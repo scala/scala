@@ -6,12 +6,25 @@
 package scala.tools.nsc
 package matching
 
-import util.Position
-import collection._
-import mutable.BitSet
-import immutable.IntMap
-import MatchUtil._
-import annotation.elidable
+/**
+ * Simple pattern types:
+ *
+ * 1 Variable               x
+ * 3 Literal                56
+ *
+ * Types which must be decomposed into conditionals and simple types:
+ *
+ * 2 Typed                  x: Int
+ * 4 Stable Identifier      Bob or `x`
+ * 5 Constructor            Symbol("abc")
+ * 6 Tuple                  (5, 5)
+ * 7 Extractor              List(1, 2)
+ * 8 Sequence               List(1, 2, _*)
+ * 9 Infix                  5 :: xs
+ * 10 Alternative           "foo" | "bar"
+ * 11 XML                   --
+ * 12 Regular Expression    --
+ */
 
 trait Patterns extends ast.TreeDSL {
   self: transform.ExplicitOuter =>
@@ -19,41 +32,154 @@ trait Patterns extends ast.TreeDSL {
   import global.{ typer => _, _ }
   import definitions._
   import CODE._
+  import treeInfo.{ unbind, isVarPattern }
 
-  val NoPattern = Pattern(EmptyTree)
+  // Fresh patterns
+  final def emptyPatterns(i: Int): List[Pattern] = List.fill(i)(NoPattern)
 
-  class ConstructorPattern(override val tree: Apply) extends Pattern(tree) {
-    private val Apply(fn, args) = tree
+  // A fresh, empty pattern
+  def NoPattern = WildcardPattern()
 
-    def isCaseClass = fn.isType
-    def isCaseObject = args == Nil && !fn.isType
-    def isFunction = !isCaseObject && !isCaseObject
+  // 8.1.1
+  case class VariablePattern(tree: Ident) extends Pattern {
+    override def irrefutableFor(tpe: Type) = true
   }
 
-  class LiteralPattern(override val tree: Literal) extends Pattern(tree)
-  class IdentPattern(override val tree: Ident) extends Pattern(tree)
-  class ObjectPattern(override val tree: Apply) extends Pattern(tree)
+  // 8.1.1 (b)
+  case class WildcardPattern() extends Pattern {
+    val tree = EmptyTree
+    override def irrefutableFor(tpe: Type) = true
+  }
 
-  class TypedPattern(override val tree: Typed) extends Pattern(tree)
-  class UnapplyPattern(override val tree: UnApply) extends Pattern(tree)
-  class SeqPattern(override val tree: UnApply) extends Pattern(tree)
+  // 8.1.2
+  case class TypedPattern(tree: Typed) extends Pattern {
+    private val Typed(expr, tpt) = tree
+
+    override def irrefutableFor(tpe: Type) = tpe <:< tree.tpe
+  }
+
+  // 8.1.3
+  case class LiteralPattern(tree: Literal) extends Pattern { }
+
+  // 8.1.4
+  case class StableIdPattern(tree: Ident) extends Pattern { }
+
+  // 8.1.5
+  case class ConstructorPattern(tree: Apply) extends ApplyPattern {
+    // XXX todo
+    // override def irrefutableFor(tpe: Type) = false
+  }
+
+  // 8.1.6
+  case class TuplePattern(tree: Apply) extends ApplyPattern {
+    // XXX todo
+    // override def irrefutableFor(tpe: Type) = false
+  }
+
+  // 8.1.7
+  case class ExtractorPattern(tree: UnApply) extends Pattern { }
+
+  // 8.1.8
+  case class SequencePattern(tree: ArrayValue) extends Pattern { }
+
+  // 8.1.8 (b)
+  case class SequenceStarPattern(tree: ArrayValue) extends Pattern { }
+
+  // 8.1.9
+  // InfixPattern ... subsumed by Constructor/Extractor Patterns
+
+  // 8.1.10
+  case class AlternativePattern(tree: Alternative, subpatterns: Seq[Pattern]) extends Pattern { }
+
+  // 8.1.11
+  // XMLPattern ... for now, subsumed by SequencePattern, but if we want
+  //   to make it work right, it probably needs special handling.
+
+
+  // XXX - temporary pattern until we have integrated every tree type.
+  case class MiscPattern(tree: Tree) extends Pattern {
+    // println("Resorted to MiscPattern: %s/%s".format(tree, tree.getClass))
+  }
+
 
   object Pattern {
+    def isDefaultPattern(t: Tree)   = cond(unbind(t)) { case EmptyTree | WILD() => true }
+    def isStar(t: Tree)             = cond(unbind(t)) { case Star(q) => isDefaultPattern(q) }
+    def isRightIgnoring(t: Tree)    = cond(unbind(t)) { case ArrayValue(_, xs) if !xs.isEmpty => isStar(xs.last) }
+
     def apply(tree: Tree): Pattern = tree match {
-      case x: Apply => new ConstructorPattern(x)
-      case _        => new MiscPattern(tree)
+      case x: Bind              => apply(unbind(tree)) withBoundTree x
+      case EmptyTree | WILD()   => WildcardPattern()
+      case x @ Alternative(ps)  => AlternativePattern(x, ps map apply)
+      case x: Apply             => ApplyPattern(x)
+      case x: Typed             => TypedPattern(x)
+      case x: Literal           => LiteralPattern(x)
+      case x: UnApply           => ExtractorPattern(x)
+      case x: Ident             => if (isVarPattern(x)) VariablePattern(x) else StableIdPattern(x)
+      case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequencePattern(x)
+      case x: Select            => MiscPattern(x) // XXX
+      case x: Star              => MiscPattern(x) // XXX
+      case _                    => abort("Unknown Tree reached pattern matcher: %s/%s".format(tree, tree.getClass))
     }
-    // def apply(x: Tree, preGuard: Tree): Pattern = new Pattern(x, preGuard)
     def unapply(other: Pattern): Option[Tree] = Some(other.tree)
   }
 
-  class MiscPattern(tree: Tree) extends Pattern(tree) { }
+  // right now a tree like x @ Apply(fn, Nil) where !fn.isType
+  // is handled by creating a singleton type:
+  //
+  //    val stype = Types.singleType(x.tpe.prefix, x.symbol)
+  //
+  // and then passing that as a type argument to EqualsPatternClass:
+  //
+  //    val tpe = typeRef(NoPrefix, EqualsPatternClass, List(stype))
+  //
+  // then creating a Typed pattern and rebinding.
+  //
+  //    val newpat = Typed(EmptyTree, TypeTree(tpe)) setType tpe)
+  //
+  object ApplyPattern {
+    def apply(x: Apply): Pattern = {
+      val Apply(fn, args) = x
 
-  sealed abstract class Pattern(val tree: Tree, val preGuard: Tree) {
-    // type T <: Tree
-    // val tree: T
+      if (fn.isType) {
+        if (isTupleType(fn.tpe)) TuplePattern(x)
+        else ConstructorPattern(x)
+      }
+      else if (args.isEmpty) fn match {
+        case _  => ConstructorPattern(x)  // XXX
+        // case x: Ident => StableIdPattern(x)
+        // case x        => MiscPattern(x)
+      }
+      else abort("Strange apply: %s/%s".format(x))
+    }
+  }
 
-    def this(tree: Tree) = this(tree, null)
+  sealed abstract class ApplyPattern extends Pattern {
+    protected lazy val Apply(fn, args) = tree
+
+    def isConstructorPattern = fn.isType
+  }
+
+  sealed abstract class Pattern {
+    val tree: Tree
+
+    // 8.1.13
+    // A pattern p is irrefutable for type T if any of the following applies:
+    //   1) p is a variable pattern
+    //   2) p is a typed pattern x: T', and T <: T'
+    //   3) p is a constructor pattern C(p1,...,pn), the type T is an instance of class C,
+    //      the primary constructor of type T has argument types T1,...,Tn and and each
+    //      pi is irrefutable for Ti.
+    def irrefutableFor(tpe: Type) = false
+
+    // XXX only a var for short-term experimentation.
+    private var _boundTree: Bind = null
+    def boundTree = if (_boundTree == null) tree else _boundTree
+    def withBoundTree(x: Bind): this.type = {
+      _boundTree = x
+      this
+    }
+    lazy val boundVariables = strip(boundTree)
 
     def    sym  = tree.symbol
     def    tpe  = tree.tpe
@@ -66,43 +192,37 @@ trait Patterns extends ast.TreeDSL {
       tree setType tpe
       this
     }
-    lazy val stripped = strip(tree)._1
-    lazy val boundVariables = strip(tree)._2
-    lazy val unbound: Pattern = copy(stripped)
 
     def mkSingleton = tpe match {
       case st: SingleType => st
       case _              => singleType(prefix, sym)
     }
 
-    final def isBind              = cond(tree)     { case x: Bind => true }
-    final def isDefault           = cond(stripped) { case EmptyTree | WILD() => true }
-    final def isStar              = cond(stripped) { case Star(q) => Pattern(q).isDefault }
-    final def isAlternative       = cond(stripped) { case Alternative(_) => true }
-    final def isRightIgnoring     = cond(stripped) { case ArrayValue(_, xs) if !xs.isEmpty => Pattern(xs.last).isStar }
+    final def isDefault           = cond(tree) { case EmptyTree | WILD() => true }
+    final def isStar              = cond(tree) { case Star(q) => Pattern(q).isDefault }
+    final def isAlternative       = cond(tree) { case Alternative(_) => true }
+    final def isRightIgnoring     = cond(tree) { case ArrayValue(_, xs) if !xs.isEmpty => Pattern(xs.last).isStar }
 
     /** returns true if pattern tests an object */
     final def isObjectTest(head: Type) =
       isSymValid && prefix.isStable && (head =:= mkSingleton)
 
     /** Helpers **/
-    private def strip(t: Tree, syms: List[Symbol] = Nil): (Tree, List[Symbol]) = t match {
-      case b @ Bind(_, pat) => strip(pat, b.symbol :: syms)
-      case _                => (t, syms)
+    private def strip(t: Tree): List[Symbol] = t match {
+      case b @ Bind(_, pat) => b.symbol :: strip(pat)
+      case _                => Nil
     }
 
     /** Standard methods **/
-    def copy(
-      tree: Tree = this.tree,
-      preGuard: Tree = this.preGuard
-    ): Pattern = Pattern(tree)  // XXX
-    // Pattern(tree, preGuard)
+    def copy(tree: Tree = this.tree): Pattern =
+      if (_boundTree == null) Pattern(tree)
+      else Pattern(tree) withBoundTree _boundTree
 
-    override def toString() = "Pattern(%s)".format(tree)
+    override def toString() = "Pattern(%s, %s)".format(tree, boundVariables)
     override def equals(other: Any) = other match {
-      case Pattern(t) => this.tree == t
+      case x: Pattern => this.boundTree == x.boundTree
       case _          => super.equals(other)
     }
-    override def hashCode() = tree.hashCode()
+    override def hashCode() = boundTree.hashCode()
   }
 }

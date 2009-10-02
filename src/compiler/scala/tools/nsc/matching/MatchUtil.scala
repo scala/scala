@@ -12,7 +12,7 @@ object MatchUtil
   import collection.mutable.ListBuffer
 
   def impossible:           Nothing = abort("this never happens")
-  def abort(msg: String):   Nothing = throw new RuntimeException(msg)
+  def abort(msg: String):   Nothing = Predef.error(msg)
 
   /** Transforms a list of triples into a triple of lists.
    *

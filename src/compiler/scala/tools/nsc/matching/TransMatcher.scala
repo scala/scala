@@ -3,27 +3,6 @@
  * Copyright 2007 Google Inc. All Rights Reserved.
  * Author: bqe@google.com (Burak Emir)
  */
-// $Id$
-
-/**
- * Simple pattern types:
- *
- * 1 Variable               x
- * 3 Literal                56
- *
- * Types which must be decomposed into conditionals and simple types:
- *
- * 2 Typed                  x: Int
- * 4 Stable Identifier      Bob or `x`
- * 5 Constructor            Symbol("abc")
- * 6 Tuple                  (5, 5)
- * 7 Extractor              List(1, 2)
- * 8 Sequence               List(1, 2, _*)
- * 9 Infix                  5 :: xs
- * 10 Alternative           "foo" | "bar"
- * 11 XML                   --
- * 12 Regular Expression    --
- */
 
 package scala.tools.nsc
 package matching
@@ -31,6 +10,7 @@ package matching
 import util.Position
 import ast.{ TreePrinters, Trees }
 import symtab.SymbolTable
+import transform.ExplicitOuter
 import java.io.{ StringWriter, PrintWriter }
 import scala.util.NameTransformer.decode
 
@@ -39,10 +19,10 @@ import scala.util.NameTransformer.decode
  *  @author Burak Emir
  */
 trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
-  self: transform.ExplicitOuter with PatternNodes with ParallelMatching =>
+  self: ExplicitOuter with ParallelMatching with PatternOptimizer =>
 
   import global.{ typer => _, _ }
-  import analyzer.Typer;
+  import analyzer.Typer
   import definitions._
   import symtab.Flags
   import CODE._
@@ -53,110 +33,13 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
 
   final val settings_squeeze = settings.Xsqueeze.value == "on"
 
-  /** Contains data structures which the match algorithm implementation
-   *  requires but which aren't essential to the algorithm itself.
-   */
-  case class MatchMatrixContext(
-    handleOuter: TreeFunction1,   // Tree => Tree function
-    typer: Typer,                 // a local typer
-    owner: Symbol,                // the current owner
-    matchResultType: Type)        // the expected result type of the whole match
-  {
-    def newVar(
-      pos: Position,
-      tpe: Type,
-      flags: List[Long] = Nil,
-      name: Name = null): Symbol =
-    {
-      val n: Name = if (name == null) newName(pos, "temp") else name
-      // careful: pos has special meaning
-      owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
-    }
-
-    def typedValDef(x: Symbol, rhs: Tree) = {
-      val finalRhs = x.tpe match {
-        case WildcardType   =>
-          rhs setType null
-          x setInfo (typer typed rhs).tpe
-          rhs
-        case _              =>
-          typer.typed(rhs, x.tpe)
-      }
-      typer typed (VAL(x) === finalRhs)
-    }
-
-    def squeezedBlock(vds: List[Tree], exp: Tree): Tree =
-      if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
-      else                  Block(vds, exp)
-
-    private def squeezedBlock1(vds: List[Tree], exp: Tree): Tree = {
-      class RefTraverser(sym: Symbol) extends Traverser {
-        var nref, nsafeRef = 0
-        override def traverse(tree: Tree) = tree match {
-          case t: Ident if t.symbol eq sym =>
-            nref += 1
-            if (sym.owner == currentOwner) // oldOwner should match currentOwner
-              nsafeRef += 1
-
-          case LabelDef(_, args, rhs) =>
-            (args dropWhile(_.symbol ne sym)) match {
-              case Nil  =>
-              case _    => nref += 2  // cannot substitute this one
-            }
-            traverse(rhs)
-          case t if nref > 1 =>       // abort, no story to tell
-          case t =>
-            super.traverse(t)
-        }
-      }
-
-      class Subst(sym: Symbol, rhs: Tree) extends Transformer {
-        var stop = false
-        override def transform(tree: Tree) = tree match {
-          case t: Ident if t.symbol == sym =>
-            stop = true
-            rhs
-          case _ => if (stop) tree else super.transform(tree)
-        }
-      }
-
-      lazy val squeezedTail = squeezedBlock(vds.tail, exp)
-      def default = squeezedTail match {
-        case Block(vds2, exp2) => Block(vds.head :: vds2, exp2)
-        case exp2              => Block(vds.head :: Nil,  exp2)
-      }
-
-      if (vds.isEmpty) exp
-      else vds.head match {
-        case vd: ValDef =>
-          val sym = vd.symbol
-          val rt = new RefTraverser(sym)
-          rt.atOwner (owner) (rt traverse squeezedTail)
-
-          rt.nref match {
-            case 0                      => squeezedTail
-            case 1 if rt.nsafeRef == 1  => new Subst(sym, vd.rhs) transform squeezedTail
-            case _                      => default
-          }
-        case _          =>
-          default
-      }
-    }
-  }
-
-  case class MatchMatrixInit(
-    roots: List[Symbol],
-    cases: List[CaseDef],
-    default: Tree
-  )
-
   /** Handles all translation of pattern matching.
    */
   def handlePattern(
     selector: Tree,         // tree being matched upon (called scrutinee after this)
     cases: List[CaseDef],   // list of cases in the match
     isChecked: Boolean,     // whether exhaustiveness checking is enabled (disabled with @unchecked)
-    context: MatchMatrixContext): Tree =
+    context: MatrixContext): Tree =
   {
     import context._
 
@@ -172,15 +55,15 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
       (cases forall caseIsOk)
 
     // For x match { ... we start with a single root
-    def singleMatch(): (List[Tree], MatchMatrixInit) = {
+    def singleMatch(): (List[Tree], MatrixInit) = {
       val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
       val varDef: Tree      = typedValDef(root, selector)
 
-      (List(varDef), MatchMatrixInit(List(root), cases, matchError(ID(root))))
+      (List(varDef), MatrixInit(List(root), cases, matchError(ID(root))))
     }
 
     // For (x, y, z) match { ... we start with multiple roots, called tpXX.
-    def tupleMatch(app: Apply): (List[Tree], MatchMatrixInit) = {
+    def tupleMatch(app: Apply): (List[Tree], MatrixInit) = {
       val Apply(fn, args) = app
       val (roots, vars) = List.unzip(
         for ((arg, typeArg) <- args zip selector.tpe.typeArgs) yield {
@@ -188,7 +71,7 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
           (v, typedValDef(v, arg))
         }
       )
-      (vars, MatchMatrixInit(roots, cases, matchError(treeCopy.Apply(app, fn, roots map ID))))
+      (vars, MatrixInit(roots, cases, matchError(treeCopy.Apply(app, fn, roots map ID))))
     }
 
     // sets up top level variables and algorithm input
@@ -204,8 +87,8 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
 
     // redundancy check
     matrix.targets filter (_.isNotReached) foreach (cs => cunit.error(cs.body.pos, "unreachable code"))
-    // cleanup performs squeezing and resets any remaining TRANS_FLAGs
-    matrix cleanup dfatree
+    // optimize performs squeezing and resets any remaining TRANS_FLAGs
+    matrix optimize dfatree
   }
 
   private def toCompactString(t: Tree): String = {
