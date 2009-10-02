@@ -62,7 +62,6 @@ final class ListBuffer[A]
         val newElem = new :: (x, start.tail);
         if (last0 eq start) {
           last0 = newElem
-          len += 1
         }
         start = newElem
       } else {
@@ -75,7 +74,6 @@ final class ListBuffer[A]
         val newElem = new :: (x, cursor.tail.tail)
         if (last0 eq cursor.tail) {
           last0 = newElem
-          len += 1
         }
         cursor.asInstanceOf[::[A]].tl = newElem
       }
