@@ -11,7 +11,7 @@ package scala.tools.nsc
  * @version 1.0
  * @author Lex Spoon, 2007/3/24
  **/
-class InterpreterSettings {
+class InterpreterSettings(repl: Interpreter) {
   /** A list of paths where :load should look */
   var loadPath = List(".")
 
@@ -21,6 +21,14 @@ class InterpreterSettings {
    *  truncated.
    */
   var maxPrintString = 2400
+
+  def deprecation_=(x: Boolean) = {
+    val old = repl.settings.deprecation.value
+    repl.settings.deprecation.value = x
+    if (!old && x) println("Enabled -deprecation output.")
+    else if (old && !x) println("Disabled -deprecation output.")
+  }
+  def deprecation: Boolean = repl.settings.deprecation.value
 
   override def toString =
     "InterpreterSettings {\n" +
@@ -50,7 +58,7 @@ package scala.tools.nsc
  * @version 1.0
  * @author Lex Spoon, 2007/3/24
  **/
-class InterpreterSettings {
+class InterpreterSettings(repl: Interpreter) {
   /** A list of paths where :load should look */
   var loadPath = List(".")
 
@@ -59,7 +67,15 @@ class InterpreterSettings {
    *  more than this number of characters, then the printout is
    *  truncated.
    */
-  var maxPrintString = 390
+  var maxPrintString = 2400
+
+  def deprecation_=(x: Boolean) = {
+    val old = repl.settings.deprecation.value
+    repl.settings.deprecation.value = x
+    if (!old && x) println("Enabled -deprecation output.")
+    else if (old && !x) println("Disabled -deprecation output.")
+  }
+  def deprecation: Boolean = repl.settings.deprecation.value
 
   override def toString =
     "InterpreterSettings {\n" +

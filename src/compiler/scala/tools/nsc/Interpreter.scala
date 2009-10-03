@@ -102,7 +102,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   }
 
   /** interpreter settings */
-  lazy val isettings = new InterpreterSettings
+  lazy val isettings = new InterpreterSettings(this)
 
   object reporter extends ConsoleReporter(settings, null, out) {
     override def printMessage(msg: String) {
