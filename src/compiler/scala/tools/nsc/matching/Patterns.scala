@@ -83,7 +83,11 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.5
   case class ConstructorPattern(tree: Apply) extends ApplyPattern {
-    require(fn.isType)
+    require(fn.isType && isCaseClass(tpe))
+
+    override def subpatterns(pats: MatchMatrix#Patterns) =
+      if (pats.isCaseHead) args map Pattern.apply
+      else super.subpatterns(pats)
 
     override def simplify(testVar: Symbol) =
       if (args.isEmpty) this rebindToEmpty tree.tpe
@@ -158,7 +162,7 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.10
   case class AlternativePattern(tree: Alternative) extends Pattern {
     private val Alternative(subtrees) = tree
-    override def subpatterns(pats: MatchMatrix#Patterns) = subtrees map Pattern.apply
+    // override def subpatterns(pats: MatchMatrix#Patterns) = subtrees map Pattern.apply
   }
 
   // 8.1.11
@@ -235,15 +239,6 @@ trait Patterns extends ast.TreeDSL {
   sealed abstract class ApplyPattern extends Pattern {
     protected lazy val Apply(fn, args) = tree
     private def isCaseClass = tree.tpe.typeSymbol hasFlag Flags.CASE
-
-    override def subpatterns(pats: MatchMatrix#Patterns): List[Pattern] =
-      if (isConstructorPattern && isCaseClass) {
-        if (pats.isCaseHead) args map Pattern.apply
-        else pats.dummyPatterns
-      }
-      else if (isConstructorPattern && !args.isEmpty) abort("Strange Apply")
-      else pats.dummyPatterns
-
     def isConstructorPattern = fn.isType
   }
   // trait SimplePattern extends Pattern {
@@ -256,7 +251,7 @@ trait Patterns extends ast.TreeDSL {
     def simplify(testVar: Symbol): Pattern = this
     def simplify(): Pattern = this simplify NoSymbol
 
-    def subpatterns(pats: MatchMatrix#Patterns): List[Pattern] = Nil
+    def subpatterns(pats: MatchMatrix#Patterns): List[Pattern] = pats.dummyPatterns
 
     // 8.1.13
     // A pattern p is irrefutable for type T if any of the following applies:
@@ -326,10 +321,6 @@ trait Patterns extends ast.TreeDSL {
     final def isStar              = cond(tree) { case Star(q) => Pattern(q).isDefault }
     final def isAlternative       = cond(tree) { case Alternative(_) => true }
     final def isRightIgnoring     = cond(tree) { case ArrayValue(_, xs) if !xs.isEmpty => Pattern(xs.last).isStar }
-
-    /** returns true if pattern tests an object */
-    final def isObjectTest(head: Type) =
-      isSymValid && prefix.isStable && (head =:= mkSingleton)
 
     /** Helpers **/
     private def strip(t: Tree): List[Symbol] = t match {

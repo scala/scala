@@ -153,8 +153,9 @@ trait ParallelMatching extends ast.TreeDSL
       def zip[T](others: List[T]) = trees zip others
       def pzip[T](others: List[T]) = ps zip others
 
-      def isObjectTest(pat: Pattern)  = pat isObjectTest headType
-      def isObjectTest(pat: Tree)     = Pattern(pat) isObjectTest headType
+      /** returns true if pattern tests an object */
+      def isObjectTest(pat: Pattern) =
+        pat.isSymValid && pat.prefix.isStable && (headType =:= pat.mkSingleton)
 
       def extractSimpleSwitch(): Option[(List[Tree], Option[Tree])] = {
         def isSwitchableTag(tag: Int)     = cond(tag)       { case ByteTag | ShortTag | IntTag | CharTag => true }
@@ -591,12 +592,21 @@ trait ParallelMatching extends ast.TreeDSL
     /** mixture rule for type tests
     **/
     class MixTypes(val pats: Patterns, val rest: Rep) extends RuleApplication {
-      private def subpatterns(p: Pattern): List[Pattern] =
-        p.tree match {
-          case app @ Apply(fn, ps) if isCaseClass(app.tpe) && fn.isType   => if (pats.isCaseHead) toPats(ps) else pats.dummyPatterns
-          case Apply(fn, xs) if !xs.isEmpty || fn.isType                  => abort("strange Apply")
-          case _                                                          => pats.dummyPatterns
-        }
+      // see bug1434.scala for an illustration of why "x <:< y" is insufficient.
+      // this code is definitely inadequate at best.  Inherited comment:
+      //
+      //   an approximation of _tp1 <:< tp2 that ignores _ types. this code is wrong,
+      //   ideally there is a better way to do it, and ideally defined in Types.scala
+      private def matches(arg1: Type, arg2: Type) = {
+        val List(t1, t2) = List(arg1, arg2) map decodedEqualsType
+        def eqSymbols = t1.typeSymbol eq t2.typeSymbol
+        def isSubtype = t1.baseTypeSeq exists (_.typeSymbol eq t2.typeSymbol)
+
+        (t1 <:< t2) || ((t1, t2) match {
+          case (_: TypeRef, _: TypeRef) => !t1.isArray && (t1.prefix =:= t2.prefix) && (eqSymbols || isSubtype)
+          case _ => false
+        })
+      }
 
       // moreSpecific: more specific patterns
       //     subsumed: more general patterns (subsuming current), rows index and subpatterns
@@ -604,42 +614,38 @@ trait ParallelMatching extends ast.TreeDSL
       def join[T](xs: List[Option[T]]): List[T] = xs.flatMap(x => x)
       val (moreSpecific, subsumed, remaining) : (List[Tree], List[(Int, List[Tree])], List[(Int, Tree)]) = unzip3(
         for ((pattern, j) <- pats.pzip()) yield {
-          val spat: Tree = pattern.tree
-          val pat: Tree = pattern.boundTree
+          def spat: Tree = pattern.tree
+          def pat: Tree = pattern.boundTree
 
           def eqHead(tpe: Type)         = pats.headType =:= tpe
           def alts(yes: Tree, no: Tree) = if (eqHead(pat.tpe)) yes else no
 
-          lazy val isDef                = isDefaultPattern(pat)
-          lazy val dummy                = (j, pats.dummies)
-          lazy val pass                 = (j, pat)
-          lazy val subs                 = (j, subpatterns(Pattern(pat)) map (_.boundTree))
-
-          lazy val cmpOld: TypeComp  = spat.tpe cmp pats.headType  // contains type info about pattern's type vs. head pattern
-          import cmpOld.{ erased }
-
-          def erased_xIsaY = erased.xIsaY
-          def erased_yIsaX = erased.yIsaX
+          def isDef               = pattern.isDefault
+          lazy val dummy          = (j, pats.dummies)
+          lazy val pass           = (j, pat)
+          lazy val subs           = (j, pattern.subpatterns(pats) map (_.boundTree))
 
           // scrutinee, pattern
-          val (s, p)  = (decodedEqualsType(spat.tpe), decodedEqualsType(pats.headType))
-          def xIsaY   = s <:< p
-          def yIsaX   = p <:< s
+          val (s, p) = (spat.tpe, pats.headType)
+
+          def sMatchesP = matches(s, p)
+          def pMatchesS = matches(p, s)
 
           // each pattern will yield a triple of options corresponding to the three lists,
           // which will be flattened down to the values
           implicit def mkOpt[T](x: T): Option[T] = Some(x)    // limits noise from Some(value)
           (spat match {
-            case LIT(null) if !eqHead(spat.tpe)               => (None, None, pass)           // special case for constant null
-            case _ if pats.isObjectTest(pat)                  => (EmptyTree, dummy, None)     // matching an object
-            case Typed(p @ Stripped(_: UnApply), _) if xIsaY  => (p, dummy, None)             // <:< is never <equals>
-            case q @ Typed(pp, _) if xIsaY                    => (alts(pp, q), dummy, None)   // never =:= for <equals>
-            // case z: UnApply                                   => (None, None, pass)
-            case z: UnApply                                   => (EmptyTree, dummy, pass)
-            case _ if erased.xIsaY || xIsaY && !isDef         => (alts(EmptyTree, pat), subs, None) // never =:= for <equals>
-            case _ if erased.yIsaX || yIsaX || isDef          => (EmptyTree, dummy, pass)     // subsuming (matched *and* remaining pattern)
-            case _                                            => (None, None, pass)
-            // The below fixes bugs 425 and 816 with only the small downside
+            case LIT(null) if !eqHead(spat.tpe)                     => (None, None, pass)           // special case for constant null
+            case _ if pats.isObjectTest(pattern)                    => (EmptyTree, dummy, None)     // matching an object
+            case Typed(pp @ Stripped(_: UnApply), _) if sMatchesP   => (pp, dummy, None)            // <:< is never <equals>
+            case q @ Typed(pp, _) if sMatchesP                      => (alts(pp, q), dummy, None)   // never =:= for <equals>
+            case z: UnApply                                         => (EmptyTree, dummy, pass)
+            case _ =>
+              if (sMatchesP && !pattern.isDefault) (alts(EmptyTree, pat), subs, None)
+              else if (pMatchesS || pattern.isDefault) (EmptyTree, dummy, pass)
+              else (None, None, pass)
+
+            // The below (once fixed) bugs 425 and 816 with only the small downside
             // of causing 60 other tests to fail.
             // case _ =>
             //   if (erased_xIsaY || xIsaY && !isDef)  (alts(EmptyTree, pat), subs, None) // never =:= for <equals>
@@ -706,7 +712,6 @@ trait ParallelMatching extends ast.TreeDSL
         val caseTemps   = srep.tvars match { case x :: xs if x == casted.sym => xs ; case x => x }
         def castedScrut = typedValDef(casted.sym, scrut.id AS_ANY castedTpe)
         def needCast    = if (casted.sym ne scrut.sym) List(castedScrut) else Nil
-
 
         val vdefs       = needCast ::: (
           for ((tmp, accessor) <- caseTemps zip cfa) yield
