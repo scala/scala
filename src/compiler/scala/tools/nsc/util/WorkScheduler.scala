@@ -50,5 +50,6 @@ class WorkScheduler {
    */
   def raise(exc: Exception) = synchronized {
     except = Some(exc)
+    postWorkItem { () => }
   }
 }
