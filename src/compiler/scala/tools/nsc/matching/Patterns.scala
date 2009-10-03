@@ -48,6 +48,7 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.1
   case class VariablePattern(tree: Ident) extends Pattern {
     override def irrefutableFor(tpe: Type) = true
+    override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
   }
 
   // 8.1.1 (b)
@@ -72,16 +73,13 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.4
   case class StableIdPattern(tree: Ident) extends Pattern {
-    override def simplify(testVar: Symbol) = rebindToEqualsCheck()
+    override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
   }
 
   // 8.1.4 (b)
   case class SelectPattern(tree: Select) extends Pattern {
-    // override def simplify(testVar: Symbol) =
-    //   this rebindToEmpty mkEqualsRef(singleType(pre, sym))
+    override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
   }
-
-  // 8.1.4 (b)
 
   // 8.1.5
   case class ConstructorPattern(tree: Apply) extends ApplyPattern {
@@ -98,8 +96,22 @@ trait Patterns extends ast.TreeDSL {
   case class ApplyValuePattern(tree: Apply) extends ApplyPattern {
     require(!fn.isType)
 
-    override def simplify(testVar: Symbol) =
-      this rebindToEmpty mkEqualsRef(singleType(prefix, sym))
+    override def simplify(testVar: Symbol) = {
+      def examinePrefix(path: Tree) = (path, path.tpe) match {
+        case (_, t: ThisType)     => singleType(t, sym)
+        case (_: Apply, _)        => PseudoType(tree)
+        case _                    => singleType(Pattern(path).mkSingleton, sym)
+      }
+      val singletonType =
+        if (isModule) mkSingleton else fn match {
+          case Select(path, _)  => examinePrefix(path)
+          case x: Ident         => Pattern(x).equalsCheck
+        }
+
+      val typeToTest = mkEqualsRef(singletonType)
+      val tt = Typed(WILD(typeToTest), TypeTree(singletonType)) setType typeToTest
+      this rebindTo tt
+    }
   }
 
   // 8.1.6
@@ -114,6 +126,7 @@ trait Patterns extends ast.TreeDSL {
     private val MethodType(List(arg, _*), _) = fn.tpe
     private def uaTyped = Typed(tree, TypeTree(arg.tpe)) setType arg.tpe
 
+    // can fix #1697 here?
     override def simplify(testVar: Symbol) =
       if (testVar.tpe <:< arg.tpe) this
       else this rebindTo uaTyped
@@ -154,9 +167,12 @@ trait Patterns extends ast.TreeDSL {
 
   // XXX - temporary pattern until we have integrated every tree type.
   case class MiscPattern(tree: Tree) extends Pattern {
-    // println("Resorted to MiscPattern: %s/%s".format(tree, tree.getClass))
+    log("Resorted to MiscPattern: %s/%s".format(tree, tree.getClass))
+    override def simplify(testVar: Symbol) = tree match {
+      case x: Ident => this.rebindToEqualsCheck()
+      case _        => super.simplify(testVar)
+    }
   }
-
 
   object Pattern {
     def isDefaultPattern(t: Tree)   = cond(unbind(t)) { case EmptyTree | WILD() => true }
@@ -238,7 +254,7 @@ trait Patterns extends ast.TreeDSL {
     // The logic formerly in classifyPat, returns either a simplification
     // of this pattern or identity.
     def simplify(testVar: Symbol): Pattern = this
-    def simplify(): Pattern = simplify(NoSymbol)
+    def simplify(): Pattern = this simplify NoSymbol
 
     def subpatterns(pats: MatchMatrix#Patterns): List[Pattern] = Nil
 

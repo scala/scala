@@ -114,11 +114,6 @@ trait PatternNodes extends ast.TreeDSL
       }
     }
 
-    // used as argument to `EqualsPatternClass'
-    case class PseudoType(o: Tree) extends SimpleTypeProxy {
-      override def underlying: Type = o.tpe
-      override def safeToString: String = "PseudoType("+o+")"
-    }
   }
 
   /** For folding a list into a well-typed x :: y :: etc :: tree. */
