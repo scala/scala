@@ -20,7 +20,7 @@ class InterpreterSettings {
    *  more than this number of characters, then the printout is
    *  truncated.
    */
-  var maxPrintString = 390
+  var maxPrintString = 2400
 
   override def toString =
     "InterpreterSettings {\n" +
