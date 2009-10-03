@@ -119,6 +119,8 @@ trait ContextTrees { self: Global =>
                 loop(lo, mid)
               else if (midpos precedes cpos)
                 loop(mid, hi)
+              else
+                addContext(contexts(mid).children, context, cpos)
             } else if (!insertAt(lo) && !insertAt(hi)) {
               val lopos = contexts(lo).pos
               val hipos = contexts(hi).pos
