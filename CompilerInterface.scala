@@ -11,8 +11,7 @@ class CompilerInterface
 	def run(args: Array[String], callback: AnalysisCallback, maximumErrors: Int, log: Logger)
 	{
 			def debug(msg: => String) = log.debug(Message(msg))
-			import scala.tools.nsc.{CompilerCommand, FatalError, Global, Settings, reporters, util}
-			import util.FakePos
+			import scala.tools.nsc.{CompilerCommand, Global, Settings}
 
 		debug("Interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
 
@@ -37,13 +36,12 @@ class CompilerInterface
 				def newPhase(prev: Phase) = analyzer.newPhase(prev)
 				def name = phaseName
 			}
-			lazy val pdescriptors = // done this way for compatibility between 2.7 and 2.8
+			override def computePhaseDescriptors = // done this way for compatibility between 2.7 and 2.8
 			{
 				phasesSet += sbtAnalyzer
-				val superd = super.phaseDescriptors
-				if(superd.contains(sbtAnalyzer)) superd else ( super.phaseDescriptors ++ Seq(sbtAnalyzer) ).toList
+				val superd = super.computePhaseDescriptors
+				if(superd.contains(sbtAnalyzer)) superd else ( superd ++ Seq(sbtAnalyzer) ).toList
 			}
-			override def phaseDescriptors = pdescriptors
 			trait Compat27 { val runsBefore: List[String] = Nil }
 		}
 		if(!reporter.hasErrors)
@@ -56,7 +54,35 @@ class CompilerInterface
 		if(reporter.hasErrors)
 		{
 			debug("Compilation failed (CompilerInterface)")
-			throw new xsbti.CompileFailed { val arguments = args; override def toString = "Analyzed compilation failed" }
+			throw new InterfaceCompileFailed(args, "Analyzed compilation failed")
 		}
 	}
 }
+class ScaladocInterface
+{
+		def run(args: Array[String], maximumErrors: Int, log: Logger)
+		{
+			import scala.tools.nsc.{doc, CompilerCommand, Global}
+			val reporter = new LoggerReporter(maximumErrors, log)
+			val docSettings: doc.Settings = new doc.Settings(reporter.error)
+			val command = new CompilerCommand(args.toList, docSettings, error, false)
+			object compiler extends Global(command.settings, reporter)
+			{
+				override val onlyPresentation = true
+			}
+			if(!reporter.hasErrors)
+			{
+				val run = new compiler.Run
+				run compile command.files
+				val generator = new doc.DefaultDocDriver
+				{
+					lazy val global: compiler.type = compiler
+					lazy val settings = docSettings
+				}
+				generator.process(run.units)
+			}
+			reporter.printSummary()
+			if(reporter.hasErrors) throw new InterfaceCompileFailed(args, "Scaladoc generation failed")
+		}
+}
+class InterfaceCompileFailed(val arguments: Array[String], override val toString: String) extends xsbti.CompileFailed

@@ -12,7 +12,7 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 {
 	import scala.tools.nsc.util.{FakePos,NoPosition,Position}
 	private val positions = new scala.collection.mutable.HashMap[Position, Severity]
-	
+
 	def error(msg: String) { error(FakePos("scalac"), msg) }
 
 	def printSummary()
@@ -22,7 +22,7 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 		if(ERROR.count > 0)
 			log.error(Message(countElementsAsString(ERROR.count, "error") + " found"))
 	}
-	
+
 	def display(pos: Position, msg: String, severity: Severity)
 	{
 		severity.count += 1
@@ -39,7 +39,7 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 				case INFO => log.info(m)
 			})
 		}
-	
+
 	private def print(logger: F0[String] => Unit, posIn: Position, msg: String)
 	{
 		def log(s: => String) = logger(Message(s))
@@ -69,7 +69,7 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 					for(offset <- pos.offset; src <- pos.source)
 					{
 						val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
-						val pointerSpace = lineContent.take(pointer).map { case '\t' => '\t'; case x => ' ' }
+						val pointerSpace = (lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }
 						log(pointerSpace.mkString + "^") // pointer to the column position of the error/warning
 					}
 				}
@@ -93,7 +93,7 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 			case _ => display(pos, msg, severity)
 		}
 	}
-	
+
 	private def testAndLog(pos: Position, severity: Severity): Boolean =
 	{
 		if(pos == null || pos.offset.isEmpty)
