@@ -83,7 +83,7 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.5
   case class ConstructorPattern(tree: Apply) extends ApplyPattern {
-    require(fn.isType && isCaseClass(tpe))
+    require(fn.isType && this.isCaseClass)
 
     override def subpatterns(pats: MatchMatrix#Patterns) =
       if (pats.isCaseHead) args map Pattern.apply
@@ -197,10 +197,25 @@ trait Patterns extends ast.TreeDSL {
       case x: Star              => MiscPattern(x) // XXX
       case _                    => abort("Unknown Tree reached pattern matcher: %s/%s".format(tree, tree.getClass))
     }
-    def unapply(other: Pattern): Option[Tree] = Some(other.tree)
+    def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
+      case x: Tree    => unapply(Pattern(x))
+      case x: Pattern => Some((x.tree, x.boundVariables))
+      case _          => None
+    }
   }
 
   object UnapplyPattern {
+    private object UnapplySeq {
+      private object TypeApp {
+        def unapply(x: Any) = condOpt(x) {
+          case TypeApply(sel @ Select(stor, nme.unapplySeq), List(tpe)) if stor.symbol eq ListModule => tpe
+        }
+      }
+      def unapply(x: UnApply) = condOpt(x) {
+        case UnApply(Apply(TypeApp(tptArg), _), List(ArrayValue(_, xs))) => (tptArg, xs)
+      }
+    }
+
     def apply(x: UnApply): Pattern = {
       x match {
         case UnapplySeq(_, _) => SequenceExtractorPattern(x)
@@ -238,7 +253,6 @@ trait Patterns extends ast.TreeDSL {
 
   sealed abstract class ApplyPattern extends Pattern {
     protected lazy val Apply(fn, args) = tree
-    private def isCaseClass = tree.tpe.typeSymbol hasFlag Flags.CASE
     def isConstructorPattern = fn.isType
   }
   // trait SimplePattern extends Pattern {
@@ -302,6 +316,8 @@ trait Patterns extends ast.TreeDSL {
 
     def isSymValid = (sym != null) && (sym != NoSymbol)
     def isModule = sym.isModule || tpe.termSymbol.isModule
+    def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
+    def isObject = isSymValid && prefix.isStable
 
     def setType(tpe: Type): this.type = {
       tree setType tpe
