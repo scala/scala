@@ -49,6 +49,7 @@ trait Patterns extends ast.TreeDSL {
   case class VariablePattern(tree: Ident) extends Pattern {
     override def irrefutableFor(tpe: Type) = true
     override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
+    // override def matchingType = mkSingleton ??? XXX
   }
 
   // 8.1.1 (b)
@@ -74,11 +75,13 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.4
   case class StableIdPattern(tree: Ident) extends Pattern {
     override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
+    override def matchingType = mkSingleton
   }
 
   // 8.1.4 (b)
   case class SelectPattern(tree: Select) extends Pattern {
     override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
+    override def matchingType = mkSingleton
   }
 
   // 8.1.5
@@ -129,6 +132,11 @@ trait Patterns extends ast.TreeDSL {
     private val UnApply(Apply(fn, _), args) = tree
     private val MethodType(List(arg, _*), _) = fn.tpe
     private def uaTyped = Typed(tree, TypeTree(arg.tpe)) setType arg.tpe
+
+    override def matchingType = arg.tpe
+
+    // lazy val ua @ UnApply(app, args) = head.tree
+    // lazy val Apply(fxn, _ :: trailingArgs) = app
 
     // can fix #1697 here?
     override def simplify(testVar: Symbol) =
@@ -314,6 +322,9 @@ trait Patterns extends ast.TreeDSL {
     def prefix  = tpe.prefix
     def isEmpty = tree.isEmpty
 
+    // this is used when this pattern is the foremost under consideration
+    def matchingType = tpe
+
     def isSymValid = (sym != null) && (sym != NoSymbol)
     def isModule = sym.isModule || tpe.termSymbol.isModule
     def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
@@ -355,5 +366,49 @@ trait Patterns extends ast.TreeDSL {
       case _          => super.equals(other)
     }
     override def hashCode() = boundTree.hashCode()
+  }
+
+  /*** Extractors ***/
+
+  object UnapplyParamType {
+    def unapply(x: Tree): Option[Type] = condOpt(unbind(x)) {
+      case UnApply(Apply(fn, _), _) => fn.tpe match {
+        case m: MethodType => m.paramTypes.head
+      }
+    }
+  }
+    //
+    // protected def getSubPatterns(len: Int, x: Tree): Option[List[Pattern]] = condOpt(x) {
+    //   case av @ ArrayValue(_,xs) if !isRightIgnoring(av) && xs.length == len   => toPats(xs) ::: List(NoPattern)
+    //   case av @ ArrayValue(_,xs) if  isRightIgnoring(av) && xs.length == len+1 => removeStar(toPats(xs)) // (*)
+    //   case EmptyTree | WILD()                                                  => emptyPatterns(len + 1)
+    // }
+
+  object SeqStarSubPatterns {
+    def removeStar(xs: List[Tree], seqType: Type): List[Pattern] = {
+      val ps = toPats(xs)
+      ps.init ::: List(ps.last rebindToType seqType)
+    }
+
+    // override def getSubPatterns(minlen: Int, x: Tree): Option[List[Pattern]] = condOpt(x) {
+    //   case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length   == minlen) =>  // Seq(p1,...,pN)
+    //     toPats(xs ::: List(gen.mkNil, EmptyTree))
+    //   case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1 == minlen) =>  // Seq(p1,...,pN,_*)
+    //     removeStar(toPats(xs)) ::: List(NoPattern)
+    //   case av @ ArrayValue(_,xs) if ( isRightIgnoring(av) && xs.length-1  < minlen) =>  // Seq(p1..,pJ,_*)   J < N
+    //     emptyPatterns(minlen + 1) ::: List(Pattern(x))
+    //   case EmptyTree | WILD()                   =>
+    //     emptyPatterns(minlen + 1          + 1)
+    // }
+
+    def unapply(x: Pattern)(implicit min: Int, seqType: Type): Option[List[Pattern]] = x.tree match {
+      case av @ ArrayValue(_, xs) =>
+        if      (!isRightIgnoring(av) && xs.length   == min) Some(toPats(xs ::: List(gen.mkNil, EmptyTree)))    // Seq(p1,...,pN)
+        else if ( isRightIgnoring(av) && xs.length-1 == min) Some(removeStar(xs, seqType) ::: List(NoPattern))  // Seq(p1,...,pN,_*)
+        else if ( isRightIgnoring(av) && xs.length-1 == min) Some(emptyPatterns(min + 1) ::: List(x))           // Seq(p1..,pJ,_*)   J < N
+        else None
+      case _ =>
+        if (x.isDefault) Some(emptyPatterns(min + 1 + 1)) else None
+    }
   }
 }

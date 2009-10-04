@@ -60,12 +60,4 @@ trait PatternNodes extends ast.TreeDSL
 
   def normalizedListPattern(pats: List[Tree], tptArg: Type): Tree =
     pats.foldRight(gen.mkNil)(listFolder(tptArg))
-
-  object UnapplyParamType {
-    def unapply(x: Tree): Option[Type] = condOpt(unbind(x)) {
-      case UnApply(Apply(fn, _), _) => fn.tpe match {
-        case m: MethodType => m.paramTypes.head
-      }
-    }
-  }
 }

@@ -139,11 +139,7 @@ trait ParallelMatching extends ast.TreeDSL
       lazy val tail = ps.tail
       lazy val size = ps.length
 
-      lazy val headType = head.tree match {
-        case p @ (_:Ident | _:Select) => head.mkSingleton // should be singleton object
-        case UnapplyParamType(x)      => x
-        case _                        => head.tpe
-      }
+      lazy val headType = head.matchingType
       def isCaseHead = head.isCaseClass
       def dummies = if (isCaseHead) getDummies(headType.typeSymbol.caseFieldAccessors.length) else Nil
       def dummyPatterns = dummies map (x => Pattern(x))
@@ -532,6 +528,14 @@ trait ParallelMatching extends ast.TreeDSL
      */
     final class MixSequenceStar(pats: Patterns, rest: Rep) extends MixSequence(pats, rest) {
       // in principle, we could optimize more, but variable binding gets complicated (@todo use finite state methods instead)
+      // override def getSubPatterns(minlen: Int, x: Tree): Option[List[Pattern]] = {
+      //   implicit val min = minlen
+      //   implicit val tpe = scrut.seqType
+      //   Pattern(x) match {
+      //     case SeqStarSubPatterns(xs) => Some(xs)
+      //     case _                      => None
+      //   }
+      // }
       override def getSubPatterns(minlen: Int, x: Tree): Option[List[Pattern]] = condOpt(x) {
         case av @ ArrayValue(_,xs) if (!isRightIgnoring(av) && xs.length   == minlen) =>  // Seq(p1,...,pN)
           toPats(xs ::: List(gen.mkNil, EmptyTree))
@@ -564,7 +568,7 @@ trait ParallelMatching extends ast.TreeDSL
           }
         }
 
-        val label       = owner.newLabel(scrut.pos, newName(scrut.pos, "failCont%")) // warning, untyped
+        val label       = owner.newLabel(scrut.pos, newName(scrut.pos, "failCont%")) // warning, untyped - typed in tree()
         val succ        = List(
           rest.rows.head.insert2(List(NoPattern), head.boundVariables, scrut.sym),
           Row(emptyPatterns(1 + rest.tvars.length), NoBinding, NoGuard, shortCut(label))
@@ -612,24 +616,21 @@ trait ParallelMatching extends ast.TreeDSL
       //     subsumed: more general patterns (subsuming current), rows index and subpatterns
       //    remaining: remaining, rows index and pattern
       def join[T](xs: List[Option[T]]): List[T] = xs.flatMap(x => x)
-      val (moreSpecific, subsumed, remaining) : (List[Tree], List[(Int, List[Tree])], List[(Int, Tree)]) = unzip3(
+      val (moreSpecific, subsumed, remaining) : (List[Pattern], List[(Int, List[Pattern])], List[(Int, Pattern)]) = unzip3(
         for ((pattern, j) <- pats.pzip()) yield {
-          def spat: Tree = pattern.tree
-          def pat: Tree = pattern.boundTree
-
-          def eqHead(tpe: Type)         = pats.headType =:= tpe
-          def alts(yes: Tree, no: Tree) = if (eqHead(pat.tpe)) yes else no
-          def isObjectTest              = pattern.isObject && eqHead(pattern.mkSingleton)
-
-          lazy val dummy          = (j, pats.dummies)
-          lazy val pass           = (j, pattern.boundTree)
-          lazy val subs           = (j, (pattern subpatterns pats) map (_.boundTree))
-
           // scrutinee, head of pattern group
           val (s, p) = (pattern.tpe, pats.headType)
 
           def sMatchesP = matches(s, p)
           def pMatchesS = matches(p, s)
+          def sEqualsP  = p =:= s
+
+          def alts[T](yes: T, no: T): T = if (sEqualsP) yes else no
+          def isObjectTest              = pattern.isObject && (pats.headType =:= pattern.mkSingleton)
+
+          lazy val dummy          = (j, pats.dummyPatterns)
+          lazy val pass           = (j, pattern)
+          lazy val subs           = (j, pattern subpatterns pats)
 
           // each pattern will yield a triple of options corresponding to the three lists,
           // which will be flattened down to the values
@@ -644,23 +645,23 @@ trait ParallelMatching extends ast.TreeDSL
           // (4) never =:= for <equals>
 
           (pattern match {
-            case Pattern(LIT(null), _) if !eqHead(pattern.tpe)                  => (None, None, pass)                     // (1)
-            case x if isObjectTest                                              => (EmptyTree, dummy, None)               // (2)
-            case Pattern(Typed(pp @ Pattern(_: UnApply, _), _), _) if sMatchesP => (pp, dummy, None)                      // (3)
-            case Pattern(Typed(pp, _), _) if sMatchesP                          => (alts(pp, pattern.tree), dummy, None)  // (4)
-            case Pattern(_: UnApply, _)                                         => (EmptyTree, dummy, pass)
-            case x if !x.isDefault && sMatchesP                                 => (alts(EmptyTree, pat), subs, None)
-            case x if  x.isDefault || pMatchesS                                 => (EmptyTree, dummy, pass)
+            case Pattern(LIT(null), _) if !sEqualsP                             => (None, None, pass)                         // (1)
+            case x if isObjectTest                                              => (NoPattern, dummy, None)                   // (2)
+            case Pattern(Typed(pp @ Pattern(_: UnApply, _), _), _) if sMatchesP => (Pattern(pp), dummy, None)                 // (3)
+            case Pattern(Typed(pp, _), _) if sMatchesP                          => (alts(Pattern(pp), pattern), dummy, None)  // (4)
+            case Pattern(_: UnApply, _)                                         => (NoPattern, dummy, pass)
+            case x if !x.isDefault && sMatchesP                                 => (alts(NoPattern, pattern), subs, None)
+            case x if  x.isDefault || pMatchesS                                 => (NoPattern, dummy, pass)
             case _                                                              => (None, None, pass)
 
-            // The below (once fixed) bugs 425 and 816 with only the small downside
-            // of causing 60 other tests to fail.
+            // The below (back when the surrounding code looked much different) fixed bugs 425 and 816
+            // with only the small downside of causing 60 other tests to fail.
             // case _ =>
             //   if (erased_xIsaY || xIsaY && !isDef)  (alts(EmptyTree, pat), subs, None) // never =:= for <equals>
             //   else if (isDef)                       (EmptyTree,           dummy, pass)
             //   else                                  (None,                 None, pass)
 
-          }) : (Option[Tree], Option[(Int, List[Tree])], Option[(Int, Tree)])
+          }) : (Option[Pattern], Option[(Int, List[Pattern])], Option[(Int, Pattern)])
         }
       ) match { case (x,y,z) => (join(x), join(y), join(z)) }
 
@@ -687,14 +688,14 @@ trait ParallelMatching extends ast.TreeDSL
         val accessorVars = if (pats.isCaseHead) mkAccessors else Nil
         val newRows =
           for ((j, ps) <- subtests) yield
-            (rest rows j).insert2(toPats(ps), pats(j).boundVariables, casted.sym)
+            (rest rows j).insert2(ps, pats(j).boundVariables, casted.sym)
 
         Branch(
           casted,
           // succeeding => transition to translate(subsumed) (taking into account more specific)
           make(subtestVars ::: accessorVars ::: rest.tvars, newRows),
           // fails      => transition to translate(remaining)
-          mkFailOpt(remaining map tupled((p1, p2) => rest rows p1 insert Pattern(p2)))
+          mkFailOpt(remaining map tupled((p1, p2) => rest rows p1 insert p2))
         )
       }
 
@@ -730,7 +731,7 @@ trait ParallelMatching extends ast.TreeDSL
       }
     }
 
-  /*** States, Rows, Etc. ***/
+    /*** States, Rows, Etc. ***/
 
     case class Row(pat: List[Pattern], subst: Bindings, guard: Guard, bx: Int) {
       def insert(h: Pattern)              = copy(pat = h :: pat)
@@ -773,7 +774,7 @@ trait ParallelMatching extends ast.TreeDSL
     }
 
     object ExpandedMatrix {
-      def unapply(x: ExpandedMatrix) = Some(x.rows, x.targets)
+      def unapply(x: ExpandedMatrix) = Some((x.rows, x.targets))
       def apply(rows: List[Row], targets: List[FinalState]) = new ExpandedMatrix(rows, targets)
     }
     class ExpandedMatrix(val rows: List[Row], val targets: List[FinalState])
@@ -977,7 +978,7 @@ trait ParallelMatching extends ast.TreeDSL
 
     val NoRep = Rep(Nil, Nil)
     /** Expands the patterns recursively. */
-    final def expand(roots: List[Symbol], cases: List[Tree]): ExpandedMatrix = {
+    final def expand(roots: List[Symbol], cases: List[CaseDef]): ExpandedMatrix = {
       val (rows, finals) = List.unzip(
         for ((CaseDef(pat, guard, body), index) <- cases.zipWithIndex) yield {
           def mkRow(ps: List[Pattern]) = Row(ps, NoBinding, Guard(guard), index)
