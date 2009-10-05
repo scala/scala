@@ -47,7 +47,7 @@ trait PatternNodes extends ast.TreeDSL
     val listRef                             = typeRef(pre, ListClass, List(tpe))
 
     def fold(x: Tree, xs: Tree) = unbind(x) match {
-      case _: Star  => makeBind(definedVars(x), WILD(x.tpe))
+      case _: Star  => makeBind(Pattern(x).definedVars, WILD(x.tpe))
       case _        =>
         val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
         val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpe, listRef), consRef)

@@ -27,18 +27,6 @@ trait PatternBindings extends ast.TreeDSL
     override def safeToString: String = "PseudoType("+o+")"
   }
 
-  final def definedVars(x: Tree): List[Symbol] = {
-    def vars(x: Tree): List[Symbol] = x match {
-      case Apply(_, args)     => args flatMap vars
-      case b @ Bind(_, p)     => b.symbol :: vars(p)
-      case Typed(p, _)        => vars(p)              // otherwise x @ (_:T)
-      case UnApply(_, args)   => args flatMap vars
-      case ArrayValue(_, xs)  => xs flatMap vars
-      case x                  => Nil
-    }
-    vars(x) reverse
-  }
-
   // If the given pattern contains alternatives, return it as a list of patterns.
   // Makes typed copies of any bindings found so all alternatives point to final state.
   def extractBindings(p: Tree, prevBindings: Tree => Tree = identity[Tree] _): List[Tree] = {
