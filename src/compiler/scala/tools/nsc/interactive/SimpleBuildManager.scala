@@ -38,11 +38,21 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
   /** Remove the given files from the managed build process. */
   def removeFiles(files: Set[AbstractFile]) {
     sources --= files
+    deleteClassfiles(files)
+    update(invalidatedByRemove(files))
+  }
+
+
+  /** Return the set of invalidated files caused by removing the given files. */
+  private def invalidatedByRemove(files: Set[AbstractFile]): Set[AbstractFile] = {
+    val deps = compiler.dependencyAnalysis.dependencies
+    deps.dependentFiles(Int.MaxValue, files)
   }
 
   def update(added: Set[AbstractFile], removed: Set[AbstractFile]) {
-    removeFiles(removed)
-    update(added)
+    sources --= removed
+    deleteClassfiles(removed)
+    update(added ++ invalidatedByRemove(removed))
   }
 
   /** The given files have been modified by the user. Recompile
@@ -50,6 +60,8 @@ class SimpleBuildManager(val settings: Settings) extends BuildManager {
    *  have been previously added as source files are recompiled.
    */
   def update(files: Set[AbstractFile]) {
+    deleteClassfiles(files)
+
     val deps = compiler.dependencyAnalysis.dependencies
     val run = compiler.newRun()
     compiler.inform("compiling " + files)

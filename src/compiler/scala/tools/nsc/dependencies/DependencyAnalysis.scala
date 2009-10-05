@@ -110,11 +110,13 @@ trait DependencyAnalysis extends SubComponent with Files {
       if (f != null){
         val source: AbstractFile = unit.source.file;
         for (d <- unit.icode){
-          val name = d.symbol match {
-            case _ : ModuleClassSymbol => d.toString+"$"
-            case _ => d.toString
-          }
+          val name = d.toString
           dependencies.emits(source, nameToFile(unit.source.file, name))
+          d.symbol match {
+            case _ : ModuleClassSymbol =>
+              dependencies.emits(source, nameToFile(unit.source.file, name + "$"))
+            case _ =>
+          }
         }
 
         for (d <- unit.depends; if (d.sourceFile != null)){

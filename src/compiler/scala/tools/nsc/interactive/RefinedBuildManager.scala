@@ -58,6 +58,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   /** Remove the given files from the managed build process. */
   def removeFiles(files: Set[AbstractFile]) {
     sources --= files
+    deleteClassfiles(files)
     update(invalidatedByRemove(files))
   }
 
@@ -72,6 +73,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
   def update(added: Set[AbstractFile], removed: Set[AbstractFile]) {
     sources --= removed
+    deleteClassfiles(removed)
     update(added ++ invalidatedByRemove(removed))
   }
 
@@ -80,6 +82,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
    *  have been previously added as source files are recompiled.
    */
   private def update(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
+    deleteClassfiles(files)
+
     val run = compiler.newRun()
     compiler.inform("compiling " + files)
     buildingFiles(files)
