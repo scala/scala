@@ -40,9 +40,9 @@ object Test_BigDecimal extends TestCase("BigDecimal") with Assert {
 
     val xi: BigDecimal = 1
     val xd: BigDecimal = 1.0
-    val xf: BigDecimal = 1.0f
-    val xs: BigDecimal = "1.0"
-    val xbi: BigDecimal = scala.BigInt(1)
+    val xf: BigDecimal = BigDecimal(1.0f)
+    val xs: BigDecimal = BigDecimal("1.0")
+    val xbi: BigDecimal = BigDecimal(scala.BigInt(1))
 
     val x: BigDecimal = 1
     val y = x + 1
