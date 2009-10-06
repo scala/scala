@@ -1,0 +1,4 @@
+t1355.scala:1: error: type arguments [A[T]] do not conform to trait A's type parameter bounds [T <: A[A[T]]]
+trait A[T <: A[A[T]]]
+             ^
+one error found
