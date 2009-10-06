@@ -19,7 +19,7 @@ package scala.actors
  *
  *  @author Philipp Haller
  */
-trait ReplyReactor extends Reactor {
+trait ReplyReactor extends Reactor with ReplyableReactor {
 
   /* A list of the current senders. The head of the list is
    * the sender of the message that was received last.

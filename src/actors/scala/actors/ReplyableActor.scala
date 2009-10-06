@@ -63,7 +63,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
    * precise type for the reply value.
    */
   override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[A](Actor.rawSelf(thiz.scheduler))
+    val ftch = new Channel[A](Actor.self(thiz.scheduler))
     thiz.send(msg, new OutputChannel[Any] {
       def !(msg: Any) =
         ftch ! f(msg)

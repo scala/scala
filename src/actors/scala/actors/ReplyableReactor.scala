@@ -17,8 +17,8 @@ package scala.actors
  *
  * @author Philipp Haller
  */
-trait ReplyableReactor extends Replyable[Any, Any] {
-  thiz: ReplyReactor =>
+private[actors] trait ReplyableReactor extends Replyable[Any, Any] {
+  _: ReplyReactor =>
 
   /**
    * Sends <code>msg</code> to this actor and awaits reply
@@ -40,7 +40,7 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    *              <code>Some(x)</code> where <code>x</code> is the reply
    */
   def !?(msec: Long, msg: Any): Option[Any] = {
-    val myself = Actor.rawSelf(thiz.scheduler)
+    val myself = Actor.rawSelf(this.scheduler)
     val res = new scala.concurrent.SyncVar[Any]
     val out = new OutputChannel[Any] {
       def !(msg: Any) =
@@ -50,9 +50,9 @@ trait ReplyableReactor extends Replyable[Any, Any] {
       def forward(msg: Any) =
         res set msg
       def receiver =
-        myself
+        myself.asInstanceOf[Actor]
     }
-    thiz.send(msg, out)
+    this.send(msg, out)
     res.get(msec)
   }
 
@@ -71,28 +71,31 @@ trait ReplyableReactor extends Replyable[Any, Any] {
    * precise type for the reply value.
    */
   override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-    val myself = Actor.rawSelf(thiz.scheduler)
-    val ftch = new Channel[A](myself)
+    val myself = Actor.rawSelf(this.scheduler)
+    val ftch = new ReactChannel[A](myself)
     val res = new scala.concurrent.SyncVar[A]
 
     val out = new OutputChannel[Any] {
       def !(msg: Any) = {
-        ftch ! f(msg)
-        res set f(msg)
+        val msg1 = f(msg)
+        ftch ! msg1
+        res set msg1
       }
       def send(msg: Any, replyTo: OutputChannel[Any]) = {
-        ftch.send(f(msg), replyTo)
-        res set f(msg)
+        val msg1 = f(msg)
+        ftch.send(msg1, replyTo)
+        res set msg1
       }
       def forward(msg: Any) = {
-        ftch forward f(msg)
-        res set f(msg)
+        val msg1 = f(msg)
+        ftch forward msg1
+        res set msg1
       }
       def receiver =
-        myself
+        myself.asInstanceOf[Actor]
     }
 
-    thiz.send(msg, out)
+    this.send(msg, out)
 
     new Future[A](ftch) {
       def apply() =

@@ -1,7 +1,7 @@
 import scala.actors._
 import scala.actors.Actor._
 
-class MyActor extends ReplyReactor with ReplyableReactor {
+class MyActor extends ReplyReactor {
   def act() {
     loop {
       react {
@@ -27,8 +27,8 @@ object Test {
             loop {
               i += 1
               val ft = r !! 'hello
-              react {
-                case ft.inputChannel ! msg =>
+              ft.inputChannel.react {
+                case msg =>
                   if (i % 10000 == 0)
                     println(msg)
                   if (i >= 50000) {

@@ -1,7 +1,7 @@
 import scala.actors._
 import scala.actors.Actor._
 
-class MyActor extends ReplyReactor with ReplyableReactor {
+class MyActor extends ReplyReactor {
   def act() {
     loop {
       react {

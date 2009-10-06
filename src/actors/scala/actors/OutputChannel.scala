@@ -45,5 +45,5 @@ trait OutputChannel[-Msg] extends AbstractReactor[Msg] {
    * Returns the <code>Reactor</code> that is
    * receiving from this <code>OutputChannel</code>.
    */
-  def receiver: Reactor
+  def receiver: Actor
 }
