@@ -117,6 +117,8 @@ trait Scanners {
       if (docBuffer ne null) docBuffer.append(c)
     }
 
+    protected def foundComment(value: String, start: Int, end: Int) = ()
+
     private class TokenData0 extends TokenData
 
     /** we need one token lookahead and one token history
@@ -393,39 +395,48 @@ trait Scanners {
     }
 
     private def skipComment(): Boolean = {
-      if (ch == '/') {
-        do {
-          nextChar()
-        } while ((ch != CR) && (ch != LF) && (ch != SU))
-        true
-      } else if (ch == '*') {
-        docBuffer = null
-        var openComments = 1
-        nextChar()
-        if (ch == '*' && buildDocs)
-          docBuffer = new StringBuilder("/**")
-        while (openComments > 0) {
+
+      if (ch == '/' || ch == '*') {
+
+        val comment = new StringBuilder("//")
+        def appendToComment() = comment.append(ch)
+
+        if (ch == '/') {
           do {
+        	appendToComment()
+            nextChar()
+          } while ((ch != CR) && (ch != LF) && (ch != SU))
+        } else {
+          docBuffer = null
+          var openComments = 1
+          nextChar()
+          appendToComment()
+          if (ch == '*' && buildDocs)
+            docBuffer = new StringBuilder("/**")
+          while (openComments > 0) {
             do {
-              if (ch == '/') {
-                nextChar(); putDocChar(ch)
-                if (ch == '*') {
-                  nextChar(); putDocChar(ch)
-                  openComments += 1
+              do {
+                if (ch == '/') {
+                  nextChar(); putDocChar(ch); appendToComment()
+                  if (ch == '*') {
+                    nextChar(); putDocChar(ch); appendToComment()
+                    openComments += 1
+                  }
                 }
+                if (ch != '*' && ch != SU) {
+                  nextChar(); putDocChar(ch); appendToComment()
+                }
+              } while (ch != '*' && ch != SU)
+              while (ch == '*') {
+                nextChar(); putDocChar(ch); appendToComment()
               }
-              if (ch != '*' && ch != SU) {
-                nextChar(); putDocChar(ch)
-              }
-            } while (ch != '*' && ch != SU)
-            while (ch == '*') {
-              nextChar(); putDocChar(ch)
-            }
-          } while (ch != '/' && ch != SU)
-          if (ch == '/') nextChar()
-          else incompleteInputError("unclosed comment")
-          openComments -= 1
+            } while (ch != '/' && ch != SU)
+            if (ch == '/') nextChar()
+            else incompleteInputError("unclosed comment")
+            openComments -= 1
+          }
         }
+        foundComment(comment.toString, offset, charOffset - 2)
         true
       } else {
         false
@@ -1039,6 +1050,10 @@ trait Scanners {
           false
         }
       }
+    }
+
+    override def foundComment(value: String, start: Int, end: Int) {
+    	unit.comments += unit.Comment(value, new RangePosition(unit.source, start, start, end))
     }
   }
 

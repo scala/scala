@@ -23,6 +23,14 @@ trait CompilationUnits { self: Global =>
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
 
+    /** representation for a source code comment, includes
+     * '//' or '/*' '*/' in the value and the position
+     */
+    case class Comment(text: String, pos: Position)
+
+    /** all comments found in this compilation unit */
+    val comments = new ListBuffer[Comment]
+
     /** Note: depends now contains toplevel classes.
      *  To get their sourcefiles, you need to dereference with .sourcefile
      */
