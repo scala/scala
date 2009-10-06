@@ -593,7 +593,7 @@ trait ParallelMatching extends ast.TreeDSL
           def pMatchesS = matches(p, s)
 
           def alts[T](yes: T, no: T): T = if (p =:= s) yes else no
-          def isObjectTest              = pattern.isObject && (p =:= pattern.mkSingleton)
+          def isObjectTest              = pattern.isObject && (p =:= pattern.matchingType)
 
           lazy val dummy          = (j, pats.dummies)
           lazy val pass           = (j, pattern)
@@ -945,15 +945,16 @@ trait ParallelMatching extends ast.TreeDSL
     final def expand(roots: List[Symbol], cases: List[CaseDef]): ExpandedMatrix = {
       val (rows, finals) = List.unzip(
         for ((CaseDef(pat, guard, body), index) <- cases.zipWithIndex) yield {
-          def mkRow(ps: List[Pattern]) = Row(ps, NoBinding, Guard(guard), index)
-          def pattern = Pattern(pat)
+          def mkRow(ps: List[Tree]) = Row(toPats(ps), NoBinding, Guard(guard), index)
 
-          def rowForPat = pat match {
-            case _ if roots.length <= 1 => mkRow(List(pattern))
-            case Apply(fn, args)        => mkRow(toPats(args))
-            case WILD()                 => mkRow(emptyPatterns(roots.length))
-          }
-          (rowForPat, FinalState(NoBinding, body, pattern.definedVars))
+          val pattern = Pattern(pat)
+          val row = mkRow(pat match {
+            case x if roots.length <= 1 => List(x)
+            case Apply(_, args)         => args
+            case WILD()                 => emptyTrees(roots.length)
+          })
+
+          (row, FinalState(NoBinding, body, pattern.definedVars))
         }
       )
 
