@@ -1337,6 +1337,7 @@
   </component>
   <component name="ProjectDictionaryState">
     <dictionary name="odersky" />
+    <dictionary name="dragos" />
   </component>
   <component name="ProjectFileVersion" converted="true" />
   <component name="ProjectKey">
@@ -1344,14 +1345,10 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/actors.iml" filepath="$PROJECT_DIR$/actors.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
-      <module fileurl="file://$PROJECT_DIR$/dbc.iml" filepath="$PROJECT_DIR$/dbc.iml" />
       <module fileurl="file://$PROJECT_DIR$/library.iml" filepath="$PROJECT_DIR$/library.iml" />
-      <module fileurl="file://$PROJECT_DIR$/manual.iml" filepath="$PROJECT_DIR$/manual.iml" />
       <module fileurl="file://$PROJECT_DIR$/partest.iml" filepath="$PROJECT_DIR$/partest.iml" />
       <module fileurl="file://$PROJECT_DIR$/scalap.iml" filepath="$PROJECT_DIR$/scalap.iml" />
-      <module fileurl="file://$PROJECT_DIR$/swing.iml" filepath="$PROJECT_DIR$/swing.iml" />
     </modules>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_5" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
@@ -1490,9 +1487,6 @@
     <option name="myVersion" value="124" />
     <option name="mySupportsUserInfoFilter" value="true" />
   </component>
-  <component name="VcsDirectoryMappings">
-    <mapping directory="" vcs="svn" />
-  </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
     <library name="Project ant library">
@@ -1515,6 +1509,13 @@
         <root url="jar://$PROJECT_DIR$/lib/ScalaCheck.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/scala-library-src.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/msil.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="Locker Lib">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/build/locker/classes/library" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
