@@ -61,6 +61,7 @@ trait Patterns extends ast.TreeDSL {
     val tree = EmptyTree
     override def irrefutableFor(tpe: Type) = true
     override def isDefault = true
+    override def toString() = "_"
   }
 
   // 8.1.2
@@ -80,16 +81,28 @@ trait Patterns extends ast.TreeDSL {
 
     def isSwitchable = cond(const.tag) { case ByteTag | ShortTag | IntTag | CharTag => true }
     def intValue = const.intValue
+    override def toString() = if (value == null) "null" else value.toString()
   }
 
   // 8.1.4
-  case class StableIdPattern(tree: Ident) extends IdentifierPattern {
-    val Ident(name) = tree
+  case class StableIdPattern(tree: Select) extends IdentifierPattern {
+    val Select(qualifier, name) = tree
+
+    def pathSegments = getPathSegments(tree)
+    private def getPathSegments(t: Tree): List[Name] = t match {
+      case Select(q, name)  => name :: getPathSegments(q)
+      case Apply(f, Nil)    => getPathSegments(f)
+      case _                => Nil
+    }
+
+    override def toString() = "StableId(%s)".format(pathSegments.mkString(" . "))
   }
 
   // 8.1.4 (b)
   case class SelectPattern(tree: Select) extends IdentifierPattern {
     val Select(qualifier, name) = tree
+
+    override def toString() = "Select(%s, %s)".format(qualifier, name)
   }
 
   trait IdentifierPattern extends Pattern {
@@ -110,12 +123,21 @@ trait Patterns extends ast.TreeDSL {
       if (args.isEmpty) this rebindToEmpty tree.tpe
       else this
 
+    override def toString() = "Constructor(%s)".format(toPats(args).mkString(", "))
+
     // XXX todo
     // override def irrefutableFor(tpe: Type) = false
   }
   // XXX temp
   case class ApplyValuePattern(tree: Apply) extends ApplyPattern {
     require(!fn.isType)
+    //
+    // val Apply(Select(qualifier, name), Nil) = tree
+    //
+    // Examples where the above does not match:
+    // files/pos/t0710.scala  Child()
+    // files/run/lazy-exprs.scala   Z1()
+    // files/run/patmatnew.scala Child()
 
     override def simplify(testVar: Symbol) = {
       def examinePrefix(path: Tree) = (path, path.tpe) match {
@@ -247,21 +269,30 @@ trait Patterns extends ast.TreeDSL {
 
 
   object Pattern {
-    def apply(tree: Tree): Pattern = tree match {
-      case x: Bind              => apply(unbind(tree)) withBoundTree x
-      case EmptyTree            => WildcardPattern()
-      case Ident(nme.WILDCARD)  => WildcardPattern()
-      case x @ Alternative(ps)  => AlternativePattern(x)
-      case x: Apply             => ApplyPattern(x)
-      case x: Typed             => TypedPattern(x)
-      case x: Literal           => LiteralPattern(x)
-      case x: UnApply           => UnapplyPattern(x)
-      case x: Ident             => if (isVarPattern(x)) VariablePattern(x) else StableIdPattern(x)
-      // case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequencePattern(x)
-      case x: ArrayValue        => SequencePattern(x)
-      case x: Select            => SelectPattern(x)
-      case x: Star              => StarPattern(x)
-      case _                    => abort("Unknown Tree reached pattern matcher: %s/%s".format(tree, tree.getClass))
+    def apply(tree: Tree): Pattern = {
+      val p = tree match {
+        case x: Bind              => apply(unbind(tree)) withBoundTree x
+        case EmptyTree            => WildcardPattern()
+        case Ident(nme.WILDCARD)  => WildcardPattern()
+        case x @ Alternative(ps)  => AlternativePattern(x)
+        case x: Apply             => ApplyPattern(x)
+        case x: Typed             => TypedPattern(x)
+        case x: Literal           => LiteralPattern(x)
+        case x: UnApply           => UnapplyPattern(x)
+        case x: Ident             => VariablePattern(x)
+        // case x: Ident             => if (isVarPattern(x)) VariablePattern(x) else StableIdPattern(x)
+        // case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequencePattern(x)
+        case x: ArrayValue        => SequencePattern(x)
+        case x: Select            => SelectPattern(x)
+        case x: Star              => StarPattern(x)
+        case _                    => abort("Unknown Tree reached pattern matcher: %s/%s".format(tree, tree.getClass))
+      }
+
+      p match {
+        case WildcardPattern()  => p
+        case _: LiteralPattern  => p
+        case _                  => traceAndReturn("[Pattern] ", p)
+      }
     }
     def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
       case x: Tree    => unapply(Pattern(x))
@@ -307,6 +338,8 @@ trait Patterns extends ast.TreeDSL {
   object ApplyPattern {
     def apply(x: Apply): Pattern = {
       val Apply(fn, args) = x
+
+      // case x @ Apply(sel: Select, Nil)  => StableIdPattern(sel)
 
       if (fn.isType) {
         if (isTupleType(fn.tpe)) TuplePattern(x)

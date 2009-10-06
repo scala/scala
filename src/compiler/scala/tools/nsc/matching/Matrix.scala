@@ -95,7 +95,7 @@ trait Matrix extends PatternOptimizer {
     {
       val n: Name = if (name == null) newName(pos, "temp") else name
       // careful: pos has special meaning
-      owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
+      traceAndReturn("[newVar] ", owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_))
     }
 
     def typedValDef(x: Symbol, rhs: Tree) = {
@@ -107,8 +107,7 @@ trait Matrix extends PatternOptimizer {
         case _              =>
           typer.typed(rhs, x.tpe)
       }
-      typer typed (VAL(x) === finalRhs)
+      traceAndReturn("[typedValDef] ", typer typed (VAL(x) === finalRhs))
     }
   }
-
 }

@@ -39,11 +39,12 @@ trait ParallelMatching extends ast.TreeDSL
   def ifDebug(body: => Unit): Unit          = { if (settings.debug.value) body }
   def DBG(msg: => String): Unit             = { ifDebug(println(msg)) }
 
-  @elidable(elidable.FINE)
+  // @elidable(elidable.FINE)
   def TRACE(f: String, xs: Any*): Unit      = { if (trace) println(if (xs.isEmpty) f else f.format(xs : _*)) }
-
-  def logAndReturn[T](s: String, x: T): T   = { log(s + x.toString) ; x }
   def traceAndReturn[T](s: String, x: T): T = { TRACE(s + x.toString) ; x }
+
+  def indent(s: Any) = s.toString() split "\n" map ("  " + _) mkString "\n"
+  def indentAll(s: Seq[Any]) = s map ("  " + _.toString() + "\n") mkString
 
   /** Transition **/
   def isRightIgnoring(t: Tree) = cond(unbind(t)) { case ArrayValue(_, xs) if !xs.isEmpty => isStar(xs.last) }
@@ -91,7 +92,7 @@ trait ParallelMatching extends ast.TreeDSL
       else Rep(tvars, rows).checkExhaustive
     }
 
-    override def toString() = "MatchMatrix(%s)".format(targets)
+    override def toString() = "MatchMatrix(%s) { %s }".format(matchResultType, indentAll(targets))
 
     /**
      * Encapsulates a symbol being matched on.
@@ -123,7 +124,7 @@ trait ParallelMatching extends ast.TreeDSL
       def seqType   = tpe.widen baseType SeqClass
       def elemType  = tpe typeArgs 0  // can this happen? if (seqType == NoType) error("...")
 
-      def newVarOfTpe(tpe: Type) = context.newVar(pos, tpe, flags)
+      def newVarOfTpe(tpe: Type) = newVar(pos, tpe, flags)
       def newVarOfSeqType = newVar(pos, seqType)
       def newVarOfElemType = newVar(pos, elemType)
 
@@ -134,7 +135,7 @@ trait ParallelMatching extends ast.TreeDSL
         if (tpe =:= headType) this
         else new Scrutinee(newVar(pos, headType, flags))
 
-      override def toString() = "Scrutinee(sym = %s, tpe = %s, id = %s)".format(sym, tpe, id)
+      override def toString() = "(%s: %s)".format(id, tpe)
     }
 
     def isPatternSwitch(scrut: Scrutinee, ps: List[Pattern]): Option[PatternSwitch] = {
@@ -187,7 +188,7 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       def mkRule(rest: Rep): RuleApplication = {
-        logAndReturn("mkRule: ", head.tree match {
+        traceAndReturn("[mkRule] ", head.tree match {
             case x if isEquals(x.tpe)                 => new MixEquals(this, rest)
             case x: ArrayValue                        => new MixSequence(this, rest)
             case AnyUnapply(false)                    => new MixUnapply(this, rest, false)
@@ -199,6 +200,7 @@ trait ParallelMatching extends ast.TreeDSL
           }
         )
       }
+      override def toString() = "%s match {%s}".format(scrut, indentAll(ps))
     } // PatternMatch
 
     /** picks which rewrite rule to apply
@@ -225,24 +227,25 @@ trait ParallelMatching extends ast.TreeDSL
       def rest: Rep
       lazy val PatternMatch(scrut, patterns) = pats
       lazy val head = pats.head
-      private def sym = scrut.sym
 
       /** Creates Some(fail rule) even if xs == Nil. */
-      def mkFail(xs: List[Row]): Option[Rep] = Some(make(sym :: rest.tvars, xs))
+      def mkFail(xs: List[Row]): Option[Rep] = Some(make(scrut.sym :: rest.tvars, xs))
 
       /** Returns None if xs == Nil, Some(fail rule) otherwise. */
       def mkFailOpt(xs: List[Row]): Option[Rep] = if (xs.isEmpty) None else mkFail(xs)
 
       /** Splices scrutinee's symbol in between the given lists */
       def mkNewRep(pre: List[Symbol], post: List[Symbol], rows: List[Row]) =
-        make(pre ::: sym :: post, rows)
+        make(pre ::: scrut.sym :: post, rows)
 
       /** translate outcome of the rule application into code (possible involving recursive application of rewriting) */
       def tree(): Tree
 
       override def toString = {
-        "RuleApplication/%s (%s: %s) { %s ... }".format(
-          getClass(), scrut, scrut.tpe, head
+        "Rule/%s (%s =^= %s) {\n%s}".format(
+          getClass.getSimpleName,
+          scrut, head,
+          indentAll(patterns)
         )
       }
     }
@@ -338,11 +341,6 @@ trait ParallelMatching extends ast.TreeDSL
             target MATCH (casesWithDefault: _*)
         }
       }
-      override def toString = {
-        "MixLiteralInts {\n  pats: %s\n  varMap: %s\n}".format(
-          pats, varMap
-        )
-      }
     }
 
     /** mixture rule for unapply pattern
@@ -428,11 +426,6 @@ trait ParallelMatching extends ast.TreeDSL
         typer typed squeezedBlock(
           List(handleOuter(uacall)),
           IF (cond) THEN squeezedBlock(vdefs, succ) ELSE fail
-        )
-      }
-      override def toString = {
-        "MixUnapply {\n  pats: %s\n  ua: %s\n}".format(
-          pats, ua
         )
       }
     }
@@ -533,8 +526,9 @@ trait ParallelMatching extends ast.TreeDSL
       /** condition (to be used in IF), success and failure Rep */
       final def getTransition(): (Branch[Tree], Symbol) = {
         val value = {
-          // how is it known these are the only possible typerefs here?
-          val TypeRef(_,_,List(arg)) = head.tpe
+          // val TypeRef(_,_,List(arg)) = head.tpe
+          val arg = decodedEqualsType(head.tpe)
+
           arg match {
             case SingleType(pre, sym) => REF(pre, sym)
             case PseudoType(o)        => o.duplicate
@@ -563,6 +557,7 @@ trait ParallelMatching extends ast.TreeDSL
           IF (handleOuter(cond)) THEN srep.toTree ELSE LabelDef(failLabel, Nil, fail)
         )
       }
+      override def toString() = "MixEquals(%s == %s)".format(scrut, head)
     }
 
     /** mixture rule for type tests
@@ -638,9 +633,8 @@ trait ParallelMatching extends ast.TreeDSL
       ) match { case (x,y,z) => (join(x), join(y), join(z)) }
 
       override def toString = {
-        "MixTypes(%s: %s) {\n  moreSpecific: %s\n  subsumed: %s\n  remaining: %s\n}".format(
-          scrut, scrut.tpe, moreSpecific, subsumed, remaining
-        )
+        super.toString() +
+        indentAll(List("moreSpecific: " + moreSpecific, "subsumed: " + subsumed, "remaining: " + remaining))
       }
 
       /** returns casted symbol, success matrix and optionally fail matrix for type test on the top of this column */
@@ -734,11 +728,12 @@ trait ParallelMatching extends ast.TreeDSL
         }
       }
       override def toString() = {
-        val patStr = pat.mkString
-        val others = List(subst, guard) map (_.toString) filter (_ != "")
-        val otherStr = if (others.isEmpty) "" else " // " + others.mkString(" ")
-
-        "Row(%d) %s%s".format(bx, patStr, otherStr)
+        val str = indent(
+          "%s\n%s\n%s\n".format(
+            subst, pat.mkString("\n"), guard
+          )
+        )
+        "Row(%d) {\n%s}".format(bx, str)
       }
     }
 
