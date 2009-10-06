@@ -48,6 +48,9 @@ To make a bundle and request that ibilio upload it, do:
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
     http://maven.apache.org/maven-v4_0_0.xsd">
 
+<properties>
+  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+</properties>
   <modelVersion>4.0.0</modelVersion>
   <groupId>jline</groupId>
   <artifactId>jline</artifactId>

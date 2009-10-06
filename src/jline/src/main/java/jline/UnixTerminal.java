@@ -36,7 +36,6 @@ public class UnixTerminal extends Terminal {
     public static final short DEL_THIRD = 51;
     public static final short DEL_SECOND = 126;
 
-    private Map terminfo;
     private boolean echoEnabled;
     private String ttyConfig;
     private boolean backspaceDeleteSwitched = false;
@@ -44,7 +43,7 @@ public class UnixTerminal extends Terminal {
         System.getProperty("jline.sttyCommand", "stty");
 
 
-    String encoding = System.getProperty("input.encoding", "UTF-8");
+    String encoding = System.getProperty("jline.UnixTerminal.input.encoding", "UTF-8");
     ReplayPrefixOneCharInputStream replayStream = new ReplayPrefixOneCharInputStream(encoding);
     InputStreamReader replayReader;
 
@@ -58,14 +57,18 @@ public class UnixTerminal extends Terminal {
 
     protected void checkBackspace(){
         String[] ttyConfigSplit = ttyConfig.split(":|=");
+        String eof;
 
-        if (ttyConfigSplit.length < 7)
+        if ("gfmt1".equals(ttyConfigSplit[0]) && ttyConfigSplit.length > 20) {
+            // BSD style -g
+            eof = ttyConfigSplit[20];
+        } else if (ttyConfigSplit.length > 6 && ttyConfigSplit[6] != null) {
+            eof = ttyConfigSplit[6];
+        } else {
             return;
+        }
 
-        if (ttyConfigSplit[6] == null)
-            return;
-
-        backspaceDeleteSwitched = ttyConfigSplit[6].equals("7f");
+        backspaceDeleteSwitched = eof.equals("7f");
     }
 
     /**
