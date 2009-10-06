@@ -337,6 +337,7 @@ self: Analyzer =>
               if (traceImplicits) println("tvars = "+tvars+"/"+(tvars map (_.constr)))
               val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt),
                                       false, lubDepth(List(itree2.tpe, pt)))
+              checkBounds(itree2.pos, NoPrefix, NoSymbol, undetParams, targs, "inferred ") // #2421
               val subst = new TreeTypeSubstituter(undetParams, targs)
               subst traverse itree2
               // todo: remove type params that have been instantiated to Nothing, similar
