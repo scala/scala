@@ -37,7 +37,8 @@ trait Patterns extends ast.TreeDSL {
   import treeInfo.{ unbind, isVarPattern }
 
   // Fresh patterns
-  final def emptyPatterns(i: Int): List[Pattern] = List.fill(i)(NoPattern)
+  def emptyPatterns(i: Int): List[Pattern] = List.fill(i)(NoPattern)
+  def emptyTrees(i: Int): List[Tree] = List.fill(i)(EmptyTree)
 
   // An empty pattern
   def NoPattern = WildcardPattern()
@@ -82,12 +83,17 @@ trait Patterns extends ast.TreeDSL {
   }
 
   // 8.1.4
-  case class StableIdPattern(tree: Ident) extends IdentifierPattern { }
+  case class StableIdPattern(tree: Ident) extends IdentifierPattern {
+    val Ident(name) = tree
+  }
 
   // 8.1.4 (b)
-  case class SelectPattern(tree: Select) extends IdentifierPattern { }
+  case class SelectPattern(tree: Select) extends IdentifierPattern {
+    val Select(qualifier, name) = tree
+  }
 
   trait IdentifierPattern extends Pattern {
+    val name: Name
     override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
     override def matchingType = mkSingleton
   }
@@ -96,9 +102,9 @@ trait Patterns extends ast.TreeDSL {
   case class ConstructorPattern(tree: Apply) extends ApplyPattern {
     require(fn.isType && this.isCaseClass)
 
-    override def subpatterns(pats: MatchMatrix#PatternMatch) =
-      if (pats.isCaseHead) args map Pattern.apply
-      else super.subpatterns(pats)
+    override def subpatterns(pm: MatchMatrix#PatternMatch) =
+      if (pm.isCaseHead) args map Pattern.apply
+      else super.subpatterns(pm)
 
     override def simplify(testVar: Symbol) =
       if (args.isEmpty) this rebindToEmpty tree.tpe
@@ -113,7 +119,7 @@ trait Patterns extends ast.TreeDSL {
 
     override def simplify(testVar: Symbol) = {
       def examinePrefix(path: Tree) = (path, path.tpe) match {
-        case (_, t: ThisType)     => singleType(t, sym)
+        case (_, t: ThisType)     => singleType(t, sym) // this.X
         case (_: Apply, _)        => PseudoType(tree)
         case _                    => singleType(Pattern(path).mkSingleton, sym)
       }
@@ -167,10 +173,52 @@ trait Patterns extends ast.TreeDSL {
   }
 
   // 8.1.8 (b) (literal ArrayValues)
-  case class SequencePattern(tree: ArrayValue) extends Pattern { }
+  case class SequencePattern(tree: ArrayValue) extends Pattern {
+    lazy val ArrayValue(elemtpt, elems) = tree
+    lazy val elemPatterns = toPats(elems)
+    lazy val nonStarPatterns = if (hasStar) elemPatterns.init else elemPatterns
 
-  // // 8.1.8 (b)
-  case class SequenceStarPattern(tree: ArrayValue) extends Pattern { }
+    def hasStar = isRightIgnoring(tree)
+    def nonStarLength = nonStarPatterns.length
+    def isAllDefaults = nonStarPatterns forall (_.isDefault)
+
+    def rebindStar(seqType: Type): List[Pattern] = {
+      require(hasStar)
+      nonStarPatterns ::: List(elemPatterns.last rebindToType seqType)
+    }
+
+    /** True if 'next' must be checked even if 'first' failed to match after passing its length test
+      * (the conditional supplied by getPrecondition.) This is an optimization to avoid checking sequences
+      * which cannot match due to a length incompatibility.
+      */
+
+    override def completelyCovers(second: Pattern): Boolean = {
+      if (second.isDefault) return false
+
+      second match {
+        case x: SequencePattern  =>
+          val (len1, len2)    = (nonStarLength, x.nonStarLength)
+          val (star1, star2)  = (this.hasStar, x.hasStar)
+
+          // this still needs rewriting.
+          val res =
+          ( star1 &&  star2 && len2  < len1                     ) ||  // Seq(a,b,c,_*) followed by Seq(a,b,_*) because of (a,b)
+          ( star1 && !star2 && len2  < len1 &&    isAllDefaults ) ||  // Seq(a,b,c,_*) followed by Seq(a,b) because of (a,b)
+          // ( star1 &&           len2  < len1                     ) ||
+          (!star1 &&  star2                                     ) ||
+          (!star1 && !star2 && len2 >= len1                     )
+
+          !res
+        case _ =>
+          // shouldn't happen...
+          false
+      }
+    }
+  }
+
+  // 8.1.8 (b)
+  // temporarily subsumed by SequencePattern
+  // case class SequenceStarPattern(tree: ArrayValue) extends Pattern { }
 
   // abstract trait ArrayValuePattern extends Pattern {
   //   val tree: ArrayValue
@@ -178,6 +226,11 @@ trait Patterns extends ast.TreeDSL {
   //   lazy val elemPatterns = toPats(elems)
   //   def nonStarElems = if (isRightIgnoring) elems.init else elems
   // }
+
+  // 8.1.8 (c)
+  case class StarPattern(tree: Star) extends Pattern {
+    val Star(elem) = tree
+  }
 
   // 8.1.9
   // InfixPattern ... subsumed by Constructor/Extractor Patterns
@@ -192,14 +245,6 @@ trait Patterns extends ast.TreeDSL {
   // XMLPattern ... for now, subsumed by SequencePattern, but if we want
   //   to make it work right, it probably needs special handling.
 
-  // XXX - temporary pattern until we have integrated every tree type.
-  case class MiscPattern(tree: Tree) extends Pattern {
-    log("Resorted to MiscPattern: %s/%s".format(tree, tree.getClass))
-    override def simplify(testVar: Symbol) = tree match {
-      case x: Ident => this.rebindToEqualsCheck()
-      case _        => super.simplify(testVar)
-    }
-  }
 
   object Pattern {
     def apply(tree: Tree): Pattern = tree match {
@@ -212,9 +257,10 @@ trait Patterns extends ast.TreeDSL {
       case x: Literal           => LiteralPattern(x)
       case x: UnApply           => UnapplyPattern(x)
       case x: Ident             => if (isVarPattern(x)) VariablePattern(x) else StableIdPattern(x)
-      case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequencePattern(x)
+      // case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequencePattern(x)
+      case x: ArrayValue        => SequencePattern(x)
       case x: Select            => SelectPattern(x)
-      case x: Star              => MiscPattern(x) // XXX
+      case x: Star              => StarPattern(x)
       case _                    => abort("Unknown Tree reached pattern matcher: %s/%s".format(tree, tree.getClass))
     }
     def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
@@ -285,7 +331,7 @@ trait Patterns extends ast.TreeDSL {
     def simplify(testVar: Symbol): Pattern = this
     def simplify(): Pattern = this simplify NoSymbol
 
-    def subpatterns(pats: MatchMatrix#PatternMatch): List[Pattern] = pats.dummyPatterns
+    def subpatterns(pm: MatchMatrix#PatternMatch): List[Pattern] = pm.dummies
 
     // 8.1.13
     // A pattern p is irrefutable for type T if any of the following applies:
@@ -295,6 +341,9 @@ trait Patterns extends ast.TreeDSL {
     //      the primary constructor of type T has argument types T1,...,Tn and and each
     //      pi is irrefutable for Ti.
     def irrefutableFor(tpe: Type) = false
+
+    // does this pattern completely cover that pattern (i.e. latter cannot be matched)
+    def completelyCovers(second: Pattern) = false
 
     // Is this a default pattern (untyped "_" or an EmptyTree inserted by the matcher)
     def isDefault = false
