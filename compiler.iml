@@ -2,17 +2,23 @@
 <module relativePaths="true" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Scala" name="Scala">
-      <configuration />
+      <configuration>
+        <option name="takeFromSettings" value="true" />
+        <option name="myScalaCompilerJarPath" value="$MODULE_DIR$/build/locker/classes/compiler:/localhome/dragos/workspace-laptop/git/scala/lib/fjbg.jar" />
+        <option name="myScalaSdkJarPath" value="$MODULE_DIR$/build/locker/classes/library" />
+      </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" inherit-compiler-output="true">
+  <component name="NewModuleRootManager" inherit-compiler-output="false">
+    <output url="file://$MODULE_DIR$/build/quick/classes/compiler" />
+    <output-test url="file://$MODULE_DIR$/out/test/compiler" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/src/compiler">
       <sourceFolder url="file://$MODULE_DIR$/src/compiler" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="library" />
+    <orderEntry type="library" name="Locker Lib" level="project" />
     <orderEntry type="library" name="Project ant library" level="project" />
     <orderEntry type="library" name="Project Scala SDK" level="project" />
     <orderEntry type="library" name="ant" level="application" />

@@ -128,8 +128,7 @@ trait Printers { self: ICodes =>
     def printInstruction(i: Instruction) {
 //      if (settings.Xdce.value)
 //        print(if (i.useful) "   " else " * ");
-      if (settings.debug.value)
-        if (i.pos.isDefined) print(i.pos.line.toString)
+      if (i.pos.isDefined) print(i.pos.line.toString + "\t") else print("undef\t")
       println(i.toString())
     }
   }

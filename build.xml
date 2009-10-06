@@ -1601,7 +1601,7 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
   <target name="nightly">
     <antcall target="nightly-nopt">
       <!-- disabled until problems are fixed -->
-      <!-- <param name="scalac.args.optimise" value="-optimise"/> -->
+      <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
 

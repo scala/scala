@@ -167,7 +167,7 @@ trait BasicBlocks {
     def replaceInstruction(pos: Int, instr: Instruction): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
 
-      instr.pos = instrs(pos).pos
+      instr.setPos(instrs(pos).pos)
       instrs(pos) = instr
       true
     }
@@ -184,7 +184,7 @@ trait BasicBlocks {
       var changed = false
       while (i < instrs.length && !changed) {
         if (instrs(i) == oldInstr) {
-          newInstr.pos = oldInstr.pos
+          newInstr.setPos(oldInstr.pos)
           instrs(i) = newInstr
           changed = true
         }
@@ -330,7 +330,7 @@ trait BasicBlocks {
 
       if (!ignore) {
         touched = true
-        instr.pos = pos
+        instr.setPos(pos)
         instructionList = instr :: instructionList
         _lastInstruction = instr
       }

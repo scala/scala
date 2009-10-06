@@ -59,7 +59,7 @@ trait Opcodes { self: ICodes =>
   /** This class represents an instruction of the intermediate code.
    *  Each case subclass will represent a specific operation.
    */
-  abstract class Instruction {
+  abstract class Instruction extends Cloneable {
 
     /** This abstract method returns the number of used elements on the stack */
     def consumed : Int = 0
@@ -79,15 +79,21 @@ trait Opcodes { self: ICodes =>
     def difference = produced-consumed
 
     /** The corresponding position in the source file */
-    var pos: Position = NoPosition
+    private var _pos: Position = NoPosition
+
+    def pos: Position = _pos
 
     /** Used by dead code elimination. */
     var useful: Boolean = false
 
     def setPos(p: Position): this.type = {
-      pos = p
+      _pos = p
       this
     }
+
+    /** Clone this instruction. */
+    override def clone: Instruction =
+      super.clone.asInstanceOf[Instruction]
   }
 
   object opcodes {

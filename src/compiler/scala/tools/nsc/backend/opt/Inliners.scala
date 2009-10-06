@@ -199,7 +199,7 @@ abstract class Inliners extends SubComponent {
            case CALL_METHOD(meth, Static(true)) if (meth.isClassConstructor) =>
              CALL_METHOD(meth, Static(true))
 
-           case _ => i
+           case _ => i.clone
          }
          // check any pending NEW's
          if (pending isDefinedAt i) {
