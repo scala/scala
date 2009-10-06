@@ -29,13 +29,13 @@ import scala.concurrent.ManagedBlocker
  * @author Philipp Haller
  */
 class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
-                          protected var terminate: Boolean,
+                          protected val terminate: Boolean,
                           protected val daemon: Boolean)
   extends Thread with ExecutorScheduler with TerminationMonitor {
 
   setDaemon(daemon)
 
-  private var terminating = false
+  private var terminating = false // guarded by this
   protected val CHECK_FREQ = 10
 
   /* This constructor (and the var above) is currently only used to work
@@ -45,18 +45,6 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
    */
   def this(d: Boolean) {
     this(null, true, d)
-  }
-
-  private def adjustCorePoolSize() {
-    val coreSize = executor.getCorePoolSize()
-    if (coreSize < ThreadPoolConfig.maxPoolSize && (executor.getActiveCount() >= coreSize - 1)) {
-      executor.setCorePoolSize(coreSize + 1)
-    }
-  }
-
-  override def managedBlock(blocker: ManagedBlocker) {
-    adjustCorePoolSize()
-    blocker.block()
   }
 
   override def run() {
@@ -73,8 +61,6 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
             throw new QuitException
 
           gc()
-
-          adjustCorePoolSize()
         }
       }
     } catch {

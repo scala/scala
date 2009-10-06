@@ -10,7 +10,19 @@
 
 package scala.actors
 
+import scala.actors.scheduler.{DelegatingScheduler, DefaultThreadPoolScheduler}
 import scala.collection.mutable.Queue
+
+private object Reactor {
+  val scheduler = new DelegatingScheduler {
+    def makeNewScheduler: IScheduler = {
+      val s = new DefaultThreadPoolScheduler(false)
+      Debug.info(this+": starting new "+s+" ["+s.getClass+"]")
+      s.start()
+      s
+    }
+  }
+}
 
 /**
  * The Reactor trait provides lightweight actors.
@@ -52,7 +64,7 @@ trait Reactor extends OutputChannel[Any] {
     Map()
 
   protected[actors] def scheduler: IScheduler =
-    Scheduler
+    Reactor.scheduler
 
   protected[actors] def mailboxSize: Int =
     mailbox.size
