@@ -1,0 +1,55 @@
+<assembly>
+    <id></id>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <fileSets>
+        <fileSet>
+            <includes>
+                <include>README*</include>
+                <include>LICENSE*</include>
+                <include>NOTICE*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+          <directory>target</directory>
+          <outputDirectory></outputDirectory>
+          <includes>
+            <include>*.jar</include>
+          </includes>
+        </fileSet>
+        <fileSet>
+            <directory>licenses</directory>
+            <outputDirectory>/lib</outputDirectory>
+            <includes>
+                <include>*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>src/test/java/jline/example</directory>
+            <outputDirectory>/examples/jline/example</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>src/test/resources/jline/example</directory>
+            <outputDirectory>/examples/jline/example</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>target/site/apidocs</directory>
+            <outputDirectory>/apidocs</outputDirectory>
+        </fileSet>
+
+        <!-- also include sources -->
+        <fileSet>
+          <directory>src</directory>
+          <outputDirectory>/src/src</outputDirectory>
+        </fileSet>
+        <fileSet>
+          <directory></directory>
+          <outputDirectory>/src</outputDirectory>
+          <includes>
+            <include>pom.xml</include>
+          </includes>
+        </fileSet>
+    </fileSets>
+</assembly>

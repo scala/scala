@@ -1,0 +1,492 @@
+<!DOCTYPE book
+  PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+  "http://www.docbook.org/xml/4.1.2/docbookx.dtd">
+
+<book>
+	<bookinfo>
+		<title>
+			JLine
+		</title>
+		<copyright>
+	   		<year>2002, 2003,  2004, 2005, 2006, 2007</year>
+			<holder>Marc Prud'hommeaux</holder>
+		</copyright>
+	</bookinfo>
+	<part id="manual">
+		<title>JLine Manual</title>
+
+		<chapter id="introduction">
+			<title>Introduction</title>
+			<para>
+			JLine is a Java library for handling console input.
+			It is similar in functionality to BSD editline and GNU
+			readline. People familiar with the readline/editline
+			capabilities for modern shells (such as bash and tcsh) will
+			find most of the command editing features of JLine to
+			be familiar.
+			</para>
+		</chapter>
+
+		<chapter id="license">
+			<title>License and Terms of Use</title>
+			<para>
+				JLine is distributed under the BSD license, meaning that
+				you are completely free to redistribute, modify, or sell it
+				with almost no restrictins.
+				For more information on the BSD license, see
+				<ulink url="http://www.opensource.org/licenses/bsd-license.php"
+				>http://www.opensource.org/licenses/bsd-license.php</ulink>.
+			</para>
+			<para>
+				For information on obtaining the software under another
+				license, contact the copyright holder:
+				<ulink url="mailto:mwp1@cornell.edu">mwp1@cornell.edu</ulink>.
+			</para>
+		</chapter>
+
+		<chapter id="obtaining">
+			<title>Obtaining JLine</title>
+			<para>
+				JLine is hosted on SourceForge, and is located at
+				<ulink url="http://jline.sf.net">http://jline.sf.net</ulink>.
+				The latest release can be downloaded from 
+				<ulink url=
+				"http://sourceforge.net/project/showfiles.php?group_id=64033">http://sourceforge.net/project/showfiles.php?group_id=64033</ulink>.
+				API documentation can be found in the
+                <ulink url="apidocs">apidocs/</ulink> directory.
+			</para>
+		</chapter>
+
+		<chapter id="installation">
+			<title>Installation</title>
+			<para>
+				JLine has no library dependencies, aside from a JVM
+				of version 1.2 or higher. To install JLine, download the
+				<filename>jline.jar</filename> file, and either place it in
+				the system-wide java extensions directory, or
+				manually add it to your
+				<computeroutput>CLASSPATH</computeroutput>.
+				The extensions directory is dependent on your operating
+				system. Some few examples are:
+				<itemizedlist>
+					<listitem><para>
+					Macintosh OS X:
+					<filename>/Library/Java/Extensions</filename> or
+					<filename>/System/Library/Java/Extensions</filename>
+					</para></listitem>
+					<listitem><para>
+					Microsoft Windows:
+					<filename>JAVAHOME\jre\lib\ext</filename>
+					(example: 
+					<filename>C:\j2sdk1.4.1_03\jre\lib\ext</filename>)
+					</para></listitem>
+					<listitem><para>
+					UNIX Systems:
+					<filename>JAVAHOME/jre/lib/ext</filename>
+					(example: 
+					<filename>/usr/local/java/jre/lib/ext</filename>)
+					</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				JLine is not 100% pure Java. On Windows, it relies on a
+				<filename>.dll</filename> file to initialize the terminal
+				to be able to accept unbuffered input. However,
+				no installation is necessary for this: when initialized,
+				JLine will dynamically extract the DLL to a temporary
+				directory and load it. For more details, see the
+				documentation for the <classname>jline.WindowsTerminal</classname> class.
+			</para>
+			<para>
+				On UNIX systems (including Macintosh OS X), JLine will
+				execute the <filename>stty</filename> command to initialize
+				the terminal to allow unbuffered input. For more details,
+				see the documentation for the <classname>jline.UnixTerminal</classname> class.
+			</para>
+			<para>
+				For both Windows and UNIX systems, JLine will fail to
+				initialize if it is run inside a strict security manager
+				that does not allow the loading of libraries, writing
+				to the file system, or executing external programs. However,
+				for most console applications, this is usually not the case.
+			</para>
+		</chapter>
+		<chapter id="supported_platforms">
+			<title>Supported Platforms</title>
+			<para>
+				JLine should work on any Windows system, or any
+				minimally compliant POSIX system (includling Linux and
+				Macintosh OS X).
+			</para>
+			<para>
+				The platforms on which JLine has been confirmed to work are:
+				<itemizedlist>
+					<listitem><para>
+						Microsoft Windows XP
+					</para></listitem>
+					<listitem><para>
+						RedHat Linux 9.0
+					</para></listitem>
+					<listitem><para>
+						Debian Linux 3.0
+					</para></listitem>
+					<listitem><para>
+						Macintosh OS X 10.3
+					</para></listitem>
+				</itemizedlist>
+			</para>
+			<para>
+				Please report successes or failures to the author:
+				<ulink url="mailto:mwp1@cornell.edu">mwp1@cornell.edu</ulink>.
+			</para>
+		</chapter>
+		<chapter id="features">
+			<title>Features</title>
+			<section id="features_history">
+				<title>Command History</title>
+				<para>
+				</para>
+			</section>
+			<section id="features_completion">
+				<title>Tab completion</title>
+				<para>
+				</para>
+			</section>
+			<section id="features_line_editing">
+				<title>Line editing</title>
+				<para>
+				</para>
+			</section>
+			<section id="features_keybindings">
+				<title>Custom Keybindings</title>
+				<para>
+				You can create your own keybindings by creating a
+				<filename>HOME/.jlinebindings.properties"</filename>
+				file. You can override the location of this file with
+				the "<computeroutput>jline.keybindings</computeroutput>"
+				system property.
+				</para>
+                <!--
+				<para>
+				The default keybindings are as follows:
+					<programlisting>
+					</programlisting>
+				</para>
+                -->
+			</section>
+			<section id="features_masking">
+				<title>Character masking</title>
+				<para>
+				</para>
+			</section>
+		</chapter>
+		<chapter id="api">
+			<title>API</title>
+			<para>
+				This section discusses some common usages of the JLine API.
+				For in-depth usage of the JLine API, see the
+				<ulink url="apidocs">apidocs</ulink>.
+			</para>
+			<section id="reading_password">
+				<title>Reading a password from the console</title>
+				<para>
+					A common task that console applications need to do is
+					read in a password. While it is standard for software
+					to not echo password strings as they are typed,
+					the Java core APIs surprisingly do not provide any
+					means to do this.
+				</para>
+				<para>
+					JLine can read a password with the following code:
+					<programlisting>
+String password = new <classname>jline.ConsoleReader</classname>().readLine(new Character('*'));
+					</programlisting>
+					This will replace every character types on the console
+					with a star character.
+				</para>
+				<para>
+					Alternately, you can have it not echo password
+					character at all:
+					<programlisting>
+String password = new <classname>jline.ConsoleReader</classname>().readLine(new Character(0));
+					</programlisting>
+				</para>
+				<para>
+					The <filename>jline-demo.jar</filename> file contains
+					a sample application that reads the password. To run
+					the sample, execute:
+					<programlisting>
+java -cp jline-demo.jar jline.example.PasswordReader "*"
+					</programlisting>
+				</para>
+			</section>
+		</chapter>
+		<chapter id="faq">
+			<title>Frequently Asked Questions</title>
+			<section id="faq_unsupported_platform"><title>
+				Can I disable JLine if it isn't working on my platform?
+				</title>
+				<para>
+				You can disable JLine by setting the System property
+				"<computeroutput>jline.terminal</computeroutput>"
+				to
+				"<classname>jline.UnsupportedTerminal</classname>". For example:
+				<programlisting>
+java -Djline.terminal=jline.UnsupportedTerminal jline.example.Example simple
+				</programlisting>
+				</para>
+			</section>
+			<section id="faq_custom_keybindings"><title>
+				How do I customize the key bindings?
+				</title>
+				<para>
+				You can create your own keybindings by creating a
+				<filename>HOME/.jlinebindings.properties"</filename>
+				file. You can override the location of this file with
+				the "<computeroutput>jline.keybindings</computeroutput>"
+				system property. To examine the format to use, see the
+				<filename>src/jline/keybindings.properties</filename>
+				file in the source distribution.
+				</para>
+			</section>
+			<section id="faq_jline_as_default"><title>
+				Can I use JLine as the default console input stream for
+				all applications?
+				</title>
+				<para>
+				No, but you can use the <classname>jline.ConsoleRunner</classname> application
+				to set up the system input stream and continue on
+				the launch another program. For example, to use JLine
+				as the input handler for the popular 
+				<ulink url="http://www.beanshell.org">BeanShell</ulink>
+				console application, you can run:
+				<programlisting>
+java <classname>jline.ConsoleRunner</classname> <ulink url="http://www.beanshell.org/manual/standalonemode.html">bsh.Interpreter</ulink>
+				</programlisting>
+				</para>
+			</section>
+			<section id="faq_jline_beanshell"><title>
+				Can I use JLine as the input handler for <ulink url="http://www.beanshell.org">BeanShell</ulink>?
+				</title>
+				<para>
+				Yes. Try running:
+				<programlisting>
+java <classname>jline.ConsoleRunner</classname> <ulink url="http://www.beanshell.org/manual/standalonemode.html">bsh.Interpreter</ulink>
+				</programlisting>
+				</para>
+			</section>
+			<section id="faq_jline_jdb"><title>
+				Can I use JLine as the input handler for <ulink url="http://java.sun.com/j2se/1.3/docs/tooldocs/solaris/jdb.html">jdb</ulink> (the java debugger)?
+				</title>
+				<para>
+				Yes. Try running:
+				<programlisting>
+java <classname>jline.ConsoleRunner</classname> com.sun.tools.example.debug.tty.TTY <emphasis>args</emphasis>
+				</programlisting>
+				</para>
+			</section>
+			<section id="faq_pure_java"><title>
+				Is JLine <trademark>100% pure Java</trademark>?
+				</title>
+				<para>
+				No: JLine uses a couple small native methods in the Windows
+				platform. On Unix, it is technically pure java, but relies
+				on the execution of external (non-java) programs. See the
+				<link linkend="installation">installation section</link>
+				for more details.
+				</para>
+			</section>
+			<section id="faq_password"><title>
+				How do I make it so password characters are no echoed
+				to the screen?
+				</title>
+				<para>
+				See <link linkend="reading_password"/>.
+				</para>
+			</section>
+			<section id="faq_cursrs"><title>
+				Is JLine a full-featured curses implementation?
+				</title>
+				<para>
+				No: JLine has no ability to position the cursor on the
+				console. It might someday evolve into a plausible
+				Java curses implementation.
+				</para>
+			</section>
+		</chapter>
+	</part>
+
+	<appendix id="known_bugs">
+		<title>Known Bugs</title>	
+		<itemizedlist>
+			<listitem><para>
+			Clearing the screen (CTRL-L) doesn't currently work on Windows.
+			</para></listitem>
+		</itemizedlist>
+	</appendix>
+
+	<appendix id="contributors">
+		<title>Contributors</title>	
+        <para>
+        The following people have contributed to improving JLine over the
+        years:
+        </para>
+		<itemizedlist>
+			<listitem><para>
+            Marc Prud'hommeaux
+			</para></listitem>
+			<listitem><para>
+            Damian Steer
+			</para></listitem>
+			<listitem><para>
+            Dale Kemp
+			</para></listitem>
+			<listitem><para>
+            Jun Liu
+			</para></listitem>
+			<listitem><para>
+            malcolm@epcc.ed.ac.uk
+			</para></listitem>
+			<listitem><para>
+            Simon Patarin
+			</para></listitem>
+			<listitem><para>
+            Amy Isard
+			</para></listitem>
+			<listitem><para>
+            Ryan Bell
+			</para></listitem>
+			<listitem><para>
+            Marc Herbert
+			</para></listitem>
+			<listitem><para>
+            Christian Salm
+			</para></listitem>
+		</itemizedlist>
+	</appendix>
+
+	<appendix id="todo">
+		<title>Future enhancements</title>	
+		<itemizedlist>
+			<listitem><para>
+				Add localization for all strings.
+			</para></listitem>
+			<listitem><para>
+				Create a BNFCompletor that can handle any BNF.
+			</para></listitem>
+		</itemizedlist>
+	</appendix>
+
+	<appendix id="changelog">
+		<title>Change Log</title>
+		<itemizedlist>
+			<title>0.9.93 2007-11-13</title>
+			<listitem><para>
+                Fixed backspace handling on Unix/OS X.
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.9.92 2007-10-30</title>
+			<listitem><para>
+                JLine now works with 64-bit Windows systems.
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.9.91 2007-03-11</title>
+			<listitem><para>
+                Added ConsoleReader.setUsePagination() method which allows
+                configuration of pagination when the number of rows of
+                candidates exceeds the height of the detected terminal, thanks
+                to a patch by Damian Steer.
+			</para></listitem>
+			<listitem><para>
+                Better support for UTF-8 inputs (issue #1623521).
+			</para></listitem>
+			<listitem><para>
+                Improved list of supported keys on Windows (issue #1649790).
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.9.5 2006-03-08</title>
+			<listitem><para>
+				Fixed problem with "stty" on Solaris, which doesn't
+				understand "stty size" to query the terminal size. It now
+				uses "stty -a", which supposedly outputs a POSIX standard 
+				format.
+			</para></listitem>
+			<listitem><para>
+				Support HOME and END keys, thanks to a patch by
+				Dale Kemp.
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.9.1 2005-01-29</title>
+			<listitem><para>
+				Fixed problem with the 0.9.0 distribution that
+				failed to include the Windows jline.dll in the jline.jar,
+				rendering it inoperable on Windows.
+			</para></listitem>
+			<listitem><para>
+				Implemented proper interception or arrow keys on Windows,
+				meaning that history can now be navigated with the UP
+				and DOWN keys, and line editing can take place with
+				the LEFT and RIGHT arrow keys.
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.9.0 2005-01-23</title>
+			<listitem><para>
+				Changed license from GPL to BSD.
+			</para></listitem>
+			<listitem><para>
+				Made "CTRL-L" map to clearing the screen.
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.8.1 2003-11-18</title>
+			<listitem><para>
+				Fixed accidental dependency on JVM 1.4.
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.8.0 2003-11-17</title>
+			<listitem><para>
+				Windows support using a native .dll
+			</para></listitem>
+			<listitem><para>
+				A new ClassNameCompletor
+			</para></listitem>
+			<listitem><para>
+				Many doc improvements
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.6.0 2003-07-08</title>
+			<listitem><para>
+				Many bugfixes
+			</para></listitem>
+			<listitem><para>
+				Better release system
+			</para></listitem>
+			<listitem><para>
+				Automatically set terminal property by
+				issuing stty on UNIX systems
+			</para></listitem>
+			<listitem><para>
+				Additional tab-completion handlers
+			</para></listitem>
+			<listitem><para>
+				Tested on Debian Linux and Mac OS 10.2
+			</para></listitem>
+			<listitem><para>
+				Example includes dictionary, filename, and simple completion
+			</para></listitem>
+		</itemizedlist>
+		<itemizedlist>
+			<title>0.3.0 2002-10-05</title>
+			<listitem><para>
+				Initial release
+			</para></listitem>
+		</itemizedlist>
+	</appendix>
+</book>

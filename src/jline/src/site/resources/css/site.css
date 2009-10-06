@@ -1,0 +1,311 @@
+
+body {
+    min-width: 600px;
+    width: 600px;
+    width: auto !important;
+    background-color: #fff;
+    font-family: Verdana, sans;
+}
+
+body,div,span,td,p,h2,h3,h4,h5,h6,a,ul,li {
+    font-family: Verdana, sans;
+    font-size: 11px;
+    color: #5A5A5A;
+    font-style: normal;
+}
+
+a,a:hover,a:visited,a:active {
+    color: #5A5A5A;
+    /* text-decoration: underline; */
+}
+
+/* main layout */
+#banner {
+    color: #FFA500;
+    border: none;
+    margin: 0 0 0 0;
+    background-color: #fff;
+    background-image: url(../images/header.jpg);
+    background-position: right;
+    background-repeat: no-repeat;
+    height: 100px;
+}
+
+#bannerLeft img{
+    margin: 10px 0 0 10px;
+}
+
+#leftColumn {
+    background-color: transparent;
+    position: absolute;
+    top: 140px;
+    left: 20px;
+    width: 180px;
+    margin: 0px;
+    padding: 0px;
+    border: none;
+}
+
+#bodyColumn {
+    margin: 0 0 20px 220px;
+    background-color: #fff;
+    padding: 30px;
+    position: relative;
+    background-image: url(../images/dotted.png);
+    background-repeat: repeat-y;
+}
+
+#footer div.xright {
+    color: #fff;
+    margin-right: 10px;
+}
+
+/* end main layout */
+.deprecated {
+    text-decoration: line-through;
+}
+
+.comment {
+    color: green;
+}
+
+.source pre {
+    font-family: "Andale Mono", monospace;
+    font-size: 11px;
+    background-color: #ddd;
+    width: 100%;
+    color: #5A5A5A;
+    border-width: 0px;
+    padding-top: 6px;
+    padding-left: 3px;
+}
+
+#breadcrumbs {
+    background-color: #FE1100;
+    border: none;
+    height: 15px;
+}
+
+/*
+    workaround for bug in the Doxia docbook renderer that opens
+    anchors (e.g. <a name="index">), but doesn't ever close them
+*/
+#section a,a:hover,a:visited,a:active {
+    text-decoration: none;
+}
+
+
+#breadcrumbs a {
+    color: #fff;
+    margin-left: 20px;
+    text-decoration: none;
+}
+
+h1 {
+    border: none;
+    padding-left: 0;
+    font-weight: bold;
+    text-transform: capitalize;
+    background-color: #7FAABB !important;
+    color: #FFFFFF !important;
+    font-size: 19px !important;
+}
+
+h2 {
+    border: none;
+    padding-left: 0;
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: capitalize;
+    background-color: #7FAABB !important;
+    color: #FFFFFF !important;
+    font-size: 17px !important;
+}
+
+h3 {
+    border: none;
+    font-weight: bolder;
+    padding-left: 0;
+    background-color: #8BBBD1 !important;
+    color: #FFFFFF !important;
+}
+
+#navcolumn {
+    padding: 0;
+    overflow: hidden;
+}
+
+#navcolumn ul {
+    margin: 0px 0 3px 0;
+    background-repeat: repeat-x;
+}
+
+#navcolumn h5 {
+    border: none;
+    background-image: url(../images/dotted.png);
+    background-repeat: repeat-x;
+    padding: 4px 0 3px 20px;
+    font-size: 11px !important;
+    margin-top: -1px;
+}
+
+#navcolumn ul {
+    margin-bottom: 8px;
+}
+
+#navcolumn li {
+    margin: 0px 0 0px 3px;
+    padding: 2px;
+    list-style-position: outside;
+    font-size: 7.5pt !important;
+    padding-left: 16px;
+    padding-left /**/: 2px !important;
+    /* warning, don't reformat, there should be no comment between padding-left and comment, to fix IE5 issues */
+}
+
+#menuDownloadable_docs li {
+    background-image: url(../images/ico_file_pdf.png);
+    padding-top: 3px;
+    padding-bottom: 1px;
+}
+
+#navcolumn strong {
+    color: #000000;
+    font-weight: bold;
+}
+
+#navcolumn strong a {
+    color: #000000;
+    font-weight: bold;
+}
+
+#navcolumn a {
+    padding-left: 14px;
+    text-decoration: underline;
+    padding-bottom: 2px;
+    color: #5a5a5a;
+}
+
+#navcolumn a img {
+    margin-top: 0;
+}
+
+#navcolumn a#poweredBy img {
+    margin: 0 0 15px 20px;
+    width: 90px;
+    height: 30px;
+}
+
+#navcolumn #lastPublished {
+    color: #999;
+    margin: 0 0 0 20px;
+}
+
+#navcolumn a:hover {
+    color: Olive;
+    padding-left: 14px;
+    text-decoration: underline;
+    padding-bottom: 2px;
+}
+
+#breadcrumbs div.xright,#breadcrumbs div.xleft {
+    color: #fff;
+    display: inline;
+    font-size: 7pt !important;
+}
+
+#banner a#projectLogo img {
+    float: left;
+    background-color: #fff !important;
+    margin: 20px 0 0 20px !important;
+}
+
+#navcolumn li {
+    color: #000000;
+}
+
+#navcolumn strong {
+    color: #000000;
+    font-weight: bold;
+    margin-left: 15px;
+}
+
+div.source {
+    background-color: #ddd;
+}
+
+div.source pre,code,td.code {
+    font-size: 8pt !important;
+    font-family: monospace;
+    margin: 0;
+}
+
+td.code {
+    font-size: 10pt !important;
+    font-family: monospace;
+}
+
+div#legend {
+    display: none;
+}
+
+table td.source {
+    border: none !important;
+}
+
+table td,table th {
+    font-size: 8pt !important;
+    font-family: verdana;
+}
+
+table th {
+    font-weight: bold;
+}
+
+.collapsed {
+    background-image: url(../images/collapsed.png) !important;
+}
+
+li.expanded {
+    background-image: url(../images/expanded.png) !important;
+}
+
+/*
+li.expanded ul {
+    margin-top: 5px !important;
+}
+*/
+
+a.externalLink,a.newWindow {
+    padding-right: 9px !important;
+    background-image: none !important; /*ie5*/
+}
+
+a.externalLink /* */ {
+    background-image: url(../images/external.png) !important;
+}
+
+a.newWindow /* */ {
+    background-image: url(../images/newwindow.png) !important;
+}
+
+table {
+    width: 68%; /* fix for ie 5.x */
+}
+
+i {
+    content: "\"/*"
+}
+
+table {
+    width: 100%;
+}
+/* remove banner: comment the following lines for the full layout */ /*
+#banner, #breadcrumbs {
+    display: none !important;
+}
+#leftColumn {
+    position: relative;
+    top: 0;
+}
+*/
