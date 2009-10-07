@@ -1,5 +1,0 @@
-t1659.scala:3: error: overriding method u in trait W of type [A](v: Y{type X = A})Unit;
- method u has incompatible type
-class Z extends W { def u[A](v : Y { type X = A }) = null }
-                        ^
-one error found

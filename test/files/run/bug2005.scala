@@ -1,4 +1,4 @@
-object Bug {
+object Test {
   def main(args: Array[String]) {
     val a = new Array[Array[Int]](2,2)
     test(a)
