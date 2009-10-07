@@ -40,7 +40,7 @@ abstract class ClassfileParser {
   protected var isScala: Boolean = _        // does class file describe a scala class?
   protected var isScalaRaw: Boolean = _     // this class file is a scala class with no pickled info
   protected var hasMeta: Boolean = _        // does class file contain jaco meta attribute?s
-  protected var busy: Boolean = false       // lock to detect recursive reads
+  protected var busy: Option[Symbol] = None // lock to detect recursive reads
   private var   externalName: Name = _      // JVM name of the current class
   protected var classTParams = Map[Name,Symbol]()
 
@@ -65,8 +65,13 @@ abstract class ClassfileParser {
         else e.getClass.toString
       } + ")")
     }
-    assert(!busy, "internal error: illegal class file dependency")
-    busy = true
+    assert(!busy.isDefined, {
+      val (s1, s2) = (busy.get, root)
+      if (s1 eq s2) "unsatisfiable cyclic dependency in '%s'".format(s1)
+      else "illegal class file dependency between '%s' and '%s'".format(s1, s2)
+    })
+
+    busy = Some(root)
     /*root match {
       case cs: ClassSymbol =>
         cs.classFile = file
@@ -95,7 +100,7 @@ abstract class ClassfileParser {
       case e: RuntimeException        => handleError(e)
     }
   } finally {
-    busy = false
+    busy = None
   }
 
   protected def statics: Symbol = staticModule.moduleClass
