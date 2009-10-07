@@ -15,6 +15,7 @@ trait Matrix extends PatternOptimizer {
   import global.{ typer => _, _ }
   import analyzer.Typer
   import CODE._
+  import Debug._
 
   /** Translation of match expressions.
    *
@@ -95,19 +96,13 @@ trait Matrix extends PatternOptimizer {
     {
       val n: Name = if (name == null) newName(pos, "temp") else name
       // careful: pos has special meaning
-      traceAndReturn("[newVar] ", owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_))
+      val res = owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
+
+      traceCategory("newVar", "%s: %s", res, tpe)
+      res
     }
 
-    def typedValDef(x: Symbol, rhs: Tree) = {
-      val finalRhs = x.tpe match {
-        case WildcardType   =>
-          rhs setType null
-          x setInfo (typer typed rhs).tpe
-          rhs
-        case _              =>
-          typer.typed(rhs, x.tpe)
-      }
-      traceAndReturn("[typedValDef] ", typer typed (VAL(x) === finalRhs))
-    }
+    def typedValDef(x: Symbol, rhs: Tree) =
+      tracing("typedVal", typer typedValDef (VAL(x) === rhs))
   }
 }

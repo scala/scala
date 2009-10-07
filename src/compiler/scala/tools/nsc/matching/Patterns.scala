@@ -9,24 +9,9 @@ package matching
 import symtab.Flags
 import util.NoPosition
 
-/**
- * Simple pattern types:
+/** Patterns are wrappers for Trees with enhanced semantics.
  *
- * 1 Variable               x
- * 3 Literal                56
- *
- * Types which must be decomposed into conditionals and simple types:
- *
- * 2 Typed                  x: Int
- * 4 Stable Identifier      Bob or `x`
- * 5 Constructor            Symbol("abc")
- * 6 Tuple                  (5, 5)
- * 7 Extractor              List(1, 2)
- * 8 Sequence               List(1, 2, _*)
- * 9 Infix                  5 :: xs
- * 10 Alternative           "foo" | "bar"
- * 11 XML                   --
- * 12 Regular Expression    --
+ *  @author Paul Phillips
  */
 
 trait Patterns extends ast.TreeDSL {
@@ -35,6 +20,7 @@ trait Patterns extends ast.TreeDSL {
   import global.{ typer => _, _ }
   import definitions._
   import CODE._
+  import Debug._
   import treeInfo.{ unbind, isVarPattern }
 
   // Fresh patterns
@@ -74,7 +60,7 @@ trait Patterns extends ast.TreeDSL {
       case ExtractorPattern(ua) if testVar.tpe <:< tpt.tpe  => this rebindTo expr
       case _                                                => this
     }
-    override def toString() = "%s: %s".format(expr, tpt)
+    override def toString() = "%s: %s".format(Pattern(expr), tpt)
   }
 
   // 8.1.3
@@ -271,6 +257,8 @@ trait Patterns extends ast.TreeDSL {
   // XMLPattern ... for now, subsumed by SequencePattern, but if we want
   //   to make it work right, it probably needs special handling.
 
+  private def abortUnknownTree(tree: Tree) =
+    abort("Unknown Tree reached pattern matcher: %s/%s".format(tree, tree.getClass))
 
   object Pattern {
     // a small tree -> pattern cache
@@ -294,7 +282,7 @@ trait Patterns extends ast.TreeDSL {
         case x: ArrayValue        => SequencePattern(x)
         case x: Select            => StableIdPattern(x)
         case x: Star              => StarPattern(x)
-        case _                    => abort("Unknown Tree reached pattern matcher: %s/%s".format(tree, tree.getClass))
+        case _                    => abortUnknownTree(tree)
       }
       cache(tree) = p
 
@@ -302,7 +290,7 @@ trait Patterns extends ast.TreeDSL {
       p match {
         case WildcardPattern()  => p
         case _: LiteralPattern  => p
-        case _                  => traceAndReturn("[New Pattern] ", p)
+        case _                  => tracing("Pattern", p)
       }
     }
     def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
@@ -363,7 +351,7 @@ trait Patterns extends ast.TreeDSL {
           case _: Select  => ApplySelectPattern(x)
         }
       }
-      else abort("Strange apply: %s/%s".format(x))
+      else abortUnknownTree(x)
     }
   }
 

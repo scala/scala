@@ -16,6 +16,7 @@ trait PatternBindings extends ast.TreeDSL
   import global.{ typer => _, _ }
   import definitions.{ EqualsPatternClass }
   import CODE._
+  import Debug._
 
   /** EqualsPattern **/
   def isEquals(tpe: Type)           = cond(tpe) { case TypeRef(_, EqualsPatternClass, _) => true }
@@ -116,6 +117,8 @@ trait PatternBindings extends ast.TreeDSL
     def castIfNeeded  =
       if (tvar.tpe <:< pvar.tpe) ID(tvar)
       else ID(tvar) AS_ANY pvar.tpe
+
+    override def toString() = pp(pvar -> tvar)
   }
 
   case class BindingsInfo(xs: List[Binding]) {
@@ -129,6 +132,7 @@ trait PatternBindings extends ast.TreeDSL
   }
 
   class Bindings(private val vlist: List[Binding]) extends Function1[Symbol, Option[Ident]] {
+    traceCategory("Bindings", this.toString)
     def vmap(v: Symbol): Option[Binding] = vlist find (_.pvar eq v)
 
     // filters the given list down to those defined in these bindings
@@ -141,7 +145,7 @@ trait PatternBindings extends ast.TreeDSL
     }
     def apply(v: Symbol): Option[Ident] = vmap(v) map (_.toIdent)
 
-    override def toString() = " Bound(%s)".format(vlist)
+    override def toString() = pp(vlist)
   }
 
   val NoBinding: Bindings = new Bindings(Nil)
