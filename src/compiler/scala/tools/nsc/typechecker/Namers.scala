@@ -1182,17 +1182,17 @@ trait Namers { self: Analyzer =>
                 }
                 true
               }
-              def checkSelectors(selectors: List[(Name, Name)]): Unit = selectors match {
-                case (from, to) :: rest =>
+              def checkSelectors(selectors: List[ImportSelector]): Unit = selectors match {
+                case ImportSelector(from, _, to, _) :: rest =>
                   if (from != nme.WILDCARD && base != ErrorType) {
                     if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
                       context.error(tree.pos, from.decode + " is not a member of " + expr);
                     if (checkNotRedundant(tree.pos, from, to))
                       checkNotRedundant(tree.pos, from.toTypeName, to.toTypeName)
                   }
-                  if (from != nme.WILDCARD && (rest.exists (sel => sel._1 == from)))
+                  if (from != nme.WILDCARD && (rest.exists (sel => sel.name == from)))
                     context.error(tree.pos, from.decode + " is renamed twice");
-                  if ((to ne null) && to != nme.WILDCARD && (rest exists (sel => sel._2 == to)))
+                  if ((to ne null) && to != nme.WILDCARD && (rest exists (sel => sel.rename == to)))
                     context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
                   checkSelectors(rest)
                 case Nil =>

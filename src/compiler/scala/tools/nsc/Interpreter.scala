@@ -614,13 +614,13 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   private class ImportHandler(imp: Import) extends MemberHandler(imp) {
     /** Whether this import includes a wildcard import */
-    override val importsWildcard = imp.selectors.map(_._1) contains USCOREkw
+    override val importsWildcard = imp.selectors.map(_.name) contains USCOREkw
 
     /** The individual names imported by this statement */
     override val importedNames: Seq[Name] = for {
-      (_, sel) <- imp.selectors
-      if (sel != null && sel != USCOREkw)
-      name <- List(sel.toTypeName, sel.toTermName)
+      sel <- imp.selectors
+      if (sel.rename != null && sel.rename != USCOREkw)
+      name <- List(sel.rename.toTypeName, sel.rename.toTermName)
     }
     yield name
 

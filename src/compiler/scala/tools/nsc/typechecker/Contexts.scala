@@ -63,7 +63,7 @@ trait Contexts { self: Analyzer =>
       assert(pkg ne null)
       val qual = gen.mkAttributedStableRef(pkg)
       sc = sc.makeNewImport(
-        Import(qual, List((nme.WILDCARD, null)))
+        Import(qual, List(ImportSelector(nme.WILDCARD, -1, null, -1)))
         .setSymbol(NoSymbol.newImport(NoPosition).setFlag(SYNTHETIC).setInfo(ImportType(qual)))
         .setType(NoType))
       sc.depth += 1
@@ -465,10 +465,10 @@ trait Contexts { self: Analyzer =>
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val pre = imp.qual.tpe
-      def collect(sels: List[(Name, Name)]): List[ImplicitInfo] = sels match {
+      def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
         case List() => List()
-        case List((nme.WILDCARD, _)) => collectImplicits(pre.implicitMembers, pre)
-        case (from, to) :: sels1 =>
+        case List(ImportSelector(nme.WILDCARD, _, _, _)) => collectImplicits(pre.implicitMembers, pre)
+        case ImportSelector(from, _, to, _) :: sels1 =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
             val sym = imp.importedSymbol(to)
@@ -550,7 +550,7 @@ trait Contexts { self: Analyzer =>
 
     /** Is name imported explicitly, not via wildcard? */
     def isExplicitImport(name: Name): Boolean =
-      tree.selectors exists (_._2 == name.toTermName)
+      tree.selectors exists (_.rename == name.toTermName)
 
     /** The symbol with name <code>name</code> imported from import clause
      *  <code>tree</code>.
@@ -560,15 +560,15 @@ trait Contexts { self: Analyzer =>
       var renamed = false
       var selectors = tree.selectors
       while (selectors != Nil && result == NoSymbol) {
-        if (selectors.head._1 != nme.WILDCARD)
-          notifyImport(name, qual.tpe, selectors.head._1, selectors.head._2)
+        if (selectors.head.name != nme.WILDCARD)
+          notifyImport(name, qual.tpe, selectors.head.name, selectors.head.rename)
 
-        if (selectors.head._2 == name.toTermName)
+        if (selectors.head.rename == name.toTermName)
           result = qual.tpe.member(
-            if (name.isTypeName) selectors.head._1.toTypeName else selectors.head._1)
-        else if (selectors.head._1 == name.toTermName)
+            if (name.isTypeName) selectors.head.name.toTypeName else selectors.head.name)
+        else if (selectors.head.name == name.toTermName)
           renamed = true
-        else if (selectors.head._1 == nme.WILDCARD && !renamed)
+        else if (selectors.head.name == nme.WILDCARD && !renamed)
           result = qual.tpe.member(name)
         selectors = selectors.tail
       }
@@ -578,10 +578,10 @@ trait Contexts { self: Analyzer =>
     def allImportedSymbols: List[Symbol] =
       qual.tpe.members flatMap (transformImport(tree.selectors, _))
 
-    private def transformImport(selectors: List[(Name, Name)], sym: Symbol): List[Symbol] = selectors match {
+    private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {
       case List() => List()
-      case List((nme.WILDCARD, _)) => List(sym)
-      case (from, to) :: _ if (from == sym.name) =>
+      case List(ImportSelector(nme.WILDCARD, _, _, _)) => List(sym)
+      case ImportSelector(from, _, to, _) :: _ if (from == sym.name) =>
         if (to == nme.WILDCARD) List()
         else { val sym1 = sym.cloneSymbol; sym1.name = to; List(sym1) }
       case _ :: rest => transformImport(rest, sym)

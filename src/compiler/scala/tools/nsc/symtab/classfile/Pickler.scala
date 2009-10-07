@@ -265,7 +265,7 @@ abstract class Pickler extends SubComponent {
 
         case Import(expr, selectors) =>
           putTree(expr)
-          for ((from,to) <- selectors) {
+          for (ImportSelector(from, _, to, _) <- selectors) {
             putEntry(from)
             putEntry(to)
           }
@@ -714,7 +714,7 @@ abstract class Pickler extends SubComponent {
           writeRef(tree.tpe)
           writeRef(tree.symbol)
           writeRef(expr)
-          for ((from, to) <- selectors) {
+          for (ImportSelector(from, _, to, _) <- selectors) {
             writeRef(from)
             writeRef(to)
           }

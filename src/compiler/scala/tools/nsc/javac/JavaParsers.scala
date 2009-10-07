@@ -630,7 +630,7 @@ trait JavaParsers extends JavaScanners {
 
     def importCompanionObject(cdef: ClassDef): Tree =
       atPos(cdef.pos) {
-        Import(Ident(cdef.name.toTermName), List((nme.WILDCARD, null)))
+        Import(Ident(cdef.name.toTermName), List(ImportSelector(nme.WILDCARD, -1, null, -1)))
       }
 
     // Importing the companion object members cannot be done uncritically: see
@@ -661,21 +661,24 @@ trait JavaParsers extends JavaScanners {
       accept(IMPORT)
       val pos = in.currentPos
       val buf = new ListBuffer[Name]
-      def collectIdents() {
+      def collectIdents() : Int = {
         if (in.token == ASTERISK) {
+          val starOffset = in.pos
           in.nextToken
           buf += nme.WILDCARD
+          starOffset
         } else {
+          val nameOffset = in.pos
           buf += ident()
           if (in.token == DOT) {
             in.nextToken
             collectIdents()
-          }
+          } else nameOffset
         }
       }
       if (in.token == STATIC) in.nextToken
       else buf += nme.ROOTPKG
-      collectIdents()
+      val lastnameOffset = collectIdents()
       accept(SEMI)
       val names = buf.toList
       if (names.length < 2) {
@@ -686,8 +689,8 @@ trait JavaParsers extends JavaScanners {
         val lastname = names.last
         List {
           atPos(pos) {
-            if (lastname == nme.WILDCARD) Import(qual, List((lastname, null)))
-            else Import(qual, List((lastname, lastname)))
+            if (lastname == nme.WILDCARD) Import(qual, List(ImportSelector(lastname, lastnameOffset, null, -1)))
+            else Import(qual, List(ImportSelector(lastname, lastnameOffset, lastname, lastnameOffset)))
           }
         }
       }

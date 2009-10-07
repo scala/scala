@@ -535,12 +535,23 @@ trait Trees {
       LabelDef(sym.name, params map Ident, rhs) setSymbol sym
     }
 
+  /** Import selector
+   *
+   * Representation of an imported name its optional rename and their optional positions
+   *
+   * @param name      the imported name
+   * @param namePos   its position or -1 if undefined
+   * @param rename    the name the import is renamed to (== name if no renaming)
+   * @param renamePos the position of the rename or -1 if undefined
+   */
+  case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int)
+
   /** Import clause
    *
    *  @param expr
    *  @param selectors
    */
-  case class Import(expr: Tree, selectors: List[(Name, Name)])
+  case class Import(expr: Tree, selectors: List[ImportSelector])
        extends SymTree
     // The symbol of an Import is an import symbol @see Symbol.newImport
     // It's used primarily as a marker to check that the import has been typechecked.
@@ -1042,7 +1053,7 @@ trait Trees {
     def DefDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree): TypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
-    def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]): Import
+    def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]): Import
     def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
@@ -1097,7 +1108,7 @@ trait Trees {
       new TypeDef(mods, name, tparams, rhs).copyAttrs(tree)
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree) =
       new LabelDef(name, params, rhs).copyAttrs(tree)
-    def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]) =
+    def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]) =
       new Import(expr, selectors).copyAttrs(tree)
     def DocDef(tree: Tree, comment: String, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
@@ -1213,7 +1224,7 @@ trait Trees {
       if (name0 == name) && (params0 == params) && (rhs0 == rhs) => t
       case _ => treeCopy.LabelDef(tree, name, params, rhs)
     }
-    def Import(tree: Tree, expr: Tree, selectors: List[(Name, Name)]) = tree match {
+    def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]) = tree match {
       case t @ Import(expr0, selectors0)
       if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => treeCopy.Import(tree, expr, selectors)

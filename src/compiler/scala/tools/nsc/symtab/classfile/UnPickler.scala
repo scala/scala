@@ -545,7 +545,7 @@ abstract class UnPickler {
           val selectors = until(end, () => {
             val from = readNameRef()
             val to = readNameRef()
-            (from, to)
+            ImportSelector(from, -1, to, -1)
           })
           (Import(expr, selectors).
            setSymbol(symbol).

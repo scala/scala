@@ -1830,8 +1830,9 @@ trait Typers { self: Analyzer =>
               if (imp0 ne null) {
                 context = context.makeNewImport(imp0)
                 imp0.symbol.initialize
-              }
-              EmptyTree
+                imp0
+              } else
+                EmptyTree
             case _ =>
               if (localTarget && !includesTargetPos(stat)) {
                 stat
