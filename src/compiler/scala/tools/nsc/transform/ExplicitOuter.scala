@@ -10,7 +10,7 @@ package transform
 import symtab._
 import Flags.{ CASE => _, _ }
 import scala.collection.mutable.ListBuffer
-import matching.{ TransMatcher, Patterns, PatternNodes, ParallelMatching }
+import matching.{ TransMatcher, Patterns, ParallelMatching }
 
 /** This class ...
  *
@@ -19,7 +19,6 @@ import matching.{ TransMatcher, Patterns, PatternNodes, ParallelMatching }
  */
 abstract class ExplicitOuter extends InfoTransform
       with TransMatcher
-      with PatternNodes
       with Patterns
       with ParallelMatching
       with TypingTransformers

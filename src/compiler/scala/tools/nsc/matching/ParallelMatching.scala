@@ -23,15 +23,34 @@ trait ParallelMatching extends ast.TreeDSL
       with Patterns
       with PatternBindings
       with PatternOptimizer
-      with PatternNodes
 {
   self: ExplicitOuter =>
 
   import global.{ typer => _, _ }
   import definitions.{ AnyRefClass, IntClass, getProductArgs, productProj }
   import treeInfo.{ isStar }
-  import Types._
   import CODE._
+
+  object Types {
+    import definitions._
+    implicit def enrichType(x: Type): RichType = new RichType(x)
+
+    class RichType(undecodedTpe: Type) {
+      def tpe = decodedEqualsType(undecodedTpe)
+      def isAnyRef = tpe <:< AnyRefClass.tpe
+
+      // These tests for final classes can inspect the typeSymbol
+      private def is(s: Symbol) = tpe.typeSymbol eq s
+      def      isByte = is(ByteClass)
+      def     isShort = is(ShortClass)
+      def       isInt = is(IntClass)
+      def      isChar = is(CharClass)
+      def   isBoolean = is(BooleanClass)
+      def   isNothing = is(NothingClass)
+      def     isArray = is(ArrayClass)
+    }
+  }
+  import Types._
 
   /** Debugging support: enable with -Ypmat-debug **/
   private final def trace = settings.Ypmatdebug.value

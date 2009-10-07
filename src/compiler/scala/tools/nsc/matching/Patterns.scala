@@ -7,6 +7,7 @@ package scala.tools.nsc
 package matching
 
 import symtab.Flags
+import util.NoPosition
 
 /**
  * Simple pattern types:
@@ -65,6 +66,8 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.2
   case class TypedPattern(tree: Typed) extends Pattern {
     private val Typed(expr, tpt) = tree
+
+    override def subpatternsForVars: List[Pattern] = List(Pattern(expr))
 
     override def irrefutableFor(tpe: Type) = tpe <:< tree.tpe
     override def simplify(testVar: Symbol) = Pattern(expr) match {
@@ -142,8 +145,8 @@ trait Patterns extends ast.TreeDSL {
   }
 
   // 8.1.7
-  case class ExtractorPattern(tree: UnApply) extends Pattern {
-    private val UnApply(Apply(fn, _), args) = tree
+  case class ExtractorPattern(tree: UnApply) extends UnapplyPattern {
+    private val Apply(fn, _) = unfn
     private val MethodType(List(arg, _*), _) = fn.tpe
     private def uaTyped = Typed(tree, TypeTree(arg.tpe)) setType arg.tpe
 
@@ -158,16 +161,35 @@ trait Patterns extends ast.TreeDSL {
   }
 
   // 8.1.8 (unapplySeq calls)
-  case class SequenceExtractorPattern(tree: UnApply) extends Pattern {
+  case class SequenceExtractorPattern(tree: UnApply) extends UnapplyPattern {
     private val UnApply(
       Apply(TypeApply(Select(_, nme.unapplySeq), List(tptArg)), _),
       List(ArrayValue(_, elems))
     ) = tree
 
+    /** For folding a list into a well-typed x :: y :: etc :: tree. */
+    private def listFolder = {
+      val tpe = tptArg.tpe
+      val MethodType(_, TypeRef(pre, sym, _)) = ConsClass.primaryConstructor.tpe
+      val consRef                             = typeRef(pre, sym, List(tpe))
+      val listRef                             = typeRef(pre, ListClass, List(tpe))
+
+      def fold(x: Tree, xs: Tree) = unbind(x) match {
+        case _: Star  => makeBind(Pattern(x).definedVars, WILD(x.tpe))
+        case _        =>
+          val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
+          val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpe, listRef), consRef)
+
+          Apply(TypeTree(consType), List(x, xs)) setType consRef
+      }
+
+      fold _
+    }
+
     // @pre: is not right-ignoring (no star pattern) ; no exhaustivity check
     override def simplify(testVar: Symbol) = {
       testVar setFlag Flags.TRANS_FLAG
-      this rebindTo normalizedListPattern(elems, tptArg.tpe)
+      this rebindTo elems.foldRight(gen.mkNil)(listFolder)
     }
     override def toString() = "UnapplySeq(%s)".format(elems)
   }
@@ -177,6 +199,8 @@ trait Patterns extends ast.TreeDSL {
     lazy val ArrayValue(elemtpt, elems) = tree
     lazy val elemPatterns = toPats(elems)
     lazy val nonStarPatterns = if (hasStar) elemPatterns.init else elemPatterns
+
+    override def subpatternsForVars: List[Pattern] = elemPatterns
 
     def hasStar = isRightIgnoring(tree)
     def nonStarLength = nonStarPatterns.length
@@ -345,7 +369,7 @@ trait Patterns extends ast.TreeDSL {
 
   /** Some intermediate pattern classes with shared structure **/
 
-  trait SelectPattern extends NamePattern {
+  sealed trait SelectPattern extends NamePattern {
     def select: Select
     lazy val Select(qualifier, name) = select
     def pathSegments = getPathSegments(tree)
@@ -367,7 +391,7 @@ trait Patterns extends ast.TreeDSL {
     }
   }
 
-  trait NamePattern extends Pattern {
+  sealed trait NamePattern extends Pattern {
     def name: Name
     override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
     override def matchingType = mkSingleton
@@ -377,8 +401,15 @@ trait Patterns extends ast.TreeDSL {
   //   def simplify(testVar: Symbol): Pattern = this
   // }
 
-  sealed abstract class ApplyPattern extends Pattern {
+  sealed trait UnapplyPattern extends Pattern {
+    lazy val UnApply(unfn, args) = tree
+    override def subpatternsForVars: List[Pattern] = toPats(args)
+  }
+
+  sealed trait ApplyPattern extends Pattern {
     protected lazy val Apply(fn, args) = tree
+    override def subpatternsForVars: List[Pattern] = toPats(args)
+
     def isConstructorPattern = fn.isType
   }
 
@@ -449,70 +480,6 @@ trait Patterns extends ast.TreeDSL {
     override def hashCode() = boundTree.hashCode()
   }
 
-  trait PatternBindingLogic {
-    self: Pattern =>
-
-    // XXX only a var for short-term experimentation.
-    private var _boundTree: Bind = null
-    def boundTree = if (_boundTree == null) tree else _boundTree
-    def withBoundTree(x: Bind): this.type = {
-      _boundTree = x
-      this
-    }
-    lazy val boundVariables = strip(boundTree)
-
-    def definedVars = definedVarsInternal(boundTree)
-    private def definedVarsInternal(x: Tree): List[Symbol] = {
-      def vars(x: Tree): List[Symbol] = x match {
-        case Apply(_, args)     => args flatMap vars
-        case b @ Bind(_, p)     => b.symbol :: vars(p)
-        case Typed(p, _)        => vars(p)              // otherwise x @ (_:T)
-        case UnApply(_, args)   => args flatMap vars
-        case ArrayValue(_, xs)  => xs flatMap vars
-        case x                  => Nil
-      }
-      vars(x) reverse
-    }
-
-    private def wrapBindings(vs: List[Symbol], pat: Tree): Tree = vs match {
-      case Nil      => pat
-      case x :: xs  => Bind(x, wrapBindings(xs, pat)) setType pat.tpe
-    }
-
-    // If a tree has bindings, boundTree looks something like
-    //   Bind(v3, Bind(v2, Bind(v1, tree)))
-    // This takes the given tree and creates a new pattern
-    //   using the same bindings.
-    def rebindTo(t: Tree): Pattern =
-      Pattern(wrapBindings(boundVariables, t))
-
-    // Wrap this pattern's bindings around (_: Type)
-    def rebindToType(tpe: Type, annotatedType: Type = null): Pattern = {
-      val aType = if (annotatedType == null) tpe else annotatedType
-      rebindTo(Typed(WILD(tpe), TypeTree(aType)) setType tpe)
-    }
-
-    // Wrap them around _
-    def rebindToEmpty(tpe: Type): Pattern =
-      rebindTo(Typed(EmptyTree, TypeTree(tpe)) setType tpe)
-
-    // Wrap them around a singleton type for an EqualsPattern check.
-    def rebindToEqualsCheck(): Pattern =
-      rebindToType(equalsCheck)
-
-    // Like rebindToEqualsCheck, but subtly different.  Not trying to be
-    // mysterious -- I haven't sorted it all out yet.
-    def rebindToObjectCheck(): Pattern = {
-      val sType = mkSingleton
-      rebindToType(mkEqualsRef(sType), sType)
-    }
-
-    /** Helpers **/
-    private def strip(t: Tree): List[Symbol] = t match {
-      case b @ Bind(_, pat) => b.symbol :: strip(pat)
-      case _                => Nil
-    }
-  }
 
   /*** Extractors ***/
 
