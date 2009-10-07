@@ -544,6 +544,10 @@ trait Scanners {
           nextChar()
           if (ch == '\"') {
             nextChar()
+            while (ch == '\"') {
+              putChar('\"')
+              nextChar()
+            }
             token = STRINGLIT
             setStrVal()
           } else {

@@ -204,6 +204,8 @@ abstract class SymbolLoaders {
       // or treat as abstractions. For now the symbol in the package module takes precedence.
       for (existing <- owner.info.decl(member.name).alternatives)
         owner.info.decls.unlink(existing)
+    }
+    for (member <- m.info.decls.iterator) {
       owner.info.decls.enter(member)
     }
   }
