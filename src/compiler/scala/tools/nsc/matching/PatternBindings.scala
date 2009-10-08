@@ -89,7 +89,7 @@ trait PatternBindings extends ast.TreeDSL
     // Like rebindToEqualsCheck, but subtly different.  Not trying to be
     // mysterious -- I haven't sorted it all out yet.
     def rebindToObjectCheck(): Pattern = {
-      val sType = mkSingleton
+      val sType = typeToMatch
       rebindToType(mkEqualsRef(sType), sType)
     }
 

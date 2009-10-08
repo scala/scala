@@ -77,16 +77,16 @@ trait Patterns extends ast.TreeDSL {
     require (!isVarPattern(fn) && args.isEmpty)
     val ident @ Ident(name) = fn
 
+    override def typeToMatch = Pattern(ident).equalsCheck
     override def simplify(testVar: Symbol) = this.rebindToObjectCheck()
-    override def mkSingleton = Pattern(ident).equalsCheck
     override def toString() = "Id(%s)".format(name)
   }
   // 8.1.4 (b)
   case class ApplySelectPattern(tree: Apply) extends ApplyPattern with SelectPattern {
     val Apply(select: Select, _) = tree
 
+    override def typeToMatch = mkSingletonFromQualifier
     override def simplify(testVar: Symbol) = this.rebindToObjectCheck()
-    override def mkSingleton = mkSingletonFromQualifier
     override def toString() = "SelectApply(%s)".format(name)
   }
   // 8.1.4 (c)
@@ -98,7 +98,7 @@ trait Patterns extends ast.TreeDSL {
   case class ObjectPattern(tree: Apply) extends ApplyPattern {  // NamePattern?
     require(!fn.isType && isModule)
 
-    override def matchingType = mkSingleton
+    override def typeToMatch = tpe.narrow
     override def simplify(testVar: Symbol) = this.rebindToObjectCheck()
     override def toString() = "Object(%s)".format(fn)
   }
@@ -136,14 +136,14 @@ trait Patterns extends ast.TreeDSL {
     private val MethodType(List(arg, _*), _) = fn.tpe
     private def uaTyped = Typed(tree, TypeTree(arg.tpe)) setType arg.tpe
 
-    override def matchingType = arg.tpe
+    override def typeToMatch = arg.tpe
 
     // can fix #1697 here?
     override def simplify(testVar: Symbol) =
       if (testVar.tpe <:< arg.tpe) this
       else this rebindTo uaTyped
 
-    override def toString() = "Unapply(f: %s => %s)".format(matchingType, fn.tpe.resultType)
+    override def toString() = "Unapply(f: %s => %s)".format(typeToMatch, fn.tpe.resultType)
   }
 
   // 8.1.8 (unapplySeq calls)
@@ -370,7 +370,7 @@ trait Patterns extends ast.TreeDSL {
     protected def mkSingletonFromQualifier = {
       def pType = qualifier match {
         case _: Apply => PseudoType(tree)
-        case _        => singleType(Pattern(qualifier).mkSingleton, sym)
+        case _        => singleType(Pattern(qualifier).typeToMatch, sym)
       }
       qualifier.tpe match {
         case t: ThisType  => singleType(t, sym) // this.X
@@ -381,8 +381,8 @@ trait Patterns extends ast.TreeDSL {
 
   sealed trait NamePattern extends Pattern {
     def name: Name
+    override def typeToMatch = tpe.narrow
     override def simplify(testVar: Symbol) = this.rebindToEqualsCheck()
-    override def matchingType = mkSingleton
   }
 
   // trait SimplePattern extends Pattern {
@@ -424,7 +424,7 @@ trait Patterns extends ast.TreeDSL {
     def isDefault = false
 
     // what type must a scrutinee have to match this pattern?
-    def matchingType = tpe
+    def typeToMatch = tpe
 
     // the subpatterns for this pattern (at the moment, that means constructor arguments)
     def subpatterns(pm: MatchMatrix#PatternMatch): List[Pattern] = pm.dummies
@@ -445,13 +445,10 @@ trait Patterns extends ast.TreeDSL {
     }
 
     def equalsCheck =
-      if (sym.isValue) singleType(NoPrefix, sym)
-      else mkSingleton
-
-    def mkSingleton = tpe match {
-      case st: SingleType => st
-      case _              => singleType(prefix, sym)
-    }
+      tracing("equalsCheck",
+        if (sym.isValue) singleType(NoPrefix, sym)
+        else tpe.narrow
+      )
 
     final def isAlternative       = cond(tree) { case Alternative(_) => true }
 
