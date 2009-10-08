@@ -29,6 +29,8 @@ abstract class TreeGen
   def scalaScalaObjectConstr      = scalaDot(nme.ScalaObject.toTypeName)
   def productConstr               = scalaDot(nme.Product.toTypeName)
 
+  private def isRootOrEmptyPackageClass(s: Symbol) = s.isRoot || s.isEmptyPackageClass
+
   def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree): Tree =
     AppliedTypeTree(
       scalaDot(newTypeName("Function"+argtpes.length)),
@@ -51,7 +53,7 @@ abstract class TreeGen
     case NoPrefix =>
       EmptyTree
     case ThisType(clazz) =>
-      if (clazz.isRoot || clazz.isEmptyPackageClass) EmptyTree
+      if (isRootOrEmptyPackageClass(clazz)) EmptyTree
       else mkAttributedThis(clazz)
     case SingleType(pre, sym) =>
       val qual = mkAttributedStableRef(pre, sym)
@@ -103,9 +105,9 @@ abstract class TreeGen
   def mkAttributedRef(pre: Type, sym: Symbol): Tree = {
     val qual = mkAttributedQualifier(pre)
     qual match {
-      case EmptyTree                                                              => mkAttributedIdent(sym)
-      case This(clazz) if (qual.symbol.isRoot || qual.symbol.isEmptyPackageClass) => mkAttributedIdent(sym)
-      case _                                                                      => mkAttributedSelect(qual, sym)
+      case EmptyTree                                              => mkAttributedIdent(sym)
+      case This(clazz) if isRootOrEmptyPackageClass(qual.symbol)  => mkAttributedIdent(sym)
+      case _                                                      => mkAttributedSelect(qual, sym)
     }
   }
 
@@ -151,30 +153,25 @@ abstract class TreeGen
   def mkAttributedIdent(sym: Symbol): Tree =
     Ident(sym.name) setSymbol sym setType sym.tpe
 
-  /** XXX this method needs a close analysis to identify its essential logical
-   *  units - this attempt at modularization verges on the arbitrary.
-   */
   def mkAttributedSelect(qual: Tree, sym: Symbol): Tree = {
     def tpe = qual.tpe
-    def isUnqualified(s: Symbol) =
-      s != null && (List(nme.ROOT, nme.EMPTY_PACKAGE_NAME) contains s.name.toTermName)
-    def isInPkgObject(s: Symbol) =
-      tpe != null && s.owner.isPackageObjectClass && s.owner.owner == tpe.typeSymbol
-    def getQualifier() =
-      if (!isInPkgObject(sym)) qual
-      else {
-        val pkgobj = sym.owner.sourceModule
-        Select(qual, nme.PACKAGEkw) setSymbol pkgobj setType singleType(tpe, pkgobj)
-      }
 
-    if (isUnqualified(qual.symbol)) mkAttributedIdent(sym)
+    def isUnqualified(n: Name)        = n match { case nme.ROOT | nme.EMPTY_PACKAGE_NAME => true ; case _ => false }
+    def hasUnqualifiedName(s: Symbol) = s != null && isUnqualified(s.name.toTermName)
+    def isInPkgObject(s: Symbol)      = s != null && s.owner.isPackageObjectClass && s.owner.owner == tpe.typeSymbol
+
+    if (hasUnqualifiedName(qual.symbol))
+      mkAttributedIdent(sym)
     else {
-      val newQualifier = getQualifier()
-      def verifyType(tree: Tree) =
-        if (newQualifier.tpe == null) tree
-        else tree setType (tpe memberType sym)
+      val pkgQualifier            =
+        if (!isInPkgObject(sym)) qual else {
+          val obj = sym.owner.sourceModule
+          Select(qual, nme.PACKAGEkw) setSymbol obj setType singleType(tpe, obj)
+        }
+      val tree = Select(pkgQualifier, sym)
 
-      verifyType( Select(newQualifier, sym.name) setSymbol sym )
+      if (pkgQualifier.tpe == null) tree
+      else tree setType (tpe memberType sym)
     }
   }
 
