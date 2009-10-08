@@ -23,6 +23,8 @@ trait Patterns extends ast.TreeDSL {
   import Debug._
   import treeInfo.{ unbind, isVarPattern }
 
+  type PatternMatch = MatchMatrix#PatternMatch
+
   // Fresh patterns
   def emptyPatterns(i: Int): List[Pattern] = List.fill(i)(NoPattern)
   def emptyTrees(i: Int): List[Tree] = List.fill(i)(EmptyTree)
@@ -197,6 +199,20 @@ trait Patterns extends ast.TreeDSL {
       nonStarPatterns ::: List(elemPatterns.last rebindToType seqType)
     }
 
+    // optimization to avoid trying to match if length makes it impossible
+    override def precondition(pm: PatternMatch) = {
+      import pm.{ scrut, head }
+      val len = nonStarLength
+      val compareOp = head.tpe member nme.lengthCompare  // symbol for "lengthCompare" method
+      val op: TreeFunction2 =
+        if (hasStar) _ ANY_>= _
+        else _ MEMBER_== _
+
+      def cmpFunction(t1: Tree) = op((t1 DOT compareOp)(LIT(len)), ZERO)
+
+      Some(nullSafe(cmpFunction _, FALSE)(scrut.id))
+    }
+
     /** True if 'next' must be checked even if 'first' failed to match after passing its length test
       * (the conditional supplied by getPrecondition.) This is an optimization to avoid checking sequences
       * which cannot match due to a length incompatibility.
@@ -249,7 +265,7 @@ trait Patterns extends ast.TreeDSL {
   case class AlternativePattern(tree: Alternative) extends Pattern {
     private lazy val Alternative(subtrees) = tree
     private def alts = subtrees map Pattern.apply
-    // override def subpatterns(pats: PatternMatch) = subtrees map Pattern.apply
+    // override def subpatterns(pmatch: PatternMatch) = subtrees map Pattern.apply
     override def toString() = "Alts(%s)".format(alts mkString " | ")
   }
 
@@ -407,6 +423,10 @@ trait Patterns extends ast.TreeDSL {
     // returns either a simplification of this pattern or identity.
     def simplify(testVar: Symbol): Pattern = this
     def simplify(): Pattern = this simplify NoSymbol
+
+    // given this scrutinee, what if any condition must be satisfied before
+    // we even try to match?
+    def precondition(scrut: PatternMatch): Option[Tree] = None
 
     // 8.1.13
     // A pattern p is irrefutable for type T if any of the following applies:
