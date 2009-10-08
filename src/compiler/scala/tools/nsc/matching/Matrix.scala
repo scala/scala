@@ -8,8 +8,9 @@ package matching
 
 import transform.ExplicitOuter
 import util.Position
+import symtab.Flags
 
-trait Matrix extends PatternOptimizer {
+trait Matrix extends MatrixAdditions {
   self: ExplicitOuter with ParallelMatching =>
 
   import global.{ typer => _, _ }

@@ -19,7 +19,7 @@ import scala.util.NameTransformer.decode
  *  @author Burak Emir
  */
 trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
-  self: ExplicitOuter with ParallelMatching with PatternOptimizer =>
+  self: ExplicitOuter with ParallelMatching  =>
 
   import global.{ typer => _, _ }
   import analyzer.Typer

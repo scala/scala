@@ -8,14 +8,20 @@ package matching
 
 import transform.ExplicitOuter
 
-trait PatternOptimizer extends ast.TreeDSL
+/** Traits which are mixed into MatchMatrix, but separated out as
+ *  (somewhat) independent components to keep them on the sidelines.
+ */
+trait MatrixAdditions extends ast.TreeDSL
 {
   self: ExplicitOuter with ParallelMatching =>
 
   import global.{ typer => _, _ }
   import symtab.Flags
   import CODE._
+  import Debug._
 
+  /** The Squeezer, responsible for all the squeezing.
+   */
   private[matching] trait Squeezer {
     self: MatrixContext =>
 
@@ -78,6 +84,8 @@ trait PatternOptimizer extends ast.TreeDSL
     }
   }
 
+  /** The Optimizer, responsible for some of the optimizing.
+   */
   private[matching] trait MatchMatrixOptimizer {
     self: MatchMatrix =>
 
@@ -132,6 +140,100 @@ trait PatternOptimizer extends ast.TreeDSL
       }
 
       returning[Tree](resetTraverser traverse _)(lxtt transform tree)
+    }
+  }
+
+  /** The Exhauster.
+   */
+  private[matching] trait MatrixExhaustiveness {
+    self: MatchMatrix =>
+
+    import self.context._
+
+    /** Exhaustiveness checking requires looking for sealed classes
+     *  and if found, making sure all children are covered by a pattern.
+     */
+    class ExhaustivenessChecker(rep: Rep) {
+      val Rep(tvars, rows) = rep
+
+      import Flags.{ MUTABLE, ABSTRACT, SEALED, TRANS_FLAG }
+
+      private case class Combo(index: Int, sym: Symbol) {
+        // is this combination covered by the given pattern?
+        def isCovered(p: Pattern) = {
+          def cmpSymbols(t1: Type, t2: Type)  = t1.typeSymbol eq t2.typeSymbol
+          def coversSym = {
+            val tpe = decodedEqualsType(p.tpe)
+            lazy val lmoc = sym.linkedModuleOfClass
+            val symtpe =
+              if ((sym hasFlag Flags.MODULE) && (lmoc ne NoSymbol))
+                singleType(sym.tpe.prefix, lmoc)   // e.g. None, Nil
+              else sym.tpe
+
+            (tpe.typeSymbol == sym) ||
+            (symtpe <:< tpe) ||
+            (symtpe.parents exists (x => cmpSymbols(x, tpe))) || // e.g. Some[Int] <: Option[&b]
+            ((tpe.prefix memberType sym) <:< tpe)  // outer, see combinator.lexical.Scanner
+          }
+
+          cond(p.tree) {
+            case _: UnApply | _: ArrayValue => true
+            case x                          => p.isDefault || coversSym
+          }
+        }
+      }
+
+      /* True if the patterns in 'row' cover the given type symbol combination, and has no guard. */
+      private def rowCoversCombo(row: Row, combos: List[Combo]) =
+        row.guard.isEmpty && (combos forall (c => c isCovered row.pats(c.index)))
+
+      private def requiresExhaustive(s: Symbol) =
+         (s hasFlag MUTABLE) &&                 // indicates that have not yet checked exhaustivity
+        !(s hasFlag TRANS_FLAG) &&              // indicates @unchecked
+         (s.tpe.typeSymbol hasFlag SEALED) &&
+         { s resetFlag MUTABLE ; true }         // side effects MUTABLE flag
+
+      private def sealedSymsFor(s: Symbol): Set[Symbol] = {
+        def countSealed(child: Symbol) = {
+          // include base class only if non-abstract
+          def baseSet = if (child hasFlag ABSTRACT) Set() else Set(child)
+          sealedSymsFor(child) ++ baseSet
+        }
+        if (s hasFlag SEALED) s.children flatMap countSealed
+        else Set()
+      }
+      private lazy val inexhaustives: List[List[Combo]] = {
+        val collected =
+          for ((sym, i) <- tvars.zipWithIndex ; if requiresExhaustive(sym)) yield
+            i -> sealedSymsFor(sym.tpe.typeSymbol)
+
+        val folded =
+          collected.foldRight(List[List[Combo]]())((c, xs) => {
+            val (i, syms) = c match { case (i, set) => (i, set.toList) }
+            xs match {
+              case Nil  => syms map (s => List(Combo(i, s)))
+              case _    => for (s <- syms ; rest <- xs) yield Combo(i, s) :: rest
+            }
+          })
+
+        folded filterNot (combo => rows exists (r => rowCoversCombo(r, combo)))
+      }
+
+      private def mkPad(xs: List[Combo], i: Int): String = xs match {
+        case Nil                    => pad("*")
+        case Combo(j, sym) :: rest  => if (j == i) pad(sym.name.toString) else mkPad(rest, i)
+      }
+      private def mkMissingStr(open: List[Combo]) =
+        "missing combination %s\n" format tvars.indices.map(mkPad(open, _)).mkString
+
+      /** The only public method. */
+      def check = {
+        def errMsg = (inexhaustives map mkMissingStr).mkString
+        if (inexhaustives.nonEmpty)
+          cunit.warning(tvars.head.pos, "match is not exhaustive!\n" + errMsg)
+
+        rep
+      }
     }
   }
 }

@@ -22,7 +22,6 @@ trait ParallelMatching extends ast.TreeDSL
       with Matrix
       with Patterns
       with PatternBindings
-      with PatternOptimizer
 {
   self: ExplicitOuter =>
 
@@ -133,7 +132,7 @@ trait ParallelMatching extends ast.TreeDSL
   def toPats(xs: List[Tree]): List[Pattern] = xs map Pattern.apply
 
   /** The umbrella matrix class. **/
-  class MatchMatrix(val context: MatrixContext, data: MatrixInit) extends MatchMatrixOptimizer {
+  class MatchMatrix(val context: MatrixContext, data: MatrixInit) extends MatchMatrixOptimizer with MatrixExhaustiveness {
     import context._
 
     val MatrixInit(roots, cases, failTree)  = data
@@ -162,7 +161,7 @@ trait ParallelMatching extends ast.TreeDSL
       // shortcut
       if (bx < 0) Apply(ID(shortCuts(-bx-1)), Nil)
       // first time this bx is requested - might be bound elsewhere
-      else if (target.isNotReached) target.createLabelBody("body%"+bx, patternVars, patternValDefs)
+      else if (target.isNotReached) target.createLabelBody(bx, patternVars, patternValDefs)
       // call label "method" if possible
       else target.getLabelBody(idents, patternValDefs)
     }
@@ -748,31 +747,25 @@ trait ParallelMatching extends ast.TreeDSL
 
     /*** States, Rows, Etc. ***/
 
-    case class Row(pat: List[Pattern], subst: Bindings, guard: Guard, bx: Int) {
-      if (pat exists (p => !p.isDefault))
-        traceCategory("Row", "%s", pp(pat))
+    case class Row(pats: List[Pattern], subst: Bindings, guard: Guard, bx: Int) {
+      if (pats exists (p => !p.isDefault))
+        traceCategory("Row", "%s", pp(pats))
 
-      def insert(h: Pattern)              = copy(pat = h :: pat)
-      def insert(hs: List[Pattern])       = copy(pat = hs ::: pat)    // prepends supplied pattern
-      def replace(hs: List[Pattern])      = copy(pat = hs)            // substitutes for patterns
+      def insert(h: Pattern)              = copy(pats = h :: pats)
+      def insert(hs: List[Pattern])       = copy(pats = hs ::: pats)  // prepends supplied pattern
+      def replace(hs: List[Pattern])      = copy(pats = hs)           // substitutes for patterns
       def rebind(b: Bindings)             = copy(subst = b)           // substitutes for bindings
 
       def rebind2(vs: Iterable[Symbol], tvars: Symbol) =
         copy(subst = subst.add(vs, tvars))
 
       def insert2(hs: List[Pattern], vs: Iterable[Symbol], tvars: Symbol) =             // prepends and prepends
-        copy(pat = hs ::: pat, subst = subst.add(vs, tvars))
-
-      /** returns true if the patterns in this rows cover a type symbols "combination" and there is no guard
-       *  @param comb pairs of (column index, type symbol)
-       */
-      def covers(combos: List[Combo]) =
-        guard.isEmpty && (combos forall (c => c isCovered pat(c.index)))
+        copy(pats = hs ::: pats, subst = subst.add(vs, tvars))
 
       // returns this rows with alternatives expanded
       def expandAlternatives(classifyPat: (Pattern, Int) => Pattern): List[Row] = {
         // classify all the top level patterns - alternatives come back unaltered
-        val newPats: List[Pattern] = pat.zipWithIndex map tupled(classifyPat)
+        val newPats: List[Pattern] = pats.zipWithIndex map tupled(classifyPat)
         // expand alternatives if any are present
         (newPats indexWhere (_.isAlternative)) match {
           case -1     => List(replace(newPats))
@@ -782,7 +775,7 @@ trait ParallelMatching extends ast.TreeDSL
             extractBindings(alts.boundTree) map (x => replace(prefix ::: Pattern(x) :: suffix))
         }
       }
-      override def toString() = pp(bx -> (pat, subst))
+      override def toString() = pp(bx -> (pats, subst))
     }
 
     object ExpandedMatrix {
@@ -830,7 +823,8 @@ trait ParallelMatching extends ast.TreeDSL
         abort(msg.format(name, pp(labelParamTypes), pp(idents), pp(vdefs)))
       }
 
-      def createLabelBody(name: String, args: List[Symbol], vdefs: List[Tree]) = {
+      def createLabelBody(index: Int, args: List[Symbol], vdefs: List[Tree]) = {
+        val name = "body%" + index
         require(_labelSym == null)
         referenceCount += 1
 
@@ -866,31 +860,6 @@ trait ParallelMatching extends ast.TreeDSL
 
       override def toString() = pp("Final%d%s".format(bx, pp(freeVars)) -> body)
     }
-
-    case class Combo(index: Int, sym: Symbol) {
-      // is this combination covered by the given pattern?
-      def isCovered(p: Pattern) = {
-        def cmpSymbols(t1: Type, t2: Type)  = t1.typeSymbol eq t2.typeSymbol
-        def coversSym = {
-          val tpe = decodedEqualsType(p.tpe)
-          lazy val lmoc = sym.linkedModuleOfClass
-          val symtpe =
-            if ((sym hasFlag Flags.MODULE) && (lmoc ne NoSymbol))
-              singleType(sym.tpe.prefix, lmoc)   // e.g. None, Nil
-            else sym.tpe
-
-          (tpe.typeSymbol == sym) ||
-          (symtpe <:< tpe) ||
-          (symtpe.parents exists (x => cmpSymbols(x, tpe))) || // e.g. Some[Int] <: Option[&b]
-          ((tpe.prefix memberType sym) <:< tpe)  // outer, see combinator.lexical.Scanner
-        }
-
-        cond(p.tree) {
-          case _: UnApply | _: ArrayValue => true
-          case x                          => p.isDefault || coversSym
-        }
-      }
-    }
     case class Branch[T](action: T, succ: Rep, fail: Option[Rep])
     case class UnapplyCall(ua: Tree, vdefs: List[Tree]) {
       def matchCondition: Tree =
@@ -899,44 +868,32 @@ trait ParallelMatching extends ast.TreeDSL
     }
 
     case class Rep(val tvars: List[Symbol], val rows: List[Row]) {
-      import Flags._
+      lazy val Row(pats, subst, guard, index) = rows.head
+      lazy val guardedRest        = if (guard.isEmpty) NoRep else make(tvars, rows.tail)
+      lazy val (defaults, others) = pats span (_.isDefault)
 
       /** Converts this to a tree - recursively acquires subreps. */
       final def toTree(): Tree = typer typed this.applyRule.tree()
 
-      /** Exhaustiveness checking requires looking for sealed classes
-       *  and if found, making sure all children are covered by a pattern.
-       */
-      private def requiresExhaustive(s: Symbol) =
-         (s hasFlag MUTABLE) &&                 // indicates that have not yet checked exhaustivity
-        !(s hasFlag TRANS_FLAG) &&              // indicates @unchecked
-         (s.tpe.typeSymbol hasFlag SEALED) &&
-         { s resetFlag MUTABLE ; true }         // side effects MUTABLE flag
+      /** The VariableRule. */
+      private def variable() = {
+        val binding = (defaults map (_.boundVariables) zip tvars) .
+          foldLeft(subst)((b, pair) => b.add(pair._1, pair._2))
 
-      private def sealedSymsFor(s: Symbol): Set[Symbol] = {
-        def countSealed(child: Symbol) = {
-          // include base class only if non-abstract
-          def baseSet = if (child hasFlag ABSTRACT) Set() else Set(child)
-          sealedSymsFor(child) ++ baseSet
-        }
-        if (s hasFlag SEALED) s.children flatMap countSealed
-        else Set()
+        VariableRule(binding, guard, guardedRest, index)
       }
-      private lazy val inexhaustives: List[List[Combo]] = {
-        val collected =
-          for ((sym, i) <- tvars.zipWithIndex ; if requiresExhaustive(sym)) yield
-            i -> sealedSymsFor(sym.tpe.typeSymbol)
 
-        val folded =
-          collected.foldRight(List[List[Combo]]())((c, xs) => {
-            val (i, syms) = c match { case (i, set) => (i, set.toList) }
-            xs match {
-              case Nil  => syms map (s => List(Combo(i, s)))
-              case _    => for (s <- syms ; rest <- xs) yield Combo(i, s) :: rest
-            }
-          })
+      /** The MixtureRule. */
+      def mixture() = {
+        /** cut out the column containing the non-default pattern. */
+        val newIndex  = defaults.size
 
-        folded filterNot (combo => rows exists (_ covers combo))
+        val rpat      = others.head
+        val column    = rpat :: (rows.tail map (_ pats newIndex))
+        val restTemp  = dropIndex(tvars, newIndex)
+        val restRows  = rows map (r => r replace dropIndex(r.pats, newIndex))
+
+        MixtureRule(new Scrutinee(tvars(newIndex)), column, make(restTemp, restRows))
       }
 
       /** Applying the rule will result in one of:
@@ -945,47 +902,15 @@ trait ParallelMatching extends ast.TreeDSL
         *    MixtureRule - if one or more patterns are not default patterns
         *      ErrorRule - if there are no rows remaining
         */
-      final def applyRule(): RuleApplication = {
-        def dropIndex[T](xs: List[T], n: Int) = (xs take n) ::: (xs drop (n + 1))
-
-        lazy val Row(pmatch, subst, guard, index) = rows.head
-        lazy val guardedRest        = if (guard.isEmpty) NoRep else make(tvars, rows.tail)
-        lazy val (defaults, others) = pmatch span (_.isDefault)
-        lazy val ndIndex            = defaults.size   // index of non-default pattern in pmatch
-
+      final def applyRule(): RuleApplication =
         if (rows.isEmpty) ErrorRule()
-        else if (others.isEmpty) {
-          /** top-most rows contains only variables/wildcards */
-          val binding = (defaults map (_.boundVariables) zip tvars) .
-            foldLeft(subst)((b, pair) => b.add(pair._1, pair._2))
+        else if (others.isEmpty) variable()
+        else mixture()
 
-          VariableRule(binding, guard, guardedRest, index)
-        }
-        else {
-          /** cut out the column (px) containing the non-default pattern. */
-          val rpat      = others.head
-          val vs        = rpat.boundVariables
-          val column    = rpat :: (rows.tail map (_ pat ndIndex))
-          val restTemp  = dropIndex(tvars, ndIndex)
-          val restRows  = rows map (r => r replace dropIndex(r.pat, ndIndex))
+      def checkExhaustive = new ExhaustivenessChecker(this).check
 
-          MixtureRule(new Scrutinee(tvars(ndIndex)), column, make(restTemp, restRows))
-        }
-      }
-
-      def checkExhaustive: this.type = {
-        if (inexhaustives.nonEmpty) {
-          def mkPad(xs: List[Combo], i: Int): String = xs match {
-            case Nil                    => pad("*")
-            case Combo(j, sym) :: rest  => if (j == i) pad(sym.name.toString) else mkPad(rest, i)
-          }
-          def mkMissingStr(open: List[Combo]) =
-            "missing combination %s\n" format tvars.indices.map(mkPad(open, _)).mkString
-
-          cunit.warning(tvars.head.pos, "match is not exhaustive!\n" + (inexhaustives map mkMissingStr).mkString)
-        }
-        this
-      }
+      private def dropIndex[T](xs: List[T], n: Int) =
+        (xs take n) ::: (xs drop (n + 1))
 
       override def toString() =
         if (tvars.size == 0) "Rep(%d) = %s".format(rows.size, pp(rows))
