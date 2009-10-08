@@ -1,1 +1,0 @@
-/* scala.testing.Show does not exist for the dotnet target */

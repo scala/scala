@@ -1,1 +1,0 @@
-/* BytePickle.scala does not exist for the dotnet target */

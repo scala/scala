@@ -274,7 +274,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     </javac>
     <!-- NOTE: Potential problem with maximal command line length on Windows
          (32768 characters for XP, since executed with Java's "exec"). See
-         src/build/msil.xml for more details. -->
+         src/build/msil.xml in msil branch for more details. -->
     <scalacfork
       destdir="${build-locker.dir}/classes/library"
       compilerpathref="starr.classpath"
@@ -1560,24 +1560,6 @@ FORWARDED TARGETS FOR JVM 1.5 BUILD
 -->
 
 <!-- ===========================================================================
-FORWARDED TARGETS FOR MSIL BUILD
-============================================================================ -->
-
-  <target name="msil" depends="pack.done">
-    <ant antfile="${src.dir}/build/msil.xml" target="msil-pack.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="msiltest"/>
-
-  <target name="msildist" depends="pack.done">
-    <ant antfile="${src.dir}/build/msil.xml" target="msil-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="msilclean">
-    <ant antfile="${src.dir}/build/msil.xml" target="msil-all.clean" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-<!-- ===========================================================================
 FORWARDED TARGETS FOR PACKAGING
 ============================================================================ -->
   
@@ -1585,14 +1567,9 @@ FORWARDED TARGETS FOR PACKAGING
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
   
-  <target name="msildistpack" depends="pack.done">
-    <ant antfile="${src.dir}/build/msil.xml" target="msil-dist.done" inheritall="yes" inheritrefs="yes"/>
-    <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
   <!-- Used by the scala-installer script -->
-  <target name="alldistpack" depends="distpack, msildistpack"/>
-  <target name="allallclean" depends="all.clean, msilclean"/>
+  <target name="alldistpack" depends="distpack"/>
+  <target name="allallclean" depends="all.clean"/>
 
 <!-- ===========================================================================
 FORWARDED TARGETS FOR NIGHTLY BUILDS
@@ -1608,11 +1585,6 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
   <target name="nightly-nopt" depends="all.done">
     <!-- cannot antcall all.done, the properties defined in there (dist.dir) are not returned. need depends. -->
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="msilnightly" depends="pack.done">
-    <ant antfile="${src.dir}/build/msil.xml" target="msil-all.done" inheritall="yes" inheritrefs="yes"/>
-    <ant antfile="${src.dir}/build/pack.xml" target="msilpack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
 
 <!-- ===========================================================================

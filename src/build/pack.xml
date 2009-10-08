@@ -261,68 +261,12 @@ JAVA FOUR DISTRIBUTION PACKAGING
   <target name="fourpack-archives.done" depends="fourpack-archives.zip"/>
 
 <!-- ===========================================================================
-MSIL DISTRIBUTION PACKAGING
-============================================================================ -->
-
-  <!-- MSIL Archive -->
-
-  <target name="msilpack-archives.start">
-    <mkdir dir="${dists.dir}/archives"/>
-  </target>
-
-  <target name="msilpack-archives.tar" depends="msilpack-archives.start">
-    <tar destfile="${dists.dir}/archives/scala-${version.number}-msil.tgz"
-         compression="gzip" longfile="gnu">
-      <tarfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-${version.number}-msil"
-        includes="bin/**" mode="755"/>
-      <!-- Inlcude only dll's. Using scala-msil depends on having a scala distribution -->
-      <tarfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-${version.number}-msil"
-        includes="lib/*.dll"/>
-    </tar>
-    <checksum file="${dists.dir}/archives/scala-${version.number}-msil.tgz" fileext=".md5"/>
-  </target>
-
-  <target name="msilpack-archives.zip" depends="msilpack-archives.tar">
-    <zip destfile="${dists.dir}/archives/scala-${version.number}-msil.zip">
-      <zipfileset dir="${dists.dir}/scala-msil-${version.number}" prefix="scala-${version.number}-msil"
-        includes="bin/**,lib/*.dll"/>
-    </zip>
-    <checksum file="${dists.dir}/archives/scala-${version.number}-msil.zip" fileext=".md5"/>
-  </target>
-  
-  <target name="msilpack-archives.done" depends="msilpack-archives.zip"/>
-
-  <!-- MSIL Sbaz package -->
-
-  <target name="msilpack-sbaz.start">
-    <mkdir dir="${dists.dir}/sbaz"/>
-  </target>
-
-  <target name="msilpack-sbaz.msil" depends="msilpack-sbaz.start">
-   <sbaz
-      file="${dists.dir}/sbaz/scala-msil-${version.number}.sbp"
-      adfile="${dists.dir}/sbaz/scala-msil-${version.number}.advert"
-      name="scala-msil"
-      version="${version.number}"
-      desc="The Scala MSIL package contains everything needed to use Scala on .NET."
-      depends="scala-library,scala-devel"
-      link="${sbaz.universe}/scala-msil-${version.number}.sbp">
-      <binset dir="${dists.dir}/scala-msil-${version.number}/bin" includes="scala*-net*"/>
-      <libset dir="${dists.dir}/scala-msil-${version.number}/lib" includes="*.dll"/>
-    </sbaz>
-  </target>
-
-  <target name="msilpack-sbaz.done" depends="msilpack-sbaz.msil"/>
-
-<!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->
 
   <target name="pack-all.done" depends="pack-archives.done, pack-sbaz.done, pack-maven.done"/>
 
   <target name="fourpack-all.done" depends="fourpack-archives.done"/>
-
-  <target name="msilpack-all.done" depends="msilpack-archives.done, msilpack-sbaz.done"/>
 
 <!-- ===========================================================================
 MISCELLANEOUS
