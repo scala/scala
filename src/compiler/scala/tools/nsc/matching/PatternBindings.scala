@@ -31,14 +31,18 @@ trait PatternBindings extends ast.TreeDSL
 
   // If the given pattern contains alternatives, return it as a list of patterns.
   // Makes typed copies of any bindings found so all alternatives point to final state.
-  def extractBindings(p: Tree, prevBindings: Tree => Tree = identity[Tree] _): List[Tree] = {
+  def extractBindings(p: Pattern): List[Pattern] =
+    toPats(_extractBindings(p.boundTree, identity))
+
+  private def _extractBindings(p: Tree, prevBindings: Tree => Tree): List[Tree] = {
     def newPrev(b: Bind) = (x: Tree) => treeCopy.Bind(b, b.name, x) setType x.tpe
 
     p match {
-      case b @ Bind(_, body)  => extractBindings(body, newPrev(b))
+      case b @ Bind(_, body)  => _extractBindings(body, newPrev(b))
       case Alternative(ps)    => ps map prevBindings
     }
   }
+
   def makeBind(vs: List[Symbol], pat: Tree): Tree = vs match {
     case Nil      => pat
     case x :: xs  => Bind(x, makeBind(xs, pat)) setType pat.tpe
