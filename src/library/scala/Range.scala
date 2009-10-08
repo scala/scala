@@ -11,7 +11,7 @@
 package scala
 
 import annotation.experimental
-import collection.immutable.Vector
+
 import collection.VectorView
 import util.control.Exception.catching
 import util.Hashable
@@ -39,7 +39,7 @@ import util.Hashable
 abstract class GenericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean = false)
   (implicit num: Integral[T])
-extends VectorView[T, Vector[T]] with RangeToString[T] with Hashable {
+extends VectorView[T, collection.immutable.Vector[T]] with RangeToString[T] with Hashable {
   import num._
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
@@ -50,7 +50,7 @@ extends VectorView[T, Vector[T]] with RangeToString[T] with Hashable {
 
   // By adjusting end based on isInclusive, we can treat all ranges as exclusive.
   private lazy val trueEnd: T = if (isInclusive) end + step else end
-  protected def underlying = Vector.empty[T]
+  protected def underlying = collection.immutable.Vector.empty[T]
 
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
@@ -129,7 +129,7 @@ extends VectorView[T, Vector[T]] with RangeToString[T] with Hashable {
   }
 }
 
-private[scala] trait RangeToString[T] extends VectorView[T, Vector[T]] {
+private[scala] trait RangeToString[T] extends VectorView[T, collection.immutable.Vector[T]] {
   // The default toString() tries to print every element and will exhaust memory
   // if the Range is unduly large.  This interacts poorly with the REPL.
   override def toString() = {
@@ -179,11 +179,11 @@ object GenericRange
  *  @since   2.5
  */
 class Range(val start: Int, val end: Int, val step: Int)
-extends VectorView[Int, Vector[Int]] with RangeToString[Int]
+extends VectorView[Int, collection.immutable.Vector[Int]] with RangeToString[Int]
 {
   require(step != 0)
 
-  protected def underlying = Vector.empty[Int]
+  protected def underlying = collection.immutable.Vector.empty[Int]
 
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.

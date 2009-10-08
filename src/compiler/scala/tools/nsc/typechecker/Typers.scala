@@ -300,9 +300,11 @@ trait Typers { self: Analyzer =>
     }
 
     /** Check that `tpt' refers to a non-refinement class type */
-    def checkClassType(tpt: Tree, existentialOK: Boolean) {
+    def checkClassType(tpt: Tree, existentialOK: Boolean, stablePrefix: Boolean) {
       def check(tpe: Type): Unit = tpe.normalize match {
-        case TypeRef(_, sym, _) if sym.isClass && !sym.isRefinementClass => ;
+        case TypeRef(pre, sym, _) if sym.isClass && !sym.isRefinementClass =>
+          if (stablePrefix && phase.id <= currentRun.typerPhase.id && !pre.isStable)
+            error(tpt.pos, "type "+pre+" is not a stable prefix")
         case ErrorType => ;
         case PolyType(_, restpe) => check(restpe)
         case ExistentialType(_, restpe) if existentialOK => check(restpe)
@@ -988,7 +990,7 @@ trait Typers { self: Analyzer =>
     }
 
     def adaptToMember(qual: Tree, searchTemplate: Type): Tree = {
-      val qtpe = qual.tpe.widen
+      var qtpe = qual.tpe.widen
       if (qual.isTerm &&
           ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
           phase.id <= currentRun.typerPhase.id && !qtpe.isError &&
@@ -998,6 +1000,10 @@ trait Typers { self: Analyzer =>
                                       // a value that needs to be coerced, so we check whether the implicit value has an `apply` method
                                      // (if we allow this, we get divergence, e.g., starting at `conforms` during ant quick.bin)
                                      // note: implicit arguments are still inferred (this kind of "chaining" is allowed)
+        if (qtpe.normalize.isInstanceOf[ExistentialType]) {
+          qtpe = qtpe.normalize.skolemizeExistential(context.owner, qual)
+          qual setType qtpe
+        }
         val coercion = inferView(qual, qtpe, searchTemplate, true)
         if (coercion != EmptyTree)
           typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
@@ -1158,7 +1164,7 @@ trait Typers { self: Analyzer =>
       def validateParentClass(parent: Tree, superclazz: Symbol) {
         if (!parent.tpe.isError) {
           val psym = parent.tpe.typeSymbol.initialize
-          checkClassType(parent, false)
+          checkClassType(parent, false, true)
           if (psym != superclazz) {
             if (psym.isTrait) {
               val ps = psym.info.parents
@@ -1283,6 +1289,11 @@ trait Typers { self: Analyzer =>
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
       val impl2 = addSyntheticMethods(impl1, clazz, context)
 
+      if (mdef.name == nme.PACKAGEkw)
+        for (m <- mdef.symbol.info.members)
+          if (m.isClass && m.hasFlag(CASE))
+            context.error(if (m.pos.isDefined) m.pos else mdef.pos,
+                          "implementation restriction: "+mdef.symbol+" cannot contain case "+m)
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
     }
 
@@ -2856,7 +2867,7 @@ trait Typers { self: Analyzer =>
 
       def typedNew(tpt: Tree) = {
         var tpt1 = typedTypeConstructor(tpt)
-        checkClassType(tpt1, false)
+        checkClassType(tpt1, false, true)
         if (tpt1.hasSymbol && !tpt1.symbol.typeParams.isEmpty) {
           context.undetparams = cloneSymbols(tpt1.symbol.typeParams)
           tpt1 = TypeTree()
@@ -2953,7 +2964,7 @@ trait Typers { self: Analyzer =>
             val targs = args map (_.tpe)
             checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
             if (fun.symbol == Predef_classOf) {
-              checkClassType(args.head, true)
+              checkClassType(args.head, true, false)
               atPos(tree.pos) { gen.mkClassOf(targs.head) }
             } else {
               if (phase.id <= currentRun.typerPhase.id &&

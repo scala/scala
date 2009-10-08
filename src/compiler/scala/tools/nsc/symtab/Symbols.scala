@@ -1479,8 +1479,8 @@ trait Symbols {
     override def toString(): String =
       if (isValueParameter && owner.isSetter)
         "parameter of setter "+owner.nameString
-      else if (isPackageObjectClass)
-        "package object "+nameString
+      else if (isPackageObject || isPackageObjectClass)
+        "package object "+owner.nameString
       else
         compose(List(kindString,
                      if (isClassConstructor) owner.simpleName.decode+idString else nameString))

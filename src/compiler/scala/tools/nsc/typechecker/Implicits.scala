@@ -174,6 +174,15 @@ self: Analyzer =>
     }
   }
 
+  /** An extractor for unary function types arg => res
+   */
+  object Function1 {
+    def unapply(tp: Type) = tp match {
+      case TypeRef(_, sym, List(arg, res)) if (sym == FunctionClass(1)) => Some(arg, res)
+      case _ => None
+    }
+  }
+
   /** A class that sets up an implicit search. For more info, see comments for `inferImplicit`.
    *  @param tree             The tree for which the implicit needs to be inserted.
    *  @param pt               The original expected type of the implicit.
@@ -344,32 +353,33 @@ self: Analyzer =>
        */
       val wildPt = approximate(pt)
 
-      /** Does type `tp' match wildPt?
-       *  This is the case if either `wildPt' is a HasMethodMatching type
-       *  and `tp' has a method matching wildPt, or otherwise if
-       *  `tp' stripped of universal quantifiers is compatible with `wildPt'.
+      /** Does type `tp' match expected type `pt'
+       *  This is the case if either `pt' is a unary function type with a
+       *  HasMethodMatching type as result, and `tp' is a unary function
+       *  or method type whose result type has a method whose name and type
+       *  correspond to the HasMethodMatching type,
+       *  or otherwise if `tp' is compatible with `pt'.
        */
-      def matchesWildPt(tp: Type) = wildPt match {
-        case HasMethodMatching(name, argtpes, restpe) =>
-          (tp.member(name) filter (m => isApplicableSafe(List(), m.tpe, argtpes, restpe))) != NoSymbol
-        case _ =>
-          isCompatible(depoly(tp), wildPt)
-      }
+      def matchesPt(tp: Type, pt: Type, undet: List[Symbol]) =
+        isCompatible(tp, pt) || {
+          pt match {
+            case Function1(arg, HasMethodMatching(name, argtpes, restpe)) =>
+              normalize(tp) match {
+                case Function1(arg1, res1) =>
+                  (arg <:< arg1) &&
+                  (res1.member(name) filter (m => isApplicableSafe(undet, m.tpe, argtpes, restpe))) != NoSymbol
+                case _ =>
+                  false
+              }
+            case _ =>
+              false
+          }
+        }
 
-      /** Does type `tp' match prototype `pt'?
-       *  This is the case if either `pt' is a HasMethodMatching type
-       *  and `tp' has a member matching `pt', or otherwise if
-       *  `tp' is compatible with `pt'.
-       */
-      def matchesPt(tp: Type, pt: Type) = pt match {
-        case HasMethodMatching(name, argtpes, restpe) =>
-          (tp.member(name) filter (m => isApplicableSafe(undetParams, m.tpe, argtpes, restpe))) != NoSymbol
-        case _ =>
-          isCompatible(tp, pt)
-      }
-
-      if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+depoly(info.tpe)+"/"+undetParams+"/"+isPlausiblyCompatible(info.tpe, wildPt)+"/"+matchesWildPt(info.tpe))
-      if (isPlausiblyCompatible(info.tpe, wildPt) && matchesWildPt(info.tpe) && isStable(info.pre)) {
+      if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+depoly(info.tpe)+"/"+undetParams+"/"+isPlausiblyCompatible(info.tpe, wildPt)+"/"+matchesPt(depoly(info.tpe), wildPt, List()))
+      if (isPlausiblyCompatible(info.tpe, wildPt) &&
+          matchesPt(depoly(info.tpe), wildPt, List()) &&
+          isStable(info.pre)) {
 
         val itree = atPos(tree.pos.focus) {
           if (info.pre == NoPrefix) Ident(info.name)
@@ -408,7 +418,7 @@ self: Analyzer =>
           if (itree2.tpe.isError) SearchFailure
           else if (hasMatchingSymbol(itree1)) {
             val tvars = undetParams map freshVar
-            if (matchesPt(itree2.tpe, pt.instantiateTypeParams(undetParams, tvars))) {
+            if (matchesPt(itree2.tpe, pt.instantiateTypeParams(undetParams, tvars), undetParams)) {
               if (traceImplicits) println("tvars = "+tvars+"/"+(tvars map (_.constr)))
               val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt),
                                       false, lubDepth(List(itree2.tpe, pt)))
@@ -422,7 +432,7 @@ self: Analyzer =>
               // println("RESULT = "+itree+"///"+itree1+"///"+itree2)//DEBUG
               result
             } else {
-              if (traceImplicits) println("incompatible???")
+              if (traceImplicits) println("incompatible: "+itree2.tpe+" does not match "+pt.instantiateTypeParams(undetParams, tvars))
               SearchFailure
             }
           } else if (settings.XlogImplicits.value)

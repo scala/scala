@@ -32,7 +32,9 @@ class A {
     }
   }
 
-  class Impl2 extends Impl(1) with Itf#Itf2 {
+  val impl = new Impl(0)
+
+  class Impl2 extends Impl(1) with impl.Itf2 {
     def method2 = {
       println(abc)
     }
