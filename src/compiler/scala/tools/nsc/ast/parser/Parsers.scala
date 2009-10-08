@@ -1889,6 +1889,7 @@ self =>
         } else {
           t = id
         }
+        t setPos t.pos.makeTransparent
       }
       def loop(): Tree =
         if (in.token == USCORE) {
@@ -1904,6 +1905,7 @@ self =>
             t = atPos(start, if (name == nme.ERROR) in.offset else nameOffset) {
               Select(t, name)
             }
+            t setPos t.pos.makeTransparent
             in.nextToken()
             loop()
           } else {
