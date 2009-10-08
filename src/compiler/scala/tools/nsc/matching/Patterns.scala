@@ -204,7 +204,7 @@ trait Patterns extends ast.TreeDSL {
       import pm.{ scrut, head }
       val len = nonStarLength
       val compareOp = head.tpe member nme.lengthCompare  // symbol for "lengthCompare" method
-      val op: TreeFunction2 =
+      val op: (Tree, Tree) => Tree =
         if (hasStar) _ ANY_>= _
         else _ MEMBER_== _
 

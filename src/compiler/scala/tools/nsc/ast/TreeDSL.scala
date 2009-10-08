@@ -20,13 +20,8 @@ trait TreeDSL {
   import gen.{ scalaDot }
 
   object CODE {
-    // clarity aliases
-    type TreeFunction1 = Tree => Tree
-    type TreeFunction2 = (Tree, Tree) => Tree
-    type BooleanTreeFunction2 = (Tree, Tree) => Boolean
-
     // Add a null check to a Tree => Tree function
-    def nullSafe[T](f: TreeFunction1, ifNull: Tree): TreeFunction1 =
+    def nullSafe[T](f: Tree => Tree, ifNull: Tree): Tree => Tree =
       tree => IF (tree MEMBER_== NULL) THEN ifNull ELSE f(tree)
 
     // XXX these two are in scala.PartialFunction now, just have to

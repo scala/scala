@@ -73,6 +73,14 @@ trait ParallelMatching extends ast.TreeDSL
       case x                    =>  x.toString + " (" + x.getClass + ")"
     }
 
+    // Formatting for some error messages
+    private val NPAD = 15
+    def pad(s: String): String = "%%%ds" format (NPAD-1) format s
+    def pad(s: Any): String = pad(s match {
+      case x: Tree    => treeToString(x)
+      case x          => x.toString
+    })
+
     // pretty print for debugging
     def pp(x: Any): String = pp(x, false)
     def pp(x: Any, newlines: Boolean): String = {
@@ -338,10 +346,8 @@ trait ParallelMatching extends ast.TreeDSL
         def guardTest = IF (guard.duplicate.tree) THEN body ELSE guardedRest.toTree
         implicit val ctx = context
 
-        typer typed(
-          if (guard.isEmpty) body
-          else squeezedBlock(subst.infoForAll.patternValDefs, guardTest)
-        )
+        if (guard.isEmpty) body
+        else squeezedBlock(subst.infoForAll.patternValDefs, guardTest)
       }
     }
 
@@ -477,7 +483,7 @@ trait ParallelMatching extends ast.TreeDSL
               for ((vtpe, i) <- ts.zipWithIndex) yield {
                 val vchild  = mkVar(vtpe)
                 val accSym  = productProj(uresGet, i+1)
-                val rhs     = typer typed fn(ID(uresGet), accSym)
+                val rhs     = fn(ID(uresGet), accSym)
 
                 (typedValDef(vchild, rhs), vchild)
               })
@@ -487,15 +493,13 @@ trait ParallelMatching extends ast.TreeDSL
       } /* def getTransition(...) */
 
       final def tree() = {
-        val Branch(UnapplyCall(uacall, vdefs), srep, frep) = this.getTransition
+        val Branch(uacall @ UnapplyCall(ua, vdefs), srep, frep) = this.getTransition
+        val cond = uacall.matchCondition
         val succ = srep.toTree
         val fail = frep map (_.toTree) getOrElse (failTree)
-        val cond =
-          if (uacall.symbol.tpe.isBoolean) ID(uacall.symbol)
-          else uacall.symbol IS_DEFINED
 
-        typer typed squeezedBlock(
-          List(handleOuter(uacall)),
+        squeezedBlock(
+          List(handleOuter(ua)),
           IF (cond) THEN squeezedBlock(vdefs, succ) ELSE fail
         )
       }
@@ -539,22 +543,14 @@ trait ParallelMatching extends ast.TreeDSL
           emptyPatterns(pivot.elemPatterns.length + 1)
       }
 
-      def makeSuccRep(vs: List[Symbol], tail: Symbol, nrows: List[Row]) = {
-        val ssym = if (pivot.hasStar) List(scrut.sym) else Nil
-
-        make(List(vs, List(tail), ssym, rest.tvars).flatten, nrows)
-      }
-
-      case class TransitionContext(f: TreeFunction2)
-
       // context (to be used in IF), success and failure Rep
-      def getTransition(): Branch[TransitionContext] = {
+      final def tree(): Tree = {
         assert(scrut.tpe <:< head.tpe, "fatal: %s is not <:< %s".format(scrut, head.tpe))
 
         val vs                  = pivot.nonStarPatterns map (x => newVar(x.tree.pos, scrut.elemType))
         lazy val tail           = scrut.newVarOfSeqType
         lazy val lastBinding    = typedValDef(tail, scrut.id DROP vs.size)
-        def elemAt(i: Int)      = typer typed ((scrut.id DOT (scrut.tpe member nme.apply))(LIT(i)))
+        def elemAt(i: Int)      = (scrut.id DOT (scrut.tpe member nme.apply))(LIT(i))
 
         val bindings =
           (vs.zipWithIndex map tupled((v, i) => typedValDef(v, elemAt(i)))) ::: List(lastBinding)
@@ -566,19 +562,12 @@ trait ParallelMatching extends ast.TreeDSL
           }
         )
 
-        val succ = makeSuccRep(vs, tail, nrows flatMap (x => x))
-        val fail = mkFail(frows flatMap (x => x))
-        def transition = (thenp: Tree, elsep: Tree) =>
-          IF (getPrecondition) THEN squeezedBlock(bindings, thenp) ELSE elsep
+        val symList = if (pivot.hasStar) List(scrut.sym) else Nil
+        val cond = (pivot precondition pmatch).get
+        val succ = make(List(vs, List(tail), symList, rest.tvars).flatten, nrows.flatten).toTree
+        val fail = make(scrut.sym :: rest.tvars, frows.flatten).toTree
 
-        Branch(TransitionContext(transition), succ, fail)
-      }
-
-      private def getPrecondition = typer typed (pivot precondition pmatch get)
-
-      final def tree() = {
-        val Branch(TransitionContext(transition), succ, Some(fail)) = this.getTransition
-        transition(succ.toTree, fail.toTree)
+        IF (cond) THEN squeezedBlock(bindings, succ) ELSE fail
       }
     }
 
@@ -603,19 +592,17 @@ trait ParallelMatching extends ast.TreeDSL
 
         // todo: optimize if no guard, and no further tests
         val fail    = mkFail(List.map2(rest.rows.tail, pmatch.tail)(_ insert _))
-        val action  = typer typed (scrut.id MEMBER_== value)
+        val action  = scrut.id MEMBER_== value
 
         (Branch(action, mkNewRep(Nil, rest.tvars, succ), fail), label)
       }
 
       final def tree() = {
         val (Branch(cond, srep, Some(frep)), failLabel) = this.getTransition
-        val fail  = typer typed frep.toTree
+        val fail  = frep.toTree
         failLabel setInfo MethodType(Nil, fail.tpe)
 
-        typer typed(
-          IF (handleOuter(cond)) THEN srep.toTree ELSE LabelDef(failLabel, Nil, fail)
-        )
+        IF (handleOuter(cond)) THEN srep.toTree ELSE LabelDef(failLabel, Nil, fail)
       }
       override def toString() = "MixEquals(%s == %s)".format(scrut, head)
     }
@@ -752,10 +739,10 @@ trait ParallelMatching extends ast.TreeDSL
 
         val vdefs       = needCast ::: (
           for ((tmp, accessor) <- caseTemps zip cfa) yield
-            typedValDef(tmp, typer typed fn(casted.id, accessor))
+            typedValDef(tmp, fn(casted.id, accessor))
         )
 
-        typer typed (IF (cond) THEN squeezedBlock(vdefs, succ) ELSE fail)
+        IF (cond) THEN squeezedBlock(vdefs, succ) ELSE fail
       }
     }
 
@@ -785,7 +772,7 @@ trait ParallelMatching extends ast.TreeDSL
       // returns this rows with alternatives expanded
       def expandAlternatives(classifyPat: (Pattern, Int) => Pattern): List[Row] = {
         // classify all the top level patterns - alternatives come back unaltered
-        val newPats: List[Pattern] = List.map2(pat, pat.indices.toList)(classifyPat)
+        val newPats: List[Pattern] = pat.zipWithIndex map tupled(classifyPat)
         // expand alternatives if any are present
         (newPats indexWhere (_.isAlternative)) match {
           case -1     => List(replace(newPats))
@@ -905,37 +892,51 @@ trait ParallelMatching extends ast.TreeDSL
       }
     }
     case class Branch[T](action: T, succ: Rep, fail: Option[Rep])
-    case class UnapplyCall(ua: Tree, args: List[Tree])
+    case class UnapplyCall(ua: Tree, vdefs: List[Tree]) {
+      def matchCondition: Tree =
+        if (ua.symbol.tpe.isBoolean) ID(ua.symbol)
+        else ua.symbol IS_DEFINED
+    }
 
     case class Rep(val tvars: List[Symbol], val rows: List[Row]) {
       import Flags._
 
       /** Converts this to a tree - recursively acquires subreps. */
-      final def toTree(): Tree = this.applyRule.tree()
+      final def toTree(): Tree = typer typed this.applyRule.tree()
 
-      private def toUse(s: Symbol) =
+      /** Exhaustiveness checking requires looking for sealed classes
+       *  and if found, making sure all children are covered by a pattern.
+       */
+      private def requiresExhaustive(s: Symbol) =
          (s hasFlag MUTABLE) &&                 // indicates that have not yet checked exhaustivity
         !(s hasFlag TRANS_FLAG) &&              // indicates @unchecked
-         (s.tpe.typeSymbol hasFlag SEALED)
+         (s.tpe.typeSymbol hasFlag SEALED) &&
+         { s resetFlag MUTABLE ; true }         // side effects MUTABLE flag
 
-      // the superclass is taken if it is not abstract
-      private def countSuper(s: Symbol): Set[Symbol]  = if (s hasFlag ABSTRACT) emptySymbolSet else Set(s)
-      private def countSymbol(s: Symbol): Set[Symbol] = candidates(s) ++ countSuper(s)
-      private def candidates(s: Symbol): Set[Symbol]  =
-        if (s hasFlag SEALED) s.children flatMap countSymbol
-        else emptySymbolSet
-
-      private def setsToCombine: List[(Int, Set[Symbol])] =
-        for ((sym, i) <- tvars.zipWithIndex ; if toUse(sym)) yield {
-          sym resetFlag MUTABLE
-          (i, candidates(sym.tpe.typeSymbol))
+      private def sealedSymsFor(s: Symbol): Set[Symbol] = {
+        def countSealed(child: Symbol) = {
+          // include base class only if non-abstract
+          def baseSet = if (child hasFlag ABSTRACT) Set() else Set(child)
+          sealedSymsFor(child) ++ baseSet
         }
+        if (s hasFlag SEALED) s.children flatMap countSealed
+        else Set()
+      }
+      private lazy val inexhaustives: List[List[Combo]] = {
+        val collected =
+          for ((sym, i) <- tvars.zipWithIndex ; if requiresExhaustive(sym)) yield
+            i -> sealedSymsFor(sym.tpe.typeSymbol)
 
-      // computes cartesian product, keeps indices available
-      private def combine(colcom: List[(Int, Set[Symbol])]): List[List[Combo]] = colcom match {
-        case Nil              => Nil
-        case (i, syms) :: Nil => syms.toList map (s => List(Combo(i, s)))
-        case (i, syms) :: cs  => for (s <- syms.toList; rest <- combine(cs)) yield Combo(i, s) :: rest
+        val folded =
+          collected.foldRight(List[List[Combo]]())((c, xs) => {
+            val (i, syms) = c match { case (i, set) => (i, set.toList) }
+            xs match {
+              case Nil  => syms map (s => List(Combo(i, s)))
+              case _    => for (s <- syms ; rest <- xs) yield Combo(i, s) :: rest
+            }
+          })
+
+        folded filterNot (combo => rows exists (_ covers combo))
       }
 
       /** Applying the rule will result in one of:
@@ -973,34 +974,22 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       def checkExhaustive: this.type = {
-        val allcomb = combine(setsToCombine)
-        if (allcomb forall (combo => rows exists (_ covers combo)))
-          return this
+        if (inexhaustives.nonEmpty) {
+          def mkPad(xs: List[Combo], i: Int): String = xs match {
+            case Nil                    => pad("*")
+            case Combo(j, sym) :: rest  => if (j == i) pad(sym.name.toString) else mkPad(rest, i)
+          }
+          def mkMissingStr(open: List[Combo]) =
+            "missing combination %s\n" format tvars.indices.map(mkPad(open, _)).mkString
 
-        // if we reach here, patterns were not exhaustive
-        def mkPad(xs: List[Combo], i: Int): String = xs match {
-          case Nil                    => pad("*")
-          case Combo(j, sym) :: rest  => if (j == i) pad(sym.name.toString) else mkPad(rest, i)
+          cunit.warning(tvars.head.pos, "match is not exhaustive!\n" + (inexhaustives map mkMissingStr).mkString)
         }
-        def mkMissingStr(open: List[Combo]) =
-          "missing combination " + tvars.indices.map(mkPad(open, _)).mkString + "\n"
-
-        val missingCombos = allcomb filter (open => rows.forall(!_.covers(open))) map mkMissingStr
-        cunit.warning(tvars.head.pos, "match is not exhaustive!\n" + missingCombos.mkString)
         this
       }
 
-      override def toString() = {
+      override def toString() =
         if (tvars.size == 0) "Rep(%d) = %s".format(rows.size, pp(rows))
         else "Rep(%dx%d)\n  %s\n  %s".format(tvars.size, rows.size, pp(tvars), pp(rows))
-      }
-
-      private def pad(s: Any): String = pad(s match {
-        case x: Tree    => treeToString(x)
-        case x          => x.toString
-      })
-      private val NPAD = 15
-      private def pad(s: String): String = "%%%ds" format (NPAD-1) format s
     }
 
     val NoRep = Rep(Nil, Nil)
@@ -1054,7 +1043,7 @@ trait ParallelMatching extends ast.TreeDSL
     }
 
     /** adds a test comparing the dynamic outer to the static outer */
-    final def addOuterCondition(cond: Tree, tpe2test: Type, scrut: Tree, handleOuter: TreeFunction1) = {
+    final def addOuterCondition(cond: Tree, tpe2test: Type, scrut: Tree, handleOuter: Tree => Tree) = {
       val theRef = handleOuter(tpe2test match {
         case TypeRef(NoPrefix, _, _)          => abort("assertion failed: NoPrefix")
         case TypeRef(ThisType(clazz), _, _)   => THIS(clazz)

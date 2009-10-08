@@ -82,7 +82,7 @@ trait Matrix extends PatternOptimizer {
   )
 
   case class MatrixContext(
-    handleOuter: TreeFunction1,   // Tree => Tree function
+    handleOuter: Tree => Tree,    // for outer pointer
     typer: Typer,                 // a local typer
     owner: Symbol,                // the current owner
     matchResultType: Type)        // the expected result type of the whole match
