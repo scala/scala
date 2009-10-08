@@ -7,7 +7,9 @@
 package scala.tools.nsc
 
 case class FatalError(msg: String) extends Exception(msg)
+
 class MissingRequirementError(val req: String) extends FatalError(req + " not found.")
+
 object MissingRequirementError {
   def unapply(x: Throwable) = x match {
     case x: MissingRequirementError => Some(x.req)

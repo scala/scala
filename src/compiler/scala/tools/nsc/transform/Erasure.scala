@@ -901,21 +901,23 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             treeCopy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
           case TypeDef(_, _, _, _) =>
             EmptyTree
-          case TypeApply(fun, args @ List(arg)) // !!! todo: simplify by having GenericArray also extract trees
+          case Apply(instanceOf @ TypeApply(fun @ Select(qual, name), args @ List(arg)), List()) // !!! todo: simplify by having GenericArray also extract trees
           if ((fun.symbol == Any_isInstanceOf || fun.symbol == Object_isInstanceOf) &&
               unboundedGenericArrayLevel(arg.tpe) > 0) =>
             val level = unboundedGenericArrayLevel(arg.tpe)
             def isArrayTest(arg: Tree) =
               gen.mkRuntimeCall("isArray", List(arg, Literal(Constant(level))))
             typedPos(tree.pos) {
-              if (level == 1) isArrayTest(fun)
+              if (level == 1) isArrayTest(qual)
               else
-                gen.evalOnce(fun, currentOwner, unit) { fun1 =>
+                gen.evalOnce(qual, currentOwner, unit) { qual1 =>
                   gen.mkAnd(
-                    treeCopy.TypeApply(tree, fun1(), args),
-                    isArrayTest(fun1()))
+                    Apply(TypeApply(Select(qual1(), fun.symbol),
+                                    List(TypeTree(erasure(arg.tpe)))),
+                          List()),
+                    isArrayTest(qual1()))
                 }
-            }
+              }
           case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
                                         fun.symbol != Object_asInstanceOf &&
                                         fun.symbol != Object_isInstanceOf) =>

@@ -22,8 +22,8 @@ object ScalaRunTime {
   def isArray(x: AnyRef): Boolean = // !!! remove once newarrays
     x != null && (x.getClass.isArray || x.isInstanceOf[BoxedArray[_]])
 
-  def isArray(x: AnyRef, atLevel: Int): Boolean =
-    x != null && isArrayClass(x.getClass, atLevel)
+  def isArray(x: Any, atLevel: Int): Boolean =
+    x != null && isArrayClass(x.asInstanceOf[AnyRef].getClass, atLevel)
 
   private def isArrayClass(clazz: Class[_], atLevel: Int): Boolean =
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
