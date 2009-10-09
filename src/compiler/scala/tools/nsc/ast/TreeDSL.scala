@@ -186,6 +186,8 @@ trait TreeDSL {
         if (target.tpe.typeSymbol == SomeClass) TRUE   // is Some[_]
         else NOT(ID(target) DOT nme.isEmpty)           // is Option[_]
 
+      def GET() = fn(ID(target), nme.get)
+
       // name of nth indexed argument to a method (first parameter list), defaults to 1st
       def ARG(idx: Int = 0) = Ident(target.paramss.head(idx))
       def ARGS = target.paramss.head
