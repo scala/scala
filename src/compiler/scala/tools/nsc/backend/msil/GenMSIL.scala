@@ -1214,7 +1214,13 @@ abstract class GenMSIL extends SubComponent {
 
         needAdditionalRet = false
 
-	val currentLineNr = instr.pos.line
+        val currentLineNr = try {
+          instr.pos.line
+        } catch {
+          case _: UnsupportedOperationException =>
+            log("Warning: wrong position in: " + method)
+            lastLineNr
+        }
 
         if (currentLineNr != lastLineNr) {
           mcode.setPosition(currentLineNr)

@@ -192,7 +192,7 @@ abstract class TailCalls extends Transform
             }
           )
 
-          if (!isTransformed && tailrecRequired(dd))
+          if (!forMSIL && !isTransformed && tailrecRequired(dd))
             unit.error(dd.pos, "could not optimize @tailrec annotated method")
 
           log("Leaving DefDef: " + name)
