@@ -2162,7 +2162,7 @@ trait Typers { self: Analyzer =>
                 }
               }
 
-              if (fun.symbol == List_apply && args.isEmpty) {
+              if (fun.symbol == List_apply && args.isEmpty && !onlyPresentation) {
                 atPos(tree.pos) { gen.mkNil setType restpe }
               } else {
                 constfold(treeCopy.Apply(tree, fun, args1).setType(ifPatternSkipFormals(restpe)))
