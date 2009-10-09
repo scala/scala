@@ -1530,36 +1530,6 @@ STABLE REFERENCE (STARR)
   <target name="starr.done" depends="starr.libs"/>
 
 <!-- ===========================================================================
-FORWARDED TARGETS FOR JVM 1.5 BUILD
-============================================================================ -->
-  
-  <target name="five" depends="pack.done">
-    <ant antfile="${src.dir}/build/five.xml" target="five.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fivepack" depends="pack.done">
-    <ant antfile="${src.dir}/build/five.xml" target="five-pack.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fiveclean" depends="pack.done">
-    <ant antfile="${src.dir}/build/five.xml" target="five.clean" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fivetest" depends="pack.done">
-    <ant antfile="${src.dir}/build/five.xml" target="five-test.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-  <target name="fivedist" depends="pack.done">
-    <ant antfile="${src.dir}/build/five.xml" target="five-all.done" inheritall="yes" inheritrefs="yes"/>
-  </target>
-
-<!--
-  <target name="fourclean">
-    <ant antfile="${src.dir}/build/four.xml" target="four-all.clean" inheritall="yes" inheritrefs="yes"/>
-  </target>
--->
-
-<!-- ===========================================================================
 FORWARDED TARGETS FOR PACKAGING
 ============================================================================ -->
   
