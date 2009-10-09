@@ -686,10 +686,8 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
     exiting = false
     shouldExit = false
 
-    scheduler execute {
-      scheduler.newActor(Actor.this)
-      (new Reaction(Actor.this)).run()
-    }
+    scheduler.newActor(this)
+    scheduler.execute(new Reaction(this))
 
     this
   }

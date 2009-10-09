@@ -48,7 +48,22 @@ private[actors] trait DelegatingScheduler extends IScheduler {
     }
   }
 
-  def newActor(actor: Reactor) = impl.newActor(actor)
+  def newActor(actor: Reactor) = synchronized {
+    val createNew = if (sched eq null)
+      true
+    else sched.synchronized {
+      if (!sched.isActive)
+        true
+      else {
+        sched.newActor(actor)
+        false
+      }
+    }
+    if (createNew) {
+      sched = makeNewScheduler()
+      sched.newActor(actor)
+    }
+  }
 
   def terminated(actor: Reactor) = impl.terminated(actor)
 

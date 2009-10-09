@@ -69,6 +69,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
 
           if (allTerminated) {
             Debug.info(this+": all actors terminated")
+            terminating = true
             throw new QuitException
           }
 
@@ -79,6 +80,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
             val num = pool.drainTasksTo(list)
             Debug.info(this+": drained "+num+" tasks")
             drainedTasks = list
+            terminating = true
             throw new QuitException
           }
         }
@@ -127,7 +129,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
   }
 
   def isActive = synchronized {
-    (pool ne null) && !pool.isShutdown()
+    !terminating && (pool ne null) && !pool.isShutdown()
   }
 
   override def managedBlock(blocker: scala.concurrent.ManagedBlocker) {
