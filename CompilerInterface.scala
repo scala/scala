@@ -40,7 +40,7 @@ class CompilerInterface
 			{
 				phasesSet += sbtAnalyzer
 				val superd = super.computePhaseDescriptors
-				if(superd.contains(sbtAnalyzer)) superd else ( superd ++ Seq(sbtAnalyzer) ).toList
+				if(superd.contains(sbtAnalyzer)) superd else ( superd ++ List(sbtAnalyzer) ).toList
 			}
 			trait Compat27 { val runsBefore: List[String] = Nil }
 		}
