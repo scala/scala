@@ -408,6 +408,13 @@ trait Patterns extends ast.TreeDSL {
   sealed trait UnapplyPattern extends Pattern {
     lazy val UnApply(unfn, args) = tree
     override def subpatternsForVars: List[Pattern] = toPats(args)
+
+    private def isSameFunction(f1: Tree, f2: Tree) =
+      (f1.symbol == f2.symbol) && (f1 equalsStructure f2)
+
+    // XXX args
+    def isSameUnapply(other: UnapplyPattern) =
+      isSameFunction(unfn, other.unfn)
   }
 
   sealed trait ApplyPattern extends Pattern {
