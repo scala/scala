@@ -95,13 +95,19 @@ trait Matrix extends MatrixAdditions {
     // TRANS_FLAG communicates there should be no exhaustiveness checking
     private def flags(checked: Boolean) = if (checked) Nil else List(TRANS_FLAG)
 
+    /** Every new variable allocated gets one of these. */
+    class PatternVar(val lhs: Symbol, val rhs: Tree) {
+      lazy val ident  = ID(lhs)
+      lazy val valDef = typedValDef(lhs, rhs)
+    }
+
     /** Given a tree, creates a new synthetic variable of the same type
      *  and assigns the tree to it.
      */
     def copyVar(
       root: Tree,
+      checked: Boolean,
       _tpe: Type = null,
-      checked: Boolean = false,
       label: String = "temp"): PatternVar =
     {
       val tpe   = ifNull(_tpe, root.tpe)
@@ -112,20 +118,14 @@ trait Matrix extends MatrixAdditions {
     }
 
     /** The rhs is expressed as a function of the lhs. */
-    def createVar(tpe: Type, f: Symbol => Tree, checked: Boolean = false) = {
+    def createVar(tpe: Type, f: Symbol => Tree, checked: Boolean) = {
       val lhs = newVar(owner.pos, tpe, flags(checked))
       val rhs = f(lhs)
 
       new PatternVar(lhs, rhs)
     }
 
-    class PatternVar(val lhs: Symbol, val rhs: Tree) {
-      lazy val ident  = ID(lhs)
-      lazy val valDef = typedValDef(lhs, rhs)
-      // lazy val valDef = typedValDef(lhs, rhs setType lhs.tpe)
-    }
-
-    def newVar(
+    private def newVar(
       pos: Position,
       tpe: Type,
       flags: List[Long] = Nil,

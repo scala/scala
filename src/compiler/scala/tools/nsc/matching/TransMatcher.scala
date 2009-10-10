@@ -56,7 +56,7 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
 
     // For x match { ... we start with a single root
     def singleMatch(): (List[Tree], MatrixInit) = {
-      val v = copyVar(selector, checked = isChecked)
+      val v = copyVar(selector, isChecked)
 
       (List(v.valDef), MatrixInit(List(v.lhs), cases, matchError(v.ident)))
     }
@@ -64,7 +64,7 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
     // For (x, y, z) match { ... we start with multiple roots, called tpXX.
     def tupleMatch(app: Apply): (List[Tree], MatrixInit) = {
       val Apply(fn, args) = app
-      val vs = args zip rootTypes map { case (arg, tpe) => copyVar(arg, tpe, isChecked, "tp") }
+      val vs = args zip rootTypes map { case (arg, tpe) => copyVar(arg, isChecked, tpe, "tp") }
 
       def merror = matchError(treeCopy.Apply(app, fn, vs map (_.ident)))
       (vs map (_.valDef), MatrixInit(vs map (_.lhs), cases, merror))
