@@ -13,7 +13,7 @@
 
 // Questions: how to call update, appendFront, appendBack?
 //            how to make them available? trait Vector? VectorLike? have another companion object VectorImpl?
-//            mix in LinearSeq?
+//            mix in LinearSeq as well?
 
 
 package scala.collection
@@ -596,7 +596,7 @@ class VectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends Vector[
     val s = new VectorIterator[A](startIndex, endIndex)
     s.initFrom(this)
     s.stabilize(focus)
-    s.gotoPos(startIndex, startIndex ^ focus)
+    if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
     s
   }
 
