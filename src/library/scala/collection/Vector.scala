@@ -34,8 +34,9 @@ trait Vector[+A] extends Seq[A]
 }
 
 object Vector extends SeqFactory[Vector] {
+  override def empty[A]: Vector[A] = immutable.Vector.empty[A]
   implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] = new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, Vector[A]] = mutable.Vector.newBuilder[A]
+  def newBuilder[A]: Builder[A, Vector[A]] = immutable.Vector.newBuilder[A]
 
   @deprecated("use collection.mutable.Vector instead") type Mutable[A] = scala.collection.mutable.Vector[A]
 }
