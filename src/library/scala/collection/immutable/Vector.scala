@@ -42,504 +42,13 @@ trait Vector[+A]  extends scala.collection.immutable.Seq[A]
 /**
  * @since 2.8
  */
-object Vector extends SeqFactory[VectorImpl] {
-  implicit def builderFactory[A]: BuilderFactory[A, VectorImpl[A], Coll] =
+object Vector extends SeqFactory[Vector] {
+  implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] =
     new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, VectorImpl[A]] =
+  def newBuilder[A]: Builder[A, Vector[A]] =
     new VectorBuilder[A]
 
-  // TODO: override object empty { }
-}
-
-
-
-
-@serializable @SerialVersionUID(7129304555082767876L)
-class VectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends Vector[A]
-                              with GenericTraversableTemplate[A, VectorImpl]
-                              with VectorLike[A, VectorImpl[A]]
-                              with SeqLike[A, VectorImpl[A]]
-                              with VectorPointer[A @uncheckedVariance] {
-
-  //assert(startIndex >= 0, startIndex+"<0")
-  //assert(startIndex <= endIndex, startIndex+">"+endIndex)
-  //assert(focus >= 0, focus+"<0")
-  //assert(focus <= endIndex, focus+">"+endIndex)
-
-  override def companion: GenericCompanion[VectorImpl] = Vector
-
-  def length = endIndex - startIndex
-
-  override def iterator: VectorIterator[A] = {
-    val s = new VectorIterator[A](startIndex, endIndex)
-    s.initFrom(this)
-    s.stabilize(focus)
-    if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
-    s
-  }
-
-  // TODO: reverse
-  // TODO: reverseIterator
-
-  private def checkRangeConvert(index: Int) = {
-    val idx = index + startIndex
-    if (0 <= index && idx < endIndex)
-      idx
-    else
-      throw new IndexOutOfBoundsException(index.toString)
-  }
-
-  def apply(index: Int): A = {
-    val idx = checkRangeConvert(index)
-//    //println("get elem: "+index + "/"+idx + "(focus:" +focus+" xor:"+(idx^focus)+" depth:"+depth+")")
-    getElem(idx, idx ^ focus)
-  }
-
-  def update[B>:A](index: Int, value: B): VectorImpl[B] = {
-    val idx = checkRangeConvert(index)
-    val s = new VectorImpl[B](startIndex, endIndex, idx)
-    s.initFrom(this)
-    s.gotoPosClean(focus, idx, focus ^ idx)
-    s.display0(idx & 0x1f) = value.asInstanceOf[AnyRef]
-    s
-  }
-
-  override def take(n: Int): VectorImpl[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (startIndex + n < endIndex) {
-      dropBack0(startIndex + n)
-    } else
-      this
-  }
-
-  override def drop(n: Int): VectorImpl[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (startIndex + n < endIndex) {
-      dropFront0(startIndex + n)
-    } else
-      Vector.empty
-  }
-
-  override def takeRight(n: Int): VectorImpl[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (endIndex - n > startIndex) {
-      dropFront0(endIndex + n)
-    } else
-      this
-  }
-
-  override def dropRight(n: Int): VectorImpl[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (endIndex - n > startIndex) {
-      dropBack0(endIndex - n)
-    } else
-      Vector.empty
-  }
-
-
-
-  private def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
-    val elems = new Array[AnyRef](32)
-    System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
-    elems
-  }
-
-  private def shiftTopLevel(oldLeft: Int, newLeft: Int) = (depth - 1) match {
-    case 0 =>
-      display0 = copyRange(display0, oldLeft, newLeft)
-    case 1 =>
-      display1 = copyRange(display1, oldLeft, newLeft)
-    case 2 =>
-      display2 = copyRange(display2, oldLeft, newLeft)
-    case 3 =>
-      display3 = copyRange(display3, oldLeft, newLeft)
-    case 4 =>
-      display4 = copyRange(display4, oldLeft, newLeft)
-    case 5 =>
-      display5 = copyRange(display5, oldLeft, newLeft)
-  }
-
-  private def cleanLeftEdge(cutIndex: Int) = (depth - 1) match {
-    case 5 =>
-      for (i <- 0 until ((cutIndex >>> 25) & 0x1f)) display5(i) = null
-      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
-      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 4 =>
-      display5 = null
-      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
-      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 3 =>
-      display5 = null
-      display4 = null
-      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 2 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 1 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 0 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      display1 = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-  }
-
-  private def cleanRightEdge(cutIndex: Int) = (depth - 1) match {
-    case 5 =>
-      for (i <- ((cutIndex >>> 25) & 0x1f) until 32) display5(i) = null
-      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
-      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 4 =>
-      display5 = null
-      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
-      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 3 =>
-      display5 = null
-      display4 = null
-      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 2 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 1 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 0 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      display1 = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-  }
-
-  private def requiredDepth(xor: Int) = {
-    if (xor < (1 <<  5)) 1
-    else if (xor < (1 << 10)) 2
-    else if (xor < (1 << 15)) 3
-    else if (xor < (1 << 20)) 4
-    else if (xor < (1 << 25)) 5
-    else if (xor < (1 << 30)) 6
-    else throw new IllegalArgumentException()
-  }
-
-  private def dropFront0(cutIndex: Int): VectorImpl[A] = {
-    var blockIndex = cutIndex & ~31
-    var lo = cutIndex & 31
-
-    val xor = cutIndex ^ (endIndex - 1)
-    val d = requiredDepth(xor)
-    val shift = (cutIndex & ~((1 << (5*d))-1))
-
-    //println("cut front at " + cutIndex + ".." + endIndex + " (xor: "+xor+" shift: " + shift + " d: " + d +")")
-
-    val s = new VectorImpl(cutIndex-shift, endIndex-shift, blockIndex-shift)
-    s.initFrom(this)
-    if (s.depth > 1)
-      s.gotoPos(blockIndex, focus ^ blockIndex)
-    s.depth = d
-    s.stabilize(blockIndex-shift)
-    s.cleanLeftEdge(cutIndex-shift)
-    s
-  }
-
-  private def dropBack0(cutIndex: Int): VectorImpl[A] = {
-    var blockIndex = (cutIndex - 1) & ~31
-    var lo = ((cutIndex - 1) & 31) + 1
-
-    val xor = startIndex ^ (cutIndex - 1)
-    val d = requiredDepth(xor)
-
-    //println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
-
-    val s = new VectorImpl(startIndex, cutIndex, blockIndex)
-    s.initFrom(this)
-    if (s.depth > 1)
-      s.gotoPos(blockIndex, focus ^ blockIndex)
-    s.depth = d
-    s.stabilize(blockIndex)
-    s.cleanRightEdge(cutIndex)
-    s
-  }
-
-
-  def appendFront[B>:A](value: B): VectorImpl[B] = {
-    if (endIndex != startIndex) {
-      var blockIndex = (startIndex - 1) & ~31
-      var lo = (startIndex - 1) & 31
-
-      if (blockIndex + 32 == startIndex) {
-
-        val freeSpace = ((1<<5*(depth)) - endIndex)
-        val shift = freeSpace & ~((1<<5*(depth-1))-1)
-        val shiftBlocks = freeSpace >>> 5*(depth-1)
-
-        //println("----- appendFront " + value + " at " + (startIndex - 1) + " reached block start")
-        if (shift != 0) {
-          // case A: we can shift right on the top level
-          debug
-          //println("shifting right by " + shiftBlocks + " at level " + (depth-1) + " (had "+freeSpace+" free space)")
-
-          if (depth > 1) {
-            val newBlockIndex = blockIndex + shift
-            val newFocus = focus + shift
-            val s = new VectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
-            s.initFrom(this)
-            s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
-            s.debug
-            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-            s.display0(lo) = value.asInstanceOf[AnyRef]
-            //assert(depth == s.depth)
-            s
-          } else {
-            val newBlockIndex = blockIndex + 32
-            val newFocus = focus
-
-            //assert(newBlockIndex == 0)
-            //assert(newFocus == 0)
-
-            val s = new VectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
-            s.initFrom(this)
-            s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
-            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-            s.display0(shift-1) = value.asInstanceOf[AnyRef]
-            s.debug
-            s
-          }
-        } else if (blockIndex < 0) {
-          // case B: we need to move the whole structure
-          val move = (1 << 5*(depth+1)) - (1 << 5*(depth))
-          //println("moving right by " + move + " at level " + (depth-1) + " (had "+freeSpace+" free space)")
-
-          val newBlockIndex = blockIndex + move
-          val newFocus = focus + move
-
-          val s = new VectorImpl(startIndex - 1 + move, endIndex + move, newBlockIndex)
-          s.initFrom(this)
-          s.debug
-          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
-          s.display0(lo) = value.asInstanceOf[AnyRef]
-          s.debug
-          //assert(s.depth == depth+1)
-          s
-        } else {
-          val newBlockIndex = blockIndex
-          val newFocus = focus
-
-          val s = new VectorImpl(startIndex - 1, endIndex, newBlockIndex)
-          s.initFrom(this)
-          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-          s.display0(lo) = value.asInstanceOf[AnyRef]
-          //assert(s.depth == depth)
-          s
-        }
-
-      } else {
-//        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new VectorImpl(startIndex - 1, endIndex, blockIndex)
-        s.initFrom(this)
-        s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
-        s.display0(lo) = value.asInstanceOf[AnyRef]
-        s
-      }
-    } else {
-      // empty vector, just insert single element at the back
-      val elems = new Array[AnyRef](32)
-      elems(31) = value.asInstanceOf[AnyRef]
-      val s = new VectorImpl(31,32,0)
-      s.depth = 1
-      s.display0 = elems
-      s
-    }
-  }
-
-  def appendBack[B>:A](value: B): VectorImpl[B] = {
-//    //println("------- append " + value)
-//    debug()
-    if (endIndex != startIndex) {
-      var blockIndex = endIndex & ~31
-      var lo = endIndex & 31
-
-      if (endIndex == blockIndex) {
-        val shift = startIndex & ~((1<<5*(depth-1))-1)
-        val shiftBlocks = startIndex >>> 5*(depth-1)
-
-        //println("----- appendBack " + value + " at " + endIndex + " reached block end")
-
-        if (shift != 0) {
-          debug
-          //println("shifting left by " + shiftBlocks + " at level " + (depth-1) + " (had "+startIndex+" free space)")
-          if (depth > 1) {
-            val newBlockIndex = blockIndex - shift
-            val newFocus = focus - shift
-            val s = new VectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
-            s.initFrom(this)
-            s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
-            s.debug
-            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-            s.display0(lo) = value.asInstanceOf[AnyRef]
-            s.debug
-            //assert(depth == s.depth)
-            s
-          } else {
-            val newBlockIndex = blockIndex - 32
-            val newFocus = focus
-
-            //assert(newBlockIndex == 0)
-            //assert(newFocus == 0)
-
-            val s = new VectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
-            s.initFrom(this)
-            s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
-            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-            s.display0(32 - shift) = value.asInstanceOf[AnyRef]
-            s.debug
-            s
-          }
-        } else {
-          val newBlockIndex = blockIndex
-          val newFocus = focus
-
-          val s = new VectorImpl(startIndex, endIndex + 1, newBlockIndex)
-          s.initFrom(this)
-          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
-          s.display0(lo) = value.asInstanceOf[AnyRef]
-          //assert(s.depth == depth+1) might or might not create new level!
-          if (s.depth == depth+1) {
-            //println("creating new level " + s.depth + " (had "+0+" free space)")
-            s.debug
-          }
-          s
-        }
-      } else {
-//        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new VectorImpl(startIndex, endIndex + 1, blockIndex)
-        s.initFrom(this)
-        s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
-        s.display0(lo) = value.asInstanceOf[AnyRef]
-        s
-      }
-    } else {
-      val elems = new Array[AnyRef](32)
-      elems(0) = value.asInstanceOf[AnyRef]
-      val s = new VectorImpl(0,1,0)
-      s.depth = 1
-      s.display0 = elems
-      s
-    }
-  }
-
-}
-
-
-final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with VectorPointer[A @uncheckedVariance] {
-
-  private var blockIndex: Int = _startIndex & ~31
-  private var lo: Int = _startIndex & 31
-  private var endIndex: Int = _endIndex
-
-  private var endLo = Math.min(endIndex - blockIndex, 32)
-
-  def hasNext = _hasNext
-
-  private var _hasNext = blockIndex + lo < endIndex
-
-  def next(): A = {
-    if (!_hasNext) throw new NoSuchElementException("reached iterator end")
-
-    val res = display0(lo).asInstanceOf[A]
-    lo += 1
-
-    if (lo == endLo) {
-      if (blockIndex + lo < endIndex) {
-        val newBlockIndex = blockIndex+32
-        gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
-
-        blockIndex = newBlockIndex
-        endLo = Math.min(endIndex - blockIndex, 32)
-        lo = 0
-      } else {
-        _hasNext = false
-      }
-    }
-
-    res
-  }
-
-  // TODO: take
-  // TODO: drop
-}
-
-
-final class VectorBuilder[A]() extends Builder[A,VectorImpl[A]] with VectorPointer[A @uncheckedVariance] {
-
-  display0 = new Array[AnyRef](32)
-  depth = 1
-
-  var blockIndex = 0
-  var lo = 0
-
-  def += (elem: A): this.type = {
-    if (lo == 32) {
-      val newBlockIndex = blockIndex+32
-      gotoNextBlockStartClean(newBlockIndex, blockIndex ^ newBlockIndex)
-      blockIndex = newBlockIndex
-      lo = 0
-    }
-    display0(lo) = elem.asInstanceOf[AnyRef]
-    lo += 1
-    this
-  }
-
-  def result: VectorImpl[A] = {
-    val s = new VectorImpl[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
-    s.initFrom(this)
-    if (depth > 1) s.gotoPos(0, blockIndex + lo)
-    s
-  }
-
-  def clear: Unit = {
-    display0 = new Array[AnyRef](32)
-    depth = 1
-    blockIndex = 0
-    lo = 0
-  }
+  // TODO: override val empty = new VectorImpl(0, 0, 0)
 }
 
 
@@ -1067,3 +576,490 @@ trait VectorPointer[T] {
 }
 
 
+
+
+@serializable @SerialVersionUID(7129304555082767876L)
+class VectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends Vector[A]
+                              with SeqLike[A, Vector[A]]
+                              with VectorPointer[A @uncheckedVariance] {
+
+  //assert(startIndex >= 0, startIndex+"<0")
+  //assert(startIndex <= endIndex, startIndex+">"+endIndex)
+  //assert(focus >= 0, focus+"<0")
+  //assert(focus <= endIndex, focus+">"+endIndex)
+
+  override def companion: GenericCompanion[Vector] = Vector
+
+  def length = endIndex - startIndex
+
+  override def iterator: VectorIterator[A] = {
+    val s = new VectorIterator[A](startIndex, endIndex)
+    s.initFrom(this)
+    s.stabilize(focus)
+    if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
+    s
+  }
+
+  // TODO: reverse
+  // TODO: reverseIterator
+
+  private def checkRangeConvert(index: Int) = {
+    val idx = index + startIndex
+    if (0 <= index && idx < endIndex)
+      idx
+    else
+      throw new IndexOutOfBoundsException(index.toString)
+  }
+
+  def apply(index: Int): A = {
+    val idx = checkRangeConvert(index)
+//    //println("get elem: "+index + "/"+idx + "(focus:" +focus+" xor:"+(idx^focus)+" depth:"+depth+")")
+    getElem(idx, idx ^ focus)
+  }
+
+  def update[B>:A](index: Int, value: B): Vector[B] = {
+    val idx = checkRangeConvert(index)
+    val s = new VectorImpl[B](startIndex, endIndex, idx)
+    s.initFrom(this)
+    s.gotoPosClean(focus, idx, focus ^ idx)
+    s.display0(idx & 0x1f) = value.asInstanceOf[AnyRef]
+    s
+  }
+
+  override def take(n: Int): Vector[A] = {
+    if (n < 0) throw new IllegalArgumentException(n.toString)
+    if (startIndex + n < endIndex) {
+      dropBack0(startIndex + n)
+    } else
+      this
+  }
+
+  override def drop(n: Int): Vector[A] = {
+    if (n < 0) throw new IllegalArgumentException(n.toString)
+    if (startIndex + n < endIndex) {
+      dropFront0(startIndex + n)
+    } else
+      Vector.empty
+  }
+
+  override def takeRight(n: Int): Vector[A] = {
+    if (n < 0) throw new IllegalArgumentException(n.toString)
+    if (endIndex - n > startIndex) {
+      dropFront0(endIndex + n)
+    } else
+      this
+  }
+
+  override def dropRight(n: Int): Vector[A] = {
+    if (n < 0) throw new IllegalArgumentException(n.toString)
+    if (endIndex - n > startIndex) {
+      dropBack0(endIndex - n)
+    } else
+      Vector.empty
+  }
+
+
+
+  private def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
+    val elems = new Array[AnyRef](32)
+    System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
+    elems
+  }
+
+  private def shiftTopLevel(oldLeft: Int, newLeft: Int) = (depth - 1) match {
+    case 0 =>
+      display0 = copyRange(display0, oldLeft, newLeft)
+    case 1 =>
+      display1 = copyRange(display1, oldLeft, newLeft)
+    case 2 =>
+      display2 = copyRange(display2, oldLeft, newLeft)
+    case 3 =>
+      display3 = copyRange(display3, oldLeft, newLeft)
+    case 4 =>
+      display4 = copyRange(display4, oldLeft, newLeft)
+    case 5 =>
+      display5 = copyRange(display5, oldLeft, newLeft)
+  }
+
+  private def cleanLeftEdge(cutIndex: Int) = (depth - 1) match {
+    case 5 =>
+      for (i <- 0 until ((cutIndex >>> 25) & 0x1f)) display5(i) = null
+      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
+      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 4 =>
+      display5 = null
+      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
+      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 3 =>
+      display5 = null
+      display4 = null
+      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 2 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 1 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 0 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      display1 = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+  }
+
+  private def cleanRightEdge(cutIndex: Int) = (depth - 1) match {
+    case 5 =>
+      for (i <- ((cutIndex >>> 25) & 0x1f) until 32) display5(i) = null
+      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
+      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 4 =>
+      display5 = null
+      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
+      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 3 =>
+      display5 = null
+      display4 = null
+      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 2 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 1 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 0 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      display1 = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+  }
+
+  private def requiredDepth(xor: Int) = {
+    if (xor < (1 <<  5)) 1
+    else if (xor < (1 << 10)) 2
+    else if (xor < (1 << 15)) 3
+    else if (xor < (1 << 20)) 4
+    else if (xor < (1 << 25)) 5
+    else if (xor < (1 << 30)) 6
+    else throw new IllegalArgumentException()
+  }
+
+  private def dropFront0(cutIndex: Int): Vector[A] = {
+    var blockIndex = cutIndex & ~31
+    var lo = cutIndex & 31
+
+    val xor = cutIndex ^ (endIndex - 1)
+    val d = requiredDepth(xor)
+    val shift = (cutIndex & ~((1 << (5*d))-1))
+
+    //println("cut front at " + cutIndex + ".." + endIndex + " (xor: "+xor+" shift: " + shift + " d: " + d +")")
+
+    val s = new VectorImpl(cutIndex-shift, endIndex-shift, blockIndex-shift)
+    s.initFrom(this)
+    if (s.depth > 1)
+      s.gotoPos(blockIndex, focus ^ blockIndex)
+    s.depth = d
+    s.stabilize(blockIndex-shift)
+    s.cleanLeftEdge(cutIndex-shift)
+    s
+  }
+
+  private def dropBack0(cutIndex: Int): Vector[A] = {
+    var blockIndex = (cutIndex - 1) & ~31
+    var lo = ((cutIndex - 1) & 31) + 1
+
+    val xor = startIndex ^ (cutIndex - 1)
+    val d = requiredDepth(xor)
+
+    //println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
+
+    val s = new VectorImpl(startIndex, cutIndex, blockIndex)
+    s.initFrom(this)
+    if (s.depth > 1)
+      s.gotoPos(blockIndex, focus ^ blockIndex)
+    s.depth = d
+    s.stabilize(blockIndex)
+    s.cleanRightEdge(cutIndex)
+    s
+  }
+
+
+  def appendFront[B>:A](value: B): Vector[B] = {
+    if (endIndex != startIndex) {
+      var blockIndex = (startIndex - 1) & ~31
+      var lo = (startIndex - 1) & 31
+
+      if (blockIndex + 32 == startIndex) {
+
+        val freeSpace = ((1<<5*(depth)) - endIndex)
+        val shift = freeSpace & ~((1<<5*(depth-1))-1)
+        val shiftBlocks = freeSpace >>> 5*(depth-1)
+
+        //println("----- appendFront " + value + " at " + (startIndex - 1) + " reached block start")
+        if (shift != 0) {
+          // case A: we can shift right on the top level
+          debug
+          //println("shifting right by " + shiftBlocks + " at level " + (depth-1) + " (had "+freeSpace+" free space)")
+
+          if (depth > 1) {
+            val newBlockIndex = blockIndex + shift
+            val newFocus = focus + shift
+            val s = new VectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            s.initFrom(this)
+            s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
+            s.debug
+            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.display0(lo) = value.asInstanceOf[AnyRef]
+            //assert(depth == s.depth)
+            s
+          } else {
+            val newBlockIndex = blockIndex + 32
+            val newFocus = focus
+
+            //assert(newBlockIndex == 0)
+            //assert(newFocus == 0)
+
+            val s = new VectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            s.initFrom(this)
+            s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
+            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.display0(shift-1) = value.asInstanceOf[AnyRef]
+            s.debug
+            s
+          }
+        } else if (blockIndex < 0) {
+          // case B: we need to move the whole structure
+          val move = (1 << 5*(depth+1)) - (1 << 5*(depth))
+          //println("moving right by " + move + " at level " + (depth-1) + " (had "+freeSpace+" free space)")
+
+          val newBlockIndex = blockIndex + move
+          val newFocus = focus + move
+
+          val s = new VectorImpl(startIndex - 1 + move, endIndex + move, newBlockIndex)
+          s.initFrom(this)
+          s.debug
+          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
+          s.display0(lo) = value.asInstanceOf[AnyRef]
+          s.debug
+          //assert(s.depth == depth+1)
+          s
+        } else {
+          val newBlockIndex = blockIndex
+          val newFocus = focus
+
+          val s = new VectorImpl(startIndex - 1, endIndex, newBlockIndex)
+          s.initFrom(this)
+          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+          s.display0(lo) = value.asInstanceOf[AnyRef]
+          //assert(s.depth == depth)
+          s
+        }
+
+      } else {
+//        //println("will make writable block (from "+focus+") at: " + blockIndex)
+        val s = new VectorImpl(startIndex - 1, endIndex, blockIndex)
+        s.initFrom(this)
+        s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
+        s.display0(lo) = value.asInstanceOf[AnyRef]
+        s
+      }
+    } else {
+      // empty vector, just insert single element at the back
+      val elems = new Array[AnyRef](32)
+      elems(31) = value.asInstanceOf[AnyRef]
+      val s = new VectorImpl(31,32,0)
+      s.depth = 1
+      s.display0 = elems
+      s
+    }
+  }
+
+  def appendBack[B>:A](value: B): Vector[B] = {
+//    //println("------- append " + value)
+//    debug()
+    if (endIndex != startIndex) {
+      var blockIndex = endIndex & ~31
+      var lo = endIndex & 31
+
+      if (endIndex == blockIndex) {
+        val shift = startIndex & ~((1<<5*(depth-1))-1)
+        val shiftBlocks = startIndex >>> 5*(depth-1)
+
+        //println("----- appendBack " + value + " at " + endIndex + " reached block end")
+
+        if (shift != 0) {
+          debug
+          //println("shifting left by " + shiftBlocks + " at level " + (depth-1) + " (had "+startIndex+" free space)")
+          if (depth > 1) {
+            val newBlockIndex = blockIndex - shift
+            val newFocus = focus - shift
+            val s = new VectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            s.initFrom(this)
+            s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
+            s.debug
+            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.display0(lo) = value.asInstanceOf[AnyRef]
+            s.debug
+            //assert(depth == s.depth)
+            s
+          } else {
+            val newBlockIndex = blockIndex - 32
+            val newFocus = focus
+
+            //assert(newBlockIndex == 0)
+            //assert(newFocus == 0)
+
+            val s = new VectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            s.initFrom(this)
+            s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
+            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.display0(32 - shift) = value.asInstanceOf[AnyRef]
+            s.debug
+            s
+          }
+        } else {
+          val newBlockIndex = blockIndex
+          val newFocus = focus
+
+          val s = new VectorImpl(startIndex, endIndex + 1, newBlockIndex)
+          s.initFrom(this)
+          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+          s.display0(lo) = value.asInstanceOf[AnyRef]
+          //assert(s.depth == depth+1) might or might not create new level!
+          if (s.depth == depth+1) {
+            //println("creating new level " + s.depth + " (had "+0+" free space)")
+            s.debug
+          }
+          s
+        }
+      } else {
+//        //println("will make writable block (from "+focus+") at: " + blockIndex)
+        val s = new VectorImpl(startIndex, endIndex + 1, blockIndex)
+        s.initFrom(this)
+        s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
+        s.display0(lo) = value.asInstanceOf[AnyRef]
+        s
+      }
+    } else {
+      val elems = new Array[AnyRef](32)
+      elems(0) = value.asInstanceOf[AnyRef]
+      val s = new VectorImpl(0,1,0)
+      s.depth = 1
+      s.display0 = elems
+      s
+    }
+  }
+
+}
+
+
+final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with VectorPointer[A @uncheckedVariance] {
+
+  private var blockIndex: Int = _startIndex & ~31
+  private var lo: Int = _startIndex & 31
+  private var endIndex: Int = _endIndex
+
+  private var endLo = Math.min(endIndex - blockIndex, 32)
+
+  def hasNext = _hasNext
+
+  private var _hasNext = blockIndex + lo < endIndex
+
+  def next(): A = {
+    if (!_hasNext) throw new NoSuchElementException("reached iterator end")
+
+    val res = display0(lo).asInstanceOf[A]
+    lo += 1
+
+    if (lo == endLo) {
+      if (blockIndex + lo < endIndex) {
+        val newBlockIndex = blockIndex+32
+        gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
+
+        blockIndex = newBlockIndex
+        endLo = Math.min(endIndex - blockIndex, 32)
+        lo = 0
+      } else {
+        _hasNext = false
+      }
+    }
+
+    res
+  }
+
+  // TODO: take
+  // TODO: drop
+}
+
+
+final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A @uncheckedVariance] {
+
+  display0 = new Array[AnyRef](32)
+  depth = 1
+
+  var blockIndex = 0
+  var lo = 0
+
+  def += (elem: A): this.type = {
+    if (lo == 32) {
+      val newBlockIndex = blockIndex+32
+      gotoNextBlockStartClean(newBlockIndex, blockIndex ^ newBlockIndex)
+      blockIndex = newBlockIndex
+      lo = 0
+    }
+    display0(lo) = elem.asInstanceOf[AnyRef]
+    lo += 1
+    this
+  }
+
+  def result: Vector[A] = {
+    val s = new VectorImpl[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
+    s.initFrom(this)
+    if (depth > 1) s.gotoPos(0, blockIndex + lo)
+    s
+  }
+
+  def clear: Unit = {
+    display0 = new Array[AnyRef](32)
+    depth = 1
+    blockIndex = 0
+    lo = 0
+  }
+}
