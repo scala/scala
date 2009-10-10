@@ -17,6 +17,7 @@ trait Matrix extends MatrixAdditions {
   import analyzer.Typer
   import CODE._
   import Debug._
+  import Flags.{ TRANS_FLAG }
 
   /** Translation of match expressions.
    *
@@ -89,6 +90,41 @@ trait Matrix extends MatrixAdditions {
     matchResultType: Type)        // the expected result type of the whole match
       extends Squeezer
   {
+    private def ifNull[T](x: T, alt: T) = if (x == null) alt else x
+
+    // TRANS_FLAG communicates there should be no exhaustiveness checking
+    private def flags(checked: Boolean) = if (checked) Nil else List(TRANS_FLAG)
+
+    /** Given a tree, creates a new synthetic variable of the same type
+     *  and assigns the tree to it.
+     */
+    def copyVar(
+      root: Tree,
+      _tpe: Type = null,
+      checked: Boolean = false,
+      label: String = "temp"): PatternVar =
+    {
+      val tpe   = ifNull(_tpe, root.tpe)
+      val name  = newName(root.pos, label)
+      val sym   = newVar(root.pos, tpe, flags(checked), name)
+
+      new PatternVar(sym, root)
+    }
+
+    /** The rhs is expressed as a function of the lhs. */
+    def createVar(tpe: Type, f: Symbol => Tree, checked: Boolean = false) = {
+      val lhs = newVar(owner.pos, tpe, flags(checked))
+      val rhs = f(lhs)
+
+      new PatternVar(lhs, rhs)
+    }
+
+    class PatternVar(val lhs: Symbol, val rhs: Tree) {
+      lazy val ident  = ID(lhs)
+      lazy val valDef = typedValDef(lhs, rhs)
+      // lazy val valDef = typedValDef(lhs, rhs setType lhs.tpe)
+    }
+
     def newVar(
       pos: Position,
       tpe: Type,

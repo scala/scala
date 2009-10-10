@@ -31,6 +31,7 @@ trait ParallelMatching extends ast.TreeDSL
   import CODE._
   import Types._
   import Debug._
+  import Flags.{ TRANS_FLAG }
 
   /** Transition **/
   def isRightIgnoring(t: Tree) = cond(unbind(t)) { case ArrayValue(_, xs) if !xs.isEmpty => isStar(xs.last) }
@@ -92,7 +93,7 @@ trait ParallelMatching extends ast.TreeDSL
      * Note that we only ever match on Symbols, not Trees: a temporary variable
      * is created for any expressions being matched on.
      */
-    case class Scrutinee(val sym: Symbol) {
+    class Scrutinee(val sym: Symbol) {
       import definitions._
 
       // presenting a face of our symbol
@@ -117,7 +118,11 @@ trait ParallelMatching extends ast.TreeDSL
       def newVarOfElemType = newVar(pos, elemType)
 
       // for propagating "unchecked" to synthetic vars
-      def flags: List[Long] = List(Flags.TRANS_FLAG) filter (sym hasFlag _)
+      def isChecked = !(sym hasFlag TRANS_FLAG)
+      def flags: List[Long] = List(TRANS_FLAG) filter (sym hasFlag _)
+
+      // this is probably where this actually belongs
+      def createVar(tpe: Type, f: Symbol => Tree) = context.createVar(tpe, f, isChecked)
 
       def castedTo(headType: Type) =
         if (tpe =:= headType) this
@@ -332,18 +337,17 @@ trait ParallelMatching extends ast.TreeDSL
       val uapattern = head match { case x: UnapplyPattern => x ; case _ => abort("XXX") }
       val ua @ UnApply(app, args) = head.tree
 
-      private lazy val zipped      = pmatch pzip rest.rows
-
       // Note: trailingArgs is not necessarily Nil, because unapply can take implicit parameters.
       val Apply(fxn, _ :: trailingArgs) = app
-      def unapplyReturnType = if (args.isEmpty) BooleanClass.tpe else app.tpe typeArgs 0
+      private def reapply = Apply(fxn, scrut.id :: trailingArgs)
 
-      lazy val unapplyVar     = newVar(ua.pos, app.tpe, scrut.flags)
-      lazy val unapplyValDef  =
-        typedValDef(unapplyVar, Apply(fxn, scrut.id :: trailingArgs) setType unapplyVar.tpe)
+      private lazy val zipped      = pmatch pzip rest.rows
 
-      def mkGet(s: Symbol) = typedValDef(s, fn(ID(unapplyVar), nme.get))
-      def mkVar(tpe: Type) = newVar(ua.pos, tpe, scrut.flags)
+      lazy val unapplyResult =
+        createVar(app.tpe,
+          lhs => reapply setType lhs.tpe,
+          scrut.isChecked
+        )
 
       // XXX in transition.
       object sameUnapplyCall {
@@ -369,7 +373,7 @@ trait ParallelMatching extends ast.TreeDSL
         }
 
       lazy val cond: Tree = {
-        val s = unapplyValDef.symbol
+        val s = unapplyResult.valDef.symbol
         if (s.tpe.isBoolean) ID(s)
         else s IS_DEFINED
       }
@@ -377,41 +381,40 @@ trait ParallelMatching extends ast.TreeDSL
       lazy val failure =
         mkFail(zipped.tail filterNot (x => isSameUnapply(x._1)) map { case (pat, r) => r insert pat })
 
+      private def doSuccess: (List[Tree], List[Symbol], List[Row]) = {
+        def mkVar(tpe: Type) = newVar(ua.pos, tpe, scrut.flags)
+
+        lazy val lhs   = mkVar(app.tpe typeArgs 0)
+        lazy val vdef  = typedValDef(lhs, fn(ID(unapplyResult.lhs), nme.get))
+
+        // at this point it's Some[T1,T2...]
+        lazy val tpes  = getProductArgs(lhs.tpe).get
+
+        // one allocation per tuple element
+        lazy val allocations =
+          for ((tpe, i) <- tpes.zipWithIndex) yield
+            scrut.createVar(tpe, _ => fn(ID(lhs), productProj(lhs, i + 1)))
+
+        def vdefs = allocations map (_.valDef)
+        def vsyms = allocations map (_.lhs)
+
+        // 0 is Boolean, 1 is Option[T], 2+ is Option[(T1,T2,...)]
+        args.length match {
+          case 0  => (Nil, Nil, mkNewRows((xs) => Nil, 0))
+          case 1  => (List(vdef), List(lhs), mkNewRows(xs => List(xs.head), 1))
+          case _  => (vdef :: vdefs, vsyms, mkNewRows(identity, tpes.size))
+        }
+      }
+
       lazy val success = {
-        val (vdefs, ntemps, nrows) =
-          args.length match {
-            case 0  =>
-              (Nil, Nil, mkNewRows((xs) => Nil, 0))
+        val (vdefs, ntemps, rows) = doSuccess
+        val srep = make(ntemps ::: scrut.sym :: rest.tvars, rows).toTree
 
-            case 1 =>
-              val lhs = mkVar(app.tpe typeArgs 0)
-              val vdef = mkGet(lhs)
-              (List(vdef), List(lhs), mkNewRows(xs => List(xs.head), 1))
-
-            case _ =>
-              val uresGet   = mkVar(app.tpe typeArgs 0)
-              val vdefHead  = mkGet(uresGet)
-              val ts        = getProductArgs(uresGet.tpe).get
-              val nrows     = mkNewRows(identity, ts.size)
-
-              val (vdefs: List[Tree], vsyms: List[Symbol]) = List.unzip(
-                for ((vtpe, i) <- ts.zipWithIndex) yield {
-                  val vchild  = mkVar(vtpe)
-                  val accSym  = productProj(uresGet, i+1)
-                  val rhs     = fn(ID(uresGet), accSym)
-
-                  (typedValDef(vchild, rhs), vchild)
-                })
-
-              (vdefHead :: vdefs, vsyms, nrows)
-          }
-
-        val srep = make(ntemps ::: scrut.sym :: rest.tvars, nrows).toTree
         squeezedBlock(vdefs, srep)
       }
 
       final def tree() =
-        squeezedBlock(List(handleOuter(unapplyValDef)), codegen)
+        squeezedBlock(List(handleOuter(unapplyResult.valDef)), codegen)
     }
 
     /** handle sequence pattern and ArrayValue (but not star patterns)

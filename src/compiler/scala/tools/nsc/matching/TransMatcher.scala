@@ -24,7 +24,6 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
   import global.{ typer => _, _ }
   import analyzer.Typer
   import definitions._
-  import symtab.Flags
   import CODE._
 
   // cunit is set to the current unit in ExplicitOuter's transformUnit,
@@ -45,10 +44,9 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
   {
     import context._
 
-    // TRANS_FLAG communicates that there should be no exhaustiveness checking
-    val flags                 = List(Flags.TRANS_FLAG) filterNot (_ => isChecked)
     def matchError(obj: Tree) = atPos(selector.pos)(THROW(MatchErrorClass, obj))
     def caseIsOk(c: CaseDef)  = cond(c.pat) { case _: Apply | Ident(nme.WILDCARD) => true }
+    def rootTypes             = selector.tpe.typeArgs
 
     // this appears to be an attempt at optimizing when all case defs are constructor
     // patterns, but I don't think it's correct.
@@ -58,22 +56,18 @@ trait TransMatcher extends ast.TreeDSL with CompactTreePrinter {
 
     // For x match { ... we start with a single root
     def singleMatch(): (List[Tree], MatrixInit) = {
-      val root: Symbol      = newVar(selector.pos, selector.tpe, flags)
-      val varDef: Tree      = typedValDef(root, selector)
+      val v = copyVar(selector, checked = isChecked)
 
-      (List(varDef), MatrixInit(List(root), cases, matchError(ID(root))))
+      (List(v.valDef), MatrixInit(List(v.lhs), cases, matchError(v.ident)))
     }
 
     // For (x, y, z) match { ... we start with multiple roots, called tpXX.
     def tupleMatch(app: Apply): (List[Tree], MatrixInit) = {
       val Apply(fn, args) = app
-      val (roots, vars) = List.unzip(
-        for ((arg, typeArg) <- args zip selector.tpe.typeArgs) yield {
-          val v = newVar(arg.pos, typeArg, flags, newName(arg.pos, "tp"))
-          (v, typedValDef(v, arg))
-        }
-      )
-      (vars, MatrixInit(roots, cases, matchError(treeCopy.Apply(app, fn, roots map ID))))
+      val vs = args zip rootTypes map { case (arg, tpe) => copyVar(arg, tpe, isChecked, "tp") }
+
+      def merror = matchError(treeCopy.Apply(app, fn, vs map (_.ident)))
+      (vs map (_.valDef), MatrixInit(vs map (_.lhs), cases, merror))
     }
 
     // sets up top level variables and algorithm input
