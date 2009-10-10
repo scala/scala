@@ -163,7 +163,7 @@ trait Patterns extends ast.TreeDSL {
       val listRef                             = typeRef(pre, ListClass, List(tpe))
 
       def fold(x: Tree, xs: Tree) = unbind(x) match {
-        case _: Star  => makeBind(Pattern(x).definedVars, WILD(x.tpe))
+        case _: Star  => Pattern(x) rebindTo WILD(x.tpe) boundTree  // this is using boundVariables instead of definedVars
         case _        =>
           val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
           val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpe, listRef), consRef)
@@ -187,6 +187,7 @@ trait Patterns extends ast.TreeDSL {
     lazy val ArrayValue(elemtpt, elems) = tree
     lazy val elemPatterns = toPats(elems)
     lazy val nonStarPatterns = if (hasStar) elemPatterns.init else elemPatterns
+    private def starPattern = elemPatterns.last
 
     override def subpatternsForVars: List[Pattern] = elemPatterns
 
@@ -196,7 +197,7 @@ trait Patterns extends ast.TreeDSL {
 
     def rebindStar(seqType: Type): List[Pattern] = {
       require(hasStar)
-      nonStarPatterns ::: List(elemPatterns.last rebindToType seqType)
+      nonStarPatterns ::: List(starPattern rebindTo WILD(seqType))
     }
 
     // optimization to avoid trying to match if length makes it impossible
@@ -484,7 +485,6 @@ trait Patterns extends ast.TreeDSL {
       if (boundTree eq tree) Pattern(tree)
       else Pattern(tree) withBoundTree boundTree.asInstanceOf[Bind]
 
-    // override def toString() = "Pattern(%s, %s)".format(tree, boundVariables)
     override def equals(other: Any) = other match {
       case x: Pattern => this.boundTree == x.boundTree
       case _          => super.equals(other)

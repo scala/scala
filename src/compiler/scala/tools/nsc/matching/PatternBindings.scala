@@ -43,11 +43,6 @@ trait PatternBindings extends ast.TreeDSL
     }
   }
 
-  def makeBind(vs: List[Symbol], pat: Tree): Tree = vs match {
-    case Nil      => pat
-    case x :: xs  => Bind(x, makeBind(xs, pat)) setType pat.tpe
-  }
-
   trait PatternBindingLogic {
     self: Pattern =>
 
@@ -73,8 +68,12 @@ trait PatternBindings extends ast.TreeDSL
     //   Bind(v3, Bind(v2, Bind(v1, tree)))
     // This takes the given tree and creates a new pattern
     //   using the same bindings.
-    def rebindTo(t: Tree): Pattern =
+    def rebindTo(t: Tree): Pattern = {
+      if (boundVariables.size < definedVars.size)
+        TRACE("In %s, boundVariables = %s but definedVars = %s", this, boundVariables, definedVars)
+
       Pattern(wrapBindings(boundVariables, t))
+    }
 
     // Wrap this pattern's bindings around (_: Type)
     def rebindToType(tpe: Type, annotatedType: Type = null): Pattern = {
@@ -98,7 +97,6 @@ trait PatternBindings extends ast.TreeDSL
     }
 
     /** Helpers **/
-
     private def wrapBindings(vs: List[Symbol], pat: Tree): Tree = vs match {
       case Nil      => pat
       case x :: xs  => Bind(x, wrapBindings(xs, pat)) setType pat.tpe
