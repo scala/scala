@@ -11,6 +11,11 @@
 // Work in progress for a new immutable vector implementation.
 // This code is still preliminary, so expect things to change somewhat.
 
+// Questions: how to call update, appendFront, appendBack?
+//            how to make them available? trait Vector? VectorLike? have another companion object VectorImpl?
+//            mix in LinearSeq?
+
+
 package scala.collection
 package immutable
 
