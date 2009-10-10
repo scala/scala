@@ -8,6 +8,8 @@
 
 // $Id$
 
+// Work in progress for a new immutable vector implementation.
+// This code is still preliminary, so expect things to change somewhat.
 
 package scala.collection
 package immutable
@@ -16,6 +18,20 @@ import scala.annotation.unchecked.uncheckedVariance
 
 import scala.collection.generic._
 import scala.collection.mutable.Builder
+
+
+/** A subtrait of <code>collection.Vector</code> which represents sequences
+ *  that cannot be mutated.
+ *
+ *  @since 2.8
+ */
+
+trait Vector[+A]  extends scala.collection.immutable.Seq[A]
+                   with scala.collection.Vector[A]
+                   with GenericTraversableTemplate[A, Vector]
+                   with VectorLike[A, Vector[A]] {
+  override def companion: GenericCompanion[Vector] = Vector
+}
 
 
 /**
@@ -27,8 +43,9 @@ object Vector extends SeqFactory[Vector] {
   def newBuilder[A]: Builder[A, Vector[A]] =
     new VectorBuilder[A]
 
-  // TODO: override val empty = new Vector(0, 0, 0)
+  // TODO: override val empty = new VectorImpl(0, 0, 0)
 }
+
 
 
 trait VectorPointer[T] {
@@ -556,16 +573,10 @@ trait VectorPointer[T] {
 
 
 
-/** A subtrait of <code>collection.Vector</code> which represents sequences
- *  that cannot be mutated.
- *
- *  @since 2.8
- */
-class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.collection.immutable.Seq[A]
-                  with scala.collection.Seq[A]
-                  with GenericTraversableTemplate[A, Vector]
-                  with SeqLike[A, Vector[A]]
-                  with VectorPointer[A @uncheckedVariance] {
+@serializable @SerialVersionUID(7129304555082767876L)
+class VectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends Vector[A]
+                              with SeqLike[A, Vector[A]]
+                              with VectorPointer[A @uncheckedVariance] {
 
   //assert(startIndex >= 0, startIndex+"<0")
   //assert(startIndex <= endIndex, startIndex+">"+endIndex)
@@ -603,7 +614,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
 
   def update[B>:A](index: Int, value: B): Vector[B] = {
     val idx = checkRangeConvert(index)
-    val s = new Vector[B](startIndex, endIndex, idx)
+    val s = new VectorImpl[B](startIndex, endIndex, idx)
     s.initFrom(this)
     s.gotoPosClean(focus, idx, focus ^ idx)
     s.display0(idx & 0x1f) = value.asInstanceOf[AnyRef]
@@ -775,7 +786,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
 
     //println("cut front at " + cutIndex + ".." + endIndex + " (xor: "+xor+" shift: " + shift + " d: " + d +")")
 
-    val s = new Vector(cutIndex-shift, endIndex-shift, blockIndex-shift)
+    val s = new VectorImpl(cutIndex-shift, endIndex-shift, blockIndex-shift)
     s.initFrom(this)
     if (s.depth > 1)
       s.gotoPos(blockIndex, focus ^ blockIndex)
@@ -794,7 +805,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
 
     //println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
 
-    val s = new Vector(startIndex, cutIndex, blockIndex)
+    val s = new VectorImpl(startIndex, cutIndex, blockIndex)
     s.initFrom(this)
     if (s.depth > 1)
       s.gotoPos(blockIndex, focus ^ blockIndex)
@@ -825,7 +836,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
           if (depth > 1) {
             val newBlockIndex = blockIndex + shift
             val newFocus = focus + shift
-            val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            val s = new VectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
             s.debug
@@ -840,7 +851,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
             //assert(newBlockIndex == 0)
             //assert(newFocus == 0)
 
-            val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            val s = new VectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
             s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
@@ -856,7 +867,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
           val newBlockIndex = blockIndex + move
           val newFocus = focus + move
 
-          val s = new Vector(startIndex - 1 + move, endIndex + move, newBlockIndex)
+          val s = new VectorImpl(startIndex - 1 + move, endIndex + move, newBlockIndex)
           s.initFrom(this)
           s.debug
           s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
@@ -868,7 +879,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
           val newBlockIndex = blockIndex
           val newFocus = focus
 
-          val s = new Vector(startIndex - 1, endIndex, newBlockIndex)
+          val s = new VectorImpl(startIndex - 1, endIndex, newBlockIndex)
           s.initFrom(this)
           s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -878,7 +889,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
 
       } else {
 //        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new Vector(startIndex - 1, endIndex, blockIndex)
+        val s = new VectorImpl(startIndex - 1, endIndex, blockIndex)
         s.initFrom(this)
         s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
         s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -888,7 +899,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
       // empty vector, just insert single element at the back
       val elems = new Array[AnyRef](32)
       elems(31) = value.asInstanceOf[AnyRef]
-      val s = new Vector(31,32,0)
+      val s = new VectorImpl(31,32,0)
       s.depth = 1
       s.display0 = elems
       s
@@ -914,7 +925,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
           if (depth > 1) {
             val newBlockIndex = blockIndex - shift
             val newFocus = focus - shift
-            val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            val s = new VectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
             s.debug
@@ -930,7 +941,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
             //assert(newBlockIndex == 0)
             //assert(newFocus == 0)
 
-            val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            val s = new VectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
             s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
@@ -942,7 +953,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
           val newBlockIndex = blockIndex
           val newFocus = focus
 
-          val s = new Vector(startIndex, endIndex + 1, newBlockIndex)
+          val s = new VectorImpl(startIndex, endIndex + 1, newBlockIndex)
           s.initFrom(this)
           s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -955,7 +966,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
         }
       } else {
 //        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new Vector(startIndex, endIndex + 1, blockIndex)
+        val s = new VectorImpl(startIndex, endIndex + 1, blockIndex)
         s.initFrom(this)
         s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
         s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -964,7 +975,7 @@ class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends scala.colle
     } else {
       val elems = new Array[AnyRef](32)
       elems(0) = value.asInstanceOf[AnyRef]
-      val s = new Vector(0,1,0)
+      val s = new VectorImpl(0,1,0)
       s.depth = 1
       s.display0 = elems
       s
@@ -1034,7 +1045,7 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
   }
 
   def result: Vector[A] = {
-    val s = new Vector[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
+    val s = new VectorImpl[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
     s.initFrom(this)
     if (depth > 1) s.gotoPos(0, blockIndex + lo)
     s
