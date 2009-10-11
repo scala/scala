@@ -158,6 +158,7 @@ trait Matrix extends MatrixAdditions {
 
       override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
     }
+    // val NoPatternVar = PatternVar(NoSymbol, EmptyTree, false)
 
     /** Sets the rhs to EmptyTree, which makes the valDef ignored in Scrutinee.
      */

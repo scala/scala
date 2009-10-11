@@ -53,12 +53,15 @@ trait ParallelMatching extends ast.TreeDSL
       -shortCuts.length
     }
 
+    // XXX transitional.
+    final def requestBody(bx: Int, subst: Bindings): Tree =
+      requestBody(bx, PatternVarGroup.fromBindings(subst.get(), targets(bx).freeVars))
+
     /** first time bx is requested, a LabelDef is returned. next time, a jump.
      *  the function takes care of binding
      */
-    final def requestBody(bx: Int, subst: Bindings): Tree = {
-      val target @ FinalState(tbx, body, freeVars) = targets(bx)
-      val pvgroup = PatternVarGroup.fromBindings(subst.get(), freeVars)
+    final def requestBody(bx: Int, pvgroup: PatternVarGroup): Tree = {
+      val target = targets(bx)
 
       // shortcut
       if (bx < 0) Apply(ID(shortCuts(-bx-1)), Nil)
@@ -70,7 +73,7 @@ trait ParallelMatching extends ast.TreeDSL
 
     /** the injection here handles alternatives and unapply type tests */
     final def make(tvars: PatternVarGroup, row1: List[Row]): Rep = {
-      def classifyPat(opat: Pattern, j: Int): Pattern = opat simplify tvars(j).sym
+      def classifyPat(opat: Pattern, j: Int): Pattern = opat simplify tvars(j)
 
       val rows = row1 flatMap (_ expandAlternatives classifyPat)
       if (rows.length != row1.length) make(tvars, rows)  // recursive call if any change
@@ -114,10 +117,13 @@ trait ParallelMatching extends ast.TreeDSL
       // sequences
       def seqType         = tpe.widen baseType SeqClass
       def elemType        = tpe typeArgs 0
-      def elemAt(i: Int)  = (id DOT (tpe member nme.apply))(LIT(i))
 
-      def createElemVar(i: Int)   = createVar(elemType, _ => elemAt(i))
-      def createSeqVar(drop: Int) = createVar(seqType, _ => id DROP drop)
+      private def elemAt(i: Int)  = (id DOT (tpe member nme.apply))(LIT(i))
+      private def createElemVar(i: Int)   = createVar(elemType, _ => elemAt(i))
+      private def createSeqVar(drop: Int) = createVar(seqType, _ => id DROP drop)
+
+      def createSequenceVars(count: Int): List[PatternVar] =
+        (0 to count).toList map (i => if (i < count) createElemVar(i) else createSeqVar(i))
 
       // for propagating "unchecked" to synthetic vars
       def isChecked = !(sym hasFlag TRANS_FLAG)
@@ -171,6 +177,7 @@ trait ParallelMatching extends ast.TreeDSL
       def isCaseHead = head.isCaseClass
       private val dummyCount = if (isCaseHead) headType.typeSymbol.caseFieldAccessors.length else 0
       def dummies = emptyPatterns(dummyCount)
+      // def dummies = head.dummies
 
       def apply(i: Int): Pattern = ps(i)
       def pzip() = ps.zipWithIndex
@@ -362,7 +369,8 @@ trait ParallelMatching extends ast.TreeDSL
         private def sameFunction(fn1: Tree) = fxn.symbol == fn1.symbol && (fxn equalsStructure fn1)
 
         def unapply(p: Pattern) = condOpt(p) {
-          case Pattern(UnApply(Apply(fn1, _), args), _) if sameFunction(fn1)  => args
+          case Pattern(UnApply(Apply(fn1, _), args), _) if sameFunction(fn1)  =>
+            tracing("sameUnapply", args)
         }
       }
       object SameUnapply {
@@ -372,13 +380,6 @@ trait ParallelMatching extends ast.TreeDSL
         }
       }
       def isSameUnapply(p: Pattern) = SameUnapply.unapply(p).isDefined
-
-      // Second argument is number of dummies to prepend in the default case
-      def mkNewRows(sameFilter: (List[Tree]) => List[Tree], dum: Int) =
-        for ((pat, r) <- zipped) yield pat match {
-          case sameUnapplyCall(args)  => r.insert2(toPats(sameFilter(args)) ::: List(NoPattern), pat.boundVariables, scrut.sym)
-          case _                      => r insert (emptyPatterns(dum) ::: List(pat))
-        }
 
       lazy val cond: Tree =
         if (unapplyResult.tpe.isBoolean) ID(unapplyResult.valsym)
@@ -403,11 +404,20 @@ trait ParallelMatching extends ast.TreeDSL
           for ((tpe, i) <- tpes.zipWithIndex) yield
             scrut.createVar(tpe, _ => fn(ID(tuple), productProj(tuple, i + 1)))
 
+        // the filter prevents infinite unapply recursion
+        def mkNewRows(sameFilter: (List[Tree]) => List[Tree]) = {
+          val dum = if (args.length <= 1) args.length else tpes.size
+          for ((pat, r) <- zipped) yield pat match {
+            case sameUnapplyCall(xs)  => r.insert2(toPats(sameFilter(xs)) ::: List(NoPattern), pat.boundVariables, scrut.sym)
+            case _                    => r insert (emptyPatterns(dum) ::: List(pat))
+          }
+        }
+
         // 0 is Boolean, 1 is Option[T], 2+ is Option[(T1,T2,...)]
         args.length match {
-          case 0  => (Nil, Nil, mkNewRows((xs) => Nil, 0))
-          case 1  => (List(pv), List(pv), mkNewRows(xs => List(xs.head), 1))
-          case _  => (pv :: tuplePVs, tuplePVs, mkNewRows(identity, tpes.size))
+          case 0  => (Nil, Nil, mkNewRows((xs) => Nil))
+          case 1  => (List(pv), List(pv), mkNewRows(xs => List(xs.head)))
+          case _  => (pv :: tuplePVs, tuplePVs, mkNewRows(identity))
         }
       }
 
@@ -437,7 +447,8 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       def getSubPatterns(x: Pattern): Option[List[Pattern]] = {
-        def defaults = Some(emptyPatterns(pivot.elemPatterns.length + 1))
+        // def defaults = Some(emptyPatterns(pivot.elemPatterns.length + 1))
+        def defaults = Some(pivot.dummies)
         val av @ ArrayValue(_, xs) = x.tree match {
           case x: ArrayValue      => x
           case EmptyTree | WILD() => return defaults
@@ -467,8 +478,7 @@ trait ParallelMatching extends ast.TreeDSL
         assert(scrut.tpe <:< head.tpe, "fatal: %s is not <:< %s".format(scrut, head.tpe))
 
         // one pattern var per sequence element up to elemCount, and one more for the rest of the sequence
-        val elemCount = pivot.nonStarPatterns.size
-        val pvs = ((0 until elemCount).toList map (scrut createElemVar _)) ::: List(scrut createSeqVar elemCount)
+        val pvs = scrut createSequenceVars pivot.nonStarPatterns.size
 
         val (nrows, frows): (List[Option[Row]], List[Option[Row]]) = List.unzip(
           for ((c, rows) <- pmatch pzip rest.rows) yield getSubPatterns(c) match {
@@ -663,11 +673,12 @@ trait ParallelMatching extends ast.TreeDSL
 
       // returns this rows with alternatives expanded
       def expandAlternatives(classifyPat: (Pattern, Int) => Pattern): List[Row] = {
+        def isNotAlternative(p: Pattern) = !cond(p.tree) { case _: Alternative => true }
+
         // classify all the top level patterns - alternatives come back unaltered
         val newPats: List[Pattern] = pats.zipWithIndex map tupled(classifyPat)
         // see if any alternatives were in there
-        val (ps, others) = newPats span (x => !x.isAlternative)
-
+        val (ps, others) = newPats span isNotAlternative
         // make a new row for each alternative, with it spliced into the original position
         if (others.isEmpty) List(copy(pats = ps))
         else extractBindings(others.head) map (x => replaceAt(ps.size, x))
@@ -684,8 +695,14 @@ trait ParallelMatching extends ast.TreeDSL
     class ExpandedMatrix(val rows: List[Row], val targets: List[FinalState]) {
       require(rows.size == targets.size)
 
-      override def toString() =
-        "ExpandedMatrix(%d)".format(rows.size) + pp(rows zip targets, true)
+      override def toString() = {
+        def rprint(r: Row) = "Row %d: %d pats, %d bound".format(r.bx, r.pats.size, r.subst.get().size)
+        def tprint(t: FinalState) = "%s (free = %s)".format(t.body, pp(t.freeVars))
+        val xs = rows zip targets map { case (r,t) => rprint(r) -> tprint(t) }
+        val ppstr = pp(xs, newlines = true)
+
+        "ExpandedMatrix(%d rows)".format(rows.size) + ppstr
+      }
     }
 
     abstract class State {
