@@ -77,12 +77,6 @@ trait Matrix extends MatrixAdditions {
   states. Otherwise,the error state is used after its reference count has been incremented.
   **/
 
-  case class MatrixInit(
-    roots: List[Symbol],
-    cases: List[CaseDef],
-    default: Tree
-  )
-
   case class MatrixContext(
     handleOuter: Tree => Tree,    // for outer pointer
     typer: Typer,                 // a local typer
@@ -95,13 +89,29 @@ trait Matrix extends MatrixAdditions {
     // TRANS_FLAG communicates there should be no exhaustiveness checking
     private def flags(checked: Boolean) = if (checked) Nil else List(TRANS_FLAG)
 
-    /** Every new variable allocated gets one of these. */
-    class PatternVar(val lhs: Symbol, val rhs: Tree) {
+    case class MatrixInit(
+      roots: List[PatternVar],
+      cases: List[CaseDef],
+      default: Tree
+    ) {
+      def tvars = roots map (_.lhs)
+      def valDefs = roots map (_.valDef)
+    }
+
+    /** Every temporary variable allocated is put in a PatternVar.
+     */
+    class PatternVar(val lhs: Symbol, val rhs: Tree, val checked: Boolean) {
+      def sym = lhs
       lazy val ident  = ID(lhs)
       lazy val valDef = typedValDef(lhs, rhs)
 
       override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
     }
+
+    /** Sets the rhs to EmptyTree, which makes the valDef ignored in Scrutinee.
+     */
+    def specialVar(lhs: Symbol, checked: Boolean) =
+      new PatternVar(lhs, EmptyTree, checked)
 
     /** Given a tree, creates a new synthetic variable of the same type
      *  and assigns the tree to it.
@@ -116,15 +126,17 @@ trait Matrix extends MatrixAdditions {
       val name  = newName(root.pos, label)
       val sym   = newVar(root.pos, tpe, flags(checked), name)
 
-      tracing("copy", new PatternVar(sym, root))
+      tracing("copy", new PatternVar(sym, root, checked))
     }
 
-    /** The rhs is expressed as a function of the lhs. */
+    /** Creates a new synthetic variable of the specified type and
+     *  assigns the result of f(symbol) to it.
+     */
     def createVar(tpe: Type, f: Symbol => Tree, checked: Boolean) = {
       val lhs = newVar(owner.pos, tpe, flags(checked))
       val rhs = f(lhs)
 
-      tracing("create", new PatternVar(lhs, rhs))
+      tracing("create", new PatternVar(lhs, rhs, checked))
     }
 
     private def newVar(

@@ -25,6 +25,9 @@ trait MatrixAdditions extends ast.TreeDSL
   private[matching] trait Squeezer {
     self: MatrixContext =>
 
+    def squeezedBlockPVs(pvs: List[PatternVar], exp: Tree): Tree =
+      squeezedBlock(pvs map (_.valDef), exp)
+
     def squeezedBlock(vds: List[Tree], exp: Tree): Tree =
       if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
       else                  Block(vds, exp)
@@ -204,7 +207,7 @@ trait MatrixAdditions extends ast.TreeDSL
       }
       private lazy val inexhaustives: List[List[Combo]] = {
         val collected =
-          for ((sym, i) <- tvars.zipWithIndex ; if requiresExhaustive(sym)) yield
+          for ((pv, i) <- tvars.zipWithIndex ; val sym = pv.lhs ; if requiresExhaustive(sym)) yield
             i -> sealedSymsFor(sym.tpe.typeSymbol)
 
         val folded =
@@ -230,7 +233,7 @@ trait MatrixAdditions extends ast.TreeDSL
       def check = {
         def errMsg = (inexhaustives map mkMissingStr).mkString
         if (inexhaustives.nonEmpty)
-          cunit.warning(tvars.head.pos, "match is not exhaustive!\n" + errMsg)
+          cunit.warning(tvars.head.lhs.pos, "match is not exhaustive!\n" + errMsg)
 
         rep
       }

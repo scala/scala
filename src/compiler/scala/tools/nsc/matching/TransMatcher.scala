@@ -56,31 +56,30 @@ trait TransMatcher extends ast.TreeDSL {
       (cases forall caseIsOk)
 
     // For x match { ... we start with a single root
-    def singleMatch(): (List[Tree], MatrixInit) = {
+    def singleMatch(): MatrixInit = {
       val v = copyVar(selector, isChecked)
-
-      (tracing("root(s)", List(v.valDef)), MatrixInit(List(v.lhs), cases, matchError(v.ident)))
+      tracing("root(s)", context.MatrixInit(List(v), cases, matchError(v.ident)))
     }
 
     // For (x, y, z) match { ... we start with multiple roots, called tpXX.
-    def tupleMatch(app: Apply): (List[Tree], MatrixInit) = {
+    def tupleMatch(app: Apply): MatrixInit = {
       val Apply(fn, args) = app
       val vs = args zip rootTypes map { case (arg, tpe) => copyVar(arg, isChecked, tpe, "tp") }
-
       def merror = matchError(treeCopy.Apply(app, fn, vs map (_.ident)))
-      (tracing("root(s)", vs map (_.valDef)), MatrixInit(vs map (_.lhs), cases, merror))
+
+      tracing("root(s)", context.MatrixInit(vs, cases, merror))
     }
 
     // sets up top level variables and algorithm input
-    val (vars, matrixInit) = selector match {
+    val matrixInit = selector match {
       case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) => tupleMatch(app)
       case _                                                              => singleMatch()
     }
 
-    val matrix  = new MatchMatrix(context, matrixInit)
-    val rep     = matrix.expansion                    // expands casedefs and assigns name
-    val mch     = typer typed rep.toTree              // executes algorithm, converts tree to DFA
-    val dfatree = typer typed Block(vars, mch)        // packages into a code block
+    val matrix  = new MatchMatrix(context) { lazy val data = matrixInit }
+    val rep     = matrix.expansion                            // expands casedefs and assigns name
+    val mch     = typer typed rep.toTree                      // executes algorithm, converts tree to DFA
+    val dfatree = typer typed Block(matrixInit.valDefs, mch)  // packages into a code block
 
     // redundancy check
     matrix.targets filter (_.isNotReached) foreach (cs => cunit.error(cs.body.pos, "unreachable code"))
