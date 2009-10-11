@@ -96,6 +96,7 @@ trait Matrix extends MatrixAdditions {
     ) {
       def tvars = roots map (_.lhs)
       def valDefs = roots map (_.valDef)
+      override def toString() = "MatrixInit(roots = %s, %d cases)".format(pp(roots), cases.size)
     }
 
     implicit def pvlist2pvgroup(xs: List[PatternVar]): PatternVarGroup =
@@ -104,6 +105,20 @@ trait Matrix extends MatrixAdditions {
     object PatternVarGroup {
       def apply(xs: PatternVar*) = new PatternVarGroup(xs.toList)
       def apply(xs: List[PatternVar]) = new PatternVarGroup(xs)
+
+      // XXX - transitional
+      def fromBindings(vlist: List[Binding], freeVars: List[Symbol] = Nil) = {
+        def vmap(v: Symbol): Option[Binding] = vlist find (_.pvar eq v)
+        val info =
+          if (freeVars.isEmpty) vlist
+          else (freeVars map vmap).flatten
+
+        val xs =
+          for (Binding(lhs, rhs) <- info) yield
+            new PatternVar(lhs, Ident(rhs) setType lhs.tpe, !(rhs hasFlag TRANS_FLAG))
+
+        new PatternVarGroup(xs)
+      }
     }
 
     val emptyPatternVarGroup = PatternVarGroup()
@@ -135,8 +150,8 @@ trait Matrix extends MatrixAdditions {
     class PatternVar(val lhs: Symbol, val rhs: Tree, val checked: Boolean) {
       def sym = lhs
       def valsym = valDef.symbol
-
-      def tpe = valsym.tpe // XXX how will sym.tpe differ from sym.tpe ?
+      // XXX how will valsym.tpe differ from sym.tpe ?
+      def tpe = valsym.tpe
 
       lazy val ident  = ID(lhs)
       lazy val valDef = tracing("typedVal", typer typedValDef (VAL(lhs) === rhs))

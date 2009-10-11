@@ -115,39 +115,19 @@ trait PatternBindings extends ast.TreeDSL
     if (tvar.info containsTp WildcardType)
       tvar setInfo pvar.info
 
-    def toIdent       = Ident(tvar) setType pvar.tpe
-    def castIfNeeded  =
-      if (tvar.tpe <:< pvar.tpe) ID(tvar)
-      else ID(tvar) AS_ANY pvar.tpe
-
     override def toString() = pp(pvar -> tvar)
   }
 
-  case class BindingsInfo(xs: List[Binding]) {
-    def patternVars = xs map (_.pvar)
-    def temporaryVars = xs map (_.tvar)
-    def idents = xs map (_.toIdent)
-
-    def patternValDefs(implicit context: MatrixContext) =
-      for (b @ Binding(pvar, tvar) <- xs) yield
-        context.typedValDef(pvar, b.toIdent)
-  }
-
-  class Bindings(private val vlist: List[Binding]) extends Function1[Symbol, Option[Ident]] {
+  class Bindings(private val vlist: List[Binding]) {
     if (!vlist.isEmpty)
       traceCategory("Bindings", this.toString)
 
-    def vmap(v: Symbol): Option[Binding] = vlist find (_.pvar eq v)
-
-    // filters the given list down to those defined in these bindings
-    def infoFor(vs: List[Symbol]) = BindingsInfo(vs map vmap flatten)
-    def infoForAll                = BindingsInfo(vlist)
+    def get() = vlist
 
     def add(vs: Iterable[Symbol], tvar: Symbol): Bindings = {
       val newBindings = vs.toList map (v => Binding(v, tvar))
       new Bindings(newBindings ++ vlist)
     }
-    def apply(v: Symbol): Option[Ident] = vmap(v) map (_.toIdent)
 
     override def toString() = pp(vlist)
   }

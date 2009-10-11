@@ -57,20 +57,15 @@ trait ParallelMatching extends ast.TreeDSL
      *  the function takes care of binding
      */
     final def requestBody(bx: Int, subst: Bindings): Tree = {
-      implicit val ctx = context
       val target @ FinalState(tbx, body, freeVars) = targets(bx)
-      val substInfo = subst infoFor freeVars
-      import substInfo._
-
-      // XXX when is this not true?
-      // assert(tbx == bx)
+      val pvgroup = PatternVarGroup.fromBindings(subst.get(), freeVars)
 
       // shortcut
       if (bx < 0) Apply(ID(shortCuts(-bx-1)), Nil)
       // first time this bx is requested - might be bound elsewhere
-      else if (target.isNotReached) target.createLabelBody(bx, patternVars, patternValDefs)
+      else if (target.isNotReached) target.createLabelBody(bx, pvgroup)
       // call label "method" if possible
-      else target.getLabelBody(idents, patternValDefs)
+      else target.getLabelBody(pvgroup)
     }
 
     /** the injection here handles alternatives and unapply type tests */
@@ -179,7 +174,10 @@ trait ParallelMatching extends ast.TreeDSL
 
       def apply(i: Int): Pattern = ps(i)
       def pzip() = ps.zipWithIndex
-      def pzip[T](others: List[T]) = ps zip others
+      def pzip[T](others: List[T]) = {
+        assert(ps.size == others.size, "Internal error: ps = %s, others = %s".format(ps, others))
+        ps zip others
+      }
 
       // Any unapply - returns Some(true) if a type test is needed before the unapply can
       // be called (e.g. def unapply(x: Foo) = { ... } but our scrutinee is type Any.)
@@ -223,6 +221,10 @@ trait ParallelMatching extends ast.TreeDSL
     /***** Rule Applications *****/
 
     sealed abstract class RuleApplication {
+      // def isFinal = false
+      // def body = tree
+      // def freeVars = (scrut.pv :: rest.tvars).syms
+
       def pmatch: PatternMatch
       def rest: Rep
       def cond: Tree
@@ -242,7 +244,7 @@ trait ParallelMatching extends ast.TreeDSL
         pvgroup: PatternVarGroup = emptyPatternVarGroup,
         includeScrut: Boolean = true): Rep =
       {
-        val scrutpvs = if (includeScrut) List(pmatch.scrut.pv) else Nil
+        val scrutpvs = if (includeScrut) List(scrut.pv) else Nil
         make(pvgroup.pvs ::: scrutpvs ::: rest.tvars, rows)
       }
 
@@ -263,10 +265,9 @@ trait ParallelMatching extends ast.TreeDSL
       lazy val success  = requestBody(bx, subst)
       lazy val failure  = guardedRest.toTree
 
-      final def tree(): Tree = {
-        implicit val ctx = context
-        squeezedBlock(subst.infoForAll.patternValDefs, codegen)
-      }
+      lazy val pvgroup  = PatternVarGroup.fromBindings(subst.get())
+
+      final def tree(): Tree = squeezedBlock(pvgroup.valDefs, codegen)
     }
 
     /** Mixture rule for all literal ints (and chars) i.e. hopefully a switch
@@ -721,7 +722,10 @@ trait ParallelMatching extends ast.TreeDSL
         abort(msg.format(name, pp(labelParamTypes), pp(idents), pp(vdefs)))
       }
 
-      def createLabelBody(index: Int, args: List[Symbol], vdefs: List[Tree]) = {
+      def createLabelBody(index: Int, pvgroup: PatternVarGroup) = {
+        def args = pvgroup.syms
+        def vdefs = pvgroup.valDefs
+
         val name = "body%" + index
         require(_labelSym == null)
         referenceCount += 1
@@ -744,7 +748,9 @@ trait ParallelMatching extends ast.TreeDSL
         ifLabellable(vdefs, squeezedBlock(vdefs, label))
       }
 
-      def getLabelBody(idents: List[Tree], vdefs: List[Tree]): Tree = {
+      def getLabelBody(pvgroup: PatternVarGroup): Tree = {
+        def idents = pvgroup map (_.rhs)
+        def vdefs = pvgroup.valDefs
         referenceCount += 1
         // if (idents.size != labelParamTypes.size)
         //   consistencyFailure(idents, vdefs)
