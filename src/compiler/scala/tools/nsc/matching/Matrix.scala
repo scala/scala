@@ -98,12 +98,48 @@ trait Matrix extends MatrixAdditions {
       def valDefs = roots map (_.valDef)
     }
 
+    implicit def pvlist2pvgroup(xs: List[PatternVar]): PatternVarGroup =
+      PatternVarGroup(xs)
+
+    object PatternVarGroup {
+      def apply(xs: PatternVar*) = new PatternVarGroup(xs.toList)
+      def apply(xs: List[PatternVar]) = new PatternVarGroup(xs)
+    }
+
+    val emptyPatternVarGroup = PatternVarGroup()
+    class PatternVarGroup(val pvs: List[PatternVar]) {
+      def syms = pvs map (_.sym)
+      def valDefs = pvs map (_.valDef)
+      def idents = pvs map (_.ident)
+
+      def extractIndex(index: Int): (PatternVar, PatternVarGroup) = {
+        val (t, ts) = self.extractIndex(pvs, index)
+        (t, PatternVarGroup(ts))
+      }
+
+      def size = pvs.size
+      def head = pvs.head
+      def ::(t: PatternVar) = PatternVarGroup(t :: pvs)
+      def :::(ts: List[PatternVar]) = PatternVarGroup(ts ::: pvs)
+      def ++(other: PatternVarGroup) = PatternVarGroup(pvs ::: other.pvs)
+
+      def apply(i: Int) = pvs(i)
+      def zipWithIndex = pvs.zipWithIndex
+      def indices = pvs.indices
+      def map[T](f: PatternVar => T) = pvs map f
+      def filter(p: PatternVar => Boolean) = PatternVarGroup(pvs filter p)
+    }
+
     /** Every temporary variable allocated is put in a PatternVar.
      */
     class PatternVar(val lhs: Symbol, val rhs: Tree, val checked: Boolean) {
       def sym = lhs
+      def valsym = valDef.symbol
+
+      def tpe = valsym.tpe // XXX how will sym.tpe differ from sym.tpe ?
+
       lazy val ident  = ID(lhs)
-      lazy val valDef = typedValDef(lhs, rhs)
+      lazy val valDef = tracing("typedVal", typer typedValDef (VAL(lhs) === rhs))
 
       override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
     }
