@@ -99,6 +99,8 @@ trait Matrix extends MatrixAdditions {
     class PatternVar(val lhs: Symbol, val rhs: Tree) {
       lazy val ident  = ID(lhs)
       lazy val valDef = typedValDef(lhs, rhs)
+
+      override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
     }
 
     /** Given a tree, creates a new synthetic variable of the same type
@@ -114,7 +116,7 @@ trait Matrix extends MatrixAdditions {
       val name  = newName(root.pos, label)
       val sym   = newVar(root.pos, tpe, flags(checked), name)
 
-      new PatternVar(sym, root)
+      tracing("copy", new PatternVar(sym, root))
     }
 
     /** The rhs is expressed as a function of the lhs. */
@@ -122,7 +124,7 @@ trait Matrix extends MatrixAdditions {
       val lhs = newVar(owner.pos, tpe, flags(checked))
       val rhs = f(lhs)
 
-      new PatternVar(lhs, rhs)
+      tracing("create", new PatternVar(lhs, rhs))
     }
 
     private def newVar(
@@ -133,10 +135,7 @@ trait Matrix extends MatrixAdditions {
     {
       val n: Name = if (name == null) newName(pos, "temp") else name
       // careful: pos has special meaning
-      val res = owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
-
-      traceCategory("newVar", "%s: %s", res, tpe)
-      res
+      owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
     }
 
     def typedValDef(x: Symbol, rhs: Tree) =

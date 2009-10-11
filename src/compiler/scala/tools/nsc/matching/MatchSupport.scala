@@ -7,6 +7,8 @@ package scala.tools.nsc
 package matching
 
 import transform.ExplicitOuter
+import ast.{ TreePrinters, Trees }
+import java.io.{ StringWriter, PrintWriter }
 
 /** Ancillary bits of ParallelMatching which are better off
  *  out of the way.
@@ -73,10 +75,12 @@ trait MatchSupport extends ast.TreeDSL
     // pretty print for debugging
     def pp(x: Any): String = pp(x, false)
     def pp(x: Any, newlines: Boolean): String = {
-      def clean(s: String): String = s.replaceAll("""java\.lang\.""", "")
+      def clean(s: String): String =
+        s . replaceAll("""java\.lang\.""", "")
+          . replaceAll("""\$iw\.""", "")
 
       val elems: List[Any] = x match {
-        case x: String      => return clean(x)
+        case x: String      => return x
         case xs: List[_]    => xs
         case x: Tuple2[_,_] => return pp(x._1) + " -> " + pp(x._2)
         case x              => return pp(x.toString)
@@ -88,7 +92,7 @@ trait MatchSupport extends ast.TreeDSL
         else xs2.mkString("(", ", ", ")")
       }
 
-      pplist(elems)
+      clean(pplist(elems))
     }
 
     def ifDebug(body: => Unit): Unit          = { if (settings.debug.value) body }
@@ -139,5 +143,106 @@ trait MatchSupport extends ast.TreeDSL
 
   /** Drops the 'i'th element of a list.
    */
-  def dropIndex[T](xs: List[T], n: Int) = (xs take n) ::: (xs drop (n + 1))
+  def dropIndex[T](xs: List[T], n: Int) = {
+    val (l1, l2) = xs splitAt n
+    l1 ::: (l2 drop 1)
+  }
+
+  /** Extract the nth element of a list and return it and the remainder.
+   */
+  def extractIndex[T](xs: List[T], n: Int): (T, List[T]) =
+    (xs(n), dropIndex(xs, n))
+
+  /** A tree printer which is stingier about vertical whitespace and unnecessary
+   *  punctuation than the standard one.
+   */
+
+  // lazy val compactTreePrinter = compactTreePrinters.create()
+
+  class CompactTreePrinter extends {
+    val trees: global.type = global
+  } with TreePrinters {
+      import trees._
+
+      override def create(writer: PrintWriter): TreePrinter = new TreePrinter(writer) {
+        // drill down through Blocks and pull out the real statements.
+        def allStatements(t: Tree): List[Tree] = t match {
+          case Block(stmts, expr) => (stmts flatMap allStatements) ::: List(expr)
+          case _                  => List(t)
+        }
+
+        override def printRaw(tree: Tree): Unit = {
+          // routing supercalls through this for debugging ease
+          def s() = {
+            // Console.println("toSuper: " + tree.getClass)
+            super.printRaw(tree)
+          }
+
+          tree match {
+            // labels used for jumps - does not map to valid scala code
+            case LabelDef(name, params, rhs) =>
+              print("labeldef %s(%s) = ".format(name, params mkString ","))
+              printRaw(rhs)
+
+            // target.method(arg) ==> target method arg
+            case Apply(Select(target, method), List(arg)) =>
+              (target, arg) match {
+                case (_: Ident, _: Literal | _: Ident)  =>
+                  printRaw(target)
+                  print(" %s " format symName(tree, method))
+                  printRaw(arg)
+                case _                        => s()
+              }
+
+            // case Select(Select(_, x), y) if x.toString == "this" =>
+            //   print(symName(tree, y))
+            // target.unary_! ==> !target
+            case Select(qualifier, name) =>
+              val n = symName(tree, name)
+              if (n startsWith "unary_") {
+                print(n drop 6)
+                print(qualifier)
+              }
+              else s()
+
+            // target.toString() ==> target.toString
+            case Apply(fn, Nil)   => printRaw(fn)
+
+            // if a Block only continues one actual statement, just print it.
+            case Block(stats, expr) =>
+              allStatements(tree) match {
+                case List(x)            => printRow(List(x), "", ";", "")
+                case _                  => s()
+              }
+
+            // If thenp or elsep has only one statement, it doesn't need more than one line.
+            case If(cond, thenp, elsep) =>
+              printRow(List(cond), "if (", "", ") ")
+
+              def ifIndented(x: Tree) = {
+                indent ; println ; printRaw(x) ; undent
+              }
+
+              indent ; println ;
+              allStatements(thenp) match {
+                case List(x: If)  => ifIndented(x)
+                case List(x)      => printRaw(x)
+                case _            => printRaw(thenp)
+              }
+              undent ; println ;
+              val elseStmts = allStatements(elsep)
+              if (!elseStmts.isEmpty) {
+                print("else")
+                indent ; println
+                elseStmts match {
+                  case List(x)      => printRaw(x)
+                  case xs           => printRaw(elsep)
+                }
+                undent ; println
+              }
+            case _        => s()
+          }
+        }
+      }
+  }
 }

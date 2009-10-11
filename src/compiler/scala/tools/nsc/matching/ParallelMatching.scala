@@ -34,7 +34,6 @@ trait ParallelMatching extends ast.TreeDSL
   import Flags.{ TRANS_FLAG }
 
   /** Transition **/
-  def isRightIgnoring(t: Tree) = cond(unbind(t)) { case ArrayValue(_, xs) if !xs.isEmpty => isStar(xs.last) }
   def toPats(xs: List[Tree]): List[Pattern] = xs map Pattern.apply
 
   /** The umbrella matrix class. **/
@@ -71,6 +70,19 @@ trait ParallelMatching extends ast.TreeDSL
       // call label "method" if possible
       else target.getLabelBody(idents, patternValDefs)
     }
+
+    // make(tvars, rows)
+    // make(scrut.sym :: rest.tvars, xs).toTree
+    // make(rest.tvars, newRows ::: defaultRows)
+    // make(r.tvars, r.rows map (x => x rebind bindVars(tag, x.subst)))
+    // make(rest.tvars, defaultRows).toTree
+    // make(ntemps ::: scrut.sym :: rest.tvars, rows).toTree
+    // make(List(vs map (_.lhs), symList, rest.tvars).flatten, nrows.flatten)
+    // make(scrut.sym :: rest.tvars, frows.flatten).toTree
+    // make(scrut.sym :: rest.tvars, rows).toTree
+    // make(subtestVars ::: casted.accessorVars ::: rest.tvars, newRows)
+    // make(tvars, rows.tail)
+    // make(_tvars, _rows)
 
     /** the injection here handles alternatives and unapply type tests */
     final def make(tvars: List[Symbol], row1: List[Row]): Rep = {
@@ -450,7 +462,7 @@ trait ParallelMatching extends ast.TreeDSL
             case (false, false) => toPats(xs) ::: List(NoPattern)
           })
         }
-        else if (pivot.hasStar && isRightIgnoring(av) && xs.length-1 < pivotLen)
+        else if (pivot.hasStar && sp.hasStar && xs.length-1 < pivotLen)
           Some(emptyPatterns(pivotLen + 1) ::: List(x))
         else
           defaults    // XXX
@@ -574,7 +586,7 @@ trait ParallelMatching extends ast.TreeDSL
           (pattern match {
             case Pattern(LIT(null), _) if !(p =:= s)                            => (None, None, pass)                         // (1)
             case x if isObjectTest                                              => (NoPattern, dummy, None)                   // (2)
-            case Pattern(Typed(pp @ Pattern(_: UnApply, _), _), _) if sMatchesP => (Pattern(pp), dummy, None)                 // (3)
+            // case Pattern(Typed(pp @ Pattern(_: UnApply, _), _), _) if sMatchesP => (Pattern(pp), dummy, None)                 // (3)
             case Pattern(Typed(pp, _), _) if sMatchesP                          => (alts(Pattern(pp), pattern), dummy, None)  // (4)
             case Pattern(_: UnApply, _)                                         => (NoPattern, dummy, pass)
             case x if !x.isDefault && sMatchesP                                 => (alts(NoPattern, pattern), subs, None)
@@ -648,6 +660,12 @@ trait ParallelMatching extends ast.TreeDSL
 
       /** Drops the 'i'th pattern */
       def drop(i: Int) = copy(pats = dropIndex(pats, i))
+
+      /** Extracts the nth pattern. */
+      def extractColumn(i: Int) = {
+        val (x, xs) = extractIndex(pats, i)
+        (x, copy(pats = xs))
+      }
 
       /** Replaces the 'i'th pattern with the argument. */
       def replaceAt(i: Int, p: Pattern) = {
@@ -773,16 +791,18 @@ trait ParallelMatching extends ast.TreeDSL
       /** Cut out the column containing the non-default pattern. */
       class Cut(index: Int) {
         /** The first two separate out the 'i'th pattern in each row from the remainder. */
-        private val _column = rows map (_ pats index)
-        private val _rows   = rows map (_ drop index)
+        private val (_column, _rows) =
+          List.unzip(rows map (_ extractColumn index))
 
         /** Now the 'i'th tvar is separated out and used as a new Scrutinee. */
-        private val _sym    = tvars(index)
-        private val _tvars  = dropIndex(tvars, index)
-        private val _scrut  = new Scrutinee(_sym)
+        private val (_sym, _tvars) =
+          extractIndex(tvars, index)
 
-        /** The first non-default pattern (others.head) takes the place of _column's head. */
-        def mix = MixtureRule(_scrut, others.head :: _column.tail, make(_tvars, _rows))
+        /** The non-default pattern (others.head) replaces the column head. */
+        private val (_ncol, _nrep) =
+          (others.head :: _column.tail, make(_tvars, _rows))
+
+        def mix = MixtureRule(new Scrutinee(_sym), _ncol, _nrep)
       }
 
       /** Converts this to a tree - recursively acquires subreps. */

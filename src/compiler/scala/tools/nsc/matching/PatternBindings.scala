@@ -134,7 +134,9 @@ trait PatternBindings extends ast.TreeDSL
   }
 
   class Bindings(private val vlist: List[Binding]) extends Function1[Symbol, Option[Ident]] {
-    traceCategory("Bindings", this.toString)
+    if (!vlist.isEmpty)
+      traceCategory("Bindings", this.toString)
+
     def vmap(v: Symbol): Option[Binding] = vlist find (_.pvar eq v)
 
     // filters the given list down to those defined in these bindings

@@ -460,19 +460,19 @@ abstract class ExplicitOuter extends InfoTransform
             sym setFlag notPROTECTED
           super.transform(tree)
 
-        case Apply(sel @ Select(qual, name), args)
-          if (name == nme.CONSTRUCTOR && isInner(sel.symbol.owner)) =>
-            val outerVal = atPos(tree.pos) {
-              if (qual.isInstanceOf[This]) { // it's a call between constructors of same class
-                assert(outerParam != NoSymbol)
-                outerValue
-              } else {
-                var pre = qual.tpe.prefix
-                if (pre == NoPrefix) pre = sym.owner.outerClass.thisType
-                gen.mkAttributedQualifier(pre)
-              }
-            }
-            super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
+        case Apply(sel @ Select(qual, name), args) if (name == nme.CONSTRUCTOR && isInner(sel.symbol.owner)) =>
+          val outerVal = atPos(tree.pos)(qual match {
+            // it's a call between constructors of same class
+            case _: This  =>
+              assert(outerParam != NoSymbol)
+              outerValue
+            case _        =>
+              gen.mkAttributedQualifier(qual.tpe.prefix match {
+                case NoPrefix => sym.owner.outerClass.thisType
+                case x        => x
+              })
+          })
+          super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
 
         // TransMatch hook
         case mch: Match =>

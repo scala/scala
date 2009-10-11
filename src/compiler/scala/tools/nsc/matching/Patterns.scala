@@ -187,17 +187,17 @@ trait Patterns extends ast.TreeDSL {
     lazy val ArrayValue(elemtpt, elems) = tree
     lazy val elemPatterns = toPats(elems)
     lazy val nonStarPatterns = if (hasStar) elemPatterns.init else elemPatterns
-    private def starPattern = elemPatterns.last
+    private def lastPattern = elemPatterns.last
 
     override def subpatternsForVars: List[Pattern] = elemPatterns
 
-    def hasStar = isRightIgnoring(tree)
+    def hasStar = elems.nonEmpty && (cond(lastPattern) { case _: StarPattern => true })
     def nonStarLength = nonStarPatterns.length
     def isAllDefaults = nonStarPatterns forall (_.isDefault)
 
     def rebindStar(seqType: Type): List[Pattern] = {
       require(hasStar)
-      nonStarPatterns ::: List(starPattern rebindTo WILD(seqType))
+      nonStarPatterns ::: List(lastPattern rebindTo WILD(seqType))
     }
 
     // optimization to avoid trying to match if length makes it impossible
@@ -503,20 +503,20 @@ trait Patterns extends ast.TreeDSL {
     }
   }
 
-  object SeqStarSubPatterns {
-    def removeStar(xs: List[Tree], seqType: Type): List[Pattern] = {
-      val ps = toPats(xs)
-      ps.init ::: List(ps.last rebindToType seqType)
-    }
-
-    def unapply(x: Pattern)(implicit min: Int, seqType: Type): Option[List[Pattern]] = x.tree match {
-      case av @ ArrayValue(_, xs) =>
-        if      (!isRightIgnoring(av) && xs.length   == min) Some(toPats(xs ::: List(gen.mkNil, EmptyTree)))    // Seq(p1,...,pN)
-        else if ( isRightIgnoring(av) && xs.length-1 == min) Some(removeStar(xs, seqType) ::: List(NoPattern))  // Seq(p1,...,pN,_*)
-        else if ( isRightIgnoring(av) && xs.length-1  < min) Some(emptyPatterns(min + 1) ::: List(x))           // Seq(p1..,pJ,_*)   J < N
-        else None
-      case _ =>
-        if (x.isDefault) Some(emptyPatterns(min + 1 + 1)) else None
-    }
-  }
+  // object SeqStarSubPatterns {
+  //   def removeStar(xs: List[Tree], seqType: Type): List[Pattern] = {
+  //     val ps = toPats(xs)
+  //     ps.init ::: List(ps.last rebindToType seqType)
+  //   }
+  //
+  //   def unapply(x: Pattern)(implicit min: Int, seqType: Type): Option[List[Pattern]] = x.tree match {
+  //     case av @ ArrayValue(_, xs) =>
+  //       if      (!isRightIgnoring(av) && xs.length   == min) Some(toPats(xs ::: List(gen.mkNil, EmptyTree)))    // Seq(p1,...,pN)
+  //       else if ( isRightIgnoring(av) && xs.length-1 == min) Some(removeStar(xs, seqType) ::: List(NoPattern))  // Seq(p1,...,pN,_*)
+  //       else if ( isRightIgnoring(av) && xs.length-1  < min) Some(emptyPatterns(min + 1) ::: List(x))           // Seq(p1..,pJ,_*)   J < N
+  //       else None
+  //     case _ =>
+  //       if (x.isDefault) Some(emptyPatterns(min + 1 + 1)) else None
+  //   }
+  // }
 }
