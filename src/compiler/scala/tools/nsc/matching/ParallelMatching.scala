@@ -173,7 +173,7 @@ trait ParallelMatching extends ast.TreeDSL
       def tail = ps.tail
       def size = ps.length
 
-      def headType = head.typeToMatch
+      def headType = head.necessaryType
       def isCaseHead = head.isCaseClass
       private val dummyCount = if (isCaseHead) headType.typeSymbol.caseFieldAccessors.length else 0
       def dummies = emptyPatterns(dummyCount)
@@ -559,7 +559,7 @@ trait ParallelMatching extends ast.TreeDSL
           def pMatchesS = matches(p, s)
 
           def alts[T](yes: T, no: T): T = if (p =:= s) yes else no
-          def isObjectTest              = pattern.isObject && (p =:= pattern.typeToMatch)
+          def isObjectTest              = pattern.isObject && (p =:= pattern.necessaryType)
 
           lazy val dummy          = (j, pmatch.dummies)
           lazy val pass           = (j, pattern)
