@@ -30,6 +30,23 @@ trait MatchSupport extends ast.TreeDSL
     import definitions._
     implicit def enrichType(x: Type): RichType = new RichType(x)
 
+    // see bug1434.scala for an illustration of why "x <:< y" is insufficient.
+    // this code is definitely inadequate at best.  Inherited comment:
+    //
+    //   an approximation of _tp1 <:< tp2 that ignores _ types. this code is wrong,
+    //   ideally there is a better way to do it, and ideally defined in Types.scala
+    private[matching] def matches(arg1: Type, arg2: Type) = {
+      val List(t1, t2) = List(arg1, arg2) map decodedEqualsType
+      def eqSymbols = t1.typeSymbol eq t2.typeSymbol
+      //  note: writing this as "t1.baseTypeSeq exists (_ =:= t2)" does not lead to 1434 passing.
+      def isSubtype = t1.baseTypeSeq exists (_.typeSymbol eq t2.typeSymbol)
+
+      (t1 <:< t2) || ((t1, t2) match {
+        case (_: TypeRef, _: TypeRef) => !t1.isArray && (t1.prefix =:= t2.prefix) && (eqSymbols || isSubtype)
+        case _ => false
+      })
+    }
+
     class RichType(undecodedTpe: Type) {
       def tpe = decodedEqualsType(undecodedTpe)
       def isAnyRef = tpe <:< AnyRefClass.tpe
@@ -135,27 +152,6 @@ trait MatchSupport extends ast.TreeDSL
     def indentAll(s: Seq[Any]) = s map ("  " + _.toString() + "\n") mkString
   }
 
-  /** Transforms a list of triples into a triple of lists.
-   *
-   *  @param xs the list of triples to unzip
-   *  @return a triple of lists.
-   */
-  def unzip3[A,B,C](xs: List[(A,B,C)]): (List[A], List[B], List[C]) = {
-    import collection.mutable.ListBuffer
-
-    val b1 = new ListBuffer[A]
-    val b2 = new ListBuffer[B]
-    val b3 = new ListBuffer[C]
-    var xc = xs
-    while (!xc.isEmpty) {
-      b1 += xc.head._1
-      b2 += xc.head._2
-      b3 += xc.head._3
-      xc = xc.tail
-    }
-    (b1.toList, b2.toList, b3.toList)
-  }
-
   /** Drops the 'i'th element of a list.
    */
   def dropIndex[T](xs: List[T], n: Int) = {
@@ -171,9 +167,6 @@ trait MatchSupport extends ast.TreeDSL
   /** A tree printer which is stingier about vertical whitespace and unnecessary
    *  punctuation than the standard one.
    */
-
-  // lazy val compactTreePrinter = compactTreePrinters.create()
-
   class CompactTreePrinter extends {
     val trees: global.type = global
   } with TreePrinters {

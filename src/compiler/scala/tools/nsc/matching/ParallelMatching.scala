@@ -526,77 +526,49 @@ trait ParallelMatching extends ast.TreeDSL
       override def toString() = "MixEquals(%s == %s)".format(scrut, head)
     }
 
-    /** mixture rule for type tests
-    **/
+    /** Mixture rule for type tests.
+     *  moreSpecific: more specific patterns
+     *      subsumed: more general patterns (subsuming current), rows index and subpatterns
+     *     remaining: remaining, rows index and pattern
+     */
     class MixTypes(val pmatch: PatternMatch, val rest: Rep) extends RuleApplication {
-      // see bug1434.scala for an illustration of why "x <:< y" is insufficient.
-      // this code is definitely inadequate at best.  Inherited comment:
-      //
-      //   an approximation of _tp1 <:< tp2 that ignores _ types. this code is wrong,
-      //   ideally there is a better way to do it, and ideally defined in Types.scala
-      private def matches(arg1: Type, arg2: Type) = {
-        val List(t1, t2) = List(arg1, arg2) map decodedEqualsType
-        def eqSymbols = t1.typeSymbol eq t2.typeSymbol
-        //  note: writing this as "t1.baseTypeSeq exists (_ =:= t2)" does not lead to 1434 passing.
-        def isSubtype = t1.baseTypeSeq exists (_.typeSymbol eq t2.typeSymbol)
+      case class Yes(bx: Int, moreSpecific: Pattern, subsumed: List[Pattern])
+      case class No(bx: Int, remaining: Pattern)
 
-        (t1 <:< t2) || ((t1, t2) match {
-          case (_: TypeRef, _: TypeRef) => !t1.isArray && (t1.prefix =:= t2.prefix) && (eqSymbols || isSubtype)
-          case _ => false
-        })
-      }
-
-      // moreSpecific: more specific patterns
-      //     subsumed: more general patterns (subsuming current), rows index and subpatterns
-      //    remaining: remaining, rows index and pattern
-      def join[T](xs: List[Option[T]]): List[T] = xs.flatMap(x => x)
-      val (moreSpecific, subsumed, remaining) : (List[Pattern], List[(Int, List[Pattern])], List[(Int, Pattern)]) = unzip3(
+      val (yeses, noes) : (List[Yes], List[No]) = List.unzip(
         for ((pattern, j) <- pmatch.pzip()) yield {
           // scrutinee, head of pattern group
-          val (s, p) = (pattern.tpe, pmatch.headType)
+          val (s, p) = (pattern.tpe, head.necessaryType)
+
+          def isEquivalent  = head.necessaryType =:= pattern.tpe
+          def isObjectTest  = pattern.isObject && (p =:= pattern.necessaryType)
 
           def sMatchesP = matches(s, p)
           def pMatchesS = matches(p, s)
 
-          def alts[T](yes: T, no: T): T = if (p =:= s) yes else no
-          def isObjectTest              = pattern.isObject && (p =:= pattern.necessaryType)
+          def ifEquiv(yes: Pattern): Pattern = if (isEquivalent) yes else pattern
 
-          lazy val dummy          = (j, pmatch.dummies)
-          lazy val pass           = (j, pattern)
-          lazy val subs           = (j, pattern subpatterns pmatch)
+          def passl(p: Pattern = NoPattern, ps: List[Pattern] = pmatch.dummies) = Some(Yes(j, p, ps))
+          def passr()                                                           = Some( No(j, pattern))
 
-          // each pattern will yield a triple of options corresponding to the three lists,
-          // which will be flattened down to the values
-          implicit def mkOpt[T](x: T): Option[T] = Some(x)    // limits noise from Some(value)
-
-          // Note - at the moment these comments are mostly trivial or nonsensical, but
-          // they persist from a much earlier time and I still try to read the tea leaves
-          //
-          // (1) special case for constant null
-          // (2) matching an object
-          // (3) <:< is never <equals>
-          // (4) never =:= for <equals>
+          def typed(pp: Tree) = passl(ifEquiv(Pattern(pp)))
+          def subs()          = passl(ifEquiv(NoPattern), pattern subpatterns pmatch)
 
           (pattern match {
-            case Pattern(LIT(null), _) if !(p =:= s)                            => (None, None, pass)                         // (1)
-            case x if isObjectTest                                              => (NoPattern, dummy, None)                   // (2)
-            // case Pattern(Typed(pp @ Pattern(_: UnApply, _), _), _) if sMatchesP => (Pattern(pp), dummy, None)                 // (3)
-            case Pattern(Typed(pp, _), _) if sMatchesP                          => (alts(Pattern(pp), pattern), dummy, None)  // (4)
-            case Pattern(_: UnApply, _)                                         => (NoPattern, dummy, pass)
-            case x if !x.isDefault && sMatchesP                                 => (alts(NoPattern, pattern), subs, None)
-            case x if  x.isDefault || pMatchesS                                 => (NoPattern, dummy, pass)
-            case _                                                              => (None, None, pass)
-
-            // The below (back when the surrounding code looked much different) fixed bugs 425 and 816
-            // with only the small downside of causing 60 other tests to fail.
-            // case _ =>
-            //   if (erased_xIsaY || xIsaY && !isDef)  (alts(EmptyTree, pat), subs, None) // never =:= for <equals>
-            //   else if (isDef)                       (EmptyTree,           dummy, pass)
-            //   else                                  (None,                 None, pass)
-
-          }) : (Option[Pattern], Option[(Int, List[Pattern])], Option[(Int, Pattern)])
+            case Pattern(LIT(null), _) if !(p =:= s)        => (None, passr)      // (1)
+            case x if isObjectTest                          => (passl(), None)    // (2)
+            case Pattern(Typed(pp, _), _)     if sMatchesP  => (typed(pp), None)  // (4)
+            case Pattern(_: UnApply, _)                     => (passl(), passr)
+            case x if !x.isDefault && sMatchesP             => (subs(), None)
+            case x if  x.isDefault || pMatchesS             => (passl(), passr)
+            case _                                          => (None, passr)
+          }) : (Option[Yes], Option[No])
         }
-      ) match { case (x,y,z) => (join(x), join(y), join(z)) }
+      ) match { case (x,y) => (x.flatten, y.flatten) }
+
+      val moreSpecific = yeses map (_.moreSpecific)
+      val subsumed = yeses map (x => (x.bx, x.subsumed))
+      val remaining = noes map (x => (x.bx, x.remaining))
 
       // temporary checks so we're less crashy while we determine what to implement.
       def checkErroneous(scrut: Scrutinee): Type = {
@@ -608,38 +580,27 @@ trait ParallelMatching extends ast.TreeDSL
         }
       }
 
-      override def toString = {
-        val msgs = List(
-          "moreSpecific: " + pp(moreSpecific),
-          "    subsumed: " + pp(subsumed),
-          "   remaining: " + pp(remaining)
-        )
-
-        super.toString() + "\n" + indentAll(msgs)
-      }
-
-      private def isAnyMoreSpecific = moreSpecific exists (x => !x.isEmpty)
-      private def mkZipped          = moreSpecific zip subsumed map {
-        case (mspat, (j, pmatch)) => (j, mspat :: pmatch)
-      }
+      private def mkZipped =
+        for (Yes(j, moreSpecific, subsumed) <- yeses) yield
+          j -> (moreSpecific :: subsumed)
 
       lazy val casted = scrut castedTo pmatch.headType
       lazy val cond   = condition(checkErroneous(casted), scrut)
 
+      private def isAnyMoreSpecific = yeses exists (x => !x.moreSpecific.isEmpty)
+      lazy val (subtests, subtestVars) =
+        if (isAnyMoreSpecific)  (mkZipped, List(casted.pv))
+        else                    (subsumed, Nil)
+
+      lazy val newRows =
+        for ((j, ps) <- subtests) yield
+          (rest rows j).insert2(ps, pmatch(j).boundVariables, casted.sym)
+
       lazy val success = {
-        val (subtests, subtestVars) =
-          if (isAnyMoreSpecific)  (mkZipped, List(casted.pv))
-          else                    (subsumed, Nil)
-
-        val newRows =
-          for ((j, ps) <- subtests) yield
-            (rest rows j).insert2(ps, pmatch(j).boundVariables, casted.sym)
-
-        val srep =
-          remake(newRows, subtestVars ::: casted.accessorPatternVars, includeScrut = false)
-
+        val srep = remake(newRows, subtestVars ::: casted.accessorPatternVars, includeScrut = false)
         squeezedBlock(casted.allValDefs, srep.toTree)
       }
+
       lazy val failure =
         mkFail(remaining map tupled((p1, p2) => rest rows p1 insert p2))
 
