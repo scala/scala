@@ -14,7 +14,7 @@ package scala.collection
 import generic._
 import TraversableView.NoBuilder
 
-/** A base class for views of Iterables.
+/** A template trait for a non-strict view of an iterable.
  *
  *  @author Martin Odersky
  *  @version 2.8
@@ -64,8 +64,8 @@ extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] wit
 
   trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] {
     protected[this] val other: Iterable[B]
-    val thisElem: A1
-    val thatElem: B
+    protected[this] val thisElem: A1
+    protected[this] val thatElem: B
     override def iterator: Iterator[(A1, B)] =
       self.iterator.zipAll(other.iterator, thisElem, thatElem)
   }

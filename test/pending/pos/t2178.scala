@@ -1,3 +1,4 @@
+// fixed by now
 scala> Array(Array(1)).last.last
 java.lang.ClassCastException: [I
 	at .<init>(<console>:5)

@@ -1,5 +1,4 @@
-
-
+// works in trunk
 class Module {}
 
 abstract class T {

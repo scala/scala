@@ -1,3 +1,3 @@
 object A {
-  classOf[String].getMethod("equals", Array(""))
+  classOf[String].getMethod("equals", "")
 }

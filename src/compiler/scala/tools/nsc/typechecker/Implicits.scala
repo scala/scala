@@ -735,10 +735,15 @@ self: Analyzer =>
               "classType", tp,
               (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
                else findSubManifest(pre) :: suffix): _*)
-          } else if (sym.isAbstractType && !sym.isTypeParameterOrSkolem && !sym.isExistential) {
-            manifestFactoryCall(
-              "abstractType", tp,
-              findSubManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp0.bounds.hi) :: (args map findSubManifest): _*)
+          } else if (sym.isAbstractType) {
+            if (sym.isExistential)
+              EmptyTree // todo: change to existential parameter manifest
+            else if (sym.isTypeParameterOrSkolem)
+              EmptyTree  // a manifest should have been found by normal searchImplicit
+            else
+              manifestFactoryCall(
+                "abstractType", tp,
+                findSubManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp0.bounds.hi) :: (args map findSubManifest): _*)
           } else {
             EmptyTree  // a manifest should have been found by normal searchImplicit
           }
@@ -747,7 +752,10 @@ self: Analyzer =>
           if (parents.length == 1) findManifest(parents.head)
           else manifestFactoryCall("intersectionType", tp, parents map (findSubManifest(_)): _*)
         case ExistentialType(tparams, result) =>
-          mot(result)
+          existentialAbstraction(tparams, result) match {
+            case ExistentialType(_, _) => mot(result)
+            case t => mot(t)
+          }
         case _ =>
           EmptyTree
       }

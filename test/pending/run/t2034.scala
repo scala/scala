@@ -1,3 +1,4 @@
+// no idea, reassigned to Iulian
 object Test {
 
   def main(args: Array[String]) {
@@ -7,7 +8,7 @@ object Test {
 
   object foo {
     class foo2 {
-      override def toString = getClass.getSimpleName
+      override def toString = getClass.toString//.getSimpleName
     }
   }
 

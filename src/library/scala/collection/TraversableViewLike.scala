@@ -17,7 +17,7 @@ import Math.MAX_INT
 import TraversableView.NoBuilder
 
 /** <p>
- *    A base class for views of <a href="../Traversable.html"
+ *    A template trait for views of <a href="../Traversable.html"
  *    target="contentFrame"><code>Traversable</code></a>.<br/>
  *    Every subclass has to implement the <code>foreach</code> method.
  *  </p>

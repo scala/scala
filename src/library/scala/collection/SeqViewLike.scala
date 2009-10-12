@@ -15,7 +15,7 @@ import generic._
 import Seq.fill
 import TraversableView.NoBuilder
 
-/** A non-strict projection of an iterable.
+/** A template trait for a non-strict view of a sequence.
  * @author Sean McDirmid
  * @author Martin Odersky
  * @version 2.8
@@ -65,7 +65,7 @@ trait SeqViewLike[+A,
   }
 
   trait Appended[B >: A] extends Transformed[B] with super.Appended[B] {
-    lazy val restSeq = rest.toSeq
+    protected[this] lazy val restSeq = rest.toSeq
     override def length = self.length + restSeq.length
     override def apply(idx: Int) =
       if (idx < self.length) self(idx) else restSeq(idx - self.length)
@@ -102,6 +102,20 @@ trait SeqViewLike[+A,
       else throw new IndexOutOfBoundsException(idx.toString)
   }
 
+  trait Zipped[B] extends Transformed[(A, B)] with super.Zipped[B] {
+    protected[this] lazy val thatSeq = other.toSeq
+    override def length: Int = self.length min thatSeq.length
+    override def apply(idx: Int) = (self.apply(idx), thatSeq.apply(idx))
+  }
+
+  trait ZippedAll[A1 >: A, B] extends Transformed[(A1, B)] with super.ZippedAll[A1, B] {
+    protected[this] lazy val thatSeq = other.toSeq
+    override def length: Int = self.length max thatSeq.length
+    override def apply(idx: Int) =
+      (if (idx < self.length) self.apply(idx) else thisElem,
+       if (idx < thatSeq.length) thatSeq.apply(idx) else thatElem)
+  }
+
   trait Reversed extends Transformed[A] {
     override def iterator: Iterator[A] = self.reverseIterator
     override def length: Int = self.length
@@ -133,10 +147,10 @@ trait SeqViewLike[+A,
   protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
+  protected override def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] { val other = that }
+  protected override def newZippedAll[A1 >: A, B](that: Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new ZippedAll[A1, B] { val other = that; val thisElem = _thisElem; val thatElem = _thatElem }
   protected def newReversed: Transformed[A] = new Reversed { }
-  protected def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new Patched[B] {
-    val from = _from; val patch = _patch; val replaced = _replaced
-  }
+  protected def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new Patched[B] { val from = _from; val patch = _patch; val replaced = _replaced }
 
   override def reverse: This = newReversed.asInstanceOf[This]
 

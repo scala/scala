@@ -26,4 +26,5 @@ trait VectorView[+A, +Coll] extends VectorViewLike[A, Coll, VectorView[A, Coll]]
 object VectorView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
   implicit def builderFactory[A]: BuilderFactory[A, VectorView[A, Vector[_]], Coll] = new BuilderFactory[A, VectorView[A, Vector[_]], Coll] { def apply(from: Coll) = new NoBuilder }
+  implicit def arrBuilderFactory[A]: BuilderFactory[A, VectorView[A, Array[A]], TraversableView[_, Array[_]]] = new BuilderFactory[A, VectorView[A, Array[A]], TraversableView[_, Array[_]]] { def apply(from: TraversableView[_, Array[_]]) = new NoBuilder }
 }

@@ -92,6 +92,15 @@ val x20 = 1
 
 val two = one + x5
 
+// handling generic wildcard arrays (#2386)
+// It's put here because type feedback is an important part of it.
+val xs: Array[_] = Array(1, 2)
+xs.size
+xs.head
+xs filter (_ == 2)
+xs map (_ => "abc")
+xs map (x => x)
+xs map (x => (x, x))
 
 // interior syntax errors should *not* go into multi-line input mode.
 // both of the following should abort immediately:

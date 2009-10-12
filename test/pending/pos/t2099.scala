@@ -1,4 +1,4 @@
-
+// nice to have, not terribly urgent, maybe?
 
 I have a trait:
 

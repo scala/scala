@@ -159,6 +159,22 @@ scala> two: Int = 2
 scala> 
 scala> 
 scala> 
+scala> xs: Array[_] = Array(1, 2)
+
+scala> res2: Int = 2
+
+scala> res3: Any = 1
+
+scala> res4: Array[_] = Array(2)
+
+scala> res5: Array[java.lang.String] = Array(abc, abc)
+
+scala> res6: scala.collection.mutable.GenericArray[_] = GenericArray(1, 2)
+
+scala> res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
+
+scala> 
+scala> 
 scala> 
 scala> <console>:1: error: '=' expected but '=>' found.
        def x => y => z
@@ -171,7 +187,7 @@ scala> <console>:1: error: expected start of definition
 scala> 
 scala> 
 scala> 
-scala>      |      |      |      | res2: scala.xml.Elem = 
+scala>      |      |      |      | res8: scala.xml.Elem = 
 <a>
        <b d="dd" c="c"></b></a>
 
@@ -181,7 +197,7 @@ scala>      |      |      |      |
 scala> 
 scala> 
 scala> 
-scala>      |      |      | res3: java.lang.String = 
+scala>      |      |      | res9: java.lang.String = 
 
        hello
        there

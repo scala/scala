@@ -1,3 +1,4 @@
+// crash verified; no solution yet
 class Foo(x: Int)
 class Bar extends Foo(1)
 

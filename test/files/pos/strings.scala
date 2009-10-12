@@ -4,3 +4,7 @@ object test {
   def f() = "hello".concat("world");
 
 }
+// #1000
+object A {
+  println("""This a "raw" string ending with a "double quote"""")
+}

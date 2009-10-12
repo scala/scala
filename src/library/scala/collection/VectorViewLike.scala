@@ -14,7 +14,7 @@ package scala.collection
 import generic._
 import TraversableView.NoBuilder
 
-/** A non-strict projection of an iterable.
+/** A template trait for a non-strict view of a vector.
  *
  * @author Sean McDirmid
  * @author Martin Odersky
@@ -99,17 +99,11 @@ trait VectorViewLike[+A,
   protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
+  protected override def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] { val other = that }
+  protected override def newZippedAll[A1 >: A, B](that: Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new ZippedAll[A1, B] { val other = that; val thisElem = _thisElem; val thatElem = _thatElem }
   protected override def newReversed: Transformed[A] = new Reversed { }
   protected override def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new Patched[B] {
     val from = _from; val patch = _patch; val replaced = _replaced
-  }
-  protected override def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] {
-    val other = that
-  }
-  protected override def newZippedAll[A1 >: A, B](that: Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new ZippedAll[A1, B] {
-    val other: Iterable[B] = that
-    val thisElem = _thisElem
-    val thatElem = _thatElem
   }
   override def stringPrefix = "VectorView"
 }
