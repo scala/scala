@@ -201,7 +201,7 @@ abstract class UnPickler {
           // the "case Apply" in readTree() takes care of selecting the correct alternative
           //  after parsing the arguments.
           if (sym == NoSymbol && !owner.hasFlag(OVERLOADED)) {
-            errorBadSignature(
+            errorMissingRequirement(
               "reference " + (if (name.isTypeName) "type " else "value ") +
               name.decode + " of " + owner + " refers to nonexisting symbol.")
           }
@@ -812,6 +812,10 @@ abstract class UnPickler {
 
     private def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)
+
+    private def errorMissingRequirement(msg: String) =
+      if (settings.debug.value) errorBadSignature(msg)
+      else throw new IOException("class file needed by "+classRoot.name+" is missing.\n"+msg)
 
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
