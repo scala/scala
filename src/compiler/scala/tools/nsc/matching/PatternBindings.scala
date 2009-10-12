@@ -51,10 +51,21 @@ trait PatternBindings extends ast.TreeDSL
     def subpatternsForVars: List[Pattern] = Nil
 
     // This is what calls subpatternsForVars.
-    def definedVars: List[Symbol] =
-      (boundVariables ::: (subpatternsForVars flatMap (_.definedVars))).reverse // XXX reverse?
+    // XXX reverse?
+    def deepBoundVariables: List[Symbol] = deepstrip(boundTree)
+    // (boundVariables ::: otherBoundVariables).reverse
 
-    lazy val boundVariables = strip(boundTree)
+    private def shallowBoundVariables = strip(boundTree)
+    private def otherBoundVariables = subpatternsForVars flatMap (_.deepBoundVariables)
+    lazy val boundVariables = {
+      val res = shallowBoundVariables
+      val deep = deepBoundVariables
+
+      if (res.size != deep.size)
+        TRACE("deep variable list %s is larger than bound %s", deep, res)
+
+      res
+    }
 
     // XXX only a var for short-term experimentation.
     private var _boundTree: Bind = null
@@ -69,8 +80,8 @@ trait PatternBindings extends ast.TreeDSL
     // This takes the given tree and creates a new pattern
     //   using the same bindings.
     def rebindTo(t: Tree): Pattern = {
-      if (boundVariables.size < definedVars.size)
-        TRACE("In %s, boundVariables = %s but definedVars = %s", this, boundVariables, definedVars)
+      if (boundVariables.size < deepBoundVariables.size)
+        TRACE("ALERT: rebinding %s is losing %s", this, otherBoundVariables)
 
       Pattern(wrapBindings(boundVariables, t))
     }
@@ -105,6 +116,8 @@ trait PatternBindings extends ast.TreeDSL
       case b @ Bind(_, pat) => b.symbol :: strip(pat)
       case _                => Nil
     }
+    private def deepstrip(t: Tree): List[Symbol] =
+      t filter { case _: Bind => true ; case _ => false } map (_.symbol)
   }
 
   case class Binding(pvar: Symbol, tvar: Symbol) {

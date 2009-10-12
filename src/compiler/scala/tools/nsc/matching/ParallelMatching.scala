@@ -315,7 +315,7 @@ trait ParallelMatching extends ast.TreeDSL
       // varMap is a list from each literal to a list of the defined vars.
       lazy val (literalMap, varMap) = {
         val tags    = literals map (_.intValue)
-        val varMap  = tags zip (literals map (_.definedVars))
+        val varMap  = tags zip (literals map (_.deepBoundVariables))
         val litMap  =
           tags.zipWithIndex.reverse.foldLeft(IntMap.empty[List[Int]]) {
             // we reverse before the fold so the list can be built with ::
@@ -649,8 +649,9 @@ trait ParallelMatching extends ast.TreeDSL
     /*** States, Rows, Etc. ***/
 
     case class Row(pats: List[Pattern], subst: Bindings, guard: Guard, bx: Int) {
+      private def substpp = if (subst.get().isEmpty) "" else "(free = %s)".format(pp(subst.get()))
       if (pats exists (p => !p.isDefault))
-        traceCategory("Row", "%s", pp(pats))
+        traceCategory("Row", "%s%s", pats, substpp)
 
       /** Extracts the 'i'th pattern. */
       def extractColumn(i: Int) = {
@@ -668,8 +669,8 @@ trait ParallelMatching extends ast.TreeDSL
       def insert(hs: List[Pattern])       = copy(pats = hs ::: pats)  // prepends supplied pattern
       def rebind(b: Bindings)             = copy(subst = b)           // substitutes for bindings
 
-      def insert2(hs: List[Pattern], vs: Iterable[Symbol], tvar: Symbol) =             // prepends and prepends
-        copy(pats = hs ::: pats, subst = subst.add(vs, tvar))
+      def insert2(hs: List[Pattern], vs: Iterable[Symbol], tvar: Symbol) =
+        tracing("insert2", copy(pats = hs ::: pats, subst = subst.add(vs, tvar)))
 
       // returns this rows with alternatives expanded
       def expandAlternatives(classifyPat: (Pattern, Int) => Pattern): List[Row] = {
@@ -851,7 +852,7 @@ trait ParallelMatching extends ast.TreeDSL
             case WILD()                 => emptyTrees(roots.length)
           })
 
-          row -> FinalState(index, body, pattern.definedVars)
+          row -> FinalState(index, body, pattern.deepBoundVariables)
         })
       )
 

@@ -25,7 +25,7 @@ trait TransMatcher extends ast.TreeDSL {
   import analyzer.Typer
   import definitions._
   import CODE._
-  import Debug.tracing
+  import Debug.{ TRACE, tracing }
 
   // cunit is set to the current unit in ExplicitOuter's transformUnit,
   // and nulled out afterward to avoid leaking.
@@ -84,17 +84,9 @@ trait TransMatcher extends ast.TreeDSL {
     // redundancy check
     matrix.targets filter (_.isNotReached) foreach (cs => cunit.error(cs.body.pos, "unreachable code"))
     // optimize performs squeezing and resets any remaining TRANS_FLAGs
-    matrix optimize dfatree
-  }
-
-  object compactTreePrinters extends CompactTreePrinter
-
-  private def toCompactString(t: Tree): String = {
-    val buffer = new StringWriter()
-    val printer = compactTreePrinters.create(new PrintWriter(buffer))
-    printer.print(t)
-    printer.flush()
-    buffer.toString
+    val res = matrix optimize dfatree
+    TRACE("handlePattern(%s, ...) = %s", selector, res)
+    res
   }
 }
 

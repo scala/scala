@@ -59,7 +59,6 @@ trait MatchSupport extends ast.TreeDSL
       case WILD()               => "_"
       case Literal(Constant(x)) => "LIT(%s)".format(x)
       case Apply(fn, args)      => "%s(%s)".format(treeToString(fn), args map treeToString mkString ",")
-      case x: TypeTree          => "TT(%s)".format(symbolToString(x.symbol))
       case Typed(expr, tpt)     => "%s: %s".format(treeToString(expr), treeToString(tpt))
       case x                    =>  x.toString + " (" + x.getClass + ")"
     }
@@ -75,31 +74,44 @@ trait MatchSupport extends ast.TreeDSL
     // pretty print for debugging
     def pp(x: Any): String = pp(x, false)
     def pp(x: Any, newlines: Boolean): String = {
+      val stripStrings = List("""java\.lang\.""", """\$iw\.""")
+
       def clean(s: String): String =
-        s . replaceAll("""java\.lang\.""", "")
-          . replaceAll("""\$iw\.""", "")
+        stripStrings.foldLeft(s)((s, x) => s.replaceAll(x, ""))
 
-      val elems: List[Any] = x match {
-        case x: String      => return x
-        case xs: List[_]    => xs
-        case x: Tuple2[_,_] => return pp(x._1) + " -> " + pp(x._2)
-        case x              => return pp(x.toString)
-      }
-      def pplist(xs: List[Any]): String = {
-        val xs2 = xs map pp
+      def pplist(xs: List[Any]): String =
+        if (newlines) (xs map ("    " + _ + "\n")).mkString("\n", "", "")
+        else xs.mkString("(", ", ", ")")
 
-        if (newlines) (xs2 map ("    " + _ + "\n")).mkString("\n", "", "")
-        else xs2.mkString("(", ", ", ")")
-      }
+      pp(x match {
+        case s: String      => return clean(s)
+        case x: Tree        => treeToCompactString(x)
+        case xs: List[_]    => pplist(xs map pp)
+        case x: Tuple2[_,_] => "%s -> %s".format(pp(x._1), pp(x._2))
+        case x              => x.toString
+      })
+    }
 
-      clean(pplist(elems))
+    object compactTreePrinter extends CompactTreePrinter
+
+    def treeToCompactString(t: Tree): String = {
+      val buffer = new StringWriter()
+      val printer = compactTreePrinter.create(new PrintWriter(buffer))
+      printer.print(t)
+      printer.flush()
+      buffer.toString
     }
 
     def ifDebug(body: => Unit): Unit          = { if (settings.debug.value) body }
     def DBG(msg: => String): Unit             = { ifDebug(println(msg)) }
 
     // @elidable(elidable.FINE)
-    def TRACE(f: String, xs: Any*): Unit      = { if (trace) println(pp(if (xs.isEmpty) f else f.format(xs : _*))) }
+    def TRACE(f: String, xs: Any*): Unit      = {
+      if (trace) {
+        val msg = if (xs.isEmpty) f else f.format(xs map pp: _*)
+        println(msg)
+      }
+    }
 
     def tracing2[T](x: T)(category: String, xs: String*) = {
       val preamble = "[" + """%10s""".format(category) + "]  "
@@ -110,11 +122,14 @@ trait MatchSupport extends ast.TreeDSL
     }
 
     def tracing[T](s: String, x: T): T = {
-      TRACE("[" + """%10s""".format(s) + "]  " + x.toString)
+      val format = "[" + """%10s""".format(s) + "]  %s"
+      TRACE(format, x)
       x
     }
-    def traceCategory(cat: String, f: String, xs: Any*) =
-      TRACE("[" + """%10s""".format(cat) + "]  " + f, xs: _*)
+    def traceCategory(cat: String, f: String, xs: Any*) = {
+      val format = "[" + """%10s""".format(cat) + "]  " + f
+      TRACE(format, xs: _*)
+    }
 
     def indent(s: Any) = s.toString() split "\n" map ("  " + _) mkString "\n"
     def indentAll(s: Seq[Any]) = s map ("  " + _.toString() + "\n") mkString

@@ -361,7 +361,7 @@ abstract class ExplicitOuter extends InfoTransform
           val gdcall =
             if (guard == EmptyTree) EmptyTree
             else {
-              val vs       = Pattern(p).definedVars
+              val vs       = Pattern(p).deepBoundVariables
               val guardDef = makeGuardDef(vs, guard)
               nguard       += transform(guardDef) // building up list of guards
 

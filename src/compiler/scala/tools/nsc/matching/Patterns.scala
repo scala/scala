@@ -165,7 +165,7 @@ trait Patterns extends ast.TreeDSL {
       val listRef                             = typeRef(pre, ListClass, List(tpe))
 
       def fold(x: Tree, xs: Tree) = unbind(x) match {
-        case _: Star  => Pattern(x) rebindTo WILD(x.tpe) boundTree  // this is using boundVariables instead of definedVars
+        case _: Star  => Pattern(x) rebindTo WILD(x.tpe) boundTree  // this is using boundVariables instead of deepBoundVariables
         case _        =>
           val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "matching$dummy")
           val consType    = MethodType(dummyMethod newSyntheticValueParams List(tpe, listRef), consRef)
@@ -317,6 +317,7 @@ trait Patterns extends ast.TreeDSL {
     def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
       case x: Tree    => unapply(Pattern(x))
       case x: Pattern => Some((x.tree, x.boundVariables))
+      // case x: Pattern => Some((x.tree, x.deepBoundVariables))
       case _          => None
     }
   }
