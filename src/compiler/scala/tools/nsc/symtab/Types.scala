@@ -2329,11 +2329,20 @@ A type's typeSymbol should never be inspected directly.
               tp1
           }
         }
+        override def mapOver(tp: Type): Type = tp match {
+          case SingleType(pre, sym) =>
+            if (sym.isPackageClass) tp // short path
+            else {
+              val pre1 = this(pre)
+              if ((pre1 eq pre) || !pre1.isStable) tp
+              else singleType(pre1, sym)
+            }
+          case _ => super.mapOver(tp)
+        }
+
         override def mapOver(tree: Tree) =
           tree match {
-            case tree:Ident
-            if tree.tpe.isStable
-            =>
+            case tree:Ident if tree.tpe.isStable =>
               // Do not discard the types of existential ident's.
               // The symbol of the Ident itself cannot be listed
               // in the existential's parameters, so the
@@ -2343,9 +2352,6 @@ A type's typeSymbol should never be inspected directly.
             case _ =>
               super.mapOver(tree)
           }
-
-
-
       }
       val tpe1 = extrapolate(tpe)
       var tparams0 = tparams
