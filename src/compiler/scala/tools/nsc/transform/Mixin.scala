@@ -726,14 +726,18 @@ abstract class Mixin extends InfoTransform {
         def isField(sym: Symbol) =
           sym.hasFlag(PRIVATE) && sym.isTerm && !sym.isMethod
 
-        var fields =
-          for (sc <- clazz.info.parents;
-                field <- sc.decls.elements.toList
-             if !sc.typeSymbol.isTrait
-                && field.owner != clazz
-                && (settings.checkInit.value
-                    && isField(field)
-                    || field.hasFlag(LAZY))) yield field
+        def needsBitmapField(sc: Type, field: Symbol) =
+          !sc.typeSymbol.isTrait &&
+          field.owner != clazz &&
+          (settings.checkInit.value && isField(field) ||
+            field.hasFlag(LAZY))
+
+        // parents != baseClasses.map(_.tpe): bug #1535
+        val fields = for {
+          sc <- clazz.info.baseClasses.map(_.tpe)
+          field <- sc.decls.elements.toList
+          if needsBitmapField(sc, field)
+        } yield field
 
         if (settings.debug.value) log("Found inherited fields in " + clazz + " : " + fields)
         fields.length
