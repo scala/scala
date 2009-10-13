@@ -95,7 +95,8 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.4 (c)
   case class StableIdPattern(tree: Select) extends SelectPattern {
     def select = tree
-    override def description = "StableId(%s)".format(pathSegments.mkString(" . "))
+    override def description = "StableId(%s)".format(printableSegments.mkString(" . "))
+    private def printableSegments = pathSegments filterNot (_.toString == "$iw")
   }
   // 8.1.4 (d)
   case class ObjectPattern(tree: Apply) extends ApplyPattern {  // NamePattern?
@@ -129,7 +130,6 @@ trait Patterns extends ast.TreeDSL {
   }
   // 8.1.6
   case class TuplePattern(tree: Apply) extends ApplyPattern {
-    override def necessaryType = ProductRootClass.tpe
     // XXX todo
     // override def irrefutableFor(tpe: Type) = false
   }
@@ -260,6 +260,7 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.8 (c)
   case class StarPattern(tree: Star) extends Pattern {
     val Star(elem) = tree
+    override def description = "*"
   }
 
   // 8.1.9
@@ -316,7 +317,6 @@ trait Patterns extends ast.TreeDSL {
     def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
       case x: Tree    => unapply(Pattern(x))
       case x: Pattern => Some((x.tree, x.boundVariables))
-      // case x: Pattern => Some((x.tree, x.deepBoundVariables))
       case _          => None
     }
   }
@@ -404,6 +404,7 @@ trait Patterns extends ast.TreeDSL {
     def name: Name
     override def sufficientType = tpe.narrow
     override def simplify(pv: PatternVar) = this.rebindToEqualsCheck()
+    override def description = name.toString()
   }
 
   sealed trait UnapplyPattern extends Pattern {
@@ -463,10 +464,10 @@ trait Patterns extends ast.TreeDSL {
 
     // what type could a scrutinee have which would automatically indicate a match?
     // (nullness and guards will still be checked.)
-    def sufficientType = NothingClass.tpe
-    // XXX a more plausible default is:
-    //
-    // def sufficientType = tpe.narrow
+    def sufficientType = tpe
+
+    // XXX have to determine if this can be made useful beyond an extractor barrier.
+    // Default sufficient type might be NothingClass.tpe, tpe.narrow, ...
 
     // the subpatterns for this pattern (at the moment, that means constructor arguments)
     def subpatterns(pm: MatchMatrix#PatternMatch): List[Pattern] = pm.dummies
@@ -511,17 +512,17 @@ trait Patterns extends ast.TreeDSL {
       )
 
     /** Standard methods **/
-    def copy(tree: Tree = this.tree): Pattern =
-      if (boundTree eq tree) Pattern(tree)
-      else Pattern(tree) withBoundTree boundTree.asInstanceOf[Bind]
-
     override def equals(other: Any) = other match {
       case x: Pattern => this.boundTree == x.boundTree
       case _          => super.equals(other)
     }
     override def hashCode() = boundTree.hashCode()
     def description = super.toString()
-    final override def toString() = "%s %s".format(description, isSequence)
+    final override def toString() = {
+      if (boundVariables.isEmpty) description
+      else "%s @ (%s)".format(boundVariables.mkString(", "), description)
+    }
+    def toTypeString() = "%s <: x <: %s".format(necessaryType, sufficientType)
   }
 
   /*** Extractors ***/

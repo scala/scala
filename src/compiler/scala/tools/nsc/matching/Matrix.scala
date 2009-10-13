@@ -132,6 +132,7 @@ trait Matrix extends MatrixAdditions {
         (t, PatternVarGroup(ts))
       }
 
+      def isEmpty = pvs.isEmpty
       def size = pvs.size
       def head = pvs.head
       def ::(t: PatternVar) = PatternVarGroup(t :: pvs)
@@ -143,6 +144,8 @@ trait Matrix extends MatrixAdditions {
       def indices = pvs.indices
       def map[T](f: PatternVar => T) = pvs map f
       def filter(p: PatternVar => Boolean) = PatternVarGroup(pvs filter p)
+
+      override def toString() = pp(pvs)
     }
 
     /** Every temporary variable allocated is put in a PatternVar.

@@ -182,6 +182,22 @@ trait MatchSupport extends ast.TreeDSL
           case _                  => List(t)
         }
 
+        def printLogicalOr(t1: (Tree, Boolean), t2: (Tree, Boolean)) =
+          printLogicalOp(t1, t2, "||")
+
+        def printLogicalAnd(t1: (Tree, Boolean), t2: (Tree, Boolean)) =
+          printLogicalOp(t1, t2, "&&")
+
+        def printLogicalOp(t1: (Tree, Boolean), t2: (Tree, Boolean), op: String) = {
+          def maybenot(tvalue: Boolean) = if (tvalue) "" else "!"
+
+          printRow(List(t1._1, t2._1),
+            " %s(" format maybenot(t1._2),
+            ") %s %s(".format(op, maybenot(t2._2)),
+            ")"
+          )
+        }
+
         override def printRaw(tree: Tree): Unit = {
           // routing supercalls through this for debugging ease
           def s() = super.printRaw(tree)
@@ -224,8 +240,18 @@ trait MatchSupport extends ast.TreeDSL
             // We get a lot of this stuff
             case If( IsTrue(), x, _)        => printRaw(x)
             case If(IsFalse(), _, x)        => printRaw(x)
+
+            case If(cond,  IsTrue(), elsep) =>
+              printLogicalOr(cond -> true, elsep -> true)
+
             case If(cond, IsFalse(), elsep) =>
-              printRow(List(cond, elsep), " !(", ") && (", ") ")
+              printLogicalAnd(cond -> false, elsep -> true)
+
+            case If(cond,  thenp, IsTrue()) =>
+              printLogicalOr(cond -> false, thenp -> true)
+
+            case If(cond,  thenp, IsFalse()) =>
+              printLogicalAnd(cond -> true, thenp -> true)
 
             // If thenp or elsep has only one statement, it doesn't need more than one line.
             case If(cond, thenp, elsep) =>

@@ -72,6 +72,7 @@ trait ParallelMatching extends ast.TreeDSL
 
     /** the injection here handles alternatives and unapply type tests */
     final def make(tvars: PatternVarGroup, row1: List[Row]): Rep = {
+      // TRACE("make(%s%s)", pp(tvars.pvs, 1, true), pp(row1, 1, true))
       def classifyPat(opat: Pattern, j: Int): Pattern = opat simplify tvars(j)
 
       val rows = row1 flatMap (_ expandAlternatives classifyPat)
@@ -188,7 +189,15 @@ trait ParallelMatching extends ast.TreeDSL
       // Any unapply - returns Some(true) if a type test is needed before the unapply can
       // be called (e.g. def unapply(x: Foo) = { ... } but our scrutinee is type Any.)
       object AnyUnapply {
-        def unapply(x: Tree): Option[Boolean] = condOpt(x) { case UnapplyParamType(tpe) => !(scrut.tpe <:< tpe) }
+        def unapply(x: Tree): Option[Boolean] = condOpt(x) {
+          case UnapplyParamType(tpe) => !(scrut.tpe <:< tpe)
+        }
+      }
+
+      object TypedUnapply {
+        def unapply(x: Tree): Option[Boolean] = condOpt(x) {
+          case Typed(UnapplyParamType(tpe), tpt) => !(tpt.tpe <:< tpe)
+        }
       }
 
       def mkRule(rest: Rep): RuleApplication = {
@@ -196,6 +205,7 @@ trait ParallelMatching extends ast.TreeDSL
             case x if isEquals(x.tpe)                 => new MixEquals(this, rest)
             case x: ArrayValue                        => new MixSequence(this, rest)
             case AnyUnapply(false)                    => new MixUnapply(this, rest, false)
+            // case TypedUnapply(needsTest)              =>
             case _ =>
               isPatternSwitch(scrut, ps) match {
                 case Some(x)  => new MixLiteralInts(x, rest)
@@ -609,9 +619,10 @@ trait ParallelMatching extends ast.TreeDSL
     /*** States, Rows, Etc. ***/
 
     case class Row(pats: List[Pattern], subst: Bindings, guard: Guard, bx: Int) {
-      private def substpp = if (subst.get().isEmpty) "" else "(free = %s)".format(pp(subst.get()))
+      private def nobindings = subst.get().isEmpty
+      private def bindstr = if (nobindings) "" else pp(subst)
       if (pats exists (p => !p.isDefault))
-        traceCategory("Row", "%s%s", pats, substpp)
+        traceCategory("Row", "%s%s", pats, bindstr)
 
       /** Extracts the 'i'th pattern. */
       def extractColumn(i: Int) = {
@@ -644,7 +655,10 @@ trait ParallelMatching extends ast.TreeDSL
         if (others.isEmpty) List(copy(pats = ps))
         else extractBindings(others.head) map (x => replaceAt(ps.size, x))
       }
-      override def toString() = pp(bx -> (pats, subst))
+      override def toString() = {
+        val bs = if (nobindings) "" else "\n" + bindstr
+        "Row(%d)(%s%s)".format(bx, pp(pats), bs)
+      }
     }
 
     object ExpandedMatrix {
@@ -657,9 +671,13 @@ trait ParallelMatching extends ast.TreeDSL
       require(rows.size == targets.size)
 
       override def toString() = {
-        def rprint(r: Row) = "Row %d: %d pats, %d bound".format(r.bx, r.pats.size, r.subst.get().size)
-        def tprint(t: FinalState) = "%s (free = %s)".format(t.body, pp(t.freeVars))
-        val xs = rows zip targets map { case (r,t) => rprint(r) -> tprint(t) }
+        def vprint(vs: List[Any]) = if (vs.isEmpty) "" else ": %s".format(pp(vs))
+        def rprint(r: Row) = pp(r)
+        def tprint(t: FinalState) =
+          if (t.freeVars.isEmpty) " ==> %s".format(pp(t.body))
+          else " ==>\n        %s".format(pp(t.freeVars -> t.body))
+
+        val xs = rows zip targets map { case (r,t) => rprint(r) + tprint(t) }
         val ppstr = pp(xs, newlines = true)
 
         "ExpandedMatrix(%d rows)".format(rows.size) + ppstr
@@ -769,7 +787,7 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       /** Converts this to a tree - recursively acquires subreps. */
-      final def toTree(): Tree = typer typed this.applyRule()
+      final def toTree(): Tree = tracing("toTree", typer typed applyRule())
 
       /** The VariableRule. */
       private def variable() = {
@@ -793,9 +811,10 @@ trait ParallelMatching extends ast.TreeDSL
         else if (others.isEmpty) variable.tree()
         else mixture.tree()
 
+      def ppn(x: Any) = pp(x, newlines = true)
       override def toString() =
-        if (tvars.size == 0) "Rep(%d) = %s".format(rows.size, pp(rows))
-        else "Rep(%dx%d)\n  %s\n  %s".format(tvars.size, rows.size, pp(tvars), pp(rows))
+        if (tvars.size == 0) "Rep(%d) = %s".format(rows.size, ppn(rows))
+        else "Rep(%dx%d)%s%s".format(tvars.size, rows.size, ppn(tvars), ppn(rows))
     }
 
     val NoRep = Rep(Nil, Nil)
