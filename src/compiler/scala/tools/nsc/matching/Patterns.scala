@@ -8,6 +8,7 @@ package matching
 
 import symtab.Flags
 import util.NoPosition
+import scala.util.NameTransformer.decode
 
 /** Patterns are wrappers for Trees with enhanced semantics.
  *
@@ -21,7 +22,7 @@ trait Patterns extends ast.TreeDSL {
   import definitions._
   import CODE._
   import Debug._
-  import treeInfo.{ unbind, isVarPattern }
+  import treeInfo.{ unbind, isVarPattern, isVariableName }
 
   type PatternMatch       = MatchMatrix#PatternMatch
   private type PatternVar = MatrixContext#PatternVar
@@ -42,6 +43,7 @@ trait Patterns extends ast.TreeDSL {
     require(isVarPattern(tree) && name != nme.WILDCARD)
 
     override def irrefutableFor(tpe: Type) = true
+    override def description = "%s".format(name)
   }
 
   // 8.1.1 (b)
@@ -63,7 +65,7 @@ trait Patterns extends ast.TreeDSL {
       case ExtractorPattern(ua) if pv.sym.tpe <:< tpt.tpe  => this rebindTo expr
       case _                                                => this
     }
-    override def description = "%s: %s".format(Pattern(expr), tpt)
+    override def description = "Typ(%s: %s)".format(Pattern(expr), tpt)
   }
 
   // 8.1.3
@@ -72,7 +74,10 @@ trait Patterns extends ast.TreeDSL {
 
     def isSwitchable = cond(const.tag) { case ByteTag | ShortTag | IntTag | CharTag => true }
     def intValue = const.intValue
-    override def description = if (value == null) "null" else value.toString()
+    override def description = {
+      val s = if (value == null) "null" else value.toString()
+      "Lit(%s)".format(s)
+    }
   }
 
   // 8.1.4 (a)
@@ -86,17 +91,23 @@ trait Patterns extends ast.TreeDSL {
   }
   // 8.1.4 (b)
   case class ApplySelectPattern(tree: Apply) extends ApplyPattern with SelectPattern {
+    require (args.isEmpty)
     val Apply(select: Select, _) = tree
 
     override def sufficientType = mkSingletonFromQualifier
     override def simplify(pv: PatternVar) = this.rebindToObjectCheck()
-    override def description = "SelectApply(%s)".format(name)
+    override def description = backticked match {
+      case Some(s)  => "this." + s
+      case _        => "Sel(%s.%s)".format(Pattern(qualifier), name)
+    }
+
   }
   // 8.1.4 (c)
   case class StableIdPattern(tree: Select) extends SelectPattern {
     def select = tree
-    override def description = "StableId(%s)".format(printableSegments.mkString(" . "))
-    private def printableSegments = pathSegments filterNot (_.toString == "$iw")
+    override def description = "St(%s)".format(printableSegments.mkString(" . "))
+    private def printableSegments =
+      pathSegments filter (x => !x.isEmpty && (x.toString != "$iw"))
   }
   // 8.1.4 (d)
   case class ObjectPattern(tree: Apply) extends ApplyPattern {  // NamePattern?
@@ -104,26 +115,38 @@ trait Patterns extends ast.TreeDSL {
 
     override def sufficientType = tpe.narrow
     override def simplify(pv: PatternVar) = this.rebindToObjectCheck()
-    override def description = "Object(%s)".format(fn)
+    override def description = "Obj(%s)".format(fn)
   }
   // 8.1.4 (e)
   case class SimpleIdPattern(tree: Ident) extends NamePattern {
     val Ident(name) = tree
+    override def description = "Id(%s)".format(name)
   }
 
   // 8.1.5
-  case class ConstructorPattern(tree: Apply) extends ApplyPattern {
+  case class ConstructorPattern(tree: Apply) extends ApplyPattern with NamePattern {
     require(fn.isType && this.isCaseClass)
+    def name = tpe.typeSymbol.name
+    def cleanName = tpe.typeSymbol.cleanNameString
+    def hasPrefix = tpe.prefix.prefixString != ""
+    def prefixedName =
+      if (hasPrefix) "%s.%s".format(tpe.prefix.prefixString, cleanName)
+      else cleanName
+
+    private def isColonColon = cleanName == "::"
 
     override def subpatterns(pm: MatchMatrix#PatternMatch) =
-      if (pm.head.isCaseClass) args map Pattern.apply
+      if (pm.head.isCaseClass) toPats(args)
       else super.subpatterns(pm)
 
     override def simplify(pv: PatternVar) =
       if (args.isEmpty) this rebindToEmpty tree.tpe
       else this
 
-    override def description = "Constructor(%s)".format(toPats(args).mkString(", "))
+    override def description = {
+      if (isColonColon) "%s :: %s".format(Pattern(args(0)), Pattern(args(1)))
+      else "%s(%s)".format(name, toPats(args).mkString(", "))
+    }
 
     // XXX todo
     // override def irrefutableFor(tpe: Type) = false
@@ -132,6 +155,7 @@ trait Patterns extends ast.TreeDSL {
   case class TuplePattern(tree: Apply) extends ApplyPattern {
     // XXX todo
     // override def irrefutableFor(tpe: Type) = false
+    override def description = "((%s))".format(args.size, toPats(args).mkString(", "))
   }
 
   // 8.1.7
@@ -142,16 +166,16 @@ trait Patterns extends ast.TreeDSL {
 
     override def necessaryType = arg.tpe
 
-    // can fix #1697 here?
     override def simplify(pv: PatternVar) =
       if (pv.sym.tpe <:< arg.tpe) this
       else this rebindTo uaTyped
 
-    override def description = "Unapply(f: %s => %s)".format(necessaryType, fn.tpe.resultType)
+    override def description = "UnApp(%s => %s)".format(necessaryType, resTypesString)
   }
 
   // 8.1.8 (unapplySeq calls)
   case class SequenceExtractorPattern(tree: UnApply) extends UnapplyPattern {
+
     private val UnApply(
       Apply(TypeApply(Select(_, nme.unapplySeq), List(tptArg)), _),
       List(ArrayValue(_, elems))
@@ -181,7 +205,7 @@ trait Patterns extends ast.TreeDSL {
       pv.sym setFlag Flags.TRANS_FLAG
       this rebindTo elems.foldRight(gen.mkNil)(listFolder)
     }
-    override def description = "UnapplySeq(%s)".format(elems)
+    override def description = "UnSeq(%s => %s)".format(tptArg, resTypesString)
   }
 
   // 8.1.8 (b) (literal ArrayValues)
@@ -243,7 +267,7 @@ trait Patterns extends ast.TreeDSL {
           false
       }
     }
-    override def description = "Sequence(%s)".format(elems)
+    override def description = "Seq(%s)".format(elemPatterns)
   }
 
   // 8.1.8 (b)
@@ -260,7 +284,12 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.8 (c)
   case class StarPattern(tree: Star) extends Pattern {
     val Star(elem) = tree
-    override def description = "*"
+    override def description = "_*"
+  }
+  // XXX temporary?
+  case class ThisPattern(tree: This) extends NamePattern {
+    val This(name) = tree
+    override def description = "this"
   }
 
   // 8.1.9
@@ -269,9 +298,8 @@ trait Patterns extends ast.TreeDSL {
   // 8.1.10
   case class AlternativePattern(tree: Alternative) extends Pattern {
     private lazy val Alternative(subtrees) = tree
-    private def alts = subtrees map Pattern.apply
-    // override def subpatterns(pmatch: PatternMatch) = subtrees map Pattern.apply
-    override def description = "Alts(%s)".format(alts mkString " | ")
+    private def alts = toPats(subtrees)
+    override def description = "Alt(%s)".format(alts mkString " | ")
   }
 
   // 8.1.11
@@ -303,6 +331,7 @@ trait Patterns extends ast.TreeDSL {
         case x: ArrayValue        => SequencePattern(x)
         case x: Select            => StableIdPattern(x)
         case x: Star              => StarPattern(x)
+        case x: This              => ThisPattern(x) // XXX ?
         case _                    => abortUnknownTree(tree)
       }
       cache(tree) = p
@@ -382,6 +411,10 @@ trait Patterns extends ast.TreeDSL {
     def select: Select
     lazy val Select(qualifier, name) = select
     def pathSegments = getPathSegments(tree)
+    def backticked: Option[String] = qualifier match {
+      case _: This if isVariableName(name)  => Some("`%s`".format(name))
+      case _                                => None
+    }
 
     protected def getPathSegments(t: Tree): List[Name] = t match {
       case Select(q, name)  => name :: getPathSegments(q)
@@ -410,6 +443,12 @@ trait Patterns extends ast.TreeDSL {
   sealed trait UnapplyPattern extends Pattern {
     lazy val UnApply(unfn, args) = tree
     override def subpatternsForVars: List[Pattern] = toPats(args)
+
+    def resTypes = analyzer.unapplyTypeList(unfn.symbol, unfn.tpe)
+    def resTypesString = resTypes match {
+      case Nil  => "Boolean"
+      case xs   => xs.mkString(", ")
+    }
 
     private def isSameFunction(f1: Tree, f2: Tree) =
       (f1.symbol == f2.symbol) && (f1 equalsStructure f2)
@@ -518,9 +557,13 @@ trait Patterns extends ast.TreeDSL {
     }
     override def hashCode() = boundTree.hashCode()
     def description = super.toString()
+    def bindingsDescription =
+      if (boundTree.isEmpty) ""
+      else (boundVariables map (_.name)).mkString("", ", ", " @ ")
+
     final override def toString() = {
       if (boundVariables.isEmpty) description
-      else "%s @ (%s)".format(boundVariables.mkString(", "), description)
+      else "%s%s".format(bindingsDescription, description)
     }
     def toTypeString() = "%s <: x <: %s".format(necessaryType, sufficientType)
   }

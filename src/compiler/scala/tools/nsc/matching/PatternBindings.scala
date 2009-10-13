@@ -73,7 +73,7 @@ trait PatternBindings extends ast.TreeDSL
     def boundTree = if (_boundTree == null) tree else _boundTree
     def withBoundTree(x: Bind): this.type = {
       _boundTree = x
-      this
+      tracing[this.type]("Bound", this)
     }
 
     // If a tree has bindings, boundTree looks something like
