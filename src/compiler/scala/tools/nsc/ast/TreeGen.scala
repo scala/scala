@@ -131,7 +131,7 @@ abstract class TreeGen
   }
 
   /** Cast `tree' to type `pt' */
-  def mkAttributedCastUntyped(tree: Tree, pt: Type): Tree = {
+  def mkCast(tree: Tree, pt: Type): Tree = {
     if (settings.debug.value) log("casting " + tree + ":" + tree.tpe + " to " + pt)
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
     assert(!pt.typeSymbol.isPackageClass)

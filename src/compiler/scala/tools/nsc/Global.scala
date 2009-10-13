@@ -63,7 +63,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   } with TreeGen {
     def mkAttributedCast(tree: Tree, pt: Type): Tree =
-      typer.typed(mkAttributedCastUntyped(tree, pt))
+      typer.typed(mkCast(tree, pt))
   }
 
   /** Fold constants */

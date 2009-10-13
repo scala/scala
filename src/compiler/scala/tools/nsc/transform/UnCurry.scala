@@ -392,7 +392,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                     Select(predef, "wrap"+elemtp.typeSymbol.name+"Array")
                   else
                     TypeApply(Select(predef, "genericWrapArray"), List(TypeTree(elemtp)))
-                Apply(meth, List(tree))
+                val adaptedTree = // need to cast to Array[elemtp], as arrays are not covariant
+                  gen.mkCast(tree, arrayType(elemtp))
+                Apply(meth, List(adaptedTree))
               }
             }
           }
@@ -401,11 +403,15 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           def sequenceToArray(tree: Tree) = {
             val toArraySym = tree.tpe member nme.toArray
             assert(toArraySym != NoSymbol)
+            def getManifest(tp: Type): Tree = {
+              val manifestOpt = localTyper.findManifest(tp, false)
+              if (!manifestOpt.tree.isEmpty) manifestOpt.tree
+              else if (tp.bounds.hi ne tp) getManifest(tp.bounds.hi)
+              else localTyper.getManifestTree(tree.pos, tp, false)
+            }
             atPhase(phase.next) {
               localTyper.typedPos(pos) {
-                Apply(
-                  gen.mkAttributedSelect(tree, toArraySym),
-                  List(localTyper.getManifestTree(tree.pos, tree.tpe.typeArgs.head, false)))
+                Apply(gen.mkAttributedSelect(tree, toArraySym), List(getManifest(tree.tpe.typeArgs.head)))
               }
             }
           }

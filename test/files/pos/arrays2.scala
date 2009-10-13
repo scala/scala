@@ -9,3 +9,15 @@ object arrays2 {
   }
 }
 
+// #2422
+object arrays4 {
+  val args = Array[String]("World")
+  "Hello %1$s".format(args: _*)
+}
+
+// #2461
+object arrays3 {
+  import scala.collection.JavaConversions._
+  def apply[X](xs : X*) : java.util.List[X] = java.util.Arrays.asList(xs: _*)
+}
+

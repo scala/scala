@@ -3946,7 +3946,7 @@ trait Typers { self: Analyzer =>
     }
 
     def getManifestTree(pos: Position, tp: Type, full: Boolean): Tree = {
-      val manifestOpt = findManifest(tp, false)
+      val manifestOpt = findManifest(tp, full)
       if (manifestOpt.tree.isEmpty) {
         error(pos, "cannot find "+(if (full) "" else "class ")+"manifest for element type "+tp)
         Literal(Constant(null))
