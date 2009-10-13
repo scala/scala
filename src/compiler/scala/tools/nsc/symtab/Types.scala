@@ -2706,10 +2706,13 @@ A type's typeSymbol should never be inspected directly.
     eparams
   }
 
+  //  note: it's important to write the two tests in this order,
+  //  as only typeParams forces the classfile to be read. See #400
+  private def isRawIfWithoutArgs(sym: Symbol) =
+    !sym.typeParams.isEmpty && sym.hasFlag(JAVA)
+
   def isRaw(sym: Symbol, args: List[Type]) =
-    !phase.erasedTypes && !sym.typeParams.isEmpty && sym.hasFlag(JAVA) && args.isEmpty
-      //  note: it's important to write the two first tests in this order,
-      //  as only typeParams forces the classfile to be read. See #400
+    !phase.erasedTypes && isRawIfWithoutArgs(sym) && args.isEmpty
 
   /** Is type tp a ``raw type''? */
   def isRawType(tp: Type) = tp match {
@@ -2727,9 +2730,7 @@ A type's typeSymbol should never be inspected directly.
    */
   object rawToExistential extends TypeMap {
     def apply(tp: Type): Type = tp match {
-      case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty && sym.hasFlag(JAVA) =>
-        //  note: it's important to write the two tests in this order,
-        //  as only typeParams forces the classfile to be read. See #400
+      case TypeRef(pre, sym, List()) if isRawIfWithoutArgs(sym) =>
         val eparams = typeParamsToExistentials(sym, sym.typeParams)
         existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
       case _ =>

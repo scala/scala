@@ -58,7 +58,7 @@ trait TransMatcher extends ast.TreeDSL {
     // For x match { ... we start with a single root
     def singleMatch(): MatrixInit = {
       val v = copyVar(selector, isChecked)
-      tracing("root(s)", context.MatrixInit(List(v), cases, matchError(v.ident)))
+      context.MatrixInit(List(v), cases, matchError(v.ident))
     }
 
     // For (x, y, z) match { ... we start with multiple roots, called tpXX.
@@ -67,14 +67,14 @@ trait TransMatcher extends ast.TreeDSL {
       val vs = args zip rootTypes map { case (arg, tpe) => copyVar(arg, isChecked, tpe, "tp") }
       def merror = matchError(treeCopy.Apply(app, fn, vs map (_.ident)))
 
-      tracing("root(s)", context.MatrixInit(vs, cases, merror))
+      context.MatrixInit(vs, cases, merror)
     }
 
     // sets up top level variables and algorithm input
-    val matrixInit = selector match {
+    val matrixInit = tracing("matrixInit", selector match {
       case app @ Apply(fn, _) if isTupleType(selector.tpe) && doApply(fn) => tupleMatch(app)
       case _                                                              => singleMatch()
-    }
+    })
 
     val matrix  = new MatchMatrix(context) { lazy val data = matrixInit }
     val rep     = matrix.expansion                            // expands casedefs and assigns name

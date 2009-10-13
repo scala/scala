@@ -111,6 +111,9 @@ trait MatchSupport extends ast.TreeDSL
 
     object compactTreePrinter extends CompactTreePrinter
 
+    // def treeChildrenString(t: Tree): String =
+    //   nodeToString(t)
+
     def treeToCompactString(t: Tree): String = {
       val buffer = new StringWriter()
       val printer = compactTreePrinter.create(new PrintWriter(buffer))
@@ -181,10 +184,7 @@ trait MatchSupport extends ast.TreeDSL
 
         override def printRaw(tree: Tree): Unit = {
           // routing supercalls through this for debugging ease
-          def s() = {
-            // Console.println("toSuper: " + tree.getClass)
-            super.printRaw(tree)
-          }
+          def s() = super.printRaw(tree)
 
           tree match {
             // labels used for jumps - does not map to valid scala code
@@ -202,8 +202,6 @@ trait MatchSupport extends ast.TreeDSL
                 case _                        => s()
               }
 
-            // case Select(Select(_, x), y) if x.toString == "this" =>
-            //   print(symName(tree, y))
             // target.unary_! ==> !target
             case Select(qualifier, name) =>
               val n = symName(tree, name)
@@ -222,6 +220,12 @@ trait MatchSupport extends ast.TreeDSL
                 case List(x)            => printRow(List(x), "", ";", "")
                 case _                  => s()
               }
+
+            // We get a lot of this stuff
+            case If( IsTrue(), x, _)        => printRaw(x)
+            case If(IsFalse(), _, x)        => printRaw(x)
+            case If(cond, IsFalse(), elsep) =>
+              printRow(List(cond, elsep), " !(", ") && (", ") ")
 
             // If thenp or elsep has only one statement, it doesn't need more than one line.
             case If(cond, thenp, elsep) =>

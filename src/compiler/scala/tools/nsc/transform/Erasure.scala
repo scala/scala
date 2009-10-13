@@ -384,9 +384,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
    }
   }
 
-  private def isSeqClass(sym: Symbol) =
-    (SeqClass isNonBottomSubClass sym) && (sym != ObjectClass)
-
   /** The symbol which is called by a bridge;
    *  @pre phase > erasure
    */

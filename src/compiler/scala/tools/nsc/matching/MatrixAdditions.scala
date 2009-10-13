@@ -20,6 +20,22 @@ trait MatrixAdditions extends ast.TreeDSL
   import CODE._
   import Debug._
 
+  // Extractors which can spot pure true/false expressions
+  // even through the haze of braces
+  abstract class SeeThroughBlocks[T] {
+    protected def unapplyImpl(x: Tree): T
+    def unapply(x: Tree): T = x match {
+      case Block(Nil, expr)         => unapply(expr)
+      case _                        => unapplyImpl(x)
+    }
+  }
+  object IsTrue extends SeeThroughBlocks[Boolean] {
+    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure TRUE
+  }
+  object IsFalse extends SeeThroughBlocks[Boolean] {
+    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure FALSE
+  }
+
   /** The Squeezer, responsible for all the squeezing.
    */
   private[matching] trait Squeezer {
@@ -28,10 +44,9 @@ trait MatrixAdditions extends ast.TreeDSL
     def squeezedBlockPVs(pvs: List[PatternVar], exp: Tree): Tree =
       squeezedBlock(pvs map (_.valDef), exp)
 
-    def squeezedBlock(vds: List[Tree], exp: Tree): Tree = tracing("squeezed",
+    def squeezedBlock(vds: List[Tree], exp: Tree): Tree =
       if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
       else                  Block(vds, exp)
-    )
 
     private def squeezedBlock1(vds: List[Tree], exp: Tree): Tree = {
       class RefTraverser(sym: Symbol) extends Traverser {
@@ -96,21 +111,6 @@ trait MatrixAdditions extends ast.TreeDSL
     import self.context._
 
     final def optimize(tree: Tree): Tree = {
-      // Extractors which can spot pure true/false expressions
-      // even through the haze of braces
-      abstract class SeeThroughBlocks[T] {
-        protected def unapplyImpl(x: Tree): T
-        def unapply(x: Tree): T = x match {
-          case Block(Nil, expr)         => unapply(expr)
-          case _                        => unapplyImpl(x)
-        }
-      }
-      object IsTrue extends SeeThroughBlocks[Boolean] {
-        protected def unapplyImpl(x: Tree): Boolean = x equalsStructure TRUE
-      }
-      object IsFalse extends SeeThroughBlocks[Boolean] {
-        protected def unapplyImpl(x: Tree): Boolean = x equalsStructure FALSE
-      }
       object lxtt extends Transformer {
         override def transform(tree: Tree): Tree = tree match {
           case blck @ Block(vdefs, ld @ LabelDef(name, params, body)) =>
