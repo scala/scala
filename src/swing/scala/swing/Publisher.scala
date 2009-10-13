@@ -138,7 +138,7 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
   protected val underlying: Buffer[Reference[A]]
 
   def +=(el: A): this.type = { purgeReferences(); underlying += Ref(el); this }
-  def +:(el: A) = { purgeReferences(); Ref(el) +: underlying; this }
+  def +=:(el: A) = { purgeReferences(); Ref(el) +: underlying; this }
   def remove(el: A) { underlying -= Ref(el); purgeReferences(); }
   def remove(n: Int) = { val el = apply(n); remove(el); el }
   def insertAll(n: Int, iter: Iterable[A]) {

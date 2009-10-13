@@ -86,7 +86,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param elem  the element to append.
    *  @return      the updated buffer.
    */
-  def +:(elem: A): this.type = {
+  def +=:(elem: A): this.type = {
     ensureSize(size0 + 1)
     copy(0, 1, size0)
     array(0) = elem.asInstanceOf[AnyRef]

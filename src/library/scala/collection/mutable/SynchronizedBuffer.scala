@@ -95,8 +95,8 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param elem  the element to append.
    */
-  abstract override def +:(elem: A): Buffer[A] = synchronized {
-    super.+:(elem)
+  abstract override def +=:(elem: A): Buffer[A] = synchronized {
+    super.+=:(elem)
   }
 
   /** Prepends a number of elements provided by an iterable object

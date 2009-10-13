@@ -36,8 +36,8 @@ trait ObservableBuffer[A, This <: ObservableBuffer[A, This]]
     this
   }
 
-  abstract override def +:(element: A): this.type = {
-    super.+:(element)
+  abstract override def +=:(element: A): this.type = {
+    super.+=:(element)
     publish(new Include(Start, element) with Undoable {
       def undo() { trimStart(1) }
     })

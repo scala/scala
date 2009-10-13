@@ -114,7 +114,7 @@ final class ListBuffer[A]
    *  @param x  the element to prepend.
    *  @return   this buffer.
    */
-  def +: (x: A): this.type = {
+  def +=: (x: A): this.type = {
     if (exported) copy()
     val newElem = new :: (x, start)
     if (start.isEmpty) last0 = newElem

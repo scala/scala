@@ -76,7 +76,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  the identity of the buffer.
    *  @param elem  the element to prepend.
    */
-  def +:(elem: A): This
+  def +=:(elem: A): This
+
+  @deprecated("use `+=:' instead")
+  final def +:(elem: A): This = +=:(elem)
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
