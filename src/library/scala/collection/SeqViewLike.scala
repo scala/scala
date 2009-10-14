@@ -161,6 +161,8 @@ trait SeqViewLike[+A,
 //    else super.patch[B, That](from, patch, replaced)(bf)
   }
 
+  //TR TODO: updated, +: ed :+ ed
+
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That =
     patch(length, fill(len - length)(elem), 0)
 

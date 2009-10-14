@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: SeqLike.scala 18895 2009-10-02 17:57:16Z odersky $
 
 
 package scala.collection
@@ -133,7 +133,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  is O(length min len) instead of O(length). The method should be overwritten
    *  if computing length is cheap.
    */
-  def lengthCompare(len: Int): Int = {
+  def lengthCompare(len: Int): Int = { //TR: should use iterator?
     var i = 0
     breakable {
       for (_ <- this) {
@@ -157,7 +157,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @param  p the predicate
    *  @param  from  the start index
    */
-  def segmentLength(p: A => Boolean, from: Int): Int = {
+  def segmentLength(p: A => Boolean, from: Int): Int = { //TR: should use iterator?
     var result = 0
     var i = 0
     breakable {
@@ -190,7 +190,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @param  p the predicate
    *  @param  from  the start index
    */
-  def indexWhere(p: A => Boolean, from: Int): Int = {
+  def indexWhere(p: A => Boolean, from: Int): Int = { //TR: should use iterator?
     var result = -1
     var i = from
     breakable {
@@ -460,7 +460,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   def removeDuplicates: Repr = {
     val b = newBuilder
-    var seen = Set[A]()
+    var seen = Set[A]() //TR: should use mutable.HashSet?
     for (x <- this) {
       if (!(seen contains x)) {
         b += x
@@ -482,6 +482,38 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b ++= toCollection(rest).view drop replaced
     b.result
   }
+
+  /** Returns a copy of this sequence with the element at position `index` replaced by `elem`.
+   */
+  def updated[B >: A, That](index: Int, elem: B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+    val b = bf(repr)
+    val (prefix, rest) = this.splitAt(index)
+    b ++= toCollection(prefix)
+    b += elem
+    b ++= toCollection(rest).view.tail
+    b.result
+  }
+
+  /** Returns a new sequence consisting of `elem` followed by the elements of this sequence.
+   */
+  def +:[B >: A, That](elem: B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+    val b = bf(repr)
+    b += elem
+    b ++= thisCollection
+    b.result
+  }
+
+  /** Returns a new sequence consisting of the elements of this sequence followed by `elem`.
+   */
+  def :+[B >: A, That](elem: B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+    val b = bf(repr)
+    b ++= thisCollection
+    b += elem
+    b.result
+  }
+
+
+
 
   /** Returns a new sequence of given length containing the elements of this sequence followed by zero
    *  or more occurrences of given elements.
