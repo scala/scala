@@ -8,7 +8,7 @@ package scala.tools.nsc
 
 import scala.tools.nsc.util.{FreshNameCreator,OffsetPosition,Position,NoPosition,SourceFile}
 import scala.tools.nsc.io.AbstractFile
-import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
+import scala.collection.mutable.{LinkedHashSet, HashSet, HashMap, ListBuffer}
 
 trait CompilationUnits { self: Global =>
 
@@ -62,7 +62,7 @@ trait CompilationUnits { self: Global =>
     /** The icode representation of classes in this compilation unit.
      *  It is empty up to phase 'icode'.
      */
-    val icode: HashSet[icodes.IClass] = new HashSet
+    val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
 
     def error(pos: Position, msg: String) =
       reporter.error(pos, msg)

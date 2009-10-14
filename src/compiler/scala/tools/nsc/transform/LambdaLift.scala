@@ -10,7 +10,7 @@ package transform
 import symtab._
 import Flags._
 import util.TreeSet
-import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.collection.mutable.{HashMap, LinkedHashMap, ListBuffer}
 import scala.tools.nsc.util.{Position, NoPosition}
 
 abstract class LambdaLift extends InfoTransform {
@@ -45,13 +45,13 @@ abstract class LambdaLift extends InfoTransform {
   class LambdaLifter(unit: CompilationUnit) extends explicitOuter.OuterPathTransformer(unit) {
 
     /** A map storing free variables of functions and classes */
-    private val free = new HashMap[Symbol, SymSet]
+    private val free = new LinkedHashMap[Symbol, SymSet]
 
     /** A map storing the free variable proxies of functions and classes */
-    private val proxies = new HashMap[Symbol, List[Symbol]]
+    private val proxies = new LinkedHashMap[Symbol, List[Symbol]]
 
     /** A hashtable storing calls between functions */
-    private val called = new HashMap[Symbol, SymSet]
+    private val called = new LinkedHashMap[Symbol, SymSet]
 
     /** The set of symbols that need to be renamed. */
     private val renamable = newSymSet
@@ -60,13 +60,13 @@ abstract class LambdaLift extends InfoTransform {
     private var changedFreeVars: Boolean = _
 
     /** Buffers for lifted out classes and methods */
-    private val liftedDefs = new HashMap[Symbol, ListBuffer[Tree]]
+    private val liftedDefs = new LinkedHashMap[Symbol, ListBuffer[Tree]]
 
     private type SymSet = TreeSet[Symbol]
 
     private def newSymSet = new TreeSet[Symbol]((x, y) => x.isLess(y))
 
-    private def symSet(f: HashMap[Symbol, SymSet], sym: Symbol): SymSet = f.get(sym) match {
+    private def symSet(f: LinkedHashMap[Symbol, SymSet], sym: Symbol): SymSet = f.get(sym) match {
       case Some(ss) => ss
       case None => val ss = newSymSet; f(sym) = ss; ss
     }
