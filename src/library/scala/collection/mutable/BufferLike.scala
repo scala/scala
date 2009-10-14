@@ -126,7 +126,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def ++:(iter: Traversable[A]): This = { for (x <- iter) x +: this; repr }
+  def ++=:(iter: Traversable[A]): This = { for (x <- iter) x +=: this; repr }
+
+  @deprecated("use ++=: instead")
+  final def ++:(iter: Traversable[A]): This = ++=:(iter)
 
   /** Prepends a number of elements provided by an iterator
    *  The identity of the buffer is returned.
@@ -134,7 +137,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param iter   the iterator
    *  @return       the updated buffer.
    */
-  def ++:(iter: Iterator[A]): This = { for (x <- iter) x +: this; repr }
+  def ++=:(iter: Iterator[A]): This = { for (x <- iter) x +=: this; repr }
+
+  @deprecated("use ++=: instead")
+  final def ++:(iter: Iterator[A]): This = ++=:(iter)
 
   /** Appends elements to this buffer.
    *
@@ -153,7 +159,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param elem  the element to prepend.
    */
-  def prepend(elems: A*) { elems ++: this }
+  def prepend(elems: A*) { elems ++=: this }
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method. The identity of the
@@ -161,7 +167,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def prependAll(iter: Traversable[A]) { iter ++: this }
+  def prependAll(iter: Traversable[A]) { iter ++=: this }
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method. The identity of the
@@ -169,7 +175,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def prependAll(iter: Iterator[A]) { iter ++: this }
+  def prependAll(iter: Iterator[A]) { iter ++=: this }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a

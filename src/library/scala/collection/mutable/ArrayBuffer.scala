@@ -101,7 +101,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++:(iter: Traversable[A]): this.type = { insertAll(0, iter); this }
+  override def ++=:(iter: Traversable[A]): this.type = { insertAll(0, iter); this }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a

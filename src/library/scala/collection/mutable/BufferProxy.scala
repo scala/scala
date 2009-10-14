@@ -86,13 +86,8 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   def +=:(elem: A): Buffer[A] = self.+=:(elem)
 
-  /** Prepends a number of elements provided by an iterable object
-   *  via its <code>iterator</code> method. The identity of the
-   *  buffer is returned.
-   *
-   *  @param iter  the iterable object.
-   */
-  def ++:(iter: scala.collection.Iterable[A]): Buffer[A] = self.++:(iter)
+  override def ++=:(iter: scala.collection.Traversable[A]): Buffer[A] = self.++=:(iter)
+  override def ++=:(iter: scala.collection.Iterator[A]): Buffer[A] = self.++=:(iter)
 
   /** Prepend an element to this list.
    *

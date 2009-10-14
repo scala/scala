@@ -105,8 +105,8 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++:(iter: Traversable[A]): Buffer[A] = synchronized {
-    super.++:(iter)
+  override def ++=:(iter: Traversable[A]): Buffer[A] = synchronized {
+    super.++=:(iter)
   }
 
   /** Prepend an element to this list.
