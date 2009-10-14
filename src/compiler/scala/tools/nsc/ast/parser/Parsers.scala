@@ -420,8 +420,17 @@ self =>
     /** Join the comment associated with a definition
     */
     def joinComment(trees: => List[Tree]): List[Tree] = {
-      val buf = in.flushDoc
-      if ((buf ne null) && buf.length > 0) trees map (t => DocDef(buf, t) setPos t.pos) // !!! take true comment position
+      val doc = in.flushDoc
+      if ((doc ne null) && doc._1.length > 0) {
+        val ts = trees
+        val main = ts.find(_.pos.isOpaqueRange)
+        ts map {
+          t =>
+            val dd = DocDef(doc._1, t)
+            val pos = doc._2.withEnd(t.pos.endOrPoint)
+            dd setPos (if (t eq main) pos else pos.makeTransparent)
+        }
+      }
       else trees
     }
 

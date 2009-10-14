@@ -103,10 +103,11 @@ trait Scanners {
     /** buffer for the documentation comment
      */
     var docBuffer: StringBuilder = null
+    var docOffset: Position = null
 
     /** Return current docBuffer and set docBuffer to null */
     def flushDoc = {
-      val ret = if (docBuffer != null) docBuffer.toString else null
+      val ret = if (docBuffer != null) (docBuffer.toString, docOffset) else null
       docBuffer = null
       ret
     }
@@ -118,6 +119,8 @@ trait Scanners {
     }
 
     protected def foundComment(value: String, start: Int, end: Int) = ()
+
+    protected def foundDocComment(value: String, start: Int, end: Int) = ()
 
     private class TokenData0 extends TokenData
 
@@ -411,8 +414,11 @@ trait Scanners {
           var openComments = 1
           nextChar()
           appendToComment()
-          if (ch == '*' && buildDocs)
+          var buildingDocComment = false
+          if (ch == '*' && buildDocs) {
+            buildingDocComment = true
             docBuffer = new StringBuilder("/**")
+          }
           while (openComments > 0) {
             do {
               do {
@@ -435,7 +441,11 @@ trait Scanners {
             else incompleteInputError("unclosed comment")
             openComments -= 1
           }
+
+          if (buildingDocComment)
+            foundDocComment(comment.toString, offset, charOffset - 2)
         }
+
         foundComment(comment.toString, offset, charOffset - 2)
         true
       } else {
@@ -1058,6 +1068,10 @@ trait Scanners {
 
     override def foundComment(value: String, start: Int, end: Int) {
     	unit.comments += unit.Comment(value, new RangePosition(unit.source, start, start, end))
+    }
+
+    override def foundDocComment(value: String, start: Int, end: Int) {
+      docOffset = new RangePosition(unit.source, start, start, end)
     }
   }
 

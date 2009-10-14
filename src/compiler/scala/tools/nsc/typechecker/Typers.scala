@@ -1392,8 +1392,8 @@ trait Typers { self: Analyzer =>
           }
           if (mods hasFlag DEFERRED) gs.toList else vdef :: gs.toList
         }
-      case DocDef(comment, defn) =>
-        addGetterSetter(defn) map (stat => DocDef(comment, stat))
+      case dd @ DocDef(comment, defn) =>
+        addGetterSetter(defn) map (stat => DocDef(comment, stat) setPos dd.pos)
 
       case Annotated(annot, defn) =>
         addGetterSetter(defn) map (stat => Annotated(annot, stat))
@@ -3519,9 +3519,12 @@ trait Typers { self: Analyzer =>
         case ldef @ LabelDef(_, _, _) =>
           labelTyper(ldef).typedLabelDef(ldef)
 
-        case DocDef(comment, defn) =>
+        case ddef @ DocDef(comment, defn) =>
           val ret = typed(defn, mode, pt)
-          if ((comments ne null) && (defn.symbol ne null) && (defn.symbol ne NoSymbol)) comments(defn.symbol) = comment
+          if ((comments ne null) && (defn.symbol ne null) && (defn.symbol ne NoSymbol)) {
+            comments(defn.symbol) = comment
+            commentOffsets(defn.symbol) = ddef.pos.startOrPoint
+          }
           ret
 
         case Annotated(constr, arg) =>

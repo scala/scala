@@ -125,6 +125,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (onlyPresentation) new HashMap[Symbol,String]
     else null
 
+  /** A map of all doc comments source file offsets,
+   *  indexed by symbols.
+   *  Only active in onlyPresentation mode
+   */
+  val commentOffsets =
+    if (onlyPresentation) new HashMap[Symbol,Int]
+    else null
+
   /** A map of argument names for methods
    *  !!! can be dropped once named method arguments are in !!!
    */
