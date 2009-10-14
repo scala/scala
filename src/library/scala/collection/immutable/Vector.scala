@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: Vector.scala 19072 2009-10-13 12:19:59Z rompf $
 
 
 // Questions: how to name update, appendFront, appendBack?
@@ -17,7 +17,6 @@ package scala.collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import compat.Platform.arraycopy
 
 import scala.collection.generic._
 import scala.collection.mutable.Builder
@@ -40,8 +39,8 @@ trait Vector[+A] extends Seq[A]
 object Vector extends SeqFactory[Vector] {
   implicit def builderFactory[A]: BuilderFactory[A, Vector[A], Coll] =
     new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, Vector[A]] =
-    NewVector.newBuilder[A]
+  override def empty[A]: Vector[A] = NewVector.empty[A]
+  def newBuilder[A]: Builder[A, Vector[A]] = NewVector.newBuilder[A]
 }
 
 
@@ -59,8 +58,7 @@ trait NewVector[+A]  extends Vector[A]
 object NewVector extends SeqFactory[NewVector] {
   implicit def builderFactory[A]: BuilderFactory[A, NewVector[A], Coll] =
     new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, NewVector[A]] =
-    new NewVectorBuilder[A]
+  def newBuilder[A]: Builder[A, NewVector[A]] = new NewVectorBuilder[A]
 
   // TODO: override object empty { }
 }
@@ -150,7 +148,7 @@ class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends NewV
 
   private def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
     val elems = new Array[AnyRef](32)
-    arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
+    System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
     elems
   }
 
@@ -745,7 +743,7 @@ trait NewVectorPointer[T] {
     final def copyOf(a: Array[AnyRef]) = {
 //      //println("copy")
       val b = new Array[AnyRef](a.length)
-      arraycopy(a, 0, b, 0, a.length)
+      System.arraycopy(a, 0, b, 0, a.length)
       b
     }
 
