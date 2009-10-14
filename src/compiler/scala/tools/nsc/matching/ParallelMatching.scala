@@ -189,7 +189,7 @@ trait ParallelMatching extends ast.TreeDSL
       // Any unapply - returns Some(true) if a type test is needed before the unapply can
       // be called (e.g. def unapply(x: Foo) = { ... } but our scrutinee is type Any.)
       object AnyUnapply {
-        def unapply(x: Tree): Option[Boolean] = condOpt(x) {
+        def unapply(x: Pattern): Option[Boolean] = condOpt(x.tree) {
           case UnapplyParamType(tpe) => !(scrut.tpe <:< tpe)
         }
       }
@@ -201,18 +201,16 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       def mkRule(rest: Rep): RuleApplication = {
-        tracing("Rule", head.tree match {
-            case x if isEquals(x.tpe)                 => new MixEquals(this, rest)
-            case x: ArrayValue                        => new MixSequence(this, rest)
-            case AnyUnapply(false)                    => new MixUnapply(this, rest, false)
-            // case TypedUnapply(needsTest)              =>
-            case _ =>
-              isPatternSwitch(scrut, ps) match {
-                case Some(x)  => new MixLiteralInts(x, rest)
-                case _        => new MixTypes(this, rest)
-              }
-          }
-        )
+        tracing("Rule", head match {
+          case x if isEquals(x.tree.tpe)        => new MixEquals(this, rest)
+          case x: SequencePattern               => new MixSequence(this, rest, x)
+          case AnyUnapply(false)                => new MixUnapply(this, rest, false)
+          case _ =>
+            isPatternSwitch(scrut, ps) match {
+              case Some(x)  => new MixLiteralInts(x, rest)
+              case _        => new MixTypes(this, rest)
+            }
+        })
       }
       override def toString() = "%s match {%s}".format(scrut, indentAll(ps))
     } // PatternMatch
@@ -441,68 +439,36 @@ trait ParallelMatching extends ast.TreeDSL
         squeezedBlock(List(handleOuter(unapplyResult.valDef)), codegen)
     }
 
-    /** handle sequence pattern and ArrayValue (but not star patterns)
+    /** Handle Sequence patterns (including Star patterns.)
+     *  Note: pivot == head, just better typed.
      */
-    sealed class MixSequence(val pmatch: PatternMatch, val rest: Rep) extends RuleApplication {
-      // Called 'pivot' since it's the head of the column under consideration in the mixture rule.
-      val pivot @ SequencePattern(av @ ArrayValue(_, _)) = head
+    sealed class MixSequence(val pmatch: PatternMatch, val rest: Rep, pivot: SequencePattern) extends RuleApplication {
+      def hasStar = pivot.hasStar
       private def pivotLen = pivot.nonStarLength
 
-      def mustCheck(first: Pattern, next: Pattern): Boolean = {
-        if (first.tree eq next.tree)
-          return false
+      // one pattern var per sequence element up to elemCount, and one more for the rest of the sequence
+      lazy val pvs = scrut createSequenceVars pivotLen
 
-        !(first completelyCovers next)
-      }
+      // divide the remaining rows into success/failure branches, expanding subsequences of patterns
+      private lazy val rowsplit = {
+        require(scrut.tpe <:< head.tpe)
 
-      def getSubPatterns(x: Pattern): Option[List[Pattern]] = {
-        // def defaults = Some(emptyPatterns(pivot.elemPatterns.length + 1))
-        def defaults = Some(pivot.dummies)
-        val av @ ArrayValue(_, xs) = x.tree match {
-          case x: ArrayValue      => x
-          case EmptyTree | WILD() => return defaults
-          case _                  => return None
-        }
+        List.unzip(
+          for ((c, rows) <- pmatch pzip rest.rows) yield {
+            def canSkip                     = pivot canSkipSubsequences c
+            def passthrough(skip: Boolean)  = if (skip) None else Some(rows insert c)
 
-        val sp = x.asInstanceOf[SequencePattern]
-        val (star1, star2) = (pivot.hasStar, sp.hasStar)
-
-        if (sp.nonStarLength == pivotLen) {
-          Some((star1, star2) match {
-            case (true, true)   => (sp rebindStar scrut.seqType) ::: List(NoPattern)
-            case (true, false)  => toPats(xs ::: List(gen.mkNil, EmptyTree))
-            case (false, true)  => (sp rebindStar scrut.seqType)
-            case (false, false) => toPats(xs) ::: List(NoPattern)
-          })
-        }
-        else if (pivot.hasStar && sp.hasStar && xs.length-1 < pivotLen)
-          Some(emptyPatterns(pivotLen + 1) ::: List(x))
-        else
-          defaults    // XXX
-      }
-
-      lazy val cond = (pivot precondition pmatch).get
-
-      lazy val (success, failure) = {
-        assert(scrut.tpe <:< head.tpe, "fatal: %s is not <:< %s".format(scrut, head.tpe))
-
-        // one pattern var per sequence element up to elemCount, and one more for the rest of the sequence
-        val pvs = scrut createSequenceVars pivot.nonStarPatterns.size
-
-        val (nrows, frows): (List[Option[Row]], List[Option[Row]]) = List.unzip(
-          for ((c, rows) <- pmatch pzip rest.rows) yield getSubPatterns(c) match {
-            case Some(ps) => (Some(rows insert ps), if (mustCheck(head, c)) Some(rows insert c) else None)
-            case None     => (None, Some(rows insert c))
+            pivot.subsequences(c, scrut.seqType) match {
+              case Some(ps) => (Some(rows insert ps), passthrough(canSkip))
+              case None     => (None, passthrough(false))
+            }
           }
-        )
-
-        val succ = remake(nrows.flatten, pvs, includeScrut = pivot.hasStar)
-
-        (
-          squeezedBlockPVs(pvs, succ.toTree),
-          remake(frows.flatten).toTree
-        )
+        ) match { case (l1, l2) => (l1.flatten, l2.flatten) }
       }
+
+      lazy val cond     = (pivot precondition pmatch).get   // length check
+      lazy val success  = squeezedBlockPVs(pvs, remake(rowsplit._1, pvs, hasStar).toTree)
+      lazy val failure  = remake(rowsplit._2).toTree
 
       final def tree(): Tree = codegen
     }

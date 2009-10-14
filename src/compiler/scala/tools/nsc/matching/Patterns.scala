@@ -22,7 +22,7 @@ trait Patterns extends ast.TreeDSL {
   import definitions._
   import CODE._
   import Debug._
-  import treeInfo.{ unbind, isVarPattern, isVariableName }
+  import treeInfo.{ unbind, isStar, isVarPattern, isVariableName }
 
   type PatternMatch       = MatchMatrix#PatternMatch
   private type PatternVar = MatrixContext#PatternVar
@@ -36,6 +36,9 @@ trait Patterns extends ast.TreeDSL {
 
   // The constant null pattern
   def NullPattern = LiteralPattern(NULL)
+
+  // The Nil pattern
+  def NilPattern = Pattern(gen.mkNil)
 
   // 8.1.1
   case class VariablePattern(tree: Ident) extends NamePattern {
@@ -208,35 +211,35 @@ trait Patterns extends ast.TreeDSL {
     override def description = "UnSeq(%s => %s)".format(tptArg, resTypesString)
   }
 
-  // 8.1.8 (b) (literal ArrayValues)
-  case class SequencePattern(tree: ArrayValue) extends Pattern {
+  abstract class SequencePattern extends Pattern {
+    val tree: ArrayValue
+    def nonStarPatterns: List[Pattern]
+    def subsequences(other: Pattern, seqType: Type): Option[List[Pattern]]
+    def canSkipSubsequences(second: Pattern): Boolean
+
     lazy val ArrayValue(elemtpt, elems) = tree
     lazy val elemPatterns = toPats(elems)
-    lazy val nonStarPatterns = if (hasStar) elemPatterns.init else elemPatterns
-    private def lastPattern = elemPatterns.last
 
+    override def dummies = emptyPatterns(elems.length + 1)
     override def subpatternsForVars: List[Pattern] = elemPatterns
 
     def nonStarLength = nonStarPatterns.length
     def isAllDefaults = nonStarPatterns forall (_.isDefault)
 
-    override def dummies = emptyPatterns(elemPatterns.length + 1)
+    def isShorter(other: SequencePattern) = nonStarLength < other.nonStarLength
+    def isSameLength(other: SequencePattern) = nonStarLength == other.nonStarLength
 
-    def rebindStar(seqType: Type): List[Pattern] = {
-      require(hasStar)
-      nonStarPatterns ::: List(lastPattern rebindTo WILD(seqType))
-    }
+    protected def lengthCheckOp: (Tree, Tree) => Tree =
+      if (hasStar) _ ANY_>= _
+      else _ MEMBER_== _
 
     // optimization to avoid trying to match if length makes it impossible
     override def precondition(pm: PatternMatch) = {
       import pm.{ scrut, head }
       val len = nonStarLength
-      val compareOp = head.tpe member nme.lengthCompare  // symbol for "lengthCompare" method
-      val op: (Tree, Tree) => Tree =
-        if (hasStar) _ ANY_>= _
-        else _ MEMBER_== _
+      val compareOp = head.tpe member nme.lengthCompare
 
-      def cmpFunction(t1: Tree) = op((t1 DOT compareOp)(LIT(len)), ZERO)
+      def cmpFunction(t1: Tree) = lengthCheckOp((t1 DOT compareOp)(LIT(len)), ZERO)
 
       Some(nullSafe(cmpFunction _, FALSE)(scrut.id))
     }
@@ -245,41 +248,54 @@ trait Patterns extends ast.TreeDSL {
       * (the conditional supplied by getPrecondition.) This is an optimization to avoid checking sequences
       * which cannot match due to a length incompatibility.
       */
-    override def completelyCovers(second: Pattern): Boolean = {
-      if (second.isDefault) return false
-
-      second match {
-        case x: SequencePattern  =>
-          val (len1, len2)    = (nonStarLength, x.nonStarLength)
-          val (star1, star2)  = (this.hasStar, x.hasStar)
-
-          // this still needs rewriting.
-          val res =
-          ( star1 &&  star2 && len2  < len1                     ) ||  // Seq(a,b,c,_*) followed by Seq(a,b,_*) because of (a,b)
-          ( star1 && !star2 && len2  < len1 &&    isAllDefaults ) ||  // Seq(a,b,c,_*) followed by Seq(a,b) because of (a,b)
-          // ( star1 &&           len2  < len1                     ) ||
-          (!star1 &&  star2                                     ) ||
-          (!star1 && !star2 && len2 >= len1                     )
-
-          !res
-        case _ =>
-          // shouldn't happen...
-          false
-      }
-    }
     override def description = "Seq(%s)".format(elemPatterns)
   }
 
-  // 8.1.8 (b)
-  // temporarily subsumed by SequencePattern
-  // case class SequenceStarPattern(tree: ArrayValue) extends Pattern { }
+  // 8.1.8 (b) (literal ArrayValues)
+  case class SequenceNoStarPattern(tree: ArrayValue) extends SequencePattern {
+    require(!hasStar)
+    lazy val nonStarPatterns = elemPatterns
 
-  // abstract trait ArrayValuePattern extends Pattern {
-  //   val tree: ArrayValue
-  //   lazy val av @ ArrayValue(elemTpt, elems) = tree
-  //   lazy val elemPatterns = toPats(elems)
-  //   def nonStarElems = if (isRightIgnoring) elems.init else elems
-  // }
+    // no star
+    def subsequences(other: Pattern, seqType: Type): Option[List[Pattern]] =
+      condOpt(other) {
+        case next: SequenceStarPattern if isSameLength(next)    => next rebindStar seqType
+        case next: SequenceNoStarPattern if isSameLength(next)  => next.elemPatterns ::: List(NoPattern)
+        case WildcardPattern() | (_: SequencePattern)           => dummies
+      }
+
+    def canSkipSubsequences(second: Pattern): Boolean =
+      (tree eq second.tree) || (cond(second) {
+        case x: SequenceNoStarPattern => (x isShorter this) && this.isAllDefaults
+      })
+  }
+
+  // 8.1.8 (b)
+  case class SequenceStarPattern(tree: ArrayValue) extends SequencePattern {
+    require(hasStar)
+    lazy val nonStarPatterns = elemPatterns.init
+
+    // yes star
+    private def nilPats = List(NilPattern, NoPattern)
+    def subsequences(other: Pattern, seqType: Type): Option[List[Pattern]] =
+      condOpt(other) {
+        case next: SequenceStarPattern if isSameLength(next)    => (next rebindStar seqType) ::: List(NoPattern)
+        case next: SequenceStarPattern if (next isShorter this) => (dummies drop 1) ::: List(next)
+        case next: SequenceNoStarPattern if isSameLength(next)  => next.elemPatterns ::: nilPats
+        case WildcardPattern() | (_: SequencePattern)           => dummies
+      }
+
+    def rebindStar(seqType: Type): List[Pattern] =
+      nonStarPatterns ::: List(elemPatterns.last rebindTo WILD(seqType))
+
+    def canSkipSubsequences(second: Pattern): Boolean =
+      (tree eq second.tree) || (cond(second) {
+        case x: SequenceStarPattern   => this isShorter x
+        case x: SequenceNoStarPattern => !(x isShorter this)
+      })
+
+    override def description = "Seq*(%s)".format(elemPatterns)
+  }
 
   // 8.1.8 (c)
   case class StarPattern(tree: Star) extends Pattern {
@@ -313,6 +329,16 @@ trait Patterns extends ast.TreeDSL {
     // a small tree -> pattern cache
     private val cache = new collection.mutable.HashMap[Tree, Pattern]
 
+    def unadorn(x: Tree): Tree = x match {
+      case Typed(expr, _) => unadorn(expr)
+      case Bind(_, x)     => unadorn(x)
+      case _              => x
+    }
+
+    def isRightIgnoring(t: Tree) = cond(unadorn(t)) {
+      case ArrayValue(_, xs) if !xs.isEmpty => isStar(unadorn(xs.last))
+    }
+
     def apply(tree: Tree): Pattern = {
       if (cache contains tree)
         return cache(tree)
@@ -327,8 +353,7 @@ trait Patterns extends ast.TreeDSL {
         case x: Literal           => LiteralPattern(x)
         case x: UnApply           => UnapplyPattern(x)
         case x: Ident             => if (isVarPattern(x)) VariablePattern(x) else SimpleIdPattern(x)
-        // case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequencePattern(x)
-        case x: ArrayValue        => SequencePattern(x)
+        case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequenceNoStarPattern(x)
         case x: Select            => StableIdPattern(x)
         case x: Star              => StarPattern(x)
         case x: This              => ThisPattern(x) // XXX ?
@@ -521,15 +546,12 @@ trait Patterns extends ast.TreeDSL {
     def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
     def isObject = isSymValid && prefix.isStable  // XXX not entire logic
 
-    def unadorn(x: Tree): Tree = x match {
-      case Typed(expr, _) => unadorn(expr)
-      case Bind(_, x)     => unadorn(x)
-      case _              => x
-    }
+    def unadorn(t: Tree): Tree = Pattern unadorn t
 
     private def isStar(x: Tree) = cond(unadorn(x)) { case Star(_) => true }
     private def endsStar(xs: List[Tree]) = xs.nonEmpty && isStar(xs.last)
 
+    def isStarSequence = isSequence && hasStar
     def isSequence = cond(unadorn(tree)) {
       case Sequence(xs) => true
       case ArrayValue(tpt, xs) => true
@@ -577,21 +599,4 @@ trait Patterns extends ast.TreeDSL {
       }
     }
   }
-
-  // object SeqStarSubPatterns {
-  //   def removeStar(xs: List[Tree], seqType: Type): List[Pattern] = {
-  //     val ps = toPats(xs)
-  //     ps.init ::: List(ps.last rebindToType seqType)
-  //   }
-  //
-  //   def unapply(x: Pattern)(implicit min: Int, seqType: Type): Option[List[Pattern]] = x.tree match {
-  //     case av @ ArrayValue(_, xs) =>
-  //       if      (!isRightIgnoring(av) && xs.length   == min) Some(toPats(xs ::: List(gen.mkNil, EmptyTree)))    // Seq(p1,...,pN)
-  //       else if ( isRightIgnoring(av) && xs.length-1 == min) Some(removeStar(xs, seqType) ::: List(NoPattern))  // Seq(p1,...,pN,_*)
-  //       else if ( isRightIgnoring(av) && xs.length-1  < min) Some(emptyPatterns(min + 1) ::: List(x))           // Seq(p1..,pJ,_*)   J < N
-  //       else None
-  //     case _ =>
-  //       if (x.isDefault) Some(emptyPatterns(min + 1 + 1)) else None
-  //   }
-  // }
 }
