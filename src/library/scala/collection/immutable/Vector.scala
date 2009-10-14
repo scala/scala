@@ -17,6 +17,7 @@ package scala.collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
+import compat.Platform.arraycopy
 
 import scala.collection.generic._
 import scala.collection.mutable.Builder
@@ -149,7 +150,7 @@ class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends NewV
 
   private def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
     val elems = new Array[AnyRef](32)
-    System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
+    arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
     elems
   }
 
@@ -744,7 +745,7 @@ trait NewVectorPointer[T] {
     final def copyOf(a: Array[AnyRef]) = {
 //      //println("copy")
       val b = new Array[AnyRef](a.length)
-      System.arraycopy(a, 0, b, 0, a.length)
+      arraycopy(a, 0, b, 0, a.length)
       b
     }
 
