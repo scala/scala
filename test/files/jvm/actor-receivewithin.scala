@@ -29,16 +29,19 @@ object A extends Actor {
           }
         }
         B ! 'next
-        cnt = 0
-        while (cnt < 501) {
-          cnt += 1
-          receiveWithin (500) {
-            case 'msg2 =>
-              if (cnt % 100 == 0)
-                println("'msg2")
-            case TIMEOUT =>
-              println("TIMEOUT")
-          }
+        receive {
+          case 'done =>
+            cnt = 0
+            while (cnt < 501) {
+              cnt += 1
+              receiveWithin (500) {
+                case 'msg2 =>
+                  if (cnt % 100 == 0)
+                    println("'msg2")
+                case TIMEOUT =>
+                  println("TIMEOUT")
+              }
+            }
         }
     }
   }
@@ -56,6 +59,7 @@ object B extends Actor {
         for (_ <- 1 to 500) {
           A ! 'msg2
         }
+        A ! 'done
     }
   }
 }
