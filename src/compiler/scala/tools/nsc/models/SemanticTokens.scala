@@ -476,7 +476,6 @@ class SemanticTokens(val compiler: Global) {
         build(tree.pat)
         build(tree.guard)
         build(tree.body)
-      case tree : Sequence   => build(tree.trees);
       case tree : Assign     => build(tree.lhs); build(tree.rhs);
       case tree : If         => build(tree.cond); build(tree.thenp); build(tree.elsep);
       case tree : New        =>

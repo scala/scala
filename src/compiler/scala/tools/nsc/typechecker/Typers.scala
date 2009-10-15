@@ -128,10 +128,10 @@ trait Typers { self: Analyzer =>
    */
   val LHSmode       = 0x400
 
-  /** The mode <code>REGPATmode</code> is set when regular expression patterns
-   *  are allowed.
+  /** The mode <code>STARmode</code> is set when star patterns are allowed.
+   *  (This was formerly called REGPATmode.)
    */
-  val REGPATmode    = 0x1000
+  val STARmode      = 0x1000
 
   /** The mode <code>ALTmode</code> is set when we are under a pattern alternative */
   val ALTmode       = 0x2000
@@ -387,11 +387,9 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def checkRegPatOK(pos: Position, mode: Int) =
-      if ((mode & REGPATmode) == 0 &&
-          phase.id <= currentRun.typerPhase.id) // fixes t1059
-        error(pos, "no regular expression pattern allowed here\n"+
-              "(regular expression patterns are only allowed in arguments to *-parameters)")
+    def checkStarPatOK(pos: Position, mode: Int) =
+      if ((mode & STARmode) == 0 && phase.id <= currentRun.typerPhase.id)
+        error(pos, "star patterns must correspond with varargs parameters")
 
     /** Check that type of given tree does not contain local or private
      *  components.
@@ -1921,18 +1919,11 @@ trait Typers { self: Analyzer =>
       args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))
 
     def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
-      if (isVarArgs(originalFormals)) {
-        val nonVarCount = originalFormals.length - 1
-        val prefix =
-          List.map2(args take nonVarCount, adaptedFormals take nonVarCount) ((arg, formal) =>
-            typedArg(arg, mode, 0, formal))
-        val suffix =
-          List.map2(args drop nonVarCount, adaptedFormals drop nonVarCount) ((arg, formal) =>
-            typedArg(arg, mode, REGPATmode, formal))
-        prefix ::: suffix
-      } else {
-        List.map2(args, adaptedFormals)((arg, formal) => typedArg(arg, mode, 0, formal))
-      }
+      def newmode(i: Int) =
+        if (isVarArgs(originalFormals) && i >= originalFormals.length - 1) STARmode else 0
+
+      for (((arg, formal), i) <- (args zip adaptedFormals).zipWithIndex) yield
+        typedArg(arg, mode, newmode(i), formal)
     }
 
     /** Does function need to be instantiated, because a missing parameter
@@ -1963,11 +1954,7 @@ trait Typers { self: Analyzer =>
     /** Is `tree' a block created by a named application?
      */
     def isNamedApplyBlock(tree: Tree) =
-      context.namedApplyBlockInfo match {
-        case Some((block, _)) => block == tree
-        case None => false
-      }
-
+      context.namedApplyBlockInfo exists (_._1 == tree)
 
     /**
      *  @param tree ...
@@ -3534,17 +3521,12 @@ trait Typers { self: Analyzer =>
           newTyper(context.makeNewScope(tree, context.owner)(BlockScopeKind(context.depth)))
             .typedBlock(tree, mode, pt)
 
-        case Sequence(elems) =>
-          checkRegPatOK(tree.pos, mode)
-          val elems1 = elems mapConserve (elem => typed(elem, mode, pt))
-          treeCopy.Sequence(tree, elems1) setType pt
-
         case Alternative(alts) =>
           val alts1 = alts mapConserve (alt => typed(alt, mode | ALTmode, pt))
           treeCopy.Alternative(tree, alts1) setType pt
 
         case Star(elem) =>
-          checkRegPatOK(tree.pos, mode)
+          checkStarPatOK(tree.pos, mode)
           val elem1 = typed(elem, mode, pt)
           treeCopy.Star(tree, elem1) setType pt
 

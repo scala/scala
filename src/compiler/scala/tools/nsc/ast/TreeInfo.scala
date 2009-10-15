@@ -272,7 +272,6 @@ abstract class TreeInfo {
   /** Is this pattern node a sequence-valued pattern? */
   def isSequenceValued(tree: Tree): Boolean = tree match {
     case Bind(_, body) => isSequenceValued(body)
-    case Sequence(_) => true
     case ArrayValue(_, _) => true
     case Star(_) => true
     case Alternative(ts) => ts exists isSequenceValued

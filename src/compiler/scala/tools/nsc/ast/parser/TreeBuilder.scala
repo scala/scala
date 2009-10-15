@@ -54,7 +54,7 @@ abstract class TreeBuilder {
         treeCopy.Typed(tree, transform(expr), tpt)
       case Bind(name, body) =>
         treeCopy.Bind(tree, name, transform(body))
-      case Sequence(_) | Alternative(_) | Star(_) =>
+      case Alternative(_) | Star(_) =>
         super.transform(tree)
       case _ =>
         tree
@@ -420,15 +420,6 @@ abstract class TreeBuilder {
       case _                => List(t)
     }
     Alternative(ts flatMap alternatives)
-  }
-
-  /** Create tree for a pattern sequence */
-  def makeSequence(ts: List[Tree]): Tree = {
-    def elements(t: Tree): List[Tree] = t match {
-      case Sequence(ts) => ts
-      case _            => List(t)
-    }
-    Sequence(ts flatMap elements)
   }
 
   /** Create visitor <x => x match cases> */

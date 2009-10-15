@@ -223,8 +223,7 @@ abstract class TailCalls extends Transform
         case CaseDef(pat, guard, body) =>
           treeCopy.CaseDef(tree, pat, guard, transform(body))
 
-        case Sequence(_) | Alternative(_) |
-             Star(_)     | Bind(_, _) =>
+        case Alternative(_) | Star(_) | Bind(_, _) =>
           throw new RuntimeException("We should've never gotten inside a pattern")
 
         case Function(vparams, body) =>

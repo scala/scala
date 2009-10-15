@@ -1,5 +1,4 @@
-bug421.scala:5: error: no regular expression pattern allowed here
-(regular expression patterns are only allowed in arguments to *-parameters)
+bug421.scala:5: error: star patterns must correspond with varargs parameters
     case Bar("foo",_*) => error("huh?");
                     ^
 one error found

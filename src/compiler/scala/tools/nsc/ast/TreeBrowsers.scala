@@ -299,9 +299,6 @@ abstract class TreeBrowsers {
       case Block(stats, expr) =>
         ("Block", EMPTY)
 
-      case Sequence(trees) =>
-        ("Sequence", EMPTY)
-
       case Alternative(trees) =>
         ("Alternative", EMPTY)
 
@@ -448,9 +445,6 @@ abstract class TreeBrowsers {
 
       case Block(stats, expr) =>
         stats ::: List(expr)
-
-      case Sequence(trees) =>
-        trees
 
       case Alternative(trees) =>
         trees

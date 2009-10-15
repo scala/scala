@@ -255,9 +255,6 @@ abstract class TreePrinters {
           print(pat); printOpt(" if ", guard)
           print(" => "); print(body)
 
-        case Sequence(trees) =>
-          printRow(trees, "[", ", ", "]")
-
         case Alternative(trees) =>
           printRow(trees, "(", "| ", ")")
 

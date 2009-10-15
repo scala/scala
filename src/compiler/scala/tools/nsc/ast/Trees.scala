@@ -670,12 +670,6 @@ trait Trees {
   /** casedef shorthand */
   def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body)
 
-  /** Sequence of patterns (comma separated expressions), eliminated by the
-   *  <code>TransMatch</code> phase.
-   */
-  case class Sequence(trees: List[Tree])
-       extends TermTree
-
   /** Alternatives of patterns, eliminated by TransMatch, except for
    *  occurences in encoded Switch stmt (=remaining Match(CaseDef(...))
    */
@@ -970,8 +964,6 @@ trait Trees {
      // { stats; expr }
   case CaseDef(pat, guard, body) =>                               (eliminated by transmatch/explicitouter)
     // case pat if guard => body
-  case Sequence(trees) =>                                         (eliminated by transmatch/explicitouter)
-    // pat1, ..., pat_n
   case Alternative(trees) =>                                      (eliminated by transmatch/explicitouter)
     // pat1 | ... | patn
   case Star(elem) =>                                              (eliminated by transmatch/explicitouter)
@@ -1058,7 +1050,6 @@ trait Trees {
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef
-    def Sequence(tree: Tree, trees: List[Tree]): Sequence
     def Alternative(tree: Tree, trees: List[Tree]): Alternative
     def Star(tree: Tree, elem: Tree): Star
     def Bind(tree: Tree, name: Name, body: Tree): Bind
@@ -1118,8 +1109,6 @@ trait Trees {
       new Block(stats, expr).copyAttrs(tree)
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree) =
       new CaseDef(pat, guard, body).copyAttrs(tree)
-    def Sequence(tree: Tree, trees: List[Tree]) =
-      new Sequence(trees).copyAttrs(tree)
     def Alternative(tree: Tree, trees: List[Tree]) =
       new Alternative(trees).copyAttrs(tree)
     def Star(tree: Tree, elem: Tree) =
@@ -1248,11 +1237,6 @@ trait Trees {
       case t @ CaseDef(pat0, guard0, body0)
       if (pat0 == pat) && (guard0 == guard) && (body0 == body) => t
       case _ => treeCopy.CaseDef(tree, pat, guard, body)
-    }
-    def Sequence(tree: Tree, trees: List[Tree]) = tree match {
-      case t @ Sequence(trees0)
-      if trees0 == trees => t
-      case _ => treeCopy.Sequence(tree, trees)
     }
     def Alternative(tree: Tree, trees: List[Tree]) = tree match {
       case t @ Alternative(trees0)
@@ -1469,8 +1453,6 @@ trait Trees {
         treeCopy.Block(tree, transformStats(stats, currentOwner), transform(expr))
       case CaseDef(pat, guard, body) =>
         treeCopy.CaseDef(tree, transform(pat), transform(guard), transform(body))
-      case Sequence(trees) =>
-        treeCopy.Sequence(tree, transformTrees(trees))
       case Alternative(trees) =>
         treeCopy.Alternative(tree, transformTrees(trees))
       case Star(elem) =>
@@ -1622,8 +1604,6 @@ trait Trees {
         traverseTrees(stats); traverse(expr)
       case CaseDef(pat, guard, body) =>
         traverse(pat); traverse(guard); traverse(body)
-      case Sequence(trees) =>
-        traverseTrees(trees)
       case Alternative(trees) =>
         traverseTrees(trees)
       case Star(elem) =>

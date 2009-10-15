@@ -183,7 +183,8 @@ object PickleFormat {
     final val TEMPLATEtree = 12
     final val BLOCKtree = 13
     final val CASEtree = 14
-    final val SEQUENCEtree = 15
+    // This node type has been removed.
+    // final val SEQUENCEtree = 15
     final val ALTERNATIVEtree = 16
     final val STARtree = 17
     final val BINDtree = 18

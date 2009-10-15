@@ -582,10 +582,6 @@ abstract class UnPickler {
           val body = readTreeRef()
           CaseDef(pat, guard, body).setType(tpe)
 
-        case SEQUENCEtree =>
-          val trees = until(end, readTreeRef)
-          Sequence(trees).setType(tpe)
-
         case ALTERNATIVEtree =>
           val trees = until(end, readTreeRef)
           Alternative(trees).setType(tpe)

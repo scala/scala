@@ -148,7 +148,6 @@ abstract class LiftCode extends Transform with Reifiers {
 // case TypeTree() =>
 // /* Pattern matching */
 // case CaseDef(pat, guard, body) =>
-// case Sequence(trees) =>
 // case Alternative(trees) =>
 // case Star(elem) =>
 // case Bind(name, body) =>

@@ -289,9 +289,6 @@ abstract class Pickler extends SubComponent {
           putTree(guard)
           putTree(body)
 
-        case Sequence(trees) =>
-          putTrees(trees)
-
         case Alternative(trees) =>
           putTrees(trees)
 
@@ -750,12 +747,6 @@ abstract class Pickler extends SubComponent {
           writeRef(pat)
           writeRef(guard)
           writeRef(body)
-          TREE
-
-        case tree@Sequence(trees) =>
-          writeNat(SEQUENCEtree)
-          writeRef(tree.tpe)
-          writeRefs(trees)
           TREE
 
         case tree@Alternative(trees) =>

@@ -553,11 +553,9 @@ trait Patterns extends ast.TreeDSL {
 
     def isStarSequence = isSequence && hasStar
     def isSequence = cond(unadorn(tree)) {
-      case Sequence(xs) => true
-      case ArrayValue(tpt, xs) => true
+      case ArrayValue(_, _) => true
     }
     def hasStar = cond(unadorn(tree)) {
-      case Sequence(xs) if endsStar(xs)       => true
       case ArrayValue(_, xs) if endsStar(xs)  => true
     }
 

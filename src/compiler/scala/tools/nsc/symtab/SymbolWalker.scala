@@ -220,7 +220,6 @@ trait SymbolWalker {
       case tree : Typed => f(tree.expr); f(tree.tpt)
       case tree : Block => fs(tree.stats); f(tree.expr)
       case tree: CaseDef => f(tree.pat);f(tree.guard);f(tree.body)
-      case tree : Sequence   => fs(tree.trees);
       case tree : Assign     => f(tree.lhs); f(tree.rhs);
       case tree : If         => f(tree.cond); f(tree.thenp); f(tree.elsep);
       case tree : New        => f(tree.tpt);
