@@ -36,11 +36,17 @@ class CompilerInterface
 				def newPhase(prev: Phase) = analyzer.newPhase(prev)
 				def name = phaseName
 			}
-			override def computePhaseDescriptors = // done this way for compatibility between 2.7 and 2.8
+			override lazy val phaseDescriptors = // done this way for compatibility between 2.7 and 2.8
 			{
 				phasesSet += sbtAnalyzer
-				val superd = super.computePhaseDescriptors
+				val superd = superComputePhaseDescriptors
 				if(superd.contains(sbtAnalyzer)) superd else ( superd ++ List(sbtAnalyzer) ).toList
+			}
+			private def superComputePhaseDescriptors() = // required because 2.8 makes computePhaseDescriptors private
+			{
+				val meth = classOf[Global].getDeclaredMethod("computePhaseDescriptors")
+				meth.setAccessible(true)
+				meth.invoke(this).asInstanceOf[List[SubComponent]]
 			}
 			trait Compat27 { val runsBefore: List[String] = Nil }
 		}
