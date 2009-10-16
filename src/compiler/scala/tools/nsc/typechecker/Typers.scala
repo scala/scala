@@ -1599,6 +1599,48 @@ trait Typers { self: Analyzer =>
       context.imports map (_ importedSymbol name) find (_ != NoSymbol)
     }
 
+    /** Does this tree declare a val or def with the same name as one in scope?
+     *  This only catches identifiers in the same file, so more work is needed.
+     *
+     *  @param    tree  the given tree
+     *  @param    filt  filter for any conflicting symbols found -- false means ignore
+     */
+    def checkShadowings(tree: Tree, filt: (Symbol) => Boolean = _ => true) {
+      def sameFile(other: Symbol) =
+        (tree.symbol != null) && tree.symbol.sourceFile == other.sourceFile
+      def inFile(other: Symbol) =
+        if (sameFile(other)) ""
+        else if (other.sourceFile != null) "in %s ".format(other.sourceFile)
+        else ""
+
+      def positionStr(other: Symbol) = other.pos match {
+        case NoPosition => inFile(other) match { case "" => "(location unknown) " ; case x => x }
+        case pos        => "%sat line %s\n%s".format(inFile(other), pos.line, pos.lineContent) + """        /* is shadowed by */"""
+      }
+      def include(v: ValOrDefDef, other: Symbol) = {
+        // shadowing on the same line is a good bet for noise
+        (v.pos == NoPosition || other.pos == NoPosition || v.pos.line != other.pos.line) &&
+        // not likely we'll shadow a whole package without realizing it
+        !other.isPackage &&
+        // (v.symbol == null || !v.symbol.hasTransOwner(other)) &&
+        filt(other)
+      }
+
+      tree match {
+        // while I try to figure out how to limit the noise far enough to make this
+        // genuinely useful, I'm setting minimum identifier length to 3 to omit all
+        // those x's and i's we so enjoy reusing.
+        case v: ValOrDefDef if v.name.toString.length > 2 =>
+          namesWhatIdent(v.name) map { other =>
+            if (include(v, other) && unit != null) {
+              val fstr = "%s (%s) shadows usage %s"
+              unit.warning(v.pos, fstr.format(v.name, v.tpt, positionStr(other)))
+            }
+          }
+        case _ =>
+      }
+    }
+
     /**
      *  @param ddef ...
      *  @return     ...
@@ -1610,16 +1652,9 @@ trait Typers { self: Analyzer =>
       // catches method parameters shadowing identifiers declared in the same file, so more
       // work is needed.  Most of the code here is to filter out false positives.
       def isAuxConstructor(sym: Symbol) = sym.isConstructor && !sym.isPrimaryConstructor
-      if (settings.Xwarnings.value && unit != null && !isAuxConstructor(ddef.symbol)) {
-        for (v <- ddef.vparamss.flatten ; if (v.symbol == null) || !(v.symbol hasFlag SYNTHETIC))
-          for (other <- namesWhatIdent(v.name) ; if (v ne other) && !other.isDeferred) {
-            val where = other.pos match {
-              case NoPosition   => ""
-              case x: Position  => "at line %s\n%s".format(x.line, x.lineContent) + """        /* is shadowed by */"""
-            }
-            if (v.pos == NoPosition || other.pos == NoPosition || v.pos.line != other.pos.line)
-              unit.warning(v.pos, "%s (%s) shadows earlier usage %s".format(v.name, v.tpt, where))
-          }
+      if (settings.Xwarnings.value && !isAuxConstructor(ddef.symbol)) {
+        for (v <- ddef.vparamss.flatten ; if v.symbol != null && !(v.symbol hasFlag SYNTHETIC))
+          checkShadowings(v, (sym => !sym.isDeferred && !sym.isMethod))
       }
 
       reenterTypeParams(ddef.tparams)
@@ -1718,6 +1753,7 @@ trait Typers { self: Analyzer =>
           while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
           if (e eq null) context.scope.enter(stat.symbol)
         }
+        if (settings.Xwarnings.value) checkShadowings(stat)
         enterLabelDef(stat)
       }
       val stats1 = typedStats(block.stats, context.owner)
