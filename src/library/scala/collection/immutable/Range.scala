@@ -128,7 +128,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends Vector[Int] {
 }
 
 object Range {
-  private val MAX_PRINT = 512  // some arbitrary value
+  private[immutable] val MAX_PRINT = 512  // some arbitrary value
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     override def isInclusive = true

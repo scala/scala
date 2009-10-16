@@ -21,6 +21,7 @@ trait Integral[T] extends Numeric[T] {
   class IntegralOps(lhs: T) extends Ops(lhs) {
     def /(rhs: T) = quot(lhs, rhs)
     def %(rhs: T) = rem(lhs, rhs)
+    def /%(rhs: T) = (quot(lhs, rhs), rem(lhs, rhs))
   }
   override implicit def mkNumericOps(lhs: T): IntegralOps = new IntegralOps(lhs)
 }

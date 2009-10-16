@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Range.scala 18987 2009-10-08 18:31:44Z odersky $
+// $Id: GenericRange.scala 18987 2009-10-08 18:31:44Z odersky $
 
 package scala.collection.immutable
 
@@ -37,13 +37,10 @@ import util.Hashable
  */
 @experimental
 abstract class GenericRange[T]
-  (val start: T, val end: T, val step: T, val isInclusive: Boolean = false)
+  (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
 extends VectorView[T, collection.immutable.Vector[T]]
-   with RangeToString[T] // !!! I think this does too little to be its trait --> see simplified impl ion Range
-   with Hashable // !!! not needed because it inherits from Vector
 {
-
   import num._
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
@@ -52,10 +49,12 @@ extends VectorView[T, collection.immutable.Vector[T]]
   require(!(step equiv zero))
   require(genericLength <= fromInt(Math.MAX_INT), "Implementation restricts ranges to Math.MAX_INT elements.")
 
-  // By adjusting end based on isInclusive, we can treat all ranges as exclusive.
-  // [Martin] !!! trueEnd is false, see Range#limit
-  private lazy val trueEnd: T = if (isInclusive) end + step else end
+  // inclusive/exclusiveness captured this way because we do not have any
+  // concept of a "unit", we can't just add an epsilon to an exclusive
+  // endpoint to make it inclusive (as can be done with the int-based Range.)
+  protected def limitTest(x: T) = !isEmpty && isInclusive && equiv(x, end)
   protected def underlying = collection.immutable.Vector.empty[T]
+  protected def divides(x: T, by: T) = equiv(x % by, zero)
 
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
@@ -75,26 +74,40 @@ extends VectorView[T, collection.immutable.Vector[T]]
   override def foreach[U](f: T => U) {
     var i = start
     if (step > zero) {
-      while (i < trueEnd) {
+      while (i < end) {
         f(i)
         i = i + step
       }
     } else {
-      while (i > trueEnd) {
+      while (i > end) {
         f(i)
         i = i + step
       }
     }
+    if (limitTest(i)) f(i)
   }
 
-  lazy val genericLength: T = {
-    def plen(s: T, e: T, stp: T) =
-      if (e <= s) zero else ((e - s) / stp)
+  def genericLength: T = {
+    def lim = if (limitTest(end)) one else zero
 
-    if (step > zero) plen(start, trueEnd, step)
-    else plen(trueEnd, start, -step)
+    if ((start < end && step < zero) || (start > end && step > zero)) zero
+    else if (equiv(start, end)) lim
+    else {
+      val (steps, left) = (end - start) /% step
+      val last = if (!equiv(left, zero) || isInclusive) one else zero
+
+      steps + last
+    }
   }
-  lazy val length: Int = toInt(genericLength)
+
+  def length: Int = toInt(genericLength)
+  final override def isEmpty =
+    if (step > zero)
+      if (isInclusive) end > start
+      else end >= start
+    else
+      if (isInclusive) start > end
+      else start >= end
 
   // Since apply(Int) already exists, we are not allowed apply(T) since
   // they erase to the same thing.
@@ -104,54 +117,35 @@ extends VectorView[T, collection.immutable.Vector[T]]
     start + (idx * step)
   }
 
+  // a well-typed contains method.
+  def containsTyped(x: T): Boolean =
+    limitTest(x) || (
+      if (step > zero)
+        (start <= x) && (x < end) && divides(x - start, step)
+      else
+        (start >= x) && (x > end) && divides(start - x, step)
+    )
+
   // The contains situation makes for some interesting code.
-  // This attempts to check containerhood in a range-sensible way, but
-  // falls back on super.contains if the cast ends up failing.
-  // !!! [Martin] contains should only return `true' for numbers of the form start + n * step.
-  override def contains(_x: Any): Boolean = {
-    def doContains = {
-      // checking for Int is important so for instance BigIntRange from
-      // 1 to Googlefinity can see if 5 is in there without calling super.
-      val x = _x match {
-        case i: Int => fromInt(i)
-        case _      => _x.asInstanceOf[T]
-      }
-      def matchesStep = (x - start) % step == zero
-      def withinRange =
-        if (step > zero) start <= x && x < trueEnd
-        else start >= x && x > trueEnd
+  // I am not aware of any way to avoid a cast somewhere, because
+  // contains must take an Any.
+  override def contains(x: Any): Boolean =
+    try containsTyped(x.asInstanceOf[T])
+    catch { case _: ClassCastException => super.contains(x) }
 
-      withinRange && matchesStep
-    }
-
-    // !!! [Martin] That's too inefficient foir a core library class in my opinion:
-    catching(classOf[ClassCastException]) opt doContains getOrElse super.contains(_x)
-
-  }
-
-  // Using trueEnd gives us Range(1, 10, 1).inclusive == Range(1, 11, 1)
-  val hashValues = List(start, trueEnd, step)
-
-  // [Martin] !!! this means that GenericRange(0, 0, 1) and GenericRange(0, -1, 1) are not equal,
-  // which violates the sequence equality conventions. See Range.equals for how it needs to be done.
   override def equals(other: Any) = other match {
-    case x: GenericRange[_] => this equalHashValues x
-    case _                  => false
+    case x: GenericRange[_] => (genericLength == x.genericLength) && (genericLength match {
+      case 0  => true
+      case 1  => x.start == start
+      case n  => x.start == start && x.step == step
+    })
+    case _  => super.equals(other)
   }
-}
-
-private[scala] trait RangeToString[T] extends VectorView[T, collection.immutable.Vector[T]] {
-  // The default toString() tries to print every element and will exhaust memory
-  // if the Range is unduly large.  This interacts poorly with the REPL.
   override def toString() = {
-    val MAX_PRINT = 512  // some arbitrary value
-    val str = (this take MAX_PRINT).mkString(", ")
-
-    if (length > MAX_PRINT) str.replaceAll("""\)$""", ", ...)")
-    else str
+    val endStr = if (length > Range.MAX_PRINT) ", ... )" else ")"
+    take(Range.MAX_PRINT).mkString("GenericRange(", ", ", endStr)
   }
 }
-
 
 object GenericRange
 {
