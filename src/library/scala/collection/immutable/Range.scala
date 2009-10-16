@@ -29,29 +29,32 @@ class Range(val start: Int, val end: Int, val step: Int) extends Vector[Int] {
 
   require(step != 0)
 
+  protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
+
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
-   *  @note should never be called after `inclusive'.
    */
-  def by(step: Int): Range = Range(start, end, step)
+  def by(step: Int): Range = copy(start, end, step)
+
+  protected def limit = end
 
   override def foreach[U](f: Int => U) {
     var i = start
-    while (if (step > 0) i < end else i > end) {
+    while (if (step > 0) i < limit else i > limit) {
       f(i)
       i += step
     }
   }
 
   lazy val length: Int = {
-    def plen(start: Int, end: Int, step: Int) =
-      if (end <= start) 0 else (end - start - 1) / step + 1
-    if (step > 0) plen(start, end, step)
-    else plen(end, start, -step)
+    def plen(start: Int, limit: Int, step: Int) =
+      if (limit <= start) 0 else (limit - start - 1) / step + 1
+    if (step > 0) plen(start, limit, step)
+    else plen(limit, start, -step)
   }
 
   final override def isEmpty =
-    if (step > 0) start >= end else start <= end
+    if (step > 0) start >= limit else start <= limit
 
   @inline
   final def apply(idx: Int): Int = {
@@ -59,59 +62,48 @@ class Range(val start: Int, val end: Int, val step: Int) extends Vector[Int] {
     start + idx * step
   }
 
-  final override def init: Range =
-    dropRight(1)
-
   final override def take(n: Int): Range = {
-    val end1 = start + step * (n max 0)
-    if (step > 0) Range(start, end1 min end, step)
-    else Range(start, end1 max end, step)
+    val limit1 = start + step * (n max 0)
+    if (step > 0) Range(start, limit1 min limit, step)
+    else Range(start, limit1 max limit, step)
   }
 
   final override def drop(n: Int): Range =
-    if (step == 0) this
-    else Range(start + step * n, end, step)
+    copy(start + step * (n max 0), end, step)
+
+  final override def init: Range =
+    take(length - 1)
 
   final override def slice(from: Int, until: Int): Range =
     drop(from).take(until - from)
 
-  final override def takeWhile(p: Int => Boolean): Range = {
+  private def skip(p: Int => Boolean): Int = {
     var s = start
-    while (!isEmpty && p(s)) s += step
-    Range(start, s, step)
+    while ((if (step > 0) s < limit else s > limit) && p(s)) s += step
+    s
   }
 
-  final override def dropWhile(p: Int => Boolean): Range = {
-    var s = start
-    while (!isEmpty && p(s)) s += step
-    Range(s, end, step)
-  }
+  final override def takeWhile(p: Int => Boolean): Range = Range(start, skip(p), step)
+  final override def dropWhile(p: Int => Boolean): Range = copy(skip(p), end, step)
 
   final override def span(p: Int => Boolean): (Range, Range) = {
-    var s = start
-    while (!isEmpty && p(s)) s += step
-    (Range(start, s, step), Range(s, end, step))
+    val split = skip(p)
+    (Range(start, split, step), copy(split, end, step))
   }
 
   final override def splitAt(n: Int) = (take(n), drop(n))
 
-  final override def takeRight(n: Int): Range = {
-    val start1 = end - step * (n max 0)
-    if (step > 0) Range(start1 max start, end, step)
-    else Range(start1 min start, end, step)
-  }
+  final override def takeRight(n: Int): Range = drop(length - n)
 
-  final override def dropRight(n: Int): Range =
-    Range(start, end - step * n, step)
+  final override def dropRight(n: Int): Range = take(length - n)
 
-  final override def reverse: Range =
-    Range(end, start, -step)
+  final override def reverse: Range = new Range.Inclusive(last, start, -step)
+
+  def inclusive = new Range.Inclusive(start, end, step)
 
   def contains(x: Int): Boolean =
-    if (step > 0) start <= x && x < end && (x - start) % step == 0
-    else start >= x && x > end && (start - x) % step == 0
-
-  def inclusive = Range(start, end + Math.signum(step), step)
+    if (step > 0) start <= x && x < limit && (x - start) % step == 0
+    else start >= x && x > limit && (start - x) % step == 0
 
   override def equals(other: Any) = other match {
     case x: Range =>
@@ -124,59 +116,35 @@ class Range(val start: Int, val end: Int, val step: Int) extends Vector[Int] {
   }
 
   /* eliminated, so as to not break the hashcode/equals contract
-  override def hashCode = start + end + step
+  override def hashCode = start + limit + step
   */
 
   override def toString() = {
-    val end = if (length > Range.MAX_PRINT) ", ... )" else ")"
-    take(Range.MAX_PRINT).mkString("Range(", ", ", end)
+    val endStr = if (length > Range.MAX_PRINT) ", ... )" else ")"
+    take(Range.MAX_PRINT).mkString("Range(", ", ", endStr)
   }
 }
 
 object Range {
   private val MAX_PRINT = 512  // some arbitrary value
 
-  @deprecated("use Range.inclusive instead")
-  final class Inclusive(start: Int, end0: Int, step: Int)
-      extends Range(start, if (step > 0) end0 + 1 else end0 - 1, step) { self =>
-    override def by(step: Int): Range = new Inclusive(start, end0, step)
+  class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
+    override protected val limit = end + Math.signum(step)
+    override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
   }
 
-  // The standard / Int-specific Range.
-  def apply(start: Int, end: Int, step: Int): Range =
-    if (step == 1) new ByOne(start, end)
-    else if (step > 0) new ByPosStep(start, end, step)
-    else new ByNegStep(start, end, step)
+  def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
+  def apply(start: Int, end: Int): Range with ByOne = new Range(start, end, 1) with ByOne
+  def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
+  def inclusive(start: Int, end: Int): Range.Inclusive with ByOne = new Inclusive(start, end, 1) with ByOne
 
-  def inclusive(start: Int, end: Int, step: Int): Range =
-    apply(start, end + Math.signum(step), step)
-
-  class ByOne(start: Int, end: Int) extends Range(start, end, 1) {
+  trait ByOne extends Range {
     override final def foreach[U](f: Int => U) {
       var i = start
-      while (i < end) {
+      val l = limit
+      while (i < l) {
         f(i)
         i += 1
-      }
-    }
-  }
-
-  class ByPosStep(start: Int, end: Int, step: Int) extends Range(start, end, step) {
-    override final def foreach[U](f: Int => U) {
-      var i = start
-      while (i < end) {
-        f(i)
-        i += step
-      }
-    }
-  }
-
-  class ByNegStep(start: Int, end: Int, step: Int) extends Range(start, end, step) {
-    override final def foreach[U](f: Int => U) {
-      var i = start
-      while (i > end) {
-        f(i)
-        i += step
       }
     }
   }
