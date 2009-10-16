@@ -11,6 +11,7 @@
 
 package scala.runtime
 
+import scala.collection.immutable.GenericRange
 
 final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   // Proxy.self
@@ -51,7 +52,7 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def toRadians: Double = Math.toRadians(x)
 
   /** Converts an angle measured in radians to an approximately equivalent
-   *  angle measured in degrees.
+   *  angle measured in degrees
    *
    *  @param  x angle, in radians
    *  @return the measurement of the angle <code>x</code> in degrees.

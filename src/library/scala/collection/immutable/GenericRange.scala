@@ -6,9 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: Range.scala 18987 2009-10-08 18:31:44Z odersky $
 
-package scala
+package scala.collection.immutable
 
 import annotation.experimental
 
@@ -39,7 +39,11 @@ import util.Hashable
 abstract class GenericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean = false)
   (implicit num: Integral[T])
-extends VectorView[T, collection.immutable.Vector[T]] with RangeToString[T] with Hashable {
+extends VectorView[T, collection.immutable.Vector[T]]
+   with RangeToString[T] // !!! I think this does too little to be its trait --> see simplified impl ion Range
+   with Hashable // !!! not needed because it inherits from Vector
+{
+
   import num._
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
@@ -102,6 +106,7 @@ extends VectorView[T, collection.immutable.Vector[T]] with RangeToString[T] with
   // The contains situation makes for some interesting code.
   // This attempts to check containerhood in a range-sensible way, but
   // falls back on super.contains if the cast ends up failing.
+  // !!! [Martin] contains should only return `true' for numbers of the form start + n * step.
   override def contains(_x: Any): Boolean = {
     def doContains = {
       // checking for Int is important so for instance BigIntRange from
@@ -118,11 +123,16 @@ extends VectorView[T, collection.immutable.Vector[T]] with RangeToString[T] with
       withinRange && matchesStep
     }
 
+    // !!! [Martin] That's too inefficient foir a core library class in my opinion:
     catching(classOf[ClassCastException]) opt doContains getOrElse super.contains(_x)
+
   }
 
   // Using trueEnd gives us Range(1, 10, 1).inclusive == Range(1, 11, 1)
   val hashValues = List(start, trueEnd, step)
+
+  // [Martin] !!! this means that GenericRange(0, 0, 1) and GenericRange(0, -1, 1) are not equal,
+  // which violates the sequence equality conventions. See Range.equals for how it needs to be done.
   override def equals(other: Any) = other match {
     case x: GenericRange[_] => this equalHashValues x
     case _                  => false
@@ -162,129 +172,3 @@ object GenericRange
     new Inclusive(start, end, step)
 }
 
-
-/** <p>
- *    The <code>Range</code> class represents integer values in range
- *    <code>[start;end)</code> with non-zero step value <code>step</code>.
- *    Sort of acts like a sequence also (supports length and contains).
- *    For example:
- *  </p><pre>
- *     <b>val</b> r1 = 0 until 10
- *     <b>val</b> r2 = r1.start until r1.end by r1.step + 1
- *     println(r2.length) // = 5
- *  </pre>
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.5
- */
-class Range(val start: Int, val end: Int, val step: Int)
-extends VectorView[Int, collection.immutable.Vector[Int]] with RangeToString[Int]
-{
-  require(step != 0)
-
-  protected def underlying = collection.immutable.Vector.empty[Int]
-
-  /** Create a new range with the start and end values of this range and
-   *  a new <code>step</code>.
-   */
-  def by(step: Int): Range = new Range(start, end, step)
-
-  final override def foreach[U](f: Int => U) {
-    var i = start
-    if (step > 0) {
-      while (i < end) {
-        f(i)
-        i += step
-      }
-    } else {
-      while (i > end) {
-        f(i)
-        i += step
-      }
-    }
-  }
-
-  lazy val length: Int = {
-    def plen(start: Int, end: Int, step: Int) =
-      if (end <= start) 0 else (end - start - 1) / step + 1
-    if (step > 0) plen(start, end, step)
-    else plen(end, start, -step)
-  }
-
-  @inline
-  final def apply(idx: Int): Int = {
-    if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
-    start + idx * step
-  }
-
-  def contains(x: Int): Boolean =
-    if (step > 0) start <= x && x < end
-    else start >= x && x > end
-
-  def inclusive = Range.inclusive(start, end, step)
-  // XXX right now (1 to 10).toList == (1 to 10) but their hashCodes are unequal.
-  override def equals(other: Any) = other match {
-    case x: Range => start == x.start && end == x.end && step == x.step
-    case _        => super.equals(other)
-  }
-  override def hashCode = start + end + step
-}
-
-object Range {
-  @deprecated("use Range.inclusive instead")
-  final class Inclusive(start: Int, end0: Int, step: Int)
-      extends Range(start, if (step > 0) end0 + 1 else end0 - 1, step) { self =>
-    override def by(step: Int): Range = new Inclusive(start, end0, step)
-  }
-
-  // The standard / Int-specific Range.
-  def apply(start: Int, end: Int, step: Int) =
-    new Range(start, end, step)
-  def inclusive(start: Int, end: Int, step: Int): Range =
-    new Range.Inclusive(start, end, step)
-
-  // BigInt and Long are straightforward generic ranges.
-  object BigInt {
-    def apply(start: BigInt, end: BigInt, step: BigInt) = GenericRange(start, end, step)
-    def inclusive(start: BigInt, end: BigInt, step: BigInt) = GenericRange.inclusive(start, end, step)
-  }
-  object Long {
-    def apply(start: Long, end: Long, step: Long) = GenericRange(start, end, step)
-    def inclusive(start: Long, end: Long, step: Long) = GenericRange.inclusive(start, end, step)
-  }
-
-  // BigDecimal uses an alternative implementation of Numeric in which
-  // it pretends to be Integral[T] instead of Fractional[T].  See Numeric for
-  // details.  The intention is for it to throw an exception anytime
-  // imprecision or surprises might result from anything, although this may
-  // not yet be fully implemented.
-  object BigDecimal {
-    implicit val bigDecAsIntegral = scala.Numeric.BigDecimalAsIfIntegral
-
-    def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
-      GenericRange(start, end, step)
-    def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
-      GenericRange.inclusive(start, end, step)
-  }
-  // Double re-uses BigDecimal's range.
-  object Double {
-    def apply(start: Double, end: Double, step: Double) = scala.BigDecimal(start) until end by step
-    def inclusive(start: Double, end: Double, step: Double) = scala.BigDecimal(start) to end by step
-  }
-
-  // As there is no appealing default step size for not-really-integral ranges,
-  // we offer a partially constructed object.
-  class Partial[T, U](f: T => U) {
-    def by(x: T): U = f(x)
-  }
-
-  // Illustrating genericity with Int Range, which should have the same behavior
-  // as the original Range class.  However we leave the original Range
-  // indefinitely, for performance and because the compiler seems to bootstrap
-  // off it and won't do so with our parameterized version without modifications.
-  object Int {
-    def apply(start: Int, end: Int, step: Int) = GenericRange(start, end, step)
-    def inclusive(start: Int, end: Int, step: Int) = GenericRange.inclusive(start, end, step)
-  }
-}

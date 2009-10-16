@@ -10,7 +10,7 @@ val sum = new AtomicInteger
 
 val q = new scala.concurrent.SyncVar[Int]
 
-val producers = (1 to 3).force map { z => new Thread {
+val producers = (1 to 3) map { z => new Thread {
   override def run() {
     var again = true
     while (again) {
@@ -23,7 +23,7 @@ val producers = (1 to 3).force map { z => new Thread {
   }
 } }
 
-val summers = (1 to 7).force map { z => new Thread {
+val summers = (1 to 7) map { z => new Thread {
   override def run() {
     val x = j.decrementAndGet()
     if (x >= 0) {

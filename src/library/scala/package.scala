@@ -43,6 +43,9 @@ package object scala {
   type StringBuilder = scala.collection.mutable.StringBuilder
   val StringBuilder = scala.collection.mutable.StringBuilder
 
+  type Range = scala.collection.immutable.Range
+  val Range = scala.collection.immutable.Range
+
   @deprecated("use Iterable instead") type Collection[+A] = Iterable[A]
   @deprecated("use Iterable instead") val Collection = Iterable
 

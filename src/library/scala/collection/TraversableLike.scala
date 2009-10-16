@@ -826,4 +826,30 @@ self =>
    *  @note view(from, to)  is equivalent to view.slice(from, to)
    */
   def view(from: Int, until: Int): TraversableView[A, Repr] = view.slice(from, until)
+
+  class WithFilter(p: A => Boolean) {
+
+    def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+      val b = bf(repr)
+      for (x <- self)
+        if (p(x)) b += f(x)
+      b.result
+    }
+
+    def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, Repr]): That = {
+      val b = bf(repr)
+      for (x <- self)
+        if (p(x)) b ++= f(x)
+      b.result
+    }
+
+    def foreach[U](f: A => U): Unit =
+      for (x <- self)
+        if (p(x)) f(x)
+
+    def withFilter(q: A => Boolean): WithFilter =
+      new WithFilter(x => p(x) && q(x))
+  }
+
+  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 }

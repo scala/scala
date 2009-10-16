@@ -11,6 +11,8 @@
 
 package scala.runtime
 
+import collection.immutable.Range
+
 
 final class RichInt(val start: Int) extends Proxy with Ordered[Int] {
 
@@ -20,13 +22,12 @@ final class RichInt(val start: Int) extends Proxy with Ordered[Int] {
   // Ordered[Int]
   def compare(that: Int): Int = if (start < that) -1 else if (start > that) 1 else 0
 
-  /** See <code>Iterator.range</code>. */
-  def until(end: Int): Range = new Range(start, end, 1)
   def until(end: Int, step: Int): Range = new Range(start, end, step)
+  def until(end: Int): Range.ByOne = new Range.ByOne(start, end)
 
   /** like <code>until</code>, but includes the last index */
-  def to(end: Int): Range = Range.inclusive(start, end, 1)
   def to(end: Int, step: Int): Range = Range.inclusive(start, end, step)
+  def to(end: Int): Range.ByOne = new Range.ByOne(start, end + 1)
 
   def min(that: Int): Int = if (start < that) start else that
   def max(that: Int): Int = if (start > that) start else that

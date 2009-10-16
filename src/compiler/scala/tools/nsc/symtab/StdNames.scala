@@ -344,6 +344,7 @@ trait StdNames {
     val value = newTermName("value")
     val view_ = newTermName("view")
     val wait_ = newTermName("wait")
+    val withFilter = newTermName("withFilter")
     val zip = newTermName("zip")
 
     val ZAND = encode("&&")
