@@ -131,7 +131,7 @@ object Range {
   private val MAX_PRINT = 512  // some arbitrary value
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
-    override isInclusive = true
+    override def isInclusive = true
     override protected val limit = end + Math.signum(step)
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
   }
