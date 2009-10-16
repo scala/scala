@@ -53,6 +53,7 @@ extends VectorView[T, collection.immutable.Vector[T]]
   require(genericLength <= fromInt(Math.MAX_INT), "Implementation restricts ranges to Math.MAX_INT elements.")
 
   // By adjusting end based on isInclusive, we can treat all ranges as exclusive.
+  // [Martin] !!! trueEnd is false, see Range#limit
   private lazy val trueEnd: T = if (isInclusive) end + step else end
   protected def underlying = collection.immutable.Vector.empty[T]
 

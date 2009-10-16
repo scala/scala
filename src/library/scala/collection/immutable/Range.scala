@@ -36,6 +36,8 @@ class Range(val start: Int, val end: Int, val step: Int) extends Vector[Int] {
    */
   def by(step: Int): Range = copy(start, end, step)
 
+  def isInclusive = false
+
   protected def limit = end
 
   override def foreach[U](f: Int => U) {
@@ -129,6 +131,7 @@ object Range {
   private val MAX_PRINT = 512  // some arbitrary value
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
+    override isInclusive = true
     override protected val limit = end + Math.signum(step)
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
   }
