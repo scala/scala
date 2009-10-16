@@ -830,6 +830,7 @@ trait ScalacSettings {
   val Yidedebug     = BooleanSetting    ("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
+  val Xwarnings     = BooleanSetting    ("-Xstrict-warnings", "Emit extra (usually spurious) warnings.")
 
   /**
    * -P "Plugin" settings

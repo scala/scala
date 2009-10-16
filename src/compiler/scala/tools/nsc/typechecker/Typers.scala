@@ -1570,17 +1570,64 @@ trait Typers { self: Analyzer =>
         error(vparam.tpt.pos,"Parameter type in structural refinement may not refer to abstract type defined outside that same refinement")
     }
 
+    /** does given name name an identifier visible at this point?
+     *
+     *  @param name the given name
+     *  @return     <code>true</code> if an identifier with the given name is visible.
+     */
+    def namesSomeIdent(name: Name): Boolean = namesWhatIdent(name).isDefined
+
+    /** If this name returns a visible identifier, return its symbol.
+     *
+     *  @param name the given name
+     *  @return     <code>Some(sym)</code> if an ident is visible, None otherwise.
+     */
+    def namesWhatIdent(name: Name): Option[Symbol] = {
+      var cx = context
+      while (cx != NoContext) {
+        val pre = cx.enclClass.prefix
+        val defEntry = cx.scope.lookupEntryWithContext(name)(context.owner)
+        if ((defEntry ne null) && defEntry.sym.exists)
+          return Some(defEntry.sym)
+
+        cx = cx.enclClass
+        (pre member name filter (sym => sym.exists && context.isAccessible(sym, pre, false))) match {
+          case NoSymbol   => cx = cx.outer
+          case other      => return Some(other)
+        }
+      }
+      context.imports map (_ importedSymbol name) find (_ != NoSymbol)
+    }
+
     /**
      *  @param ddef ...
      *  @return     ...
      */
     def typedDefDef(ddef: DefDef): DefDef = {
       val meth = ddef.symbol
+
+      // If warnings are enabled, attempt to alert about variable shadowing.  This only
+      // catches method parameters shadowing identifiers declared in the same file, so more
+      // work is needed.  Most of the code here is to filter out false positives.
+      def isAuxConstructor(sym: Symbol) = sym.isConstructor && !sym.isPrimaryConstructor
+      if (settings.Xwarnings.value && unit != null && !isAuxConstructor(ddef.symbol)) {
+        for (v <- ddef.vparamss.flatten ; if (v.symbol == null) || !(v.symbol hasFlag SYNTHETIC))
+          for (other <- namesWhatIdent(v.name) ; if (v ne other) && !other.isDeferred) {
+            val where = other.pos match {
+              case NoPosition   => ""
+              case x: Position  => "at line %s\n%s".format(x.line, x.lineContent) + """        /* is shadowed by */"""
+            }
+            if (v.pos == NoPosition || other.pos == NoPosition || v.pos.line != other.pos.line)
+              unit.warning(v.pos, "%s (%s) shadows earlier usage %s".format(v.name, v.tpt, where))
+          }
+      }
+
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
-      for (vparams1 <- vparamss1; if !vparams1.isEmpty; vparam1 <- vparams1.init) {
+
+      for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1) {
         if (isRepeatedParamType(vparam1.symbol.tpe))
           error(vparam1.pos, "*-parameter must come last")
       }
@@ -3266,30 +3313,6 @@ trait Typers { self: Analyzer =>
 
           result
         }
-      }
-
-      /** does given name name an identifier visible at this point?
-       *
-       *  @param name the given name
-       *  @return     <code>true</code> if an identifier with the given name is visible.
-       */
-      def namesSomeIdent(name: Name): Boolean = {
-        var cx = context
-        while (cx != NoContext) {
-          val pre = cx.enclClass.prefix
-          val defEntry = cx.scope.lookupEntryWithContext(name)(context.owner)
-          if ((defEntry ne null) && defEntry.sym.exists) return true
-          cx = cx.enclClass
-          if ((pre.member(name) filter (
-            sym => sym.exists && context.isAccessible(sym, pre, false))) != NoSymbol) return true
-          cx = cx.outer
-        }
-        var imports = context.imports      // impSym != NoSymbol => it is imported from imports.head
-        while (!imports.isEmpty) {
-          if (imports.head.importedSymbol(name) != NoSymbol) return true
-          imports = imports.tail
-        }
-        false
       }
 
       /** Attribute an identifier consisting of a simple name or an outer reference.
