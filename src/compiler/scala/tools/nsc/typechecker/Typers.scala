@@ -3258,9 +3258,10 @@ trait Typers { self: Analyzer =>
             phase.id <= currentRun.typerPhase.id &&
             !sym.isConstructor &&
             !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull &&
-            (result.symbol != Any_isInstanceOf)  // null.isInstanceOf[T] is not a dereference; bug #1356
+            !(List(Any_isInstanceOf, Any_asInstanceOf) contains result.symbol)  // null.is/as is not a dereference
           }
-          if (settings.Xchecknull.value && isPotentialNullDeference)
+          // unit is null here sometimes; how are we to know when unit might be null? (See bug #2467.)
+          if (settings.Xchecknull.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
           result
