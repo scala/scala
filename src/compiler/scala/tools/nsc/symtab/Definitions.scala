@@ -53,7 +53,7 @@ trait Definitions {
 
     // top types
     lazy val AnyClass     = newClass(ScalaPackageClass, nme.Any, Nil) setFlag (ABSTRACT)
-    lazy val AnyValClass  = newClass(ScalaPackageClass, nme.AnyVal, anyparam) setFlag (FINAL | SEALED)
+    lazy val AnyValClass  = newClass(ScalaPackageClass, nme.AnyVal, anyparam) setFlag (ABSTRACT | SEALED)
     lazy val AnyRefClass  = newAlias(ScalaPackageClass, nme.AnyRef, ObjectClass.typeConstructor)
     lazy val ObjectClass  = getClass(sn.Object)
 

@@ -198,14 +198,10 @@ trait MatrixAdditions extends ast.TreeDSL
          { s resetFlag MUTABLE ; true }         // side effects MUTABLE flag
 
       private def sealedSymsFor(s: Symbol): Set[Symbol] = {
-        def countSealed(child: Symbol) = {
-          // include base class only if non-abstract
-          def baseSet = if (child hasFlag ABSTRACT) Set() else Set(child)
-          sealedSymsFor(child) ++ baseSet
-        }
-        if (s hasFlag SEALED) s.children flatMap countSealed
-        else Set()
+        val kids = s.children flatMap sealedSymsFor
+        if (s hasFlag ABSTRACT) kids else kids + s
       }
+
       private lazy val inexhaustives: List[List[Combo]] = {
         val collected =
           for ((pv, i) <- tvars.zipWithIndex ; val sym = pv.lhs ; if requiresExhaustive(sym)) yield

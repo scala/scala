@@ -25,8 +25,13 @@ missing combination             Gp
 
     def ma5(x:Deep) = x match { // Gp
                       ^
-patmatexhaust.scala:70: error: unreachable code
+patmatexhaust.scala:75: warning: match is not exhaustive!
+missing combination              B
+
+  def ma9(x: B) = x match {
+                  ^
+patmatexhaust.scala:92: error: unreachable code
       case 1 => 
              ^
-5 warnings found
+6 warnings found
 one error found

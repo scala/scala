@@ -1,5 +1,5 @@
 class TestSealedExhaustive { // compile only
-    sealed class Foo
+    sealed abstract class Foo
 
     case class Bar(x:Int) extends Foo
     case object Baz extends Foo
@@ -12,7 +12,7 @@ class TestSealedExhaustive { // compile only
       case Baz    => // not exhaustive
     }
 
-    sealed class Mult
+    sealed abstract class Mult
     case class Kult(s:Mult) extends Mult
     case class Qult() extends Mult
 
@@ -32,7 +32,7 @@ class TestSealedExhaustive { // compile only
       case (Qult(), Kult(_))    =>
     }
 
-    sealed class Deep
+    sealed abstract class Deep
 
     case object Ga extends Deep
     sealed class Gp extends Deep
@@ -65,6 +65,28 @@ class TestSealedExhaustive { // compile only
     case 1::2::Nil =>
       case _ =>
   }
+
+  sealed class B
+  case class B1 extends B
+  case object B2 extends B
+  def ma8(x: B) = x match {
+    case _: B => true
+  }
+  def ma9(x: B) = x match {
+    case B1() => true       // missing B, which is not abstract so must be included
+    case B2   => true
+  }
+  sealed abstract class C
+  abstract class C1 extends C
+  object C2 extends C
+  case object C6 extends C
+  class C3 extends C1
+  case class C4 extends C3
+  def ma10(x: C) = x match { // exhaustive
+    case C4()     => true
+    case C2 | C6  => true
+  }
+
   def redundant = 1 match { // include this otherwise script won't test this in files/neg
     case 1 =>
       case 1 =>
