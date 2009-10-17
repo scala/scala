@@ -1105,7 +1105,10 @@ abstract class ClassfileParser {
 
   private def setPrivateWithin(sym: Symbol, jflags: Int) {
     if ((jflags & (JAVA_ACC_PRIVATE | JAVA_ACC_PROTECTED | JAVA_ACC_PUBLIC)) == 0)
-      sym.privateWithin = sym.toplevelClass.owner
+      // See ticket #1687 for an example of when topLevelClass is NoSymbol: it
+      // apparently occurs when processing v45.3 bytecode.
+      if (sym.toplevelClass != NoSymbol)
+        sym.privateWithin = sym.toplevelClass.owner
   }
 
   @inline final private def isPrivate(flags: Int) =
