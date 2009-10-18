@@ -27,6 +27,14 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def ceil: Double = Math.ceil(x)
   def floor: Double = Math.floor(x)
 
+  /** !!! At the time I wrote these Double ranges, BigDecimal(0.17) == 0.17d.  Since
+   *  this is no longer true, these ranges need to operate on Doubles, else
+   *  (0.0 to 1.0 by 0.1).contains(0.1) will be false under the anticipated 2.8
+   *  equality scheme.  They only operate on BigDecimals because I wasn't 100%
+   *  sure about when operations on Doubles are guaranteed to be exact and using
+   *  BigDecimal seemed the conservative route.
+   */
+
   /** See <code>BigDecimal.until</code>. */
   def until(end: Double): Range.Partial[Double, GenericRange.Exclusive[BigDecimal]] =
     new Range.Partial(until(end, _))
