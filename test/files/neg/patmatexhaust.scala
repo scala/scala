@@ -67,7 +67,7 @@ class TestSealedExhaustive { // compile only
   }
 
   sealed class B
-  case class B1 extends B
+  case class B1() extends B
   case object B2 extends B
   def ma8(x: B) = x match {
     case _: B => true
@@ -81,7 +81,7 @@ class TestSealedExhaustive { // compile only
   object C2 extends C
   case object C6 extends C
   class C3 extends C1
-  case class C4 extends C3
+  case class C4() extends C3
   def ma10(x: C) = x match { // exhaustive
     case C4()     => true
     case C2 | C6  => true
