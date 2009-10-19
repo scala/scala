@@ -27,29 +27,21 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def ceil: Double = Math.ceil(x)
   def floor: Double = Math.floor(x)
 
-  /** !!! At the time I wrote these Double ranges, BigDecimal(0.17) == 0.17d.  Since
-   *  this is no longer true, these ranges need to operate on Doubles, else
-   *  (0.0 to 1.0 by 0.1).contains(0.1) will be false under the anticipated 2.8
-   *  equality scheme.  They only operate on BigDecimals because I wasn't 100%
-   *  sure about when operations on Doubles are guaranteed to be exact and using
-   *  BigDecimal seemed the conservative route.
-   */
-
   /** See <code>BigDecimal.until</code>. */
-  def until(end: Double): Range.Partial[Double, GenericRange.Exclusive[BigDecimal]] =
+  def until(end: Double): Range.Partial[Double, GenericRange[Double]] =
     new Range.Partial(until(end, _))
 
   /** See <code>BigDecimal.until</code>. */
-  def until(end: Double, step: Double): GenericRange.Exclusive[BigDecimal] =
-    BigDecimal(x).until(end, step)
+  def until(end: Double, step: Double): GenericRange[Double] =
+    Range.Double(x, end, step)
 
   /** See <code>BigDecimal.to</code>. */
-  def to(end: Double): Range.Partial[Double, GenericRange.Inclusive[BigDecimal]] =
+  def to(end: Double): Range.Partial[Double, GenericRange[Double]] =
     new Range.Partial(to(end, _))
 
   /** See <code>BigDecimal.to</code>. */
-  def to(end: Double, step: Double): GenericRange.Inclusive[BigDecimal] =
-    BigDecimal(x).to(end, step)
+  def to(end: Double, step: Double): GenericRange[Double] =
+    Range.Double.inclusive(x, end, step)
 
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.

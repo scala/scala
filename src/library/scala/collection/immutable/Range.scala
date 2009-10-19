@@ -177,10 +177,22 @@ object Range {
       GenericRange.inclusive(start, end, step)
   }
 
-  // Double re-uses BigDecimal's range.
+  // Double works by using a BigDecimal under the hood for precise
+  // stepping, but mapping the sequence values back to doubles with
+  // .doubleValue.  This constructs the BigDecimals by way of the
+  // String constructor (valueOf) instead of the Double one, which
+  // is necessary to keep 0.3d at 0.3 as opposed to
+  // 0.299999999999999988897769753748434595763683319091796875 or so.
   object Double {
-    def apply(start: Double, end: Double, step: Double) = scala.BigDecimal(start) until end by step
-    def inclusive(start: Double, end: Double, step: Double) = scala.BigDecimal(start) to end by step
+    implicit val bigDecAsIntegral = scala.Numeric.BigDecimalAsIfIntegral
+    implicit val doubleAsIntegral = scala.Numeric.DoubleAsIfIntegral
+    def toBD(x: Double): BigDecimal = scala.BigDecimal valueOf x
+
+    def apply(start: Double, end: Double, step: Double) =
+      BigDecimal(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
+
+    def inclusive(start: Double, end: Double, step: Double) =
+      BigDecimal.inclusive(toBD(start), toBD(end), toBD(step)) mapRange (_.doubleValue)
   }
 
   // As there is no appealing default step size for not-really-integral ranges,

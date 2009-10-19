@@ -46,6 +46,15 @@ object BigDecimal
 
   val defaultMathContext = MathContext.UNLIMITED
 
+  /** Constructs a <code>BigDecimal</code> using the java BigDecimal static
+   *  valueOf constructor.
+   *
+   *  @param  d the specified double value
+   *  @return the constructed <code>BigDecimal</code>
+   */
+  def valueOf(d: Double): BigDecimal = apply(BigDec valueOf d)
+  def valueOf(d: Double, mc: MathContext): BigDecimal = apply(BigDec valueOf d, mc)
+
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified <code>Integer</code> value.
    *
@@ -144,7 +153,7 @@ object BigDecimal
   implicit def long2bigDecimal(l: Long): BigDecimal = apply(l)
 
   /** Implicit conversion from <code>Double</code> to <code>BigDecimal</code>. */
-  implicit def double2bigDecimal(d: Double): BigDecimal = apply(d)
+  implicit def double2bigDecimal(d: Double): BigDecimal = valueOf(d, defaultMathContext)
 }
 
 /**
@@ -337,9 +346,9 @@ extends jl.Number with ScalaNumericConversions
   def floatValue  = this.bigDecimal.floatValue
 
   /** Converts this BigDecimal to a <tt>Double</tt>.
-   *  if this BigDecimal has too great a magnitude to represent as a float,
-   *  it will be converted to <code>Float.NEGATIVE_INFINITY</code> or
-   *  <code>Float.POSITIVE_INFINITY</code> as appropriate.
+   *  if this BigDecimal has too great a magnitude to represent as a double,
+   *  it will be converted to <code>Double.NEGATIVE_INFINITY</code> or
+   *  <code>Double.POSITIVE_INFINITY</code> as appropriate.
    */
   def doubleValue = this.bigDecimal.doubleValue
 

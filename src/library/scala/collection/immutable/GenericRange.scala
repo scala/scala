@@ -8,13 +8,12 @@
 
 // $Id: GenericRange.scala 18987 2009-10-08 18:31:44Z odersky $
 
-package scala.collection.immutable
+package scala.collection
+package immutable
 
 import annotation.experimental
-
-import collection.VectorView
-import util.control.Exception.catching
-import util.Hashable
+import mutable.{ Builder, ListBuffer }
+import generic._
 
 /** <p>
  *    <code>GenericRange</code> is a generified version of the
@@ -39,15 +38,21 @@ import util.Hashable
 abstract class GenericRange[+T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
-extends VectorView[T, collection.immutable.Vector[T]]
+extends Vector[T]
 {
   import num._
+
+  private def fail(msg: String) = throw new UnsupportedOperationException(msg)
+
+  if (step equiv zero)
+    fail("GenericRange step cannot be zero.")
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
   // subranges and limiting the subranges to MAX_INT.  There's no other way around it because
   // the generics we inherit assume integer-based indexing (as well they should.)
-  require(!(step equiv zero))
-  require(genericLength <= fromInt(Math.MAX_INT), "Implementation restricts ranges to Math.MAX_INT elements.")
+  // The second condition is making sure type T can meaningfully be compared to Math.MAX_INT.
+  if (genericLength > fromInt(Math.MAX_INT) && (Math.MAX_INT == toInt(fromInt(Math.MAX_INT))))
+    fail("Implementation restricts ranges to Math.MAX_INT elements.")
 
   // inclusive/exclusiveness captured this way because we do not have any
   // concept of a "unit", we can't just add an epsilon to an exclusive
@@ -97,7 +102,7 @@ extends VectorView[T, collection.immutable.Vector[T]]
   }
 
   def length: Int = toInt(genericLength)
-  final override def isEmpty =
+  override def isEmpty =
     if (step > zero)
       if (isInclusive) end < start
       else end <= start
@@ -121,6 +126,46 @@ extends VectorView[T, collection.immutable.Vector[T]]
       else
         (start >= x) && (x > end) && divides(start - x, step)
     )
+  }
+
+  // Motivated by the desire for Double ranges with BigDecimal precision,
+  // we need some way to map a Range and get another Range.  This can't be
+  // done in any fully general way because Ranges are not arbitrary
+  // sequences but step-valued, so we have a custom method only we can call
+  // which we promise to use responsibly.
+  //
+  // The point of it all is that
+  //
+  //   0.0 to 1.0 by 0.1
+  //
+  // should result in
+  //
+  //   GenericRange[Double](0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+  //
+  // and not
+  //
+  //   GenericRange[Double](0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5, 0.6000000000000001, 0.7000000000000001, 0.8, 0.9)
+  //
+  // or perhaps more importantly,
+  //
+  //   (0.1 to 0.3 by 0.1 contains 0.3) == true
+  //
+  private[immutable] def mapRange[A](fm: T => A)(implicit unum: Integral[A]): GenericRange[A] = {
+    val self = this
+
+    // XXX This may be incomplete.
+    new GenericRange[A](fm(start), fm(end), fm(step), isInclusive) {
+      def copy[A1 >: A](start: A1, end: A1, step: A1)(implicit unum: Integral[A1]): GenericRange[A1] =
+        if (isInclusive) GenericRange.inclusive(start, end, step)
+        else GenericRange(start, end, step)
+
+      private val underlyingRange: GenericRange[T] = self
+      override def foreach[U](f: A => U) { underlyingRange foreach (x => f(fm(x))) }
+      override def isEmpty = underlyingRange.isEmpty
+      override def apply(idx: Int): A = fm(underlyingRange(idx))
+      override def containsTyped[A1 >: A](el: A1)(implicit unum: Integral[A1]) =
+        underlyingRange exists (x => fm(x) == el)
+    }
   }
 
   // The contains situation makes for some interesting code.
@@ -153,9 +198,7 @@ extends VectorView[T, collection.immutable.Vector[T]]
   }
 }
 
-
-object GenericRange
-{
+object GenericRange {
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends GenericRange(start, end, step, true) {
     def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): Inclusive[U] =

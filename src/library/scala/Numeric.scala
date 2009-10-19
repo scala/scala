@@ -104,11 +104,10 @@ object Numeric {
   }
   implicit object FloatIsFractional extends FloatIsFractional with Ordering.FloatOrdering
 
-  trait DoubleIsFractional extends Fractional[Double] {
+  trait DoubleIsConflicted extends Numeric[Double] {
     def plus(x: Double, y: Double): Double = x + y
     def minus(x: Double, y: Double): Double = x - y
     def times(x: Double, y: Double): Double = x * y
-    def div(x: Double, y: Double): Double = x / y
     def negate(x: Double): Double = -x
     def fromInt(x: Int): Double = x
     def toInt(x: Double): Int = x.toInt
@@ -116,7 +115,13 @@ object Numeric {
     def toFloat(x: Double): Float = x.toFloat
     def toDouble(x: Double): Double = x
   }
-  implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.DoubleOrdering
+  trait DoubleIsFractional extends DoubleIsConflicted with Fractional[Double] {
+    def div(x: Double, y: Double): Double = x / y
+  }
+  trait DoubleAsIfIntegral extends DoubleIsConflicted with Integral[Double] {
+    def quot(x: Double, y: Double): Double = (BigDecimal(x) / BigDecimal(y)).doubleValue
+    def rem(x: Double, y: Double): Double = (BigDecimal(x) remainder BigDecimal(y)).doubleValue
+  }
 
   trait BigDecimalIsConflicted extends Numeric[BigDecimal] {
     def plus(x: BigDecimal, y: BigDecimal): BigDecimal = x + y
@@ -135,14 +140,16 @@ object Numeric {
   }
   trait BigDecimalAsIfIntegral extends BigDecimalIsConflicted with Integral[BigDecimal] {
     def quot(x: BigDecimal, y: BigDecimal): BigDecimal = x / y
-    // scala.BigDecimal doesn't give access to remainder, grr
-    def rem(x: BigDecimal, y: BigDecimal): BigDecimal =
-      new BigDecimal(x.bigDecimal remainder y.bigDecimal)
+    def rem(x: BigDecimal, y: BigDecimal): BigDecimal = x remainder y
   }
 
-  // The Fractional one is the implicit, but Integral is useful for GenericRange.
+  // For Double and BigDecimal we offer implicit Fractional objects, but also one
+  // which acts like an Integral type, which is useful in GenericRange.
   implicit object BigDecimalIsFractional extends BigDecimalIsFractional with Ordering.BigDecimalOrdering
   object BigDecimalAsIfIntegral extends BigDecimalAsIfIntegral with Ordering.BigDecimalOrdering
+
+  implicit object DoubleIsFractional extends DoubleIsFractional with Ordering.DoubleOrdering
+  object DoubleAsIfIntegral extends DoubleAsIfIntegral with Ordering.DoubleOrdering
 }
 
 trait Numeric[T] extends Ordering[T] {
