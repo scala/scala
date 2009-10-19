@@ -99,11 +99,11 @@ extends VectorView[T, collection.immutable.Vector[T]]
   def length: Int = toInt(genericLength)
   final override def isEmpty =
     if (step > zero)
+      if (isInclusive) end < start
+      else end <= start
+    else
       if (isInclusive) end > start
       else end >= start
-    else
-      if (isInclusive) start > end
-      else start >= end
 
   def apply(idx: Int): T = {
     if (idx < 0 || idx >= length) throw new IndexOutOfBoundsException(idx.toString)
