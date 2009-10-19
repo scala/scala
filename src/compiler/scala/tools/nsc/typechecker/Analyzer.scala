@@ -55,7 +55,7 @@ trait Analyzer extends AnyRef
       def apply(unit: CompilationUnit) {
         try {
           unit.body = newTyper(rootContext(unit)).typed(unit.body)
-          if (global.settings.Yrangepos.value) global.validatePositions(unit.body)
+          if (global.settings.Yrangepos.value && !global.reporter.hasErrors) global.validatePositions(unit.body)
           for (workItem <- unit.toCheck) workItem()
         } finally {
           unit.toCheck.clear()

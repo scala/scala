@@ -549,7 +549,11 @@ self =>
         val opinfo = opstack.head
         opstack = opstack.tail
         val opPos = r2p(opinfo.offset, opinfo.offset, opinfo.offset+opinfo.operator.length)
-        top = atPos(opinfo.operand.pos.startOrPoint, opinfo.offset) {
+        val lPos = opinfo.operand.pos
+        val start = if (lPos.isDefined) lPos.startOrPoint else  opPos.startOrPoint
+        val rPos = top.pos
+        val end = if (rPos.isDefined) rPos.endOrPoint else opPos.endOrPoint
+        top = atPos(start, opinfo.offset, end) {
           makeBinop(isExpr, opinfo.operand, opinfo.operator, top, opPos)
         }
       }
