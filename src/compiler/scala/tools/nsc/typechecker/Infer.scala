@@ -1419,11 +1419,23 @@ trait Infer {
           val ptvars = ptparams map freshVar
           val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
           if (!(isPopulated(tp, pt1) && isInstantiatable(tvars ::: ptvars))) {
-            //println(tpparams)
-            //println(tvars map instBounds)
-            //println(ptvars map instBounds)
-            error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
-            return pattp
+            // In ticket #2486 we have this example of code which would fail
+            // here without a change:
+            //
+            // class A[T]
+            // class B extends A[Int]
+            // class C[T] extends A[T] { def f(t: A[T]) = t match { case x: B => () } }
+            //
+            // This reports error: pattern type is incompatible with expected type;
+            // found   : B
+            // required: A[T]
+            //
+            // I am not sure what is the ideal fix, but for the moment I am intercepting
+            // it at the last minute and applying a looser check before failing.
+            if (!isPlausiblyCompatible(pattp, pt)) {
+              error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
+              return pattp
+            }
           }
           ptvars foreach instantiateTypeVar
         }
