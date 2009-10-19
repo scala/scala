@@ -1078,10 +1078,38 @@ trait Symbols {
      */
     def thisType: Type = NoPrefix
 
-    /** Return every accessor of a primary constructor parameter in this case class
+    /** Return every accessor of a primary constructor parameter in this case class.
+     *  The scope declarations may be out of order because fields with less than private
+     *  access are first given a regular getter, then a new renamed getter which comes
+     *  later in the declaration list.  For this reason we have to pinpoint the
+     *  right accessors by starting with the original fields (which will be in the right
+     *  order) and looking for getters with applicable names.  The getters may have the
+     *  standard name "foo" or may have been renamed to "foo$\d+" in SyntheticMethods.
+     *  See ticket #1373.
      */
-    final def caseFieldAccessors: List[Symbol] =
-      info.decls.toList filter (sym => !(sym hasFlag PRIVATE) && sym.hasFlag(CASEACCESSOR))
+    final def caseFieldAccessors: List[Symbol] = {
+      val allWithFlag = info.decls.toList filter (_ hasFlag CASEACCESSOR)
+      val (accessors, fields) = allWithFlag partition (_.isMethod)
+
+      def findAccessor(field: Symbol): Symbol = {
+        // There is another renaming the field may have undergone, for instance as in
+        // ticket #2175: case class Property[T](private var t: T), t becomes Property$$t.
+        // So we use the original name everywhere.
+        val getterName    = nme.getterName(field.originalName)
+
+        // Note this is done in two passes intentionally, to ensure we pick up the original
+        // getter if present before looking for the renamed getter.
+        def origGetter    = accessors find (_.originalName == getterName)
+        def renamedGetter = accessors find (_.originalName startsWith (getterName + "$"))
+        val accessorName  = origGetter orElse renamedGetter
+
+        accessorName getOrElse {
+          throw new Error("Could not find case accessor for %s in %s".format(field, this))
+        }
+      }
+
+      fields map findAccessor
+    }
 
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.hasFlag(PARAMACCESSOR))
@@ -1117,7 +1145,7 @@ trait Symbols {
     def defaultGetter_=(getter: Symbol): Unit =
       throw new Error("defaultGetter cannot be set for " + this)
 
-    /** For a lazy value, it's lazy accessor. NoSymbol for all others */
+    /** For a lazy value, its lazy accessor. NoSymbol for all others */
     def lazyAccessor: Symbol = NoSymbol
 
     /** For an outer accessor: The class from which the outer originates.
@@ -1586,15 +1614,17 @@ trait Symbols {
       clone
     }
 
+    private val validAliasFlags = SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED
+
     override def alias: Symbol =
-      if (hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED)) initialize.referenced
+      if (hasFlag(validAliasFlags)) initialize.referenced
       else NoSymbol
 
     def setAlias(alias: Symbol): TermSymbol = {
       assert(alias != NoSymbol, this)
       assert(!(alias hasFlag OVERLOADED), alias)
 
-      assert(hasFlag(SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED), this)
+      assert(hasFlag(validAliasFlags), this)
       referenced = alias
       this
     }

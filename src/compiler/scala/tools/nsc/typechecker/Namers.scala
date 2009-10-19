@@ -127,13 +127,13 @@ trait Namers { self: Analyzer =>
         unsafeTypeParams foreach(sym => paramContext.scope.enter(sym))
         newNamer(paramContext)
       }
-      if (sym.isTerm) {
-        if (sym.hasFlag(PARAM) && sym.owner.isPrimaryConstructor)
-          primaryConstructorParamNamer
-        else if (sym.hasFlag(PARAMACCESSOR))
-          primaryConstructorParamNamer
-        else innerNamer
-      } else innerNamer
+      def usePrimary = sym.isTerm && (
+        (sym hasFlag PARAMACCESSOR) ||
+        ((sym hasFlag PARAM) && sym.owner.isPrimaryConstructor)
+      )
+
+      if (usePrimary) primaryConstructorParamNamer
+      else innerNamer
     }
 
     protected def conflict(newS : Symbol, oldS : Symbol) : Boolean = {
@@ -339,7 +339,7 @@ trait Namers { self: Analyzer =>
           case tree @ ClassDef(mods, name, tparams, impl) =>
             tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
-            if ((mods.flags & CASE) != 0L) {
+            if (mods.isCase) {
               val m = ensureCompanionObject(tree, caseModuleDef(tree))
               caseClassOfModuleClass(m.moduleClass) = tree
             }
@@ -368,7 +368,7 @@ trait Namers { self: Analyzer =>
                  (mods.flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL).toLong ||
                  name.endsWith(nme.OUTER, nme.OUTER.length) ||
                  context.unit.isJava) &&
-                (mods.flags & LAZY) == 0L) {
+                 !mods.isLazy) {
               tree.symbol = enterInScope(owner.newValue(tree.pos, name)
                 .setFlag(mods.flags))
               finish
@@ -389,22 +389,24 @@ trait Namers { self: Analyzer =>
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
               }
               tree.symbol =
-                if (mods.hasFlag(DEFERRED)) {
+                if (mods.isDeferred) {
                   getter setPos tree.pos // unfocus getter position, because there won't be a separate value
                 } else {
                   var vsym =
                     if (!context.owner.isClass) {
-                      assert((mods.flags & LAZY) != 0L) // if not a field, it has to be a lazy val
+                      assert(mods.isLazy)   // if not a field, it has to be a lazy val
                       owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods.flags | MUTABLE)
                     } else {
-                      owner.newValue(tree.pos, nme.getterToLocal(name))
-                        .setFlag(mods.flags & FieldFlags | PRIVATE | LOCAL |
-                                 (if (mods.hasFlag(LAZY)) MUTABLE else 0))
+                      val mflag = if (mods.isLazy) MUTABLE else 0
+                      val newflags = mods.flags & FieldFlags | PRIVATE | LOCAL | mflag
+
+                      owner.newValue(tree.pos, nme.getterToLocal(name)) setFlag newflags
                     }
                   enterInScope(vsym)
                   setInfo(vsym)(namerOf(vsym).typeCompleter(tree))
-                  if ((mods.flags & LAZY) != 0L)
+                  if (mods.isLazy)
                     vsym.setLazyAccessor(getter)
+
                   vsym
                 }
               addBeanGetterSetter(vd, getter)
@@ -472,7 +474,7 @@ trait Namers { self: Analyzer =>
         if (!name(0).isLetter)
           context.error(vd.pos, "`BeanProperty' annotation can be applied "+
                                 "only to fields that start with a letter")
-        else if (mods hasFlag PRIVATE)
+        else if (mods.isPrivate)
           // avoids name clashes with private fields in traits
           context.error(vd.pos, "`BeanProperty' annotation can only be applied "+
                                 "to non-private fields")
@@ -485,7 +487,7 @@ trait Namers { self: Analyzer =>
           val getterMods = Modifiers(flags, mods.privateWithin, Nil, mods.positions)
           val beanGetterDef = atPos(vd.pos.focus) {
             DefDef(getterMods, getterName, Nil, List(Nil), tpt.duplicate,
-                   if (mods hasFlag DEFERRED) EmptyTree
+                   if (mods.isDeferred) EmptyTree
                    else Select(This(getter.owner.name), name)) }
           enterSyntheticSym(beanGetterDef)
 

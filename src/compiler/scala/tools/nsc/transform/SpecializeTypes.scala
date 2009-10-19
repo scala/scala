@@ -430,11 +430,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         log(" * looking at: " + m)
         if (!m.isDeferred) concreteSpecMethods += m
 
-        // specialized members have to be overridable. Fields should not
-        // have the field CASEACCESSOR (messes up patmatch)
-        if (m.hasFlag(PRIVATE)) {
-          m.resetFlag(PRIVATE | CASEACCESSOR).setFlag(PROTECTED)
-        }
+        // specialized members have to be overridable.
+        if (m.hasFlag(PRIVATE))
+          m.resetFlag(PRIVATE).setFlag(PROTECTED)
 
         if (m.isConstructor) {
           val specCtor = enterMember(m.cloneSymbol(cls).setFlag(SPECIALIZED))

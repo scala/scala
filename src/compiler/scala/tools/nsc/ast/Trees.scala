@@ -64,6 +64,7 @@ trait Trees {
     def isAbstract  = hasFlag(ABSTRACT )
     def isDeferred  = hasFlag(DEFERRED )
     def isCase      = hasFlag(CASE     )
+    def isLazy      = hasFlag(LAZY     )
     def isSealed    = hasFlag(SEALED   )
     def isFinal     = hasFlag(FINAL    )
     def isTrait     = hasFlag(TRAIT | notDEFERRED) // (part of DEVIRTUALIZE)
