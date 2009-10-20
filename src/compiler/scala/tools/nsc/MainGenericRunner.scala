@@ -7,7 +7,7 @@
 
 package scala.tools.nsc
 
-import java.io.{File, IOException}
+import java.io.{ File, IOException }
 import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.InvocationTargetException
 import java.net.{ URL, MalformedURLException }
@@ -15,6 +15,7 @@ import scala.util.ScalaClassLoader
 
 import util.ClassPath
 import File.pathSeparator
+import Properties.{ versionString, copyrightString }
 
 /** An object that runs Scala code.  It has three possible
   * sources for the code to run: pre-compiled code, a script file,
@@ -46,39 +47,31 @@ object MainGenericRunner {
   }
 
   def main(args: Array[String]) {
-    def error(str: String) = Console.println(str)
-    val command = new GenericRunnerCommand(args.toList, error)
+    def errorFn(str: String) = Console println str
 
+    val command = new GenericRunnerCommand(args.toList, errorFn)
     val settings = command.settings
     def sampleCompiler = new Global(settings)
 
-    if (!command.ok) {
-      println(command.usageMsg)
-      println(sampleCompiler.pluginOptionsHelp)
-      return
-    }
+    if (!command.ok)
+      return errorFn("%s\n%s".format(command.usageMsg, sampleCompiler.pluginOptionsHelp))
 
-    settings.classpath.value =
-      addClasspathExtras(settings.classpath.value)
-
+    settings.classpath.value = addClasspathExtras(settings.classpath.value)
     settings.defines.applyToCurrentJVM
 
-    if (settings.version.value) {
-      Console.println(
-        "Scala code runner " +
-        Properties.versionString + " -- " +
-        Properties.copyrightString)
-      return
-    }
+    if (settings.version.value)
+      return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
 
-    if (command.shouldStopWithInfo) {
-      Console.println(command.getInfoMessage(sampleCompiler))
-      return
-    }
+    if (command.shouldStopWithInfo)
+      return errorFn(command getInfoMessage sampleCompiler)
 
-    def exitSuccess : Nothing = exit(0)
-    def exitFailure : Nothing = exit(1)
-    def exitCond(b: Boolean) : Nothing = if(b) exitSuccess else exitFailure
+    def exitSuccess: Nothing = exit(0)
+    def exitFailure(msg: Any = null): Nothing = {
+      if (msg != null) errorFn(msg.toString)
+      exit(1)
+    }
+    def exitCond(b: Boolean): Nothing =
+      if (b) exitSuccess else exitFailure(null)
 
     def fileToURL(f: File): Option[URL] =
       try { Some(f.toURL) }
@@ -114,17 +107,34 @@ object MainGenericRunner {
       jars(settings.extdirs.value) :::
       urls(settings.Xcodebase.value)
 
-    command.thingToRun match {
-      case _ if settings.execute.value != "" =>
-        val fullArgs =
-	  command.thingToRun.toList ::: command.arguments
-        exitCond(ScriptRunner.runCommand(settings,
-		  			 settings.execute.value,
-					 fullArgs))
+    def createLoop(): InterpreterLoop = {
+      val loop = new InterpreterLoop
+      loop main settings
+      loop
+    }
 
-      case None =>
-        (new InterpreterLoop).main(settings)
+    def dashe = settings.execute.value
+    def dashi = settings.loadfiles.value
+    def slurp = dashi map (file => io.File(file).slurp()) mkString "\n"
 
+    /** Was code given in a -e argument? */
+    if (!settings.execute.isDefault) {
+      /** If a -i argument was also given, we want to execute the code after the
+       *  files have been included, so they are read into strings and prepended to
+       *  the code given in -e.  The -i option is documented to only make sense
+       *  interactively so this is a pretty reasonable assumption.
+       *
+       *  This all needs a rewrite though.
+       */
+      val fullArgs = command.thingToRun.toList ::: command.arguments
+      val code =
+        if (settings.loadfiles.isDefault) dashe
+        else slurp + "\n" + dashe
+
+      exitCond(ScriptRunner.runCommand(settings, code, fullArgs))
+    }
+    else command.thingToRun match {
+      case None             => createLoop()
       case Some(thingToRun) =>
         val isObjectName =
           settings.howtorun.value match {
@@ -133,34 +143,20 @@ object MainGenericRunner {
             case "guess"  => ScalaClassLoader.classExists(classpath, thingToRun)
           }
 
-        if (isObjectName) {
-          try {
-            ObjectRunner.run(classpath, thingToRun, command.arguments)
-          } catch {
-            case e: ClassNotFoundException =>
-              Console.println(e)
-              exitFailure
-            case e: NoSuchMethodException =>
-              Console.println(e)
-              exitFailure
+        if (isObjectName)
+          try ObjectRunner.run(classpath, thingToRun, command.arguments)
+          catch {
+            case e @ (_: ClassNotFoundException | _: NoSuchMethodException) => exitFailure(e)
             case e: InvocationTargetException =>
               e.getCause.printStackTrace
-              exitFailure
+              exitFailure()
           }
-        } else {
-          try {
-            exitCond(ScriptRunner.runScript(settings,
-					    thingToRun,
-					    command.arguments))
-          } catch {
-	    case e: IOException =>
-              Console.println(e.getMessage())
-              exitFailure
-            case e: SecurityException =>
-              Console.println(e)
-              exitFailure
+        else
+          try exitCond(ScriptRunner.runScript(settings, thingToRun, command.arguments))
+          catch {
+            case e: IOException       => exitFailure(e.getMessage)
+            case e: SecurityException => exitFailure(e)
           }
-        }
     }
   }
 }

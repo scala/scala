@@ -549,7 +549,8 @@ object Settings {
       }
   }
 
-  /** A setting that accumulates all strings supplied to it */
+  /** A setting that accumulates all strings supplied to it,
+   *  until it encounters one starting with a '-'. */
   class MultiStringSetting private[Settings](
     val name: String,
     val arg: String,
@@ -560,8 +561,10 @@ object Settings {
     def appendToValue(str: String) { value ++= List(str) }
 
     def tryToSet(args: List[String]) = {
-      args foreach appendToValue
-      Some(Nil)
+      val (strings, rest) = args span (x => !x.startsWith("-"))
+      strings foreach appendToValue
+
+      Some(rest)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
     def unparse: List[String] = value map { name + ":" + _ }
