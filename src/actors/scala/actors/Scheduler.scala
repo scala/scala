@@ -11,7 +11,7 @@
 package scala.actors
 
 import java.util.concurrent._
-import scheduler.{DelegatingScheduler, ForkJoinScheduler, DefaultThreadPoolScheduler}
+import scheduler.{DelegatingScheduler, ForkJoinScheduler, ResizableThreadPoolScheduler}
 
 /**
  * The <code>Scheduler</code> object is used by <code>Actor</code> to
@@ -24,11 +24,21 @@ object Scheduler extends DelegatingScheduler {
   Debug.info("initializing "+this+"...")
 
   def makeNewScheduler: IScheduler = {
-    //val s = new DefaultThreadPoolScheduler(false)
-    val s = new ForkJoinScheduler
-    Debug.info(this+": starting new "+s+" ["+s.getClass+"]")
-    s.start()
-    s
+    // test on which JVM we are running
+    val jvmVendor = System.getProperty("java.vm.vendor")
+    val sched = if (jvmVendor.indexOf("IBM") != -1) {
+      Debug.info(this+": running on a "+jvmVendor+" JVM")
+      // on IBM J9 1.6 do not use ForkJoinPool
+      val s = new ResizableThreadPoolScheduler(false)
+      s.start()
+      s
+    } else {
+      val s = new ForkJoinScheduler
+      s.start()
+      s
+    }
+    Debug.info(this+": starting new "+sched+" ["+sched.getClass+"]")
+    sched
   }
 
   /* Only <code>ForkJoinScheduler</code> implements this method.
