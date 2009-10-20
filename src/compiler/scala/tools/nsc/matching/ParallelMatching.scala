@@ -560,7 +560,7 @@ trait ParallelMatching extends ast.TreeDSL
           j -> (moreSpecific :: subsumed)
 
       lazy val casted = scrut castedTo pmatch.headType
-      lazy val cond   = condition(checkErroneous(casted), scrut)
+      lazy val cond   = condition(checkErroneous(casted), scrut, head.boundVariables.nonEmpty)
 
       private def isAnyMoreSpecific = yeses exists (x => !x.moreSpecific.isEmpty)
       lazy val (subtests, subtestVars) =
@@ -803,17 +803,17 @@ trait ParallelMatching extends ast.TreeDSL
 
     /** returns the condition in "if (cond) k1 else k2"
      */
-    final def condition(tpe: Type, scrut: Scrutinee): Tree = {
+    final def condition(tpe: Type, scrut: Scrutinee, isBound: Boolean): Tree = {
       assert(scrut.isDefined)
-      val cond = handleOuter(condition(tpe, scrut.id))
+      val cond = handleOuter(condition(tpe, scrut.id, isBound))
 
       if (!needsOuterTest(tpe, scrut.tpe, owner)) cond
       else addOuterCondition(cond, tpe, scrut.id)
     }
 
-    final def condition(tpe: Type, scrutTree: Tree): Tree = {
+    final def condition(tpe: Type, scrutTree: Tree, isBound: Boolean): Tree = {
       assert((tpe ne NoType) && (scrutTree.tpe ne NoType))
-      def useEqTest         = tpe.termSymbol.isModule || (tpe.prefix eq NoPrefix)
+      def useEqTest     = tpe.termSymbol.isModule || (tpe.prefix eq NoPrefix)
 
       //         case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
       //           val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
@@ -824,7 +824,16 @@ trait ParallelMatching extends ast.TreeDSL
             case v @ Constant(null) if scrutTree.tpe.isAnyRef   => scrutTree ANY_EQ NULL
             case v                                              => scrutTree MEMBER_== Literal(v)
           }
-        case _: SingletonType if useEqTest                      => REF(tpe.termSymbol) MEMBER_== scrutTree
+        case _: SingletonType if useEqTest                      =>
+          val eqTest = REF(tpe.termSymbol) MEMBER_== scrutTree
+          // See ticket #1503 for the motivation behind checking for a binding.
+          // The upshot is that it is unsound to assume equality means the right
+          // type, but if the value doesn't appear on the right hand side of the
+          // match that's unimportant; so we add an instance check only if there
+          // is a binding.
+          if (isBound) eqTest AND (scrutTree IS tpe.widen)
+          else eqTest
+
         case _ if scrutTree.tpe <:< tpe && tpe.isAnyRef         => scrutTree OBJ_!= NULL
         case _                                                  => scrutTree IS tpe
       })
