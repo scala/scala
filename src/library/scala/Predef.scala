@@ -247,10 +247,6 @@ object Predef extends LowPriorityImplicits {
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
-  /** Lens from Ordering[T] to Ordered[T] */
-  implicit def orderingToOrdered[T](x: T)(implicit ord: Ordering[T]): Ordered[T] =
-    new Ordered[T] { def compare(that: T): Int = ord.compare(x, that) }
-
   implicit def byte2short(x: Byte): Short = x.toShort
   implicit def byte2int(x: Byte): Int = x.toInt
   implicit def byte2long(x: Byte): Long = x.toLong
