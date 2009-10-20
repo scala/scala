@@ -162,18 +162,12 @@ object Ordering {
   implicit object Long extends LongOrdering
 
   trait FloatOrdering extends Ordering[Float] {
-    def compare(x: Float, y: Float) =
-      if (x < y) -1
-      else if (x == y) 0
-      else 1
+    def compare(x: Float, y: Float) = java.lang.Float.compare(x, y)
   }
   implicit object Float extends FloatOrdering
 
   trait DoubleOrdering extends Ordering[Double] {
-    def compare(x: Double, y: Double) =
-      if (x < y) -1
-      else if (x == y) 0
-      else 1
+    def compare(x: Double, y: Double) = java.lang.Double.compare(x, y)
   }
   implicit object Double extends DoubleOrdering
 
