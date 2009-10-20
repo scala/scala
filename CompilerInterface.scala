@@ -60,7 +60,7 @@ class CompilerInterface
 		if(reporter.hasErrors)
 		{
 			debug("Compilation failed (CompilerInterface)")
-			throw new InterfaceCompileFailed(args, "Analyzed compilation failed")
+			throw new InterfaceCompileFailed(args, "Compilation failed")
 		}
 	}
 }
