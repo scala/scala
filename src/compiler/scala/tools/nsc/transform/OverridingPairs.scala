@@ -10,6 +10,7 @@ package transform
 import collection.mutable.HashMap
 import symtab.Flags._
 import util.HashSet
+import annotation.tailrec
 
 /** A class that yields a kind of iterator (`Cursor`),
  *  which yields all pairs of overriding/overridden symbols
@@ -165,7 +166,8 @@ abstract class OverridingPairs {
     //@M: note that next is called once during object initialisation
     def hasNext: Boolean = curEntry ne null
 
-    def next {
+    @tailrec
+    final def next {
       if (curEntry ne null) {
         overriding = curEntry.sym
         if (nextEntry ne null) {
