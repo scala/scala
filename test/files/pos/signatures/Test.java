@@ -1,4 +1,4 @@
-import scala.collection.mutable.Vector;
+import scala.collection.mutable.IndexedSeq;
 import test.Outer;
 
 /* Test correct generation of java signatures. The Outer class should not

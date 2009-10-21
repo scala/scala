@@ -215,7 +215,7 @@ object Test extends Application {
   sequenceTest(LinearSeq())
 //  sequenceTest(mutable.LinearSeq())
   sequenceTest(immutable.LinearSeq())
-  sequenceTest(mutable.Vector())
+  sequenceTest(mutable.IndexedSeq())
   rangeTest(1 to 10)
 
   setTest(Set())

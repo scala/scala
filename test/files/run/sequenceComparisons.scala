@@ -24,7 +24,7 @@ object Test {
     mutable.Seq(_: _*),
     // immutable.Stack(_: _*),
     // mutable.Stack(_: _*),
-    immutable.Vector(_: _*),
+    immutable.IndexedSeq(_: _*), // was Vector
     //mutable.Vector(_: _*),
     immutable.List(_: _*),
     immutable.Stream(_: _*)
