@@ -57,7 +57,6 @@ trait NewVector[+A]  extends Vector[A]
 
 
 object NewVector extends SeqFactory[NewVector] {
-<<<<<<< HEAD
   private[immutable] val bf = new GenericCanBuildFrom[Nothing] {
     def apply() = newBuilder[Nothing]
   }
@@ -65,11 +64,6 @@ object NewVector extends SeqFactory[NewVector] {
     bf.asInstanceOf[CanBuildFrom[Coll, A, NewVector[A]]]
   def newBuilder[A]: Builder[A, NewVector[A]] = new NewVectorBuilder[A]
   override def empty[A]: NewVector[A] = new NewVectorImpl[A](0, 0, 0)
-=======
-  implicit def builderFactory[A]: BuilderFactory[A, NewVector[A], Coll] =
-    new VirtualBuilderFactory[A]
-  def newBuilder[A]: Builder[A, NewVector[A]] = new NewVectorBuilder[A]
->>>>>>> scala.collection.Vector defaults to immutable
 
   // TODO: special-case empty vectors and empty builders
 }
@@ -117,17 +111,29 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
   // SeqLike api
 
+<<<<<<< HEAD
   override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[NewVector[A], B, That]): That = {
+=======
+  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: BuilderFactory[B, That, NewVector[A]]): That = {
+>>>>>>> added methods updated +: :+ to SeqLike
     // just ignore bf
     updateAt(index, elem).asInstanceOf[That]
   }
 
+<<<<<<< HEAD
   override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[NewVector[A], B, That]): That = {
+=======
+  override def +:[B >: A, That](elem: B)(implicit bf: BuilderFactory[B, That, NewVector[A]]): That = {
+>>>>>>> added methods updated +: :+ to SeqLike
     // just ignore bf
     appendFront(elem).asInstanceOf[That]
   }
 
+<<<<<<< HEAD
   override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[NewVector[A], B, That]): That = {
+=======
+  override def :+[B >: A, That](elem: B)(implicit bf: BuilderFactory[B, That, NewVector[A]]): That = {
+>>>>>>> added methods updated +: :+ to SeqLike
     // just ignore bf
     appendBack(elem).asInstanceOf[That]
   }
@@ -167,6 +173,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
   // semi-private api
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   def updateAt[B >: A](index: Int, elem: B): NewVector[B] = {
     val idx = checkRangeConvert(index)
@@ -324,6 +331,11 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
     val s = new NewVectorImpl(startIndex, cutIndex, blockIndex)
 >>>>>>> scala.collection.Vector defaults to immutable
+=======
+  def updateAt[B >: A](index: Int, elem: B): NewVector[B] = {
+    val idx = checkRangeConvert(index)
+    val s = new NewVectorImpl[B](startIndex, endIndex, idx)
+>>>>>>> added methods updated +: :+ to SeqLike
     s.initFrom(this)
     s.gotoPosClean(focus, idx, focus ^ idx)
     s.display0(idx & 0x1f) = elem.asInstanceOf[AnyRef]
@@ -929,7 +941,7 @@ trait NewVectorPointer[T] {
     final def copyOf(a: Array[AnyRef]) = {
 //      //println("copy")
       val b = new Array[AnyRef](a.length)
-      System.arraycopy(a, 0, b, 0, a.length)
+      arraycopy(a, 0, b, 0, a.length)
       b
     }
 

@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: SeqLike.scala 18895 2009-10-02 17:57:16Z odersky $
 
 
 package scala.collection
