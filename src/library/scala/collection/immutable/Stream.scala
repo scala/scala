@@ -79,10 +79,6 @@ self =>
     this
   }
 
-  /** Does this stream have more than one elements defined?
-   */
-  private def hasMoreThanOneElements = false
-
   /** Prints elements of this stream one by one, separated by commas */
   def print() { print(", ") }
 

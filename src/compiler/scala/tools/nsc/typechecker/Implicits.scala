@@ -624,7 +624,7 @@ self: Analyzer =>
           case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
             if (sym.isClass && !sym.isRefinementClass && !sym.isAnonymousClass) {
               if (addType(tp)) {
-                for (bc <- sym.info.baseClasses.tail)
+                for (bc <- sym.ancestors)
                   getParts(tp.baseType(bc))
                 getParts(pre)
                 args foreach getParts

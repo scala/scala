@@ -92,6 +92,12 @@ trait Unapplies extends ast.TreeDSL
     case NoSymbol => tp member nme.unapplySeq
     case unapp    => unapp
   }
+  /** returns unapply member's parameter type. */
+  def unapplyParameterType(extractor: Symbol) = {
+    val tps = extractor.tpe.paramTypes
+    if (tps.length == 1) tps.head.typeSymbol
+    else NoSymbol
+  }
 
   def copyUntyped[T <: Tree](tree: T): T =
     returning[T](UnTyper traverse _)(tree.duplicate)

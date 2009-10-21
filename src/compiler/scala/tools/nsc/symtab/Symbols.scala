@@ -1172,8 +1172,12 @@ trait Symbols {
      */
     def mixinClasses: List[Symbol] = {
       val sc = superClass
-      info.baseClasses.tail.takeWhile(sc ne)
+      ancestors takeWhile (sc ne)
     }
+
+    /** All directly or indirectly inherited classes.
+     */
+    def ancestors: List[Symbol] = info.baseClasses drop 1
 
     /** The package containing this symbol, or NoSymbol if there
      *  is not one. */
@@ -1308,18 +1312,15 @@ trait Symbols {
       if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, ofclazz.thisType)
 
     final def allOverriddenSymbols: List[Symbol] =
-      if (owner.isClass && !owner.info.baseClasses.isEmpty)
-        for { bc <- owner.info.baseClasses.tail
-              val s = overriddenSymbol(bc)
-              if s != NoSymbol } yield s
-      else List()
+      if (!owner.isClass) Nil
+      else owner.ancestors map overriddenSymbol filter (_ != NoSymbol)
 
     /** The virtual classes overridden by this virtual class (excluding `clazz' itself)
      *  Classes appear in linearization order (with superclasses before subclasses)
      */
     final def overriddenVirtuals: List[Symbol] =
       if (isVirtualTrait && hasFlag(OVERRIDE))
-        this.owner.info.baseClasses.tail
+        this.owner.ancestors
           .map(_.info.decl(name))
           .filter(_.isVirtualTrait)
           .reverse

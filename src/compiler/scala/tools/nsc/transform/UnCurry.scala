@@ -72,11 +72,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           apply(MethodType(List(), restpe))
         case PolyType(tparams, restpe) =>
           PolyType(tparams, apply(MethodType(List(), restpe)))
-        case TypeRef(pre, sym, List(arg)) if (sym == ByNameParamClass) =>
+        case TypeRef(pre, ByNameParamClass, List(arg)) =>
           apply(functionType(List(), arg))
-        case TypeRef(pre, sym, args) if (sym == RepeatedParamClass) =>
+        case TypeRef(pre, RepeatedParamClass, args) =>
           apply(appliedType(SeqClass.typeConstructor, args))
-        case TypeRef(pre, sym, args) if (sym == JavaRepeatedParamClass) =>
+        case TypeRef(pre, JavaRepeatedParamClass, args) =>
           apply(arrayType(
             if (isUnboundedGeneric(args.head)) ObjectClass.tpe else args.head))
         case _ =>
@@ -557,12 +557,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           inPattern = false
           val fn1 = transform(fn)
           inPattern = true
-          val args1 = transformTrees(
-            if (fn.symbol.name == nme.unapply)
-              args
-            else if (fn.symbol.name == nme.unapplySeq)
-              transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe))
-            else { assert(false,"internal error: UnApply node has wrong symbol"); null })
+          val args1 = transformTrees(fn.symbol.name match {
+            case nme.unapply    => args
+            case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe))
+            case _              => Predef.error("internal error: UnApply node has wrong symbol")
+          })
           treeCopy.UnApply(tree, fn1, args1)
 
         case Apply(fn, args) =>
@@ -619,7 +618,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     } setType uncurryTreeType(tree.tpe)
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
-      def applyUnary(tree: Tree): Tree =
+      def applyUnary(): Tree =
         if (tree.symbol.isMethod &&
             (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
           if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
@@ -666,11 +665,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           treeCopy.Apply(tree, fn, args ::: args1)
         case Ident(name) =>
           assert(name != nme.WILDCARD_STAR.toTypeName)
-          applyUnary(tree);
-        case Select(qual, name) =>
-          applyUnary(tree)
-        case TypeApply(_, _) =>
-          applyUnary(tree)
+          applyUnary()
+        case Select(_, _) | TypeApply(_, _) =>
+          applyUnary()
         case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.hasFlag(LAZY)) =>
           if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
           atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))

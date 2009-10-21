@@ -226,7 +226,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     if (!phase.erasedTypes) try {
       if (clazz hasFlag Flags.CASE) {
-        val isTop = !(clazz.info.baseClasses.tail exists (_ hasFlag Flags.CASE))
+        val isTop = !(clazz.ancestors exists (_ hasFlag Flags.CASE))
         // case classes are implicitly declared serializable
         clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
 

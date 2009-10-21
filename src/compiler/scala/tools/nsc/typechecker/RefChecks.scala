@@ -374,7 +374,7 @@ abstract class RefChecks extends InfoTransform {
       // 4. Check that every defined member with an `override' modifier overrides some other member.
       for (member <- clazz.info.decls.toList)
         if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-            (clazz.info.baseClasses.tail forall {
+            (clazz.ancestors forall {
                bc => member.matchingSymbol(bc, clazz.thisType) == NoSymbol
             })) {
           // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
