@@ -154,7 +154,7 @@ trait SeqViewLike[+A,
 
   override def reverse: This = newReversed.asInstanceOf[This]
 
-  override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That = {
+  override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That = {
     newPatched(from, patch, replaced).asInstanceOf[That]
 // was:    val b = bf(repr)
 //    if (b.isInstanceOf[NoBuilder[_]]) newPatched(from, patch, replaced).asInstanceOf[That]
@@ -163,7 +163,7 @@ trait SeqViewLike[+A,
 
   //TR TODO: updated, +: ed :+ ed
 
-  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That =
+  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That =
     patch(length, fill(len - length)(elem), 0)
 
   override def stringPrefix = "SeqView"

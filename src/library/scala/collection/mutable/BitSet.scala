@@ -91,5 +91,5 @@ class BitSet(protected var elems: Array[Long]) extends Set[Int]
 /** A factory object for mutable bitsets */
 object BitSet extends BitSetFactory[BitSet] {
   def empty: BitSet = new BitSet
-  implicit def builderFactory: BuilderFactory[Int, BitSet, BitSet] = bitsetBuilderFactory
+  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 }

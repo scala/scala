@@ -140,7 +140,7 @@ abstract class DefaultDocDriver extends DocDriver with ModelFrames with ModelToX
           if (idx == -1) str;
           else str.substring(idx + 1);
         }+ ")");
-         else NodeSeq.Empty) ++ super.optional(cls))(NodeSeq.builderFactory)
+         else NodeSeq.Empty) ++ super.optional(cls))//(NodeSeq.builderFactory)
       }
 
     }

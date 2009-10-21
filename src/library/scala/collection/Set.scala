@@ -36,5 +36,5 @@ trait Set[A] extends (A => Boolean)
  */
 object Set extends SetFactory[Set] {
   override def empty[A]: Set[A] = immutable.Set.empty[A]
-  implicit def builderFactory[A]: BuilderFactory[A, Set[A], Coll] = setBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
 }

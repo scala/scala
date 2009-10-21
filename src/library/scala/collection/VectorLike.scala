@@ -97,7 +97,7 @@ trait VectorLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
   override def reduceRight[B >: A](op: (A, B) => B): B =
     if (length > 0) foldr(0, length - 1, this(length - 1), op) else super.reduceRight(op)
 
-  override def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: BuilderFactory[(A1, B), That, Repr]): That = that match {
+  override def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = that match {
     case that: Vector[_] =>
       val b = bf(repr)
       var i = 0
@@ -112,7 +112,7 @@ trait VectorLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
       super.zip[A1, B, That](that)(bf)
   }
 
-  override def zipWithIndex[A1 >: A, That](implicit bf: BuilderFactory[(A1, Int), That, Repr]): That = {
+  override def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
     val len = length
     b.sizeHint(len)

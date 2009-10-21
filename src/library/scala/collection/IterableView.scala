@@ -24,5 +24,9 @@ trait IterableView[+A, +Coll] extends IterableViewLike[A, Coll, IterableView[A, 
 
 object IterableView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
-  implicit def builderFactory[A]: BuilderFactory[A, IterableView[A, Iterable[_]], Coll] = new BuilderFactory[A, IterableView[A, Iterable[_]], Coll] { def apply(from: Coll) = new NoBuilder }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IterableView[A, Iterable[_]]] =
+    new CanBuildFrom[Coll, A, IterableView[A, Iterable[_]]] {
+      def apply(from: Coll) = new NoBuilder
+      def apply() = new NoBuilder
+    }
 }

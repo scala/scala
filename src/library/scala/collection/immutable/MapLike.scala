@@ -91,7 +91,7 @@ self =>
    *  @param f A function over keys and values
    *  @return  the updated map
    */
-  def transform[C, That](f: (A, B) => C)(implicit bf: BuilderFactory[(A, C), That, This]): That = {
+  def transform[C, That](f: (A, B) => C)(implicit bf: CanBuildFrom[This, (A, C), That]): That = {
     val b = bf(repr)
     for ((key, value) <- this) b += ((key, f(key, value)))
     b.result

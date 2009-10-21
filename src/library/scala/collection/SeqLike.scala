@@ -390,7 +390,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return     a sequence containing the elements of this
    *              sequence and those of the given sequence <code>that</code>.
    */
-  def union[B >: A, That](that: Seq[B])(implicit bf: BuilderFactory[B, That, Repr]): That =
+  def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
     this ++ that
 
   /** <p>
@@ -474,7 +474,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  except that `replaced` elements starting from `from` are replaced
    *  by `patch`.
    */
-  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     val (prefix, rest) = this.splitAt(from)
     b ++= toCollection(prefix)
@@ -485,7 +485,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Returns a copy of this sequence with the element at position `index` replaced by `elem`.
    */
-  def updated[B >: A, That](index: Int, elem: B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+  def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     val (prefix, rest) = this.splitAt(index)
     b ++= toCollection(prefix)
@@ -496,7 +496,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Returns a new sequence consisting of `elem` followed by the elements of this sequence.
    */
-  def +:[B >: A, That](elem: B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+  def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     b += elem
     b ++= thisCollection
@@ -505,7 +505,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Returns a new sequence consisting of the elements of this sequence followed by `elem`.
    */
-  def :+[B >: A, That](elem: B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+  def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     b ++= thisCollection
     b += elem
@@ -518,7 +518,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   /** Returns a new sequence of given length containing the elements of this sequence followed by zero
    *  or more occurrences of given elements.
    */
-  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, Repr]): That = {
+  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     b.sizeHint(length max len)
     var diff = len - length

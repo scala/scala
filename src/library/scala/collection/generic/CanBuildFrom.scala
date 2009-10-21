@@ -17,8 +17,13 @@ import mutable.Builder
  *
  *  @since 2.8
  */
-trait BuilderFactory[-Elem, +To, -From] {
+trait CanBuildFrom[-From, -Elem, +To] {
 
-  /** Creates a new builder */
+  /** Creates a new builder, using `from` as a prototype
+   * the resulting Builder will build the same kind of collection
+   */
   def apply(from: From): Builder[Elem, To]
+
+  /** Creates a new builder from scratch */
+  def apply(): Builder[Elem, To]
 }

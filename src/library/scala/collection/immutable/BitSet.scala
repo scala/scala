@@ -60,7 +60,7 @@ object BitSet extends BitSetFactory[BitSet] {
   /** The empty bitset */
   val empty: BitSet = new BitSet1(0L)
 
-  implicit def builderFactory: BuilderFactory[Int, BitSet, BitSet] = bitsetBuilderFactory
+  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
   /** A bitset containing all the bits in an array */
   def fromArray(elems: Array[Long]): BitSet = {

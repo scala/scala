@@ -168,8 +168,10 @@ class ArrayBuffer[A](override protected val initialSize: Int)
  *  @since   2.8
  */
 object ArrayBuffer extends SeqFactory[ArrayBuffer] {
-  implicit def builderFactory[A]: BuilderFactory[A, ArrayBuffer[A], Coll] =
-    new VirtualBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayBuffer[A]] =
+    new GenericCanBuildFrom[A] {
+      def apply() = newBuilder[A]
+    }
   def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]
 }
 

@@ -46,6 +46,6 @@ class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
  *  @version 2.8
  */
 object ListMap extends MutableMapFactory[ListMap] {
-  implicit def builderFactory[A, B]: BuilderFactory[(A, B), ListMap[A, B], Coll] = new MapBuilderFactory[A, B]
+  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), ListMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: ListMap[A, B] = new ListMap[A, B]
 }

@@ -22,13 +22,13 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This] with Traversable[
   def foreach[U](f: A => U): Unit
 
   // maps/iteration
-  def flatMap[B, That](f: A => Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That
-  def map[B, That](f: A => B)(implicit bf: BuilderFactory[B, That, This]): That
-  def filterMap[B, That](pf: PartialFunction[Any, B])(implicit bf: BuilderFactory[B, That, This]): That
+  def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That
+  def filterMap[B, That](pf: PartialFunction[Any, B])(implicit bf: CanBuildFrom[This, B, That]): That
 
   // new collections
-  def ++[B >: A, That](that: Iterator[B])(implicit bf: BuilderFactory[B, That, This]): That
-  def ++[B >: A, That](that: Traversable[B])(implicit bf: BuilderFactory[B, That, This]): That
+  def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That
   def copyToArray[B >: A](xs: Array[B], start: Int): Unit
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit
   def copyToBuffer[B >: A](dest: Buffer[B]): Unit

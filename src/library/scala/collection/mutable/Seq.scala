@@ -36,6 +36,9 @@ trait Seq[A] extends Iterable[A]
  *  @since   2.8
  */
 object Seq extends SeqFactory[Seq] {
-  implicit def builderFactory[A]: BuilderFactory[A, Seq[A], Coll] = new VirtualBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] =
+    new GenericCanBuildFrom[A] {
+      def apply() = newBuilder[A]
+    }
   def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
 }

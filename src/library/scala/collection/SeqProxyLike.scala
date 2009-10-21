@@ -47,12 +47,12 @@ trait SeqProxyLike[+A, +This <: SeqLike[A, This] with Seq[A]] extends SeqLike[A,
   override def endsWith[B](that: Seq[B]): Boolean = self.endsWith(that)
   override def indexOfSeq[B >: A](that: Seq[B]): Int = self.indexOfSeq(that)
   override def contains(elem: Any): Boolean = self.contains(elem)
-  override def union[B >: A, That](that: Seq[B])(implicit bf: BuilderFactory[B, That, This]): That = self.union(that)(bf)
+  override def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.union(that)(bf)
   override def diff[B >: A, That](that: Seq[B]): This = self.diff(that)
   override def intersect[B >: A, That](that: Seq[B]): This = self.intersect(that)
   override def removeDuplicates: This = self.removeDuplicates
-  override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That = self.patch(from, patch, replaced)(bf)
-  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That = self.padTo(len, elem)(bf)
+  override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That = self.patch(from, patch, replaced)(bf)
+  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That = self.padTo(len, elem)(bf)
   override def indices: Range = self.indices
   override def view = self.view
   override def view(from: Int, until: Int) = self.view(from, until)

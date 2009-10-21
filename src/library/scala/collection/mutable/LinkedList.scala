@@ -32,8 +32,10 @@ class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSeq[A]
 }
 
 object LinkedList extends SeqFactory[LinkedList] {
-  implicit def builderFactory[A]: BuilderFactory[A, LinkedList[A], Coll] =
-    new VirtualBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] =
+    new GenericCanBuildFrom[A] {
+      def apply() = newBuilder[A]
+    }
   def newBuilder[A]: Builder[A, LinkedList[A]] =
     (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)
 }

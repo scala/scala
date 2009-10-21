@@ -259,7 +259,7 @@ self =>
    *  If one of the two iterables is longer than the other, its remaining elements are ignored.
    *  @param   that  The iterable providing the second half of each result pair
    */
-  def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: BuilderFactory[(A1, B), That, Repr]): That = {
+  def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
     val these = this.iterator
     val those = that.iterator
@@ -288,7 +288,7 @@ self =>
    *                  invoked where <code>m &gt; n</code>.
    *
    */
-  def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: BuilderFactory[(A1, B), That, Repr]): That = {
+  def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
     val these = this.iterator
     val those = that.iterator
@@ -303,7 +303,7 @@ self =>
 
   /** Zips this iterable with its indices (startiong from 0).
    */
-  def zipWithIndex[A1 >: A, That](implicit bf: BuilderFactory[(A1, Int), That, Repr]): That = {
+  def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
     var i = 0
     for (x <- this) {

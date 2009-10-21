@@ -41,8 +41,8 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def lastIndexWhere(p: A => Boolean): Int
   def lastIndexWhere(p: A => Boolean, end: Int): Int
   def lengthCompare(len: Int): Int
-  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: BuilderFactory[B, That, This]): That
-  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: BuilderFactory[B, That, This]): That
+  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
+  def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That
   def prefixLength(p: A => Boolean): Int
   def removeDuplicates: This
   def reverse: This
@@ -51,7 +51,7 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def slice(from: Int): Seq[A]
   def startsWith[B](that: Seq[B]): Boolean
   def startsWith[B](that: Seq[B], offset: Int): Boolean
-  def union[B >: A, That](that: Seq[B])(implicit bf: BuilderFactory[B, That, This]): That
+  def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That
 
   override def view: SeqView[A, This]
   override def view(from: Int, until: Int): SeqView[A, This]

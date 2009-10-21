@@ -19,7 +19,7 @@ import generic._
  *  @since 1
  */
 object ListSet extends SetFactory[ListSet] {
-  implicit def builderFactory[A]: BuilderFactory[A, ListSet[A], Coll] = setBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListSet[A]] = setCanBuildFrom[A]
   override def empty[A] = new ListSet[A]
 }
 

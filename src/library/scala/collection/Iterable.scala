@@ -66,7 +66,10 @@ trait Iterable[+A] extends Traversable[A]
  */
 object Iterable extends TraversableFactory[Iterable] {
 
-  implicit def builderFactory[A]: BuilderFactory[A, Iterable[A], Coll] = new VirtualBuilderFactory[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] =
+    new GenericCanBuildFrom[A] {
+      def apply() = newBuilder[A]
+    }
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
   /** The minimum element of a non-empty sequence of ordered elements */
