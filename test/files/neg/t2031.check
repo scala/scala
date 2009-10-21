@@ -1,6 +1,6 @@
 t2031.scala:8: error: polymorphic expression cannot be instantiated to expected type;
  found   : [A]scala.collection.mutable.Builder[A,scala.collection.immutable.TreeSet[A]]
- required: scala.collection.generic.BuilderFactory[Int,?,scala.collection.immutable.TreeSet[Int]]
+ required: scala.collection.generic.CanBuildFrom[scala.collection.immutable.TreeSet[Int],Int,?]
  res0.map(x => x)(TreeSet.newBuilder)
                           ^
 one error found

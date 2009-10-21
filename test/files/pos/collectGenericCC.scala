@@ -2,7 +2,7 @@ import scala.collection.generic._
 import scala.collection._
 
 object Test {
-  def collect[A, Res](r: {def foreach[U](k: A => U): Unit})(implicit bf: BuilderFactory[A, Res, Nothing]) = {
+  def collect[A, Res](r: Traversable[A])(implicit bf: CanBuildFrom[Nothing, A, Res]) = {
     val b = bf()
     for (a <- r) b += a
     b.result
