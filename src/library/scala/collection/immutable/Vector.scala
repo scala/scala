@@ -57,6 +57,7 @@ trait NewVector[+A]  extends Vector[A]
 
 
 object NewVector extends SeqFactory[NewVector] {
+<<<<<<< HEAD
   private[immutable] val bf = new GenericCanBuildFrom[Nothing] {
     def apply() = newBuilder[Nothing]
   }
@@ -64,6 +65,11 @@ object NewVector extends SeqFactory[NewVector] {
     bf.asInstanceOf[CanBuildFrom[Coll, A, NewVector[A]]]
   def newBuilder[A]: Builder[A, NewVector[A]] = new NewVectorBuilder[A]
   override def empty[A]: NewVector[A] = new NewVectorImpl[A](0, 0, 0)
+=======
+  implicit def builderFactory[A]: BuilderFactory[A, NewVector[A], Coll] =
+    new VirtualBuilderFactory[A]
+  def newBuilder[A]: Builder[A, NewVector[A]] = new NewVectorBuilder[A]
+>>>>>>> scala.collection.Vector defaults to immutable
 
   // TODO: special-case empty vectors and empty builders
 }
@@ -161,9 +167,163 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
   // semi-private api
 
+<<<<<<< HEAD
   def updateAt[B >: A](index: Int, elem: B): NewVector[B] = {
     val idx = checkRangeConvert(index)
     val s = new NewVectorImpl[B](startIndex, endIndex, idx)
+=======
+  private def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
+    val elems = new Array[AnyRef](32)
+    System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
+    elems
+  }
+
+  private def shiftTopLevel(oldLeft: Int, newLeft: Int) = (depth - 1) match {
+    case 0 =>
+      display0 = copyRange(display0, oldLeft, newLeft)
+    case 1 =>
+      display1 = copyRange(display1, oldLeft, newLeft)
+    case 2 =>
+      display2 = copyRange(display2, oldLeft, newLeft)
+    case 3 =>
+      display3 = copyRange(display3, oldLeft, newLeft)
+    case 4 =>
+      display4 = copyRange(display4, oldLeft, newLeft)
+    case 5 =>
+      display5 = copyRange(display5, oldLeft, newLeft)
+  }
+
+  private def cleanLeftEdge(cutIndex: Int) = (depth - 1) match {
+    case 5 =>
+      for (i <- 0 until ((cutIndex >>> 25) & 0x1f)) display5(i) = null
+      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
+      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 4 =>
+      display5 = null
+      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
+      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 3 =>
+      display5 = null
+      display4 = null
+      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 2 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 1 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+    case 0 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      display1 = null
+      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+  }
+
+  private def cleanRightEdge(cutIndex: Int) = (depth - 1) match {
+    case 5 =>
+      for (i <- ((cutIndex >>> 25) & 0x1f) until 32) display5(i) = null
+      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
+      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 4 =>
+      display5 = null
+      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
+      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 3 =>
+      display5 = null
+      display4 = null
+      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 2 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 1 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+    case 0 =>
+      display5 = null
+      display4 = null
+      display3 = null
+      display2 = null
+      display1 = null
+      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+  }
+
+  private def requiredDepth(xor: Int) = {
+    if (xor < (1 <<  5)) 1
+    else if (xor < (1 << 10)) 2
+    else if (xor < (1 << 15)) 3
+    else if (xor < (1 << 20)) 4
+    else if (xor < (1 << 25)) 5
+    else if (xor < (1 << 30)) 6
+    else throw new IllegalArgumentException()
+  }
+
+  private def dropFront0(cutIndex: Int): NewVector[A] = {
+    var blockIndex = cutIndex & ~31
+    var lo = cutIndex & 31
+
+    val xor = cutIndex ^ (endIndex - 1)
+    val d = requiredDepth(xor)
+    val shift = (cutIndex & ~((1 << (5*d))-1))
+
+    //println("cut front at " + cutIndex + ".." + endIndex + " (xor: "+xor+" shift: " + shift + " d: " + d +")")
+
+    val s = new NewVectorImpl(cutIndex-shift, endIndex-shift, blockIndex-shift)
+    s.initFrom(this)
+    if (s.depth > 1)
+      s.gotoPos(blockIndex, focus ^ blockIndex)
+    s.depth = d
+    s.stabilize(blockIndex-shift)
+    s.cleanLeftEdge(cutIndex-shift)
+    s
+  }
+
+  private def dropBack0(cutIndex: Int): NewVector[A] = {
+    var blockIndex = (cutIndex - 1) & ~31
+    var lo = ((cutIndex - 1) & 31) + 1
+
+    val xor = startIndex ^ (cutIndex - 1)
+    val d = requiredDepth(xor)
+
+    //println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
+
+    val s = new NewVectorImpl(startIndex, cutIndex, blockIndex)
+>>>>>>> scala.collection.Vector defaults to immutable
     s.initFrom(this)
     s.gotoPosClean(focus, idx, focus ^ idx)
     s.display0(idx & 0x1f) = elem.asInstanceOf[AnyRef]
@@ -769,7 +929,7 @@ trait NewVectorPointer[T] {
     final def copyOf(a: Array[AnyRef]) = {
 //      //println("copy")
       val b = new Array[AnyRef](a.length)
-      arraycopy(a, 0, b, 0, a.length)
+      System.arraycopy(a, 0, b, 0, a.length)
       b
     }
 
