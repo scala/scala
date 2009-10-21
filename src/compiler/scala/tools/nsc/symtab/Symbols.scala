@@ -1673,7 +1673,7 @@ trait Symbols {
       if (phase.flatClasses && !hasFlag(METHOD) &&
           rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
-          assert(rawowner.isClass)
+          assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname, rawowner))
           flatname = newTermName(compactify(rawowner.name.toString() + "$" + rawname))
         }
         flatname
@@ -1838,7 +1838,7 @@ trait Symbols {
         newTypeName(rawname+"$trait") // (part of DEVIRTUALIZE)
       } else if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == nme.EMPTY) {
-          assert(rawowner.isClass)
+          assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname, rawowner))
           flatname = newTypeName(compactify(rawowner.name.toString() + "$" + rawname))
         }
         flatname
