@@ -834,6 +834,7 @@ trait ScalacSettings {
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Xwarnings     = BooleanSetting    ("-Xstrict-warnings", "Emit extra (usually spurious) warnings.")
+  val Ytailrec      = BooleanSetting    ("-Ytailrecommend", "Alert methods which would be tail-recursive if private or final.")
 
   /**
    * -P "Plugin" settings

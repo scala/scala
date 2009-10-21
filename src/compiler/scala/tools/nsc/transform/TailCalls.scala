@@ -163,19 +163,31 @@ abstract class TailCalls extends Transform
           newCtx.tailPos = true
 
           val isEligible = newCtx.currentMethod.isFinal || (newCtx.currentMethod.enclClass hasFlag Flags.MODULE)
-          if (isEligible) {
+          // If -Ytailrecommend is given, we speculatively try transforming ineligible methods and
+          // report where we would have been successful.
+          val recommend = settings.Ytailrec.value
+          val savedFlags: Option[Long] = if (recommend) Some(newCtx.currentMethod.flags) else None
+
+          if (isEligible || recommend) {
+            if (recommend)
+              newCtx.currentMethod.flags |= Flags.FINAL
+
             newCtx.tparams = Nil
             log("  Considering " + name + " for tailcalls")
             tree.symbol.tpe match {
               case PolyType(tpes, restpe) =>
                 newCtx.tparams = tparams map (_.symbol)
                 newCtx.label.setInfo(
-                  newCtx.label.tpe.substSym(tpes, tparams map (_.symbol)))
+                newCtx.label.tpe.substSym(tpes, tparams map (_.symbol)))
               case _ =>
             }
           }
-          val t1 = treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
-            transform(rhs, newCtx) match {
+
+          val t1 = treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, {
+            val transformed = transform(rhs, newCtx)
+            savedFlags foreach (newCtx.currentMethod.flags = _)
+
+            transformed match {
               case newRHS if isEligible && newCtx.accessed =>
                 log("Rewrote def " + newCtx.currentMethod)
                 isTransformed = true
@@ -188,9 +200,15 @@ abstract class TailCalls extends Transform
                   List(ValDef(newThis, This(currentClass))),
                   LabelDef(newCtx.label, newThis :: (vparams.flatten map (_.symbol)), newRHS)
                 )))
-              case rhs  => rhs
+              case _ if recommend =>
+                if (newCtx.accessed)
+                  unit.warning(dd.pos, "method is tailrecommended")
+                // transform with the original flags restored
+                transform(rhs, newCtx)
+
+              case rhs => rhs
             }
-          )
+          })
 
           if (!forMSIL && !isTransformed && tailrecRequired(dd))
             unit.error(dd.pos, "could not optimize @tailrec annotated method")
