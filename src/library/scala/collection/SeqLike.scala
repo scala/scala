@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: SeqLike.scala 18895 2009-10-02 17:57:16Z odersky $
+// $Id$
 
 
 package scala.collection
@@ -545,7 +545,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *      .sortWith((e1, e2) => (e1 compareTo e2) &lt; 0) =
    *    List("Bob", "John", "Steve", "Tom")</pre>
    */
-  def sortWith(lt: (A, A) => Boolean): Repr = {
+  def sortWith(lt: (A, A) => Boolean): Repr = sortWith(Ordering fromLessThan lt)
+
+  def sortWith[B >: A](ord: Ordering[B]): Repr = {
     val arr = new GenericArray[A](this.length)
     var i = 0
     for (x <- this) {
@@ -553,7 +555,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
       i += 1
     }
     java.util.Arrays.sort(
-      arr.array, (Ordering fromLessThan lt).asInstanceOf[Ordering[Object]])
+      arr.array, ord.asInstanceOf[Ordering[Object]])
     val b = newBuilder
     for (x <- arr) b += x
     b.result

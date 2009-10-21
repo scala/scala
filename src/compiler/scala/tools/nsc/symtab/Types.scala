@@ -531,7 +531,7 @@ trait Types {
 //      val startTime = if (util.Statistics.enabled) System.nanoTime() else 0l
       val result =
         ((this eq that) ||
-         (if (explainSwitch) explain("<", isSubType, this, that)
+         (if (explainSwitch) explain("<:", isSubType, this, that)
           else isSubType(this, that, AnyDepth)))
 //      if (util.Statistics.enabled) {
 //        subtypeNanos += System.nanoTime() - startTime

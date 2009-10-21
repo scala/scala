@@ -1025,7 +1025,13 @@ abstract class ClassfileParser {
               if (entry.outerName.endsWith("$")) entry.outerName.subName(0, entry.outerName.length - 1)
               else entry.outerName
             val sym = classSymbol(outerName)
-            val s = atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
+            val s =
+              // if loading during initialization of `definitions' typerPhase is not yet set.
+              // in that case we simply load the mmeber at the current phase
+              if (currentRun.typerPhase != null)
+                atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
+              else
+                getMember(sym, innerName.toTypeName)
             assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
             s
 
