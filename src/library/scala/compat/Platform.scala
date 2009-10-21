@@ -26,6 +26,7 @@ object Platform {
    *  @param destPos ..
    *  @param length  ..
    */
+  @inline
   def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
     System.arraycopy(src, srcPos, dest, destPos, length)
   }
@@ -37,19 +38,25 @@ object Platform {
    *  @param length    ..
    *  @return          ..
    */
+  @inline
   def createArray(elemClass: Class[_], length: Int): AnyRef =
     java.lang.reflect.Array.newInstance(elemClass, length)
 
+  @inline
   def arrayclear(arr: Array[Int]) { java.util.Arrays.fill(arr, 0) }
 
+  @inline
   def getClassForName(name: String): Class[_] = java.lang.Class.forName(name)
 
   val EOL = System.getProperty("line.separator", "\n")
 
+  @inline
   def currentTime: Long = System.currentTimeMillis()
 
+  @inline
   def collectGarbage: Unit = System.gc()
 
   /** The name of the default character set encoding as a string */
+  @inline
   def defaultCharsetName: String = java.nio.charset.Charset.defaultCharset.name
 }
