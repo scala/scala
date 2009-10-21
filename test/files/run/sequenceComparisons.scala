@@ -25,7 +25,7 @@ object Test {
     // immutable.Stack(_: _*),
     // mutable.Stack(_: _*),
     immutable.Vector(_: _*),
-    mutable.Vector(_: _*),
+    //mutable.Vector(_: _*),
     immutable.List(_: _*),
     immutable.Stream(_: _*)
   )

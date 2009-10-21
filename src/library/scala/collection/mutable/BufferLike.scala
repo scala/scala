@@ -38,7 +38,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
 
   import scala.collection.{Iterable, Traversable}
 
-// Abstract methods from Vector:
+// Abstract methods from IndexedSeq:
 
   /** Return element at index `n`
    *  @throws   IndexOutofBoundsException if the index is not valid

@@ -12,7 +12,7 @@
 package scala.runtime
 
 import java.lang.Character
-import collection.{Vector, VectorView}
+import collection.{IndexedSeq, IndexedSeqView}
 import Predef.{require, NoSuchElementException}
 
 /** <p>
@@ -85,11 +85,11 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
 
   /** Create a <code>[Char]</code> over the characters from 'x' to 'y' - 1
    */
-  def until(limit: Char): VectorView[Char, Vector[Char]] =
-    if (limit <= x) Vector.empty.view
+  def until(limit: Char): IndexedSeqView[Char, IndexedSeq[Char]] =
+    if (limit <= x) IndexedSeq.empty.view
     else
-      new VectorView[Char, Vector[Char]] {
-        protected def underlying = Vector.empty[Char]
+      new IndexedSeqView[Char, IndexedSeq[Char]] {
+        protected def underlying = IndexedSeq.empty[Char]
         def length = limit - x
         def apply(i: Int): Char = {
           require(i >= 0 && i < length)
@@ -97,8 +97,8 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
         }
       }
 
-  /** Create a <code>VectorView[Char]</code> over the characters from 'x' to 'y'
+  /** Create a <code>IndexedSeqView[Char]</code> over the characters from 'x' to 'y'
    */
-  def to(y: Char): VectorView[Char, Vector[Char]] = until((y + 1).toChar)
+  def to(y: Char): IndexedSeqView[Char, IndexedSeq[Char]] = until((y + 1).toChar)
 
 }

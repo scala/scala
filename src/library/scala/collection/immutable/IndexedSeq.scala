@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Vector.scala 19072 2009-10-13 12:19:59Z rompf $
+// $Id: IndexedSeq.scala 19072 2009-10-13 12:19:59Z rompf $
 
 // TODO: check overhead of builder factories for methods updated, +: and :+
 
@@ -20,50 +20,50 @@ import compat.Platform.arraycopy // FIXME: Platform.arraycopy is slower than Sys
 import scala.collection.generic._
 import scala.collection.mutable.Builder
 
-/** A subtrait of <code>collection.Vector</code> which represents sequences
+/** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
  *  that cannot be mutated.
  *
  *  @since 2.8
  */
-trait Vector[+A] extends Seq[A]
-                    with scala.collection.Vector[A]
-                    with GenericTraversableTemplate[A, Vector]
-                    with VectorLike[A, Vector[A]] {
-  override def companion: GenericCompanion[Vector] = Vector
+trait IndexedSeq[+A] extends Seq[A]
+                    with scala.collection.IndexedSeq[A]
+                    with GenericTraversableTemplate[A, IndexedSeq]
+                    with IndexedSeqLike[A, IndexedSeq[A]] {
+  override def companion: GenericCompanion[IndexedSeq] = IndexedSeq
 }
 
 /**
  * @since 2.8
  */
-object Vector extends SeqFactory[Vector] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
+object IndexedSeq extends SeqFactory[IndexedSeq] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
     new GenericCanBuildFrom[A] {
       def apply() = newBuilder[A]
     }
-  override def empty[A] = NewVector.empty[A]
-  def newBuilder[A]: Builder[A, Vector[A]] = NewVector.newBuilder[A]
+  override def empty[A] = NewIndexedSeq.empty[A]
+  def newBuilder[A]: Builder[A, IndexedSeq[A]] = NewIndexedSeq.newBuilder[A]
 }
 
 
 
-// implementation classes below
+// implementation classes below (TODO: rename)
 
-trait NewVector[+A]  extends Vector[A]
-                   with GenericTraversableTemplate[A, NewVector]
-                   with VectorLike[A, NewVector[A]]
-                   with SeqLike[A, NewVector[A]] { // use impl from SeqLike, not VectorLike
-  override def companion: GenericCompanion[NewVector] = NewVector
+trait NewIndexedSeq[+A]  extends IndexedSeq[A]
+                   with GenericTraversableTemplate[A, NewIndexedSeq]
+                   with IndexedSeqLike[A, NewIndexedSeq[A]]
+                   with SeqLike[A, NewIndexedSeq[A]] { // use impl from SeqLike, not IndexedSeqLike
+  override def companion: GenericCompanion[NewIndexedSeq] = NewIndexedSeq
 }
 
 
-object NewVector extends SeqFactory[NewVector] {
+object NewIndexedSeq extends SeqFactory[NewIndexedSeq] {
   private[immutable] val bf = new GenericCanBuildFrom[Nothing] {
     def apply() = newBuilder[Nothing]
   }
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, NewVector[A]] =
-    bf.asInstanceOf[CanBuildFrom[Coll, A, NewVector[A]]]
-  def newBuilder[A]: Builder[A, NewVector[A]] = new NewVectorBuilder[A]
-  override def empty[A]: NewVector[A] = new NewVectorImpl[A](0, 0, 0)
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, NewIndexedSeq[A]] =
+    bf.asInstanceOf[CanBuildFrom[Coll, A, NewIndexedSeq[A]]]
+  def newBuilder[A]: Builder[A, NewIndexedSeq[A]] = new NewIndexedSeqBuilder[A]
+  override def empty[A]: NewIndexedSeq[A] = new NewIndexedSeqImpl[A](0, 0, 0)
 
   // TODO: special-case empty vectors and empty builders
 }
@@ -73,20 +73,22 @@ object NewVector extends SeqFactory[NewVector] {
 
 
 @serializable @SerialVersionUID(7129304555082767876L)
-private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends NewVector[A]
-                              with NewVectorPointer[A @uncheckedVariance] {
+private class NewIndexedSeqImpl[+A](startIndex: Int, endIndex: Int, focus: Int) extends NewIndexedSeq[A]
+                              with NewIndexedSeqPointer[A @uncheckedVariance] {
 
   //assert(startIndex >= 0, startIndex+"<0")
   //assert(startIndex <= endIndex, startIndex+">"+endIndex)
   //assert(focus >= 0, focus+"<0")
   //assert(focus <= endIndex, focus+">"+endIndex)
 
+  var dirty = false
+
   def length = endIndex - startIndex
 
-  override def iterator: NewVectorIterator[A] = {
-    val s = new NewVectorIterator[A](startIndex, endIndex)
+  override def iterator: NewIndexedSeqIterator[A] = {
+    val s = new NewIndexedSeqIterator[A](startIndex, endIndex)
     s.initFrom(this)
-    s.stabilize(focus)
+    if (dirty) s.stabilize(focus)
     if (s.depth > 1) s.gotoPos(startIndex, startIndex ^ focus)
     s
   }
@@ -111,22 +113,22 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
   // SeqLike api
 
-  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[NewVector[A], B, That]): That = {
+  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[NewIndexedSeq[A], B, That]): That = {
     // just ignore bf
     updateAt(index, elem).asInstanceOf[That]
   }
 
-  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[NewVector[A], B, That]): That = {
+  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[NewIndexedSeq[A], B, That]): That = {
     // just ignore bf
     appendFront(elem).asInstanceOf[That]
   }
 
-  override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[NewVector[A], B, That]): That = {
+  override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[NewIndexedSeq[A], B, That]): That = {
     // just ignore bf
     appendBack(elem).asInstanceOf[That]
   }
 
-  override def take(n: Int): NewVector[A] = {
+  override def take(n: Int): NewIndexedSeq[A] = {
     if (n < 0) throw new IllegalArgumentException(n.toString)
     if (startIndex + n < endIndex) {
       dropBack0(startIndex + n)
@@ -134,15 +136,15 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
       this
   }
 
-  override def drop(n: Int): NewVector[A] = {
+  override def drop(n: Int): NewIndexedSeq[A] = {
     if (n < 0) throw new IllegalArgumentException(n.toString)
     if (startIndex + n < endIndex) {
       dropFront0(startIndex + n)
     } else
-      NewVector.empty
+      NewIndexedSeq.empty
   }
 
-  override def takeRight(n: Int): NewVector[A] = {
+  override def takeRight(n: Int): NewIndexedSeq[A] = {
     if (n < 0) throw new IllegalArgumentException(n.toString)
     if (endIndex - n > startIndex) {
       dropFront0(endIndex + n)
@@ -150,27 +152,28 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
       this
   }
 
-  override def dropRight(n: Int): NewVector[A] = {
+  override def dropRight(n: Int): NewIndexedSeq[A] = {
     if (n < 0) throw new IllegalArgumentException(n.toString)
     if (endIndex - n > startIndex) {
       dropBack0(endIndex - n)
     } else
-      NewVector.empty
+      NewIndexedSeq.empty
   }
 
 
   // semi-private api
 
-  def updateAt[B >: A](index: Int, elem: B): NewVector[B] = {
+  def updateAt[B >: A](index: Int, elem: B): NewIndexedSeq[B] = {
     val idx = checkRangeConvert(index)
-    val s = new NewVectorImpl[B](startIndex, endIndex, idx)
+    val s = new NewIndexedSeqImpl[B](startIndex, endIndex, idx)
     s.initFrom(this)
-    s.gotoPosClean(focus, idx, focus ^ idx)
+    s.gotoPosClean(focus, idx, focus ^ idx) // if dirty commit changes; go to new pos and prepare for writing
     s.display0(idx & 0x1f) = elem.asInstanceOf[AnyRef]
+    s.dirty = true
     s
   }
 
-  def appendFront[B>:A](value: B): NewVector[B] = {
+  def appendFront[B>:A](value: B): NewIndexedSeq[B] = {
     if (endIndex != startIndex) {
       var blockIndex = (startIndex - 1) & ~31
       var lo = (startIndex - 1) & 31
@@ -190,11 +193,11 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
           if (depth > 1) {
             val newBlockIndex = blockIndex + shift
             val newFocus = focus + shift
-            val s = new NewVectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            val s = new NewIndexedSeqImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
             s.debug
-            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // maybe create pos; prepare for writing
             s.display0(lo) = value.asInstanceOf[AnyRef]
             //assert(depth == s.depth)
             s
@@ -205,10 +208,10 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
             //assert(newBlockIndex == 0)
             //assert(newFocus == 0)
 
-            val s = new NewVectorImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
+            val s = new NewIndexedSeqImpl(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
-            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // prepare for writing
             s.display0(shift-1) = value.asInstanceOf[AnyRef]
             s.debug
             s
@@ -222,7 +225,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
           val newFocus = focus + move
 
 
-          val s = new NewVectorImpl(startIndex - 1 + move, endIndex + move, newBlockIndex)
+          val s = new NewIndexedSeqImpl(startIndex - 1 + move, endIndex + move, newBlockIndex)
           s.initFrom(this)
           s.debug
           s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
@@ -234,7 +237,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
           val newBlockIndex = blockIndex
           val newFocus = focus
 
-          val s = new NewVectorImpl(startIndex - 1, endIndex, newBlockIndex)
+          val s = new NewIndexedSeqImpl(startIndex - 1, endIndex, newBlockIndex)
           s.initFrom(this)
           s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -244,7 +247,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
       } else {
 //        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new NewVectorImpl(startIndex - 1, endIndex, blockIndex)
+        val s = new NewIndexedSeqImpl(startIndex - 1, endIndex, blockIndex)
         s.initFrom(this)
         s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
         s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -254,14 +257,14 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
       // empty vector, just insert single element at the back
       val elems = new Array[AnyRef](32)
       elems(31) = value.asInstanceOf[AnyRef]
-      val s = new NewVectorImpl(31,32,0)
+      val s = new NewIndexedSeqImpl(31,32,0)
       s.depth = 1
       s.display0 = elems
       s
     }
   }
 
-  def appendBack[B>:A](value: B): NewVector[B] = {
+  def appendBack[B>:A](value: B): NewIndexedSeq[B] = {
 //    //println("------- append " + value)
 //    debug()
     if (endIndex != startIndex) {
@@ -280,7 +283,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
           if (depth > 1) {
             val newBlockIndex = blockIndex - shift
             val newFocus = focus - shift
-            val s = new NewVectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            val s = new NewIndexedSeqImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
             s.debug
@@ -296,7 +299,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
             //assert(newBlockIndex == 0)
             //assert(newFocus == 0)
 
-            val s = new NewVectorImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
+            val s = new NewIndexedSeqImpl(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
             s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
             s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
@@ -308,7 +311,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
           val newBlockIndex = blockIndex
           val newFocus = focus
 
-          val s = new NewVectorImpl(startIndex, endIndex + 1, newBlockIndex)
+          val s = new NewIndexedSeqImpl(startIndex, endIndex + 1, newBlockIndex)
           s.initFrom(this)
           s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -321,7 +324,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
         }
       } else {
 //        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new NewVectorImpl(startIndex, endIndex + 1, blockIndex)
+        val s = new NewIndexedSeqImpl(startIndex, endIndex + 1, blockIndex)
         s.initFrom(this)
         s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
         s.display0(lo) = value.asInstanceOf[AnyRef]
@@ -330,7 +333,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
     } else {
       val elems = new Array[AnyRef](32)
       elems(0) = value.asInstanceOf[AnyRef]
-      val s = new NewVectorImpl(0,1,0)
+      val s = new NewIndexedSeqImpl(0,1,0)
       s.depth = 1
       s.display0 = elems
       s
@@ -461,7 +464,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
     else throw new IllegalArgumentException()
   }
 
-  private def dropFront0(cutIndex: Int): NewVector[A] = {
+  private def dropFront0(cutIndex: Int): NewIndexedSeq[A] = {
     var blockIndex = cutIndex & ~31
     var lo = cutIndex & 31
 
@@ -471,7 +474,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
     //println("cut front at " + cutIndex + ".." + endIndex + " (xor: "+xor+" shift: " + shift + " d: " + d +")")
 
-    val s = new NewVectorImpl(cutIndex-shift, endIndex-shift, blockIndex-shift)
+    val s = new NewIndexedSeqImpl(cutIndex-shift, endIndex-shift, blockIndex-shift)
     s.initFrom(this)
     if (s.depth > 1)
       s.gotoPos(blockIndex, focus ^ blockIndex)
@@ -481,7 +484,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
     s
   }
 
-  private def dropBack0(cutIndex: Int): NewVector[A] = {
+  private def dropBack0(cutIndex: Int): NewIndexedSeq[A] = {
     var blockIndex = (cutIndex - 1) & ~31
     var lo = ((cutIndex - 1) & 31) + 1
 
@@ -490,7 +493,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 
     //println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
 
-    val s = new NewVectorImpl(startIndex, cutIndex, blockIndex)
+    val s = new NewIndexedSeqImpl(startIndex, cutIndex, blockIndex)
     s.initFrom(this)
     if (s.depth > 1)
       s.gotoPos(blockIndex, focus ^ blockIndex)
@@ -503,7 +506,7 @@ private class NewVectorImpl[+A](startIndex: Int, endIndex: Int, focus: Int) exte
 }
 
 
-final class NewVectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with NewVectorPointer[A @uncheckedVariance] {
+final class NewIndexedSeqIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterator[A] with NewIndexedSeqPointer[A @uncheckedVariance] {
 
   private var blockIndex: Int = _startIndex & ~31
   private var lo: Int = _startIndex & 31
@@ -542,7 +545,7 @@ final class NewVectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iter
 }
 
 
-final class NewVectorBuilder[A]() extends Builder[A,NewVector[A]] with NewVectorPointer[A @uncheckedVariance] {
+final class NewIndexedSeqBuilder[A]() extends Builder[A,NewIndexedSeq[A]] with NewIndexedSeqPointer[A @uncheckedVariance] {
 
   display0 = new Array[AnyRef](32)
   depth = 1
@@ -562,8 +565,8 @@ final class NewVectorBuilder[A]() extends Builder[A,NewVector[A]] with NewVector
     this
   }
 
-  def result: NewVector[A] = {
-    val s = new NewVectorImpl[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
+  def result: NewIndexedSeq[A] = {
+    val s = new NewIndexedSeqImpl[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
     s.initFrom(this)
     if (depth > 1) s.gotoPos(0, blockIndex + lo)
     s
@@ -579,7 +582,7 @@ final class NewVectorBuilder[A]() extends Builder[A,NewVector[A]] with NewVector
 
 
 
-trait NewVectorPointer[T] {
+trait NewIndexedSeqPointer[T] {
     var depth: Int = _
     var display0: Array[AnyRef] = _
     var display1: Array[AnyRef] = _
@@ -589,7 +592,7 @@ trait NewVectorPointer[T] {
     var display5: Array[AnyRef] = _
 
     // used
-    final def initFrom[U](that: NewVectorPointer[U]) = {
+    final def initFrom[U](that: NewIndexedSeqPointer[U]) = {
       depth = that.depth
       (depth - 1) match {
         case 0 =>
@@ -646,6 +649,7 @@ trait NewVectorPointer[T] {
       }
     }
 
+    // unused currently
     final def gotoZeroInit(elems: Array[AnyRef]) = (depth - 1) match { // goto pos zero
       case 5 =>
         display5 = elems.asInstanceOf[Array[AnyRef]]
@@ -783,7 +787,7 @@ trait NewVectorPointer[T] {
 
 
     // USED IN APPEND
-    // create a new block at the bottom level, and possible ex
+    // create a new block at the bottom level (and possibly nodes on its path)
 
     final def gotoFreshPosClean(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 5)) { // level = 0
@@ -948,6 +952,9 @@ trait NewVectorPointer[T] {
         stabilize(newIndex)
       }
     }
+
+    // old path is maybe dirty (then we need to reconcile)  <-- as a start, we could assume it always is (?)
+    // new path is being made dirty (we do need to change)
 
     final def XgotoPosClean(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto pos index
       if (xor < (1 <<  5)) { // level = 0

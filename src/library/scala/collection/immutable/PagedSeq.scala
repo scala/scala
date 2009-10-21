@@ -116,7 +116,7 @@ class PagedSeq[T: ClassManifest] protected(
   first1: Page[T],
   start: Int,
   end: Int)
-extends scala.collection.Vector[T]
+extends scala.collection.IndexedSeq[T]
 {
   /**  A paged sequence is constructed from a method that produces more characters when asked.
    *  The producer method is analogous to the read method in java.io.Reader.

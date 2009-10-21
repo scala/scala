@@ -289,7 +289,7 @@ object Predef extends LowPriorityImplicits {
 
   //implicit def lazyStreamToConsable[A](xs: => Stream[A]) = new runtime.StreamCons(xs)
 
-  implicit def seqToCharSequence(xs: collection.Vector[Char]): CharSequence = new CharSequence {
+  implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new CharSequence {
     def length: Int = xs.length
     def charAt(index: Int): Char = xs(index)
     def subSequence(start: Int, end: Int): CharSequence = seqToCharSequence(xs.slice(start, end))

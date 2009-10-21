@@ -4,7 +4,7 @@ package scala.tools.partest.nest;
 
 import java.util.Hashtable;
 
-/** A class to compare vectors of objects.  The result of comparison
+/** A class to compare IndexedSeqs of objects.  The result of comparison
     is a list of <code>change</code> objects which form an
     edit script.  The objects compared are traditionally lines
     of text from two files.  Comparison options such as "ignore
@@ -68,12 +68,12 @@ public class Diff {
       set of changes.  This makes things slower, sometimes much slower. */
   public boolean no_discards = false;
 
-  private int[] xvec, yvec;	/* Vectors being compared. */
-  private int[] fdiag;		/* Vector, indexed by diagonal, containing
+  private int[] xvec, yvec;	/* IndexedSeqs being compared. */
+  private int[] fdiag;		/* IndexedSeq, indexed by diagonal, containing
 				   the X coordinate of the point furthest
 				   along the given diagonal in the forward
 				   search of the edit matrix. */
-  private int[] bdiag;		/* Vector, indexed by diagonal, containing
+  private int[] bdiag;		/* IndexedSeq, indexed by diagonal, containing
 				   the X coordinate of the point furthest
 				   along the given diagonal in the backward
 				   search of the edit matrix. */
@@ -275,7 +275,7 @@ public class Diff {
   /** Compare in detail contiguous subsequences of the two files
      which are known, as a whole, to match each other.
 
-     The results are recorded in the vectors filevec[N].changed_flag, by
+     The results are recorded in the IndexedSeqs filevec[N].changed_flag, by
      storing a 1 in the element for each line that is an insertion or deletion.
 
      The subsequence of file 0 is [XOFF, XLIM) and likewise for file 1.
@@ -538,7 +538,7 @@ public class Diff {
     void clear() {
       /* Allocate a flag for each line of each file, saying whether that line
 	 is an insertion or deletion.
-	 Allocate an extra element, always zero, at each end of each vector.
+	 Allocate an extra element, always zero, at each end of each IndexedSeq.
        */
       changed_flag = new boolean[buffered_lines + 2];
     }
@@ -849,16 +849,16 @@ public class Diff {
     /** Number of elements (lines) in this file. */
     final int buffered_lines;
 
-    /** Vector, indexed by line number, containing an equivalence code for
-       each line.  It is this vector that is actually compared with that
+    /** IndexedSeq, indexed by line number, containing an equivalence code for
+       each line.  It is this IndexedSeq that is actually compared with that
        of another file to generate differences. */
     private final int[]	    equivs;
 
-    /** Vector, like the previous one except that
+    /** IndexedSeq, like the previous one except that
        the elements for discarded lines have been squeezed out.  */
     final int[]	   undiscarded;
 
-    /** Vector mapping virtual line numbers (not counting discarded lines)
+    /** IndexedSeq mapping virtual line numbers (not counting discarded lines)
        to real ones (counting those lines).  Both are origin-0.  */
     final int[]	   realindexes;
 

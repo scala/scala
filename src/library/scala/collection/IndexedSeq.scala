@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Vector.scala 19035 2009-10-10 22:54:28Z rompf $
+// $Id: IndexedSeq.scala 19035 2009-10-10 22:54:28Z rompf $
 
 
 package scala.collection
@@ -27,19 +27,19 @@ import scala.collection.mutable.Builder
  *  @version 2.8
  *  @since   2.8
  */
-trait Vector[+A] extends Seq[A]
-                    with GenericTraversableTemplate[A, Vector]
-                    with VectorLike[A, Vector[A]] {
-  override def companion: GenericCompanion[Vector] = Vector
+trait IndexedSeq[+A] extends Seq[A]
+                    with GenericTraversableTemplate[A, IndexedSeq]
+                    with IndexedSeqLike[A, IndexedSeq[A]] {
+  override def companion: GenericCompanion[IndexedSeq] = IndexedSeq
 }
 
-object Vector extends SeqFactory[Vector] {
-  override def empty[A]: Vector[A] = immutable.Vector.empty[A]
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
+object IndexedSeq extends SeqFactory[IndexedSeq] {
+  override def empty[A]: IndexedSeq[A] = immutable.IndexedSeq.empty[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
     new GenericCanBuildFrom[A] {
       def apply() = newBuilder[A]
     }
-  def newBuilder[A]: Builder[A, Vector[A]] = immutable.Vector.newBuilder[A]
+  def newBuilder[A]: Builder[A, IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]
 
-  @deprecated("use collection.mutable.Vector instead") type Mutable[A] = scala.collection.mutable.Vector[A]
+  @deprecated("use collection.mutable.IndexedSeq instead") type Mutable[A] = scala.collection.mutable.IndexedSeq[A]
 }

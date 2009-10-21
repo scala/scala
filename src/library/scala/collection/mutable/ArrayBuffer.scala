@@ -29,7 +29,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   extends Buffer[A]
      with GenericTraversableTemplate[A, ArrayBuffer]
      with BufferLike[A, ArrayBuffer[A]]
-     with VectorLike[A, ArrayBuffer[A]]
+     with IndexedSeqLike[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]]
      with ResizableArray[A] {
 
@@ -69,7 +69,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @return      the updated buffer.
    */
   override def ++=(iter: Traversable[A]): this.type = iter match {
-    case v: Vector[_] =>
+    case v: IndexedSeq[_] =>
       val n = v.length
       ensureSize(size0 + n)
       v.copyToArray(array.asInstanceOf[scala.Array[Any]], size0, n)

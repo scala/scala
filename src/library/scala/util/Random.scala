@@ -142,7 +142,7 @@ object Random extends Random
    */
   // def shuffle: This = {
   //   import scala.util.Random.nextInt
-  //   val buf = thisCollection.toVector
+  //   val buf = thisCollection.toIndexedSeq
   //
   //   def swap(i1: Int, i2: Int) {
   //     val tmp = buf(i1)

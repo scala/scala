@@ -21,17 +21,17 @@ import generic._
  * @version 2.8
  * @since   2.8
  */
-trait VectorView[+A, +Coll] extends VectorViewLike[A, Coll, VectorView[A, Coll]]
+trait IndexedSeqView[+A, +Coll] extends IndexedSeqViewLike[A, Coll, IndexedSeqView[A, Coll]]
 
-object VectorView {
+object IndexedSeqView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, VectorView[A, Vector[_]]] =
-    new CanBuildFrom[Coll, A, VectorView[A, Vector[_]]] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeqView[A, IndexedSeq[_]]] =
+    new CanBuildFrom[Coll, A, IndexedSeqView[A, IndexedSeq[_]]] {
       def apply(from: Coll) = new NoBuilder
       def apply() = new NoBuilder
     }
-  implicit def arrCanBuildFrom[A]: CanBuildFrom[TraversableView[_, Array[_]], A, VectorView[A, Array[A]]] =
-    new CanBuildFrom[TraversableView[_, Array[_]], A, VectorView[A, Array[A]]] {
+  implicit def arrCanBuildFrom[A]: CanBuildFrom[TraversableView[_, Array[_]], A, IndexedSeqView[A, Array[A]]] =
+    new CanBuildFrom[TraversableView[_, Array[_]], A, IndexedSeqView[A, Array[A]]] {
       def apply(from: TraversableView[_, Array[_]]) = new NoBuilder
       def apply() = new NoBuilder
     }

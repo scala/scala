@@ -22,7 +22,7 @@ import collection.Seq
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  */
-abstract class BoxedArray[A] extends Vector[A] with VectorLike[A, BoxedArray[A]] with Boxed { self =>
+abstract class BoxedArray[A] extends IndexedSeq[A] with IndexedSeqLike[A, BoxedArray[A]] with Boxed { self =>
 
   val ex = new Error("trying to create a BoxedArray")
   ex.printStackTrace()
@@ -90,16 +90,16 @@ abstract class BoxedArray[A] extends Vector[A] with VectorLike[A, BoxedArray[A]]
   override def copyToArray[B](xs: Array[B], start: Int, len: Int): Unit =
     copyTo(0, xs, start, len)
 
-  /** Creates a possible nested vector which consists of all the elements
+  /** Creates a possible nested IndexedSeq which consists of all the elements
    *  of this array. If the elements are arrays themselves, the `deep' transformation
-   *  is applied recursively to them. The stringPrefix of the vector is
-   *  "Array", hence the vector prints like an array with all its
+   *  is applied recursively to them. The stringPrefix of the IndexedSeq is
+   *  "Array", hence the IndexedSeq prints like an array with all its
    *  elements shown, and the same recursively for any subarrays.
    *
    *  Example:   Array(Array(1, 2), Array(3, 4)).deep.toString
    *  prints:    Array(Array(1, 2), Array(3, 4))
    */
-  def deep: collection.Vector[Any] = new collection.Vector[Any] {
+  def deep: collection.IndexedSeq[Any] = new collection.IndexedSeq[Any] {
     def length = self.length
     def apply(idx: Int): Any = self.apply(idx) match {
       case elem: AnyRef if ScalaRunTime.isArray(elem) => ScalaRunTime.boxArray(elem).deep

@@ -191,7 +191,7 @@ object ScalaRunTime {
   def stringOf(arg : Any): String = arg match {
     case null => "null"
     case arg: AnyRef if isArray(arg) =>
-      val d: collection.Vector[Any] = WrappedArray.make(arg).deep
+      val d: collection.IndexedSeq[Any] = WrappedArray.make(arg).deep
       d.toString
     case arg: WrappedArray[_] => arg.deep.toString
     case arg => arg.toString

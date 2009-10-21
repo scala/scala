@@ -13,7 +13,7 @@ package scala
 
 import scala.collection.generic._
 import scala.collection.Traversable
-import scala.collection.mutable.{Vector, ArrayBuilder, GenericArray}
+import scala.collection.mutable.{IndexedSeq, ArrayBuilder, GenericArray}
 import compat.Platform.arraycopy
 import scala.reflect.ClassManifest
 import scala.runtime.ScalaRunTime.{array_apply, array_update}
@@ -377,8 +377,8 @@ object Array extends FallbackArrayBuilding {
    *  @param x the selector value
    *  @return  sequence wrapped in an option, if this is a Seq, otherwise none
    */
-  def unapplySeq[T](x: Array[T]): Option[Vector[T]] =
-    if (x == null) None else Some(x.toVector)
+  def unapplySeq[T](x: Array[T]): Option[IndexedSeq[T]] =
+    if (x == null) None else Some(x.toIndexedSeq)
     // !!! the null check should to be necessary, but without it 2241 fails. Seems to be a bug
     // in pattern matcher.
 

@@ -14,23 +14,23 @@ package scala.collection
 import generic._
 import TraversableView.NoBuilder
 
-/** A template trait for a non-strict view of a vector.
+/** A template trait for a non-strict view of a IndexedSeq.
  *
  * @author Sean McDirmid
  * @author Martin Odersky
  * @version 2.8
  * @since   2.8
  */
-trait VectorViewLike[+A,
+trait IndexedSeqViewLike[+A,
                          +Coll,
-                         +This <: VectorView[A, Coll] with VectorViewLike[A, Coll, This]]
-  extends Vector[A] with VectorLike[A, This] with SeqView[A, Coll] with SeqViewLike[A, Coll, This]
+                         +This <: IndexedSeqView[A, Coll] with IndexedSeqViewLike[A, Coll, This]]
+  extends IndexedSeq[A] with IndexedSeqLike[A, This] with SeqView[A, Coll] with SeqViewLike[A, Coll, This]
 { self =>
 
-  trait Transformed[+B] extends VectorView[B, Coll] with super.Transformed[B]
+  trait Transformed[+B] extends IndexedSeqView[B, Coll] with super.Transformed[B]
 
   trait Sliced extends Transformed[A] with super.Sliced {
-    /** Override to use Vector's foreach; todo: see whether this is really faster */
+    /** Override to use IndexedSeq's foreach; todo: see whether this is really faster */
     override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
   }
 
@@ -105,5 +105,5 @@ trait VectorViewLike[+A,
   protected override def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new Patched[B] {
     val from = _from; val patch = _patch; val replaced = _replaced
   }
-  override def stringPrefix = "VectorView"
+  override def stringPrefix = "IndexedSeqView"
 }

@@ -13,8 +13,8 @@ package scala.runtime
 
 import scala.util.matching.Regex
 import collection.generic._
-import collection.VectorLike
-import collection.immutable.Vector
+import collection.IndexedSeqLike
+import collection.immutable.IndexedSeq
 import collection.mutable.{Builder, StringBuilder}
 
 object RichString {
@@ -40,7 +40,7 @@ object RichString {
 
 import RichString._
 
-class RichString(val self: String) extends Proxy with Vector[Char] with VectorLike[Char, RichString] with PartialFunction[Int, Char] with Ordered[String] with Boxed {
+class RichString(val self: String) extends Proxy with IndexedSeq[Char] with IndexedSeqLike[Char, RichString] with PartialFunction[Int, Char] with Ordered[String] with Boxed {
 
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = RichString.newBuilder

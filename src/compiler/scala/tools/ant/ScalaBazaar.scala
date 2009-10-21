@@ -16,7 +16,7 @@ package scala.tools.ant {
   import java.io.{File, FileInputStream, FileOutputStream,
                   FileWriter, StringReader}
   import java.net.URL
-  import java.util.{ArrayList, Vector}
+  import java.util.ArrayList
   import java.util.zip.{ZipOutputStream, ZipEntry}
 
   import org.apache.tools.ant.{AntClassLoader, BuildException,

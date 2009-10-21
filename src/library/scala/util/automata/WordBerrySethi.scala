@@ -139,7 +139,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     this.pos = 0
 
     // determine "Sethi-length" of the regexp
-    //activeBinders = new Vector()
+    //activeBinders = new IndexedSeq()
     var it = subexpr.iterator
     while (it.hasNext)
       traverse(it.next)

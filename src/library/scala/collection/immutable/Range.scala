@@ -25,7 +25,7 @@ package scala.collection.immutable
  *  @version 2.8
  *  @since   2.5
  */
-class Range(val start: Int, val end: Int, val step: Int) extends Vector[Int] {
+class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int] {
 
   require(step != 0)
 

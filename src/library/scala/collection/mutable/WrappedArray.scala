@@ -23,7 +23,7 @@ import scala.collection.generic._
  *  @version 1.0
  *  @since 2.8
  */
-abstract class WrappedArray[T] extends Vector[T] with ArrayLike[T, WrappedArray[T]] {
+abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedArray[T]] {
 
   override protected[this] def thisCollection: WrappedArray[T] = this
   override protected[this] def toCollection(repr: WrappedArray[T]): WrappedArray[T] = repr
@@ -73,7 +73,7 @@ object WrappedArray {
         ArrayBuilder.make[T]()(m) mapResult WrappedArray.make[T]
   }
 
-  def newBuilder[A]: Builder[A, Vector[A]] = new ArrayBuffer
+  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer
 
   @serializable
   final class ofRef[T <: AnyRef](val array: Array[T]) extends WrappedArray[T] {

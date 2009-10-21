@@ -14,20 +14,20 @@ package mutable
 
 import generic._
 
-/** A subtrait of <code>collection.Vector</code> which represents sequences
+/** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
  *  that can be mutated.
  */
-trait Vector[A] extends Seq[A]
-                   with scala.collection.Vector[A]
-                   with GenericTraversableTemplate[A, Vector]
-                   with VectorLike[A, Vector[A]] {
-  override def companion: GenericCompanion[Vector]  = Vector
+trait IndexedSeq[A] extends Seq[A]
+                   with scala.collection.IndexedSeq[A]
+                   with GenericTraversableTemplate[A, IndexedSeq]
+                   with IndexedSeqLike[A, IndexedSeq[A]] {
+  override def companion: GenericCompanion[IndexedSeq]  = IndexedSeq
 }
 
-object Vector extends SeqFactory[Vector] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
+object IndexedSeq extends SeqFactory[IndexedSeq] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
     new GenericCanBuildFrom[A] {
       def apply() = newBuilder[A]
     }
-  def newBuilder[A]: Builder[A, Vector[A]] = new ArrayBuffer
+  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A]
 }

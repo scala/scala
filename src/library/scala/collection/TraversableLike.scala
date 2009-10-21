@@ -720,10 +720,10 @@ self =>
    */
   def toSeq: Seq[A] = toList
 
-  /** Returns a vector with all elements in this traversable object.
+  /** Returns a IndexedSeq with all elements in this traversable object.
    *  @note Will not terminate for infinite-sized collections.
    */
-  def toVector[B >: A]: mutable.Vector[B] = (new ArrayBuffer[B] ++= thisCollection)
+  def toIndexedSeq[B >: A]: mutable.IndexedSeq[B] = (new ArrayBuffer[B] ++= thisCollection)
 
   /** Returns a stream with all elements in this traversable object.
    */

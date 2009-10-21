@@ -38,7 +38,7 @@ import generic._
 abstract class GenericRange[+T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
-extends Vector[T]
+extends IndexedSeq[T]
 {
   import num._
 
@@ -60,7 +60,7 @@ extends Vector[T]
   protected def limitTest[U >: T](x: U)(implicit unum: Integral[U]) =
     !isEmpty && isInclusive && unum.equiv(x, end)
 
-  protected def underlying = collection.immutable.Vector.empty[T]
+  protected def underlying = collection.immutable.IndexedSeq.empty[T]
 
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.

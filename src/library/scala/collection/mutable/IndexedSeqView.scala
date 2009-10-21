@@ -17,21 +17,21 @@ import Math.MAX_INT
 
 import TraversableView.NoBuilder
 
-/** A non-strict view of a mutable vector.
- *  This is a leaf class which mixes methods returning a plain vector view
- *  and methods returning a mutable vector view.
+/** A non-strict view of a mutable IndexedSeq.
+ *  This is a leaf class which mixes methods returning a plain IndexedSeq view
+ *  and methods returning a mutable IndexedSeq view.
  *  There is no associated `Like' class.
  * @author Sean McDirmid
  * @author Martin Odersky
  * @version 2.8
  * @since   2.8
  */
-trait VectorView[A, +Coll] extends scala.collection.VectorView[A, Coll] {
+trait IndexedSeqView[A, +Coll] extends scala.collection.IndexedSeqView[A, Coll] {
 self =>
 
   def update(idx: Int, elem: A)
 
-  trait Transformed[B] extends VectorView[B, Coll] with super.Transformed[B] {
+  trait Transformed[B] extends IndexedSeqView[B, Coll] with super.Transformed[B] {
     def update(idx: Int, elem: B)
   }
 
@@ -72,26 +72,26 @@ self =>
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
   protected override def newReversed: Transformed[A] = new Reversed { }
 
-  // Todo: if we replace VectorView[A, Coll] below by
-  // private[this] type This = VectorView[A, Coll]
+  // Todo: if we replace IndexedSeqView[A, Coll] below by
+  // private[this] type This = IndexedSeqView[A, Coll]
   // The interpreter will display resX.This.
   // It shouldn't.
 
-  override def filter(p: A => Boolean): VectorView[A, Coll] = newFiltered(p)
-  override def init: VectorView[A, Coll]  = newSliced(0, size - 1).asInstanceOf[VectorView[A, Coll]]
-  override def drop(n: Int): VectorView[A, Coll] = newSliced(n max 0, MAX_INT).asInstanceOf[VectorView[A, Coll]]
-  override def take(n: Int): VectorView[A, Coll] = newSliced(0, n).asInstanceOf[VectorView[A, Coll]]
-  override def slice(from: Int, until: Int): VectorView[A, Coll] = newSliced(from max 0, until).asInstanceOf[VectorView[A, Coll]]
-  override def dropWhile(p: A => Boolean): VectorView[A, Coll] = newDroppedWhile(p).asInstanceOf[VectorView[A, Coll]]
-  override def takeWhile(p: A => Boolean): VectorView[A, Coll] = newTakenWhile(p).asInstanceOf[VectorView[A, Coll]]
-  override def span(p: A => Boolean): (VectorView[A, Coll], VectorView[A, Coll]) = (takeWhile(p), dropWhile(p))
-  override def splitAt(n: Int): (VectorView[A, Coll], VectorView[A, Coll]) = (take(n), drop(n))
-  override def reverse: VectorView[A, Coll] = newReversed.asInstanceOf[VectorView[A, Coll]]
+  override def filter(p: A => Boolean): IndexedSeqView[A, Coll] = newFiltered(p)
+  override def init: IndexedSeqView[A, Coll]  = newSliced(0, size - 1).asInstanceOf[IndexedSeqView[A, Coll]]
+  override def drop(n: Int): IndexedSeqView[A, Coll] = newSliced(n max 0, MAX_INT).asInstanceOf[IndexedSeqView[A, Coll]]
+  override def take(n: Int): IndexedSeqView[A, Coll] = newSliced(0, n).asInstanceOf[IndexedSeqView[A, Coll]]
+  override def slice(from: Int, until: Int): IndexedSeqView[A, Coll] = newSliced(from max 0, until).asInstanceOf[IndexedSeqView[A, Coll]]
+  override def dropWhile(p: A => Boolean): IndexedSeqView[A, Coll] = newDroppedWhile(p).asInstanceOf[IndexedSeqView[A, Coll]]
+  override def takeWhile(p: A => Boolean): IndexedSeqView[A, Coll] = newTakenWhile(p).asInstanceOf[IndexedSeqView[A, Coll]]
+  override def span(p: A => Boolean): (IndexedSeqView[A, Coll], IndexedSeqView[A, Coll]) = (takeWhile(p), dropWhile(p))
+  override def splitAt(n: Int): (IndexedSeqView[A, Coll], IndexedSeqView[A, Coll]) = (take(n), drop(n))
+  override def reverse: IndexedSeqView[A, Coll] = newReversed.asInstanceOf[IndexedSeqView[A, Coll]]
 }
 
 /*
- * object VectorView {
+ * object IndexedSeqView {
   type Coll = TraversableView[_, C] forSome { type C <: scala.collection.Traversable[_] }
-  implicit def canBuildFrom[A]: CanBuildFrom[Vector[_], A, VectorView[A], Coll] = new CanBuildFrom[mutable.Vector[_], A, VectorView[A], Coll] { : Coll) = new NoBuilder }
+  implicit def canBuildFrom[A]: CanBuildFrom[IndexedSeq[_], A, IndexedSeqView[A], Coll] = new CanBuildFrom[mutable.IndexedSeq[_], A, IndexedSeqView[A], Coll] { : Coll) = new NoBuilder }
 }
 */

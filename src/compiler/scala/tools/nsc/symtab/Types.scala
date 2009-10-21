@@ -4894,6 +4894,6 @@ A type's typeSymbol should never be inspected directly.
     "scala.collection.Traversable",
     "scala.collection.Iterable",
     "scala.collection.mutable.StringBuilder",
-    "scala.collection.Vector",
+    "scala.collection.IndexedSeq",
     "scala.collection.Iterator")
 }

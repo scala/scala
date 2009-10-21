@@ -23,9 +23,9 @@ import generic._
  *  @since   2.8
  */
 class GenericArray[A](override val length: Int)
-extends Vector[A]
+extends IndexedSeq[A]
    with GenericTraversableTemplate[A, GenericArray]
-   with VectorLike[A, GenericArray[A]] {
+   with IndexedSeqLike[A, GenericArray[A]] {
 
   override def companion: GenericCompanion[GenericArray] = GenericArray
 

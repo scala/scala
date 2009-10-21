@@ -13,23 +13,23 @@ package scala.collection
 package mutable
 import generic._
 
-/** A subtrait of collection.Vector which represents sequences
+/** A subtrait of collection.IndexedSeq which represents sequences
  *  that can be mutated.
  *
  *  @since 2.8
  */
-trait ArrayLike[A, +Repr] extends VectorLike[A, Repr] { self =>
+trait ArrayLike[A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
 
-  /** Creates a possible nested vector which consists of all the elements
+  /** Creates a possible nested IndexedSeq which consists of all the elements
    *  of this array. If the elements are arrays themselves, the `deep' transformation
-   *  is applied recursively to them. The stringPrefix of the vector is
-   *  "Array", hence the vector prints like an array with all its
+   *  is applied recursively to them. The stringPrefix of the IndexedSeq is
+   *  "Array", hence the IndexedSeq prints like an array with all its
    *  elements shown, and the same recursively for any subarrays.
    *
    *  Example:   Array(Array(1, 2), Array(3, 4)).deep.toString
    *  prints:    Array(Array(1, 2), Array(3, 4))
    */
-  def deep: scala.collection.Vector[Any] = new scala.collection.Vector[Any] {
+  def deep: scala.collection.IndexedSeq[Any] = new scala.collection.IndexedSeq[Any] {
     def length = self.length
     def apply(idx: Int): Any = self.apply(idx) match {
       case x: AnyRef if x.getClass.isArray => WrappedArray.make(x).deep

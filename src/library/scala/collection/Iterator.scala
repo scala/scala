@@ -172,7 +172,7 @@ object Iterator {
 
   /**
    *  @param xs the array of elements
-   *  @see also: Vector.iterator and slice
+   *  @see also: IndexedSeq.iterator and slice
    */
   @deprecated("use `xs.iterator' instead")
   def fromArray[a](xs: Array[a]): Iterator[a] =
@@ -182,7 +182,7 @@ object Iterator {
    *  @param xs     the array of elements
    *  @param start  the start index
    *  @param length  the length
-   *  @see also: Vector.iterator and slice
+   *  @see also: IndexedSeq.iterator and slice
    */
   @deprecated("use `xs.slice(start, start + length).iterator' instead")
   def fromArray[a](xs: Array[a], start: Int, length: Int): Iterator[a] =

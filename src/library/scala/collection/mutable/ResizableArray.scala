@@ -22,9 +22,9 @@ import generic._
  *  @version 2.8
  *  @since   1
  */
-trait ResizableArray[A] extends Vector[A]
+trait ResizableArray[A] extends IndexedSeq[A]
                            with GenericTraversableTemplate[A, ResizableArray]
-                           with VectorLike[A, ResizableArray[A]] {
+                           with IndexedSeqLike[A, ResizableArray[A]] {
 
   override def companion: GenericCompanion[ResizableArray] = ResizableArray
 
@@ -34,7 +34,7 @@ trait ResizableArray[A] extends Vector[A]
   protected var size0: Int = 0
 
   //##########################################################################
-  // implement/override methods of Vector[A]
+  // implement/override methods of IndexedSeq[A]
 
   /** Returns the length of this resizable array.
    */

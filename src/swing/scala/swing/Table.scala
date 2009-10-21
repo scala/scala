@@ -16,7 +16,7 @@ import javax.swing.table._
 import javax.swing.event._
 import java.awt.{Dimension, Color}
 import event._
-import scala.collection.mutable.{Set, Vector}
+import scala.collection.mutable.{Set, IndexedSeq}
 
 object Table {
   object AutoResizeMode extends Enumeration {
@@ -122,7 +122,7 @@ class Table extends Component with Scrollable.Wrapper {
   }
   import Table._
 
-  // TODO: use Vector[_ <: Vector[Any]], see ticket #2005
+  // TODO: use IndexedSeq[_ <: IndexedSeq[Any]], see ticket #2005
   def this(rowData: Array[Array[Any]], columnNames: Seq[_]) = {
     this()
     peer.setModel(new AbstractTableModel {

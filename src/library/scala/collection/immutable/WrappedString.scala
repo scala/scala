@@ -19,7 +19,7 @@ import scala.util.matching.Regex
 /**
  * @since 2.8
  */
-class WrappedString(override val self: String) extends Vector[Char] with StringLike[WrappedString] with Proxy {
+class WrappedString(override val self: String) extends IndexedSeq[Char] with StringLike[WrappedString] with Proxy {
 
   override protected[this] def thisCollection: WrappedString = this
   override protected[this] def toCollection(repr: WrappedString): WrappedString = repr
