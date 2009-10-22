@@ -2,7 +2,7 @@ import scala.collection.generic._
 import scala.collection._
 
 object Test {
-  def collect[A, Res](r: Traversable[A])(implicit bf: CanBuild[A, Res]) = {
+  def collect[A, Res](r: Traversable[A])(implicit bf: CanBuildFrom[Nothing, A, Res]) = {
     val b = bf()
     for (a <- r) b += a
     b.result
