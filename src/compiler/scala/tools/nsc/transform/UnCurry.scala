@@ -485,6 +485,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       def liftTree(tree: Tree) = {
         if (settings.debug.value)
           log("lifting tree at: " + (tree.pos))
+
+        // Until/unless #1909 is fixed, much better to not compile than to fail at runtime.
+        if (currentOwner.isAuxiliaryConstructor)
+          unit.error(tree.pos, "Implementation restriction: auxiliary constructor calls may not use expressions which require lifting.")
+
         val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName(tree.pos, "liftedTree"))
         sym.setInfo(MethodType(List(), tree.tpe))
         new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)

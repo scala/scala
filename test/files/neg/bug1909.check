@@ -1,0 +1,4 @@
+bug1909.scala:5: error: Implementation restriction: auxiliary constructor calls may not use expressions which require lifting.
+  def this(p: String) = this(try 0)
+                             ^
+one error found
