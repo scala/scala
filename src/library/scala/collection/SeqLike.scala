@@ -562,23 +562,21 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b.result
   }
 
-  /** Sort the sequence according to the Ordering which results from mapping
+  /** Sort the sequence according to the Ordering which results from transforming
    *  the implicitly given Ordering[B] to an Ordering[A].  For example:
    *
    *  <code>
    *    val words = "The quick brown fox jumped over the lazy dog".split(' ')
    *    // this works because scala.Ordering will implicitly provide an Ordering[Tuple2[Int, Char]]
-   *    words.sortBy(x => (x.length, x.head.toLower))
-   *    res0: Array[String] = Array(dog, fox, The, the, lazy, over, brown, quick, jumped)
+   *    words.sortBy(x => (x.length, x.head))
+   *    res0: Array[String] = Array(The, dog, fox, the, lazy, over, brown, quick, jumped)
    *  </code>
    *
-   *  @param    f   the mapping function
+   *  @param    f   the transformation function A => B
    *  @param    ord the Ordering[B]
    *  @return       the sorted representation
    */
-
-  @experimental
-  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sortWith(ord map f)
+  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sortWith(ord on f)
 
   /**
    *  Overridden for efficiency.
