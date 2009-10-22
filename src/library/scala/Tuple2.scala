@@ -13,86 +13,15 @@
 package scala
 
 import annotation.unchecked.uncheckedVariance
+import scala.collection.Traversable
+import scala.collection.generic.GenericTraversableTemplate
+import scala.collection.mutable.Builder
 
-object Tuple2 {
-
-  import collection.generic._
-/* !!! todo: enable
-  class IterableOps[CC[+B] <: Iterable[B] with IterableTemplate[CC, B @uncheckedVariance], A1, A2](tuple: (CC[A1], Iterable[A2])) {
-    def zip: CC[(A1, A2)] = {
-      val elems1 = tuple._1.iterator
-      val elems2 = tuple._2.iterator
-      val b = (tuple._1: IterableTemplate[CC, A1]).newBuilder[(A1, A2)]
-        // : needed because otherwise it picks Iterable's builder.
-      while (elems1.hasNext && elems2.hasNext)
-        b += ((elems1.next, elems2.next))
-      b.result
-    }
-    def map[B](f: (A1, A2) => B): CC[B] = {
-      val elems1 = tuple._1.iterator
-      val elems2 = tuple._2.iterator
-      val b = (tuple._1: IterableTemplate[CC, A1]).newBuilder[B]
-      while (elems1.hasNext && elems2.hasNext)
-        b += f(elems1.next, elems2.next)
-      b.result
-    }
-    def flatMap[B](f: (A1, A2) => CC[B]): CC[B] = {
-      val elems1 = tuple._1.iterator
-      val elems2 = tuple._2.iterator
-      val b = (tuple._1: IterableTemplate[CC, A1]).newBuilder[B]
-      while (elems1.hasNext && elems2.hasNext)
-        b ++= f(elems1.next, elems2.next)
-      b.result
-    }
-    def foreach[U](f: (A1, A2) => U) {
-      val elems1 = tuple._1.iterator
-      val elems2 = tuple._2.iterator
-      while (elems1.hasNext && elems2.hasNext)
-        f(elems1.next, elems2.next)
-    }
-    def forall(p: (A1, A2) => Boolean): Boolean = {
-      val elems1 = tuple._1.iterator
-      val elems2 = tuple._2.iterator
-      while (elems1.hasNext && elems2.hasNext)
-        if (!p(elems1.next, elems2.next)) return false
-      true
-    }
-    def exists(p: (A1, A2) => Boolean): Boolean = {
-      val elems1 = tuple._1.iterator
-      val elems2 = tuple._2.iterator
-      while (elems1.hasNext && elems2.hasNext)
-        if (p(elems1.next, elems2.next)) return true
-      false
-    }
-  }
-  implicit def tupleOfIterableWrapper[CC[+B] <: Iterable[B] with IterableTemplate[CC, B], A1, A2](tuple: (CC[A1], Iterable[A2])) =
-    new IterableOps[CC, A1, A2](tuple)
-
-
-/* A more general version which will probably not work.
-  implicit def tupleOfIterableWrapper[CC[+B] <: Iterable[B] with IterableTemplate[CC, B], A1, A2, B1 <: CC[A1]](tuple: B1, Iterable[A2]) =
-    new IterableOps[CC, A1, A2](tuple)
-*/
-
-  // Adriaan: If you drop the type parameters it will infer the wrong types.
-  tupleOfIterableWrapper[collection.immutable.List, Int, Int]((collection.immutable.Nil, collection.immutable.Nil)) forall (_ + _ < 10)
-*/
-}
 
 /** Tuple2 is the canonical representation of a @see Product2
  *
  */
 case class Tuple2[+T1, +T2](_1:T1, _2:T2) extends Product2[T1, T2]  {
-/*
-  def map[CC[X] <: Traversable[X], A1, A2, B](implicit fst: T1 => CC[A1], snd: T2 => Traversable[A2]) = (f: (A1, A2) => B) => {
-    val b = fst(_1).genericBuilder[B]
-    val it1 = _1.iterator
-    val it2 = _2.iterator
-    while (it1.hasNext && it2.hasNext)
-      b += f(it1.next, it2.next)
-    b.result
-  }
-*/
   override def toString() = {
      val sb = new StringBuilder
      sb.append('(').append(_1).append(',').append(_2).append(')')
@@ -101,5 +30,56 @@ case class Tuple2[+T1, +T2](_1:T1, _2:T2) extends Product2[T1, T2]  {
 
   /** Swap the elements of the tuple */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
+
+/*
+  type Traverserable[CC[X] <: Traversable[X], X] = GenericTraversableTemplate[X, CC] with Iterable[X]
+
+  // TODO: benchmark factored version vs inlining forall2 everywhere (specialisation?)
+  // factor further? (use fold2)
+  // must use <:< instead of =>, otherwise bogus any2stringadd conversion is also eligible (in case of type errors)
+
+
+  def forall2[CC[X] <: Traverserable[CC, X], A1, A2](f: (A1, A2) => Boolean)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): Boolean = {
+    val it1 = _1.iterator
+    val it2 = _2.iterator
+    var res = true
+    while (res && it1.hasNext && it2.hasNext)
+      res = f(it1.next, it2.next)
+    res
+  }
+
+  def exists2[CC[X] <: Traverserable[CC, X], A1, A2](f: (A1, A2) => Boolean)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): Boolean = {
+    val it1 = _1.iterator
+    val it2 = _2.iterator
+    var res = false
+    while (!res && it1.hasNext && it2.hasNext)
+      res = f(it1.next, it2.next)
+    res
+  }
+
+  def foreach2[CC[X] <: Traverserable[CC, X], A1, A2, U](f: (A1, A2) => U)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): Unit
+    = forall2[CC, A1, A2]{(x, y) => f(x, y); true} // XXX: remove type args and fix crash in type infer
+
+  def build2[CC[X] <: Traverserable[CC, X], A1, A2, B](f: Builder[B, CC[B]] => (A1, A2) => Unit)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[B] = {
+    val b = _1.genericBuilder[B]
+      foreach2[CC, A1, A2, Unit](f(b)) // XXX: remove type args and fix crash in type infer
+    b.result
+  }
+
+  def zip2[CC[X] <: Traverserable[CC, X], A1, A2](implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[(A1, A2)]
+    = build2[CC, A1, A2, (A1, A2)]{b => (x, y) =>  // XXX: remove type args and fix crash in type infer
+        b += Tuple2(x, y)
+      }
+
+  def map2[CC[X] <: Traverserable[CC, X], A1, A2, B](f: (A1, A2) => B)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[B]
+    = build2[CC, A1, A2, B]{b => (x, y) =>  // XXX: remove type args and fix crash in type infer
+        b += f(x, y)
+      }
+
+  def flatMap2[CC[X] <: Traverserable[CC, X], A1, A2, B](f: (A1, A2) => CC[B])(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[B]
+    = build2[CC, A1, A2, B]{b => (x, y) =>  // XXX: remove type args and fix crash in type infer
+        b ++= f(x, y)
+      }
+*/
 
 }

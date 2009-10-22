@@ -583,7 +583,9 @@ trait Infer {
       List.map2(tparams, targs) {(tparam, targ) =>
         if (targ.typeSymbol == NothingClass && (restpe == WildcardType || (varianceInType(restpe)(tparam) & COVARIANT) == 0)) {
           uninstantiated += tparam
-          tparam.tpe
+          tparam.tpeHK  //@M tparam.tpe was wrong: we only want the type constructor,
+            // not the type constructor applied to dummy arguments
+            // see ticket 474 for an example that crashes if we use .tpe instead of .tpeHK)
         } else if (targ.typeSymbol == RepeatedParamClass) {
           targ.baseType(SeqClass)
         } else if (targ.typeSymbol == JavaRepeatedParamClass) {

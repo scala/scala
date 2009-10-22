@@ -1963,8 +1963,9 @@ A type's typeSymbol should never be inspected directly.
   // now, pattern-matching returns the most recent constr
   object TypeVar {
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)] = Some((tv.origin, tv.constr))
-    def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr)
-    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint(List(),List()))
+    def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr, List(), List())
+    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint(List(),List()), List(), tparam.typeParams)
+    def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) = new TypeVar(origin, constr, args, params)
   }
 
   /** A class representing a type variable
@@ -1973,7 +1974,9 @@ A type's typeSymbol should never be inspected directly.
    * A TypeVar whose list of args is non-empty can only be instantiated by a higher-kinded type that can be applied to these args
    * NOTE:
    */
-  class TypeVar(val origin: Type, val constr0: TypeConstraint) extends Type {
+  class TypeVar(val origin: Type, val constr0: TypeConstraint, override val typeArgs: List[Type], override val params: List[Symbol]) extends Type {
+    // params are needed to keep track of variance (see mapOverArgs in SubstMap)
+    assert(typeArgs.isEmpty || typeArgs.length == params.length)
     // var tid = { tidCount += 1; tidCount } //DEBUG
 
     /** The constraint associated with the variable */
@@ -1983,6 +1986,24 @@ A type's typeSymbol should never be inspected directly.
     /** The variable's skolemizatuon level */
     val level = skolemizationLevel
 
+    /**
+     *  two occurrences of a higher-kinded typevar, e.g. ?CC[Int] and ?CC[String], correspond to
+     *  *two instances* of TypeVar that share the *same* TypeConstraint
+     *  constr for ?CC only tracks type constructors anyway, so when ?CC[Int] <:< List[Int] and ?CC[String] <:< Iterable[String]
+     *  ?CC's hibounds contains List and Iterable
+     */
+    def applyArgs(newArgs: List[Type]): TypeVar =
+      if(newArgs.isEmpty) this // SubstMap relies on this (though this check is redundant when called from appliedType...)
+      else TypeVar(origin, constr, newArgs, params) // @M TODO: interaction with undoLog??
+        // newArgs.length may differ from args.length (could've been empty before)
+      // OBSOLETE BEHAVIOUR: imperatively update args to new args
+      // this initialises a TypeVar's arguments to the arguments of the type
+      // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
+      // thus, we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
+      // OBSOLETE BECAUSE: can't update imperatively because TypeVars do get applied to different arguments over type (in asSeenFrom) -- see pos/tcpoly_infer_implicit_tuplewrapper.scala
+      // CONSEQUENCE: make new TypeVar's for every application of a TV to args,
+      //   inference may generate several TypeVar's for a single type parameter that must be inferred,
+      //   one of them is in the set of tvars that need to be solved, and they all share the same constr instance
 
 
     def setInst(tp: Type) {
@@ -2024,12 +2045,24 @@ A type's typeSymbol should never be inspected directly.
         else             constr.hibounds = tp :: constr.hibounds
         // println("addedBound: "+(this, tp)) // @MDEBUG
         }
+      def checkArgs(args1: List[Type], args2: List[Type], params: List[Symbol]) =
+        if(isLowerBound) isSubArgs(args1, args2, params)
+        else             isSubArgs(args2, args1, params)
 
       if (constr.instValid) // type var is already set
         checkSubtype(tp, constr.inst)
       else isRelatable(tp) && {
-        addBound(tp)
-        true
+        if(params.isEmpty) { // type var has kind *
+          addBound(tp)
+          true
+        } else // higher-kinded type var with same arity as tp
+          (typeArgs.length == tp.typeArgs.length) && {
+            // register type constructor (the type without its type arguments) as bound
+            addBound(tp.typeConstructor)
+            // check subtyping of higher-order type vars
+            // use variances as defined in the type parameter that we're trying to infer (the result is sanity-checked later)
+            checkArgs(tp.typeArgs, typeArgs, params)
+          }
       }
     }
 
@@ -2050,17 +2083,24 @@ A type's typeSymbol should never be inspected directly.
       }
     }
 
-    override val isHigherKinded = false
+    override val isHigherKinded = typeArgs.isEmpty && !params.isEmpty
 
     override def normalize: Type =
       if  (constr.instValid) constr.inst
-      else super.normalize
+      else if (isHigherKinded) {  // get here when checking higher-order subtyping of the typevar by itself (TODO: check whether this ever happens?)
+        // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
+        PolyType(params, applyArgs(params map (_.typeConstructor)))
+      } else {
+        super.normalize
+      }
 
     override def typeSymbol = origin.typeSymbol
     override def safeToString: String = {
-      def varString = "?"+(if (settings.explaintypes.value) level else "")+origin// +"#"+tid //DEBUG
+      def varString = "?"+(if (settings.explaintypes.value) level else "")+
+                          origin+
+                          (if(typeArgs.isEmpty) "" else (typeArgs map (_.safeToString)).mkString("[ ", ", ", " ]")) // +"#"+tid //DEBUG
       if (constr.inst eq null) "<null " + origin + ">"
-      else if (settings.debug.value) varString+constr.toString
+      else if (settings.debug.value) varString+"(@"+constr.hashCode+")"+constr.toString
       else if (constr.inst eq NoType) varString
       else constr.inst.toString
     }
@@ -2068,7 +2108,7 @@ A type's typeSymbol should never be inspected directly.
     override def isVolatile = origin.isVolatile
     override def kind = "TypeVar"
 
-    def cloneInternal = TypeVar(origin, constr cloneInternal)
+    def cloneInternal = TypeVar(origin, constr cloneInternal, typeArgs, params) // @M TODO: clone args/params?
   }
 
   /** A type carrying some annotations. Created by the typechecker
@@ -2385,7 +2425,7 @@ A type's typeSymbol should never be inspected directly.
       case st: SingletonType => appliedType(st.widen, args) // @M TODO: what to do? see bug1
       case RefinedType(parents, decls) => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
       case TypeBounds(lo, hi) => TypeBounds(appliedType(lo, args), appliedType(hi, args))
-      case tv@TypeVar(_, _) => tv //@M: for tcpoly inference, this becomes: tv.applyArgs(args)
+      case tv@TypeVar(_, constr) => tv.applyArgs(args)
       case ErrorType => tycon
       case WildcardType => tycon // needed for neg/t0226
       case _ => throw new Error(debugString(tycon))
@@ -2678,7 +2718,7 @@ A type's typeSymbol should never be inspected directly.
         else AntiPolyType(pre1, args1)
       case tv@TypeVar(_, constr) =>
         if (constr.instValid) this(constr.inst)
-        else tv
+        else tv.applyArgs(mapOverArgs(tv.typeArgs, tv.params))  //@M !args.isEmpty implies !typeParams.isEmpty
       case NotNullType(tp) =>
         val tp1 = this(tp)
         if (tp1 eq tp) tp
@@ -4079,15 +4119,6 @@ A type's typeSymbol should never be inspected directly.
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2))
       if !(tp1.isHigherKinded || tp2.isHigherKinded) =>
         //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
-        def isSubArgs(tps1: List[Type], tps2: List[Type],
-                      tparams: List[Symbol]): Boolean = (
-          tps1.isEmpty && tps2.isEmpty
-          ||
-          !tps1.isEmpty && !tps2.isEmpty &&
-          (tparams.head.isCovariant || (tps2.head <:< tps1.head)) &&
-          (tparams.head.isContravariant || (tps1.head <:< tps2.head)) &&
-          isSubArgs(tps1.tail, tps2.tail, tparams.tail)
-        );
         ((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
           else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)) &&
          (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
