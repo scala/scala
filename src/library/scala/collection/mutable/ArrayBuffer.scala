@@ -127,7 +127,6 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *
    *  @param n  the index which refers to the first element to delete.
    *  @param count   the number of elemenets to delete
-   *  @return   the updated array buffer.
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   override def remove(n: Int, count: Int) {
