@@ -341,6 +341,10 @@ abstract class LambdaLift extends InfoTransform {
 
     private def liftDef(tree: Tree): Tree = {
       val sym = tree.symbol
+      // A similar check is in UnCurry.
+      if (sym.owner.isAuxiliaryConstructor && sym.isMethod)
+        unit.error(tree.pos, "Implementation restriction: auxiliary constructor calls may not use expressions which require lifting.")
+
       sym.owner = sym.owner.enclClass
       if (sym.isClass) sym.owner = sym.owner.toInterface
       if (sym.isMethod) sym setFlag LIFTED

@@ -1,0 +1,4 @@
+bug1909b.scala:3: error: Implementation restriction: auxiliary constructor calls may not use expressions which require lifting.
+    def bar() = 5
+        ^
+one error found
