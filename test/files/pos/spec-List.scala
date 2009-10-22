@@ -498,7 +498,7 @@ object List extends SeqFactory[List] {
 
   implicit def builderFactory[A]: CanBuildFrom[Coll, A, List[A]] =
     new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
+      override def apply() = newBuilder[A]
     }
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 
