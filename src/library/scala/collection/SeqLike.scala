@@ -12,6 +12,7 @@
 package scala.collection
 import generic._
 import mutable.{ListBuffer, HashMap, GenericArray}
+import annotation.experimental
 
 // import immutable.{List, Nil, ::}
 import generic._
@@ -207,7 +208,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
   /** Returns the index of the first occurence of the specified
-   *  object in this iterable object.
+   *  object in this sequence.
    *
    *  @note may not terminate for infinite-sized collections.
    *  @param  elem  element to search for.
@@ -218,7 +219,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
   /** Returns the index of the first occurence of the specified
-   *  object in this iterable object,  starting from a start index, or
+   *  object in this sequence, starting from a start index, or
    *  -1, if none exists.
    *
    *  @note may not terminate for infinite-sized collections.
@@ -530,7 +531,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b.result
   }
 
-  /** Sort the iterable according to the comparison function
+  /** Sort the sequence according to the comparison function
    *  <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>,
    *  which should be true iff <code>e1</code> is smaller than
    *  <code>e2</code>.
@@ -538,7 +539,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  same order in the sorted sequence as in the original.
    *
    *  @param lt the comparison function
-   *  @return   an iterable sorted according to the comparison function
+   *  @return   a sequence sorted according to the comparison function
    *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
    *  @ex <pre>
    *    List("Steve", "Tom", "John", "Bob")
@@ -560,6 +561,24 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     for (x <- arr) b += x
     b.result
   }
+
+  /** Sort the sequence according to the Ordering which results from mapping
+   *  the implicitly given Ordering[B] to an Ordering[A].  For example:
+   *
+   *  <code>
+   *    val words = "The quick brown fox jumped over the lazy dog".split(' ')
+   *    // this works because scala.Ordering will implicitly provide an Ordering[Tuple2[Int, Char]]
+   *    words.sortBy(x => (x.length, x.head.toLower))
+   *    res0: Array[String] = Array(dog, fox, The, the, lazy, over, brown, quick, jumped)
+   *  </code>
+   *
+   *  @param    f   the mapping function
+   *  @param    ord the Ordering[B]
+   *  @return       the sorted representation
+   */
+
+  @experimental
+  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sortWith(ord map f)
 
   /**
    *  Overridden for efficiency.

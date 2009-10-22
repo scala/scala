@@ -92,6 +92,11 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
     def compare(x: T, y: T) = outer.compare(y, x)
   }
 
+  /** Given a function mapping U => T, creates Ordering[U]. */
+  def map[U](f: U => T): Ordering[U] = new Ordering[U] {
+    def compare(x: U, y: U) = outer.compare(f(x), f(y))
+  }
+
   class Ops(lhs: T) {
     def <(rhs: T) = lt(lhs, rhs)
     def <=(rhs: T) = lteq(lhs, rhs)
