@@ -502,11 +502,7 @@ object List extends SeqFactory[List] {
 
   import scala.collection.{Iterable, Seq, IndexedSeq}
 
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
-
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 
   override def empty[A]: List[A] = Nil

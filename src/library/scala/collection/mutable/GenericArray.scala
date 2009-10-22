@@ -68,10 +68,7 @@ extends IndexedSeq[A]
 }
 
 object GenericArray extends SeqFactory[GenericArray] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenericArray[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenericArray[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, GenericArray[A]] =
     new ArrayBuffer[A] mapResult { buf =>
       val result = new GenericArray[A](buf.length)

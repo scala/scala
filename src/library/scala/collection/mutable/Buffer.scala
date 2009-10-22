@@ -34,10 +34,7 @@ trait Buffer[A] extends Seq[A]
 /** Factory object for <code>Buffer</code> trait.
  */
 object Buffer extends SeqFactory[Buffer] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Buffer[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Buffer[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Buffer[A]] = new ArrayBuffer
 }
 

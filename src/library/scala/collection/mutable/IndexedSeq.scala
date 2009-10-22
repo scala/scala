@@ -25,9 +25,6 @@ trait IndexedSeq[A] extends Seq[A]
 }
 
 object IndexedSeq extends SeqFactory[IndexedSeq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A]
 }

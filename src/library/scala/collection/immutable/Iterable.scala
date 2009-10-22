@@ -37,10 +37,7 @@ trait Iterable[+A] extends Traversable[A]
  *  @since   2.8
  */
 object Iterable extends TraversableFactory[Iterable] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Iterable[A]] = new mutable.ListBuffer
 }
 

@@ -36,10 +36,7 @@ trait IndexedSeq[+A] extends Seq[A]
  * @since 2.8
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
   override def empty[A] = NewIndexedSeq.empty[A]
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = NewIndexedSeq.newBuilder[A]
 }
@@ -58,7 +55,7 @@ trait NewIndexedSeq[+A]  extends IndexedSeq[A]
 
 object NewIndexedSeq extends SeqFactory[NewIndexedSeq] {
   private[immutable] val bf = new GenericCanBuildFrom[Nothing] {
-    def apply() = newBuilder[Nothing]
+    override def apply() = newBuilder[Nothing]
   }
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, NewIndexedSeq[A]] =
     bf.asInstanceOf[CanBuildFrom[Coll, A, NewIndexedSeq[A]]]

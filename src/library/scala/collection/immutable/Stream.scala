@@ -404,10 +404,7 @@ object Stream extends SeqFactory[Stream] {
    *        Stream as its From type parameter must yield a stream as its result parameter.
    *        If that assumption is broken, cast errors might result.
    */
-  class StreamCanBuildFrom[A] extends GenericCanBuildFrom[A] {
-    def apply() = newBuilder[A]
-  }
-
+  class StreamCanBuildFrom[A] extends GenericCanBuildFrom[A]
 
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] = new StreamCanBuildFrom[A]
 

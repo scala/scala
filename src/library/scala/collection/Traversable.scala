@@ -105,10 +105,7 @@ object Traversable extends TraversableFactory[Traversable] { self =>
   /** provide break functionality separate from client code */
   private[collection] val breaks: Breaks = new Breaks
 
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 }
 

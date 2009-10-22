@@ -115,9 +115,6 @@ trait ResizableArray[A] extends IndexedSeq[A]
 }
 
 object ResizableArray extends SeqFactory[ResizableArray] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ResizableArray[A]] =
-    new GenericCanBuildFrom[A] {
-      def apply() = newBuilder[A]
-    }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ResizableArray[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, ResizableArray[A]] = new ArrayBuffer[A]
 }

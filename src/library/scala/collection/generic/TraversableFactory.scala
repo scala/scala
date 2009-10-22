@@ -18,8 +18,9 @@ package generic
 abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenericCompanion[CC] {
 
-  abstract class GenericCanBuildFrom[A] extends CanBuildFrom[CC[_], A, CC[A]] {
+  class GenericCanBuildFrom[A] extends CanBuildFrom[CC[_], A, CC[A]] {
     def apply(from: Coll) = from.genericBuilder[A]
+    def apply() = newBuilder[A]
   }
 
   /** Concatenate all the argument collections into a single collection.
