@@ -1651,7 +1651,7 @@ trait Typers { self: Analyzer =>
       // catches method parameters shadowing identifiers declared in the same file, so more
       // work is needed.  Most of the code here is to filter out false positives.
       def isAuxConstructor(sym: Symbol) = sym.isConstructor && !sym.isPrimaryConstructor
-      if (settings.Xwarnings.value && !isAuxConstructor(ddef.symbol)) {
+      if (settings.YwarnShadow.value && !isAuxConstructor(ddef.symbol)) {
         for (v <- ddef.vparamss.flatten ; if v.symbol != null && !(v.symbol hasFlag SYNTHETIC))
           checkShadowings(v, (sym => !sym.isDeferred && !sym.isMethod))
       }
@@ -1752,7 +1752,7 @@ trait Typers { self: Analyzer =>
           while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
           if (e eq null) context.scope.enter(stat.symbol)
         }
-        if (settings.Xwarnings.value) checkShadowings(stat)
+        if (settings.YwarnShadow.value) checkShadowings(stat)
         enterLabelDef(stat)
       }
       val stats1 = typedStats(block.stats, context.owner)

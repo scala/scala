@@ -20,6 +20,7 @@ abstract class TreeInfo {
 
   val trees: SymbolTable
   import trees._
+  import definitions.ThrowableClass
 
   def isTerm(tree: Tree): Boolean = tree.isTerm
   def isType(tree: Tree): Boolean = tree.isType
@@ -238,6 +239,16 @@ abstract class TreeInfo {
     case _ => false
   }
 
+  /** Does this CaseDef catch Throwable? */
+  def catchesThrowable(cdef: CaseDef) = catchesAllOf(cdef, ThrowableClass.tpe)
+
+  /** Does this CaseDef catch everything of a certain Type? */
+  def catchesAllOf(cdef: CaseDef, threshold: Type) =
+    isDefaultCase(cdef) || (cdef.guard.isEmpty && (unbind(cdef.pat) match {
+      case Typed(Ident(nme.WILDCARD), tpt)  => (tpt.tpe != null) && (threshold <:< tpt.tpe)
+      case _                                => false
+    }))
+
   /** Is this pattern node a catch-all or type-test pattern? */
   def isCatchCase(cdef: CaseDef) = cdef match {
     case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) =>
@@ -251,7 +262,7 @@ abstract class TreeInfo {
   private def isSimpleThrowable(tp: Type): Boolean = tp match {
     case TypeRef(pre, sym, args) =>
       (pre == NoPrefix || pre.widen.typeSymbol.isStatic) &&
-      (sym isNonBottomSubClass definitions.ThrowableClass) &&  /* bq */ !sym.isTrait
+      (sym isNonBottomSubClass ThrowableClass) &&  /* bq */ !sym.isTrait
     case _ =>
       false
   }

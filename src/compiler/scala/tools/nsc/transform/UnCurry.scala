@@ -636,6 +636,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           }
           treeCopy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs1)
         case Try(body, catches, finalizer) =>
+          // If warnings are enabled, alert about promiscuously catching cases.
+          if (settings.YwarnCatches.value)
+            for (cd <- catches find treeInfo.catchesThrowable)
+              unit.warning(cd.pos, "catch clause swallows everything: not advised.")
+
           if (catches forall treeInfo.isCatchCase) tree
           else {
             val exname = unit.fresh.newName(tree.pos, "ex$")
