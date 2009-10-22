@@ -1337,6 +1337,7 @@
   </component>
   <component name="ProjectDictionaryState">
     <dictionary name="odersky" />
+    <dictionary name="dragos" />
   </component>
   <component name="ProjectFileVersion" converted="true" />
   <component name="ProjectKey">
@@ -1507,13 +1508,9 @@
     </library>
     <library name="Project Scala SDK">
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/lib/scala-library.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/jline.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/scala-compiler.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/fjbg.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/ScalaCheckHelper.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/ScalaCheck.jar!/" />
-        <root url="jar://$PROJECT_DIR$/lib/scala-library-src.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/msil.jar!/" />
       </CLASSES>
       <JAVADOC />
