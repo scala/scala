@@ -104,5 +104,7 @@ abstract class CharArrayReader { self =>
     ch = self.ch
     override def decodeUni = self.decodeUni
     def error(offset: Int, msg: String) = self.error(offset, msg)
+    /** A mystery why CharArrayReader.nextChar() returns Unit */
+    def getc() = { nextChar() ; ch }
   }
 }

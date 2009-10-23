@@ -731,6 +731,7 @@ trait Scanners {
     /** Read a number into strVal and set base
     */
     protected def getNumber() {
+      def isDigit(c: Char) = java.lang.Character isDigit c
       val base1 = if (base < 10) 10 else base
         // read 8,9's even if format is octal, produce a malformed number error afterwards.
       while (digit2int(ch, base1) >= 0) {
@@ -738,52 +739,59 @@ trait Scanners {
         nextChar()
       }
       token = INTLIT
-      if (base <= 10 && ch == '.') {
-        val lookahead = lookaheadReader
-        lookahead.nextChar()
-        def restOfNumber() = {
-          putChar(ch)
-          nextChar()
-          getFraction()
-        }
 
-        lookahead.ch match {
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-            return restOfNumber()
-
-          /** Backquoted idents like 22.`foo` */
-          case '`' =>
-            return setStrVal()
-
-          /** These letters may be part of a literal, or a method invocation on an Int */
-          case 'd' | 'D' | 'f' | 'F' =>
-            lookahead.nextChar()
-            if (!isIdentifierPart(lookahead.ch))
-              return restOfNumber()
-
-          /** A little more special handling for e.g. 5e7 */
-          case 'e' | 'E' =>
-            lookahead.nextChar()
-            val ch = lookahead.ch
-            if (!isIdentifierPart(ch) || (ch >= '0' && ch <= '9') || ch == '+' || ch == '-')
-              return restOfNumber()
-
-          case _ =>
-            if (!isIdentifierStart(lookahead.ch))
-              return restOfNumber()
-        }
-      }
-      if (base <= 10 &&
-          (ch == 'e' || ch == 'E' ||
-           ch == 'f' || ch == 'F' ||
-           ch == 'd' || ch == 'D')) {
-        return getFraction()
-      }
-      setStrVal()
-      if (ch == 'l' || ch == 'L') {
+      /** When we know for certain it's a number after using a touch of lookahead */
+      def restOfNumber() = {
+        putChar(ch)
         nextChar()
-        token = LONGLIT
-      } else checkNoLetter()
+        getFraction()
+      }
+      def restOfUncertainToken() = {
+        def isEfd = ch match { case 'e' | 'E' | 'f' | 'F' | 'd' | 'D' => true ; case _ => false }
+        def isL   = ch match { case 'l' | 'L' => true ; case _ => false }
+
+        if (base <= 10 && isEfd)
+          getFraction()
+        else {
+          setStrVal()
+          if (isL) {
+            nextChar()
+            token = LONGLIT
+          }
+          else checkNoLetter()
+        }
+      }
+
+      if (base > 10 || ch != '.')
+        restOfUncertainToken()
+      else {
+        val lookahead = lookaheadReader
+        val isDefinitelyNumber =
+          (lookahead.getc(): @switch) match {
+            /** Another digit is a giveaway. */
+            case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'  =>
+              true
+
+            /** Backquoted idents like 22.`foo`. */
+            case '`' =>
+              return setStrVal()  /** Note the early return **/
+
+            /** These letters may be part of a literal, or a method invocation on an Int */
+            case 'd' | 'D' | 'f' | 'F' =>
+              !isIdentifierPart(lookahead.getc())
+
+            /** A little more special handling for e.g. 5e7 */
+            case 'e' | 'E' =>
+              val ch = lookahead.getc()
+              !isIdentifierPart(ch) || (isDigit(ch) || ch == '+' || ch == '-')
+
+            case x  =>
+              !isIdentifierStart(x)
+          }
+
+        if (isDefinitelyNumber) restOfNumber()
+        else restOfUncertainToken()
+      }
     }
 
     /** Parse character literal if current character is followed by \',
