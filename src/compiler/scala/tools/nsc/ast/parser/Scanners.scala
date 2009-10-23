@@ -306,13 +306,7 @@ trait Scanners {
           base = 10
           getNumber()
         case '`' =>
-          nextChar()
-          if (getStringLit('`')) {
-            finishNamed();
-            if (name.length == 0) syntaxError("empty quoted identifier")
-            token = BACKQUOTED_IDENT
-          }
-          else syntaxError("unclosed quoted identifier")
+          getBackquotedIdent()
         case '\"' =>
           nextChar()
           if (ch == '\"') {
@@ -474,6 +468,16 @@ trait Scanners {
     }
 
 // Identifiers ---------------------------------------------------------------
+
+    private def getBackquotedIdent(): Unit = {
+      nextChar()
+      if (getStringLit('`')) {
+        finishNamed();
+        if (name.length == 0) syntaxError("empty quoted identifier")
+        token = BACKQUOTED_IDENT
+      }
+      else syntaxError("unclosed quoted identifier")
+    }
 
     private def getIdentRest(): Unit = (ch: @switch) match {
       case 'A' | 'B' | 'C' | 'D' | 'E' |
@@ -746,6 +750,10 @@ trait Scanners {
         lookahead.ch match {
           case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
             return restOfNumber()
+
+          /** Backquoted idents like 22.`foo` */
+          case '`' =>
+            return setStrVal()
 
           /** These letters may be part of a literal, or a method invocation on an Int */
           case 'd' | 'D' | 'f' | 'F' =>
