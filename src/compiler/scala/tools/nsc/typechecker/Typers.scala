@@ -801,8 +801,8 @@ trait Typers { self: Analyzer =>
           typer1.silent(tpr => tpr.typed(tpr.applyImplicitArgs(tree), mode, pt)) match {
             case result: Tree => result
             case ex: TypeError =>
-              if (settings.debug.value) log("fallback on implicits: "+tree)
-              val tree1 = typed(resetAttrs(original), mode, WildcardType)
+              if (settings.debug.value) log("fallback on implicits: "+tree+"/"+resetAttrs(original, true))
+              val tree1 = typed(resetAttrs(original, true), mode, WildcardType)
               tree1.tpe = addAnnotations(tree1, tree1.tpe)
               if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, EmptyTree)
           }

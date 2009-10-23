@@ -1803,7 +1803,7 @@ trait Trees {
 
   /** resets symbol and tpe fields in a tree, @see ResetAttrsTraverse
    */
-  def resetAttrs[A<:Tree](x:A):A = {new ResetAttrsTraverser().traverse(x); x}
+  def resetAttrs[A<:Tree](x:A, strict: Boolean = false): A = {new ResetAttrsTraverser(strict).traverse(x); x}
 
   /** A traverser which resets symbol and tpe fields of all nodes in a given tree
    *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept and
@@ -1812,7 +1812,7 @@ trait Trees {
    *
    *  (bq:) This traverser has mutable state and should be discarded after use
    */
-  class ResetAttrsTraverser extends Traverser {
+  class ResetAttrsTraverser(strict: Boolean) extends Traverser {
     private val erasedSyms = new HashSet[Symbol](8)
     override def traverse(tree: Tree): Unit = tree match {
       case EmptyTree | TypeTree() =>
@@ -1820,20 +1820,22 @@ trait Trees {
       case Template(parents, self, body) =>
         tree.symbol = NoSymbol
         tree.tpe = null
-        for (stat <- body)
-          if (stat.isDef) erasedSyms.addEntry(stat.symbol)
+        if (!strict)
+          for (stat <- body)
+            if (stat.isDef) erasedSyms.addEntry(stat.symbol)
         super.traverse(tree)
       case _: DefTree | Function(_, _) =>
-        erasedSyms.addEntry(tree.symbol)
+        if (!strict) erasedSyms.addEntry(tree.symbol)
         tree.symbol = NoSymbol
         tree.tpe = null
         super.traverse(tree)
       case _ =>
-        if (tree.hasSymbol && erasedSyms.contains(tree.symbol)) tree.symbol = NoSymbol
+        if (tree.hasSymbol && (strict || erasedSyms.contains(tree.symbol))) tree.symbol = NoSymbol
         tree.tpe = null
         super.traverse(tree)
     }
   }
+
   /* hook to memoize trees in IDE */
   trait TreeKind {
     def isType : Boolean

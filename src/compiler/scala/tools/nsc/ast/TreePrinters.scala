@@ -272,6 +272,7 @@ abstract class TreePrinters {
 
         case Function(vparams, body) =>
           print("("); printValueParams(vparams); print(" => "); print(body); print(")")
+          if (settings.uniqid.value && tree.symbol != null) print("#"+tree.symbol.id)
 
         case Assign(lhs, rhs) =>
           print(lhs); print(" = "); print(rhs)

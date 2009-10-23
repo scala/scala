@@ -402,6 +402,8 @@ trait Infer {
         }
       }
 
+    def isPlausiblyPopulated(tp1: Type, tp2: Type): Boolean = true
+
     def isPlausiblyCompatible(tp: Type, pt: Type): Boolean = tp match {
       case PolyType(_, restpe) =>
         isPlausiblyCompatible(restpe, pt)

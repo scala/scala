@@ -129,6 +129,8 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
       }
     sb append end
   }
+
+  override def stringPrefix = "BitSet"
 }
 
 object BitSetLike {

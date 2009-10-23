@@ -3585,10 +3585,14 @@ A type's typeSymbol should never be inspected directly.
       case (_, et: ExistentialType) =>
         et.withTypeVars(isConsistent(tp1, _))
     }
-    if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
-      tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
-    else tp1.baseClasses forall (bc =>
-      tp2.baseTypeIndex(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
+
+    def check(tp1: Type, tp2: Type) =
+      if (tp1.typeSymbol.isClass && tp1.typeSymbol.hasFlag(FINAL))
+        tp1 <:< tp2 || isNumericValueClass(tp1.typeSymbol) && isNumericValueClass(tp2.typeSymbol)
+      else tp1.baseClasses forall (bc =>
+        tp2.baseTypeIndex(bc) < 0 || isConsistent(tp1.baseType(bc), tp2.baseType(bc)))
+
+    check(tp1, tp2)/* && check(tp2, tp1)*/ // need to investgate why this can't be made symmetric -- neg/gadts1 fails, and run/existials also.
   }
 
   /** Does a pattern of type `patType' need an outer test when executed against
