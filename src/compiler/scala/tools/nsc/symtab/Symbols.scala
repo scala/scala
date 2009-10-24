@@ -1208,7 +1208,8 @@ trait Symbols {
       (this.rawInfo ne NoType) && {
         val res =
           !this.owner.isPackageClass ||
-          ((this.sourceFile eq null) && (that.sourceFile eq null)) ||
+          (this.sourceFile eq null) ||
+          (that.sourceFile eq null) ||
           (this.sourceFile eq that.sourceFile) ||
           (this.sourceFile == that.sourceFile)
 
