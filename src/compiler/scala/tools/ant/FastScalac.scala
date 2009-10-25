@@ -77,23 +77,25 @@ class FastScalac extends Scalac {
       shutdown.value = shutdownServer
 
       val stringSettings =
-        List(s.outdir, s.classpath, s.bootclasspath, s.extdirs, s.encoding) map (x => "%s %s".format(x.name, x.value))
+        List(s.outdir, s.classpath, s.bootclasspath, s.extdirs, s.encoding) flatMap (x => List(x.name, x.value))
 
       val serverOption =
-        serverAddr.toList map ("-server " + _) // '-server' option
+        serverAddr.toList flatMap (x => List("-server", x))  // '-server' option
 
       val choiceSettings =
         List(s.debuginfo, s.target) map (x => "%s:%s".format(x.name, x.value))
 
       val booleanSettings =
-        List(s.debug, s.deprecation, s.nopredefs, s.verbose, reset, shutdown) map (x => if (x.value) x.name else "")
+        List(s.debug, s.deprecation, s.nopredefs, s.verbose, reset, shutdown) map (x => if (x.value) List(x.name) else Nil) flatten
 
-      val phaseSetting =
-        List(settings.log) map (x => if (x.value.isEmpty) "" else "%s:%s".format(x.name, x.value))
+      val phaseSetting = {
+        val s = settings.log
+        if (s.value.isEmpty) Nil
+        else List("%s:%s".format(s.name, s.value.mkString(",")))
+      }
 
       val cmdOptions =
-        List(stringSettings, serverOption, choiceSettings, booleanSettings, phaseSetting) .
-          flatten . filterNot (_.isEmpty)
+        stringSettings ::: serverOption ::: choiceSettings ::: booleanSettings ::: phaseSetting
 
       val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
       try {
