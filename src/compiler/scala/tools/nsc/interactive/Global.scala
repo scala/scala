@@ -84,7 +84,13 @@ self =>
           if (typerRun == currentTyperRun)
             return
 
-          integrateNew()
+          // @Martin
+          // Guard against NPEs in integrateNew if context.unit == null here.
+          // But why are we doing this at all? If it was non-null previously
+          // integrateNew will already have been called. If it was null previously
+          // it will still be null now?
+          if (context.unit != null)
+            integrateNew()
           throw new FreshRunReq
         } catch {
           case ex : ValidateError => // Ignore, this will have been reported elsewhere
