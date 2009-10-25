@@ -75,7 +75,7 @@ trait AnnotationInfos {
    *  </p>
    */
   case class AnnotationInfo(atp: Type, args: List[Tree],
-                            assocs: List[(Name, ClassfileAnnotArg)])
+                            assocs: List[(Name, ClassfileAnnotArg)], pos : Position)
   extends AnnotationInfoBase {
 
     // Classfile annot: args empty. Scala annot: assocs empty.
@@ -95,7 +95,7 @@ trait AnnotationInfos {
     /** Change all ident's with Symbol "from" to instead use symbol "to" */
     def substIdentSyms(from: Symbol, to: Symbol) = {
       val subs = new TreeSymSubstituter(List(from), List(to))
-      AnnotationInfo(atp, args.map(subs(_)), assocs)
+      AnnotationInfo(atp, args.map(subs(_)), assocs, pos)
     }
   }
 

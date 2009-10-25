@@ -171,13 +171,13 @@ abstract class GenJVM extends SubComponent {
         parents = definitions.ObjectClass.tpe :: parents;
 
       for (annot <- c.symbol.annotations) annot match {
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == SerializableAttr =>
+        case AnnotationInfo(tp, _, _, _) if tp.typeSymbol == SerializableAttr =>
           parents = parents ::: List(definitions.SerializableClass.tpe)
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
+        case AnnotationInfo(tp, _, _, _) if tp.typeSymbol == CloneableAttr =>
           parents = parents ::: List(CloneableClass.tpe)
-        case AnnotationInfo(tp, Literal(const) :: _, _) if tp.typeSymbol == SerialVersionUID =>
+        case AnnotationInfo(tp, Literal(const) :: _, _, _) if tp.typeSymbol == SerialVersionUID =>
           serialVUID = Some(const.longValue)
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
+        case AnnotationInfo(tp, _, _, _) if tp.typeSymbol == RemoteAttr =>
           parents = parents ::: List(RemoteInterface.tpe)
           remoteClass = true
         case _ => ()
@@ -330,7 +330,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (AnnotationInfo(tp, List(exc), _) <- excs.removeDuplicates if tp.typeSymbol == ThrowsAttr) {
+      for (AnnotationInfo(tp, List(exc), _, _) <- excs.removeDuplicates if tp.typeSymbol == ThrowsAttr) {
         val Literal(const) = exc
         buf.putShort(
           cpool.addClass(
@@ -402,7 +402,7 @@ abstract class GenJVM extends SubComponent {
       }
 
       def emitAnnotation(annotInfo: AnnotationInfo) {
-        val AnnotationInfo(typ, args, assocs) = annotInfo
+        val AnnotationInfo(typ, args, assocs, _) = annotInfo
         val jtype = javaType(typ)
         buf.putShort(cpool.addUtf8(jtype.getSignature()).toShort)
         assert(args.isEmpty, args.toString)
@@ -537,9 +537,9 @@ abstract class GenJVM extends SubComponent {
       var attributes = 0
 
       f.symbol.annotations foreach { a => a match {
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == TransientAtt =>
+        case AnnotationInfo(tp, _, _, _) if tp.typeSymbol == TransientAtt =>
           attributes = attributes | JAccessFlags.ACC_TRANSIENT
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == VolatileAttr =>
+        case AnnotationInfo(tp, _, _, _) if tp.typeSymbol == VolatileAttr =>
           attributes = attributes | JAccessFlags.ACC_VOLATILE
         case _ => ();
       }}
@@ -622,7 +622,7 @@ abstract class GenJVM extends SubComponent {
 
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
       def isRemoteThrows(ainfo: AnnotationInfo) = ainfo match {
-        case AnnotationInfo(tp, List(arg), _) if tp.typeSymbol == ThrowsAttr =>
+        case AnnotationInfo(tp, List(arg), _, _) if tp.typeSymbol == ThrowsAttr =>
           arg match {
             case Literal(Constant(tpe: Type)) if tpe.typeSymbol == RemoteException.typeSymbol => true
             case _ => false
@@ -633,7 +633,7 @@ abstract class GenJVM extends SubComponent {
       if (remoteClass ||
           (meth.hasAnnotation(RemoteAttr) && jmethod.isPublic())) {
         val c = Constant(RemoteException)
-        val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(Literal(c).setType(c.tpe)), List())
+        val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(Literal(c).setType(c.tpe)), List(), NoPosition)
         if (!meth.annotations.exists(isRemoteThrows)) {
           meth.addAnnotation(ainfo)
         }
@@ -646,7 +646,7 @@ abstract class GenJVM extends SubComponent {
      */
     private def splitAnnotations(annotations: List[AnnotationInfo], annotSym: Symbol): (List[AnnotationInfo], List[AnnotationInfo]) = {
       annotations.partition { a => a match {
-        case AnnotationInfo(tp, _, _) if tp.typeSymbol == annotSym => true
+        case AnnotationInfo(tp, _, _, _) if tp.typeSymbol == annotSym => true
         case _ => false
       }}
     }

@@ -257,6 +257,13 @@ self: scala.tools.nsc.Global =>
       if (t.pos includes pos) {
         if (!t.pos.isTransparent) last = t
         super.traverse(t)
+      } else if (t.symbol != null) {
+        for(annot <- t.symbol.annotations if !annot.pos.isTransparent) {
+          last = Annotated(TypeTree(annot.atp) setPos annot.pos, t)
+          last.setType(annot.atp)
+          last.setPos(annot.pos)
+          traverseTrees(annot.args)
+        }
       }
     }
   }

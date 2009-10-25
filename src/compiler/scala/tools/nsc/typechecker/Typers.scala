@@ -2396,7 +2396,7 @@ trait Typers { self: Analyzer =>
      * @param annClass the expected annotation class
      */
     def typedAnnotation(ann: Tree, mode: Int = EXPRmode, selfsym: Symbol = NoSymbol, annClass: Symbol = AnnotationClass, requireJava: Boolean = false): AnnotationInfo = {
-      lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil)
+      lazy val annotationError = AnnotationInfo(ErrorType, Nil, Nil, NoPosition)
       var hasError: Boolean = false
       def error(pos: Position, msg: String) = {
         context.error(pos, msg)
@@ -2507,13 +2507,13 @@ trait Typers { self: Analyzer =>
             }
 
             for (name <- names) {
-              if (!name.annotations.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List())) &&
+              if (!name.annotations.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List(), NoPosition)) &&
                   !name.hasFlag(DEFAULTPARAM))
                 error(ann.pos, "annotation " + annType.typeSymbol.fullNameString + " is missing argument " + name.name)
             }
 
             if (hasError) annotationError
-            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)})
+            else AnnotationInfo(annType, List(), nvPairs map {p => (p._1, p._2.get)}, ann.pos)
           }
         } else if (requireJava) {
           error(ann.pos, "nested classfile annotations must be defined in java; found: "+ annType)
@@ -2553,7 +2553,7 @@ trait Typers { self: Analyzer =>
 
           def annInfo(t: Tree): AnnotationInfo = t match {
             case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-              AnnotationInfo(annType, args, List())
+              AnnotationInfo(annType, args, List(), t.pos)
 
             case Block(stats, expr) =>
               context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+

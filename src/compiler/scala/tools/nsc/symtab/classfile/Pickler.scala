@@ -468,7 +468,7 @@ abstract class Pickler extends SubComponent {
             putAnnotation(annInfo)
         }
       }
-      val AnnotationInfo(tpe, args, assocs) = annot
+      val AnnotationInfo(tpe, args, assocs, _) = annot
       putType(tpe)
       args foreach putAnnotArg
       assocs foreach { asc =>
@@ -614,7 +614,7 @@ abstract class Pickler extends SubComponent {
           }
 
         // annotations attached to a symbol (i.e. annots on terms)
-        case (target: Symbol, annot@AnnotationInfo(_, _, _)) =>
+        case (target: Symbol, annot@AnnotationInfo(_, _, _, _)) =>
           writeRef(target)
           writeAnnotation(annot)
           SYMANNOT
@@ -966,7 +966,7 @@ abstract class Pickler extends SubComponent {
           MODIFIERS
 
         // annotations on types (not linked to a symbol)
-        case annot@AnnotationInfo(_, _, _) =>
+        case annot@AnnotationInfo(_, _, _, _) =>
           writeAnnotation(annot)
           ANNOTINFO
 
@@ -1072,7 +1072,7 @@ abstract class Pickler extends SubComponent {
             printRef(tp)
             printRefs(annots)
           }
-        case (target: Symbol, AnnotationInfo(atp, args, Nil)) =>
+        case (target: Symbol, AnnotationInfo(atp, args, Nil, _)) =>
           print("SYMANNOT ")
           printRef(target)
           printRef(atp)
@@ -1081,7 +1081,7 @@ abstract class Pickler extends SubComponent {
           print("CHILDREN ")
           printRef(target)
           for (c <- children) printRef(c.asInstanceOf[Symbol])
-        case AnnotationInfo(atp, args, Nil) =>
+        case AnnotationInfo(atp, args, Nil, _) =>
           print("ANNOTINFO")
           printRef(atp)
           for (c <- args) printRef(c)

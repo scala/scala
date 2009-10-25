@@ -1858,7 +1858,7 @@ abstract class GenMSIL extends SubComponent {
       mf = mf | (if (sym isFinal) TypeAttributes.Sealed else 0)
 
       sym.annotations foreach { a => a match {
-        case AnnotationInfo(SerializableAttr, _, _) =>
+        case AnnotationInfo(SerializableAttr, _, _, _) =>
           // TODO: add the Serializable TypeAttribute also if the annotation
           // System.SerializableAttribute is present (.net annotation, not scala)
           //  Best way to do it: compare with
@@ -1908,7 +1908,7 @@ abstract class GenMSIL extends SubComponent {
       // TODO: add this annotation also if the class has the custom attribute
       // System.NotSerializedAttribute
       sym.annotations.foreach( a => a match {
-        case AnnotationInfo(TransientAtt, _, _) =>
+        case AnnotationInfo(TransientAtt, _, _, _) =>
           mf = mf | FieldAttributes.NotSerialized
         case _ => ()
       })
@@ -2123,7 +2123,7 @@ abstract class GenMSIL extends SubComponent {
 
     private def isCloneable(sym: Symbol): Boolean = {
       !sym.annotations.forall( a => a match {
-        case AnnotationInfo(CloneableAttr, _, _) => false
+        case AnnotationInfo(CloneableAttr, _, _, _) => false
         case _ => true
       })
     }

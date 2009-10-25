@@ -2163,7 +2163,7 @@ A type's typeSymbol should never be inspected directly.
     // ** Replace formal type parameter symbols with actual type arguments. * /
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
       val annotations1 = annotations.map(info => AnnotationInfo(info.atp.instantiateTypeParams(
-          formals, actuals), info.args, info.assocs))
+          formals, actuals), info.args, info.assocs, info.pos))
       val underlying1 = underlying.instantiateTypeParams(formals, actuals)
       if ((annotations1 eq annotations) && (underlying1 eq underlying)) this
       else AnnotatedType(annotations1, underlying1, selfsym)
@@ -2785,7 +2785,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     def mapOver(annot: AnnotationInfo): Option[AnnotationInfo] = {
-      val AnnotationInfo(atp, args, assocs) = annot
+      val AnnotationInfo(atp, args, assocs, pos) = annot
 
       if (dropNonConstraintAnnotations &&
           !(atp.typeSymbol isNonBottomSubClass TypeConstraintClass))
@@ -2798,7 +2798,7 @@ A type's typeSymbol should never be inspected directly.
       if ((args eq args1) && (atp eq atp1))
         Some(annot)
       else if (args1.length == args.length)
-        Some(AnnotationInfo(atp1, args1, assocs))
+        Some(AnnotationInfo(atp1, args1, assocs, pos))
       else
         None
     }
