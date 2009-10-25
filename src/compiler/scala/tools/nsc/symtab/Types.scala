@@ -2558,14 +2558,15 @@ A type's typeSymbol should never be inspected directly.
 
 // Hash consing --------------------------------------------------------------
 
-  var uniques: HashSet[AnyRef] = _
+  private val initialUniquesCapacity = 4096
+  private var uniques: HashSet[AnyRef] = _
   private var uniqueRunId = NoRunId
 
-  def uniqueTypeCount = uniques.size // for statistics
+  def uniqueTypeCount = if (uniques == null) 0 else uniques.size // for statistics
 
   private def unique[T <: AnyRef](tp: T): T = {
     if (uniqueRunId != currentRunId) {
-      uniques = new HashSet(20000)
+      uniques = new HashSet("uniques", initialUniquesCapacity)
       uniqueRunId = currentRunId
     }
     uniques.findEntry(tp) match {

@@ -1813,7 +1813,7 @@ trait Trees {
    *  (bq:) This traverser has mutable state and should be discarded after use
    */
   class ResetAttrsTraverser(strict: Boolean) extends Traverser {
-    private val erasedSyms = new HashSet[Symbol](8)
+    private val erasedSyms = new HashSet[Symbol]("erasedSyms", 8)
     override def traverse(tree: Tree): Unit = tree match {
       case EmptyTree | TypeTree() =>
         ;

@@ -45,7 +45,6 @@ abstract class Statistics {
       inform("#subtype     : " + subtypeCount)
       inform("ns subtype   : " + subtypeNanos)
       inform("#sametype    : " + sametypeCount)
-      inform("#unique types: " + uniques.size)
       inform("ms type-flow-analysis: " + analysis.timer.millis)
       if (phase.name == "typer") {
         inform("time spent typechecking: "+showRelTyper(analyzer.typerTime))

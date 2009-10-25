@@ -15,9 +15,8 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.control.ControlException
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.interactive.RangePositions
-import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition, SourceFile}
+import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile }
 import symtab.Flags._
-import util.HashSet
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.

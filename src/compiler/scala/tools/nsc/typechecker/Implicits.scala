@@ -12,9 +12,8 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.{LinkedHashMap, ListBuffer}
-import scala.tools.nsc.util.{HashSet, Position, Set, NoPosition, SourceFile}
+import scala.tools.nsc.util.{ HashSet, Position, Set, NoPosition, SourceFile }
 import symtab.Flags._
-import util.HashSet
 
 /** This trait provides methods to find various kinds of implicits.
  *
@@ -497,7 +496,7 @@ self: Analyzer =>
                         invalidImplicits: ListBuffer[Symbol]): Map[ImplicitInfo, SearchResult] = {
 
       /** A set containing names that are shadowed by implicit infos */
-      val shadowed = new HashSet[Name](8)
+      lazy val shadowed = new HashSet[Name]("shadowed", 512)
 
       /** Try implicit `info` to see whether it is applicable for expected type `pt`.
        *  This is the case if all of the following holds:

@@ -148,7 +148,7 @@ abstract class OverridingPairs {
      *  (maybe excluded because of hasCommonParentAsSubclass).
      *  These will not appear as overriding
      */
-    private val visited = new HashSet[ScopeEntry](256)
+    private val visited = new HashSet[ScopeEntry]("visited", 64)
 
     /** The current entry candidate for overriding
      */

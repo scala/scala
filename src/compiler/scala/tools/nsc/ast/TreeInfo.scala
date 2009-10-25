@@ -189,7 +189,7 @@ abstract class TreeInfo {
   def isLeftAssoc(operator: Name): Boolean =
     operator.length > 0 && operator(operator.length - 1) != ':'
 
-  private val reserved = new HashSet[Name]
+  private val reserved = new HashSet[Name]("reserved", 64)
   reserved addEntry nme.false_
   reserved addEntry nme.true_
   reserved addEntry nme.null_
