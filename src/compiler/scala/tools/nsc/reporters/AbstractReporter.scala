@@ -50,12 +50,12 @@ abstract class AbstractReporter extends Reporter {
    *  @param pos ...
    *  @return    <code>true</code> if <code>pos</code> was already logged.
    */
-  private def testAndLog(pos: Position, severity: Severity): Boolean = {
-    if (pos eq null) return false
-    if (pos.offset.isEmpty) return false
-    val fpos = pos.focus
-    if ((positions contains fpos) && positions(fpos) >= severity) return true
-    positions += (fpos -> severity)
-    false
-  }
+  private def testAndLog(pos: Position, severity: Severity): Boolean =
+    pos != null && pos.isDefined && {
+      val fpos = pos.focus
+      (positions get fpos) match {
+        case Some(level) if level >= severity => true
+        case _                                => positions += (fpos -> severity) ; false
+      }
+    }
 }

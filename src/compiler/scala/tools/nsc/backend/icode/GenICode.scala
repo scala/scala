@@ -1064,9 +1064,9 @@ abstract class GenICode extends SubComponent  {
             val Some(l) = ctx.method.lookupLocal(param.head)
             ctx1 = genLoad(arg.head, ctx1, l.kind)
             if (param.head.name == nme.THIS)
-              STORE_THIS(toTypeKind(ctx1.clazz.symbol.tpe)).setPos(arg.head.pos) +: stores
+              STORE_THIS(toTypeKind(ctx1.clazz.symbol.tpe)).setPos(arg.head.pos) +=: stores
             else {
-              STORE_LOCAL(l).setPos(arg.head.pos) +: stores
+              STORE_LOCAL(l).setPos(arg.head.pos) +=: stores
             }
         }
         arg = arg.tail
@@ -2142,7 +2142,7 @@ abstract class GenICode extends SubComponent  {
       locals -= l
 
     /** Return all locals that are in scope. */
-    def varsInScope: Buffer[Local] = outer.varsInScope.clone() ++ locals
+    def varsInScope: Buffer[Local] = outer.varsInScope.clone() ++= locals
 
     override def toString() =
       outer.toString() + locals.mkString("[", ", ", "]")

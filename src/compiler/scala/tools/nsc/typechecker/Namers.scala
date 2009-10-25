@@ -480,7 +480,7 @@ trait Namers { self: Analyzer =>
                                 "to non-private fields")
         else {
           val flags = mods.flags & (DEFERRED | OVERRIDE | STATIC)
-          val beanName = name(0).toString.toUpperCase + name.subName(1, name.length)
+          val beanName = name.toString.capitalize
 
           val getterName = if (hasBoolBP) "is" + beanName
                            else "get" + beanName

@@ -808,11 +808,10 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   // very simple right now, will get more interesting
   def dumpTrees(xs: List[String]): String = {
-    val treestrs =
-      List.flatten(
-        for (x <- xs ; name <- nameOfIdent(x) ; req <- requestForName(name))
-        yield req.trees
-      )
+    val treestrs = (
+      for (x <- xs ; name <- nameOfIdent(x) ; req <- requestForName(name))
+      yield req.trees
+    ).flatten
 
     if (treestrs.isEmpty) "No trees found."
     else treestrs.map(t => t.toString + " (" + t.getClass.getSimpleName + ")\n").mkString

@@ -150,18 +150,11 @@ class TcpService(port: Int, cl: ClassLoader) extends Thread with Service {
           nextClient.close()
       }
     } catch {
-      case ioe: IOException =>
-        Debug.info(this+": caught "+ioe)
-      case sec: SecurityException =>
-        Debug.info(this+": caught "+sec)
       case e: Exception =>
         Debug.info(this+": caught "+e)
     } finally {
       Debug.info(this+": shutting down...")
-
-      var workers: List[TcpServiceWorker] = List()
-      connections.values foreach { w => workers = w :: workers }
-      workers foreach { w => w.halt }
+      connections foreach { case (_, worker) => worker.halt }
     }
   }
 

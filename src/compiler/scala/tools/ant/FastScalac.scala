@@ -66,6 +66,7 @@ class FastScalac extends Scalac {
   /** Performs the compilation. */
   override def execute() = {
     val (settings, sourceFiles, javaOnly) = initialize
+    val s = settings
 
     if (!sourceFiles.isEmpty && !javaOnly) {
       def trim(xs: List[String]) = xs filter (x => x.length > 0)
@@ -74,22 +75,25 @@ class FastScalac extends Scalac {
 
       reset.value = resetCaches
       shutdown.value = shutdownServer
+
+      val stringSettings =
+        List(s.outdir, s.classpath, s.bootclasspath, s.extdirs, s.encoding) map (x => "%s %s".format(x.name, x.value))
+
+      val serverOption =
+        serverAddr.toList map ("-server " + _) // '-server' option
+
+      val choiceSettings =
+        List(s.debuginfo, s.target) map (x => "%s:%s".format(x.name, x.value))
+
+      val booleanSettings =
+        List(s.debug, s.deprecation, s.nopredefs, s.verbose, reset, shutdown) map (x => if (x.value) x.name else "")
+
+      val phaseSetting =
+        List(settings.log) map (x => if (x.value.isEmpty) "" else "%s:%s".format(x.name, x.value))
+
       val cmdOptions =
-        // StringSetting
-        List.flatten(
-          List(settings.outdir, settings.classpath, settings.bootclasspath,
-               settings.extdirs, settings.encoding) map (s => List(s.name, s.value))) :::
-        // '-server' option
-        (if (serverAddr.isEmpty) Nil else List("-server", serverAddr.get)) :::
-        // ChoiceSetting
-        (List(settings.debuginfo, settings.target) map (s => s.name + ":" + s.value)) :::
-        // BooleanSetting
-        trim(
-          List(settings.debug, settings.deprecation, settings.nopredefs,
-               settings.verbose, reset, shutdown) map (s => if (s.value) s.name else "")) :::
-        // PhaseSetting
-        trim(
-          List(settings.log) map (s => if (s.value.isEmpty) "" else s.name + ":" + s.value))
+        List(stringSettings, serverOption, choiceSettings, booleanSettings, phaseSetting) .
+          flatten . filterNot (_.isEmpty)
 
       val args = (cmdOptions ::: (sourceFiles map (_.toString))).toArray
       try {

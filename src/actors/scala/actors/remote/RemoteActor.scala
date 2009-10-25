@@ -75,7 +75,7 @@ object RemoteActor {
       kernels -= s
       // terminate `kern` when it does
       // not appear as value any more
-      if (!kernels.values.contains(kern)) {
+      if (!kernels.valuesIterator.contains(kern)) {
         Debug.info("terminating "+kern)
         // terminate NetKernel
         kern.terminate()

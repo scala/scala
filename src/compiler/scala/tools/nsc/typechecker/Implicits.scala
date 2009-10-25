@@ -473,7 +473,7 @@ self: Analyzer =>
         }
       }
       def comesBefore(sym: Symbol, owner: Symbol) =
-        sym.pos.offset.getOrElse(0) < owner.pos.offset.getOrElse(Integer.MAX_VALUE) &&
+        sym.pos.pointOrElse(0) < owner.pos.pointOrElse(Integer.MAX_VALUE) &&
         !(owner.ownerChain contains sym)
 
       sym.isInitialized ||

@@ -368,6 +368,10 @@ trait Iterator[+A] { self =>
     }
   }
 
+  /** !!! Temporary, awaiting more general implementation.
+   */
+  def withFilter(p: A => Boolean) = this.toStream withFilter p
+
   /** Returns an iterator over all the elements of this iterator which
    *  do not satisfy the predicate <code>p</code>.
    *

@@ -186,10 +186,10 @@ extends BatchSourceFile(name, contents)
     this("(virtual file)", components.toList:_*)
 
   override def positionInUltimateSource(position: Position) = {
-    if (position.offset.isEmpty) super.positionInUltimateSource(position)
+    if (!position.isDefined) super.positionInUltimateSource(position)
     else {
       println("!!!")
-      var off = position.offset.get
+      var off = position.point
       var compsLeft = components
       // the search here has to be against the length of the files underlying the
       // components, not their advertised length (which in the case of a fragment is
@@ -249,12 +249,9 @@ extends BatchSourceFile(name, contents) {
       start,
       stop)
 
-  override def positionInUltimateSource(position: Position) = {
-    if (position.offset.isEmpty)
-      super.positionInUltimateSource(position)
-    else {
-      super.positionInUltimateSource(
-      new OffsetPosition(this, position.offset.get))
-    }
-  }
+  override def positionInUltimateSource(position: Position) =
+    super.positionInUltimateSource(
+      if (position.isDefined) new OffsetPosition(this, position.point)
+      else position
+    )
 }

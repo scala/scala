@@ -833,8 +833,9 @@ abstract class GenJVM extends SubComponent {
 
       def makeLabels(bs: List[BasicBlock]) = {
         if (settings.debug.value)
-          log("Making labels for: " + method);
-        HashMap.empty ++ bs.zip(bs map (b => jcode.newLabel))
+          log("Making labels for: " + method)
+
+        HashMap(bs map (b => b -> jcode.newLabel) : _*)
       }
 
       isModuleInitialized = false

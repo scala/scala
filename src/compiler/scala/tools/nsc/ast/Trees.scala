@@ -655,7 +655,7 @@ trait Trees {
     val vparamss2 = vparamss map (vps => vps map { vd =>
       treeCopy.ValDef(vd, vd.mods &~ DEFAULTPARAM, vd.name, vd.tpt, EmptyTree)
     })
-    Template(parents, self, gvdefs ::: List.flatten(vparamss2) ::: constrs ::: etdefs ::: rest)
+    Template(parents, self, gvdefs ::: vparamss2.flatten ::: constrs ::: etdefs ::: rest)
   }
 
   /** Block of expressions (semicolon separated expressions) */

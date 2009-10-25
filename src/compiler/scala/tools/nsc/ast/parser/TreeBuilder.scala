@@ -378,7 +378,7 @@ abstract class TreeBuilder {
         val rhss = valeqs map { case ValEq(_, _, rhs) => rhs }
         val defpat1 = makeBind(pat)
         val defpats = pats map makeBind
-        val pdefs = List.flatten(List.map2(defpats, rhss)(makePatDef))
+        val pdefs = (List.map2(defpats, rhss)(makePatDef)).flatten
         val ids = (defpat1 :: defpats) map makeValue
         val rhs1 = makeForYield(
           List(ValFrom(pos, defpat1, rhs)),

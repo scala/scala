@@ -70,12 +70,8 @@ abstract class Inliners extends SubComponent {
                block:  BasicBlock,
                instr:  Instruction,
                callee: IMethod) {
-       log("Inlining " + callee + " in " + caller + " at pos: " +
-           (try {
-             instr.pos.offset.get
-           } catch {
-             case _ => "<nopos>"
-           }));
+       def posToStr(pos: util.Position) = if (pos.isDefined) pos.point.toString else "<nopos>"
+       log("Inlining " + callee + " in " + caller + " at pos: " + posToStr(instr.pos))
 
        val targetPos = instr.pos
        val a = new analysis.MethodTFA(callee)
@@ -86,7 +82,7 @@ abstract class Inliners extends SubComponent {
        /* Map 'original' blocks to the ones inlined in the caller. */
        val inlinedBlock: Map[BasicBlock, BasicBlock] = new HashMap
 
-       val varsInScope: Set[Local] = new HashSet[Local] ++ block.varsInScope.iterator
+       val varsInScope: Set[Local] = HashSet() ++= block.varsInScope
 
        val instrBefore = block.toList.takeWhile {
          case i @ SCOPE_ENTER(l) => varsInScope += l

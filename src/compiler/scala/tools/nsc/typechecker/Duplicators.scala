@@ -127,10 +127,9 @@ abstract class Duplicators extends Analyzer {
             ldef.symbol = newsym
             log("newsym: " + newsym + " info: " + newsym.info)
 
-          case DefDef(_, _, _, _, _, rhs) =>
+          case DefDef(_, _, tparams, vparamss, _, rhs) =>
             // invalidate parameters
-            invalidate(tree.asInstanceOf[DefDef].tparams)
-            invalidate(List.flatten(tree.asInstanceOf[DefDef].vparamss))
+            invalidate(tparams ::: vparamss.flatten)
             tree.symbol = NoSymbol
 
           case _ =>
@@ -148,7 +147,7 @@ abstract class Duplicators extends Analyzer {
       oldClassOwner = oldThis
       newClassOwner = newThis
       invalidate(ddef.tparams)
-      for (vdef <- List.flatten(ddef.vparamss)) {
+      for (vdef <- ddef.vparamss.flatten) {
         invalidate(vdef)
         vdef.tpe = null
       }

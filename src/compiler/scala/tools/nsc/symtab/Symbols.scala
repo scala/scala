@@ -71,7 +71,7 @@ trait Symbols {
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
 
     def namePos(source: BatchSourceFile) = {
-      val pos: Int = this.pos.offset.getOrElse(-1)
+      val pos: Int = this.pos.pointOrElse(-1)
       val buf = source.content
       if (pos == -1) -1
       else if (isTypeParameter) pos - name.length

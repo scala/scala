@@ -639,7 +639,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
             case None => rhs
             case Some(k) => atPos(rhs.pos)(nonLocalReturnTry(rhs, k, tree.symbol))
           }
-          treeCopy.DefDef(tree, mods, name, tparams, List(List.flatten(vparamss)), tpt, rhs1)
+          treeCopy.DefDef(tree, mods, name, tparams, List(vparamss.flatten), tpt, rhs1)
         case Try(body, catches, finalizer) =>
           // If warnings are enabled, alert about promiscuously catching cases.
           if (settings.YwarnCatches.value)

@@ -419,20 +419,14 @@ abstract class TreeBrowsers {
       case ValDef(mods, name, tpe, rhs) =>
         mods.annotations ::: List(tpe, rhs)
 
-      case DefDef(mods, name, tparams, vparams, tpe, rhs) => {
-        var children: List[Tree] = List()
-        children = tparams ::: children
-        children = List.flatten(vparams) ::: children
-        mods.annotations ::: tpe :: rhs :: children
-      }
+      case DefDef(mods, name, tparams, vparams, tpe, rhs) =>
+        mods.annotations ::: tpe :: rhs :: vparams.flatten ::: tparams
 
       case TypeDef(mods, name, tparams, rhs) =>
         mods.annotations ::: rhs :: tparams // @M: was List(rhs, lobound)
 
-      case Import(expr, selectors) => {
-        var children: List[Tree] = List(expr)
-        children
-      }
+      case Import(expr, selectors) =>
+        List(expr)
 
       case CaseDef(pat, guard, body) =>
         List(pat, guard, body)
@@ -542,12 +536,10 @@ abstract class TreeBrowsers {
 
     /** Return a textual representation of this t's symbol */
     def symbolText(t: Tree): String = {
-      var prefix = ""
-
-      if (t.hasSymbol)
-        prefix = "[has] "
-      if (t.isDef)
-        prefix = "[defines] "
+      val prefix =
+        if (t.hasSymbol)  "[has] "
+        else if (t.isDef) "[defines] "
+        else ""
 
       prefix + t.symbol
     }

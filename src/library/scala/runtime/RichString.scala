@@ -139,7 +139,7 @@ class RichString(val self: String) extends Proxy with IndexedSeq[Char] with Inde
     else if (self.length == 0) ""
     else {
       val chars = self.toCharArray
-      chars(0) = chars(0).toUpperCase
+      chars(0) = chars(0).toUpper
       new String(chars)
     }
 

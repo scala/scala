@@ -299,8 +299,7 @@ trait ModelToXML extends ModelExtractor {
   protected def decodeOption(tag: String, string: String): NodeSeq =
     <code>{Text(string + " - ")}</code>;
 
-  protected def decodeTag(tag: String): String =
-    "" + Character.toUpperCase(tag.charAt(0)) + tag.substring(1)
+  protected def decodeTag(tag: String): String = tag.capitalize
 
   def shortHeader(entity: Entity)(implicit from: Frame): NodeSeq =
     <tr>
