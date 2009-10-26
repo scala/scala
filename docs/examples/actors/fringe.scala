@@ -2,6 +2,8 @@ package examples.actors
 
 import scala.actors.Actor._
 import scala.actors.{Channel, OutputChannel}
+import scala.actors.{Debug, Scheduler}
+import scala.actors.scheduler.ResizableThreadPoolScheduler
 
 /**
  @author Philipp Haller
@@ -17,6 +19,13 @@ object fringe extends Application {
   case class ComputeFringe(t1: Tree, atoms: OutputChannel[Option[Leaf]])
   case class Equal(atom1: Option[Leaf], atom2: Option[Leaf])
   case class Extract(tree: Tree)
+
+  Debug.level = 3
+  Scheduler.impl = {
+    val s = new ResizableThreadPoolScheduler(false)
+    s.start()
+    s
+  }
 
   val comparator = actor {
     val extractor1 = actor(extractorBehavior())

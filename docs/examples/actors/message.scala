@@ -3,6 +3,8 @@ package examples.actors
 import scala.actors.{Actor, Scheduler}
 import scala.actors.Actor._
 import scala.actors.scheduler.SingleThreadedScheduler
+import scala.actors.{Debug, Scheduler}
+import scala.actors.scheduler.ResizableThreadPoolScheduler
 
 object message {
   def main(args: Array[String]) {
@@ -14,7 +16,13 @@ object message {
     }
     val nActors = 500
     val finalSum = n * nActors
-    Scheduler.impl = new SingleThreadedScheduler
+    //Scheduler.impl = new SingleThreadedScheduler
+    Debug.level = 3
+    Scheduler.impl = {
+      val s = new ResizableThreadPoolScheduler(false)
+      s.start()
+      s
+    }
 
     def beh(next: Actor, sum: Int) {
       react {
@@ -35,6 +43,6 @@ object message {
     val firstActor = actorChain(nActors, null)
     var i = n; while (i > 0) { firstActor ! 0; i -= 1 }
 
-    Scheduler.shutdown()
+    //Scheduler.shutdown()
   }
 }
