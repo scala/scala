@@ -92,30 +92,30 @@ class MessageQueue(protected val label: String) {
 
   /** Removes the n-th message that satisfies the predicate <code>p</code>.
    */
-  def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] =
+  def remove(n: Int)(p: (Any, OutputChannel[Any]) => Boolean): Option[(Any, OutputChannel[Any])] =
     removeInternal(n)(p) map (x => (x.msg, x.session))
 
   /** Extracts the first message that satisfies the predicate <code>p</code>
    *  or <code>null</code> if <code>p</code> fails for all of them.
    */
-  def extractFirst(p: Any => Boolean): MessageQueueElement =
+  def extractFirst(p: (Any, OutputChannel[Any]) => Boolean): MessageQueueElement =
     removeInternal(0)(p) orNull
 
-  private def removeInternal(n: Int)(p: Any => Boolean): Option[MessageQueueElement] = {
+  private def removeInternal(n: Int)(p: (Any, OutputChannel[Any]) => Boolean): Option[MessageQueueElement] = {
     var pos = 0
 
     def foundMsg(x: MessageQueueElement) = {
       changeSize(-1)
       Some(x)
     }
-    def test(msg: Any): Boolean =
-      p(msg) && (pos == n || { pos += 1 ; false })
+    def test(msg: Any, session: OutputChannel[Any]): Boolean =
+      p(msg, session) && (pos == n || { pos += 1 ; false })
 
     if (isEmpty)    // early return
       return None
 
     // special handling if returning the head
-    if (test(first.msg)) {
+    if (test(first.msg, first.session)) {
       val res = first
       first = first.next
       if (res eq last)
@@ -128,7 +128,7 @@ class MessageQueue(protected val label: String) {
       var prev = first
 
       while (curr != null) {
-        if (test(curr.msg)) {
+        if (test(curr.msg, curr.session)) {
           prev.next = curr.next
           if (curr eq last)
             last = prev
@@ -161,12 +161,12 @@ private[actors] trait MessageQueueTracer extends MessageQueue
     printQueue("GET %s" format res)
     res
   }
-  override def remove(n: Int)(p: Any => Boolean): Option[(Any, OutputChannel[Any])] = {
+  override def remove(n: Int)(p: (Any, OutputChannel[Any]) => Boolean): Option[(Any, OutputChannel[Any])] = {
     val res = super.remove(n)(p)
     printQueue("REMOVE %s" format res)
     res
   }
-  override def extractFirst(p: Any => Boolean): MessageQueueElement = {
+  override def extractFirst(p: (Any, OutputChannel[Any]) => Boolean): MessageQueueElement = {
     val res = super.extractFirst(p)
     printQueue("EXTRACT_FIRST %s" format res)
     res

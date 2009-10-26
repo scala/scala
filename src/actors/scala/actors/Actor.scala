@@ -439,7 +439,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
     var done = false
     while (!done) {
-      val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
+      val qel = mailbox.extractFirst((m: Any, replyTo: OutputChannel[Any]) => f.isDefinedAt(m))
       if (null eq qel) {
         synchronized {
           // in mean time new stuff might have arrived
@@ -484,7 +484,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
     }
 
     // first, remove spurious TIMEOUT message from mailbox if any
-    mailbox.extractFirst((m: Any) => m == TIMEOUT)
+    mailbox.extractFirst((m: Any, replyTo: OutputChannel[Any]) => m == TIMEOUT)
 
     val receiveTimeout = () => {
       if (f.isDefinedAt(TIMEOUT)) {
@@ -496,7 +496,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
     var done = false
     while (!done) {
-      val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
+      val qel = mailbox.extractFirst((m: Any, replyTo: OutputChannel[Any]) => f.isDefinedAt(m))
       if (null eq qel) {
         val todo = synchronized {
           // in mean time new stuff might have arrived
@@ -580,7 +580,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
     }
 
     // first, remove spurious TIMEOUT message from mailbox if any
-    mailbox.extractFirst((m: Any) => m == TIMEOUT)
+    mailbox.extractFirst((m: Any, replyTo: OutputChannel[Any]) => m == TIMEOUT)
 
     val receiveTimeout = () => {
       if (f.isDefinedAt(TIMEOUT)) {
@@ -592,7 +592,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
     var done = false
     while (!done) {
-      val qel = mailbox.extractFirst((m: Any) => f.isDefinedAt(m))
+      val qel = mailbox.extractFirst((m: Any, replyTo: OutputChannel[Any]) => f.isDefinedAt(m))
       if (null eq qel) {
         val todo = synchronized {
           // in mean time new stuff might have arrived
