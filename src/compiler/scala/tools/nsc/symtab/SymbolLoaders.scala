@@ -198,7 +198,7 @@ abstract class SymbolLoaders {
 
   class NamespaceLoader(classpath: ClassPath[MSILType]) extends PackageLoader(classpath) {
     protected def needCompile(bin: MSILType, src: AbstractFile) =
-      (!src.name.endsWith(".java"))
+      false // always use compiled file on .net
 
     protected def doLoad(cls: ClassRep[MSILType]) = {
       if (cls.binary.isDefined) {
