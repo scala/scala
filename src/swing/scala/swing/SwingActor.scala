@@ -13,6 +13,9 @@ package scala.swing
 
 import scala.actors._
 
+// Dummy to keep ant from recompiling on every run.
+trait SwingActor { }
+
 /*object SwingActor {
   /**
    * Similar to Actor.actor, but creates an instance of a SwingActor.

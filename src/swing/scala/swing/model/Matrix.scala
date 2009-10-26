@@ -8,9 +8,11 @@
 
 // $Id$
 
-
 package scala.swing
 package model
+
+// Dummy to keep ant from recompiling on every run.
+trait Matrix { }
 
 /*trait Matrix[A] extends Function2[Int, Int, A] {
 

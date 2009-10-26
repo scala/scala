@@ -1,3 +1,4 @@
+package scala
 
 package object actors {
   @deprecated("use scala.actors.scheduler.ForkJoinScheduler instead")
