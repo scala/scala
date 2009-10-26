@@ -21,6 +21,7 @@ extends CompilerCommand(allargs, settings, error, false, false)
     this(allargs, str => Console.println("Error: " + str))
 
   /** name of the associated compiler command */
+  override val cmdName = "scala"
   val compCmdName = "scalac"
 
   /** What to run.  If it is None, then the interpreter should be started */
