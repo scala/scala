@@ -342,12 +342,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           sourceModule setInfo sym.tpe
           assert(clazz.sourceModule != NoSymbol)//debug
           parents1 = List()
-          decls1 = newScope(decls.toList filter isImplementedStatically)
+          decls1 = new Scope(decls.toList filter isImplementedStatically)
         } else if (!parents.isEmpty) {
           parents1 = parents.head :: (parents.tail map toInterface)
         }
       }
-      //decls1 = atPhase(phase.next)(newScope(decls1.toList))//debug
+      //decls1 = atPhase(phase.next)(new Scope(decls1.toList))//debug
       if ((parents1 eq parents) && (decls1 eq decls)) tp
       else ClassInfoType(parents1, decls1, clazz)
 
@@ -421,7 +421,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
     /** The rootContext used for typing */
     private val rootContext =
-      erasure.NoContext.make(EmptyTree, RootClass, newScope)
+      erasure.NoContext.make(EmptyTree, RootClass, new Scope)
 
     /** The typer */
     private var localTyper: erasure.Typer = _

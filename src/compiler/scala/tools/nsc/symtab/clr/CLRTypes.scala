@@ -63,20 +63,11 @@ abstract class CLRTypes {
   val fields: Map[Symbol, FieldInfo] = new HashMap
   val sym2type: Map[Type,Symbol] = new HashMap
 
-  private var alltypes: Array[Type] = _
 
   def init() = try { // initialize
-/*
-    val assems = new StringTokenizer(global.settings.assemrefs.value, File.pathSeparator)
-    while (assems.hasMoreTokens()) {
-      assemrefs += new File(assems.nextToken())
-    }
-    */
-
-    val mscorlib = findAssembly("mscorlib.dll")
-    Type.initMSCORLIB(mscorlib)
-    findAssembly("scalaruntime.dll")
-    findAllAssemblies()
+    // the MsilClasspath (nsc/util/Classpath.scala) initializes the msil-library by calling
+    // Assembly.LoadFrom("mscorlib.dll"), so this type should be found
+    Type.initMSCORLIB(getTypeSafe("System.String").Assembly)
 
     BYTE     = getTypeSafe("System.SByte")
     UBYTE    = getTypeSafe("System.Byte")
@@ -104,37 +95,19 @@ abstract class CLRTypes {
     SYMTAB_CONSTR = SCALA_SYMTAB_ATTR.GetConstructor(bytearray)
     SYMTAB_DEFAULT_CONSTR = SCALA_SYMTAB_ATTR.GetConstructor(Type.EmptyTypes)
 
-    //assert(SCALA_SYMTAB_ATTR != null)
-
     val delegate: Type = getTypeSafe("System.Delegate")
     val dargs: Array[Type] = Array(delegate, delegate)
     DELEGATE_COMBINE = delegate.GetMethod("Combine", dargs)
     DELEGATE_REMOVE = delegate.GetMethod("Remove", dargs)
-    //assert(DELEGATE_COMBINE != null)
-    //assert(DELEGATE_REMOVE != null)
-
-
-    var alltypes: Array[Type] = Type.EmptyTypes
-    for (assem <- assemblies) {
-      val atypes = assem.GetTypes().filter((typ: Type) => typ.DeclaringType == null)
-      alltypes = Array.concat(alltypes, atypes)
-    }
-
-    Sorting.stableSort(alltypes, (t1: Type, t2: Type) => (t1.FullName compareTo t2.FullName) < 0)
-    this.alltypes = alltypes
   }
   catch {
     case e: RuntimeException =>
       Console.println(e.getMessage)
-      // no bloody exits! exit(1)
+      throw e
   }
 
   //##########################################################################
   // type mapping and lookup
-
-//   private class MyHashMap[A, B <: AnyRef] extends HashMap[A, B] {
-//     override def default(key: A): B = null;
-//   }
 
   def getType(name: String): Type = Type.GetType(name)
 
@@ -147,107 +120,4 @@ abstract class CLRTypes {
   def mkArrayType(elemType: Type): Type = getType(elemType.FullName + "[]")
 
   def isDelegateType(t: Type): Boolean = { t.BaseType() == DELEGATE }
-
-  //##########################################################################
-  // assembly loading methods
-
-  // a list of all loaded assemblies
-  private var assemblies: ListBuffer[Assembly] = new ListBuffer()
-
-  // a set of all directories and assembly files
-  //private var assemrefs: Set[File] = new HashSet()
-
-  //def assembly(file : File) = assemrefs += file
-
-  /** Load the assembly with the given name
-   */
-  private def findAssembly(name: String): Assembly = {
-    // see if the assembly is referenced directly
-    for (file <- global.assemrefs.iterator if file.getName() == name) {
-      val assem = Assembly.LoadFrom(file.getPath())
-      if (assem != null) {
-	global.assemrefs -= file
-	assemblies += assem
-	return assem
-      }
-    }
-    // look in directories specified with the '-r' option
-    for (dir <- global.assemrefs.iterator if dir.isDirectory()) {
-      val file = new File(dir, name)
-      if (file.exists()) {
-	val assem = Assembly.LoadFrom(file.getPath())
-	if (assem != null) {
-	  assemblies += assem
-	  return assem
-	}
-      }
-    }
-    // try in the current directory
-    val file = new File(".", name)
-    if (file.exists()) {
-      val assem = Assembly.LoadFrom(file.getPath())
-      if (assem != null) {
-	assemblies += assem
-	return assem
-      }
-    }
-    throw new RuntimeException(
-      "cannot find assembly " + name + "; use the -Xassem-path option to specify its location")
-  }
-
-  /** Load the rest of the assemblies specified with the '-r' option
-   */
-  private def findAllAssemblies() {
-    for (file <- global.assemrefs.iterator) {
-      if (file.isFile()) {
-        //System.out.println("Loading assembly " + file)
-	val assem = Assembly.LoadFrom(file.getPath())
-	if (assem != null) {
-	  assemblies += assem
-	}
-      }
-    }
-    global.assemrefs.clear
-  }
-
-  //##########################################################################
-  // collect the members contained in a given namespace
-
-  /** Find the position of the first type whose name starts with
-   *  the given prefix; return the length of the types array if no match
-   *  is found so the result canbe used to terminate loop conditions
-   */
-  private def findFirst(prefix: String): Int = {
-    var m = 0
-    var n = alltypes.length - 1
-    while (m < n) {
-      val l = (m + n) / 2
-      val res = alltypes(l).FullName.compareTo(prefix)
-      if (res < 0) m = l + 1
-      else n = l
-    }
-    if (alltypes(m).FullName.startsWith(prefix)) m else alltypes.length
-  }
-
-  /** Collects the members contained in the given Scala package (namespace)
-   */
-  def collectMembers(pakage: Symbol, typesMap: Map[String,Type], namespacesSet: Set[String]) = {
-    val namespace = if (pakage.isRoot) "" else pakage.fullNameString + "."
-    val nl = namespace.length()
-    var i = findFirst(namespace)
-    while (i < alltypes.length && alltypes(i).FullName.startsWith(namespace)) {
-      val typ = alltypes(i)
-      if (typ.FullName != "java.lang.Object" && typ.FullName != "java.lang.String") {
-	val k = typ.FullName.indexOf(".", nl)
-	if (k < 0) {
-	  typesMap.update(typ.Name, typ)
-	} else {
-	  namespacesSet += (typ.Namespace.substring(nl, k))
-	}
-      }
-      i += 1
-    }
-  }
-
-    //##########################################################################
 }  // CLRTypes

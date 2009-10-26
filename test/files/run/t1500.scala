@@ -20,6 +20,8 @@ object Test {
 
     val tool = new Interpreter(new Settings())
     val global = tool.compiler
+    // when running that compiler, give it a scala-library to the classpath
+    global.settings.classpath.value = System.getProperty("java.class.path")
 
     import global._
     import definitions._

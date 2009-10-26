@@ -337,14 +337,15 @@ abstract class TreeInfo {
   /** Compilation unit is the predef object
    */
   def isPredefUnit(tree: Tree): Boolean = tree match {
-    case PackageDef(Ident(nme.scala_), List(obj)) => isPredefObj(obj)
+    case PackageDef(Ident(nme.scala_), defs) => isPredefObj(defs)
     case _ => false
   }
 
-  private def isPredefObj(tree: Tree): Boolean = tree match {
-    case ModuleDef(_, nme.Predef, _) => true
-    case DocDef(_, tree1) => isPredefObj(tree1)
-    case Annotated(_, tree1) => isPredefObj(tree1)
+  private def isPredefObj(trees: List[Tree]): Boolean = trees match {
+    case Import(_, _) :: xs => isPredefObj(xs)
+    case ModuleDef(_, nme.Predef, _) :: Nil => true
+    case DocDef(_, tree1) :: Nil => isPredefObj(List(tree1))
+    case Annotated(_, tree1) :: Nil => isPredefObj(List(tree1))
     case _ => false
   }
 

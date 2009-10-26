@@ -122,7 +122,7 @@ abstract class ExplicitOuter extends InfoTransform
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
       if (isInner(clazz) && !(clazz hasFlag INTERFACE)) {
-        decls1 = newScope(decls.toList)
+        decls1 = new Scope(decls.toList)
         val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
         outerAcc expandName clazz
 
@@ -141,7 +141,7 @@ abstract class ExplicitOuter extends InfoTransform
         for (mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
-            if (decls1 eq decls) decls1 = newScope(decls.toList)
+            if (decls1 eq decls) decls1 = new Scope(decls.toList)
             val newAcc = mixinOuterAcc.cloneSymbol(clazz)
             newAcc resetFlag DEFERRED setInfo (clazz.thisType memberType mixinOuterAcc)
             decls1 enter newAcc

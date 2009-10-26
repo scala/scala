@@ -22,8 +22,9 @@ import classfile.UnPickler
 abstract class TypeParser {
 
   val global: Global
-  import global.loaders.clrTypes
-  import clrTypes.global._
+
+  import global._
+  import loaders.clrTypes
 
   //##########################################################################
 
@@ -76,8 +77,7 @@ abstract class TypeParser {
       val a = attrs(0).asInstanceOf[MSILAttribute];
       assert (a.getConstructor() == clrTypes.SYMTAB_CONSTR);
       val symtab = a.getConstructorArguments()(0).asInstanceOf[Array[Byte]]
-      unpickler.unpickle(symtab, 0, clazz.asInstanceOf[unpickler.global.Symbol],
-                                    staticModule.asInstanceOf[unpickler.global.Symbol], typ.FullName);
+      unpickler.unpickle(symtab, 0, clazz, staticModule, typ.FullName);
       val mClass = clrTypes.getType(typ.FullName + "$");
       if (mClass != null) {
         clrTypes.types(statics) = mClass;
@@ -93,8 +93,8 @@ abstract class TypeParser {
                     else  if (typ.IsInterface()) definitions.ObjectClass.tpe
                     else definitions.AnyClass.tpe; // this is System.Object
     val parents = superType :: ifaces.map(getCLRType).toList
-    instanceDefs = newClassScope(clazz)
-    staticDefs = newClassScope(staticModule)
+    instanceDefs = new Scope
+    staticDefs = new Scope
 
     val classInfo = ClassInfoType(parents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
@@ -112,7 +112,7 @@ abstract class TypeParser {
 				            || ntype.IsNestedFamANDAssem)
 				          || ntype.IsInterface)
       {
-	val loader = new global.loaders.MSILTypeLoader(ntype)
+	val loader = new loaders.MSILTypeLoader(ntype)
 	val nclazz = statics.newClass(NoPosition, ntype.Name.toTypeName)
 	val nmodule = statics.newModule(NoPosition, ntype.Name)
 	nclazz.setInfo(loader)

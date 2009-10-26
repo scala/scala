@@ -576,7 +576,7 @@ abstract class RefChecks extends InfoTransform {
 // Forward reference checking ---------------------------------------------------
 
     class LevelInfo(val outer: LevelInfo) {
-      val scope: Scope = if (outer eq null) newScope else newScope(outer.scope)
+      val scope: Scope = if (outer eq null) new Scope else new Scope(outer.scope)
       var maxindex: Int = Math.MIN_INT
       var refpos: Position = _
       var refsym: Symbol = _
@@ -601,7 +601,7 @@ abstract class RefChecks extends InfoTransform {
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
             assert(stat.symbol != NoSymbol, stat);//debug
             if (stat.symbol.isLocal) {
-              currentLevel.scope.enter(newScopeEntry(stat.symbol, currentLevel.scope));
+              currentLevel.scope.enter(stat.symbol)
               symIndex(stat.symbol) = index;
             }
           case _ =>

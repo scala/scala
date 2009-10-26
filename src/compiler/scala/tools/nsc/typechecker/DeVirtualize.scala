@@ -86,7 +86,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
         def enter(sym: Symbol) = // at next phase because names of worker traits change
           atPhase(ownPhase.next) { decls.enter(sym) }
         if (containsVirtuals(clazz)) {
-          decls = newScope
+          decls = new Scope
           for (m <- decls0.toList) {
             if (m.isVirtualClass) {
               m.setFlag(notDEFERRED | notFINAL | lateABSTRACT)
@@ -100,7 +100,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
         if (clazz.isVirtualClass) {
           println("virtual class: "+clazz+clazz.locationString)
           transformOwnerInfo(clazz)
-          decls = newScope
+          decls = new Scope
 
           // add virtual fields for all primary constructor parameters
           for (row <- paramTypesAndIndices(clazz.primaryConstructor.tpe, 0))
@@ -335,7 +335,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
           val parents2 =
             removeDuplicates(parents1.flatMap(addOverriddenVirtuals))
             .map(_.substSym(clazz.typeParams, factory.typeParams))
-          sym setInfo ClassInfoType(parents2, newScope, cclazz)
+          sym setInfo ClassInfoType(parents2, new Scope, cclazz)
         }
       }
     }

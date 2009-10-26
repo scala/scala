@@ -52,12 +52,16 @@ class ScalacFork extends MatchingTask with TaskArgs {
     if (!compTarget.isEmpty) settings.target = compTarget.get
     if (!compilationPath.isEmpty) settings.classpath = compilationPath.get
     if (!sourcePath.isEmpty) settings.sourcepath = sourcePath.get
+    if (compTarget.isDefined && compTarget.get == "msil") settings.sourcedir = sourceDir.get
     if (!params.isEmpty) settings.more = params.get
 
     // not yet used: compilerPath, sourcedir (used in mapper), failonerror, timeout
 
     val mapper = new GlobPatternMapper()
-    mapper.setTo("*.class")
+    if (compTarget.isDefined && compTarget.get == "msil")
+      mapper.setTo("*.msil")
+    else
+      mapper.setTo("*.class")
     mapper.setFrom("*.scala")
     val includedFiles: Array[File] =
       new SourceFileScanner(this).restrict(

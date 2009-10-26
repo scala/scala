@@ -113,6 +113,8 @@ object Foo2 {
     var reporter: ConsoleReporter = _
     def process(args: Array[String]) {
       val docSettings = new scala.tools.nsc.doc.Settings(error)
+      // when running that compiler, give it a scala-library to the classpath
+      docSettings.classpath.value = System.getProperty("java.class.path")
       reporter = new ConsoleReporter(docSettings)
       val command = new CompilerCommand(args.toList, docSettings, error, false)
       try {

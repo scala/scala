@@ -54,7 +54,7 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALLREF = REFERENCE(definitions.NullClass)
     val THROWABLE    = REFERENCE(ThrowableClass)
 
-    val BoxesRunTime_equals =
+    lazy val BoxesRunTime_equals =
       if (!forMSIL)
         definitions.getMember(definitions.BoxesRunTimeClass, nme.equals_)
       else

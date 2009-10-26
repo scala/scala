@@ -110,7 +110,7 @@ abstract class MetaParser{
   }
 
   protected def parseClass() {
-    locals = newScope
+    locals = new Scope
     def parse(): Type = {
       nextToken()
       if (token == "[") {
@@ -132,7 +132,7 @@ abstract class MetaParser{
 
   protected def parseMethod() {
     val globals = locals
-    locals = if (locals eq null) newScope else newScope(locals)
+    locals = if (locals eq null) new Scope else new Scope(locals)
     def parse(): Type = {
       nextToken();
       if (token == "[") PolyType(parseTypeParams(), parse())

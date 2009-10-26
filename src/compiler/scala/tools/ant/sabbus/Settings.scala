@@ -33,6 +33,10 @@ class Settings {
   def sourcepath = sourcepathBf.get
   def sourcepath_=(p: Path): this.type = { sourcepathBf = Some(p); this }
 
+  private var sourcedirBf: Option[File] = None
+  def sourcedir = sourcedirBf.get
+  def sourcedir_=(p: File): this.type = { sourcedirBf = Some(p); this }
+
   private var bootclasspathBf: Option[Path] = None
   def bootclasspath = bootclasspathBf.get
   def bootclasspath_=(p: Path): this.type = { bootclasspathBf = Some(p); this }
@@ -66,6 +70,7 @@ class Settings {
     (if (uncheckedBf) "-unchecked" :: Nil else Nil) :::
     (if (!classpathBf.isEmpty) "-classpath" :: classpath.toString :: Nil else Nil) :::
     (if (!sourcepathBf.isEmpty) "-sourcepath" :: sourcepath.toString :: Nil else Nil) :::
+    (if (!sourcedirBf.isEmpty) "-Xsourcedir" :: sourcedir.toString :: Nil else Nil) :::
     (if (!bootclasspathBf.isEmpty) "-bootclasspath" :: bootclasspath.toString :: Nil else Nil) :::
     (if (!extdirsBf.isEmpty) "-extdirs" :: extdirs.toString :: Nil else Nil) :::
     (if (!dBf.isEmpty) "-d" :: d.getAbsolutePath :: Nil else Nil) :::
@@ -80,6 +85,7 @@ class Settings {
       this.uncheckedBf == cs.uncheckedBf &&
       this.classpathBf == cs.classpathBf &&
       this.sourcepathBf == cs.sourcepathBf &&
+      this.sourcedirBf == cs.sourcedirBf &&
       this.bootclasspathBf == cs.bootclasspathBf &&
       this.extdirsBf == cs.extdirsBf &&
       this.dBf == cs.dBf &&

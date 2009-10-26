@@ -89,16 +89,10 @@ abstract class UnPickler {
     }
 
     /** The `decls' scope associated with given symbol */
-    private def symScope(sym: Symbol, isTemp : Boolean) = symScopes.get(sym) match {
-      case None =>
-        val s = if (isTemp) newTempScope
-                else if (sym.isClass || sym.isModuleClass || sym.isModule) newClassScope(sym);
-                else newScope
-
-        symScopes(sym) = s; s
+    private def symScope(sym: Symbol) = symScopes.get(sym) match {
+      case None => val s = new Scope; symScopes(sym) = s; s
       case Some(s) => s
     }
-    private def symScope(sym : Symbol) : Scope = symScope(sym, false)
 
     /** Does entry represent an (internal) symbol */
     private def isSymbolEntry(i: Int): Boolean = {
@@ -302,7 +296,7 @@ abstract class UnPickler {
           val dcls = symScope(clazz)
           new RefinedType(ps, dcls) { override def symbol = clazz }
 */
-         new RefinedType(until(end, readTypeRef), symScope(clazz, true)) {
+         new RefinedType(until(end, readTypeRef), symScope(clazz)) {
            override def typeSymbol = clazz
           }
         case CLASSINFOtpe =>
@@ -816,10 +810,8 @@ abstract class UnPickler {
     private class LazyTypeRef(i: Int) extends LazyType {
       private val definedAtRunId = currentRunId
       private val p = phase
-      // In IDE, captures class files dependencies so they can be reloaded when their dependencies change.
-      private val ideHook = unpickleIDEHook
       override def complete(sym: Symbol) : Unit = {
-        val tp = ideHook(at(i, readType))
+        val tp = at(i, readType)
         if (p != phase) atPhase(p) (sym setInfo tp)
         else sym setInfo tp
         if (currentRunId != definedAtRunId) sym.setInfo(adaptToNewRunMap(tp))

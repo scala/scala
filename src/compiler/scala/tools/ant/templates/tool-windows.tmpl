@@ -47,7 +47,7 @@ if "%_TOOL_CLASSPATH%"=="" (
   )
 )
 
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.classpath="%CLASSPATH%" -Denv.emacs="%EMACS%" @properties@
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Denv.emacs="%EMACS%" @properties@
 
 rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%
 "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %_ARGS%

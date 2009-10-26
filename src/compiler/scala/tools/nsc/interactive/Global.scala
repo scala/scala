@@ -392,7 +392,7 @@ self =>
     println("typeMembers at "+tree+" "+tree.tpe)
     val context = doLocateContext(pos)
     val superAccess = tree.isInstanceOf[Super]
-    val scope = newScope
+    val scope = new Scope
     val members = new LinkedHashMap[Symbol, TypeMember]
     def addTypeMember(sym: Symbol, pre: Type, inherited: Boolean, viaView: Symbol) {
       val symtpe = pre.memberType(sym)

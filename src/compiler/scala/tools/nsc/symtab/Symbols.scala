@@ -1822,7 +1822,6 @@ trait Symbols {
       if (owner.isPackageClass) source else super.sourceFile
     override def sourceFile_=(f: AbstractFile) {
       //System.err.println("set source file of " + this + ": " + f);
-      attachSource(this, f)
       source = f
     }
     override def isFromClassFile = {

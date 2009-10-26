@@ -17,6 +17,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
   // optionizes a system property
   private def syspropopt(name: String): Option[String] = onull(System.getProperty(name))
+  private def sysenvopt(name: String): Option[String] = onull(System.getenv(name))
 
   // given any number of possible path segments, flattens down to a
   // :-separated style path
@@ -24,7 +25,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     segments.toList.flatMap(x => x) mkString File.pathSeparator
 
   protected def classpathDefault =
-    syspropopt("env.classpath") orElse syspropopt("java.class.path") getOrElse ""
+    sysenvopt("CLASSPATH") getOrElse "."
 
   protected def bootclasspathDefault =
     concatPath(syspropopt("sun.boot.class.path"), guessedScalaBootClassPath)
@@ -35,6 +36,9 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
   protected def extdirsDefault =
     concatPath(syspropopt("java.ext.dirs"), guessedScalaExtDirs)
+
+  protected def assemExtdirsDefault =
+    concatPath(guessedScalaExtDirs)
 
   protected def pluginsDirDefault =
     guess(List("misc", "scala-devel", "plugins"), _.isDirectory) getOrElse ""
@@ -759,8 +763,10 @@ trait ScalacSettings {
    * -X "Advanced" settings
    */
   val Xhelp         = BooleanSetting    ("-X", "Print a synopsis of advanced options")
-  val assemname     = StringSetting     ("-Xassem", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil")
+  val assemname     = StringSetting     ("-Xassem-name", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil")
   val assemrefs     = StringSetting     ("-Xassem-path", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil")
+  val assemextdirs  = StringSetting     ("-Xassem-extdirs", "dirs", "List of directories containing assemblies, defaults to `lib'", assemExtdirsDefault).dependsOn(target, "msil")
+  val sourcedir     = StringSetting     ("-Xsourcedir", "directory", "When -target:msil, the source folder structure is mirrored in output directory.", ".").dependsOn(target, "msil")
   val checkInit     = BooleanSetting    ("-Xcheckinit", "Add runtime checks on field accessors. Uninitialized accesses result in an exception being thrown.")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
   val elideLevel    = IntSetting        ("-Xelide-level", "Generate calls to @elidable-marked methods only method priority is greater than argument.",

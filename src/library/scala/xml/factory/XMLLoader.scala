@@ -36,13 +36,12 @@ trait XMLLoader[T <: Node]
    */
   def loadXML(source: InputSource, parser: SAXParser): T = {
     val newAdapter = adapter
-    import newAdapter._
 
-    scopeStack push TopScope
+    newAdapter.scopeStack push TopScope
     parser.parse(source, newAdapter)
-    scopeStack.pop
+    newAdapter.scopeStack.pop
 
-    rootElem.asInstanceOf[T]
+    newAdapter.rootElem.asInstanceOf[T]
   }
 
   /** Loads XML from the given file, file descriptor, or filename. */

@@ -175,10 +175,13 @@ def f(e: Exp) = e match {{  // non-exhaustive warning here
     val output = new PrintWriter(
       new Skip1Writer(new OutputStreamWriter(Console.out)))
     val repl = new InterpreterLoop(input, output)
-    repl.main(new Settings)
+    val settings = new Settings
+    // when running that compiler, give it a scala-library to the classpath
+    settings.classpath.value = System.getProperty("java.class.path")
+    repl.main(settings)
     println()
 
-    val interp = new Interpreter(new Settings)
+    val interp = new Interpreter(settings)
     interp.interpret("def plusOne(x: Int) = x + 1")
     interp.interpret("plusOne(5)")
     interp.reset()

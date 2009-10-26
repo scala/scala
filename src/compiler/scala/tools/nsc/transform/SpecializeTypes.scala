@@ -373,7 +373,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       typeEnv(cls) = env
       this.specializedClass((clazz, env)) = cls
 
-      val decls1 = newScope
+      val decls1 = new Scope
 
       val specializedInfoType: Type = {
         val (_, unspecParams) = splitParams(clazz.info.typeParams)
@@ -741,7 +741,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val parents1 = parents mapConserve (this);
           val decls1 = mapOver(decls.toList);
           if ((parents1 eq parents) && (decls1 eq decls)) tp
-          else ClassInfoType(parents1, newScope(decls1), clazz)
+          else ClassInfoType(parents1, new Scope(decls1), clazz)
         case AnnotatedType(annots, atp, selfsym) =>
           val annots1 = mapOverAnnotations(annots)
           val atp1 = this(atp)
@@ -778,12 +778,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val res = tpe match {
       case PolyType(targs, ClassInfoType(base, decls, clazz)) =>
         val parents = base map specializedType
-        PolyType(targs, ClassInfoType(parents, newScope(specializeClass(clazz, typeEnv(clazz))), clazz))
+        PolyType(targs, ClassInfoType(parents, new Scope(specializeClass(clazz, typeEnv(clazz))), clazz))
 
       case ClassInfoType(base, decls, clazz) if !clazz.isPackageClass =>
 //        val parents = base map specializedType
         log("transformInfo " + clazz )
-        val res = ClassInfoType(base map specializedType, newScope(specializeClass(clazz, typeEnv(clazz))), clazz)
+        val res = ClassInfoType(base map specializedType, new Scope(specializeClass(clazz, typeEnv(clazz))), clazz)
         res
 
       case _ =>

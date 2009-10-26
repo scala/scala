@@ -90,6 +90,8 @@ object Test {
     settings.Xexperimental.value = true
     settings.selfInAnnots.value = true
     settings.deprecation.value = true
+    // when running that compiler, give it a scala-library to the classpath
+    settings.classpath.value = System.getProperty("java.class.path")
 
     val interp = new Interpreter(settings)
 

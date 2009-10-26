@@ -42,12 +42,6 @@ abstract class SymbolTable extends Names
   }
   def notifyImport(what : Name, container : Type, from : Name, to : Name) : Unit = {}
   def sanitize(tree : Tree) : Tree = tree
-  def attachSource(symbol : ClassSymbol, file : io.AbstractFile) : Unit = {
-    assert(symbol != null)
-  }
-  def prepareReset(symbol : Symbol, tpe : LazyType) : Unit = {
-    assert(symbol != null)
-  }
 
   /** A period is an ordinal number for a phase in a run.
    *  Phases in later runs have higher periods than phases in earlier runs.

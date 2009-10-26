@@ -57,11 +57,10 @@ class ReflectiveRunner extends RunnerUtils {
     val newClasspath = paths mkString pathSeparator
 
     syspropset("java.class.path", newClasspath)
-    syspropset("env.classpath", newClasspath)
     syspropset("scala.home", "")
 
     if (fileManager.debug)
-      for (prop <- List("java.class.path", "env.classpath", "sun.boot.class.path", "java.ext.dirs"))
+      for (prop <- List("java.class.path", "sun.boot.class.path", "java.ext.dirs"))
         println(prop + ": " + sysprop(prop))
 
     try {

@@ -11,19 +11,24 @@ package util
 import java.io.File
 import java.net.URL
 import java.util.StringTokenizer
+import scala.util.Sorting
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
 import scala.tools.nsc.io.AbstractFile
 
+import ch.epfl.lamp.compiler.msil.{Type => MSILType, Assembly}
+
+
 /** <p>
- *    This module provides star expansion of '-classpath' option arguments.
+ *    This module provides star expansion of '-classpath' option arguments, behaves the same as
+ *    java, see [http://java.sun.com/javase/6/docs/technotes/tools/windows/classpath.html]
  *  </p>
  *
  *  @author Stepan Koltsov
  */
 object ClassPath {
   /** Expand single path entry */
-  private def expandStar(pattern: String): List[String] = {
+  private def expandS(pattern: String): List[String] = {
     def nameMatchesStar(name: String) = name.toLowerCase().endsWith(".jar")
 
     /** Get all jars in directory */
@@ -41,299 +46,390 @@ object ClassPath {
   }
 
   /** Split path using platform-dependent path separator */
-  def splitPath(path: String): List[String] =
+  private def splitPath(path: String): List[String] =
     path split File.pathSeparator toList
 
-  /** Expand path with expanding stars */
-  def expandPath(path: String): List[String] = splitPath(path).flatMap(expandStar(_))
-
-  def expandPath(path: String, expandStar: Boolean): List[String] =
-    if (expandStar) expandPath(path)
+  /** Expand path and possibly expanding stars */
+  def expandPath(path: String, expandStar: Boolean = true): List[String] =
+    if (expandStar) splitPath(path).flatMap(expandS(_))
     else splitPath(path)
 
+
+  def validPackage(name: String) =
+    !(name.equals("META-INF") || name.startsWith("."))
+
+  def validSourceFile(name: String) =
+    (name.endsWith(".scala") || name.endsWith(".java"))
+
+  var XO = false
+  def validClassFile(name: String) =
+    if (name.endsWith(".class")) {
+      val className = name.substring(0, name.length - 6)
+      (!className.endsWith("$class") || XO)
+    } else false
+
+
+  def collectTypes(assemFile: AbstractFile) = {
+    var res: Array[MSILType] = MSILType.EmptyTypes
+    val assem = Assembly.LoadFrom(assemFile.path)
+    if (assem != null) {
+      // DeclaringType == null: true for non-inner classes
+      res = assem.GetTypes().filter((typ: MSILType) => typ.DeclaringType == null)
+      Sorting.stableSort(res, (t1: MSILType, t2: MSILType) => (t1.FullName compareTo t2.FullName) < 0)
+    }
+    res
+  }
 }
 
-/** <p>
- *    Richer classpath abstraction than files.
- *  </p>
- *  <p>
- *    Roughly based on Eclipse's classpath abstractions.
- *  </p>
- *
- *  @author Sean McDirmid
+/**
+ * A represents classes which can be loaded with a ClassfileLoader/MSILTypeLoader
+ * and / or a SourcefileLoader.
  */
-class ClassPath(onlyPresentation: Boolean) {
+case class ClassRep[T](binary: Option[T], source: Option[AbstractFile]) {
+  def name = {
+    if (binary.isDefined) binary.get match {
+      case f: AbstractFile =>
+        assert(f.name.endsWith(".class"), f.name)
+        f.name.substring(0, f.name.length - 6)
+      case t: MSILType =>
+        t.Name
+      case c =>
+        throw new FatalError("Unexpected binary class representation: "+ c)
+    } else {
+      assert(source.isDefined)
+      val nme = source.get.name
+      if (nme.endsWith(".scala"))
+        nme.substring(0, nme.length - 6)
+      else if (nme.endsWith(".java"))
+        nme.substring(0, nme.length - 5)
+      else
+        throw new FatalError("Unexpected source file ending: "+ nme)
+    }
+  }
+}
 
-  def this() = this(false)
+/**
+ * Represents a package which contains classes and other packages
+ */
+abstract class ClassPath[T] {
+  /**
+   * The short name of the package (without prefix)
+   */
+  def name: String
+  def classes: List[ClassRep[T]]
+  def packages: List[ClassPath[T]]
+  def sourcepaths: List[AbstractFile]
 
-  class Source(val location: AbstractFile, val compile: Boolean) {
-    // assert(location           != null, "cannot find source location")
-    // assert(location.getFile() != null, "cannot find source location " + " " + location + " " + location.getClass())
-    override def toString(): String = "" + location + " " + compile
+  /**
+   * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
+   * Does not support nested classes on .NET
+   */
+  def findClass(name: String): Option[ClassRep[T]] = {
+    val i = name.indexOf('.')
+    if (i < 0) {
+      classes.find(c => c.name == name)
+    } else {
+      val pkg = name.substring(0, i)
+      val rest = name.substring(i + 1, name.length)
+      packages.find(p => p.name == pkg).flatMap(_.findClass(rest))
+    }
+  }
+}
+
+/**
+ * A Classpath containing source files
+ */
+class SourcePath[T](dir: AbstractFile) extends ClassPath[T] {
+  def name = dir.name
+
+  def classes = {
+    val cls = new ListBuffer[ClassRep[T]]
+    for (f <- dir.iterator) {
+      if (!f.isDirectory && ClassPath.validSourceFile(f.name))
+        cls += ClassRep[T](None, Some(f))
+    }
+    cls.toList
   }
 
-  abstract class Entry(val location: AbstractFile) {
-    // assert(location           != null, "cannot find classpath location")
-    // assert(location.getFile() != null, "cannot find classpath location " + " " + location + " " + location.getClass())
-    def source: Source
-    override def toString() =
-      (if (location == null) "<none>" else location.toString) +
-        (if (source == null) "" else " source=" + source)
+  def packages = {
+    val pkg = new ListBuffer[SourcePath[T]]
+    for (f <- dir.iterator) {
+      if (f.isDirectory && ClassPath.validPackage(f.name))
+        pkg += new SourcePath[T](f)
+    }
+    pkg.toList
   }
 
-  class Output(location0: AbstractFile, val sourceFile: AbstractFile) extends Entry(location0) {
-    def source = if (sourceFile ne null) new Source(sourceFile, true) else null
+  def sourcepaths: List[AbstractFile] = List(dir)
+
+  override def toString() = "sourcepath: "+ dir.toString()
+}
+
+/**
+ * A directory (or a .jar file) containing classfiles and packages
+ */
+class DirectoryClassPath(dir: AbstractFile) extends ClassPath[AbstractFile] {
+  def name = dir.name
+
+  def classes = {
+    val cls = new ListBuffer[ClassRep[AbstractFile]]
+    for (f <- dir.iterator) {
+      if (!f.isDirectory && ClassPath.validClassFile(f.name))
+        cls += ClassRep(Some(f), None)
+    }
+    cls.toList
   }
 
-  class Library(location0: AbstractFile) extends Entry(location0) {
-    def doc: AbstractFile = null
-    def sourceFile: AbstractFile = null
-    def source = if (sourceFile eq null) null else new Source(sourceFile, false)
+  def packages = {
+    val pkg = new ListBuffer[DirectoryClassPath]
+    for (f <- dir.iterator) {
+      if (f.isDirectory && ClassPath.validPackage(f.name))
+        pkg += new DirectoryClassPath(f)
+    }
+    pkg.toList
   }
 
-  class Context(val entries: List[Entry]) {
-    def find(name: String, isDir: Boolean): Context = if (isPackage) {
-      def find0(entries: List[Entry]): Context = {
-        if (entries.isEmpty) new Context(Nil)
-        else {
-          val ret = find0(entries.tail)
-          val head = entries.head;
-          val name0 = name + (if (!isDir) ".class" else "")
-          val clazz = if (head.location eq null) null
-                      else head.location.lookupPath(name0, isDir)
+  def sourcepaths: List[AbstractFile] = Nil
 
-          val source0 =
-            if (head.source eq null) null
-            else if ((clazz eq null) || isDir) {
-              val source1 = head.source.location.lookupPath(
-                name + (if (isDir) "" else ".scala"), isDir)
-              if ((source1 eq null) && !isDir && (clazz ne null)) head.source.location
-              else source1
-            }
-            else head.source.location
+  override def toString() = "directory classpath: "+ dir.toString()
+}
 
-          if ((clazz eq null) && (source0 eq null)) ret
-          else {
-            val entry = new Entry(clazz) {
-              override def source =
-                if (source0 eq null) null
-                else new Source(source0, head.source.compile)
-            }
-            try {
-              //Console.err.println("this=" + this + "\nclazz=" + clazz + "\nsource0=" + source0 + "\n")
 
-              if (!isDir) new Context(entry :: Nil)
-              else new Context(entry :: ret.entries)
-            } catch {
-              case e: Error =>
-              throw e
-            }
+
+/**
+ * A assembly file (dll / exe) containing classes and namespaces
+ */
+class AssemblyClassPath(types: Array[MSILType], namespace: String) extends ClassPath[MSILType] {
+  def name = {
+    val i = namespace.lastIndexOf('.')
+    if (i < 0) namespace
+    else namespace.substring(i + 1, namespace.length)
+  }
+
+  def this(assemFile: AbstractFile) {
+    this(ClassPath.collectTypes(assemFile), "")
+  }
+
+  private lazy val first: Int = {
+    var m = 0
+    var n = types.length - 1
+    while (m < n) {
+      val l = (m + n) / 2
+      val res = types(l).FullName.compareTo(namespace)
+      if (res < 0) m = l + 1
+      else n = l
+    }
+    if (types(m).FullName.startsWith(namespace)) m else types.length
+  }
+
+  def classes = {
+    val cls = new ListBuffer[ClassRep[MSILType]]
+    var i = first
+    while (i < types.length && types(i).Namespace.startsWith(namespace)) {
+      // CLRTypes used to exclude java.lang.Object and java.lang.String (no idea why..)
+      if (types(i).Namespace == namespace)
+        cls += ClassRep(Some(types(i)), None)
+      i += 1
+    }
+    cls.toList
+  }
+
+  def packages = {
+    val nsSet = new MutHashSet[String]
+    var i = first
+    while (i < types.length && types(i).Namespace.startsWith(namespace)) {
+      val subns = types(i).Namespace
+      if (subns.length > namespace.length) {
+        // example: namespace = "System", subns = "System.Reflection.Emit"
+        //   => find second "." and "System.Reflection" to nsSet.
+        val end = subns.indexOf('.', namespace.length + 1)
+        nsSet += (if (end < 0) subns
+                  else subns.substring(0, end))
+      }
+      i += 1
+    }
+    for (ns <- nsSet.toList)
+      yield new AssemblyClassPath(types, ns)
+  }
+
+  def sourcepaths: List[AbstractFile] = Nil
+
+  override def toString() = "assembly classpath "+ namespace
+}
+
+/**
+ * A classpath unifying multiple class- and sourcepath entries.
+ */
+abstract class MergedClassPath[T] extends ClassPath[T] {
+  protected val entries: List[ClassPath[T]]
+
+  def name = entries.head.name
+
+  def classes: List[ClassRep[T]] = {
+    val cls = new ListBuffer[ClassRep[T]]
+    for (e <- entries; c <- e.classes) {
+      val name = c.name
+      val idx = cls.indexWhere(cl => cl.name == name)
+      if (idx >= 0) {
+        val existing = cls(idx)
+        if (existing.binary.isEmpty && c.binary.isDefined)
+          cls(idx) = existing.copy(binary = c.binary)
+        if (existing.source.isEmpty && c.source.isDefined)
+          cls(idx) = existing.copy(source = c.source)
+      } else {
+        cls += c
+      }
+    }
+    cls.toList
+  }
+
+  def packages: List[ClassPath[T]] = {
+    val pkg = new ListBuffer[ClassPath[T]]
+    for (e <- entries; p <- e.packages) {
+      val name = p.name
+      val idx = pkg.indexWhere(pk => pk.name == name)
+      if (idx >= 0) {
+        pkg(idx) = addPackage(pkg(idx), p)
+      } else {
+        pkg += p
+      }
+    }
+    pkg.toList
+  }
+
+  def sourcepaths: List[AbstractFile] = entries.flatMap(_.sourcepaths)
+
+  private def addPackage(to: ClassPath[T], pkg: ClassPath[T]) = to match {
+    case cp: MergedClassPath[T] =>
+      newMergedClassPath(cp.entries ::: List(pkg))
+    case _ =>
+      newMergedClassPath(List(to, pkg))
+  }
+
+  private def newMergedClassPath(entrs: List[ClassPath[T]]): MergedClassPath[T] =
+    new MergedClassPath[T] {
+      protected val entries = entrs
+    }
+
+  override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
+}
+
+/**
+ * The classpath when compiling with target:jvm. Binary files (classfiles) are represented
+ * as AbstractFile. nsc.io.ZipArchive is used to view zip/jar archives as directories.
+ */
+class JavaClassPath(boot: String, ext: String, user: String, source: String, Xcodebase: String)
+extends MergedClassPath[AbstractFile] {
+
+  protected val entries: List[ClassPath[AbstractFile]] = assembleEntries()
+  private def assembleEntries(): List[ClassPath[AbstractFile]] = {
+    import ClassPath._
+    val etr = new ListBuffer[ClassPath[AbstractFile]]
+
+    def addFilesInPath(path: String, expand: Boolean,
+          ctr: AbstractFile => ClassPath[AbstractFile] = x => new DirectoryClassPath(x)) {
+      for (fileName <- expandPath(path, expandStar = expand)) {
+        val file = AbstractFile.getDirectory(fileName)
+        if (file ne null) etr += ctr(file)
+      }
+    }
+
+    // 1. Boot classpath
+    addFilesInPath(boot, false)
+
+    // 2. Ext classpath
+    for (fileName <- expandPath(ext, expandStar = false)) {
+      val dir = AbstractFile.getDirectory(fileName)
+      if (dir ne null) {
+        for (file <- dir) {
+          val name = file.name.toLowerCase
+          if (name.endsWith(".jar") || name.endsWith(".zip") || file.isDirectory) {
+            val archive = AbstractFile.getDirectory(new File(dir.file, name))
+            if (archive ne null) etr += new DirectoryClassPath(archive)
           }
         }
       }
-
-      val ret = find0(entries)
-      if (ret.entries.isEmpty) {
-        //Console.err.println("BAD_FILE: " + name + " in " + this)
-        null
-      } else ret
-    } else null
-
-    def isPackage: Boolean =
-      if (entries.isEmpty) false
-      else if (entries.head.location ne null) entries.head.location.isDirectory
-      else entries.head.source.location.isDirectory
-
-    def name =
-      if (entries.isEmpty) "<none>"
-      else {
-        val head = entries.head
-        val name = if (head.location ne null) head.location.name
-                   else head.source.location.name
-        if (isPackage) name
-        else name.substring(0, name.length() - (".class").length())
-      }
-
-    override def toString(): String = toString(entries)
-
-    def toString(entry: Entry): String =
-      ((if (entry.location eq null) "<none>"
-        else entry.location.toString()) +
-       (if (entry.source eq null) ""
-        else " with_source=" + entry.source.location.toString()))
-
-    def toString(entries0: List[Entry]): String =
-      if (entries0.isEmpty) ""
-      else toString(entries0.head) + ":::" + toString(entries0.tail)
-
-    def isSourceFile = {
-      def head = entries.head
-      def clazz = head.location
-      def source = if (head.source eq null) null else head.source.location
-      def isPredef = source.name.equals("Predef.scala") ||
-                     source.path.startsWith("scala/runtime")
-
-      if (entries.isEmpty || entries.isEmpty || (source eq null)) false
-      else if (!onlyPresentation && !head.source.compile) false
-      else if (source.isDirectory) false
-      else if (clazz eq null) true
-      else if (onlyPresentation && !isPredef) true
-      else if (source.lastModified > clazz.lastModified) true
-      else false
     }
 
-    def sourceFile = if ((entries.head.source ne null) && !entries.head.source.location.isDirectory)
-      entries.head.source.location else null
+    // 3. User classpath
+    addFilesInPath(user, true)
 
-    def classFile = if (!isSourceFile) entries.head.location else null
-
-    def sourcePath =
-      if (!isSourceFile && !entries.isEmpty && (entries.head.source ne null)) {
-        val ret = entries.head.source.location
-        if ((ret ne null) && !ret.isDirectory) {
-          Console.err.println("source path " + ret + " is not a directory")
-          null
-        } else ret
+    // 4. Codebase entries (URLs)
+    {
+      val urlSeparator = " "
+      val urlStrtok = new StringTokenizer(Xcodebase, urlSeparator)
+      while (urlStrtok.hasMoreTokens()) try {
+        val url = new URL(urlStrtok.nextToken())
+        val archive = AbstractFile.getURL(url)
+        if (archive ne null) etr += new DirectoryClassPath(archive)
       }
-      else null
+      catch {
+        case e =>
+          Console.println("error adding classpath form URL: " + e.getMessage)//debug
+        throw e
+      }
+    }
 
-    def validPackage(name: String): Boolean =
-      ! (name.equals("META-INF") || name.startsWith("."))
+    // 5. Source path
+    if (source != "")
+      addFilesInPath(source, false, x => new SourcePath[AbstractFile](x))
+
+    etr.toList
   }
+}
 
-  class Build {
-    val entries = new ArrayBuffer[Entry]
+/**
+ * The classpath when compiling with target:msil. Binary files are represented as
+ * MSILType values.
+ */
+class MsilClassPath(ext: String, user: String, source: String) extends MergedClassPath[MSILType] {
+  protected val entries: List[ClassPath[MSILType]] = assembleEntries()
 
-    def root = new Context(entries.toList)
+  private def assembleEntries(): List[ClassPath[MSILType]] = {
+    import ClassPath._
+    val etr = new ListBuffer[ClassPath[MSILType]]
+    val names = new MutHashSet[String]
 
-    def this(classpath: String) {
-      this()
-      addFilesInPath(classpath)
-    }
-
-    def this(source: String, output: String) {
-      this()
-      addDirsInPath(source, output)
-    }
-
-    def this(classpath: String, source: String, output: String,
-             boot: String, extdirs: String, codebase: String) {
-      this()
-      addFilesInPath(boot)
-      addArchivesInExtDirPath(extdirs)
-      addDirsInPath(source, output)
-      addFilesInPath(classpath)
-      addURLsInPath(codebase)
-    }
-
-    /**
-     *  Lookup the given path in this classpath. Returns null if not found.
-     *  Does not work with absolute paths (starting with '/').
-     *
-     *  @param path  Path to look up (if isDir is false, '.class' is appended!).
-     *  @param isDir Whether to look for a directory or a file
-     *  @return      The abstract file or null if path was not found
-     */
-    def lookupPath(path: String, isDir: Boolean): AbstractFile = {
-      val ctx = root.find(path, isDir)
-      if (ctx eq null) null
-      else if (ctx.entries.isEmpty) null
-      else if (ctx.entries.head eq null) null
-      else ctx.entries.head.location
-    }
-
-    /**
-     *  @param classes where the class files come from and are written to
-     *  @param sources where the source files come from
-     */
-    def output(classes : String, sources : String) = {
-      assert(classes ne null)
-      assert(sources ne null)
-      val location = AbstractFile.getDirectory(classes)
-      val sources0 = AbstractFile.getDirectory(sources)
-      class Output0 extends Output(location, sources0)
-      entries += new Output0()
-    }
-    /**
-     *  @param classes where the class files come from
-     *  @param sources optional source file attachment, otherwise null
-     */
-    def library(classes: String, sources: String) {
-      assert(classes ne null)
-      val location = AbstractFile.getDirectory(classes)
-      var sourceFile0 =
-        if (sources ne null) AbstractFile.getDirectory(sources)
-        else null
-      if (sourceFile0 ne null) {
-        val file00 = sourceFile0.lookupPath("src", true)
-        if ((file00 ne null) && file00.isDirectory) {
-          sourceFile0 = file00
-        }
-      }
-
-      class Library0 extends Library(location) {
-        override def sourceFile = sourceFile0
-      }
-      entries += new Library0()
-    }
-
-    private def addFilesInPath(path: String) {
-      for (fileName <- ClassPath.expandPath(path)) {
-        val file = AbstractFile.getDirectory(fileName)
-        if (file ne null) entries += (new Library(file))
-      }
-    }
-
-    private def addArchivesInExtDirPath(path: String) {
-      for (fileName <- ClassPath.expandPath(path)) {
-        val file = AbstractFile.getDirectory(fileName)
-        if (file ne null) {
-          for (file0 <- file) {
-            val name = file0.name
-            if (name.endsWith(".jar") || name.endsWith(".zip") || file0.isDirectory) {
-              val archive = AbstractFile.getDirectory(new File(file.file, name))
-              if (archive ne null) entries += (new Library(archive))
-            }
+    // 1. Assemblies from -Xassem-extdirs
+    for (dirName <- expandPath(ext, expandStar = false)) {
+      val dir = AbstractFile.getDirectory(dirName)
+      if (dir ne null) {
+        for (file <- dir) {
+          val name = file.name.toLowerCase
+          if (name.endsWith(".dll") || name.endsWith(".exe")) {
+            names += name
+            etr += new AssemblyClassPath(file)
           }
         }
       }
     }
 
-    private def addDirsInPath(source: String, output: String) {
-      val clazzes = AbstractFile.getDirectory(output)
-      if (clazzes eq null)
-        throw new FatalError("Output location \"" + output + "\" not found")
-      val strtok = new StringTokenizer(source, File.pathSeparator)
-      if (!strtok.hasMoreTokens()) {
-        val output0 = (new Output(clazzes, null))
-        entries += output0
-      }
-      else while (strtok.hasMoreTokens()) {
-        val sources = AbstractFile.getDirectory(strtok.nextToken())
-        val output0 = (new Output(clazzes, sources))
-        entries += output0
-      }
-    }
-
-    private val urlSeparator = " "
-    private def addURLsInPath(codebase: String) {
-      val strtok = new StringTokenizer(codebase, urlSeparator)
-      while (strtok.hasMoreTokens()) {
-        try {
-          val url = new URL(strtok.nextToken())
-          val archive = AbstractFile.getURL(url)
-          if (archive ne null) entries += (new Library(archive))
-        }
-        catch {
-          case e =>
-            Console.println("error in addURLsInPath: " + e.getMessage)//debug
-            throw e
+    // 2. Assemblies from -Xassem-path
+    for (fileName <- expandPath(user, expandStar = false)) {
+      val file = AbstractFile.getFile(fileName)
+      if (file ne null) {
+        val name = file.name.toLowerCase
+        if (name.endsWith(".dll") || name.endsWith(".exe")) {
+          names += name
+          etr += new AssemblyClassPath(file)
         }
       }
     }
 
-    override def toString() =
-      entries.toList.mkString("", File.pathSeparator, "")
-  } // class Build
+    def check(n: String) {
+      if (!names.contains(n))
+      throw new AssertionError("Cannot find assembly "+ n +
+         ". Use -Xassem-extdirs or -Xassem-path to specify its location")
+    }
+    check("mscorlib.dll")
+    check("scalaruntime.dll")
 
+    // 3. Source path
+    for (dirName <- expandPath(source, expandStar = false)) {
+      val file = AbstractFile.getDirectory(dirName)
+      if (file ne null) etr += new SourcePath[MSILType](file)
+    }
+
+    etr.toList
+  }
 }

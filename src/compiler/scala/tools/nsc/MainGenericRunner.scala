@@ -39,7 +39,14 @@ object MainGenericRunner {
     lazy val jarsInLib = listDir("lib") filter (_.getName endsWith ".jar")
     lazy val dirsInClasses = listDir("classes") filter (_.isDirectory)
     val cpScala =
-      if (scalaHome == null) Nil
+      if (scalaHome == null) {
+        // this is to make the interpreter work when running without the scala script
+        // (e.g. from eclipse). Before, "java.class.path" was added to the user classpath
+        // in Settings; this was changed to match the behavior of Sun's javac.
+        val javacp = System.getProperty("java.class.path")
+        if (javacp == null) Nil
+        else ClassPath.expandPath(javacp)
+      }
       else (jarsInLib ::: dirsInClasses) map (_.toString)
 
     // either prepend existing classpath or append "."

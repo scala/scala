@@ -11,8 +11,9 @@ package scala.tools.scalap
 
 
 import java.io.{File, PrintStream, OutputStreamWriter, ByteArrayOutputStream}
-import scala.tools.nsc.util.ClassPath
 import scalax.rules.scalasig._
+import tools.nsc.io.AbstractFile
+import tools.nsc.util.{ClassPath, JavaClassPath}
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -61,7 +62,7 @@ object Main {
     out.flush()
   }
 
-  def isPackageObjectFile(s: String) = s != null && (s.endsWith(File.separator + "package") || s == "package")
+  def isPackageObjectFile(s: String) = s != null && (s.endsWith(".package") || s == "package")
 
   def parseScalaSignature(scalaSig: ScalaSig, isPackageObject: Boolean) = {
     val baos = new ByteArrayOutputStream
@@ -112,19 +113,20 @@ object Main {
    * @param path...
    * @param classname...
    */
-  def process(args: Arguments, path: ClassPath#Build)(classname: String): Unit = {
+  def process(args: Arguments, path: ClassPath[AbstractFile])(classname: String): Unit = {
     // find the classfile
-    val filename = Names.encode(
+    val encName = Names.encode(
       if (classname == "scala.AnyRef") "java.lang.Object"
-      else classname).replace('.', File.separatorChar)
-    val cfile = path.lookupPath(filename, /*isDir*/ false)
-    if (cfile != null) {
+      else classname)
+    val cls = path.findClass(encName)
+    if (cls.isDefined && cls.get.binary.isDefined) {
+      val cfile = cls.get.binary.get
       if (verbose) {
         Console.println(Console.BOLD + "FILENAME" + Console.RESET + " = " + cfile.path)
       }
       val bytes = cfile.toByteArray
       if (isScalaFile(bytes)) {
-        decompileScala(bytes, isPackageObjectFile(filename))
+        decompileScala(bytes, isPackageObjectFile(encName))
       } else {
         // construct a reader for the classfile content
         val reader = new ByteArrayReader(cfile.toByteArray)
@@ -261,13 +263,12 @@ object Main {
       verbose = arguments contains "-verbose"
       printPrivates = arguments contains "-private"
       // construct a custom class path
-      val classPath0 = new ClassPath(false)
       val path = arguments.getArgument("-classpath") match {
         case None => arguments.getArgument("-cp") match {
-          case None => new classPath0.Build()
-          case Some(path) => new classPath0.Build(path)
+          case None => EmptyClasspath
+          case Some(path) => new JavaClassPath("", "", path, "", "")
         }
-        case Some(path) => new classPath0.Build(path)
+        case Some(path) => new JavaClassPath("", "", path, "", "")
       }
       // print the classpath if output is verbose
       if (verbose) {
@@ -276,5 +277,16 @@ object Main {
       // process all given classes
       arguments.getOthers.foreach(process(arguments, path))
     }
+  }
+
+  object EmptyClasspath extends ClassPath[AbstractFile] {
+    import tools.nsc.util.ClassRep
+    /**
+     * The short name of the package (without prefix)
+     */
+    def name: String = ""
+    def classes: List[ClassRep[AbstractFile]] = Nil
+    def packages: List[ClassPath[AbstractFile]] = Nil
+    def sourcepaths: List[AbstractFile] = Nil
   }
 }

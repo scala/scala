@@ -114,7 +114,7 @@ trait NamesDefaults { self: Analyzer =>
      */
     def baseFunBlock(baseFun: Tree): Tree = {
       val isConstr = baseFun.symbol.isConstructor
-      val blockTyper = newTyper(context.makeNewScope(tree, context.owner)(BlockScopeKind(context.depth)))
+      val blockTyper = newTyper(context.makeNewScope(tree, context.owner))
 
       // baseFun1: extract the function from a potential TypeApply
       // funTargs: type arguments on baseFun, used to reconstruct TypeApply in blockWith(Out)Qualifier

@@ -774,7 +774,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       //println("computing bridges for " + owner)//DEBUG
       assert(phase == currentRun.erasurePhase)
       val site = owner.thisType
-      val bridgesScope = newScope
+      val bridgesScope = new Scope
       val bridgeTarget = new HashMap[Symbol, Symbol]
       var bridges: List[Tree] = List()
       val opc = atPhase(currentRun.explicitOuterPhase) {

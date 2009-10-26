@@ -756,7 +756,7 @@ trait Types {
         while (!bcs.isEmpty) {
           val decls = bcs.head.info.decls
           var entry =
-            if (name == nme.ANYNAME) decls.elems else decls.lookupEntryWithContext(name)(from)
+            if (name == nme.ANYNAME) decls.elems else decls.lookupEntry(name)
           while (entry ne null) {
             val sym = entry.sym
             if (sym.getFlag(requiredFlags) == requiredFlags) {
@@ -779,10 +779,10 @@ trait Types {
                           if (self eq null) self = this.narrow;
                           (self.memberType(member) matches self.memberType(sym))
                         })) {
-                    members = newThrowAwayScope(List(member, sym))
+                    members = new Scope(List(member, sym))
                   }
                 } else {
-                  var prevEntry = members.lookupEntryWithContext(sym.name)(from)
+                  var prevEntry = members.lookupEntry(sym.name)
                   while ((prevEntry ne null) &&
                          !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
@@ -1422,10 +1422,8 @@ trait Types {
     override def kind = "ClassInfoType"
   }
 
-  class PackageClassInfoType(decls: Scope, clazz: Symbol, val lazyLoader : LazyType)
-  extends ClassInfoType(List(), decls, clazz) {
-    def reset = clazz.setInfo(lazyLoader)
-  }
+  class PackageClassInfoType(decls: Scope, clazz: Symbol)
+  extends ClassInfoType(List(), decls, clazz)
 
   /** A class representing a constant type.
    *
@@ -2230,8 +2228,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** The canonical creator for this-types */
   def mkThisType(sym: Symbol): Type = {
-    class UniqueThisType extends ThisType(sym) with UniqueType
-    if (phase.erasedTypes) sym.tpe else unique(new UniqueThisType)
+    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType)
   }
 
   /** The canonical creator for single-types */
@@ -2244,9 +2241,7 @@ A type's typeSymbol should never be inspected directly.
       var sym1 = rebind(pre, sym)
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) sym1 = rebind(pre1, sym1)
-
-      class UniqueSingleType extends SingleType(pre1, sym1) with UniqueType
-      unique(new UniqueSingleType)
+      unique(new SingleType(pre1, sym1) with UniqueType)
     }
   }
 
@@ -2254,18 +2249,16 @@ A type's typeSymbol should never be inspected directly.
   def mkSuperType(thistp: Type, supertp: Type): Type =
     if (phase.erasedTypes) supertp
     else {
-      class UniqueSuperType extends SuperType(thistp, supertp) with UniqueType
-      unique(new UniqueSuperType)
+      unique(new SuperType(thistp, supertp) with UniqueType)
     }
 
   /** The canonical creator for type bounds */
   def mkTypeBounds(lo: Type, hi: Type): TypeBounds = {
-    class UniqueTypeBounds extends TypeBounds(lo, hi) with UniqueType
-    unique(new UniqueTypeBounds)
+    unique(new TypeBounds(lo, hi) with UniqueType)
   }
 
   def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) = {
-    class RefinementOfClass extends RefinedType(parents, decls) {
+   class RefinementOfClass extends RefinedType(parents, decls) {
       override def typeSymbol: Symbol = clazz
     }
     new RefinementOfClass
@@ -2280,7 +2273,7 @@ A type's typeSymbol should never be inspected directly.
     else {
       // having $anonfun as owner causes the pickler to break upon unpickling; see ticket #2323
       val nonAnonOwner = (owner.ownerChain dropWhile (_.isAnonymousFunction)).headOption getOrElse NoSymbol
-      val clazz = recycle(nonAnonOwner.newRefinementClass(NoPosition))
+      val clazz = nonAnonOwner.newRefinementClass(NoPosition)
       val result = refinementOfClass(clazz, parents, decls)
       clazz.setInfo(result)
       result
@@ -2294,7 +2287,7 @@ A type's typeSymbol should never be inspected directly.
    *  @return        ...
    */
   def refinedType(parents: List[Type], owner: Symbol): Type =
-    refinedType(parents, owner, newTempScope, owner.pos)
+    refinedType(parents, owner, new Scope, owner.pos)
 
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original
@@ -2750,7 +2743,7 @@ A type's typeSymbol should never be inspected directly.
       val elems = scope.toList
       val elems1 = mapOver(elems)
       if (elems1 eq elems) scope
-      else newScope(elems1)
+      else new Scope(elems1)
     }
 
     /** Map this function over given list of symbols */
@@ -4578,7 +4571,7 @@ A type's typeSymbol should never be inspected directly.
                 else {
                   def lubBounds(bnds: List[TypeBounds]): TypeBounds =
                     mkTypeBounds(glb(bnds map (_.lo), decr(depth)), lub(bnds map (_.hi), decr(depth)))
-                  recycle(lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name))
+                  lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name)
                     .setInfo(lubBounds(symtypes map (_.bounds)))
                 }
               }

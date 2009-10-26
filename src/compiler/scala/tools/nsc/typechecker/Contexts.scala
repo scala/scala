@@ -240,8 +240,8 @@ trait Contexts { self: Analyzer =>
       make(unit, tree, owner, scope, imports)
     }
 
-    def makeNewScope(tree: Tree, owner: Symbol)(implicit kind : ScopeKind): Context =
-      make(tree, owner, scopeFor(scope, tree, kind))
+    def makeNewScope(tree: Tree, owner: Symbol): Context =
+      make(tree, owner, new Scope(scope))
     // IDE stuff: distinguish between scopes created for typing and scopes created for naming.
 
     def make(tree: Tree, owner: Symbol): Context =
@@ -268,7 +268,7 @@ trait Contexts { self: Analyzer =>
       //todo: find out why we need next line
       while (baseContext.tree.isInstanceOf[Template])
         baseContext = baseContext.outer
-      val argContext = baseContext.makeNewScope(tree, owner)(Constructor0ScopeKind)
+      val argContext = baseContext.makeNewScope(tree, owner)
       argContext.reportGeneralErrors = this.reportGeneralErrors
       argContext.reportAmbiguousErrors = this.reportAmbiguousErrors
       def enterElems(c: Context) {

@@ -51,15 +51,6 @@ abstract class Pickler extends SubComponent {
             add(sym, pickle)
             add(sym.linkedSym, pickle)
             pickle.finish
-            // pickleHash is used to track changes in a signature (-> IDE)
-            val doPickleHash = global.doPickleHash
-            if (doPickleHash) {
-              var i = 0
-              while (i < pickle.writeIndex) {
-                unit.pickleHash += pickle.bytes(i).toLong // toLong needed to work around bug
-                i += 1
-              }
-            }
           case _ =>
         }
       }
