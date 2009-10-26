@@ -155,13 +155,13 @@ abstract class Enumeration(initial: Int, names: String*) {
   /** The type of the enumerated values. */
   @serializable
   @SerialVersionUID(7091335633555234129L)
-  abstract class Value extends Ordered[Value] {
+  abstract class Value extends Ordered[Enumeration#Value] {
     /** the id and bit location of this enumeration value */
     def id: Int
-    override def compare(that: Value): Int = this.id - that.id
+    override def compare(that: Enumeration#Value): Int = this.id - that.id
     override def equals(other: Any): Boolean =
       other match {
-        case that: Value => compare(that) == 0
+        case that: Enumeration#Value => compare(that) == 0
         case _ => false
       }
     override def hashCode: Int = id.hashCode
