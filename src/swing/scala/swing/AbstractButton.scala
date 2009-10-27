@@ -11,9 +11,9 @@
 
 package scala.swing
 
+import event._
 import java.awt.{Dimension, Insets}
 import javax.swing.{AbstractButton => JAbstractButton, Icon}
-import event._
 
 /**
  * Base class of all button-like widgets, such as push buttons,

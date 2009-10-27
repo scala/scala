@@ -344,7 +344,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                 val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
                 def transformCase(cdef: CaseDef): CaseDef =
                   substParam(
-                    resetAttrs(
+                    resetLocalAttrs(
                       CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true))))
                 if (cases exists treeInfo.isDefaultCase) Literal(true)
                 else

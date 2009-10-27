@@ -11,9 +11,9 @@
 
 package scala.swing
 
+import event._
 import javax.swing._
 import java.awt.event._
-import event._
 
 /**
  * A password field, that displays a replacement character for each character in the password.

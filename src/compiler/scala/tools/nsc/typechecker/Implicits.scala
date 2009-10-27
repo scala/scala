@@ -100,6 +100,21 @@ self: Analyzer =>
       tpeCache
     }
 
+    /** Does type `tp` contain an Error type as parameter or result?
+     */
+    private def containsError(tp: Type): Boolean = tp match {
+      case PolyType(tparams, restpe) => containsError(restpe)
+      case MethodType(params, restpe) => (params map (_.tpe) exists (_.isError)) || containsError(restpe)
+      case _ => tp.isError
+    }
+
+    def isCyclicOrErroneous = try {
+      containsError(tpe)
+    } catch {
+      case ex: CyclicReference =>
+        true
+    }
+
     override def equals(other: Any) = other match {
       case that: ImplicitInfo =>
           this.name == that.name &&
@@ -216,14 +231,6 @@ self: Analyzer =>
     private def depoly(tp: Type): Type = tp match {
       case PolyType(tparams, restpe) => tparamsToWildcards(restpe, tparams)
       case _ => tp
-    }
-
-    /** Does type `tp` contain an Error type as parameter or result?
-     */
-    private def containsError(tp: Type): Boolean = tp match {
-      case PolyType(tparams, restpe) => containsError(restpe)
-      case MethodType(params, restpe) => (params map (_.tpe) exists (_.isError)) || containsError(restpe)
-      case _ => tp.isError
     }
 
     /** Does type `dtor` dominate type `dted`?
@@ -508,7 +515,7 @@ self: Analyzer =>
        *           SearchFailure if not.
        */
       def tryImplicit(info: ImplicitInfo): SearchResult =
-        if (containsError(info.tpe) ||
+        if (info.isCyclicOrErroneous ||
             (isLocal && shadowed.contains(info.name)) ||
             (isView && (info.sym == Predef_identity || info.sym == Predef_conforms))  //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
             // TODO: remove `info.sym == Predef_identity` once we have a new STARR that only has conforms as an implicit

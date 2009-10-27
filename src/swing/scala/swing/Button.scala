@@ -11,8 +11,8 @@
 
 package scala.swing
 
-import javax.swing._
 import event._
+import javax.swing._
 
 object Button {
   def apply(text0: String)(op: => Unit) = new Button(Action(text0)(op))

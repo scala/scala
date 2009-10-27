@@ -11,8 +11,8 @@
 
 package scala.swing
 
-import javax.swing.{AbstractButton => JAbstractButton,Icon}
 import event._
+import javax.swing.{AbstractButton => JAbstractButton,Icon}
 import scala.collection._
 import scala.collection.mutable.Buffer
 

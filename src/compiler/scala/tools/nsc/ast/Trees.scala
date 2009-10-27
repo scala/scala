@@ -1803,7 +1803,8 @@ trait Trees {
 
   /** resets symbol and tpe fields in a tree, @see ResetAttrsTraverse
    */
-  def resetAttrs[A<:Tree](x:A, strict: Boolean = false): A = {new ResetAttrsTraverser(strict).traverse(x); x}
+  def resetAllAttrs[A<:Tree](x:A): A = { new ResetAttrsTraverser().traverse(x); x }
+  def resetLocalAttrs[A<:Tree](x:A): A = { new ResetLocalAttrsTraverser().traverse(x); x }
 
   /** A traverser which resets symbol and tpe fields of all nodes in a given tree
    *  except for (1) TypeTree nodes, whose <code>.tpe</code> field is kept and
@@ -1812,26 +1813,39 @@ trait Trees {
    *
    *  (bq:) This traverser has mutable state and should be discarded after use
    */
-  class ResetAttrsTraverser(strict: Boolean) extends Traverser {
-    private val erasedSyms = new HashSet[Symbol]("erasedSyms", 8)
+  private class ResetAttrsTraverser extends Traverser {
+    protected def isLocal(sym: Symbol): Boolean = true
+    protected def resetDef(tree: Tree) {
+      tree.symbol = NoSymbol
+      tree.tpe = null
+      super.traverse(tree)
+    }
     override def traverse(tree: Tree): Unit = tree match {
       case EmptyTree | TypeTree() =>
         ;
-      case Template(parents, self, body) =>
-        tree.symbol = NoSymbol
+      case _: DefTree | Function(_, _) | Template(_, _, _) =>
+        resetDef(tree)
+      case _ =>
+        if (tree.hasSymbol && isLocal(tree.symbol)) tree.symbol = NoSymbol
         tree.tpe = null
-        if (!strict)
-          for (stat <- body)
-            if (stat.isDef) erasedSyms.addEntry(stat.symbol)
         super.traverse(tree)
-      case _: DefTree | Function(_, _) =>
-        if (!strict) erasedSyms.addEntry(tree.symbol)
-        tree.symbol = NoSymbol
-        tree.tpe = null
+    }
+  }
+
+  private class ResetLocalAttrsTraverser extends ResetAttrsTraverser {
+    private val erasedSyms = new HashSet[Symbol](8)
+    override protected def isLocal(sym: Symbol) =
+      erasedSyms contains sym
+    override protected def resetDef(tree: Tree) {
+      erasedSyms addEntry tree.symbol
+      super.resetDef(tree)
+    }
+    override def traverse(tree: Tree): Unit = tree match {
+      case Template(parents, self, body) =>
+        for (stat <- body)
+          if (stat.isDef) erasedSyms.addEntry(stat.symbol)
         super.traverse(tree)
       case _ =>
-        if (tree.hasSymbol && (strict || erasedSyms.contains(tree.symbol))) tree.symbol = NoSymbol
-        tree.tpe = null
         super.traverse(tree)
     }
   }

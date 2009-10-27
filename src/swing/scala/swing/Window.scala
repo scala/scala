@@ -11,9 +11,9 @@
 
 package scala.swing
 
+import event._
 import java.awt.{Image, Point, Window => AWTWindow}
 import javax.swing._
-import event._
 
 /**
  * A window with decoration such as a title, border, and action buttons.

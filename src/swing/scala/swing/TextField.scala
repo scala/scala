@@ -11,9 +11,9 @@
 
 package scala.swing
 
+import event._
 import javax.swing._
 import java.awt.event._
-import event._
 
 
 /*object TextField {

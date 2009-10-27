@@ -11,11 +11,11 @@
 
 package scala.swing
 
+import event._
 import javax.swing._
 import javax.swing.text._
 import javax.swing.event._
 import java.awt.Color
-import event._
 
 object TextComponent {
   trait HasColumns extends TextComponent {

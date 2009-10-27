@@ -116,9 +116,7 @@ abstract class Enumeration(initial: Int, names: String*) {
    * or initialize each Enumeration with Value(String),
    * for valueOf to work.
    * @param s an enumeration name
-   * @return <tt>Some(Value)</tt> if an enumeration's name matches <var>s</var>,
-   * else <tt>None</tt>
-   * Note the change here is intentional. You should know whether
+   * Note the change here wrt 2.7 is intentional. You should know whether
    * a name is in an Enumeration beforehand. If not, just use find on values.
    */
   def withName(s: String): Value = values.find(_.toString == s).get

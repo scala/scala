@@ -11,8 +11,8 @@
 
 package scala.swing
 
-import javax.swing._
 import event.Event
+import javax.swing._
 
 /**
  * Convenience class with utility methods for GUI applications.

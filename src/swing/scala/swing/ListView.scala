@@ -11,9 +11,9 @@
 
 package scala.swing
 
+import event._
 import javax.swing._
 import javax.swing.event._
-import event._
 import java.awt.Color
 
 object ListView {

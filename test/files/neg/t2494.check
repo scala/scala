@@ -1,0 +1,4 @@
+t2494.scala:1: error: recursive value a needs type
+object A { val a = { println("a = " + a); a = 1} }
+                                      ^
+one error found

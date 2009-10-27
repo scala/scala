@@ -241,9 +241,10 @@ trait Typers { self: Analyzer =>
      *  @param pos0   The position where to report the error
      *  @param ex     The exception that caused the error
      */
-    def reportTypeError(pos0: Position, ex: TypeError) {
+    def reportTypeError(pos: Position, ex: TypeError) {
+      if (ex.pos == NoPosition) ex.pos = pos
+      if (!context.reportGeneralErrors) throw ex
       if (settings.debug.value) ex.printStackTrace()
-      val pos = if (ex.pos == NoPosition) pos0 else ex.pos
       ex match {
         case CyclicReference(sym, info: TypeCompleter) =>
           val msg =
@@ -256,11 +257,11 @@ trait Typers { self: Analyzer =>
               case _ =>
                 ex.getMessage()
             }
-          context.error(pos, msg)
+          context.error(ex.pos, msg)
           if (sym == ObjectClass)
             throw new FatalError("cannot redefine root "+sym)
         case _ =>
-          context.error(pos, ex)
+          context.error(ex.pos, ex)
       }
     }
 
@@ -703,11 +704,11 @@ trait Typers { self: Analyzer =>
     /** Utility method: Try op1 on tree. If that gives an error try op2 instead.
      */
     def tryBoth(tree: Tree)(op1: (Typer, Tree) => Tree)(op2: (Typer, Tree) => Tree): Tree =
-      silent(op1(_, tree.duplicate)) match {
+      silent(op1(_, tree)) match {
         case result1: Tree =>
           result1
         case ex1: TypeError =>
-          silent(op2(_, tree)) match {
+          silent(op2(_, resetAllAttrs(tree))) match {
             case result2: Tree =>
 //              println("snd succeeded: "+result2)
               result2
@@ -800,8 +801,8 @@ trait Typers { self: Analyzer =>
           typer1.silent(tpr => tpr.typed(tpr.applyImplicitArgs(tree), mode, pt)) match {
             case result: Tree => result
             case ex: TypeError =>
-              if (settings.debug.value) log("fallback on implicits: "+tree+"/"+resetAttrs(original, true))
-              val tree1 = typed(resetAttrs(original, true), mode, WildcardType)
+              if (settings.debug.value) log("fallback on implicits: "+tree+"/"+resetAllAttrs(original))
+              val tree1 = typed(resetAllAttrs(original), mode, WildcardType)
               tree1.tpe = addAnnotations(tree1, tree1.tpe)
               if (tree1.isEmpty) tree1 else adapt(tree1, mode, pt, EmptyTree)
           }
@@ -1008,7 +1009,7 @@ trait Typers { self: Analyzer =>
     /** Try to apply an implicit conversion to `qual' to that it contains
      *  a method `name` which can be applied to arguments `args' with expected type `pt'.
      *  If `pt' is defined, there is a fallback to try again with pt = ?.
-     *  This helps avoiding propagating result information to far and solves
+     *  This helps avoiding propagating result information too far and solves
      *  #1756.
      *  If no conversion is found, return `qual' unchanged.
      *
@@ -3067,6 +3068,7 @@ trait Typers { self: Analyzer =>
         try {
           newTyper(c).typedArgs(args, mode)
         } catch {
+          case ex: CyclicReference => throw ex
           case ex: TypeError =>
             null
         }
@@ -3417,7 +3419,7 @@ trait Typers { self: Analyzer =>
                 (!currentRun.compiles(defSym) ||
                  (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
               defSym = NoSymbol
-            else if (impSym.isError)
+            else if (impSym.isError || impSym.name == nme.CONSTRUCTOR)
               impSym = NoSymbol
           }
           if (defSym.exists) {

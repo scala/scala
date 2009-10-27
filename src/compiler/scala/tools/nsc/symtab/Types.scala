@@ -4861,7 +4861,7 @@ A type's typeSymbol should never be inspected directly.
 // Errors and Diagnostics -----------------------------------------------------
 
   /** An exception signalling a type error */
-  class TypeError(val pos: Position, val msg: String) extends java.lang.Error(msg) {
+  class TypeError(var pos: Position, val msg: String) extends java.lang.Error(msg) {
     def this(msg: String) = this(NoPosition, msg)
   }
 

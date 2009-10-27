@@ -11,8 +11,8 @@
 
 package scala.swing
 
-import javax.swing._
 import event._
+import javax.swing._
 
 /**
  * A two state button with a push button like user interface.

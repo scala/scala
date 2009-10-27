@@ -235,7 +235,7 @@ trait NamesDefaults { self: Analyzer =>
         val (sym, byName) = symP
         // resetAttrs required for #2290. given a block { val x = 1; x }, when wrapping into a function
         // () => { val x = 1; x }, the owner of symbol x must change (to the apply method of the function).
-        val body = if (byName) blockTyper.typed(Function(List(), resetAttrs(arg)))
+        val body = if (byName) blockTyper.typed(Function(List(), resetLocalAttrs(arg)))
                    else arg
         atPos(body.pos)(ValDef(sym, body).setType(NoType))
       })

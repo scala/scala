@@ -1964,7 +1964,9 @@ trait Symbols {
 
   /** An exception for cyclic references of symbol definitions */
   case class CyclicReference(sym: Symbol, info: Type)
-  extends TypeError("illegal cyclic reference involving " + sym)
+  extends TypeError("illegal cyclic reference involving " + sym) {
+    // printStackTrace() // debug
+  }
 
   /** A class for type histories */
   private sealed case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {
