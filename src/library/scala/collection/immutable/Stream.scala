@@ -144,18 +144,24 @@ self =>
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override final def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+  override final def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[B]
-    // optimization: drop A's for which f yields no B
-    var rest = this
-    var seg: Traversable[B] = null
-    do {
-      if (rest.isEmpty) return Stream.Empty.asInstanceOf[That]
-      seg = f(rest.head)
-      rest = rest.tail
-    } while (seg.isEmpty)
-    (seg.toStream append (rest flatMap f).asInstanceOf[Stream[B]]).asInstanceOf[That]
-  }
+    // optimisations are not for speed, but for functionality
+    // see tickets #153, #498, #2147, and corresponding tests in run/ (as well as run/stream_flatmap_odds.scala)
+    (if (isEmpty) Stream.Empty
+    else {
+      // establish !prefix.isEmpty || nonEmptyPrefix.isEmpty
+      var nonEmptyPrefix = this
+      var prefix = f(nonEmptyPrefix.head).toStream
+      while (!nonEmptyPrefix.isEmpty && prefix.isEmpty) {
+        nonEmptyPrefix = nonEmptyPrefix.tail
+        if(!nonEmptyPrefix.isEmpty)
+          prefix = f(nonEmptyPrefix.head).toStream
+      }
+
+      if(nonEmptyPrefix.isEmpty) Stream.empty
+      else prefix append (nonEmptyPrefix.tail flatMap f).asInstanceOf[Stream[B]]
+    }).asInstanceOf[That]
 
   /** Returns all the elements of this stream that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
