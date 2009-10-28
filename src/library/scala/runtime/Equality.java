@@ -78,10 +78,12 @@ public class Equality
   }
 
   public static void log(String msg) {
-    if (logger != null) {
-      logger.warning(msg);
-      handler.flush();
+    if (logEverything) {
+      if (logger != null) {
+        logger.warning(msg);
+        handler.flush();
+      }
+      else System.out.println(msg);
     }
-    else System.out.println(msg);
   }
 }
