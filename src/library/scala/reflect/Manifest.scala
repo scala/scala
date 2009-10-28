@@ -13,6 +13,7 @@ package scala.reflect
 
 import scala.runtime._
 import scala.collection.mutable._
+import scala.collection.immutable.{List, Nil}
 
 /** <p>
   *   A <code>Manifest[T]</code> is an opaque descriptor for type <code>T</code>.

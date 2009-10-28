@@ -12,6 +12,10 @@
 package scala.xml
 package dtd
 
+import collection.immutable.{List, Nil}
+import collection.mutable.StringBuilder
+
+
 /** an ExternalIDs - either PublicID or SystemID
  *
  *  @author Burak Emir

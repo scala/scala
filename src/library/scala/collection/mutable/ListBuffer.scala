@@ -13,6 +13,7 @@ package scala.collection
 package mutable
 
 import generic._
+import immutable.{List, Nil, ::}
 
 /** A Buffer implementation back up by a list. It provides constant time
  *  prepend and append. Most other operations are linear.

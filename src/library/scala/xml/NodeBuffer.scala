@@ -11,6 +11,8 @@
 
 package scala.xml
 
+import collection.{Iterator, Seq, Iterable}
+
 /**
  * <p>
  *   This class acts as a Buffer for nodes. If it is used as a sequence

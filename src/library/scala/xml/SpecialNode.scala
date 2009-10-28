@@ -11,6 +11,9 @@
 
 package scala.xml
 
+import collection.immutable.{List, Nil, ::}
+import collection.mutable.StringBuilder
+
 /** <p>
  *    <code>SpecialNode</code> is a special XML node which
  *    represents either text (PCDATA), a comment, a PI, or an entity ref.

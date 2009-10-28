@@ -11,7 +11,7 @@
 
 package scala
 
-import scala.collection.SetLike
+import scala.collection.{SetLike, Iterator}
 import scala.collection.mutable.{Builder, AddingBuilder, Map, HashMap}
 import scala.collection.immutable.{Set, BitSet}
 import scala.collection.generic.CanBuildFrom

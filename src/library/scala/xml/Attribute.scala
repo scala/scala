@@ -10,6 +10,10 @@
 
 package scala.xml
 
+import collection.Seq
+import collection.mutable.StringBuilder
+
+
 /** Attribute defines the interface shared by both
  *  PrefixedAttribute and UnprefixedAttribute
  */

@@ -16,6 +16,8 @@ import scala.util.regexp.Base
 
 import scala.collection.mutable
 import scala.collection.immutable
+import collection.immutable.{List, Nil}
+import collection.{Seq, Iterator}
 
 /** this turns a regexp over A into a NondetWorkAutom over A using the
  *  celebrated position automata construction (also called Berry-Sethi or

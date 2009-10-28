@@ -11,6 +11,9 @@
 
 package scala
 
+import collection.{Iterable, Seq}
+import collection.immutable.{List, Nil, ::}
+
 /** <p>
  *   The <code>Either</code> type represents a value of one of two possible
  *   types (a disjoint union). The data constructors <code>Left</code> and

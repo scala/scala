@@ -11,6 +11,10 @@
 
 package scala.xml
 
+import collection.Seq
+import collection.mutable.StringBuilder
+
+
 /** Unprefixed attributes have the null namespace, and no prefix field
  *
  *  @author Burak Emir

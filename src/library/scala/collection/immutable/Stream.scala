@@ -13,7 +13,7 @@ package scala.collection
 package immutable
 
 import generic._
-import mutable.{Builder, LazyBuilder, ListBuffer}
+import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
 import scala.annotation.tailrec
 
 /**

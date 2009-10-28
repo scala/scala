@@ -12,9 +12,11 @@
 package scala.xml
 package dtd
 
-import scala.util.regexp.WordExp
-import scala.util.automata.{DetWordAutom, SubsetConstruction, WordBerrySethi}
-import scala.collection.mutable.HashSet
+import util.regexp.WordExp
+import util.automata.{DetWordAutom, SubsetConstruction, WordBerrySethi}
+import collection.mutable.{HashSet, StringBuilder}
+import collection.immutable.{List, Nil}
+import collection.Seq
 import Utility.sbToString
 import PartialFunction._
 

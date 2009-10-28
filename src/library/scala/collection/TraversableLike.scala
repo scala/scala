@@ -13,7 +13,8 @@ package scala.collection
 import generic._
 
 import scala.reflect.ClassManifest
-import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
+import mutable.{Builder, StringBuilder, Buffer, ArrayBuffer, ListBuffer}
+import immutable.{List, Stream, Nil, ::}
 import annotation.experimental
 
 /** <p>

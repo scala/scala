@@ -11,7 +11,8 @@
 
 package scala.xml
 
-import collection.mutable.{Set, HashSet}
+import collection.mutable.{Set, HashSet, StringBuilder}
+import collection.Seq
 import parsing.XhtmlEntities
 
 /**

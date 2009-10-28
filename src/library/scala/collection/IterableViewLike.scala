@@ -12,6 +12,7 @@
 package scala.collection
 
 import generic._
+import collection.immutable.Stream
 import TraversableView.NoBuilder
 
 /** A template trait for a non-strict view of an iterable.

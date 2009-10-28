@@ -10,6 +10,7 @@
 
 package scala.collection
 import generic._
+import immutable.{List, Stream}
 import annotation.unchecked.uncheckedVariance
 
 /** <p>

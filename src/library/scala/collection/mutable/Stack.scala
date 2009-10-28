@@ -13,6 +13,8 @@ package scala.collection
 package mutable
 
 import generic._
+import collection.immutable.{List, Nil}
+import collection.Iterator
 
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.

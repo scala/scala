@@ -13,6 +13,7 @@ package scala
 
 import java.math.BigInteger
 import java.{ lang => jl }
+import scala.collection.immutable.Range
 
 /**
  *  @author  Martin Odersky

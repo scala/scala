@@ -6,12 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: SeqLike.scala 18895 2009-10-02 17:57:16Z odersky $
+// $Id$
 
 
 package scala.collection
 import generic._
 import mutable.{ListBuffer, HashMap, GenericArray}
+import immutable.{List, Range}
 import annotation.experimental
 
 // import immutable.{List, Nil, ::}

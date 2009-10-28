@@ -11,6 +11,8 @@
 
 package scala.util
 
+import collection.immutable.List
+
 /**
  *  @author Stephane Micheloud
  *

@@ -12,7 +12,7 @@
 package scala.reflect
 
 import scala.runtime._
-import scala.collection.immutable.Nil
+import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable.{WrappedArray, ArrayBuilder}
 
 /** <p>

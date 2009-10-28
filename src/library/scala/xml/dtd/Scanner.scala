@@ -12,6 +12,8 @@
 package scala.xml
 package dtd
 
+import collection.{Seq, Iterator}
+import collection.immutable.{List, Nil}
 
 /** Scanner for regexps (content models in DTD element declarations)
  *  todo: cleanup

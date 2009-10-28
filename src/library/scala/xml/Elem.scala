@@ -11,6 +11,8 @@
 
 package scala.xml
 
+import collection.Seq
+
 /** This singleton object contains the apply and unapplySeq methods for convenient construction and
  *  deconstruction. It is possible to deconstruct any Node instance (that is not a SpecialNode or
  *  a Group) using the syntax

@@ -13,6 +13,10 @@ package scala.xml
 
 import Utility.sbToString
 import annotation.tailrec
+import collection.immutable.List
+import collection.{Seq, Iterator, Iterable}
+import collection.mutable.StringBuilder
+
 
 /**
  * Copyright 2008 Google Inc. All Rights Reserved.

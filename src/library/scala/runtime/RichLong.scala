@@ -11,7 +11,7 @@
 
 package scala.runtime
 
-import scala.collection.immutable.GenericRange
+import scala.collection.immutable.{Range, GenericRange}
 
 final class RichLong(x: Long) extends Proxy with Ordered[Long] {
 

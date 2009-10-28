@@ -12,6 +12,9 @@
 package scala.xml
 
 import Utility.{ isNameStart }
+import collection.Iterator
+import collection.immutable.{Nil, List}
+import collection.mutable.StringBuilder
 
 case object Null extends MetaData {
 

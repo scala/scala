@@ -10,6 +10,7 @@ package scala
 
 import reflect.ClassManifest
 import collection._
+import collection.immutable.{List, Stream, Nil}
 import xml.NodeSeq
 
 /** A trait representing Zero of a given type.  It should be understood

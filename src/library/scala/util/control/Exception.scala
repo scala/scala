@@ -1,5 +1,7 @@
 package scala.util.control
 
+import collection.immutable.List
+
 /** Classes representing the components of exception handling.
  *  Each class is independently composable.  Some common uses:
  *

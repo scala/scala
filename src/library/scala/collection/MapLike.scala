@@ -11,7 +11,7 @@
 package scala.collection
 
 import generic._
-import mutable.{Builder, MapBuilder}
+import mutable.{Builder, StringBuilder, MapBuilder}
 import PartialFunction._
 
 /** <p>

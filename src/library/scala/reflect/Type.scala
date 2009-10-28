@@ -11,6 +11,7 @@
 
 package scala.reflect
 
+import collection.immutable.List
 import Predef._
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */

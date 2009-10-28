@@ -13,7 +13,7 @@ package scala.collection
 package immutable
 
 import generic._
-import mutable.Builder
+import mutable.{Builder, StringBuilder}
 import scala.util.matching.Regex
 
 /**

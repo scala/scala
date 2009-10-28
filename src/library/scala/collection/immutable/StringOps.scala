@@ -12,6 +12,8 @@
 package scala.collection
 package immutable
 
+import mutable.StringBuilder
+
 /**
  * @since 2.8
  */

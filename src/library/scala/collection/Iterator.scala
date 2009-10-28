@@ -11,7 +11,8 @@
 
 package scala.collection
 
-import mutable.{Buffer, ArrayBuffer, ListBuffer}
+import mutable.{Buffer, ArrayBuffer, ListBuffer, StringBuilder}
+import immutable.{List, Stream}
 import annotation.{ tailrec, experimental }
 // import immutable.{List, Nil, ::, Stream}
 

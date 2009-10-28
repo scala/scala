@@ -11,6 +11,10 @@
 
 package scala.xml
 
+import collection.Seq
+import collection.immutable.{List, Nil}
+import collection.mutable.StringBuilder
+
 /**
  * This object provides methods ...
  *

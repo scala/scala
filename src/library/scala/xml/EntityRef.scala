@@ -10,6 +10,8 @@
 
 
 package scala.xml
+import collection.mutable.StringBuilder
+
 
 /** The class <code>EntityRef</code> implements an XML node for entity
  *  references.

@@ -11,6 +11,8 @@
 
 package scala.xml
 
+import collection.mutable.StringBuilder
+
 object Text {
   def apply(data: String) =
     if (data != null) new Text(data)

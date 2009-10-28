@@ -13,6 +13,7 @@ package scala.collection
 
 import BitSetLike._
 import generic._
+import mutable.StringBuilder
 
 /** common base class for mutable and immutable bit sets
  *

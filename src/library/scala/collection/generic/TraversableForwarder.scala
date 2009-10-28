@@ -12,7 +12,8 @@
 package scala.collection.generic
 import scala.collection._
 
-import mutable.Buffer
+import mutable.{Buffer, StringBuilder}
+import immutable.{List, Stream}
 // import immutable.{List, Nil, ::, Stream}
 
 /** <p>

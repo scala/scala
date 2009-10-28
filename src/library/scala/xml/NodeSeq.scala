@@ -12,7 +12,8 @@
 package scala.xml
 
 import collection.immutable
-import collection.SeqLike
+import collection.immutable.{List, Nil, ::}
+import collection.{Seq, SeqLike}
 import collection.mutable.{Builder, ListBuffer}
 import collection.generic.CanBuildFrom
 

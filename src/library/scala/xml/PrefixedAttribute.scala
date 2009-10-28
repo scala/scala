@@ -11,6 +11,10 @@
 
 package scala.xml
 
+import collection.Seq
+import collection.mutable.StringBuilder
+
+
 /** prefixed attributes always have a non-null namespace.
  *
  *  @param pre   ...

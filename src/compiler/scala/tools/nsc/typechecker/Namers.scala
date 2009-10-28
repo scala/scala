@@ -359,7 +359,7 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterModuleSymbol(tree)
             tree.symbol.moduleClass.setInfo(namerOf(tree.symbol).moduleClassTypeCompleter((tree)))
             finish
-            if (tree.symbol.name == nme.PACKAGEkw) {
+            if (tree.symbol.name == nme.PACKAGEkw && tree.symbol.owner != ScalaPackageClass) {
               loaders.openPackageModule(tree.symbol)
             }
 
@@ -1132,6 +1132,11 @@ trait Namers { self: Analyzer =>
               newNamer(context.makeNewScope(tree, sym)).classSig(tparams, impl)
 
             case ModuleDef(_, _, impl) =>
+              /** no, does not work here.
+              if (tree.symbol.name == nme.PACKAGEkw) {
+                loaders.openPackageModule(tree.symbol)
+              }
+              */
               val clazz = sym.moduleClass
               clazz.setInfo(newNamer(context.makeNewScope(tree, clazz)).templateSig(impl))
               //clazz.typeOfThis = singleType(sym.owner.thisType, sym);

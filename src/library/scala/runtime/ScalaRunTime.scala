@@ -14,6 +14,7 @@ package scala.runtime
 import scala.reflect.ClassManifest
 import scala.collection.Seq
 import scala.collection.mutable._
+import scala.collection.immutable.{List, Stream, Nil, ::}
 
 /* The object <code>ScalaRunTime</code> provides ...
  */

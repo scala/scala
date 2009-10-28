@@ -13,7 +13,9 @@ package scala.xml
 package parsing
 
 import java.io.{InputStream, Reader, File, FileDescriptor, FileInputStream}
-import scala.collection.mutable.Stack
+import collection.mutable.{Stack, StringBuilder}
+import collection.immutable.{List, Nil}
+import collection.{Seq, Iterator}
 
 import org.xml.sax.{ Attributes, InputSource }
 import org.xml.sax.helpers.DefaultHandler

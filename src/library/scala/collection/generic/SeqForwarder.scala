@@ -11,6 +11,7 @@
 
 package scala.collection.generic
 import scala.collection._
+import scala.collection.immutable.Range
 
 /** This class implements a forwarder for sequences. It forwards
  *  all calls to a different sequence object except for

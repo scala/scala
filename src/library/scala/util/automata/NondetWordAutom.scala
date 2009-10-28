@@ -11,7 +11,7 @@
 
 package scala.util.automata
 
-import scala.collection.{immutable, mutable, Set, Map}
+import scala.collection.{immutable, mutable, Set, Seq, Map}
 
 /** A nondeterministic automaton. States are integers, where
  *  0 is always the only initial state. Transitions are represented
