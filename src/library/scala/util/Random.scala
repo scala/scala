@@ -111,14 +111,13 @@ object Random extends Random
   import collection.mutable.ArrayBuffer
   import collection.generic.CanBuildFrom
 
-  /** Returns a new sequence in random order.
-   *  @param  seq   the sequence to shuffle
-   *  @return       the shuffled sequence
+  /** Returns a new collection of the same type in a randomly chosen order.
+   *
+   *  @param  coll    the Traversable to shuffle
+   *  @return         the shuffled Traversable
    */
-  def shuffle[T, CC[_] <: Traversable[_]](seq: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
-    val builder = bf(seq)
-    val buf = new ArrayBuffer[T]
-    seq foreach (x => buf += x.asInstanceOf[T]) // why is this cast necessary?
+  def shuffle[T, CC[X] <: Traversable[X]](coll: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
+    val buf = new ArrayBuffer[T] ++ coll
 
     def swap(i1: Int, i2: Int) {
       val tmp = buf(i1)
@@ -131,6 +130,6 @@ object Random extends Random
       swap(n - 1, k)
     }
 
-    bf(seq) ++= buf result
+    bf(coll) ++= buf result
   }
 }
