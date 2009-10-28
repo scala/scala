@@ -112,7 +112,7 @@ abstract class RefChecks extends InfoTransform {
 
     /** Add bridges for vararg methods that extend Java vararg methods
      */
-    def addVarargBridges(clazz: Symbol): List[Tree] {
+    def addVarargBridges(clazz: Symbol): List[Tree] = {
       val self = clazz.thisType
 
       val bridges = new ListBuffer[Tree]
