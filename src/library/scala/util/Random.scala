@@ -107,19 +107,18 @@ class Random(val self: java.util.Random) {
  */
 object Random extends Random
 {
-  import collection.Seq
+  import collection.Traversable
+  import collection.mutable.ArrayBuffer
+  import collection.generic.CanBuildFrom
 
   /** Returns a new sequence in random order.
    *  @param  seq   the sequence to shuffle
    *  @return       the shuffled sequence
    */
-  def shuffle[T: ClassManifest](seq: Seq[T]): Seq[T] = {
-    // It would be better if this preserved the shape of its container, but I have
-    // again been defeated by the lack of higher-kinded type inference.  I can
-    // only make it work that way if it's called like
-    //   shuffle[Int,List](List.range(0,100))
-    // which nicely defeats the "convenience" portion of "convenience method".
-    val buf = seq.toArray
+  def shuffle[T, CC[_] <: Traversable[_]](seq: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
+    val builder = bf(seq)
+    val buf = new ArrayBuffer[T]
+    seq foreach (x => buf += x.asInstanceOf[T]) // why is this cast necessary?
 
     def swap(i1: Int, i2: Int) {
       val tmp = buf(i1)
@@ -132,29 +131,6 @@ object Random extends Random
       swap(n - 1, k)
     }
 
-    buf.toSeq
+    bf(seq) ++= buf result
   }
-
-  /** I was consumed by weeping when I discovered how easy this
-   *  is to implement in SeqLike rather than trying to
-   *  accomplish the inference from the outside.  For reference
-   *  here is the shape-preserving implementation.
-   */
-  // def shuffle: This = {
-  //   import scala.util.Random.nextInt
-  //   val buf = thisCollection.toIndexedSeq
-  //
-  //   def swap(i1: Int, i2: Int) {
-  //     val tmp = buf(i1)
-  //     buf(i1) = buf(i2)
-  //     buf(i2) = tmp
-  //   }
-  //
-  //   for (n <- buf.length to 2 by -1) {
-  //     val k = nextInt(n)
-  //     swap(n - 1, k)
-  //   }
-  //
-  //   newBuilder ++= buf result
-  // }
 }
