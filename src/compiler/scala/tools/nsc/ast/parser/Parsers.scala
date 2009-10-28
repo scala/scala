@@ -241,6 +241,8 @@ self =>
 
     var assumedClosingParens = collection.mutable.Map(RPAREN -> 0, RBRACKET -> 0, RBRACE -> 0)
 
+    var inFunReturnType = false
+
     protected def skip(targetToken: Int) {
       var nparens = 0
       var nbraces = 0
@@ -2113,7 +2115,13 @@ self =>
           val tparams = typeParamClauseOpt(name, contextBoundBuf)
           val vparamss = paramClauses(name, contextBoundBuf.toList, false)
           newLineOptWhenFollowedBy(LBRACE)
-          var restype = typedOpt()
+          val savedInFunReturnType = inFunReturnType
+          var restype = try {
+            inFunReturnType = true
+            typedOpt()
+          } finally {
+            inFunReturnType = savedInFunReturnType
+          }
           val rhs =
             if (isStatSep || in.token == RBRACE) {
               if (restype.isEmpty) restype = scalaUnitConstr
@@ -2508,8 +2516,6 @@ self =>
       (self, stats.toList)
     }
 
-
-
     /** RefineStatSeq    ::= RefineStat {semi RefineStat}
      *  RefineStat       ::= Dcl
      *                     | type TypeDef
@@ -2521,7 +2527,10 @@ self =>
         if (isDclIntro) { // don't IDE hook
           stats ++= joinComment(defOrDcl(in.offset, NoMods))
         } else if (!isStatSep) {
-          syntaxErrorOrIncomplete("illegal start of declaration", true)
+          syntaxErrorOrIncomplete(
+            "illegal start of declaration"+
+            (if (inFunReturnType) " (possible cause: missing `=' in front of current method body)"
+             else ""), true)
         }
         if (in.token != RBRACE) acceptStatSep()
       }

@@ -271,7 +271,6 @@ abstract class TreeGen
     DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
   def mkRuntimeCall(meth: Name, args: List[Tree]): Tree = {
-    assert(meth.toString != "boxArray") // !!! can be removed once arrays are in.
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
   }
 
@@ -301,6 +300,19 @@ abstract class TreeGen
   /** Make forwarder to method `target', passing all parameters in `params' */
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
     (target /: vparamss)((fn, vparams) => Apply(fn, vparams map paramToArg))
+
+  /** Applies a wrapArray call to an array, making it a WrappedArray
+   */
+  def mkWrapArray(tree: Tree, elemtp: Type) = {
+    val predef = mkAttributedRef(PredefModule)
+    val meth =
+      if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol) ||
+          isValueClass(elemtp.typeSymbol))
+        Select(predef, "wrapArray")
+      else
+        TypeApply(Select(predef, "genericWrapArray"), List(TypeTree(elemtp)))
+    Apply(meth, List(tree))
+  }
 
   /** Used in situations where you need to access value of an expression several times
    */

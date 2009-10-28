@@ -1514,7 +1514,8 @@ trait Symbols {
 
     /** If settings.uniqid is set, the symbol's id, else "" */
     final def idString: String =
-      if (settings.uniqid.value) "#"+id else ""
+      if (settings.uniqid.value) "#"+id // +" in "+owner.name+"#"+owner.id // DEBUG
+      else ""
 
     /** String representation, including symbol's kind
      *  e.g., "class Foo", "method Bar".

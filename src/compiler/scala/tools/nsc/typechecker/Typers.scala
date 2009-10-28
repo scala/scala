@@ -669,12 +669,12 @@ trait Typers { self: Analyzer =>
     }
 
     /** The member with given name of given qualifier tree */
-    def member(qual: Tree, name: Name)(from : Symbol) = qual.tpe match {
+    def member(qual: Tree, name: Name) = qual.tpe match {
       case ThisType(clazz) if (context.enclClass.owner.hasTransOwner(clazz)) =>
         qual.tpe.member(name)
       case _  =>
         if (phase.next.erasedTypes) qual.tpe.member(name)
-        else qual.tpe.nonLocalMember(name)(from)
+        else qual.tpe.nonLocalMember(name)
     }
 
     def silent(op: Typer => Tree): AnyRef /* in fact, TypeError or Tree */ = {
@@ -837,7 +837,7 @@ trait Typers { self: Analyzer =>
         }
       case _ =>
         def applyPossible = {
-          def applyMeth = member(adaptToName(tree, nme.apply), nme.apply)(context.owner)
+          def applyMeth = member(adaptToName(tree, nme.apply), nme.apply)
           if ((mode & TAPPmode) != 0)
             tree.tpe.typeParams.isEmpty && applyMeth.filter(! _.tpe.typeParams.isEmpty) != NoSymbol
           else
@@ -1035,7 +1035,7 @@ trait Typers { self: Analyzer =>
      *  If no conversion is found, return `qual' unchanged.
      */
     def adaptToName(qual: Tree, name: Name) =
-      if (member(qual, name)(context.owner) != NoSymbol) qual
+      if (member(qual, name) != NoSymbol) qual
       else adaptToMember(qual, HasMember(name))
 
     private def typePrimaryConstrBody(clazz : Symbol, cbody: Tree, tparams: List[Symbol], enclTparams: List[Symbol], vparamss: List[List[ValDef]]): Tree = {
@@ -1662,10 +1662,10 @@ trait Typers { self: Analyzer =>
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
-      for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1) {
+      for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
         if (isRepeatedParamType(vparam1.symbol.tpe))
           error(vparam1.pos, "*-parameter must come last")
-      }
+
       var tpt1 = checkNoEscaping.privates(meth, typedType(ddef.tpt))
       if (!settings.Xexperimental.value) {
         for (vparams <- vparamss1; vparam <- vparams) {
@@ -3296,7 +3296,7 @@ trait Typers { self: Analyzer =>
             }
             tree.symbol
           } else {
-            member(qual, name)(context.owner)
+            member(qual, name)
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
           val qual1 = adaptToName(qual, name)

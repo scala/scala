@@ -59,6 +59,15 @@ abstract class RefChecks extends InfoTransform {
       PolyType(List(), tp)
     } else tp
 
+  val toJavaRepeatedParam = new TypeMap {
+    def apply(tp: Type) = tp match {
+      case TypeRef(pre, RepeatedParamClass, args) =>
+        typeRef(pre, JavaRepeatedParamClass, args)
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
@@ -90,6 +99,61 @@ abstract class RefChecks extends InfoTransform {
     }
 
 // Override checking ------------------------------------------------------------
+
+    def hasRepeatedParam(tp: Type): Boolean = tp match {
+      case MethodType(formals, restpe) =>
+        formals.nonEmpty && formals.last.tpe.typeSymbol == RepeatedParamClass ||
+        hasRepeatedParam(restpe)
+      case PolyType(_, restpe) =>
+        hasRepeatedParam(restpe)
+      case _ =>
+        false
+    }
+
+    /** Add bridges for vararg methods that extend Java vararg methods
+     */
+    def addVarargBridges(clazz: Symbol): List[Tree] {
+      val self = clazz.thisType
+
+      val bridges = new ListBuffer[Tree]
+
+      def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
+        val bridge = member.cloneSymbolImpl(clazz)
+          .setPos(clazz.pos).setFlag(member.flags | VBRIDGE)
+        bridge.setInfo(bridgetpe.cloneInfo(bridge))
+        clazz.info.decls enter bridge
+        val List(params) = bridge.paramss
+        val TypeRef(_, JavaRepeatedParamClass, List(elemtp)) = params.last.tpe
+        val (initargs, List(lastarg0)) = (params map Ident) splitAt (params.length - 1)
+        val lastarg = gen.wildcardStar(gen.mkWrapArray(lastarg0, elemtp))
+        val body = Apply(Select(This(clazz), member), initargs ::: List(lastarg))
+        localTyper.typed {
+          /*util.trace("generating varargs bridge")*/(DefDef(bridge, body))
+        }
+      }
+
+      // For all concrete non-private members that have a (Scala) repeated parameter:
+      //   compute the corresponding method type `jtpe` with a Java repeated parameter
+      //   if a method with type `jtpe` exists and that method is not a varargs bridge
+      //   then create a varargs bridge of type `jtpe` that forwards to the
+      //   member method with the Scala vararg type.
+      for (member <- clazz.info.nonPrivateMembers) {
+        if (!(member hasFlag DEFERRED) && hasRepeatedParam(member.info)) {
+          val jtpe = toJavaRepeatedParam(self.memberType(member))
+          val inherited = clazz.info.nonPrivateMemberAdmitting(member.name, VBRIDGE) filter (
+            sym => (self.memberType(sym) matches jtpe) && !(sym hasFlag VBRIDGE)
+            // this is a bit tortuous: we look for non-private members or bridges
+            // if we find a bridge everything is OK. If we find another member,
+            // we need to create a bridge
+          )
+          if (inherited.exists) {
+            bridges += varargBridge(member, jtpe)
+          }
+        }
+      }
+
+      bridges.toList
+    }
 
     /** 1. Check all members of class `clazz' for overriding conditions.
      *  That is for overriding member M and overridden member O:
@@ -325,14 +389,15 @@ abstract class RefChecks extends InfoTransform {
         // Bridge symbols qualify.
         // Used as a fall back if no overriding symbol of a Java abstract method can be found
         def javaErasedOverridingSym(sym: Symbol): Symbol =
-          clazz.tpe.findMember(sym.name, PRIVATE, 0, false)(NoSymbol).filter(other =>
+          clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
             !other.isDeferred &&
             (other hasFlag JAVA) && {
               val tp1 = erasure.erasure(clazz.thisType.memberType(sym))
               val tp2 = erasure.erasure(clazz.thisType.memberType(other))
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
             })
-        for (member <- clazz.tpe.nonPrivateMembers)
+
+        for (member <- clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE))
           if (member.isDeferred && !(clazz hasFlag ABSTRACT) &&
               !isAbstractTypeWithoutFBound(member) &&
               !((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)) {
@@ -346,6 +411,7 @@ abstract class RefChecks extends InfoTransform {
                 " and overrides incomplete superclass member " + infoString(other)
                else ""))
           }
+
         // 3. Check that concrete classes do not have deferred definitions
         // that are not implemented in a subclass.
         // Note that this is not the same as (2); In a situation like
@@ -912,11 +978,14 @@ abstract class RefChecks extends InfoTransform {
         case ValDef(_, _, _, _) =>
           checkDeprecatedOvers()
 
-        case Template(_, _, _) =>
+        case Template(parents, self, body) =>
           localTyper = localTyper.atOwner(tree, currentOwner)
           validateBaseTypes(currentOwner)
           checkDefaultsInOverloaded(currentOwner)
+          val bridges = addVarargBridges(currentOwner)
           checkAllOverrides(currentOwner)
+          if (bridges.nonEmpty)
+            result = treeCopy.Template(tree, parents, self, body ::: bridges)
 
         case TypeTree() =>
           val existentialParams = new ListBuffer[Symbol]

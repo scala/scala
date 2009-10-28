@@ -83,6 +83,7 @@ object Flags {
   final val LOCKED        = 0x8000000000L // temporary flag to catch cyclic dependencies
   final val SPECIALIZED   = 0x10000000000L// symbol is a generated specialized member
   final val DEFAULTINIT   = 0x20000000000L// symbol is a generated specialized member
+  final val VBRIDGE       = 0x40000000000L// symbol is a varargs bridge
 
   final val InitialFlags  = 0x0001FFFFFFFFFFFFL // flags that are enabled from phase 1.
   final val LateFlags     = 0x00FE000000000000L // flags that override flags in 0x1FC.
@@ -232,7 +233,10 @@ object Flags {
   /** These modifiers appear in TreePrinter output. */
   final val PrintableFlags: Long =
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR |
-    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC
+    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC | VBRIDGE
+
+  /** The two bridge flags */
+  final val BRIDGES = BRIDGE | VBRIDGE
 
   final val FieldFlags: Long =
     MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
@@ -321,6 +325,7 @@ object Flags {
 
       case SUPERACCESSOR => "<superaccessor>"
       case PARAMACCESSOR => "<paramaccessor>"
+      case VBRIDGE        => "<...bridge>"
 
       case _ => ""
     }

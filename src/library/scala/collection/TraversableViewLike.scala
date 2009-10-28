@@ -145,16 +145,15 @@ self =>
 
   override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
     newAppended(that).asInstanceOf[That]
-// was:    val b = bf(repr)
-//     if (b.isInstanceOf[NoBuilder[_]]) newAppended(that).asInstanceOf[That]
-//    else super.++[B, That](that)(bf)
+// was:    if (bf.isInstanceOf[ByPassCanBuildFrom]) newAppended(that).asInstanceOf[That]
+//         else super.++[B, That](that)(bf)
   }
 
   override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[This, B, That]): That = ++[B, That](that.toStream)
 
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = {
     newMapped(f).asInstanceOf[That]
-// was:        val b = bf(repr)
+//    val b = bf(repr)
 //          if (b.isInstanceOf[NoBuilder[_]]) newMapped(f).asInstanceOf[That]
 //    else super.map[B, That](f)(bf)
   }

@@ -426,33 +426,47 @@ trait Types {
      *  Members appear in linearization order of their owners.
      *  Members with the same owner appear in reverse order of their declarations.
      */
-    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0, false)(NoSymbol).alternatives
+    def members: List[Symbol] = findMember(nme.ANYNAME, 0, 0, false).alternatives
 
     /** A list of all non-private members of this type (defined or inherited) */
     def nonPrivateMembers: List[Symbol] =
-      findMember(nme.ANYNAME, PRIVATE | BRIDGE, 0, false)(NoSymbol).alternatives
+      findMember(nme.ANYNAME, PRIVATE | BRIDGES, 0, false).alternatives
+
+    /** A list of all non-private members of this type  (defined or inherited),
+     *  admitting members with given flags `admit`
+     */
+    def nonPrivateMembersAdmitting(admit: Long): List[Symbol] =
+      findMember(nme.ANYNAME, (PRIVATE | BRIDGES) & ~admit, 0, false).alternatives
 
     /** A list of all implicit symbols of this type  (defined or inherited) */
     def implicitMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BRIDGE, IMPLICIT, false)(NoSymbol).alternatives
+      findMember(nme.ANYNAME, BRIDGES, IMPLICIT, false).alternatives
 
     /** A list of all deferred symbols of this type  (defined or inherited) */
     def deferredMembers: List[Symbol] =
-      findMember(nme.ANYNAME, BRIDGE, DEFERRED, false)(NoSymbol).alternatives
+      findMember(nme.ANYNAME, BRIDGES, DEFERRED, false).alternatives
 
     /** The member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def member(name: Name): Symbol = findMember(name, BRIDGE, 0, false)(NoSymbol)
+    def member(name: Name): Symbol = findMember(name, BRIDGES, 0, false)
 
     /** The non-private member with given name,
-     *  an OverloadedSymbol if several exist, NoSymbol if none exist */
+     *  an OverloadedSymbol if several exist, NoSymbol if none exist.
+     *  Bridges are excluded from the result
+     */
     def nonPrivateMember(name: Name): Symbol =
-      findMember(name, PRIVATE | BRIDGE, 0, false)(NoSymbol)
+      findMember(name, PRIVATE | BRIDGES, 0, false)
+
+    /** The non-private member with given name, admitting members with given flags `admit`
+     *  an OverloadedSymbol if several exist, NoSymbol if none exist
+     */
+    def nonPrivateMemberAdmitting(name: Name, admit: Long): Symbol =
+      findMember(name, (PRIVATE | BRIDGES) & ~admit, 0, false)
 
     /** The non-local member with given name,
      *  an OverloadedSymbol if several exist, NoSymbol if none exist */
-    def nonLocalMember(name: Name)(from : Symbol): Symbol =
-      findMember(name, LOCAL | BRIDGE, 0, false)(from)
+    def nonLocalMember(name: Name): Symbol =
+      findMember(name, LOCAL | BRIDGES, 0, false)
 
     /** The least type instance of given class which is a supertype
      *  of this type */
@@ -730,16 +744,15 @@ trait Types {
      *  @param excludedFlags  Returned members do not have these flags
      *  @param requiredFlags  Returned members do have these flags
      *  @param stableOnly     If set, return only members that are types or stable values
-     *  @param from           ??
      */
     //TODO: use narrow only for modules? (correct? efficiency gain?)
-    def findMember(name: Name, excludedFlags: Int, requiredFlags: Long, stableOnly: Boolean)(from:Symbol): Symbol = {
+    def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
       // if this type contains type variables, get rid of them;
       // without this, the matchesType call would lead to type variables on both sides
       // of a subtyping/equality judgement, which can lead to recursive types being constructed.
       // See (t0851) for a situation where this happens.
       if (!this.isGround)
-        return typeVarToOriginMap(this).findMember(name, excludedFlags, requiredFlags, stableOnly)(from)
+        return typeVarToOriginMap(this).findMember(name, excludedFlags, requiredFlags, stableOnly)
       if (util.Statistics.enabled) findMemberCount += 1
 //      val startTime = if (util.Statistics.enabled) System.nanoTime() else 0l
 
@@ -943,8 +956,7 @@ trait Types {
     // todo see whether we can do without
     override def isError: Boolean = true
     override def decls: Scope = new ErrorScope(NoSymbol)
-    override def findMember(name: Name, excludedFlags: Int,
-                            requiredFlags: Long, stableOnly: Boolean)(from : Symbol): Symbol = {
+    override def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
       var sym = decls lookup name
       if (sym == NoSymbol) {
         sym = NoSymbol.newErrorSymbol(name)
@@ -3421,7 +3433,7 @@ A type's typeSymbol should never be inspected directly.
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
         sym
       } else {
-        var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)(NoSymbol)
+        var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
           assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
