@@ -70,6 +70,12 @@ abstract class ConstantFolder {
   }
 
   private def foldBinop(op: Name, x: Constant, y: Constant): Constant = try {
+    // temporarily logging folded ==/!= so the log doesn't have unexplained absences
+    if ((op == nme.EQ || op == nme.NE) && x.tag != y.tag && settings.logEqEq.value) {
+      val opstr = if (op == nme.EQ) "==" else "!="
+      scala.runtime.Equality.log("Folding constant expression (%s %s %s)".format(x.value, opstr, y.value))
+    }
+
     val optag = if (x.tag == y.tag) x.tag
                 else if (isNumeric(x.tag) && isNumeric(y.tag))
                   if (x.tag > y.tag) x.tag else y.tag

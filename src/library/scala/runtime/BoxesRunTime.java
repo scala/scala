@@ -33,13 +33,17 @@ public class BoxesRunTime
 
     private static int typeCode(Object a) {
         if (a instanceof Integer) return INT;
+        if (a instanceof Byte) return BYTE;
         if (a instanceof Character) return CHAR;
         if (a instanceof Long) return LONG;
         if (a instanceof Double) return DOUBLE;
-        if (a instanceof Float) return FLOAT;
-        if (a instanceof Byte) return BYTE;
         if (a instanceof Short) return SHORT;
+        if (a instanceof Float) return FLOAT;
         return OTHER;
+    }
+
+    private static String boxDescription(Object a) {
+      return "" + a.getClass().getSimpleName() + "(" + a + ")";
     }
 
 /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
@@ -135,221 +139,7 @@ public class BoxesRunTime
 
     /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
-    /** These methods manually implement "overloading" among boxed primitives.
-     *  The compiler is capable of inserting (but does not presently) the specific
-     *  equals method based on the statically known types of the boxes.
-     */
-
-    public static boolean equalsCharacterCharacter(Character a, Character b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.charValue() == b.charValue();
-    }
-    public static boolean equalsCharacterByte(Character a, Byte b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.charValue() == b.byteValue();
-    }
-    public static boolean equalsCharacterShort(Character a, Short b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.charValue() == b.shortValue();
-    }
-    public static boolean equalsCharacterInteger(Character a, Integer b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.charValue() == b.intValue();
-    }
-    public static boolean equalsCharacterLong(Character a, Long b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.charValue() == b.longValue();
-    }
-    public static boolean equalsCharacterFloat(Character a, Float b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.charValue() == b.floatValue();
-    }
-    public static boolean equalsCharacterDouble(Character a, Double b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.charValue() == b.doubleValue();
-    }
-    public static boolean equalsByteCharacter(Byte a, Character b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.byteValue() == b.charValue();
-    }
-    public static boolean equalsByteByte(Byte a, Byte b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.byteValue() == b.byteValue();
-    }
-    public static boolean equalsByteShort(Byte a, Short b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.byteValue() == b.shortValue();
-    }
-    public static boolean equalsByteInteger(Byte a, Integer b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.byteValue() == b.intValue();
-    }
-    public static boolean equalsByteLong(Byte a, Long b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.byteValue() == b.longValue();
-    }
-    public static boolean equalsByteFloat(Byte a, Float b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.byteValue() == b.floatValue();
-    }
-    public static boolean equalsByteDouble(Byte a, Double b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.byteValue() == b.doubleValue();
-    }
-    public static boolean equalsShortCharacter(Short a, Character b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.shortValue() == b.charValue();
-    }
-    public static boolean equalsShortByte(Short a, Byte b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.shortValue() == b.byteValue();
-    }
-    public static boolean equalsShortShort(Short a, Short b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.shortValue() == b.shortValue();
-    }
-    public static boolean equalsShortInteger(Short a, Integer b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.shortValue() == b.intValue();
-    }
-    public static boolean equalsShortLong(Short a, Long b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.shortValue() == b.longValue();
-    }
-    public static boolean equalsShortFloat(Short a, Float b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.shortValue() == b.floatValue();
-    }
-    public static boolean equalsShortDouble(Short a, Double b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.shortValue() == b.doubleValue();
-    }
-    public static boolean equalsIntegerCharacter(Integer a, Character b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.intValue() == b.charValue();
-    }
-    public static boolean equalsIntegerByte(Integer a, Byte b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.intValue() == b.byteValue();
-    }
-    public static boolean equalsIntegerShort(Integer a, Short b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.intValue() == b.shortValue();
-    }
-    public static boolean equalsIntegerInteger(Integer a, Integer b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.intValue() == b.intValue();
-    }
-    public static boolean equalsIntegerLong(Integer a, Long b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.intValue() == b.longValue();
-    }
-    public static boolean equalsIntegerFloat(Integer a, Float b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.intValue() == b.floatValue();
-    }
-    public static boolean equalsIntegerDouble(Integer a, Double b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.intValue() == b.doubleValue();
-    }
-    public static boolean equalsLongCharacter(Long a, Character b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.longValue() == b.charValue();
-    }
-    public static boolean equalsLongByte(Long a, Byte b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.longValue() == b.byteValue();
-    }
-    public static boolean equalsLongShort(Long a, Short b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.longValue() == b.shortValue();
-    }
-    public static boolean equalsLongInteger(Long a, Integer b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.longValue() == b.intValue();
-    }
-    public static boolean equalsLongLong(Long a, Long b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.longValue() == b.longValue();
-    }
-    public static boolean equalsLongFloat(Long a, Float b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.longValue() == b.floatValue();
-    }
-    public static boolean equalsLongDouble(Long a, Double b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.longValue() == b.doubleValue();
-    }
-    public static boolean equalsFloatCharacter(Float a, Character b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.floatValue() == b.charValue();
-    }
-    public static boolean equalsFloatByte(Float a, Byte b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.floatValue() == b.byteValue();
-    }
-    public static boolean equalsFloatShort(Float a, Short b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.floatValue() == b.shortValue();
-    }
-    public static boolean equalsFloatInteger(Float a, Integer b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.floatValue() == b.intValue();
-    }
-    public static boolean equalsFloatLong(Float a, Long b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.floatValue() == b.longValue();
-    }
-    public static boolean equalsFloatFloat(Float a, Float b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.floatValue() == b.floatValue();
-    }
-    public static boolean equalsFloatDouble(Float a, Double b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.floatValue() == b.doubleValue();
-    }
-    public static boolean equalsDoubleCharacter(Double a, Character b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.doubleValue() == b.charValue();
-    }
-    public static boolean equalsDoubleByte(Double a, Byte b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.doubleValue() == b.byteValue();
-    }
-    public static boolean equalsDoubleShort(Double a, Short b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.doubleValue() == b.shortValue();
-    }
-    public static boolean equalsDoubleInteger(Double a, Integer b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.doubleValue() == b.intValue();
-    }
-    public static boolean equalsDoubleLong(Double a, Long b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.doubleValue() == b.longValue();
-    }
-    public static boolean equalsDoubleFloat(Double a, Float b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.doubleValue() == b.floatValue();
-    }
-    public static boolean equalsDoubleDouble(Double a, Double b) {
-        if (a == null || b == null) return (Object)a == (Object)b;
-        else return a.doubleValue() == b.doubleValue();
-    }
-
-    /** The current equals method, whose logic is under review. **/
-
-    public static boolean equals(Object a, Object b) {
-        if ((a instanceof Number || a instanceof Character) && (b instanceof Number || b instanceof Character)) {
-          if (a.getClass() != b.getClass()) {
-            Equality.logInternal("[ BOXED ] Comparing: ", a, b, Equality.whereAreWe());
-          }
-        }
-
-        if (a == null || b == null)
-            return a == b;
-        if (a.equals(b))
-            return true;
+    private static boolean equalsBonusLogicFromScala27(Object a, Object b) {
         if (a instanceof Number || a instanceof Character || b instanceof Number || b instanceof Character) {
             int acode = typeCode(a);
             int bcode = typeCode(b);
@@ -376,16 +166,43 @@ public class BoxesRunTime
                 res = (aa == bb);
             }
 
-            if (res || b.equals(a)) {
-              String msg;
-              if (res) msg = "[ BOXED ] Overriding equals between different types: ";
-              else msg = "[ BOXED ] Overriding equals because b.equals(a): ";
-              Equality.logInternal(msg, a, b, Equality.whereAreWe());
-              return true;
-            }
-            return false;
+            if (res || b.equals(a)) return true;
+            else return false;
         }
         return false;
+    }
+
+    private static String logMessage(Object a, Object b, String where) {
+      return "Compared boxed primitives (" + boxDescription(a) + " == " + boxDescription(b) + ") @ " + where;
+    }
+
+    private static void verifyEqEq(Object a, Object b, boolean isFatal, boolean onlyIfActuallyEqual) {
+      int code1 = typeCode(a);
+      int code2 = typeCode(b);
+
+      if (code1 < OTHER && code2 < OTHER && code1 != code2) {
+        if (!onlyIfActuallyEqual || equalsBonusLogicFromScala27(a, b)) {
+          String msg = logMessage(a, b, Equality.whereAreWe(5));
+          Equality.warnOrDie(msg, isFatal);
+        }
+      }
+    }
+
+    /** The current equals method. **/
+    public static boolean equals(Object a, Object b) {
+        if (a == null || b == null)
+            return a == b;
+
+        verifyEqEq(a, b,
+          (Equality.dieOnBoxedCompare || Equality.dieOnBoxedCompareIfValuesAreEqual),
+          (Equality.warnOnBoxedCompareIfValuesAreEqual || Equality.dieOnBoxedCompareIfValuesAreEqual)
+        );
+
+        if (a.equals(b))
+            return true;
+
+        if (Equality.use28Semantics) return false;
+        else return equalsBonusLogicFromScala27(a, b);
     }
 
 /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
@@ -889,11 +706,11 @@ public class BoxesRunTime
 
     /** arg.toChar */
     public static Character toCharacter(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Character) return (Character)arg;
-        if (arg instanceof Byte) return boxToCharacter((char)unboxToByte(arg));
-        if (arg instanceof Short) return boxToCharacter((char)unboxToShort(arg));
         if (arg instanceof Integer) return boxToCharacter((char)unboxToInt(arg));
+        if (arg instanceof Short) return boxToCharacter((char)unboxToShort(arg));
+        if (arg instanceof Character) return (Character)arg;
         if (arg instanceof Long) return boxToCharacter((char)unboxToLong(arg));
+        if (arg instanceof Byte) return boxToCharacter((char)unboxToByte(arg));
         if (arg instanceof Float) return boxToCharacter((char)unboxToFloat(arg));
         if (arg instanceof Double) return boxToCharacter((char)unboxToDouble(arg));
         throw new NoSuchMethodException();
@@ -901,11 +718,11 @@ public class BoxesRunTime
 
     /** arg.toByte */
     public static Byte toByte(Object arg) throws NoSuchMethodException {
+        if (arg instanceof Integer) return boxToByte((byte)unboxToInt(arg));
         if (arg instanceof Character) return boxToByte((byte)unboxToChar(arg));
         if (arg instanceof Byte) return (Byte)arg;
-        if (arg instanceof Short) return boxToByte((byte)unboxToShort(arg));
-        if (arg instanceof Integer) return boxToByte((byte)unboxToInt(arg));
         if (arg instanceof Long) return boxToByte((byte)unboxToLong(arg));
+        if (arg instanceof Short) return boxToByte((byte)unboxToShort(arg));
         if (arg instanceof Float) return boxToByte((byte)unboxToFloat(arg));
         if (arg instanceof Double) return boxToByte((byte)unboxToDouble(arg));
         throw new NoSuchMethodException();
@@ -913,11 +730,11 @@ public class BoxesRunTime
 
     /** arg.toShort */
     public static Short toShort(Object arg) throws NoSuchMethodException {
+        if (arg instanceof Integer) return boxToShort((short)unboxToInt(arg));
+        if (arg instanceof Long) return boxToShort((short)unboxToLong(arg));
         if (arg instanceof Character) return boxToShort((short)unboxToChar(arg));
         if (arg instanceof Byte) return boxToShort((short)unboxToByte(arg));
         if (arg instanceof Short) return (Short)arg;
-        if (arg instanceof Integer) return boxToShort((short)unboxToInt(arg));
-        if (arg instanceof Long) return boxToShort((short)unboxToLong(arg));
         if (arg instanceof Float) return boxToShort((short)unboxToFloat(arg));
         if (arg instanceof Double) return boxToShort((short)unboxToDouble(arg));
         throw new NoSuchMethodException();
@@ -925,49 +742,49 @@ public class BoxesRunTime
 
     /** arg.toInt */
     public static Integer toInteger(Object arg) throws NoSuchMethodException {
+        if (arg instanceof Integer) return (Integer)arg;
+        if (arg instanceof Long) return boxToInteger((int)unboxToLong(arg));
+        if (arg instanceof Double) return boxToInteger((int)unboxToDouble(arg));
+        if (arg instanceof Float) return boxToInteger((int)unboxToFloat(arg));
         if (arg instanceof Character) return boxToInteger((int)unboxToChar(arg));
         if (arg instanceof Byte) return boxToInteger((int)unboxToByte(arg));
         if (arg instanceof Short) return boxToInteger((int)unboxToShort(arg));
-        if (arg instanceof Integer) return (Integer)arg;
-        if (arg instanceof Long) return boxToInteger((int)unboxToLong(arg));
-        if (arg instanceof Float) return boxToInteger((int)unboxToFloat(arg));
-        if (arg instanceof Double) return boxToInteger((int)unboxToDouble(arg));
         throw new NoSuchMethodException();
     }
 
     /** arg.toLong */
     public static Long toLong(Object arg) throws NoSuchMethodException {
+        if (arg instanceof Integer) return boxToLong((long)unboxToInt(arg));
+        if (arg instanceof Double) return boxToLong((long)unboxToDouble(arg));
+        if (arg instanceof Float) return boxToLong((long)unboxToFloat(arg));
+        if (arg instanceof Long) return (Long)arg;
         if (arg instanceof Character) return boxToLong((long)unboxToChar(arg));
         if (arg instanceof Byte) return boxToLong((long)unboxToByte(arg));
         if (arg instanceof Short) return boxToLong((long)unboxToShort(arg));
-        if (arg instanceof Integer) return boxToLong((long)unboxToInt(arg));
-        if (arg instanceof Long) return (Long)arg;
-        if (arg instanceof Float) return boxToLong((long)unboxToFloat(arg));
-        if (arg instanceof Double) return boxToLong((long)unboxToDouble(arg));
         throw new NoSuchMethodException();
     }
 
     /** arg.toFloat */
     public static Float toFloat(Object arg) throws NoSuchMethodException {
-        if (arg instanceof Character) return boxToFloat((float)unboxToChar(arg));
-        if (arg instanceof Byte) return boxToFloat((float)unboxToByte(arg));
-        if (arg instanceof Short) return boxToFloat((float)unboxToShort(arg));
         if (arg instanceof Integer) return boxToFloat((float)unboxToInt(arg));
         if (arg instanceof Long) return boxToFloat((float)unboxToLong(arg));
         if (arg instanceof Float) return (Float)arg;
         if (arg instanceof Double) return boxToFloat((float)unboxToDouble(arg));
+        if (arg instanceof Character) return boxToFloat((float)unboxToChar(arg));
+        if (arg instanceof Byte) return boxToFloat((float)unboxToByte(arg));
+        if (arg instanceof Short) return boxToFloat((float)unboxToShort(arg));
         throw new NoSuchMethodException();
     }
 
     /** arg.toDouble */
     public static Double toDouble(Object arg) throws NoSuchMethodException {
+        if (arg instanceof Integer) return boxToDouble((double)unboxToInt(arg));
+        if (arg instanceof Float) return boxToDouble((double)unboxToFloat(arg));
+        if (arg instanceof Double) return (Double)arg;
+        if (arg instanceof Long) return boxToDouble((double)unboxToLong(arg));
         if (arg instanceof Character) return boxToDouble((double)unboxToChar(arg));
         if (arg instanceof Byte) return boxToDouble((double)unboxToByte(arg));
         if (arg instanceof Short) return boxToDouble((double)unboxToShort(arg));
-        if (arg instanceof Integer) return boxToDouble((double)unboxToInt(arg));
-        if (arg instanceof Long) return boxToDouble((double)unboxToLong(arg));
-        if (arg instanceof Float) return boxToDouble((double)unboxToFloat(arg));
-        if (arg instanceof Double) return (Double)arg;
         throw new NoSuchMethodException();
     }
 

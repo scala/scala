@@ -1291,7 +1291,7 @@ abstract class GenICode extends SubComponent  {
                         elseCtx: Context): Unit =
     {
       def genComparisonOp(l: Tree, r: Tree, code: Int) {
-        if (settings.logEquality.value && isUniversalEqualityOp(code))
+        if (settings.logEqEq.value && isUniversalEqualityOp(code))
           logEqEq(tree, l, r, code)
 
         val op: TestOp = code match {
@@ -1422,9 +1422,13 @@ abstract class GenICode extends SubComponent  {
         (rsym == ObjectClass) ||
         (lsym != rsym) && (isBoxed(lsym) || isBoxed(rsym))
       }
+      def cannotAvoidBoxesRuntime =
+        settings.logEqEq.value || settings.YwarnEqEq.value || settings.YdieEqEq.value
 
-      if (mustUseAnyComparator) {
-
+      /** We can avoid generating calls to BoxesRuntime only if -Yfuture-eqeq
+       *  is enabled AND none of the eqeq logging options are enabled.
+       */
+      if (mustUseAnyComparator && (!settings.YfutureEqEq.value || cannotAvoidBoxesRuntime)) {
         val ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
         val ctx2 = genLoad(r, ctx1, ANY_REF_CLASS)
         ctx2.bb.emitOnly(
@@ -1433,7 +1437,6 @@ abstract class GenICode extends SubComponent  {
         )
       }
       else {
-
         if (isNull(l))
           // null == expr -> expr eq null
           genLoad(r, ctx, ANY_REF_CLASS).bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS)
@@ -2153,39 +2156,18 @@ abstract class GenICode extends SubComponent  {
     override def varsInScope: Buffer[Local] = new ListBuffer
   }
 
-  /** Log equality tests to file if they are playing with typefire */
+  /** Log equality tests between different primitives. */
   def logEqEq(tree: Tree, l: Tree, r: Tree, code: Int) {
     import definitions._
     val op = if (code == scalaPrimitives.EQ) "==" else if (code == scalaPrimitives.NE) "!=" else "??"
-
-    def mayBeNumericComparison: Boolean = {
-      def isPossiblyBoxed(sym: Symbol): Boolean = {
-        import definitions._
-        // classes as which a boxed primitive may statically appear
-        val possibleBoxes = List(BoxedNumberClass, BoxedCharacterClass, SerializableClass, ComparableClass)
-
-        (sym == ObjectClass) || (possibleBoxes exists (sym isNonBottomSubClass _))
-      }
-
-      val lsym = l.tpe.typeSymbol
-      val rsym = r.tpe.typeSymbol
-
-      def isSameBox = {
-        def isFinalBox(s: Symbol) = (s isNonBottomSubClass BoxedNumberClass) && s.isFinal
-        isFinalBox(lsym) && isFinalBox(rsym) && lsym == rsym
-      }
-      isPossiblyBoxed(lsym) && isPossiblyBoxed(rsym) && !isSameBox
-    }
-
     val tkl = toTypeKind(l.tpe)
     val tkr = toTypeKind(r.tpe)
-    lazy val whereAreWe = tree.pos.source + ":" + tree.pos.line
-    def logit(preface: String) =
-      runtime.Equality.log("[%s] %s %s %s (%s)".format(preface, l.tpe, op, r.tpe, whereAreWe))
 
     if (tkl.isNumericType && tkr.isNumericType && tkl != tkr)
-      logit(" KNOWN ")
-    else if (mayBeNumericComparison)
-      logit("UNKNOWN")
+      runtime.Equality.logComparison(
+        "Comparing actual primitives",
+        "%s %s %s".format(l.tpe, op, r.tpe),
+        tree.pos.source + ":" + tree.pos.line
+      )
   }
 }

@@ -825,8 +825,6 @@ trait ScalacSettings {
                                           withHelpSyntax("-Ysqueeze:<enabled>")
   val Ystatistics   = BooleanSetting    ("-Ystatistics", "Print compiler statistics")
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
-  val logEquality   = BooleanSetting    ("-Ylog-equality", "Log all noteworthy equality tests (hardcoded to /tmp/scala-equality-log.txt)") .
-                        withPostSetHook(() => scala.runtime.Equality.logEverything = true)
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "Selects dispatch method for structural refinement method calls",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache") .
@@ -837,6 +835,16 @@ trait ScalacSettings {
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Ytailrec      = BooleanSetting    ("-Ytailrecommend", "Alert methods which would be tail-recursive if private or final.")
+
+  // Equality specific
+  val logEqEq       = BooleanSetting    ("-Ylog-eqeq", "Log all noteworthy equality tests") .
+                        withPostSetHook(() => scala.runtime.Equality.logEverything = true)
+  val YfutureEqEq   = BooleanSetting    ("-Yfuture-eqeq", "Use proposed overloading-based numeric equality semantics.") .
+                        withPostSetHook(() => scala.runtime.Equality.use28Semantics = true)
+  val YwarnEqEq     = BooleanSetting    ("-Ywarn-eqeq", "Warn when boxed primitives of different types are compared.") .
+                        withPostSetHook(() => scala.runtime.Equality.warnOnBoxedCompare = true)
+  val YdieEqEq      = BooleanSetting    ("-Ydie-changed-eqeq", "Throw an exception if a comparison would have come back differently in scala 2.7.") .
+                        withPostSetHook(() => scala.runtime.Equality.dieOnBoxedCompareIfValuesAreEqual = true)
 
   // Warnings
   val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics")
