@@ -29,20 +29,28 @@ import ch.epfl.lamp.compiler.msil.{Type => MSILType, Assembly}
 object ClassPath {
   /** Expand single path entry */
   private def expandS(pattern: String): List[String] = {
-    def nameMatchesStar(name: String) = name.toLowerCase().endsWith(".jar")
+    def isJar(name: String) = name.toLowerCase endsWith ".jar"
 
     /** Get all jars in directory */
-    def lsJars(f: File) = {
+    def lsJars(f: File, filt: String => Boolean = _ => true) = {
       val list = f.listFiles()
       if (list eq null) Nil
-      else list.filter(f => f.isFile() && nameMatchesStar(f.getName())).map(_.getPath()).toList
+      else list.filter(f => f.isFile() && filt(f.getName) && isJar(f.getName())).map(_.getPath()).toList
     }
 
     val suffix = File.separator + "*"
 
+    def basedir(s: String) =
+      if (s contains File.separator) s.substring(0, s.lastIndexOf(File.separator))
+      else "."
+
     if (pattern == "*") lsJars(new File("."))
-    else if (pattern endsWith suffix) lsJars(new File(pattern.substring(0, pattern.length - suffix.length)))
-    else pattern :: Nil
+    else if (pattern endsWith suffix) lsJars(new File(pattern dropRight 2))
+    else if (pattern contains '*') {
+      val regexp = ("^%s$" format pattern.replaceAll("""\*""", """.*""")).r
+      lsJars(new File(basedir(pattern)), regexp findFirstIn _ isDefined)
+    }
+    else List(pattern)
   }
 
   /** Split path using platform-dependent path separator */
