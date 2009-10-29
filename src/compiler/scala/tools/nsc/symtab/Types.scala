@@ -1572,7 +1572,7 @@ A type's typeSymbol should never be inspected directly.
     //  (args.isEmpty && !typeParamsDirect.isEmpty) && !isRawType(this)
     //  check for isRawType: otherwise raw types are considered higher-kinded types during subtyping:
     override def isHigherKinded
-      = (args.isEmpty && !typeParamsDirect.isEmpty) && !isRaw(sym, args)
+      = (args.isEmpty && !typeParamsDirect.isEmpty) && (settings.YhigherKindedRaw.value || !isRaw(sym, args))
       // (args.isEmpty && !typeParamsDirect.isEmpty) && (phase.erasedTypes || !sym.hasFlag(JAVA))
 
 
