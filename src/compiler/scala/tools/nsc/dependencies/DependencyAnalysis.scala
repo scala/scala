@@ -141,9 +141,10 @@ trait DependencyAnalysis extends SubComponent with Files {
             references += file -> (references(file) + tree.symbol.fullNameString)
           }
           tree match {
-            case cdef: ClassDef if !cdef.symbol.hasFlag(Flags.PACKAGE) =>
+            case cdef: ClassDef if !cdef.symbol.isModuleClass && !cdef.symbol.hasFlag(Flags.PACKAGE) =>
               buf += cdef.symbol
               super.traverse(tree)
+
             case _ =>
               super.traverse(tree)
           }

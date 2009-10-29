@@ -18,7 +18,11 @@ import io.AbstractFile
  */
 class SimpleBuildManager(val settings: Settings) extends BuildManager {
 
-  class BuilderGlobal(settings: Settings) extends scala.tools.nsc.Global(settings)  {
+  class BuilderGlobal(settings: Settings, reporter : Reporter) extends scala.tools.nsc.Global(settings, reporter)  {
+
+    def this(settings: Settings) =
+      this(settings, new ConsoleReporter(settings))
+
     def newRun() = new Run()
   }
 

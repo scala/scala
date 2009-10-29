@@ -1888,6 +1888,7 @@ trait Symbols {
     }
 
     override def cloneSymbolImpl(owner: Symbol): Symbol = {
+      assert(!isModuleClass)
       val clone = new ClassSymbol(owner, pos, name)
       if (thisSym != this) {
         clone.typeOfThis = typeOfThis
