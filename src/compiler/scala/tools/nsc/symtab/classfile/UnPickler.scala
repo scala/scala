@@ -417,7 +417,7 @@ abstract class UnPickler {
         else
           args += at(argref, readAnnotArg)
       }
-      AnnotationInfo(atp, args.toList, assocs.toList, NoPosition)
+      AnnotationInfo(atp, args.toList, assocs.toList)
     }
 
 

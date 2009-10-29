@@ -9,7 +9,6 @@ package typechecker
 
 import symtab.Flags
 import symtab.Flags._
-import util.NoPosition
 import scala.collection.mutable.ListBuffer
 
 /** <ul>
@@ -229,7 +228,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       if (clazz hasFlag Flags.CASE) {
         val isTop = !(clazz.ancestors exists (_ hasFlag Flags.CASE))
         // case classes are implicitly declared serializable
-        clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil, NoPosition)
+        clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
 
         if (isTop) {
           // If this case class has fields with less than public visibility, their getter at this

@@ -271,7 +271,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def concreteTypes(sym: Symbol): List[Type] =
     sym.getAnnotation(SpecializedClass) match {
-      case Some(AnnotationInfo(_, args, _, _)) =>
+      case Some(AnnotationInfo(_, args, _)) =>
         args match {
           case Literal(ct) :: _ =>
             val tpes = parseTypes(ct.stringValue)

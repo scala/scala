@@ -8,7 +8,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.HashMap
-import scala.tools.nsc.util.{ Position, NoPosition }
+import scala.tools.nsc.util.Position
 import symtab.Flags
 import symtab.Flags._
 
@@ -919,7 +919,7 @@ trait Namers { self: Analyzer =>
         } else typer.typedType(tpt).tpe
         // #2382: return type of default getters are always @uncheckedVariance
         if (meth.hasFlag(DEFAULTPARAM))
-          rt.withAnnotation(AnnotationInfo(definitions.uncheckedVarianceClass.tpe, List(), List(), NoPosition))
+          rt.withAnnotation(AnnotationInfo(definitions.uncheckedVarianceClass.tpe, List(), List()))
         else rt
       })
     }

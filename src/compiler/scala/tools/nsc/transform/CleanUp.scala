@@ -9,7 +9,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.tools.nsc.util.{ Position, NoPosition }
+import scala.tools.nsc.util.Position
 import scala.collection.mutable.{ListBuffer, HashMap}
 
 abstract class CleanUp extends Transform with ast.TreeDSL {
@@ -32,10 +32,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private var localTyper: analyzer.Typer = null
 
     private lazy val serializableAnnotation =
-      AnnotationInfo(SerializableAttr.tpe, Nil, Nil, NoPosition)
+      AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
     private lazy val serialVersionUIDAnnotation = {
       val attr = definitions.getClass("scala.SerialVersionUID")
-      AnnotationInfo(attr.tpe, List(Literal(Constant(0))), List(), NoPosition)
+      AnnotationInfo(attr.tpe, List(Literal(Constant(0))), List())
     }
 
     private object MethodDispatchType extends scala.Enumeration {

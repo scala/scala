@@ -349,7 +349,7 @@ trait ModelToXML extends ModelExtractor {
   def attrsFor(entity: Entity)(implicit from: Frame): NodeSeq = {
     def attrFor(attr: AnnotationInfo): Node = {
       val buf = new StringBuilder
-      val AnnotationInfo(tpe, args, nvPairs, _) = attr
+      val AnnotationInfo(tpe, args, nvPairs) = attr
       val name = link(decode(tpe.typeSymbol))
       if (!args.isEmpty)
         buf.append(args.mkString("(", ",", ")"))

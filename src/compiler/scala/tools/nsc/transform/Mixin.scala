@@ -611,7 +611,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                        .setInfo(IntClass.tpe)
                        .setFlag(PROTECTED)
           atPhase(currentRun.typerPhase) {
-            sym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil, NoPosition)
+            sym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
           }
           clazz.info.decls.enter(sym)
           addDef(clazz.pos, VAL(sym) === ZERO)

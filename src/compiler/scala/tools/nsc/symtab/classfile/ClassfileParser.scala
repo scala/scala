@@ -778,7 +778,7 @@ abstract class ClassfileParser {
           this.hasMeta = true
          // Attribute on methods of java annotation classes when that method has a default
         case nme.AnnotationDefaultATTR =>
-          sym.addAnnotation(AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List(), NoPosition))
+          sym.addAnnotation(AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()))
           in.skip(attrLen)
         // Java annotatinos on classes / methods / fields with RetentionPolicy.RUNTIME
         case nme.RuntimeAnnotationATTR =>
@@ -848,7 +848,7 @@ abstract class ClassfileParser {
         }
       }
       if (hasError) None
-      else Some(AnnotationInfo(attrType, List(), nvpairs.toList, NoPosition))
+      else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
     } catch {
       case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
       case ex: Throwable =>

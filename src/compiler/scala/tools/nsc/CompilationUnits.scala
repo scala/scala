@@ -47,9 +47,6 @@ trait CompilationUnits { self: Global =>
     /** things to check at end of compilation unit */
     val toCheck = new ListBuffer[() => Unit]
 
-    /** used to track changes in a signature */
-    var pickleHash : Long = 0
-
     def position(pos: Int) = source.position(pos)
 
     /** The position of a targeted type check
