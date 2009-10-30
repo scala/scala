@@ -115,8 +115,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   override protected[this] def thisCollection: Seq[A] = this.asInstanceOf[Seq[A]]
   override protected[this] def toCollection(repr: Repr): Seq[A] = repr.asInstanceOf[Seq[A]]
 
-  import Traversable.breaks._
-
   /** Returns the length of the sequence.
    */
   def length: Int
@@ -135,13 +133,12 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  is O(length min len) instead of O(length). The method should be overwritten
    *  if computing length is cheap.
    */
-  def lengthCompare(len: Int): Int = { //TR: should use iterator?
+  def lengthCompare(len: Int): Int = {
     var i = 0
-    breakable {
-      for (_ <- this) {
-        i += 1
-        if (i > len) break
-      }
+    val it = iterator
+    while (it.hasNext && i <= len) {
+      it.next()
+      i += 1
     }
     i - len
   }
@@ -159,16 +156,12 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @param  p the predicate
    *  @param  from  the start index
    */
-  def segmentLength(p: A => Boolean, from: Int): Int = { //TR: should use iterator?
-    var result = 0
+  def segmentLength(p: A => Boolean, from: Int): Int = {
     var i = 0
-    breakable {
-      for (x <- this) {
-        if (i >= from && !p(x)) { result = i - from; break }
-        else i += 1
-      }
-    }
-    result
+    var it = iterator.drop(from)
+    while (it.hasNext && p(it.next()))
+      i += 1
+    i
   }
 
   /** Returns length of longest prefix of this seqence
@@ -192,16 +185,12 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @param  p the predicate
    *  @param  from  the start index
    */
-  def indexWhere(p: A => Boolean, from: Int): Int = { //TR: should use iterator?
-    var result = -1
+  def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = from
-    breakable {
-      for (x <- this) {
-        if (i >= from && p(x)) { result = i; break }
-        else i += 1
-      }
-    }
-    result
+    var it = iterator.drop(from)
+    while (it.hasNext && !p(it.next()))
+      i += 1
+    if (it.hasNext) i else -1
   }
 
   /** Returns index of the first element satisying a predicate, or -1. */
