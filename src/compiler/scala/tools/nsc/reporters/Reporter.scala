@@ -46,6 +46,8 @@ abstract class Reporter {
   def warning(pos: Position, msg: String                ) { info0(pos, msg, WARNING, false) }
   def   error(pos: Position, msg: String                ) { info0(pos, msg,   ERROR, false) }
 
+  def comment(pos: Position, msg: String) {}
+
   /** An error that could possibly be fixed if the unit were longer.
    *  This is used only when the interpreter tries
    *  to distinguish fatal errors from those that are due to

@@ -1083,11 +1083,14 @@ trait Scanners {
     }
 
     override def foundComment(value: String, start: Int, end: Int) {
-    	unit.comments += unit.Comment(value, new RangePosition(unit.source, start, start, end))
+      val pos = new RangePosition(unit.source, start, start, end)
+    	unit.comments += unit.Comment(value, pos)
+    	unit.comment(pos, value)
     }
 
     override def foundDocComment(value: String, start: Int, end: Int) {
       docOffset = new RangePosition(unit.source, start, start, end)
+      unit.comment(docOffset, value)
     }
   }
 

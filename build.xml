@@ -1569,7 +1569,7 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
 POSITIONS
 ============================================================================ -->
 
-  <target name="test.positions" depends="pack.done">
+  <target name="test.positions" depends="quick.comp">
     <antcall target="test.positions.tests.sub" inheritRefs="true">
       <param name="test.tests.srcs" value="${test.dir}/files/positions"/>
     </antcall>
@@ -1622,11 +1622,15 @@ POSITIONS
     </if>
     <scalacfork
       destdir=""
-      compilerpathref="pack.classpath"
-      srcdir="${srcdir}"
+      compilerpathref="locker.classpath"
+      srcpath="${srcdir}"
       params="-Xprint-pos -Yide-debug"
+      srcdir="${srcdir}"
       jvmargs="${scalacfork.jvmargs}">
       <include name="${srcs}"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+      </compilationpath>
     </scalacfork>
   </target>
 

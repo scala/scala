@@ -78,6 +78,9 @@ trait CompilationUnits { self: Global =>
     def incompleteInputError(pos: Position, msg:String) =
       reporter.incompleteInputError(pos, msg)
 
+    def comment(pos: Position, msg: String) =
+      reporter.comment(pos, msg)
+
     /** Is this about a .java source file? */
     lazy val isJava = source.file.name.endsWith(".java")
 
