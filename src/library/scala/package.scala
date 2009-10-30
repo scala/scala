@@ -40,6 +40,9 @@ package object scala {
   val Stream = scala.collection.immutable.Stream
   val #:: = scala.collection.immutable.Stream.#::
 
+  type Vector[+A] = scala.collection.immutable.Vector[A]
+  val Vector = scala.collection.immutable.Vector
+
   type StringBuilder = scala.collection.mutable.StringBuilder
   val StringBuilder = scala.collection.mutable.StringBuilder
 

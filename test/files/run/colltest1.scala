@@ -213,6 +213,8 @@ object Test extends Application {
   sequenceTest(mutable.Seq())
   sequenceTest(immutable.Seq())
   sequenceTest(LinearSeq())
+  sequenceTest(IndexedSeq())
+  sequenceTest(Vector())
 //  sequenceTest(mutable.LinearSeq())
   sequenceTest(immutable.LinearSeq())
   sequenceTest(mutable.IndexedSeq())

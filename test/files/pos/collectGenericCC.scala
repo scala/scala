@@ -8,7 +8,7 @@ object Test {
     b.result
   }
 
-  collect[Int, IndexedSeq[Int]](List(1,2,3,4))
+  collect[Int, Vector[Int]](List(1,2,3,4))
   collect[Char, String](List('1','2','3','4'))
   collect[Char, Array[Char]](List('1','2','3','4'))
 }

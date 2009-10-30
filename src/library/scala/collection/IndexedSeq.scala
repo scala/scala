@@ -12,7 +12,7 @@
 package scala.collection
 
 import generic._
-import scala.collection.mutable.Builder
+import mutable.Builder
 
 /** <p>
  *    Sequences that support O(1) element access and O(1) length computation.
@@ -34,9 +34,7 @@ trait IndexedSeq[+A] extends Seq[A]
 }
 
 object IndexedSeq extends SeqFactory[IndexedSeq] {
-  override def empty[A]: IndexedSeq[A] = immutable.IndexedSeq.empty[A]
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]
-
-  @deprecated("use collection.mutable.IndexedSeq instead") type Mutable[A] = scala.collection.mutable.IndexedSeq[A]
 }
+

@@ -15,7 +15,7 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A subtrait of <code>collection.Seq</code> which represents sequences
+/** A subtrait of <code>collection.LinearSeq</code> which represents sequences
  *  that cannot be mutated.
  *
  *  @since 2.8
