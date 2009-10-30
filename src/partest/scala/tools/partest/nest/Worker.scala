@@ -19,9 +19,17 @@ import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
 import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
+import scala.collection.mutable.HashMap
+
 case class RunTests(kind: String, files: List[File])
 case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])
 case class LogContext(file: LogFile, writers: Option[(StringWriter, PrintWriter)])
+
+abstract class TestResult {
+  def file: File
+}
+case class Result(override val file: File, context: LogContext) extends TestResult
+case class Timeout(override val file: File) extends TestResult
 
 class LogFile(parent: File, child: String) extends File(parent, child) {
   var toDelete = false
@@ -930,19 +938,23 @@ class Worker(val fileManager: FileManager) extends Actor {
     if (numFiles == 0)
       reportAll(topcont)
 
+    // maps canonical file names to the test result (0: OK, 1: FAILED, 2: TIMOUT)
+    val status = new HashMap[String, Int]
+
     var fileCnt = 1
     Actor.loopWhile(fileCnt <= numFiles) {
       val parent = self
-      val ontimeout = new TimerTask {
-        def run() {
-          parent ! 'timeout
-        }
-      }
-      timer.schedule(ontimeout, fileManager.timeout.toLong)
 
       actor {
-        val result = try {
-          processSingleFile(files(fileCnt-1))
+        val testFile = files(fileCnt-1)
+
+        val ontimeout = new TimerTask {
+          def run() = parent ! Timeout(testFile)
+        }
+        timer.schedule(ontimeout, fileManager.timeout.toLong)
+
+        val context = try {
+          processSingleFile(testFile)
         } catch {
           case t: Throwable =>
             NestUI.verbose("while invoking compiler ("+files+"):")
@@ -952,28 +964,37 @@ class Worker(val fileManager: FileManager) extends Actor {
               t.getCause.printStackTrace
             LogContext(null, None)
         }
-        parent ! result
+        parent ! Result(testFile, context)
       }
 
       react {
-        case 'timeout =>
-          val swr = new StringWriter
-          val wr = new PrintWriter(swr)
-          printInfoStart(files(fileCnt-1), wr)
-          printInfoTimeout(wr)
-          wr.flush()
-          swr.flush()
-          NestUI.normal(swr.toString)
-          succeeded = false
-          reportResult(None)
-          if (fileCnt == numFiles)
-            reportAll(topcont)
-          fileCnt += 1
-        case logs: LogContext =>
-          reportResult(if (logs != null) Some(logs) else None)
-          if (fileCnt == numFiles)
-            reportAll(topcont)
-          fileCnt += 1
+        case res: TestResult =>
+          val path = res.file.getCanonicalPath
+          status.get(path) match {
+            case Some(stat) => // ignore message
+            case None => res match {
+              case Timeout(_) =>
+                status += (path -> 2)
+                val swr = new StringWriter
+                val wr = new PrintWriter(swr)
+                printInfoStart(files(fileCnt-1), wr)
+                printInfoTimeout(wr)
+                wr.flush()
+                swr.flush()
+                NestUI.normal(swr.toString)
+                succeeded = false
+                reportResult(None)
+                if (fileCnt == numFiles)
+                  reportAll(topcont)
+                fileCnt += 1
+              case Result(_, logs) =>
+                status += (path -> (if (succeeded) 0 else 1))
+                reportResult(if (logs != null) Some(logs) else None)
+                if (fileCnt == numFiles)
+                  reportAll(topcont)
+                fileCnt += 1
+            }
+          }
       }
     }
   }
