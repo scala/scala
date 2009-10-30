@@ -83,35 +83,53 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   /** The given files have been modified by the user. Recompile
    *  them and all files that depend on them. Only files that
    *  have been previously added as source files are recompiled.
+   *  Files that were already compiled are taken out from the result
+   *  of the dependency analysis.
    */
-  private def update(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
-    deleteClassfiles(files)
+  private def update(files: Set[AbstractFile]) = {
+    def update0(files: Set[AbstractFile], updated: Set[AbstractFile]): Unit = if (!files.isEmpty) {
+      deleteClassfiles(files)
+      val run = compiler.newRun()
+      compiler.inform("compiling " + files)
+      buildingFiles(files)
 
-    val run = compiler.newRun()
-    compiler.inform("compiling " + files)
-    buildingFiles(files)
-
-    run.compileFiles(files.toList)
-    if (compiler.reporter.hasErrors) {
-      compiler.reporter.reset
-      return
-    }
-
-    val changesOf = new mutable.HashMap[Symbol, List[Change]]
-
-    val defs = compiler.dependencyAnalysis.definitions
-    for (src <- files; val syms = defs(src); sym <- syms) {
-      definitions(src).find(_.fullNameString == sym.fullNameString) match {
-        case Some(oldSym) =>
-          changesOf(oldSym) = changeSet(oldSym, sym)
-        case _ =>
-          // a new top level definition, no need to process
+      run.compileFiles(files.toList)
+      if (compiler.reporter.hasErrors) {
+        compiler.reporter.reset
+        return
       }
+
+      val changesOf = new mutable.HashMap[Symbol, List[Change]]
+      val additionalDefs: mutable.HashSet[AbstractFile] = mutable.HashSet.empty
+
+      val defs = compiler.dependencyAnalysis.definitions
+      for (src <- files) {
+        if (definitions(src).isEmpty)
+    	  additionalDefs ++= compiler.dependencyAnalysis.
+    	                     dependencies.dependentFiles(1, mutable.Set(src))
+        else {
+          val syms = defs(src)
+          for (sym <- syms) {
+            definitions(src).find(_.fullNameString == sym.fullNameString) match {
+              case Some(oldSym) =>
+                changesOf(oldSym) = changeSet(oldSym, sym)
+              case _ =>
+                // a new top level definition, no need to process
+            }
+          }
+        }
+      }
+
+      println("Changes: " + changesOf)
+      updateDefinitions(files)
+      val compiled = updated ++ files
+      additionalDefs -- compiled
+      update0(invalidated(files, changesOf) ++ additionalDefs, compiled)
     }
-    println("Changes: " + changesOf)
-    updateDefinitions(files)
-    update(invalidated(files, changesOf))
+
+    update0(files, immutable.Set())
   }
+
 
   /** Return the set of source files that are invalidated by the given changes. */
   def invalidated(files: Set[AbstractFile], changesOf: collection.Map[Symbol, List[Change]]): Set[AbstractFile] = {
@@ -127,71 +145,63 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       break
     }
 
-    // changesOf will be empty just after initialization with a saved
-    // dependencies file.
-    if (changesOf.isEmpty)
-      buf ++= directDeps
-    else {
-      for ((oldSym, changes) <- changesOf; change <- changes) {
-
-        def checkParents(cls: Symbol, file: AbstractFile) {
-          val parentChange = cls.info.parents.exists(_.typeSymbol.fullNameString == oldSym.fullNameString)
+    for ((oldSym, changes) <- changesOf; change <- changes) {
+      def checkParents(cls: Symbol, file: AbstractFile) {
+        val parentChange = cls.info.parents.exists(_.typeSymbol.fullNameString == oldSym.fullNameString)
 //          println("checkParents " + cls + " oldSym: " + oldSym + " parentChange: " + parentChange + " " + cls.info.parents)
+        change match {
+          case Changed(Class(_)) if parentChange =>
+            invalidate(file, "parents have changed", change)
+
+          case Added(Definition(_)) if parentChange =>
+            invalidate(file, "inherited new method", change)
+
+          case Removed(Definition(_)) if parentChange =>
+            invalidate(file, "inherited method removed", change)
+
+          case _ => ()
+        }
+      }
+
+      def checkInterface(cls: Symbol, file: AbstractFile) {
+        change match {
+          case Added(Definition(name)) =>
+            if (cls.info.decls.iterator.exists(_.fullNameString == name))
+              invalidate(file, "of new method with existing name", change)
+          case Changed(Class(name)) =>
+            if (cls.info.typeSymbol.fullNameString == name)
+              invalidate(file, "self type changed", change)
+          case _ =>
+            ()
+        }
+      }
+
+      def checkReferences(file: AbstractFile) {
+//        println(file + ":" + references(file))
+        val refs = references(file)
+        if (refs.isEmpty)
+          invalidate(file, "it is a direct dependency and we don't yet have finer-grained dependency information", change)
+        else {
           change match {
-            case Changed(Class(_)) if parentChange =>
-              invalidate(file, "parents have changed", change)
-
-            case Added(Definition(_)) if parentChange =>
-              invalidate(file, "inherited new method", change)
-
-            case Removed(Definition(_)) if parentChange =>
-              invalidate(file, "inherited method removed", change)
-
+            case Removed(Definition(name)) if refs(name) =>
+              invalidate(file, "it references deleted definition", change)
+            case Removed(Class(name)) if (refs(name)) =>
+              invalidate(file, "it references deleted class", change)
+            case Changed(Definition(name)) if (refs(name)) =>
+              invalidate(file, "it references changed definition", change)
             case _ => ()
           }
         }
+      }
 
-        def checkInterface(cls: Symbol, file: AbstractFile) {
-          change match {
-            case Added(Definition(name)) =>
-              if (cls.info.decls.iterator.exists(_.fullNameString == name))
-                invalidate(file, "of new method with existing name", change)
-            case Changed(Class(name)) =>
-              if (cls.info.typeSymbol.fullNameString == name)
-                invalidate(file, "self type changed", change)
-            case _ =>
-              ()
-          }
-        }
-
-        def checkReferences(file: AbstractFile) {
-//          println(file + ":" + references(file))
-          val refs = references(file)
-          if (refs.isEmpty)
-            invalidate(file, "it is a direct dependency and we don't yet have finer-grained dependency information", change)
-          else {
-            change match {
-              case Removed(Definition(name)) if refs(name) =>
-                invalidate(file, "it references deleted definition", change)
-              case Removed(Class(name)) if (refs(name)) =>
-                invalidate(file, "it references deleted class", change)
-              case Changed(Definition(name)) if (refs(name)) =>
-                invalidate(file, "it references changed definition", change)
-              case _ => ()
-            }
-          }
-        }
-
-        breakable {
-          for (file <- directDeps) {
-            for (cls <- definitions(file)) checkParents(cls, file)
-            for (cls <- definitions(file)) checkInterface(cls, file)
-            checkReferences(file)
-          }
+      breakable {
+        for (file <- directDeps) {
+          for (cls <- definitions(file)) checkParents(cls, file)
+          for (cls <- definitions(file)) checkInterface(cls, file)
+          checkReferences(file)
         }
       }
     }
-
     buf
   }
 
