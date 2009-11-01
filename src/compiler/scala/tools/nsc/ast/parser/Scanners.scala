@@ -395,7 +395,7 @@ trait Scanners {
 
       if (ch == '/' || ch == '*') {
 
-        val comment = new StringBuilder("//")
+        val comment = new StringBuilder("/")
         def appendToComment() = comment.append(ch)
 
         if (ch == '/') {
@@ -406,6 +406,7 @@ trait Scanners {
         } else {
           docBuffer = null
           var openComments = 1
+          appendToComment()
           nextChar()
           appendToComment()
           var buildingDocComment = false
