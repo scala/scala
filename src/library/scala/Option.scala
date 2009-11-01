@@ -30,19 +30,6 @@ object Option
    */
   @experimental
   def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
-
-  // For methods which return -1 on failure
-  // def fromReturnValue(value: Int): Option[Int] = if (value < 0) None else Some(value)
-
-  class NullableOption[A >: Null <: AnyRef](x: Option[A]) {
-    /** The option's value if it is nonempty, or <code>null</code> if it is empty.
-     *  The use of null of course is discouraged, but code written to use Options
-     *  often must interface with code which expects and returns nulls.
-     */
-    @experimental
-    def orNull: A = if (x.isEmpty) null else x.get
-  }
-  implicit def option2NullableOption[A >: Null <: AnyRef](xo: Option[A]): NullableOption[A] = new NullableOption(xo)
 }
 
 /** This class represents optional values. Instances of <code>Option</code>
@@ -88,6 +75,13 @@ sealed abstract class Option[+A] extends Product {
    */
   def orZero[B >: A](implicit z: Zero[B]): B =
     this getOrElse z.zero
+
+  /** The option's value if it is nonempty, or <code>null</code> if it is empty.
+   *  The use of null of course is discouraged, but code written to use Options
+   *  often must interface with code which expects and returns nulls.
+   */
+  @experimental
+  def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse null
 
   /** If the option is nonempty, return a function applied to its value,
    *  wrapped in a Some i.e. <code>Some(f(this.get))</code>.

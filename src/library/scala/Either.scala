@@ -55,14 +55,30 @@ sealed abstract class Either[+A, +B] {
   }
 
   /**
+   * Joins an <code>Either</code> through <code>Right</code>.
+   */
+  def joinRight[A1 >: A, B1 >: B, C](implicit ev: B1 <:< Either[A1, C]): Either[A1, C] = this match {
+    case Left(a)  => Left(a)
+    case Right(b) => b
+  }
+
+  /**
+   * Joins an <code>Either</code> through <code>Left</code>.
+   */
+  def joinLeft[A1 >: A, B1 >: B, C](implicit ev: A1 <:< Either[C, B1]): Either[C, B1] = this match {
+    case Left(a)  => a
+    case Right(b) => Right(b)
+  }
+
+  /**
    * Returns <code>true</code> if this is a <code>Left</code>, <code>false</code> otherwise.
    */
-  def isLeft = false  // Default here, overriden in Left
+  def isLeft: Boolean
 
   /**
    * Returns <code>true</code> if this is a <code>Right</code>, <code>false</code> otherwise.
    */
-  def isRight = false // Default here, overriden in Right.
+  def isRight: Boolean
 }
 
 /**
@@ -71,7 +87,10 @@ sealed abstract class Either[+A, +B] {
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Left[+A, +B](a: A) extends Either[A, B] { override def isLeft = true }
+final case class Left[+A, +B](a: A) extends Either[A, B] {
+  def isLeft = true
+  def isRight = false
+}
 
 /**
  * The right side of the disjoint union, as opposed to the <code>Left</code> side.
@@ -79,41 +98,20 @@ final case class Left[+A, +B](a: A) extends Either[A, B] { override def isLeft =
  * @author <a href="mailto:research@workingmouse.com">Tony Morris</a>, Workingmouse
  * @version 1.0, 11/10/2008
  */
-final case class Right[+A, +B](b: B) extends Either[A, B] { override def isRight = true }
+final case class Right[+A, +B](b: B) extends Either[A, B] {
+  def isLeft = false
+  def isRight = true
+}
 
 object Either {
-
-  /**
-   * Returns the <code>Left</code> values in the given <code>Iterable</code> of <code>Either</code>s.
-   */
-  @deprecated("use `for (Left(a) <- es) yield a'")
-  def lefts[A, B](es: Iterable[Either[A, B]]) =
-    es.foldRight[List[A]](Nil)((e, as) => e match {
-      case Left(a) => a :: as
-      case Right(_) => as
-    })
-
-  /**
-   * Returns the <code>Right</code> values in the given<code>Iterable</code> of  <code>Either</code>s.
-   */
-  @deprecated("use `for (Right(a) <- es) yield a'")
-  def rights[A, B](es: Iterable[Either[A, B]]) =
-    es.foldRight[List[B]](Nil)((e, bs) => e match {
-      case Left(_) => bs
-      case Right(b) => b :: bs
-    })
-
-  /** Transforms an Iterable of Eithers into a pair of lists.
-   *
-   *  @param xs the iterable of Eithers to separate
-   *  @return a pair of lists.
-   */
-  @deprecated("use `for ((Left(l), Right(r)) <- es partition isLeft) yield (l, r)'")
-  def separate[A,B](es: Iterable[Either[A,B]]): (List[A], List[B]) =
-      es.foldRight[(List[A], List[B])]((Nil, Nil)) {
-      case (Left(a), (lefts, rights)) => (a :: lefts, rights)
-      case (Right(b), (lefts, rights)) => (lefts, b :: rights)
+  class MergeableEither[A](x: Either[A, A]) {
+    def merge: A = x match {
+      case Left(a)  => a
+      case Right(a) => a
     }
+  }
+
+  implicit def either2mergeable[A](x: Either[A, A]): MergeableEither[A] = new MergeableEither(x)
 
   /**
    * Projects an <code>Either</code> into a <code>Left</code>.
@@ -315,15 +313,11 @@ object Either {
     }
   }
 
-  /**
-   * Joins an <code>Either</code> through <code>Left</code>.
-   */
+  @deprecated("use `x.joinLeft'")
   def joinLeft[A, B](es: Either[Either[A, B], B]) =
     es.left.flatMap(x => x)
 
-  /**
-   * Joins an <code>Either</code> through <code>Right</code>.
-   */
+  @deprecated("use `x.joinRight'")
   def joinRight[A, B](es: Either[A, Either[A, B]]) =
     es.right.flatMap(x => x)
 
@@ -331,14 +325,47 @@ object Either {
    * Takes an <code>Either</code> to its contained value within <code>Left</code> or
    * <code>Right</code>.
    */
+  @deprecated("use `x.merge'")
   def merge[T](e: Either[T, T]) = e match {
     case Left(t) => t
     case Right(t) => t
   }
 
+  /**
+   * Returns the <code>Left</code> values in the given <code>Iterable</code> of <code>Either</code>s.
+   */
+  @deprecated("use `for (Left(a) <- es) yield a'")
+  def lefts[A, B](es: Iterable[Either[A, B]]) =
+    es.foldRight[List[A]](Nil)((e, as) => e match {
+      case Left(a) => a :: as
+      case Right(_) => as
+    })
+
+  /**
+   * Returns the <code>Right</code> values in the given<code>Iterable</code> of  <code>Either</code>s.
+   */
+  @deprecated("use `for (Right(a) <- es) yield a'")
+  def rights[A, B](es: Iterable[Either[A, B]]) =
+    es.foldRight[List[B]](Nil)((e, bs) => e match {
+      case Left(_) => bs
+      case Right(b) => b :: bs
+    })
+
+  /** Transforms an Iterable of Eithers into a pair of lists.
+   *
+   *  @param xs the iterable of Eithers to separate
+   *  @return a pair of lists.
+   */
+  @deprecated("use `for ((Left(l), Right(r)) <- es partition isLeft) yield (l, r)'")
+  def separate[A,B](es: Iterable[Either[A,B]]): (List[A], List[B]) =
+    es.foldRight[(List[A], List[B])]((Nil, Nil)) {
+      case (Left(a), (lefts, rights)) => (a :: lefts, rights)
+      case (Right(b), (lefts, rights)) => (lefts, b :: rights)
+    }
+
   /** If the condition satisfies, return the given A in <code>Left</code>,
    *  otherwise, return the given B in <code>Right</code>.
    */
-  def cond[A, B](test: Boolean, right: => B, left: => A) =
-    if(test) Right(right) else Left(left)
+  def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =
+    if (test) Right(right) else Left(left)
 }
