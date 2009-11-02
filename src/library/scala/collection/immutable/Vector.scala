@@ -12,27 +12,27 @@ package scala.collection
 package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import compat.Platform.arraycopy
+import compat.Platform
 
 import scala.collection.generic._
 import scala.collection.mutable.Builder
 
 
 object Vector extends SeqFactory[Vector] {
-  private[immutable] val BF = new GenericCanBuildFrom[Nothing] {
+  /*private[immutable]*/ val BF = new GenericCanBuildFrom[Nothing] {
     override def apply() = newBuilder[Nothing]
   }
   @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
     BF.asInstanceOf[CanBuildFrom[Coll, A, Vector[A]]]
   def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
-  private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
+  /*private[immutable]*/ val NIL = new Vector[Nothing](0, 0, 0)
   @inline override def empty[A]: Vector[A] = NIL
 }
 
 
 
 @serializable
-final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends Seq[A]
+final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends Seq[A] // TODO: protect members
                  with GenericTraversableTemplate[A, Vector]
                  with SeqLike[A, Vector[A]]
                  with VectorPointer[A @uncheckedVariance] {
@@ -44,14 +44,14 @@ override def companion: GenericCompanion[Vector] = Vector
   //assert(focus >= 0, focus+"<0")
   //assert(focus <= endIndex, focus+">"+endIndex)
 
-  var dirty = false
+  /*private*/ var dirty = false
 
   def length = endIndex - startIndex
 
   override def lengthCompare(len: Int): Int = length - len
 
 
-  override def iterator: VectorIterator[A] = {
+  @inline override def iterator: VectorIterator[A] = {
     val s = new VectorIterator[A](startIndex, endIndex)
     s.initFrom(this)
     if (dirty) s.stabilize(focus)
@@ -59,12 +59,25 @@ override def companion: GenericCompanion[Vector] = Vector
     s
   }
 
+  // TODO: check performance of foreach/map etc. should override or not?
+  // Ideally, clients will inline calls to map all the way down, including the iterator/builder methods.
+  // In principle, escape analysis could even remove the iterator/builder allocations and do it
+  // with local variables exclusively. But we're not quite there yet ...
+
+  @inline def foreach0[U](f: A => U): Unit = iterator.foreach0(f)
+
+  @inline def map0[B, That](f: A => B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
+    val b = bf(repr)
+    foreach0(x => b += f(x))
+    b.result
+  }
+
   // TODO: reverse
   // TODO: reverseIterator
 
   def apply(index: Int): A = {
     val idx = checkRangeConvert(index)
-//    //println("get elem: "+index + "/"+idx + "(focus:" +focus+" xor:"+(idx^focus)+" depth:"+depth+")")
+    //println("get elem: "+index + "/"+idx + "(focus:" +focus+" xor:"+(idx^focus)+" depth:"+depth+")")
     getElem(idx, idx ^ focus)
   }
 
@@ -133,10 +146,32 @@ override def companion: GenericCompanion[Vector] = Vector
     val idx = checkRangeConvert(index)
     val s = new Vector[B](startIndex, endIndex, idx)
     s.initFrom(this)
-    s.gotoPosClean(focus, idx, focus ^ idx) // if dirty commit changes; go to new pos and prepare for writing
+    s.dirty = dirty
+    s.gotoPosWritable(focus, idx, focus ^ idx)  // if dirty commit changes; go to new pos and prepare for writing
     s.display0(idx & 0x1f) = elem.asInstanceOf[AnyRef]
-    s.dirty = true
     s
+  }
+
+
+
+  def gotoPosWritableFull(oldIndex: Int, newIndex: Int, xor: Int) = {
+    if (dirty) stabilize(oldIndex) // will copy level 1 to level d-1
+    gotoPosWritable0(newIndex, xor) // will copy level 0
+    dirty = true
+  }
+
+  private def gotoPosWritable(oldIndex: Int, newIndex: Int, xor: Int) = if (dirty) {
+    gotoPosWritable1(oldIndex, newIndex, xor)
+  } else {
+    gotoPosWritable0(newIndex, xor)
+    dirty = true
+  }
+
+  private def gotoFreshPosWritable(oldIndex: Int, newIndex: Int, xor: Int) = if (dirty) {
+    gotoFreshPosWritable1(oldIndex, newIndex, xor)
+  } else {
+    gotoFreshPosWritable0(oldIndex, newIndex, xor)
+    dirty = true
   }
 
   def appendFront[B>:A](value: B): Vector[B] = {
@@ -146,9 +181,9 @@ override def companion: GenericCompanion[Vector] = Vector
 
       if (blockIndex + 32 == startIndex) {
 
-        val freeSpace = ((1<<5*(depth)) - endIndex)
-        val shift = freeSpace & ~((1<<5*(depth-1))-1)
-        val shiftBlocks = freeSpace >>> 5*(depth-1)
+        val freeSpace = ((1<<5*(depth)) - endIndex) // free space at the right given the current tree-structure depth
+        val shift = freeSpace & ~((1<<5*(depth-1))-1) // number of elements by which we'll shift right (only move at top level)
+        val shiftBlocks = freeSpace >>> 5*(depth-1) // number of top-level blocks
 
         //println("----- appendFront " + value + " at " + (startIndex - 1) + " reached block start")
         if (shift != 0) {
@@ -161,9 +196,10 @@ override def companion: GenericCompanion[Vector] = Vector
             val newFocus = focus + shift
             val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
+            s.dirty = dirty
             s.shiftTopLevel(0, shiftBlocks) // shift right by n blocks
             s.debug
-            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // maybe create pos; prepare for writing
+            s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // maybe create pos; prepare for writing
             s.display0(lo) = value.asInstanceOf[AnyRef]
             //assert(depth == s.depth)
             s
@@ -176,8 +212,9 @@ override def companion: GenericCompanion[Vector] = Vector
 
             val s = new Vector(startIndex - 1 + shift, endIndex + shift, newBlockIndex)
             s.initFrom(this)
+            s.dirty = dirty
             s.shiftTopLevel(0, shiftBlocks) // shift right by n elements
-            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // prepare for writing
+            s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // prepare for writing
             s.display0(shift-1) = value.asInstanceOf[AnyRef]
             s.debug
             s
@@ -193,8 +230,9 @@ override def companion: GenericCompanion[Vector] = Vector
 
           val s = new Vector(startIndex - 1 + move, endIndex + move, newBlockIndex)
           s.initFrom(this)
+          s.dirty = dirty
           s.debug
-          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
+          s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex) // could optimize: we know it will create a whole branch
           s.display0(lo) = value.asInstanceOf[AnyRef]
           s.debug
           //assert(s.depth == depth+1)
@@ -205,17 +243,19 @@ override def companion: GenericCompanion[Vector] = Vector
 
           val s = new Vector(startIndex - 1, endIndex, newBlockIndex)
           s.initFrom(this)
-          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+          s.dirty = dirty
+          s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
           //assert(s.depth == depth)
           s
         }
 
       } else {
-//        //println("will make writable block (from "+focus+") at: " + blockIndex)
+        //println("will make writable block (from "+focus+") at: " + blockIndex)
         val s = new Vector(startIndex - 1, endIndex, blockIndex)
         s.initFrom(this)
-        s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
+        s.dirty = dirty
+        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
         s.display0(lo) = value.asInstanceOf[AnyRef]
         s
       }
@@ -251,9 +291,10 @@ override def companion: GenericCompanion[Vector] = Vector
             val newFocus = focus - shift
             val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
+            s.dirty = dirty
             s.shiftTopLevel(shiftBlocks, 0) // shift left by n blocks
             s.debug
-            s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
             s.display0(lo) = value.asInstanceOf[AnyRef]
             s.debug
             //assert(depth == s.depth)
@@ -267,8 +308,9 @@ override def companion: GenericCompanion[Vector] = Vector
 
             val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
             s.initFrom(this)
+            s.dirty = dirty
             s.shiftTopLevel(shiftBlocks, 0) // shift right by n elements
-            s.gotoPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+            s.gotoPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
             s.display0(32 - shift) = value.asInstanceOf[AnyRef]
             s.debug
             s
@@ -279,7 +321,8 @@ override def companion: GenericCompanion[Vector] = Vector
 
           val s = new Vector(startIndex, endIndex + 1, newBlockIndex)
           s.initFrom(this)
-          s.gotoFreshPosClean(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
+          s.dirty = dirty
+          s.gotoFreshPosWritable(newFocus, newBlockIndex, newFocus ^ newBlockIndex)
           s.display0(lo) = value.asInstanceOf[AnyRef]
           //assert(s.depth == depth+1) might or might not create new level!
           if (s.depth == depth+1) {
@@ -289,10 +332,11 @@ override def companion: GenericCompanion[Vector] = Vector
           s
         }
       } else {
-//        //println("will make writable block (from "+focus+") at: " + blockIndex)
+        //println("will make writable block (from "+focus+") at: " + blockIndex)
         val s = new Vector(startIndex, endIndex + 1, blockIndex)
         s.initFrom(this)
-        s.gotoPosClean(focus, blockIndex, focus ^ blockIndex)
+        s.dirty = dirty
+        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
         s.display0(lo) = value.asInstanceOf[AnyRef]
         s
       }
@@ -309,12 +353,6 @@ override def companion: GenericCompanion[Vector] = Vector
 
   // low-level implementation (needs cleanup)
 
-  private def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
-    val elems = new Array[AnyRef](32)
-    arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
-    elems
-  }
-
   private def shiftTopLevel(oldLeft: Int, newLeft: Int) = (depth - 1) match {
     case 0 =>
       display0 = copyRange(display0, oldLeft, newLeft)
@@ -330,94 +368,132 @@ override def companion: GenericCompanion[Vector] = Vector
       display5 = copyRange(display5, oldLeft, newLeft)
   }
 
-  private def cleanLeftEdge(cutIndex: Int) = (depth - 1) match {
-    case 5 =>
-      for (i <- 0 until ((cutIndex >>> 25) & 0x1f)) display5(i) = null
-      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
-      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 4 =>
-      display5 = null
-      for (i <- 0 until ((cutIndex >>> 20) & 0x1f)) display4(i) = null
-      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 3 =>
-      display5 = null
-      display4 = null
-      for (i <- 0 until ((cutIndex >>> 15) & 0x1f)) display3(i) = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 2 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      for (i <- 0 until ((cutIndex >>> 10) & 0x1f)) display2(i) = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 1 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      for (i <- 0 until ((cutIndex >>>  5) & 0x1f)) display1(i) = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
-    case 0 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      display1 = null
-      for (i <- 0 until ((cutIndex >>>  0) & 0x1f)) display0(i) = null
+  def zeroLeft(array: Array[AnyRef], index: Int): Unit = {
+    var i = 0; while (i < index) { array(i) = null; i+=1 }
   }
 
-  private def cleanRightEdge(cutIndex: Int) = (depth - 1) match {
-    case 5 =>
-      for (i <- ((cutIndex >>> 25) & 0x1f) until 32) display5(i) = null
-      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
-      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 4 =>
-      display5 = null
-      for (i <- ((cutIndex >>> 20) & 0x1f) until 32) display4(i) = null
-      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 3 =>
-      display5 = null
-      display4 = null
-      for (i <- ((cutIndex >>> 15) & 0x1f) until 32) display3(i) = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 2 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      for (i <- ((cutIndex >>> 10) & 0x1f) until 32) display2(i) = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 1 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      for (i <- ((cutIndex >>>  5) & 0x1f) until 32) display1(i) = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
-    case 0 =>
-      display5 = null
-      display4 = null
-      display3 = null
-      display2 = null
-      display1 = null
-      for (i <- ((cutIndex >>>  0) & 0x1f) until 32) display0(i) = null
+  def zeroRight(array: Array[AnyRef], index: Int): Unit = {
+    var i = index; while (i < array.length) { array(i) = null; i+=1 }
+  }
+
+  def copyLeft(array: Array[AnyRef], right: Int): Array[AnyRef] = {
+    val a2 = new Array[AnyRef](array.length)
+    Platform.arraycopy(array, 0, a2, 0, right)
+    a2
+  }
+  def copyRight(array: Array[AnyRef], left: Int): Array[AnyRef] = {
+    val a2 = new Array[AnyRef](array.length)
+    Platform.arraycopy(array, left, a2, left, a2.length - left)
+    a2
+  }
+
+  private def preClean(depth: Int) = {
+    this.depth = depth
+    (depth - 1) match {
+      case 0 =>
+        display1 = null
+        display2 = null
+        display3 = null
+        display4 = null
+        display5 = null
+      case 1 =>
+        display2 = null
+        display3 = null
+        display4 = null
+        display5 = null
+      case 2 =>
+        display3 = null
+        display4 = null
+        display5 = null
+      case 3 =>
+        display4 = null
+        display5 = null
+      case 4 =>
+        display5 = null
+      case 5 =>
+    }
+  }
+
+  // requires structure is at index cutIndex and writable at level 0
+  private def cleanLeftEdge(cutIndex: Int) = {
+    if (cutIndex < (1 << 5)) {
+      zeroLeft(display0, cutIndex)
+    } else
+    if (cutIndex < (1 << 10)) {
+      zeroLeft(display0, cutIndex & 0x1f)
+      display1 = copyRight(display1, (cutIndex >>>  5))
+    } else
+    if (cutIndex < (1 << 15)) {
+      zeroLeft(display0, cutIndex & 0x1f)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
+      display2 = copyRight(display2, (cutIndex >>> 10))
+    } else
+    if (cutIndex < (1 << 20)) {
+      zeroLeft(display0, cutIndex & 0x1f)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
+      display2 = copyRight(display2, (cutIndex >>> 10) & 0x1f)
+      display3 = copyRight(display3, (cutIndex >>> 15))
+    } else
+    if (cutIndex < (1 << 25)) {
+      zeroLeft(display0, cutIndex & 0x1f)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
+      display2 = copyRight(display2, (cutIndex >>> 10) & 0x1f)
+      display3 = copyRight(display3, (cutIndex >>> 15) & 0x1f)
+      display4 = copyRight(display4, (cutIndex >>> 20))
+    } else
+    if (cutIndex < (1 << 30)) {
+      zeroLeft(display0, cutIndex & 0x1f)
+      display1 = copyRight(display1, (cutIndex >>>  5) & 0x1f)
+      display2 = copyRight(display2, (cutIndex >>> 10) & 0x1f)
+      display3 = copyRight(display3, (cutIndex >>> 15) & 0x1f)
+      display4 = copyRight(display4, (cutIndex >>> 20) & 0x1f)
+      display5 = copyRight(display5, (cutIndex >>> 25))
+    } else {
+      throw new IllegalArgumentException()
+    }
+  }
+
+  // requires structure is writable and at index cutIndex
+  private def cleanRightEdge(cutIndex: Int) = {
+
+    // FIXME: we're actually sitting one block left if cutIndex lies on a block boundary
+    // this means that we'll end up erasing the whole block!!
+
+    if (cutIndex <= (1 << 5)) {
+      zeroRight(display0, cutIndex)
+    } else
+    if (cutIndex <= (1 << 10)) {
+      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
+      display1 = copyLeft(display1, (cutIndex >>>  5))
+    } else
+    if (cutIndex <= (1 << 15)) {
+      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
+      display2 = copyLeft(display2, (cutIndex >>> 10))
+    } else
+    if (cutIndex <= (1 << 20)) {
+      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
+      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 0x1f) + 1)
+      display3 = copyLeft(display3, (cutIndex >>> 15))
+    } else
+    if (cutIndex <= (1 << 25)) {
+      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
+      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 0x1f) + 1)
+      display3 = copyLeft(display3, (((cutIndex-1) >>> 15) & 0x1f) + 1)
+      display4 = copyLeft(display4, (cutIndex >>> 20))
+    } else
+    if (cutIndex <= (1 << 30)) {
+      zeroRight(display0, ((cutIndex-1) & 0x1f) + 1)
+      display1 = copyLeft(display1, (((cutIndex-1) >>>  5) & 0x1f) + 1)
+      display2 = copyLeft(display2, (((cutIndex-1) >>> 10) & 0x1f) + 1)
+      display3 = copyLeft(display3, (((cutIndex-1) >>> 15) & 0x1f) + 1)
+      display4 = copyLeft(display4, (((cutIndex-1) >>> 20) & 0x1f) + 1)
+      display5 = copyLeft(display5, (cutIndex >>> 25))
+    } else {
+      throw new IllegalArgumentException()
+    }
   }
 
   private def requiredDepth(xor: Int) = {
@@ -440,6 +516,7 @@ override def companion: GenericCompanion[Vector] = Vector
 
     //println("cut front at " + cutIndex + ".." + endIndex + " (xor: "+xor+" shift: " + shift + " d: " + d +")")
 
+/*
     val s = new Vector(cutIndex-shift, endIndex-shift, blockIndex-shift)
     s.initFrom(this)
     if (s.depth > 1)
@@ -447,6 +524,17 @@ override def companion: GenericCompanion[Vector] = Vector
     s.depth = d
     s.stabilize(blockIndex-shift)
     s.cleanLeftEdge(cutIndex-shift)
+    s
+*/
+
+    // need to init with full display iff going to cutIndex requires swapping block at level >= d
+
+    val s = new Vector(cutIndex-shift, endIndex-shift, blockIndex-shift)
+    s.initFrom(this)
+    s.dirty = dirty
+    s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
+    s.preClean(d)
+    s.cleanLeftEdge(cutIndex - shift)
     s
   }
 
@@ -456,15 +544,16 @@ override def companion: GenericCompanion[Vector] = Vector
 
     val xor = startIndex ^ (cutIndex - 1)
     val d = requiredDepth(xor)
-
-    //println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
-
+/*
+    println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
+    if (cutIndex == blockIndex + 32)
+      println("OUCH!!!")
+*/
     val s = new Vector(startIndex, cutIndex, blockIndex)
     s.initFrom(this)
-    if (s.depth > 1)
-      s.gotoPos(blockIndex, focus ^ blockIndex)
-    s.depth = d
-    s.stabilize(blockIndex)
+    s.dirty = dirty
+    s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
+    s.preClean(d)
     s.cleanRightEdge(cutIndex)
     s
   }
@@ -508,21 +597,27 @@ final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterato
 
   // TODO: take
   // TODO: drop
+
+  // TODO: remove!
+  @inline def foreach0[U](f: A =>  U) { while (hasNext) f(next()) }
 }
 
 
 final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A @uncheckedVariance] {
 
+  // TODO: possible alternative: start with display0 = null, blockIndex = -32, lo = 32
+  // to avoid allocation initial array if the result will be empty anyways
+
   display0 = new Array[AnyRef](32)
   depth = 1
 
-  var blockIndex = 0
-  var lo = 0
+  private var blockIndex = 0
+  private var lo = 0
 
   def += (elem: A): this.type = {
     if (lo == 32) {
       val newBlockIndex = blockIndex+32
-      gotoNextBlockStartClean(newBlockIndex, blockIndex ^ newBlockIndex)
+      gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex)
       blockIndex = newBlockIndex
       lo = 0
     }
@@ -532,6 +627,8 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
   }
 
   def result: Vector[A] = {
+    if (blockIndex + lo == 0)
+      return Vector.empty
     val s = new Vector[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
     s.initFrom(this)
     if (depth > 1) s.gotoPos(0, blockIndex + lo)
@@ -548,19 +645,22 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
 
 
 
-trait VectorPointer[T] {
-    var depth: Int = _
-    var display0: Array[AnyRef] = _
-    var display1: Array[AnyRef] = _
-    var display2: Array[AnyRef] = _
-    var display3: Array[AnyRef] = _
-    var display4: Array[AnyRef] = _
-    var display5: Array[AnyRef] = _
+private[immutable] trait VectorPointer[T] {
+     var depth: Int = _
+     var display0: Array[AnyRef] = _
+     var display1: Array[AnyRef] = _
+     var display2: Array[AnyRef] = _
+     var display3: Array[AnyRef] = _
+     var display4: Array[AnyRef] = _
+     var display5: Array[AnyRef] = _
 
     // used
-    final def initFrom[U](that: VectorPointer[U]) = {
-      depth = that.depth
+     final def initFrom[U](that: VectorPointer[U]): Unit = initFrom(that, that.depth)
+
+     final def initFrom[U](that: VectorPointer[U], depth: Int) = {
+      this.depth = depth
       (depth - 1) match {
+        case -1 =>
         case 0 =>
           display0 = that.display0
         case 1 =>
@@ -591,8 +691,9 @@ trait VectorPointer[T] {
       }
     }
 
-    // used
-    final def getElem(index: Int, xor: Int): T = {
+
+    // requires structure is at pos oldIndex = xor ^ index
+     final def getElem(index: Int, xor: Int): T = {
       if (xor < (1 << 5)) { // level = 0
         display0(index & 31).asInstanceOf[T]
       } else
@@ -615,41 +716,48 @@ trait VectorPointer[T] {
       }
     }
 
-    // unused currently
-    final def gotoZeroInit(elems: Array[AnyRef]) = (depth - 1) match { // goto pos zero
-      case 5 =>
-        display5 = elems.asInstanceOf[Array[AnyRef]]
-        display4 = display5(0).asInstanceOf[Array[AnyRef]]
-        display3 = display4(0).asInstanceOf[Array[AnyRef]]
-        display2 = display3(0).asInstanceOf[Array[AnyRef]]
-        display1 = display2(0).asInstanceOf[Array[AnyRef]]
-        display0 = display1(0).asInstanceOf[Array[AnyRef]]
-      case 4 =>
-        display4 = elems.asInstanceOf[Array[AnyRef]]
-        display3 = display4(0).asInstanceOf[Array[AnyRef]]
-        display2 = display3(0).asInstanceOf[Array[AnyRef]]
-        display1 = display2(0).asInstanceOf[Array[AnyRef]]
-        display0 = display1(0).asInstanceOf[Array[AnyRef]]
-      case 3 =>
-        display3 = elems.asInstanceOf[Array[AnyRef]]
-        display2 = display3(0).asInstanceOf[Array[AnyRef]]
-        display1 = display2(0).asInstanceOf[Array[AnyRef]]
-        display0 = display1(0).asInstanceOf[Array[AnyRef]]
-      case 2 =>
-        display2 = elems.asInstanceOf[Array[AnyRef]]
-        display1 = display2(0).asInstanceOf[Array[AnyRef]]
-        display0 = display1(0).asInstanceOf[Array[AnyRef]]
-      case 1 =>
-        display1 = elems.asInstanceOf[Array[AnyRef]]
-        display0 = display1(0).asInstanceOf[Array[AnyRef]]
-      case 0 =>
-        display0 = elems.asInstanceOf[Array[AnyRef]]
+
+    // go to specific position
+    // requires structure is at pos oldIndex = xor ^ index,
+    // ensures structure is at pos index
+     final def gotoPos(index: Int, xor: Int): Unit = {
+      if (xor < (1 << 5)) { // level = 0 (could maybe removed)
+      } else
+      if (xor < (1 << 10)) { // level = 1
+        display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
+      } else
+      if (xor < (1 << 15)) { // level = 2
+        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else
+      if (xor < (1 << 20)) { // level = 3
+        display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else
+      if (xor < (1 << 25)) { // level = 4
+        display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else
+      if (xor < (1 << 30)) { // level = 5
+        display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
+        display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else { // level = 6
+        throw new IllegalArgumentException()
+      }
     }
+
+
 
     // USED BY ITERATOR
 
     // xor: oldIndex ^ index
-    final def gotoNextBlockStart(index: Int, xor: Int): Unit = { // goto block start pos
+     final def gotoNextBlockStart(index: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 10)) { // level = 1
         display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
       } else
@@ -682,7 +790,7 @@ trait VectorPointer[T] {
     // USED BY BUILDER
 
     // xor: oldIndex ^ index
-    final def gotoNextBlockStartClean(index: Int, xor: Int): Unit = { // goto block start pos
+     final def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 10)) { // level = 1
         if (depth == 1) { display1 = new Array(32); display1(0) = display0; depth+=1}
         display0 = new Array(32)
@@ -734,28 +842,191 @@ trait VectorPointer[T] {
 
 
 
-    // STUFF BELOW USED BY APPEND
+    // STUFF BELOW USED BY APPEND / UPDATE
 
-    final def copyOf(a: Array[AnyRef]) = {
-//      //println("copy")
+     final def copyOf(a: Array[AnyRef]) = {
+      //println("copy")
       val b = new Array[AnyRef](a.length)
-      arraycopy(a, 0, b, 0, a.length)
+      Platform.arraycopy(a, 0, b, 0, a.length)
       b
     }
 
-    final def nullSlotAndCopy(array: Array[AnyRef], index: Int) = {
-//      //println("copy and null")
+     final def nullSlotAndCopy(array: Array[AnyRef], index: Int) = {
+      //println("copy and null")
       val x = array(index)
-//TODO
-//      array(index) = null
+      array(index) = null
       copyOf(x.asInstanceOf[Array[AnyRef]])
     }
 
 
-    // USED IN APPEND
-    // create a new block at the bottom level (and possibly nodes on its path)
+    // make sure there is no aliasing
+    // requires structure is at pos index
+    // ensures structure is clean and at pos index and writable at all levels except 0
 
-    final def gotoFreshPosClean(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto block start pos
+     final def stabilize(index: Int) = (depth - 1) match {
+      case 5 =>
+        display5 = copyOf(display5)
+        display4 = copyOf(display4)
+        display3 = copyOf(display3)
+        display2 = copyOf(display2)
+        display1 = copyOf(display1)
+        display5((index >> 25) & 31) = display4
+        display4((index >> 20) & 31) = display3
+        display3((index >> 15) & 31) = display2
+        display2((index >> 10) & 31) = display1
+        display1((index >>  5) & 31) = display0
+      case 4 =>
+        display4 = copyOf(display4)
+        display3 = copyOf(display3)
+        display2 = copyOf(display2)
+        display1 = copyOf(display1)
+        display4((index >> 20) & 31) = display3
+        display3((index >> 15) & 31) = display2
+        display2((index >> 10) & 31) = display1
+        display1((index >>  5) & 31) = display0
+      case 3 =>
+        display3 = copyOf(display3)
+        display2 = copyOf(display2)
+        display1 = copyOf(display1)
+        display3((index >> 15) & 31) = display2
+        display2((index >> 10) & 31) = display1
+        display1((index >>  5) & 31) = display0
+      case 2 =>
+        display2 = copyOf(display2)
+        display1 = copyOf(display1)
+        display2((index >> 10) & 31) = display1
+        display1((index >>  5) & 31) = display0
+      case 1 =>
+        display1 = copyOf(display1)
+        display1((index >>  5) & 31) = display0
+      case 0 =>
+    }
+
+
+
+
+
+
+    /// USED IN UPDATE AND APPEND BACK
+
+    // prepare for writing at an existing position
+
+    // requires structure is clean and at pos oldIndex = xor ^ newIndex,
+    // ensures structure is dirty and at pos newIndex and writable at level 0
+     final def gotoPosWritable0(newIndex: Int, xor: Int): Unit = (depth - 1) match {
+      case 5 =>
+        display5 = copyOf(display5)
+        display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31).asInstanceOf[Array[AnyRef]]
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      case 4 =>
+        display4 = copyOf(display4)
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      case 3 =>
+        display3 = copyOf(display3)
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      case 2 =>
+        display2 = copyOf(display2)
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      case 1 =>
+        display1 = copyOf(display1)
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      case 0 =>
+        display0 = copyOf(display0)
+    }
+
+
+    // requires structure is dirty and at pos oldIndex,
+    // ensures structure is dirty and at pos newIndex and writable at level 0
+     final def gotoPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
+      if (xor < (1 <<  5)) { // level = 0
+        display0 = copyOf(display0)
+      } else
+      if (xor < (1 << 10)) { // level = 1
+        display1 = copyOf(display1)
+        display1((oldIndex >> 5) & 31) = display0
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
+      } else
+      if (xor < (1 << 15)) { // level = 2
+        display1 = copyOf(display1)
+        display2 = copyOf(display2)
+        display1((oldIndex >>  5) & 31) = display0
+        display2((oldIndex >> 10) & 31) = display1
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else
+      if (xor < (1 << 20)) { // level = 3
+        display1 = copyOf(display1)
+        display2 = copyOf(display2)
+        display3 = copyOf(display3)
+        display1((oldIndex >>  5) & 31) = display0
+        display2((oldIndex >> 10) & 31) = display1
+        display3((oldIndex >> 15) & 31) = display2
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else
+      if (xor < (1 << 25)) { // level = 4
+        display1 = copyOf(display1)
+        display2 = copyOf(display2)
+        display3 = copyOf(display3)
+        display4 = copyOf(display4)
+        display1((oldIndex >>  5) & 31) = display0
+        display2((oldIndex >> 10) & 31) = display1
+        display3((oldIndex >> 15) & 31) = display2
+        display4((oldIndex >> 20) & 31) = display3
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else
+      if (xor < (1 << 30)) { // level = 5
+        display1 = copyOf(display1)
+        display2 = copyOf(display2)
+        display3 = copyOf(display3)
+        display4 = copyOf(display4)
+        display5 = copyOf(display5)
+        display1((oldIndex >>  5) & 31) = display0
+        display2((oldIndex >> 10) & 31) = display1
+        display3((oldIndex >> 15) & 31) = display2
+        display4((oldIndex >> 20) & 31) = display3
+        display5((oldIndex >> 25) & 31) = display4
+        display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31).asInstanceOf[Array[AnyRef]]
+        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
+        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
+        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
+        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
+      } else { // level = 6
+        throw new IllegalArgumentException()
+      }
+    }
+
+
+    // USED IN DROP
+
+     final def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
+      val elems = new Array[AnyRef](32)
+      Platform.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
+      elems
+    }
+
+
+
+
+    // USED IN APPEND
+    // create a new block at the bottom level (and possibly nodes on its path) and prepares for writing
+
+    // requires structure is clean and at pos oldIndex,
+    // ensures structure is dirty and at pos newIndex and writable at level 0
+     final def gotoFreshPosWritable0(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 5)) { // level = 0
         //println("XXX clean with low xor")
       } else
@@ -830,164 +1101,20 @@ trait VectorPointer[T] {
       } else { // level = 6
         throw new IllegalArgumentException()
       }
-      stabilize(newIndex)
     }
 
 
-    // xor: oldIndex ^ index
-    final def XgotoFreshPosClean(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto block start pos
-      if (xor < (1 << 10)) { // level = 1
-        if (depth == 1) { display1 = new Array(32); depth +=1 }
-        else { display1 = copyOf(display1) }
-        display1((oldIndex >>  5) & 31) = display0
-        display0 = new Array(32)
-      } else
-      if (xor < (1 << 15)) { // level = 2
-        if (depth == 2) { display2 = new Array(32); depth+=1}
-        else { display2 = copyOf(display2) }
-        display1 = copyOf(display1)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display0 = new Array(32)
-        display1 = new Array(32)
-      } else
-      if (xor < (1 << 20)) { // level = 3
-        if (depth == 3) { display3 = new Array(32); depth+=1}
-        else { display3 = copyOf(display3) }
-        display1 = copyOf(display1)
-        display2 = copyOf(display2)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display3((oldIndex >> 15) & 31) = display2
-        display0 = new Array(32)
-        display1 = new Array(32)
-        display2 = new Array(32)
-      } else
-      if (xor < (1 << 25)) { // level = 4
-        if (depth == 4) { display4 = new Array(32); depth+=1}
-        else { display4 = copyOf(display4) }
-        display1 = copyOf(display1)
-        display2 = copyOf(display2)
-        display3 = copyOf(display3)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display3((oldIndex >> 15) & 31) = display2
-        display4((oldIndex >> 20) & 31) = display3
-        display0 = new Array(32)
-        display1 = new Array(32)
-        display2 = new Array(32)
-        display3 = new Array(32)
-      } else
-      if (xor < (1 << 30)) { // level = 5
-        if (depth == 5) { display5 = new Array(32); depth+=1 }
-        else { display5 = copyOf(display5) }
-        display1 = copyOf(display1)
-        display2 = copyOf(display2)
-        display3 = copyOf(display3)
-        display4 = copyOf(display4)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display3((oldIndex >> 15) & 31) = display2
-        display4((oldIndex >> 20) & 31) = display3
-        display5((oldIndex >> 25) & 31) = display4
-        display0 = new Array(32)
-        display1 = new Array(32)
-        display2 = new Array(32)
-        display3 = new Array(32)
-        display4 = new Array(32)
-      } else { // level = 6
-        throw new IllegalArgumentException()
-      }
+    // requires structure is dirty and at pos oldIndex,
+    // ensures structure is dirty and at pos newIndex and writable at level 0
+     final def gotoFreshPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
+      stabilize(oldIndex)
+      gotoFreshPosWritable0(oldIndex, newIndex, xor)
     }
 
-    /// USED IN UPDATE AND APPEND BACK
-
-    // prepare for writing at an existing position
-
-    // xor: oldIndex ^ index
-    // precondition: the pointers (and only those) on path oldIndex to display0 are null
-    // postconditions:
-    // the pointers (and only those) on path newIndex to display0 are null
-    // path oldIndex will be updated with previous displayX
-    // displayX will be fresh, writable copies of path newIndex
 
 
-    final def gotoPosClean(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
-      if (depth > 1) {
-        gotoPos(newIndex, xor)
-        stabilize(newIndex)
-      }
-    }
 
-    // old path is maybe dirty (then we need to reconcile)  <-- as a start, we could assume it always is (?)
-    // new path is being made dirty (we do need to change)
-
-    final def XgotoPosClean(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto pos index
-      if (xor < (1 <<  5)) { // level = 0
-//        //println("inside same chunk")
-        display0 = copyOf(display0)
-      } else
-      if (xor < (1 << 10)) { // level = 1
-//        //println("transfer to chunk at level 1 ("+oldIndex+"->"+newIndex+")")
-        display1 = copyOf(display1)
-        display1((oldIndex >> 5) & 31) = display0
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31)
-      } else
-      if (xor < (1 << 15)) { // level = 2
-//        //println("transfer to chunk at level 1")
-        display1 = copyOf(display1)
-        display2 = copyOf(display2)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else
-      if (xor < (1 << 20)) { // level = 3
-        display1 = copyOf(display1)
-        display2 = copyOf(display2)
-        display3 = copyOf(display3)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display3((oldIndex >> 15) & 31) = display2
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else
-      if (xor < (1 << 25)) { // level = 4
-        display1 = copyOf(display1)
-        display2 = copyOf(display2)
-        display3 = copyOf(display3)
-        display4 = copyOf(display4)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display3((oldIndex >> 15) & 31) = display2
-        display4((oldIndex >> 20) & 31) = display3
-        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else
-      if (xor < (1 << 30)) { // level = 5
-        display1 = copyOf(display1)
-        display2 = copyOf(display2)
-        display3 = copyOf(display3)
-        display4 = copyOf(display4)
-        display5 = copyOf(display5)
-        display1((oldIndex >>  5) & 31) = display0
-        display2((oldIndex >> 10) & 31) = display1
-        display3((oldIndex >> 15) & 31) = display2
-        display4((oldIndex >> 20) & 31) = display3
-        display5((oldIndex >> 25) & 31) = display4
-        display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31).asInstanceOf[Array[AnyRef]]
-        display3 = nullSlotAndCopy(display4, (newIndex >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = nullSlotAndCopy(display3, (newIndex >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = nullSlotAndCopy(display2, (newIndex >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = nullSlotAndCopy(display1, (newIndex >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else { // level = 6
-        throw new IllegalArgumentException()
-      }
-    }
-
+    // DEBUG STUFF
 
     def debug(): Unit = {
       return
@@ -1007,70 +1134,6 @@ trait VectorPointer[T] {
       //println("DISPLAY 0: " + (if (display0 ne null) display0.map(x=> if (x eq null) "." else x.toString).mkString(" ") else "null"))
     }
 
-
-    // make sure there is no aliasing
-
-    // TODO: optimize
-    final def stabilize(index: Int) = {
-//      debug()
-      display0 = copyOf(display0)
-      if (depth > 1) {
-        display1 = copyOf(display1)
-        display1((index >>  5) & 31) = display0
-      }
-      if (depth > 2) {
-        display2 = copyOf(display2)
-        display2((index >> 10) & 31) = display1
-      }
-      if (depth > 3) {
-        display3 = copyOf(display3)
-        display3((index >> 15) & 31) = display2
-      }
-      if (depth > 4) {
-        display4 = copyOf(display4)
-        display4((index >> 20) & 31) = display3
-      }
-      if (depth > 5) {
-        display5 = copyOf(display5)
-        display5((index >> 25) & 31) = display4
-      }
-    }
-
-
-
-
-    // go to specified position
-
-    // xor: oldIndex ^ index
-    final def gotoPos(index: Int, xor: Int): Unit = { // goto pos index
-      if (xor < (1 << 10)) { // level = 1
-        display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
-      } else
-      if (xor < (1 << 15)) { // level = 2
-        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else
-      if (xor < (1 << 20)) { // level = 3
-        display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else
-      if (xor < (1 << 25)) { // level = 4
-        display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else
-      if (xor < (1 << 30)) { // level = 5
-        display4 = display5((index >> 25) & 31).asInstanceOf[Array[AnyRef]]
-        display3 = display4((index >> 20) & 31).asInstanceOf[Array[AnyRef]]
-        display2 = display3((index >> 15) & 31).asInstanceOf[Array[AnyRef]]
-        display1 = display2((index >> 10) & 31).asInstanceOf[Array[AnyRef]]
-        display0 = display1((index >>  5) & 31).asInstanceOf[Array[AnyRef]]
-      } else { // level = 6
-        throw new IllegalArgumentException()
-      }
-    }
 
 }
 
