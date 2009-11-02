@@ -11,7 +11,7 @@
 
 package scala.swing
 
-import java.awt.{Image, Window => AWTWindow, Frame => AWTFrame}
+import java.awt.{Window => AWTWindow, Frame => AWTFrame}
 import javax.swing._
 import Swing._
 
@@ -49,8 +49,19 @@ sealed trait RichWindow extends Window {
   def title: String = peer.getTitle
   def title_=(s: String) = peer.setTitle(s)
 
-  def menuBar: MenuBar = UIElement.cachedWrapper(peer.getJMenuBar)
-  def menuBar_=(m: MenuBar) = peer.setJMenuBar(m.peer)
+  /**
+   * The menu bar of this frame or `NoMenuBar` if no menu bar is set.
+   */
+  def menuBar: MenuBar = {
+      val m = UIElement.cachedWrapper(peer.getJMenuBar)
+      if (m != null) m else MenuBar.NoMenuBar
+  }
+  /**
+   * Set the current menu bar of this frame. Pass `NoMenuBar` if this frame
+   * should not show a menu bar.
+   */
+  def menuBar_=(m: MenuBar) =
+    peer.setJMenuBar(if(m == MenuBar.NoMenuBar) null else m.peer)
 
   def resizable_=(b: Boolean) { peer.setResizable(b) }
   def resizable = peer.isResizable

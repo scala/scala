@@ -4,7 +4,7 @@ package test
 import scala.swing._
 import scala.swing.event._
 
-object LabelTest extends SimpleGUIApplication{
+object LabelTest extends SimpleSwingApplication {
   def top = new MainFrame{
     contents = new Label {
       text = "Hello"

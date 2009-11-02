@@ -15,7 +15,6 @@ import event._
 import javax.swing._
 import javax.swing.table._
 import javax.swing.event._
-import java.awt.{Dimension, Color}
 import scala.collection.mutable.{Set, IndexedSeq}
 
 object Table {

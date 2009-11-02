@@ -14,7 +14,6 @@ package scala.swing
 import event._
 import scala.collection.mutable.Buffer
 import javax.swing.{JTabbedPane, JComponent}
-import java.awt.{Color, Rectangle}
 
 
 object TabbedPane {
@@ -37,8 +36,12 @@ object TabbedPane {
     protected[TabbedPane] var parent: TabbedPane = parent0
 
     protected var _title = title0
-    def title: String = _title//parent.peer.getTitleAt(index)
-    def title_=(t: String) { _title = title0; if (parent != null) parent.peer.setTitleAt(index, t) }
+    def title: String = _title
+    def title_=(t: String) {
+      // beware to keep this order since, index depends on the _old_ title
+      if (parent != null) parent.peer.setTitleAt(index, t)
+      _title = t
+    }
     protected var _content = content0
     def content: Component = _content//UIElement.cachedWrapper(peer.getComponentAt(index).asInstanceOf[JComponent])
     def content_=(c: Component) { _content = c; if (parent != null) parent.peer.setComponentAt(index, c.peer) }

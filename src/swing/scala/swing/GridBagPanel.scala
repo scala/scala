@@ -11,7 +11,7 @@
 
 package scala.swing
 
-import java.awt.{Insets, GridBagConstraints}
+import java.awt.{GridBagConstraints}
 
 
 object GridBagPanel {

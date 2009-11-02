@@ -15,16 +15,23 @@ import javax.swing.{KeyStroke, Icon}
 import java.awt.event.ActionListener
 
 object Action {
+  /**
+   * Special action that has an empty title and all default properties and does nothing.
+   * Use this as a "null action", i.e., to tell components that they do not have any
+   * associated action. A component may then obtain its properties from its direct members
+   * instead of from its action.
+   * In Java Swing, one would use `null` instead of a designated action.
+   */
   case object NoAction extends Action("") { def apply() {} }
 
   object Trigger {
-    abstract trait Wrapper extends Component with Action.Trigger {
-      self: Component {
-        def peer: javax.swing.JComponent {
-          def addActionListener(a: ActionListener)
-          def removeActionListener(a: ActionListener)
-        }
-      } =>
+    trait Wrapper extends Action.Trigger {
+      def peer: javax.swing.JComponent {
+        def addActionListener(a: ActionListener)
+        def removeActionListener(a: ActionListener)
+        def setAction(a: Action): javax.swing.Action
+        def getAction: javax.swing.Action
+      }
     }
   }
 
@@ -39,8 +46,11 @@ object Action {
     //def hideActionText_=(b: Boolean)
   }
 
-  def apply(title: String)(block: =>Unit) = new Action(title) {
-    def apply() { block }
+  /**
+   * Convenience method to create an action with a given title and body to run.
+   */
+  def apply(title: String)(body: =>Unit) = new Action(title) {
+    def apply() { body }
   }
 }
 

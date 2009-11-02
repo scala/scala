@@ -35,7 +35,7 @@ object Container {
       protected def insertAt(n: Int, c: Component) { peer.add(c.peer, n) }
       def +=(c: Component): this.type = { peer.add(c.peer) ; this }
       def length = peer.getComponentCount
-      def apply(n: Int) = UIElement.cachedWrapper(peer.getComponent(n))
+      def apply(n: Int) = UIElement.cachedWrapper[Component](peer.getComponent(n))
     }
 
     peer.addContainerListener(new java.awt.event.ContainerListener {

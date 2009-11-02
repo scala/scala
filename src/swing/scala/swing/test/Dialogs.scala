@@ -4,7 +4,7 @@ package test
 import swing._
 import swing.event._
 
-object Dialogs extends SimpleGUIApplication {
+object Dialogs extends SimpleSwingApplication {
   import TabbedPane._
 
   lazy val label = new Label("No Result yet")

@@ -13,7 +13,6 @@ package scala.swing
 import event._
 import javax.swing._
 import javax.swing.text._
-import java.awt.Color
 import java.awt.event._
 
 /**

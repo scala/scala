@@ -4,7 +4,7 @@ package test
 import swing._
 import swing.event._
 
-object SwingApp extends SimpleGUIApplication {
+object SwingApp extends SimpleSwingApplication {
   def top = new MainFrame {
     title = "SwingApp"
     var numclicks = 0

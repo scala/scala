@@ -13,7 +13,6 @@ package scala.swing
 
 import java.awt.event._
 import javax.swing.event._
-import java.awt.{Color, Dimension, Point, Rectangle}
 import javax.swing.border._
 import javax.swing.{JComponent, Icon, BorderFactory, SwingUtilities}
 

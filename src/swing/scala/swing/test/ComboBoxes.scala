@@ -13,7 +13,7 @@ import javax.swing.{Icon, ImageIcon}
  *
  * TODO: clean up layout
  */
-object ComboBoxes extends SimpleGUIApplication {
+object ComboBoxes extends SimpleSwingApplication {
   import ComboBox._
   lazy val ui = new FlowPanel {
    	contents += new ComboBox(List(1,2,3,4))

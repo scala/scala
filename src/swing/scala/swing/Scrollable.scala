@@ -11,8 +11,6 @@
 
 package scala.swing
 
-import java.awt.{Rectangle, Dimension}
-
 object Scrollable {
   trait Wrapper extends Scrollable {
     protected def scrollablePeer: javax.swing.Scrollable

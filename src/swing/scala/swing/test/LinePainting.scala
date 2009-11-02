@@ -10,7 +10,7 @@ import java.awt.{Color, Dimension, Graphics, Graphics2D, Point, geom}
  *
  * @author Frank Teubler, Ingo Maier
  */
-object LinePainting extends SimpleGUIApplication {
+object LinePainting extends SimpleSwingApplication {
   lazy val ui = new Panel {
     background = Color.white
     preferredSize = (200,200)

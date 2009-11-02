@@ -6,7 +6,7 @@ import swing.event._
 import GridBagPanel._
 import java.awt.Insets
 
-object GridBagDemo extends SimpleGUIApplication {
+object GridBagDemo extends SimpleSwingApplication {
   lazy val ui = new GridBagPanel {
     val c = new Constraints
     val shouldFill = true

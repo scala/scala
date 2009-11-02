@@ -12,4 +12,8 @@
 package scala.swing
 package event
 
-case class ValueChanged(override val source: Component) extends ComponentEvent
+object ValueChanged {
+  def unapply(a: ValueChanged): Option[Component] = Some(a.source)
+}
+
+class ValueChanged(override val source: Component) extends ComponentEvent

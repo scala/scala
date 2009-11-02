@@ -15,7 +15,6 @@ import event._
 import javax.swing._
 import javax.swing.text._
 import javax.swing.event._
-import java.awt.Color
 
 object TextComponent {
   trait HasColumns extends TextComponent {
@@ -72,8 +71,8 @@ class TextComponent extends Component with Publisher {
   def selectAll() { peer.selectAll() }
 
   peer.getDocument.addDocumentListener(new DocumentListener {
-    def changedUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this)) }
-    def insertUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this)) }
-    def removeUpdate(e:DocumentEvent) { publish(ValueChanged(TextComponent.this)) }
+    def changedUpdate(e:DocumentEvent) { publish(new ValueChanged(TextComponent.this)) }
+    def insertUpdate(e:DocumentEvent) { publish(new ValueChanged(TextComponent.this)) }
+    def removeUpdate(e:DocumentEvent) { publish(new ValueChanged(TextComponent.this)) }
   })
 }

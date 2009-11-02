@@ -41,8 +41,8 @@ trait Publisher extends Reactor {
     }
   }
 
-  def subscribe(listener: Reaction) { listeners += listener }
-  def unsubscribe(listener: Reaction) { listeners -= listener }
+  private[swing] def subscribe(listener: Reaction) { listeners += listener }
+  private[swing] def unsubscribe(listener: Reaction) { listeners -= listener }
 
   /**
    * Notify all registered reactions.
@@ -138,7 +138,7 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
   protected val underlying: Buffer[Reference[A]]
 
   def +=(el: A): this.type = { purgeReferences(); underlying += Ref(el); this }
-  def +=:(el: A) = { purgeReferences(); Ref(el) +: underlying; this }
+  def +=:(el: A) = { purgeReferences(); Ref(el) +=: underlying; this }
   def remove(el: A) { underlying -= Ref(el); purgeReferences(); }
   def remove(n: Int) = { val el = apply(n); remove(el); el }
   def insertAll(n: Int, iter: Iterable[A]) {
@@ -146,11 +146,6 @@ abstract class RefBuffer[A <: AnyRef] extends Buffer[A] with SingleRefCollection
     underlying.insertAll(n, iter.view.map(Ref(_)))
   }
   def update(n: Int, el: A) { purgeReferences(); underlying(n) = Ref(el) }
-  override def readOnly : Seq[A] = new Seq[A] {
-    def length = self.length
-    def iterator = self.iterator
-    def apply(n: Int) = self(n)
-  }
   def apply(n: Int) = {
     purgeReferences()
     var el = underlying(n).get

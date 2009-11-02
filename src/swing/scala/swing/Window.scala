@@ -11,8 +11,8 @@
 
 package scala.swing
 
+import java.awt.{Window => AWTWindow}
 import event._
-import java.awt.{Image, Point, Window => AWTWindow}
 import javax.swing._
 
 /**
@@ -26,10 +26,7 @@ import javax.swing._
 abstract class Window extends UIElement with RootPanel with Publisher { outer =>
   def peer: AWTWindow with InterfaceMixin
 
-  protected trait InterfaceMixin extends javax.swing.RootPaneContainer {
-    def getRootPane: JRootPane
-    //protected def setRootPane(p: JRootPane)
-  }
+  protected trait InterfaceMixin extends javax.swing.RootPaneContainer
 
   /**
    * This method is called when the window is closing, after all other window

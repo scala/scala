@@ -6,7 +6,7 @@ import event._
 
 /** A GUI app to convert celsius to centigrade
  */
-object CelsiusConverter extends SimpleGUIApplication {
+object CelsiusConverter extends SimpleSwingApplication {
   def top = new MainFrame {
     title = "Convert Celsius to Fahrenheit"
     val tempCelsius = new TextField

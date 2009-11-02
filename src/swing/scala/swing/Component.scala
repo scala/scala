@@ -13,7 +13,7 @@ package scala.swing
 
 import event._
 
-import java.awt.{Dimension, Point, Graphics, Graphics2D}
+import java.awt.Graphics
 import java.awt.event._
 import javax.swing.JComponent
 import javax.swing.border.Border
@@ -58,6 +58,19 @@ abstract class Component extends UIElement {
     def __super__paintComponent(g: Graphics) {
       super.paintComponent(g)
     }
+    override def paintBorder(g: Graphics) {
+      Component.this.paintBorder(g.asInstanceOf[Graphics2D])
+    }
+    def __super__paintBorder(g: Graphics) {
+      super.paintBorder(g)
+    }
+    override def paintChildren(g: Graphics) {
+      Component.this.paintChildren(g.asInstanceOf[Graphics2D])
+    }
+    def __super__paintChildren(g: Graphics) {
+      super.paintChildren(g)
+    }
+
     override def paint(g: Graphics) {
       Component.this.paint(g.asInstanceOf[Graphics2D])
     }
@@ -245,14 +258,28 @@ abstract class Component extends UIElement {
   protected def paintComponent(g: Graphics2D) {
     peer match {
       case peer: SuperMixin => peer.__super__paintComponent(g)
-      case _ => // it's a wrapper created on the fly
+      case _ =>
     }
   }
 
-  protected def paint(g: Graphics2D) {
+  protected def paintBorder(g: Graphics2D) {
+    peer match {
+      case peer: SuperMixin => peer.__super__paintBorder(g)
+      case _ =>
+    }
+  }
+
+  protected def paintChildren(g: Graphics2D) {
+    peer match {
+      case peer: SuperMixin => peer.__super__paintChildren(g)
+      case _ =>
+    }
+  }
+
+  def paint(g: Graphics2D) {
     peer match {
       case peer: SuperMixin => peer.__super__paint(g)
-      case _ => // it's a wrapper created on the fly
+      case _ => peer.paint(g)
     }
   }
 

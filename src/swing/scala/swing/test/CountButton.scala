@@ -4,7 +4,7 @@ package test
 import scala.swing._
 import scala.swing.event._
 
-object CountButton extends SimpleGUIApplication {
+object CountButton extends SimpleSwingApplication {
   def top = new MainFrame {
     title = "My Frame"
     contents = new GridPanel(2, 2) {

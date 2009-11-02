@@ -14,6 +14,10 @@ package scala.swing
 import scala.collection.mutable._
 import javax.swing._
 
+object MenuBar {
+  case object NoMenuBar extends MenuBar
+}
+
 /**
  * A menu bar. Each window can contain at most one. Contains a number of menus.
  *

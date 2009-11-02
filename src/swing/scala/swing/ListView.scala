@@ -14,7 +14,6 @@ package scala.swing
 import event._
 import javax.swing._
 import javax.swing.event._
-import java.awt.Color
 
 object ListView {
   /**
@@ -188,24 +187,32 @@ class ListView[A] extends Component {
       def iterator = a.iterator
     }
 
+    def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
+    def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
+
     /**
      * The indices of the currently selected items.
      */
     object indices extends Indices(peer.getSelectedIndices) {
       def -=(n: Int): this.type = { peer.removeSelectionInterval(n,n); this }
       def +=(n: Int): this.type = { peer.addSelectionInterval(n,n); this }
-
+      @deprecated("Use ListView.selection.leadIndex")
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
+      @deprecated("Use ListView.selection.anchorIndex")
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }
+
+    @deprecated("Use ListView.selectIndices")
     def selectIndices(ind: Int*) = peer.setSelectedIndices(ind.toArray)
 
     /**
      * The currently selected items.
      */
     object items extends scala.collection.SeqProxy[A] {
-      def self = peer.getSelectedValues.toSeq.map(_.asInstanceOf[A])
+      def self = peer.getSelectedValues.map(_.asInstanceOf[A])
+      @deprecated("Use ListView.selection.leadIndex")
       def leadIndex: Int = peer.getSelectionModel.getLeadSelectionIndex
+      @deprecated("Use ListView.selection.anchorIndex")
       def anchorIndex: Int = peer.getSelectionModel.getAnchorSelectionIndex
     }
 
@@ -214,7 +221,7 @@ class ListView[A] extends Component {
 
     peer.getSelectionModel.addListSelectionListener(new ListSelectionListener {
       def valueChanged(e: javax.swing.event.ListSelectionEvent) {
-        publish(ListSelectionChanged(ListView.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
+        publish(new ListSelectionChanged(ListView.this, e.getFirstIndex to e.getLastIndex, e.getValueIsAdjusting))
       }
     })
 
@@ -237,6 +244,8 @@ class ListView[A] extends Component {
   def selectionForeground_=(c: Color) = peer.setSelectionForeground(c)
   def selectionBackground: Color = peer.getSelectionBackground
   def selectionBackground_=(c: Color) = peer.setSelectionBackground(c)
+
+  def selectIndices(ind: Int*) = peer.setSelectedIndices(ind.toArray)
 
   peer.getModel.addListDataListener(new ListDataListener {
     def contentsChanged(e: ListDataEvent) { publish(ListChanged(ListView.this)) }

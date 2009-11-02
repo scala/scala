@@ -12,7 +12,6 @@
 package scala.swing
 
 import event._
-import java.awt.{Dimension, Insets}
 import javax.swing.{AbstractButton => JAbstractButton, Icon}
 
 /**
@@ -42,6 +41,7 @@ abstract class AbstractButton extends Component with Action.Trigger with Publish
   def rolloverSelectedIcon: Icon = peer.getRolloverSelectedIcon
   def rolloverSelectedIcon_=(b: Icon) = peer.setRolloverSelectedIcon(b)
 
+  // TODO: we need an action cache
   private var _action: Action = Action.NoAction
   def action: Action = _action
   def action_=(a: Action) { _action = a; peer.setAction(a.peer) }

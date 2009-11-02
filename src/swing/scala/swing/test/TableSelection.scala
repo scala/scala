@@ -2,10 +2,9 @@ package scala.swing
 package test
 
 import java.awt.Dimension
-import swing._
 import swing.event._
 
-object TableSelection extends SimpleGUIApplication {
+object TableSelection extends SimpleSwingApplication {
   val model = Array(List("Mary", "Campione", "Snowboarding", 5, false).toArray,
                     List("Alison", "Huml", "Rowing", 5, false).toArray,
                     List("Kathy", "Walrath", "Knitting", 5, false).toArray,
