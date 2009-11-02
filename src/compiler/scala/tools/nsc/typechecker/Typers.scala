@@ -1420,10 +1420,17 @@ trait Typers { self: Analyzer =>
         templ setSymbol clazz.newLocalDummy(templ.pos)
       val self1 = templ.self match {
         case vd @ ValDef(mods, name, tpt, EmptyTree) =>
-          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))
+          val tpt1 =
+            checkNoEscaping.privates(
+              clazz.thisSym,
+              treeCopy.TypeTree(tpt) setType vd.symbol.tpe)
           treeCopy.ValDef(vd, mods, name, tpt1, EmptyTree) setType NoType
       }
-      if (self1.name != nme.WILDCARD) context.scope enter self1.symbol
+// was:
+//          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))
+//          treeCopy.ValDef(vd, mods, name, tpt1, EmptyTree) setType NoType
+// but this leads to cycles for existential self types ==> #2545
+	  if (self1.name != nme.WILDCARD) context.scope enter self1.symbol
       val selfType =
         if (clazz.isAnonymousClass && !phase.erasedTypes)
           intersectionType(clazz.info.parents, clazz.owner)
@@ -2944,13 +2951,18 @@ trait Typers { self: Analyzer =>
             .setOriginal(tpt1)
             .setType(appliedType(tpt1.tpe, context.undetparams map (_.tpe)))
         }
+
         /** If current tree <tree> appears in <val x(: T)? = <tree>>
          *  return `tp with x.type' else return `tp'.
          */
         def narrowRhs(tp: Type) = {
           var sym = context.tree.symbol
-          if (sym != null && sym != NoSymbol && sym.owner.isClass && sym.getter(sym.owner) != NoSymbol)
-            sym = sym.getter(sym.owner)
+          if (sym != null && sym != NoSymbol)
+            if (sym.owner.isClass) {
+              if (sym.getter(sym.owner) != NoSymbol) sym = sym.getter(sym.owner)
+            } else if (sym hasFlag LAZY) {
+              if (sym.lazyAccessor != NoSymbol) sym = sym.lazyAccessor
+            }
           context.tree match {
             case ValDef(mods, _, _, Apply(Select(`tree`, _), _)) if !(mods hasFlag MUTABLE) =>
               val pre = if (sym.owner.isClass) sym.owner.thisType else NoPrefix

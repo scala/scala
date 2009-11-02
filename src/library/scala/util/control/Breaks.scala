@@ -11,10 +11,11 @@
 
 package scala.util.control
 
-/** An object that can be used for the break control abstraction.
+/** A class that can be instantiated for the break control abstraction.
  *  Example usage:<pre>
  *
- *  <b>import</b> Breaks.{break, breakable}
+ *  val mybreaks = new Breaks
+ *  import</b> mybreaks.{break, breakable}
  *
  *  breakable {
  *    <b>for</b> (...) {
@@ -22,6 +23,8 @@ package scala.util.control
  *    }
  *  }</pre>
  *
+ *  Calls to break from one instantiation of Breaks will never
+ *  target breakable objects of some other instantion.
  */
 class Breaks {
 
@@ -37,11 +40,25 @@ class Breaks {
     }
   }
 
-  /* Break from closest enclosing breakable block */
+  /* Break from dynamically closest enclosing breakable block
+   * @note this might be different than the statically closest enclosing
+   * block!
+   */
   def break { throw breakException }
 }
 
-/** A singleton object providing the Break functionality */
+/** An object that can be used for the break control abstraction.
+ *  Example usage:<pre>
+ *
+ *  <b>import</b> Breaks.{break, breakable}
+ *
+ *  breakable {
+ *    <b>for</b> (...) {
+ *      <b>if</b> (...) break
+ *    }
+ *  }</pre>
+ *
+ */
 object Breaks extends Breaks
 
 private class BreakException extends RuntimeException with ControlException

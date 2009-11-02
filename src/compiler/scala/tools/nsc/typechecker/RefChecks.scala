@@ -780,7 +780,7 @@ abstract class RefChecks extends InfoTransform {
         val cdef = ClassDef(mods | MODULE, name, List(), impl)
           .setPos(tree.pos)
           .setSymbol(sym.moduleClass)
-          .setType(NoType);
+          .setType(NoType)
         if (sym.isStatic) {
           if (!sym.allOverriddenSymbols.isEmpty) {
             val factory = sym.owner.newMethod(sym.pos, sym.name)

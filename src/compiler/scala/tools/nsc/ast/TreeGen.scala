@@ -240,6 +240,20 @@ abstract class TreeGen
   }
 
   // var m$: T = null; or, if class member: local var m$: T = _;
+  /*!!!
+  def mkModuleValDef(accessor: Symbol) = {
+    val mval = accessor.owner.newValue(accessor.pos.focus, nme.moduleVarName(accessor.name))
+      .setInfo(accessor.tpe.finalResultType)
+      .setFlag(LAZY);
+    if (mval.owner.isClass) {
+      mval setFlag (PRIVATE | LOCAL | SYNTHETIC)
+      mval.owner.info.decls.enter(mval)
+    }
+    ValDef(mval, New(TypeTree(mval.tpe), List(List())))
+  }
+  */
+
+  // var m$: T = null; or, if class member: local var m$: T = _;
   def mkModuleVarDef(accessor: Symbol) = {
     val mvar = accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
       .setInfo(accessor.tpe.finalResultType)

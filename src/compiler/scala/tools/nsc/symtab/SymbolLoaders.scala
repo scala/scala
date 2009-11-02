@@ -164,9 +164,10 @@ abstract class SymbolLoaders {
 
       // if there's a $member object, enter its members as well.
       val pkgModule = root.info.decl(nme.PACKAGEkw)
-      if (pkgModule.isModule && !(pkgModule.rawInfo.isInstanceOf[SourcefileLoader] &&
-                                  classpath.name == "scala"))
+      if (pkgModule.isModule && !pkgModule.rawInfo.isInstanceOf[SourcefileLoader]) {
+        //println("open "+pkgModule)//DEBUG
         openPackageModule(pkgModule)
+      }
     }
   }
 

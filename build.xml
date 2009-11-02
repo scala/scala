@@ -523,7 +523,20 @@ QUICK BUILD (QUICK)
       params="${scalac.args.quick}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
+      <include name="scala/swing/package.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      srcpath="${src.dir}/library"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/swing"
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
+      <exclude name="scala/swing/package.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -969,7 +982,16 @@ BOOTSTRAPPING BUILD (STRAP)
       classpath="${build-strap.dir}/classes/library"
       target="jvm-1.5"
       addparams="${scalac.args.all}">
+      <include name="scala/swing/package.scala"/>
+    </scalac>
+    <scalac
+      srcdir="${src.dir}/swing"
+      destdir="${build-strap.dir}/classes/library"
+      classpath="${build-strap.dir}/classes/library"
+      target="jvm-1.5"
+      addparams="${scalac.args.all}">
       <include name="**/*.scala"/>
+      <exclude name="scala/swing/package.scala"/>
     </scalac>
     <propertyfile file="${build-strap.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
