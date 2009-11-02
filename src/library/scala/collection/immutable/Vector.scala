@@ -30,9 +30,10 @@ object Vector extends SeqFactory[Vector] {
 }
 
 
+// TODO: most members are still public -> restrict access (caveat: private prevents inlining)
 
 @serializable
-final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends Seq[A] // TODO: protect members
+final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends Seq[A]
                  with GenericTraversableTemplate[A, Vector]
                  with SeqLike[A, Vector[A]]
                  with VectorPointer[A @uncheckedVariance] {
@@ -65,7 +66,6 @@ override def companion: GenericCompanion[Vector] = Vector
   // with local variables exclusively. But we're not quite there yet ...
 
   @inline def foreach0[U](f: A => U): Unit = iterator.foreach0(f)
-
   @inline def map0[B, That](f: A => B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
     val b = bf(repr)
     foreach0(x => b += f(x))
@@ -154,12 +154,6 @@ override def companion: GenericCompanion[Vector] = Vector
 
 
 
-  def gotoPosWritableFull(oldIndex: Int, newIndex: Int, xor: Int) = {
-    if (dirty) stabilize(oldIndex) // will copy level 1 to level d-1
-    gotoPosWritable0(newIndex, xor) // will copy level 0
-    dirty = true
-  }
-
   private def gotoPosWritable(oldIndex: Int, newIndex: Int, xor: Int) = if (dirty) {
     gotoPosWritable1(oldIndex, newIndex, xor)
   } else {
@@ -179,7 +173,14 @@ override def companion: GenericCompanion[Vector] = Vector
       var blockIndex = (startIndex - 1) & ~31
       var lo = (startIndex - 1) & 31
 
-      if (blockIndex + 32 == startIndex) {
+      if (startIndex != blockIndex + 32) {
+        val s = new Vector(startIndex - 1, endIndex, blockIndex)
+        s.initFrom(this)
+        s.dirty = dirty
+        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
+        s.display0(lo) = value.asInstanceOf[AnyRef]
+        s
+      } else {
 
         val freeSpace = ((1<<5*(depth)) - endIndex) // free space at the right given the current tree-structure depth
         val shift = freeSpace & ~((1<<5*(depth-1))-1) // number of elements by which we'll shift right (only move at top level)
@@ -250,14 +251,6 @@ override def companion: GenericCompanion[Vector] = Vector
           s
         }
 
-      } else {
-        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new Vector(startIndex - 1, endIndex, blockIndex)
-        s.initFrom(this)
-        s.dirty = dirty
-        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
-        s.display0(lo) = value.asInstanceOf[AnyRef]
-        s
       }
     } else {
       // empty vector, just insert single element at the back
@@ -277,7 +270,15 @@ override def companion: GenericCompanion[Vector] = Vector
       var blockIndex = endIndex & ~31
       var lo = endIndex & 31
 
-      if (endIndex == blockIndex) {
+      if (endIndex != blockIndex) {
+        //println("will make writable block (from "+focus+") at: " + blockIndex)
+        val s = new Vector(startIndex, endIndex + 1, blockIndex)
+        s.initFrom(this)
+        s.dirty = dirty
+        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
+        s.display0(lo) = value.asInstanceOf[AnyRef]
+        s
+      } else {
         val shift = startIndex & ~((1<<5*(depth-1))-1)
         val shiftBlocks = startIndex >>> 5*(depth-1)
 
@@ -331,14 +332,6 @@ override def companion: GenericCompanion[Vector] = Vector
           }
           s
         }
-      } else {
-        //println("will make writable block (from "+focus+") at: " + blockIndex)
-        val s = new Vector(startIndex, endIndex + 1, blockIndex)
-        s.initFrom(this)
-        s.dirty = dirty
-        s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
-        s.display0(lo) = value.asInstanceOf[AnyRef]
-        s
       }
     } else {
       val elems = new Array[AnyRef](32)
@@ -351,7 +344,7 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
 
-  // low-level implementation (needs cleanup)
+  // low-level implementation (needs cleanup, maybe move to util class)
 
   private def shiftTopLevel(oldLeft: Int, newLeft: Int) = (depth - 1) match {
     case 0 =>
@@ -377,6 +370,8 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
   def copyLeft(array: Array[AnyRef], right: Int): Array[AnyRef] = {
+//    if (array eq null)
+//      println("OUCH!!! " + right + "/" + depth + "/"+startIndex + "/" + endIndex + "/" + focus)
     val a2 = new Array[AnyRef](array.length)
     Platform.arraycopy(array, 0, a2, 0, right)
     a2
@@ -456,7 +451,7 @@ override def companion: GenericCompanion[Vector] = Vector
   // requires structure is writable and at index cutIndex
   private def cleanRightEdge(cutIndex: Int) = {
 
-    // FIXME: we're actually sitting one block left if cutIndex lies on a block boundary
+    // we're actually sitting one block left if cutIndex lies on a block boundary
     // this means that we'll end up erasing the whole block!!
 
     if (cutIndex <= (1 << 5)) {
@@ -544,17 +539,19 @@ override def companion: GenericCompanion[Vector] = Vector
 
     val xor = startIndex ^ (cutIndex - 1)
     val d = requiredDepth(xor)
+    val shift = (startIndex & ~((1 << (5*d))-1))
+
 /*
     println("cut back at " + startIndex + ".." + cutIndex + " (xor: "+xor+" d: " + d +")")
     if (cutIndex == blockIndex + 32)
       println("OUCH!!!")
 */
-    val s = new Vector(startIndex, cutIndex, blockIndex)
+    val s = new Vector(startIndex-shift, cutIndex-shift, blockIndex-shift)
     s.initFrom(this)
     s.dirty = dirty
     s.gotoPosWritable(focus, blockIndex, focus ^ blockIndex)
     s.preClean(d)
-    s.cleanRightEdge(cutIndex)
+    s.cleanRightEdge(cutIndex-shift)
     s
   }
 
