@@ -12,7 +12,7 @@
 package scala.collection
 package generic
 
-import mutable.Builder
+import mutable.{Builder, SetBuilder}
 
 /** A template for companion objects of Set and subclasses thereof.
  *
@@ -21,11 +21,11 @@ import mutable.Builder
 abstract class SortedSetFactory[CC[A] <: SortedSet[A] with SortedSetLike[A, CC[A]]] {
   type Coll = CC[_]
 
-  def newBuilder[A](implicit ord: Ordering[A]): Builder[A, CC[A]]
-
   def empty[A](implicit ord: Ordering[A]): CC[A]
 
   def apply[A](elems: A*)(implicit ord: Ordering[A]): CC[A] = (newBuilder[A](ord) ++= elems).result
+
+  def newBuilder[A](implicit ord: Ordering[A]): Builder[A, CC[A]] = new SetBuilder[A, CC[A]](empty)
 
   implicit def newCanBuildFrom[A](implicit ord : Ordering[A]) : CanBuildFrom[Coll, A, CC[A]] = new SortedSetCanBuildFrom()(ord);
 

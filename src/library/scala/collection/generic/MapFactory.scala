@@ -12,7 +12,7 @@
 package scala.collection
 package generic
 
-import mutable.Builder
+import mutable.{Builder, MapBuilder}
 
 /** A template for companion objects of <code>mutable.Map</code> and
  *  subclasses thereof.
@@ -23,11 +23,11 @@ abstract class MapFactory[CC[A, B] <: Map[A, B] with MapLike[A, B, CC[A, B]]] {
 
   type Coll = CC[_, _]
 
-  def newBuilder[A, B]: Builder[(A, B), CC[A, B]]
-
   def empty[A, B]: CC[A, B]
 
   def apply[A, B](elems: (A, B)*): CC[A, B] = (newBuilder[A, B] ++= elems).result
+
+  def newBuilder[A, B]: Builder[(A, B), CC[A, B]] = new MapBuilder[A, B, CC[A, B]](empty[A, B])
 
   class MapCanBuildFrom[A, B] extends CanBuildFrom[Coll, (A, B), CC[A, B]] {
     def apply(from: Coll) = newBuilder[A, B]

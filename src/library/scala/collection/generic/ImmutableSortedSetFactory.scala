@@ -12,12 +12,8 @@
 package scala.collection
 package generic
 
-import mutable.{Builder, SetBuilder}
-
 /** A template for companion objects of mutable.Map and subclasses thereof.
  *
  *  @since 2.8
  */
-abstract class ImmutableSortedSetFactory[CC[A] <: immutable.SortedSet[A] with SortedSetLike[A, CC[A]]] extends SortedSetFactory[CC]{
-  def newBuilder[A](implicit ord: Ordering[A]): Builder[A, CC[A]] = new SetBuilder[A, CC[A]](empty)
-}
+abstract class ImmutableSortedSetFactory[CC[A] <: immutable.SortedSet[A] with SortedSetLike[A, CC[A]]] extends SortedSetFactory[CC]

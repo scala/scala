@@ -35,7 +35,7 @@ import generic._
  * @note If you do not have specific implementations for `add` and `-` in mind,
  *       you might consider inheriting from <code>DefaultMap</code> instead.
  *
- * @note Of you additions and mutations return the same kind of map as the map
+ * @note If your additions and mutations return the same kind of map as the map
  *       you are defining, you should inherit from <code>MapLike</code> as well.
  *
  * @since 1
@@ -48,7 +48,8 @@ trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
  *
  * @since 2.5
  */
-object Map extends ImmutableMapFactory[immutable.Map] {
-  def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
+object Map extends MapFactory[Map] {
+  def empty[A, B]: Map[A, B] = immutable.Map.empty
+
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
 }

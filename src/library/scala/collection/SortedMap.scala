@@ -30,9 +30,10 @@ trait SortedMap[A, +B] extends Map[A, B] with SortedMapLike[A, B, SortedMap[A, B
 /**
  * @since 2.8
  */
-object SortedMap extends ImmutableSortedMapFactory[immutable.SortedMap] {
+object SortedMap extends SortedMapFactory[SortedMap] {
+  def empty[A, B](implicit ord: Ordering[A]): SortedMap[A, B] = immutable.SortedMap.empty[A, B](ord)
+
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), SortedMap[A, B]] = new SortedMapCanBuildFrom[A, B]
-  def empty[A, B](implicit ord: Ordering[A]): immutable.SortedMap[A, B] = immutable.SortedMap.empty[A, B](ord)
 }
 
 
