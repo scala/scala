@@ -200,7 +200,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		private val root = call[AnyRef](classPath, "root")()
 		def findClass(name: String): Option[AbstractFile] =
 		{
-			val entry = call[Option[AnyRef]](root, "find", classOf[String], classOf[Boolean])(name, boolean2Boolean(false))
+			val entry = call[AnyRef](root, "find", classOf[String], classOf[Boolean])(name, boolean2Boolean(false))
 			if (entry eq null)
 				None
 			else
@@ -209,5 +209,8 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	}
 	import scala.reflect.Manifest
 	private def call[T  <: AnyRef](on: AnyRef, name: String, tpes: Class[_]*)(args: AnyRef*)(implicit mf: Manifest[T]): T =
-		mf.erasure.cast(on.getClass.getMethod(name, tpes : _*).invoke(on, args : _*)).asInstanceOf[T]
+	{
+		val result = on.getClass.getMethod(name, tpes : _*).invoke(on, args : _*)
+		mf.erasure.cast(result).asInstanceOf[T]
+	}
 }
