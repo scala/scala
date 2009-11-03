@@ -34,6 +34,7 @@ trait Reactor extends OutputChannel[Any] {
   /* The actor's mailbox. */
   private[actors] val mailbox = new MessageQueue("Reactor")
 
+  // guarded by this
   private[actors] val sendBuffer = new Queue[(Any, OutputChannel[Any])]
 
   /* If the actor waits in a react, continuation holds the
@@ -121,6 +122,7 @@ trait Reactor extends OutputChannel[Any] {
 
   def receiver: Actor = this.asInstanceOf[Actor]
 
+  // guarded by this
   private[actors] def drainSendBuffer(mbox: MessageQueue) {
     while (!sendBuffer.isEmpty) {
       val item = sendBuffer.dequeue()

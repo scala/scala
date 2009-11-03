@@ -127,7 +127,8 @@ object Futures {
       Actor.receive(reaction)
     }
 
-    awaitWith(partFuns)
+    if (partFuns.length > 0)
+      awaitWith(partFuns)
 
     var results: List[Option[Any]] = Nil
     val size = resultsMap.size
