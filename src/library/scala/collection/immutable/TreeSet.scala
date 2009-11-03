@@ -22,7 +22,7 @@ import mutable.{Builder, AddingBuilder}
 object TreeSet extends SortedSetFactory[TreeSet]{
 
   implicit def implicitBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = newBuilder[A](ordering)
-  def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
+  override def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
     new AddingBuilder(empty[A](ordering))
 
   /** The empty set of this type
