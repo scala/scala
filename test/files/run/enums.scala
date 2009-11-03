@@ -46,6 +46,25 @@ object Test3 {
   }
 }
 
+object Test4 {
+
+  object Direction extends Enumeration("North", "South", "East", "West") {
+    val North, South, East, West = Value;
+  }
+
+  def run: Int = {
+    val dir = Direction.withName("North")
+    assert(dir.toString == "North")
+    try {
+      Direction.withName("Nord")
+      assert(false)
+    } catch {
+      case e: Exception => /* do nothing */
+    }
+    0
+  }
+}
+
 //############################################################################
 // Test code
 
@@ -73,6 +92,7 @@ object Test {
     check_success("Test1", Test1.run, 5);
     check_success("Test2", Test2.run, 5);
     check_success("Test3", Test3.run, 1);
+    check_success("Test4", Test4.run, 0);
     Console.println;
   }
 }

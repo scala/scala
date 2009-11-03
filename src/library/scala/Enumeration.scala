@@ -121,9 +121,14 @@ abstract class Enumeration(initial: Int, names: String*) {
    * initialize each Enumeration with Value(String). Otherwise, the
    * names are determined automatically through reflection.
    *
-   * @param s an enumeration name
-   * @return <tt>Some(Value)</tt> if an enumeration's name matches <var>s</var>,
-   *         else <tt>None</tt>
+   * Note the change here wrt 2.7 is intentional. You should know whether
+   * a name is in an Enumeration beforehand. If not, just use find on
+   * values.
+   *
+   * @param  s an Enumeration name
+   * @return   the Value of this Enumeration if its name matches <var>s</var>
+   * @throws   java.util.NoSuchElementException if no Value with a matching
+   *           name is in this Enumeration
    */
   final def withName(s: String): Value = values.find(_.toString == s).get
 
