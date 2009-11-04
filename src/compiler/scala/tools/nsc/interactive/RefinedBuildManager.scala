@@ -153,6 +153,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           case Changed(Class(_)) if parentChange =>
             invalidate(file, "parents have changed", change)
 
+          case Changed(Definition(_)) if parentChange =>
+            invalidate(file, "inherited method changed", change)
+
           case Added(Definition(_)) if parentChange =>
             invalidate(file, "inherited new method", change)
 
