@@ -530,7 +530,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  @param lt the comparison function
    *  @return   a sequence sorted according to the comparison function
-   *            <code>&lt;(e1: a, e2: a) =&gt; Boolean</code>.
+   *            <code>lt(e1: a, e2: a) =&gt; Boolean</code>.
    *  @ex <pre>
    *    List("Steve", "Tom", "John", "Bob")
    *      .sortWith((e1, e2) => (e1 compareTo e2) &lt; 0) =
