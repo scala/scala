@@ -12,8 +12,6 @@
 package scala.runtime
 import scala.reflect.ClassManifest
 
-import Predef._
-
 @serializable
 final class BoxedObjectArray[A <: AnyRef](val value: Array[AnyRef], val elemManifest: ClassManifest[A]) extends BoxedArray[A] {
 

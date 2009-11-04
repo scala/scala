@@ -11,9 +11,6 @@
 
 package scala
 
-
-import Predef._
-
 /**
  * @since 2.0
  */

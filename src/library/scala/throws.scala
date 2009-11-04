@@ -11,8 +11,6 @@
 
 package scala
 
-import Predef._
-
 /** <p>
  *    Annotation for specifying the exceptions thrown by a method.
  *    For example:

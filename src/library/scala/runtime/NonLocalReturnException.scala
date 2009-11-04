@@ -11,7 +11,6 @@
 
 package scala.runtime
 
-import Predef.RuntimeException
 import scala.util.control.ControlException
 
 class NonLocalReturnException[T](val key: AnyRef, val value: T) extends RuntimeException with ControlException

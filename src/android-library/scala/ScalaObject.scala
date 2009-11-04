@@ -11,6 +11,4 @@
 
 package scala
 
-import Predef._
-
 trait ScalaObject extends AnyRef

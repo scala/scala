@@ -12,7 +12,6 @@
 package scala
 
 import java.util.Comparator
-import collection.Iterable
 
 /** A trait for representing total orderings.  It is important to
  * distinguish between a type that has a total order and a representation

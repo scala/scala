@@ -11,8 +11,6 @@
 
 package scala
 
-import Predef._
-
 /** This class represents uninitialized variable/value errors.
  *
  *  @author  Martin Odersky

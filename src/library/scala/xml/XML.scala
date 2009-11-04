@@ -11,7 +11,6 @@
 
 package scala.xml
 
-import Predef._
 import scala.xml.parsing.NoBindingFactoryAdapter
 import scala.xml.factory.XMLLoader
 import org.xml.sax.InputSource

@@ -11,7 +11,6 @@
 
 package scala.runtime
 
-import Predef._
 import compat.Platform.EOL
 
 final class RichException(exc: Throwable) {

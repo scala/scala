@@ -10,7 +10,6 @@
 
 package scala.xml
 
-import Predef._
 import collection.mutable.StringBuilder
 
 

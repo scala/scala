@@ -12,7 +12,7 @@ package scala
 
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
-import scala.collection.immutable.{Range, GenericRange}
+import scala.collection.immutable.GenericRange
 
 /** Conversions which present a consistent conversion interface
  *  across all the numeric types.

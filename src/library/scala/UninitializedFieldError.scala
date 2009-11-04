@@ -11,8 +11,6 @@
 
 package scala
 
-import Predef._
-
 /** This class implements errors which are thrown whenever a
  *  field is used before it has been initialized.
  *

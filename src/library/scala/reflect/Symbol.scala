@@ -11,8 +11,6 @@
 
 package scala.reflect
 
-import Predef._
-
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
 abstract class Symbol {
   val owner: Symbol

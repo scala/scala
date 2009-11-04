@@ -11,6 +11,4 @@
 
 package scala
 
-import Predef._
-
-trait ScalaObject extends AnyRef
+trait ScalaObject extends java.lang.Object

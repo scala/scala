@@ -11,7 +11,6 @@
 
 package scala.xml
 
-import Predef._
 import Utility.sbToString
 import collection.mutable.StringBuilder
 

@@ -11,8 +11,6 @@
 
 package scala.runtime
 
-
-import Predef._
 import java.lang.reflect.{ Method => JMethod }
 import java.lang.{ Class => JClass }
 

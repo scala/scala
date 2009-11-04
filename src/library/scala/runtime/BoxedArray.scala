@@ -11,7 +11,6 @@
 
 package scala.runtime
 
-import Predef._
 import scala.reflect.ClassManifest
 import collection.mutable._
 import collection.Seq

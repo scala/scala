@@ -12,8 +12,6 @@
 package scala
 
 
-import Predef._
-
 /** This class implements a simple proxy that forwards all calls to
  *  methods of class <code>Any</code> to another object <code>self</code>.
  *  Please note that only those methods can be forwarded that are

@@ -13,7 +13,6 @@
 package scala
 
 import annotation.unchecked.uncheckedVariance
-import scala.collection.Traversable
 import scala.collection.generic.GenericTraversableTemplate
 import scala.collection.mutable.Builder
 

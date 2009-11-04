@@ -11,8 +11,6 @@
 
 package scala.reflect
 
-import Predef.Error
-
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
 class Code[Type](val tree: Tree)
 

@@ -12,7 +12,6 @@
 package scala.compat
 
 import java.lang.System
-import Predef._
 
 object Platform {
 

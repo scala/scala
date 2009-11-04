@@ -11,10 +11,7 @@
 
 package scala
 
-import Predef._
 import annotation.experimental
-import collection.{Iterator, Iterable}
-import collection.immutable.List
 
 object Option
 {

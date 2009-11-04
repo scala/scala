@@ -46,7 +46,9 @@ trait Contexts { self: Analyzer =>
       if (!unit.isJava) {
         assert(ScalaPackage ne null, "Scala package is null")
         imps += ScalaPackage
-        if (!(treeInfo.isPredefUnit(unit.body) || treeInfo.containsLeadingPredefImport(List(unit.body))))
+        if (!(treeInfo.isUnitInScala(unit.body, nme.Predef) ||
+              treeInfo.isUnitInScala(unit.body, nme.ScalaObject) ||
+              treeInfo.containsLeadingPredefImport(List(unit.body))))
           imps += PredefModule
       }
     }

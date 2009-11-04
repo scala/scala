@@ -306,8 +306,6 @@ class Product(val i: Int) extends Group("Product") with Arity
 
   def apply() = {
 <file name={fileName}>{header}
-import Predef._
-
 object {className} {{
   def unapply{invariantArgs}(x: {className}{invariantArgs}): Option[{className}{invariantArgs}] =
     Some(x)
@@ -315,6 +313,7 @@ object {className} {{
 
 /** {className} is a cartesian product of {i} component{s}.
  *  {descriptiveComment}
+ *  @since 2.3
  */
 trait {className}{covariantArgs} extends Product {{
   /**

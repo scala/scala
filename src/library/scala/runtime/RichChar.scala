@@ -13,7 +13,6 @@ package scala.runtime
 
 import java.lang.Character
 import collection.{IndexedSeq, IndexedSeqView}
-import Predef.{require, NoSuchElementException}
 
 /** <p>
  *    For example, in the following code

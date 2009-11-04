@@ -11,8 +11,6 @@
 
 package scala
 
-import Predef._
-
 /** This class implements errors which are thrown whenever an
  *  object doesn't match any pattern of a pattern matching
  *  expression.

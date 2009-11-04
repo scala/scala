@@ -11,8 +11,6 @@
 
 package scala
 
-import collection.Iterator
-
 /** The trait <code>Product</code> defines access functions for instances
  *  of products, in particular case classes.
  *

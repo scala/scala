@@ -12,7 +12,6 @@
 package scala.collection
 package script
 
-import Predef._
 import mutable.ArrayBuffer
 
 /** Class <code>Message</code> represents messages that are issued by observable

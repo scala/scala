@@ -11,8 +11,6 @@
 package scala.collection
 package mutable
 
-import Predef._
-
 /**
  * @since 2.3
  */

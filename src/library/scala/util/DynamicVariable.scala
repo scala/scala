@@ -12,7 +12,6 @@
 package scala.util
 
 
-import Predef._
 import java.lang.InheritableThreadLocal
 
 /** <p>

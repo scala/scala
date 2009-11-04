@@ -28,8 +28,6 @@ o/*                     __                                               *\
 package scala.collection.immutable
 
 
-//import Predef.NoSuchElementException
-
 /** <p>
  *    General Balanced Trees - highly efficient functional dictionaries.
  *  </p>

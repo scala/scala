@@ -11,8 +11,6 @@
 
 package scala
 
-import collection.Iterator
-
 /** Counted iterators keep track of the number of elements seen so far
  *
  *  @since 2.0

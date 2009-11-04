@@ -12,7 +12,6 @@
 package scala.collection
 package mutable
 
-import Predef._
 import scala.reflect.ClassManifest
 import scala.collection.generic._
 

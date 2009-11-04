@@ -288,22 +288,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       params="${scalac.args.all}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
-      <include name="scala/Predef.scala"/>
-      <include name="scala/LowPriorityImplicits.scala"/>
-      <compilationpath>
-        <pathelement location="${build-locker.dir}/classes/library"/>
-      </compilationpath>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-locker.dir}/classes/library"
-      compilerpathref="starr.classpath"
-      srcpath="${src.dir}/library"
-      params="${scalac.args.all}"
-      srcdir="${src.dir}/library"
-      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/LowPriorityImplicits.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
       </compilationpath>
@@ -336,7 +321,6 @@ LOCAL REFERENCE BUILD (LOCKER)
     <scalacfork
       destdir="${build-locker.dir}/classes/compiler"
       compilerpathref="starr.classpath"
-      srcpath="${src.dir}/compiler"
       params="${scalac.args.all}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
@@ -472,22 +456,7 @@ QUICK BUILD (QUICK)
       params="${scalac.args.quick}"
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
-      <include name="scala/Predef.scala"/>
-      <include name="scala/LowPriorityImplicits.scala"/>
-      <compilationpath>
-        <pathelement location="${build-quick.dir}/classes/library"/>
-      </compilationpath>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/library"
-      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/LowPriorityImplicits.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -495,7 +464,6 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/actors"
       jvmargs="${scalacfork.jvmargs}">
@@ -507,7 +475,6 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
@@ -519,24 +486,10 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/swing"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="scala/swing/package.scala"/>
-      <compilationpath>
-        <pathelement location="${build-quick.dir}/classes/library"/>
-      </compilationpath>
-    </scalacfork>
-    <scalacfork
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      srcpath="${src.dir}/library"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/swing"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <exclude name="scala/swing/package.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
       </compilationpath>
@@ -581,7 +534,6 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/compiler"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/compiler"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/compiler"
       jvmargs="${scalacfork.jvmargs}">
@@ -623,7 +575,6 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/scalap"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/scalap"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/scalap"
       jvmargs="${scalacfork.jvmargs}">
@@ -665,7 +616,6 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/partest"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/partest"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/partest"
       jvmargs="${scalacfork.jvmargs}">
@@ -944,21 +894,9 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/library"
       destdir="${build-strap.dir}/classes/library"
       classpath="${build-strap.dir}/classes/library"
-      sourcepath="${src.dir}/library"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
-      <include name="scala/Predef.scala"/>
-      <include name="scala/LowPriorityImplicits.scala"/>
-    </scalac>
-    <scalac
-      srcdir="${src.dir}/library"
-      destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
       target="jvm-1.5"
       addparams="${scalac.args.all}">
       <include name="**/*.scala"/>
-      <exclude name="scala/Predef.scala"/>
-      <exclude name="scala/LowPriorityImplicits.scala"/>
     </scalac>
     <scalac
       srcdir="${src.dir}/actors"
@@ -982,16 +920,7 @@ BOOTSTRAPPING BUILD (STRAP)
       classpath="${build-strap.dir}/classes/library"
       target="jvm-1.5"
       addparams="${scalac.args.all}">
-      <include name="scala/swing/package.scala"/>
-    </scalac>
-    <scalac
-      srcdir="${src.dir}/swing"
-      destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
       <include name="**/*.scala"/>
-      <exclude name="scala/swing/package.scala"/>
     </scalac>
     <propertyfile file="${build-strap.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
@@ -1156,7 +1085,6 @@ LIBRARIES (MSIL, FJBG maybe later)
     <scalacfork
       destdir="${build-libs.dir}/classes/msil"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/msil"
       params="${scalac.args.all}"
       srcdir="${src.dir}/msil"
       jvmargs="${scalacfork.jvmargs}">
@@ -1201,7 +1129,6 @@ LIBRARIES (MSIL, FJBG maybe later)
     <scalacfork
       destdir="${build-libs.dir}/classes/fjbg"
       compilerpathref="locker.classpath"
-      srcpath="${src.dir}/fjbg"
       params="${scalac.args.all}"
       srcdir="${src.dir}/fjbg"
       jvmargs="${scalacfork.jvmargs}">
