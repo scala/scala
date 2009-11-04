@@ -109,8 +109,8 @@ trait SyntheticMethods extends ast.TreeDSL {
       typer typed { DEF(method) === LIT(clazz.name.decode) }
     }
 
-    def forwardingMethod(name: Name): Tree = {
-      val target      = getMember(ScalaRunTimeModule, "_" + name)
+    def forwardingMethod(name: Name, targetName: Name): Tree = {
+      val target      = getMember(ScalaRunTimeModule, targetName)
       val paramtypes  = target.tpe.paramTypes drop 1
       val method      = syntheticMethod(
         name, 0, makeTypeConstructor(paramtypes, target.tpe.resultType)
@@ -122,6 +122,9 @@ trait SyntheticMethods extends ast.TreeDSL {
         }
       }
     }
+
+    def hashCodeTarget: Name =
+      if (settings.Yjenkins.value) "hashCodeJenkins" else nme.hashCode_
 
     def equalsSym = syntheticMethod(
       nme.equals_, 0, makeTypeConstructor(List(AnyClass.tpe), BooleanClass.tpe)
@@ -244,8 +247,8 @@ trait SyntheticMethods extends ast.TreeDSL {
 
         // methods for case classes only
         def classMethods = List(
-          Object_hashCode -> (() => forwardingMethod(nme.hashCode_)),
-          Object_toString -> (() => forwardingMethod(nme.toString_)),
+          Object_hashCode -> (() => forwardingMethod(nme.hashCode_, "_" + hashCodeTarget)),
+          Object_toString -> (() => forwardingMethod(nme.toString_, "_" + nme.toString_)),
           Object_equals   -> (() => equalsClassMethod)
         )
         // methods for case objects only

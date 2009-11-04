@@ -837,6 +837,7 @@ trait ScalacSettings {
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Ytailrec      = BooleanSetting    ("-Ytailrecommend", "Alert methods which would be tail-recursive if private or final.")
   val YhigherKindedRaw = BooleanSetting    ("-Yhigher-kinded-raw", "(temporary!) Treat raw Java types as higher-kinded types.")
+  val Yjenkins      = BooleanSetting    ("-Yjenkins-hashCodes", "Use jenkins hash algorithm for case class generated hashCodes.")
 
   // Equality specific
   val logEqEq       = BooleanSetting    ("-Ylog-eqeq", "Log all noteworthy equality tests") .

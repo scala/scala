@@ -105,6 +105,9 @@ object ScalaRunTime {
   def _toString(x: Product): String =
     caseFields(x).mkString(x.productPrefix + "(", ",", ")")
 
+  def _hashCodeJenkins(x: Product): Int =
+    scala.util.JenkinsHash.hashSeq(x.productPrefix.toSeq ++ x.productIterator.toSeq)
+
   def _hashCode(x: Product): Int = {
     var code = x.productPrefix.hashCode()
     val arr =  x.productArity
