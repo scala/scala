@@ -70,12 +70,6 @@ sealed abstract class Option[+A] extends Product {
   def getOrElse[B >: A](default: => B): B =
     if (isEmpty) default else this.get
 
-  /** If the option is nonempty return its value,
-   *  otherwise return the Zero for this type.
-   */
-  def orZero[B >: A](implicit z: Zero[B]): B =
-    this getOrElse z.zero
-
   /** The option's value if it is nonempty, or <code>null</code> if it is empty.
    *  The use of null of course is discouraged, but code written to use Options
    *  often must interface with code which expects and returns nulls.
