@@ -1700,8 +1700,13 @@ trait Typers { self: Analyzer =>
         computeParamAliases(meth.owner, vparamss1, rhs1)
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
 
-      if (meth.owner.isRefinementClass && meth.allOverriddenSymbols.isEmpty)
-        for (vparams <- ddef.vparamss; vparam <- vparams)
+      // If only refinement owned methods are checked, invalid code can result; see ticket #2144.
+      def requiresStructuralCheck = meth.allOverriddenSymbols.isEmpty && (
+        meth.owner.isRefinementClass ||
+        (!meth.isConstructor && !meth.isSetter && meth.owner.isAnonymousClass)
+      )
+      if (requiresStructuralCheck)
+        for (vparam <- ddef.vparamss.flatten)
           checkStructuralCondition(meth.owner, vparam)
 
       if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
