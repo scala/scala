@@ -12,7 +12,7 @@
 package scala
 
 import collection.mutable._
-import collection.immutable.{WrappedString, IndexedSeq}
+import collection.immutable.WrappedString
 import collection.generic.CanBuildFrom
 
 /** The `LowPriorityImplicits` class provides implicit values that

@@ -928,19 +928,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         f.file.container.name == "scala"
       val res = new ListBuffer[SourceFile]
       var scalaObject: Option[SourceFile] = None
-      var lowPriorityImplicits: Option[SourceFile] = None
-      var predef: Option[SourceFile] = None
       for (file <- files) file.file.name match {
-        case "ScalaObject.scala"          if inScalaFolder(file) => scalaObject = Some(file)
-        case "LowPriorityImplicits.scala" if inScalaFolder(file) => lowPriorityImplicits = Some(file)
-        case "Predef.scala"               if inScalaFolder(file) => predef = Some(file)
+        case "ScalaObject.scala" if inScalaFolder(file) => scalaObject = Some(file)
         case "package.scala" => file +=: res // prepend package objects
         case _ => res += file                // append all others
       }
-      val f: SourceFile => Unit = res.+=:(_)
-      predef map f                // Predef 3rd
-      lowPriorityImplicits map f  // LowPriorityImplicits 2nd
-      scalaObject map f           // ScalaObject 1st
+      scalaObject.map(res.+=:(_)) // ScalaObject 1st
       res.toList                  // then package objects, then others
     }
   } // class Run

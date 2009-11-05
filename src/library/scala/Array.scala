@@ -12,8 +12,7 @@
 package scala
 
 import scala.collection.generic._
-import scala.collection.Traversable
-import scala.collection.mutable.{IndexedSeq, ArrayBuilder, GenericArray}
+import scala.collection.mutable.{ArrayBuilder, GenericArray}
 import compat.Platform.arraycopy
 import scala.reflect.ClassManifest
 import scala.runtime.ScalaRunTime.{array_apply, array_update}
