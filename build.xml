@@ -15,21 +15,20 @@ END-USER TARGETS
     
   <target name="build-opt"
     description="Builds the optimised Scala compiler and library. Executables are in 'build/pack/bin'.">
-    <antcall target="build"> 
+    <antcall target="build">
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
-    
-  <target name="build.optimise"><antcall target="build"/></target> <!-- for compat, remove when unused -->
-  <target name="optimise"><antcall target="build"/></target> <!-- for compat, remove when unused -->
 
   <target name="clean" depends="quick.clean"
     description="Removes binaries of compiler and library. Distributions are untouched."/>
 
   <target name="test" depends="test.done"
     description="Runs test suite and bootstrapping test on Scala compiler and library."/>
-  <target name="test.optimise">
-    <antcall target="test"> 
+
+  <target name="test-opt"
+    description="Runs test suite and bootstrapping test, everything is optimised (compiler, library, tests).">
+    <antcall target="test">
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
@@ -52,17 +51,17 @@ END-USER TARGETS
   
   <target name="dist-opt"
     description="Makes a new optimised distribution and tests it. Will remove existing binaries and documentation.">
-    <antcall target="dist"> 
+    <antcall target="dist">
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
-  
-  <target name="dist.optimise"><antcall target="optdist"/></target> <!-- for compat, remove when unused -->
-  
+
   <target name="fastdist" depends="dist.done"
-    description="Makes a new distribution without testing it or removing partially build elements"/>
-  <target name="fastdist.optimise">
-    <antcall target="fastdist"> 
+    description="Makes a new distribution without testing it or removing partially build elements."/>
+
+  <target name="fastdist-opt"
+    description="Makes a new optimised distribution without testing it or removing partially build elements.">
+    <antcall target="fastdist">
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
@@ -72,7 +71,7 @@ END-USER TARGETS
   
   <target name="replacestarr"
     description="Replaces the Starr compiler and library by fresh ones built from current sources and tests them.">
-    <fail message="This target is not available on Windows. Use 'ant newstarrwin' instead.">
+    <fail message="This target is not available on Windows. Use 'ant replacestarrwin' instead.">
       <condition>
         <os family="windows"/>
       </condition>
@@ -86,23 +85,21 @@ END-USER TARGETS
   
   <target name="replacestarr-opt"
     description="Replaces the Starr compiler and library by fresh, optimised ones built from current sources and tests them.">
-    <antcall target="newstarr"> 
+    <antcall target="replacestarr">
       <param name="scalac.args.optimise" value="-optimise"/>
     </antcall>
   </target>
-  
-  <target name="newstarr.optimise"><antcall target="optnewstarr"/></target> <!-- for compat, remove when unused -->
 
   <!-- Ant on Windows is not able to delete jar files that are referenced in any <path>.
        See ticket 1290 on trac. -->
-  <target name="newstarrwin"
+  <target name="replacestarrwin"
     description="Creates a new Starr on Windows. Manually execute 'ant locker.clean build' first!">
-    <fail message="This target is only available on Windows. Use 'ant newstarr' instead.">
+    <fail message="This target is only available on Windows. Use 'ant replacestarr' instead.">
       <condition>
         <not><os family="windows"/></not>
       </condition>
     </fail>
-    <echo message="CAUTION: Make sure to execute 'ant locker.clean build' prior to calling 'newstarrwin'."/>
+    <echo message="CAUTION: Make sure to execute 'ant locker.clean build' prior to calling 'replacestarrwin'."/>
     <antcall target="starr.done"/>
     <antcall target="locker.clean"/>
     <antcall target="test.done"/>
@@ -113,20 +110,13 @@ END-USER TARGETS
     <antcall target="palo.clean"/>
     <antcall target="unlocklocker"/>
   </target>
-  <target name="freshlocker.optimise">
-    <antcall target="freshlocker"> 
-      <param name="scalac.args.optimise" value="-optimise"/>
-    </antcall>    
-  </target>
-  
+
   <target name="replacelocker-opt"
     description="Replaces the Locker compiler and library by fresh, optimised ones built from current sources.">
-    <antcall target="replacelocker"> 
+    <antcall target="replacelocker">
       <param name="scalac.args.optimise" value="-optimise"/>
-    </antcall>    
+    </antcall>
   </target>
-  
-  <target name="newlocker.optimise"><antcall target="replacelocker"/></target> <!-- for compat, remove when unused -->
 
   <target name="unlocklocker"
     description="Unlocks Locker, allowing its compiler and library to be rebuilt">
@@ -1433,7 +1423,7 @@ TEST AND DISTRIBUTION BUNDLE (ALL)
 STABLE REFERENCE (STARR)
 ============================================================================ -->
 <!-- Does not use any properties other than ${basedir}, so that it can
-     run without 'init' (when using 'newstarrwin') -->
+     run without 'init' (when using 'replacestarrwin') -->
 
   <target name="starr.start">
     <fail message="Library in build/pack not available">
