@@ -65,14 +65,14 @@ trait Definitions {
 
     // the scala value classes
     lazy val UnitClass    = newClass(ScalaPackageClass, nme.Unit, anyvalparam).setFlag(ABSTRACT | FINAL)
-    lazy val ByteClass    = newValueClass(nme.Byte, 'B')
-    lazy val ShortClass   = newValueClass(nme.Short, 'S')
-    lazy val CharClass    = newValueClass(nme.Char, 'C')
-    lazy val IntClass     = newValueClass(nme.Int, 'I')
-    lazy val LongClass    = newValueClass(nme.Long, 'L')
-    lazy val FloatClass   = newValueClass(nme.Float, 'F')
-    lazy val DoubleClass  = newValueClass(nme.Double, 'D')
-    lazy val BooleanClass = newValueClass(nme.Boolean, 'Z')
+    lazy val ByteClass    = newValueClass(nme.Byte, 'B', 1)
+    lazy val ShortClass   = newValueClass(nme.Short, 'S', 2)
+    lazy val CharClass    = newValueClass(nme.Char, 'C', 2)
+    lazy val IntClass     = newValueClass(nme.Int, 'I', 3)
+    lazy val LongClass    = newValueClass(nme.Long, 'L', 4)
+    lazy val FloatClass   = newValueClass(nme.Float, 'F', 5)
+    lazy val DoubleClass  = newValueClass(nme.Double, 'D', 6)
+    lazy val BooleanClass = newValueClass(nme.Boolean, 'Z', -1)
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
 
@@ -539,8 +539,9 @@ trait Definitions {
 
     val refClass = new HashMap[Symbol, Symbol]
     val abbrvTag = new HashMap[Symbol, Char]
+    val numericWidth = new HashMap[Symbol, Int]
 
-    private def newValueClass(name: Name, tag: Char): Symbol = {
+    private def newValueClass(name: Name, tag: Char, width: Int): Symbol = {
       val boxedName = sn.Boxed(name)
 
       val clazz = newClass(ScalaPackageClass, name, anyvalparam) setFlag (ABSTRACT | FINAL)
@@ -549,6 +550,7 @@ trait Definitions {
       boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
+      if (width > 0) numericWidth(clazz) = width
 
       val module = ScalaPackageClass.newModule(NoPosition, name)
       ScalaPackageClass.info.decls.enter(module)
@@ -693,7 +695,13 @@ trait Definitions {
 
     /** Is symbol a numeric value class? */
     def isNumericValueClass(sym: Symbol): Boolean =
-      (sym ne BooleanClass) && (boxedClass contains sym)
+      numericWidth contains sym
+
+    /** Is symbol a numeric value class? */
+    def isNumericValueType(tp: Type): Boolean = tp match {
+      case TypeRef(_, sym, _) => isNumericValueClass(sym)
+      case _ => false
+    }
 
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {

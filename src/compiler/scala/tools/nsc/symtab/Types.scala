@@ -580,7 +580,7 @@ trait Types {
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
 //      val startTime = if (util.Statistics.enabled) System.nanoTime() else 0l
-      val result =
+//      val result =
         ((this eq that) ||
          (if (explainSwitch) explain("<:", isSubType, this, that)
           else isSubType(this, that, AnyDepth)))
@@ -588,8 +588,22 @@ trait Types {
 //        subtypeNanos += System.nanoTime() - startTime
 //        subtypeCount += 1
 //      }
-      result
+//      result
     }
+
+    /** Is this type a weak subtype of that type? True also for numeric types, i.e. Int weak_<:< Long.
+     */
+    def weak_<:<(that: Type): Boolean =
+//      val startTime = if (util.Statistics.enabled) System.nanoTime() else 0l
+//      val result =
+        ((this eq that) ||
+         (if (explainSwitch) explain("weak_<:", isWeakSubType, this, that)
+          else isWeakSubType(this, that)))
+//      if (util.Statistics.enabled) {
+//        subtypeNanos += System.nanoTime() - startTime
+//        subtypeCount += 1
+//      }
+//      result
 
     /** Is this type equivalent to that type? */
     def =:=(that: Type): Boolean = (
@@ -1974,7 +1988,7 @@ A type's typeSymbol should never be inspected directly.
   object TypeVar {
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)] = Some((tv.origin, tv.constr))
     def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr, List(), List())
-    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint(List(),List()), List(), tparam.typeParams)
+    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint, List(), tparam.typeParams)
     def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) = new TypeVar(origin, constr, args, params)
   }
 
@@ -2042,19 +2056,25 @@ A type's typeSymbol should never be inspected directly.
      *   registerBound returns whether this TypeVar could plausibly be a subtype of tp and,
      *     if so, tracks tp as a upper bound of this type variable
      */
-    def registerBound(tp: Type, isLowerBound: Boolean): Boolean = { //println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
+    def registerBound(tp: Type, isLowerBound: Boolean, numBound: Boolean = false): Boolean = { //println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
       if(isLowerBound) assert(tp != this)
 
       undoLog record this
 
       def checkSubtype(tp1: Type, tp2: Type) =
-        if(isLowerBound) tp1 <:< tp2
-        else             tp2 <:< tp1
+        if (numBound)
+          if (isLowerBound) tp1 weak_<:< tp2
+          else              tp2 weak_<:< tp1
+        else
+          if(isLowerBound) tp1 <:< tp2
+          else             tp2 <:< tp1
+
       def addBound(tp: Type) = {
-        if(isLowerBound) constr.lobounds = tp :: constr.lobounds
-        else             constr.hibounds = tp :: constr.hibounds
+        if (isLowerBound) constr.addLoBound(tp, numBound)
+        else constr.addHiBound(tp, numBound)
         // println("addedBound: "+(this, tp)) // @MDEBUG
-        }
+      }
+
       def checkArgs(args1: List[Type], args2: List[Type], params: List[Symbol]) =
         if(isLowerBound) isSubArgs(args1, args2, params)
         else             isSubArgs(args2, args1, params)
@@ -2086,7 +2106,7 @@ A type's typeSymbol should never be inspected directly.
         undoLog record this
 
         val newInst = wildcardToTypeVarMap(tp)
-        if (constr.lobounds.forall(_ <:< newInst) && constr.hibounds.forall(newInst <:< _)) {
+        if (constr.isWithinBounds(newInst)) {
           setInst(tp)
           true
         } else false
@@ -2588,25 +2608,61 @@ A type's typeSymbol should never be inspected directly.
   /** A class expressing upper and lower bounds constraints of type variables,
    * as well as their instantiations.
    */
-  class TypeConstraint(lo0: List[Type], hi0: List[Type]) {
+  class TypeConstraint(lo0: List[Type], hi0: List[Type], numlo0: Type, numhi0: Type) {
     //var self: Type = _ //DEBUG
+    def this(lo0: List[Type], hi0: List[Type]) = this(lo0, hi0, NoType, NoType)
     def this() = this(List(), List())
-    var lobounds: List[Type] = lo0
-    var hibounds: List[Type] = hi0
+
+    private var lobounds = lo0
+    private var hibounds = hi0
+    private var numlo = numlo0
+    private var numhi = numhi0
+
+    def loBounds: List[Type] = if (numlo == NoType) lobounds else numlo :: lobounds
+    def hiBounds: List[Type] = if (numhi == NoType) hibounds else numhi :: hibounds
+
+/* not needed
+    def numLoBound: Type = numlo
+    def numHiBound: Type = numhi
+    def nonNumLoBounds: List[Type] = lobounds
+    def nonNumHiBounds: List[Type] = hibounds
+*/
+
+    def addLoBound(tp: Type, numBound: Boolean = false) {
+      if (numBound && isNumericValueType(tp)) {
+        if (!isNumericSubType(tp, numlo)) numlo = tp
+      } else {
+        lobounds = tp :: lobounds
+      }
+    }
+
+    def addHiBound(tp: Type, numBound: Boolean = false) {
+      if (numBound && isNumericValueType(tp)) {
+        if (!isNumericSubType(numhi, tp)) numhi = tp
+      } else {
+        hibounds = tp :: hibounds
+      }
+    }
+
+    def isWithinBounds(tp: Type): Boolean =
+      lobounds.forall(_ <:< tp) &&
+      hibounds.forall(tp <:< _) &&
+      (numlo == NoType || (numlo weak_<:< tp)) &&
+      (numhi == NoType || (tp weak_<:< numhi))
 
     var inst: Type = NoType // @M reduce visibility?
 
     def instValid = (inst ne null) && (inst ne NoType)
 
     def cloneInternal = {
-      val tc = new TypeConstraint(lobounds, hibounds)
+      val tc = new TypeConstraint(lobounds, hibounds, numlo, numhi)
       tc.inst = inst
       tc
     }
 
     override def toString =
-      (lobounds map (_.safeToString)).mkString("[ _>:(", ",", ") ") +
-      (hibounds map (_.safeToString)).mkString("| _<:(", ",", ") ] _= ") +
+      (loBounds map (_.safeToString)).mkString("[ _>:(", ",", ") ") +
+      (hiBounds map (_.safeToString)).mkString("| _<:(", ",", ") ] _= ") +
       inst.safeToString
   }
 
@@ -4106,152 +4162,6 @@ A type's typeSymbol should never be inspected directly.
     firstTry
   }
 
-/* DEAD
-  /** Does type `tp1' conform to `tp2'?
-   */
-  private def isSubType1(tp1: Type, tp2: Type, depth: Int): Boolean = {
-    ((tp1, tp2) match {
-      case (ErrorType, _)    => true
-      case (WildcardType, _) => true
-      case (_, ErrorType)    => true
-      case (_, WildcardType) => true
-
-      case (NoType, _)   => false
-      case (NoPrefix, _) => tp2 == NoPrefix || tp2.typeSymbol.isPackageClass
-      case (_, NoType)   => false
-      case (_, NoPrefix) => tp1 == NoPrefix || tp1.typeSymbol.isPackageClass
-
-      case (ThisType(_), ThisType(_))           => tp1 =:= tp2
-      case (ThisType(_), SingleType(_, _))      => tp1 =:= tp2
-      case (SingleType(_, _), ThisType(_))      => tp1 =:= tp2
-      case (SingleType(_, _), SingleType(_, _)) => tp1 =:= tp2
-      case (ConstantType(_), ConstantType(_))   => tp1 =:= tp2
-      case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2))
-      if !(tp1.isHigherKinded || tp2.isHigherKinded) =>
-        //Console.println("isSubType " + tp1 + " " + tp2);//DEBUG
-        ((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
-          else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)) &&
-         (sym2 == AnyClass || isSubArgs(args1, args2, sym1.typeParams)) //@M: Any is kind-polymorphic
-         ||
-         sym1.isAbstractType && isDifferentTypeConstructor(tp1, tp1.bounds.hi) && (tp1.bounds.hi <:< tp2)
-         ||
-         sym2.isAbstractType && isDifferentTypeConstructor(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo)
-         ||
-         sym2.isClass &&
-         ({ val base = tp1 baseType sym2; !(base eq tp1) && (base <:< tp2) })
-         ||
-         sym1 == NothingClass
-         ||
-         //{ Console.println("last chance " + sym1 + " " + sym2 + " " + sym2.isClass + " " + (sym2 isSubClass ObjectClass)); true } &&
-         sym1 == NullClass &&
-         sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) && (!(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass))
-         ||
-         {
-           val tp1n = normalizePlus(tp1)
-           val tp2n = normalizePlus(tp2)
-           ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType(tp1n, tp2n, depth)
-         })
-      case (MethodType(params1, res1), MethodType(params2, res2)) =>
-        (params1.length == params2.length &&
-         matchingParams(tp1.paramTypes, tp2.paramTypes, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
-         (res1 <:< res2) &&
-         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
-      case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-        tparams1.length == tparams2.length && {
-          if(tparams1.isEmpty) res1 <:< res2 // fast-path: monomorphic nullary method type
-          else if(tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
-            List.forall2(tparams1, tparams2)((p1, p2) =>
-              p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
-            res1 <:< res2.substSym(tparams2, tparams1)
-          } else { // normalized higher-kinded type
-            //@M for an example of why we need to generate fresh symbols, see neg/tcpoly_ticket2101.scala
-            val tpsFresh = cloneSymbols(tparams1) // @M cloneSymbols(tparams2) should be equivalent -- TODO: check
-
-            (List.forall2(tparams1, tparams2)((p1, p2) =>
-            p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&
-            res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh))
-            //@M TODO: should also check that the kinds of the type parameters conform (ticket 2066)
-            //@M the forall in the previous test could be optimised to the following,
-            // but not worth the extra complexity since it only shaves 1s from quick.comp
-            //   (List.forall2(tpsFresh/*optimisation*/, tparams2)((p1, p2) =>
-            //   p2.info.substSym(tparams2, tpsFresh) <:< p1.info /*optimisation, == (p1 from tparams1).info.substSym(tparams1, tpsFresh)*/) &&
-            // this optimisation holds because inlining cloneSymbols in `val tpsFresh = cloneSymbols(tparams1)` gives:
-            // val tpsFresh = tparams1 map (_.cloneSymbol)
-            // for (tpFresh <- tpsFresh) tpFresh.setInfo(tpFresh.info.substSym(tparams1, tpsFresh))
-          }
-        }
-      case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
-        lo2 <:< lo1 && hi1 <:< hi2
-      case (AnnotatedType(_,_,_), _) =>
-        annotationsConform(tp1, tp2) && tp1.withoutAnnotations <:< tp2.withoutAnnotations
-      case (_, AnnotatedType(_,_,_)) =>
-        annotationsConform(tp1, tp2) && tp1.withoutAnnotations <:< tp2.withoutAnnotations
-      case (BoundedWildcardType(bounds), _) =>
-        bounds.lo <:< tp2
-      case (_, BoundedWildcardType(bounds)) =>
-        tp1 <:< bounds.hi
-      case (tp, tv @ TypeVar(_,_)) =>
-        tv.registerBound(tp, true)
-      case (tv @ TypeVar(_,_), tp) =>
-        tv.registerBound(tp, false)
-      case (_, _)  if (tp1.isHigherKinded || tp2.isHigherKinded) =>
-        (tp1.typeSymbol == NothingClass
-         ||
-         tp2.typeSymbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
-         || // @M! normalize reduces higher-kinded case to PolyType's
-         (tp1.isHigherKinded && tp2.isHigherKinded) && {
-           val tp1a = tp1.normalize
-           val tp2a = tp2.normalize
-           assert((tp1a ne tp1) || (tp2a ne tp2))
-           isSubType0(tp1a, tp2a, depth)
-         })
-      case (_, TypeRef(pre2, sym2, args2))
-      if (sym2.isAbstractType && isDifferentTypeConstructor(tp2, tp2.bounds.lo) && (tp1 <:< tp2.bounds.lo) ||
-          sym2 == NotNullClass && tp1.isNotNull) =>
-        true
-      case (_, TypeRef(pre2, sym2, args2))
-      if (sym2 == SingletonClass && tp1.isStable) =>
-        true
-      case (_, RefinedType(parents2, ref2)) =>
-        (parents2 forall (tp2 => tp1 <:< tp2)) &&
-        (ref2.toList forall tp1.specializes) /* &&
- removed, replaced by stricter condition on stable values.
-        (tp1.typeSymbol != NullClass || !parents2.exists(_.typeSymbol.isAbstractType))
-*/
-      case (ExistentialType(_, _), _) =>
-        try {
-          skolemizationLevel += 1
-          tp1.skolemizeExistential(NoSymbol, null) <:< tp2
-        } finally {
-          skolemizationLevel -= 1
-        }
-      case (_, et: ExistentialType) if et.withTypeVars(tp1 <:< _, depth) =>
-        true
-      case (RefinedType(parents1, ref1), _) =>
-        parents1 exists (_ <:< tp2)
-      case (_, NotNullType(ntp2)) =>
-        tp1.isNotNull && tp1 <:< ntp2
-      case (NotNullType(ntp1), _) =>
-        ntp1 <:< tp2
-      case ((_: ThisType | _: SingleType | _: ConstantType), _) =>
-        tp1.underlying <:< tp2
-
-      case (TypeRef(pre1, sym1, args1), _) =>
-        (sym1 == NothingClass && tp2 <:< AnyClass.tpe
-         ||
-         sym1 == NullClass && tp2.isInstanceOf[SingletonType] && (tp1 <:< tp2.widen)
-         ||
-         sym1.isAbstractType && (tp1.bounds.hi <:< tp2))
-      case _ =>
-        false
-    }) || {
-      val tp1n = normalizePlus(tp1)
-      val tp2n = normalizePlus(tp2)
-      ((tp1n ne tp1) || (tp2n ne tp2)) && isSubType(tp1n, tp2n, depth)
-    }
-  }
-*/
-
   /** Are `tps1' and `tps2' lists of equal length such
    *  that all elements of `tps1' conform to corresponding elements
    *  of `tps2'?
@@ -4372,51 +4282,39 @@ A type's typeSymbol should never be inspected directly.
         }
         if (!cyclic) {
           if (up) {
-            if (bound.typeSymbol != AnyClass) {
-              tvar.constr.hibounds =
-                bound.instantiateTypeParams(tparams, tvars) :: tvar.constr.hibounds
-            }
+            if (bound.typeSymbol != AnyClass)
+              tvar.constr addHiBound bound.instantiateTypeParams(tparams, tvars)
             for (tparam2 <- tparams)
               if (tparam2.info.bounds.lo =:= tparam.tpe)  //@M TODO: should probably be .tpeHK
-                tvar.constr.hibounds =
-                  tparam2.tpe.instantiateTypeParams(tparams, tvars) :: tvar.constr.hibounds
+                tvar.constr addHiBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
           } else {
-            if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam) {
-              tvar.constr.lobounds =
-                bound.instantiateTypeParams(tparams, tvars) :: tvar.constr.lobounds
-            }
+            if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam)
+              tvar.constr addLoBound bound.instantiateTypeParams(tparams, tvars)
             for (tparam2 <- tparams)
               if (tparam2.info.bounds.hi =:= tparam.tpe)  //@M TODO: should probably be .tpeHK
-                tvar.constr.lobounds =
-                  tparam2.tpe.instantiateTypeParams(tparams, tvars) :: tvar.constr.lobounds
+                tvar.constr addLoBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
           }
         }
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
 
         // println("solveOne(useGlb, glb, lub): "+ (up, //@MDEBUG
-        //   if (depth != AnyDepth) glb(tvar.constr.hibounds, depth) else glb(tvar.constr.hibounds),
-        //   if (depth != AnyDepth) lub(tvar.constr.lobounds, depth) else lub(tvar.constr.lobounds)))
+        //   if (depth != AnyDepth) glb(tvar.constr.hiBounds, depth) else glb(tvar.constr.hiBounds),
+        //   if (depth != AnyDepth) lub(tvar.constr.loBounds, depth) else lub(tvar.constr.loBounds)))
 
         tvar setInst (
           if (up) {
-            if (depth != AnyDepth) glb(tvar.constr.hibounds, depth) else glb(tvar.constr.hibounds)
+            if (depth != AnyDepth) glb(tvar.constr.hiBounds, depth) else glb(tvar.constr.hiBounds)
           } else {
-            if (depth != AnyDepth) lub(tvar.constr.lobounds, depth) else lub(tvar.constr.lobounds)
+            if (depth != AnyDepth) lub(tvar.constr.loBounds, depth) else lub(tvar.constr.loBounds)
           })
-        // Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hibounds) else tvar.constr.lobounds)+((if (up) (tvar.constr.hibounds) else tvar.constr.lobounds) map (_.widen))+" = "+tvar.constr.inst)//@MDEBUG
+        // Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen))+" = "+tvar.constr.inst)//@MDEBUG
       }
     }
 
     for ((tvar, (tparam, variance)) <- config)
       solveOne(tvar, tparam, variance)
 
-    var ok = true
-    for (tvar <- tvars)
-      if (!(tvar.constr.lobounds forall (_ <:< tvar.constr.inst)) ||
-          !(tvar.constr.hibounds forall (tvar.constr.inst <:< _))) {
-        ok = false
-      }
-    ok
+    tvars forall (tvar => tvar.constr.isWithinBounds(tvar.constr.inst))
   }
 
   /** Do type arguments `targs' conform to formal parameters
@@ -4536,6 +4434,46 @@ A type's typeSymbol should never be inspected directly.
     val strippedTypes = ts mapConserve (stripType)
     (strippedTypes, quantified)
   }
+
+  def weakLub(ts: List[Type]) =
+    if (ts.nonEmpty && (ts forall isNumericValueType)) numericLub(ts)
+    else lub(ts)
+
+  def weakGlb(ts: List[Type]) =
+    if (ts.nonEmpty && (ts forall isNumericValueType)) numericGlb(ts)
+    else glb(ts)
+
+  def numericLub(ts: List[Type]) =
+    (ByteClass.tpe /: ts) ((t1, t2) => if (isNumericSubType(t1, t2)) t2 else t1)
+
+  def numericGlb(ts: List[Type]) =
+    (DoubleClass.tpe /: ts) ((t1, t2) => if (isNumericSubType(t1, t2)) t1 else t2)
+
+  def isWeakSubType(tp1: Type, tp2: Type) =
+    tp1 match {
+      case TypeRef(_, sym1, _) if isNumericValueClass(sym1) =>
+        tp2 match {
+          case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
+            sym1 == sym2 || numericWidth(sym1) < numericWidth(sym2)
+          case tv2 @ TypeVar(_, _) =>
+            tv2.registerBound(tp1, isLowerBound = true, numBound = true)
+          case _ =>
+            isSubType(tp1, tp2)
+        }
+      case tv1 @ TypeVar(_, _) =>
+        tp2 match {
+          case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
+            tv1.registerBound(tp2, isLowerBound = false, numBound = true)
+          case _ =>
+            isSubType(tp1, tp2)
+        }
+      case _ =>
+        isSubType(tp1, tp2)
+    }
+
+  def isNumericSubType(tp1: Type, tp2: Type) =
+    isNumericValueType(tp1) && isNumericValueType(tp2) &&
+    (tp1.typeSymbol == tp2.typeSymbol || numericWidth(tp1.typeSymbol) < numericWidth(tp2.typeSymbol))
 
   def lub(ts: List[Type]): Type = lub(ts, lubDepth(ts))
 

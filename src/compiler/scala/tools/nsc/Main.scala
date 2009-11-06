@@ -80,8 +80,7 @@ object Main extends AnyRef with EvalLoop {
         val command = new CompilerCommand(args.toList, settings, error, true)
         buildManager.update(fileSet(command.files), Set.empty)
       }
-    }
-    else {
+    } else {
       if (command.settings.target.value == "msil") {
         val libpath = System.getProperty("msil.libpath")
         if (libpath != null)
@@ -115,7 +114,7 @@ object Main extends AnyRef with EvalLoop {
         case ex @ FatalError(msg) =>
           if (true || command.settings.debug.value) // !!!
             ex.printStackTrace();
-        reporter.error(null, "fatal error: " + msg)
+          reporter.error(null, "fatal error: " + msg)
       }
     }
   }

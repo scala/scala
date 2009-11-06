@@ -937,6 +937,8 @@ trait Typers { self: Analyzer =>
                   // infinite expansion if pt is constant type ()
                   if (sym == UnitClass && tree.tpe <:< AnyClass.tpe) // (12)
                     return typed(atPos(tree.pos)(Block(List(tree), Literal(()))), mode, pt)
+                  else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt))
+                    return typed(atPos(tree.pos)(Select(tree, "to"+sym.name)), mode, pt)
                 case _ =>
               }
               if (!context.undetparams.isEmpty) {
@@ -2755,7 +2757,7 @@ trait Typers { self: Analyzer =>
      */
     protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
       //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
-      def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else lub(tps map (_.deconst))
+      def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) pt else weakLub(tps map (_.deconst))
 
       //@M! get the type of the qualifier in a Select tree, otherwise: NoType
       def prefixType(fun: Tree): Type = fun match {
@@ -2920,9 +2922,14 @@ trait Typers { self: Analyzer =>
           val thenp1 = typed(thenp, UnitClass.tpe)
           treeCopy.If(tree, cond1, thenp1, elsep) setType thenp1.tpe
         } else {
-          val thenp1 = typed(thenp, pt)
-          val elsep1 = typed(elsep, pt)
-          treeCopy.If(tree, cond1, thenp1, elsep1) setType ptOrLub(List(thenp1.tpe, elsep1.tpe))
+          var thenp1 = typed(thenp, pt)
+          var elsep1 = typed(elsep, pt)
+          val owntype = ptOrLub(List(thenp1.tpe, elsep1.tpe))
+          if (isNumericValueType(owntype)) {
+            thenp1 = adapt(thenp1, mode, owntype)
+            elsep1 = adapt(elsep1, mode, owntype)
+          }
+          treeCopy.If(tree, cond1, thenp1, elsep1) setType owntype
         }
       }
 
@@ -3553,6 +3560,9 @@ trait Typers { self: Analyzer =>
         }
       }
 
+      def adaptCase(cdef: CaseDef, tpe: Type): CaseDef =
+        treeCopy.CaseDef(cdef, cdef.pat, cdef.guard, adapt(cdef.body, mode, tpe))
+
       // begin typed1
       val sym: Symbol = tree.symbol
       if ((sym ne null) && (sym ne NoSymbol)) sym.initialize
@@ -3648,20 +3658,28 @@ trait Typers { self: Analyzer =>
             typed1(atPos(tree.pos) { Function(params, body) }, mode, pt)
           } else {
             val selector1 = checkDead(typed(selector))
-            val cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
-            treeCopy.Match(tree, selector1, cases1) setType ptOrLub(cases1 map (_.tpe))
+            var cases1 = typedCases(tree, cases, selector1.tpe.widen, pt)
+            val owntype = ptOrLub(cases1 map (_.tpe))
+            if (isNumericValueType(owntype)) {
+              cases1 = cases1 map (adaptCase(_, owntype))
+            }
+            treeCopy.Match(tree, selector1, cases1) setType owntype
           }
 
         case Return(expr) =>
           typedReturn(expr)
 
         case Try(block, catches, finalizer) =>
-          val block1 = typed(block, pt)
-          val catches1 = typedCases(tree, catches, ThrowableClass.tpe, pt)
+          var block1 = typed(block, pt)
+          var catches1 = typedCases(tree, catches, ThrowableClass.tpe, pt)
           val finalizer1 = if (finalizer.isEmpty) finalizer
                            else typed(finalizer, UnitClass.tpe)
-          treeCopy.Try(tree, block1, catches1, finalizer1)
-            .setType(ptOrLub(block1.tpe :: (catches1 map (_.tpe))))
+          val owntype = ptOrLub(block1.tpe :: (catches1 map (_.tpe)))
+          if (isNumericValueType(owntype)) {
+            block1 = adapt(block1, mode, owntype)
+            catches1 = catches1 map (adaptCase(_, owntype))
+          }
+          treeCopy.Try(tree, block1, catches1, finalizer1) setType owntype
 
         case Throw(expr) =>
           val expr1 = typed(expr, ThrowableClass.tpe)
