@@ -11,6 +11,7 @@
 package scala.tools.ant.sabbus
 
 import java.io.File
+import java.io.FileWriter
 import org.apache.tools.ant.Project
 import org.apache.tools.ant.taskdefs.{MatchingTask, Java}
 import org.apache.tools.ant.util.{GlobPatternMapper, SourceFileScanner}
@@ -84,12 +85,19 @@ class ScalacFork extends MatchingTask with TaskArgs {
       java.setClasspath(compilerPath.get)
       java.setClassname("scala.tools.nsc.Main")
       if (!timeout.isEmpty) java.setTimeout(timeout.get)
+
+      //dump the arguments to a file and do  "java @file"
+      val tempArgFile = File.createTempFile("scalacfork","")
+      val outf = new FileWriter(tempArgFile)
       for (arg <- settings.toArgs)
-        java.createArg().setValue(arg)
+        { outf.write(arg) ; outf.write(" ") }
       for (file <- includedFiles)
-        java.createArg().setFile(file)
-      for (af <- argfile)
-        java.createArg().setValue("@"+ af)
+        { outf.write(file.getPath) ; outf.write(" ") }
+      outf.close
+
+      java.createArg().setValue("@"+ tempArgFile.getAbsolutePath)
+      if (argfile.isDefined)
+        java.createArg().setValue("@"+ argfile.get)
 
       log(java.getCommandLine.getCommandline.mkString("", " ", ""), Project.MSG_VERBOSE)
       val res = java.executeJava()
