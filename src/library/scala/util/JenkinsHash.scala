@@ -46,7 +46,7 @@ object JenkinsHash {
     case x: Long      => bb putLong x
     case x: Float     => bb putFloat x
     case x: Double    => bb putDouble x
-    case x: Boolean   => if (x) bb put Byte.MaxValue else Byte.MinValue
+    case x: Boolean   => bb.put(if (x) Byte.MaxValue else Byte.MinValue)
     case x: Char      => bb putChar x
     case x: Unit      =>
   }
