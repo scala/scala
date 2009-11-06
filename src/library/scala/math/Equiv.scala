@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala
+package scala.math
 
 /** <p>
  *    A trait for representing equivalence relations.  It is important to

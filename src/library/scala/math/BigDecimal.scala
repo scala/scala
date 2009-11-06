@@ -8,7 +8,7 @@
 
 // $Id$
 
-package scala
+package scala.math
 
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }

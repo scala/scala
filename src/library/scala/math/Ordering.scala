@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala
+package scala.math
 
 import java.util.Comparator
 

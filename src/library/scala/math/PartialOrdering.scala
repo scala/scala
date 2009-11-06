@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala
+package scala.math
 
 /** <p>
  *    A trait for representing partial orderings.  It is important to

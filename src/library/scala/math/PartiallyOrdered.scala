@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala
+package scala.math
 
 /** A class for partially ordered data.
  *

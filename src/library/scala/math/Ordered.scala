@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala
+package scala.math
 
 /** A trait for totally ordered data.
  *

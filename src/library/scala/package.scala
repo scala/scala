@@ -49,6 +49,30 @@ package object scala {
   type Range = scala.collection.immutable.Range
   val Range = scala.collection.immutable.Range
 
+  // Numeric types which were moved into scala.math.*
+
+  type BigDecimal = scala.math.BigDecimal
+  val BigDecimal = scala.math.BigDecimal
+
+  type BigInt = scala.math.BigInt
+  val BigInt = scala.math.BigInt
+
+  type Equiv[T] = scala.math.Equiv[T]
+  type Fractional[T] = scala.math.Fractional[T]
+  type Integral[T] = scala.math.Integral[T]
+
+  type Numeric[T] = scala.math.Numeric[T]
+  val Numeric = scala.math.Numeric
+
+  type Ordered[T] = scala.math.Ordered[T]
+  val Ordered = scala.math.Ordered
+
+  type Ordering[T] = scala.math.Ordering[T]
+  val Ordering = scala.math.Ordering
+
+  type PartialOrdering[T] = scala.math.PartialOrdering[T]
+  type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
+
   @deprecated("use Iterable instead") type Collection[+A] = Iterable[A]
   @deprecated("use Iterable instead") val Collection = Iterable
 

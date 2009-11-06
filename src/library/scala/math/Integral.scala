@@ -9,7 +9,7 @@
 // $Id$
 
 
-package scala
+package scala.math
 
 /**
  * @since 2.8
