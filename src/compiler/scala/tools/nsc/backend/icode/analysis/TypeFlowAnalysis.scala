@@ -126,6 +126,12 @@ abstract class TypeFlowAnalysis {
           in(b)  = typeFlowLattice.bottom
           out(b) = typeFlowLattice.bottom
         }
+
+        // start block has var bindings for each of its parameters
+        val entryBindings = new VarBinding
+        m.params.foreach(p => entryBindings += ((p, p.kind)))
+        in(m.code.startBlock) = lattice.IState(entryBindings, typeStackLattice.bottom)
+
         m.exh foreach { e =>
           in(e.startBlock) = lattice.IState(in(e.startBlock).vars, typeStackLattice.exceptionHandlerStack)
         }
