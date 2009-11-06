@@ -11,7 +11,7 @@
 
 package scala.runtime
 
-import scala.collection.immutable.{Range, GenericRange}
+import scala.collection.immutable.{Range, NumericRange}
 
 final class RichLong(x: Long) extends Proxy with Ordered[Long] {
 
@@ -21,18 +21,18 @@ final class RichLong(x: Long) extends Proxy with Ordered[Long] {
   // Ordered[Long].compare
   def compare(y: Long): Int = if (x < y) -1 else if (x > y) 1 else 0
 
-  /** Create a GenericRange[Long] in range <code>[start;end)</code>
+  /** Create a NumericRange[Long] in range <code>[start;end)</code>
    *  with the specified step, where start is the target Long.
    *
    *  @param end    the end value of the range (exclusive)
    *  @param step   the distance between elements (defaults to 1)
    *  @return       the range
    */
-  def until(end: Long, step: Long = 1L): GenericRange.Exclusive[Long] = Range.Long(x, end, step)
+  def until(end: Long, step: Long = 1L): NumericRange.Exclusive[Long] = Range.Long(x, end, step)
 
   /** Like until, but inclusive of the end value.
    */
-  def to(end: Long, step: Long = 1L): GenericRange.Inclusive[Long] = Range.Long.inclusive(x, end, step)
+  def to(end: Long, step: Long = 1L): NumericRange.Inclusive[Long] = Range.Long.inclusive(x, end, step)
 
   def min(y: Long): Long = if (x < y) x else y
   def max(y: Long): Long = if (x > y) x else y

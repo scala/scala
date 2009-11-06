@@ -12,7 +12,7 @@ package scala
 
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
-import scala.collection.immutable.GenericRange
+import scala.collection.immutable.NumericRange
 
 /** Conversions which present a consistent conversion interface
  *  across all the numeric types.
@@ -359,27 +359,27 @@ extends jl.Number with ScalaNumericConversions
   def toIntExact = bigDecimal.intValueExact
   def toLongExact = bigDecimal.longValueExact
 
-  /** Creates a partially constructed GenericRange[BigDecimal] in range
+  /** Creates a partially constructed NumericRange[BigDecimal] in range
    *  <code>[start;end)</code>, where start is the target BigDecimal.  The step
    *  must be supplied via the "by" method of the returned object in order
    *  to receive the fully constructed range.  For example:
    * <pre>
    * val partial = BigDecimal(1.0) to 2.0       // not usable yet
-   * val range = partial by 0.01                // now a GenericRange
+   * val range = partial by 0.01                // now a NumericRange
    * val range2 = BigDecimal(0) to 1.0 by 0.01  // all at once of course is fine too
    * </pre>
    *
    *  @param end    the end value of the range (exclusive)
-   *  @return       the partially constructed GenericRange
+   *  @return       the partially constructed NumericRange
    */
-  def until(end: BigDecimal): Range.Partial[BigDecimal, GenericRange.Exclusive[BigDecimal]] =
+  def until(end: BigDecimal): Range.Partial[BigDecimal, NumericRange.Exclusive[BigDecimal]] =
     new Range.Partial(until(end, _))
 
   /** Same as the one-argument <code>until</code>, but creates the range immediately. */
   def until(end: BigDecimal, step: BigDecimal) = Range.BigDecimal(this, end, step)
 
   /** Like <code>until</code>, but inclusive of the end value. */
-  def to(end: BigDecimal): Range.Partial[BigDecimal, GenericRange.Inclusive[BigDecimal]] =
+  def to(end: BigDecimal): Range.Partial[BigDecimal, NumericRange.Inclusive[BigDecimal]] =
     new Range.Partial(to(end, _))
 
   /** Like <code>until</code>, but inclusive of the end value. */

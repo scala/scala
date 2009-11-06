@@ -13,6 +13,7 @@ package scala.annotation
  *
  *  @since 2.8
  */
+@experimental // and an experiment which may soon be ending
 final class experimental(message: String) extends StaticAnnotation {
   def this() = this("")
 }

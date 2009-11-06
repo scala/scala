@@ -11,7 +11,7 @@
 
 package scala.runtime
 
-import scala.collection.immutable.{Range, GenericRange}
+import scala.collection.immutable.{Range, NumericRange}
 
 final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   // Proxy.self
@@ -28,19 +28,19 @@ final class RichDouble(x: Double) extends Proxy with Ordered[Double] {
   def floor: Double = Math.floor(x)
 
   /** See <code>BigDecimal.until</code>. */
-  def until(end: Double): Range.Partial[Double, GenericRange[Double]] =
+  def until(end: Double): Range.Partial[Double, NumericRange[Double]] =
     new Range.Partial(until(end, _))
 
   /** See <code>BigDecimal.until</code>. */
-  def until(end: Double, step: Double): GenericRange[Double] =
+  def until(end: Double, step: Double): NumericRange[Double] =
     Range.Double(x, end, step)
 
   /** See <code>BigDecimal.to</code>. */
-  def to(end: Double): Range.Partial[Double, GenericRange[Double]] =
+  def to(end: Double): Range.Partial[Double, NumericRange[Double]] =
     new Range.Partial(to(end, _))
 
   /** See <code>BigDecimal.to</code>. */
-  def to(end: Double, step: Double): GenericRange[Double] =
+  def to(end: Double, step: Double): NumericRange[Double] =
     Range.Double.inclusive(x, end, step)
 
   /** Converts an angle measured in degrees to an approximately equivalent

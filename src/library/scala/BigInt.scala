@@ -339,7 +339,7 @@ class BigInt(val bigInteger: BigInteger) extends jl.Number with ScalaNumericConv
    */
   def doubleValue = this.bigInteger.doubleValue
 
-  /** Create a GenericRange[BigInt] in range <code>[start;end)</code>
+  /** Create a NumericRange[BigInt] in range <code>[start;end)</code>
    *  with the specified step, where start is the target BigInt.
    *
    *  @param end    the end value of the range (exclusive)

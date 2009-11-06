@@ -58,7 +58,7 @@ object AbstractFile
    * @return     ...
    */
   def getURL(url: URL): AbstractFile =
-    Option(url) filterMap { case url: URL if isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
+    Option(url) partialMap { case url: URL if isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
 }
 
 /**

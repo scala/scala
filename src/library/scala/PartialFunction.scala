@@ -61,7 +61,6 @@ trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
  *  @author  Paul Phillips
  *  @since   2.8
  */
-@experimental
 object PartialFunction
 {
   /** Creates a Boolean test based on a value and a partial function.
@@ -75,7 +74,7 @@ object PartialFunction
   def cond[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean =
     (pf isDefinedAt x) && pf(x)
 
-  /** Transforms a PartialFunction[T,U] `pf' into Function1[T,Option[U]] `f'
+  /** Transforms a PartialFunction[T,U] `pf' into Function1[T, Option[U]] `f'
    *  whose result is Some(x) if the argument is in pf's domain and None otherwise,
    *  and applies it to the value `x'.  In effect, it is a 'match' statement
    *  which wraps all case results in Some(_) and adds 'case _ => None' to the end.
@@ -86,8 +85,4 @@ object PartialFunction
    */
   def condOpt[T,U](x: T)(pf: PartialFunction[T, U]): Option[U] =
     if (pf isDefinedAt x) Some(pf(x)) else None
-
-  // If only getOrElse were a bit less unwieldy...
-  // def opt[T,U](x: T, default: U)(pf: PartialFunction[T, U]): U =
-  //   opt(x)(pf) getOrElse default
 }

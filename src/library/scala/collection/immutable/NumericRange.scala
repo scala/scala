@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: GenericRange.scala 18987 2009-10-08 18:31:44Z odersky $
+// $Id: NumericRange.scala 18987 2009-10-08 18:31:44Z odersky $
 
 package scala.collection
 package immutable
@@ -16,7 +16,7 @@ import mutable.{ Builder, ListBuffer }
 import generic._
 
 /** <p>
- *    <code>GenericRange</code> is a generified version of the
+ *    <code>NumericRange</code> is a more generic version of the
  *    <code>Range</code> class which works with arbitrary types.
  *    It must be supplied with an Integral implementation of the
  *    range type.
@@ -34,8 +34,7 @@ import generic._
  *  @author  Paul Phillips
  *  @version 2.8
  */
-@experimental
-abstract class GenericRange[+T]
+abstract class NumericRange[+T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
 extends IndexedSeq[T]
@@ -45,7 +44,7 @@ extends IndexedSeq[T]
   private def fail(msg: String) = throw new UnsupportedOperationException(msg)
 
   if (step equiv zero)
-    fail("GenericRange step cannot be zero.")
+    fail("NumericRange step cannot be zero.")
 
   // todo? - we could lift the length restriction by implementing a range as a sequence of
   // subranges and limiting the subranges to MAX_INT.  There's no other way around it because
@@ -65,12 +64,12 @@ extends IndexedSeq[T]
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
    */
-  def by[U >: T](newStep: U)(implicit unum: Integral[U]): GenericRange[U] =
+  def by[U >: T](newStep: U)(implicit unum: Integral[U]): NumericRange[U] =
     copy(start, end, newStep)
 
   /** Create a copy of this range.
    */
-  def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): GenericRange[U]
+  def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): NumericRange[U]
 
   override def foreach[U](f: T => U) {
     var i = start
@@ -140,26 +139,26 @@ extends IndexedSeq[T]
   //
   // should result in
   //
-  //   GenericRange[Double](0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+  //   NumericRange[Double](0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
   //
   // and not
   //
-  //   GenericRange[Double](0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5, 0.6000000000000001, 0.7000000000000001, 0.8, 0.9)
+  //   NumericRange[Double](0.0, 0.1, 0.2, 0.30000000000000004, 0.4, 0.5, 0.6000000000000001, 0.7000000000000001, 0.8, 0.9)
   //
   // or perhaps more importantly,
   //
   //   (0.1 to 0.3 by 0.1 contains 0.3) == true
   //
-  private[immutable] def mapRange[A](fm: T => A)(implicit unum: Integral[A]): GenericRange[A] = {
+  private[immutable] def mapRange[A](fm: T => A)(implicit unum: Integral[A]): NumericRange[A] = {
     val self = this
 
     // XXX This may be incomplete.
-    new GenericRange[A](fm(start), fm(end), fm(step), isInclusive) {
-      def copy[A1 >: A](start: A1, end: A1, step: A1)(implicit unum: Integral[A1]): GenericRange[A1] =
-        if (isInclusive) GenericRange.inclusive(start, end, step)
-        else GenericRange(start, end, step)
+    new NumericRange[A](fm(start), fm(end), fm(step), isInclusive) {
+      def copy[A1 >: A](start: A1, end: A1, step: A1)(implicit unum: Integral[A1]): NumericRange[A1] =
+        if (isInclusive) NumericRange.inclusive(start, end, step)
+        else NumericRange(start, end, step)
 
-      private val underlyingRange: GenericRange[T] = self
+      private val underlyingRange: NumericRange[T] = self
       override def foreach[U](f: A => U) { underlyingRange foreach (x => f(fm(x))) }
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
@@ -185,7 +184,7 @@ extends IndexedSeq[T]
 
   override lazy val hashCode = super.hashCode()
   override def equals(other: Any) = other match {
-    case x: GenericRange[_] => (length == x.length) && (length match {
+    case x: NumericRange[_] => (length == x.length) && (length match {
       case 0  => true
       case 1  => x.start == start
       case n  => x.start == start && x.step == step
@@ -194,25 +193,25 @@ extends IndexedSeq[T]
   }
   override def toString() = {
     val endStr = if (length > Range.MAX_PRINT) ", ... )" else ")"
-    take(Range.MAX_PRINT).mkString("GenericRange(", ", ", endStr)
+    take(Range.MAX_PRINT).mkString("NumericRange(", ", ", endStr)
   }
 }
 
-object GenericRange {
+object NumericRange {
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
-  extends GenericRange(start, end, step, true) {
+  extends NumericRange(start, end, step, true) {
     def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): Inclusive[U] =
-      GenericRange.inclusive(start, end, step)
+      NumericRange.inclusive(start, end, step)
 
-    def exclusive: Exclusive[T] = GenericRange(start, end, step)
+    def exclusive: Exclusive[T] = NumericRange(start, end, step)
   }
 
   class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
-  extends GenericRange(start, end, step, false) {
+  extends NumericRange(start, end, step, false) {
     def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): Exclusive[U] =
-      GenericRange(start, end, step)
+      NumericRange(start, end, step)
 
-    def inclusive: Inclusive[T] = GenericRange.inclusive(start, end, step)
+    def inclusive: Inclusive[T] = NumericRange.inclusive(start, end, step)
   }
 
   def apply[T](start: T, end: T, step: T)(implicit num: Integral[T]): Exclusive[T] =

@@ -144,7 +144,7 @@ object Numeric {
   }
 
   // For Double and BigDecimal we offer implicit Fractional objects, but also one
-  // which acts like an Integral type, which is useful in GenericRange.
+  // which acts like an Integral type, which is useful in NumericRange.
   implicit object BigDecimalIsFractional extends BigDecimalIsFractional with Ordering.BigDecimalOrdering
   object BigDecimalAsIfIntegral extends BigDecimalAsIfIntegral with Ordering.BigDecimalOrdering
 

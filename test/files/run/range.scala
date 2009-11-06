@@ -1,4 +1,4 @@
-import scala.collection.immutable.{ Range, GenericRange }
+import scala.collection.immutable.{ Range, NumericRange }
 
 object Test {
   def rangeForeach(range : Range) = {
@@ -12,10 +12,10 @@ object Test {
 
     def negated = GR[T](-x)
 
-    def gr1 = GenericRange(x, x, x)
-    def gr2 = GenericRange.inclusive(x, x, x)
-    def gr3 = GenericRange(x, x * fromInt(10), x)
-    def gr4 = GenericRange.inclusive(x, x * fromInt(10), x)
+    def gr1 = NumericRange(x, x, x)
+    def gr2 = NumericRange.inclusive(x, x, x)
+    def gr3 = NumericRange(x, x * fromInt(10), x)
+    def gr4 = NumericRange.inclusive(x, x * fromInt(10), x)
 
     def check = assert(
       gr1.isEmpty && !gr2.isEmpty &&
@@ -40,9 +40,9 @@ object Test {
     val grs = _grs ::: (_grs map (_.negated))
     grs foreach (_.check)
 
-    assert(GenericRange(1, 10, 1) sameElements (1 until 10))
-    assert(GenericRange.inclusive(1, 10, 1) sameElements (1 to 10))
-    assert(GenericRange.inclusive(1, 100, 3) sameElements (1 to 100 by 3))
+    assert(NumericRange(1, 10, 1) sameElements (1 until 10))
+    assert(NumericRange.inclusive(1, 10, 1) sameElements (1 to 10))
+    assert(NumericRange.inclusive(1, 100, 3) sameElements (1 to 100 by 3))
 
     rangeForeach(1 to 10);
     rangeForeach(1 until 10);

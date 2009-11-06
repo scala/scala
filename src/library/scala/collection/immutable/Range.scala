@@ -172,13 +172,13 @@ object Range {
 
   // BigInt and Long are straightforward generic ranges.
   object BigInt {
-    def apply(start: BigInt, end: BigInt, step: BigInt) = GenericRange(start, end, step)
-    def inclusive(start: BigInt, end: BigInt, step: BigInt) = GenericRange.inclusive(start, end, step)
+    def apply(start: BigInt, end: BigInt, step: BigInt) = NumericRange(start, end, step)
+    def inclusive(start: BigInt, end: BigInt, step: BigInt) = NumericRange.inclusive(start, end, step)
   }
 
   object Long {
-    def apply(start: Long, end: Long, step: Long) = GenericRange(start, end, step)
-    def inclusive(start: Long, end: Long, step: Long) = GenericRange.inclusive(start, end, step)
+    def apply(start: Long, end: Long, step: Long) = NumericRange(start, end, step)
+    def inclusive(start: Long, end: Long, step: Long) = NumericRange.inclusive(start, end, step)
   }
 
   // BigDecimal uses an alternative implementation of Numeric in which
@@ -190,9 +190,9 @@ object Range {
     implicit val bigDecAsIntegral = scala.Numeric.BigDecimalAsIfIntegral
 
     def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
-      GenericRange(start, end, step)
+      NumericRange(start, end, step)
     def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
-      GenericRange.inclusive(start, end, step)
+      NumericRange.inclusive(start, end, step)
   }
 
   // Double works by using a BigDecimal under the hood for precise
@@ -224,7 +224,7 @@ object Range {
   // indefinitely, for performance and because the compiler seems to bootstrap
   // off it and won't do so with our parameterized version without modifications.
   object Int {
-    def apply(start: Int, end: Int, step: Int) = GenericRange(start, end, step)
-    def inclusive(start: Int, end: Int, step: Int) = GenericRange.inclusive(start, end, step)
+    def apply(start: Int, end: Int, step: Int) = NumericRange(start, end, step)
+    def inclusive(start: Int, end: Int, step: Int) = NumericRange.inclusive(start, end, step)
   }
 }
