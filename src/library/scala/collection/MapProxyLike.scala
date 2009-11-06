@@ -37,7 +37,7 @@ trait MapProxyLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   override def keySet: Set[A] = self.keySet
   override def keysIterator: Iterator[A] = self.keysIterator
   override def keys: Iterator[A] = self.keysIterator
-  override def valueIterable: Iterable[B] = self.valueIterable
+  override def valuesIterable: Iterable[B] = self.valuesIterable
   override def valuesIterator: Iterator[B] = self.valuesIterator
   override def values: Iterator[B] = self.valuesIterator
   override def default(key: A): B = self.default(key)

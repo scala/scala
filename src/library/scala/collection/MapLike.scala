@@ -155,7 +155,7 @@ self =>
 
   /** @return the values of this map as an iterable.
    */
-  def valueIterable: Iterable[B] = new DefaultValuesIterable
+  def valuesIterable: Iterable[B] = new DefaultValuesIterable
 
   protected class DefaultValuesIterable extends Iterable[B] {
     def iterator = self.iterator.map(_._2)

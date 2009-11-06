@@ -32,7 +32,7 @@ with SubtractableMethods[A, This]
   def isDefinedAt(key: A): Boolean
   def keySet: Set[A]
   def keysIterator: Iterator[A]
-  def valueIterable: Iterable[B]
+  def valuesIterable: Iterable[B]
   def valuesIterator: Iterator[B]
   def default(key: A): B
   def filterKeys(p: A => Boolean): DefaultMap[A, B]

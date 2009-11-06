@@ -48,7 +48,7 @@ extends Map[A, B]
   @deprecated("use `keysIterator' instead")
   override def keys: Iterator[A] = imap.keysIterator
 
-  override def valueIterable: scala.collection.Iterable[B] = imap.valueIterable
+  override def valuesIterable: scala.collection.Iterable[B] = imap.valuesIterable
 
   override def valuesIterator: Iterator[B] = imap.valuesIterator
 

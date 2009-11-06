@@ -35,7 +35,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
   override def getOrElseUpdate(key: A, default: => B): B = synchronized { super.getOrElseUpdate(key, default) }
   override def transform(f: (A, B) => B): this.type = synchronized[this.type] { super.transform(f) }
   override def retain(p: (A, B) => Boolean): this.type = synchronized[this.type] { super.retain(p) }
-  override def valueIterable: scala.collection.Iterable[B] = synchronized { super.valueIterable }
+  override def valuesIterable: scala.collection.Iterable[B] = synchronized { super.valuesIterable }
   @deprecated("Use `valuesIterator' instead") override def values: Iterator[B] = synchronized { super.valuesIterator }
   override def valuesIterator: Iterator[B] = synchronized { super.valuesIterator }
   override def clone() = synchronized { super.clone() }
