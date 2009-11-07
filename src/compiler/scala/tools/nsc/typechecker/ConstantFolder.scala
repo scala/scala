@@ -71,10 +71,11 @@ abstract class ConstantFolder {
 
   private def foldBinop(op: Name, x: Constant, y: Constant): Constant = try {
     // temporarily logging folded ==/!= so the log doesn't have unexplained absences
-    if ((op == nme.EQ || op == nme.NE) && x.tag != y.tag && settings.logEqEq.value) {
-      val opstr = if (op == nme.EQ) "==" else "!="
-      scala.runtime.Equality.log("Folding constant expression (%s %s %s)".format(x.value, opstr, y.value))
-    }
+    // Careful, these four lines added 3 minutes to the time to compile this file under -optimise
+    // if ((op == nme.EQ || op == nme.NE) && x.tag != y.tag && settings.logEqEq.value) {
+    //   val opstr = if (op == nme.EQ) "==" else "!="
+    //   scala.runtime.Equality.log("Folding constant expression (%s %s %s)".format(x.value, opstr, y.value))
+    // }
 
     val optag = if (x.tag == y.tag) x.tag
                 else if (isNumeric(x.tag) && isNumeric(y.tag))
