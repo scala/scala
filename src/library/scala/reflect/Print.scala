@@ -16,7 +16,7 @@ object Print extends Function1[Any, String] {
 
   def apply(any: Any): String = any match {
     case x: Code[_] =>
-      apply(x)
+      apply(x.tree)
     case x: Tree =>
       apply(x)
     case x: Symbol =>
@@ -26,9 +26,6 @@ object Print extends Function1[Any, String] {
     case _ =>
       "UnknownAny"
   }
-
-  def apply[A](code: Code[A]): String =
-    Print(code.tree)
 
   def apply(tree: Tree): String = tree match {
     case reflect.Ident(sym) =>
