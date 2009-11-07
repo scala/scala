@@ -765,8 +765,13 @@ trait Infer {
         case ExistentialType(tparams, qtpe) =>
           isApplicable(undetparams, qtpe, argtpes0, pt)
         case MethodType(params, _) =>
-          // repeat varargs as needed, remove ByName
-          val formals = formalTypes(params map (_.tpe), argtpes0.length)
+          def paramType(param: Symbol) = param.tpe match {
+            case TypeRef(_, sym, List(tpe)) if sym isNonBottomSubClass CodeClass =>
+              tpe
+            case tpe =>
+              tpe
+          }
+          val formals = formalTypes(params map paramType, argtpes0.length)
 
           def tryTupleApply: Boolean = {
             // if 1 formal, 1 argtpe (a tuple), otherwise unmodified argtpes0
