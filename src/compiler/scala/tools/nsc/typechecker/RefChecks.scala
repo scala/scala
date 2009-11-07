@@ -234,7 +234,7 @@ abstract class RefChecks extends InfoTransform {
       }
 
       /** Check that all conditions for overriding <code>other</code> by
-       *  <code>member</code> are met.
+       *  <code>member</code> of class <code>clazz</code> are met.
        */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol) {
 
@@ -271,9 +271,9 @@ abstract class RefChecks extends InfoTransform {
         // return if we already checked this combination elsewhere
         if (member.owner != clazz) {
           if ((member.owner isSubClass other.owner) && (member.isDeferred || !other.isDeferred)) {
-                //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
-                return;
-              }
+            //Console.println(infoString(member) + " shadows1 " + infoString(other) " in " + clazz);//DEBUG
+            return;
+          }
           if (clazz.info.parents exists (parent =>
             (parent.typeSymbol isSubClass other.owner) && (parent.typeSymbol isSubClass member.owner) &&
             (member.isDeferred || !other.isDeferred))) {
@@ -286,6 +286,11 @@ abstract class RefChecks extends InfoTransform {
               return;
             }
         }
+
+        /** Is the intersection between given two lists of overridden symbols empty?
+         */
+        def intersectionIsEmpty(syms1: List[Symbol], syms2: List[Symbol]) =
+          !(syms1 exists (syms2 contains))
 
         if (member hasFlag PRIVATE) { // (1.1)
           overrideError("has weaker access privileges; it should not be private")
@@ -310,6 +315,12 @@ abstract class RefChecks extends InfoTransform {
         } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
                    (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
           overrideError("cannot override a mutable variable")
+        } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
+                   !(member.owner isSubClass other.owner) &&
+                   !member.isDeferred && !other.isDeferred &&
+                   intersectionIsEmpty(member.allOverriddenSymbols, other.allOverriddenSymbols)) {
+          overrideError("cannot override a concrete member without a third member that's overridden by both "+
+                        "(this rule is designed to prevent ``accidental overrides'')")
         } else if (other.isStable && !member.isStable) { // (1.4)
           overrideError("needs to be a stable, immutable value")
         } else if (member.isValue && (member hasFlag LAZY) &&

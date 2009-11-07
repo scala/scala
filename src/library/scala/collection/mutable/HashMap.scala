@@ -23,8 +23,8 @@ class HashMap[A, B] extends Map[A, B]
                        with HashTable[A] {
 
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
-  override def clear() = super.clear()
-  override def size: Int = super[HashTable].size
+  override def clear() = clearTable()
+  override def size: Int = tableSize
 
   type Entry = DefaultEntry[A, B]
 

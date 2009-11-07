@@ -28,7 +28,7 @@ class HashSet[A] extends Set[A]
                     with FlatHashTable[A] {
   override def companion: GenericCompanion[HashSet] = HashSet
 
-  override def size = super.size
+  override def size = tableSize
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
@@ -38,7 +38,7 @@ class HashSet[A] extends Set[A]
   override def add(elem: A): Boolean = addEntry(elem)
   override def remove(elem: A): Boolean = removeEntry(elem).isDefined
 
-  override def clear() = super.clear()
+  override def clear() = clearTable()
 
   override def foreach[U](f: A =>  U) {
     var i = 0

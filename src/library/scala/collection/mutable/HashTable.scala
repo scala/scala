@@ -75,10 +75,6 @@ trait HashTable[A] {
    */
   protected var threshold: Int = initialThreshold
 
-  /** Returns the size of this hash table.
-   */
-  def size = tableSize
-
   /** Find entry with given key in table, null if not found
    */
   protected def findEntry(key: A): Entry = {
@@ -154,7 +150,7 @@ trait HashTable[A] {
 
   /** Remove all entries from table
    */
-  def clear() {
+  protected def clearTable() {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }
     tableSize = 0

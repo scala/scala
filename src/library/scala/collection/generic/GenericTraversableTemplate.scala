@@ -18,7 +18,7 @@ import annotation.unchecked.uncheckedVariance
 /**
  * @since 2.8
  */
-trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] {
+trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
 
   def foreach[U](f: A => U): Unit
   def head: A

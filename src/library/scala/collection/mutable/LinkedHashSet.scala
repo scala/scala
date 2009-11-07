@@ -27,7 +27,7 @@ class LinkedHashSet[A] extends Set[A]
 
   protected val ordered = new ListBuffer[A]
 
-  override def size = super.size
+  override def size = tableSize
 
   def contains(elem: A): Boolean = containsEntry(elem)
 
@@ -46,7 +46,7 @@ class LinkedHashSet[A] extends Set[A]
 
   override def clear() {
     ordered.clear()
-    super.clear()
+    clearTable()
   }
 
   override def iterator = ordered.iterator

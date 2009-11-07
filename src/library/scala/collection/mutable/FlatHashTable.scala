@@ -40,10 +40,6 @@ trait FlatHashTable[A] {
    */
   protected var threshold: Int = newThreshold(initialSize)
 
-  /** Returns the number of entires in this hash table.
-   */
-  def size: Int = tableSize
-
   def findEntry(elem: A): Option[A] = {
     var h = index(elemHashCode(elem))
     var entry = table(h)
@@ -163,7 +159,7 @@ trait FlatHashTable[A] {
     (size.toLong * lf / loadFactorDenum ).toInt
   }
 
-  protected def clear() {
+  protected def clearTable() {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i -= 1 }
     tableSize = 0

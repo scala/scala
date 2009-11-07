@@ -63,7 +63,7 @@ import annotation.experimental
  *  @version 2.8
  *  @since   2.8
  */
-trait TraversableLike[+A, +Repr] {
+trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] {
 self =>
 
   import Traversable.breaks._

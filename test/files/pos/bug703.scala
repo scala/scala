@@ -19,7 +19,7 @@ object Go {
       super.f;
     }
   }
-  class Super {
+  class Super extends A {
     def f: Unit = Console.println("A")
   }
   def main(args : Array[String]) : Unit = {

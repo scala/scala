@@ -35,7 +35,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
                              with HashTable[A] {
 
   override def empty = LinkedHashMap.empty[A, B]
-  override def size = super[HashTable].size
+  override def size = tableSize
 
   type Entry = LinkedEntry[A, B]
 
@@ -112,7 +112,7 @@ class LinkedHashMap[A, B] extends Map[A, B]
   }
 
   override def clear() {
-    super[HashTable].clear()
+    clearTable()
     firstEntry = null
   }
 }
