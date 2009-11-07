@@ -111,6 +111,7 @@ trait Contexts { self: Analyzer =>
     var inConstructorSuffix = false         // are we in a secondary constructor
                                             // after the this constructor call?
     var returnsSeen = false                 // for method context: were returns encountered?
+    var inSelfSuperCall = false             // is this a context for a constructor self or super call?
     var reportAmbiguousErrors = false
     var reportGeneralErrors = false
     var diagnostic: List[String] = Nil      // these messages are printed when issuing an error
@@ -271,6 +272,7 @@ trait Contexts { self: Analyzer =>
       while (baseContext.tree.isInstanceOf[Template])
         baseContext = baseContext.outer
       val argContext = baseContext.makeNewScope(tree, owner)
+      argContext.inSelfSuperCall = true
       argContext.reportGeneralErrors = this.reportGeneralErrors
       argContext.reportAmbiguousErrors = this.reportAmbiguousErrors
       def enterElems(c: Context) {
@@ -487,14 +489,14 @@ trait Contexts { self: Analyzer =>
       val nextOuter =
         if (owner.isConstructor) {
           if (outer.tree.isInstanceOf[Template]) outer.outer.outer
-          else outer.outer
+          else outer.outer.outer
         } else outer
         // can we can do something smarter to bring back the implicit cache?
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
         implicitsCache = List()
         val newImplicits: List[ImplicitInfo] =
-          if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass) {
+          if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
             if (!owner.isInitialized) return nextOuter.implicitss
             if (settings.debug.value)
               log("collect member implicits " + owner + ", implicit members = " +
