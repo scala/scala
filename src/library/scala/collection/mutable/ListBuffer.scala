@@ -48,6 +48,10 @@ final class ListBuffer[A]
 
   // Implementations of abstract methods in Buffer
 
+  override def apply(n: Int): A =
+    if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString())
+    else super.apply(n)
+
   /** Replaces element at index <code>n</code> with the new element
    *  <code>newelem</code>. Takes time linear in the buffer size. (except the
    *  first element, which is updated in constant time).
@@ -230,7 +234,7 @@ final class ListBuffer[A]
    *  @pre       an element exists at position <code>n</code>
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
-  def remove(n: Int): A = try {
+  def remove(n: Int): A = {
     if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString())
     if (exported) copy()
     var old = start.head

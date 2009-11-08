@@ -29,30 +29,30 @@ y6 = (BannerLimit,12345)
 x6 eq y6: false - y6 eq x6: false
 x6 equals y6: true - y6 equals x6: true
 
-x7 = {scala.BigDecimal$RoundingMode(0), scala.BigDecimal$RoundingMode(1), scala.BigDecimal$RoundingMode(2), scala.BigDecimal$RoundingMode(3), scala.BigDecimal$RoundingMode(4), scala.BigDecimal$RoundingMode(5), scala.BigDecimal$RoundingMode(6), scala.BigDecimal$RoundingMode(7)}
-y7 = {scala.BigDecimal$RoundingMode(0), scala.BigDecimal$RoundingMode(1), scala.BigDecimal$RoundingMode(2), scala.BigDecimal$RoundingMode(3), scala.BigDecimal$RoundingMode(4), scala.BigDecimal$RoundingMode(5), scala.BigDecimal$RoundingMode(6), scala.BigDecimal$RoundingMode(7)}
+x7 = RoundingMode
+y7 = RoundingMode
 x7 eq y7: true - y7 eq x7: true
 x7 equals y7: true - y7 equals x7: true
 
-x8 = {Test1_scala$WeekDay(0), Test1_scala$WeekDay(1), Test1_scala$WeekDay(2), Test1_scala$WeekDay(3), Test1_scala$WeekDay(4), Test1_scala$WeekDay(5), Test1_scala$WeekDay(6)}
-y8 = {Test1_scala$WeekDay(0), Test1_scala$WeekDay(1), Test1_scala$WeekDay(2), Test1_scala$WeekDay(3), Test1_scala$WeekDay(4), Test1_scala$WeekDay(5), Test1_scala$WeekDay(6)}
+x8 = WeekDay
+y8 = WeekDay
 x8 eq y8: true - y8 eq x8: true
 x8 equals y8: true - y8 equals x8: true
 
-x9 = scala.BigDecimal$RoundingMode(0)
-y9 = scala.BigDecimal$RoundingMode(0)
+x9 = UP
+y9 = UP
 x9 eq y9: true - y9 eq x9: true
 x9 equals y9: true - y9 equals x9: true
 
-x10 = Test1_scala$WeekDay(0)
-y10 = Test1_scala$WeekDay(0)
+x10 = Monday
+y10 = Monday
 x10 eq y10: true - y10 eq x10: true
 x10 equals y10: true - y10 equals x10: true
 
 x9 eq x10: false - x10 eq x9: false
-x9 equals x10: false - x10 equals x9: false
+x9 equals x10: true - x10 equals x9: true
 x9 eq y10: false - y10 eq x9: false
-x9 equals y10: false - y10 equals x9: false
+x9 equals y10: true - y10 equals x9: true
 
 x = List((buffers,20), (layers,2), (title,3))
 y = List((buffers,20), (layers,2), (title,3))
@@ -62,8 +62,8 @@ x = Map(buffers -> 20, layers -> 2, title -> 3)
 y = Map(buffers -> 20, layers -> 2, title -> 3)
 x equals y: true - y equals x: true
 
-x = Set(2, 3)
-y = Set(2, 3)
+x = BitSet(2, 3)
+y = BitSet(2, 3)
 x equals y: true - y equals x: true
 
 x = Set(5, 3)
@@ -74,16 +74,16 @@ x = Queue(a, b, c)
 y = Queue(a, b, c)
 x equals y: true - y equals x: true
 
-x = Stack(a, b, c)
-y = Stack(a, b, c)
+x = Stack(c, b, a)
+y = Stack(c, b, a)
 x equals y: true - y equals x: true
 
 x = Map(42 -> FortyTwo)
 y = Map(42 -> FortyTwo)
 x equals y: true - y equals x: true
 
-x = Set(0, 2)
-y = Set(0, 2)
+x = TreeSet(0, 2)
+y = TreeSet(0, 2)
 x equals y: true - y equals x: true
 
 x = ArrayBuffer(one, two)
@@ -94,24 +94,20 @@ x = Map(title -> 3, buffers -> 20, layers -> 2)
 y = Map(title -> 3, buffers -> 20, layers -> 2)
 x equals y: true - y equals x: true
 
-x = Set(0, 8, 9)
-y = Set(0, 8, 9)
+x = BitSet(0, 8, 9)
+y = BitSet(0, 8, 9)
 x equals y: true - y equals x: true
 
 x = Set(layers, buffers, title)
 y = Set(layers, buffers, title)
 x equals y: true - y equals x: true
 
-x = LinkedList(2, 3)
-y = LinkedList(2, 3)
-x equals y: true - y equals x: true
-
 x = Queue(20, 2, 3)
 y = Queue(20, 2, 3)
 x equals y: true - y equals x: true
 
-x = Stack(20, 2, 3)
-y = Stack(20, 2, 3)
+x = Stack(3, 2, 20)
+y = Stack(3, 2, 20)
 x equals y: true - y equals x: true
 
 x = ListBuffer(white, black)
