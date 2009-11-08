@@ -1573,11 +1573,28 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    private def checkStructuralCondition(refinement: Symbol, vparam: ValDef) {
-      val tp = vparam.symbol.tpe
-      if (tp.typeSymbol.isAbstractType && !(tp.typeSymbol.hasTransOwner(refinement)))
-        error(vparam.tpt.pos,"Parameter type in structural refinement may not refer to abstract type defined outside that same refinement")
-    }
+    /** Check if a method is defined in such a way that it can be called.
+      * A method cannot be called if it is a non-private member of a structural type
+      * and if its parameter's types are not one of
+      * - this.type
+      * - a type member of the structural type
+      * - an abstract type declared outside of the structural type. */
+    def checkMethodStructuralCompatible(meth: Symbol): Unit =
+      if (meth.owner.isStructuralRefinement && meth.allOverriddenSymbols.isEmpty && (!meth.hasFlag(PRIVATE) && meth.privateWithin == NoSymbol)) {
+        val tp: Type = meth.tpe match {
+          case mt: MethodType => mt
+          case pt: PolyType => pt.resultType
+          case _ => NoType
+        }
+        for (paramType <- tp.paramTypes)  {
+          if (paramType.typeSymbol.isAbstractType && !(paramType.typeSymbol.hasTransOwner(meth.owner)))
+            unit.error(meth.pos,"Parameter type in structural refinement may not refer to an abstract type defined outside that refinement")
+          else if (paramType.typeSymbol.isAbstractType && !(paramType.typeSymbol.hasTransOwner(meth)))
+            unit.error(meth.pos,"Parameter type in structural refinement may not refer to a type member of that refinement")
+          else if (paramType.isInstanceOf[ThisType] && paramType.typeSymbol == meth.owner)
+            unit.error(meth.pos,"Parameter type in structural refinement may not refer to the type of that refinement (self type)")
+        }
+      }
 
     /** does given name name an identifier visible at this point?
      *
@@ -1697,23 +1714,19 @@ trait Typers { self: Analyzer =>
         } else {
           transformedOrTyped(ddef.rhs, tpt1.tpe)
         }
+
+      checkMethodStructuralCompatible(meth)
+
       if (meth.isPrimaryConstructor && meth.isClassConstructor &&
           phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
         computeParamAliases(meth.owner, vparamss1, rhs1)
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
 
-      // If only refinement owned methods are checked, invalid code can result; see ticket #2144.
-      def requiresStructuralCheck = meth.allOverriddenSymbols.isEmpty && (
-        meth.owner.isRefinementClass ||
-        (!meth.isConstructor && !meth.isSetter && meth.owner.isAnonymousClass)
-      )
-      if (requiresStructuralCheck)
-        for (vparam <- ddef.vparamss.flatten)
-          checkStructuralCondition(meth.owner, vparam)
-
       if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
           meth.paramss.exists(ps => ps.exists(_.hasFlag(DEFAULTPARAM)) && isRepeatedParamType(ps.last.tpe)))
         error(meth.pos, "a parameter section with a `*'-parameter is not allowed to have default arguments")
+
+      checkMethodStructuralCompatible(meth)
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType
     }
@@ -1769,6 +1782,33 @@ trait Typers { self: Analyzer =>
         }
         if (settings.YwarnShadow.value) checkShadowings(stat)
         enterLabelDef(stat)
+      }
+      if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
+        block match {
+          case block @ Block(List(classDef @ ClassDef(_, _, _, _)), newInst @ Apply(Select(New(_), _), _)) =>
+            // The block is an anonymous class definitions/instantiation pair
+            //   -> members that are hidden by the type of the block are made private
+            val visibleMembers = pt match {
+              case WildcardType => classDef.symbol.info.decls.toList
+              case BoundedWildcardType(TypeBounds(lo, hi)) => lo.members
+              case _ => pt.members
+            }
+            for (member <- classDef.symbol.info.decls.toList
+                 if member.isTerm && !member.isConstructor &&
+                    member.allOverriddenSymbols.isEmpty &&
+                    (!member.hasFlag(PRIVATE) && member.privateWithin == NoSymbol) &&
+                    !(visibleMembers exists { visible =>
+                      visible.name == member.name &&
+                      member.tpe <:< visible.tpe.substThis(visible.owner, ThisType(classDef.symbol))
+                    })
+            ) {
+              member.resetFlag(PROTECTED)
+              member.resetFlag(LOCAL)
+              member.setFlag(PRIVATE)
+              member.privateWithin = NoSymbol
+            }
+          case _ =>
+        }
       }
       val stats1 = typedStats(block.stats, context.owner)
       val expr1 = typed(block.expr, mode & ~(FUNmode | QUALmode), pt)

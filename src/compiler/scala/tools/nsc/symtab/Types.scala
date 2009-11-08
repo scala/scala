@@ -262,6 +262,9 @@ trait Types {
     /** Is this type guaranteed not to have `null' as a value? */
     def isNotNull: Boolean = false
 
+    /** Is this type a structural refinement type (it 'refines' members that have not been inherited) */
+    def isStructuralRefinement: Boolean = false
+
     /** Does this depend on an enclosing method parameter? */
     def isDependent: Boolean = IsDependentCollector.collect(this)
 
@@ -1232,6 +1235,10 @@ trait Types {
     override def narrow: Type = typeSymbol.thisType
     override def isNotNull: Boolean = parents exists (_.isNotNull)
 
+    override def isStructuralRefinement: Boolean =
+      (typeSymbol.isRefinementClass || typeSymbol.isAnonymousClass) &&
+        (decls.toList exists { entry => !entry.isConstructor && entry.allOverriddenSymbols.isEmpty })
+
     // override def isNullable: Boolean =
     // parents forall (p => p.isNullable && !p.typeSymbol.isAbstractType);
 
@@ -1729,7 +1736,14 @@ A type's typeSymbol should never be inspected directly.
       else if (sym.isModuleClass)
         objectPrefix + str
       else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value)
-        thisInfo.parents.mkString("", " with ", "{ ... }")
+        thisInfo.parents.mkString(" with ") + {
+          if (sym.isStructuralRefinement)
+            ((decls.toList filter { entry =>
+              !entry.isConstructor && entry.allOverriddenSymbols.isEmpty && !entry.hasFlag(PRIVATE)
+            }) map { entry => entry.defString }).mkString("{", "; ", "}")
+          else
+            ""
+        }
       else if (sym.isRefinementClass && sym.isInitialized)
         thisInfo.toString
       else str
