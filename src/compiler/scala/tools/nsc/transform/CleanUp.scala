@@ -126,10 +126,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         /* ### CREATING THE METHOD CACHE ### */
 
-        def addStaticVariableToClass(forName: String, forType: Type, forInit: Tree): Symbol = {
+        def addStaticVariableToClass(forName: String, forType: Type, forInit: Tree, isFinal: Boolean): Symbol = {
           val varSym = currentClass.newVariable(ad.pos, mkName(forName))
             .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC)
             .setInfo(forType)
+          if (isFinal) varSym setFlag FINAL else varSym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
           currentClass.info.decls enter varSym
 
           val varDef = typedPos( VAL(varSym) === forInit )
@@ -175,7 +176,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               */
 
               val reflParamsCacheSym: Symbol =
-                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes))
+                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes), true)
 
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe) {
                 case Pair(reflMethodSym, List(forReceiverSym)) =>
@@ -203,13 +204,13 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               */
 
               val reflParamsCacheSym: Symbol =
-                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes))
+                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes), true)
 
               val reflMethodCacheSym: Symbol =
-                addStaticVariableToClass("reflMethod$Cache", MethodClass.tpe, NULL)
+                addStaticVariableToClass("reflMethod$Cache", MethodClass.tpe, NULL, false)
 
               val reflClassCacheSym: Symbol =
-                addStaticVariableToClass("reflClass$Cache", ClassClass.tpe, NULL)
+                addStaticVariableToClass("reflClass$Cache", ClassClass.tpe, NULL, false)
 
               def getMethodSym = ClassClass.tpe member nme.getMethod_
 
@@ -247,10 +248,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               */
 
               val reflParamsCacheSym: Symbol =
-                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes))
+                addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes), true)
 
               val reflPolyCacheSym: Symbol =
-                addStaticVariableToClass("reflPoly$Cache", MethodCacheClass.tpe, NEW(TypeTree(EmptyMethodCacheClass.tpe)))
+                addStaticVariableToClass("reflPoly$Cache", MethodCacheClass.tpe, NEW(TypeTree(EmptyMethodCacheClass.tpe)), false)
 
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
                 { case Pair(reflMethodSym, List(forReceiverSym)) =>
