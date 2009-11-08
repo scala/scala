@@ -13,7 +13,6 @@ package scala.collection
 import generic._
 import mutable.{ListBuffer, HashMap, GenericArray}
 import immutable.{List, Range}
-import annotation.experimental
 
 // import immutable.{List, Nil, ::}
 import generic._

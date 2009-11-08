@@ -11,7 +11,6 @@
 package scala.collection
 package immutable
 
-import annotation.experimental
 import mutable.{ Builder, ListBuffer }
 import generic._
 

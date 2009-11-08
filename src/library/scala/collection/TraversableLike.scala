@@ -15,7 +15,6 @@ import generic._
 import scala.reflect.ClassManifest
 import mutable.{Builder, StringBuilder, Buffer, ArrayBuffer, ListBuffer}
 import immutable.{List, Stream, Nil, ::}
-import annotation.experimental
 
 /** <p>
  *    A template trait for traversable collections.

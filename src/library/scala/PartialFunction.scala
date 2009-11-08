@@ -11,8 +11,6 @@
 
 package scala
 
-import annotation.experimental
-
 /** A partial function of type <code>PartialFunction[A, B]</code> is a
  *  unary function where the domain does not include all values of type
  *  <code>A</code>. The function <code>isDefinedAt</code> allows to

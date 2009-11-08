@@ -13,7 +13,7 @@ package scala.collection
 
 import mutable.{Buffer, ArrayBuffer, ListBuffer, StringBuilder}
 import immutable.{List, Stream}
-import annotation.{ tailrec, experimental }
+import annotation.{ tailrec }
 // import immutable.{List, Nil, ::, Stream}
 
 /** The <code>Iterator</code> object provides various functions for

@@ -11,8 +11,6 @@
 
 package scala
 
-import annotation.experimental
-
 /** A module defining utility methods for higher-order functional programming.
  *
  *  @author  Martin Odersky

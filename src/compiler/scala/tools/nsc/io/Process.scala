@@ -5,7 +5,6 @@
 package scala.tools.nsc
 package io
 
-import annotation.experimental
 import concurrent.ThreadRunner
 import scala.util.Properties.{ isWin, isMac }
 import scala.util.control.Exception.catching
