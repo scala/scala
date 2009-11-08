@@ -1307,11 +1307,15 @@ trait Symbols {
       site.nonPrivateMember(name).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
-    /** The symbol overridden by this symbol in given class `ofclazz' */
+    /** The symbol overridden by this symbol in given class `ofclazz'.
+     *  @pre 'ofclazz' is a base class of this symbol's owner.
+     */
     final def overriddenSymbol(ofclazz: Symbol): Symbol =
       if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, owner.thisType)
 
-    /** The symbol overriding this symbol in given subclass `ofclazz' */
+    /** The symbol overriding this symbol in given subclass `ofclazz'
+     *  @pre: `ofclazz' is a subclass of this symbol's owner
+     */
     final def overridingSymbol(ofclazz: Symbol): Symbol =
       if (isClassConstructor) NoSymbol else matchingSymbol(ofclazz, ofclazz.thisType)
 
