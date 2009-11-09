@@ -587,9 +587,15 @@ trait Infer {
      *  and treat them as uninstantiated parameters instead.
      *  Map T* entries to Seq[T].
      */
-    def adjustTypeArgs(tparams: List[Symbol], targs: List[Type], restpe: Type, uninstantiated: ListBuffer[Symbol]): List[Type] =
+    def adjustTypeArgs(tparams: List[Symbol], targs: List[Type], restpe: Type, uninstantiated: ListBuffer[Symbol]): List[Type] = {
+      @inline def covariantOrNotContained(variance: Int) =
+        ((variance & COVARIANT) == 0) ||  // tparam occurred covariantly
+        (variance == VARIANCES)           // tparam did not occur
+
       List.map2(tparams, targs) {(tparam, targ) =>
-        if (targ.typeSymbol == NothingClass && (restpe == WildcardType || (varianceInType(restpe)(tparam) & COVARIANT) == 0)) {
+        if (targ.typeSymbol == NothingClass &&
+              (  restpe == WildcardType
+              || covariantOrNotContained(varianceInType(restpe)(tparam)))) {
           uninstantiated += tparam
           tparam.tpeHK  //@M tparam.tpe was wrong: we only want the type constructor,
             // not the type constructor applied to dummy arguments
@@ -602,6 +608,7 @@ trait Infer {
           targ.widen
         }
       }
+    }
 
     /** Return inferred type arguments, given type parameters, formal parameters,
     *  argument types, result type and expected result type.

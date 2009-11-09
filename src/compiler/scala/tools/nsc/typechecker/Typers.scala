@@ -172,7 +172,19 @@ trait Typers { self: Analyzer =>
     def applyImplicitArgs(fun: Tree): Tree = fun.tpe match {
       case MethodType(params, _) =>
         var positional = true
-        val argResults = params map (p => inferImplicit(fun, p.tpe, true, false, context))
+        val argResultsBuff = new ListBuffer[SearchResult]()
+
+        // apply the substitutions (undet type param -> type) that were determined
+        // by implicit resolution of implicit arguments on the left of this argument
+        for(param <- params) {
+          var paramTp = param.tpe
+          for(ar <- argResultsBuff)
+            paramTp = paramTp.subst(ar.subst.from, ar.subst.to)
+
+          argResultsBuff += inferImplicit(fun, paramTp, true, false, context)
+        }
+
+        val argResults = argResultsBuff.toList
         val args = argResults.zip(params) flatMap {
           case (arg, param) =>
             if (arg != SearchFailure) {

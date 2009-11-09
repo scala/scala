@@ -12,9 +12,8 @@
 
 package scala
 
-import annotation.unchecked.uncheckedVariance
-import scala.collection.generic.GenericTraversableTemplate
-import scala.collection.mutable.Builder
+import scala.collection.{TraversableLike, Traversable, IterableLike}
+import scala.collection.generic.CanBuildFrom
 
 
 /** Tuple2 is the canonical representation of a @see Product2
@@ -30,55 +29,80 @@ case class Tuple2[+T1, +T2](_1:T1, _2:T2) extends Product2[T1, T2]  {
   /** Swap the elements of the tuple */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
 
-/*
-  type Traverserable[CC[X] <: Traversable[X], X] = GenericTraversableTemplate[X, CC] with Iterable[X]
+	def zipped[Repr1, El1, Repr2, El2](implicit w1: T1 <:< TraversableLike[El1, Repr1], w2: T2 <:< IterableLike[El2, Repr2]): Zipped[Repr1, El1, Repr2, El2]
+		= new Zipped[Repr1, El1, Repr2, El2](_1, _2)
 
-  // TODO: benchmark factored version vs inlining forall2 everywhere (specialisation?)
-  // factor further? (use fold2)
-  // must use <:< instead of =>, otherwise bogus any2stringadd conversion is also eligible (in case of type errors)
+  class Zipped[+Repr1, +El1, +Repr2, +El2](coll1: TraversableLike[El1, Repr1], coll2: IterableLike[El2, Repr2]) { // coll2: IterableLike for filter
+    def it: (Repr1, Repr2) = (coll1.repr, coll2.repr) // TODO: do we want this? what should its name be?
 
+    def map[B, To](f: (El1, El2) => B)(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+     val b = cbf(coll1.repr)
+     val elems2 = coll2.iterator
 
-  def forall2[CC[X] <: Traverserable[CC, X], A1, A2](f: (A1, A2) => Boolean)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): Boolean = {
-    val it1 = _1.iterator
-    val it2 = _2.iterator
-    var res = true
-    while (res && it1.hasNext && it2.hasNext)
-      res = f(it1.next, it2.next)
-    res
-  }
+     for(el1 <- coll1)
+       if(elems2.hasNext)
+         b += f(el1, elems2.next)
 
-  def exists2[CC[X] <: Traverserable[CC, X], A1, A2](f: (A1, A2) => Boolean)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): Boolean = {
-    val it1 = _1.iterator
-    val it2 = _2.iterator
-    var res = false
-    while (!res && it1.hasNext && it2.hasNext)
-      res = f(it1.next, it2.next)
-    res
-  }
+     b.result
+    }
 
-  def foreach2[CC[X] <: Traverserable[CC, X], A1, A2, U](f: (A1, A2) => U)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): Unit
-    = forall2[CC, A1, A2]{(x, y) => f(x, y); true} // XXX: remove type args and fix crash in type infer
+    def flatMap[B, To](f: (El1, El2) => Traversable[B])(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+      val b = cbf(coll1.repr)
+      val elems2 = coll2.iterator
 
-  def build2[CC[X] <: Traverserable[CC, X], A1, A2, B](f: Builder[B, CC[B]] => (A1, A2) => Unit)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[B] = {
-    val b = _1.genericBuilder[B]
-      foreach2[CC, A1, A2, Unit](f(b)) // XXX: remove type args and fix crash in type infer
-    b.result
-  }
+      for(el1 <- coll1)
+       if(elems2.hasNext)
+         b ++= f(el1, elems2.next)
 
-  def zip2[CC[X] <: Traverserable[CC, X], A1, A2](implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[(A1, A2)]
-    = build2[CC, A1, A2, (A1, A2)]{b => (x, y) =>  // XXX: remove type args and fix crash in type infer
-        b += Tuple2(x, y)
+      b.result
+    }
+
+    def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CanBuildFrom[Repr1, El1, To1], cbf2: CanBuildFrom[Repr2, El2, To2]): (To1, To2) = {
+      val b1 = cbf1(coll1.repr)
+      val b2 = cbf2(coll2.repr)
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1) {
+        if(elems2.hasNext) {
+          val el2 = elems2.next
+          if(f(el1, el2)) {
+            b1 += el1
+            b2 += el2
+          }
+        }
       }
 
-  def map2[CC[X] <: Traverserable[CC, X], A1, A2, B](f: (A1, A2) => B)(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[B]
-    = build2[CC, A1, A2, B]{b => (x, y) =>  // XXX: remove type args and fix crash in type infer
-        b += f(x, y)
-      }
+      (b1.result, b2.result)
+    }
 
-  def flatMap2[CC[X] <: Traverserable[CC, X], A1, A2, B](f: (A1, A2) => CC[B])(implicit fst: T1 <:< CC[A1], snd: T2 <:< Traverserable[Iterable, A2]/*CC[A2] does not work*/): CC[B]
-    = build2[CC, A1, A2, B]{b => (x, y) =>  // XXX: remove type args and fix crash in type infer
-        b ++= f(x, y)
-      }
-*/
+    def exists(f: (El1, El2) => Boolean): Boolean = {
+      var acc = false
+      val elems2 = coll2.iterator
 
+      for(el1 <- coll1)
+       if(!acc && elems2.hasNext)
+         acc = f(el1, elems2.next)
+
+      acc
+    }
+
+    def forall(f: (El1, El2) => Boolean): Boolean = {
+      var acc = true
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1)
+       if(acc && elems2.hasNext)
+         acc = f(el1, elems2.next)
+
+      acc
+    }
+
+    def foreach[U](f: (El1, El2) => U): Unit = {
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1)
+       if(elems2.hasNext)
+         f(el1, elems2.next)
+    }
+  }
 }
