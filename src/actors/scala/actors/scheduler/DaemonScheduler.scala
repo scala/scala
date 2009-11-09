@@ -16,7 +16,22 @@ package scheduler
  */
 object DaemonScheduler extends DelegatingScheduler {
 
-  def makeNewScheduler(): IScheduler =
-    new ForkJoinScheduler(true)
+  def makeNewScheduler(): IScheduler = {
+    // test on which JVM we are running
+    val jvmVendor = System.getProperty("java.vm.vendor")
+    val sched = if (jvmVendor.indexOf("IBM") != -1) {
+      Debug.info(this+": running on a "+jvmVendor+" JVM")
+      // on IBM J9 1.6 do not use ForkJoinPool
+      val s = new ResizableThreadPoolScheduler(true)
+      s.start()
+      s
+    } else {
+      val s = new ForkJoinScheduler(true)
+      s.start()
+      s
+    }
+    Debug.info(this+": starting new "+sched+" ["+sched.getClass+"]")
+    sched
+  }
 
 }

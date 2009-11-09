@@ -10,7 +10,8 @@
 
 package scala.actors.scheduler
 
-import scala.actors.threadpool.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
+import scala.actors.threadpool.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue,
+                                ThreadFactory}
 import scala.actors.{Debug, IScheduler}
 import scala.concurrent.ManagedBlocker
 
@@ -48,6 +49,15 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
 
   protected val CHECK_FREQ = 10
 
+  private class DaemonThreadFactory extends ThreadFactory {
+    def newThread(r: Runnable): Thread = {
+      val t = new Thread(r)
+      t.setDaemon(daemon)
+      t
+    }
+  }
+  private val threadFac = new DaemonThreadFactory
+
   private def makeNewPool(): ThreadPoolExecutor = {
     val workQueue = new LinkedBlockingQueue
     new ThreadPoolExecutor(coreSize,
@@ -55,6 +65,7 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
                            60000L,
                            TimeUnit.MILLISECONDS,
                            workQueue,
+                           threadFac,
                            new ThreadPoolExecutor.CallerRunsPolicy)
   }
 
