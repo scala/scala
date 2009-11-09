@@ -508,8 +508,10 @@ trait MarkupParser extends AnyRef with TokenTests
               val n = xName
               xToken(';')
 
-              if (unescape contains n) ts &+ unescape(n)
-              else push(n)
+              if (unescape contains n) {
+                handle.entityRef(tmppos, n)
+                ts &+ unescape(n)
+              } else push(n)
             }
           case _ => // text content
             appendText(tmppos, ts, xText);
