@@ -91,10 +91,22 @@ object Predef extends LowPriorityImplicits {
 
   def currentThread = java.lang.Thread.currentThread()
 
+  @inline def locally[T](x: T): T = x
+
   // hashcode -----------------------------------------------------------
 
   @inline def hash(x: Any): Int =
     if (x.isInstanceOf[Number]) runtime.BoxesRunTime.numHash(x.asInstanceOf[Number]) else x.hashCode
+
+  @inline def hash(x: Number): Int =
+    runtime.BoxesRunTime.numHash(x.asInstanceOf[Number])
+
+  @inline def hash(x: Long): Int = {
+    val iv = x.intValue
+    if (iv == x.longValue) iv else x.hashCode
+  }
+
+  @inline def hash(x: Int): Int = x
 
   // errors and asserts -------------------------------------------------
 

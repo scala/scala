@@ -935,7 +935,7 @@ abstract class RefChecks extends InfoTransform {
             unit.deprecationWarning(
               tree.pos,
               symbol.toString + " overrides concrete, non-deprecated symbol(s):" +
-              concrOvers.map(_.fullNameString).mkString("    ", ", ", ""))
+              concrOvers.map(_.name.decode).mkString("    ", ", ", ""))
         }
       }
 
