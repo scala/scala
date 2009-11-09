@@ -60,6 +60,7 @@ abstract class GenICode extends SubComponent  {
       else
         definitions.getMember(definitions.getClass("scala.runtime.Comparator").linkedModuleOfClass, nme.equals_)
 
+
     override def run {
       scalaPrimitives.init
       classes.clear
@@ -1431,10 +1432,17 @@ abstract class GenICode extends SubComponent  {
       if (mustUseAnyComparator && (!settings.YfutureEqEq.value || cannotAvoidBoxesRuntime)) {
         val ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
         val ctx2 = genLoad(r, ctx1, ANY_REF_CLASS)
-        ctx2.bb.emitOnly(
-          CALL_METHOD(BoxesRunTime_equals, Static(false)),
-          CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
-        )
+        // when -optimise is on we call the @inline-version of equals
+        if (settings.XO.value) {
+          val inlinedEquals = definitions.getMember(definitions.ScalaRunTimeModule, nme.inlinedEquals)
+          ctx2.bb.emit(LOAD_MODULE(definitions.ScalaRunTimeModule))
+          ctx2.bb.emit(CALL_METHOD(inlinedEquals, Dynamic))
+        } else {
+          ctx2.bb.emit(
+            CALL_METHOD(BoxesRunTime_equals, Static(false)))
+        }
+        ctx2.bb.emit(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL))
+        ctx2.bb.close
       }
       else {
         if (isNull(l))
