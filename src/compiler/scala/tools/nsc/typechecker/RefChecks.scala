@@ -448,11 +448,20 @@ abstract class RefChecks extends InfoTransform {
         if (!(clazz hasFlag ABSTRACT)) checkNoAbstractDecls(clazz)
       }
 
+      /** Does there exists a symbol declared in class `inclazz` with name `name` and
+       *  whose type seen as a member of `class.thisType` matches `tpe`?
+       */
+      def hasMatchingSym(inclazz: Symbol, name: Name, tpe: Type): Boolean =
+        inclazz.info.nonPrivateDecl(name).filter(sym =>
+          !sym.isTerm || (tpe matches clazz.thisType.memberType(sym))) != NoSymbol
+
       // 4. Check that every defined member with an `override' modifier overrides some other member.
       for (member <- clazz.info.decls.toList)
         if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-            (clazz.ancestors forall {
-               bc => member.matchingSymbol(bc, clazz.thisType) == NoSymbol
+            !(clazz.ancestors exists { bc =>
+               hasMatchingSym(bc, member.name, member.tpe) ||
+               hasRepeatedParam(member.tpe) &&
+               hasMatchingSym(bc, member.name, toJavaRepeatedParam(member.tpe))
             })) {
           // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
           unit.error(member.pos, member.toString() + " overrides nothing");
