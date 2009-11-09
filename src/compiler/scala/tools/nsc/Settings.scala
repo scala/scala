@@ -839,16 +839,6 @@ trait ScalacSettings {
   val YhigherKindedRaw = BooleanSetting    ("-Yhigher-kinded-raw", "(temporary!) Treat raw Java types as higher-kinded types.")
   val Yjenkins      = BooleanSetting    ("-Yjenkins-hashCodes", "Use jenkins hash algorithm for case class generated hashCodes.")
 
-  // Equality specific
-  val logEqEq       = BooleanSetting    ("-Ylog-eqeq", "Log all noteworthy equality tests") .
-                        withPostSetHook(() => scala.runtime.Equality.logEverything = true)
-  val YfutureEqEq   = BooleanSetting    ("-Yfuture-eqeq", "Use proposed overloading-based numeric equality semantics.") .
-                        withPostSetHook(() => scala.runtime.Equality.use28Semantics = true)
-  val YwarnEqEq     = BooleanSetting    ("-Ywarn-eqeq", "Warn when boxed primitives of different types are compared.") .
-                        withPostSetHook(() => scala.runtime.Equality.warnOnBoxedCompare = true)
-  val YdieEqEq      = BooleanSetting    ("-Ydie-changed-eqeq", "Throw an exception if a comparison would have come back differently in scala 2.7.") .
-                        withPostSetHook(() => scala.runtime.Equality.dieOnBoxedCompareIfValuesAreEqual = true)
-
   // Warnings
   val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics")
   val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")

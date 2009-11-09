@@ -96,12 +96,13 @@ object Predef extends LowPriorityImplicits {
   // hashcode -----------------------------------------------------------
 
   @inline def hash(x: Any): Int =
-    if (x.isInstanceOf[Number]) runtime.BoxesRunTime.numHash(x.asInstanceOf[Number]) else x.hashCode
+    if (x.isInstanceOf[Number]) runtime.BoxesRunTime.hashFromNumber(x.asInstanceOf[Number])
+    else x.hashCode
 
   @inline def hash(x: Number): Int =
-    runtime.BoxesRunTime.numHash(x.asInstanceOf[Number])
+    runtime.BoxesRunTime.hashFromNumber(x)
 
-  @inline def hash(x: Long): Int = {
+  @inline def hash(x: java.lang.Long): Int = {
     val iv = x.intValue
     if (iv == x.longValue) iv else x.hashCode
   }

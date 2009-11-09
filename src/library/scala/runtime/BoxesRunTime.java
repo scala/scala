@@ -178,76 +178,65 @@ public class BoxesRunTime
         return x.intValue() == ch;
     }
 
-    public static int numHash(Number n) {
-        if (n instanceof Long) {
-            int iv = n.intValue();
-            long lv = n.longValue();
-            if (lv == iv) return iv;
-        } else if (n instanceof Float) {
-            int iv = n.intValue();
-            float fv = n.floatValue();
-            if (fv == iv) return iv;
-            long lv = n.longValue();
-            if (fv == lv) return new Long(lv).hashCode();
-        } else if (n instanceof Double) {
-            int iv = n.intValue();
-            double dv = n.doubleValue();
-            if (dv == iv) return iv;
-            float fv = n.floatValue();
-            if (dv == fv) return new Float(fv).hashCode();
-            long lv = n.longValue();
-            if (dv == lv) return new Long(lv).hashCode();
-        }
-        return n.hashCode();
+    /** Hashcode algorithm is driven by the requirements imposed
+     *  by primitive equality semantics, namely that equal objects
+     *  have equal hashCodes.  The first priority are the integral/char
+     *  types, which already have the same hashCodes for the same
+     *  values except for Long.  So Long's hashCode is altered to
+     *  conform to Int's for all values in Int's range.
+     *
+     *  Float is problematic because it's far too small to hold
+     *  all the Ints, so for instance Int.MaxValue.toFloat claims
+     *  to be == to each of the largest 64 Ints.  There is no way
+     *  to preserve equals/hashCode alignment without compromising
+     *  the hashCode distribution, so Floats are only guaranteed
+     *  to have the same hashCode for whole Floats in the range
+     *  Short.MinValue to Short.MaxValue (2^16 total.)
+     *
+     *  Double has its hashCode altered to match the entire Int range,
+     *  but is not guaranteed beyond that.  (But could/should it be?
+     *  The hashCode is only 32 bits so this is a more tractable
+     *  issue than Float's, but it might be better simply to exclude it.)
+     *
+     *  Note: BigInt and BigDecimal, being arbitrary precision, could
+     *  be made consistent with all other types for the Int range, but
+     *  as yet have not.
+     *
+     *  Note: Among primitives, Float.NaN != Float.NaN, but the boxed
+     *  verisons are equal.  This still needs reconciliation.
+     */
+    public static int hashFromLong(Long n) {
+      int iv = n.intValue();
+      if (iv == n.longValue()) return iv;
+      else return n.hashCode();
     }
+    public static int hashFromDouble(Double n) {
+      int iv = n.intValue();
+      double dv = n.doubleValue();
+      if (iv == dv) return iv;
 
-    private static boolean equalsBonusLogicFromScala27(Object a, Object b) {
-        if (a instanceof Number || a instanceof Character || b instanceof Number || b instanceof Character) {
-            int acode = typeCode(a);
-            int bcode = typeCode(b);
-            int maxcode = (acode < bcode) ? bcode : acode;
-            boolean res = false;
-            if (maxcode <= INT) {
-                int aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).intValue();
-                int bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).intValue();
-                res = (aa == bb);
-            }
-            if (maxcode <= LONG) {
-                long aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).longValue();
-                long bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).longValue();
-                res = (aa == bb);
-            }
-            if (maxcode <= FLOAT) {
-                float aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).floatValue();
-                float bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).floatValue();
-                res = (aa == bb);
-            }
-            if (maxcode <= DOUBLE) {
-                double aa = (acode == CHAR) ? ((Character) a).charValue() : ((Number) a).doubleValue();
-                double bb = (bcode == CHAR) ? ((Character) b).charValue() : ((Number) b).doubleValue();
-                res = (aa == bb);
-            }
-
-            if (res || b.equals(a)) return true;
-            else return false;
-        }
-        return false;
+      long lv = n.longValue();
+      if (lv == dv) return Long.valueOf(lv).hashCode();
+      else return n.hashCode();
     }
+    public static int hashFromFloat(Float n) {
+      int iv = n.intValue();
+      float fv = n.floatValue();
+      if (iv == fv) return iv;
 
-    private static String logMessage(Object a, Object b, String where) {
-      return "Compared boxed primitives (" + boxDescription(a) + " == " + boxDescription(b) + ") @ " + where;
+      long lv = n.longValue();
+      if (lv == fv) return Long.valueOf(lv).hashCode();
+      else return n.hashCode();
     }
-
-    private static void verifyEqEq(Object a, Object b, boolean isFatal, boolean onlyIfActuallyEqual) {
-      int code1 = typeCode(a);
-      int code2 = typeCode(b);
-
-      if (code1 < OTHER && code2 < OTHER && code1 != code2) {
-        if (!onlyIfActuallyEqual || equalsBonusLogicFromScala27(a, b)) {
-          String msg = logMessage(a, b, Equality.whereAreWe(5));
-          Equality.warnOrDie(msg, isFatal);
-        }
-      }
+    public static int hashFromNumber(Number n) {
+      if (n instanceof Long) return hashFromLong((Long)n);
+      else if (n instanceof Double) return hashFromDouble((Double)n);
+      else if (n instanceof Float) return hashFromFloat((Float)n);
+      else return n.hashCode();
+    }
+    public static int hashFromObject(Object a) {
+      if (a instanceof Number) return hashFromNumber((Number)a);
+      else return a.hashCode();
     }
 
 /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */

@@ -557,11 +557,9 @@ trait Definitions {
       mclass.setInfo(ClassInfoType(List(), new Scope, mclass))
       module.setInfo(mclass.tpe)
 
-      val box = newMethod(mclass, nme.box, List(clazz.typeConstructor),
-                          ObjectClass.typeConstructor)
+      val box = newMethod(mclass, nme.box, List(clazz.typeConstructor), boxedClass(clazz).tpe)
       boxMethod(clazz) = box
-      val unbox = newMethod(mclass, nme.unbox, List(ObjectClass.typeConstructor),
-                            clazz.typeConstructor)
+      val unbox = newMethod(mclass, nme.unbox, List(ObjectClass.typeConstructor), clazz.typeConstructor)
       unboxMethod(clazz) = unbox
 
       clazz
@@ -624,10 +622,11 @@ trait Definitions {
         // def +(s: String): String
         newMethod(clazz, nme.ADD, List(stringtype), stringtype)
 
-        val restype = clazz match {
-          case LongClass | FloatClass | DoubleClass => clazz.typeConstructor
-          case _                                    => inttype
+        def isLongFloatOrDouble = clazz match {
+          case LongClass | FloatClass | DoubleClass => true
+          case _                                    => false
         }
+        val restype = if (isLongFloatOrDouble) clazz.typeConstructor else inttype
 
         // shift operations
         if (isCardinal)
