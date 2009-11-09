@@ -135,6 +135,7 @@ trait TypeKinds { self: ICodes =>
       case (BYTE, INT) | (INT, BYTE) => INT
       case (SHORT, INT) | (INT, SHORT) => INT
       case (CHAR, INT) | (INT, CHAR) => INT
+      case (BOOL, INT) | (INT, BOOL) => INT
       case _ => throw new CheckerError("Incompatible types: " + a + " with " + b)
     }
   }
