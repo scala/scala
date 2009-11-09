@@ -178,6 +178,29 @@ public class BoxesRunTime
         return x.intValue() == ch;
     }
 
+    public static int numHash(Number n) {
+        if (n instanceof Long) {
+            int iv = n.intValue();
+            long lv = n.longValue();
+            if (lv == iv) return iv;
+        } else if (n instanceof Float) {
+            int iv = n.intValue();
+            float fv = n.floatValue();
+            if (fv == iv) return iv;
+            long lv = n.longValue();
+            if (fv == lv) return new Long(lv).hashCode();
+        } else if (n instanceof Double) {
+            int iv = n.intValue();
+            double dv = n.doubleValue();
+            if (dv == iv) return iv;
+            float fv = n.floatValue();
+            if (dv == fv) return new Float(fv).hashCode();
+            long lv = n.longValue();
+            if (dv == lv) return new Long(lv).hashCode();
+        }
+        return n.hashCode();
+    }
+
     private static boolean equalsBonusLogicFromScala27(Object a, Object b) {
         if (a instanceof Number || a instanceof Character || b instanceof Number || b instanceof Character) {
             int acode = typeCode(a);
