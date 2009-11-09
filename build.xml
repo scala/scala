@@ -880,38 +880,51 @@ BOOTSTRAPPING BUILD (STRAP)
       target="1.5" source="1.5">
       <compilerarg line="${javac.args}"/>
     </javac>
-    <scalac
+    <scalacfork
+      destdir="${build-strap.dir}/classes/library"
+      compilerpathref="pack.classpath"
+      srcpath="${src.dir}/library"
+      params="${scalac.args.all}"
       srcdir="${src.dir}/library"
-      destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-    </scalac>
-    <scalac
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/library"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
       srcdir="${src.dir}/actors"
-      destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-    </scalac>
-    <scalac
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/library"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
       srcdir="${src.dir}/dbc"
-      destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-    </scalac>
-    <scalac
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/library"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
       srcdir="${src.dir}/swing"
-      destdir="${build-strap.dir}/classes/library"
-      classpath="${build-strap.dir}/classes/library"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-    </scalac>
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-strap.dir}/classes/library/library.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -937,21 +950,22 @@ BOOTSTRAPPING BUILD (STRAP)
   <target name="strap.comp" depends="strap.pre-comp" unless="strap.comp.available">
     <stopwatch name="strap.comp.timer"/>
     <mkdir dir="${build-strap.dir}/classes/compiler"/>
-    <scalac
-      srcdir="${src.dir}/compiler"
+    <scalacfork
       destdir="${build-strap.dir}/classes/compiler"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/compiler"
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${jline.jar}"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <propertyfile file="${build-strap.dir}/classes/compiler/compiler.properties">
       <entry key="version.number" value="${version.number}"/>
       <entry key="copyright.string" value="${copyright.string}"/>
@@ -966,6 +980,34 @@ BOOTSTRAPPING BUILD (STRAP)
     </copy>
     <touch file="${build-strap.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="strap.comp.timer" action="total"/>
+  </target>
+  
+  <target name="strap.pre-scalap" depends="strap.comp">
+    <uptodate property="strap.scalap.available" targetfile="${build-strap.dir}/scalap.complete">
+      <srcfiles dir="${src.dir}/scalap"/>
+    </uptodate>
+  </target>
+
+  <target name="strap.scalap" depends="strap.pre-scalap" unless="strap.scalap.available">
+    <stopwatch name="strap.scalap.timer"/>
+    <mkdir dir="${build-strap.dir}/classes/scalap"/>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/scalap"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/scalap"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/compiler"/>
+        <pathelement location="${build-strap.dir}/classes/partest"/>
+        <pathelement location="${build-strap.dir}/classes/scalap"/>
+        <pathelement location="${ant.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-strap.dir}/scalap.complete" verbose="no"/>
+    <stopwatch name="strap.scalap.timer" action="total"/>
   </target>
   
   <target name="strap.pre-partest" depends="strap.scalap">
@@ -990,20 +1032,21 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.java"/>
       <compilerarg line="${javac.args}"/>
     </javac>
-    <scalac
-      srcdir="${src.dir}/partest"
+    <scalacfork
       destdir="${build-strap.dir}/classes/partest"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/partest"
+      jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-      <classpath>
+      <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${build-strap.dir}/classes/scalap"/>
         <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
+      </compilationpath>
+    </scalacfork>
     <copy todir="${build-strap.dir}/classes/partest">
       <fileset dir="${src.dir}/partest">
         <include name="**/*.xml"/>
@@ -1013,33 +1056,6 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.partest.timer" action="total"/>
   </target>
 
-  <target name="strap.pre-scalap" depends="strap.comp">
-    <uptodate property="strap.scalap.available" targetfile="${build-strap.dir}/scalap.complete">
-      <srcfiles dir="${src.dir}/scalap"/>
-    </uptodate>
-  </target>
-
-  <target name="strap.scalap" depends="strap.pre-scalap" unless="strap.scalap.available">
-    <stopwatch name="strap.scalap.timer"/>
-    <mkdir dir="${build-strap.dir}/classes/scalap"/>
-    <scalac
-      srcdir="${src.dir}/scalap"
-      destdir="${build-strap.dir}/classes/scalap"
-      target="jvm-1.5"
-      addparams="${scalac.args.all}">
-      <include name="**/*.scala"/>
-      <classpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-        <pathelement location="${build-strap.dir}/classes/compiler"/>
-        <pathelement location="${build-strap.dir}/classes/partest"/>
-        <pathelement location="${build-strap.dir}/classes/scalap"/>
-        <pathelement location="${ant.jar}"/>
-      </classpath>
-    </scalac>
-    <touch file="${build-strap.dir}/scalap.complete" verbose="no"/>
-    <stopwatch name="strap.scalap.timer" action="total"/>
-  </target>
-  
   <target name="strap.done" depends="strap.partest"/>
 
   <target name="strap.clean">
