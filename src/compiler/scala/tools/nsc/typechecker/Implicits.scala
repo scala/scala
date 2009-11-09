@@ -384,7 +384,7 @@ self: Analyzer =>
           }
         }
 
-      if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+depoly(info.tpe)+"/"+undetParams+"/"+isPlausiblyCompatible(info.tpe, wildPt)+"/"+matchesPt(depoly(info.tpe), wildPt, List()))
+      //if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+depoly(info.tpe)+"/"+undetParams+"/"+isPlausiblyCompatible(info.tpe, wildPt)+"/"+matchesPt(depoly(info.tpe), wildPt, List()))
       if (isPlausiblyCompatible(info.tpe, wildPt) &&
           matchesPt(depoly(info.tpe), wildPt, List()) &&
           isStable(info.pre)) {

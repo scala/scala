@@ -1,0 +1,9 @@
+t0851.scala:14: error: not enough arguments for method apply: (v1: Int,v2: String)java.lang.String in trait Function2.
+Unspecified value parameter v2.
+    println(f(1))
+             ^
+t0851.scala:22: error: not enough arguments for method apply: (v1: Int,v2: String)java.lang.String in trait Function2.
+Unspecified value parameter v2.
+    println(fn(1))
+              ^
+two errors found

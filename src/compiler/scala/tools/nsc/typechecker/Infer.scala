@@ -841,6 +841,8 @@ trait Infer {
           false
       }
 
+    /** Todo: Try to make isApplicable always safe (i.e. not cause TypeErrors).
+     */
     private[typechecker] def isApplicableSafe(undetparams: List[Symbol], ftpe: Type,
                                               argtpes0: List[Type], pt: Type): Boolean = {
       val reportAmbiguousErrors = context.reportAmbiguousErrors
@@ -849,7 +851,12 @@ trait Infer {
         isApplicable(undetparams, ftpe, argtpes0, pt)
       } catch {
         case ex: TypeError =>
-          false
+          try {
+            isApplicable(undetparams, ftpe, argtpes0, WildcardType)
+          } catch {
+            case ex: TypeError =>
+              false
+          }
       } finally {
         context.reportAmbiguousErrors = reportAmbiguousErrors
       }
@@ -1379,7 +1386,7 @@ trait Infer {
             check(pre, bound)
           case TypeRef(pre, sym, args) =>
             if (sym.isAbstractType)
-              patternWarning(tp, "abstract type ")
+              if (!isLocalBinding(sym)) patternWarning(tp, "abstract type ")
             else if (sym.isAliasType)
               check(tp.normalize, bound)
             else if (sym == NothingClass || sym == NullClass || sym == AnyValClass)
@@ -1624,7 +1631,7 @@ trait Infer {
             log("infer method alt "+ tree.symbol +" with alternatives "+
                 (alts map pre.memberType) +", argtpes = "+ argtpes +", pt = "+ pt)
 
-          val allApplicable = alts filter (alt =>
+          var allApplicable = alts filter (alt =>
             isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
 
           // if there are multiple, drop those that use a default
