@@ -31,7 +31,7 @@ object Exception
   // a Throwable => T and simply rethrow the non-Exceptions.
   implicit def fromExceptionCatcher[T](pf: ExceptionCatcher[T]): Catcher[T] = {
     new PartialFunction[Throwable, T] {
-      def isDefinedAt(x: Throwable) = x match {
+      override def isDefinedAt(x: Throwable) = x match {
         case e: Exception if pf.isDefinedAt(e)  => true
         case _                                  => false
       }
@@ -102,7 +102,7 @@ object Exception
       * but with the supplied apply method replacing the current one. */
     def withApply[U](f: (Throwable) => U): Catch[U] = {
       val pf2 = new PartialFunction[Throwable, U] {
-        def isDefinedAt(x: Throwable) = pf isDefinedAt x
+        override def isDefinedAt(x: Throwable) = pf isDefinedAt x
         def apply(x: Throwable) = f(x)
       }
       new Catch(pf2, fin)
@@ -141,7 +141,7 @@ object Exception
 
   final val nothingCatcher: PartialFunction[Throwable, Nothing] =
     new PartialFunction[Throwable, Nothing] {
-      def isDefinedAt(x: Throwable) = false
+      override def isDefinedAt(x: Throwable) = false
       def apply(x: Throwable) = throw x
     }
 
@@ -209,6 +209,6 @@ object Exception
   private def pfFromExceptions(exceptions: Class[_]*) =
     new PartialFunction[Throwable, Nothing] {
       def apply(x: Throwable) = throw x
-      def isDefinedAt(x: Throwable) = wouldMatch(x, exceptions)
+      override def isDefinedAt(x: Throwable) = wouldMatch(x, exceptions)
     }
 }

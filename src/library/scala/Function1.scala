@@ -47,4 +47,10 @@ trait Function1[-T1, +R] extends AnyRef { self =>
    */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 
+  /** Checks if a value is contained in the functions domain.
+   *
+   *  @param  x   the value to test
+   *  @return true, iff <code>x</code> is in the domain of this function.
+   */
+  def isDefinedAt(x: T1): Boolean = true
 }

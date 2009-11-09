@@ -210,7 +210,7 @@ object Actor {
 
   private class RecursiveProxyHandler(a: Reactor, f: PartialFunction[Any, Unit])
           extends PartialFunction[Any, Unit] {
-    def isDefinedAt(m: Any): Boolean =
+    override def isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
     def apply(m: Any) {
       if (f.isDefinedAt(m)) f(m)

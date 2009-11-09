@@ -109,7 +109,7 @@ object SeqLike {
  *  @version 1.0, 16/07/2003
  *  @since   2.8
  */
-trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
+trait SeqLike[+A, +Repr] extends Function[Int, A] with IterableLike[A, Repr] { self =>
 
   override protected[this] def thisCollection: Seq[A] = this.asInstanceOf[Seq[A]]
   override protected[this] def toCollection(repr: Repr): Seq[A] = repr.asInstanceOf[Seq[A]]
@@ -147,7 +147,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Is this partial function defined for the index <code>x</code>?
    */
-  def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length)
+  override def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length)
 
   /** Returns length of longest segment starting from a start index `from`
    *  such that every element of the segment satisfies predicate `p`.
