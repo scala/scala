@@ -119,12 +119,11 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           }
         }
       }
-
       println("Changes: " + changesOf)
       updateDefinitions(files)
       val compiled = updated ++ files
-      additionalDefs -- compiled
-      update0(invalidated(files, changesOf) ++ additionalDefs, compiled)
+      val invalid = invalidated(files, changesOf, additionalDefs ++ compiled)
+      update0(invalid -- compiled, compiled)
     }
 
     update0(files, immutable.Set())
@@ -132,16 +131,20 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
 
   /** Return the set of source files that are invalidated by the given changes. */
-  def invalidated(files: Set[AbstractFile], changesOf: collection.Map[Symbol, List[Change]]): Set[AbstractFile] = {
+  def invalidated(files: Set[AbstractFile], changesOf: collection.Map[Symbol, List[Change]],
+		          processed: Set[AbstractFile] = Set.empty): Set[AbstractFile] = {
     val buf = new mutable.HashSet[AbstractFile]
+    val newChangesOf = new mutable.HashMap[Symbol, List[Change]]
     var directDeps =
       compiler.dependencyAnalysis.dependencies.dependentFiles(1, files)
+    directDeps --= processed
 
-//    println("direct dependencies on " + files + " " + directDeps)
     def invalidate(file: AbstractFile, reason: String, change: Change) = {
       println("invalidate " + file + " because " + reason + " [" + change + "]")
       buf += file
       directDeps -= file
+      for (sym <- definitions(file))
+        newChangesOf(sym) = List(change)
       break
     }
 
@@ -190,6 +193,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
               invalidate(file, "it references deleted definition", change)
             case Removed(Class(name)) if (refs(name)) =>
               invalidate(file, "it references deleted class", change)
+            case Changed(Class(name)) if (refs(name)) =>
+              invalidate(file, "it references changed class", change)
             case Changed(Definition(name)) if (refs(name)) =>
               invalidate(file, "it references changed definition", change)
             case _ => ()
@@ -197,15 +202,18 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
         }
       }
 
-      breakable {
         for (file <- directDeps) {
-          for (cls <- definitions(file)) checkParents(cls, file)
-          for (cls <- definitions(file)) checkInterface(cls, file)
-          checkReferences(file)
+          breakable {
+            for (cls <- definitions(file)) checkParents(cls, file)
+            for (cls <- definitions(file)) checkInterface(cls, file)
+            checkReferences(file)
+          }
         }
-      }
     }
-    buf
+    if (buf.isEmpty)
+      processed
+    else
+      invalidated(buf -- processed, newChangesOf, processed ++ buf)
   }
 
   /** Update the map of definitions per source file */
