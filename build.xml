@@ -1298,7 +1298,7 @@ BOOTRAPING TEST AND TEST SUITE
 
   <target name="test.suite" depends="pack.done">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="1200000" javaccmd="${javac.cmd}"
+             timeout="2400000" javaccmd="${javac.cmd}"
              scalacopts="${scalac.args.optimise}">
       <classpath>
         <path refid="pack.classpath"/>
