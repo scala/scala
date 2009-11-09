@@ -282,7 +282,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
      *      def apply(x: T): R = (x: @unchecked) match {
      *        { case P_i if G_i => E_i }_i=1..n
-     *      override def isDefinedAt(x: T): boolean = (x: @unchecked) match {
+     *      def isDefinedAt(x: T): boolean = (x: @unchecked) match {
      *        case P_1 if G_1 => true
      *        ...
      *        case P_n if G_n => true
@@ -291,12 +291,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *    }
      *    new $anon()
      *
-     *  However, if one of the patterns P_i if G_i is a default pattern, it should generate instead
+     *  However, if one of the patterns P_i if G_i is a default pattern, generate instead
      *
-     *      override def isDefinedAt(x: T): boolean = true
-     *
-     *  which is the default in Function1 (and PartialFunction) anyway, so
-     *  no overridden def is emitted.
+     *      def isDefinedAt(x: T): boolean = true
      */
     def transformFunction(fun: Function): Tree = {
       val fun1 = deEta(fun)
@@ -338,7 +335,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         }
         val members = {
           if (fun.tpe.typeSymbol == PartialFunctionClass) {
-            val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt).setFlag(FINAL | OVERRIDE)
+            val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt).setFlag(FINAL)
             isDefinedAtMethod.setInfo(MethodType(isDefinedAtMethod.newSyntheticValueParams(formals),
                                                  BooleanClass.tpe))
             anonClass.info.decls enter isDefinedAtMethod
@@ -356,12 +353,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                     (cases map transformCase) :::
                       List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
             }
-            val isDef=idbody(isDefinedAtMethod.paramss.head.head)
-            if (isDef == Literal(true))
-              List(applyMethodDef(mkUnchecked(fun.body)))
-            else
-              List(applyMethodDef(mkUnchecked(fun.body)),
-                   DefDef(isDefinedAtMethod, mkUnchecked(isDef)))
+            List(applyMethodDef(mkUnchecked(fun.body)),
+                 DefDef(isDefinedAtMethod, mkUnchecked(idbody(isDefinedAtMethod.paramss.head.head))))
           } else {
             List(applyMethodDef(fun.body))
           }

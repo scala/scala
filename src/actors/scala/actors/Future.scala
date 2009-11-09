@@ -105,7 +105,7 @@ object Futures {
 
     def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[Int, Any]]]) {
       val reaction: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
-        override def isDefinedAt(msg: Any) = msg match {
+        def isDefinedAt(msg: Any) = msg match {
           case TIMEOUT => true
           case _ => partFuns exists (_ isDefinedAt msg)
         }

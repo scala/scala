@@ -19,7 +19,7 @@ object Reactions {
 
   class Impl extends Reactions {
     private val parts: Buffer[Reaction] = new ListBuffer[Reaction]
-    override def isDefinedAt(e: Event) = parts.exists(_ isDefinedAt e)
+    def isDefinedAt(e: Event) = parts.exists(_ isDefinedAt e)
     def += (r: Reaction): this.type = { parts += r; this }
     def -= (r: Reaction): this.type = { parts -= r; this }
     def apply(e: Event) {
@@ -36,7 +36,7 @@ object Reactions {
 
   class Wrapper(listener: Any)(r: Reaction) extends Reaction with StronglyReferenced with Proxy {
     def self = listener
-    override def isDefinedAt(e: Event) = r.isDefinedAt(e)
+    def isDefinedAt(e: Event) = r.isDefinedAt(e)
     def apply(e: Event) { r(e) }
   }
 }

@@ -122,7 +122,7 @@ self =>
    *  @param key the key
    *  @return    <code>true</code> iff there is a mapping for key in this map
    */
-  override def isDefinedAt(key: A) = contains(key)
+  def isDefinedAt(key: A) = contains(key)
 
   /** @return the keys of this map as a set. */
   def keySet: Set[A] = new DefaultKeySet
