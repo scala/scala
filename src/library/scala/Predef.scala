@@ -91,6 +91,11 @@ object Predef extends LowPriorityImplicits {
 
   def currentThread = java.lang.Thread.currentThread()
 
+  // hashcode and equality -------------------------------------------------
+
+  @inline def hash(x: Any): Int =
+    if (x.isInstanceOf[Number]) (x.asInstanceOf[Number]).intValue else x.hashCode
+
   // errors and asserts -------------------------------------------------
 
   def error(message: String): Nothing = throw new RuntimeException(message)

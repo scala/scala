@@ -120,6 +120,13 @@ object ScalaRunTime {
     code
   }
 
+  /** Fast path equality method for inlining; used when -optimise is set.
+   */
+  @inline def inlinedEquals(x: Object, y: Object): Boolean =
+    if (x eq null) y eq null
+    else if (x.isInstanceOf[Number] || x.isInstanceOf[Character]) BoxesRunTime.equals(x, y)
+    else x.equals(y)
+
   def _equals(x: Product, y: Any): Boolean = y match {
     case y1: Product if x.productArity == y1.productArity =>
       val arity = x.productArity

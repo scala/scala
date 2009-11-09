@@ -139,6 +139,45 @@ public class BoxesRunTime
 
     /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
+    // That's the method we should use from now on.
+    public static boolean equals(Object x, Object y) {
+        if (x instanceof Number) {
+            Number xn = (Number)x;
+            if (y instanceof Number) {
+                Number yn = (Number)y;
+                if ((xn instanceof Double) || (yn instanceof Double))
+                    return xn.doubleValue() == yn.doubleValue();
+                if ((xn instanceof Float) || (yn instanceof Float))
+                    return xn.floatValue() == yn.floatValue();
+                if ((xn instanceof Long) || (yn instanceof Long))
+                    return xn.longValue() == yn.longValue();
+                return xn.intValue() == yn.intValue();
+            }
+            if (y instanceof Character)
+                return equalsNumChar(xn, (Character)y);
+        } else if (x instanceof Character) {
+            Character xc = (Character)x;
+            if (y instanceof Character)
+                return (xc.charValue() == ((Character)y).charValue());
+            if (y instanceof Number)
+                return equalsNumChar((Number)y, xc);
+        } else if (x == null) {
+            return y == null;
+        }
+        return x.equals(y);
+    }
+
+    private static boolean equalsNumChar(Number x, Character y) {
+        char ch = y.charValue();
+        if (x instanceof Double)
+            return x.doubleValue() == ch;
+        if (x instanceof Float)
+            return x.floatValue() == ch;
+        if (x instanceof Long)
+            return x.longValue() == ch;
+        return x.intValue() == ch;
+    }
+
     private static boolean equalsBonusLogicFromScala27(Object a, Object b) {
         if (a instanceof Number || a instanceof Character || b instanceof Number || b instanceof Character) {
             int acode = typeCode(a);
@@ -186,23 +225,6 @@ public class BoxesRunTime
           Equality.warnOrDie(msg, isFatal);
         }
       }
-    }
-
-    /** The current equals method. **/
-    public static boolean equals(Object a, Object b) {
-        if (a == null || b == null)
-            return a == b;
-
-        verifyEqEq(a, b,
-          (Equality.dieOnBoxedCompare || Equality.dieOnBoxedCompareIfValuesAreEqual),
-          (Equality.warnOnBoxedCompareIfValuesAreEqual || Equality.dieOnBoxedCompareIfValuesAreEqual)
-        );
-
-        if (a.equals(b))
-            return true;
-
-        if (Equality.use28Semantics) return false;
-        else return equalsBonusLogicFromScala27(a, b);
     }
 
 /* OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS ... OPERATORS */
