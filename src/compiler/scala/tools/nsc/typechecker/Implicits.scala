@@ -434,7 +434,7 @@ self: Analyzer =>
 
               // filter out failures from type inference, don't want to remove them from undetParams!
               val uninstantiated = new ListBuffer[Symbol]
-              val detargs = adjustTypeArgs(undetParams, targs, pt, uninstantiated)
+              val detargs = adjustTypeArgs(undetParams, targs, WildcardType, uninstantiated)  // TODO: WildcardType should be pt, need to fix adjustTypeArgs first
               val (okParams, okArgs) = (undetParams zip detargs) filter {case (p, a) => !uninstantiated.contains(p)} unzip
               // TODO: optimise above line(s?) once `zipped filter` works (oh, the irony! this line is needed to get Zipped to type check...)
 

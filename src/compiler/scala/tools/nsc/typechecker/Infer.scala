@@ -588,14 +588,14 @@ trait Infer {
      *  Map T* entries to Seq[T].
      */
     def adjustTypeArgs(tparams: List[Symbol], targs: List[Type], restpe: Type, uninstantiated: ListBuffer[Symbol]): List[Type] = {
-      @inline def covariantOrNotContained(variance: Int) =
-        ((variance & COVARIANT) == 0) ||  // tparam occurred covariantly
-        (variance == VARIANCES)           // tparam did not occur
+      @inline def covariant/*OrNotContained*/(variance: Int) =
+        ((variance & COVARIANT) == 0)/* ||  // tparam occurred covariantly
+        (variance == VARIANCES)           // tparam did not occur */ // TODO: fix
 
       List.map2(tparams, targs) {(tparam, targ) =>
         if (targ.typeSymbol == NothingClass &&
               (  restpe == WildcardType
-              || covariantOrNotContained(varianceInType(restpe)(tparam)))) {
+              || covariant/*OrNotContained*/(varianceInType(restpe)(tparam)))) {
           uninstantiated += tparam
           tparam.tpeHK  //@M tparam.tpe was wrong: we only want the type constructor,
             // not the type constructor applied to dummy arguments
