@@ -197,6 +197,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
               invalidate(file, "it references changed class", change)
             case Changed(Definition(name)) if (refs(name)) =>
               invalidate(file, "it references changed definition", change)
+            case Added(Definition(name)) if (refs(name)) =>
+              invalidate(file, "it references added definition", change)
             case _ => ()
           }
         }
