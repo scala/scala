@@ -583,19 +583,22 @@ trait Infer {
         tvars map (tvar => WildcardType)
     }
 
-    /** Retract any Nothing arguments which appear covariantly in result type,
-     *  and treat them as uninstantiated parameters instead.
-     *  Map T* entries to Seq[T].
+    /** Retract arguments that were inferred to Nothing because inference failed. Correct types for repeated params.
+     *
+     * We detect Nothing-due-to-failure by only retracting a parameter if either:
+     *  - it occurs in an invariant/contravariant position in `restpe`
+     *  - `restpe == WildcardType`
+     *
+     * Retracted parameters are collected in `uninstantiated`.
+     *
+     * Rewrite for repeated param types:  Map T* entries to Seq[T].
      */
     def adjustTypeArgs(tparams: List[Symbol], targs: List[Type], restpe: Type, uninstantiated: ListBuffer[Symbol]): List[Type] = {
-      @inline def covariant/*OrNotContained*/(variance: Int) =
-        ((variance & COVARIANT) == 0)/* ||  // tparam occurred covariantly
-        (variance == VARIANCES)           // tparam did not occur */ // TODO: fix
+      @inline def notCovariantIn(tparam: Symbol, restpe: Type) =
+        (varianceInType(restpe)(tparam) & COVARIANT) == 0  // tparam occurred non-covariantly (in invariant or contravariant position)
 
       List.map2(tparams, targs) {(tparam, targ) =>
-        if (targ.typeSymbol == NothingClass &&
-              (  restpe == WildcardType
-              || covariant/*OrNotContained*/(varianceInType(restpe)(tparam)))) {
+        if (targ.typeSymbol == NothingClass && (restpe == WildcardType || notCovariantIn(tparam, restpe))) {
           uninstantiated += tparam
           tparam.tpeHK  //@M tparam.tpe was wrong: we only want the type constructor,
             // not the type constructor applied to dummy arguments
