@@ -125,6 +125,9 @@ trait Definitions {
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq)
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
+      def arrayApplyMethod = getMember(ScalaRunTimeModule, "array_apply")
+      def arrayUpdateMethod = getMember(ScalaRunTimeModule, "array_update")
+      def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
 
     // classes with special meanings
     lazy val NotNullClass         = getClass("scala.NotNull")
@@ -185,6 +188,7 @@ trait Definitions {
     lazy val ArrayClass   = getClass("scala.Array")
       def Array_apply   = getMember(ArrayClass, nme.apply)
       def Array_update  = getMember(ArrayClass, nme.update)
+      def Array_length  = getMember(ArrayClass, nme.length)
     lazy val ArrayModule  = getModule("scala.Array")
       def ArrayModule_apply = getMember(ArrayModule, nme.apply)
 
