@@ -278,13 +278,16 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                     // member is a value of type unit. No field needed
                     ;
                   case _ =>
+                    // atPhase: the private field is moved to the implementation class by erasure,
+                    // so it can no longer be found in the member's owner (the trait)
+                    val accessed = atPhase(currentRun.picklerPhase)(member.accessed)
                     // otherwise mixin a field as well
                     addMember(clazz,
                               clazz.newValue(member.pos, nme.getterToLocal(member.name))
                               setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
                               setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
                               setInfo member.tpe.resultType
-                              setAnnotations member.annotations)
+                              setAnnotations accessed.annotations)
                 }
             }
           } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
