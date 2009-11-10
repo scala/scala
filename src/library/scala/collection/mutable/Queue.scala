@@ -75,7 +75,7 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
    *             p yields true.
    */
   def dequeueAll(p: A => Boolean): Seq[A] = {
-    if (first0.nonEmpty)
+    if (first0.isEmpty)
       Seq.empty
     else {
       val res = new ArrayBuffer[A]
