@@ -21,29 +21,32 @@ package mutable
  *  @version 1.0, 08/07/2003
  *  @since   2.8
  */
-trait DoubleLinkedListLike[A, This >: Null <: LinearSeq[A] with DoubleLinkedListLike[A, This]] extends LinkedListLike[A, This] { self =>
+trait DoubleLinkedListLike[A, This <: Seq[A] with DoubleLinkedListLike[A, This]] extends LinkedListLike[A, This] { self =>
 
   var prev: This = _
 
-  override def append(that: This): Unit =
-    if (next eq null) {
-      next = that
-      if (that ne null) that.prev = repr
-    } else
-      next.append(that)
+  override def append(that: This): This =
+    if (isEmpty)
+      that
+    else {
+      if (next.isEmpty) {
+        next = that
+        if (that.nonEmpty) that.prev = repr
+      } else {
+        next.append(that)
+      }
+      repr
+    }
 
-  override def insert(that: This): Unit = if (that ne null) {
-    that.append(next)
-    next = that
-    that.prev = repr
+  override def insert(that: This): Unit = {
+    super.insert(that)
+    if (that.nonEmpty) that.prev = repr
   }
 
   def remove() {
-    if (next ne null)
+    if (next.nonEmpty)
       next.prev = prev
-    if (prev ne null)
+    if (prev.nonEmpty)
       prev.next = next
-    prev = null
-    next = null
   }
 }

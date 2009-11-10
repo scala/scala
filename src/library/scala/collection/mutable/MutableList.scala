@@ -34,8 +34,8 @@ class MutableList[A] extends LinearSeq[A]
 
   override protected[this] def newBuilder = new MutableList[A]
 
-  protected var first0: LinkedList[A] = null
-  protected var last0: LinkedList[A] = null
+  protected var first0: LinkedList[A] = new LinkedList[A]
+  protected var last0: LinkedList[A] = _ // undefined if first0.isEmpty
   protected var len: Int = 0
 
   /** Is the list empty?
@@ -49,11 +49,10 @@ class MutableList[A] extends LinearSeq[A]
   /** Returns the rest of this list
    */
   override def tail: MutableList[A] = {
+    require(nonEmpty, "tail of empty list")
     val tl = new MutableList[A]
-    if (first0 ne last0) {
-      tl.first0 = first0.tail
-      tl.last0 = last0
-    }
+    tl.first0 = first0.tail
+    tl.last0 = last0
     tl.len = len - 1
     tl
   }
@@ -79,17 +78,17 @@ class MutableList[A] extends LinearSeq[A]
 
   protected def prependElem(elem: A) {
     first0 = new LinkedList[A](elem, first0)
-    if (len == 0)
-      last0 = first0
+    if (len == 0) last0 = first0
     len = len + 1
   }
 
   protected def appendElem(elem: A): Unit =
-    if (len == 0)
+    if (len == 0) {
       prependElem(elem)
-    else {
-      last0.next = new LinkedList[A](elem, null)
+    } else {
+      last0.next = new LinkedList[A]
       last0 = last0.next
+      last0.elem = elem
       len = len + 1
     }
 
@@ -98,15 +97,17 @@ class MutableList[A] extends LinearSeq[A]
 
   /** Returns an iterator over all elements of this list.
    */
-  override def iterator: Iterator[A] =
-    if (first0 eq null) Iterator.empty else first0.iterator
+  override def iterator: Iterator[A] = first0.iterator
 
-  override def last = last0.elem
+  override def last = {
+    if (isEmpty) throw new NoSuchElementException("MutableList.empty.last")
+    last0.elem
+  }
 
   /** Returns an instance of <code>scala.List</code> containing the same
    *  sequence of elements.
    */
-  override def toList: List[A] = if (first0 eq null) Nil else first0.toList
+  override def toList: List[A] = first0.toList
 
   /** Returns the current list of elements as a linked List
    *  sequence of elements.
@@ -120,8 +121,8 @@ class MutableList[A] extends LinearSeq[A]
   def +=(elem: A): this.type = { appendElem(elem); this }
 
   def clear() {
-    first0 = null
-    last0 = null
+    first0 = new LinkedList[A]
+    last0 = first0
     len = 0
   }
 

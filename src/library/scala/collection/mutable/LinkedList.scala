@@ -23,15 +23,24 @@ import generic._
  *  @since   1
  */
 @serializable
-class LinkedList[A](_elem: A, _next: LinkedList[A]) extends LinearSeq[A]
-                                                       with GenericTraversableTemplate[A, LinkedList]
-                                                       with LinkedListLike[A, LinkedList[A]] {
-  elem = _elem
-  next = _next
+class LinkedList[A]() extends LinearSeq[A]
+                         with GenericTraversableTemplate[A, LinkedList]
+                         with LinkedListLike[A, LinkedList[A]] {
+  next = this
+
+  def this(elem: A, next: LinkedList[A]) {
+    this()
+    this.elem = elem
+    this.next = next
+  }
+
   override def companion: GenericCompanion[LinkedList] = LinkedList
 }
 
 object LinkedList extends SeqFactory[LinkedList] {
+
+  override def empty[A]: LinkedList[A] = new LinkedList[A]
+
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedList[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, LinkedList[A]] =
     (new MutableList) mapResult ((l: MutableList[A]) => l.toLinkedList)

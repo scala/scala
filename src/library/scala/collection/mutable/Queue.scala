@@ -38,12 +38,11 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
    *  @return the first element of the queue.
    */
   def dequeue(): A =
-    if (first0 eq null)
+    if (isEmpty)
       throw new NoSuchElementException("queue empty")
     else {
       val res = first0.elem
       first0 = first0.next
-      if (first0 eq null) last0 = null
       len -= 1
       res
     }
@@ -55,17 +54,12 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
    *  @return the first element of the queue for which p yields true
    */
   def dequeueFirst(p: A => Boolean): Option[A] =
-    if (first0 eq null)
+    if (isEmpty)
       None
     else if (p(first0.elem)) {
       val res: Option[A] = Some(first0.elem)
       first0 = first0.next
       len -= 1
-      if (first0 eq null) {
-        last0 = null
-      } else if (first0.next eq null) {
-        last0 = first0
-      }
       res
     } else
       extractFirst(first0, p) match {
@@ -81,19 +75,14 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
    *             p yields true.
    */
   def dequeueAll(p: A => Boolean): Seq[A] = {
-    if (first0 eq null)
+    if (first0.nonEmpty)
       Seq.empty
     else {
       val res = new ArrayBuffer[A]
-      while ((first0 ne null) && p(first0.elem)) {
+      while ((first0.nonEmpty) && p(first0.elem)) {
         res += first0.elem
         first0 = first0.next
         len -= 1
-        if (first0 eq null) {
-          last0 = null
-        } else if (first0.next eq null) {
-          last0 = first0
-        }
       }
       var cell: Option[LinkedList[A]] = extractFirst(first0, p)
       while (!cell.isEmpty) {
@@ -104,20 +93,21 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
     }
   }
 
-  private def extractFirst(start: LinkedList[A], p: A => Boolean): Option[LinkedList[A]] = {
+  /** Return the proper suffix of this list which starts with the first element that satisfies `p`.
+   *  That element is unlinked from the list. If no element satisfies `p`, return None.
+   */
+  def extractFirst(start: LinkedList[A], p: A => Boolean): Option[LinkedList[A]] = {
     if (isEmpty) None
     else {
       var cell = start
-      while ((cell.next ne null) && !p(cell.next.elem)) {
+      while ((cell.next.nonEmpty) && !p(cell.next.elem)) {
         cell = cell.next
       }
-      if (cell.next eq null)
+      if (cell.next.isEmpty)
         None
       else {
         val res: Option[LinkedList[A]] = Some(cell.next)
         cell.next = cell.next.next
-        if (cell.next eq null)
-          last0 = cell
         len -= 1
         res
       }
