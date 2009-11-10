@@ -30,8 +30,10 @@ class LinkedList[A]() extends LinearSeq[A]
 
   def this(elem: A, next: LinkedList[A]) {
     this()
-    this.elem = elem
-    this.next = next
+    if (next != null) {
+      this.elem = elem
+      this.next = next
+    }
   }
 
   override def companion: GenericCompanion[LinkedList] = LinkedList
