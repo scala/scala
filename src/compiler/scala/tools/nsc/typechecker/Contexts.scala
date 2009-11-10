@@ -475,8 +475,9 @@ trait Contexts { self: Analyzer =>
         case ImportSelector(from, _, to, _) :: sels1 =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
-            val sym = imp.importedSymbol(to)
-            if (sym.hasFlag(IMPLICIT)) impls = new ImplicitInfo(to, pre, sym) :: impls
+            for (sym <- imp.importedSymbol(to).alternatives)
+              if (sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
+                impls = new ImplicitInfo(to, pre, sym) :: impls
           }
           impls
       }
