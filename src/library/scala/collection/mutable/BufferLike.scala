@@ -34,7 +34,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
                    with Subtractable[A, This]
                    with Cloneable[This]
                    with SeqLike[A, This]
-{ self =>
+{ self : This =>
 
   import scala.collection.{Iterable, Traversable}
 
@@ -126,7 +126,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def ++=:(iter: Traversable[A]): This = { for (x <- iter) x +=: this; repr }
+  def ++=:(iter: Traversable[A]): This = { insertAll(0, iter); this }
 
   @deprecated("use ++=: instead")
   final def ++:(iter: Traversable[A]): This = ++=:(iter)
@@ -137,7 +137,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param iter   the iterator
    *  @return       the updated buffer.
    */
-  def ++=:(iter: Iterator[A]): This = { for (x <- iter) x +=: this; repr }
+  def ++=:(iter: Iterator[A]): This = { insertAll(0, iter.toSeq); this }
 
   @deprecated("use ++=: instead")
   final def ++:(iter: Iterator[A]): This = ++=:(iter)
