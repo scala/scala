@@ -129,17 +129,17 @@ object ShowPickled extends Names {
         case LITERALboolean =>
           out.print(if (buf.readLong(len) == 0L) " false" else " true")
         case LITERALbyte    =>
-          out.print(" " + buf.readLong(len).asInstanceOf[Byte])
+          out.print(" " + buf.readLong(len).toByte)
         case LITERALshort   =>
-          out.print(" " + buf.readLong(len).asInstanceOf[Short])
+          out.print(" " + buf.readLong(len).toShort)
         case LITERALchar    =>
-          out.print(" " + buf.readLong(len).asInstanceOf[Char])
+          out.print(" " + buf.readLong(len).toChar)
         case LITERALint     =>
-          out.print(" " + buf.readLong(len).asInstanceOf[Int])
+          out.print(" " + buf.readLong(len).toInt)
         case LITERALlong    =>
           out.print(" " + buf.readLong(len))
         case LITERALfloat   =>
-          out.print(" " + intBitsToFloat(buf.readLong(len).asInstanceOf[Int]))
+          out.print(" " + intBitsToFloat(buf.readLong(len).toInt))
         case LITERALdouble  =>
           out.print(" " + longBitsToDouble(buf.readLong(len)))
         case LITERALstring  =>

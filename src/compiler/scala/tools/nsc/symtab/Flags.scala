@@ -287,7 +287,7 @@ object Flags {
     else if (flag == TRANS_FLAG  ) "<trans-flag>"
     else if (flag == LOCKED      ) "<locked>"
     else if (flag == LAZY        ) "lazy"
-    else flag.asInstanceOf[Int] match {
+    else flag.toInt match {
       case IMPLICIT      => "implicit"
       case FINAL         => "final"
       case PRIVATE       => "private"

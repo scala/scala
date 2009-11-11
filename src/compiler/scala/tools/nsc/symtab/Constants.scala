@@ -85,77 +85,77 @@ trait Constants {
 
     def byteValue: Byte = tag match {
       case ByteTag   => value.asInstanceOf[Byte]
-      case ShortTag  => value.asInstanceOf[Short].asInstanceOf[Byte]
-      case CharTag   => value.asInstanceOf[Char].asInstanceOf[Byte]
-      case IntTag    => value.asInstanceOf[Int].asInstanceOf[Byte]
-      case LongTag   => value.asInstanceOf[Long].asInstanceOf[Byte]
-      case FloatTag  => value.asInstanceOf[Float].asInstanceOf[Byte]
-      case DoubleTag => value.asInstanceOf[Double].asInstanceOf[Byte]
+      case ShortTag  => value.asInstanceOf[Short].toByte
+      case CharTag   => value.asInstanceOf[Char].toByte
+      case IntTag    => value.asInstanceOf[Int].toByte
+      case LongTag   => value.asInstanceOf[Long].toByte
+      case FloatTag  => value.asInstanceOf[Float].toByte
+      case DoubleTag => value.asInstanceOf[Double].toByte
       case _         => throw new Error("value " + value + " is not a Byte")
     }
 
     def shortValue: Short = tag match {
-      case ByteTag   => value.asInstanceOf[Byte].asInstanceOf[Short]
+      case ByteTag   => value.asInstanceOf[Byte].toShort
       case ShortTag  => value.asInstanceOf[Short]
-      case CharTag   => value.asInstanceOf[Char].asInstanceOf[Short]
-      case IntTag    => value.asInstanceOf[Int].asInstanceOf[Short]
-      case LongTag   => value.asInstanceOf[Long].asInstanceOf[Short]
-      case FloatTag  => value.asInstanceOf[Float].asInstanceOf[Short]
-      case DoubleTag => value.asInstanceOf[Double].asInstanceOf[Short]
+      case CharTag   => value.asInstanceOf[Char].toShort
+      case IntTag    => value.asInstanceOf[Int].toShort
+      case LongTag   => value.asInstanceOf[Long].toShort
+      case FloatTag  => value.asInstanceOf[Float].toShort
+      case DoubleTag => value.asInstanceOf[Double].toShort
       case _         => throw new Error("value " + value + " is not a Short")
     }
 
     def charValue: Char = tag match {
-      case ByteTag   => value.asInstanceOf[Byte].asInstanceOf[Char]
-      case ShortTag  => value.asInstanceOf[Short].asInstanceOf[Char]
+      case ByteTag   => value.asInstanceOf[Byte].toChar
+      case ShortTag  => value.asInstanceOf[Short].toChar
       case CharTag   => value.asInstanceOf[Char]
-      case IntTag    => value.asInstanceOf[Int].asInstanceOf[Char]
-      case LongTag   => value.asInstanceOf[Long].asInstanceOf[Char]
-      case FloatTag  => value.asInstanceOf[Float].asInstanceOf[Char]
-      case DoubleTag => value.asInstanceOf[Double].asInstanceOf[Char]
+      case IntTag    => value.asInstanceOf[Int].toChar
+      case LongTag   => value.asInstanceOf[Long].toChar
+      case FloatTag  => value.asInstanceOf[Float].toChar
+      case DoubleTag => value.asInstanceOf[Double].toChar
       case _         => throw new Error("value " + value + " is not a Char")
     }
 
     def intValue: Int = tag match {
-      case ByteTag   => value.asInstanceOf[Byte].asInstanceOf[Int]
-      case ShortTag  => value.asInstanceOf[Short].asInstanceOf[Int]
-      case CharTag   => value.asInstanceOf[Char].asInstanceOf[Int]
+      case ByteTag   => value.asInstanceOf[Byte].toInt
+      case ShortTag  => value.asInstanceOf[Short].toInt
+      case CharTag   => value.asInstanceOf[Char].toInt
       case IntTag    => value.asInstanceOf[Int]
-      case LongTag   => value.asInstanceOf[Long].asInstanceOf[Int]
-      case FloatTag  => value.asInstanceOf[Float].asInstanceOf[Int]
-      case DoubleTag => value.asInstanceOf[Double].asInstanceOf[Int]
+      case LongTag   => value.asInstanceOf[Long].toInt
+      case FloatTag  => value.asInstanceOf[Float].toInt
+      case DoubleTag => value.asInstanceOf[Double].toInt
       case _         => throw new Error("value " + value + " is not an Int")
     }
 
     def longValue: Long = tag match {
-      case ByteTag   => value.asInstanceOf[Byte].asInstanceOf[Long]
-      case ShortTag  => value.asInstanceOf[Short].asInstanceOf[Long]
-      case CharTag   => value.asInstanceOf[Char].asInstanceOf[Long]
-      case IntTag    => value.asInstanceOf[Int].asInstanceOf[Long]
+      case ByteTag   => value.asInstanceOf[Byte].toLong
+      case ShortTag  => value.asInstanceOf[Short].toLong
+      case CharTag   => value.asInstanceOf[Char].toLong
+      case IntTag    => value.asInstanceOf[Int].toLong
       case LongTag   => value.asInstanceOf[Long]
-      case FloatTag  => value.asInstanceOf[Float].asInstanceOf[Long]
-      case DoubleTag => value.asInstanceOf[Double].asInstanceOf[Long]
+      case FloatTag  => value.asInstanceOf[Float].toLong
+      case DoubleTag => value.asInstanceOf[Double].toLong
       case _         => throw new Error("value " + value + " is not a Long")
     }
 
     def floatValue: Float = tag match {
-      case ByteTag   => value.asInstanceOf[Byte].asInstanceOf[Float]
-      case ShortTag  => value.asInstanceOf[Short].asInstanceOf[Float]
-      case CharTag   => value.asInstanceOf[Char].asInstanceOf[Float]
-      case IntTag    => value.asInstanceOf[Int].asInstanceOf[Float]
-      case LongTag   => value.asInstanceOf[Long].asInstanceOf[Float]
+      case ByteTag   => value.asInstanceOf[Byte].toFloat
+      case ShortTag  => value.asInstanceOf[Short].toFloat
+      case CharTag   => value.asInstanceOf[Char].toFloat
+      case IntTag    => value.asInstanceOf[Int].toFloat
+      case LongTag   => value.asInstanceOf[Long].toFloat
       case FloatTag  => value.asInstanceOf[Float]
-      case DoubleTag => value.asInstanceOf[Double].asInstanceOf[Float]
+      case DoubleTag => value.asInstanceOf[Double].toFloat
       case _         => throw new Error("value " + value + " is not a Float")
     }
 
     def doubleValue: Double = tag match {
-      case ByteTag   => value.asInstanceOf[Byte].asInstanceOf[Double]
-      case ShortTag  => value.asInstanceOf[Short].asInstanceOf[Double]
-      case CharTag   => value.asInstanceOf[Char].asInstanceOf[Double]
-      case IntTag    => value.asInstanceOf[Int].asInstanceOf[Double]
-      case LongTag   => value.asInstanceOf[Long].asInstanceOf[Double]
-      case FloatTag  => value.asInstanceOf[Float].asInstanceOf[Double]
+      case ByteTag   => value.asInstanceOf[Byte].toDouble
+      case ShortTag  => value.asInstanceOf[Short].toDouble
+      case CharTag   => value.asInstanceOf[Char].toDouble
+      case IntTag    => value.asInstanceOf[Int].toDouble
+      case LongTag   => value.asInstanceOf[Long].toDouble
+      case FloatTag  => value.asInstanceOf[Float].toDouble
       case DoubleTag => value.asInstanceOf[Double]
       case _         => throw new Error("value " + value + " is not a Double")
     }

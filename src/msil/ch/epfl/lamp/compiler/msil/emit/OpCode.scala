@@ -52,13 +52,13 @@ class OpCode extends Visitable {
     protected def length(): byte = {
 	val code = OpCode.length(CEE_code)
 	val inline = OpCode.INLINE_length(CEE_inline)
-	return if(inline < 0) { -1 } else { (code + inline).asInstanceOf[byte] }
+	return if(inline < 0) { -1 } else { (code + inline).toByte }
     }
 
     protected def popush(): byte = {
 	val pop = OpCode.POP_size(CEE_pop)
 	val push = OpCode.PUSH_size(CEE_push)
-	return if(pop < 0 || push < 0) { OpCode.POPUSH_SPECIAL } else { (push - pop).asInstanceOf[byte] }
+	return if(pop < 0 || push < 0) { OpCode.POPUSH_SPECIAL } else { (push - pop).toByte }
     }
 
     override def toString(): String = {
@@ -524,7 +524,7 @@ object OpCode {
 			pop: byte, push: byte, inline: byte, flow: byte) {
 	that.CEE_opcode = opcode
 	that.CEE_string = string
-	that.CEE_code = code.asInstanceOf[short]
+	that.CEE_code = code.toShort
 	that.CEE_pop = pop
 	that.CEE_push = push
 	that.CEE_inline = inline

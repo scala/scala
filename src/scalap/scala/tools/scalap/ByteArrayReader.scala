@@ -61,7 +61,7 @@ class ByteArrayReader(content: Array[Byte]) {
   /** read a long
    */
   def nextLong: Long =
-    (nextInt.asInstanceOf[Long] << 32) + (nextInt.asInstanceOf[Long] & 0xffffffffL)
+    (nextInt.toLong << 32) + (nextInt.toLong & 0xffffffffL)
 
   /** read a float
    */
@@ -138,7 +138,7 @@ class ByteArrayReader(content: Array[Byte]) {
   /** extract a long integer at position bp from buf
    */
   def getLong(bp: Int): Long =
-    (getInt(bp).asInstanceOf[Long] << 32) + (getInt(bp + 4).asInstanceOf[Long] & 0xffffffffL)
+    (getInt(bp).toLong << 32) + (getInt(bp + 4).toLong & 0xffffffffL)
 
   /** extract a float at position bp from buf
    */

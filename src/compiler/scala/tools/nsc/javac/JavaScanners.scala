@@ -158,7 +158,7 @@ trait JavaScanners {
         key(i) = IDENTIFIER
       for (j <- 0 until tokenCount)
         if (tokenName(j) ne null)
-          key(tokenName(j).start) = j.asInstanceOf[Byte]
+          key(tokenName(j).start) = j.toByte
 
     }
 

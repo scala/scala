@@ -35,7 +35,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   /** Write a byte of data */
   def writeByte(b: Int) {
     if (writeIndex == bytes.length) dble()
-    bytes(writeIndex) = b.asInstanceOf[Byte]
+    bytes(writeIndex) = b.toByte
     writeIndex += 1
   }
 
@@ -43,7 +43,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
    *  All but the last digits have bit 0x80 set.
    */
   def writeNat(x: Int) =
-    writeLongNat(x.asInstanceOf[Long] & 0x00000000FFFFFFFFL)
+    writeLongNat(x.toLong & 0x00000000FFFFFFFFL)
 
   /**
    * Like writeNat, but for longs. This is not the same as
@@ -56,11 +56,11 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     def writeNatPrefix(x: Long) {
       val y = x >>> 7
       if (y != 0L) writeNatPrefix(y)
-      writeByte(((x & 0x7f) | 0x80).asInstanceOf[Int])
+      writeByte(((x & 0x7f) | 0x80).toInt)
     }
     val y = x >>> 7
     if (y != 0L) writeNatPrefix(y)
-    writeByte((x & 0x7f).asInstanceOf[Int])
+    writeByte((x & 0x7f).toInt)
   }
 
   /** Write a natural number <code>x</code> at position <code>pos</code>.
@@ -73,11 +73,11 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     def patchNatPrefix(x: Int) {
       writeByte(0)
       Array.copy(bytes, pos, bytes, pos+1, writeIndex - (pos+1))
-      bytes(pos) = ((x & 0x7f) | 0x80).asInstanceOf[Byte]
+      bytes(pos) = ((x & 0x7f) | 0x80).toByte
       val y = x >>> 7
       if (y != 0) patchNatPrefix(y)
     }
-    bytes(pos) = (x & 0x7f).asInstanceOf[Byte]
+    bytes(pos) = (x & 0x7f).toByte
     val y = x >>> 7
     if (y != 0) patchNatPrefix(y)
   }
@@ -90,7 +90,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     val y = x >> 8
     val z = x & 0xff
     if (-y != (z >> 7)) writeLong(y)
-    writeByte(z.asInstanceOf[Int])
+    writeByte(z.toInt)
   }
 
   // -- Basic input routines --------------------------------------------
@@ -105,7 +105,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
 
   /** Read a natural number in big endian format, base 128.
    *  All but the last digits have bit 0x80 set.*/
-  def readNat(): Int = readLongNat().asInstanceOf[Int]
+  def readNat(): Int = readLongNat().toInt
 
   def readLongNat(): Long = {
     var b = 0L

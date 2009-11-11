@@ -1518,15 +1518,15 @@ abstract class GenJVM extends SubComponent {
         def emitEntry(name: String, signature: String, idx: Short, start: Short, end: Short) {
           lvTab.putShort(start)
           lvTab.putShort(end)
-          lvTab.putShort(pool.addUtf8(name).asInstanceOf[Short])
-          lvTab.putShort(pool.addUtf8(signature).asInstanceOf[Short])
+          lvTab.putShort(pool.addUtf8(name).toShort)
+          lvTab.putShort(pool.addUtf8(signature).toShort)
           lvTab.putShort(idx)
         }
 
-        lvTab.putShort(entries.asInstanceOf[Short])
+        lvTab.putShort(entries.toShort)
 
         if (!jmethod.isStatic()) {
-          emitEntry("this", jclass.getType().getSignature(), 0, 0.asInstanceOf[Short], pc.asInstanceOf[Short])
+          emitEntry("this", jclass.getType().getSignature(), 0, 0.toShort, pc.toShort)
         }
 
         for (lv <- vars) {
@@ -1535,10 +1535,10 @@ abstract class GenJVM extends SubComponent {
               "<anon" + anonCounter + ">"
             } else javaName(lv.sym)
 
-            val index = indexOf(lv).asInstanceOf[Short]
+            val index = indexOf(lv).toShort
             val tpe   = javaType(lv.kind).getSignature()
             for ((start, end) <- lv.ranges) {
-              emitEntry(name, tpe, index, start.asInstanceOf[Short], (end - start).asInstanceOf[Short])
+              emitEntry(name, tpe, index, start.toShort, (end - start).toShort)
             }
         }
         val attr =

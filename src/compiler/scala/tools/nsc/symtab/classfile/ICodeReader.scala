@@ -234,7 +234,7 @@ abstract class ICodeReader extends ClassfileParser {
       /** Parse 16 bit jump target. */
       def parseJumpTarget = {
         size = size + 2
-        val offset = in.nextChar.asInstanceOf[Short]
+        val offset = in.nextChar.toShort
         val target = pc + offset
         assert(target >= 0 && target < codeLength, "Illegal jump target: " + target)
         target
