@@ -97,22 +97,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     these
   }
 
-  /** Apply a function to all the elements of the list, and return the
-   *  reversed list of results. This is equivalent to a call to <code>map</code>
-   *  followed by a call to <code>reverse</code>, but more efficient.
-   *  !!! should we deprecate this? Why have reverseMap, but not filterMap or reverseFilter, say?
-   *  @param f the function to apply to each elements.
-   *  @return  the reversed list of results.
-   */
-  def reverseMap[B](f: A => B): List[B] = {
-    @tailrec
-    def loop(l: List[A], res: List[B]): List[B] = l match {
-      case Nil => res
-      case head :: tail => loop(tail, f(head) :: res)
-    }
-    loop(this, Nil)
-  }
-
   /** Like xs map f, but returns <code>xs</code> unchanged if function
    *  <code>f</code> maps all elements to themselves (wrt ==).
    *  @note Unlike `map`, `mapConserve` is not tail-recursive.

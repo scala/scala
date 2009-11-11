@@ -259,10 +259,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** A sequence of type <code>C</code> consisting of all elements of
    *  this sequence in reverse order.
-   *  @note  the operation is implemented by building a new sequence
-   *         from <code>this(length - 1), ..., this(0)</code>
-   *  If random access is inefficient for the given sequence implementation,
-   *  this operation should be overridden.
    */
   def reverse: Repr = {
     var xs: List[A] = List()
@@ -271,6 +267,25 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     val b = newBuilder
     for (x <- xs)
       b += x
+    b.result
+  }
+
+  /** Apply a function to all the elements of the sequence, and return the
+   *  reversed sequence of results. This is equivalent to a call to <code>reverse</code>
+   *  followed by a call to <code>map</code>, but more efficient.
+   *
+   *  @param f the function to apply to each elements.
+   *  @return  the reversed seq of results.
+   */
+  def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    var xs: List[A] = List()
+    for (x <- this)
+      xs = x :: xs
+
+    val b = bf(repr)
+    for (x <- xs)
+      b += f(x)
+
     b.result
   }
 
