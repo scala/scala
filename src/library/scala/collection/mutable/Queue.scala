@@ -61,11 +61,25 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
       first0 = first0.next
       len -= 1
       res
-    } else
-      extractFirst(first0, p) match {
-        case None => None
-        case Some(cell) => Some(cell.elem)
-      }
+    } else {
+      val optElem = removeFromList(p)
+      if (optElem != None) len -= 1
+      optElem
+    }
+
+  private def removeFromList(p: A => Boolean): Option[A] = {
+    var leftlst = first0
+    var res: Option[A] = None
+    while (leftlst.next.nonEmpty && !p(leftlst.next.elem)) {
+      leftlst = leftlst.next
+    }
+    if (leftlst.next.nonEmpty) {
+      res = Some(leftlst.next.elem)
+      if (leftlst.next eq last0) last0 = leftlst
+      leftlst.next = leftlst.next.next
+    }
+    res
+  }
 
   /** Returns all elements in the queue which satisfy the
    *  given predicate, and removes those elements from the queue.
@@ -84,13 +98,22 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
         first0 = first0.next
         len -= 1
       }
-      var cell: Option[LinkedList[A]] = extractFirst(first0, p)
-      while (!cell.isEmpty) {
-        res += cell.get.elem
-        cell = extractFirst(cell.get, p)
-      }
-      res
+      if (first0.isEmpty) res
+      else removeAllFromList(p, res)
     }
+  }
+
+  private def removeAllFromList(p: A => Boolean, res: ArrayBuffer[A]): ArrayBuffer[A] = {
+    var leftlst = first0
+    while (leftlst.next.nonEmpty) {
+      if (p(leftlst.next.elem)) {
+	res += leftlst.next.elem
+	if (leftlst.next eq last0) last0 = leftlst
+	leftlst.next = leftlst.next.next
+	len -= 1
+      } else leftlst = leftlst.next
+    }
+    res
   }
 
   /** Return the proper suffix of this list which starts with the first element that satisfies `p`.
