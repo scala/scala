@@ -41,23 +41,6 @@ extends IndexedSeq[A]
     array(idx) = elem.asInstanceOf[AnyRef]
   }
 
-  /** Fills the given array <code>xs</code> with the elements of
-   *  this sequence starting at position <code>start</code>.
-   *
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   */
-  override def copyToArray[B >: A](xs: Array[B], start: Int) {
-    Array.copy(array, 0, xs, start, length)
-  }
-
-  /** Copy all elements to a buffer
-   *  @param   The buffer to which elements are copied
-  override def copyToBuffer[B >: A](dest: Buffer[B]) {
-    dest ++= (array: Seq[AnyRef]).asInstanceOf[Seq[B]]
-  }
-   */
-
   override def foreach[U](f: A =>  U) {
     var i = 0
     while (i < length) {
@@ -65,6 +48,20 @@ extends IndexedSeq[A]
       i += 1
     }
   }
+
+  /** Fills the given array <code>xs</code> with at most `len` elements of
+   *  this traversable starting at position `start`.
+   *  Copying will stop once either the end of the current traversable is reached or
+   *  `len` elements have been copied or the end of the array is reached.
+   *
+   *  @param  xs the array to fill.
+   *  @param  start starting index.
+   *  @param  len number of elements to copy
+   */
+   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+     val len1 = len min (xs.length - start) min length
+     Array.copy(array, 0, xs, start, len1)
+   }
 }
 
 object GenericArray extends SeqFactory[GenericArray] {
