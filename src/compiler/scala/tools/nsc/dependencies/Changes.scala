@@ -176,6 +176,7 @@ abstract class Changes {
 
     cs.toList
   }
+  def removeChangeSet(sym: Symbol): Change = Removed(toEntity(sym))
 
   private def toEntity(sym: Symbol): Entity =
     if (sym.isClass) Class(sym.fullNameString)
