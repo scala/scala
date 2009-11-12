@@ -14,19 +14,6 @@ import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
 
-/** Conversions which present a consistent conversion interface
- *  across all the numeric types.
- */
-trait ScalaNumericConversions extends jl.Number {
-  def toChar = intValue.toChar
-  def toByte = byteValue
-  def toShort = shortValue
-  def toInt = intValue
-  def toLong = longValue
-  def toFloat = floatValue
-  def toDouble = doubleValue
-}
-
 /**
  *  @author  Stephane Micheloud
  *  @version 1.0
@@ -164,7 +151,7 @@ object BigDecimal
 class BigDecimal(
   val bigDecimal: BigDec,
   val mc: MathContext)
-extends jl.Number with ScalaNumericConversions
+extends ScalaNumber with ScalaNumericConversions
 {
   def this(bigDecimal: BigDec) = this(bigDecimal, BigDecimal.defaultMathContext)
   import BigDecimal.RoundingMode._

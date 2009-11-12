@@ -12,6 +12,7 @@
 package scala.runtime;
 
 import java.io.*;
+import scala.math.ScalaNumber;
 
 /** An object (static class) that defines methods used for creating,
   * reverting, and calculating with, boxed values. There are four classes
@@ -145,6 +146,9 @@ public class BoxesRunTime
             Number xn = (Number)x;
             if (y instanceof Number) {
                 Number yn = (Number)y;
+                if ((y instanceof ScalaNumber) && !(x instanceof ScalaNumber)) {
+                    return y.equals(x);
+                }
                 if ((xn instanceof Double) || (yn instanceof Double))
                     return xn.doubleValue() == yn.doubleValue();
                 if ((xn instanceof Float) || (yn instanceof Float))
@@ -175,6 +179,8 @@ public class BoxesRunTime
             return x.floatValue() == ch;
         if (x instanceof Long)
             return x.longValue() == ch;
+        if (x instanceof ScalaNumber)
+            return x.equals(y);
         return x.intValue() == ch;
     }
 
