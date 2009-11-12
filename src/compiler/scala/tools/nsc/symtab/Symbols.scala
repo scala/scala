@@ -885,6 +885,48 @@ trait Symbols {
       infos ne null
     }
 
+    /** Modify term symbol's type so that a raw type C is converted to an existential C[_]
+     *
+     * This is done in checkAccessible and overriding checks in refchecks
+     * We can't do this on class loading because it would result in infinite cycles.
+     */
+    private var triedCooking: Boolean = false
+    final def cookJavaRawInfo() {
+      require(isTerm)
+      // println("cookJavaRawInfo: "+(rawname, triedCooking))
+
+      if(triedCooking) return else triedCooking = true // only try once...
+
+      def cook(sym: Symbol) {
+        require(sym hasFlag JAVA)
+        // @M: I think this is more desirable, but Martin prefers to leave raw-types as-is as much as possible
+        // object rawToExistentialInJava extends TypeMap {
+        //   def apply(tp: Type): Type = tp match {
+        //     // any symbol that occurs in a java sig, not just java symbols
+        //     // see http://lampsvn.epfl.ch/trac/scala/ticket/2454#comment:14
+        //     case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty =>
+        //       val eparams = typeParamsToExistentials(sym, sym.typeParams)
+        //       existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+        //     case _ =>
+        //       mapOver(tp)
+        //   }
+        // }
+        val tpe1 = rawToExistential(sym.tpe)
+        // println("cooking: "+ sym +": "+ sym.tpe +" to "+ tpe1)
+        if (tpe1 ne sym.tpe) {
+          sym.setInfo(tpe1)
+        }
+      }
+
+      if (hasFlag(JAVA))
+        cook(this)
+      else if (hasFlag(OVERLOADED))
+        for (sym2 <- alternatives)
+          if (sym2 hasFlag JAVA)
+            cook(sym2)
+    }
+
+
     /** The type constructor of a symbol is:
      *  For a type symbol, the type corresponding to the symbol itself,
      *  excluding parameters.

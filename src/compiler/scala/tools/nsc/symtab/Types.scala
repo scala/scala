@@ -1600,12 +1600,11 @@ A type's typeSymbol should never be inspected directly.
 
     override def typeConstructor = rawTypeRef(pre, sym, List())
 
-    //  (args.isEmpty && !typeParamsDirect.isEmpty) && !isRawType(this)
-    //  check for isRawType: otherwise raw types are considered higher-kinded types during subtyping:
-    override def isHigherKinded
-      = (args.isEmpty && !typeParamsDirect.isEmpty) && (settings.YhigherKindedRaw.value || !isRaw(sym, args))
-      // (args.isEmpty && !typeParamsDirect.isEmpty) && (phase.erasedTypes || !sym.hasFlag(JAVA))
-
+    // a reference (in a Scala program) to a type that has type parameters, but where the reference does not include type arguments
+    // note that it doesn't matter whether the symbol refers to a java or scala symbol,
+    // it does matter whether it occurs in java or scala code
+    // typerefs w/o type params that occur in java signatures/code are considered raw types, and are represented as existential types
+    override def isHigherKinded = (args.isEmpty && !typeParamsDirect.isEmpty)
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {

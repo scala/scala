@@ -370,6 +370,8 @@ abstract class RefChecks extends InfoTransform {
                   kindErrors.toList.mkString("\n", ", ", ""))
             }
           } else if (other.isTerm) {
+            other.cookJavaRawInfo() // #2454
+
             if (!overridesType(self.memberInfo(member), self.memberInfo(other))) { // 8
               overrideTypeError()
               explainTypes(self.memberInfo(member), self.memberInfo(other))

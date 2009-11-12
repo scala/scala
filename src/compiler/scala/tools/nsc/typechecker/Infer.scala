@@ -356,6 +356,8 @@ trait Infer {
           context.unit.depends += sym.toplevelClass
 
         val sym1 = sym filter (alt => context.isAccessible(alt, pre, site.isInstanceOf[Super]))
+        // Console.println("check acc " + (sym, sym1) + ":" + (sym.tpe, sym1.tpe) + " from " + pre);//DEBUG
+
         if (sym1 == NoSymbol) {
           if (settings.debug.value) {
             Console.println(context)
@@ -364,26 +366,9 @@ trait Infer {
           }
           accessError("")
         } else {
-          // Modify symbol's type so that raw types C
-          // are converted to existentials C[T] forSome { type T }.
-          // We can't do this on class loading because it would result
-          // in infinite cycles.
-          def cook(sym: Symbol) {
-            val tpe1 = rawToExistential(sym.tpe)
-            if (tpe1 ne sym.tpe) {
-              if (settings.debug.value) println("cooked: "+sym+":"+sym.tpe)
-              sym.setInfo(tpe1)
-            }
-          }
-          if (sym1.isTerm) {
-            if (sym1 hasFlag JAVA)
-              cook(sym1)
-            else if (sym1 hasFlag OVERLOADED)
-              for (sym2 <- sym1.alternatives)
-                if (sym2 hasFlag JAVA)
-                  cook(sym2)
-          }
-          //Console.println("check acc " + sym1 + ":" + sym1.tpe + " from " + pre);//DEBUG
+          if(sym1.isTerm)
+            sym1.cookJavaRawInfo() // xform java rawtypes into existentials
+
           var owntype = try{
             pre.memberType(sym1)
           } catch {
