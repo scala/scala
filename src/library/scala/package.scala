@@ -10,6 +10,21 @@
 
 
 package object scala {
+  type Throwable = java.lang.Throwable
+  type Exception = java.lang.Exception
+  type Error     = java.lang.Error
+
+  type RuntimeException                = java.lang.RuntimeException
+  type NullPointerException            = java.lang.NullPointerException
+  type ClassCastException              = java.lang.ClassCastException
+  type IndexOutOfBoundsException       = java.lang.IndexOutOfBoundsException
+  type ArrayIndexOutOfBoundsException  = java.lang.ArrayIndexOutOfBoundsException
+  type StringIndexOutOfBoundsException = java.lang.StringIndexOutOfBoundsException
+  type UnsupportedOperationException   = java.lang.UnsupportedOperationException
+  type IllegalArgumentException        = java.lang.IllegalArgumentException
+  type NoSuchElementException          = java.util.NoSuchElementException
+  type NumberFormatException           = java.lang.NumberFormatException
+  type AbstractMethodError             = java.lang.AbstractMethodError
 
   type Traversable[+A] = scala.collection.Traversable[A]
   val Traversable = scala.collection.Traversable
@@ -49,6 +64,11 @@ package object scala {
   type Range = scala.collection.immutable.Range
   val Range = scala.collection.immutable.Range
 
+  // Migrated from Predef
+
+  val $scope = scala.xml.TopScope
+  def currentThread = java.lang.Thread.currentThread()
+
   // Numeric types which were moved into scala.math.*
 
   type BigDecimal = scala.math.BigDecimal
@@ -72,6 +92,11 @@ package object scala {
 
   type PartialOrdering[T] = scala.math.PartialOrdering[T]
   type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
+
+  @deprecated("use <code>java.lang.Integer</code> instead")
+  type Integer = java.lang.Integer
+  @deprecated("use <code>java.lang.Character</code> instead")
+  type Character = java.lang.Character
 
   @deprecated("use Iterable instead") type Collection[+A] = Iterable[A]
   @deprecated("use Iterable instead") val Collection = Iterable
