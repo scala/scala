@@ -54,9 +54,5 @@ object Seq extends SeqFactory[Seq] {
 
   @deprecated("use Seq(value) instead")
   def singleton[A](value: A) = Seq(value)
-
-  /** Builds a singleton sequence. */
-  @deprecated("use <code>Seq(x)</code> instead.")
-  def single[A](x: A) = singleton(x)
 }
 

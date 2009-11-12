@@ -125,10 +125,9 @@ class Worker(val fileManager: FileManager) extends Actor {
     val classpath: List[URL] =
       outDir.toURL ::
       //List(file.getParentFile.toURL) :::
-      List(latestCompFile.toURL, latestLibFile.toURL,
-           latestActFile.toURL, latestPartestFile.toURL) :::
-      (List.fromString(CLASSPATH, File.pathSeparatorChar) map { x =>
-        (new File(x)).toURL })
+      List(latestCompFile.toURL, latestLibFile.toURL, latestActFile.toURL, latestPartestFile.toURL) :::
+      ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x).toURL))
+
     NestUI.verbose("ObjectRunner classpath: "+classpath)
 
     try {
@@ -589,7 +588,7 @@ class Worker(val fileManager: FileManager) extends Actor {
               "-d "+outDir.getCanonicalFile.getAbsolutePath+
               " -Xresident"+
               " -sourcepath "+sourcepath
-            val argList = List.fromString(argString, ' ')
+            val argList = argString split ' ' toList
 
             // configure input/output files
             val logOut    = new FileOutputStream(logFile)
@@ -610,7 +609,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
             val resCompile = (line: String) => {
               NestUI.verbose("compiling "+line)
-              val cmdArgs = List.fromString(line, ' ') map { fs => new File(dir, fs).getAbsolutePath }
+              val cmdArgs = (line split ' ').toList map (fs => new File(dir, fs).getAbsolutePath)
               NestUI.verbose("cmdArgs: "+cmdArgs)
               val sett = new Settings(error)
               sett.sourcepath.value = sourcepath

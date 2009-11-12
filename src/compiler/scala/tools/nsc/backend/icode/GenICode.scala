@@ -1410,24 +1410,32 @@ abstract class GenICode extends SubComponent  {
         * When it is statically known that both sides are equal and subtypes of Number of Character,
         * not using the rich equality is possible (their own equals method will do ok.)*/
       def mustUseAnyComparator: Boolean = {
-        def isBoxed(sym: Symbol): Boolean =
-          ((sym isNonBottomSubClass definitions.BoxedNumberClass) ||
-            (!forMSIL && (sym isNonBottomSubClass definitions.BoxedCharacterClass)))
+        import definitions._
 
-        val lsym = l.tpe.typeSymbol
-        val rsym = r.tpe.typeSymbol
-        (lsym == ObjectClass) ||
-        (rsym == ObjectClass) ||
-        (lsym != rsym) && (isBoxed(lsym) || isBoxed(rsym))
+        /** The various ways a boxed primitive might materialize at runtime. */
+        def isJavaBoxed(sym: Symbol) =
+          (sym == ObjectClass) ||
+          (sym == SerializableClass) ||
+          (sym == ComparableClass) ||
+          (sym isNonBottomSubClass BoxedNumberClass) ||
+          (sym isNonBottomSubClass BoxedCharacterClass)
+
+        def isBoxed(sym: Symbol): Boolean =
+          if (forMSIL) (sym isNonBottomSubClass BoxedNumberClass)
+          else isJavaBoxed(sym)
+
+        isBoxed(l.tpe.typeSymbol) && isBoxed(r.tpe.typeSymbol)
       }
 
       if (mustUseAnyComparator) {
-        var equalsMethod = BoxesRunTime_equals
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
-        if (settings.XO.value) {
-          equalsMethod = definitions.getMember(definitions.ScalaRunTimeModule, nme.inlinedEquals)
-          ctx.bb.emit(LOAD_MODULE(definitions.ScalaRunTimeModule))
-        }
+        val equalsMethod =
+          if (!settings.XO.value) BoxesRunTime_equals
+          else {
+            ctx.bb.emit(LOAD_MODULE(definitions.ScalaRunTimeModule))
+            definitions.getMember(definitions.ScalaRunTimeModule, nme.inlinedEquals)
+          }
+
         val ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
         val ctx2 = genLoad(r, ctx1, ANY_REF_CLASS)
         ctx2.bb.emit(CALL_METHOD(equalsMethod, if (settings.XO.value) Dynamic else Static(false)))

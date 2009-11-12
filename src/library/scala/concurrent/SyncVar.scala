@@ -63,17 +63,6 @@ class SyncVar[A] {
     notifyAll()
   }
 
-  @deprecated("Will be removed in 2.8. SyncVar should not allow exception by design.")
-  def setWithCatch(x: => A) = synchronized {
-    try {
-      this set x
-    } catch {
-      case e =>
-        this setException e
-        throw e
-    }
-  }
-
   def put(x: A) = synchronized {
     while (isDefined) wait()
     set(x)

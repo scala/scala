@@ -213,17 +213,6 @@ object Console {
    */
   def printf(text: String, args: Any*) { out.print(text format (args : _*)) }
 
-  /**
-   *  @see <a href="#printf(java.lang.String,scala.Any*)"
-   *       target="contentFrame">Console.printf</a>.
-   */
-  @deprecated("For console output, use <code>Console.printf</code>. For <code>String</code>\n"+
-              "formatting, <code>StringOps</code>'s <code>format</code> method.")
-  def format(text: String, args: Any*) {
-    if (text eq null) out.printf("null")
-    else out.print(text format (args : _*))
-  }
-
   /** Read a full line from the terminal.  Returns <code>null</code> if the end of the
    * input stream has been reached.
    *
@@ -432,28 +421,6 @@ object Console {
         case x => x
       }) :: res;
       i -= 1
-    }
-    res
-  }
-
-  private def textParams(s: Seq[Any]): Array[AnyRef] = {
-    val res = new Array[AnyRef](s.length)
-    var i: Int = 0
-    val iter = s.iterator
-    while (iter.hasNext) {
-      res(i) = iter.next match {
-        case x: Boolean => java.lang.Boolean.valueOf(x)
-        case x: Byte    => java.lang.Byte.valueOf(x)
-        case x: Short   => java.lang.Short.valueOf(x)
-        case x: Char    => java.lang.Character.valueOf(x)
-        case x: Int     => java.lang.Integer.valueOf(x)
-        case x: Long    => java.lang.Long.valueOf(x)
-        case x: Float   => java.lang.Float.valueOf(x)
-        case x: Double  => java.lang.Double.valueOf(x)
-        case x: Unit    => "()"
-        case x: AnyRef  => x
-      }
-      i += 1
     }
     res
   }

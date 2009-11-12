@@ -617,15 +617,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   @deprecated("use `lastIndexWhere' instead")
   def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
 
-  /** A sub-sequence starting at index <code>from</code>
-    *  and extending up to the length of the current sequence
-    *
-    *  @param from   The index of the first element of the slice
-    *  @throws IndexOutOfBoundsException if <code>from &lt; 0</code>
-    */
-  @deprecated("use `drop' instead")
-  def slice(from: Int): Seq[A] = toCollection(slice(from, length))
-
   @deprecated("Should be replaced by <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>")
   def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
     val i = this.iterator

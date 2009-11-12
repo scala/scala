@@ -182,7 +182,7 @@ extends scala.collection.IndexedSeq[T]
   /** the subsequence from index `start' up to the
    *  length of the current sequence.
    */
-  override def slice(start: Int) = slice(start, UndeterminedEnd)
+  def slice(start: Int): PagedSeq[T] = slice(start, UndeterminedEnd)
 
   /** Convert sequence to string */
   override def toString = {

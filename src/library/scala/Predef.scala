@@ -20,14 +20,12 @@ import collection.generic.CanBuildFrom
  *  qualification.
  */
 object Predef extends LowPriorityImplicits {
-
-  // classOf dummy ------------------------------------------------------
-
-  /** Return the runtime representation of a class type. */
+  /** Return the runtime representation of a class type.  This is a stub method.
+   *  The actual implementation is filled in by the compiler.
+   */
   def classOf[T]: Class[T] = null
 
   // aliases ------------------------------------------------------------
-
   @deprecated("lower-case type aliases will be removed") type byte    = scala.Byte
   @deprecated("lower-case type aliases will be removed") type short   = scala.Short
   @deprecated("lower-case type aliases will be removed") type char    = scala.Char
@@ -38,44 +36,18 @@ object Predef extends LowPriorityImplicits {
   @deprecated("lower-case type aliases will be removed") type boolean = scala.Boolean
   @deprecated("lower-case type aliases will be removed") type unit    = scala.Unit
 
-  @deprecated("use <code>java.lang.Integer</code> instead")
-  type Integer = java.lang.Integer
-  @deprecated("use <code>java.lang.Character</code> instead")
-  type Character = java.lang.Character
-
   type String        = java.lang.String
   type Class[T]      = java.lang.Class[T]
-  type Runnable      = java.lang.Runnable
-
-  type Throwable = java.lang.Throwable
-  type Exception = java.lang.Exception
-  type Error     = java.lang.Error
-
-  type RuntimeException                = java.lang.RuntimeException
-  type NullPointerException            = java.lang.NullPointerException
-  type ClassCastException              = java.lang.ClassCastException
-  type IndexOutOfBoundsException       = java.lang.IndexOutOfBoundsException
-  type ArrayIndexOutOfBoundsException  = java.lang.ArrayIndexOutOfBoundsException
-  type StringIndexOutOfBoundsException = java.lang.StringIndexOutOfBoundsException
-  type UnsupportedOperationException   = java.lang.UnsupportedOperationException
-  type IllegalArgumentException        = java.lang.IllegalArgumentException
-  type NoSuchElementException          = java.util.NoSuchElementException
-  type NumberFormatException           = java.lang.NumberFormatException
-  type AbstractMethodError             = java.lang.AbstractMethodError
 
   // miscelleaneous -----------------------------------------------------
-
-  private val P = scala.`package`  // to force scala package object to be seen.
-  private val L = scala.collection.immutable.List // to force Nil, :: to be seen.
-  private val S = scala.collection.mutable.StringBuilder // to force StringBuilder to be seen.
-
-  val $scope = scala.xml.TopScope
+  scala.`package`                         // to force scala package object to be seen.
+  scala.collection.immutable.List         // to force Nil, :: to be seen.
+  scala.collection.mutable.StringBuilder  // to force StringBuilder to be seen.
 
   type Function[-A, +B] = Function1[A, B]
 
   type Map[A, +B] = collection.immutable.Map[A, B]
   type Set[A] = collection.immutable.Set[A]
-
   val Map = collection.immutable.Map
   val Set = collection.immutable.Set
 
@@ -85,7 +57,6 @@ object Predef extends LowPriorityImplicits {
   def manifest[T](implicit m: Manifest[T]) = m
   def classManifest[T](implicit m: ClassManifest[T]) = m
 
-  // will soon stop being a view: subsumed by `conforms` (which is less likely to give rise to ambiguities)
   // @see `conforms` for the implicit version
   def identity[A](x: A): A = x
 
@@ -157,6 +128,14 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
+  class Ensuring[A](x: A) {
+    def ensuring(cond: Boolean): A = { assert(cond); x }
+    def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
+    def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
+    def ensuring(cond: A => Boolean, msg: Any): A = { assert(cond(x), msg); x }
+  }
+  implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
+
   // tupling ------------------------------------------------------------
 
   type Pair[+A, +B] = Tuple2[A, B]
@@ -170,14 +149,6 @@ object Predef extends LowPriorityImplicits {
     def apply[A, B, C](x: A, y: B, z: C) = Tuple3(x, y, z)
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
-
-  class Ensuring[A](x: A) {
-    def ensuring(cond: Boolean): A = { assert(cond); x }
-    def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
-    def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
-    def ensuring(cond: A => Boolean, msg: Any): A = { assert(cond(x), msg); x }
-  }
-  implicit def any2Ensuring[A](x: A): Ensuring[A] = new Ensuring(x)
 
   class ArrowAssoc[A](x: A) {
     def -> [B](y: B): Tuple2[A, B] = Tuple2(x, y)
@@ -227,19 +198,9 @@ object Predef extends LowPriorityImplicits {
   implicit def longWrapper(x: Long)     = new runtime.RichLong(x)
   implicit def floatWrapper(x: Float)   = new runtime.RichFloat(x)
   implicit def doubleWrapper(x: Double) = new runtime.RichDouble(x)
-
   implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
 
-  implicit def augmentString(x: String): StringOps = new StringOps(x)
-  implicit def unaugmentString(x: StringOps): String = x.repr
-
-  implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] =
-    new CanBuildFrom[String, Char, String] {
-      def apply(from: String) = new scala.collection.mutable.StringBuilder
-      def apply() = new scala.collection.mutable.StringBuilder
-    }
-
-  implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
+  implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
   implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs: AnyRef) match { // !!! drop the AnyRef and get unreachable code errors!
     case x: Array[AnyRef] => refArrayOps[AnyRef](x).asInstanceOf[ArrayOps[T]]
@@ -266,7 +227,7 @@ object Predef extends LowPriorityImplicits {
   implicit def booleanArrayOps(xs: Array[Boolean]): ArrayOps[Boolean] = new ArrayOps.ofBoolean(xs)
   implicit def unitArrayOps(xs: Array[Unit]): ArrayOps[Unit] = new ArrayOps.ofUnit(xs)
 
-  implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
+  // Primitive Widenings --------------------------------------------------------------
 
   implicit def byte2short(x: Byte): Short = x.toShort
   implicit def byte2int(x: Byte): Int = x.toInt
@@ -293,6 +254,8 @@ object Predef extends LowPriorityImplicits {
 
   implicit def float2double(x: Float): Double = x.toDouble
 
+  // "Autoboxing" --------------------------------------------------------------
+
   implicit def byte2Byte(x: Byte)           = java.lang.Byte.valueOf(x)
   implicit def short2Short(x: Short)        = java.lang.Short.valueOf(x)
   implicit def char2Character(x: Char)      = java.lang.Character.valueOf(x)
@@ -302,10 +265,17 @@ object Predef extends LowPriorityImplicits {
   implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
   implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
 
-  /** any array projection can be automatically converted into an array */
-  //implicit def forceArrayProjection[A](x: Array.Projection[A]): Array[A] = x.force !!! re-enable?
+  // Strings and CharSequences --------------------------------------------------------------
 
-  //implicit def lazyStreamToConsable[A](xs: => Stream[A]) = new runtime.StreamCons(xs)
+  implicit def any2stringadd(x: Any) = new runtime.StringAdd(x)
+  implicit def augmentString(x: String): StringOps = new StringOps(x)
+  implicit def unaugmentString(x: StringOps): String = x.repr
+
+  implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] =
+    new CanBuildFrom[String, Char, String] {
+      def apply(from: String) = new scala.collection.mutable.StringBuilder
+      def apply() = new scala.collection.mutable.StringBuilder
+    }
 
   implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new CharSequence {
     def length: Int = xs.length
@@ -320,6 +290,8 @@ object Predef extends LowPriorityImplicits {
     def subSequence(start: Int, end: Int): CharSequence = arrayToCharSequence(xs.slice(start, end))
     override def toString: String = xs.mkString("")
   }
+
+  // Type Constraints --------------------------------------------------------------
 
   // used, for example, in the encoding of generalized constraints
   // we need a new type constructor `<:<` and evidence `conforms`, as
