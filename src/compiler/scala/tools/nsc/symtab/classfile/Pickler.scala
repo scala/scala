@@ -190,7 +190,9 @@ abstract class Pickler extends SubComponent {
         case MethodType(params, restpe) =>
           putType(restpe); putSymbols(params)
         case PolyType(tparams, restpe) =>
-          tparams foreach (locals +=)
+          tparams foreach { tparam =>
+            if (!isLocal(tparam)) locals += tparam
+          }
           putType(restpe); putSymbols(tparams)
         case ExistentialType(tparams, restpe) =>
 //          val savedBoundSyms = boundSyms
