@@ -12,7 +12,6 @@
 package scala.math
 
 import java.math.BigInteger
-import java.{ lang => jl }
 
 /**
  *  @author  Martin Odersky
@@ -110,7 +109,7 @@ object BigInt {
  *  @version 1.0, 15/07/2003
  */
 @serializable
-class BigInt(val bigInteger: BigInteger) extends jl.Number with ScalaNumericConversions
+class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericConversions
 {
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int = this.bigInteger.hashCode()
