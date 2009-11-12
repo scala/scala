@@ -10,8 +10,10 @@ package classfile
 
 import java.lang.{Float, Double}
 import scala.tools.nsc.util.{Position, NoPosition, ShowPickled}
+import scala.collection.mutable.Set
 import Flags._
 import PickleFormat._
+
 
 /**
  * Serialize a top-level module and/or class.
@@ -65,6 +67,8 @@ abstract class Pickler extends SubComponent {
     private var ep = 0
     private val index = new LinkedHashMap[AnyRef, Int]
 
+    private var locals: Set[Symbol] = Set()
+
 //    private var boundSyms: List[Symbol] = Nil
 
     /** Returns usually symbol's owner, but picks classfile root instead
@@ -84,7 +88,8 @@ abstract class Pickler extends SubComponent {
       (sym.name.toTermName == rootName && sym.owner == rootOwner ||
        sym != NoSymbol && isLocal(sym.owner) ||
        sym.isRefinementClass ||
-       sym.isAbstractType && sym.hasFlag(EXISTENTIAL))
+       sym.isAbstractType && sym.hasFlag(EXISTENTIAL) ||
+       (locals contains sym))
 
     private def staticAnnotations(annots: List[AnnotationInfo]) =
       annots filter(ann =>
@@ -185,6 +190,7 @@ abstract class Pickler extends SubComponent {
         case MethodType(params, restpe) =>
           putType(restpe); putSymbols(params)
         case PolyType(tparams, restpe) =>
+          tparams foreach (locals +=)
           putType(restpe); putSymbols(tparams)
         case ExistentialType(tparams, restpe) =>
 //          val savedBoundSyms = boundSyms
