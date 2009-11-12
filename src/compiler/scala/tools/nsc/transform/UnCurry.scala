@@ -47,9 +47,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
 // ------ Type transformation --------------------------------------------------------
 
-//@MAT: uncurry and uncurryType fully expand type aliases in their input and output
-// note: don't normalize higher-kined types -- @M TODO: maybe split those uses of normalize?
-// OTOH, should be a problem as calls to normalize only occur on types with kind * in principle (in well-typed programs)
+// uncurry and uncurryType expand type aliases
   private def expandAlias(tp: Type): Type = if (!tp.isHigherKinded) tp.normalize else tp
 
   private def isUnboundedGeneric(tp: Type) = tp match {
@@ -68,9 +66,9 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           tp0
         case mt: ImplicitMethodType =>
           apply(MethodType(mt.params, mt.resultType))
-        case PolyType(List(), restpe) =>
+        case PolyType(List(), restpe) => // nullary method type
           apply(MethodType(List(), restpe))
-        case PolyType(tparams, restpe) =>
+        case PolyType(tparams, restpe) => // polymorphic nullary method type, since it didn't occur in a higher-kinded position
           PolyType(tparams, apply(MethodType(List(), restpe)))
         case TypeRef(pre, ByNameParamClass, List(arg)) =>
           apply(functionType(List(), arg))
@@ -83,6 +81,29 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           expandAlias(mapOver(tp))
       }
     }
+
+//@M TODO: better fix for the gross hack that conflates polymorphic nullary method types with type functions
+// `[tpars] tref` (PolyType(tpars, tref)) could uncurry to either:
+//   - `[tpars]() tref` (PolyType(tpars, MethodType(List(), tref))
+//         a nullary method types uncurry to a method with an empty argument list
+//   - `[tpars] tref`   (PolyType(tpars, tref))
+//         a proper type function -- see mapOverArgs: can only occur in args of TypeRef (right?))
+// the issue comes up when a partial type application gets normalised to a polytype, like `[A] Function1[X, A]`
+// should not apply the uncurry transform to such a type
+// see #2594 for an example
+
+    // decide whether PolyType represents a nullary method type (only if type has kind *)
+    // for higher-kinded types, leave PolyType intact
+    override def mapOverArgs(args: List[Type], tparams: List[Symbol]): List[Type] =
+      map2Conserve(args, tparams) { (arg, tparam) =>
+        arg match {
+          // is this a higher-kinded position? (TODO: confirm this is the only case)
+          case PolyType(tparams, restpe) if tparam.typeParams.nonEmpty =>  // higher-kinded type param
+            PolyType(tparams, apply(restpe)) // could not be a nullary method type
+          case _ =>
+            this(arg)
+        }
+      }
   }
 
   private val uncurryType = new TypeMap {
