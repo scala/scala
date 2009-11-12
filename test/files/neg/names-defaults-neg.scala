@@ -5,7 +5,6 @@ object Test extends Application {
   test1(b = 2, a = "#")
 
   // mixing named and positional
-  test1(a = 1, "*")
   test1(b = "(*", 23)
 
   // assignment / names

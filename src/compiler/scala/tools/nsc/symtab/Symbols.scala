@@ -1235,7 +1235,7 @@ trait Symbols {
      */
     final def linkedClassOfModule: Symbol = {
       if (this != NoSymbol)
-        owner.rawInfo.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
+        flatOwnerInfo.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
       else NoSymbol
     }
 
@@ -1244,7 +1244,7 @@ trait Symbols {
      */
     final def linkedModuleOfClass: Symbol =
       if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass) {
-        owner.rawInfo.decl(name.toTermName).suchThat(
+        flatOwnerInfo.decl(name.toTermName).suchThat(
           sym => (sym hasFlag MODULE) && (sym isCoDefinedWith this))
       } else NoSymbol
 
@@ -1253,7 +1253,7 @@ trait Symbols {
      */
     final def linkedSym: Symbol =
       if (isTerm) linkedClassOfModule
-      else if (isClass) owner.rawInfo.decl(name.toTermName).suchThat(_ isCoDefinedWith this)
+      else if (isClass) flatOwnerInfo.decl(name.toTermName).suchThat(_ isCoDefinedWith this)
       else NoSymbol
 
     /** For a module class its linked class, for a plain class
@@ -1267,6 +1267,23 @@ trait Symbols {
      */
     final def linkedClassOfClass: Symbol =
       if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
+
+    /**
+     * Returns the rawInfo of the owner. If the current phase has flat classes, it first
+     * applies all pending type maps to this symbol.
+     *
+     * Asssume this is the ModuleSymbol for B in the follwing definition:
+     *   package p { class A { object B { val x = 1 } } }
+     *
+     * The owner after flatten is "package p" (see "def owner"). The flatten type map enters
+     * symbol B in the decls of p. So to find a linked symbol ("object B" or "class B")
+     * we need to apply flatten to B first. Fixes #2470.
+     */
+    private final def flatOwnerInfo: Type = {
+      if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass)
+        info
+      owner.rawInfo
+    }
 
     /** If this symbol is an implementation class, its interface, otherwise the symbol itself
      *  The method follows two strategies to determine the interface.

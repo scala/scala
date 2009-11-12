@@ -426,7 +426,7 @@ trait Contexts { self: Analyzer =>
           pre =:= sym.owner.thisType)
          ||
          (sym hasFlag PROTECTED) &&
-         (superAccess ||
+         (superAccess || sym.isConstructor ||
           (pre.widen.typeSymbol.isNonBottomSubClass(sym.owner) &&
            (isSubClassOfEnclosing(pre.widen.typeSymbol) || phase.erasedTypes))))
         // note: phase.erasedTypes disables last test, because after addinterfaces

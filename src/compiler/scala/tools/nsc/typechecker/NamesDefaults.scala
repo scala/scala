@@ -388,7 +388,10 @@ trait NamesDefaults { self: Analyzer =>
           }
           val res = typer.silent(_.typed(arg, subst(paramtpe))) match {
             case _: TypeError =>
-              positionalAllowed = false
+              // if the named argument is on the original parameter
+              // position, positional after named is allowed.
+              if (index != pos)
+                positionalAllowed = false
               argPos(index) = pos
               rhs
             case t: Tree =>

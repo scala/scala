@@ -66,7 +66,12 @@ trait Constants {
       case StringTag  => StringClass.tpe
       case NullTag    => NullClass.tpe
       case ClassTag   => Predef_classOfType(value.asInstanceOf[Type])
-      case EnumTag    => symbolValue.owner.linkedClassOfClass.tpe
+      case EnumTag    =>
+        // given (in java): "class A { enum E { VAL1 } }"
+        //  - symbolValue: the symbol of the actual enumeration value (VAL1)
+        //  - .owner: the ModuleClasSymbol of the enumeration (object E)
+        //  - .linkedClassOfClass: the ClassSymbol of the enumeration (class E)
+        symbolValue.owner.linkedClassOfClass.tpe
     }
 
     /** We need the equals method to take account of tags as well as values.

@@ -890,7 +890,7 @@ abstract class ClassfileParser {
 
       val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
       val innerModule = getOwner(jflags).newModule(NoPosition, name).setInfo(completer).setFlag(sflags)
-      innerClass.moduleClass.setInfo(global.loaders.moduleClassLoader)
+      innerModule.moduleClass.setInfo(global.loaders.moduleClassLoader)
 
       getScope(jflags).enter(innerClass)
       getScope(jflags).enter(innerModule)

@@ -18,12 +18,16 @@ get: [
 get: 4
 get: @
 4: @
+get: 10
+get: flu
+10: flu
 get: 8
 get: 9
 get: %
 get: 5
 5: %, 17
 12: ', 13, 16
+1: bird, swine, 10
 6: ~
 get: 7
 get: +
