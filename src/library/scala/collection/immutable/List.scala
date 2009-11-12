@@ -656,26 +656,6 @@ object List extends SeqFactory[List] {
     res
   }
 
-  /** Parses a string which contains substrings separated by a
-   *  separator character and returns a list of all substrings.
-   *
-   *  @param str       the string to parse
-   *  @param separator the separator character
-   *  @return          the list of substrings
-   */
-  @deprecated("use `str.split(separator).toList' instead")
-  def fromString(str: String, separator: Char): List[String] = {
-    var words: List[String] = Nil
-    var pos = str.length()
-    while (pos > 0) {
-      val pos1 = str.lastIndexOf(separator, pos - 1)
-      if (pos1 + 1 < pos)
-        words = str.substring(pos1 + 1, pos) :: words
-      pos = pos1
-    }
-    words
-  }
-
   /** Returns the given string as a list of characters.
    *
    *  @param str the string to convert.

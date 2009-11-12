@@ -190,13 +190,6 @@ object Iterator {
     xs.slice(start, start + length).iterator
 
   /**
-   *  @param str the given string
-   *  @return    the iterator on <code>str</code>
-   */
-  @deprecated("replaced by <code>str.iterator</code>")
-  def fromString(str: String): Iterator[Char] = str.iterator
-
-  /**
    *  @param n the product arity
    *  @return  the iterator on <code>Product&lt;n&gt;</code>.
    */

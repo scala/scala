@@ -38,11 +38,6 @@ object Predef extends LowPriorityImplicits {
   @deprecated("lower-case type aliases will be removed") type boolean = scala.Boolean
   @deprecated("lower-case type aliases will be removed") type unit    = scala.Unit
 
-  @deprecated("use <code>java.lang.Integer</code> instead")
-  type Integer = java.lang.Integer
-  @deprecated("use <code>java.lang.Character</code> instead")
-  type Character = java.lang.Character
-
   type String        = java.lang.String
   type Class[T]      = java.lang.Class[T]
   type Runnable      = java.lang.Runnable
