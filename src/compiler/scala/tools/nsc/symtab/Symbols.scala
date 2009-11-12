@@ -284,7 +284,7 @@ trait Symbols {
       newSyntheticValueParams(List(argtype)).head
 
     /** Type skolems are type parameters ``seen from the inside''
-     *  Assuming a polymorpphic method m[T], its type is a PolyType which has a TypeParameter
+     *  Assuming a polymorphic method m[T], its type is a PolyType which has a TypeParameter
      *  with name `T' in its typeParams list. While type checking the parameters, result type and
      *  body of the method, there's a local copy of `T' which is a TypeSkolem.
      */
@@ -423,6 +423,7 @@ trait Symbols {
 
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE)
+    final def isClassOfModule = isModuleClass || isClass && nme.isLocalName(name)
     final def isPackageClass = isClass && hasFlag(PACKAGE)
     final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
     final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass

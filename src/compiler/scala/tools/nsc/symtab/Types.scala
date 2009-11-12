@@ -88,7 +88,7 @@ trait Types {
   /** Decrement depth unless it is a don't care */
   private final def decr(depth: Int) = if (depth == AnyDepth) AnyDepth else depth - 1
 
-  private final val printLubs = false //@MDEBUG
+  private final val printLubs = false
 
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix
@@ -1962,13 +1962,12 @@ A type's typeSymbol should never be inspected directly.
     def withTypeVars(op: Type => Boolean): Boolean = withTypeVars(op, AnyDepth)
 
     def withTypeVars(op: Type => Boolean, depth: Int): Boolean = {
-      val tvars = quantified map (tparam => TypeVar(tparam.tpe, new TypeConstraint)) // @M TODO
-//@M should probably change to handle HK type infer properly:
-//    val tvars = quantified map (tparam => TypeVar(tparam))
-      val underlying1 = underlying.instantiateTypeParams(quantified, tvars)
+      val quantifiedFresh = cloneSymbols(quantified)
+      val tvars = quantifiedFresh map (tparam => TypeVar(tparam))
+      val underlying1 = underlying.instantiateTypeParams(quantified, tvars) // fuse subst quantified -> quantifiedFresh -> tvars
       op(underlying1) && {
-        solve(tvars, quantified, quantified map (x => 0), false, depth) &&
-        isWithinBounds(NoPrefix, NoSymbol, quantified, tvars map (_.constr.inst))
+        solve(tvars, quantifiedFresh, quantifiedFresh map (x => 0), false, depth) &&
+        isWithinBounds(NoPrefix, NoSymbol, quantifiedFresh, tvars map (_.constr.inst))
       }
     }
   }
@@ -2020,7 +2019,7 @@ A type's typeSymbol should never be inspected directly.
    * Not used after phase `typer'.
    * A higher-kinded type variable has type arguments (a list of Type's) and type paramers (list of Symbols)
    * A TypeVar whose list of args is non-empty can only be instantiated by a higher-kinded type that can be applied to these args
-   * NOTE:
+   * a typevar is much like a typeref, except it has special logic for type equality/subtyping
    */
   class TypeVar(val origin: Type, val constr0: TypeConstraint, override val typeArgs: List[Type], override val params: List[Symbol]) extends Type {
     // params are needed to keep track of variance (see mapOverArgs in SubstMap)
@@ -2031,7 +2030,7 @@ A type's typeSymbol should never be inspected directly.
     var constr = constr0
     def instValid = constr.instValid
 
-    /** The variable's skolemizatuon level */
+    /** The variable's skolemization level */
     val level = skolemizationLevel
 
     /**
@@ -2044,14 +2043,14 @@ A type's typeSymbol should never be inspected directly.
       if(newArgs.isEmpty) this // SubstMap relies on this (though this check is redundant when called from appliedType...)
       else TypeVar(origin, constr, newArgs, params) // @M TODO: interaction with undoLog??
         // newArgs.length may differ from args.length (could've been empty before)
-      // OBSOLETE BEHAVIOUR: imperatively update args to new args
-      // this initialises a TypeVar's arguments to the arguments of the type
       // example: when making new typevars, you start out with C[A], then you replace C by ?C, which should yield ?C[A], then A by ?A, ?C[?A]
-      // thus, we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
-      // OBSOLETE BECAUSE: can't update imperatively because TypeVars do get applied to different arguments over type (in asSeenFrom) -- see pos/tcpoly_infer_implicit_tuplewrapper.scala
-      // CONSEQUENCE: make new TypeVar's for every application of a TV to args,
-      //   inference may generate several TypeVar's for a single type parameter that must be inferred,
-      //   one of them is in the set of tvars that need to be solved, and they all share the same constr instance
+      // we need to track a TypeVar's arguments, and map over them (see TypeMap::mapOver)
+      // TypeVars get applied to different arguments over time (in asSeenFrom)
+       // -- see pos/tcpoly_infer_implicit_tuplewrapper.scala
+      // thus: make new TypeVar's for every application of a TV to args,
+      // inference may generate several TypeVar's for a single type parameter that must be inferred,
+      // only one of them is in the set of tvars that need to be solved, but
+      // they share the same TypeConstraint instance
 
 
     def setInst(tp: Type) {
@@ -2059,17 +2058,17 @@ A type's typeSymbol should never be inspected directly.
       constr.inst = tp
     }
 
-    /** Can this variable be related in a constraint to type `tp'?
-     *  This is not the case if `tp' contains type skolems whose
-     *  skolemization level is higher than the level of this variable.
-     */
-    def isRelatable(tp: Type): Boolean =
-      !tp.exists { t =>
-        t.typeSymbol match {
-          case ts: TypeSkolem => ts.level > level
-          case _ => false
-        }
-      }
+    def addLoBound(tp: Type, numBound: Boolean = false) {
+      assert(tp != this) // implies there is a cycle somewhere (?)
+      //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
+      constr.addLoBound(tp, numBound)
+    }
+
+    def addHiBound(tp: Type, numBound: Boolean = false) {
+      // assert(tp != this)
+      //println("addHiBound: "+(safeToString, debugString(tp))) //DEBUG
+      constr.addHiBound(tp, numBound)
+    }
 
     /** Called from isSubtype0 when a TypeVar is involved in a subtyping check.
      * if isLowerBound is true,
@@ -2094,8 +2093,8 @@ A type's typeSymbol should never be inspected directly.
           else             tp2 <:< tp1
 
       def addBound(tp: Type) = {
-        if (isLowerBound) constr.addLoBound(tp, numBound)
-        else constr.addHiBound(tp, numBound)
+        if (isLowerBound) addLoBound(tp, numBound)
+        else addHiBound(tp, numBound)
         // println("addedBound: "+(this, tp)) // @MDEBUG
       }
 
@@ -2136,6 +2135,18 @@ A type's typeSymbol should never be inspected directly.
         } else false
       }
     }
+
+    /** Can this variable be related in a constraint to type `tp'?
+     *  This is not the case if `tp' contains type skolems whose
+     *  skolemization level is higher than the level of this variable.
+     */
+    def isRelatable(tp: Type): Boolean =
+      !tp.exists { t =>
+        t.typeSymbol match {
+          case ts: TypeSkolem => ts.level > level
+          case _ => false
+        }
+      }
 
     override val isHigherKinded = typeArgs.isEmpty && !params.isEmpty
 
@@ -4292,14 +4303,13 @@ A type's typeSymbol should never be inspected directly.
         val up = if (variance != CONTRAVARIANT) upper else !upper
         tvar.constr.inst = null
         val bound: Type = if (up) tparam.info.bounds.hi else tparam.info.bounds.lo
-        //Console.println("solveOne0 "+tvar+" "+config+" "+bound);//DEBUG
+        //Console.println("solveOne0(tv, tp, v, b)="+(tvar, tparam, variance, bound))
         var cyclic = bound contains tparam
         for ((tvar2, (tparam2, variance2)) <- config) {
-          // Console.println("solveOne0(tp,up,lo,hi,lo=tp,hi=tp)="+(tparam.tpe, up, tparam2.info.bounds.lo, tparam2.info.bounds.hi, (tparam2.info.bounds.lo =:= tparam.tpe), (tparam2.info.bounds.hi =:= tparam.tpe))) //DEBUG
           if (tparam2 != tparam &&
               ((bound contains tparam2) ||
-               up && (tparam2.info.bounds.lo =:= tparam.tpe) ||  //@M TODO: should probably be .tpeHK
-               !up && (tparam2.info.bounds.hi =:= tparam.tpe))) {  //@M TODO: should probably be .tpeHK
+               up && (tparam2.info.bounds.lo =:= tparam.tpe) ||
+               !up && (tparam2.info.bounds.hi =:= tparam.tpe))) {
             if (tvar2.constr.inst eq null) cyclic = true
             solveOne(tvar2, tparam2, variance2)
           }
@@ -4307,23 +4317,20 @@ A type's typeSymbol should never be inspected directly.
         if (!cyclic) {
           if (up) {
             if (bound.typeSymbol != AnyClass)
-              tvar.constr addHiBound bound.instantiateTypeParams(tparams, tvars)
+              tvar addHiBound bound.instantiateTypeParams(tparams, tvars)
             for (tparam2 <- tparams)
-              if (tparam2.info.bounds.lo =:= tparam.tpe)  //@M TODO: should probably be .tpeHK
-                tvar.constr addHiBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+              if (tparam2.info.bounds.lo =:= tparam.tpe) // declaration tp2 :> tparam implies ?tparam <: tp2
+                tvar addHiBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
           } else {
-            if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam)
-              tvar.constr addLoBound bound.instantiateTypeParams(tparams, tvars)
+            if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam) {
+              tvar addLoBound bound.instantiateTypeParams(tparams, tvars)
+            }
             for (tparam2 <- tparams)
-              if (tparam2.info.bounds.hi =:= tparam.tpe)  //@M TODO: should probably be .tpeHK
-                tvar.constr addLoBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+              if (tparam2.info.bounds.hi =:= tparam.tpe)
+                tvar addLoBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
           }
         }
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
-
-        // println("solveOne(useGlb, glb, lub): "+ (up, //@MDEBUG
-        //   if (depth != AnyDepth) glb(tvar.constr.hiBounds, depth) else glb(tvar.constr.hiBounds),
-        //   if (depth != AnyDepth) lub(tvar.constr.loBounds, depth) else lub(tvar.constr.loBounds)))
 
         tvar setInst (
           if (up) {
@@ -4331,7 +4338,8 @@ A type's typeSymbol should never be inspected directly.
           } else {
             if (depth != AnyDepth) lub(tvar.constr.loBounds, depth) else lub(tvar.constr.loBounds)
           })
-        // Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen))+" = "+tvar.constr.inst)//@MDEBUG
+
+        //Console.println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen))+" = "+tvar.constr.inst)//@MDEBUG
       }
     }
 

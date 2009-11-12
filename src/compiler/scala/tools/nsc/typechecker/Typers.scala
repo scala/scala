@@ -1007,7 +1007,7 @@ trait Typers { self: Analyzer =>
                                      // (if we allow this, we get divergence, e.g., starting at `conforms` during ant quick.bin)
                                      // note: implicit arguments are still inferred (this kind of "chaining" is allowed)
         if (qtpe.normalize.isInstanceOf[ExistentialType]) {
-          qtpe = qtpe.normalize.skolemizeExistential(context.owner, qual)
+          qtpe = qtpe.normalize.skolemizeExistential(context.owner, qual) // open the existential
           qual setType qtpe
         }
         val coercion = inferView(qual, qtpe, searchTemplate, true)
