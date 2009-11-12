@@ -140,29 +140,37 @@ public class BoxesRunTime
 
     /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
-    // That's the method we should use from now on.
+    /** Since all applicable logic has to be present in the equals method of a ScalaNumber
+     *  in any case, we dispatch to it as soon as we spot one on either side.
+     */
     public static boolean equals(Object x, Object y) {
         if (x instanceof Number) {
+            if (x instanceof ScalaNumber)
+                return x.equals(y);
+
             Number xn = (Number)x;
             if (y instanceof Number) {
-                Number yn = (Number)y;
-                if ((y instanceof ScalaNumber) && !(x instanceof ScalaNumber)) {
+                if (y instanceof ScalaNumber)
                     return y.equals(x);
-                }
+
+                Number yn = (Number)y;
                 if ((xn instanceof Double) || (yn instanceof Double))
                     return xn.doubleValue() == yn.doubleValue();
                 if ((xn instanceof Float) || (yn instanceof Float))
                     return xn.floatValue() == yn.floatValue();
                 if ((xn instanceof Long) || (yn instanceof Long))
                     return xn.longValue() == yn.longValue();
-                return xn.intValue() == yn.intValue();
+                if (typeCode(x) <= INT && typeCode(y) <= INT)
+                    return xn.intValue() == yn.intValue();
+
+                return x.equals(y);
             }
             if (y instanceof Character)
                 return equalsNumChar(xn, (Character)y);
         } else if (x instanceof Character) {
             Character xc = (Character)x;
             if (y instanceof Character)
-                return (xc.charValue() == ((Character)y).charValue());
+                return xc.equals(y);
             if (y instanceof Number)
                 return equalsNumChar((Number)y, xc);
         } else if (x == null) {
@@ -181,7 +189,10 @@ public class BoxesRunTime
             return x.longValue() == ch;
         if (x instanceof ScalaNumber)
             return x.equals(y);
-        return x.intValue() == ch;
+        if (typeCode(x) <= INT)
+            return x.intValue() == ch;
+
+        return x.equals(y);
     }
 
     /** Hashcode algorithm is driven by the requirements imposed

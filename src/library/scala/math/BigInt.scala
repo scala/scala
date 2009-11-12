@@ -24,6 +24,9 @@ object BigInt {
   private val maxCached = 1024
   private val cache = new Array[BigInt](maxCached - minCached + 1)
 
+  val MinLong = BigInt(Long.MinValue)
+  val MaxLong = BigInt(Long.MaxValue)
+
   /** Constructs a <code>BigInt</code> whose value is equal to that of the
    *  specified integer value.
    *
@@ -112,15 +115,19 @@ object BigInt {
 class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericConversions
 {
   /** Returns the hash code for this BigInt. */
-  override def hashCode(): Int = this.bigInteger.hashCode()
+  override def hashCode(): Int =
+    if (this >= BigInt.MinLong && this <= BigInt.MaxLong) unifiedPrimitiveHashcode
+    else bigInteger.hashCode
 
   /** Compares this BigInt with the specified value for equality.
    */
   override def equals(that: Any): Boolean = that match {
-    case that: BigInt               => this equals that
-    case that: BigInteger           => this equals new BigInt(that)
-    case _                          => false
+    case that: BigInt     => this equals that
+    case that: BigDecimal => that.toBigIntExact exists (this equals _)
+    case x                => unifiedPrimitiveEquals(x)
   }
+
+  override protected def isWhole = true
 
   /** Compares this BigInt with the specified BigInt for equality.
    */
