@@ -13,8 +13,10 @@ object Test extends Application {
 
   // mixing named and positional
   test1(get(4), b = get("@"))
+  test1(a = get(10), get("flu"))
   test2(get(8), v = get(9))(get("%"), l = get(5))
   test3(12, 13)("'", d = 16)
+  test3(a = 1, "swine")(c = "bird", d = 10L)
 
 
   // anonymous functions
