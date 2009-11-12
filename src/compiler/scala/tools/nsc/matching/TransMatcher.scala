@@ -13,6 +13,7 @@ import symtab.SymbolTable
 import transform.ExplicitOuter
 import java.io.{ StringWriter, PrintWriter }
 import scala.util.NameTransformer.decode
+import PartialFunction._
 
 /** Translation of pattern matching
  *
