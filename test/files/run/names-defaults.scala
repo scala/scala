@@ -265,6 +265,9 @@ object Test extends Application {
   // #2390
   case class A2390[T](x: Int) { def copy(a: Int)(b: Int = 0) = 0 }
 
+  // #2489
+  class A2489 { def foo { def bar(a: Int = 1) = a; bar(); val u = 0 } }
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))

@@ -2054,7 +2054,7 @@ trait Typers { self: Analyzer =>
         moreToAdd = initSize != scope.size
         }
         if (newStats.isEmpty) stats
-        else stats ::: newStats.toList
+        else newStats.toList ::: stats
       }
       val result = stats mapConserve (typedStat)
       if (phase.erasedTypes) result
