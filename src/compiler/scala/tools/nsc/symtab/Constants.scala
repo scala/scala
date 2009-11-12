@@ -80,7 +80,15 @@ trait Constants {
      *  @return      ...
      */
     override def equals(other: Any): Boolean = other match {
-      case that: Constant => this.tag == that.tag && this.value == that.value
+      case that: Constant =>
+        this.tag == that.tag &&
+        (this.value == that.value || isNaN(this.value) && isNaN(that.value))
+      case _ => false
+    }
+
+    def isNaN(value: Any) = value match {
+      case f: Float => f.isNaN
+      case d: Double => d.isNaN
       case _ => false
     }
 

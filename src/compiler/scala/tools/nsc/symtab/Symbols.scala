@@ -284,9 +284,9 @@ trait Symbols {
       newSyntheticValueParams(List(argtype)).head
 
     /** Type skolems are type parameters ``seen from the inside''
-     *  Given a class C[T]
-     *  Then the class has a TypeParameter with name `T' in its typeParams list
-     *  While type checking the class, there's a local copy of `T' which is a TypeSkolem
+     *  Assuming a polymorphic method m[T], its type is a PolyType which has a TypeParameter
+     *  with name `T' in its typeParams list. While type checking the parameters, result type and
+     *  body of the method, there's a local copy of `T' which is a TypeSkolem.
      */
     final def newTypeSkolem: Symbol =
       new TypeSkolem(owner, pos, name, this)
@@ -423,6 +423,7 @@ trait Symbols {
 
     final def isRefinementClass = isClass && name == nme.REFINE_CLASS_NAME.toTypeName; // no lifting for refinement classes
     final def isModuleClass = isClass && hasFlag(MODULE)
+    final def isClassOfModule = isModuleClass || isClass && nme.isLocalName(name)
     final def isPackageClass = isClass && hasFlag(PACKAGE)
     final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
     final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass
@@ -883,6 +884,48 @@ trait Symbols {
       while ((infos ne null) && phaseId(infos.validFrom) > pid) infos = infos.prev
       infos ne null
     }
+
+    /** Modify term symbol's type so that a raw type C is converted to an existential C[_]
+     *
+     * This is done in checkAccessible and overriding checks in refchecks
+     * We can't do this on class loading because it would result in infinite cycles.
+     */
+    private var triedCooking: Boolean = false
+    final def cookJavaRawInfo() {
+      require(isTerm)
+      // println("cookJavaRawInfo: "+(rawname, triedCooking))
+
+      if(triedCooking) return else triedCooking = true // only try once...
+
+      def cook(sym: Symbol) {
+        require(sym hasFlag JAVA)
+        // @M: I think this is more desirable, but Martin prefers to leave raw-types as-is as much as possible
+        // object rawToExistentialInJava extends TypeMap {
+        //   def apply(tp: Type): Type = tp match {
+        //     // any symbol that occurs in a java sig, not just java symbols
+        //     // see http://lampsvn.epfl.ch/trac/scala/ticket/2454#comment:14
+        //     case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty =>
+        //       val eparams = typeParamsToExistentials(sym, sym.typeParams)
+        //       existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+        //     case _ =>
+        //       mapOver(tp)
+        //   }
+        // }
+        val tpe1 = rawToExistential(sym.tpe)
+        // println("cooking: "+ sym +": "+ sym.tpe +" to "+ tpe1)
+        if (tpe1 ne sym.tpe) {
+          sym.setInfo(tpe1)
+        }
+      }
+
+      if (hasFlag(JAVA))
+        cook(this)
+      else if (hasFlag(OVERLOADED))
+        for (sym2 <- alternatives)
+          if (sym2 hasFlag JAVA)
+            cook(sym2)
+    }
+
 
     /** The type constructor of a symbol is:
      *  For a type symbol, the type corresponding to the symbol itself,
@@ -1813,7 +1856,19 @@ trait Symbols {
     if (util.Statistics.enabled) typeSymbolCount = typeSymbolCount + 1
   }
 
-  /** A class for type parameters viewed from inside their scopes */
+  /** A class for type parameters viewed from inside their scopes
+   *
+   *  @param origin  Can be either a tree, or a symbol, or null.
+   *  If skolem got created from newTypeSkolem (called in Namers), origin denotes
+   *  the type parameter from which the skolem was created. If it got created from
+   *  skolemizeExistential, origin is either null or a Tree. If it is a Tree, it indicates
+   *  where the skolem was introduced (this is important for knowing when to pack it
+   *  again into ab Existential). origin is `null' only in skolemizeExistentials called
+   *  from <:< or isAsSpecific, because here its value does not matter.
+   *  I elieve the following invariant holds:
+   *
+   *     origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
+   */
   class TypeSkolem(initOwner: Symbol, initPos: Position,
                    initName: Name, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
@@ -1822,11 +1877,16 @@ trait Symbols {
     val level = skolemizationLevel
 
     override def isSkolem = true
+
+    /** If typeskolem comes from a type parameter, that parameter, otherwise skolem itself */
     override def deSkolemize = origin match {
       case s: Symbol => s
       case _ => this
     }
+
+    /** If type skolem comes from an existential, the tree where it was created */
     override def unpackLocation = origin
+
     override def typeParams = info.typeParams //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
 
     override def cloneSymbolImpl(owner: Symbol): Symbol =
