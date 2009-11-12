@@ -284,9 +284,9 @@ trait Symbols {
       newSyntheticValueParams(List(argtype)).head
 
     /** Type skolems are type parameters ``seen from the inside''
-     *  Given a class C[T]
-     *  Then the class has a TypeParameter with name `T' in its typeParams list
-     *  While type checking the class, there's a local copy of `T' which is a TypeSkolem
+     *  Assuming a polymorpphic method m[T], its type is a PolyType which has a TypeParameter
+     *  with name `T' in its typeParams list. While type checking the parameters, result type and
+     *  body of the method, there's a local copy of `T' which is a TypeSkolem.
      */
     final def newTypeSkolem: Symbol =
       new TypeSkolem(owner, pos, name, this)
@@ -1813,7 +1813,19 @@ trait Symbols {
     if (util.Statistics.enabled) typeSymbolCount = typeSymbolCount + 1
   }
 
-  /** A class for type parameters viewed from inside their scopes */
+  /** A class for type parameters viewed from inside their scopes
+   *
+   *  @param origin  Can be either a tree, or a symbol, or null.
+   *  If skolem got created from newTypeSkolem (called in Namers), origin denotes
+   *  the type parameter from which the skolem was created. If it got created from
+   *  skolemizeExistential, origin is either null or a Tree. If it is a Tree, it indicates
+   *  where the skolem was introduced (this is important for knowing when to pack it
+   *  again into ab Existential). origin is `null' only in skolemizeExistentials called
+   *  from <:< or isAsSpecific, because here its value does not matter.
+   *  I elieve the following invariant holds:
+   *
+   *     origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
+   */
   class TypeSkolem(initOwner: Symbol, initPos: Position,
                    initName: Name, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
@@ -1822,11 +1834,16 @@ trait Symbols {
     val level = skolemizationLevel
 
     override def isSkolem = true
+
+    /** If typeskolem comes from a type parameter, that parameter, otherwise skolem itself */
     override def deSkolemize = origin match {
       case s: Symbol => s
       case _ => this
     }
+
+    /** If type skolem comes from an existential, the tree where it was created */
     override def unpackLocation = origin
+
     override def typeParams = info.typeParams //@M! (not deSkolemize.typeParams!!), also can't leave superclass definition: use info, not rawInfo
 
     override def cloneSymbolImpl(owner: Symbol): Symbol =

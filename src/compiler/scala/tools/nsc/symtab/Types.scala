@@ -391,7 +391,17 @@ trait Types {
      */
     def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type = this.subst(formals, actuals)
 
+    /** If this type is an existential, turn all existentially bound variables to type skolems.
+     *  @param  owner    The owner of the created type skolems
+     *  @param  origin   The tree whose type was an existential for which the skolem was created.
+     */
     def skolemizeExistential(owner: Symbol, origin: AnyRef): Type = this
+
+
+    /** A simple version of skolemizeExistential for situations where
+     *  owner or unpack location do not matter (typically used in subtype tests)
+     */
+    def skolemizeExistential: Type = skolemizeExistential(NoSymbol, null)
 
     /** Reduce to beta eta-long normal form. Expands type aliases and converts higher-kinded TypeRef's to PolyTypes. @M */
     def normalize = this // @MAT
@@ -4065,7 +4075,7 @@ A type's typeSymbol should never be inspected directly.
       case ExistentialType(_, _) =>
         try {
           skolemizationLevel += 1
-          tp1.skolemizeExistential(NoSymbol, null) <:< tp2
+          tp1.skolemizeExistential <:< tp2
         } finally {
           skolemizationLevel -= 1
         }

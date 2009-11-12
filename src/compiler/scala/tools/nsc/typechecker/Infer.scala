@@ -884,7 +884,8 @@ trait Infer {
       case OverloadedType(pre, alts) =>
         alts exists (alt => isAsSpecific(pre.memberType(alt), ftpe2))
       case et: ExistentialType =>
-        et.withTypeVars(isAsSpecific(_, ftpe2))
+        isAsSpecific(ftpe1.skolemizeExistential, ftpe2)
+        //et.withTypeVars(isAsSpecific(_, ftpe2))
       case mt: ImplicitMethodType =>
         isAsSpecific(ftpe1.resultType, ftpe2)
       case MethodType(params @ (x :: xs), _) =>
@@ -1380,8 +1381,8 @@ trait Infer {
     }
 
     def checkCheckable(pos: Position, tp: Type, kind: String) {
-      def patternWarning(tp: Type, prefix: String) = {
-        context.unit.uncheckedWarning(pos, prefix+tp+" in type"+kind+" is unchecked since it is eliminated by erasure")
+      def patternWarning(tp0: Type, prefix: String) = {
+        context.unit.uncheckedWarning(pos, prefix+tp0+" in type "+kind+tp+" is unchecked since it is eliminated by erasure")
       }
       def check(tp: Type, bound: List[Symbol]) {
         def isLocalBinding(sym: Symbol) =
@@ -1395,13 +1396,13 @@ trait Infer {
           case SingleType(pre, _) =>
             check(pre, bound)
           case TypeRef(pre, sym, args) =>
-            if (sym.isAbstractType)
+            if (sym.isAbstractType) {
               if (!isLocalBinding(sym)) patternWarning(tp, "abstract type ")
-            else if (sym.isAliasType)
+            } else if (sym.isAliasType) {
               check(tp.normalize, bound)
-            else if (sym == NothingClass || sym == NullClass || sym == AnyValClass)
+            } else if (sym == NothingClass || sym == NullClass || sym == AnyValClass) {
               error(pos, "type "+tp+" cannot be used in a type pattern or isInstanceOf test")
-            else
+            } else {
               for (arg <- args) {
                 if (sym == ArrayClass) check(arg, bound)
                 else arg match {
@@ -1411,6 +1412,7 @@ trait Infer {
                     patternWarning(arg, "non variable type-argument ")
                 }
               }
+            }
             check(pre, bound)
           case RefinedType(parents, decls) =>
             if (decls.isEmpty) for (p <- parents) check(p, bound)
@@ -1447,7 +1449,7 @@ trait Infer {
 
     def inferTypedPattern(pos: Position, pattp: Type, pt0: Type): Type = {
       val pt = widen(pt0)
-      checkCheckable(pos, pattp, " pattern")
+      checkCheckable(pos, pattp, "pattern ")
       if (!(pattp <:< pt)) {
         val tpparams = freeTypeParamsOfTerms.collect(pattp)
         if (settings.debug.value) log("free type params (1) = " + tpparams)
