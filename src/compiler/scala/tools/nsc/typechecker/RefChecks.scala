@@ -368,6 +368,9 @@ abstract class RefChecks extends InfoTransform {
                   "The kind of the right-hand side "+memberTp.normalize+" of "+member.keyString+" "+
                   member.varianceString + member.nameString+ " does not conform to its expected kind."+
                   kindErrors.toList.mkString("\n", ", ", ""))
+            } else if (member.isAbstractType) {
+              if (memberTp.isVolatile && !otherTp.bounds.hi.isVolatile)
+                overrideError("is a volatile type; cannot override a type with non-volatile upper bound")
             }
           } else if (other.isTerm) {
             other.cookJavaRawInfo() // #2454
