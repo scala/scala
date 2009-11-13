@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ -z $1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ] || [ "$1" == "-help" ] || [ "$1" == "-?" ]; then
+if [ -z $1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ] || [ "$1" = "-help" ] || [ "$1" = "-?" ]; then
   echo "Usage: `basename $0` [rev] [args]\n"
   echo "  [rev]  : either the revision number without leading 'r' (post-commit),"
   echo "           or '-loc' to create a review from current local changes (pre-commit)\n"
@@ -11,7 +11,7 @@ fi
 
 POSTREVIEW=`dirname $0`/postreview.py
 
-if [ "$1" == "-loc" ]; then
+if [ "$1" = "-loc" ]; then
   echo "creating review request from local changes..."
   REVARG=""
   LOG=""
