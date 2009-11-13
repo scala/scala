@@ -1988,16 +1988,17 @@ A type's typeSymbol should never be inspected directly.
   case class AntiPolyType(pre: Type, targs: List[Type]) extends Type {
     override def safeToString =
       pre.toString + targs.mkString("(with type arguments ", ",", ")");
-    override def memberType(sym: Symbol) = pre.memberType(sym) match {
-      case PolyType(tparams, restp) =>
-        restp.subst(tparams, targs)
-/* I don't think this is needed, as existential types close only over value types
-      case ExistentialType(tparams, qtpe) =>
-        existentialAbstraction(tparams, qtpe.memberType(sym))
-*/
-      case ErrorType =>
-        ErrorType
-    }
+    override def memberType(sym: Symbol) = appliedType(pre.memberType(sym), targs)
+//     override def memberType(sym: Symbol) = pre.memberType(sym) match {
+//       case PolyType(tparams, restp) =>
+//         restp.subst(tparams, targs)
+// /* I don't think this is needed, as existential types close only over value types
+//       case ExistentialType(tparams, qtpe) =>
+//         existentialAbstraction(tparams, qtpe.memberType(sym))
+// */
+//       case ErrorType =>
+//         ErrorType
+//     }
     override def kind = "AntiPolyType"
   }
 

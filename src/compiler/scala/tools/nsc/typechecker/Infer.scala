@@ -1736,7 +1736,7 @@ trait Infer {
           if (sym.hasFlag(OVERLOADED)) {
             val tparams = new AsSeenFromMap(pre, sym.alternatives.head.owner).mapOver(
               sym.alternatives.head.typeParams)
-            val bounds = tparams map (_.tpe)  //@M TODO: might be affected by change to tpe in Symbol
+            val bounds = tparams map (_.tpeHK) // see e.g., #1236
             val tpe =
               PolyType(tparams,
                        OverloadedType(AntiPolyType(pre, bounds), sym.alternatives))
