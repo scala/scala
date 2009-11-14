@@ -54,30 +54,7 @@ public class BoxesRunTime
     }
 
     public static Character boxToCharacter(char c) {
-        // !!! Temporarily working around the "impossible" (?) fact that
-        // c can have a negative value here.  In any revision since r17461 try:
-        //   def foo = new (Short => Char) { def apply(x: Short) = x.toChar }
-        //   foo(-100)
-        // and the -100 will get to Character, which will duly crash.
-        // The bug was masked before because the Characters were created
-        // with "new Character(c)", but now the static method uses the argument
-        // as an index into a cache array, which can't be negative.
-        //
-        // It appears to be Short-specific; I can't get anything similar
-        // out of Byte or Int.
-        Character ret;
-
-        // straightforward workarounds like bitmasking do not seem to
-        // work here; is java optimizing out "impossible" tests/ops? I
-        // don't know, but this is the safe way:
-        try {
-          ret = Character.valueOf(c);
-        }
-        catch (ArrayIndexOutOfBoundsException e) {
-          ret = new Character(c);
-        }
-
-        return ret;
+        return Character.valueOf(c);
     }
 
     public static Byte boxToByte(byte b) {

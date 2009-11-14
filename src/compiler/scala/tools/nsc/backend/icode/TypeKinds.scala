@@ -162,28 +162,36 @@ trait TypeKinds { self: ICodes =>
   case object BYTE extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE => other
+        case CHAR => INT
+        case BYTE | SHORT | INT | LONG | FLOAT | DOUBLE => other
         case REFERENCE(NothingClass) => BYTE
         case _ => abort("Uncomparable type kinds: BYTE with " + other)
       }
   }
 
+  /** Note that the max of Char/Byte and Char/Short is Int, because
+   *  neither strictly encloses the other due to unsignedness.
+   *  See ticket #2087 for a consequence.
+   */
+
   /** A 2-byte signed integer */
   case object SHORT extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case BYTE | SHORT | CHAR => SHORT
+        case CHAR => INT
+        case BYTE | SHORT => SHORT
         case REFERENCE(NothingClass) => SHORT
         case INT | LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: SHORT with " + other)
       }
   }
 
-  /** A 2-byte signed integer */
+  /** A 2-byte UNSIGNED integer */
   case object CHAR extends TypeKind {
     override def maxType(other: TypeKind): TypeKind =
       other match {
-        case BYTE | SHORT | CHAR => CHAR
+        case CHAR => CHAR
+        case BYTE | SHORT => INT
         case REFERENCE(NothingClass) => CHAR
         case INT | LONG | FLOAT | DOUBLE => other
         case _ => abort("Uncomparable type kinds: CHAR with " + other)
