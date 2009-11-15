@@ -117,59 +117,71 @@ public class BoxesRunTime
 
     /* COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON ... COMPARISON */
 
+    private static int eqTypeCode(Number a) {
+        if ((a instanceof Integer) || (a instanceof Byte)) return INT;
+        if (a instanceof Long) return LONG;
+        if (a instanceof Double) return DOUBLE;
+        if (a instanceof Short) return INT;
+        if (a instanceof Float) return FLOAT;
+        return OTHER;
+    }
+
+    public static boolean equals(Object x, Object y) {
+        if (x == y) return true;
+        if (x == null) return false;
+        return equals2(x, y);
+    }
+
     /** Since all applicable logic has to be present in the equals method of a ScalaNumber
      *  in any case, we dispatch to it as soon as we spot one on either side.
      */
-    public static boolean equals(Object x, Object y) {
+    public static boolean equals2(Object x, Object y) {
         if (x instanceof Number) {
-            if (x instanceof ScalaNumber)
-                return x.equals(y);
-
             Number xn = (Number)x;
+
             if (y instanceof Number) {
-                if (y instanceof ScalaNumber)
-                    return y.equals(x);
-
                 Number yn = (Number)y;
-                if ((xn instanceof Double) || (yn instanceof Double))
-                    return xn.doubleValue() == yn.doubleValue();
-                if ((xn instanceof Float) || (yn instanceof Float))
-                    return xn.floatValue() == yn.floatValue();
-                if ((xn instanceof Long) || (yn instanceof Long))
-                    return xn.longValue() == yn.longValue();
-                if (typeCode(x) <= INT && typeCode(y) <= INT)
+                int xcode = eqTypeCode(xn);
+                int ycode = eqTypeCode(yn);
+                switch (ycode > xcode ? ycode : xcode) {
+                case INT:
                     return xn.intValue() == yn.intValue();
-
-                return x.equals(y);
-            }
-            if (y instanceof Character)
+                case LONG:
+                    return xn.longValue() == yn.longValue();
+                case FLOAT:
+                    return xn.floatValue() == yn.floatValue();
+                case DOUBLE:
+                    return xn.doubleValue() == yn.doubleValue();
+                default:
+                    if ((yn instanceof ScalaNumber) && !(xn instanceof ScalaNumber))
+                        return y.equals(x);
+                }
+            } else if (y instanceof Character)
                 return equalsNumChar(xn, (Character)y);
         } else if (x instanceof Character) {
             Character xc = (Character)x;
             if (y instanceof Character)
-                return xc.equals(y);
+                return xc.charValue() == ((Character)y).charValue();
             if (y instanceof Number)
                 return equalsNumChar((Number)y, xc);
-        } else if (x == null) {
-            return y == null;
         }
         return x.equals(y);
     }
 
-    private static boolean equalsNumChar(Number x, Character y) {
-        char ch = y.charValue();
-        if (x instanceof Double)
-            return x.doubleValue() == ch;
-        if (x instanceof Float)
-            return x.floatValue() == ch;
-        if (x instanceof Long)
-            return x.longValue() == ch;
-        if (x instanceof ScalaNumber)
-            return x.equals(y);
-        if (typeCode(x) <= INT)
-            return x.intValue() == ch;
-
-        return x.equals(y);
+    private static boolean equalsNumChar(Number xn, Character yc) {
+        char ch = yc.charValue();
+        switch (eqTypeCode(xn)) {
+        case INT:
+            return xn.intValue() == ch;
+        case LONG:
+            return xn.longValue() == ch;
+        case FLOAT:
+            return xn.floatValue() == ch;
+        case DOUBLE:
+            return xn.doubleValue() == ch;
+        default:
+            return xn.equals(yc);
+        }
     }
 
     /** Hashcode algorithm is driven by the requirements imposed

@@ -4700,15 +4700,9 @@ A type's typeSymbol should never be inspected directly.
             else NothingClass.tpe
         }
     }
-    if (settings.debug.value) {
-      println(indent + "glb of " + ts + " at depth "+depth)//debug
-      indent = indent + "  "
-    }
+    // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
     val res = if (depth < 0) NothingClass.tpe else glb0(ts)
-    if (settings.debug.value) {
-      indent = indent.substring(0, indent.length() - 2)
-      log(indent + "glb of " + ts + " is " + res)//debug
-    }
+    // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
     if (ts exists (_.isNotNull)) res.notNull else res
   }
 
@@ -4726,7 +4720,7 @@ A type's typeSymbol should never be inspected directly.
    *  of types.
    */
   private def commonOwner(tps: List[Type]): Symbol = {
-    if (settings.debug.value) log("computing common owner of types " + tps)//debug
+    // if (settings.debug.value) log("computing common owner of types " + tps)//DEBUG
     commonOwnerMap.init
     tps foreach { tp => commonOwnerMap.apply(tp); () }
     commonOwnerMap.result
@@ -4793,7 +4787,7 @@ A type's typeSymbol should never be inspected directly.
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol) {
     assert(sym != NoSymbol)
-    if (settings.debug.value) log("add member " + sym+":"+sym.info+" to "+thistp)
+    // if (settings.debug.value) log("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
     if (!(thistp specializes sym)) {
       if (sym.isTerm)
         for (alt <- tp.nonPrivateDecl(sym.name).alternatives)

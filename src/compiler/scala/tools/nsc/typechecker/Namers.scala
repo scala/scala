@@ -615,7 +615,7 @@ trait Namers { self: Analyzer =>
           clazz.typeOfThis = selfTypeCompleter(self.tpt)
           self.symbol = clazz.thisSym.setPos(self.pos)
         } else {
-          self.tpt.tpe = NoType
+          self.tpt defineType NoType
           if (self.name != nme.WILDCARD) {
             clazz.typeOfThis = clazz.tpe
             self.symbol = clazz.thisSym
@@ -747,7 +747,7 @@ trait Namers { self: Analyzer =>
       var vparamSymss = enterValueParams(meth, vparamss)
 
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
-        tpt.tpe = context.enclClass.owner.tpe
+        tpt defineType context.enclClass.owner.tpe
         tpt setPos meth.pos.focus
       }
 
@@ -873,7 +873,7 @@ trait Namers { self: Analyzer =>
             var pfs = resultPt.paramTypes
             for (vparam <- vparams) {
               if (vparam.tpt.isEmpty) {
-                vparam.tpt.tpe = pfs.head
+                vparam.tpt defineType pfs.head
                 vparam.tpt setPos vparam.pos.focus
                 vparam.symbol setInfo pfs.head
               }
@@ -900,7 +900,7 @@ trait Namers { self: Analyzer =>
       }
       for (vparams <- vparamss; vparam <- vparams if vparam.tpt.isEmpty) {
         context.error(vparam.pos, "missing parameter type")
-        vparam.tpt.tpe = ErrorType
+        vparam.tpt defineType ErrorType
       }
 
       addDefaultGetters(meth, vparamss, tparams, overriddenSymbol)
@@ -910,7 +910,7 @@ trait Namers { self: Analyzer =>
           // replace deSkolemized symbols with skolemized ones (for resultPt computed by looking at overridden symbol, right?)
           val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
           // compute result type from rhs
-          tpt.tpe = widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
+          tpt defineType widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
           tpt setPos meth.pos.focus
           tpt.tpe
         } else typer.typedType(tpt).tpe
@@ -1148,7 +1148,7 @@ trait Namers { self: Analyzer =>
                   context.error(tpt.pos, "missing parameter type");
                   ErrorType
                 } else {
-                  tpt.tpe = widenIfNotFinal(
+                  tpt defineType widenIfNotFinal(
                     sym,
                     newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType),
                     WildcardType)
