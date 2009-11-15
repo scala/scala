@@ -66,6 +66,7 @@ import Path._
 class Path private[io] (val jfile: JFile)
 {
   val separator = JFile.separatorChar
+  val separatorStr = JFile.separator
 
   // Validation: this verifies that the type of this object and the
   // contents of the filesystem are in agreement.  All objects are
@@ -91,9 +92,20 @@ class Path private[io] (val jfile: JFile)
   def name: String = jfile.getName()
   def path: String = jfile.getPath()
   def normalize: Path = Path(jfile.getCanonicalPath())
-  // todo -
-  // def resolve(other: Path): Path
-  // def relativize(other: Path): Path
+
+  def resolve(other: Path) = if (other.isAbsolute) other else /(other)
+  def relativize(other: Path) = {
+    assert(isAbsolute == other.isAbsolute, "Paths not of same type: "+this+", "+other)
+
+    def createRelativePath(baseSegs: List[String], otherSegs: List[String]) : String = {
+      (baseSegs, otherSegs) match {
+        case (b :: bs, o :: os) if b == o => createRelativePath(bs, os)
+        case (bs, os) => ((".."+separator)*bs.length)+os.mkString(separatorStr)
+      }
+    }
+
+    Path(createRelativePath(segments, other.segments))
+  }
 
   // derived from identity
   def root: Option[Path] = roots find (this startsWith _)
