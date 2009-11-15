@@ -112,7 +112,7 @@ trait Symbols {
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      // .initialize: the type completer of the symbol parses the annotations,
+      // .initialize: the type completer o f the symbol parses the annotations,
       // see "def typeSig" in Namers
       val annots1 = initialize.rawannots map {
         case LazyAnnotationInfo(annot) => annot()
@@ -1369,8 +1369,8 @@ trait Symbols {
 
     /** The non-private member of `site' whose type and name match the type of this symbol
      */
-    final def matchingSymbol(site: Type): Symbol =
-      site.nonPrivateMember(name).filter(sym =>
+    final def matchingSymbol(site: Type, admit: Long = 0L): Symbol =
+      site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
     /** The symbol overridden by this symbol in given class `ofclazz'.

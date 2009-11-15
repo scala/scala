@@ -401,9 +401,7 @@ abstract class RefChecks extends InfoTransform {
              else clazz.toString() + " needs to be abstract") + ", since " + msg);
           clazz.setFlag(ABSTRACT)
         }
-        // Find a concrete Java method that overrides `sym' under the erasure model.
-        // Bridge symbols qualify.
-        // Used as a fall back if no overriding symbol of a Java abstract method can be found
+
         def javaErasedOverridingSym(sym: Symbol): Symbol =
           clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
             !other.isDeferred &&
@@ -413,10 +411,12 @@ abstract class RefChecks extends InfoTransform {
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
             })
 
+        def ignoreDeferred(member: Symbol) =
+          isAbstractTypeWithoutFBound(member) ||
+          ((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)
+
         for (member <- clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE))
-          if (member.isDeferred && !(clazz hasFlag ABSTRACT) &&
-              !isAbstractTypeWithoutFBound(member) &&
-              !((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)) {
+          if (member.isDeferred && !(clazz hasFlag ABSTRACT) && !ignoreDeferred(member)) {
             abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
           } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
@@ -438,8 +438,8 @@ abstract class RefChecks extends InfoTransform {
         // (3) is violated but not (2).
         def checkNoAbstractDecls(bc: Symbol) {
           for (decl <- bc.info.decls.iterator) {
-            if (decl.isDeferred && !isAbstractTypeWithoutFBound(decl)) {
-              val impl = decl.matchingSymbol(clazz.thisType)
+            if (decl.isDeferred && !ignoreDeferred(decl)) {
+              val impl = decl.matchingSymbol(clazz.thisType, admit = VBRIDGE)
               if (impl == NoSymbol || (decl.owner isSubClass impl.owner)) {
                 abstractClassError(false, "there is a deferred declaration of "+infoString(decl)+
                                    " which is not implemented in a subclass"+analyzer.varNotice(decl))
