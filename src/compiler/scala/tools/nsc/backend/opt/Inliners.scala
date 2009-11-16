@@ -290,13 +290,12 @@ abstract class Inliners extends SubComponent {
       do {
         retry = false;
         if (m.code ne null) {
-          if (settings.debug.value)
-            log("Analyzing " + m + " count " + count + " with " + m.code.blocks.length + " blocks");
+          log("Analyzing " + m + " count " + count + " with " + m.code.blocks.length + " blocks");
           tfa.init(m)
           tfa.run
           for (bb <- linearizer.linearize(m)) {
             var info = tfa.in(bb);
-            for (i <- bb.toList) {
+            for (i <- bb) {
               if (!retry) {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
@@ -308,11 +307,11 @@ abstract class Inliners extends SubComponent {
                     if (receiver != msym.owner && receiver != NoSymbol) {
                       if (settings.debug.value)
                         log("" + i + " has actual receiver: " + receiver);
-                    }
-                    if (!concreteMethod.isFinal && receiver.isFinal) {
-                      concreteMethod = lookupImpl(concreteMethod, receiver)
-                      if (settings.debug.value)
-                        log("\tlooked up method: " + concreteMethod.fullNameString)
+                      if (!concreteMethod.isFinal && receiver.isFinal) {
+                        concreteMethod = lookupImpl(concreteMethod, receiver)
+                        if (settings.debug.value)
+                          log("\tlooked up method: " + concreteMethod.fullNameString)
+                      }
                     }
 
                     if (shouldLoad(receiver, concreteMethod)) {
@@ -427,7 +426,7 @@ abstract class Inliners extends SubComponent {
           callsNonPublic = b
         case None =>
           breakable {
-            for (b <- callee.code.blocks; i <- b.toList)
+            for (b <- callee.code.blocks; i <- b)
               i match {
                 case CALL_METHOD(m, style) =>
                   if (m.hasFlag(Flags.PRIVATE) ||

@@ -105,7 +105,7 @@ abstract class ClosureElimination extends SubComponent {
         var info = cpp.in(bb)
         log("Cpp info at entry to block " + bb + ": " + info)
 
-        for (i <- bb.toList) {
+        for (i <- bb) {
           i match {
             case LOAD_LOCAL(l) if (info.bindings.isDefinedAt(LocalVar(l))) =>
               val t = info.getBinding(l)

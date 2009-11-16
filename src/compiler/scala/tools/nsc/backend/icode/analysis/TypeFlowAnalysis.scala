@@ -81,9 +81,13 @@ abstract class TypeFlowAnalysis {
     override val top    = new Elem(new VarBinding, typeStackLattice.top)
     override val bottom = new Elem(new VarBinding, typeStackLattice.bottom)
 
+//    var lubs = 0
+
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) = {
       val IState(env1, s1) = a
       val IState(env2, s2) = b
+
+//      lubs += 1
 
       val resultingLocals = new VarBinding
 
@@ -118,7 +122,7 @@ abstract class TypeFlowAnalysis {
     /** Initialize the in/out maps for the analysis of the given method. */
     def init(m: icodes.IMethod) {
       this.method = m
-
+      //typeFlowLattice.lubs = 0
       init {
         worklist += m.code.startBlock
         worklist ++= (m.exh map (_.startBlock))
@@ -168,14 +172,17 @@ abstract class TypeFlowAnalysis {
 
     def run = {
       timer.start
+//      icodes.lubs0 = 0
       forwardAnalysis(blockTransfer)
-      timer.stop
+      val t = timer.stop
       if (settings.debug.value) {
         linearizer.linearize(method).foreach(b => if (b != method.code.startBlock)
           assert(visited.contains(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
       }
-      //println("iterations: " + iterations + " for " + method.code.blocks.size)
+//      log("" + method.symbol.fullNameString + " ["  + method.code.blocks.size + " blocks] "
+//              + "\n\t" + iterations + " iterations: " + t + " ms."
+//              + "\n\tlubs: " + typeFlowLattice.lubs + " out of which " + icodes.lubs0 + " typer lubs")
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {

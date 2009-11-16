@@ -1624,7 +1624,7 @@ abstract class GenICode extends SubComponent  {
       do {
         changed = false
         n += 1
-        method.code traverse prune0
+        method.code.blocks foreach prune0
       } while (changed)
 
       if (settings.debug.value)
@@ -2061,7 +2061,7 @@ abstract class GenICode extends SubComponent  {
         }
 
         val map = substMap
-        code traverse (_.subst(map))
+        code.blocks foreach (_.subst(map))
       }
 
       /**

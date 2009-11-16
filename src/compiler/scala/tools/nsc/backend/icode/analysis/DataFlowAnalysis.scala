@@ -70,6 +70,8 @@ trait DataFlowAnalysis[L <: CompleteLattice] {
         succs foreach { p =>
           if (!worklist.contains(p))
             worklist += p;
+            if (!in.isDefinedAt(p))
+              assert(false, "Invalid successor for: " + point + " successor " + p + " does not exist")
 //          if (!p.exceptionHandlerHeader) {
 //            println("lubbing " + p.predecessors + " outs: " + p.predecessors.map(out.apply).mkString("\n", "\n", ""))
             in(p) = lattice.lub(/*in(p) :: */(p.predecessors map out.apply), p.exceptionHandlerStart)

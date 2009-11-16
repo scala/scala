@@ -71,7 +71,7 @@ abstract class Liveness {
     def genAndKill(b: BasicBlock): (Set[Local], Set[Local]) = {
       var genSet = new ListSet[Local]
       var killSet = new ListSet[Local]
-      for (i <- b.toList) i match {
+      for (i <- b) i match {
         case LOAD_LOCAL(local)  if (!killSet(local)) => genSet = genSet + local
         case STORE_LOCAL(local) if (!genSet(local))  => killSet = killSet + local
         case _ => ()

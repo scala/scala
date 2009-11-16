@@ -245,7 +245,7 @@ abstract class CopyPropagation {
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem =
-      b.toList.foldLeft(in)(interpret)
+      b.foldLeft(in)(interpret)
 
     import opcodes._
 
