@@ -16,6 +16,7 @@ if [ "$1" = "-loc" ]; then
   REVARG=""
   LOG=""
   SUMMARY="local changes"
+  REPO=""
 else
   REV=$1
   PREV=`expr $REV - 1`
@@ -29,14 +30,15 @@ else
   LOG="`svn log -c $REV`"
   if [ $? -ne 0 ]; then
     echo "could not get svn log for revision $REV"
-    exit 1
+    LOG="revision $REV"
   fi
 
   REVARG="--revision-range=$PREV:$REV"
   SUMMARY="r$REV"
+  REPO="--repository-url=https://lampsvn.epfl.ch/svn-repos/scala"
 fi
 
 
 shift # remove parameter $1 (revision)
 
-python $POSTREVIEW --server="https://chara2.epfl.ch" $REVARG --summary="$SUMMARY" --description="$LOG" -o $@
+python $POSTREVIEW --server="https://chara2.epfl.ch" $REVARG --summary="$SUMMARY" --description="$LOG" $REPO -o $@
