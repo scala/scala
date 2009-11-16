@@ -142,6 +142,7 @@ abstract class Node extends NodeSeq {
       this.prefix == that.prefix &&
       this.label == that.label &&
       this.attributes == that.attributes &&
+      this.scope == that.scope &&
       equalChildren(that)
     case _          => false
   }
@@ -157,13 +158,11 @@ abstract class Node extends NodeSeq {
   }
 
   /** <p>
-   *    Returns a hashcode. The default implementation here calls only
-   *    super.hashcode (which is the same as for objects). A more useful
-   *    implementation can be invoked by calling
-   *  <code>Utility.hashCode(pre, label, attributes.hashCode(), child)</code>.
+   *    Returns a hashcode.
    *  </p>
    */
-  override def hashCode(): Int = super.hashCode
+  override def hashCode(): Int =
+    Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child)
 
   // implementations of NodeSeq methods
 
