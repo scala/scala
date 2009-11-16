@@ -93,7 +93,7 @@ class Path private[io] (val jfile: JFile)
   def path: String = jfile.getPath()
   def normalize: Path = Path(jfile.getCanonicalPath())
 
-  def resolve(other: Path) = if (other.isAbsolute) other else /(other)
+  def resolve(other: Path) = if (other.isAbsolute || isEmpty) other else /(other)
   def relativize(other: Path) = {
     assert(isAbsolute == other.isAbsolute, "Paths not of same type: "+this+", "+other)
 
@@ -135,6 +135,7 @@ class Path private[io] (val jfile: JFile)
     val x = parent.get / name
     x.normalize != x.toAbsolute
   }
+  def isEmpty = path.length == 0
 
   // Information
   def lastModified = jfile.lastModified()
