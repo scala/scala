@@ -2339,8 +2339,10 @@ A type's typeSymbol should never be inspected directly.
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
       // having $anonfun as owner causes the pickler to break upon unpickling; see ticket #2323
-      val nonAnonOwner = (owner.ownerChain dropWhile (_.isAnonymousFunction)).headOption getOrElse NoSymbol
-      val clazz = nonAnonOwner.newRefinementClass(NoPosition)
+      // martin: I disabled this patch, replacing it with a fix in Pickler.
+      //val nonAnonOwner = (owner.ownerChain dropWhile (_.isAnonymousFunction)).headOption getOrElse NoSymbol
+      //val clazz = nonAnonOwner.newRefinementClass(NoPosition)
+      val clazz = owner.newRefinementClass(NoPosition)
       val result = refinementOfClass(clazz, parents, decls)
       clazz.setInfo(result)
       result

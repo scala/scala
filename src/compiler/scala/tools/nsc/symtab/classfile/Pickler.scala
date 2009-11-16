@@ -72,12 +72,15 @@ abstract class Pickler extends SubComponent {
 
 //    private var boundSyms: List[Symbol] = Nil
 
+    private def isRootSym(sym: Symbol) =
+      sym.name.toTermName == rootName && sym.owner == rootOwner
+
     /** Returns usually symbol's owner, but picks classfile root instead
      *  for existentially bound variables that have a non-local owner.
      *  Question: Should this be done for refinement class symbols as well?
      */
     private def localizedOwner(sym: Symbol) =
-      if (sym.isAbstractType && sym.hasFlag(EXISTENTIAL) && !isLocal(sym.owner)) root
+      if (isLocal(sym) && !isRootSym(sym) && !isLocal(sym.owner)) root
       else sym.owner
 
     /** Is root in symbol.owner*, or should it be treated as a local symbol
@@ -85,12 +88,12 @@ abstract class Pickler extends SubComponent {
      *  an existentially bound variable, or a higher-order type parameter.
      */
     private def isLocal(sym: Symbol): Boolean =
-      !sym.isPackageClass &&
-      (sym.name.toTermName == rootName && sym.owner == rootOwner ||
-       sym != NoSymbol && isLocal(sym.owner) ||
+      !sym.isPackageClass && sym != NoSymbol &&
+      (isRootSym(sym) ||
        sym.isRefinementClass ||
        sym.isAbstractType && sym.hasFlag(EXISTENTIAL) || // existential param
-       (locals contains sym)) // higher-order type param
+       (locals contains sym) || // higher-order type param
+       isLocal(sym.owner))
 
     private def staticAnnotations(annots: List[AnnotationInfo]) =
       annots filter(ann =>
