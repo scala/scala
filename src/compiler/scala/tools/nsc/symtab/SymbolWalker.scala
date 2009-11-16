@@ -20,32 +20,35 @@ trait SymbolWalker {
     def apply(pos : Position) : Symbol = map.apply(pos)
   }
   */
+  private def validSym(t: Tree) = t.symbol != NoSymbol && t.symbol != null
+  private def validSym(tp: Type) = tp != null && tp.typeSymbol != NoSymbol && tp.typeSymbol != null
+  private def notNull(tp: Type) = tp.typeSymbol != null
+  private def isNoSymbol(t: Tree) = t.symbol eq NoSymbol
+
   def walk(tree: Tree, visitor : Visitor)(fid : (util.Position) => Option[String]) : Unit = {
     val visited = new LinkedHashSet[Tree]
     def f(t : Tree) : Unit = {
       if (visited.add(t)) return
-      def fs(l : List[Tree]) : Unit = {
-        val i = l.iterator
-        while (i.hasNext) f(i.next)
-      }
-      def fss(l : List[List[Tree]]) : Unit = {
-        val i = l.iterator
-        while (i.hasNext) fs(i.next)
-      }
+
+      def fs(l: List[Tree]) = l foreach f
+      def fss(l: List[List[Tree]]) = l foreach fs
+
       if (t.isInstanceOf[StubTree]) return
-      def asTypeRef = t.tpe.asInstanceOf[TypeRef]
-      val sym = (t,t.tpe) match {
-        case (Super(_,_),SuperType(_,supertp)) if supertp.typeSymbol != NoSymbol && supertp.typeSymbol != null => supertp.typeSymbol
-        case _ if t.symbol != NoSymbol && t.symbol != null => t.symbol
-        case (t : TypeTree, tp) if tp != null && tp.typeSymbol != null && tp.typeSymbol != NoSymbol => tp.typeSymbol
-        case (t : TypeTree, tp) if tp != null && tp.resultType != null && tp.resultType.typeSymbol != null => tp.resultType.typeSymbol
-        case (t, tpe : Type) if tpe != null && (t.symbol eq NoSymbol) && t.isTerm && tpe.termSymbol != null =>
-          tpe.termSymbol
-        case (t, tpe : Type) if tpe != null && (t.symbol eq NoSymbol) && tpe.typeSymbol != null =>
-              if (t.tpe.isInstanceOf[TypeRef]) asTypeRef.sym // XXX: looks like a bug
-             else tpe.typeSymbol
-        case _ => NoSymbol
+
+      val sym = (t, t.tpe) match {
+        case (Super(_,_),SuperType(_,supertp)) if validSym(supertp) => supertp.typeSymbol
+        case _ if validSym(t)                                       => t.symbol
+        case (t: TypeTree, tp) if validSym(tp)                      => tp.typeSymbol
+        case (t: TypeTree, tp) if validSym(tp.resultType)           => tp.resultType.typeSymbol
+        case (t, tpe: Type) if isNoSymbol(t) && tpe.termSymbol != null  =>
+          if (t.isTerm) tpe.termSymbol
+          else t.tpe match {
+            case x: TypeRef => x.sym    // XXX: looks like a bug
+            case _          => tpe.typeSymbol
+          }
+        case _  => NoSymbol
       }
+
       if (sym != null && sym != NoSymbol /* && !sym.hasFlag(SYNTHETIC) */) {
         var id = fid(t.pos)
         val doAdd = if (id.isDefined) {

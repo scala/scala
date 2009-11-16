@@ -34,8 +34,8 @@ abstract class ICodeReader extends ClassfileParser {
   var method: IMethod = _                  // the current IMethod
 
   val OBJECT: TypeKind = REFERENCE(definitions.ObjectClass)
-  val nothingName = newTermName("scala.runtime.Nothing$")
-  val nullName    = newTermName("scala.runtime.Null$")
+  val nothingName = newTermName(SCALA_NOTHING)
+  val nullName    = newTermName(SCALA_NULL)
   var isScalaModule = false
 
   /** Read back bytecode for the given class symbol. It returns

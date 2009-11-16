@@ -23,6 +23,18 @@ abstract class Inliners extends SubComponent {
 
   val phaseName = "inliner"
 
+  /** Debug - for timing the inliner. */
+  private def timed[T](s: String, body: => T): T = {
+    val t1 = System.currentTimeMillis()
+    val res = body
+    val t2 = System.currentTimeMillis()
+    val ms = (t2 - t1).toInt
+    if (ms >= 2000)
+      println("%s: %d milliseconds".format(s, ms))
+
+    res
+  }
+
   /** The maximum size in basic blocks of methods considered for inlining. */
   final val MAX_INLINE_SIZE = 16
 
@@ -269,9 +281,9 @@ abstract class Inliners extends SubComponent {
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
       if (settings.debug.value)
       	log("Analyzing " + cls);
-      cls.methods.foreach { m => if (!m.symbol.isConstructor) analyzeMethod(m)
-     }}
 
+      cls.methods filterNot (_.symbol.isConstructor) foreach analyzeMethod
+    }
 
     val tfa = new analysis.MethodTFA();
     tfa.stat = settings.Ystatistics.value
@@ -281,7 +293,7 @@ abstract class Inliners extends SubComponent {
     	override def default(k: Symbol) = 0
     }
 
-    def analyzeMethod(m: IMethod): Unit = {//try {
+    def analyzeMethod(m: IMethod): Unit = {
       var retry = false
       var count = 0
       fresh.clear
@@ -371,7 +383,7 @@ abstract class Inliners extends SubComponent {
 //        e.printStackTrace();
 //        m.dump
 //        throw e
-			}
+		}
 
 
     def isMonadMethod(method: Symbol): Boolean =

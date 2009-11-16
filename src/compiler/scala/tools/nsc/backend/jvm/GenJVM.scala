@@ -822,8 +822,37 @@ abstract class GenJVM extends SubComponent {
     }
 
     var linearization: List[BasicBlock] = Nil
-
     var isModuleInitialized = false
+
+    private def genConstant(jcode: JExtendedCode, const: Constant) {
+      const.tag match {
+        case UnitTag    => ()
+        case BooleanTag => jcode.emitPUSH(const.booleanValue)
+        case ByteTag    => jcode.emitPUSH(const.byteValue)
+        case ShortTag   => jcode.emitPUSH(const.shortValue)
+        case CharTag    => jcode.emitPUSH(const.charValue)
+        case IntTag     => jcode.emitPUSH(const.intValue)
+        case LongTag    => jcode.emitPUSH(const.longValue)
+        case FloatTag   => jcode.emitPUSH(const.floatValue)
+        case DoubleTag  => jcode.emitPUSH(const.doubleValue)
+        case StringTag  => jcode.emitPUSH(const.stringValue)
+        case NullTag    => jcode.emitACONST_NULL()
+        case ClassTag   =>
+          val kind = toTypeKind(const.typeValue)
+          val toPush =
+            if (kind.isValueType) classLiteral(kind)
+            else javaType(kind).asInstanceOf[JReferenceType]
+
+          jcode emitPUSH toPush
+
+        case EnumTag   =>
+          val sym = const.symbolValue
+          jcode.emitGETSTATIC(javaName(sym.owner),
+                              javaName(sym),
+                              javaType(sym.tpe.underlying))
+        case _          => abort("Unknown constant value: " + const);
+      }
+    }
 
     /**
      *  @param m ...
@@ -835,7 +864,7 @@ abstract class GenJVM extends SubComponent {
         if (settings.debug.value)
           log("Making labels for: " + method)
 
-        HashMap(bs map (b => b -> jcode.newLabel) : _*)
+        HashMap(bs map (_ -> jcode.newLabel) : _*)
       }
 
       isModuleInitialized = false
@@ -847,12 +876,11 @@ abstract class GenJVM extends SubComponent {
 
       var nextBlock: BasicBlock = linearization.head
 
-    def genBlocks(l: List[BasicBlock]): Unit = l match {
-      case Nil => ()
-      case x :: Nil => nextBlock = null; genBlock(x)
-      case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
-    }
-
+      def genBlocks(l: List[BasicBlock]): Unit = l match {
+        case Nil => ()
+        case x :: Nil => nextBlock = null; genBlock(x)
+        case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
+      }
 
     /** Generate exception handlers for the current method. */
     def genExceptionHandlers {
@@ -867,30 +895,28 @@ abstract class GenJVM extends SubComponent {
         var start = -1
         var end = -1
 
-        linearization foreach ((b) => {
+        linearization foreach { b =>
           if (! (covered contains b) ) {
             if (start >= 0) { // we're inside a handler range
               end = labels(b).getAnchor()
-              ranges = (start, end) :: ranges
+              ranges ::= (start, end)
               start = -1
             }
           } else {
-            if (start >= 0) { // we're inside a handler range
-              end = endPC(b)
-            } else {
+            if (start < 0)  // we're not inside a handler range
               start = labels(b).getAnchor()
-              end   = endPC(b)
-            }
-            covered = covered - b
+
+            end = endPC(b)
+            covered -= b
           }
-        });
+        }
 
         /* Add the last interval. Note that since the intervals are
          * open-ended to the right, we have to give a number past the actual
          * code!
          */
         if (start >= 0) {
-          ranges = (start, jcode.getPC()) :: ranges;
+          ranges ::= (start, jcode.getPC())
         }
 
         if (!covered.isEmpty)
@@ -900,19 +926,16 @@ abstract class GenJVM extends SubComponent {
         ranges
       }
 
-      this.method.exh foreach { e =>
-        ranges(e).sort({ (p1, p2) => p1._1 < p2._1 })
-        .foreach { p =>
-          if (p._1 < p._2) {
-            if (settings.debug.value)
-              log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
-                  " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
-            jcode.addExceptionHandler(p._1, p._2,
-                                      labels(e.startBlock).getAnchor(),
-                                      if (e.cls == NoSymbol) null else javaName(e.cls))
-          } else
-            log("Empty exception range: " + p)
-        }
+      for (e <- this.method.exh ; p <- ranges(e).sortBy(_._1)) {
+        if (p._1 < p._2) {
+          if (settings.debug.value)
+            log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
+                " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+          jcode.addExceptionHandler(p._1, p._2,
+                                    labels(e.startBlock).getAnchor(),
+                                    if (e.cls == NoSymbol) null else javaName(e.cls))
+        } else
+          log("Empty exception range: " + p)
       }
     }
 
@@ -944,31 +967,7 @@ abstract class GenJVM extends SubComponent {
             jcode.emitALOAD_0()
 
           case CONSTANT(const) =>
-            const.tag match {
-              case UnitTag    => ();
-              case BooleanTag => jcode.emitPUSH(const.booleanValue)
-              case ByteTag    => jcode.emitPUSH(const.byteValue)
-              case ShortTag   => jcode.emitPUSH(const.shortValue)
-              case CharTag    => jcode.emitPUSH(const.charValue)
-              case IntTag     => jcode.emitPUSH(const.intValue)
-              case LongTag    => jcode.emitPUSH(const.longValue)
-              case FloatTag   => jcode.emitPUSH(const.floatValue)
-              case DoubleTag  => jcode.emitPUSH(const.doubleValue)
-              case StringTag  => jcode.emitPUSH(const.stringValue)
-              case NullTag    => jcode.emitACONST_NULL()
-              case ClassTag   =>
-                val kind = toTypeKind(const.typeValue);
-                if (kind.isValueType)
-                  jcode.emitPUSH(classLiteral(kind));
-                else
-                  jcode.emitPUSH(javaType(kind).asInstanceOf[JReferenceType]);
-              case EnumTag   =>
-                val sym = const.symbolValue
-                jcode.emitGETSTATIC(javaName(sym.owner),
-                                    javaName(sym),
-                                    javaType(sym.tpe.underlying))
-              case _          => abort("Unknown constant value: " + const);
-            }
+            genConstant(jcode, const)
 
           case LOAD_ARRAY_ITEM(kind) =>
             jcode.emitALOAD(javaType(kind))
@@ -1029,46 +1028,36 @@ abstract class GenJVM extends SubComponent {
             genPrimitive(primitive, instr.pos)
 
           case call @ CALL_METHOD(method, style) =>
-            val owner: String = javaName(method.owner);
-            //reference the type of the receiver instead of the method owner (if not an interface!)
+            val owner: String = javaName(method.owner)
+            // reference the type of the receiver instead of the method owner (if not an interface!)
             val dynamicOwner =
               if (needsInterfaceCall(call.hostClass)) owner
               else javaName(call.hostClass)
+            val jname = javaName(method)
+            val jtype = javaType(method).asInstanceOf[JMethodType]
 
             style match {
               case InvokeDynamic =>
-                jcode.emitINVOKEINTERFACE("java.dyn.Dynamic",
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType])
+                jcode.emitINVOKEINTERFACE("java.dyn.Dynamic", jname, jtype)
 
               case Dynamic =>
                 if (needsInterfaceCall(method.owner))
-                  jcode.emitINVOKEINTERFACE(owner,
-                                            javaName(method),
-                                            javaType(method).asInstanceOf[JMethodType])
+                  jcode.emitINVOKEINTERFACE(owner, jname, jtype)
                 else
-                  jcode.emitINVOKEVIRTUAL(dynamicOwner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
+                  jcode.emitINVOKEVIRTUAL(dynamicOwner, jname, jtype)
 
               case Static(instance) =>
-                if (instance) {
-                  jcode.emitINVOKESPECIAL(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
-                } else
-                  jcode.emitINVOKESTATIC(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
+                if (instance)
+                  jcode.emitINVOKESPECIAL(owner, jname, jtype)
+                else
+                  jcode.emitINVOKESTATIC(owner, jname, jtype)
 
               case SuperCall(_) =>
-                  jcode.emitINVOKESPECIAL(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
+                  jcode.emitINVOKESPECIAL(owner, jname, jtype)
                   // we initialize the MODULE$ field immediately after the super ctor
                   if (isStaticModule(clasz.symbol) && !isModuleInitialized &&
                       jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
-                      javaName(method) == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
+                      jname == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
                         isModuleInitialized = true;
                         jcode.emitALOAD_0();
                         jcode.emitPUTSTATIC(jclass.getName(),
