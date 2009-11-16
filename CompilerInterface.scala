@@ -36,11 +36,34 @@ class CompilerInterface
 				def newPhase(prev: Phase) = analyzer.newPhase(prev)
 				def name = phaseName
 			}
+			object apiExtractor extends
+			{
+				val global: compiler.type = compiler
+				val phaseName = API.name
+				val runsAfter = List("typer")
+				override val runsBefore = List("erasure")
+				val runsRightAfter = Some("typer")
+			}
+			with SubComponent with Compat27
+			{
+				val api = new API(global, callback)
+				def newPhase(prev: Phase) = api.newPhase(prev)
+				def name = phaseName
+			}
+			
 			override lazy val phaseDescriptors = // done this way for compatibility between 2.7 and 2.8
 			{
 				phasesSet += sbtAnalyzer
+				phasesSet += apiExtractor
 				val superd = superComputePhaseDescriptors
-				if(superd.contains(sbtAnalyzer)) superd else ( superd ++ List(sbtAnalyzer) ).toList
+				if(superd.contains(sbtAnalyzer))
+					superd
+				else
+				{
+					val typerIndex = superd.indexOf(analyzer.typerFactory)
+					assert(typerIndex >= 0)
+					superd.take(typerIndex+1) ::: apiExtractor :: superd.drop(typerIndex+1) ::: List(sbtAnalyzer)
+				}
 			}
 			private def superComputePhaseDescriptors() = // required because 2.8 makes computePhaseDescriptors private
 			{

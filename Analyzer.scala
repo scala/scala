@@ -23,7 +23,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
 	{
-		override def description = "A plugin to find all concrete instances of a given class and extract dependency information."
+		override def description = "Extracts dependency information, finds concrete instances of provided superclasses, and application entry points."
 		def name = Analyzer.name
 		def run
 		{
