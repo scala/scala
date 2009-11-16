@@ -405,11 +405,8 @@ abstract class Pickler extends SubComponent {
       }
     }
 
-    private def putTrees(trees: List[Tree]) =
-      trees.foreach(putTree _)
-
-    private def putTreess(treess: List[List[Tree]]) =
-      treess.foreach(putTrees _)
+    private def putTrees(trees: List[Tree]) = trees foreach putTree
+    private def putTreess(treess: List[List[Tree]]) = treess foreach putTrees
 
     /** only used when pickling trees, i.e. in an
      *  argument of some Annotation */
@@ -489,6 +486,10 @@ abstract class Pickler extends SubComponent {
      */
     private def writeRef(ref: AnyRef) { writeNat(index(ref)) }
     private def writeRefs(refs: List[AnyRef]) { refs foreach writeRef }
+    private def writeRefsWithLength(refs: List[AnyRef]) {
+      writeNat(refs.length)
+      writeRefs(refs)
+    }
 
     /** Write name, owner, flags, and info of a symbol.
      */
@@ -628,7 +629,7 @@ abstract class Pickler extends SubComponent {
 
         case (target: Symbol, children: List[Symbol]) =>
           writeRef(target)
-          for (c <- children) writeRef(c.asInstanceOf[Symbol])
+          writeRefs(children)
           CHILDREN
 
         case EmptyTree =>
@@ -679,13 +680,9 @@ abstract class Pickler extends SubComponent {
           writeRef(tree.symbol)
           writeRef(mods)
           writeRef(name)
-          writeNat(tparams.length)
-          writeRefs(tparams)
+          writeRefsWithLength(tparams)
           writeNat(vparamss.length)
-          for(vparams <- vparamss) {
-            writeNat(vparams.length)
-            writeRefs(vparams)
-          }
+          vparamss foreach writeRefsWithLength
           writeRef(tpt)
           writeRef(rhs)
           TREE
@@ -731,8 +728,7 @@ abstract class Pickler extends SubComponent {
           writeNat(TEMPLATEtree)
           writeRef(tree.tpe)
           writeRef(tree.symbol)
-          writeNat(parents.length)
-          writeRefs(parents)
+          writeRefsWithLength(parents)
           writeRef(self)
           writeRefs(body)
           TREE
@@ -785,7 +781,6 @@ abstract class Pickler extends SubComponent {
           writeRef(elemtpt)
           writeRefs(trees)
           TREE
-
 
         case tree@Function(vparams, body) =>
           writeNat(FUNCTIONtree)
