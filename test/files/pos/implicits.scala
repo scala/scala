@@ -1,3 +1,17 @@
+// #1435
+object t1435 {
+  implicit def a(s:String):String = error("")
+  implicit def a(i:Int):String = error("")
+  implicit def b(i:Int):String = error("")
+}
+
+class C1435 {
+  val v:String = {
+    import t1435.a
+    2
+  }
+}
+
 // #1579
 object Test1579 {
   class Column

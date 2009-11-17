@@ -957,7 +957,7 @@ self =>
      */
     def statement(location: Int): Tree = expr(location) // !!! still needed?
 
-    /** Expr       ::= (Bindings | Id | `_')  `=>' Expr
+    /** Expr       ::= (Bindings | [`implicit'] Id | `_')  `=>' Expr
      *               | Expr1
      *  ResultExpr ::= (Bindings | Id `:' CompoundType) `=>' Block
      *               | Expr1
@@ -1056,6 +1056,14 @@ self =>
       case THROW =>
         atPos(in.skipToken()) {
           Throw(expr())
+        }
+      case IMPLICIT =>
+        val start = in.skipToken()
+        val param0 = convertToParam(atPos(in.offset)(Ident(ident())))
+        val param = treeCopy.ValDef(param0, param0.mods | Flags.IMPLICIT, param0.name, param0.tpt, param0.rhs)
+        atPos(start, in.offset) {
+          accept(ARROW)
+          Function(List(param), if (location != InBlock) expr() else block())
         }
       case _ =>
         var t = postfixExpr()
