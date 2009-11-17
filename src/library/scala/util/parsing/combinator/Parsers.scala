@@ -153,9 +153,7 @@ trait Parsers {
 
     def get: Nothing = error("No result when parsing failed")
   }
-  /** An extractor so NoSuccess(msg, next) can be used in matches
-   *  Note: case class inheritance is currently sketchy and may be
-   *  deprecated, so an explicit extractor is better.
+  /** An extractor so NoSuccess(msg, next) can be used in matches.
    */
   object NoSuccess {
     def unapply[T](x: ParseResult[T]) = x match {

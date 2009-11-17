@@ -71,6 +71,9 @@ package object scala {
 
   // Numeric types which were moved into scala.math.*
 
+  @deprecated("use scala.math package instead")
+  val Math = scala.math.`package`
+
   type BigDecimal = scala.math.BigDecimal
   val BigDecimal = scala.math.BigDecimal
 

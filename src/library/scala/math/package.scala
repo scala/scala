@@ -1,22 +1,19 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
-
 package scala
 
-/** The object <code>Math</code> contains methods for performing basic numeric
+/** The package object <code>scala.math</code> contains methods for performing basic numeric
  *  operations such as the elementary exponential, logarithm, square root, and
  *  trigonometric functions.
  */
-object Math {
 
+package object math {
   /** The smallest possible value for <a href="Byte.html" target="_self">scala.Byte</a>. */
   val MIN_BYTE   = java.lang.Byte.MIN_VALUE
   /** The greatest possible value for <a href="Byte.html" target="_self">scala.Byte</a>. */
