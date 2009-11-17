@@ -109,7 +109,7 @@ class Path private[io] (val jfile: JFile)
 
   // derived from identity
   def root: Option[Path] = roots find (this startsWith _)
-  def segments: List[String] = (path split separator).toList filterNot (_.isEmpty)
+  def segments: List[String] = (path split separator).toList filterNot (_.length == 0)
   def parent: Option[Path] = Option(jfile.getParent()) map Path.apply
   def parents: List[Path] = parent match {
     case None     => Nil
