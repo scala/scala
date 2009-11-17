@@ -374,8 +374,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             ((resType :: paramTypes) forall (x => isValueClass(x.typeSymbol))) // issue #1110
           }
           def useArrayOperator =
-            ((qualSym == definitions.ObjectClass) || (qualSym == definitions.ArrayClass)) &&
-            ((methSym.name == nme.length) || (methSym.name == nme.update) || (methSym.name == nme.apply))
+            ((qualSym == definitions.ObjectClass) || (qualSym == definitions.ArrayClass)) && (
+              (methSym.name == nme.length && params.isEmpty) ||
+              (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass)) ||
+              (methSym.name == nme.apply  && params.size == 1)
+            )
           val callCode = if (useValueOperator) {
             val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
             def args              = qual :: params
