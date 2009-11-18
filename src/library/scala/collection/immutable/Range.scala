@@ -64,14 +64,17 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
     start + idx * step
   }
 
+  // take and drop have to be tolerant of large values without overflowing
+  private def locationAfterN(n: Int) = start + step * (0 max n min length)
+
   final override def take(n: Int): Range = {
-    val limit1 = start + step * (n max 0)
+    val limit1 = locationAfterN(n)
     if (step > 0) Range(start, limit1 min limit, step)
     else Range(start, limit1 max limit, step)
   }
 
   final override def drop(n: Int): Range =
-    copy(start + step * (n max 0), end, step)
+    copy(locationAfterN(n), end, step)
 
   final override def init: Range =
     take(length - 1)
