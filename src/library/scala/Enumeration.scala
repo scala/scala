@@ -176,7 +176,7 @@ abstract class Enumeration(initial: Int, names: String*) {
         val value = m.invoke(this)
         // invoke `id` method
         val idMeth = classOf[Val].getMethod("id")
-        val id: Int = idMeth.invoke(value).asInstanceOf[Integer].intValue()
+        val id: Int = idMeth.invoke(value).asInstanceOf[java.lang.Integer].intValue()
         nmap += (id -> name)
       }
       nmap(i)

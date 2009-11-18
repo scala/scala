@@ -981,7 +981,7 @@ abstract class GenMSIL extends SubComponent {
             })
 
             // shorter try-catch-finally last (the ones contained in another)
-            affectedHandlers = affectedHandlers.sort({(h1, h2) => h1.covered.size > h2.covered.size})
+            affectedHandlers = affectedHandlers.sortWith(_.covered.size > _.covered.size)
             affectedHandlers = affectedHandlers.filter(h => {h.covered.size == affectedHandlers(0).covered.size})
             untreatedHandlers = untreatedHandlers -- affectedHandlers
 
@@ -1133,9 +1133,8 @@ abstract class GenMSIL extends SubComponent {
 
       // take care of order in which exHInstructions are executed (BeginExceptionBlock as last)
       bb2exHInstructions.keysIterator.foreach((b) => {
-        bb2exHInstructions(b).sort((i1, i2) => (!i1.isInstanceOf[BeginExceptionBlock]))
+        bb2exHInstructions(b).sortBy(x => x.isInstanceOf[BeginExceptionBlock])
       })
-
 
       if (settings.debug.value) {
         log("after: " + orderedBlocks)

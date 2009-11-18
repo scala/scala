@@ -357,7 +357,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     "\\$times" -> "*", "\\$div" -> "/", "\\$bslash" -> "\\\\",
     "\\$greater" -> ">", "\\$qmark" -> "?", "\\$percent" -> "%",
     "\\$amp" -> "&", "\\$colon" -> ":", "\\$u2192" -> "→")
-  val pattern = Pattern.compile(_syms.keys.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
+  val pattern = Pattern.compile(_syms.keysIterator.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
   val placeholderPattern = "_\\$(\\d)+"
 
   def processName(name: String) = {

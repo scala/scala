@@ -188,7 +188,7 @@ abstract class CopyPropagation {
           else {
 //            if (a.stack.length != b.stack.length)
 //              throw new LubError(a, b, "Invalid stacks in states: ");
-            List.map2(a.stack, b.stack) { (v1, v2) =>
+            (a.stack, b.stack).zipped map { (v1, v2) =>
               if (v1 == v2) v1 else Unknown
             }
           }

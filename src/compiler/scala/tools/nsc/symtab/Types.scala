@@ -3663,7 +3663,7 @@ A type's typeSymbol should never be inspected directly.
       case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
         assert(sym1 == sym2)
         pre1 =:= pre2 &&
-        !(List.map3(args1, args2, sym1.typeParams) {
+        ((args1, args2, sym1.typeParams).zipped forall {
           (arg1, arg2, tparam) =>
             //if (tparam.variance == 0 && !(arg1 =:= arg2)) Console.println("inconsistent: "+arg1+"!="+arg2)//DEBUG
           if (tparam.variance == 0) arg1 =:= arg2
@@ -3674,7 +3674,7 @@ A type's typeSymbol should never be inspected directly.
             // also: think what happens if there are embedded typevars?
             if (tparam.variance < 0) arg1 <:< arg2 else arg2 <:< arg1
           else true
-        } contains false)
+        })
       case (et: ExistentialType, _) =>
         et.withTypeVars(isConsistent(_, tp2))
       case (_, et: ExistentialType) =>
@@ -4514,7 +4514,7 @@ A type's typeSymbol should never be inspected directly.
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
-          List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
+          List.map2(tparams, matchingBounds(ts, tparams).transpose)
             ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds, depth))),
           lub0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(params, _) :: rest =>
@@ -4615,7 +4615,7 @@ A type's typeSymbol should never be inspected directly.
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
-          List.map2(tparams, List.transpose(matchingBounds(ts, tparams)))
+          List.map2(tparams, matchingBounds(ts, tparams).transpose)
           ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth))),
           glb0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(params, _) :: rest =>
@@ -4738,7 +4738,7 @@ A type's typeSymbol should never be inspected directly.
       val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
       val argss = tps map (_.typeArgs)
       val capturedParams = new ListBuffer[Symbol]
-      val args = List.map2(sym.typeParams, List.transpose(argss)) {
+      val args = (sym.typeParams, argss.transpose).zipped map {
         (tparam, as) =>
           if (depth == 0)
             if (tparam.variance == variance) AnyClass.tpe

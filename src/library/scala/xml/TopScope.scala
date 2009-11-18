@@ -12,7 +12,6 @@ package scala.xml
 
 import collection.mutable.StringBuilder
 
-
 /** top level namespace scope. only contains the predefined binding
  *  for the &quot;xml&quot; prefix which is bound to
  *  &quot;http://www.w3.org/XML/1998/namespace&quot;

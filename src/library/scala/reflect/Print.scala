@@ -106,6 +106,8 @@ object Print extends Function1[Any, String] {
       (List.map2(typeParams, typeBounds)
         ((tp, tb) => "[" + Print(tb._1) + " :> " + Print(tp) + " :> " + Print(tb._2) + "]")).
           mkString("[", ", ", "]") + " -> " + Print(resultType)
+      // val z = (typeParams, typeBounds).zip map { case (tp, tb) => "[" + Print(tb._1) + " :> " + Print(tp) + " :> " + Print(tb._2) + "]" }
+      // z.mkString("[", ", ", "]") + " -> " + Print(resultType)
     case _ =>
       "???"
   }

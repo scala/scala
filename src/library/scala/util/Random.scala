@@ -119,7 +119,7 @@ object Random extends Random
    *  @return         the shuffled Traversable
    */
   def shuffle[T, CC[X] <: Traversable[X]](coll: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
-    val buf = new ArrayBuffer[T] ++ coll
+    val buf = new ArrayBuffer[T] ++= coll
 
     def swap(i1: Int, i2: Int) {
       val tmp = buf(i1)

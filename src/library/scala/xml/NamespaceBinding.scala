@@ -25,7 +25,7 @@ import collection.mutable.StringBuilder
 @SerialVersionUID(0 - 2518644165573446725L)
 case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBinding) extends AnyRef
 {
-  if (prefix != null && prefix.isEmpty)
+  if (prefix == "")
     throw new IllegalArgumentException("zero length prefix not allowed")
 
   def getURI(_prefix: String): String =

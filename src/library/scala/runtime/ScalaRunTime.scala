@@ -125,7 +125,7 @@ object ScalaRunTime {
   @inline def inlinedEquals(x: Object, y: Object): Boolean =
     if (x eq y) true
     else if (x eq null) false
-    else if (x.isInstanceOf[Number] || x.isInstanceOf[Character]) BoxesRunTime.equals2(x, y)
+    else if (x.isInstanceOf[java.lang.Number] || x.isInstanceOf[java.lang.Character]) BoxesRunTime.equals2(x, y)
     else x.equals(y)
 
   def _equals(x: Product, y: Any): Boolean = y match {

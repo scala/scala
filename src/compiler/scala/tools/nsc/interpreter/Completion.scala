@@ -62,7 +62,7 @@ class Completion(val interpreter: Interpreter) extends Completor {
     def filt(xs: List[String]) = xs filter (_ startsWith stub)
 
     case class Result(candidates: List[String], position: Int) {
-      def getCandidates() = (candidates map (_.trim) removeDuplicates) sort (_ < _)
+      def getCandidates() = (candidates map (_.trim) removeDuplicates) sortWith (_ < _)
     }
 
     // work out completion candidates and position

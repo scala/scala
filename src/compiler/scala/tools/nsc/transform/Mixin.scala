@@ -671,7 +671,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val bitmapSym = bitmapFor(clazz, offset)
         val mask      = LIT(1 << (offset % FLAGS_PER_WORD))
         def cond      = mkTest(clazz, mask, bitmapSym, true)
-        val nulls     = (lazyValNullables(lzyVal).toList.sort(_.id < _.id) map nullify)
+        val nulls     = (lazyValNullables(lzyVal).toList sortBy (_.id) map nullify)
         def syncBody  = init ::: List(mkSetFlag(clazz, offset), UNIT)
 
         log("nulling fields inside " + lzyVal + ": " + nulls)

@@ -653,7 +653,7 @@ object List extends SeqFactory[List] {
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>n = min(k,l)</code>
    */
-  @deprecated("use `(xs, ys).map(f)' instead")
+  @deprecated("use `(xs, ys).zipped.map(f)' instead")
   def map2[A,B,C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C] = {
     val b = new ListBuffer[C]
     var xc = xs
@@ -677,7 +677,7 @@ object List extends SeqFactory[List] {
    *           <code>[c<sub>0</sub>, ..., c<sub>m</sub>]</code> and
    *           <code>n = min(k,l,m)</code>
    */
-  @deprecated("use `(xs, ys, zs).map(f)' instead")
+  @deprecated("use `(xs, ys, zs).zipped.map(f)' instead")
   def map3[A,B,C,D](xs: List[A], ys: List[B], zs: List[C])(f: (A, B, C) => D): List[D] = {
     val b = new ListBuffer[D]
     var xc = xs
@@ -702,7 +702,7 @@ object List extends SeqFactory[List] {
    *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code>
    *           and <code>n = min(k,l)</code>
    */
-  @deprecated("use `(xs, ys).forall(f)' instead")
+  @deprecated("use `(xs, ys).zipped.forall(f)' instead")
   def forall2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys
@@ -724,7 +724,7 @@ object List extends SeqFactory[List] {
    *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code> and
    *           <code>n = min(k,l)</code>
    */
-  @deprecated("use `(xs, ys).exists(f)' instead")
+  @deprecated("use `(xs, ys).zipped.exists(f)' instead")
   def exists2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys

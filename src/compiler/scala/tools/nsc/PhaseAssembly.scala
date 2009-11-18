@@ -42,8 +42,8 @@ trait PhaseAssembly { self: Global =>
       var level = 0
 
       def allPhaseNames(): String = phaseobj match {
-	case None => phasename
-	case Some(lst) => lst.map(_.phaseName).reduceLeft(_+","+_)
+        case None => phasename
+        case Some(lst) => lst.map(_.phaseName).reduceLeft(_+","+_)
       }
     }
 
@@ -56,9 +56,9 @@ trait PhaseAssembly { self: Global =>
     def getNodeByPhase(phs: SubComponent): Node = {
       var node: Node = getNodeByPhase(phs.phaseName)
       node.phaseobj match {
-	case None =>
-	  node.phaseobj = Some(List[SubComponent](phs))
-	case _ =>
+        case None =>
+          node.phaseobj = Some(List[SubComponent](phs))
+        case _ =>
       }
       node
     }
@@ -107,12 +107,12 @@ trait PhaseAssembly { self: Global =>
       var lvl = 1
       var nds = nodes.valuesIterator.filter(_.level == lvl).toList
       while(nds.size > 0) {
-	nds = nds.sort((n1,n2) => (n1.phasename compareTo n2.phasename) < 0)
-	for (n <- nds) {
-	  chain = chain ::: n.phaseobj.get
-	}
-	lvl += 1
-	nds = nodes.valuesIterator.filter(_.level == lvl).toList
+        nds = nds.sortWith((n1,n2) => (n1.phasename compareTo n2.phasename) < 0)
+        for (n <- nds) {
+          chain = chain ::: n.phaseobj.get
+        }
+        lvl += 1
+        nds = nodes.valuesIterator.filter(_.level == lvl).toList
       }
       chain
     }
@@ -122,7 +122,7 @@ trait PhaseAssembly { self: Global =>
      */
     def collapseHardLinksAndLevels(node: Node, lvl: Int) {
       if (node.visited) {
-	throw new FatalError(
+        throw new FatalError(
           "Cycle in compiler phase dependencies detected, phase " +
           node.phasename + " reacted twice!")
       }
@@ -131,19 +131,19 @@ trait PhaseAssembly { self: Global =>
 
       var hls = Nil ++ node.before.filter(_.hard)
       while (hls.size > 0) {
-	for (hl <- hls) {
-	  node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
-	  node.before = hl.frm.before
-	  nodes -= hl.frm.phasename
-	  edges -= hl
-	  for (edge <- node.before) edge.to = node
-	}
-	hls = Nil ++ node.before.filter(_.hard)
+        for (hl <- hls) {
+          node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
+          node.before = hl.frm.before
+          nodes -= hl.frm.phasename
+          edges -= hl
+          for (edge <- node.before) edge.to = node
+        }
+        hls = Nil ++ node.before.filter(_.hard)
       }
       node.visited = true
 
       for (edge <- node.before) {
-	collapseHardLinksAndLevels( edge.frm, lvl + 1)
+        collapseHardLinksAndLevels( edge.frm, lvl + 1)
       }
 
       node.visited = false
@@ -156,44 +156,44 @@ trait PhaseAssembly { self: Global =>
     def validateAndEnforceHardlinks() {
       var hardlinks = edges.filter(_.hard)
       for (hl <- hardlinks) {
-	if (hl.frm.after.size > 1) {
-	  throw new FatalError("phase " + hl.frm.phasename + " want to run right after " + hl.to.phasename + ", but some phase has declared to run before " + hl.frm.phasename + ". Re-run with -Xgenerate-phase-graph <filename> to better see the problem.")
-	}
+        if (hl.frm.after.size > 1) {
+          throw new FatalError("phase " + hl.frm.phasename + " want to run right after " + hl.to.phasename + ", but some phase has declared to run before " + hl.frm.phasename + ". Re-run with -Xgenerate-phase-graph <filename> to better see the problem.")
+        }
       }
 
       var rerun = true
       while (rerun) {
-	rerun = false
-	hardlinks = edges.filter(_.hard)
-	for (hl <- hardlinks) {
-	  var sanity = Nil ++ hl.to.before.filter(_.hard)
-	  if (sanity.length == 0) {
-	    throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
-	  } else if (sanity.length > 1) {
-	    var msg = "Multiple phases want to run right after the phase " + sanity.head.to.phasename + "\n"
-	    msg += "Phases: "
-	    sanity = sanity.sort((e1,e2) => (e1.frm.phasename compareTo e2.frm.phasename) < 0)
-	    for (edge <- sanity) {
-	      msg += edge.frm.phasename + ", "
-	    }
-	    msg += "\nRe-run with -Xgenerate-phase-graph <filename> to better see the problem."
-	    throw new FatalError(msg)
+        rerun = false
+        hardlinks = edges.filter(_.hard)
+        for (hl <- hardlinks) {
+          var sanity = Nil ++ hl.to.before.filter(_.hard)
+          if (sanity.length == 0) {
+            throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
+          } else if (sanity.length > 1) {
+            var msg = "Multiple phases want to run right after the phase " + sanity.head.to.phasename + "\n"
+            msg += "Phases: "
+            sanity = sanity.sortWith((e1,e2) => (e1.frm.phasename compareTo e2.frm.phasename) < 0)
+            for (edge <- sanity) {
+              msg += edge.frm.phasename + ", "
+            }
+            msg += "\nRe-run with -Xgenerate-phase-graph <filename> to better see the problem."
+            throw new FatalError(msg)
 
-	  } else {
+          } else {
 
-	    var promote = hl.to.before.filter(e => (!e.hard))
-	    hl.to.before.clear
-	    sanity foreach (edge => hl.to.before += edge)
-	    for (edge <- promote) {
-	      rerun = true
-	      informProgress(
+            var promote = hl.to.before.filter(e => (!e.hard))
+            hl.to.before.clear
+            sanity foreach (edge => hl.to.before += edge)
+            for (edge <- promote) {
+              rerun = true
+              informProgress(
                 "promote the dependency of " + edge.frm.phasename +
                 ": "  + edge.to.phasename + " => " + hl.frm.phasename)
-	      edge.to = hl.frm
-	      hl.frm.before += edge
-	    }
-	  }
-	}
+              edge.to = hl.frm
+              hl.frm.before += edge
+            }
+          }
+        }
       }
     }
 
@@ -205,17 +205,17 @@ trait PhaseAssembly { self: Global =>
     def removeDanglingNodes() {
       var dnodes = nodes.valuesIterator filter (_.phaseobj.isEmpty)
       for (node <- dnodes) {
-	val msg = "dropping dependency on node with no phase object: "+node.phasename
+        val msg = "dropping dependency on node with no phase object: "+node.phasename
         informProgress(msg)
-	nodes -= node.phasename
-	for (edge <- node.before) {
-	  edges -= edge
-	  edge.frm.after -= edge
-	  edge.frm.phaseobj match {
-	    case Some(lsc) => if (! lsc.head.internal) warning(msg)
-	    case _ =>
-	  }
-	}
+        nodes -= node.phasename
+        for (edge <- node.before) {
+          edges -= edge
+          edge.frm.after -= edge
+          edge.frm.phaseobj match {
+            case Some(lsc) => if (! lsc.head.internal) warning(msg)
+            case _ =>
+          }
+        }
       }
     }
 
@@ -268,30 +268,30 @@ trait PhaseAssembly { self: Global =>
       var fromnode = graph.getNodeByPhase(phs)
 
       phs.runsRightAfter match {
-	case None =>
-	  for (phsname <- phs.runsAfter) {
-	    if (phsname != "terminal") {
-	      val tonode = graph.getNodeByPhase(phsname)
-	      graph.softConnectNodes(fromnode, tonode)
-	    } else {
-	      error("[phase assembly, after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
-	    }
-	  }
-	  for (phsname <- phs.runsBefore) {
-	    if (phsname != "parser") {
-	      val tonode = graph.getNodeByPhase(phsname)
-	      graph.softConnectNodes(tonode, fromnode)
-	    } else {
-	      error("[phase assembly, before dependency on parser phase not allowed: " + phsname + " => "+ fromnode.phasename + "]")
-	    }
-	  }
-	case Some(phsname) =>
-	  if (phsname != "terminal") {
-	    val tonode = graph.getNodeByPhase(phsname)
+        case None =>
+          for (phsname <- phs.runsAfter) {
+            if (phsname != "terminal") {
+              val tonode = graph.getNodeByPhase(phsname)
+              graph.softConnectNodes(fromnode, tonode)
+            } else {
+              error("[phase assembly, after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
+            }
+          }
+          for (phsname <- phs.runsBefore) {
+            if (phsname != "parser") {
+              val tonode = graph.getNodeByPhase(phsname)
+              graph.softConnectNodes(tonode, fromnode)
+            } else {
+              error("[phase assembly, before dependency on parser phase not allowed: " + phsname + " => "+ fromnode.phasename + "]")
+            }
+          }
+        case Some(phsname) =>
+          if (phsname != "terminal") {
+            val tonode = graph.getNodeByPhase(phsname)
             graph.hardConnectNodes(fromnode, tonode)
-	  } else {
-	    error("[phase assembly, right after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
-	  }
+          } else {
+            error("[phase assembly, right after dependency on terminal phase not allowed: " + fromnode.phasename + " => "+ phsname + "]")
+          }
       }
     }
     graph
@@ -309,14 +309,14 @@ trait PhaseAssembly { self: Global =>
     for (edge <- graph.edges) {
       sbuf.append("\"" + edge.frm.allPhaseNames + "(" + edge.frm.level + ")" + "\"->\"" + edge.to.allPhaseNames + "(" + edge.to.level + ")" + "\"")
       if (! edge.frm.phaseobj.get.head.internal) {
-       	extnodes += edge.frm
+               extnodes += edge.frm
       }
       edge.frm.phaseobj match { case None => null case Some(ln) => if(ln.size > 1) fatnodes += edge.frm }
       edge.to.phaseobj match { case None => null case Some(ln) => if(ln.size > 1) fatnodes += edge.to }
       if (edge.hard) {
-	sbuf.append(" [color=\"#0000ff\"]\n")
+        sbuf.append(" [color=\"#0000ff\"]\n")
       } else {
-	sbuf.append(" [color=\"#000000\"]\n")
+        sbuf.append(" [color=\"#000000\"]\n")
       }
     }
     for (node <- extnodes) {

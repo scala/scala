@@ -118,7 +118,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
             }
           }
           // Create a change for the top level classes that were removed
-          val removed = definitions(src) remove ((s: Symbol) =>
+          val removed = definitions(src) filterNot ((s: Symbol) =>
             syms.find(_.fullNameString == s.fullNameString) match {
               case None => false
               case _    => true
