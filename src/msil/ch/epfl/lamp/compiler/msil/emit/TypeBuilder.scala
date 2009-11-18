@@ -18,7 +18,7 @@ import java.io.IOException
  * @author Nikolay Mihaylov
  * @version 1.0
  */
-class TypeBuilder (module: Module, attributes: int, fullName: String, baseType: Type, interfaces: Array[Type], declType: Type)
+class TypeBuilder (module: Module, attributes: Int, fullName: String, baseType: Type, interfaces: Array[Type], declType: Type)
       extends Type(module, attributes, fullName, baseType, interfaces, declType, 0)
       with ICustomAttributeSetter
       with Visitable
@@ -45,7 +45,7 @@ class TypeBuilder (module: Module, attributes: int, fullName: String, baseType: 
      * Adds a new field to the class, with the given name,
      * attributes and field type.
      */
-    def DefineField(name: String, `type`: Type, attrs: short): FieldBuilder = {
+    def DefineField(name: String, `type`: Type, attrs: Short): FieldBuilder = {
 	val field: FieldBuilder = new FieldBuilder(name, this, attrs, `type`)
 	fieldBuilders.add(field)
 	return field
@@ -55,7 +55,7 @@ class TypeBuilder (module: Module, attributes: int, fullName: String, baseType: 
      * Adds a new method to the class, with the given name and
      * method signature.
      */
-    def DefineMethod(name: String, attrs: short, returnType: Type, paramTypes: Array[Type]): MethodBuilder = {
+    def DefineMethod(name: String, attrs: Short, returnType: Type, paramTypes: Array[Type]): MethodBuilder = {
 	val method = new MethodBuilder(name, this, attrs, returnType, paramTypes)
     val methods = methodBuilders.iterator()
     while(methods.hasNext()) {
@@ -72,7 +72,7 @@ class TypeBuilder (module: Module, attributes: int, fullName: String, baseType: 
      * Adds a new constructor to the class, with the given attributes
      * and signature.
      */
-    def DefineConstructor(attrs: short, callingConvention: short, paramTypes: Array[Type]): ConstructorBuilder = {
+    def DefineConstructor(attrs: Short, callingConvention: Short, paramTypes: Array[Type]): ConstructorBuilder = {
 	val constr = new ConstructorBuilder(this, attrs, paramTypes)
 	constructorBuilders.add(constr)
 	return constr
@@ -81,7 +81,7 @@ class TypeBuilder (module: Module, attributes: int, fullName: String, baseType: 
     /**
      * Defines a nested type given its name.
      */
-    def DefineNestedType(name: String, attributes: int, baseType: Type, interfaces: Array[Type]): TypeBuilder = {
+    def DefineNestedType(name: String, attributes: Int, baseType: Type, interfaces: Array[Type]): TypeBuilder = {
     val nested = nestedTypeBuilders.iterator()
     while(nested.hasNext()) {
         val nt = nested.next().asInstanceOf[TypeBuilder]
@@ -152,11 +152,11 @@ class TypeBuilder (module: Module, attributes: int, fullName: String, baseType: 
     }
 
     /** Sets a custom attribute. */
-    def SetCustomAttribute(constr: ConstructorInfo, value: Array[byte]) {
+    def SetCustomAttribute(constr: ConstructorInfo, value: Array[Byte]) {
 	addCustomAttribute(constr, value)
     }
 
-    def setPosition(sourceLine: int, sourceFilename: String) {
+    def setPosition(sourceLine: Int, sourceFilename: String) {
 	this.sourceLine = sourceLine
 	this.sourceFilename = sourceFilename
     }
@@ -213,7 +213,7 @@ object TypeBuilder {
     return s.toString()
     }
 
-    def methodsEqual(m1: MethodInfo, m2: MethodInfo): boolean = {
+    def methodsEqual(m1: MethodInfo, m2: MethodInfo): Boolean = {
     if (!m1.Name.equals(m2.Name))
         return false
     if (m1.ReturnType != m2.ReturnType)

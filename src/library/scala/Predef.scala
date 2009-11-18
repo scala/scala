@@ -25,17 +25,6 @@ object Predef extends LowPriorityImplicits {
    */
   def classOf[T]: Class[T] = null
 
-  // aliases ------------------------------------------------------------
-  @deprecated("lower-case type aliases will be removed") type byte    = scala.Byte
-  @deprecated("lower-case type aliases will be removed") type short   = scala.Short
-  @deprecated("lower-case type aliases will be removed") type char    = scala.Char
-  @deprecated("lower-case type aliases will be removed") type int     = scala.Int
-  @deprecated("lower-case type aliases will be removed") type long    = scala.Long
-  @deprecated("lower-case type aliases will be removed") type float   = scala.Float
-  @deprecated("lower-case type aliases will be removed") type double  = scala.Double
-  @deprecated("lower-case type aliases will be removed") type boolean = scala.Boolean
-  @deprecated("lower-case type aliases will be removed") type unit    = scala.Unit
-
   type String        = java.lang.String
   type Class[T]      = java.lang.Class[T]
 

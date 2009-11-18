@@ -23,23 +23,23 @@ class OpCode extends Visitable {
     var CEE_string: String = _
 
     /** The type of Microsoft intermediate language (MSIL) instruction. */
-    var CEE_code: short = _
+    var CEE_code: Short = _
 
     /** How the Microsoft intermediate language (MSIL) instruction pops the stack. */
-    var CEE_pop: byte = _
+    var CEE_pop: Byte = _
 
     /** How the Microsoft intermediate language (MSIL) instruction pushes operand onto the stack. */
-    var CEE_push: byte = _
+    var CEE_push: Byte = _
 
     /** Describes the type of flow control. */
-    var CEE_flow: byte = _
+    var CEE_flow: Byte = _
 
     /** ????? */
-    var CEE_inline: byte = _
+    var CEE_inline: Byte = _
 
-    var CEE_length: byte = _
+    var CEE_length: Byte = _
 
-    var CEE_popush: byte = _
+    var CEE_popush: Byte = _
 
     /**
      * the apply method for a visitor
@@ -49,13 +49,13 @@ class OpCode extends Visitable {
 	v.caseOpCode(this)
     }
 
-    protected def length(): byte = {
+    protected def length(): Byte = {
 	val code = OpCode.length(CEE_code)
 	val inline = OpCode.INLINE_length(CEE_inline)
 	return if(inline < 0) { -1 } else { (code + inline).toByte }
     }
 
-    protected def popush(): byte = {
+    protected def popush(): Byte = {
 	val pop = OpCode.POP_size(CEE_pop)
 	val push = OpCode.PUSH_size(CEE_push)
 	return if(pop < 0 || push < 0) { OpCode.POPUSH_SPECIAL } else { (push - pop).toByte }
@@ -391,27 +391,27 @@ object OpCode {
     //########################################################################
     // Opcode's amount and type of poped data
 
-    final val POP_NONE          : byte        = 0x00
-    final val POP_1             : byte        = 0x01
-    final val POP_1_1           : byte        = 0x02
-    final val POP_I             : byte        = 0x03
-    final val POP_I_1           : byte        = 0x04
-    final val POP_I_I           : byte        = 0x05
-    final val POP_I_I8          : byte        = 0x06
-    final val POP_I_R4          : byte        = 0x07
-    final val POP_I_R8          : byte        = 0x08
-    final val POP_I_I_I         : byte        = 0x09
-    final val POP_REF           : byte        = 0x0A
-    final val POP_REF_1         : byte        = 0x0B
-    final val POP_REF_I         : byte        = 0x0C
-    final val POP_REF_I_I       : byte        = 0x0D
-    final val POP_REF_I_I8      : byte        = 0x0E
-    final val POP_REF_I_R4      : byte        = 0x0F
-    final val POP_REF_I_R8      : byte        = 0x10
-    final val POP_REF_I_REF     : byte        = 0x11
-    final val POP_SPECIAL       : byte        = 0x12
+    final val POP_NONE          : Byte        = 0x00
+    final val POP_1             : Byte        = 0x01
+    final val POP_1_1           : Byte        = 0x02
+    final val POP_I             : Byte        = 0x03
+    final val POP_I_1           : Byte        = 0x04
+    final val POP_I_I           : Byte        = 0x05
+    final val POP_I_I8          : Byte        = 0x06
+    final val POP_I_R4          : Byte        = 0x07
+    final val POP_I_R8          : Byte        = 0x08
+    final val POP_I_I_I         : Byte        = 0x09
+    final val POP_REF           : Byte        = 0x0A
+    final val POP_REF_1         : Byte        = 0x0B
+    final val POP_REF_I         : Byte        = 0x0C
+    final val POP_REF_I_I       : Byte        = 0x0D
+    final val POP_REF_I_I8      : Byte        = 0x0E
+    final val POP_REF_I_R4      : Byte        = 0x0F
+    final val POP_REF_I_R8      : Byte        = 0x10
+    final val POP_REF_I_REF     : Byte        = 0x11
+    final val POP_SPECIAL       : Byte        = 0x12
     final val POP_count         : Int         = 0x13
-    final val POP_size          : Array[byte] = new Array[byte](POP_count)
+    final val POP_size          : Array[Byte] = new Array[Byte](POP_count)
 
 	POP_size(POP_NONE)              =  0
 	POP_size(POP_1)                 =  1
@@ -436,17 +436,17 @@ object OpCode {
     //########################################################################
     // Opcode's amount and type of pushed data
 
-    final val PUSH_NONE         : byte        = 0x00
-    final val PUSH_1            : byte        = 0x01
-    final val PUSH_1_1          : byte        = 0x02
-    final val PUSH_I            : byte        = 0x03
-    final val PUSH_I8           : byte        = 0x04
-    final val PUSH_R4           : byte        = 0x05
-    final val PUSH_R8           : byte        = 0x06
-    final val PUSH_REF          : byte        = 0x07
-    final val PUSH_SPECIAL      : byte        = 0x08
+    final val PUSH_NONE         : Byte        = 0x00
+    final val PUSH_1            : Byte        = 0x01
+    final val PUSH_1_1          : Byte        = 0x02
+    final val PUSH_I            : Byte        = 0x03
+    final val PUSH_I8           : Byte        = 0x04
+    final val PUSH_R4           : Byte        = 0x05
+    final val PUSH_R8           : Byte        = 0x06
+    final val PUSH_REF          : Byte        = 0x07
+    final val PUSH_SPECIAL      : Byte        = 0x08
     final val PUSH_count        : Int         = 0x09
-    final val PUSH_size         : Array[byte] = new Array[byte](PUSH_count)
+    final val PUSH_size         : Array[Byte] = new Array[Byte](PUSH_count)
 
 	PUSH_size(PUSH_NONE)             =  0
 	PUSH_size(PUSH_1)                =  1
@@ -461,30 +461,30 @@ object OpCode {
     //########################################################################
     // Opcode's amount of moved data
 
-    final val POPUSH_SPECIAL    : byte        = -128
+    final val POPUSH_SPECIAL    : Byte        = -128
 
     //########################################################################
     // Opcode's inline argument types
 
-    final val INLINE_NONE       : byte        = 0x00
-    final val INLINE_VARIABLE_S : byte        = 0x01
-    final val INLINE_TARGET_S   : byte        = 0x02
-    final val INLINE_I_S        : byte        = 0x03
-    final val INLINE_VARIABLE   : byte        = 0x04
-    final val INLINE_TARGET     : byte        = 0x05
-    final val INLINE_I          : byte        = 0x06
-    final val INLINE_I8         : byte        = 0x07
-    final val INLINE_R          : byte        = 0x08
-    final val INLINE_R8         : byte        = 0x09
-    final val INLINE_STRING     : byte        = 0x0A
-    final val INLINE_TYPE       : byte        = 0x0B
-    final val INLINE_FIELD      : byte        = 0x0C
-    final val INLINE_METHOD     : byte        = 0x0D
-    final val INLINE_SIGNATURE  : byte        = 0x0E
-    final val INLINE_TOKEN      : byte        = 0x0F
-    final val INLINE_SWITCH     : byte        = 0x10
+    final val INLINE_NONE       : Byte        = 0x00
+    final val INLINE_VARIABLE_S : Byte        = 0x01
+    final val INLINE_TARGET_S   : Byte        = 0x02
+    final val INLINE_I_S        : Byte        = 0x03
+    final val INLINE_VARIABLE   : Byte        = 0x04
+    final val INLINE_TARGET     : Byte        = 0x05
+    final val INLINE_I          : Byte        = 0x06
+    final val INLINE_I8         : Byte        = 0x07
+    final val INLINE_R          : Byte        = 0x08
+    final val INLINE_R8         : Byte        = 0x09
+    final val INLINE_STRING     : Byte        = 0x0A
+    final val INLINE_TYPE       : Byte        = 0x0B
+    final val INLINE_FIELD      : Byte        = 0x0C
+    final val INLINE_METHOD     : Byte        = 0x0D
+    final val INLINE_SIGNATURE  : Byte        = 0x0E
+    final val INLINE_TOKEN      : Byte        = 0x0F
+    final val INLINE_SWITCH     : Byte        = 0x10
     final val INLINE_count      : Int         = 0x11
-    final val INLINE_length     : Array[byte] = new Array[byte](INLINE_count)
+    final val INLINE_length     : Array[Byte] = new Array[Byte](INLINE_count)
 
 	INLINE_length(INLINE_NONE)       =  0
 	INLINE_length(INLINE_VARIABLE_S) =  1
@@ -507,21 +507,21 @@ object OpCode {
     //########################################################################
     // Opcode's control flow implications
 
-    final val FLOW_META         : byte = 0x00
-    final val FLOW_NEXT         : byte = 0x01
-    final val FLOW_BRANCH       : byte = 0x02
-    final val FLOW_COND_BRANCH  : byte = 0x03
-    final val FLOW_BREAK        : byte = 0x04
-    final val FLOW_CALL         : byte = 0x05
-    final val FLOW_RETURN       : byte = 0x06
-    final val FLOW_THROW        : byte = 0x07
+    final val FLOW_META         : Byte = 0x00
+    final val FLOW_NEXT         : Byte = 0x01
+    final val FLOW_BRANCH       : Byte = 0x02
+    final val FLOW_COND_BRANCH  : Byte = 0x03
+    final val FLOW_BREAK        : Byte = 0x04
+    final val FLOW_CALL         : Byte = 0x05
+    final val FLOW_RETURN       : Byte = 0x06
+    final val FLOW_THROW        : Byte = 0x07
     final val FLOW_count        : Int  = 0x08
 
     //########################################################################
     // Init methods for Opcode
 
-    def opcode(that: OpCode, opcode: int, string: String, code: Int,
-			pop: byte, push: byte, inline: byte, flow: byte) {
+    def opcode(that: OpCode, opcode: Int, string: String, code: Int,
+			pop: Byte, push: Byte, inline: Byte, flow: Byte) {
 	that.CEE_opcode = opcode
 	that.CEE_string = string
 	that.CEE_code = code.toShort
@@ -533,7 +533,7 @@ object OpCode {
 	that.CEE_popush = that.popush()
     }
 
-    def length(code: Int): byte = {
+    def length(code: Int): Byte = {
 	if ((code & 0xFFFFFF00) == 0xFFFFFF00) return 1
 	if ((code & 0xFFFFFF00) == 0xFFFFFE00) return 2
 	return 0
@@ -1862,7 +1862,7 @@ object OpCode {
 
     /**
      * Allocates a certain number of bytes from the local dynamic memory pool and pushes the
-     * address (a transient pointer, type *) of the first allocated byte onto the evaluation stack.
+     * address (a transient pointer, type *) of the first allocated Byte onto the evaluation stack.
      */
     final val Localloc = new OpCode()
 	opcode(Localloc, CEE_LOCALLOC, "localloc"  , 0xFFFFFE0F, POP_I, PUSH_I, INLINE_NONE, FLOW_NEXT)

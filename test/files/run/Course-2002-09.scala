@@ -81,7 +81,7 @@ class Constant(q: Quantity, v: Double) extends Constraint {
 class Probe(name: String, q: Quantity) extends Constraint {
   def newValue: Unit = printProbe(q.getValue);
   def dropValue: Unit = printProbe(None);
-  private def printProbe(v: Option[double]) {
+  private def printProbe(v: Option[Double]) {
     val vstr = v match {
       case Some(x) => x.toString()
       case None => "?"
@@ -103,7 +103,7 @@ class Quantity() {
       if (v != v1) error("Error! contradiction: " + v + " and " + v1);
     case None =>
       informant = setter; value = Some(v);
-      for (val c <- constraints; !(c == informant)) {
+      for (c <- constraints; if !(c == informant)) {
         c.newValue;
       }
   }
@@ -112,7 +112,7 @@ class Quantity() {
   def forgetValue(retractor: Constraint): Unit = {
     if (retractor == informant) {
       value = None;
-      for (val c <- constraints; !(c == informant)) c.dropValue;
+      for (c <- constraints; if !(c == informant)) c.dropValue;
     }
   }
   def forgetValue: Unit = forgetValue(NoConstraint);
@@ -258,7 +258,7 @@ object M2 {
     };
   }
 
-  def show(x: Option[int], y: Option[Int], z: Option[int]) = {
+  def show(x: Option[Int], y: Option[Int], z: Option[Int]) = {
     Console.print("a = " +set(a,x)+ ", b = " +set(b,y)+ ", c = " +set(c,z));
     Console.println(" => " + a.str + " * " + b.str + " = " + c.str);
     a.forgetValue; b.forgetValue; c.forgetValue;

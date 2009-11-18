@@ -12,13 +12,13 @@ trait Ordered[+a] {
    */
   def compareTo [b >: a <% Ordered[b]](that: b): Int
 
-  def <  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <  0
+  def <  [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) <  0
 
-  def >  [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >  0
+  def >  [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) >  0
 
-  def <= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) <= 0
+  def <= [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) <= 0
 
-  def >= [b >: a <% Ordered[b]](that: b): boolean = (this compareTo that) >= 0
+  def >= [b >: a <% Ordered[b]](that: b): Boolean = (this compareTo that) >= 0
 }
 
 
@@ -30,9 +30,9 @@ object O {
       case _ => -(y compareTo x)
     }
   }
-  implicit def view2(x: char): Ordered[char] = new Ordered[char] {
-    def compareTo [b >: char <% Ordered[b]](y: b): Int = y match {
-      case y1: char => x - y1
+  implicit def view2(x: Char): Ordered[Char] = new Ordered[Char] {
+    def compareTo [b >: Char <% Ordered[b]](y: b): Int = y match {
+      case y1: Char => x - y1
       case _ => -(y compareTo x)
     }
   }
@@ -106,7 +106,7 @@ object Test {
       Console.println(t.elements)
     }
     {
-      var t: Tree[List[char]] = Empty
+      var t: Tree[List[Char]] = Empty
       for (s <- args) {
         t = t insert toCharList(s)
       }

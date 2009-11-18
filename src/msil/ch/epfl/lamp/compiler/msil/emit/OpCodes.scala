@@ -1135,7 +1135,7 @@ object OpCodes {
 
     /**
      * Allocates a certain number of bytes from the local dynamic memory pool and pushes the
-     * address (a transient pointer, type *) of the first allocated byte onto the evaluation stack.
+     * address (a transient pointer, type *) of the first allocated Byte onto the evaluation stack.
      */
      final val Localloc = OpCode.Localloc
 

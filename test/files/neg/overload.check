@@ -1,6 +1,6 @@
 overload.scala:10: error: ambiguous reference to overloaded definition,
 both method f in class D of type (x: Any)Unit
-and  method f in class C of type (x: int)Unit
+and  method f in class C of type (x: Int)Unit
 match argument types (Int)
   (new D).f(1)
           ^

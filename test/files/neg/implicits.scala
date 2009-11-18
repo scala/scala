@@ -3,7 +3,7 @@ class Pos
 class Super
 
 object Super {
-  implicit def pos2int(p: Pos): int = 0
+  implicit def pos2int(p: Pos): Int = 0
 }
 
 object Sub extends Super {
@@ -17,7 +17,7 @@ object Test {
   import Super._
   import Sub._
   val p = new Pos
-  def f(x: int): int = x
+  def f(x: Int): Int = x
   f(p+1)
 }
 

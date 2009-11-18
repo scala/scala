@@ -5,7 +5,7 @@ class Directory(var dir_ : String)
   }
   dir_ = dir_.replaceAll("/{2,}", "/")
 
-  def this(serialized : Array[byte]) = {
+  def this(serialized : Array[Byte]) = {
     this(new String(serialized, "UTF-8"))
   }
 

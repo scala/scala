@@ -18,7 +18,7 @@ import java.io.IOException
  * @author Nikolay Mihaylov
  * @version 1.0
  */
-class FieldBuilder(name: String, declType: Type, attrs: int, fieldType: Type)
+class FieldBuilder(name: String, declType: Type, attrs: Int, fieldType: Type)
       extends FieldInfo(name, declType, attrs, fieldType)
       with ICustomAttributeSetter
       with Visitable

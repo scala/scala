@@ -52,7 +52,7 @@ abstract class ILPrinterVisitor extends Visitor {
     private var newline = true
 
     // print types without or with members?
-    protected var nomembers: boolean = false
+    protected var nomembers: Boolean = false
 
     // external assemblies
     protected var as: Array[Assembly] = null
@@ -90,13 +90,13 @@ abstract class ILPrinterVisitor extends Visitor {
     // methods to print code
     protected def print(s: String)  { align(); out.print(s)}
     protected def print(o: Object)  { align(); out.print(o) }
-    protected def print(c: char)    { align(); out.print(c) }
-    protected def print(`val`: int) { align(); out.print(`val`)}
-    protected def print(`val`: long){ align(); out.print(`val`)}
+    protected def print(c: Char)    { align(); out.print(c) }
+    protected def print(`val`: Int) { align(); out.print(`val`)}
+    protected def print(`val`: Long){ align(); out.print(`val`)}
     protected def println()         { out.println(); newline = true; padding = 0 }
-    protected def println(c: char)  { print(c); println() }
-    protected def println(i: int)   { print(i); println() }
-    protected def println(l: long)  { print(l); println() }
+    protected def println(c: Char)  { print(c); println() }
+    protected def println(i: Int)   { print(i); println() }
+    protected def println(l: Long)  { print(l); println() }
     protected def println(s: String){ print(s); println() }
     protected def println(o: Object){ print(o); println() }
     protected def printName(name: String) {
@@ -489,7 +489,7 @@ abstract class ILPrinterVisitor extends Visitor {
 
     //##########################################################################
 
-    def printAssemblySignature(assem: Assembly, extern: boolean) {
+    def printAssemblySignature(assem: Assembly, extern: Boolean) {
         print(".assembly ")
         if (extern)
             print("extern ")
