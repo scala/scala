@@ -7,7 +7,7 @@ package scala.tools.nsc
 package interpreter
 
 import scala.tools.nsc.io.AbstractFile
-import scala.util.ScalaClassLoader
+import util.ScalaClassLoader
 
 /**
  * A class loader that loads files from a {@link scala.tools.nsc.io.AbstractFile}.

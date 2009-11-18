@@ -15,7 +15,8 @@ import reflect.InvocationTargetException
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
 import scala.collection.mutable.{ ListBuffer, HashSet, ArrayBuffer }
-import scala.util.{ ScalaClassLoader, URLClassLoader }
+import scala.tools.nsc.util.ScalaClassLoader
+import ScalaClassLoader.URLClassLoader
 import scala.util.control.Exception.{ Catcher, catching, ultimately, unwrapping }
 
 import io.{ PlainFile, VirtualDirectory }
@@ -119,11 +120,14 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   /** the compiler's classpath, as URL's */
   val compilerClasspath: List[URL] = {
-    import scala.net.Utility.parseURL
+    def parseURL(s: String): Option[URL] =
+      catching(classOf[MalformedURLException]) opt new URL(s)
+
     val classpathPart =
       ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURL)
+    val codebasePart =
+      (compiler.settings.Xcodebase.value.split(" ")).toList flatMap parseURL
 
-    val codebasePart = (compiler.settings.Xcodebase.value.split(" ")).toList flatMap parseURL
     classpathPart ::: codebasePart
   }
 

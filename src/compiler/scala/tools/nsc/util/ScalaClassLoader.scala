@@ -3,7 +3,8 @@
  * @author  Paul Phillips
  */
 
-package scala.util
+package scala.tools.nsc
+package util
 
 import java.lang.{ ClassLoader => JavaClassLoader }
 import java.lang.reflect.{ Constructor, Modifier, Method }
@@ -55,15 +56,15 @@ trait ScalaClassLoader extends JavaClassLoader
   }
 }
 
-class URLClassLoader(urls: Seq[URL], parent: JavaClassLoader)
-    extends java.net.URLClassLoader(urls.toArray, parent)
-    with ScalaClassLoader
-{
-  /** Override to widen to public */
-  override def addURL(url: URL) = super.addURL(url)
-}
 
 object ScalaClassLoader {
+  class URLClassLoader(urls: Seq[URL], parent: JavaClassLoader)
+      extends java.net.URLClassLoader(urls.toArray, parent)
+      with ScalaClassLoader {
+    /** Override to widen to public */
+    override def addURL(url: URL) = super.addURL(url)
+  }
+
   def setContextLoader(cl: JavaClassLoader) = Thread.currentThread.setContextClassLoader(cl)
   def getContextLoader() = Thread.currentThread.getContextClassLoader()
   def getSystemLoader() = JavaClassLoader.getSystemClassLoader()
