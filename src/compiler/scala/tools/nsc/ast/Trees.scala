@@ -630,7 +630,7 @@ trait Trees {
         }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
-    val (lvdefs, gvdefs) = List.unzip {
+    val (lvdefs, gvdefs) =
       evdefs map {
         case vdef @ ValDef(mods, name, tpt, rhs) =>
           val fld = treeCopy.ValDef(
@@ -639,8 +639,8 @@ trait Trees {
             EmptyTree)
           val local = treeCopy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs)
           (local, fld)
-      }
-    }
+      } unzip
+
     val constrs = {
       if (constrMods.isTrait) {
         if (body forall treeInfo.isInterfaceMember) List()

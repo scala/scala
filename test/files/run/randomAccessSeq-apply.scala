@@ -6,7 +6,7 @@ object Test extends Application {
   assert(List(1) == single.toList)
 
   val two = RandomAccessSeq("a", "b")
-  assert("a" == two.first)
+  assert("a" == two.head)
   assert("b" == two.apply(1))
 
   println("OK")

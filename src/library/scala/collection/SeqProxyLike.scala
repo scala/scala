@@ -56,7 +56,6 @@ trait SeqProxyLike[+A, +This <: SeqLike[A, This] with Seq[A]] extends SeqLike[A,
   override def indices: Range = self.indices
   override def view = self.view
   override def view(from: Int, until: Int) = self.view(from, until)
-  override def findLastIndexOf(p: A => Boolean): Int = self.lastIndexWhere(p)
   override def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = (self zip that) forall { case (x,y) => f(x,y) }
   override def containsSlice[B](that: Seq[B]): Boolean = self.indexOfSeq(that) != -1
 }

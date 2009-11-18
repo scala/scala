@@ -454,17 +454,17 @@ trait ParallelMatching extends ast.TreeDSL
       private lazy val rowsplit = {
         require(scrut.tpe <:< head.tpe)
 
-        List.unzip(
-          for ((c, rows) <- pmatch pzip rest.rows) yield {
-            def canSkip                     = pivot canSkipSubsequences c
-            def passthrough(skip: Boolean)  = if (skip) None else Some(rows insert c)
+        val res = for ((c, rows) <- pmatch pzip rest.rows) yield {
+          def canSkip                     = pivot canSkipSubsequences c
+          def passthrough(skip: Boolean)  = if (skip) None else Some(rows insert c)
 
-            pivot.subsequences(c, scrut.seqType) match {
-              case Some(ps) => (Some(rows insert ps), passthrough(canSkip))
-              case None     => (None, passthrough(false))
-            }
+          pivot.subsequences(c, scrut.seqType) match {
+            case Some(ps) => (Some(rows insert ps), passthrough(canSkip))
+            case None     => (None, passthrough(false))
           }
-        ) match { case (l1, l2) => (l1.flatten, l2.flatten) }
+        }
+
+        res.unzip match { case (l1, l2) => (l1.flatten, l2.flatten) }
       }
 
       lazy val cond     = (pivot precondition pmatch).get   // length check
@@ -511,8 +511,8 @@ trait ParallelMatching extends ast.TreeDSL
       case class Yes(bx: Int, moreSpecific: Pattern, subsumed: List[Pattern])
       case class No(bx: Int, remaining: Pattern)
 
-      val (yeses, noes) : (List[Yes], List[No]) = List.unzip(
-        for ((pattern, j) <- pmatch.pzip()) yield {
+      val (yeses, noes) : (List[Yes], List[No]) =
+        (for ((pattern, j) <- pmatch.pzip()) yield {
           // scrutinee, head of pattern group
           val (s, p) = (pattern.tpe, head.necessaryType)
 
@@ -539,8 +539,7 @@ trait ParallelMatching extends ast.TreeDSL
             case x if  x.isDefault || pMatchesS             => (passl(), passr)
             case _                                          => (None, passr)
           }) : (Option[Yes], Option[No])
-        }
-      ) match { case (x,y) => (x.flatten, y.flatten) }
+        }).unzip match { case (x,y) => (x.flatten, y.flatten) }
 
       val moreSpecific = yeses map (_.moreSpecific)
       val subsumed = yeses map (x => (x.bx, x.subsumed))
@@ -739,12 +738,10 @@ trait ParallelMatching extends ast.TreeDSL
       /** Cut out the column containing the non-default pattern. */
       class Cut(index: Int) {
         /** The first two separate out the 'i'th pattern in each row from the remainder. */
-        private val (_column, _rows) =
-          List.unzip(rows map (_ extractColumn index))
+        private val (_column, _rows) = rows map (_ extractColumn index) unzip
 
         /** Now the 'i'th tvar is separated out and used as a new Scrutinee. */
-        private val (_pv, _tvars) =
-          tvars extractIndex index
+        private val (_pv, _tvars) = tvars extractIndex index
 
         /** The non-default pattern (others.head) replaces the column head. */
         private val (_ncol, _nrep) =

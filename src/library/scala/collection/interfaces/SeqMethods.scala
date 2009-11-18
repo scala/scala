@@ -48,7 +48,6 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def reverse: This
   def reverseIterator: Iterator[A]
   def segmentLength(p: A => Boolean, from: Int): Int
-  def slice(from: Int): Seq[A]
   def startsWith[B](that: Seq[B]): Boolean
   def startsWith[B](that: Seq[B], offset: Int): Boolean
   def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That

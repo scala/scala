@@ -62,7 +62,6 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    *
    *  @param   elems      the iterator object.
    *  @return the stack with the new elements on top.
-   *  @deprecated
    */
   def pushAll(elems: Iterator[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
 

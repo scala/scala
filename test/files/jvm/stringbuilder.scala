@@ -53,7 +53,7 @@ object Test2 extends TestCase("append") with Assert {
     val j1 = new java.lang.StringBuilder // Java 1.5+
     val s1 = new StringBuilder
     j1 append "###" append Array('0', '1', '2') append "xyz".subSequence(0, 3)
-    s1 append "###" append Array('0', '1', '2') append List('x', 'y', 'z')
+    s1 append "###" appendAll Array('0', '1', '2') appendAll List('x', 'y', 'z')
     assertEquals("s1.toString equals j1.toString", true, s1.toString equals j1.toString)
  }
 }
@@ -72,7 +72,7 @@ object Test3 extends TestCase("insert") with Assert {
     val j1 = new java.lang.StringBuilder // Java 1.5+
     val s1 = new StringBuilder
     j1 insert (0, "###") insert (0, Array('0', '1', '2')) insert (0, "xyz".subSequence(0, 3))
-    s1 insert (0, "###") insert (0, Array('0', '1', '2')) insert (0, List('x', 'y', 'z'))
+    s1 insert (0, "###") insertAll (0, Array('0', '1', '2')) insertAll (0, List('x', 'y', 'z'))
     //println("j1="+j1+", s1="+s1)//debug
     assertEquals("s1.toString equals j1.toString", true, s1.toString equals j1.toString)
 

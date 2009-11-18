@@ -308,10 +308,10 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     })
     case TypeRefType(prefix, symbol, typeArgs) => sep + (symbol.path match {
       case "scala.<repeated>" => flags match {
-        case TypeFlags(true) => toString(typeArgs.first) + "*"
+        case TypeFlags(true) => toString(typeArgs.head) + "*"
         case _ => "scala.Seq" + typeArgString(typeArgs)
       }
-      case "scala.<byname>" => "=> " + toString(typeArgs.first)
+      case "scala.<byname>" => "=> " + toString(typeArgs.head)
       case _ => {
         val path = StringUtil.cutSubstring(symbol.path)(".package") //remove package object reference
         StringUtil.trimStart(processName(path) + typeArgString(typeArgs), "<empty>.")

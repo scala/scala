@@ -397,48 +397,6 @@ object Array extends FallbackArrayBuilding {
     }
     a
   }
-
-  /** Create an array containing the values of a given function <code>f</code>
-   *  over given range <code>[0..n)</code>
-   */
-  @deprecated("use `Array.tabulate' instead")
-  def fromFunction[T: ClassManifest](f: Int => T)(n: Int): Array[T] = {
-    val a = new Array[T](n)
-    var i = 0
-    while (i < n) {
-      a(i) = f(i)
-      i += 1
-    }
-    a
-  }
-
-  /** Create an array containing the values of a given function <code>f</code>
-   *  over given range <code>[0..n1, 0..n2)</code>
-   */
-  @deprecated("use `Array.tabulate' instead")
-  def fromFunction[T: ClassManifest](f: (Int, Int) => T)(n1: Int, n2: Int): Array[Array[T]] =
-    fromFunction(i => fromFunction(f(i, _))(n2))(n1)
-
-  /** Create an array containing the values of a given function <code>f</code>
-   *  over given range <code>[0..n1, 0..n2, 0..n3)</code>
-   */
-  @deprecated("use `Array.tabulate' instead")
-  def fromFunction[T: ClassManifest](f: (Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int): Array[Array[Array[T]]] =
-    fromFunction(i => fromFunction(f(i, _, _))(n2, n3))(n1)
-
-  /** Create an array containing the values of a given function <code>f</code>
-   *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4)</code>
-   */
-  @deprecated("use `Array.tabulate' instead")
-  def fromFunction[T: ClassManifest](f: (Int, Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int, n4: Int): Array[Array[Array[Array[T]]]] =
-    fromFunction(i => fromFunction(f(i, _, _, _))(n2, n3, n4))(n1)
-
-  /** Create an array containing the values of a given function <code>f</code>
-   *  over given range <code>[0..n1, 0..n2, 0..n3, 0..n4, 0..n5)</code>
-   */
-  @deprecated("use `Array.tabulate' instead")
-  def fromFunction[T: ClassManifest](f: (Int, Int, Int, Int, Int) => T)(n1: Int, n2: Int, n3: Int, n4: Int, n5: Int): Array[Array[Array[Array[Array[T]]]]] =
-    fromFunction(i => fromFunction(f(i, _, _, _, _))(n2, n3, n4, n5))(n1)
 }
 
 /** This class represents polymorphic arrays. <code>Array[T]</code> is Scala's representation

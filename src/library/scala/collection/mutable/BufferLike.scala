@@ -139,9 +139,6 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   def ++=:(iter: Iterator[A]): This = { insertAll(0, iter.toSeq); this }
 
-  @deprecated("use ++=: instead")
-  final def ++:(iter: Iterator[A]): This = ++=:(iter)
-
   /** Appends elements to this buffer.
    *
    *  @param elems  the elements to append.

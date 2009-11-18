@@ -48,14 +48,6 @@ object Iterator {
    */
   def apply[A](elems: A*): Iterator[A] = elems.iterator
 
-  /** Concatenates the given argument iterators into a single iterator.
-   *
-   *  @param its the argument iterators that are to be concatenated
-   *  @return the concatenation of all the argument iterators
-   */
-  @deprecated("use <code>++</code>")
-  def concat[A](xss: Iterator[A]*): Iterator[A] = xss.iterator.flatten
-
   /** An iterator that returns the results of some element computation a number of times.
    *  @param   len  The number of elements returned
    *  @param   elem The element computation determinining each result
