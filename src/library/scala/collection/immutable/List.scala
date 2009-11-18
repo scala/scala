@@ -299,8 +299,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     if (isEmpty) Stream.Empty
     else new Stream.Cons(head, tail.toStream)
 
-  // !!! todo: work in patch
-
   /** Computes the difference between this list and the given list
    *  <code>that</code>.
    *
