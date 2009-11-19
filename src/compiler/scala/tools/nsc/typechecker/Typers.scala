@@ -1314,16 +1314,34 @@ trait Typers { self: Analyzer =>
       case ValDef(mods, name, tpt, rhs)
         if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL).toLong && !stat.symbol.isModuleVar =>
 
+        /** The annotations amongst `annots` that should go on a member of class
+         *  `memberClass` (field, getter, setter, beanGetter, beanSetter)
+         */
         def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol) = {
+
+          def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
+            // either one of the meta-annotations matches the `memberClass`
+            metaAnnots.exists(_.atp.typeSymbol == memberClass) ||
+            // else, if there is no `target` meta-annotation at all, use the default case
+            (metaAnnots.forall(ann => {
+              val annClass = ann.atp.typeSymbol
+              annClass != GetterClass && annClass != SetterClass &&
+              annClass != BeanGetterClass && annClass != BeanSetterClass
+            }) && orElse)
+          }
+
+          // there was no meta-annotation on `ann`. Look if the class annotations of
+          // `ann` has a `target` annotation, otherwise put `ann` only on fields.
+          def noMetaAnnot(ann: AnnotationInfo) = {
+            hasMatching(ann.atp.typeSymbol.annotations, memberClass == FieldClass)
+          }
+
           annots.filter(ann => ann.atp match {
-            case AnnotatedType(annots, _, _) =>
-              annots.exists(_.atp.typeSymbol == memberClass) ||
-              (memberClass == FieldClass && annots.forall(ann => {
-                val annClass = ann.atp.typeSymbol
-                annClass != GetterClass && annClass != SetterClass &&
-                annClass != BeanGetterClass && annClass != BeanSetterClass
-              }))
-            case _ => memberClass == FieldClass
+            // the annotation type has meta-annotations, e.g. @(foo @getter)
+            case AnnotatedType(metaAnnots, _, _) =>
+              hasMatching(metaAnnots, noMetaAnnot(ann))
+            // there are no meta-annotations, e.g. @foo
+            case _ => noMetaAnnot(ann)
           })
         }
 

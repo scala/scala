@@ -14,8 +14,8 @@ package scala.annotation.target
  * used to control to which of the above members the annotations on
  * the field are copied. By default, field annotations are only added
  * to the actual field, but not to any of the accessors. By annotating
- * the annotation type with one or several of the meta-annotations this
- * behavior can be changed.
+ * the annotation type or the annotation class with one or several of
+ * the meta-annotations this behavior can be changed.
  *
  * In the following example, the annotation {{{@Id}}} will be added
  * only to the bean getter {{{getX}}}. In order to annotate the field
@@ -38,6 +38,14 @@ package scala.annotation.target
  * class A {
  *   @Id @BeanProperty val x = 0
  * }
+ * }}}
+ *
+ * For annotations defined in Scala, a default target can be specified
+ * in the annotation class itself, for example
+ *
+ * {{{
+ * @getter
+ * class myAnnotation extends Annotation
  * }}}
  */
 final class beanGetter extends StaticAnnotation
