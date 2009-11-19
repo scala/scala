@@ -177,6 +177,8 @@ private[collection] sealed abstract class AssocMap[Key, +Value] extends immutabl
 
   def iterator : Iterator[(Key, Value)] = new AssocMapIterator(this)
 
+  @deprecated("use `iterator' instead") def elements = iterator
+
   override final def foreach[U](f : ((Key, Value)) =>  U) = this match {
     case Cons(key, value, tail) => { f((key, value)); tail.foreach(f); }
     case Nil() => {}

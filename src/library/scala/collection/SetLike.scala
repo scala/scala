@@ -105,6 +105,14 @@ self =>
    */
   def &(that: Set[A]): This = intersect(that)
 
+ /**  This method is an alias for <code>intersect</code>.
+   *  It computes an intersection with set <code>that</code>.
+   *  It removes all the elements that are not present in <code>that</code>.
+   *
+   *  @param that the set to intersect with
+   */
+  @deprecated("use & instead") def ** (that: Set[A]): This = intersect(that)
+
   /** The union of this set and the given set <code>that</code>.
    *
    *  @param that the set of elements to add

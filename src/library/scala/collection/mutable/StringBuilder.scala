@@ -92,6 +92,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    */
   def capacity: Int = array.length
 
+  /** Same as <code>ensureCapacity</code>. */
+  @deprecated("use `ensureCapacity' instead. An assignment is misleading because\n"+
+              "it can never decrease the capacity.")
+  def capacity_=(n: Int) { ensureCapacity(n) }
+
   /** <p>
    *    Ensures that the capacity is at least equal to the specified minimum.
    *    If the current capacity is less than the argument, then a new internal
@@ -292,6 +297,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def appendAll(x: Seq[Char]): StringBuilder =
     appendAll(x.toArray, 0, x.length)
 
+  @deprecated("use appendAll instead. This method is deprecated because of the\n"+
+              "possible confusion with `append(Any)'.")
+  def append(x: Seq[Char]): StringBuilder =
+    appendAll(x)
+
   /** <p>
    *    Appends the string representation of the <code>Char</code> array
    *    argument to this sequence.
@@ -307,6 +317,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    */
   def appendAll(x: Array[Char]): StringBuilder =
     appendAll(x, 0, x.length)
+
+  @deprecated("use appendAll instead. This method is deprecated because\n"+
+              "of the possible confusion with `append(Any)'.")
+  def append(x: Array[Char]): StringBuilder =
+    appendAll(x)
 
   /** <p>
    *    Appends the string representation of a subarray of the
@@ -330,6 +345,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     count += len
     this
   }
+
+  @deprecated("use appendAll instead. This method is deprecated because\n"+
+              "of the possible confusion with `append(Any, Int, Int)'.")
+  def append(x: Array[Char], offset: Int, len: Int): StringBuilder =
+    appendAll(x, offset, len)
 
   /** <p>
    *    Appends the string representation of the <code>Boolean</code>
@@ -458,6 +478,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     this
   }
 
+  @deprecated("use insertAll instead. This method is deprecated because of the\n"+
+              "possible confusion with `insert(Int, Any, Int, Int)'.")
+  def insert(index: Int, str: Array[Char], offset: Int, len: Int): StringBuilder =
+    insertAll(index, str, offset, len)
+
   /** <p>
    *    Inserts the string representation of the <code>Any</code>
    *    argument into this character sequence.
@@ -512,6 +537,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
   def insertAll(at: Int, x: Seq[Char]): StringBuilder =
     insertAll(at, x.toArray)
 
+  @deprecated("use insertAll instead. This method is deprecated because of\n"+
+              "the possible confusion with `insert(Int, Any)'.")
+  def insert(at: Int, x: Seq[Char]): StringBuilder =
+    insertAll(at, x)
+
   /** Inserts the string representation of the <code>Char</code> array
    *  argument into this sequence.
    *
@@ -530,6 +560,11 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
     count += len
     this
   }
+
+  @deprecated("use insertAll instead. This method is deprecated because of\n"+
+              "the possible confusion with `insert(Int, Any)'.")
+  def insert(at: Int, x: Array[Char]): StringBuilder =
+    insertAll(at, x)
 
   /** <p>
    *    Inserts the string representation of the <code>Boolean</code> argument

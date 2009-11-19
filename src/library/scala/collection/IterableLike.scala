@@ -360,6 +360,11 @@ self =>
    */
   override def view(from: Int, until: Int) = view.slice(from, until)
 
+  @deprecated("use `head' instead") def first: A = head
+
+  /** <code>None</code> if iterable is empty. */
+  @deprecated("use `headOption' instead") def firstOption: Option[A] = headOption
+
   /**
    * returns a projection that can be used to call non-strict <code>filter</code>,
    * <code>map</code>, and <code>flatMap</code> methods that build projections

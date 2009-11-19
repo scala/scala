@@ -293,6 +293,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator
 
+  @deprecated("use `reverseIterator' instead")
+  def reversedElements = reverseIterator
+
   /**
    * Checks whether the argument sequence is contained at the
    * specified index within the receiver object.
@@ -609,6 +612,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   /** Need to override string, so that it's not the Function1's string that gets mixed in.
    */
   override def toString = super[IterableLike].toString
+
+  /** Returns index of the last element satisying a predicate, or -1. */
+  @deprecated("use `lastIndexWhere' instead")
+  def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
 
   @deprecated("Should be replaced by <code>(s1, s2) forall { case (x, y) => f(x, y) }</code>")
   def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
