@@ -467,7 +467,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case _ =>
           args
       }
-      List.map2(formals, args1) { (formal, arg) =>
+      (formals, args1).zipped map { (formal, arg) =>
         if (formal.typeSymbol != ByNameParamClass) {
           arg
         } else if (isByNameRef(arg)) {

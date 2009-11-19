@@ -2861,9 +2861,8 @@ A type's typeSymbol should never be inspected directly.
         val clonedSyms = origSyms map (_.cloneSymbol)
         val clonedInfos = clonedSyms map (_.info.substSym(origSyms, clonedSyms))
         val transformedInfos = clonedInfos mapConserve (this)
-        List.map2(clonedSyms, transformedInfos) {
-          ((newSym, newInfo) => newSym.setInfo(newInfo))
-        }
+        (clonedSyms, transformedInfos).zipped map (_ setInfo _)
+
         clonedSyms
       }
     }
@@ -3845,12 +3844,12 @@ A type's typeSymbol should never be inspected directly.
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
 //        assert((tparams1 map (_.typeParams.length)) == (tparams2 map (_.typeParams.length)))
         (tparams1.length == tparams2.length &&
-         List.forall2(tparams1, tparams2)
+         (tparams1, tparams2).zipped.forall
            ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) && //@M looks like it might suffer from same problem as #2210
          res1 =:= res2.substSym(tparams2, tparams1))
       case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
         (tparams1.length == tparams2.length &&
-         List.forall2(tparams1, tparams2)
+         (tparams1, tparams2).zipped.forall
            ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) && //@M looks like it might suffer from same problem as #2210
          res1 =:= res2.substSym(tparams2, tparams1))
       case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
@@ -3891,8 +3890,7 @@ A type's typeSymbol should never be inspected directly.
    *  types?
    */
   def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean =
-    tps1.length == tps2.length &&
-    List.forall2(tps1, tps2)((tp1, tp2) => tp1 =:= tp2)
+    tps1.length == tps2.length && ((tps1, tps2).zipped forall (_ =:= _))
 
   private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
   private var basetypeRecursions: Int = 0
@@ -3974,16 +3972,16 @@ A type's typeSymbol should never be inspected directly.
         tparams1.length == tparams2.length && {
           if(tparams1.isEmpty) res1 <:< res2 // fast-path: monomorphic nullary method type
           else if(tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
-            List.forall2(tparams1, tparams2)((p1, p2) =>
-              p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
+            ((tparams1, tparams2).zipped forall ((p1, p2) =>
+              p2.info.substSym(tparams2, tparams1) <:< p1.info)) &&
             res1 <:< res2.substSym(tparams2, tparams1)
           } else { // normalized higher-kinded type
             //@M for an example of why we need to generate fresh symbols, see neg/tcpoly_ticket2101.scala
             val tpsFresh = cloneSymbols(tparams1) // @M cloneSymbols(tparams2) should be equivalent -- TODO: check
 
-            (List.forall2(tparams1, tparams2)((p1, p2) =>
-              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&
-              res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh))
+            ((tparams1, tparams2).zipped forall ((p1, p2) =>
+              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh))) &&
+              res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh)
 
             //@M the forall in the previous test could be optimised to the following,
             // but not worth the extra complexity since it only shaves 1s from quick.comp
@@ -4200,8 +4198,7 @@ A type's typeSymbol should never be inspected directly.
    *  of `tps2'?
    */
   def isSubTypes(tps1: List[Type], tps2: List[Type]): Boolean =
-    tps1.length == tps2.length &&
-    List.forall2(tps1, tps2)((tp1, tp2) => tp1 <:< tp2)
+    tps1.length == tps2.length && ((tps1, tps2).zipped forall (_ <:< _))
 
   /** Does type `tp' implement symbol `sym' with same or
    *  stronger type? Exact only if `sym' is a member of some
@@ -4262,11 +4259,11 @@ A type's typeSymbol should never be inspected directly.
 
   /** Are `tps1' and `tps2' lists of pairwise equivalent types? */
   private def matchingParams(tps1: List[Type], tps2: List[Type], tps1isJava: Boolean, tps2isJava: Boolean): Boolean =
-    tps1.length == tps2.length &&
-    List.forall2(tps1, tps2)((tp1, tp2) =>
+    (tps1.length == tps2.length) &&
+    ((tps1, tps2).zipped forall ((tp1, tp2) =>
       (tp1 =:= tp2) ||
       tps1isJava && tp2.typeSymbol == ObjectClass && tp1.typeSymbol == AnyClass ||
-      tps2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass)
+      tps2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass))
 
   /** like map2, but returns list `xs' itself - instead of a copy - if function
    *  `f' maps all elements to themselves.
@@ -4356,7 +4353,7 @@ A type's typeSymbol should never be inspected directly.
    */
   def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): Boolean = {
     val bounds = instantiatedBounds(pre, owner, tparams, targs)
-    !(List.map2(bounds, targs)((bound, targ) => bound containsType targ) contains false)
+    (bounds, targs).zipped forall (_ containsType _)
   }
 
   def instantiatedBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): List[TypeBounds] =
@@ -4514,7 +4511,7 @@ A type's typeSymbol should never be inspected directly.
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
-          List.map2(tparams, matchingBounds(ts, tparams).transpose)
+          (tparams, matchingBounds(ts, tparams).transpose).zipped map
             ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds, depth))),
           lub0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(params, _) :: rest =>
@@ -4542,8 +4539,7 @@ A type's typeSymbol should never be inspected directly.
               if (syms contains NoSymbol) NoSymbol
               else {
                 val symtypes =
-                  (List.map2(narrowts, syms)
-                     ((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType)));
+                  (narrowts, syms).zipped map ((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
                 if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
                   proto.cloneSymbol(lubRefined.typeSymbol).setInfo(lub(symtypes, decr(depth)))
                 else if (symtypes.tail forall (symtypes.head =:=))
@@ -4615,7 +4611,7 @@ A type's typeSymbol should never be inspected directly.
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
         PolyType(
-          List.map2(tparams, matchingBounds(ts, tparams).transpose)
+          (tparams, matchingBounds(ts, tparams).transpose).zipped map
           ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth))),
           glb0(matchingInstTypes(ts, tparams)))
       case ts @ MethodType(params, _) :: rest =>

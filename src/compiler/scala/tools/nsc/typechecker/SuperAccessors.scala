@@ -54,11 +54,11 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     }
 */
     private def transformArgs(args: List[Tree], formals: List[Type]) =
-      List.map2(args, formals){ (arg, formal) =>
+      ((args, formals).zipped map { (arg, formal) =>
         if (formal.typeSymbol == definitions.ByNameParamClass)
           withInvalidOwner { checkPackedConforms(transform(arg), formal.typeArgs.head) }
         else transform(arg)
-      } :::
+      }) :::
       (args drop formals.length map transform)
 
     private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
@@ -290,7 +290,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           val obj = protAcc.paramss.head.head // receiver
           protAcc.paramss.tail.zip(allParamTypes(sym.tpe)).foldLeft(Select(Ident(obj), sym): Tree) (
               (fun, pvparams) => {
-                Apply(fun, (List.map2(pvparams._1, pvparams._2) { (v, origTpe) => makeArg(v, obj, origTpe) } ))
+                Apply(fun, (pvparams._1, pvparams._2).zipped map (makeArg(_, obj, _)))
               })
         })
 

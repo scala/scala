@@ -888,8 +888,8 @@ abstract class RefChecks extends InfoTransform {
           unit.error(pos, ex.getMessage());
           if (settings.explaintypes.value) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, argtps).bounds)
-            List.map2(argtps, bounds)((targ, bound) => explainTypes(bound.lo, targ))
-            List.map2(argtps, bounds)((targ, bound) => explainTypes(targ, bound.hi))
+            (argtps, bounds).zipped map ((targ, bound) => explainTypes(bound.lo, targ))
+            (argtps, bounds).zipped map ((targ, bound) => explainTypes(targ, bound.hi))
             ()
           }
       }
@@ -899,9 +899,7 @@ abstract class RefChecks extends InfoTransform {
           val clazz = pat.tpe.typeSymbol;
           clazz == seltpe.typeSymbol &&
           clazz.isClass && (clazz hasFlag CASE) &&
-          List.forall2(
-            args,
-            clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable)
+          ((args, clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes).zipped forall isIrrefutable)
         case Typed(pat, tpt) =>
           seltpe <:< tpt.tpe
         case Ident(nme.WILDCARD) =>

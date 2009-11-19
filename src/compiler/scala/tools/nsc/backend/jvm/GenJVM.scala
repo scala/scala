@@ -47,7 +47,8 @@ abstract class GenJVM extends SubComponent {
     override def run {
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
       if (settings.Xdce.value)
-        icodes.classes.retain { (sym: Symbol, cls: IClass) => !inliner.isClosureClass(sym) || deadCode.liveClosures(sym) }
+        for ((sym, cls) <- icodes.classes ; if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
+          icodes.classes -= sym
 
       classes.valuesIterator foreach apply
     }
@@ -505,7 +506,7 @@ abstract class GenJVM extends SubComponent {
         val innerClassesAttr = jclass.getInnerClasses()
         // sort them so inner classes succeed their enclosing class
         // to satisfy the Eclipse Java compiler
-        for (innerSym <- innerClasses.toList.sort(_.name.length < _.name.length)) {
+        for (innerSym <- innerClasses.toList sortBy (_.name.length)) {
           var outerName = javaName(innerSym.rawowner)
           // remove the trailing '$'
           if (outerName.endsWith("$") && isTopLevelModule(innerSym.rawowner))

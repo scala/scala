@@ -1141,7 +1141,7 @@ trait Typers { self: Analyzer =>
                 if (!supertparams.isEmpty) error(supertpt.pos, "missing type arguments")
             }
 
-            List.map2(cstats1, treeInfo.preSuperFields(templ.body)) {
+            (cstats1, treeInfo.preSuperFields(templ.body)).zipped map {
               (ldef, gdef) => gdef.tpt.tpe = ldef.symbol.tpe
             }
           case _ =>
@@ -1573,7 +1573,7 @@ trait Typers { self: Analyzer =>
         if (!superClazz.hasFlag(JAVA)) {
           val superParamAccessors = superClazz.constrParamAccessors
           if (superParamAccessors.length == superArgs.length) {
-            List.map2(superParamAccessors, superArgs) { (superAcc, superArg) =>
+            (superParamAccessors, superArgs).zipped map { (superAcc, superArg) =>
               superArg match {
                 case Ident(name) =>
                   if (vparamss.exists(_.exists(_.symbol == superArg.symbol))) {
@@ -1924,7 +1924,7 @@ trait Typers { self: Analyzer =>
       if (fun.vparams.length != argpts.length)
         errorTree(fun, "wrong number of parameters; expected = " + argpts.length)
       else {
-        val vparamSyms = List.map2(fun.vparams, argpts) { (vparam, argpt) =>
+        val vparamSyms = (fun.vparams, argpts).zipped map { (vparam, argpt) =>
           if (vparam.tpt.isEmpty) {
             vparam.tpt.tpe =
               if (isFullyDefined(argpt)) argpt
@@ -2101,13 +2101,13 @@ trait Typers { self: Analyzer =>
         val losym = tparam.info.bounds.lo.typeSymbol
         losym != NothingClass && losym != NullClass
       }
-      List.exists2(formals, args) {
+      (formals, args).zipped exists {
         case (formal, Function(vparams, _)) =>
           (vparams exists (_.tpt.isEmpty)) &&
           vparams.length <= MaxFunctionArity &&
           (formal baseType FunctionClass(vparams.length) match {
             case TypeRef(_, _, formalargs) =>
-              List.exists2(formalargs, vparams) ((formalarg, vparam) =>
+              (formalargs, vparams).zipped.exists ((formalarg, vparam) =>
                 vparam.tpt.isEmpty && (tparams exists (formalarg contains))) &&
               (tparams forall isLowerBounded)
             case _ =>
@@ -2336,7 +2336,7 @@ trait Typers { self: Analyzer =>
             } else {
               assert((mode & PATTERNmode) == 0); // this case cannot arise for patterns
               val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
-              val strictTargs = List.map2(lenientTargs, tparams)((targ, tparam) =>
+              val strictTargs = (lenientTargs, tparams).zipped map ((targ, tparam) =>
                 if (targ == WildcardType) tparam.tpe else targ) //@M TODO: should probably be .tpeHK
               def typedArgToPoly(arg: Tree, formal: Type): Tree = {
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
@@ -2348,7 +2348,7 @@ trait Typers { self: Analyzer =>
                 }
                 arg1
               }
-              val args1 = List.map2(args, formals)(typedArgToPoly)
+              val args1 = (args, formals).zipped map typedArgToPoly
               if (args1 exists (_.tpe.isError)) setError(tree)
               else {
                 if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info));//debug
@@ -3609,7 +3609,7 @@ trait Typers { self: Analyzer =>
                              // @M! added the latter condition
                              appliedType(tpt1.tpe, argtypes)
                           else tpt1.tpe.instantiateTypeParams(tparams, argtypes)
-            List.map2(args, tparams) { (arg, tparam) => arg match {
+            (args, tparams).zipped map { (arg, tparam) => arg match {
               // note: can't use args1 in selector, because Bind's got replaced
               case Bind(_, _) =>
                 if (arg.symbol.isAbstractType)
@@ -3693,7 +3693,7 @@ trait Typers { self: Analyzer =>
         case UnApply(fun, args) =>
           val fun1 = typed(fun)
           val tpes = formalTypes(unapplyTypeList(fun.symbol, fun1.tpe), args.length)
-          val args1 = List.map2(args, tpes)(typedPattern(_, _))
+          val args1 = (args, tpes).zipped map (typedPattern(_, _))
           treeCopy.UnApply(tree, fun1, args1) setType pt
 
         case ArrayValue(elemtpt, elems) =>

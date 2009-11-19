@@ -404,7 +404,7 @@ trait Infer {
               val l = args.length - 1
               l == formals.length &&
               sym == FunctionClass(l) &&
-              List.forall2(args, formals) (isPlausiblySubType) &&
+              ((args, formals).zipped forall isPlausiblySubType) &&
               isPlausiblySubType(tp.resultApprox, args.last)
             }
           case _ =>
@@ -458,7 +458,7 @@ trait Infer {
     def isCoercible(tp: Type, pt: Type): Boolean = false
 
     def isCompatibleArgs(tps: List[Type], pts: List[Type]): Boolean =
-      List.map2(tps, pts)((tp, pt) => isCompatibleArg(tp, pt)) forall (x => x)
+      (tps, pts).zipped forall isCompatibleArg
 
     /* -- Type instantiation------------------------------------------------ */
 
@@ -562,7 +562,7 @@ trait Infer {
       }
       val tvars = tparams map freshVar
       if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
-        List.map2(tparams, tvars) ((tparam, tvar) =>
+        (tparams, tvars).zipped map ((tparam, tvar) =>
           instantiateToBound(tvar, varianceInTypes(formals)(tparam)))
       else
         tvars map (tvar => WildcardType)
@@ -582,7 +582,7 @@ trait Infer {
       @inline def notCovariantIn(tparam: Symbol, restpe: Type) =
         (varianceInType(restpe)(tparam) & COVARIANT) == 0  // tparam occurred non-covariantly (in invariant or contravariant position)
 
-      List.map2(tparams, targs) {(tparam, targ) =>
+      (tparams, targs).zipped map { (tparam, targ) =>
         if (targ.typeSymbol == NothingClass && (restpe == WildcardType || notCovariantIn(tparam, restpe))) {
           uninstantiated += tparam
           tparam.tpeHK  //@M tparam.tpe was wrong: we only want the type constructor,
@@ -659,7 +659,7 @@ trait Infer {
         if (!isFullyDefined(tvar)) tvar.constr.inst = NoType
 
       // Then define remaining type variables from argument types.
-      List.map2(argtpes, formals) {(argtpe, formal) =>
+      (argtpes, formals).zipped map { (argtpe, formal) =>
         //@M isCompatible has side-effect: isSubtype0 will register subtype checks in the tvar's bounds
         if (!isCompatibleArg(argtpe.deconst.instantiateTypeParams(tparams, tvars),
                              formal.instantiateTypeParams(tparams, tvars))) {
@@ -1032,8 +1032,8 @@ trait Infer {
                 (tparams map (_.defString)).mkString("[", ",", "]"))
           if (settings.explaintypes.value) {
             val bounds = tparams map (tp => tp.info.instantiateTypeParams(tparams, targs).bounds)
-            List.map2(targs, bounds)((targ, bound) => explainTypes(bound.lo, targ))
-            List.map2(targs, bounds)((targ, bound) => explainTypes(targ, bound.hi))
+            (targs, bounds).zipped foreach ((targ, bound) => explainTypes(bound.lo, targ))
+            (targs, bounds).zipped foreach ((targ, bound) => explainTypes(targ, bound.hi))
             ()
           }
         }

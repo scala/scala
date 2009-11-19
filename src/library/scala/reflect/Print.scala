@@ -103,11 +103,8 @@ object Print extends Function1[Any, String] {
     case reflect.MethodType(formals, resultType) =>
       formals.map(Print).mkString("(", ", ", ")") + " => " + Print(resultType)
     case reflect.PolyType(typeParams, typeBounds, resultType) =>
-      (List.map2(typeParams, typeBounds)
-        ((tp, tb) => "[" + Print(tb._1) + " :> " + Print(tp) + " :> " + Print(tb._2) + "]")).
-          mkString("[", ", ", "]") + " -> " + Print(resultType)
-      // val z = (typeParams, typeBounds).zip map { case (tp, tb) => "[" + Print(tb._1) + " :> " + Print(tp) + " :> " + Print(tb._2) + "]" }
-      // z.mkString("[", ", ", "]") + " -> " + Print(resultType)
+      val z = (typeParams, typeBounds).zip map { case (tp, tb) => "[" + Print(tb._1) + " :> " + Print(tp) + " :> " + Print(tb._2) + "]" }
+      z.mkString("[", ", ", "]") + " -> " + Print(resultType)
     case _ =>
       "???"
   }

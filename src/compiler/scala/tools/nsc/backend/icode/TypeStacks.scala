@@ -18,7 +18,7 @@ trait TypeStacks { self: ICodes =>
   import opcodes._
   import global.{Symbol, Type, definitions}
 
-  /* This class simulates the type of the opperand
+  /* This class simulates the type of the operand
    * stack of the ICode.
    */
   type Rep = List[TypeKind]
@@ -71,20 +71,22 @@ trait TypeStacks { self: ICodes =>
     def apply(n: Int): TypeKind = types(n)
 
     /**
-     * A TypeStack aggress with another one if they have the same
+     * A TypeStack agrees with another one if they have the same
      * length and each type kind agrees position-wise. Two
      * types agree if one is a subtype of the other.
      */
     def agreesWith(other: TypeStack): Boolean =
       (types.length == other.types.length) &&
-      List.forall2(types, other.types) ((t1, t2) => t1 <:< t2 || t2 <:< t1)
+      ((types, other.types).zipped forall ((t1, t2) => t1 <:< t2 || t2 <:< t1))
 
     /* This method returns a String representation of the stack */
     override def toString() = types.mkString("\n", "\n", "\n")
 
-    override def equals(other: Any): Boolean =
-      other.isInstanceOf[TypeStack] &&
-      List.forall2(other.asInstanceOf[TypeStack].types, types)((a, b) => a == b)
+    override def hashCode() = types.hashCode()
+    override def equals(other: Any): Boolean = other match {
+      case x: TypeStack => x.types sameElements types
+      case _            => false
+    }
   }
 
 }

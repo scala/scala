@@ -306,7 +306,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @return     this list without the elements of the given list
    *              <code>that</code>.
    */
-  @deprecated("use `diff' instead")
+  @deprecated("use `list1.toSet -- list2` instead")
   def -- [B >: A](that: List[B]): List[B] = {
     val b = new ListBuffer[B]
     var these = this
@@ -324,7 +324,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @return     this list without occurrences of the given object
    *              <code>x</code>.
    */
-  @deprecated("use `diff' instead")
+  @deprecated("use `filterNot (_ == x)` instead")
   def - [B >: A](x: B): List[B] = {
     val b = new ListBuffer[B]
     var these = this
@@ -360,13 +360,13 @@ sealed abstract class List[+A] extends LinearSeq[A]
       var left2 = l2
 
       while (!left1.isEmpty && !left2.isEmpty) {
-	if(lt(left1.head, left2.head)) {
-	  res += left1.head
-	  left1 = left1.tail
-	} else {
-	  res += left2.head
-	  left2 = left2.tail
-	}
+        if(lt(left1.head, left2.head)) {
+          res += left1.head
+          left1 = left1.tail
+        } else {
+          res += left2.head
+          left2 = left2.tail
+        }
       }
 
       res ++= left1
@@ -382,12 +382,12 @@ sealed abstract class List[+A] extends LinearSeq[A]
       var left = lst
 
       while (!left.isEmpty) {
-	res1 += left.head
-	left = left.tail
-	if (!left.isEmpty) {
-	  res2 += left.head
-	  left = left.tail
-	}
+        res1 += left.head
+        left = left.tail
+        if (!left.isEmpty) {
+          res2 += left.head
+          left = left.tail
+        }
       }
 
       (res1.toList, res2.toList)
@@ -397,15 +397,15 @@ sealed abstract class List[+A] extends LinearSeq[A]
     /** Merge-sort the specified list */
     def ms(lst: List[A]): List[A] =
       lst match {
-	case Nil => lst
-	case x :: Nil => lst
-	case x :: y :: Nil =>
-	  if (lt(x,y))
-	    lst
-	  else
-	    y :: x :: Nil
+        case Nil => lst
+        case x :: Nil => lst
+        case x :: y :: Nil =>
+          if (lt(x,y))
+            lst
+          else
+            y :: x :: Nil
 
-	case lst =>
+        case lst =>
           val (l1, l2) = split(lst)
           val l1s = ms(l1)
           val l2s = ms(l2)

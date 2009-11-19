@@ -477,7 +477,7 @@ trait ParallelMatching extends ast.TreeDSL
     // @todo: equals test for same constant
     class MixEquals(val pmatch: PatternMatch, val rest: Rep) extends RuleApplication {
       private lazy val labelBody =
-        remake(List.map2(rest.rows.tail, pmatch.tail)(_ insert _)).toTree
+        remake((rest.rows.tail, pmatch.tail).zipped map (_ insert _)).toTree
 
       private lazy val rhs =
         decodedEqualsType(head.tpe) match {
