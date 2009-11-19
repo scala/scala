@@ -84,7 +84,7 @@ class Path private[io] (val jfile: JFile)
   /** Creates a new Path with the specified path appended.  Assumes
    *  the type of the new component implies the type of the result.
    */
-  def /(child: Path): Path = new Path(new JFile(jfile, child.path))
+  def /(child: Path): Path = if (isEmpty) child else new Path(new JFile(jfile, child.path))
   def /(child: Directory): Directory = /(child: Path).toDirectory
   def /(child: File): File = /(child: Path).toFile
 
@@ -110,10 +110,24 @@ class Path private[io] (val jfile: JFile)
   // derived from identity
   def root: Option[Path] = roots find (this startsWith _)
   def segments: List[String] = (path split separator).toList filterNot (_.length == 0)
-  def parent: Option[Path] = Option(jfile.getParent()) map Path.apply
-  def parents: List[Path] = parent match {
-    case None     => Nil
-    case Some(p)  => p :: p.parents
+  /**
+   * @return The path of the parent directory, or root if path is already root
+   */
+  def parent: Path = {
+    val p = path match {
+      case "" | "." => ".."
+      case _ if path endsWith ".." => path + separator + ".." // the only solution
+      case _ => jfile.getParent match {
+          case null if isAbsolute => path // it should be a root. BTW, don't need to worry about relative pathed root
+          case null => "."                // a file ot dir under pwd
+          case x => x
+        }
+    }
+    new Directory(new JFile(p))
+  }
+  def parents: List[Path] = {
+    val p = parent
+    if (p isSame this) Nil else p :: p.parents
   }
   // if name ends with an extension (e.g. "foo.jpg") returns the extension ("jpg"), otherwise ""
   def extension: String = (name lastIndexOf '.') match {
@@ -131,8 +145,8 @@ class Path private[io] (val jfile: JFile)
   def isDirectory = jfile.isDirectory()
   def isAbsolute = jfile.isAbsolute()
   def isHidden = jfile.isHidden()
-  def isSymlink = parent.isDefined && {
-    val x = parent.get / name
+  def isSymlink = {
+    val x = parent / name
     x.normalize != x.toAbsolute
   }
   def isEmpty = path.length == 0
@@ -145,7 +159,7 @@ class Path private[io] (val jfile: JFile)
   // Boolean path comparisons
   def endsWith(other: Path) = segments endsWith other.segments
   def startsWith(other: Path) = segments startsWith other.segments
-  def isSame(other: Path) = toAbsolute == other.toAbsolute
+  def isSame(other: Path) = normalize == other.normalize
   def isFresher(other: Path) = lastModified > other.lastModified
 
   // creations
