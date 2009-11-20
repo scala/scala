@@ -246,7 +246,7 @@ object Test {
     pq.clear
     pq ++= (0 until 10)
     pq += 5
-    val ind = pq.lastIndexWhere(_ == 5)
+    //val ind = pq.lastIndexWhere(_ == 5)
     //println(ind)
     //println(pq)
     //assert(ind == 5)
