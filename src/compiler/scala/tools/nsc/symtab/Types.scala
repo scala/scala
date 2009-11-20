@@ -1564,6 +1564,8 @@ A type's typeSymbol should never be inspected directly.
         parentsPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
           parentsCache = thisInfo.parents map transform
+        } else if (parentsCache == null) { // seems this can happen if things are currupted enough, see #2641
+          parentsCache = List(AnyClass.tpe)
         }
       }
       parentsCache
