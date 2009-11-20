@@ -627,9 +627,9 @@ abstract class Pickler extends SubComponent {
           args foreach writeClassfileAnnotArg
           ANNOTARGARRAY
 
-        case (target: Symbol, children: List[Symbol]) =>
+        case (target: Symbol, children: List[_]) =>
           writeRef(target)
-          writeRefs(children)
+          writeRefs(children.asInstanceOf[List[Symbol]])
           CHILDREN
 
         case EmptyTree =>

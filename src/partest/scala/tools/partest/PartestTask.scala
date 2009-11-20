@@ -234,8 +234,9 @@ class PartestTask extends Task {
       }
     }
 
-    val (allSuccesses, allFailures): (Int, Int) =
-      (testFileSets map runSet).foldLeft((0, 0))((sums, x) => (sums._1 + x._1, sums._2 + x._2))
+    val _results = testFileSets map runSet
+    val allSuccesses = _results map (_._1) sum
+    val allFailures = _results map (_._2) sum
 
     def f = if (errorOnFailed && allFailures > 0) error(_) else log(_: String)
     def s = if (allFailures > 1) "s" else ""

@@ -511,8 +511,11 @@ trait ParallelMatching extends ast.TreeDSL
       case class Yes(bx: Int, moreSpecific: Pattern, subsumed: List[Pattern])
       case class No(bx: Int, remaining: Pattern)
 
-      val (yeses, noes) : (List[Yes], List[No]) =
-        (for ((pattern, j) <- pmatch.pzip()) yield {
+      val (yeses, noes) = {
+        val _ys = new ListBuffer[Yes]
+        val _ns = new ListBuffer[No]
+
+        for ((pattern, j) <- pmatch.pzip()) {
           // scrutinee, head of pattern group
           val (s, p) = (pattern.tpe, head.necessaryType)
 
@@ -530,7 +533,7 @@ trait ParallelMatching extends ast.TreeDSL
           def typed(pp: Tree) = passl(ifEquiv(Pattern(pp)))
           def subs()          = passl(ifEquiv(NoPattern), pattern subpatterns pmatch)
 
-          (pattern match {
+          val (oneY, oneN) = pattern match {
             case Pattern(LIT(null), _) if !(p =:= s)        => (None, passr)      // (1)
             case x if isObjectTest                          => (passl(), None)    // (2)
             case Pattern(Typed(pp, _), _)     if sMatchesP  => (typed(pp), None)  // (4)
@@ -538,8 +541,12 @@ trait ParallelMatching extends ast.TreeDSL
             case x if !x.isDefault && sMatchesP             => (subs(), None)
             case x if  x.isDefault || pMatchesS             => (passl(), passr)
             case _                                          => (None, passr)
-          }) : (Option[Yes], Option[No])
-        }).unzip match { case (x,y) => (x.flatten, y.flatten) }
+          }
+          oneY map (_ys +=)
+          oneN map (_ns +=)
+        }
+        (_ys.toList, _ns.toList)
+      }
 
       val moreSpecific = yeses map (_.moreSpecific)
       val subsumed = yeses map (x => (x.bx, x.subsumed))
