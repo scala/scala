@@ -31,7 +31,7 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
 
   override def isEmpty = next eq this
 
-  override def length: Int = if (isEmpty) 0 else next.length
+  override def length: Int = if (isEmpty) 0 else next.length + 1
 
   override def head: A    = elem
 

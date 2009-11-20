@@ -90,9 +90,12 @@ trait ResizableArray[A] extends IndexedSeq[A]
       var newsize = array.length * 2
       while (n > newsize)
         newsize = newsize * 2
+    // println("Internal array before, size " + size0 + ": " + array.toList)
       val newar: Array[AnyRef] = new Array(newsize)
       Array.copy(array, 0, newar, 0, size0)
+    // println("Internal array after,  size " + size0 + ": " + array.toList)
       array = newar
+    // println("New array after,  size      " + size0 + ": " + newar.toList)
     }
   }
 
