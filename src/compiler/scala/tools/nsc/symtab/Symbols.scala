@@ -563,14 +563,14 @@ trait Symbols {
     final def isStaticOwner: Boolean =
       isPackageClass || isModuleClass && isStatic
 
-    /** Is this symbol final?*/
+    /** Is this symbol final? */
     final def isFinal: Boolean = (
       hasFlag(FINAL) ||
       isTerm && (
         hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE))
     )
 
-    /** Is this symbol a sealed class?*/
+    /** Is this symbol a sealed class? */
     final def isSealed: Boolean =
       isClass && (hasFlag(SEALED) || isValueClass(this))
 

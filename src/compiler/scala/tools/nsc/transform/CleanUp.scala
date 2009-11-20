@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyrights 2005-2009 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -28,6 +28,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private val newInits = new ListBuffer[Tree]
 
     private val classConstantMeth = new HashMap[String, Symbol]
+    private val symbolStaticFields = new HashMap[String, (Symbol, Tree, Tree)] // alex
 
     private var localTyper: analyzer.Typer = null
 
@@ -501,7 +502,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        * constructor. */
       case Template(parents, self, body) =>
         localTyper = typer.atOwner(tree, currentClass)
-        if (!forMSIL) {
+        val transformedTemplate = if (!forMSIL) { // alex - assigned this to a val
           classConstantMeth.clear
           newDefs.clear
           newInits.clear
@@ -525,6 +526,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             treeCopy.Template(tree, parents, self, newBody)
         }
         else super.transform(tree)
+        applySymbolFieldInitsToStaticCtor(transformedTemplate.asInstanceOf[Template]) // alex - postprocess to include static ctors
 
       case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
         val tpe = c.typeValue
@@ -569,9 +571,148 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         }
         super.transform(tree)
 
+     /*
+      * This transformation should identify Scala symbol invocations in the tree and replace them
+      * with references to a static member. Also, whenever a class has at least a single symbol invocation
+      * somewhere in its methods, a new static member should be created and initialized for that symbol.
+      * For instance, say we have a Scala class:
+      *
+      * class Cls {
+      *   // ...
+      *   def someSymbol = `symbolic
+      *   // ...
+      * }
+      *
+      * After transformation, this class looks like this:
+      *
+      * class Cls {
+      *   private "static" val <some_name>$symbolic = Symbol("symbolic")
+      *   // ...
+      *   def someSymbol = <some_name>$symbolic
+      *   // ...
+      * }
+      *
+      * The reasoning behind this transformation is the following. Symbols get interned - they are stored
+      * in a global map which is protected with a lock. The reason for this is making equality checks
+      * quicker. But calling Symbol.apply, although it does return a unique symbol, accesses a locked object,
+      * making symbol access slow. To solve this, the unique symbol from the global symbol map in Symbol
+      * is accessed only once during class loading, and after that, the unique symbol is in the static
+      * member. Hence, it is cheap to both reach the unique symbol and do equality checks on it.
+      *
+      * And, finally, be advised - scala symbol literal and the Symbol class of the compiler
+      * have little in common.
+      */
+      case symapp @ Apply(Select(Select(a @ Ident(nme.scala_), b @ nme.Symbol), nme.apply),
+                          List(Literal(Constant(symname)))) => // alex
+        // add the symbol name to a map if it's not there already
+	val rhs = treeGen.mkCast(Apply(treeGen.scalaDot(nme.Symbol), List(Literal(Constant(symname)))), symbolType)
+        val (staticFieldSym, sfdef, sfinit) = getSymbolStaticField(symapp.pos, symname.asInstanceOf[String], rhs, symapp)
+
+        // create a reference to a static field
+        val ntree = typedWithPos(symapp.pos)(REF(staticFieldSym))
+
+        super.transform(ntree)
       case _ =>
         super.transform(tree)
     }
+
+    /* serves as a tree generator */
+    object treeGen extends scala.tools.nsc.ast.TreeGen {
+      val global: CleanUp.this.global.type = CleanUp.this.global
+    }
+
+    /* Returns the symbol and the tree for the symbol field interning a reference to a symbol 'synmname'.
+     * If it doesn't exist, i.e. the symbol is encountered the first time,
+     * it creates a new static field definition and initalization and returns it.
+     */
+    private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): (Symbol, Tree, Tree) = { // alex
+      if (symbolStaticFields.contains(symname)) symbolStaticFields(symname)
+      else {
+        val freshname = unit.fresh.newName(pos, "symbol$")
+        val theTyper = typer.atOwner(tree, currentClass)
+
+        // create a symbol for the static field
+        val stfieldSym = currentClass.newVariable(pos, freshname)
+          .setFlag(PRIVATE | STATIC | SYNTHETIC | FINAL)
+          .setInfo(symbolType)
+        currentClass.info.decls enter stfieldSym
+
+        // create field definition and initialization
+        val stfieldDef = theTyper.typed { atPos(pos)(VAL(stfieldSym) === rhs) }
+	val stfieldInit = theTyper.typed { atPos(pos)(REF(stfieldSym) === rhs) }
+
+	// add field definition to new defs
+	newDefs append stfieldDef
+
+        symbolStaticFields.put(symname, (stfieldSym, stfieldDef, stfieldInit))
+
+        symbolStaticFields(symname)
+      }
+    }
+
+    /* returns a list of all trees for symbol static fields, and clear the list */
+    private def flushSymbolFieldsInitializations: List[Tree] = {
+      var fieldlst: List[Tree] = Nil
+
+      for ((symbolname, (symbol, deftree, inittree)) <- symbolStaticFields) {
+        fieldlst ::= inittree
+      }
+      symbolStaticFields.clear
+
+      fieldlst
+    }
+
+    /* finds the static ctor DefDef tree within the template if it exists. */
+    def findStaticCtor(template: Template): Option[Tree] = {
+      template.body.find(_ match {
+	case defdef @ DefDef(mods, name, tparam, vparam, tp, rhs) => name == nme.CONSTRUCTOR && defdef.symbol.hasFlag(STATIC)
+	case _ => false
+      })
+    }
+
+    /* changes the template for the class so that it contains a static constructor with symbol fields inits,
+     * augments an existing static ctor if one already existed.
+     */
+    def applySymbolFieldInitsToStaticCtor(template: Template): Template = {
+      val symbolInitTrees = flushSymbolFieldsInitializations
+      if (symbolInitTrees.isEmpty) template
+      else {
+        val theTyper = typer.atOwner(template, currentClass)
+        val newCtor = findStaticCtor(template) match {
+	  // in case there already were static ctors - augment existing ones
+	  // currently, however, static ctors aren't being generated anywhere else
+          case Some(ctorTree) =>
+	    val ctor = ctorTree.asInstanceOf[DefDef]
+	    // modify existing static ctor
+	    val newBlock = ctor.rhs match {
+	      case block @ Block(stats, expr) =>
+		// need to add inits to existing block
+		treeCopy.Block(block, symbolInitTrees ::: stats, expr)
+	      case term @ _ if term.isInstanceOf[TermTree] =>
+		// need to create a new block with inits and the old term
+		treeCopy.Block(term, symbolInitTrees, term)
+	    }
+	    treeCopy.DefDef(ctor, ctor.mods, ctor.name, ctor.tparams, ctor.vparamss, ctor.tpt, newBlock)
+	  case None =>
+            // create new static ctor
+	    val staticCtorSym = currentClass.newConstructor(template.pos)
+       				.setFlag(STATIC)
+				.setInfo(UnitClass.tpe)
+            val rhs = Block(symbolInitTrees, Literal(()))
+            val staticCtorTree = DefDef(staticCtorSym, rhs)
+            theTyper.typed{ atPos(template.pos)(staticCtorTree) }
+        }
+      val newTemplate = treeCopy.Template(template, template.parents, template.self, newCtor :: template.body)
+        //println(newTemplate)
+        newTemplate
+      }
+    }
+
   } // CleanUpTransformer
 
 }
+
+
+
+
+

@@ -1733,7 +1733,7 @@ trait Typers { self: Analyzer =>
       ddef.tpt.setType(tpt1.tpe)
       val typedMods = removeAnnotations(ddef.mods)
       var rhs1 =
-        if (ddef.name == nme.CONSTRUCTOR) {
+        if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasFlag(STATIC)) { // alex - need this to make it possible to generate static ctors
           if (!meth.isPrimaryConstructor &&
               (!meth.owner.isClass ||
                meth.owner.isModuleClass ||
@@ -2861,7 +2861,7 @@ trait Typers { self: Analyzer =>
                      *  class NPE[T <: NPE[T] @peer]
                      *
                      * (Note: -Yself-in-annots must be on to see the problem)
-                     **/
+                     * */
                     val sym =
                       context.owner.newLocalDummy(ann.pos)
                         .newValue(ann.pos, nme.self)

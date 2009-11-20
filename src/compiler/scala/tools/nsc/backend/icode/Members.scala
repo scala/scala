@@ -113,6 +113,11 @@ trait Members { self: ICodes =>
     def lookupField(s: Symbol) = fields find (_.symbol == s)
     def lookupMethod(s: Symbol) = methods find (_.symbol == s)
     def lookupMethod(s: Name) = methods find (_.symbol.name == s)
+
+    /* determines whether or not this class contains a static ctor. */
+    def containsStaticCtor: Boolean = methods.exists(_.isStaticCtor) // alex
+    /* returns this methods static ctor if it has one. */
+    def lookupStaticCtor: Option[IMethod] = methods.find(_.isStaticCtor) // alex
   }
 
   /** Represent a field in ICode */
@@ -192,6 +197,9 @@ trait Members { self: ICodes =>
     );
 
     def isStatic: Boolean = symbol.isStaticMember
+
+    /* determines whether or not this method is the class static constructor. */
+    def isStaticCtor: Boolean = isStatic && symbol.rawname == nme.CONSTRUCTOR
 
     override def toString() = symbol.fullNameString
 

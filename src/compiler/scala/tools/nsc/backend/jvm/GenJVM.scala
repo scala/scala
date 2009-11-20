@@ -203,7 +203,7 @@ abstract class GenJVM extends SubComponent {
       if (isStaticModule(c.symbol) || serialVUID != None || clasz.bootstrapClass.isDefined) {
         if (isStaticModule(c.symbol))
             addModuleInstanceField;
-        addStaticInit(jclass)
+        addStaticInit(jclass, c.lookupStaticCtor)
 
         if (isTopLevelModule(c.symbol)) {
           if (c.symbol.linkedClassOfModule == NoSymbol)
@@ -214,6 +214,8 @@ abstract class GenJVM extends SubComponent {
         }
       }
       else {
+        if (c.containsStaticCtor) addStaticInit(jclass, c.lookupStaticCtor) // alex - adds static ctors to class
+
         // it must be a top level class (name contains no $s)
         def isCandidateForForwarders(sym: Symbol): Boolean =
           atPhase (currentRun.picklerPhase.next) {
@@ -557,6 +559,8 @@ abstract class GenJVM extends SubComponent {
     }
 
     def genMethod(m: IMethod) {
+      if (m.isStaticCtor) return // alex - skip constructors marked as static, they were handled earlier
+
       log("Generating method " + m.symbol.fullNameString)
       method = m
       endPC.clear
@@ -668,7 +672,7 @@ abstract class GenJVM extends SubComponent {
                         jclass.getType())
     }
 
-    def addStaticInit(cls: JClass) {
+    def addStaticInit(cls: JClass, mopt: Option[IMethod]) { // alex
       import JAccessFlags._
       val clinitMethod = cls.addNewMethod(ACC_PUBLIC | ACC_STATIC,
                                           "<clinit>",
@@ -676,6 +680,53 @@ abstract class GenJVM extends SubComponent {
                                           JType.EMPTY_ARRAY,
                                           new Array[String](0))
       val clinit = clinitMethod.getCode().asInstanceOf[JExtendedCode]
+
+      mopt match {
+       	case Some(m) =>
+          if (clasz.bootstrapClass.isDefined) legacyEmitBootstrapMethodInstall(clinit)
+
+          val oldLastBlock = m.code.blocks.last
+          val lastBlock = m.code.newBlock
+          oldLastBlock.replaceInstruction(oldLastBlock.length - 1, JUMP(lastBlock))
+
+          if (isStaticModule(clasz.symbol)) {
+            // call object's private ctor from static ctor
+            lastBlock.emit(NEW(REFERENCE(m.symbol.enclClass)))
+            lastBlock.emit(CALL_METHOD(m.symbol.enclClass.primaryConstructor, Static(true)))
+	  }
+
+          // add serialVUID code
+          serialVUID match {
+            case Some(value) =>
+              import Flags._
+              import definitions._
+       	      val fieldName = "serialVersionUID"
+              val fieldSymbol = clasz.symbol.newValue(NoPosition, newTermName(fieldName))
+                                  .setFlag(STATIC | FINAL)
+                                  .setInfo(longType)
+              clasz.addField(new IField(fieldSymbol))
+              lastBlock.emit(CONSTANT(Constant(value)))
+              lastBlock.emit(STORE_FIELD(fieldSymbol, true))
+            case None => ()
+          }
+
+          if (clasz.bootstrapClass.isDefined) {
+            // emit bootstrap method install
+            //emitBootstrapMethodInstall(block)
+          }
+
+          lastBlock.emit(RETURN(UNIT))
+          lastBlock.close
+
+       	  method = m
+       	  jmethod = clinitMethod
+       	  genCode(m)
+       	case None =>
+	  legacyStaticInitializer(cls, clinit)
+      }
+    }
+
+    private def legacyStaticInitializer(cls: JClass, clinit: JExtendedCode) {
       if (isStaticModule(clasz.symbol)) {
         clinit.emitNEW(cls.getName())
         clinit.emitINVOKESPECIAL(cls.getName(),
@@ -694,7 +745,7 @@ abstract class GenJVM extends SubComponent {
         case None => ()
       }
 
-      if (clasz.bootstrapClass.isDefined) emitBootstrapMethodInstall(clinit)
+      if (clasz.bootstrapClass.isDefined) legacyEmitBootstrapMethodInstall(clinit)
 
       clinit.emitRETURN()
     }
@@ -702,7 +753,7 @@ abstract class GenJVM extends SubComponent {
     /** Emit code that installs a boostrap method for invoke dynamic. It installs the default
      *  method, found in scala.runtime.DynamicDispatch.
      */
-    def emitBootstrapMethodInstall(jcode: JExtendedCode) {
+    def legacyEmitBootstrapMethodInstall(jcode: JExtendedCode) {
       jcode.emitPUSH(jclass.getType.asInstanceOf[JReferenceType])
       jcode.emitPUSH(new JObjectType("scala.runtime.DynamicDispatch"))
       jcode.emitPUSH("bootstrapInvokeDynamic")

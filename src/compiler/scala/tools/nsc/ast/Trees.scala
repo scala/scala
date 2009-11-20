@@ -135,7 +135,7 @@ trait Trees {
      */
     def setType(tp: Type): this.type = {
       /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded,
-               tp+" should not be higher-kinded");*/
+               tp+" should not be higher-kinded"); */
       tpe = tp
       this
     }

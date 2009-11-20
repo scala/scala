@@ -251,6 +251,9 @@ object Test {
     //println(pq)
     //assert(ind == 5)
     //assertPriorityDestructive(pq)
+
+    //pq.clear
+    //pq ++= (0 until 10)
   }
 
 }
