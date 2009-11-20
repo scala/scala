@@ -25,6 +25,7 @@ package scala.collection.immutable
  *  @version 2.8
  *  @since   2.5
  */
+@serializable @SerialVersionUID(7618862778670199309L)
 class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int] {
 
   require(step != 0)

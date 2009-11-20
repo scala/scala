@@ -1,126 +1,209 @@
-x0 = List(1, 2, 3)
-y0 = List(1, 2, 3)
-x0 eq y0: false - y0 eq x0: false
-x0 equals y0: true - y0 equals x0: true
+a1 = Array[1,2,3]
+_a1 = Array[1,2,3]
+arrayEquals(a1, _a1): true
 
-x1 = List()
-y1 = List()
-x1 eq y1: true - y1 eq x1: true
+c1 = Cell(a)
+_c1 = Cell(a)
+c1 eq _c1: false, _c1 eq c1: false
+c1 equals _c1: true, _c1 equals c1: true
 
-x2 = None
-y2 = None
-x2 eq y2: true - y2 eq x2: true
-
-x3 = Array[1,2,3]
-y3 = Array[1,2,3]
-arrayEquals(x3, y3): true
-
-x4 = <na>
-y4 = <na>
-x4(2): 4 - y4(2): 4
-
-x5 = 'hello
-y5 = 'hello
-x5 eq y5: true - y5 eq x5: true
-x5 equals y5: true - y5 equals x5: true
-
-x6 = (BannerLimit,12345)
-y6 = (BannerLimit,12345)
-x6 eq y6: false - y6 eq x6: false
-x6 equals y6: true - y6 equals x6: true
+e1 = Left(1)
+_e1 = Left(1)
+e1 eq _e1: false, _e1 eq e1: false
+e1 equals _e1: true, _e1 equals e1: true
 
 x7 = RoundingMode
 y7 = RoundingMode
-x7 eq y7: true - y7 eq x7: true
-x7 equals y7: true - y7 equals x7: true
+x7 eq y7: true, y7 eq x7: true
+x7 equals y7: true, y7 equals x7: true
 
 x8 = WeekDay
 y8 = WeekDay
-x8 eq y8: true - y8 eq x8: true
-x8 equals y8: true - y8 equals x8: true
+x8 eq y8: true, y8 eq x8: true
+x8 equals y8: true, y8 equals x8: true
 
 x9 = UP
 y9 = UP
-x9 eq y9: true - y9 eq x9: true
-x9 equals y9: true - y9 equals x9: true
+x9 eq y9: true, y9 eq x9: true
+x9 equals y9: true, y9 equals x9: true
 
 x10 = Monday
 y10 = Monday
-x10 eq y10: true - y10 eq x10: true
-x10 equals y10: true - y10 equals x10: true
+x10 eq y10: true, y10 eq x10: true
+x10 equals y10: true, y10 equals x10: true
 
-x9 eq x10: false - x10 eq x9: false
-x9 equals x10: true - x10 equals x9: true
-x9 eq y10: false - y10 eq x9: false
-x9 equals y10: true - y10 equals x9: true
+x9 eq x10: false, x10 eq x9: false
+x9 equals x10: true, x10 equals x9: true
+x9 eq y10: false, y10 eq x9: false
+x9 equals y10: true, y10 equals x9: true
 
-x = List((buffers,20), (layers,2), (title,3))
-y = List((buffers,20), (layers,2), (title,3))
-x equals y: true - y equals x: true
+f1 = <na>
+_f1 = <na>
+f1(2): 4, _f1(2): 4
 
-x = Map(buffers -> 20, layers -> 2, title -> 3)
-y = Map(buffers -> 20, layers -> 2, title -> 3)
-x equals y: true - y equals x: true
+xs0 = List(1, 2, 3)
+_xs0 = List(1, 2, 3)
+xs0 eq _xs0: false, _xs0 eq xs0: false
+xs0 equals _xs0: true, _xs0 equals xs0: true
+
+xs1 = List()
+_xs1 = List()
+xs1 eq _xs1: true, _xs1 eq xs1: true
+
+o1 = None
+_o1 = None
+o1 eq _o1: true, _o1 eq o1: true
+
+o2 = Some(1)
+_o2 = Some(1)
+o2 eq _o2: false, _o2 eq o2: false
+o2 equals _o2: true, _o2 equals o2: true
+
+s1 = 'hello
+_s1 = 'hello
+s1 eq _s1: true, _s1 eq s1: true
+s1 equals _s1: true, _s1 equals s1: true
+
+t1 = (BannerLimit,12345)
+_t1 = (BannerLimit,12345)
+t1 eq _t1: false, _t1 eq t1: false
+t1 equals _t1: true, _t1 equals t1: true
+
+x = BitSet(1, 2)
+y = BitSet(1, 2)
+x equals y: true, y equals x: true
 
 x = BitSet(2, 3)
 y = BitSet(2, 3)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
+
+x = Map(2 -> B, 1 -> A, 3 -> C)
+y = Map(2 -> B, 1 -> A, 3 -> C)
+x equals y: true, y equals x: true
+
+x = Set(1, 2)
+y = Set(1, 2)
+x equals y: true, y equals x: true
+
+x = List((buffers,20), (layers,2), (title,3))
+y = List((buffers,20), (layers,2), (title,3))
+x equals y: true, y equals x: true
+
+x = Map(buffers -> 20, layers -> 2, title -> 3)
+y = Map(buffers -> 20, layers -> 2, title -> 3)
+x equals y: true, y equals x: true
 
 x = Set(5, 3)
 y = Set(5, 3)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
 x = Queue(a, b, c)
 y = Queue(a, b, c)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
+
+x = Range(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+y = Range(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+x equals y: true, y equals x: true
+
+x = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+y = NumericRange(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+x equals y: true, y equals x: true
+
+x = Map(1 -> A, 2 -> B, 3 -> C)
+y = Map(1 -> A, 2 -> B, 3 -> C)
+x equals y: true, y equals x: true
+
+x = TreeSet(1, 2, 3)
+y = TreeSet(1, 2, 3)
+x equals y: true, y equals x: true
 
 x = Stack(c, b, a)
 y = Stack(c, b, a)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
+
+x = Stream(0, ?)
+y = Stream(0, ?)
+x equals y: true, y equals x: true
 
 x = Map(42 -> FortyTwo)
 y = Map(42 -> FortyTwo)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
 x = TreeSet(0, 2)
 y = TreeSet(0, 2)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
+
+x = Vector('a, 'b, 'c)
+y = Vector('a, 'b, 'c)
+x equals y: true, y equals x: true
 
 x = ArrayBuffer(one, two)
 y = ArrayBuffer(one, two)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
-x = Map(title -> 3, buffers -> 20, layers -> 2)
-y = Map(title -> 3, buffers -> 20, layers -> 2)
-x equals y: true - y equals x: true
+x = ArrayBuilder.ofLong
+y = ArrayBuilder.ofLong
+x equals y: true, y equals x: true
+
+x = ArrayBuilder.ofFloat
+y = ArrayBuilder.ofFloat
+x equals y: true, y equals x: true
+
+x = ArrayStack(3, 2, 20)
+y = ArrayStack(3, 2, 20)
+x equals y: true, y equals x: true
 
 x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
+
+x = Map(A -> 1, C -> 3, B -> 2)
+y = Map(A -> 1, C -> 3, B -> 2)
+x equals y: true, y equals x: true
 
 x = Set(layers, buffers, title)
 y = Set(layers, buffers, title)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
-x = Queue(20, 2, 3)
-y = Queue(20, 2, 3)
-x equals y: true - y equals x: true
-
-x = Stack(3, 2, 20)
-y = Stack(3, 2, 20)
-x equals y: true - y equals x: true
+x = History()
+y = History()
+x equals y: true, y equals x: true
 
 x = ListBuffer(white, black)
 y = ListBuffer(white, black)
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
+
+x = Queue(20, 2, 3)
+y = Queue(20, 2, 3)
+x equals y: true, y equals x: true
+
+x = Stack(3, 2, 20)
+y = Stack(3, 2, 20)
+x equals y: true, y equals x: true
+
+x = abc
+y = abc
+x equals y: true, y equals x: true
+
+x = WrappedArray(1, 2, 3)
+y = WrappedArray(1, 2, 3)
+x equals y: true, y equals x: true
+
+x =  xml:src="hello"
+y =  xml:src="hello"
+x equals y: true, y equals x: true
+
+x = <title></title>
+y = <title></title>
+x equals y: true, y equals x: true
 
 x = <html><title>title</title><body></body></html>
 y = <html><title>title</title><body></body></html>
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
 x = <html>
       <body>
-       <table cellpadding="2" cellspacing="0">
+        <table cellpadding="2" cellspacing="0">
         <tr>
           <th>Last Name</th>
           <th>First Name</th>
@@ -137,10 +220,10 @@ x = <html>
         </tr>
       </table>
       </body>
-    </html>
+      </html>
 y = <html>
       <body>
-       <table cellpadding="2" cellspacing="0">
+        <table cellpadding="2" cellspacing="0">
         <tr>
           <th>Last Name</th>
           <th>First Name</th>
@@ -157,26 +240,26 @@ y = <html>
         </tr>
       </table>
       </body>
-    </html>
-x equals y: true - y equals x: true
+      </html>
+x equals y: true, y equals x: true
 
 x = Tim
 y = Tim
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
 x = Bob
 y = Bob
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
 x = John
 y = John
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
 x = Bill
 y = Bill
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 
 x = Paul
 y = Paul
-x equals y: true - y equals x: true
+x equals y: true, y equals x: true
 

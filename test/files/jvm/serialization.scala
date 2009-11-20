@@ -2,17 +2,6 @@
 // Serialization
 //############################################################################
 
-import java.lang.System
-
-object EqualityTest {
-  def check[A, B](x: A, y: B) {
-    println("x = " + x)
-    println("y = " + y)
-    println("x equals y: " + (x equals y) + " - y equals x: " + (y equals x))
-    println()
-  }
-}
-
 object Serialize {
   @throws(classOf[java.io.IOException])
   def write[A](o: A): Array[Byte] = {
@@ -29,7 +18,14 @@ object Serialize {
       new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(buffer))
     in.readObject().asInstanceOf[A]
   }
+  def check[A, B](x: A, y: B) {
+    println("x = " + x)
+    println("y = " + y)
+    println("x equals y: " + (x equals y) + ", y equals x: " + (y equals x))
+    println()
+  }
 }
+import Serialize._
 
 //############################################################################
 // Test classes in package "scala"
@@ -50,92 +46,140 @@ object Test1_scala {
   }
   import WeekDay._, BigDecimal._, RoundingMode._
 
-  val x0 = List(1, 2, 3)
-  val x1 = Nil
-  val x2 = None
-  val x3 = Array(1, 2, 3)
-  val x4 = { x: Int => 2 * x }
-  val x5 = 'hello
-  val x6 = ("BannerLimit", 12345)
-  val x7 = BigDecimal.RoundingMode
-  val x8 = WeekDay
-  val x9 = UP
-  val x10 = Monday
-
+  // in alphabetic order
   try {
-    val y0: List[Int]          = Serialize.read(Serialize.write(x0))
-    val y1: List[Nothing]      = Serialize.read(Serialize.write(x1))
-    val y2: Option[Nothing]    = Serialize.read(Serialize.write(x2))
-    val y3: Array[Int]         = Serialize.read(Serialize.write(x3))
-    val y4: Function[Int, Int] = Serialize.read(Serialize.write(x4))
-    val y5: Symbol             = Serialize.read(Serialize.write(x5))
-    val y6: (String, Int)      = Serialize.read(Serialize.write(x6))
-    val y7: RoundingMode.type  = Serialize.read(Serialize.write(x7))
-    val y8: WeekDay.type       = Serialize.read(Serialize.write(x8))
-    val y9: RoundingMode       = Serialize.read(Serialize.write(x9))
-    val y10: WeekDay           = Serialize.read(Serialize.write(x10))
+    // Array
+    val a1 = Array(1, 2, 3)
+    val _a1: Array[Int] = read(write(a1))
+    println("a1 = " + arrayToString(a1))
+    println("_a1 = " + arrayToString(_a1))
+    println("arrayEquals(a1, _a1): " + arrayEquals(a1, _a1))
+    println()
 
-    println("x0 = " + x0)
-    println("y0 = " + y0)
-    println("x0 eq y0: " + (x0 eq y0) + " - y0 eq x0: " + (y0 eq x0))
-    println("x0 equals y0: " + (x0 equals y0) + " - y0 equals x0: " + (y0 equals x0))
+    // Cell
+    val c1 = new Cell('a')
+    val _c1: Cell[Char] = read(write(c1))
+    println("c1 = " + c1)
+    println("_c1 = " + _c1)
+    println("c1 eq _c1: " + (c1 eq _c1) + ", _c1 eq c1: " + (_c1 eq c1))
+    println("c1 equals _c1: " + (c1 equals _c1) + ", _c1 equals c1: " + (_c1 equals c1))
     println()
-    println("x1 = " + x1)
-    println("y1 = " + y1)
-    println("x1 eq y1: " + (x1 eq y1) + " - y1 eq x1: " + (y1 eq x1))
+
+    // Either
+    val e1 = Left(1)
+    val _e1: Either[Int, String] = read(write(e1))
+    println("e1 = " + e1)
+    println("_e1 = " + _e1)
+    println("e1 eq _e1: " + (e1 eq _e1) + ", _e1 eq e1: " + (_e1 eq e1))
+    println("e1 equals _e1: " + (e1 equals _e1) + ", _e1 equals e1: " + (_e1 equals e1))
     println()
-    println("x2 = " + x2)
-    println("y2 = " + y2)
-    println("x2 eq y2: " + (x2 eq y2) + " - y2 eq x2: " + (y2 eq x2))
-    println()
-    println("x3 = " + arrayToString(x3))
-    println("y3 = " + arrayToString(y3))
-    println("arrayEquals(x3, y3): " + arrayEquals(x3, y3))
-    println()
-    println("x4 = <na>")
-    println("y4 = <na>")
-    println("x4(2): " + x4(2) + " - y4(2): " + y4(2))
-    println()
-    println("x5 = " + x5)
-    println("y5 = " + y5)
-    println("x5 eq y5: " + (x5 eq y5) + " - y5 eq x5: " + (y5 eq x5))
-    println("x5 equals y5: " + (x5 equals y5) + " - y5 equals x5: " + (y5 equals x5))
-    println()
-    println("x6 = " + x6)
-    println("y6 = " + y6)
-    println("x6 eq y6: " + (x6 eq y6) + " - y6 eq x6: " + (y6 eq x6))
-    println("x6 equals y6: " + (x6 equals y6) + " - y6 equals x6: " + (y6 equals x6))
-    println()
+
+    // Enumeration
+    val x7 = BigDecimal.RoundingMode
+    val y7: RoundingMode.type = read(write(x7))
     println("x7 = " + x7)
     println("y7 = " + y7)
-    println("x7 eq y7: " + (x7 eq y7) + " - y7 eq x7: " + (y7 eq x7))
-    println("x7 equals y7: " + (x7 equals y7) + " - y7 equals x7: " + (y7 equals x7))
+    println("x7 eq y7: " + (x7 eq y7) + ", y7 eq x7: " + (y7 eq x7))
+    println("x7 equals y7: " + (x7 equals y7) + ", y7 equals x7: " + (y7 equals x7))
     println()
+
+    val x8 = WeekDay
+    val y8: WeekDay.type = read(write(x8))
     println("x8 = " + x8)
     println("y8 = " + y8)
-    println("x8 eq y8: " + (x8 eq y8) + " - y8 eq x8: " + (y8 eq x8))
-    println("x8 equals y8: " + (x8 equals y8) + " - y8 equals x8: " + (y8 equals x8))
+    println("x8 eq y8: " + (x8 eq y8) + ", y8 eq x8: " + (y8 eq x8))
+    println("x8 equals y8: " + (x8 equals y8) + ", y8 equals x8: " + (y8 equals x8))
     println()
+
+    val x9 = UP
+    val y9: RoundingMode = read(write(x9))
     println("x9 = " + x9)
     println("y9 = " + y9)
-    println("x9 eq y9: " + (x9 eq y9) + " - y9 eq x9: " + (y9 eq x9))
-    println("x9 equals y9: " + (x9 equals y9) + " - y9 equals x9: " + (y9 equals x9))
+    println("x9 eq y9: " + (x9 eq y9) + ", y9 eq x9: " + (y9 eq x9))
+    println("x9 equals y9: " + (x9 equals y9) + ", y9 equals x9: " + (y9 equals x9))
     println()
+
+    val x10 = Monday
+    val y10: WeekDay = read(write(x10))
     println("x10 = " + x10)
     println("y10 = " + y10)
-    println("x10 eq y10: " + (x10 eq y10) + " - y10 eq x10: " + (y10 eq x10))
-    println("x10 equals y10: " + (x10 equals y10) + " - y10 equals x10: " + (y10 equals x10))
+    println("x10 eq y10: " + (x10 eq y10) + ", y10 eq x10: " + (y10 eq x10))
+    println("x10 equals y10: " + (x10 equals y10) + ", y10 equals x10: " + (y10 equals x10))
     println()
-    println("x9 eq x10: " + (x9 eq x10) + " - x10 eq x9: " + (x10 eq x9))
-    println("x9 equals x10: " + (x9 equals x10) + " - x10 equals x9: " + (x10 equals x9))
-    println("x9 eq y10: " + (x9 eq y10) + " - y10 eq x9: " + (y10 eq x9))
-    println("x9 equals y10: " + (x9 equals y10) + " - y10 equals x9: " + (y10 equals x9))
+
+    println("x9 eq x10: " + (x9 eq x10) + ", x10 eq x9: " + (x10 eq x9))
+    println("x9 equals x10: " + (x9 equals x10) + ", x10 equals x9: " + (x10 equals x9))
+    println("x9 eq y10: " + (x9 eq y10) + ", y10 eq x9: " + (y10 eq x9))
+    println("x9 equals y10: " + (x9 equals y10) + ", y10 equals x9: " + (y10 equals x9))
+    println()
+
+    // Function
+    val f1 = { x: Int => 2 * x }
+    val _f1: Function[Int, Int] = read(write(f1))
+    println("f1 = <na>")
+    println("_f1 = <na>")
+    println("f1(2): " + f1(2) + ", _f1(2): " + _f1(2))
+    println()
+
+    // List
+    val xs0 = List(1, 2, 3)
+    val _xs0: List[Int] = read(write(xs0))
+    println("xs0 = " + xs0)
+    println("_xs0 = " + _xs0)
+    println("xs0 eq _xs0: " + (xs0 eq _xs0) + ", _xs0 eq xs0: " + (_xs0 eq xs0))
+    println("xs0 equals _xs0: " + (xs0 equals _xs0) + ", _xs0 equals xs0: " + (_xs0 equals xs0))
+    println()
+
+    val xs1 = Nil
+    val _xs1: List[Nothing] = read(write(xs1))
+    println("xs1 = " + xs1)
+    println("_xs1 = " + _xs1)
+    println("xs1 eq _xs1: " + (xs1 eq _xs1) + ", _xs1 eq xs1: " + (_xs1 eq xs1))
+    println()
+
+    // Option
+    val o1 = None
+    val _o1: Option[Nothing] = read(write(o1))
+    println("o1 = " + o1)
+    println("_o1 = " + _o1)
+    println("o1 eq _o1: " + (o1 eq _o1) + ", _o1 eq o1: " + (_o1 eq o1))
+    println()
+
+    val o2 = Some(1)
+    val _o2: Option[Int] = read(write(o2))
+    println("o2 = " + o2)
+    println("_o2 = " + _o2)
+    println("o2 eq _o2: " + (o2 eq _o2) + ", _o2 eq o2: " + (_o2 eq o2))
+    println("o2 equals _o2: " + (o2 equals _o2) + ", _o2 equals o2: " + (_o2 equals o2))
+    println()
+/*
+    // Responder
+    val r1 = Responder.constant("xyz")
+    val _r1: Responder[String] = read(write(r1))
+    check(r1, _r1)
+*/
+    // Symbol
+    val s1 = 'hello
+    val _s1: Symbol = read(write(s1))
+    println("s1 = " + s1)
+    println("_s1 = " + _s1)
+    println("s1 eq _s1: " + (s1 eq _s1) + ", _s1 eq s1: " + (_s1 eq s1))
+    println("s1 equals _s1: " + (s1 equals _s1) + ", _s1 equals s1: " + (_s1 equals s1))
+    println()
+
+    // Tuple
+    val t1 = ("BannerLimit", 12345)
+    val _t1: (String, Int) = read(write(t1))
+    println("t1 = " + t1)
+    println("_t1 = " + _t1)
+    println("t1 eq _t1: " + (t1 eq _t1) + ", _t1 eq t1: " + (_t1 eq t1))
+    println("t1 equals _t1: " + (t1 equals _t1) + ", _t1 equals t1: " + (_t1 equals t1))
     println()
   }
   catch {
     case e: Exception =>
-      e.printStackTrace()
       println("Error in Test1_scala: " + e)
+      throw e
   }
 }
 
@@ -145,50 +189,97 @@ object Test1_scala {
 @serializable
 object Test2_immutable {
   import scala.collection.immutable.{
-    BitSet, ListMap, ListSet, Queue, Stack, TreeSet, TreeMap}
+    BitSet, HashMap, HashSet, ListMap, ListSet, Queue, Range, SortedMap,
+    SortedSet, Stack, Stream, TreeMap, TreeSet, Vector}
 
-  val x1 = List(
-    Pair("buffers", 20),
-    Pair("layers", 2),
-    Pair("title", 3)
-  )
-
-  val x2 = new ListMap[String, Int] + ("buffers" -> 20, "layers" -> 2, "title" -> 3)
-
-  val x3 = {
-    val bs = new collection.mutable.BitSet()
-    bs += 2; bs += 3
-    bs.toImmutable
-  }
-
-  val x4 = new ListSet[Int]() + 3 + 5
-
-  val x5 = Queue("a", "b", "c")
-
-  val x6 = new Stack().push("a", "b", "c")
-
-  val x7 = new TreeMap[Int, String] + (42 -> "FortyTwo")
-
-  val x8 = new TreeSet[Int]() + 2 + 0
-
+  // in alphabetic order
   try {
-    val y1: List[Pair[String, Int]] = Serialize.read(Serialize.write(x1))
-    val y2: ListMap[String, Int]    = Serialize.read(Serialize.write(x2))
-    val y3: BitSet                  = Serialize.read(Serialize.write(x3))
-    val y4: ListSet[Int]            = Serialize.read(Serialize.write(x4))
-    val y5: Queue[String]           = Serialize.read(Serialize.write(x5))
-    val y6: Stack[String]           = Serialize.read(Serialize.write(x6))
-    val y7: TreeMap[Int, String]    = Serialize.read(Serialize.write(x7))
-    val y8: TreeSet[Int]            = Serialize.read(Serialize.write(x8))
+    // BitSet
+    val bs1 = BitSet.empty + 1 + 2
+    val _bs1: BitSet = read(write(bs1))
+    check(bs1, _bs1)
 
-    EqualityTest.check(x1, y1)
-    EqualityTest.check(x2, y2)
-    EqualityTest.check(x3, y3)
-    EqualityTest.check(x4, y4)
-    EqualityTest.check(x5, y5)
-    EqualityTest.check(x6, y6)
-    EqualityTest.check(x7, y7)
-    EqualityTest.check(x8, y8)
+    val bs2 = {
+      val bs = new collection.mutable.BitSet()
+      bs += 2; bs += 3
+      bs.toImmutable
+    }
+    val _bs2: BitSet = read(write(bs2))
+    check(bs2, _bs2)
+
+    // HashMap
+    val hm1 = new HashMap[Int, String] + (1 -> "A", 2 -> "B", 3 -> "C")
+    val _hm1: HashMap[Int, String] = read(write(hm1))
+    check(hm1, _hm1)
+
+    // HashSet
+    val hs1 = new HashSet[Int] + 1 + 2
+    val _hs1: HashSet[Int] = read(write(hs1))
+    check(hs1, _hs1)
+
+    // List
+    val xs1 = List(("buffers", 20), ("layers", 2), ("title", 3))
+    val _xs1: List[(String, Int)] = read(write(xs1))
+    check(xs1, _xs1)
+
+    // ListMap
+    val lm1 = new ListMap[String, Int] + ("buffers" -> 20, "layers" -> 2, "title" -> 3)
+    val _lm1: ListMap[String, Int] = read(write(lm1))
+    check(lm1, _lm1)
+
+    // ListSet
+    val ls1 = new ListSet[Int] + 3 + 5
+    val _ls1: ListSet[Int] = read(write(ls1))
+    check(ls1, _ls1)
+
+    // Queue
+    val q1 = Queue("a", "b", "c")
+    val _q1: Queue[String] = read(write(q1))
+    check(q1, _q1)
+
+    // Range
+    val r1 = 0 until 10
+    val _r1: Range = read(write(r1))
+    check(r1, _r1)
+
+    val r2 = Range.Long(0L, 10L, 1)
+    val _r2: r2.type = read(write(r2))
+    check(r2, _r2)
+
+    // SortedMap
+    val sm1 = SortedMap.empty[Int, String] + (2 -> "B", 3 -> "C", 1 -> "A")
+    val _sm1: SortedMap[Int, String] = read(write(sm1))
+    check(sm1, _sm1)
+
+    // SortedSet
+    val ss1 = SortedSet.empty[Int] + 2 + 3 + 1
+    val _ss1: SortedSet[Int] = read(write(ss1))
+    check(ss1, _ss1)
+
+    // Stack
+    val s1 = new Stack().push("a", "b", "c")
+    val _s1: Stack[String] = read(write(s1))
+    check(s1, _s1)
+
+    // Stream
+    val st1 = Stream.range(0, 10)
+    val _st1: Stream[Int] = read(write(st1))
+    check(st1, _st1)
+
+    // TreeMap
+    val tm1 = new TreeMap[Int, String] + (42 -> "FortyTwo")
+    val _tm1: TreeMap[Int, String] = read(write(tm1))
+    check(tm1, _tm1)
+
+    // TreeSet
+    val ts1 = new TreeSet[Int]() + 2 + 0
+    val _ts1: TreeSet[Int] = read(write(ts1))
+    check(ts1, _ts1)
+
+    // Vector
+    val v1 = Vector('a, 'b, 'c)
+    val _v1: Vector[Symbol] = read(write(v1))
+    check(v1, _v1)
   }
   catch {
     case e: Exception =>
@@ -201,65 +292,110 @@ object Test2_immutable {
 // Test classes in package "scala.collection.mutable"
 
 object Test3_mutable {
+  import scala.reflect.ClassManifest
   import scala.collection.mutable.{
-    ArrayBuffer, BitSet, HashMap, HashSet, History, LinkedList, ListBuffer,
-    Publisher, Queue, Stack}
+    ArrayBuffer, ArrayBuilder, ArrayStack, BitSet, DoubleLinkedList,
+    HashMap, HashSet, History, LinkedList, ListBuffer, Publisher, Queue,
+    Stack, StringBuilder, WrappedArray}
 
-  val x0 = new ArrayBuffer[String]
-  x0 ++= List("one", "two")
-
-  val x2 = new BitSet()
-  x2 += 0
-  x2 += 8
-  x2 += 9
-
-  val x1 = new HashMap[String, Int]
-  x1 ++= Test2_immutable.x1
-
-  val x3 = new HashSet[String]
-  x3 ++= Test2_immutable.x1.map(p => p._1)
-
-  @serializable
-  class Feed extends Publisher[String]
-
-  val x8 = new History[String, Feed]
-
-  val x4 = new LinkedList[Int](2, null)
-  x4.append(new LinkedList(3, null))
-
-  val x7 = new ListBuffer[String]
-  x7 ++= List("white", "black")
-
-  val x5 = new Queue[Int]
-  x5 ++= Test2_immutable.x1.map(p => p._2)
-
-  val x6 = new Stack[Int]
-  x6 ++= x5
-
+  // in alphabetic order
   try {
-    val y0: ArrayBuffer[String]   = Serialize.read(Serialize.write(x0))
-    val y1: HashMap[String, Int]  = Serialize.read(Serialize.write(x1))
-    val y2: BitSet                = Serialize.read(Serialize.write(x2))
-    val y3: HashSet[String]       = Serialize.read(Serialize.write(x3))
-//    val y4: LinkedList[Int]       = Serialize.read(Serialize.write(x4))
-    val y5: Queue[Int]            = Serialize.read(Serialize.write(x5))
-    val y6: Stack[Int]            = Serialize.read(Serialize.write(x6))
-    val y7: ListBuffer[String]    = Serialize.read(Serialize.write(x7))
-    val y8: History[String, Feed] = Serialize.read(Serialize.write(x8))
+    // ArrayBuffer
+    val ab1 = new ArrayBuffer[String]
+    ab1 ++= List("one", "two")
+    val _ab1: ArrayBuffer[String] = read(write(ab1))
+    check(ab1, _ab1)
 
-    EqualityTest.check(x0, y0)
-    EqualityTest.check(x1, y1)
-    EqualityTest.check(x2, y2)
-    EqualityTest.check(x3, y3)
-    //EqualityTest.check(x4, y4) //todo
-    EqualityTest.check(x5, y5)
-    EqualityTest.check(x6, y6)
-    EqualityTest.check(x7, y7)
-    //EqualityTest.check(x8, y8) //todo
+    // ArrayBuilder
+    val abu1 = ArrayBuilder.make[Long]
+    val _abu1: ArrayBuilder[ClassManifest[Long]] = read(write(abu1))
+    check(abu1, _abu1)
+
+    val abu2 = ArrayBuilder.make[Float]
+    val _abu2: ArrayBuilder[ClassManifest[Float]] = read(write(abu2))
+    check(abu2, _abu2)
+
+    // ArrayStack
+    val as1 = new ArrayStack[Int]
+    as1 ++= List(20, 2, 3).iterator
+    val _as1: ArrayStack[Int] = read(write(as1))
+    check(as1, _as1)
+
+    // BitSet
+    val bs1 = new BitSet()
+    bs1 += 0
+    bs1 += 8
+    bs1 += 9
+    val _bs1: BitSet = read(write(bs1))
+    check(bs1, _bs1)
+/*
+    // DoubleLinkedList
+    val dl1 = new DoubleLinkedList[Int](2, null)
+    dl1.append(new DoubleLinkedList(3, null))
+    val _dl1: DoubleLinkedList[Int] = read(write(dl1))
+    check(dl1, _dl1)
+*/
+    // HashMap
+    val hm1 = new HashMap[String, Int]
+    hm1 ++= List(("A", 1), ("B", 2), ("C", 3)).iterator
+    val _hm1: HashMap[String, Int] = read(write(hm1))
+    check(hm1, _hm1)
+
+    // HashSet
+    val hs1 = new HashSet[String]
+    hs1 ++= List("layers", "buffers", "title").iterator
+    val _hs1: HashSet[String] = read(write(hs1))
+    check(hs1, _hs1)
+
+    // History
+    @serializable
+    class Feed extends Publisher[String]
+
+    val h1 = new History[String, Int]
+    val _h1: History[String, Int] = read(write(h1))
+    check(h1, _h1)
+/*
+    // LinkedList
+    val ll1 = new LinkedList[Int](2, null)
+    ll1.append(new LinkedList(3, null))
+    val _ll1: LinkedList[Int] = read(write(ll1))
+    check(ll1, _ll1)
+*/
+    // ListBuffer
+    val lb1 = new ListBuffer[String]
+    lb1 ++= List("white", "black")
+    val _lb1: ListBuffer[String] = read(write(lb1))
+    check(lb1, _lb1)
+
+    // Publisher
+
+    // Queue
+    val q1 = new Queue[Int]
+    q1 ++= List(20, 2, 3).iterator
+    val _q1: Queue[Int] = read(write(q1))
+    check(q1, _q1)
+
+    // Stack
+    val s1 = new Stack[Int]
+    s1 pushAll q1
+    val _s1: Stack[Int] = read(write(s1))
+    check(s1, _s1)
+
+    // StringBuilder
+    val sb1 = new StringBuilder
+    sb1 append "abc"
+    val _sb1: StringBuilder = read(write(sb1))
+    check(sb1, _sb1)
+
+    // WrappedArray
+    val wa1 = WrappedArray.make(Array(1, 2, 3))
+    val _wa1: WrappedArray[Int] = read(write(wa1))
+    check(wa1, _wa1)
   }
   catch {
     case e: Exception =>
       println("Error in Test3_mutable: " + e)
+      throw e
   }
 }
 
@@ -267,15 +403,31 @@ object Test3_mutable {
 // Test classes in package "scala.xml"
 
 object Test4_xml {
-  import scala.xml.Elem
-
-  val x1 = <html><title>title</title><body></body></html>;
+  import scala.xml.{Attribute, Document, Elem, Null, PrefixedAttribute, Text}
 
   case class Person(name: String, age: Int)
 
-  class AddressBook(a: Person*) {
-    private val people: List[Person] = a.toList
-    def toXHTML =
+  try {
+    // Attribute
+    val a1 = new PrefixedAttribute("xml", "src", Text("hello"), Null)
+    val _a1: Attribute = read(write(a1))
+    check(a1, _a1)
+
+    // Document
+    val d1 = new Document
+    d1.docElem = <title></title>
+    d1.encoding = Some("UTF-8")
+    val _d1: Document = read(write(d1))
+    check(d1, _d1)
+
+    // Elem
+    val e1 = <html><title>title</title><body></body></html>;
+    val _e1: Elem = read(write(e1))
+    check(e1, _e1)
+
+    class AddressBook(a: Person*) {
+      private val people: List[Person] = a.toList
+      def toXHTML =
       <table cellpadding="2" cellspacing="0">
         <tr>
           <th>Last Name</th>
@@ -287,30 +439,26 @@ object Test4_xml {
           <td> { p.age.toString() } </td>
         </tr> }
       </table>;
-  }
+    }
 
-  val people = new AddressBook(
-    Person("Tom", 20),
-    Person("Bob", 22),
-    Person("James", 19))
+    val people = new AddressBook(
+      Person("Tom", 20),
+      Person("Bob", 22),
+      Person("James", 19))
 
-  val x2 =
-    <html>
+    val e2 =
+      <html>
       <body>
-       { people.toXHTML }
+        { people.toXHTML }
       </body>
-    </html>;
-
-  try {
-    val y1: scala.xml.Elem = Serialize.read(Serialize.write(x1))
-    val y2: scala.xml.Elem = Serialize.read(Serialize.write(x2))
-
-    EqualityTest.check(x1, y1)
-    EqualityTest.check(x2, y2)
+      </html>;
+    val _e2: Elem = read(write(e2))
+    check(e2, _e2)
   }
   catch {
     case e: Exception =>
       println("Error in Test4_xml: " + e)
+      throw e
   }
 }
 
@@ -339,11 +487,11 @@ object Test5 {
   val x2 = bob
 
   try {
-    val y1: Person   = Serialize.read(Serialize.write(x1))
-    val y2: Employee = Serialize.read(Serialize.write(x2))
+    val y1: Person   = read(write(x1))
+    val y2: Employee = read(write(x2))
 
-    EqualityTest.check(x1, y1)
-    EqualityTest.check(x2, y2)
+    check(x1, y1)
+    check(x2, y2)
   }
   catch {
     case e: Exception =>
@@ -369,13 +517,13 @@ object Test6 {
   val x3 = paul
 
   try {
-    val y1: Person   = Serialize.read(Serialize.write(x1))
-    val y2: Employee = Serialize.read(Serialize.write(x2))
-    val y3: Person   = Serialize.read(Serialize.write(x3))
+    val y1: Person   = read(write(x1))
+    val y2: Employee = read(write(x2))
+    val y3: Person   = read(write(x3))
 
-    EqualityTest.check(x1, y1)
-    EqualityTest.check(x2, y2)
-    EqualityTest.check(x3, y3)
+    check(x1, y1)
+    check(x2, y2)
+    check(x3, y3)
   }
   catch {
     case e: Exception =>

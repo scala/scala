@@ -19,6 +19,7 @@ package scala.xml
  *  @author  Burak Emir
  *  @version 1.0, 26/04/2005
  */
+@serializable @SerialVersionUID(-2289320563321795109L)
 class Document extends NodeSeq with pull.XMLEvent {
 
   /** An ordered list of child information items, in document

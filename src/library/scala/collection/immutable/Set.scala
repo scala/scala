@@ -57,7 +57,7 @@ object Set extends SetFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 1 */
-  @serializable
+  @serializable @SerialVersionUID(1233385750652442003L)
   class Set1[A](elem1: A) extends Set[A] {
     override def size: Int = 1
     def contains(elem: A): Boolean =
@@ -76,7 +76,7 @@ object Set extends SetFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 2 */
-  @serializable
+  @serializable @SerialVersionUID(-6443011234944830092L)
   class Set2[A](elem1: A, elem2: A) extends Set[A] {
     override def size: Int = 2
     def contains(elem: A): Boolean =
@@ -96,7 +96,7 @@ object Set extends SetFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 3 */
-  @serializable
+  @serializable @SerialVersionUID(-3590273538119220064L)
   class Set3[A](elem1: A, elem2: A, elem3: A) extends Set[A] {
     override def size: Int = 3
     def contains(elem: A): Boolean =
@@ -117,7 +117,7 @@ object Set extends SetFactory[Set] {
   }
 
   /** An optimized representation for immutable sets of size 4 */
-  @serializable
+  @serializable @SerialVersionUID(-3622399588156184395L)
   class Set4[A](elem1: A, elem2: A, elem3: A, elem4: A) extends Set[A] {
     override def size: Int = 4
     def contains(elem: A): Boolean =

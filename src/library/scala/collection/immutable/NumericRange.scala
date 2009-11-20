@@ -33,6 +33,7 @@ import generic._
  *  @author  Paul Phillips
  *  @version 2.8
  */
+@serializable
 abstract class NumericRange[+T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
@@ -75,12 +76,12 @@ extends IndexedSeq[T]
     if (step > zero) {
       while (i < end) {
         f(i)
-        i = i + step
+        i += step
       }
     } else {
       while (i > end) {
         f(i)
-        i = i + step
+        i += step
       }
     }
     if (limitTest(i)) f(i)
@@ -100,7 +101,7 @@ extends IndexedSeq[T]
   }
 
   def length: Int = toInt(genericLength)
-  override def isEmpty =
+  override def isEmpty: Boolean =
     if (step > zero)
       if (isInclusive) end < start
       else end <= start
