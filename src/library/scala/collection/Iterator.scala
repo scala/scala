@@ -316,10 +316,17 @@ trait Iterator[+A] { self =>
   /** Returns a new iterator that first yields the elements of this
    *  iterator followed by the elements provided by iterator <code>that</code>.
    */
-  def ++[B >: A](that: => Iterator[B]) = new Iterator[B] {
+  def ++[B >: A](that: => Iterator[B]): Iterator[B] = new Iterator[B] {
     // optimize a little bit to prevent n log n behavior.
-    var cur : Iterator[B] = self
-    def hasNext = cur.hasNext || (cur eq self) && { cur = that; hasNext }
+    private var cur : Iterator[B] = self
+    // this was unnecessarily looping forever on x ++ x
+    def hasNext = cur.hasNext || ((cur eq self) && {
+      val it = that
+      it.hasNext && {
+        cur = it
+        true
+      }
+    })
     def next() = { hasNext; cur.next() }
   }
 
@@ -1073,10 +1080,7 @@ trait Iterator[+A] { self =>
    *  iterator followed by the elements provided by iterator <code>that</code>.
    */
   @deprecated("use <code>++</code>")
-  def append[B >: A](that: Iterator[B]) = new Iterator[B] {
-    def hasNext = self.hasNext || that.hasNext
-    def next() = (if (self.hasNext) self else that).next()
-  }
+  def append[B >: A](that: Iterator[B]) = self ++ that
 
   /** Returns index of the first element satisfying a predicate, or -1. */
   @deprecated("use `indexWhere` instead")
