@@ -28,7 +28,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private val newInits = new ListBuffer[Tree]
 
     private val classConstantMeth = new HashMap[String, Symbol]
-    private val symbolStaticFields = new HashMap[String, (Symbol, Tree, Tree)] // alex
+    private val symbolStaticFields = new HashMap[String, (Symbol, Tree, Tree)]
 
     private var localTyper: analyzer.Typer = null
 
@@ -502,7 +502,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        * constructor. */
       case Template(parents, self, body) =>
         localTyper = typer.atOwner(tree, currentClass)
-        val transformedTemplate = if (!forMSIL) { // alex - assigned this to a val
+        val transformedTemplate = if (!forMSIL) {
           classConstantMeth.clear
           newDefs.clear
           newInits.clear
@@ -526,7 +526,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             treeCopy.Template(tree, parents, self, newBody)
         }
         else super.transform(tree)
-        applySymbolFieldInitsToStaticCtor(transformedTemplate.asInstanceOf[Template]) // alex - postprocess to include static ctors
+        applySymbolFieldInitsToStaticCtor(transformedTemplate.asInstanceOf[Template]) // postprocess to include static ctors
 
       case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
         val tpe = c.typeValue
@@ -603,7 +603,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       * have little in common.
       */
       case symapp @ Apply(Select(Select(a @ Ident(nme.scala_), b @ nme.Symbol), nme.apply),
-                          List(Literal(Constant(symname)))) => // alex
+                          List(Literal(Constant(symname)))) =>
         // add the symbol name to a map if it's not there already
 	val rhs = treeGen.mkCast(Apply(treeGen.scalaDot(nme.Symbol), List(Literal(Constant(symname)))), symbolType)
         val (staticFieldSym, sfdef, sfinit) = getSymbolStaticField(symapp.pos, symname.asInstanceOf[String], rhs, symapp)
@@ -625,7 +625,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
      * If it doesn't exist, i.e. the symbol is encountered the first time,
      * it creates a new static field definition and initalization and returns it.
      */
-    private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): (Symbol, Tree, Tree) = { // alex
+    private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): (Symbol, Tree, Tree) = {
       if (symbolStaticFields.contains(symname)) symbolStaticFields(symname)
       else {
         val freshname = unit.fresh.newName(pos, "symbol$")

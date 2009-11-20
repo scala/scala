@@ -1733,7 +1733,7 @@ trait Typers { self: Analyzer =>
       ddef.tpt.setType(tpt1.tpe)
       val typedMods = removeAnnotations(ddef.mods)
       var rhs1 =
-        if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasFlag(STATIC)) { // alex - need this to make it possible to generate static ctors
+        if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasFlag(STATIC)) { // need this to make it possible to generate static ctors
           if (!meth.isPrimaryConstructor &&
               (!meth.owner.isClass ||
                meth.owner.isModuleClass ||

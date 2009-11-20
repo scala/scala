@@ -214,7 +214,7 @@ abstract class GenJVM extends SubComponent {
         }
       }
       else {
-        if (c.containsStaticCtor) addStaticInit(jclass, c.lookupStaticCtor) // alex - adds static ctors to class
+        if (c.containsStaticCtor) addStaticInit(jclass, c.lookupStaticCtor)
 
         // it must be a top level class (name contains no $s)
         def isCandidateForForwarders(sym: Symbol): Boolean =
@@ -559,7 +559,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     def genMethod(m: IMethod) {
-      if (m.isStaticCtor) return // alex - skip constructors marked as static, they were handled earlier
+      if (m.isStaticCtor) return
 
       log("Generating method " + m.symbol.fullNameString)
       method = m
@@ -672,7 +672,7 @@ abstract class GenJVM extends SubComponent {
                         jclass.getType())
     }
 
-    def addStaticInit(cls: JClass, mopt: Option[IMethod]) { // alex
+    def addStaticInit(cls: JClass, mopt: Option[IMethod]) {
       import JAccessFlags._
       val clinitMethod = cls.addNewMethod(ACC_PUBLIC | ACC_STATIC,
                                           "<clinit>",

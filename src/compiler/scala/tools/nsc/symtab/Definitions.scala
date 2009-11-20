@@ -128,7 +128,7 @@ trait Definitions {
     lazy val StringClass          = getClass(sn.String)
     lazy val ClassClass           = getClass(sn.Class)
       def Class_getMethod = getMember(ClassClass, nme.getMethod_)
-    lazy val SymbolClass          = getClass("scala.Symbol") // alex
+    lazy val SymbolClass          = getClass("scala.Symbol")
 
     // fundamental modules
     lazy val PredefModule: Symbol = getModule("scala.Predef")
@@ -142,7 +142,7 @@ trait Definitions {
       def Predef_conforms = getMember(PredefModule, nme.conforms)
     lazy val ConsoleModule: Symbol = getModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getModule("scala.runtime.ScalaRunTime")
-	lazy val SymbolModule: Symbol = getModule("scala.Symbol") // alex
+	lazy val SymbolModule: Symbol = getModule("scala.Symbol")
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq)
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
@@ -248,8 +248,8 @@ trait Definitions {
 
     def optionType(tp: Type)    = typeRef(OptionClass.typeConstructor.prefix, OptionClass, List(tp))
     def someType(tp: Type)      = typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
-    def symbolType              = typeRef(SymbolClass.typeConstructor.prefix, SymbolClass, List()) // alex
-    def longType                = typeRef(LongClass.typeConstructor.prefix, LongClass, List()) // alex
+    def symbolType              = typeRef(SymbolClass.typeConstructor.prefix, SymbolClass, List())
+    def longType                = typeRef(LongClass.typeConstructor.prefix, LongClass, List())
 
     // Product, Tuple, Function
     private def mkArityArray(name: String, arity: Int, countFrom: Int = 1) = {

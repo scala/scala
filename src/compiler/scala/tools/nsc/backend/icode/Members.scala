@@ -115,9 +115,9 @@ trait Members { self: ICodes =>
     def lookupMethod(s: Name) = methods find (_.symbol.name == s)
 
     /* determines whether or not this class contains a static ctor. */
-    def containsStaticCtor: Boolean = methods.exists(_.isStaticCtor) // alex
+    def containsStaticCtor: Boolean = methods.exists(_.isStaticCtor)
     /* returns this methods static ctor if it has one. */
-    def lookupStaticCtor: Option[IMethod] = methods.find(_.isStaticCtor) // alex
+    def lookupStaticCtor: Option[IMethod] = methods.find(_.isStaticCtor)
   }
 
   /** Represent a field in ICode */
