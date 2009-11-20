@@ -75,6 +75,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     case _ => 0
   }
 
+  // @M #2585 when generating a java generic signature that includes a selection of an inner class p.I,  (p = `pre`, I = `cls`)
+  // must rewrite to p'.I, where p' refers to the class that directly defines the nested class I
+  // see also #2585 marker in javaSig: there, type arguments must be included (use pre.baseType(cls.owner))
+  // requires cls.isClass
+  @inline private def rebindInnerClass(pre: Type, cls: Symbol): Type =
+    if(cls.owner.isClass) cls.owner.tpe else pre // why not cls.isNestedClass?
+
   /** <p>
    *    The erasure <code>|T|</code> of a type <code>T</code>. This is:
    *  </p>
@@ -90,7 +97,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
    *   - For a typeref scala.Array+[T] where T is not an abstract type, scala.Array+[|T|].
    *   - For a typeref scala.Any or scala.AnyVal, java.lang.Object.
    *   - For a typeref scala.Unit, scala.runtime.BoxedUnit.
-   *   - For a typeref P.C[Ts] where C refers to a class, |P|.C.
+   *   - For a typeref P.C[Ts] where C refers to a class, |P|.C. (Where P is first rebound to the class that directly defines C.)
    *   - For a typeref P.C[Ts] where C refers to an alias type, the erasure of C's alias.
    *   - For a typeref P.C[Ts] where C refers to an abstract type, the
    *     erasure of C's upper bound.
@@ -122,9 +129,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             else typeRef(apply(pre), sym, args map this)
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
-          else if (sym.isClass)
-            typeRef(apply(if (sym.owner.isClass) sym.owner.tpe else pre), sym, List())
-          else apply(sym.info)
+          else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
+          else apply(sym.info) // alias type or abstract type
         case PolyType(tparams, restpe) =>
           apply(restpe)
         case ExistentialType(tparams, restpe) =>
@@ -164,6 +170,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           case TypeRef(pre, sym, args) =>
             if (sym == ArrayClass) args foreach traverse
             else if (sym.isTypeParameterOrSkolem || sym.isExistential || !args.isEmpty) result = true
+            else if (sym.isClass) traverse(rebindInnerClass(pre, sym)) // #2585
             else if (!sym.owner.isPackageClass) traverse(pre)
           case PolyType(_, _) | ExistentialType(_, _) =>
             result = true
@@ -243,8 +250,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             tagOfClass(sym).toString
           else if (sym.isClass)
             {
-              if (needsJavaSig(pre)) {
-                val s = jsig(pre)
+              val preRebound = pre.baseType(sym.owner) // #2585
+              if (needsJavaSig(preRebound)) {
+                val s = jsig(preRebound)
                 if (s.charAt(0) == 'L') s.substring(0, s.length - 1) + classSigSuffix
                 else classSig
               } else classSig
@@ -914,7 +922,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                           List()),
                     isArrayTest(qual1()))
                 }
-              }
+            }
           case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
                                         fun.symbol != Object_asInstanceOf &&
                                         fun.symbol != Object_isInstanceOf) =>
