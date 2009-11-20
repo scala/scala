@@ -72,6 +72,9 @@ self =>
   protected[this] def thisCollection: Traversable[A] = this.asInstanceOf[Traversable[A]]
   protected[this] def toCollection(repr: Repr): Traversable[A] = repr.asInstanceOf[Traversable[A]]
 
+  /** The type implementing this traversable */
+  protected type Self = Repr
+
   /** Create a new builder for this collection type.
    */
   protected[this] def newBuilder: Builder[A, Repr]

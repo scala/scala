@@ -220,7 +220,7 @@ object Test3_mutable {
   x3 ++= Test2_immutable.x1.map(p => p._1)
 
   @serializable
-  class Feed extends Publisher[String, Feed]
+  class Feed extends Publisher[String]
 
   val x8 = new History[String, Feed]
 

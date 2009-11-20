@@ -1275,7 +1275,7 @@ trait Namers { self: Analyzer =>
         context.error(sym.pos, "`lazy' definitions may not be initialized early")
       if (sym.info.typeSymbol == FunctionClass(0) &&
           sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
-        context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters");
+        context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters")
       if (sym hasFlag DEFERRED) { // virtual classes count, too
         if (sym.hasAnnotation(definitions.NativeAttr))
           sym.resetFlag(DEFERRED)

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/tPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -24,16 +24,16 @@ package mutable
  */
 @serializable
 @SerialVersionUID(5219213543849892588L)
-class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)]
+class History[Evt, Pub] extends Subscriber[Evt, Pub] with Iterable[(Pub, Evt)]
 {
-  protected val log: Queue[(B, A)] = new Queue[(B, A)]
+  protected val log: Queue[(Pub, Evt)] = new Queue
   val maxHistory: Int = 1000
 
   /**
    *  @param pub   ...
    *  @param event ...
    */
-  def notify(pub: B, event: A) {
+  def notify(pub: Pub, event: Evt) {
     if (log.length >= maxHistory)
       log.dequeue
 
@@ -41,8 +41,8 @@ class History[A, B] extends AnyRef with Subscriber[A, B] with Iterable[(B, A)]
   }
 
   override def size: Int = log.length
-  def iterator: Iterator[(B, A)] = log.iterator
-  def events: Iterator[A] = log.iterator.map { case (_, e) => e }
+  def iterator: Iterator[(Pub, Evt)] = log.iterator
+  def events: Iterator[Evt] = log.iterator map (_._2)
 
   def clear() { log.clear }
 

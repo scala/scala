@@ -23,10 +23,9 @@ import script._
  *  @version 1.0, 08/07/2003
  *  @since   1
  */
-trait ObservableBuffer[A, This <: ObservableBuffer[A, This]]
-      extends Buffer[A]
-      with Publisher[Message[A] with Undoable, This]
-{ self: This =>
+trait ObservableBuffer[A] extends Buffer[A] with Publisher[Message[A] with Undoable]
+{
+  type Pub <: ObservableBuffer[A]
 
   abstract override def +=(element: A): this.type = {
     super.+=(element)

@@ -71,12 +71,11 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   def clear()
 
 // Abstract methods new in this class
-
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.
    *  @param elem  the element to prepend.
    */
-  def +=:(elem: A): This
+  def +=:(elem: A): this.type
 
   @deprecated("use `+=:' instead")
   final def +:(elem: A): This = +=:(elem)
@@ -126,7 +125,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter  the iterable object.
    */
-  def ++=:(iter: Traversable[A]): This = { insertAll(0, iter); this }
+  def ++=:(iter: Traversable[A]): this.type = { insertAll(0, iter); this }
 
   @deprecated("use ++=: instead")
   final def ++:(iter: Traversable[A]): This = ++=:(iter)

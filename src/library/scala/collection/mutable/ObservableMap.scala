@@ -25,10 +25,10 @@ import script._
  *  @version 2.0, 31/12/2006
  *  @since   1
  */
-trait ObservableMap[A, B, This <: ObservableMap[A, B, This]]
-      extends Map[A, B]
-      with Publisher[Message[(A, B)] with Undoable, This]
-{ self: This =>
+trait ObservableMap[A, B] extends Map[A, B] with Publisher[Message[(A, B)] with Undoable]
+{
+
+  type Pub <: ObservableMap[A, B]
 
   abstract override def += (kv: (A, B)): this.type = {
     val (key, value) = kv

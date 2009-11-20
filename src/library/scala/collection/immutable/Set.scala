@@ -21,10 +21,10 @@ import generic._
  *  <pre>
  *    <b>def</b> contains(elem: A): Boolean
  *    <b>def</b> iterator: Iterator[A]
- *    <b>def</b> + (elem: A): This
- *    <b>def</b> - (elem: A): This</pre>
+ *    <b>def</b> + (elem: A): Self
+ *    <b>def</b> - (elem: A): Self</pre>
  *  <p>
- *    where <code>This</code> is the type of the set.
+ *    where <code>Self</code> is the type of the set.
  *  </p>
  *
  *  @author Matthias Zenger

@@ -42,7 +42,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param elem  the element to append.
    */
-  override def +(elem: A): Buffer[A] = synchronized {
+  override def +(elem: A): Self = synchronized {
     super.+(elem)
   }
 
@@ -60,7 +60,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++(iter: Traversable[A]): Buffer[A] = synchronized {
+  override def ++(iter: Traversable[A]): Self = synchronized {
     super.++(iter)
   }
 
@@ -95,7 +95,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param elem  the element to append.
    */
-  abstract override def +=:(elem: A): Buffer[A] = synchronized {
+  abstract override def +=:(elem: A): this.type = synchronized[this.type] {
     super.+=:(elem)
   }
 
@@ -105,7 +105,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++=:(iter: Traversable[A]): Buffer[A] = synchronized {
+  override def ++=:(iter: Traversable[A]): this.type = synchronized[this.type] {
     super.++=:(iter)
   }
 
@@ -181,7 +181,7 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @return an <code>ArrayBuffer</code> with the same elements.
    */
-  override def clone(): Buffer[A] = synchronized {
+  override def clone(): Self = synchronized {
     super.clone()
   }
 
