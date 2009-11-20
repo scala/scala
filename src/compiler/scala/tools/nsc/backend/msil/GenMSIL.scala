@@ -832,6 +832,10 @@ abstract class GenMSIL extends SubComponent {
         case -1   => xs
         case idx  => x :: (xs take idx) ::: (xs drop (idx + 1))
       }
+      def moveToEnd[T](xs: List[T], x: T) = (xs indexOf x) match {
+        case -1   => xs
+        case idx  => (xs take idx) ::: (xs drop (idx + 1)) ::: List(x)
+      }
 
       var blocksToPut: List[BasicBlock] = blocks
       var nextBlock: BasicBlock = null
@@ -965,8 +969,9 @@ abstract class GenMSIL extends SubComponent {
                   firstBlockAfter(exh) = outside(0)
                 //else ()
                   //assert(firstBlockAfter(exh) == outside(0), "try/catch leaving to multiple targets: " + firstBlockAfter(exh) + ", new: " + outside(0))
+
                 val last = leaving(0)._1
-                ((blocks - last) ::: List(last), None)
+                (moveToEnd(blocks, last), None)
               } else {
                 val outside = leaving.flatMap(p => p._2)
                 //assert(outside.forall(b => b == outside(0)), "exception-block leaving to multiple targets")
@@ -1002,7 +1007,7 @@ abstract class GenMSIL extends SubComponent {
                   h1.addBlock(block)
                 case None => ()
               }
-              val orderedCatchBlocks = h1.startBlock :: (adaptedBlocks - h1.startBlock)
+              val orderedCatchBlocks = moveToFront(adaptedBlocks, h1.startBlock)
 
               exceptionBlock match {
                 case Some(excBlock) =>
@@ -1033,7 +1038,7 @@ abstract class GenMSIL extends SubComponent {
                         singleAffectedHandler.finalizer.addBlock(block)
                       case None => ()
                     }
-                    val blocks = singleAffectedHandler.finalizer.startBlock :: (blocks0 - singleAffectedHandler.finalizer.startBlock)
+                    val blocks = moveToFront(blocks0, singleAffectedHandler.finalizer.startBlock)
                     currentBlock = excBlock.finallyBlock
                     addBlocks(blocks)
                   }

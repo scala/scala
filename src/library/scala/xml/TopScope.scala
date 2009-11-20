@@ -16,7 +16,7 @@ import collection.mutable.StringBuilder
  *  for the &quot;xml&quot; prefix which is bound to
  *  &quot;http://www.w3.org/XML/1998/namespace&quot;
  */
-case object TopScope extends NamespaceBinding(null, null, null)
+object TopScope extends NamespaceBinding(null, null, null)
 {
   import XML.{ xml, namespace }
 

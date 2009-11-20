@@ -131,7 +131,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       println("Changes: " + changesOf)
       updateDefinitions(files)
       val compiled = updated ++ files
-      val invalid = invalidated(files, changesOf, additionalDefs ++ compiled)
+      val invalid = invalidated(files, changesOf, additionalDefs.clone() ++= compiled)
       update0(invalid -- compiled, compiled)
     }
 
@@ -224,7 +224,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     if (buf.isEmpty)
       processed
     else
-      invalidated(buf -- processed, newChangesOf, processed ++ buf)
+      invalidated(buf.clone() --= processed, newChangesOf, processed ++ buf)
   }
 
   /** Update the map of definitions per source file */

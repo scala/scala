@@ -14,14 +14,5 @@ package scala.runtime
 import compat.Platform.EOL
 
 final class RichException(exc: Throwable) {
-
-  def getStackTraceString: String = {
-    val s = new StringBuilder()
-    for (trElem <- exc.getStackTrace()) {
-      s.append(trElem.toString())
-      s.append(EOL)
-    }
-    s.toString()
-  }
-
+  def getStackTraceString = exc.getStackTrace().mkString("", EOL, EOL)
 }

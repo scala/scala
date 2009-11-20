@@ -142,7 +142,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
    *
    *  @param  iter        an iterable object
    */
-  override def ++(elems: scala.collection.Traversable[A]) = { this.clone() ++= elems }  // ??? XXX why does this "override nothing" with override?
+  override def ++(elems: scala.collection.Traversable[A]) = { this.clone() ++= elems }
 
   /** Adds all elements provided by an iterator into the priority queue.
    *
