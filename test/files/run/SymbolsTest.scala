@@ -131,14 +131,31 @@ object Test {
     assert(lst(90) == 'lsym90)
   }
 
-  def testAnonymous { // TODO complains classdef can't be found for some reason, runs fine in my case
+  def testAnonymous { // TODO complaints classdef can't be found for some reason, runs fine in my case
     // val anon = () => {
     //   val simba = 'smba
     //   simba
     // }
+    // val an2 = () => {
+    //   object nested {
+    // 	val m = 'mfsa
+    //   }
+    //   nested.m
+    // }
+    // val an3 = () => {
+    //   object nested {
+    // 	val f = () => {
+    // 	  'layered
+    // 	}
+    // 	def gets = f()
+    //   }
+    //   nested.gets
+    // }
     // val inner = new Inner
     // assert(anon() == inner.simba)
     // assert(anon().toString == "'smba")
+    // assert(an2() == 'mfsa)
+    // assert(an3() == Symbol("layered" + ""))
   }
 
   def testNestedObject {
