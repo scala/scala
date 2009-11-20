@@ -2182,7 +2182,8 @@ trait Typers { self: Analyzer =>
               arg1
           }
           context.undetparams = undetparams
-          inferMethodAlternative(fun, undetparams, argtpes.toList, pt)
+          inferMethodAlternative(fun, undetparams, argtpes.toList, pt,
+                                 varArgsOnly = args.nonEmpty && treeInfo.isWildcardStarArg(args.last))
           doTypedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
 
         case mt @ MethodType(params, _) =>

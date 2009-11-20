@@ -1620,7 +1620,7 @@ trait Infer {
      *    assignment expression.
      */
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol],
-                               argtpes: List[Type], pt0: Type): Unit = tree.tpe match {
+                               argtpes: List[Type], pt0: Type, varArgsOnly: Boolean = false): Unit = tree.tpe match {
       case OverloadedType(pre, alts) =>
         val pt = if (pt0.typeSymbol == UnitClass) WildcardType else pt0
         tryTwice {
@@ -1630,6 +1630,9 @@ trait Infer {
 
           var allApplicable = alts filter (alt =>
             isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
+
+          if (varArgsOnly)
+            allApplicable = allApplicable filter (alt => isVarArgs(alt.tpe.paramTypes))
 
           // if there are multiple, drop those that use a default
           // (keep those that use vararg / tupling conversion)
