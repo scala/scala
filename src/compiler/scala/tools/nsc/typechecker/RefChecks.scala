@@ -668,7 +668,7 @@ abstract class RefChecks extends InfoTransform {
 
     class LevelInfo(val outer: LevelInfo) {
       val scope: Scope = if (outer eq null) new Scope else new Scope(outer.scope)
-      var maxindex: Int = Math.MIN_INT
+      var maxindex: Int = Int.MinValue
       var refpos: Position = _
       var refsym: Symbol = _
     }

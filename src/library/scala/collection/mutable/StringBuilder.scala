@@ -727,7 +727,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *    specified substring, starting at the specified index. The integer
    *    returned is the smallest value <code>k</code> for which:
    *  </p><pre>
-   *    k >= Math.min(fromIndex, str.length()) &&
+   *    k >= math.min(fromIndex, str.length()) &&
    *                   this.toString().startsWith(str, k)</pre>
    *  <p>
    *    If no such value of <code>k</code> exists, then <code>-1</code>
@@ -768,7 +768,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *    specified substring. The integer returned is the largest value
    *    <code>k</code> such that:
    *  </p><pre>val
-   *    k <= Math.min(fromIndex, str.length()) &&
+   *    k <= math.min(fromIndex, str.length()) &&
    *                   this.toString().startsWith(str, k)</pre>
    *  <p>
    *    If no such value of <code>k</code> exists, then <code>-1</code>
@@ -852,7 +852,7 @@ object StringBuilder
   // method <code>java.util.Arrays.copyOf</code> exists since 1.6
   private def copyOf(src: Array[Char], newLength: Int): Array[Char] = {
     val dest = new Array[Char](newLength)
-    arraycopy(src, 0, dest, 0, Math.min(src.length, newLength))
+    arraycopy(src, 0, dest, 0, src.length min newLength)
     dest
   }
 }

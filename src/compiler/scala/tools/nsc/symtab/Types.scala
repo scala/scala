@@ -3626,7 +3626,7 @@ A type's typeSymbol should never be inspected directly.
     */
   def lubDepth(ts: List[Type]) = {
     var d = 0
-    for (tp <- ts) d = Math.max(d, tp.baseTypeSeqDepth)
+    for (tp <- ts) d = math.max(d, tp.baseTypeSeqDepth)
     d + LubGlbMargin
   }
 

@@ -138,7 +138,7 @@ object Range {
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     override def isInclusive = true
-    override protected val limit = end + Math.signum(step)
+    override protected val limit = end + math.signum(step)
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
   }
 

@@ -174,9 +174,9 @@ object Sorting {
 
         // Swap partition elements back to middle
         val n = off + len
-        var s = Math.min(a-off, b-a)
+        var s = math.min(a-off, b-a)
         vecswap(off, b-s, s)
-        s = Math.min(d-c, n-d-1)
+        s = math.min(d-c, n-d-1)
         vecswap(b,   n-s, s)
 
         // Recursively sort non-partition-elements
@@ -275,9 +275,9 @@ object Sorting {
 
         // Swap partition elements back to middle
         val n = off + len
-        var s = Math.min(a-off, b-a)
+        var s = math.min(a-off, b-a)
         vecswap(off, b-s, s)
-        s = Math.min(d-c, n-d-1)
+        s = math.min(d-c, n-d-1)
         vecswap(b,   n-s, s)
 
         // Recursively sort non-partition-elements
@@ -383,9 +383,9 @@ object Sorting {
 
         // Swap partition elements back to middle
         val n = off + len
-        var s = Math.min(a-off, b-a)
+        var s = math.min(a-off, b-a)
         vecswap(off, b-s, s)
-        s = Math.min(d-c, n-d-1)
+        s = math.min(d-c, n-d-1)
         vecswap(b,   n-s, s)
 
         // Recursively sort non-partition-elements
@@ -491,9 +491,9 @@ object Sorting {
 
         // Swap partition elements back to middle
         val n = off + len
-        var s = Math.min(a-off, b-a)
+        var s = math.min(a-off, b-a)
         vecswap(off, b-s, s)
-        s = Math.min(d-c, n-d-1)
+        s = math.min(d-c, n-d-1)
         vecswap(b,   n-s, s)
 
         // Recursively sort non-partition-elements

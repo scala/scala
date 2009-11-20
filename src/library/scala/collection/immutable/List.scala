@@ -306,7 +306,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @return     this list without the elements of the given list
    *              <code>that</code>.
    */
-  @deprecated("use `list1.toSet -- list2` instead")
+  @deprecated("use `list1 filterNot (list2 contains)` instead")
   def -- [B >: A](that: List[B]): List[B] = {
     val b = new ListBuffer[B]
     var these = this

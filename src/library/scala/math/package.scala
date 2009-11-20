@@ -171,18 +171,27 @@ package object math {
   def min(x: Float, y: Float): Float  = java.lang.Math.min(x, y)
   def min(x: Double, y: Double): Double = java.lang.Math.min(x, y)
 
-  def signum(x: Double): Double = x match { case 0 => 0
-                                            case y if y < 0 => -1.0
-                                            case y if y > 0 => 1.0 }
-  def signum(x: Float): Float = x match { case 0f => 0f
-                                          case y if y < 0f => -1.0f
-                                          case y if y > 0f => 1.0f }
-  def signum(x: Long): Long = x match { case 0l => 0l
-                                        case y if y < 0l => -1l
-                                        case y if y > 0l => 1l }
-  def signum(x: Int): Int = x match { case 0 => 0
-                                      case y if y < 0 => -1
-                                      case y if y > 0 => 1}
+  def signum(x: Double): Double =
+    if (x == 0d) 0d
+    else if (x < 0) -1.0
+    else if (x > 0) 1.0
+    else x    // NaN
+
+  def signum(x: Float): Float =
+    if (x == 0f) 0f
+    else if (x < 0) -1.0f
+    else if (x > 0) 1.0f
+    else x    // NaN
+
+  def signum(x: Long): Long =
+    if (x == 0l) 0l
+    else if (x < 0) -1l
+    else 1l
+
+  def signum(x: Int): Int =
+    if (x == 0) 0
+    else if (x < 0) -1
+    else 1
 
   // from Java 1.5
   // def log10(x: Double): Double = java.lang.Math.log10(x)

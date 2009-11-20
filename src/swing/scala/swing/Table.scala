@@ -299,7 +299,7 @@ class Table extends Component with Scrollable.Wrapper {
     def tableChanged(e: TableModelEvent) = publish(
       e.getType match {
         case TableModelEvent.UPDATE =>
-          if (e.getFirstRow == 0 && e.getLastRow == Math.MAX_INT && e.getColumn == TableModelEvent.ALL_COLUMNS)
+          if (e.getFirstRow == 0 && e.getLastRow == Int.MaxValue && e.getColumn == TableModelEvent.ALL_COLUMNS)
             TableChanged(Table.this)
           else if (e.getFirstRow == TableModelEvent.HEADER_ROW)
             TableStructureChanged(Table.this)
