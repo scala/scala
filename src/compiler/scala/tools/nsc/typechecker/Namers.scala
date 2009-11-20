@@ -362,7 +362,7 @@ trait Namers { self: Analyzer =>
 
           case vd @ ValDef(mods, name, tp, rhs) =>
             if ((!context.owner.isClass ||
-                 (mods.flags & (PRIVATE | LOCAL)) == (PRIVATE | LOCAL).toLong ||
+                 (mods.flags & (PRIVATE | LOCAL | CASEACCESSOR)) == (PRIVATE | LOCAL) ||
                  name.endsWith(nme.OUTER, nme.OUTER.length) ||
                  context.unit.isJava) &&
                  !mods.isLazy) {
@@ -370,38 +370,44 @@ trait Namers { self: Analyzer =>
                 .setFlag(mods.flags))
               finish
             } else {
+              val mods1 =
+            	  if (mods.hasFlag(PRIVATE) && mods.hasFlag(LOCAL) && !mods.isLazy) {
+                    context.error(tree.pos, "private[this] not allowed for case class parameters")
+                    mods &~ LOCAL
+                  } else mods
               // add getter and possibly also setter
               val accflags: Long = ACCESSOR |
-                (if (mods.isVariable) mods.flags & ~MUTABLE & ~PRESUPER
-                 else mods.flags & ~PRESUPER | STABLE)
+              (if (mods1.isVariable) mods1.flags & ~MUTABLE & ~PRESUPER
+                 else mods1.flags & ~PRESUPER | STABLE)
               if (nme.isSetterName(name))
                 context.error(tree.pos, "Names of vals or vars may not end in `_='")
               // .isInstanceOf[..]: probably for (old) IDE hook. is this obsolete?
-              val getter = enterAliasMethod(tree, name, accflags, mods)
+              val getter = enterAliasMethod(tree, name, accflags, mods1)
               setInfo(getter)(namerOf(getter).getterTypeCompleter(vd))
-              if (mods.isVariable) {
+              if (mods1.isVariable) {
                 val setter = enterAliasMethod(tree, nme.getterToSetter(name),
                                             accflags & ~STABLE & ~CASEACCESSOR,
-                                            mods)
+                                            mods1)
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
               }
+
               tree.symbol =
-                if (mods.isDeferred) {
+                if (mods1.isDeferred) {
                   getter setPos tree.pos // unfocus getter position, because there won't be a separate value
                 } else {
                   val vsym =
                     if (!context.owner.isClass) {
-                      assert(mods.isLazy)   // if not a field, it has to be a lazy val
-                      owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods.flags | MUTABLE)
+                      assert(mods1.isLazy)   // if not a field, it has to be a lazy val
+                      owner.newValue(tree.pos, name + "$lzy" ).setFlag(mods1.flags | MUTABLE)
                     } else {
-                      val mflag = if (mods.isLazy) MUTABLE else 0
-                      val newflags = mods.flags & FieldFlags | PRIVATE | LOCAL | mflag
-
+                      val mFlag = if (mods1.isLazy) MUTABLE else 0
+                      val lFlag = if (mods.hasFlag(PRIVATE) && mods.hasFlag(LOCAL)) 0 else LOCAL
+                      val newflags = mods1.flags & FieldFlags | PRIVATE | lFlag | mFlag
                       owner.newValue(tree.pos, nme.getterToLocal(name)) setFlag newflags
                     }
                   enterInScope(vsym)
                   setInfo(vsym)(namerOf(vsym).typeCompleter(tree))
-                  if (mods.isLazy)
+                  if (mods1.isLazy)
                     vsym.setLazyAccessor(getter)
 
                   vsym
