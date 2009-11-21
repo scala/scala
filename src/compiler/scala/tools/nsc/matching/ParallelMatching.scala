@@ -53,20 +53,19 @@ trait ParallelMatching extends ast.TreeDSL
       -shortCuts.length
     }
 
-    // XXX transitional.
-    final def requestBody(bx: Int, subst: Bindings): Tree =
-      requestBody(bx, PatternVarGroup.fromBindings(subst.get(), targets(bx).freeVars))
-
     /** first time bx is requested, a LabelDef is returned. next time, a jump.
      *  the function takes care of binding
      */
-    final def requestBody(bx: Int, pvgroup: PatternVarGroup): Tree = {
+    final def requestBody(bx: Int, subst: Bindings): Tree = {
+      // shortcut
+      if (bx < 0)
+        return Apply(ID(shortCuts(-bx-1)), Nil)
+
+      val pvgroup = PatternVarGroup.fromBindings(subst.get(), targets(bx).freeVars)
       val target = targets(bx)
 
-      // shortcut
-      if (bx < 0) Apply(ID(shortCuts(-bx-1)), Nil)
       // first time this bx is requested - might be bound elsewhere
-      else if (target.isNotReached) target.createLabelBody(bx, pvgroup)
+      if (target.isNotReached) target.createLabelBody(bx, pvgroup)
       // call label "method" if possible
       else target.getLabelBody(pvgroup)
     }
