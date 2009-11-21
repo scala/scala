@@ -129,7 +129,7 @@ self =>
 
   protected class DefaultKeySet extends Set[A] {
     def contains(key : A) = self.contains(key)
-    def iterator = self.iterator.map(_._1)
+    def iterator = keysIterator
     def + (elem: A): Set[A] = (Set[A]() ++ this + elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     def - (elem: A): Set[A] = (Set[A]() ++ this - elem).asInstanceOf[Set[A]] // !!! concrete overrides abstract problem
     override def size = self.size
@@ -158,7 +158,7 @@ self =>
   def valuesIterable: Iterable[B] = new DefaultValuesIterable
 
   protected class DefaultValuesIterable extends Iterable[B] {
-    def iterator = self.iterator.map(_._2)
+    def iterator = valuesIterator
     override def size = self.size
     override def foreach[C](f: B => C) = for ((k, v) <- self) f(v)
   }
