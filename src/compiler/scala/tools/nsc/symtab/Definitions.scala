@@ -95,6 +95,11 @@ trait Definitions {
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
 
+    def ScalaValueClasses = List(
+      UnitClass, ByteClass, ShortClass, IntClass, LongClass,
+      CharClass, FloatClass, DoubleClass, BooleanClass
+    )
+
     // exceptions and other throwables
     lazy val ThrowableClass                 = getClass(sn.Throwable)
     lazy val NullPointerExceptionClass      = getClass(sn.NPException)
@@ -125,10 +130,10 @@ trait Definitions {
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
     lazy val PartialFunctionClass = getClass("scala.PartialFunction")
+    lazy val SymbolClass          = getClass("scala.Symbol")
     lazy val StringClass          = getClass(sn.String)
     lazy val ClassClass           = getClass(sn.Class)
       def Class_getMethod = getMember(ClassClass, nme.getMethod_)
-    lazy val SymbolClass          = getClass("scala.Symbol")
 
     // fundamental modules
     lazy val PredefModule: Symbol = getModule("scala.Predef")
@@ -142,7 +147,7 @@ trait Definitions {
       def Predef_conforms = getMember(PredefModule, nme.conforms)
     lazy val ConsoleModule: Symbol = getModule("scala.Console")
     lazy val ScalaRunTimeModule: Symbol = getModule("scala.runtime.ScalaRunTime")
-	lazy val SymbolModule: Symbol = getModule("scala.Symbol")
+    lazy val SymbolModule: Symbol = getModule("scala.Symbol")
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq)
       def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
       def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
@@ -407,6 +412,18 @@ trait Definitions {
     lazy val BoxedLongClass         = getClass("java.lang.Long")
     lazy val BoxedFloatClass        = getClass("java.lang.Float")
     lazy val BoxedDoubleClass       = getClass("java.lang.Double")
+
+    /** The various ways a boxed primitive might materialize at runtime. */
+    def isMaybeBoxed(sym: Symbol) =
+      if (forMSIL)
+        sym isNonBottomSubClass BoxedNumberClass
+      else {
+        (sym == ObjectClass) ||
+        (sym == SerializableClass) ||
+        (sym == ComparableClass) ||
+        (sym isNonBottomSubClass BoxedNumberClass) ||
+        (sym isNonBottomSubClass BoxedCharacterClass)
+      }
 
     lazy val BoxedUnitClass         = getClass("scala.runtime.BoxedUnit")
     lazy val BoxedUnitModule        = getModule("scala.runtime.BoxedUnit")

@@ -28,7 +28,8 @@ abstract class GenICode extends SubComponent  {
   import icodes.opcodes._
   import definitions.{
     ArrayClass, ObjectClass, ThrowableClass,
-    Object_equals, Object_isInstanceOf, Object_asInstanceOf
+    Object_equals, Object_isInstanceOf, Object_asInstanceOf,
+    isMaybeBoxed
   }
   import scalaPrimitives.{
     isArrayOp, isComparisonOp, isLogicalOp,
@@ -1332,23 +1333,8 @@ abstract class GenICode extends SubComponent  {
         * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
         * When it is statically known that both sides are equal and subtypes of Number of Character,
         * not using the rich equality is possible (their own equals method will do ok.)*/
-      def mustUseAnyComparator: Boolean = {
-        import definitions._
-
-        /** The various ways a boxed primitive might materialize at runtime. */
-        def isJavaBoxed(sym: Symbol) =
-          (sym == ObjectClass) ||
-          (sym == SerializableClass) ||
-          (sym == ComparableClass) ||
-          (sym isNonBottomSubClass BoxedNumberClass) ||
-          (sym isNonBottomSubClass BoxedCharacterClass)
-
-        def isBoxed(sym: Symbol): Boolean =
-          if (forMSIL) (sym isNonBottomSubClass BoxedNumberClass)
-          else isJavaBoxed(sym)
-
-        isBoxed(l.tpe.typeSymbol) && isBoxed(r.tpe.typeSymbol)
-      }
+      def mustUseAnyComparator: Boolean =
+        isMaybeBoxed(l.tpe.typeSymbol) && isMaybeBoxed(r.tpe.typeSymbol)
 
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime

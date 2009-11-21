@@ -53,7 +53,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       localTyper typed { atPos(pos)(tree) }
 
     private def classConstantMethod(pos: Position, sig: String): Symbol =
-      (classConstantMeth get sig) getOrElse {
+      classConstantMeth.getOrElseUpdate(sig, {
         val forName = getMember(ClassClass.linkedModuleOfClass, nme.forName)
         val owner = currentOwner.enclClass
 
@@ -70,9 +70,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         )
 
         newDefs.append(cdef, mdef)
-        classConstantMeth.update(sig, meth)
         meth
-      }
+      })
 
     override def transformUnit(unit: CompilationUnit) =
       unit.body = transform(unit.body)
@@ -80,7 +79,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     /** A value class is defined to be only Java-compatible values: unit is
       * not part of it, as opposed to isValueClass in definitions. scala.Int is
       * a value class, java.lang.Integer is not. */
-    def isValueClass(sym: Symbol) = boxedClass contains sym
+    def isJavaValueClass(sym: Symbol) = boxedClass contains sym
 
     override def transform(tree: Tree): Tree = tree match {
 
@@ -350,13 +349,16 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
           val qualSym = qual.tpe.typeSymbol
           val methSym = ad.symbol
+          def args = qual :: params
+
+          /** Normal non-Array call */
           def defaultCall = {
             // reflective method call machinery
-            val invokeName  = MethodClass.tpe member nme.invoke_    // reflect.Method.invoke(...)
-            def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes)) // cache Symbol
-            def lookup      = Apply(cache, List(qual GETCLASS))     // get Method object from cache
-            def args        = ArrayValue(TypeTree(ObjectClass.tpe), params)  // args for invocation
-            def invocation  = (lookup DOT invokeName)(qual, args)   // .invoke(qual, ...)
+            val invokeName  = MethodClass.tpe member nme.invoke_                                // reflect.Method.invoke(...)
+            def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))   // cache Symbol
+            def lookup      = Apply(cache, List(qual GETCLASS))                                 // get Method object from cache
+            def invokeArgs  = ArrayValue(TypeTree(ObjectClass.tpe), params)                     // args for invocation
+            def invocation  = (lookup DOT invokeName)(qual, invokeArgs)                         // .invoke(qual, ...)
 
             // exception catching machinery
             val invokeExc   = currentOwner.newValue(ad.pos, mkTerm()) setInfo InvocationTargetExceptionClass.tpe
@@ -364,53 +366,43 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             def catchBody   = Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
 
             // try { method.invoke } catch { case e: InvocationTargetExceptionClass => throw e.getCause() }
-            TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY
+            fixResult( TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY )
           }
-          def useValueOperator = {
-            def isBoxed(qualSym: Symbol): Boolean =
-              (qualSym isNonBottomSubClass BoxedNumberClass) ||
-              (!forMSIL && (qualSym isNonBottomSubClass BoxedCharacterClass))
-            ((qualSym == definitions.ObjectClass) || isBoxed(qualSym)) && // may be a boxed value class
-            (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name) &&
-            ((resType :: paramTypes) forall (x => isValueClass(x.typeSymbol))) // issue #1110
-          }
-          def useArrayOperator =
-            ((qualSym == definitions.ObjectClass) || (qualSym == definitions.ArrayClass)) && (
-              (methSym.name == nme.length && params.isEmpty) ||
-              (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass)) ||
-              (methSym.name == nme.apply  && params.size == 1)
-            )
-          val callCode = if (useValueOperator) {
-            val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
-            def args              = qual :: params
-            fixResult((IF (test) THEN (REF(operator) APPLY args) ELSE defaultCall))
-          }
-          else if (useArrayOperator) {
-            val args = qual :: params
-            val operatorCall = // what follows is incredibly ugly. this dirty fix should be deal with at the next cleanup of cleanup.
-              if (methSym.name == nme.length)
-                (REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args))
-              else if (methSym.name == nme.update)
-                (REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2)))
-              else
-                (REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1))))
-            (IF (qual IS_OBJ arrayType(ObjectClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(ByteClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(ShortClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(IntClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(LongClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(FloatClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(DoubleClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(CharClass.tpe)) THEN operatorCall
-            ELSE (IF (qual IS_OBJ arrayType(BooleanClass.tpe)) THEN operatorCall
-            ELSE fixResult(defaultCall)
-            )))))))))
-          }
-          else fixResult(defaultCall)
-          localTyper.typed(callCode)
-        }
 
-        def getClass(q: Tree): Tree = (q DOT nme.getClass_)()
+          def useValueOperator =
+            isMaybeBoxed(qualSym) && // may be a boxed value class
+            (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name) &&
+            ((resType :: paramTypes) forall (x => isJavaValueClass(x.typeSymbol))) // issue #1110
+
+          def isArrayMethodSignature =
+            (methSym.name == nme.length && params.isEmpty) ||
+            (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass)) ||
+            (methSym.name == nme.apply  && params.size == 1)
+
+          def isDefinitelyArray = isArrayMethodSignature && (qualSym == ArrayClass)
+          def isMaybeArray = isArrayMethodSignature && (qualSym == ObjectClass) // precondition: !isDefinitelyArray
+
+          def genArrayCall = methSym.name match {
+            case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
+            case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
+            case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
+          }
+          def genArrayTest = {
+            def oneTest(s: Symbol) = qual IS_OBJ arrayType(s.tpe)
+            OR((ObjectClass :: ScalaValueClasses filterNot (_ eq UnitClass)) map oneTest: _*)
+          }
+
+          val callCode =
+            if (useValueOperator) {
+              val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
+              IF (test) THEN fixResult(REF(operator) APPLY args) ELSE defaultCall
+            }
+            else if (isDefinitelyArray) genArrayCall
+            else if (isMaybeArray) IF (genArrayTest) THEN genArrayCall ELSE defaultCall
+            else defaultCall
+
+          localTyper typed callCode
+        }
 
         if (settings.refinementMethodDispatch.value == "invoke-dynamic") {
 /*          val guardCallSite: Tree = {
@@ -456,7 +448,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 val sym = currentOwner.newValue(ad.pos, mkTerm("qual")) setInfo qual0.tpe
                 qual = REF(sym)
 
-                def structResType = if (isValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType
+                def structResType = if (isJavaValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType
                 BLOCK(
                   VAL(sym) === qual0,
                   callAsReflective(mparams map (_.tpe), resType, structResType)
@@ -531,7 +523,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case Literal(c) if (c.tag == ClassTag) && !forMSIL=>
         val tpe = c.typeValue
         typedWithPos(tree.pos) {
-          if (isValueClass(tpe.typeSymbol) || tpe.typeSymbol == definitions.UnitClass) {
+          if (isValueClass(tpe.typeSymbol)) {
             if (tpe.typeSymbol == UnitClass)
               Select(REF(BoxedUnit_TYPE), BoxedUnit_TYPE)
             else
@@ -603,10 +595,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       * have little in common.
       */
       case symapp @ Apply(Select(Select(a @ Ident(nme.scala_), b @ nme.Symbol), nme.apply),
-                          List(Literal(Constant(symname)))) =>
+                          List(Literal(Constant(symname: String)))) =>
         // add the symbol name to a map if it's not there already
-	val rhs = treeGen.mkCast(Apply(treeGen.scalaDot(nme.Symbol), List(Literal(Constant(symname)))), symbolType)
-        val (staticFieldSym, sfdef, sfinit) = getSymbolStaticField(symapp.pos, symname.asInstanceOf[String], rhs, symapp)
+        val rhs = gen.mkCast(Apply(gen.scalaDot(nme.Symbol), List(Literal(Constant(symname)))), symbolType)
+        val (staticFieldSym, sfdef, sfinit) = getSymbolStaticField(symapp.pos, symname, rhs, symapp)
 
         // create a reference to a static field
         val ntree = typedWithPos(symapp.pos)(REF(staticFieldSym))
@@ -616,18 +608,12 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         super.transform(tree)
     }
 
-    /* serves as a tree generator */
-    object treeGen extends scala.tools.nsc.ast.TreeGen {
-      val global: CleanUp.this.global.type = CleanUp.this.global
-    }
-
     /* Returns the symbol and the tree for the symbol field interning a reference to a symbol 'synmname'.
      * If it doesn't exist, i.e. the symbol is encountered the first time,
      * it creates a new static field definition and initalization and returns it.
      */
-    private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): (Symbol, Tree, Tree) = {
-      if (symbolStaticFields.contains(symname)) symbolStaticFields(symname)
-      else {
+    private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): (Symbol, Tree, Tree) =
+      symbolStaticFields.getOrElseUpdate(symname, {
         val freshname = unit.fresh.newName(pos, "symbol$")
         val theTyper = typer.atOwner(tree, currentClass)
 
@@ -639,36 +625,27 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
         // create field definition and initialization
         val stfieldDef = theTyper.typed { atPos(pos)(VAL(stfieldSym) === rhs) }
-	val stfieldInit = theTyper.typed { atPos(pos)(REF(stfieldSym) === rhs) }
+        val stfieldInit = theTyper.typed { atPos(pos)(REF(stfieldSym) === rhs) }
 
-	// add field definition to new defs
-	newDefs append stfieldDef
+        // add field definition to new defs
+        newDefs append stfieldDef
 
-        symbolStaticFields.put(symname, (stfieldSym, stfieldDef, stfieldInit))
-
-        symbolStaticFields(symname)
-      }
-    }
+        (stfieldSym, stfieldDef, stfieldInit)
+      })
 
     /* returns a list of all trees for symbol static fields, and clear the list */
     private def flushSymbolFieldsInitializations: List[Tree] = {
-      var fieldlst: List[Tree] = Nil
-
-      for ((symbolname, (symbol, deftree, inittree)) <- symbolStaticFields) {
-        fieldlst ::= inittree
-      }
+      val fields = (symbolStaticFields.valuesIterator map (_._3)).toList
       symbolStaticFields.clear
-
-      fieldlst
+      fields
     }
 
     /* finds the static ctor DefDef tree within the template if it exists. */
-    def findStaticCtor(template: Template): Option[Tree] = {
-      template.body.find(_ match {
-	case defdef @ DefDef(mods, name, tparam, vparam, tp, rhs) => name == nme.CONSTRUCTOR && defdef.symbol.hasFlag(STATIC)
-	case _ => false
-      })
-    }
+    def findStaticCtor(template: Template): Option[Tree] =
+      template.body find {
+        case defdef @ DefDef(mods, nme.CONSTRUCTOR, tparam, vparam, tp, rhs) => defdef.symbol hasFlag STATIC
+        case _ => false
+      }
 
     /* changes the template for the class so that it contains a static constructor with symbol fields inits,
      * augments an existing static ctor if one already existed.
@@ -679,40 +656,31 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       else {
         val theTyper = typer.atOwner(template, currentClass)
         val newCtor = findStaticCtor(template) match {
-	  // in case there already were static ctors - augment existing ones
-	  // currently, however, static ctors aren't being generated anywhere else
-          case Some(ctorTree) =>
-	    val ctor = ctorTree.asInstanceOf[DefDef]
-	    // modify existing static ctor
-	    val newBlock = ctor.rhs match {
-	      case block @ Block(stats, expr) =>
-		// need to add inits to existing block
-		treeCopy.Block(block, symbolInitTrees ::: stats, expr)
-	      case term @ _ if term.isInstanceOf[TermTree] =>
-		// need to create a new block with inits and the old term
-		treeCopy.Block(term, symbolInitTrees, term)
-	    }
-	    treeCopy.DefDef(ctor, ctor.mods, ctor.name, ctor.tparams, ctor.vparamss, ctor.tpt, newBlock)
-	  case None =>
+          // in case there already were static ctors - augment existing ones
+          // currently, however, static ctors aren't being generated anywhere else
+          case Some(ctor @ DefDef(mods, name, tparams, vparamss, tpt, rhs)) =>
+            // modify existing static ctor
+            val newBlock = rhs match {
+              case block @ Block(stats, expr) =>
+                // need to add inits to existing block
+                treeCopy.Block(block, symbolInitTrees ::: stats, expr)
+              case term: TermTree =>
+                // need to create a new block with inits and the old term
+                treeCopy.Block(term, symbolInitTrees, term)
+            }
+            treeCopy.DefDef(ctor, mods, name, tparams, vparamss, tpt, newBlock)
+          case None =>
             // create new static ctor
-	    val staticCtorSym = currentClass.newConstructor(template.pos)
-       				.setFlag(STATIC)
-				.setInfo(UnitClass.tpe)
+            val staticCtorSym = currentClass.newConstructor(template.pos)
+                                  .setFlag(STATIC)
+                                  .setInfo(UnitClass.tpe)
             val rhs = Block(symbolInitTrees, Literal(()))
             val staticCtorTree = DefDef(staticCtorSym, rhs)
-            theTyper.typed{ atPos(template.pos)(staticCtorTree) }
+            theTyper.typed { atPos(template.pos)(staticCtorTree) }
         }
-      val newTemplate = treeCopy.Template(template, template.parents, template.self, newCtor :: template.body)
-        //println(newTemplate)
-        newTemplate
+        treeCopy.Template(template, template.parents, template.self, newCtor :: template.body)
       }
     }
-
   } // CleanUpTransformer
 
 }
-
-
-
-
-
