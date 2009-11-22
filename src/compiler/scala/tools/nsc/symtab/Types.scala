@@ -3287,8 +3287,10 @@ A type's typeSymbol should never be inspected directly.
   class SubstWildcardMap(from: List[Symbol]) extends TypeMap {
     def apply(tp: Type): Type = try {
       tp match {
-        case TypeRef(_, sym, _) if (from contains sym) => WildcardType
-        case _ => mapOver(tp)
+        case TypeRef(_, sym, _) if (from contains sym) =>
+          BoundedWildcardType(sym.info.bounds)
+        case _ =>
+          mapOver(tp)
       }
     } catch {
       case ex: MalformedType =>
