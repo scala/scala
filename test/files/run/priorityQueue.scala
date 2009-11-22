@@ -21,7 +21,7 @@ object Test {
     testDrops
     testUpdates
     testEquality
-    testSeq
+    testMisc
   }
 
   def testInsertionsAndEqualities {
@@ -232,9 +232,10 @@ object Test {
     assertPriorityDestructive(pq2)
   }
 
-  def testSeq {
+  def testMisc {
     val pq = new PriorityQueue[Int]
     pq ++= (0 until 100)
+    assert(pq.size == 100)
 
     val (p1, p2) = pq.partition(_ < 50)
     assertPriorityDestructive(p1)
@@ -246,14 +247,33 @@ object Test {
     pq.clear
     pq ++= (0 until 10)
     pq += 5
-    //val ind = pq.lastIndexWhere(_ == 5)
-    //println(ind)
-    //println(pq)
-    //assert(ind == 5)
-    //assertPriorityDestructive(pq)
+    assert(pq.size == 11)
 
-    //pq.clear
-    //pq ++= (0 until 10)
+    val ind = pq.lastIndexWhere(_ == 5)
+    assert(ind == 5)
+    assertPriorityDestructive(pq)
+
+    pq.clear
+    pq ++= (0 until 10)
+    assert(pq.lastIndexWhere(_ == 9) == 0)
+    assert(pq.lastIndexOf(8) == 1)
+    assert(pq.lastIndexOf(7) == 2)
+
+    pq += 5
+    pq += 9
+    assert(pq.lastIndexOf(9) == 1)
+    assert(pq.lastIndexWhere(_ % 2 == 1) == 10)
+    assert(pq.lastIndexOf(5) == 6)
+
+    val lst = pq.reverseIterator.toList
+    for (i <- 0 until 5) assert(lst(i) == i)
+    assert(lst(5) == 5)
+    assert(lst(6) == 5)
+    assert(lst(7) == 6)
+    assert(lst(8) == 7)
+    assert(lst(9) == 8)
+    assert(lst(10) == 9)
+    assert(lst(11) == 9)
   }
 
 }

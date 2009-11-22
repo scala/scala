@@ -202,6 +202,20 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     }
   }
 
+  override def reverse = throw new UnsupportedOperationException("Priority queue cannot be reversed.")
+
+  override def reverseIterator = new Iterator[A] {
+    val arr = new Array[Any](size)
+    iterator.copyToArray(arr)
+    var i = arr.size - 1
+    def hasNext: Boolean = i >= 0
+    def next(): A = {
+      val curr = arr(i)
+      i -= 1
+      curr.asInstanceOf[A]
+    }
+  }
+
   /** The hashCode method always yields an error, since it is not
    *  safe to use mutable queues as keys in hash tables.
    *
