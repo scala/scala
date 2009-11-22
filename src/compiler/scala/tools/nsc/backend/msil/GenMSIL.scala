@@ -829,11 +829,11 @@ abstract class GenMSIL extends SubComponent {
     def orderBlocksForExh(blocks: List[BasicBlock], exH: List[ExceptionHandler]): List[BasicBlock] = {
 
       def moveToFront[T](xs: List[T], x: T) = (xs indexOf x) match {
-        case -1   => xs
+        case -1   => x :: xs
         case idx  => x :: (xs take idx) ::: (xs drop (idx + 1))
       }
       def moveToEnd[T](xs: List[T], x: T) = (xs indexOf x) match {
-        case -1   => xs
+        case -1   => xs ::: List(x)
         case idx  => (xs take idx) ::: (xs drop (idx + 1)) ::: List(x)
       }
 
