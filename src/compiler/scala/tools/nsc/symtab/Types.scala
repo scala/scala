@@ -4029,7 +4029,7 @@ A type's typeSymbol should never be inspected directly.
 
     /** First try, on the right:
      *   - unwrap Annotated types, BoundedWildcardTypes,
-     *   - bind TypeVars on the right, if lhs is not Annotated nor BoundedWildcard
+     *   - bind TypeVars  on the right, if lhs is not Annotated nor BoundedWildcard
      *   - handle common cases for first-kind TypeRefs on both sides as a fast path.
      */
     def firstTry = tp2 match {
@@ -4479,9 +4479,9 @@ A type's typeSymbol should never be inspected directly.
     (DoubleClass.tpe /: ts) ((t1, t2) => if (isNumericSubType(t1, t2)) t1 else t2)
 
   def isWeakSubType(tp1: Type, tp2: Type) =
-    tp1 match {
+    tp1.deconst.normalize match {
       case TypeRef(_, sym1, _) if isNumericValueClass(sym1) =>
-        tp2 match {
+        tp2.deconst.normalize match {
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
             sym1 == sym2 || numericWidth(sym1) < numericWidth(sym2)
           case tv2 @ TypeVar(_, _) =>
@@ -4490,7 +4490,7 @@ A type's typeSymbol should never be inspected directly.
             isSubType(tp1, tp2)
         }
       case tv1 @ TypeVar(_, _) =>
-        tp2 match {
+        tp2.deconst.normalize match {
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
             tv1.registerBound(tp2, isLowerBound = false, numBound = true)
           case _ =>

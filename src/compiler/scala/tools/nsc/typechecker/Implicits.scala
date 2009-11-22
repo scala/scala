@@ -368,21 +368,28 @@ self: Analyzer =>
        *  correspond to the HasMethodMatching type,
        *  or otherwise if `tp' is compatible with `pt'.
        */
-      def matchesPt(tp: Type, pt: Type, undet: List[Symbol]) =
-        isCompatible(tp, pt) || {
+      def matchesPt(tp: Type, pt: Type, undet: List[Symbol]) = {
+        isCompatible(tp, pt) ||
+        isView && {
           pt match {
-            case Function1(arg, HasMethodMatching(name, argtpes, restpe)) =>
+            case Function1(arg, res) =>
               normalize(tp) match {
                 case Function1(arg1, res1) =>
-                  (arg <:< arg1) &&
-                  (res1.member(name) filter (m => isApplicableSafe(undet, m.tpe, argtpes, restpe))) != NoSymbol
-                case _ =>
-                  false
+                  (arg.deconst weak_<:< arg1) && {
+                    res match {
+                      case HasMethodMatching(name, argtpes, restpe) =>
+                        (res1.member(name) filter (m =>
+                          isApplicableSafe(undet, m.tpe, argtpes, restpe))) != NoSymbol
+                      case _ =>
+                        res1 <:< res
+                    }
+                  }
+                case _ => false
               }
-            case _ =>
-              false
+            case _ => false
           }
         }
+      }
 
       //if (traceImplicits) println("typed impl for "+wildPt+"? "+info.name+":"+depoly(info.tpe)+"/"+undetParams+"/"+isPlausiblyCompatible(info.tpe, wildPt)+"/"+matchesPt(depoly(info.tpe), wildPt, List()))
       if (isPlausiblyCompatible(info.tpe, wildPt) &&

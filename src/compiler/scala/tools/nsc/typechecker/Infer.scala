@@ -418,7 +418,8 @@ trait Infer {
       case TypeRef(_, sym1, _) =>
         !sym1.isClass || {
           tp2.normalize match {
-            case TypeRef(_, sym2, _) => !sym2.isClass || (sym1 isSubClass sym2)
+            case TypeRef(_, sym2, _) =>
+              !sym2.isClass || (sym1 isSubClass sym2) || isNumericSubType(tp1, tp2)
             case _ => true
           }
         }
