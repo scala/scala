@@ -42,10 +42,6 @@ class FallbackArrayBuilding {
  *  @version 1.0
  */
 object Array extends FallbackArrayBuilding {
-
-  import runtime.BoxedArray;
-  import scala.runtime.ScalaRunTime.boxArray;
-
   implicit def canBuildFrom[T](implicit m: ClassManifest[T]): CanBuildFrom[Array[_], T, Array[T]] =
     new CanBuildFrom[Array[_], T, Array[T]] {
       def apply(from: Array[_]) = ArrayBuilder.make[T]()(m)

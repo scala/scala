@@ -149,8 +149,6 @@ trait Definitions {
     lazy val ScalaRunTimeModule: Symbol = getModule("scala.runtime.ScalaRunTime")
     lazy val SymbolModule: Symbol = getModule("scala.Symbol")
       def SeqFactory = getMember(ScalaRunTimeModule, nme.Seq)
-      def checkDefinedMethod = getMember(ScalaRunTimeModule, "checkDefined")
-      def isArrayMethod = getMember(ScalaRunTimeModule, "isArray")
       def arrayApplyMethod = getMember(ScalaRunTimeModule, "array_apply")
       def arrayUpdateMethod = getMember(ScalaRunTimeModule, "array_update")
       def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
@@ -400,9 +398,6 @@ trait Definitions {
     // boxed classes
     lazy val ObjectRefClass         = getClass("scala.runtime.ObjectRef")
     lazy val BoxesRunTimeClass      = getModule("scala.runtime.BoxesRunTime")
-    lazy val BoxedArrayClass        = getClass("scala.runtime.BoxedArray")
-    lazy val BoxedAnyArrayClass     = getClass("scala.runtime.BoxedAnyArray")
-    lazy val BoxedObjectArrayClass  = getClass("scala.runtime.BoxedObjectArray")
     lazy val BoxedNumberClass       = getClass(sn.BoxedNumber)
     lazy val BoxedCharacterClass    = getClass(sn.BoxedCharacter)
     lazy val BoxedBooleanClass      = getClass(sn.BoxedBoolean)
@@ -570,7 +565,6 @@ trait Definitions {
     val boxedModule = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
-    val boxedArrayClass = new HashMap[Symbol, Symbol]
 
     def isUnbox(m: Symbol) = (m.name == nme.unbox) && cond(m.tpe) {
       case MethodType(_, restpe) => cond(unboxMethod get restpe.typeSymbol) {
@@ -595,7 +589,6 @@ trait Definitions {
       val clazz = newClass(ScalaPackageClass, name, anyvalparam) setFlag (ABSTRACT | FINAL)
       boxedClass(clazz) = getClass(boxedName)
       boxedModule(clazz) = getModule(boxedName)
-      boxedArrayClass(clazz) = getClass("scala.runtime.Boxed" + name + "Array")
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
       if (width > 0) numericWidth(clazz) = width

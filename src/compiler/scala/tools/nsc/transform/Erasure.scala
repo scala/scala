@@ -425,17 +425,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         })
     }
 
-    /** generate  ScalaRuntime.boxArray(tree)
-     *  !!! todo: optimize this in case the runtime type is known
-     */
-    private def boxArray(tree: Tree): Tree = tree match {
-      case LabelDef(name, params, rhs) =>
-        val rhs1 = boxArray(rhs)
-        treeCopy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
-      case _ =>
-        typedPos(tree.pos) { gen.mkRuntimeCall(nme.boxArray, List(tree)) }
-    }
-
     /** Unbox <code>tree</code> of boxed type to expected type <code>pt</code>.
      *
      *  @param tree the given tree

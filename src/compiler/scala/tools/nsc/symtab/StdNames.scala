@@ -268,8 +268,6 @@ trait StdNames {
     val assume_ = newTermName("assume")
     val asInstanceOf_ = newTermName("asInstanceOf")
     val box = newTermName("box")
-    val boxArray = newTermName("boxArray")
-    val forceBoxedArray = newTermName("forceBoxedArray")
     val canEqual_ = newTermName("canEqual")
     val checkInitialized = newTermName("checkInitialized")
     val classOf = newTermName("classOf")
