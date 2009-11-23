@@ -2521,16 +2521,19 @@ A type's typeSymbol should never be inspected directly.
     else {
       var occurCount = emptySymCount ++ (tparams map (_ -> 0))
       val tpe = deAlias(tpe0)
-      for (t <- tpe) {
-        t match {
-          case TypeRef(_, sym, _) =>
-            occurCount get sym match {
-              case Some(count) => occurCount += (sym -> (count + 1))
-              case None =>
-            }
-          case _ =>
+      def countOccs(tp: Type) =
+        for (t <- tp) {
+          t match {
+            case TypeRef(_, sym, _) =>
+              occurCount get sym match {
+                case Some(count) => occurCount += (sym -> (count + 1))
+                case None =>
+              }
+            case _ =>
+          }
         }
-      }
+      countOccs(tpe)
+      for (tparam <- tparams) countOccs(tparam.info)
 
       val extrapolate = new TypeMap {
         variance = 1

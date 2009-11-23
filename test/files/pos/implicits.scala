@@ -50,3 +50,8 @@ object Test2188 {
 
   val x: java.util.List[String] = List("foo")
 }
+
+object TestNumericWidening {
+  val y = 1
+  val x: java.lang.Long = y
+}

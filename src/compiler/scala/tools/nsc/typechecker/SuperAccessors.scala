@@ -27,7 +27,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._
-  import typer.typed
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "superaccessors"
@@ -38,7 +37,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   class SuperAccTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private var validCurrentOwner = true
     private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
-    private val typer = analyzer.newTyper(analyzer.rootContext(unit))
 
     private def accDefBuf(clazz: Symbol) = accDefs find (_._1 == clazz) match {
       case Some((_, buf)) => buf
@@ -63,8 +61,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
     private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
       if (tree.tpe exists (_.typeSymbol.isExistentialSkolem)) {
-        val packed = typer.packedType(tree, NoSymbol)
-        if (!(packed <:< pt)) typer.infer.typeError(tree.pos, packed, pt)
+        val packed = localTyper.packedType(tree, NoSymbol)
+        if (!(packed <:< pt)) localTyper.infer.typeError(tree.pos, packed, pt)
       }
       tree
     }
@@ -115,7 +113,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             superAcc.setInfo(superAccTpe.cloneInfo(superAcc))
             //println("creating super acc "+superAcc+":"+superAcc.tpe)//DEBUG
             clazz.info.decls enter superAcc;
-            accDefBuf(clazz) += typed(DefDef(superAcc, EmptyTree))
+            accDefBuf(clazz) += typers(clazz).typed(DefDef(superAcc, EmptyTree))
           }
           atPos(sup.pos) {
             Select(gen.mkAttributedThis(clazz), superAcc) setType tree.tpe;
@@ -175,7 +173,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case sel @ Select(qual @ This(_), name) =>
            if ((sym hasFlag PARAMACCESSOR) && (sym.alias != NoSymbol)) {
-            val result = typed {
+            val result = localTyper.typed {
               Select(
                 Super(qual.symbol, nme.EMPTY.toTypeName/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
                 sym.alias) setPos tree.pos
@@ -207,7 +205,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             val setter = makeSetter(lhs);
             if (settings.debug.value)
               log("Replaced " + tree + " with " + setter);
-            transform(typed(Apply(setter, List(qual, rhs))))
+            transform(localTyper.typed(Apply(setter, List(qual, rhs))))
           } else
             super.transform(tree)
 
@@ -306,7 +304,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
       if (settings.debug.value)
         log("Replaced " + tree + " with " + res)
-      if (hasArgs) typer.typedOperator(res) else typer.typed(res)
+      if (hasArgs) localTyper.typedOperator(res) else localTyper.typed(res)
     }
 
     /** Adapt the given argument in call to protected member.
