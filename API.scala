@@ -27,7 +27,14 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	{
 		override def description = "Extracts the public API from source files."
 		def name = API.name
-		def run: Unit = currentRun.units.foreach(processUnit)
+		def run: Unit =
+		{
+			val start = System.currentTimeMillis
+			if(java.lang.Boolean.getBoolean("sbt.api.enable"))
+				currentRun.units.foreach(processUnit)
+			val stop = System.currentTimeMillis
+			println("API phase took : " + ((stop - start)/1000.0) + " s")
+		}
 		def processUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
@@ -116,11 +123,39 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	}
 	private def fieldDef[T](s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers) => T): T =
 		create(processType(s.tpe), s.fullNameString, getAccess(s), getModifiers(s))
-	private def typeDef(s: Symbol) = error("type members not implemented yet")
+	private def typeDef(s: Symbol): xsbti.api.TypeMember =
+	{
+		val (typeParams, tpe) =
+			s.info match
+			{
+				case PolyType(typeParams0, base) => (typeParameters(typeParams0), base)
+				case t => (Array[xsbti.api.TypeParameter](), t)
+			}
+		val name = s.fullNameString
+		val access = getAccess(s)
+		val modifiers = getModifiers(s)
 
-	private def classStructure(s: Symbol) = structure(s.info.parents, s.info.decls)
-	private def structure(parents: List[Type], defs: Scope) = new xsbti.api.Structure(types(parents), processDefinitions(defs))
-	private def processDefinitions(defs: Scope): Array[xsbti.api.Definition] = defs.toList.toArray.map(definition)
+		if(s.isAliasType)
+			new xsbti.api.TypeAlias(processType(tpe), typeParams, name, access, modifiers)
+		else if(s.isAbstractType)
+		{
+			val bounds = tpe.bounds
+			new xsbti.api.TypeDeclaration(processType(bounds.lo), processType(bounds.hi), typeParams, name, access, modifiers)
+		}
+		else
+			error("Unknown type member" + s)
+	}
+
+	private def structure(s: Symbol): xsbti.api.Structure = structure(s.info)
+	private def structure(info: Type): xsbti.api.Structure =
+	{
+		val s = info.typeSymbol
+		val (declared, inherited) = info.members.partition(_.owner == s)
+		structure(info.baseClasses.map(_.tpe), declared, inherited) // linearization instead of parents
+	}
+	private def structure(parents: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure =
+		new xsbti.api.Structure(types(parents), processDefinitions(declared), processDefinitions(inherited))
+	private def processDefinitions(defs: List[Symbol]): Array[xsbti.api.Definition] = defs.toArray.map(definition)
 	private def definition(sym: Symbol): xsbti.api.Definition =
 	{
 		if(sym.isClass) classLike(sym)
@@ -133,7 +168,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	{
 		import Flags._
 		new xsbti.api.Modifiers(s.hasFlag(ABSTRACT), s.hasFlag(DEFERRED), s.hasFlag(OVERRIDE),
-			s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY))
+			s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY), s.hasFlag(SYNTHETIC))
 	}
 	private def isImplicit(s: Symbol) = s.hasFlag(Flags.IMPLICIT)
 	private def getAccess(c: Symbol): xsbti.api.Access =
@@ -164,7 +199,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				if(args.isEmpty) base else new xsbti.api.Parameterized(base, args.map(simpleType).toArray[SimpleType])
 			case SuperType(thistpe: Type, supertpe: Type) => error("Super type (not implemented)")
 			case at: AnnotatedType => annotatedType(at)
-			case RefinedType(parents, defs) => structure(parents, defs)
+			case rt: RefinedType/*(parents, defs)*/ => structure(rt)//parents, defs.toList)
 			case ExistentialType(tparams, result) => new xsbti.api.Existential(processType(result), typeParameters(tparams))
 			case NoType => error("NoType")
 			case PolyType(typeParams, resultType) => println("polyType(" + typeParams + " , " + resultType + ")"); error("polyType")
@@ -207,7 +242,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				else DefinitionType.Module
 			}
 			else DefinitionType.ClassDef
-		new xsbti.api.ClassLike(defType, selfType(c), classStructure(c), typeParameters(c), name, access, modifiers)
+		new xsbti.api.ClassLike(defType, selfType(c), structure(c), typeParameters(c), name, access, modifiers)
 	}
 	private final class TopLevelHandler(sourceFile: File) extends TopLevelTraverser
 	{
