@@ -285,6 +285,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           (parents map jsig).mkString
         case AnnotatedType(_, atp, _) =>
           jsig(atp)
+        case BoundedWildcardType(bounds) =>
+          println("something's wrong: "+sym+":"+sym.tpe+" has a bounded wildcard type")
+          jsig(bounds.hi)
         case _ =>
           val etp = erasure(tp)
           if (etp eq tp) throw new UnknownSig
