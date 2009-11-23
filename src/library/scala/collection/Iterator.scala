@@ -355,10 +355,19 @@ trait Iterator[+A] { self =>
   def filter(p: A => Boolean): Iterator[A] = {
     val self = buffered
     new Iterator[A] {
-      private def skip() = while (self.hasNext && !p(self.head)) self.next()
-      def hasNext = { skip(); self.hasNext }
-      def next() = { skip(); self.next() }
-    }
+			var computedHasNext = false
+      private def skip() = {
+				while (self.hasNext && !p(self.head)) self.next()
+				computedHasNext = self.hasNext
+			}
+      def hasNext = { if (!computedHasNext) skip(); computedHasNext }
+      def next() = {
+				if (!computedHasNext)
+					skip()
+				computedHasNext = false
+				self.next()
+    	}
+		}
   }
 
   /** !!! Temporary, awaiting more general implementation.
@@ -401,8 +410,19 @@ trait Iterator[+A] { self =>
   def takeWhile(p: A => Boolean): Iterator[A] = {
     val self = buffered
     new Iterator[A] {
-      def hasNext = { self.hasNext && p(self.head) }
-      def next() = (if (hasNext) self else empty).next()
+			var computedHasNext = false
+
+      def hasNext = {
+				val result = computedHasNext || (self.hasNext && p(self.head))
+				computedHasNext = result
+				result
+			}
+
+      def next() = {
+				val result = (if (computedHasNext || hasNext) self else empty).next()
+				computedHasNext = false
+				result
+			}
     }
   }
 
