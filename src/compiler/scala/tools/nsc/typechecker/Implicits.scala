@@ -741,47 +741,50 @@ self: Analyzer =>
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
 
-      def mot(tp0: Type): Tree = tp0.normalize match {
-        case ThisType(_) | SingleType(_, _) =>
-          manifestFactoryCall("singleType", tp, gen.mkAttributedQualifier(tp0))
-        case ConstantType(value) =>
-          manifestOfType(tp0.deconst, full)
-        case TypeRef(pre, sym, args) =>
-          if (isValueClass(sym) || isPhantomClass(sym)) {
-            typed { atPos(tree.pos.focus) {
-              Select(gen.mkAttributedRef(FullManifestModule), sym.name.toString)
-            }}
-          } else if (sym == ArrayClass && args.length == 1) {
-            manifestFactoryCall("arrayType", args.head, findSubManifest(args.head))
-           } else if (sym.isClass) {
-            val suffix = gen.mkClassOf(tp0) :: (args map findSubManifest)
-            manifestFactoryCall(
-              "classType", tp,
-              (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
-               else findSubManifest(pre) :: suffix): _*)
-          } else if (sym.isAbstractType) {
-            if (sym.isExistential)
-              EmptyTree // todo: change to existential parameter manifest
-            else if (sym.isTypeParameterOrSkolem)
-              EmptyTree  // a manifest should have been found by normal searchImplicit
-            else
+      def mot(tp0: Type): Tree = {
+        val tp1 = tp0.normalize
+        tp1 match {
+          case ThisType(_) | SingleType(_, _) =>
+            manifestFactoryCall("singleType", tp, gen.mkAttributedQualifier(tp1))
+          case ConstantType(value) =>
+            manifestOfType(tp1.deconst, full)
+          case TypeRef(pre, sym, args) =>
+            if (isValueClass(sym) || isPhantomClass(sym)) {
+              typed { atPos(tree.pos.focus) {
+                Select(gen.mkAttributedRef(FullManifestModule), sym.name.toString)
+              }}
+            } else if (sym == ArrayClass && args.length == 1) {
+              manifestFactoryCall("arrayType", args.head, findSubManifest(args.head))
+            } else if (sym.isClass) {
+              val suffix = gen.mkClassOf(tp1) :: (args map findSubManifest)
               manifestFactoryCall(
-                "abstractType", tp,
-                findSubManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp0.bounds.hi) :: (args map findSubManifest): _*)
-          } else {
-            EmptyTree  // a manifest should have been found by normal searchImplicit
-          }
-        case RefinedType(parents, decls) =>
-          // refinement is not generated yet
-          if (parents.length == 1) findManifest(parents.head)
-          else manifestFactoryCall("intersectionType", tp, parents map (findSubManifest(_)): _*)
-        case ExistentialType(tparams, result) =>
-          existentialAbstraction(tparams, result) match {
-            case ExistentialType(_, _) => mot(result)
-            case t => mot(t)
-          }
-        case _ =>
-          EmptyTree
+                "classType", tp,
+                (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
+                 else findSubManifest(pre) :: suffix): _*)
+            } else if (sym.isAbstractType) {
+              if (sym.isExistential)
+                EmptyTree // todo: change to existential parameter manifest
+              else if (sym.isTypeParameterOrSkolem)
+                EmptyTree  // a manifest should have been found by normal searchImplicit
+              else
+                manifestFactoryCall(
+                  "abstractType", tp,
+                  findSubManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp1.bounds.hi) :: (args map findSubManifest): _*)
+            } else {
+              EmptyTree  // a manifest should have been found by normal searchImplicit
+            }
+          case RefinedType(parents, decls) =>
+            // refinement is not generated yet
+            if (parents.length == 1) findManifest(parents.head)
+            else manifestFactoryCall("intersectionType", tp, parents map (findSubManifest(_)): _*)
+          case ExistentialType(tparams, result) =>
+            existentialAbstraction(tparams, result) match {
+              case ExistentialType(_, _) => mot(result)
+              case t => mot(t)
+            }
+          case _ =>
+            EmptyTree
+        }
       }
 
       mot(tp)
