@@ -496,9 +496,9 @@ trait Infer {
      *  @param pt      ...
      *  @return        ...
      */
-    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type): List[Type] = {
+    private def exprTypeArgs(tparams: List[Symbol], restpe: Type, pt: Type, checkCompat: (Type, Type) => Boolean = isCompatible): List[Type] = {
       val tvars = tparams map freshVar
-      if (isCompatible(restpe.instantiateTypeParams(tparams, tvars), pt)) {
+      if (checkCompat(restpe.instantiateTypeParams(tparams, tvars), pt)) {
         try {
           // If the restpe is an implicit method, and the expected type is fully defined
           // optimze type varianbles wrt to the implicit formals only; ignore the result type.
@@ -788,7 +788,8 @@ trait Infer {
               try {
                 val uninstantiated = new ListBuffer[Symbol]
                 val targs = methTypeArgs(undetparams, formals, restpe, argtpes, pt, uninstantiated)
-                (exprTypeArgs(uninstantiated.toList, restpe.instantiateTypeParams(undetparams, targs), pt) ne null) &&
+                // #2665: must use weak conformance, not regular one (follow the monorphic case above)
+                (exprTypeArgs(uninstantiated.toList, restpe.instantiateTypeParams(undetparams, targs), pt, isWeaklyCompatible) ne null) &&
                 isWithinBounds(NoPrefix, NoSymbol, undetparams, targs)
               } catch {
                 case ex: NoInstance => false
