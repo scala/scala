@@ -190,27 +190,27 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	}
 	private class NewFinder extends ClassFinder
 	{
+		private val findClass0 = reflect[Option[AnyRef]]("findClass", classOf[String])
+		findClass0.force(classPath) // force discovery, so that an exception is thrown if method doesn't exist
+		private val extractClass0 = reflect[Option[AbstractFile]]("binary")
 		def findClass(name: String): Option[AbstractFile] =
-			call[Option[AnyRef]](classPath, "findClass", classOf[String])(name).flatMap(extractClass)
-		private def extractClass(a: AnyRef) =
-			call[Option[AbstractFile]](a, "binary")()
+			findClass0(classPath, name).flatMap(a => extractClass0(a))
 	}
 	private class LegacyFinder extends ClassFinder
 	{
-		private val root = call[AnyRef](classPath, "root")()
+		private val root = { val m = reflect[AnyRef]("root"); m(classPath) }
+		private val find0 = reflect[AnyRef]("find", classOf[String], classOf[Boolean])
+		find0.force(root) // force discovery, so that an exception is thrown if method doesn't exist
+		private val classFile = reflect[AbstractFile]("classFile")
 		def findClass(name: String): Option[AbstractFile] =
 		{
-			val entry = call[AnyRef](root, "find", classOf[String], classOf[Boolean])(name, boolean2Boolean(false))
+			val entry = find0(root, name, boolean2Boolean(false))
 			if (entry eq null)
 				None
 			else
-				Some( call[AbstractFile](entry, "classFile")() )
+				Some( classFile(entry) )
 		}
 	}
 	import scala.reflect.Manifest
-	private def call[T  <: AnyRef](on: AnyRef, name: String, tpes: Class[_]*)(args: AnyRef*)(implicit mf: Manifest[T]): T =
-	{
-		val result = on.getClass.getMethod(name, tpes : _*).invoke(on, args : _*)
-		mf.erasure.cast(result).asInstanceOf[T]
-	}
+	private def reflect[T](name: String, tpes: Class[_]*)(implicit mf: Manifest[T]) = new CachedMethod(name, tpes : _*)(mf)
 }
