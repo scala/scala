@@ -14,22 +14,26 @@ package dtd
 
 import PartialFunction._
 import ContentModel.ElemName
+import MakeValidationException._    // @todo other exceptions
+
 import scala.util.automata._
+import scala.collection.mutable.BitSet
 
 /** validate children and/or attributes of an element
  *  exceptions are created but not thrown.
  */
 class ElementValidator() extends Function1[Node,Boolean] {
 
-  var exc: List[ValidationException] = Nil
+  private var exc: List[ValidationException] = Nil
 
   protected var contentModel: ContentModel           = _
   protected var dfa:          DetWordAutom[ElemName] = _
   protected var adecls:       List[AttrDecl]         = _
 
   /** set content model, enabling element validation */
-  def setContentModel(cm:ContentModel) = {
-    contentModel = cm; cm match {
+  def setContentModel(cm: ContentModel) = {
+    contentModel = cm
+    cm match {
       case ELEMENTS(r) =>
         val nfa = ContentModel.Translator.automatonFrom(r, 1)
         dfa = new SubsetConstruction(nfa).determinize
@@ -43,7 +47,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
   /** set meta data, enabling attribute validation */
   def setMetaData(adecls: List[AttrDecl]) { this.adecls = adecls }
 
-  def getIterator(nodes: Seq[Node], skipPCDATA: Boolean): Iterator[ElemName] = {
+  def getIterable(nodes: Seq[Node], skipPCDATA: Boolean): Iterable[ElemName] = {
     def isAllWhitespace(a: Atom[_]) = cond(a.data) { case s: String if s.trim.isEmpty  => true }
 
     nodes.filter {
@@ -52,57 +56,41 @@ class ElementValidator() extends Function1[Node,Boolean] {
         case _                                => !skipPCDATA
       }
       case x                                  => x.namespace eq null
-    } . map (x => ElemName(x.label)) iterator
+    } . map (x => ElemName(x.label))
   }
 
   /** check attributes, return true if md corresponds to attribute declarations in adecls.
    */
   def check(md: MetaData): Boolean = {
-    //@todo other exceptions
-    import MakeValidationException._;
-    val len: Int = exc.length;
-    var j = 0;
-    var ok = new scala.collection.mutable.BitSet(adecls.length);
-    def find(Key:String): AttrDecl = {
-      var attr: AttrDecl = null;
-      val jt = adecls.iterator; while(j < adecls.length) {
-        jt.next match {
-          case a @ AttrDecl(Key, _, _) => attr = a; ok += j; j = adecls.length;
-          case _                       => j = j + 1;
+    val len: Int = exc.length
+    var ok = new BitSet(adecls.length)
+
+    for (attr <- md) {
+      def attrStr = attr.value.toString
+      def find(Key: String): Option[AttrDecl] = {
+        adecls.zipWithIndex find {
+          case (a @ AttrDecl(Key, _, _), j) => ok += j ; return Some(a)
+          case _                            => false
         }
+        None
       }
-      attr
-    }
-    val it = md.iterator; while(it.hasNext) {
-      val attr = it.next
-      j = 0
+
       find(attr.key) match {
+        case None =>
+          exc ::= fromUndefinedAttribute(attr.key)
 
-        case null =>
-          //Console.println("exc");
-          exc = fromUndefinedAttribute( attr.key ) :: exc;
+        case Some(AttrDecl(_, tpe, DEFAULT(true, fixedValue))) if attrStr != fixedValue =>
+          exc ::= fromFixedAttribute(attr.key, fixedValue, attrStr)
 
-        case AttrDecl(_, tpe, DEFAULT(true, fixedValue)) if attr.value.toString != fixedValue =>
-          exc = fromFixedAttribute( attr.key, fixedValue, attr.value.toString) :: exc;
-
-        case s =>
-          //Console.println("s: "+s);
-
-      }
-    }
-
-    //val missing = ok.toSet(false); FIXME: it doesn't seem to be used anywhere
-    j = 0
-    var kt = adecls.iterator
-    while (kt.hasNext) {
-      kt.next match {
-        case AttrDecl(key, tpe, REQUIRED) if !ok(j) =>
-          exc = fromMissingAttribute( key, tpe ) :: exc;
-          j = j + 1;
         case _ =>
-          j = j + 1;
       }
     }
+
+    adecls.zipWithIndex foreach {
+      case (AttrDecl(key, tpe, REQUIRED), j) if !ok(j) => exc ::= fromMissingAttribute(key, tpe)
+      case _ =>
+    }
+
     exc.length == len //- true if no new exception
   }
 
@@ -111,28 +99,24 @@ class ElementValidator() extends Function1[Node,Boolean] {
    */
   def check(nodes: Seq[Node]): Boolean = contentModel match {
     case ANY    => true
-    case EMPTY  => !getIterator(nodes, false).hasNext
-    case PCDATA => !getIterator(nodes, true).hasNext
+    case EMPTY  => getIterable(nodes, false).isEmpty
+    case PCDATA => getIterable(nodes, true).isEmpty
     case MIXED(ContentModel.Alt(branches @ _*))  =>   // @todo
       val j = exc.length
       def find(Key: String): Boolean =
         branches exists { case ContentModel.Letter(ElemName(Key)) => true ; case _ => false }
 
-      getIterator(nodes, true) map (_.name) filterNot find foreach {
+      getIterable(nodes, true) map (_.name) filterNot find foreach {
         exc ::= MakeValidationException fromUndefinedElement _
       }
       (exc.length == j)   // - true if no new exception
 
     case _: ELEMENTS =>
-      var q = 0
-      getIterator(nodes, false) foreach { e =>
-        (dfa delta q get e) match {
-          case Some(p)  => q = p
-          case _        => throw ValidationException("element %s not allowed here" format e)
+      dfa isFinal {
+        getIterable(nodes, false).foldLeft(0) { (q, e) =>
+          (dfa delta q get e) getOrElse (throw ValidationException("element %s not allowed here" format e))
         }
       }
-
-      dfa isFinal q       // - true if arrived in final state
   }
 
   /** applies various validations - accumulates error messages in exc

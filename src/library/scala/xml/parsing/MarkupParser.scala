@@ -364,7 +364,7 @@ trait MarkupParser extends AnyRef with TokenTests
    *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
    *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
    */
-  protected def xTag(pscope:NamespaceBinding): Tuple3[String, MetaData, NamespaceBinding] = {
+  protected def xTag(pscope:NamespaceBinding): (String, MetaData, NamespaceBinding) = {
     val qname = xName
 
     xSpaceOpt
