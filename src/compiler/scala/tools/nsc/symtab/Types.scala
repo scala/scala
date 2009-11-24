@@ -1507,6 +1507,7 @@ trait Types {
     private var baseTypeSeqPeriod = NoPeriod
 
     override def isStable: Boolean = {
+      sym == NothingClass ||
       sym == SingletonClass ||
       sym.isAliasType && normalize.isStable ||
       sym.isAbstractType && (bounds.hi.typeSymbol isSubClass SingletonClass)
