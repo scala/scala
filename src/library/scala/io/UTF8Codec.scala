@@ -17,7 +17,7 @@ package scala.io
 object UTF8Codec
 {
   final val UNI_REPLACEMENT_CHAR: Int = 0x0000FFFD
-  final val UNI_REPLACEMENT_BYTES = encode(UNI_REPLACEMENT_CHAR)
+  final val UNI_REPLACEMENT_BYTES = Array[Byte](-17, -65, -67)
 
   // Note, from http://unicode.org/faq/utf_bom.html#utf8-5
   //

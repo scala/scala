@@ -9,7 +9,7 @@ object test {
   class Foo(x: Int) {
     def this() = this("abc")
     def this(x: String) = this(1)
-    def this(x: boolean) = this(x)
+    def this(x: Boolean) = this(x)
   }
 
   class Bar[a](x: a) {

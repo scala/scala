@@ -15,5 +15,5 @@ import ch.epfl.lamp.compiler.msil.ConstructorInfo
  * @version 1.0
  */
 trait ICustomAttributeSetter {
-    def SetCustomAttribute(constr: ConstructorInfo, value: Array[byte])
+    def SetCustomAttribute(constr: ConstructorInfo, value: Array[Byte])
 }

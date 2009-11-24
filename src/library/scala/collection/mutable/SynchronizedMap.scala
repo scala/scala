@@ -38,7 +38,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
   override def valuesIterable: scala.collection.Iterable[B] = synchronized { super.valuesIterable }
   @deprecated("Use `valuesIterator' instead") override def values: Iterator[B] = synchronized { super.valuesIterator }
   override def valuesIterator: Iterator[B] = synchronized { super.valuesIterator }
-  override def clone() = synchronized { super.clone() }
+  override def clone(): Self = synchronized { super.clone() }
   override def foreach[U](f: ((A, B)) => U) = synchronized { super.foreach(f) }
   override def apply(key: A): B = synchronized { super.apply(key) }
   override def keySet: scala.collection.Set[A] = synchronized { super.keySet }
@@ -50,7 +50,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
 
   @deprecated("See Map.+ for explanation") override def +(kv: (A, B)): this.type = synchronized[this.type] { super.+(kv) }
   // can't override -, -- same type!
-  // @deprecated override def -(key: A): This = synchronized { super.-(key) }
+  // @deprecated override def -(key: A): Self = synchronized { super.-(key) }
 
   // !!! todo: also add all other methods
 }

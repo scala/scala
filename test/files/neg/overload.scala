@@ -1,5 +1,5 @@
 class C {
-  def f(x: int) {}
+  def f(x: Int) {}
 }
 
 class D extends C {

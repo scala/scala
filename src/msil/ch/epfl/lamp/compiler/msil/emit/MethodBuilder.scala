@@ -45,7 +45,7 @@ class MethodBuilder(name: String, declType: Type, attrs: Int, returnType: Type, 
     }
 
     /** Sets a custom attribute. */
-    def SetCustomAttribute(constr: ConstructorInfo, value: Array[byte]) {
+    def SetCustomAttribute(constr: ConstructorInfo, value: Array[Byte]) {
 	addCustomAttribute(constr, value)
     }
 

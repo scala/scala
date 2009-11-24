@@ -88,10 +88,10 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param elem  the element to append.
    */
-  def +=:(elem: A): Buffer[A] = self.+=:(elem)
+  def +=:(elem: A): this.type = { self.+=:(elem); this }
 
-  override def ++=:(iter: scala.collection.Traversable[A]): Buffer[A] = self.++=:(iter)
-  override def ++=:(iter: scala.collection.Iterator[A]): Buffer[A] = self.++=:(iter)
+  override def ++=:(iter: scala.collection.Traversable[A]): this.type = { self.++=:(iter); this }
+  override def ++=:(iter: scala.collection.Iterator[A]): this.type = { self.++=:(iter); this }
 
   /** Prepend an element to this list.
    *

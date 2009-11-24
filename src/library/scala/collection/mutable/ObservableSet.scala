@@ -23,10 +23,10 @@ import script._
  *  @version 1.0, 08/07/2003
  *  @since   1
  */
-trait ObservableSet[A, This <: ObservableSet[A, This]]
-      extends Set[A]
-      with Publisher[Message[A] with Undoable, This]
-{ self: This =>
+trait ObservableSet[A] extends Set[A] with Publisher[Message[A] with Undoable]
+{
+
+  type Pub <: ObservableSet[A]
 
   abstract override def +=(elem: A): this.type = {
     if (!contains(elem)) {

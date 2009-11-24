@@ -22,7 +22,7 @@ import generic._
  *  @version 2.8
  *  @since   1
  */
-@serializable
+@serializable @SerialVersionUID(-7308240733518833071L)
 class LinkedList[A]() extends LinearSeq[A]
                          with GenericTraversableTemplate[A, LinkedList]
                          with LinkedListLike[A, LinkedList[A]] {

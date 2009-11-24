@@ -19,6 +19,7 @@ import scala.reflect.ClassManifest
  *
  * @since 2.8
  */
+@serializable
 abstract class ArrayBuilder[T] extends Builder[T, Array[T]]
 
 /**
@@ -84,6 +85,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofRef[_] => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofRef"
   }
 
   class ofByte extends ArrayBuilder[Byte] {
@@ -141,6 +149,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofByte => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofByte"
   }
 
   class ofShort extends ArrayBuilder[Short] {
@@ -198,6 +213,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofShort => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofShort"
   }
 
   class ofChar extends ArrayBuilder[Char] {
@@ -255,6 +277,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofChar => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofChar"
   }
 
   class ofInt extends ArrayBuilder[Int] {
@@ -312,6 +341,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofInt => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofInt"
   }
 
   class ofLong extends ArrayBuilder[Long] {
@@ -369,6 +405,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofLong => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofLong"
   }
 
   class ofFloat extends ArrayBuilder[Float] {
@@ -426,6 +469,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofFloat => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofFloat"
   }
 
   class ofDouble extends ArrayBuilder[Double] {
@@ -483,6 +533,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofDouble => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofDouble"
   }
 
   class ofBoolean extends ArrayBuilder[Boolean] {
@@ -540,6 +597,13 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofBoolean => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofBoolean"
   }
 
   class ofUnit extends ArrayBuilder[Unit] {
@@ -597,5 +661,12 @@ object ArrayBuilder {
       if (capacity != 0 && capacity == size) elems
       else mkArray(size)
     }
+
+    override def equals(other: Any): Boolean = other match {
+      case x: ofUnit => (size == x.size) && (elems == x.elems)
+      case _ => false
+    }
+
+    override def toString = "ArrayBuilder.ofUnit"
   }
 }

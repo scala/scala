@@ -176,7 +176,7 @@ self =>
    *              contain the same elements.
    */
   override def equals(that: Any): Boolean = that match {
-    case that: Set[A] =>
+    case that: Set[_] =>
       (this eq that) ||
       (that canEqual this) &&
       (this.size == that.size) &&

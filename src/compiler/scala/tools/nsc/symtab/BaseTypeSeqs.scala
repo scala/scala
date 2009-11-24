@@ -8,7 +8,7 @@ package symtab
 // todo implement in terms of BitSet
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.Map
-import Math.max
+import math.max
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
  *  of a type. It characterized by the following two laws:
@@ -137,7 +137,7 @@ trait BaseTypeSeqs {
 
     protected def maxDepthOfElems = {
       var d = 0
-      for (i <- 0 until length) d = Math.max(d, maxDpth(elems(i)))
+      for (i <- 0 until length) d = max(d, maxDpth(elems(i)))
       d
     }
 

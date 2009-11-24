@@ -112,7 +112,7 @@ trait Symbols {
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      // .initialize: the type completer of the symbol parses the annotations,
+      // .initialize: the type completer o f the symbol parses the annotations,
       // see "def typeSig" in Namers
       val annots1 = initialize.rawannots map {
         case LazyAnnotationInfo(annot) => annot()
@@ -563,14 +563,14 @@ trait Symbols {
     final def isStaticOwner: Boolean =
       isPackageClass || isModuleClass && isStatic
 
-    /** Is this symbol final?*/
+    /** Is this symbol final? */
     final def isFinal: Boolean = (
       hasFlag(FINAL) ||
       isTerm && (
         hasFlag(PRIVATE) || isLocal || owner.isClass && owner.hasFlag(FINAL | MODULE))
     )
 
-    /** Is this symbol a sealed class?*/
+    /** Is this symbol a sealed class? */
     final def isSealed: Boolean =
       isClass && (hasFlag(SEALED) || isValueClass(this))
 
@@ -1166,9 +1166,10 @@ trait Symbols {
         def renamedGetter = accessors find (_.originalName startsWith (getterName + "$"))
         val accessorName  = origGetter orElse renamedGetter
 
-        accessorName getOrElse {
-          throw new Error("Could not find case accessor for %s in %s".format(field, this))
-        }
+        // This fails more gracefully rather than throw an Error as it used to because
+        // as seen in #2625, we can reach this point with an already erroneous tree.
+        accessorName getOrElse NoSymbol
+        // throw new Error("Could not find case accessor for %s in %s".format(field, this))
       }
 
       fields map findAccessor
@@ -1369,8 +1370,8 @@ trait Symbols {
 
     /** The non-private member of `site' whose type and name match the type of this symbol
      */
-    final def matchingSymbol(site: Type): Symbol =
-      site.nonPrivateMember(name).filter(sym =>
+    final def matchingSymbol(site: Type, admit: Long = 0L): Symbol =
+      site.nonPrivateMemberAdmitting(name, admit).filter(sym =>
         !sym.isTerm || (site.memberType(this) matches site.memberType(sym)))
 
     /** The symbol overridden by this symbol in given class `ofclazz'.

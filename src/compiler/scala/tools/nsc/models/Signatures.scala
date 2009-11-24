@@ -25,14 +25,10 @@ class Signatures(val compiler: Compiler) {
     def asString: String = name + "[" + asString0(children) + "]"
   }
 
-  def sort(sigs: List[Signature]) =
-    sigs.sort((l0,l1) => l0.name.compareTo(l1.name) > 0)
+  def sort(sigs: List[Signature]) = sigs sortBy (_.name) reverse
 
-  def asString0(sigs: List[Signature]): String = {
-    var ret = ""
-    for (sig <- sort(sigs)) ret = ret + sig.asString
-    ret
-  }
+  def asString0(sigs: List[Signature]): String =
+    sort(sigs) map (_.asString) mkString
 
   def signature(unit: CompilationUnit): String =
     asString0(signature(unit.body, Nil))

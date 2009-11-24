@@ -4,11 +4,13 @@ package dependencies;
 import java.io.{InputStream, OutputStream, PrintStream, InputStreamReader, BufferedReader}
 import io.{AbstractFile, PlainFile}
 
-import scala.collection._;
+import scala.collection._;import scala.tools.nsc.io.VirtualFile
+
 
 trait Files { self : SubComponent =>
 
   class FileDependencies(val classpath : String) {
+    import FileDependencies._
 
     class Tracker extends mutable.OpenHashMap[AbstractFile, mutable.Set[AbstractFile]]{
       override def default(key: AbstractFile) = {
@@ -30,8 +32,10 @@ trait Files { self : SubComponent =>
     def reset(file: AbstractFile) = dependencies -= file;
 
     def cleanEmpty() = {
-      dependencies.foreach({case (key, value) => value.retain(_.exists)})
+      dependencies foreach {case (key, value) => value.retain(x => x.exists && (x ne RemovedFile))}
       dependencies.retain((key, value) => key.exists && !value.isEmpty)
+      targets foreach {case (key, value) => value.retain(_.exists)}
+      targets.retain((key, value) => key.exists && !value.isEmpty)
     }
 
     def containsFile(f: AbstractFile) = targets.contains(f.absolute)
@@ -50,7 +54,7 @@ trait Files { self : SubComponent =>
       val indirect = dependentFiles(maxDepth, direct)
 
       for ((source, targets) <- targets;
-           if direct(source) || indirect(source)){
+           if direct(source) || indirect(source) || (source eq RemovedFile)){
         targets.foreach(_.delete);
         targets -= source;
       }
@@ -65,7 +69,7 @@ trait Files { self : SubComponent =>
       val indirect = new mutable.HashSet[AbstractFile];
       val newInvalidations = new mutable.HashSet[AbstractFile];
 
-      def invalid(file: AbstractFile) = indirect(file) || changed(file);
+      def invalid(file: AbstractFile) = indirect(file) || changed(file) || (file eq RemovedFile)
 
       def go(i : Int) : Unit = if(i > 0){
         newInvalidations.clear;
@@ -108,6 +112,7 @@ trait Files { self : SubComponent =>
 
   object FileDependencies{
     val Separator = "-------";
+    private val RemovedFile = new VirtualFile("removed")
 
     def readFrom(file: AbstractFile, toFile : String => AbstractFile): Option[FileDependencies] = readFromFile(file) { in =>
       val reader = new BufferedReader(new InputStreamReader(in))
@@ -116,14 +121,26 @@ trait Files { self : SubComponent =>
       var line : String = null
       while ({line = reader.readLine; (line != null) && (line != Separator)}){
         line.split(" -> ") match {
-          case Array(from, on) => it.depends(toFile(from), toFile(on));
+          case Array(from, on) =>
+            (toFile(from), toFile(on)) match {
+              case (null, _) => // fromFile is removed, it's ok
+              case (fromFile, null) => it.depends(fromFile, RemovedFile) // onFile is removed, should recompile fromFile
+              case (fromFile, onFile) => it.depends(fromFile, onFile)
+            }
           case x => global.inform("Parse error: Unrecognised string " + line); return None
         }
       }
 
       while ({line = reader.readLine; (line != null) && (line != Separator)}){
         line.split(" -> ") match {
-          case Array(source, target) => it.emits(toFile(source), toFile(target));
+          case Array(source, target) =>
+            val targetFile = toFile(target)
+            (toFile(source), toFile(target)) match {
+              case (null, null) => // source and target are all removed, it's ok
+              case (null, targetFile) => it.emits(RemovedFile, targetFile) // source is removed, should remove relative target later
+              case (_, null) => // it may has been cleaned outside, or removed during last phase
+              case (sourceFile, targetFile) => it.emits(sourceFile, targetFile)
+            }
           case x => global.inform("Parse error: Unrecognised string " + line); return None
         }
       }

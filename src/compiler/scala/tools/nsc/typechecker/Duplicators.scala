@@ -241,6 +241,9 @@ abstract class Duplicators extends Analyzer {
           super.typed(atPos(tree.pos)(tree1))
 
         case _ =>
+          if (tree.hasSymbol && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
+            tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any
+          }
           tree.tpe = null
           super.typed(tree, mode, pt)
       }

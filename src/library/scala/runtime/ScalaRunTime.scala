@@ -19,10 +19,7 @@ import scala.collection.immutable.{List, Stream, Nil, ::}
 /* The object <code>ScalaRunTime</code> provides ...
  */
 object ScalaRunTime {
-
-  def isArray(x: AnyRef): Boolean = // !!! remove once newarrays
-    x != null && (x.getClass.isArray || x.isInstanceOf[BoxedArray[_]])
-
+  def isArray(x: AnyRef): Boolean = isArray(x, 1)
   def isArray(x: Any, atLevel: Int): Boolean =
     x != null && isArrayClass(x.asInstanceOf[AnyRef].getClass, atLevel)
 
@@ -30,10 +27,6 @@ object ScalaRunTime {
     clazz.isArray && (atLevel == 1 || isArrayClass(clazz.getComponentType, atLevel - 1))
 
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
-
-  // todo: remove?
-  def forceBoxedArray[A <: Any](xs: Seq[A]): Array[A] =
-    throw new Error(" not implemented: forceBoxedArray")
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = java.lang.reflect.Array.get(xs, idx)
@@ -123,8 +116,9 @@ object ScalaRunTime {
   /** Fast path equality method for inlining; used when -optimise is set.
    */
   @inline def inlinedEquals(x: Object, y: Object): Boolean =
-    if (x eq null) y eq null
-    else if (x.isInstanceOf[Number] || x.isInstanceOf[Character]) BoxesRunTime.equals(x, y)
+    if (x eq y) true
+    else if (x eq null) false
+    else if (x.isInstanceOf[java.lang.Number] || x.isInstanceOf[java.lang.Character]) BoxesRunTime.equals2(x, y)
     else x.equals(y)
 
   def _equals(x: Product, y: Any): Boolean = y match {
@@ -156,35 +150,7 @@ object ScalaRunTime {
       false
   }
 
-  //def checkDefined[T >: Null](x: T): T =
-  //  if (x == null) throw new UndefinedException else x
-
   def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
-
-  def arrayValue[A](x: BoxedArray[A], elemClass: Class[_]): AnyRef =
-    if (x eq null) null else x.unbox(elemClass)
-
-  /** Temporary method to go to new array representation
-   *  !!! can be reomved once bootstrap is complete !!!
-   */
-  def unboxedArray[A](x: AnyRef): AnyRef = x match {
-    case ba: BoxedArray[_] => ba.value
-    case _ => x
-  }
-
-  def boxArray(value: AnyRef): BoxedArray[_] = value match {
-    case x: Array[AnyRef] => new BoxedObjectArray(x, ClassManifest.classType(x.getClass.getComponentType))
-    case x: Array[Int] => new BoxedIntArray(x)
-    case x: Array[Double] => new BoxedDoubleArray(x)
-    case x: Array[Long] => new BoxedLongArray(x)
-    case x: Array[Float] => new BoxedFloatArray(x)
-    case x: Array[Char] => new BoxedCharArray(x)
-    case x: Array[Byte] => new BoxedByteArray(x)
-    case x: Array[Short] => new BoxedShortArray(x)
-    case x: Array[Boolean] => new BoxedBooleanArray(x)
-    case x: BoxedArray[_] => x
-    case null => null
-  }
 
   /** Given any Scala value, convert it to a String.
    *

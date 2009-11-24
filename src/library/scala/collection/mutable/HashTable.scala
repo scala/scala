@@ -144,6 +144,19 @@ trait HashTable[A] {
     }
   }
 
+  protected final def foreachEntry[C](f: Entry => C) {
+    val t = table
+    var index = t.length - 1
+    while (index >= 0) {
+      var entry = t(index)
+      while (entry ne null) {
+        f(entry.asInstanceOf[Entry])
+        entry = entry.next
+      }
+      index -= 1
+    }
+  }
+
   /** An iterator returning all entries */
   @deprecated("use entriesIterator instead")
   protected def entries: Iterator[Entry] = entriesIterator

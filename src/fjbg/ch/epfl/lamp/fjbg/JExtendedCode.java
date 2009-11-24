@@ -74,7 +74,7 @@ public class JExtendedCode extends JCode {
         },
         {
             /* T_SHORT -> T_BOOLEAN */ forbidden,
-            /* T_SHORT -> T_CHAR */    nothingToDo,
+            /* T_SHORT -> T_CHAR */    {JOpcode.I2C},
             /* T_SHORT -> T_FLOAT */   {JOpcode.I2F},
             /* T_SHORT -> T_DOUBLE */  {JOpcode.I2D},
             /* T_SHORT -> T_BYTE */    {JOpcode.I2B},

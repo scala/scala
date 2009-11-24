@@ -66,6 +66,7 @@ import Path._
 class Path private[io] (val jfile: JFile)
 {
   val separator = JFile.separatorChar
+  val separatorStr = JFile.separator
 
   // Validation: this verifies that the type of this object and the
   // contents of the filesystem are in agreement.  All objects are
@@ -83,7 +84,7 @@ class Path private[io] (val jfile: JFile)
   /** Creates a new Path with the specified path appended.  Assumes
    *  the type of the new component implies the type of the result.
    */
-  def /(child: Path): Path = new Path(new JFile(jfile, child.path))
+  def /(child: Path): Path = if (isEmpty) child else new Path(new JFile(jfile, child.path))
   def /(child: Directory): Directory = /(child: Path).toDirectory
   def /(child: File): File = /(child: Path).toFile
 
@@ -91,17 +92,42 @@ class Path private[io] (val jfile: JFile)
   def name: String = jfile.getName()
   def path: String = jfile.getPath()
   def normalize: Path = Path(jfile.getCanonicalPath())
-  // todo -
-  // def resolve(other: Path): Path
-  // def relativize(other: Path): Path
+
+  def resolve(other: Path) = if (other.isAbsolute || isEmpty) other else /(other)
+  def relativize(other: Path) = {
+    assert(isAbsolute == other.isAbsolute, "Paths not of same type: "+this+", "+other)
+
+    def createRelativePath(baseSegs: List[String], otherSegs: List[String]) : String = {
+      (baseSegs, otherSegs) match {
+        case (b :: bs, o :: os) if b == o => createRelativePath(bs, os)
+        case (bs, os) => ((".."+separator)*bs.length)+os.mkString(separatorStr)
+      }
+    }
+
+    Path(createRelativePath(segments, other.segments))
+  }
 
   // derived from identity
   def root: Option[Path] = roots find (this startsWith _)
-  def segments: List[String] = (path split separator).toList filterNot (_.isEmpty)
-  def parent: Option[Path] = Option(jfile.getParent()) map Path.apply
-  def parents: List[Path] = parent match {
-    case None     => Nil
-    case Some(p)  => p :: p.parents
+  def segments: List[String] = (path split separator).toList filterNot (_.length == 0)
+  /**
+   * @return The path of the parent directory, or root if path is already root
+   */
+  def parent: Path = {
+    val p = path match {
+      case "" | "." => ".."
+      case _ if path endsWith ".." => path + separator + ".." // the only solution
+      case _ => jfile.getParent match {
+          case null if isAbsolute => path // it should be a root. BTW, don't need to worry about relative pathed root
+          case null => "."                // a file ot dir under pwd
+          case x => x
+        }
+    }
+    new Directory(new JFile(p))
+  }
+  def parents: List[Path] = {
+    val p = parent
+    if (p isSame this) Nil else p :: p.parents
   }
   // if name ends with an extension (e.g. "foo.jpg") returns the extension ("jpg"), otherwise ""
   def extension: String = (name lastIndexOf '.') match {
@@ -119,10 +145,11 @@ class Path private[io] (val jfile: JFile)
   def isDirectory = jfile.isDirectory()
   def isAbsolute = jfile.isAbsolute()
   def isHidden = jfile.isHidden()
-  def isSymlink = parent.isDefined && {
-    val x = parent.get / name
+  def isSymlink = {
+    val x = parent / name
     x.normalize != x.toAbsolute
   }
+  def isEmpty = path.length == 0
 
   // Information
   def lastModified = jfile.lastModified()
@@ -132,7 +159,7 @@ class Path private[io] (val jfile: JFile)
   // Boolean path comparisons
   def endsWith(other: Path) = segments endsWith other.segments
   def startsWith(other: Path) = segments startsWith other.segments
-  def isSame(other: Path) = toAbsolute == other.toAbsolute
+  def isSame(other: Path) = normalize == other.normalize
   def isFresher(other: Path) = lastModified > other.lastModified
 
   // creations

@@ -122,7 +122,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mut
   private def getValue(e: Entry) =
     e.value.asInstanceOf[B]
 
-  private def logLimit: Int = Math.sqrt(table.length).toInt
+  private def logLimit: Int = math.sqrt(table.length).toInt
 
   private[this] def markUpdated(key: A, ov: Option[B], delta: Int) {
     val lv = loadFactor

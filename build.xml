@@ -1128,6 +1128,7 @@ LIBRARIES (MSIL, FJBG maybe later)
       destdir="${build-libs.dir}/classes/fjbg"
       classpath="${build-libs.dir}/classes/fjbg"
       includes="**/*.java"
+      debug="true"
       target="1.5" source="1.4">
         <compilerarg line="${javac.args}"/>
     </javac>

@@ -426,7 +426,8 @@ object Settings {
 
     // Ordered (so we can use TreeSet)
     def compare(that: Setting): Int = name compare that.name
-    def compareLists[T <% Ordered[T]](xs: List[T], ys: List[T]): Boolean = xs.sort(_ < _) == ys.sort(_ < _)
+    def compareLists[T <% Ordered[T]](xs: List[T], ys: List[T]): Boolean =
+      xs.sortWith(_ < _) == ys.sortWith(_ < _)
 
     // Equality
     def eqValues: List[Any] = List(name, value)
@@ -832,7 +833,8 @@ trait ScalacSettings {
   val specialize    = BooleanSetting    ("-Yspecialize", "Specialize generic code on types.")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
   val Yidedebug     = BooleanSetting    ("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
-  val Ybuilderdebug = ChoiceSetting     ("-Ybuilder-debug", "Compile using the specified build manager", List("none", "refined", "simple"), "none")
+  val Ybuilderdebug = ChoiceSetting     ("-Ybuilder-debug", "Compile using the specified build manager", List("none", "refined", "simple"), "none") .
+                        withHelpSyntax("-Ybuilder-debug:<method>")
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Ytailrec      = BooleanSetting    ("-Ytailrecommend", "Alert methods which would be tail-recursive if private or final.")

@@ -25,7 +25,7 @@ import generic._
  *    the Int-based scala.Range should be more performant.
  *  </p><pre>
  *     <b>val</b> r1 = new Range(0, 100, 1)
- *     <b>val</b> veryBig = Math.MAX_INT.toLong + 1
+ *     <b>val</b> veryBig = Int.MaxValue.toLong + 1
  *     <b>val</b> r2 = Range.Long(veryBig, veryBig + 100, 1)
  *     assert(r1 sameElements r2.map(_ - veryBig))
  *  </pre>
@@ -33,6 +33,7 @@ import generic._
  *  @author  Paul Phillips
  *  @version 2.8
  */
+@serializable
 abstract class NumericRange[+T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
@@ -48,9 +49,9 @@ extends IndexedSeq[T]
   // todo? - we could lift the length restriction by implementing a range as a sequence of
   // subranges and limiting the subranges to MAX_INT.  There's no other way around it because
   // the generics we inherit assume integer-based indexing (as well they should.)
-  // The second condition is making sure type T can meaningfully be compared to Math.MAX_INT.
-  if (genericLength > fromInt(Math.MAX_INT) && (Math.MAX_INT == toInt(fromInt(Math.MAX_INT))))
-    fail("Implementation restricts ranges to Math.MAX_INT elements.")
+  // The second condition is making sure type T can meaningfully be compared to Int.MaxValue.
+  if (genericLength > fromInt(Int.MaxValue) && (Int.MaxValue == toInt(fromInt(Int.MaxValue))))
+    fail("Implementation restricts ranges to Int.MaxValue elements.")
 
   // inclusive/exclusiveness captured this way because we do not have any
   // concept of a "unit", we can't just add an epsilon to an exclusive
@@ -75,12 +76,12 @@ extends IndexedSeq[T]
     if (step > zero) {
       while (i < end) {
         f(i)
-        i = i + step
+        i += step
       }
     } else {
       while (i > end) {
         f(i)
-        i = i + step
+        i += step
       }
     }
     if (limitTest(i)) f(i)
@@ -100,7 +101,7 @@ extends IndexedSeq[T]
   }
 
   def length: Int = toInt(genericLength)
-  override def isEmpty =
+  override def isEmpty: Boolean =
     if (step > zero)
       if (isInclusive) end < start
       else end <= start

@@ -90,7 +90,7 @@ with Streamable.Chars
     val dest = destPath.toFile
     if (!isValid) fail("Source %s is not a valid file." format name)
     if (this.normalize == dest.normalize) fail("Source and destination are the same.")
-    if (!dest.parent.map(_.exists).getOrElse(false)) fail("Destination cannot be created.")
+    if (!dest.parent.exists) fail("Destination cannot be created.")
     if (dest.exists && !dest.canWrite) fail("Destination exists but is not writable.")
     if (dest.isDirectory) fail("Destination exists but is a directory.")
 

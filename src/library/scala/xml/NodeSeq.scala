@@ -56,7 +56,7 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] {
   def apply(i: Int): Node = theSeq(i)
   def apply(f: Node => Boolean): NodeSeq = filter(f)
 
-  /** structural equality */
+  /** structural equality (XXX - this shatters any hope of hashCode equality) */
   override def equals(x: Any): Boolean = x match {
     case z:Node      => (length == 1) && z == apply(0)
     case z:Seq[_]    => sameElements(z)

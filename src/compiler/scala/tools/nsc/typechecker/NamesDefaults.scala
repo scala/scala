@@ -223,7 +223,7 @@ trait NamesDefaults { self: Analyzer =>
      */
     def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[ValDef] = {
       val context = blockTyper.context
-      val symPs = List.map2(args, paramTypes)((arg, tpe) => {
+      val symPs = (args, paramTypes).zipped map ((arg, tpe) => {
         val byName = tpe.typeSymbol == ByNameParamClass
         val s = context.owner.newValue(arg.pos, unit.fresh.newName(arg.pos, "x$"))
         val valType = if (byName) functionType(List(), arg.tpe)
@@ -231,7 +231,7 @@ trait NamesDefaults { self: Analyzer =>
         s.setInfo(valType)
         (context.scope.enter(s), byName)
       })
-      List.map2(symPs, args)((symP, arg) => {
+      (symPs, args).zipped map ((symP, arg) => {
         val (sym, byName) = symP
         // resetAttrs required for #2290. given a block { val x = 1; x }, when wrapping into a function
         // () => { val x = 1; x }, the owner of symbol x must change (to the apply method of the function).
@@ -270,7 +270,7 @@ trait NamesDefaults { self: Analyzer =>
                                        reorderArgsInv(formals, argPos),
                                        blockTyper)
               // refArgs: definition-site order again
-              val refArgs = List.map2(reorderArgs(valDefs, argPos), formals)((vDef, tpe) => {
+              val refArgs = (reorderArgs(valDefs, argPos), formals).zipped map ((vDef, tpe) => {
                 val ref = gen.mkAttributedRef(vDef.symbol)
                 atPos(vDef.pos.focus) {
                   // for by-name parameters, the local value is a nullary function returning the argument

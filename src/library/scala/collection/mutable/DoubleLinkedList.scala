@@ -4,7 +4,7 @@
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
-*                                                                      */
+\*                                                                      */
 
 // $Id$
 
@@ -14,7 +14,7 @@ package mutable
 
 import generic._
 
-/** This class implements single linked lists where both the head (<code>elem</code>)
+/** This class implements double linked lists where both the head (<code>elem</code>)
  *  and the tail (<code>next</code>) are mutable.
  *
  *  @author Matthias Zenger
@@ -22,12 +22,20 @@ import generic._
  *  @version 2.8
  *  @since   1
  */
-@serializable @SerialVersionUID(419155950203746706L)
-class DoubleLinkedList[A](_elem: A, _next: DoubleLinkedList[A]) extends LinearSeq[A]
-                                                                   with GenericTraversableTemplate[A, DoubleLinkedList]
-                                                                   with DoubleLinkedListLike[A, DoubleLinkedList[A]] {
-  elem = _elem
-  next = _next
+@serializable @SerialVersionUID(-8144992287952814767L)
+class DoubleLinkedList[A]() extends LinearSeq[A]
+                            with GenericTraversableTemplate[A, DoubleLinkedList]
+                            with DoubleLinkedListLike[A, DoubleLinkedList[A]] {
+  next = this
+
+  def this(elem: A, next: DoubleLinkedList[A]) {
+    this()
+    if (next != null) {
+      this.elem = elem
+      this.next = next
+    }
+  }
+
   override def companion: GenericCompanion[DoubleLinkedList] = DoubleLinkedList
 }
 

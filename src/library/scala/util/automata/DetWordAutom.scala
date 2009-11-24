@@ -31,23 +31,9 @@ abstract class DetWordAutom[T <: AnyRef] {
   val delta: Array[Map[T,Int]]
   val default: Array[Int]
 
-  /**
-   *  @param q ...
-   *  @return  ...
-   */
   def isFinal(q: Int) = finals(q) != 0
-
-  /**
-   *  @param q ...
-   *  @return  ...
-   */
   def isSink(q: Int) = delta(q).isEmpty && default(q) == q
 
-  /**
-   *  @param q     ...
-   *  @param label ...
-   *  @return      ...
-   */
   def next(q: Int, label: T) = {
     delta(q).get(label) match {
       case Some(p) => p
@@ -59,25 +45,15 @@ abstract class DetWordAutom[T <: AnyRef] {
     val sb = new StringBuilder("[DetWordAutom  nstates=")
     sb.append(nstates)
     sb.append(" finals=")
-    var map = scala.collection.immutable.Map[Int,Int]()
-    var j = 0; while( j < nstates ) {
-      if (j < finals.length)
-        map = map.updated(j, finals(j))
-      j += 1
-    }
+    val map = Map(finals.zipWithIndex map (_.swap): _*)
     sb.append(map.toString())
     sb.append(" delta=\n")
+
     for (i <- 0 until nstates) {
-      sb.append( i )
-      sb.append("->")
-      sb.append(delta(i).toString())
-      sb.append('\n')
-      if (i < default.length) {
-        sb.append("_>")
-        sb.append(default(i).toString())
-        sb.append('\n')
-      }
+      sb append "%d->%s\n".format(i, delta(i))
+      if (i < default.length)
+        sb append "_>%s\n".format(default(i))
     }
-    sb.toString()
+    sb.toString
   }
 }

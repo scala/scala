@@ -131,12 +131,23 @@ trait Trees {
       this
     }
 
+    /** Set tpe to give `tp` and return this.
+     */
     def setType(tp: Type): this.type = {
       /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded,
-               tp+" should not be higher-kinded");*/
+               tp+" should not be higher-kinded"); */
       tpe = tp
       this
     }
+
+    /** Like `setType`, but if this is a previously empty TypeTree
+     *  that fact is remembered so that resetType will snap back.
+     */
+    def defineType(tp: Type): this.type = setType(tp)
+
+    /** Reset type to `null`, with special handling of TypeTrees and the EmptyType
+     */
+    def resetType() { tpe = null }
 
     def symbol: Symbol = null
     def symbol_=(sym: Symbol) {
@@ -323,6 +334,7 @@ trait Trees {
     super.tpe_=(NoType)
     override def tpe_=(t: Type) =
       if (t != NoType) throw new Error("tpe_=("+t+") inapplicable for <empty>")
+    override def resetType() {}
     override def isEmpty = true
   }
 
@@ -618,17 +630,16 @@ trait Trees {
         }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
-    val (lvdefs, gvdefs) = List.unzip {
-      evdefs map {
-        case vdef @ ValDef(mods, name, tpt, rhs) =>
-          val fld = treeCopy.ValDef(
-            vdef.duplicate, mods, name,
-            atPos(vdef.pos.focus) { TypeTree() setOriginal tpt setPos tpt.pos.focus }, // atPos in case
-            EmptyTree)
-          val local = treeCopy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs)
-          (local, fld)
-      }
-    }
+    val (lvdefs, gvdefs) = evdefs map {
+      case vdef @ ValDef(mods, name, tpt, rhs) =>
+        val fld = treeCopy.ValDef(
+          vdef.duplicate, mods, name,
+          atPos(vdef.pos.focus) { TypeTree() setOriginal tpt setPos tpt.pos.focus }, // atPos in case
+          EmptyTree)
+        val local = treeCopy.ValDef(vdef, Modifiers(PRESUPER), name, tpt, rhs)
+        (local, fld)
+    } unzip
+
     val constrs = {
       if (constrMods.isTrait) {
         if (body forall treeInfo.isInterfaceMember) List()
@@ -868,11 +879,24 @@ trait Trees {
   case class TypeTree() extends TypTree {
     override def symbol = if (tpe == null) null else tpe.typeSymbol
 
-    private var orig: Tree = null // should be EmptyTree?
+    private var orig: Tree = null
+    private var wasEmpty: Boolean = false
 
     def original: Tree = orig
 
     def setOriginal(tree: Tree): this.type = { orig = tree; setPos(tree.pos); this }
+
+    override def defineType(tp: Type): this.type = {
+      wasEmpty = isEmpty
+      setType(tp)
+    }
+
+    /** Reset type to null, unless type original was empty and then
+     *  got its type via a defineType
+     */
+    override def resetType() {
+      if (wasEmpty) tpe = null
+    }
 
     override def isEmpty = (tpe eq null) || tpe == NoType
   }
@@ -1817,18 +1841,16 @@ trait Trees {
     protected def isLocal(sym: Symbol): Boolean = true
     protected def resetDef(tree: Tree) {
       tree.symbol = NoSymbol
-      tree.tpe = null
-      super.traverse(tree)
     }
-    override def traverse(tree: Tree): Unit = tree match {
-      case EmptyTree | TypeTree() =>
-        ;
-      case _: DefTree | Function(_, _) | Template(_, _, _) =>
-        resetDef(tree)
-      case _ =>
-        if (tree.hasSymbol && isLocal(tree.symbol)) tree.symbol = NoSymbol
-        tree.tpe = null
-        super.traverse(tree)
+    override def traverse(tree: Tree): Unit = {
+      tree match {
+        case _: DefTree | Function(_, _) | Template(_, _, _) =>
+          resetDef(tree)
+        case _ =>
+          if (tree.hasSymbol && isLocal(tree.symbol)) tree.symbol = NoSymbol
+      }
+      tree.resetType()
+      super.traverse(tree)
     }
   }
 

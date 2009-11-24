@@ -23,6 +23,18 @@ abstract class Inliners extends SubComponent {
 
   val phaseName = "inliner"
 
+  /** Debug - for timing the inliner. */
+  private def timed[T](s: String, body: => T): T = {
+    val t1 = System.currentTimeMillis()
+    val res = body
+    val t2 = System.currentTimeMillis()
+    val ms = (t2 - t1).toInt
+    if (ms >= 2000)
+      println("%s: %d milliseconds".format(s, ms))
+
+    res
+  }
+
   /** The maximum size in basic blocks of methods considered for inlining. */
   final val MAX_INLINE_SIZE = 16
 
@@ -269,9 +281,9 @@ abstract class Inliners extends SubComponent {
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
       if (settings.debug.value)
       	log("Analyzing " + cls);
-      cls.methods.foreach { m => if (!m.symbol.isConstructor) analyzeMethod(m)
-     }}
 
+      cls.methods filterNot (_.symbol.isConstructor) foreach analyzeMethod
+    }
 
     val tfa = new analysis.MethodTFA();
     tfa.stat = settings.Ystatistics.value
@@ -281,7 +293,7 @@ abstract class Inliners extends SubComponent {
     	override def default(k: Symbol) = 0
     }
 
-    def analyzeMethod(m: IMethod): Unit = {//try {
+    def analyzeMethod(m: IMethod): Unit = {
       var retry = false
       var count = 0
       fresh.clear
@@ -290,13 +302,12 @@ abstract class Inliners extends SubComponent {
       do {
         retry = false;
         if (m.code ne null) {
-          if (settings.debug.value)
-            log("Analyzing " + m + " count " + count + " with " + m.code.blocks.length + " blocks");
+          log("Analyzing " + m + " count " + count + " with " + m.code.blocks.length + " blocks");
           tfa.init(m)
           tfa.run
           for (bb <- linearizer.linearize(m)) {
             var info = tfa.in(bb);
-            for (i <- bb.toList) {
+            for (i <- bb) {
               if (!retry) {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
@@ -308,11 +319,11 @@ abstract class Inliners extends SubComponent {
                     if (receiver != msym.owner && receiver != NoSymbol) {
                       if (settings.debug.value)
                         log("" + i + " has actual receiver: " + receiver);
-                    }
-                    if (!concreteMethod.isFinal && receiver.isFinal) {
-                      concreteMethod = lookupImpl(concreteMethod, receiver)
-                      if (settings.debug.value)
-                        log("\tlooked up method: " + concreteMethod.fullNameString)
+                      if (!concreteMethod.isFinal && receiver.isFinal) {
+                        concreteMethod = lookupImpl(concreteMethod, receiver)
+                        if (settings.debug.value)
+                          log("\tlooked up method: " + concreteMethod.fullNameString)
+                      }
                     }
 
                     if (shouldLoad(receiver, concreteMethod)) {
@@ -372,7 +383,7 @@ abstract class Inliners extends SubComponent {
 //        e.printStackTrace();
 //        m.dump
 //        throw e
-			}
+		}
 
 
     def isMonadMethod(method: Symbol): Boolean =
@@ -427,7 +438,7 @@ abstract class Inliners extends SubComponent {
           callsNonPublic = b
         case None =>
           breakable {
-            for (b <- callee.code.blocks; i <- b.toList)
+            for (b <- callee.code.blocks; i <- b)
               i match {
                 case CALL_METHOD(m, style) =>
                   if (m.hasFlag(Flags.PRIVATE) ||

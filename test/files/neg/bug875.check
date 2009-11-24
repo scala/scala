@@ -4,8 +4,8 @@ bug875.scala:3: error: no `: _*' annotation allowed here
                            ^
 bug875.scala:6: error: no `: _*' annotation allowed here
 (such annotations are only allowed in arguments to *-parameters)
-  mkList(xs: _*)
-           ^
+  mkList1(xs: _*)
+            ^
 bug875.scala:15: error: no `: _*' annotation allowed here
 (such annotations are only allowed in arguments to *-parameters)
   f(true, 1, xs: _*)

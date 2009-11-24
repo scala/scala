@@ -1,7 +1,7 @@
 object Test {
   def main(args:Array[String]): Unit = {
     val z = Array(1,2,3,4)
-    val zs: Seq[int] = z
+    val zs: Seq[Int] = z
     val za: Any = z
 
 /*

@@ -1,9 +1,9 @@
 object Test extends Application {
   val xs = List(4, 5, 6)
   val ys = List(1, 2, 3, xs: _*)
-  def mkList(x: Int) = List(x)
-  def mkList(x: Boolean) = List(x)
-  mkList(xs: _*)
+  def mkList1(x: Int) = List(x)
+  def mkList2(x: Boolean) = List(x)
+  mkList1(xs: _*)
 
 
   def f(x: Int*) = List(x: _*)

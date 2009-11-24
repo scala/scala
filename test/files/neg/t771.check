@@ -1,0 +1,4 @@
+t771.scala:4: error: trait Iterator is abstract; cannot be instantiated
+  def c[A](it:java.util.Iterator[A]) = new scala.Iterator[A]
+                                       ^
+one error found

@@ -19,9 +19,10 @@ package mutable
  *  target="contentFrame"><code>Publisher</code></a>.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.8
  *  @since   1
  */
-trait Subscriber[-A, -B] {
-  def notify(pub: B, event: A): Unit
+trait Subscriber[-Evt, -Pub] {
+  def notify(pub: Pub, event: Evt): Unit
 }

@@ -469,6 +469,18 @@ abstract class ScalaPrimitives {
 
   def isCoercion(code: Int): Boolean = (code >= B2B) && (code <= D2D)
 
+  final val typeOfArrayOp: Map[Int, TypeKind] = Map(
+    (List(ZARRAY_LENGTH, ZARRAY_GET, ZARRAY_SET) map (_ -> BOOL)) ++
+    (List(BARRAY_LENGTH, BARRAY_GET, BARRAY_SET) map (_ -> BYTE)) ++
+    (List(SARRAY_LENGTH, SARRAY_GET, SARRAY_SET) map (_ -> SHORT)) ++
+    (List(CARRAY_LENGTH, CARRAY_GET, CARRAY_SET) map (_ -> CHAR)) ++
+    (List(IARRAY_LENGTH, IARRAY_GET, IARRAY_SET) map (_ -> INT)) ++
+    (List(LARRAY_LENGTH, LARRAY_GET, LARRAY_SET) map (_ -> LONG)) ++
+    (List(FARRAY_LENGTH, FARRAY_GET, FARRAY_SET) map (_ -> FLOAT)) ++
+    (List(DARRAY_LENGTH, DARRAY_GET, DARRAY_SET) map (_ -> DOUBLE)) ++
+    (List(OARRAY_LENGTH, OARRAY_GET, OARRAY_SET) map (_ -> REFERENCE(AnyRefClass))) : _*
+  )
+
   /** Check whether the given operation code is an array operation. */
   def isArrayOp(code: Int): Boolean =
     isArrayNew(code) | isArrayLength(code) | isArrayGet(code) | isArraySet(code)

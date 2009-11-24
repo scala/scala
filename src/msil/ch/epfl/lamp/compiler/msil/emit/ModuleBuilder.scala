@@ -105,7 +105,7 @@ class ModuleBuilder(name: String, fullname: String, scopeName: String, assembly:
     }
 
     /** Sets a custom attribute. */
-    def SetCustomAttribute(constr: ConstructorInfo, value: Array[byte]) {
+    def SetCustomAttribute(constr: ConstructorInfo, value: Array[Byte]) {
 	addCustomAttribute(constr, value)
     }
 

@@ -71,7 +71,7 @@ self: scala.tools.nsc.Global =>
     Range(new RangePosition(null, lo, lo, hi), EmptyTree)
 
   /** The maximal free range */
-  private lazy val maxFree: Range = free(0, Math.MAX_INT)
+  private lazy val maxFree: Range = free(0, Int.MaxValue)
 
   /** A singleton list of a non-empty range from `lo` to `hi`, or else the empty List */
   private def maybeFree(lo: Int, hi: Int) =

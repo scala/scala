@@ -3,7 +3,7 @@ trait Foo {
 }
 
 trait Bar extends Foo {
-  def foobar: unit = super.foobar
+  def foobar: Unit = super.foobar
 }
 
 // the following definition breaks the compiler

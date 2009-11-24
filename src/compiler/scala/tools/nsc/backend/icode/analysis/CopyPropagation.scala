@@ -66,8 +66,8 @@ abstract class CopyPropagation {
           if ((other eq bottom) || (this eq bottom))
             (this eq other)
           else {
-            this.bindings == other.bindings &&
-            List.forall2(this.stack, other.stack) { (a, b) => a == b }
+            (this.bindings == other.bindings) &&
+            ((this.stack, other.stack).zipped forall (_ == _))
           }
         }
 
@@ -188,7 +188,7 @@ abstract class CopyPropagation {
           else {
 //            if (a.stack.length != b.stack.length)
 //              throw new LubError(a, b, "Invalid stacks in states: ");
-            List.map2(a.stack, b.stack) { (v1, v2) =>
+            (a.stack, b.stack).zipped map { (v1, v2) =>
               if (v1 == v2) v1 else Unknown
             }
           }
@@ -245,9 +245,14 @@ abstract class CopyPropagation {
     }
 
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem =
-      b.toList.foldLeft(in)(interpret)
+      b.foldLeft(in)(interpret)
 
     import opcodes._
+
+    private def retain[A, B](map: Map[A, B])(p: (A, B) => Boolean) = {
+      for ((k, v) <- map ; if !p(k, v)) map -= k
+      map
+    }
 
     /** Abstract interpretation for one instruction. */
     def interpret(in: copyLattice.Elem, i: Instruction): copyLattice.Elem = {
@@ -458,7 +463,7 @@ abstract class CopyPropagation {
      */
     final def cleanReferencesTo(s: copyLattice.State, target: Location) {
       def cleanRecord(r: Record): Record = {
-        r.bindings retain { (loc, value) =>
+        retain(r.bindings) { (loc, value) =>
           (value match {
             case Deref(loc1) if (loc1 == target) => false
             case Boxed(loc1) if (loc1 == target)  => false
@@ -478,7 +483,7 @@ abstract class CopyPropagation {
         case _ => v
       }}
 
-      s.bindings retain { (loc, value) =>
+      retain(s.bindings) { (loc, value) =>
         (value match {
           case Deref(loc1) if (loc1 == target) => false
           case Boxed(loc1) if (loc1 == target) => false
@@ -531,12 +536,12 @@ abstract class CopyPropagation {
       }
       state.stack = state.stack map { v => v match {
         case Record(cls, bindings) =>
-          bindings.retain { (sym: Symbol, v: Value) => shouldRetain(sym) }
+          retain(bindings) { (sym, _) => shouldRetain(sym) }
           Record(cls, bindings)
         case _ => v
       }}
 
-      state.bindings retain {(loc, value) =>
+      retain(state.bindings) { (loc, value) =>
         value match {
           case Deref(Field(rec, sym)) => shouldRetain(sym)
           case Boxed(Field(rec, sym)) => shouldRetain(sym)

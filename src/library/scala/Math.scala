@@ -8,65 +8,98 @@
 
 // $Id$
 
-
 package scala
 
 /** The object <code>Math</code> contains methods for performing basic numeric
  *  operations such as the elementary exponential, logarithm, square root, and
  *  trigonometric functions.
  */
+@deprecated("use scala.math package instead")
 object Math {
+  @deprecated("Use scala.Byte.MinValue instead")
+  val MIN_BYTE = java.lang.Byte.MIN_VALUE
 
-  /** The smallest possible value for <a href="Byte.html" target="_self">scala.Byte</a>. */
-  val MIN_BYTE   = java.lang.Byte.MIN_VALUE
-  /** The greatest possible value for <a href="Byte.html" target="_self">scala.Byte</a>. */
-  val MAX_BYTE   = java.lang.Byte.MAX_VALUE
+  @deprecated("Use scala.Byte.MaxValue instead")
+  val MAX_BYTE = java.lang.Byte.MAX_VALUE
 
-  /** The smallest possible value for <a href="Short.html" target="_self">scala.Short</a>. */
-  val MIN_SHORT  = java.lang.Short.MIN_VALUE
-  /** The greatest possible value for <a href="Short.html" target="_self">scala.Short</a>. */
-  val MAX_SHORT  = java.lang.Short.MAX_VALUE
+  @deprecated("Use scala.Short.MinValue instead")
+  val MIN_SHORT = java.lang.Short.MIN_VALUE
 
-  /** The smallest possible value for <a href="Char.html" target="_self">scala.Char</a>. */
-  val MIN_CHAR   = java.lang.Character.MIN_VALUE
-  /** The greatest possible value for <a href="Char.html" target="_self">scala.Char</a>. */
-  val MAX_CHAR   = java.lang.Character.MAX_VALUE
+  @deprecated("Use scala.Short.MaxValue instead")
+  val MAX_SHORT = java.lang.Short.MAX_VALUE
 
-  /** The smallest possible value for <a href="Int.html" target="_self">scala.Int</a>. */
-  val MIN_INT    = java.lang.Integer.MIN_VALUE
-  /** The greatest possible value for <a href="Int.html" target="_self">scala.Int</a>. */
-  val MAX_INT    = java.lang.Integer.MAX_VALUE
+  @deprecated("Use scala.Char.MinValue instead")
+  val MIN_CHAR = java.lang.Character.MIN_VALUE
 
-  /** The smallest possible value for <a href="Long.html" target="_self">scala.Long</a>. */
-  val MIN_LONG   = java.lang.Long.MIN_VALUE
-  /** The greatest possible value for <a href="Long.html" target="_self">scala.Long</a>. */
-  val MAX_LONG   = java.lang.Long.MAX_VALUE
+  @deprecated("Use scala.Char.MaxValue instead")
+  val MAX_CHAR = java.lang.Character.MAX_VALUE
+
+  @deprecated("Use scala.Int.MinValue instead")
+  val MIN_INT = java.lang.Integer.MIN_VALUE
+
+  @deprecated("Use scala.Int.MaxValue instead")
+  val MAX_INT = java.lang.Integer.MAX_VALUE
+
+  @deprecated("Use scala.Long.MinValue instead")
+  val MIN_LONG = java.lang.Long.MIN_VALUE
+
+  @deprecated("Use scala.Long.MaxValue instead")
+  val MAX_LONG = java.lang.Long.MAX_VALUE
 
   /** The smallest possible value for <a href="Float.html" target="_self">scala.Float</a>. */
+  @deprecated("Use scala.Float.MinValue instead")
   val MIN_FLOAT  = -java.lang.Float.MAX_VALUE
+
   /** The smallest difference between two values of <a href="Float.html" target="_self">scala.Float</a>. */
+  @deprecated("Use scala.Float.Epsilon instead")
   val EPS_FLOAT  = java.lang.Float.MIN_VALUE
+
   /** The greatest possible value for <a href="Float.html" target="_self">scala.Float</a>. */
+  @deprecated("Use scala.Float.MaxValue instead")
   val MAX_FLOAT  = java.lang.Float.MAX_VALUE
+
   /** A value of type <a href="Float.html" target="_self">scala.Float</a> that represents no number. */
+  @deprecated("Use scala.Float.NaN instead")
   val NaN_FLOAT  = java.lang.Float.NaN
+
   /** Negative infinity of type <a href="Float.html" target="_self">scala.Float</a>. */
+  @deprecated("Use scala.Float.NegativeInfinity instead")
   val NEG_INF_FLOAT = java.lang.Float.NEGATIVE_INFINITY
+
   /** Positive infinity of type <a href="Float.html" target="_self">scala.Float</a>. */
+  @deprecated("Use scala.Float.PositiveInfinity instead")
   val POS_INF_FLOAT = java.lang.Float.POSITIVE_INFINITY
 
   /** The smallest possible value for <a href="Double.html" target="_self">scala.Double</a>. */
+  @deprecated("Use scala.Double.MinValue instead")
   val MIN_DOUBLE = -java.lang.Double.MAX_VALUE
+
   /** The smallest difference between two values of <a href="Double.html" target="_self">scala.Double</a>. */
+  @deprecated("Use scala.Double.Epsilon instead")
   val EPS_DOUBLE = java.lang.Double.MIN_VALUE
+
   /** The greatest possible value for <a href="Double.html" target="_self">scala.Double</a>. */
+  @deprecated("Use scala.Double.MaxValue instead")
   val MAX_DOUBLE = java.lang.Double.MAX_VALUE
+
   /** A value of type <a href="Double.html" target="_self">scala.Double</a> that represents no number. */
+  @deprecated("Use scala.Double.NaN instead")
   val NaN_DOUBLE = java.lang.Double.NaN
+
   /** Negative infinity of type <a href="Double.html" target="_self">scala.Double</a>. */
+  @deprecated("Use scala.Double.NegativeInfinity instead")
   val NEG_INF_DOUBLE = java.lang.Double.NEGATIVE_INFINITY
+
   /** Positive infinity of type <a href="Double.html" target="_self">scala.Double</a>. */
+  @deprecated("Use scala.Double.PositiveInfinity instead")
   val POS_INF_DOUBLE = java.lang.Double.POSITIVE_INFINITY
+
+  /** The code from here down is cut/pasted from the math package object.
+   *  It should properly be in a shared trait but as of this writing
+   *  inherited members in package objects are not visible.
+   */
+
+  /*******************************************************************/
 
   /** The <code>double</code> value that is closer than any other to
    *  <code>e</code>, the base of the natural logarithms.
@@ -174,29 +207,25 @@ object Math {
   def min(x: Float, y: Float): Float  = java.lang.Math.min(x, y)
   def min(x: Double, y: Double): Double = java.lang.Math.min(x, y)
 
-  def signum(x: Double): Double = x match { case 0 => 0
-                                            case y if y < 0 => -1.0
-                                            case y if y > 0 => 1.0 }
-  def signum(x: Float): Float = x match { case 0f => 0f
-                                          case y if y < 0f => -1.0f
-                                          case y if y > 0f => 1.0f }
-  def signum(x: Long): Long = x match { case 0l => 0l
-                                        case y if y < 0l => -1l
-                                        case y if y > 0l => 1l }
-  def signum(x: Int): Int = x match { case 0 => 0
-                                      case y if y < 0 => -1
-                                      case y if y > 0 => 1}
+  def signum(x: Double): Double =
+    if (x == 0d) 0d
+    else if (x < 0) -1.0
+    else if (x > 0) 1.0
+    else x    // NaN
 
-  // from Java 1.5
-  // def log10(x: Double): Double = java.lang.Math.log10(x)
-  // def cbrt(x: Double): Double = java.lang.Math.cbrt(x)
-  //
-  // def ulp(x: Double): Double = java.lang.Math.ulp(x)
-  // def ulp(x: Float): Float = java.lang.Math.ulp(x)
-  // def sinh(x: Double): Double = java.lang.Math.sinh(x)
-  // def cosh(x: Double): Double = java.lang.Math.cosh(x)
-  // def tanh(x: Double):Double = java.lang.Math.tanh(x)
-  // def hypot(x: Double, y: Double): Double = java.lang.Math.hypot(x, y)
-  // def expm1(x: Double): Double = java.lang.Math.expm1(x)
-  // def log1p(x: Double): Double = java.lang.Math.log1p(x)
+  def signum(x: Float): Float =
+    if (x == 0f) 0f
+    else if (x < 0) -1.0f
+    else if (x > 0) 1.0f
+    else x    // NaN
+
+  def signum(x: Long): Long =
+    if (x == 0l) 0l
+    else if (x < 0) -1l
+    else 1l
+
+  def signum(x: Int): Int =
+    if (x == 0) 0
+    else if (x < 0) -1
+    else 1
 }

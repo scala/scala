@@ -92,15 +92,9 @@ abstract class Changes {
        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
 
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-      (tparams1.length == tparams2.length &&
-       List.forall2(tparams1, tparams2)
-       ((p1, p2) => sameType(p1.info, p2.info)) &&
-       sameType(res1, res2))
+      sameTypeParams(tparams1, tparams2) && sameType(res1, res2)
     case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
-      (tparams1.length == tparams2.length &&
-       List.forall2(tparams1, tparams2)
-       ((p1, p2) => sameType(p1.info, p2.info)) &&
-       sameType(res1, res2))
+      sameTypeParams(tparams1, tparams2) && sameType(res1, res2)
     case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         sameType(lo1, lo2) && sameType(hi1, hi2)
     case (BoundedWildcardType(bounds), _) =>
@@ -133,9 +127,11 @@ abstract class Changes {
       ((tp1n ne tp1) || (tp2n ne tp2)) && sameType(tp1n, tp2n)
     }
 
+  private def sameTypeParams(tparams1: List[Symbol], tparams2: List[Symbol]) =
+    sameTypes(tparams1 map (_.info), tparams2 map (_.info))
+
   def sameTypes(tps1: List[Type], tps2: List[Type]): Boolean =
-    (tps1.length == tps2.length
-     && List.forall2(tps1, tps2)(sameType))
+    (tps1.length == tps2.length) && ((tps1, tps2).zipped forall sameType)
 
   /** Return the list of changes between 'from' and 'to'.
    */

@@ -297,11 +297,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *    new $anon()
      *
      *  transform a function node (x => body) of type PartialFunction[T, R] where
-     *    body = x match { case P_i if G_i => E_i }_i=1..n
+     *    body = expr match { case P_i if G_i => E_i }_i=1..n
      *  to:
      *
      *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
-     *      def apply(x: T): R = (x: @unchecked) match {
+     *      def apply(x: T): R = (expr: @unchecked) match {
      *        { case P_i if G_i => E_i }_i=1..n
      *      def isDefinedAt(x: T): boolean = (x: @unchecked) match {
      *        case P_1 if G_1 => true
@@ -361,8 +361,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                                                  BooleanClass.tpe))
             anonClass.info.decls enter isDefinedAtMethod
             def idbody(idparam: Symbol) = fun.body match {
-              case Match(_, cases) =>
-                val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam));
+              case Match(selector, cases) =>
+                val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam))
                 def transformCase(cdef: CaseDef): CaseDef =
                   substParam(
                     resetLocalAttrs(
@@ -370,7 +370,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                 if (cases exists treeInfo.isDefaultCase) Literal(true)
                 else
                   Match(
-                    Ident(idparam),
+                    substParam(resetLocalAttrs(selector.duplicate)),
                     (cases map transformCase) :::
                       List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
             }
@@ -467,7 +467,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case _ =>
           args
       }
-      List.map2(formals, args1) { (formal, arg) =>
+      (formals, args1).zipped map { (formal, arg) =>
         if (formal.typeSymbol != ByNameParamClass) {
           arg
         } else if (isByNameRef(arg)) {

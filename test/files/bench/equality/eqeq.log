@@ -1,0 +1,42 @@
+Banchmark results for testing equality operations:
+eq.scala: Base case, use eq equality only
+eqeq.scala: Test case, use == instead of eq.
+All tests run on Thinkpad T400, 1.6.0_12 client VM.
+Test command: java eq 5 5
+              java eqeq 5 5
+eq.scala, no -optimise
+eq$		109		78		79		63		63
+eq$		94		63		63		78		78
+eq$		94		62		62		62		78
+eq$		94		78		78		78		78
+eq$		94		78		78		78		78
+eq.scala, with -optimise
+eq$		421		63		62		47		63
+eq$		406		62		62		63		62
+eq$		407		62		62		78		63
+eq$		406		63		63		62		62
+eq$		407		62		62		63		47
+eqeq.scala with version of BoxesRuntime as of Nov 13th, no -optimise
+eqeq$		562		516		516		516		515
+eqeq$		547		515		515		531		532
+eqeq$		532		516		516		515		516
+eqeq$		547		531		531		516		531
+eqeq$		547		515		515		516		516
+eqeq.scala with version of BoxesRuntime as of Nov 13th, with -optimise
+eqeq$		1031		390		391		391		391
+eqeq$		1031		391		391		391		390
+eqeq$		1031		390		390		391		391
+eqeq$		1031		406		407		391		390
+eqeq$		1031		390		390		391		391
+eqeq.scala with 1st optimized of Nov 14th, no -optimise
+eqeq$		484		421		438		438		437
+eqeq$		484		438		437		437		438
+eqeq$		469		437		453		454		438
+eqeq$		468		437		438		468		438
+eqeq$		485		437		437		422		438
+eqeq.scala with 1st optimized of Nov 14th, with -optimise
+eqeq$		1016		375		391		375		375
+eqeq$		1016		375		391		390		375
+eqeq$		1016		390		391		375		375
+eqeq$		1015		375		391		390		375
+eqeq$		1016		390		375		375		375

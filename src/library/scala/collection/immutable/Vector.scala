@@ -6,7 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: Vector.scala 19072 2009-10-13 12:19:59Z rompf $
+// $Id$
 
 package scala.collection
 package immutable
@@ -564,7 +564,7 @@ final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterato
   private var lo: Int = _startIndex & 31
   private var endIndex: Int = _endIndex
 
-  private var endLo = Math.min(endIndex - blockIndex, 32)
+  private var endLo = math.min(endIndex - blockIndex, 32)
 
   def hasNext = _hasNext
 
@@ -582,7 +582,7 @@ final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterato
         gotoNextBlockStart(newBlockIndex, blockIndex ^ newBlockIndex)
 
         blockIndex = newBlockIndex
-        endLo = Math.min(endIndex - blockIndex, 32)
+        endLo = math.min(endIndex - blockIndex, 32)
         lo = 0
       } else {
         _hasNext = false
@@ -1011,7 +1011,7 @@ private[immutable] trait VectorPointer[T] {
 
      final def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
       val elems = new Array[AnyRef](32)
-      Platform.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft,oldLeft))
+      Platform.arraycopy(array, oldLeft, elems, newLeft, 32 - math.max(newLeft,oldLeft))
       elems
     }
 

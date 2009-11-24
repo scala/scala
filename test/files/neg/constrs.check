@@ -8,7 +8,7 @@ constrs.scala:10: error: called constructor's definition must precede calling co
     def this() = this("abc")
                  ^
 constrs.scala:12: error: called constructor's definition must precede calling constructor's definition
-    def this(x: boolean) = this(x)
+    def this(x: Boolean) = this(x)
                            ^
 constrs.scala:16: error: type mismatch;
  found   : Int(1)

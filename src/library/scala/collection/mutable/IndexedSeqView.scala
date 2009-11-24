@@ -13,7 +13,6 @@ package scala.collection
 package mutable
 
 import generic._
-import Math.MAX_INT
 
 import TraversableView.NoBuilder
 
@@ -79,7 +78,7 @@ self =>
 
   override def filter(p: A => Boolean): IndexedSeqView[A, Coll] = newFiltered(p)
   override def init: IndexedSeqView[A, Coll]  = newSliced(0, size - 1).asInstanceOf[IndexedSeqView[A, Coll]]
-  override def drop(n: Int): IndexedSeqView[A, Coll] = newSliced(n max 0, MAX_INT).asInstanceOf[IndexedSeqView[A, Coll]]
+  override def drop(n: Int): IndexedSeqView[A, Coll] = newSliced(n max 0, Int.MaxValue).asInstanceOf[IndexedSeqView[A, Coll]]
   override def take(n: Int): IndexedSeqView[A, Coll] = newSliced(0, n).asInstanceOf[IndexedSeqView[A, Coll]]
   override def slice(from: Int, until: Int): IndexedSeqView[A, Coll] = newSliced(from max 0, until).asInstanceOf[IndexedSeqView[A, Coll]]
   override def dropWhile(p: A => Boolean): IndexedSeqView[A, Coll] = newDroppedWhile(p).asInstanceOf[IndexedSeqView[A, Coll]]

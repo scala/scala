@@ -680,7 +680,7 @@ trait Scanners {
         var value: Long = 0
         val divider = if (base == 10) 1 else 2
         val limit: Long =
-          if (token == LONGLIT) Math.MAX_LONG else Math.MAX_INT
+          if (token == LONGLIT) Long.MaxValue else Int.MaxValue
         var i = 0
         val len = strVal.length
         while (i < len) {
@@ -709,7 +709,7 @@ trait Scanners {
     */
     def floatVal(negated: Boolean): Double = {
       val limit: Double =
-        if (token == DOUBLELIT) Math.MAX_DOUBLE else Math.MAX_FLOAT
+        if (token == DOUBLELIT) Double.MaxValue else Float.MaxValue
       try {
         val value: Double = java.lang.Double.valueOf(strVal).doubleValue()
         if (value > limit)

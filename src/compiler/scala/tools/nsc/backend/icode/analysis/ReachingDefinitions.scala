@@ -43,19 +43,19 @@ abstract class ReachingDefinitions {
       else if (bottom == b) a
       else {
         val locals = a.vars ++ b.vars
-        val stack = if (a.stack == Nil)
-          b.stack
-        else if (b.stack == Nil) a.stack
-        else List.map2(a.stack, b.stack) (_ ++ _)
+        val stack =
+          if (a.stack == Nil) b.stack
+          else if (b.stack == Nil) a.stack
+          else (a.stack, b.stack).zipped map (_ ++ _)
 
-        val res = IState(locals, stack)
+        IState(locals, stack)
 
-//        Console.println("\tlub2: " + a + ", " + b)
-//        Console.println("\tis: " + res)
-
-//        if (res._1 eq bottom._1) (new ListSet[Definition], Nil)
-//        else res
-        res
+        // val res = IState(locals, stack)
+        // Console.println("\tlub2: " + a + ", " + b)
+        // Console.println("\tis: " + res)
+        // if (res._1 eq bottom._1) (new ListSet[Definition], Nil)
+        // else res
+        // res
       }
   }
 

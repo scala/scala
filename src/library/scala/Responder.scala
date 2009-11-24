@@ -67,6 +67,7 @@ object Responder {
  *  @version 1.0
  *  @since 2.1
  */
+@serializable
 abstract class Responder[+A] {
 
   def respond(k: A => Unit): Unit
@@ -90,5 +91,7 @@ abstract class Responder[+A] {
       Responder.this.respond(x => if (p(x)) k(x) else ())
     }
   }
+
+  override def toString = "Responder"
 }
 

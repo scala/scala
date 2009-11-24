@@ -24,7 +24,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     table = new Array[AnyRef](capacity)
   }
 
-  private def index(x: Int): Int = Math.abs(x % capacity)
+  private def index(x: Int): Int = math.abs(x % capacity)
 
   def findEntry(x: T): T = {
     var h = index(x.hashCode())

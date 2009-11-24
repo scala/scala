@@ -68,7 +68,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile
   def isDirectory: Boolean = false
 
   /** Returns the time that this abstract file was last modified. */
-  def lastModified: Long = Math.MIN_LONG
+  def lastModified: Long = Long.MinValue
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {

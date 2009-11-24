@@ -12,7 +12,7 @@
 
 package scala
 
-import scala.collection.{TraversableLike, Traversable, IterableLike}
+import scala.collection.{ TraversableLike, IterableLike }
 import scala.collection.generic.CanBuildFrom
 
 

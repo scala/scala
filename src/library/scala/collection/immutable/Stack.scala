@@ -69,7 +69,6 @@ class Stack[+A] protected (protected val elems: List[A]) extends Seq[A] {
    *
    *  @param   elems      the iterator object.
    *  @return the stack with the new elements on top.
-   *  @deprecated
    */
   def pushAll[B >: A](elems: Iterator[B]): Stack[B] =
     ((this: Stack[B]) /: elems)(_ push _)

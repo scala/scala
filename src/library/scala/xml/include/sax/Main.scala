@@ -47,13 +47,15 @@ object Main {
     if (args.isEmpty)
       return
 
-    val (resolver, args2): (Option[EntityResolver], Array[String]) =
-      if (args.size < 2 || args(0) != "-r") (None, args)
+    def dashR = args.size >= 2 && args(0) == "-r"
+    val args2 = if (dashR) args drop 2 else args
+    val resolver: Option[EntityResolver] =
+      if (dashR) None
       else catching(classOf[Exception]) opt {
-        val r = Class.forName(args(1)).newInstance().asInstanceOf[EntityResolver]
-        parser setEntityResolver r
-        (r, args drop 2)
-      } orElse (return error("Could not load requested EntityResolver"))
+          val r = Class.forName(args(1)).newInstance().asInstanceOf[EntityResolver]
+          parser setEntityResolver r
+          r
+        } orElse (return error("Could not load requested EntityResolver"))
 
     for (arg <- args2) {
       try {

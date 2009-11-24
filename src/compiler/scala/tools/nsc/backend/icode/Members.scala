@@ -36,6 +36,14 @@ trait Members { self: ICodes =>
     var producedStack: TypeStack = null
 
     private var currentLabel: Int = 0
+    private var _touched = false
+
+    def touched = _touched
+    def touched_=(b: Boolean): Unit = if (b) {
+      blocks foreach (_.touched = true)
+      _touched = true
+    } else
+      _touched = false
 
     // Constructor code
     startBlock = newBlock
@@ -52,52 +60,11 @@ trait Members { self: ICodes =>
       if (b == startBlock)
         startBlock = b.successors.head;
       blocks -= b
-    }
+      assert(!blocks.contains(b))
+      for (handler <- method.exh if handler.covers(b))
+        handler.covered -= b
 
-    /**
-     * Apply a function to all basic blocks, for side-effects. It starts at
-     * the given startBlock and checks that are no predecessors of the given node.
-     * Only blocks that are reachable via a path from startBlock are ever visited.
-     */
-    def traverseFrom(startBlock: BasicBlock, f: BasicBlock => Unit) = {
-      val visited: Set[BasicBlock] = new HashSet();
-
-      def traverse0(toVisit: List[BasicBlock]): Unit = toVisit match {
-        case Nil => ();
-        case b :: bs => if (!visited.contains(b)) {
-          f(b);
-          visited += b;
-          traverse0(bs ::: b.successors);
-        } else
-          traverse0(bs);
-      }
-      assert(startBlock.predecessors == Nil,
-             "Starting traverse from a block with predecessors: " + this);
-      traverse0(startBlock :: Nil)
-    }
-
-    def traverse(f: BasicBlock => Unit) = blocks.toList foreach f;
-
-    /* This method applies the given function to each basic block. */
-    def traverseFeedBack(f: (BasicBlock, HashMap[BasicBlock, Boolean]) => Unit) = {
-      val visited : HashMap[BasicBlock, Boolean] = new HashMap;
-      visited ++= blocks.iterator.map(x => (x, false));
-
-      var blockToVisit: List[BasicBlock] = List(startBlock)
-
-      while (!blockToVisit.isEmpty) {
-        blockToVisit match {
-	  case b::xs =>
-	    if (!visited(b)) {
-	      f(b, visited);
-	      blockToVisit = b.successors ::: xs;
-	      visited += (b -> true)
-	    } else
-	      blockToVisit = xs
-          case _ =>
-            error("impossible match")
-	}
-      }
+      touched = true
     }
 
     /** This methods returns a string representation of the ICode */
@@ -112,6 +79,7 @@ trait Members { self: ICodes =>
     /* Create a new block and append it to the list
      */
     def newBlock: BasicBlock = {
+      touched = true
       val block = new BasicBlock(nextLabel, method);
       blocks += block;
       block
@@ -145,6 +113,11 @@ trait Members { self: ICodes =>
     def lookupField(s: Symbol) = fields find (_.symbol == s)
     def lookupMethod(s: Symbol) = methods find (_.symbol == s)
     def lookupMethod(s: Name) = methods find (_.symbol.name == s)
+
+    /* determines whether or not this class contains a static ctor. */
+    def containsStaticCtor: Boolean = methods.exists(_.isStaticCtor)
+    /* returns this methods static ctor if it has one. */
+    def lookupStaticCtor: Option[IMethod] = methods.find(_.isStaticCtor)
   }
 
   /** Represent a field in ICode */
@@ -225,12 +198,15 @@ trait Members { self: ICodes =>
 
     def isStatic: Boolean = symbol.isStaticMember
 
+    /* determines whether or not this method is the class static constructor. */
+    def isStaticCtor: Boolean = isStatic && symbol.rawname == nme.CONSTRUCTOR
+
     override def toString() = symbol.fullNameString
 
     import opcodes._
     def checkLocals: Unit = if (code ne null) {
       Console.println("[checking locals of " + this + "]")
-      for (bb <- code.blocks; i <- bb.toList) i match {
+      for (bb <- code.blocks; i <- bb) i match {
         case LOAD_LOCAL(l) =>
           if (!this.locals.contains(l))
             Console.println("Local " + l + " is not declared in " + this)

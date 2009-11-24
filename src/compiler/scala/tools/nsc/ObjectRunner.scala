@@ -8,7 +8,7 @@
 package scala.tools.nsc
 
 import java.net.URL
-import scala.util.ScalaClassLoader
+import util.ScalaClassLoader
 
 /** An object that runs another object specified by name.
  *

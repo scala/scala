@@ -20,6 +20,7 @@ package scala.xml
  *
  *  @author Burak Emir
  */
+@deprecated("Use UnprefixedAttribute's extractor")
 class HasKeyValue(key: String) {
   def unapplySeq(x: MetaData): Option[Seq[Node]] = x.get(key)
 }

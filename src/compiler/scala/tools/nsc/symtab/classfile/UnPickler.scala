@@ -132,7 +132,8 @@ abstract class UnPickler {
       val savedIndex = readIndex
       readIndex = index(i)
       val tag = readByte().toInt
-      if (tag != CLASSsym) assert(false)
+      assert(tag == CLASSsym)
+
       readNat(); // read length
       val result = readNameRef() == nme.REFINE_CLASS_NAME.toTypeName
       readIndex = savedIndex
@@ -350,7 +351,7 @@ abstract class UnPickler {
       val len = readNat()
       (tag: @switch) match {
         case LITERALunit    => Constant(())
-        case LITERALboolean => Constant(if (readLong(len) == 0L) false else true)
+        case LITERALboolean => Constant(readLong(len) != 0L)
         case LITERALbyte    => Constant(readLong(len).toByte)
         case LITERALshort   => Constant(readLong(len).toShort)
         case LITERALchar    => Constant(readLong(len).toChar)
@@ -390,17 +391,15 @@ abstract class UnPickler {
 
     /** Read a ClassfileAnnotArg (argument to a classfile annotation)
      */
-    private def readClassfileAnnotArg(): ClassfileAnnotArg = {
-      val b = peekByte()
-      if (peekByte() == ANNOTINFO) {
+    private def readClassfileAnnotArg(): ClassfileAnnotArg = peekByte() match {
+      case ANNOTINFO      =>
         NestedAnnotArg(readAnnotation())
-      } else if (peekByte() == ANNOTARGARRAY) {
+      case ANNOTARGARRAY  =>
         readByte()
         val end = readNat() + readIndex
         ArrayAnnotArg(until(end, readClassfileAnnotArgRef).toArray)
-      } else {
+      case _              =>
         LiteralAnnotArg(readConstant())
-      }
     }
 
     /** Read an AnnotationInfo. Not to be called directly, use
@@ -419,7 +418,6 @@ abstract class UnPickler {
       }
       AnnotationInfo(atp, args.toList, assocs.toList)
     }
-
 
     /** Read an annotation and as a side effect store it into
      *  the symbol it requests. Called at top-level, for all
@@ -450,212 +448,184 @@ abstract class UnPickler {
         errorBadSignature("tree expected (" + outerTag + ")")
       val end = readNat() + readIndex
       val tag = readByte()
-      val tpe =
-        if (tag != EMPTYtree)
-          readTypeRef()
-        else
-          NoType
+      val tpe = if (tag == EMPTYtree) NoType else readTypeRef()
 
-      tag match {
+      // Set by the three functions to follow.  If symbol is non-null
+      // after the the new tree 't' has been created, t has its Symbol
+      // set to symbol; and it always has its Type set to tpe.
+      var symbol: Symbol = null
+      var mods: Modifiers = null
+      var name: Name = null
+
+      /** Read a Symbol, Modifiers, and a Name */
+      def setSymModsName() {
+        symbol = readSymbolRef()
+        mods = readModifiersRef()
+        name = readNameRef()
+      }
+      /** Read a Symbol and a Name */
+      def setSymName() {
+        symbol = readSymbolRef()
+        name = readNameRef()
+      }
+      /** Read a Symbol */
+      def setSym() {
+        symbol = readSymbolRef()
+      }
+
+      val t = tag match {
         case EMPTYtree =>
           EmptyTree
 
         case PACKAGEtree =>
-          val symbol = readSymbolRef()
+          setSym()
+          // val discardedSymbol = readSymbolRef()  // XXX is symbol intentionally not set?
           val pid = readTreeRef().asInstanceOf[RefTree]
           val stats = until(end, readTreeRef)
-          PackageDef(pid, stats) setType tpe
+          PackageDef(pid, stats)
 
         case CLASStree =>
-          val symbol = readSymbolRef()
-          val mods = readModifiersRef()
-          val name = readNameRef()
+          setSymModsName()
           val impl = readTemplateRef()
           val tparams = until(end, readTypeDefRef)
-          (ClassDef(mods, name, tparams, impl).
-           setSymbol(symbol).
-           setType(tpe))
+          ClassDef(mods, name, tparams, impl)
 
         case MODULEtree =>
-          val symbol = readSymbolRef()
-          val mods = readModifiersRef()
-          val name = readNameRef()
-          val impl = readTemplateRef()
-          (ModuleDef(mods, name, impl).
-           setSymbol(symbol).
-           setType(tpe))
+          setSymModsName()
+          ModuleDef(mods, name, readTemplateRef())
 
         case VALDEFtree =>
-          val symbol = readSymbolRef()
-          val mods = readModifiersRef()
-          val name = readNameRef()
+          setSymModsName()
           val tpt = readTreeRef()
           val rhs = readTreeRef()
-
-          (ValDef(mods, name, tpt, rhs).
-           setSymbol(symbol).
-           setType(tpe))
+          ValDef(mods, name, tpt, rhs)
 
         case DEFDEFtree =>
-          val symbol = readSymbolRef()
-          val mods = readModifiersRef()
-          val name = readNameRef()
-          val numTparams = readNat()
-          val tparams = times(numTparams, readTypeDefRef)
-          val numVparamss = readNat
-          val vparamss = times(numVparamss, () => {
-            val len = readNat()
-            times(len, readValDefRef)})
+          setSymModsName()
+          val tparams = times(readNat(), readTypeDefRef)
+          val vparamss = times(readNat(), () => times(readNat(), readValDefRef))
           val tpt = readTreeRef()
           val rhs = readTreeRef()
 
-          (DefDef(mods, name, tparams, vparamss, tpt, rhs).
-           setSymbol(symbol).
-           setType(tpe))
+          DefDef(mods, name, tparams, vparamss, tpt, rhs)
 
         case TYPEDEFtree =>
-          val symbol = readSymbolRef()
-          val mods = readModifiersRef()
-          val name = readNameRef()
+          setSymModsName()
           val rhs = readTreeRef()
           val tparams = until(end, readTypeDefRef)
-
-          (TypeDef(mods, name, tparams, rhs).
-           setSymbol(symbol).
-           setType(tpe))
+          TypeDef(mods, name, tparams, rhs)
 
         case LABELtree =>
-          val symbol = readSymbolRef()
-          val name = readNameRef()
+          setSymName()
           val rhs = readTreeRef()
           val params = until(end, readIdentRef)
-          (LabelDef(name, params, rhs).
-           setSymbol(symbol).
-           setType(tpe))
+          LabelDef(name, params, rhs)
 
         case IMPORTtree =>
-          val symbol = readSymbolRef()
+          setSym()
           val expr = readTreeRef()
           val selectors = until(end, () => {
             val from = readNameRef()
             val to = readNameRef()
             ImportSelector(from, -1, to, -1)
           })
-          (Import(expr, selectors).
-           setSymbol(symbol).
-           setType(tpe))
+
+          Import(expr, selectors)
 
         case DOCDEFtree =>
           val comment = readConstantRef match {
-            case Constant(com: String) => com
-            case other =>
-              errorBadSignature("Document comment not a string (" + other + ")")
+            case Constant(com: String)  => com
+            case other => errorBadSignature("Document comment not a string (" + other + ")")
           }
           val definition = readTreeRef()
-          (DocDef(comment, definition).setType(tpe))
+          DocDef(comment, definition)
 
         case TEMPLATEtree =>
-          val symbol = readSymbolRef()
-          val numParents = readNat()
-          val parents = times(numParents, readTreeRef)
+          setSym()
+          val parents = times(readNat(), readTreeRef)
           val self = readValDefRef()
           val body = until(end, readTreeRef)
 
-          (Template(parents, self, body).
-           setSymbol(symbol).
-           setType(tpe))
+          Template(parents, self, body)
 
         case BLOCKtree =>
           val expr = readTreeRef()
           val stats = until(end, readTreeRef)
-          Block(stats, expr).setType(tpe)
+          Block(stats, expr)
 
         case CASEtree =>
           val pat = readTreeRef()
           val guard = readTreeRef()
           val body = readTreeRef()
-          CaseDef(pat, guard, body).setType(tpe)
+          CaseDef(pat, guard, body)
 
         case ALTERNATIVEtree =>
-          val trees = until(end, readTreeRef)
-          Alternative(trees).setType(tpe)
+          Alternative(until(end, readTreeRef))
 
         case STARtree =>
-          val elem = readTreeRef()
-          Star(elem).setType(tpe)
+          Star(readTreeRef())
 
         case BINDtree =>
-          val symbol = readSymbolRef()
-          val name = readNameRef()
-          val body = readTreeRef()
-          (Bind(name, body).
-           setSymbol(symbol).
-           setType(tpe))
+          setSymName()
+          Bind(name, readTreeRef())
 
         case UNAPPLYtree =>
           val fun = readTreeRef()
           val args = until(end, readTreeRef)
-          (UnApply(fun: Tree, args).setType(tpe))
+          UnApply(fun, args)
 
         case ARRAYVALUEtree =>
           val elemtpt = readTreeRef()
           val trees = until(end, readTreeRef)
-          (ArrayValue(elemtpt, trees).setType(tpe))
+          ArrayValue(elemtpt, trees)
 
         case FUNCTIONtree =>
-          val symbol = readSymbolRef()
+          setSym()
           val body = readTreeRef()
           val vparams = until(end, readValDefRef)
-          (Function(vparams, body).
-           setSymbol(symbol).
-           setType(tpe))
+          Function(vparams, body)
 
         case ASSIGNtree =>
           val lhs = readTreeRef()
           val rhs = readTreeRef()
-          Assign(lhs, rhs).setType(tpe)
+          Assign(lhs, rhs)
 
         case IFtree =>
           val cond = readTreeRef()
           val thenp = readTreeRef()
           val elsep = readTreeRef()
-          If(cond, thenp, elsep).setType(tpe)
+          If(cond, thenp, elsep)
 
         case MATCHtree =>
           val selector = readTreeRef()
           val cases = until(end, readCaseDefRef)
-          Match(selector, cases).setType(tpe)
+          Match(selector, cases)
 
         case RETURNtree =>
-          val symbol = readSymbolRef()
-          val expr = readTreeRef()
-          (Return(expr).
-           setSymbol(symbol).
-           setType(tpe))
+          setSym()
+          Return(readTreeRef())
 
         case TREtree =>
           val block = readTreeRef()
           val finalizer = readTreeRef()
           val catches = until(end, readCaseDefRef)
-          Try(block, catches, finalizer).setType(tpe)
+          Try(block, catches, finalizer)
 
         case THROWtree =>
-          val expr = readTreeRef()
-          Throw(expr).setType(tpe)
+          Throw(readTreeRef())
 
         case NEWtree =>
-          val tpt = readTreeRef()
-          New(tpt).setType(tpe)
+          New(readTreeRef())
 
         case TYPEDtree =>
           val expr = readTreeRef()
           val tpt = readTreeRef()
-          Typed(expr, tpt).setType(tpe)
+          Typed(expr, tpt)
 
         case TYPEAPPLYtree =>
           val fun = readTreeRef()
           val args = until(end, readTreeRef)
-          TypeApply(fun, args).setType(tpe)
+          TypeApply(fun, args)
 
         case APPLYtree =>
           val fun = readTreeRef()
@@ -664,79 +634,77 @@ abstract class UnPickler {
             fun.setType(fun.symbol.info)
             typer.infer.inferMethodAlternative(fun, Nil, args map (_.tpe), tpe)
           }
-          Apply(fun, args).setType(tpe)
+          Apply(fun, args)
 
         case APPLYDYNAMICtree =>
-          val symbol = readSymbolRef()
+          setSym()
           val qual = readTreeRef()
           val args = until(end, readTreeRef)
-          ApplyDynamic(qual, args).setSymbol(symbol).setType(tpe)
+          ApplyDynamic(qual, args)
 
         case SUPERtree =>
-          val symbol = readSymbolRef()
+          setSym()
           val qual = readNameRef()
           val mix = readNameRef()
-          Super(qual, mix).setSymbol(symbol).setType(tpe)
+          Super(qual, mix)
 
         case THIStree =>
-          val symbol = readSymbolRef()
-          val qual = readNameRef()
-          This(qual).setSymbol(symbol).setType(tpe)
+          setSym()
+          This(readNameRef())
 
         case SELECTtree =>
-          val symbol = readSymbolRef()
+          setSym()
           val qualifier = readTreeRef()
           val selector = readNameRef()
-          Select(qualifier, selector).setSymbol(symbol).setType(tpe)
+          Select(qualifier, selector)
 
         case IDENTtree =>
-          val symbol = readSymbolRef()
-          val name = readNameRef()
-          Ident(name).setSymbol(symbol).setType(tpe)
+          setSymName()
+          Ident(name)
 
         case LITERALtree =>
-          val value = readConstantRef()
-          Literal(value).setType(tpe)
+          Literal(readConstantRef())
 
         case TYPEtree =>
-          TypeTree().setType(tpe)
+          TypeTree()
 
         case ANNOTATEDtree =>
           val annot = readTreeRef()
           val arg = readTreeRef()
-          Annotated(annot, arg).setType(tpe)
+          Annotated(annot, arg)
 
         case SINGLETONTYPEtree =>
-          val ref = readTreeRef()
-          SingletonTypeTree(ref).setType(tpe)
+          SingletonTypeTree(readTreeRef())
 
         case SELECTFROMTYPEtree =>
           val qualifier = readTreeRef()
           val selector = readNameRef()
-          SelectFromTypeTree(qualifier, selector).setType(tpe)
+          SelectFromTypeTree(qualifier, selector)
 
         case COMPOUNDTYPEtree =>
-          val templ = readTemplateRef()
-          CompoundTypeTree(templ: Template).setType(tpe)
+          CompoundTypeTree(readTemplateRef())
 
         case APPLIEDTYPEtree =>
           val tpt = readTreeRef()
           val args = until(end, readTreeRef)
-          AppliedTypeTree(tpt, args).setType(tpe)
+          AppliedTypeTree(tpt, args)
 
         case TYPEBOUNDStree =>
           val lo = readTreeRef()
           val hi = readTreeRef()
-          TypeBoundsTree(lo, hi).setType(tpe)
+          TypeBoundsTree(lo, hi)
 
         case EXISTENTIALTYPEtree =>
           val tpt = readTreeRef()
           val whereClauses = until(end, readTreeRef)
-          ExistentialTypeTree(tpt, whereClauses).setType(tpe)
+          ExistentialTypeTree(tpt, whereClauses)
 
         case _ =>
           errorBadSignature("unknown tree type (" + tag + ")")
       }
+
+      if (symbol == null) t setType tpe
+      else t setSymbol symbol setType tpe
     }
 
     def readModifiers(): Modifiers = {
@@ -798,7 +766,6 @@ abstract class UnPickler {
         case other =>
           errorBadSignature("expected an TypeDef (" + other + ")")
       }
-
 
     private def errorBadSignature(msg: String) =
       throw new RuntimeException("malformed Scala signature of " + classRoot.name + " at " + readIndex + "; " + msg)

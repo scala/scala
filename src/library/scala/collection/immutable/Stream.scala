@@ -480,6 +480,7 @@ object Stream extends SeqFactory[Stream] {
   }
 
   /** A lazy cons cell, from which streams are built. */
+  @serializable @SerialVersionUID(-602202424901551803L)
   final class Cons[+A](hd: A, tl: => Stream[A]) extends Stream[A] {
     override def isEmpty = false
     override def head = hd

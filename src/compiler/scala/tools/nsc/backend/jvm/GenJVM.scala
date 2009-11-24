@@ -47,7 +47,8 @@ abstract class GenJVM extends SubComponent {
     override def run {
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
       if (settings.Xdce.value)
-        icodes.classes.retain { (sym: Symbol, cls: IClass) => !inliner.isClosureClass(sym) || deadCode.liveClosures(sym) }
+        for ((sym, cls) <- icodes.classes ; if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
+          icodes.classes -= sym
 
       classes.valuesIterator foreach apply
     }
@@ -202,7 +203,7 @@ abstract class GenJVM extends SubComponent {
       if (isStaticModule(c.symbol) || serialVUID != None || clasz.bootstrapClass.isDefined) {
         if (isStaticModule(c.symbol))
             addModuleInstanceField;
-        addStaticInit(jclass)
+        addStaticInit(jclass, c.lookupStaticCtor)
 
         if (isTopLevelModule(c.symbol)) {
           if (c.symbol.linkedClassOfModule == NoSymbol)
@@ -213,6 +214,8 @@ abstract class GenJVM extends SubComponent {
         }
       }
       else {
+        if (c.containsStaticCtor) addStaticInit(jclass, c.lookupStaticCtor)
+
         // it must be a top level class (name contains no $s)
         def isCandidateForForwarders(sym: Symbol): Boolean =
           atPhase (currentRun.picklerPhase.next) {
@@ -431,9 +434,11 @@ abstract class GenJVM extends SubComponent {
 
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
       if (!sym.hasFlag(Flags.EXPANDEDNAME | Flags.SYNTHETIC)
-          && !(sym.isMethod && sym.hasFlag(Flags.LIFTED))) {
+          && !(sym.isMethod && sym.hasFlag(Flags.LIFTED))
+          && !(sym.ownerChain exists (_.isImplClass))) {  // @M don't generate java generics sigs for (members of) implementation classes, as they are monomorphic (TODO: ok?)
         val memberTpe = atPhase(currentRun.erasurePhase)(owner.thisType.memberInfo(sym))
-//        println("sym: " + sym.fullNameString + " : " + memberTpe + " sym.info: " + sym.info)
+        // println("addGenericSignature sym: " + sym.fullNameString + " : " + memberTpe + " sym.info: " + sym.info)
+        // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
         erasure.javaSig(sym, memberTpe) match {
           case Some(sig) =>
             val index = jmember.getConstantPool().addUtf8(sig).toShort
@@ -505,7 +510,7 @@ abstract class GenJVM extends SubComponent {
         val innerClassesAttr = jclass.getInnerClasses()
         // sort them so inner classes succeed their enclosing class
         // to satisfy the Eclipse Java compiler
-        for (innerSym <- innerClasses.toList.sort(_.name.length < _.name.length)) {
+        for (innerSym <- innerClasses.toList sortBy (_.name.length)) {
           var outerName = javaName(innerSym.rawowner)
           // remove the trailing '$'
           if (outerName.endsWith("$") && isTopLevelModule(innerSym.rawowner))
@@ -556,6 +561,8 @@ abstract class GenJVM extends SubComponent {
     }
 
     def genMethod(m: IMethod) {
+      if (m.isStaticCtor) return
+
       log("Generating method " + m.symbol.fullNameString)
       method = m
       endPC.clear
@@ -667,7 +674,7 @@ abstract class GenJVM extends SubComponent {
                         jclass.getType())
     }
 
-    def addStaticInit(cls: JClass) {
+    def addStaticInit(cls: JClass, mopt: Option[IMethod]) {
       import JAccessFlags._
       val clinitMethod = cls.addNewMethod(ACC_PUBLIC | ACC_STATIC,
                                           "<clinit>",
@@ -675,6 +682,53 @@ abstract class GenJVM extends SubComponent {
                                           JType.EMPTY_ARRAY,
                                           new Array[String](0))
       val clinit = clinitMethod.getCode().asInstanceOf[JExtendedCode]
+
+      mopt match {
+       	case Some(m) =>
+          if (clasz.bootstrapClass.isDefined) legacyEmitBootstrapMethodInstall(clinit)
+
+          val oldLastBlock = m.code.blocks.last
+          val lastBlock = m.code.newBlock
+          oldLastBlock.replaceInstruction(oldLastBlock.length - 1, JUMP(lastBlock))
+
+          if (isStaticModule(clasz.symbol)) {
+            // call object's private ctor from static ctor
+            lastBlock.emit(NEW(REFERENCE(m.symbol.enclClass)))
+            lastBlock.emit(CALL_METHOD(m.symbol.enclClass.primaryConstructor, Static(true)))
+	  }
+
+          // add serialVUID code
+          serialVUID match {
+            case Some(value) =>
+              import Flags._
+              import definitions._
+       	      val fieldName = "serialVersionUID"
+              val fieldSymbol = clasz.symbol.newValue(NoPosition, newTermName(fieldName))
+                                  .setFlag(STATIC | FINAL)
+                                  .setInfo(longType)
+              clasz.addField(new IField(fieldSymbol))
+              lastBlock.emit(CONSTANT(Constant(value)))
+              lastBlock.emit(STORE_FIELD(fieldSymbol, true))
+            case None => ()
+          }
+
+          if (clasz.bootstrapClass.isDefined) {
+            // emit bootstrap method install
+            //emitBootstrapMethodInstall(block)
+          }
+
+          lastBlock.emit(RETURN(UNIT))
+          lastBlock.close
+
+       	  method = m
+       	  jmethod = clinitMethod
+       	  genCode(m)
+       	case None =>
+	  legacyStaticInitializer(cls, clinit)
+      }
+    }
+
+    private def legacyStaticInitializer(cls: JClass, clinit: JExtendedCode) {
       if (isStaticModule(clasz.symbol)) {
         clinit.emitNEW(cls.getName())
         clinit.emitINVOKESPECIAL(cls.getName(),
@@ -693,7 +747,7 @@ abstract class GenJVM extends SubComponent {
         case None => ()
       }
 
-      if (clasz.bootstrapClass.isDefined) emitBootstrapMethodInstall(clinit)
+      if (clasz.bootstrapClass.isDefined) legacyEmitBootstrapMethodInstall(clinit)
 
       clinit.emitRETURN()
     }
@@ -701,7 +755,7 @@ abstract class GenJVM extends SubComponent {
     /** Emit code that installs a boostrap method for invoke dynamic. It installs the default
      *  method, found in scala.runtime.DynamicDispatch.
      */
-    def emitBootstrapMethodInstall(jcode: JExtendedCode) {
+    def legacyEmitBootstrapMethodInstall(jcode: JExtendedCode) {
       jcode.emitPUSH(jclass.getType.asInstanceOf[JReferenceType])
       jcode.emitPUSH(new JObjectType("scala.runtime.DynamicDispatch"))
       jcode.emitPUSH("bootstrapInvokeDynamic")
@@ -822,8 +876,37 @@ abstract class GenJVM extends SubComponent {
     }
 
     var linearization: List[BasicBlock] = Nil
-
     var isModuleInitialized = false
+
+    private def genConstant(jcode: JExtendedCode, const: Constant) {
+      const.tag match {
+        case UnitTag    => ()
+        case BooleanTag => jcode.emitPUSH(const.booleanValue)
+        case ByteTag    => jcode.emitPUSH(const.byteValue)
+        case ShortTag   => jcode.emitPUSH(const.shortValue)
+        case CharTag    => jcode.emitPUSH(const.charValue)
+        case IntTag     => jcode.emitPUSH(const.intValue)
+        case LongTag    => jcode.emitPUSH(const.longValue)
+        case FloatTag   => jcode.emitPUSH(const.floatValue)
+        case DoubleTag  => jcode.emitPUSH(const.doubleValue)
+        case StringTag  => jcode.emitPUSH(const.stringValue)
+        case NullTag    => jcode.emitACONST_NULL()
+        case ClassTag   =>
+          val kind = toTypeKind(const.typeValue)
+          val toPush =
+            if (kind.isValueType) classLiteral(kind)
+            else javaType(kind).asInstanceOf[JReferenceType]
+
+          jcode emitPUSH toPush
+
+        case EnumTag   =>
+          val sym = const.symbolValue
+          jcode.emitGETSTATIC(javaName(sym.owner),
+                              javaName(sym),
+                              javaType(sym.tpe.underlying))
+        case _          => abort("Unknown constant value: " + const);
+      }
+    }
 
     /**
      *  @param m ...
@@ -835,7 +918,7 @@ abstract class GenJVM extends SubComponent {
         if (settings.debug.value)
           log("Making labels for: " + method)
 
-        HashMap(bs map (b => b -> jcode.newLabel) : _*)
+        HashMap(bs map (_ -> jcode.newLabel) : _*)
       }
 
       isModuleInitialized = false
@@ -847,12 +930,11 @@ abstract class GenJVM extends SubComponent {
 
       var nextBlock: BasicBlock = linearization.head
 
-    def genBlocks(l: List[BasicBlock]): Unit = l match {
-      case Nil => ()
-      case x :: Nil => nextBlock = null; genBlock(x)
-      case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
-    }
-
+      def genBlocks(l: List[BasicBlock]): Unit = l match {
+        case Nil => ()
+        case x :: Nil => nextBlock = null; genBlock(x)
+        case x :: y :: ys => nextBlock = y; genBlock(x); genBlocks(y :: ys)
+      }
 
     /** Generate exception handlers for the current method. */
     def genExceptionHandlers {
@@ -867,30 +949,28 @@ abstract class GenJVM extends SubComponent {
         var start = -1
         var end = -1
 
-        linearization foreach ((b) => {
+        linearization foreach { b =>
           if (! (covered contains b) ) {
             if (start >= 0) { // we're inside a handler range
               end = labels(b).getAnchor()
-              ranges = (start, end) :: ranges
+              ranges ::= (start, end)
               start = -1
             }
           } else {
-            if (start >= 0) { // we're inside a handler range
-              end = endPC(b)
-            } else {
+            if (start < 0)  // we're not inside a handler range
               start = labels(b).getAnchor()
-              end   = endPC(b)
-            }
-            covered = covered - b
+
+            end = endPC(b)
+            covered -= b
           }
-        });
+        }
 
         /* Add the last interval. Note that since the intervals are
          * open-ended to the right, we have to give a number past the actual
          * code!
          */
         if (start >= 0) {
-          ranges = (start, jcode.getPC()) :: ranges;
+          ranges ::= (start, jcode.getPC())
         }
 
         if (!covered.isEmpty)
@@ -900,19 +980,16 @@ abstract class GenJVM extends SubComponent {
         ranges
       }
 
-      this.method.exh foreach { e =>
-        ranges(e).sort({ (p1, p2) => p1._1 < p2._1 })
-        .foreach { p =>
-          if (p._1 < p._2) {
-            if (settings.debug.value)
-              log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
-                  " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
-            jcode.addExceptionHandler(p._1, p._2,
-                                      labels(e.startBlock).getAnchor(),
-                                      if (e.cls == NoSymbol) null else javaName(e.cls))
-          } else
-            log("Empty exception range: " + p)
-        }
+      for (e <- this.method.exh ; p <- ranges(e).sortBy(_._1)) {
+        if (p._1 < p._2) {
+          if (settings.debug.value)
+            log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
+                " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+          jcode.addExceptionHandler(p._1, p._2,
+                                    labels(e.startBlock).getAnchor(),
+                                    if (e.cls == NoSymbol) null else javaName(e.cls))
+        } else
+          log("Empty exception range: " + p)
       }
     }
 
@@ -944,31 +1021,7 @@ abstract class GenJVM extends SubComponent {
             jcode.emitALOAD_0()
 
           case CONSTANT(const) =>
-            const.tag match {
-              case UnitTag    => ();
-              case BooleanTag => jcode.emitPUSH(const.booleanValue)
-              case ByteTag    => jcode.emitPUSH(const.byteValue)
-              case ShortTag   => jcode.emitPUSH(const.shortValue)
-              case CharTag    => jcode.emitPUSH(const.charValue)
-              case IntTag     => jcode.emitPUSH(const.intValue)
-              case LongTag    => jcode.emitPUSH(const.longValue)
-              case FloatTag   => jcode.emitPUSH(const.floatValue)
-              case DoubleTag  => jcode.emitPUSH(const.doubleValue)
-              case StringTag  => jcode.emitPUSH(const.stringValue)
-              case NullTag    => jcode.emitACONST_NULL()
-              case ClassTag   =>
-                val kind = toTypeKind(const.typeValue);
-                if (kind.isValueType)
-                  jcode.emitPUSH(classLiteral(kind));
-                else
-                  jcode.emitPUSH(javaType(kind).asInstanceOf[JReferenceType]);
-              case EnumTag   =>
-                val sym = const.symbolValue
-                jcode.emitGETSTATIC(javaName(sym.owner),
-                                    javaName(sym),
-                                    javaType(sym.tpe.underlying))
-              case _          => abort("Unknown constant value: " + const);
-            }
+            genConstant(jcode, const)
 
           case LOAD_ARRAY_ITEM(kind) =>
             jcode.emitALOAD(javaType(kind))
@@ -1029,46 +1082,36 @@ abstract class GenJVM extends SubComponent {
             genPrimitive(primitive, instr.pos)
 
           case call @ CALL_METHOD(method, style) =>
-            val owner: String = javaName(method.owner);
-            //reference the type of the receiver instead of the method owner (if not an interface!)
+            val owner: String = javaName(method.owner)
+            // reference the type of the receiver instead of the method owner (if not an interface!)
             val dynamicOwner =
               if (needsInterfaceCall(call.hostClass)) owner
               else javaName(call.hostClass)
+            val jname = javaName(method)
+            val jtype = javaType(method).asInstanceOf[JMethodType]
 
             style match {
               case InvokeDynamic =>
-                jcode.emitINVOKEINTERFACE("java.dyn.Dynamic",
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType])
+                jcode.emitINVOKEINTERFACE("java.dyn.Dynamic", jname, jtype)
 
               case Dynamic =>
                 if (needsInterfaceCall(method.owner))
-                  jcode.emitINVOKEINTERFACE(owner,
-                                            javaName(method),
-                                            javaType(method).asInstanceOf[JMethodType])
+                  jcode.emitINVOKEINTERFACE(owner, jname, jtype)
                 else
-                  jcode.emitINVOKEVIRTUAL(dynamicOwner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
+                  jcode.emitINVOKEVIRTUAL(dynamicOwner, jname, jtype)
 
               case Static(instance) =>
-                if (instance) {
-                  jcode.emitINVOKESPECIAL(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
-                } else
-                  jcode.emitINVOKESTATIC(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
+                if (instance)
+                  jcode.emitINVOKESPECIAL(owner, jname, jtype)
+                else
+                  jcode.emitINVOKESTATIC(owner, jname, jtype)
 
               case SuperCall(_) =>
-                  jcode.emitINVOKESPECIAL(owner,
-                                          javaName(method),
-                                          javaType(method).asInstanceOf[JMethodType]);
+                  jcode.emitINVOKESPECIAL(owner, jname, jtype)
                   // we initialize the MODULE$ field immediately after the super ctor
                   if (isStaticModule(clasz.symbol) && !isModuleInitialized &&
                       jmethod.getName() == JMethod.INSTANCE_CONSTRUCTOR_NAME &&
-                      javaName(method) == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
+                      jname == JMethod.INSTANCE_CONSTRUCTOR_NAME) {
                         isModuleInitialized = true;
                         jcode.emitALOAD_0();
                         jcode.emitPUTSTATIC(jclass.getName(),

@@ -10,7 +10,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import java.io.{IOException, FileNotFoundException}
 import java.nio.charset._
 import compat.Platform.currentTime
-import scala.tools.nsc.io.{SourceReader, AbstractFile}
+import scala.tools.nsc.io.{SourceReader, AbstractFile, Path}
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.util.{ClassPath, MsilClassPath, JavaClassPath, SourceFile, BatchSourceFile, OffsetPosition, RangePosition}
 
@@ -227,28 +227,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     settings.dependenciesFile.value match {
       case "none" => ()
       case x =>
-        val jfile = new java.io.File(x)
-        if (!jfile.exists) jfile.createNewFile
-        else {
-          // This logic moved here from scala.tools.nsc.dependencies.File.
-          // Note that it will trip an assertion in lookupPathUnchecked
-          // if the path being looked at is absolute.
-
-          /** The directory where file lookup should start at. */
-          val rootDirectory: AbstractFile = {
-            AbstractFile.getDirectory(".")
-//             val roots = java.io.File.listRoots()
-//             assert(roots.length > 0)
-//             new PlainFile(roots(0))
-          }
-
-          def toFile(path: String) = {
-            val file = rootDirectory.lookupPathUnchecked(path, false)
-            assert(file ne null, path)
-            file
-          }
-
-          dependencyAnalysis.loadFrom(AbstractFile.getFile(jfile), toFile)
+        val depFilePath = Path(x)
+        if (depFilePath.exists) {
+          /** The directory where file lookup should start */
+          val rootPath = depFilePath.parent
+          def toFile(path: String) = AbstractFile.getFile(rootPath resolve Path(path))
+          dependencyAnalysis.loadFrom(AbstractFile.getFile(depFilePath), toFile)
         }
     }
 
@@ -390,10 +374,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsAfter = List[String]("uncurry")
     val runsRightAfter = None
   } with TailCalls
-
- //  object checkDefined extends {
- //    val global: Global.this.type = Global.this
- //  } with CheckDefined
 
   // phaseName = "explicitouter"
   object explicitOuter extends {
@@ -841,15 +821,20 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       informTime("total", startTime)
 
       if (!dependencyAnalysis.off) {
+        settings.dependenciesFile.value match {
+          case "none" =>
+          case x =>
+            val depFilePath = Path(x)
+            if (!depFilePath.exists)
+              dependencyAnalysis.dependenciesFile = AbstractFile.getFile(depFilePath.createFile())
 
-        def fromFile(file: AbstractFile): String = {
-          val path = file.path
-          if (path.startsWith("./"))
-            path.substring(2, path.length)
-          else path
+            /** The directory where file lookup should start */
+            val rootPath = depFilePath.parent.normalize
+            def fromFile(file: AbstractFile): String =
+              rootPath.relativize(Path(file.file).normalize).path
+
+            dependencyAnalysis.saveDependencies(fromFile)
         }
-
-        dependencyAnalysis.saveDependencies(fromFile)
       }
     }
 

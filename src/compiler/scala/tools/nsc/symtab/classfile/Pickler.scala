@@ -72,12 +72,15 @@ abstract class Pickler extends SubComponent {
 
 //    private var boundSyms: List[Symbol] = Nil
 
+    private def isRootSym(sym: Symbol) =
+      sym.name.toTermName == rootName && sym.owner == rootOwner
+
     /** Returns usually symbol's owner, but picks classfile root instead
      *  for existentially bound variables that have a non-local owner.
      *  Question: Should this be done for refinement class symbols as well?
      */
     private def localizedOwner(sym: Symbol) =
-      if (sym.isAbstractType && sym.hasFlag(EXISTENTIAL) && !isLocal(sym.owner)) root
+      if (isLocal(sym) && !isRootSym(sym) && !isLocal(sym.owner)) root
       else sym.owner
 
     /** Is root in symbol.owner*, or should it be treated as a local symbol
@@ -85,12 +88,12 @@ abstract class Pickler extends SubComponent {
      *  an existentially bound variable, or a higher-order type parameter.
      */
     private def isLocal(sym: Symbol): Boolean =
-      !sym.isPackageClass &&
-      (sym.name.toTermName == rootName && sym.owner == rootOwner ||
-       sym != NoSymbol && isLocal(sym.owner) ||
+      !sym.isPackageClass && sym != NoSymbol &&
+      (isRootSym(sym) ||
        sym.isRefinementClass ||
        sym.isAbstractType && sym.hasFlag(EXISTENTIAL) || // existential param
-       (locals contains sym)) // higher-order type param
+       (locals contains sym) || // higher-order type param
+       isLocal(sym.owner))
 
     private def staticAnnotations(annots: List[AnnotationInfo]) =
       annots filter(ann =>
@@ -402,11 +405,8 @@ abstract class Pickler extends SubComponent {
       }
     }
 
-    private def putTrees(trees: List[Tree]) =
-      trees.foreach(putTree _)
-
-    private def putTreess(treess: List[List[Tree]]) =
-      treess.foreach(putTrees _)
+    private def putTrees(trees: List[Tree]) = trees foreach putTree
+    private def putTreess(treess: List[List[Tree]]) = treess foreach putTrees
 
     /** only used when pickling trees, i.e. in an
      *  argument of some Annotation */
@@ -486,6 +486,10 @@ abstract class Pickler extends SubComponent {
      */
     private def writeRef(ref: AnyRef) { writeNat(index(ref)) }
     private def writeRefs(refs: List[AnyRef]) { refs foreach writeRef }
+    private def writeRefsWithLength(refs: List[AnyRef]) {
+      writeNat(refs.length)
+      writeRefs(refs)
+    }
 
     /** Write name, owner, flags, and info of a symbol.
      */
@@ -623,9 +627,9 @@ abstract class Pickler extends SubComponent {
           args foreach writeClassfileAnnotArg
           ANNOTARGARRAY
 
-        case (target: Symbol, children: List[Symbol]) =>
+        case (target: Symbol, children: List[_]) =>
           writeRef(target)
-          for (c <- children) writeRef(c.asInstanceOf[Symbol])
+          writeRefs(children.asInstanceOf[List[Symbol]])
           CHILDREN
 
         case EmptyTree =>
@@ -676,13 +680,9 @@ abstract class Pickler extends SubComponent {
           writeRef(tree.symbol)
           writeRef(mods)
           writeRef(name)
-          writeNat(tparams.length)
-          writeRefs(tparams)
+          writeRefsWithLength(tparams)
           writeNat(vparamss.length)
-          for(vparams <- vparamss) {
-            writeNat(vparams.length)
-            writeRefs(vparams)
-          }
+          vparamss foreach writeRefsWithLength
           writeRef(tpt)
           writeRef(rhs)
           TREE
@@ -728,8 +728,7 @@ abstract class Pickler extends SubComponent {
           writeNat(TEMPLATEtree)
           writeRef(tree.tpe)
           writeRef(tree.symbol)
-          writeNat(parents.length)
-          writeRefs(parents)
+          writeRefsWithLength(parents)
           writeRef(self)
           writeRefs(body)
           TREE
@@ -782,7 +781,6 @@ abstract class Pickler extends SubComponent {
           writeRef(elemtpt)
           writeRefs(trees)
           TREE
-
 
         case tree@Function(vparams, body) =>
           writeNat(FUNCTIONtree)

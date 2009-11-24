@@ -481,8 +481,7 @@ trait Contexts { self: Analyzer =>
           }
           impls
       }
-      if (settings.debug.value)
-        log("collect implicit imports " + imp + "=" + collect(imp.tree.selectors))//debug
+      //if (settings.debug.value) log("collect implicit imports " + imp + "=" + collect(imp.tree.selectors))//DEBUG
       collect(imp.tree.selectors)
     }
 
@@ -499,17 +498,14 @@ trait Contexts { self: Analyzer =>
         val newImplicits: List[ImplicitInfo] =
           if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
             if (!owner.isInitialized) return nextOuter.implicitss
-            if (settings.debug.value)
-              log("collect member implicits " + owner + ", implicit members = " +
-                  owner.thisType.implicitMembers)//debug
+            // if (settings.debug.value) log("collect member implicits " + owner + ", implicit members = " + owner.thisType.implicitMembers)//DEBUG
             val savedEnclClass = enclClass
             this.enclClass = this
             val res = collectImplicits(owner.thisType.implicitMembers, owner.thisType)
             this.enclClass = savedEnclClass
             res
           } else if (scope != nextOuter.scope && !owner.isPackageClass) {
-            if (settings.debug.value)
-              log("collect local implicits " + scope.toList)//debug
+            if (settings.debug.value) log("collect local implicits " + scope.toList)//DEBUG
             collectImplicits(scope.toList, NoPrefix)
           } else if (imports != nextOuter.imports) {
             assert(imports.tail == nextOuter.imports)

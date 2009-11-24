@@ -84,20 +84,13 @@ class PrettyPrinter(width: Int, step: Int) {
    *  @param s   ...
    *  @return    ...
    */
-  protected def makeBox(ind: Int, s: String) = {
-    // XXX um...
-    if (cur < ind)
-      cur == ind
+  protected def makeBox(ind: Int, s: String) =
     if (cur + s.length > width) {            // fits in this line
-      items = Box(ind, s) :: items
+      items ::= Box(ind, s)
       cur += s.length
-    } else try {
-      for (b <- cut(s, ind).iterator)  // break it up
-        items = b :: items
-    } catch {
-      case _:BrokenException => makePara(ind, s) // give up, para
     }
-  }
+    else try cut(s, ind) foreach (items ::= _)            // break it up
+    catch { case _: BrokenException => makePara(ind, s) } // give up, para
 
   // dont respect indent in para, but afterwards
   protected def makePara(ind: Int, s: String) = {

@@ -18,32 +18,38 @@ package mutable
  *  a filter which can be used to constrain the number of events sent to the
  *  subscriber. Subscribers may suspend their subscription, or reactivate a
  *  suspended subscription. Class <code>Publisher</code> is typically used
- *  as a mixin. The type variable <code>This</code> models self types.
+ *  as a mixin. The abstract type <code>Pub</code> models the type of the publisher itself.
  *
  *  @author  Matthias Zenger
- *  @version 1.0, 08/07/2003
+ *  @author  Martin Odersky
+ *  @version 2.8
  *  @since   1
  */
-trait Publisher[A, This <: Publisher[A, This]] {
-  self: This =>
+trait Publisher[Evt] {
 
-  type SubThis = Subscriber[A, This]
-  type Filter = A => Boolean
+  type Pub <: Publisher[Evt]
+  type Sub = Subscriber[Evt, Pub]
+  type Filter = Evt => Boolean
 
-  private val filters = new HashMap[SubThis, Set[Filter]] with MultiMap[SubThis, Filter]
-  private val suspended = new HashSet[SubThis]
+  /** The publisher itself of type `Pub'. Implemented by a cast from `this' here.
+   *  Needs to be overridden if the actual publisher is different from `this'.
+   */
+  protected val self: Pub = this.asInstanceOf[Pub]
 
-  def subscribe(sub: SubThis) { subscribe(sub, event => true) }
-  def subscribe(sub: SubThis, filter: Filter) { filters(sub) += filter }
-  def suspendSubscription(sub: SubThis) { suspended += sub }
-  def activateSubscription(sub: SubThis) { suspended -= sub }
-  def removeSubscription(sub: SubThis) { filters -= sub }
+  private val filters = new HashMap[Sub, Set[Filter]] with MultiMap[Sub, Filter]
+  private val suspended = new HashSet[Sub]
+
+  def subscribe(sub: Sub) { subscribe(sub, event => true) }
+  def subscribe(sub: Sub, filter: Filter) { filters(sub) += filter }
+  def suspendSubscription(sub: Sub) { suspended += sub }
+  def activateSubscription(sub: Sub) { suspended -= sub }
+  def removeSubscription(sub: Sub) { filters -= sub }
   def removeSubscriptions() { filters.clear }
 
-  protected def publish(event: A) {
+  protected def publish(event: Evt) {
     filters.keysIterator.foreach(sub =>
       if (filters.entryExists(sub, p => p(event)))
-        sub.notify(this, event)
+        sub.notify(self, event)
     )
   }
 
@@ -52,7 +58,7 @@ trait Publisher[A, This <: Publisher[A, This]] {
    *  @return true, iff both publishers contain the same sequence of elements.
    */
   override def equals(obj: Any): Boolean = obj match {
-    case that: Publisher[_, _] =>
+    case that: Publisher[_] =>
       (this.filters equals that.filters) &&
       (this.suspended equals that.suspended)
     case _ =>

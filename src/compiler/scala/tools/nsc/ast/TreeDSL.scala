@@ -199,6 +199,10 @@ trait TreeDSL {
       if (guards.isEmpty) EmptyTree
       else guards reduceLeft gen.mkAnd
 
+    def OR(guards: Tree*) =
+      if (guards.isEmpty) EmptyTree
+      else guards reduceLeft gen.mkOr
+
     def IF(tree: Tree)    = new IfStart(tree, EmptyTree)
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)

@@ -299,8 +299,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     if (isEmpty) Stream.Empty
     else new Stream.Cons(head, tail.toStream)
 
-  // !!! todo: work in patch
-
   /** Computes the difference between this list and the given list
    *  <code>that</code>.
    *
@@ -308,7 +306,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @return     this list without the elements of the given list
    *              <code>that</code>.
    */
-  @deprecated("use `diff' instead")
+  @deprecated("use `list1 filterNot (list2 contains)` instead")
   def -- [B >: A](that: List[B]): List[B] = {
     val b = new ListBuffer[B]
     var these = this
@@ -326,7 +324,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @return     this list without occurrences of the given object
    *              <code>x</code>.
    */
-  @deprecated("use `diff' instead")
+  @deprecated("use `filterNot (_ == x)` instead")
   def - [B >: A](x: B): List[B] = {
     val b = new ListBuffer[B]
     var these = this
@@ -362,13 +360,13 @@ sealed abstract class List[+A] extends LinearSeq[A]
       var left2 = l2
 
       while (!left1.isEmpty && !left2.isEmpty) {
-	if(lt(left1.head, left2.head)) {
-	  res += left1.head
-	  left1 = left1.tail
-	} else {
-	  res += left2.head
-	  left2 = left2.tail
-	}
+        if(lt(left1.head, left2.head)) {
+          res += left1.head
+          left1 = left1.tail
+        } else {
+          res += left2.head
+          left2 = left2.tail
+        }
       }
 
       res ++= left1
@@ -384,12 +382,12 @@ sealed abstract class List[+A] extends LinearSeq[A]
       var left = lst
 
       while (!left.isEmpty) {
-	res1 += left.head
-	left = left.tail
-	if (!left.isEmpty) {
-	  res2 += left.head
-	  left = left.tail
-	}
+        res1 += left.head
+        left = left.tail
+        if (!left.isEmpty) {
+          res2 += left.head
+          left = left.tail
+        }
       }
 
       (res1.toList, res2.toList)
@@ -399,15 +397,15 @@ sealed abstract class List[+A] extends LinearSeq[A]
     /** Merge-sort the specified list */
     def ms(lst: List[A]): List[A] =
       lst match {
-	case Nil => lst
-	case x :: Nil => lst
-	case x :: y :: Nil =>
-	  if (lt(x,y))
-	    lst
-	  else
-	    y :: x :: Nil
+        case Nil => lst
+        case x :: Nil => lst
+        case x :: y :: Nil =>
+          if (lt(x,y))
+            lst
+          else
+            y :: x :: Nil
 
-	case lst =>
+        case lst =>
           val (l1, l2) = split(lst)
           val l1s = ms(l1)
           val l2s = ms(l2)
@@ -717,7 +715,7 @@ object List extends SeqFactory[List] {
    *          <code>[a0, ..., ak]</code>, <code>[b0, ..., bl]</code> and
    *          <code>n = min(k,l)</code>
    */
-  @deprecated("use `(xs, ys).map(f)' instead")
+  @deprecated("use `(xs, ys).zipped.map(f)' instead")
   def map2[A,B,C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C] = {
     val b = new ListBuffer[C]
     var xc = xs
@@ -741,7 +739,7 @@ object List extends SeqFactory[List] {
    *           <code>[c<sub>0</sub>, ..., c<sub>m</sub>]</code> and
    *           <code>n = min(k,l,m)</code>
    */
-  @deprecated("use `(xs, ys, zs).map(f)' instead")
+  @deprecated("use `(xs, ys, zs).zipped.map(f)' instead")
   def map3[A,B,C,D](xs: List[A], ys: List[B], zs: List[C])(f: (A, B, C) => D): List[D] = {
     val b = new ListBuffer[D]
     var xc = xs
@@ -766,7 +764,7 @@ object List extends SeqFactory[List] {
    *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code>
    *           and <code>n = min(k,l)</code>
    */
-  @deprecated("use `(xs, ys).forall(f)' instead")
+  @deprecated("use `(xs, ys).zipped.forall(f)' instead")
   def forall2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys
@@ -788,7 +786,7 @@ object List extends SeqFactory[List] {
    *           <code>[b<sub>0</sub>, ..., b<sub>l</sub>]</code> and
    *           <code>n = min(k,l)</code>
    */
-  @deprecated("use `(xs, ys).exists(f)' instead")
+  @deprecated("use `(xs, ys).zipped.exists(f)' instead")
   def exists2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys

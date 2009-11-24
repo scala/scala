@@ -21,7 +21,7 @@ import java.io.IOException
  * @author Nikolay Mihaylov
  * @version 1.0
  */
-class ConstructorBuilder(declType: Type, attrs: int, paramTypes: Array[Type])
+class ConstructorBuilder(declType: Type, attrs: Int, paramTypes: Array[Type])
       extends ConstructorInfo(declType, attrs, paramTypes)
       with ICustomAttributeSetter
       with Visitable
@@ -31,7 +31,7 @@ class ConstructorBuilder(declType: Type, attrs: int, paramTypes: Array[Type])
     // public interface
 
     /** Defines a parameter of this constructor. */
-    def DefineParameter(pos: int, attr: int, name: String): ParameterBuilder = {
+    def DefineParameter(pos: Int, attr: Int, name: String): ParameterBuilder = {
 	val param = new ParameterBuilder(name, params(pos).ParameterType, attr, pos)
 	params(pos) = param
 	return param

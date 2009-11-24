@@ -344,12 +344,7 @@ abstract class TailCalls extends Transform
       typed(t)
     }
 
-    private def isSameTypes(ts1: List[Symbol], ts2: List[Symbol]): Boolean = {
-      def isSameType(t1: Symbol, t2: Symbol) = {
-        t1 == t2
-      }
-      List.forall2(ts1, ts2)(isSameType)
-    }
+    private def isSameTypes(ts1: List[Symbol], ts2: List[Symbol]) = ts1 sameElements ts2
 
     /** Returns <code>true</code> if the fun tree refers to the same method as
      *  the one saved in <code>ctx</code>.

@@ -15,7 +15,7 @@ object test {
 	//  Try the same thing as above but use function as arguemnt to Bar
 	// constructor
 
-	type FunIntToA [a] = (int) => a
+	type FunIntToA [a] = (Int) => a
 	class Bar[a] (var f: FunIntToA[a])
 
 	object Bar {

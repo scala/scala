@@ -21,7 +21,7 @@ import scala.util.matching.Regex
  *  @since 2.7
  */
 object PagedSeq {
-  final val UndeterminedEnd = Math.MAX_INT
+  final val UndeterminedEnd = Int.MaxValue
 
   /** Constructs a character sequence from a character iterator */
   def fromIterator[T: ClassManifest](source: Iterator[T]): PagedSeq[T] =

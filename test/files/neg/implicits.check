@@ -3,7 +3,7 @@ implicits.scala:21: error: type mismatch;
  required: ?{val +: ?}
 Note that implicit conversions are not applicable because they are ambiguous:
  both method any2plus in object Sub of type (x: Any)Sub.Plus
- and method pos2int in object Super of type (p: Pos)int
+ and method pos2int in object Super of type (p: Pos)Int
  are possible conversion functions from Pos to ?{val +: ?}
   f(p+1)
     ^

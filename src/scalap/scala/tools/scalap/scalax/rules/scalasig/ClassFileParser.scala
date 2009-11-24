@@ -217,7 +217,7 @@ case class ConstantPool(len : Int) {
   }
 
   def add(f : ConstantPool => Any) = {
-    buffer + f
+    buffer += f
     this
   }
 }

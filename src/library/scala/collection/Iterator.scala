@@ -48,14 +48,6 @@ object Iterator {
    */
   def apply[A](elems: A*): Iterator[A] = elems.iterator
 
-  /** Concatenates the given argument iterators into a single iterator.
-   *
-   *  @param its the argument iterators that are to be concatenated
-   *  @return the concatenation of all the argument iterators
-   */
-  @deprecated("use <code>++</code>")
-  def concat[A](xss: Iterator[A]*): Iterator[A] = xss.iterator.flatten
-
   /** An iterator that returns the results of some element computation a number of times.
    *  @param   len  The number of elements returned
    *  @param   elem The element computation determinining each result
@@ -324,10 +316,17 @@ trait Iterator[+A] { self =>
   /** Returns a new iterator that first yields the elements of this
    *  iterator followed by the elements provided by iterator <code>that</code>.
    */
-  def ++[B >: A](that: => Iterator[B]) = new Iterator[B] {
+  def ++[B >: A](that: => Iterator[B]): Iterator[B] = new Iterator[B] {
     // optimize a little bit to prevent n log n behavior.
-    var cur : Iterator[B] = self
-    def hasNext = cur.hasNext || (cur eq self) && { cur = that; hasNext }
+    private var cur : Iterator[B] = self
+    // this was unnecessarily looping forever on x ++ x
+    def hasNext = cur.hasNext || ((cur eq self) && {
+      val it = that
+      it.hasNext && {
+        cur = it
+        true
+      }
+    })
     def next() = { hasNext; cur.next() }
   }
 
@@ -356,10 +355,19 @@ trait Iterator[+A] { self =>
   def filter(p: A => Boolean): Iterator[A] = {
     val self = buffered
     new Iterator[A] {
-      private def skip() = while (self.hasNext && !p(self.head)) self.next()
-      def hasNext = { skip(); self.hasNext }
-      def next() = { skip(); self.next() }
-    }
+			var computedHasNext = false
+      private def skip() = {
+				while (self.hasNext && !p(self.head)) self.next()
+				computedHasNext = self.hasNext
+			}
+      def hasNext = { if (!computedHasNext) skip(); computedHasNext }
+      def next() = {
+				if (!computedHasNext)
+					skip()
+				computedHasNext = false
+				self.next()
+    	}
+		}
   }
 
   /** !!! Temporary, awaiting more general implementation.
@@ -402,8 +410,19 @@ trait Iterator[+A] { self =>
   def takeWhile(p: A => Boolean): Iterator[A] = {
     val self = buffered
     new Iterator[A] {
-      def hasNext = { self.hasNext && p(self.head) }
-      def next() = (if (hasNext) self else empty).next()
+			var computedHasNext = false
+
+      def hasNext = {
+				val result = computedHasNext || (self.hasNext && p(self.head))
+				computedHasNext = result
+				result
+			}
+
+      def next() = {
+				val result = (if (computedHasNext || hasNext) self else empty).next()
+				computedHasNext = false
+				result
+			}
     }
   }
 
@@ -1081,10 +1100,7 @@ trait Iterator[+A] { self =>
    *  iterator followed by the elements provided by iterator <code>that</code>.
    */
   @deprecated("use <code>++</code>")
-  def append[B >: A](that: Iterator[B]) = new Iterator[B] {
-    def hasNext = self.hasNext || that.hasNext
-    def next() = (if (self.hasNext) self else that).next()
-  }
+  def append[B >: A](that: Iterator[B]) = self ++ that
 
   /** Returns index of the first element satisfying a predicate, or -1. */
   @deprecated("use `indexWhere` instead")

@@ -29,7 +29,7 @@ class ParameterBuilder(name: String, tpe: Type, attr: Int, pos: Int)
     //##########################################################################
 
     /** Sets a custom attribute. */
-    def SetCustomAttribute(constr: ConstructorInfo, value: Array[byte]) {
+    def SetCustomAttribute(constr: ConstructorInfo, value: Array[Byte]) {
 	addCustomAttribute(constr, value)
     }
 
