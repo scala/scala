@@ -37,6 +37,9 @@ class Completion(val interpreter: Interpreter) extends Completor {
   // it takes a little while to look through the jars so we use a future and a concurrent map
   class CompletionAgent {
     val dottedPaths = new ConcurrentHashMap[String, List[String]]
+    // TODO - type aliases defined in package objects, like scala.List.<tab>
+    // val typeAliases = new ConcurrentHashMap[String, String]
+    // val packageObjects = new ConcurrentHashMap[String, List[String]]
     val topLevelPackages = new DelayedLazyVal(
       () => enumToList(dottedPaths.keys) filterNot (_ contains '.'),
       getDottedPaths(dottedPaths, interpreter)
@@ -86,14 +89,19 @@ class Completion(val interpreter: Interpreter) extends Completor {
       // a few keywords which don't appear as methods via reflection
       val memberKeywords = List("isInstanceOf", "asInstanceOf")
       def doDotted(): Result = {
-        lazy val pkgs = filt(membersOfPath(path))
-        lazy val ids = filt(membersOfId(path))
-        lazy val idExtras = filt(memberKeywords)  // isInstanceOf and asInstanceOf
-        lazy val statics = filt(completeStaticMembers(path))
+        def pkgs = membersOfPath(path)
+        def ids = membersOfId(path)
+        def idExtras = memberKeywords  // isInstanceOf and asInstanceOf
+        def statics = completeStaticMembers(path)
+        def pkgMembers = completePackageMembers(path)
 
-        if (!pkgs.isEmpty) Result(pkgs, path.length + 1)
-        else if (!ids.isEmpty) Result(ids ::: idExtras, path.length + 1)
-        else Result(statics ::: idExtras, path.length + 1)
+        val idList = filt(
+          if (!pkgs.isEmpty) pkgs
+          else if (!ids.isEmpty) ids ::: idExtras
+          else statics ::: idExtras
+        ) ::: filt(pkgMembers)
+
+        Result(idList, path.length + 1)
       }
 
       segments.size match {
@@ -103,11 +111,14 @@ class Completion(val interpreter: Interpreter) extends Completor {
       }
     }
 
+    def getOrElse[K, V](map: ConcurrentHashMap[K, V], key: K, value: => V) =
+      if (map containsKey key) map get key
+      else value
+
     def isValidId(s: String) = interpreter.unqualifiedIds contains s
     def membersOfId(s: String) = interpreter membersOfIdentifier s
 
-    def isValidPath(s: String) = dottedPaths containsKey s
-    def membersOfPath(s: String) = if (isValidPath(s)) dottedPaths get s else Nil
+    def membersOfPath(s: String) = getOrElse(dottedPaths, s, Nil)
 
     // XXX generalize this to look through imports
     def membersOfScala() = membersOfPath("scala")
@@ -130,27 +141,30 @@ class Completion(val interpreter: Interpreter) extends Completor {
     }
   }
 
+  import java.lang.reflect.Modifier.{ isPrivate, isProtected, isStatic }
+  private def isVisible(x: Int) = !isPrivate(x) && !isProtected(x)
+  private def isSingleton(x: Int, isJava: Boolean) = !isJava || isStatic(x)
+
+  private def getMembers(c: Class[_], isJava: Boolean): List[String] =
+    c.getMethods.toList .
+      filter (x => isVisible(x.getModifiers)) .
+      filter (x => isSingleton(x.getModifiers, isJava)) .
+      map (_.getName) .
+      filter (isValidCompletion)
+
+  private def getClassObject(path: String): Option[Class[_]] =
+    (interpreter getClassObject path) orElse
+    (interpreter getClassObject ("scala." + path)) orElse
+    (interpreter getClassObject ("java.lang." + path))
+
   // jline's completion comes through here - we ask a Buffer for the candidates.
   override def complete(_buffer: String, cursor: Int, candidates: JList[String]): Int =
     new Buffer(_buffer).complete(candidates)
 
+  def completePackageMembers(path: String): List[String] =
+    getClassObject(path + "." + "package") map (getMembers(_, false)) getOrElse Nil
+
   def completeStaticMembers(path: String): List[String] = {
-    import java.lang.reflect.Modifier.{ isPrivate, isProtected, isStatic }
-    def isVisible(x: Int) = !isPrivate(x) && !isProtected(x)
-    def isSingleton(x: Int, isJava: Boolean) = !isJava || isStatic(x)
-
-    def getMembers(c: Class[_], isJava: Boolean): List[String] =
-      c.getMethods.toList .
-        filter (x => isVisible(x.getModifiers)) .
-        filter (x => isSingleton(x.getModifiers, isJava)) .
-        map (_.getName) .
-        filter (isValidCompletion)
-
-    def getClassObject(path: String): Option[Class[_]] =
-      (interpreter getClassObject path) orElse
-      (interpreter getClassObject ("scala." + path)) orElse
-      (interpreter getClassObject ("java.lang." + path))
-
     // java style, static methods
     val js = getClassObject(path) map (getMembers(_, true)) getOrElse Nil
     // scala style, methods on companion object
@@ -211,10 +225,13 @@ object Completion
     }
 
     def oneJar(jar: String): Unit = {
-      def cleanup(s: String): String = s map { c => if (c == '/' || c == '$') '.' else c } toString
+      def cleanup(s: String): String = {
+        val tr = s map { c => if (c == '/' || c == '$') '.' else c }
+        tr stripSuffix "." stripSuffix ".class"
+      }
       val classfiles = Completion getClassFiles jar map cleanup
 
-      for (cl <- classfiles; (k, v) <- subpaths(cl)) {
+      for (cl <- classfiles.removeDuplicates ; (k, v) <- subpaths(cl)) {
         if (map containsKey k) map.put(k, v :: map.get(k))
         else map.put(k, List(v))
       }
