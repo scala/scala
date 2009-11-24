@@ -4321,15 +4321,21 @@ A type's typeSymbol should never be inspected directly.
             if (bound.typeSymbol != AnyClass)
               tvar addHiBound bound.instantiateTypeParams(tparams, tvars)
             for (tparam2 <- tparams)
-              if (tparam2.info.bounds.lo =:= tparam.tpe) // declaration tp2 :> tparam implies ?tparam <: tp2
-                tvar addHiBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+              tparam2.info.bounds.lo.dealias match {
+                case TypeRef(_, `tparam`, _) =>
+                  tvar addHiBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+                case _ =>
+              }
           } else {
             if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam) {
               tvar addLoBound bound.instantiateTypeParams(tparams, tvars)
             }
             for (tparam2 <- tparams)
-              if (tparam2.info.bounds.hi =:= tparam.tpe)
-                tvar addLoBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+              tparam2.info.bounds.hi.dealias match {
+                case TypeRef(_, `tparam`, _) =>
+                  tvar addLoBound tparam2.tpe.instantiateTypeParams(tparams, tvars)
+                case _ =>
+              }
           }
         }
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
@@ -4345,6 +4351,7 @@ A type's typeSymbol should never be inspected directly.
       }
     }
 
+    // println("solving "+tvars+"/"+tparams+"/"+(tparams map (_.info)))
     for ((tvar, (tparam, variance)) <- config)
       solveOne(tvar, tparam, variance)
 
