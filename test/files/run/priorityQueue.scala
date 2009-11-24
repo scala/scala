@@ -22,6 +22,7 @@ object Test {
     testUpdates
     testEquality
     testMisc
+    testReverse
   }
 
   def testInsertionsAndEqualities {
@@ -274,6 +275,54 @@ object Test {
     assert(lst(9) == 8)
     assert(lst(10) == 9)
     assert(lst(11) == 9)
+
+    pq.clear
+    assert(pq.reverseIterator.toList.isEmpty)
+
+    pq ++= (50 to 75)
+    assert(pq.lastIndexOf(70) == 5)
+
+    pq += 55
+    pq += 70
+    assert(pq.lastIndexOf(70) == 6)
+    assert(pq.lastIndexOf(55) == 22)
+    assert(pq.lastIndexOf(55, 21) == 21)
+    assert(pq.lastIndexWhere(_ > 54) == 22)
+    assert(pq.lastIndexWhere(_ > 54, 21) == 21)
+    assert(pq.lastIndexWhere(_ > 69, 5) == 5)
+  }
+
+  def testReverse {
+    val pq = new PriorityQueue[(Int, Int)]
+    pq ++= (for (i <- 0 until 10) yield (i, i * i % 10))
+
+    assert(pq.reverse.size == pq.reverseIterator.toList.size)
+    assert((pq.reverse zip pq.reverseIterator.toList).forall(p => p._1 == p._2))
+    assert(pq.reverse.sameElements(pq.reverseIterator.toSeq))
+    assert(pq.reverse(0)._1 == pq(9)._1)
+    assert(pq.reverse(1)._1 == pq(8)._1)
+    assert(pq.reverse(4)._1 == pq(5)._1)
+    assert(pq.reverse(9)._1 == pq(0)._1)
+
+    pq += ((7, 7))
+    pq += ((7, 9))
+    pq += ((7, 8))
+    assert(pq.reverse.reverse == pq)
+    assert(pq.reverse.lastIndexWhere(_._2 == 6) == 6)
+    assertPriorityDestructive(pq.reverse.reverse)
+
+    val iq = new PriorityQueue[Int]
+    iq ++= (0 until 50)
+    assert(iq.reverse == iq.reverseIterator.toSeq)
+    assert(iq.reverse.reverse == iq)
+
+    iq += 25
+    iq += 40
+    iq += 10
+    assert(iq.reverse == iq.reverseIterator.toList)
+    assert(iq.reverse.reverse == iq)
+    assert(iq.reverse.lastIndexWhere(_ == 10) == 11)
+    assertPriorityDestructive(iq.reverse.reverse)
   }
 
 }

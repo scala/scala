@@ -202,7 +202,25 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     }
   }
 
-  override def reverse = throw new UnsupportedOperationException("Priority queue cannot be reversed.")
+  /**
+   * Returns the reverse of this queue. The priority queue that gets
+   * returned will have an inversed ordering - if for some elements
+   * <code>x</code> and <code>y</code> the original queue's ordering
+   * had <code>compare</code> returning an integer w, the new one will return -w,
+   * assuming the original ordering abides its contract.
+   *
+   * Note that the order of the elements will be reversed unless the
+   * <code>compare</code> method returns 0. In this case, such elements
+   * will be subsequent, but their corresponding subinterval may be inappropriately
+   * reversed. However, due to the compare-equals contract, they will also be equal.
+   */
+  override def reverse = {
+    val revq = new PriorityQueue[A]()(new math.Ordering[A] {
+      def compare(x: A, y: A) = ord.compare(y, x)
+    })
+    for (i <- 1 until resarr.length) revq += resarr(i)
+    revq
+  }
 
   override def reverseIterator = new Iterator[A] {
     val arr = new Array[Any](size)
