@@ -3,8 +3,6 @@
  */
 package xsbt
 
-/*TODO: linearization vs. parents and declared vs. inherited members*/
-
 import java.io.File
 import scala.tools.nsc.{io, plugins, symtab, Global, Phase}
 import io.{AbstractFile, PlainFile, ZipArchive}
