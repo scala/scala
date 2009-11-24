@@ -1,0 +1,19 @@
+= TODO in Scaladoc =
+
+== Model extractor ==
+
+
+
+== Parser ==
+
+ * Report more than one error per Scaladoc comment. This is caused by the reporter being used, and the fact that all errors are positioned on the documented symbol.
+ * Maintain position information, and use it in error messages (currently all positions are on symbol being documented)
+ * Parse wiki list syntax
+ * Parse wiki table syntax
+ * Parse URL links
+ * Parse symbol (class or method) links
+
+== HTML generator ==
+
+
+ 

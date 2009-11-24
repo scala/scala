@@ -1,0 +1,91 @@
+* {
+	color: black;
+	text-decoration: none;
+	font-size: inherit;
+	font-family: sans-serif;
+	border-width: 0px;
+	padding: 0px;
+	margin: 0px;
+}
+
+#browser {
+	top: 0px;
+	left: 0px;
+	bottom: 0px;
+	width: 300px;
+	display: block;
+	position: fixed;
+	overflow: auto;
+}
+
+#quickflt {
+	height: 22px;
+	right: 0px;
+	left: 0px;
+	top: 0px;
+	position: absolute;
+	display: block;
+	font-weight: bold;
+	color: #993300;
+	padding: 5px;
+	font-size: 12px;
+	background-color: white;
+}
+
+#tpl {
+	right: 0px;
+	left: 0px;
+	bottom: 0px;
+	top: 30px;
+	position: absolute;
+	display: block;
+}
+
+#tpl h3 {
+	background-color: #142556;
+	color: white;
+	font-weight: bold;
+	padding: 2px;
+	display: block;
+	font-size: 14px;
+	border-bottom-color: white;
+	border-bottom-style: solid;
+	border-bottom-width: 1px;
+}
+
+#tpl h3 a {
+	color: white;
+}
+
+#tpl ol > li {
+	display: block;
+	font-size: 14px;
+	background-color: #cccccc;
+	border-bottom-color: white;
+	border-bottom-style: solid;
+	border-bottom-width: 1px;
+}
+
+#tpl ol > li .icon {
+	bottom: -2px;
+	position: relative;
+}
+
+#content {
+	border-left-width: 1px;
+	border-left-color: black;
+	border-left-style: solid;
+	right: 0px;
+	left: 0px;
+	bottom: 0px;
+	top: 0px;
+	position: fixed;
+	margin-left: 300px;
+	display: block;
+}
+
+#content > iframe {
+	display: block;
+	height: 100%;
+	width: 100%;
+}

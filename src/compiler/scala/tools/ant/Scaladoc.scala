@@ -17,8 +17,8 @@ import org.apache.tools.ant.taskdefs.MatchingTask
 import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper}
 
-import scala.tools.nsc.{Global, Settings}
-import scala.tools.nsc.doc.DefaultDocDriver
+import scala.tools.nsc.Global
+import scala.tools.nsc.doc.Settings
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 /** <p>
@@ -40,9 +40,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *    <li>extdirs,</li>
  *    <li>extdirsref,</li>
  *    <li>encoding,</li>
- *    <li>windowtitle,</li>
  *    <li>doctitle,</li>
- *    <li>stylesheetfile,</li>
  *    <li>header,</li>
  *    <li>footer,</li>
  *    <li>top,</li>
@@ -103,20 +101,8 @@ class Scaladoc extends MatchingTask {
   /** The character encoding of the files to compile. */
   private var encoding: Option[String] = None
 
-  /** The window title of the generated HTML documentation. */
-  private var windowtitle: Option[String] = None
-
   /** The document title of the generated HTML documentation. */
   private var doctitle: Option[String] = None
-
-  /** The user-specified stylesheet file. */
-  private var stylesheetfile: Option[String] = None
-
-  /** The user-specified header/footer and top/bottom texts. */
-  private var pageheader: Option[String] = None
-  private var pagefooter: Option[String] = None
-  private var pagetop   : Option[String] = None
-  private var pagebottom: Option[String] = None
 
   /** Instruct the compiler to use additional parameters */
   private var addParams: String = ""
@@ -275,60 +261,12 @@ class Scaladoc extends MatchingTask {
     encoding = Some(input)
   }
 
-  /** Sets the <code>windowtitle</code> attribute.
-   *
-   *  @param input The value of <code>windowtitle</code>.
-   */
-  def setWindowtitle(input: String) {
-    windowtitle = Some(input)
-  }
-
   /** Sets the <code>doctitle</code> attribute.
    *
    *  @param input The value of <code>doctitle</code>.
    */
   def setDoctitle(input: String) {
     doctitle = Some(input)
-  }
-
-  /** Sets the <code>stylesheetfile</code> attribute.
-   *
-   *  @param input The value of <code>stylesheetfile</code>.
-   */
-  def setStylesheetfile(input: String) {
-    stylesheetfile = Some(input)
-  }
-
-  /** Sets the <code>header</code> attribute.
-   *
-   *  @param input The value of <code>header</code>.
-   */
-  def setHeader(input: String) {
-    pageheader = Some(input)
-  }
-
-  /** Sets the <code>footer</code> attribute.
-   *
-   *  @param input The value of <code>footer</code>.
-   */
-  def setFooter(input: String) {
-    pagefooter = Some(input)
-  }
-
-  /** Sets the <code>top</code> attribute.
-   *
-   *  @param input The value of <code>top</code>.
-   */
-  def setTop(input: String) {
-    pagetop = Some(input)
-  }
-
-  /** Sets the <code>bottom</code> attribute.
-   *
-   *  @param input The value of <code>bottom</code>.
-   */
-  def setBottom(input: String) {
-    pagebottom = Some(input)
   }
 
   /** Set the <code>addparams</code> info attribute.
@@ -492,7 +430,7 @@ class Scaladoc extends MatchingTask {
 \*============================================================================*/
 
   /** Initializes settings and source files */
-  protected def initialize: Pair[scala.tools.nsc.doc.Settings, List[File]] = {
+  protected def initialize: Pair[Settings, List[File]] = {
     // Tests if all mandatory attributes are set and valid.
     if (origin.isEmpty) error("Attribute 'srcdir' is not set.")
     if (getOrigin.isEmpty) error("Attribute 'srcdir' is not set.")
@@ -542,7 +480,7 @@ class Scaladoc extends MatchingTask {
 
     // Builds-up the compilation settings for Scalac with the existing Ant
     // parameters.
-    val docSettings = new scala.tools.nsc.doc.Settings(error)
+    val docSettings = new Settings(error)
     docSettings.outdir.value = asString(destination.get)
     if (!classpath.isEmpty)
       docSettings.classpath.value = asString(getClasspath)
@@ -554,13 +492,7 @@ class Scaladoc extends MatchingTask {
       docSettings.bootclasspath.value = asString(getBootclasspath)
     if (!extdirs.isEmpty) docSettings.extdirs.value = asString(getExtdirs)
     if (!encoding.isEmpty) docSettings.encoding.value = encoding.get
-    if (!windowtitle.isEmpty) docSettings.windowtitle.value = windowtitle.get
     if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)
-    if (!stylesheetfile.isEmpty) docSettings.stylesheetfile.value = stylesheetfile.get
-    if (!pageheader.isEmpty) docSettings.pageheader.value = decodeEscapes(pageheader.get)
-    if (!pagefooter.isEmpty) docSettings.pagefooter.value = decodeEscapes(pagefooter.get)
-    if (!pagetop.isEmpty) docSettings.pagetop.value = decodeEscapes(pagetop.get)
-    if (!pagebottom.isEmpty) docSettings.pagebottom.value = decodeEscapes(pagebottom.get)
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
@@ -583,26 +515,11 @@ class Scaladoc extends MatchingTask {
 
   /** Performs the compilation. */
   override def execute() = {
-    val Pair(commandSettings, sourceFiles) = initialize
-    val reporter = new ConsoleReporter(commandSettings)
-
-    // Compiles the actual code
-    val compiler = new Global(commandSettings, reporter) {
-      override protected def computeInternalPhases() {
-	phasesSet += syntaxAnalyzer
-	phasesSet += analyzer.namerFactory
-	phasesSet += analyzer.typerFactory
-      }
-      override def onlyPresentation = true
-    }
+    val Pair(docSettings, sourceFiles) = initialize
+    val reporter = new ConsoleReporter(docSettings)
     try {
-      val run = new compiler.Run
-      run.compile(sourceFiles.map (_.toString))
-      object generator extends DefaultDocDriver {
-        lazy val global: compiler.type = compiler
-        lazy val settings = commandSettings
-      }
-      generator.process(run.units)
+      val docProcessor = new scala.tools.nsc.doc.Processor(reporter, docSettings)
+      docProcessor.document(sourceFiles.map (_.toString))
       if (reporter.ERROR.count > 0)
         error(
           "Document failed with " +

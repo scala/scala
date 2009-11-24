@@ -1,0 +1,228 @@
+* {
+	color: black;
+	text-decoration: none;
+	font-size: 11pt;
+	font-family: sans-serif;
+	border-width: 0px;
+	padding: 0px;
+	margin: 0px;
+}
+
+#owner {
+	padding: 12px;
+	font-size: 12pt;
+	position: relative;
+	display: block;
+}
+
+.value #owner {
+	background-color: #ced8f4;
+}
+
+.type #owner {
+	background-color: #f4cece;
+}
+
+#definition {
+	display: block;
+	padding: 6px;
+}
+
+#definition > img {
+	float: left;
+}
+
+#definition > h1 {
+	padding: 12px 0 12px 6px;
+	color: white;
+	font-size: 24pt;
+	display: inline-block;
+}
+
+.value #definition {
+	background-color: #142556;
+}
+
+.type #definition {
+	background-color: #561414;
+}
+
+.signature {
+	clear: both;
+	display: block;
+	background-color: #cccccc;
+}
+
+.value #definition + .signature {
+	background-color: #ced8f4;
+}
+
+.type #definition + .signature {
+	background-color: #f4cece;
+}
+
+.signature .kind {
+	font-weight: bold;
+	font-size: 12pt;
+	padding: 4px;
+	text-align: right;
+	float: left;
+	width: 72px;
+}
+
+.signature .symbol {
+	display: block;
+	font-size: 12pt;
+	margin-left: 80px;
+}
+
+.signature .name {
+	display: inline-block;
+	padding-bottom: 4px;
+	padding-top: 4px;
+	font-weight: bold;
+}
+
+.signature .tparams {
+	padding: 4px;
+}
+
+.signature .tparams > span {
+	margin-right: 2px;
+	margin-left: 2px;
+	padding: 4px;
+}
+
+.signature .params {
+	padding: 4px;
+}
+
+.signature .params > span {
+	margin-right: 2px;
+	margin-left: 2px;
+	padding: 4px;
+}
+
+.signature .result {
+	padding-left: 0px;
+	padding-bottom: 4px;
+	padding-right: 4px;
+	padding-top: 4px;
+}
+
+.signature .result span {
+	margin-right: 2px;
+	margin-left: 2px;
+	padding: 4px;
+}
+
+#comment > p {
+	margin: 8px;
+}
+
+#mbrsel {
+	padding: 4px;
+	background-color: #cccccc;
+	display: block;
+}
+
+#mbrsel > div > h3 {
+	padding: 4px;
+	display: block;
+	float: left;
+}
+
+#mbrsel > div > ol {
+	margin-left: 80px;
+}
+
+#mbrsel > div > ol > li {
+	display: block;
+	padding: 4px 8px 4px 8px;
+	font-weight: bold;
+	background-color: white;
+	display: inline-block;
+	cursor: crosshair;
+}
+
+#mbrsel > div > ol > li.in {
+	background-color: white;
+}
+
+#mbrsel > div > ol > li.out {
+	color: #888888;
+	background-color: #bbbbbb;
+}
+
+#template > div.members > ol {
+	background-color: white;
+}
+
+#values > h3 {
+	color: white;
+	padding: 4px;
+	background-color: #142556;
+	font-size: 12pt;
+	font-weight: bold;
+}
+
+#types > h3 {
+	padding: 4px;
+	color: white;
+	font-weight: bold;
+	font-size: 12pt;
+	background-color: #561414;
+}
+
+#constructors > h3 {
+	padding: 4px;
+	color: white;
+	font-weight: bold;
+	font-size: 12pt;
+	background-color: #000000;
+}
+
+.members > ol > li {
+	display: block;
+}
+
+.members .paramcmts {
+	margin-left: 80px;
+}
+
+.members .paramcmts > li.tparam {
+	background-color: #ffcc66;
+	display: none;
+}
+
+.members .paramcmts > li.param {
+	background-color: #cc99ff;
+	display: none;
+}
+
+.members .attributes {
+	border-bottom-color: black;
+	border-bottom-style: solid;
+	border-bottom-width: 1px;
+	margin-left: 80px;
+}
+
+.members .attributes > li {
+	padding: 2px;
+	font-size: 10pt;
+	display: inline-block;
+}
+
+.members .comment {
+	display: block;
+	margin-left: 80px;
+}
+
+.members .comment > p {
+	margin-left: 0px;
+	margin-bottom: 4px;
+	margin-right: 4px;
+	margin-top: 4px;
+	display: block;
+}
+

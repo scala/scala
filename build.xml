@@ -334,6 +334,10 @@ LOCAL REFERENCE BUILD (LOCKER)
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
         <include name="**/*.css"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+
       </fileset>
     </copy>
     <touch file="${build-locker.dir}/compiler.complete" verbose="no"/>
@@ -547,6 +551,9 @@ QUICK BUILD (QUICK)
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
         <include name="**/*.css"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
       </fileset>
     </copy>
     <touch file="${build-quick.dir}/compiler.complete" verbose="no"/>
@@ -976,7 +983,10 @@ BOOTSTRAPPING BUILD (STRAP)
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
         <include name="**/*.css"/>
-      </fileset>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+       </fileset>
     </copy>
     <touch file="${build-strap.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="strap.comp.timer" action="total"/>
@@ -1186,7 +1196,6 @@ DOCUMENTATION
     <mkdir dir="${build-docs.dir}/library"/>
     <scaladoc
       destdir="${build-docs.dir}/library"
-      windowtitle="Scala Library"
       doctitle="Scala ${version.number} API"
       classpathref="pack.classpath">
       <src>
@@ -1269,7 +1278,6 @@ DOCUMENTATION
     <mkdir dir="${build-docs.dir}/compiler"/>
     <scaladoc
       destdir="${build-docs.dir}/compiler"
-      windowtitle="Scala Compiler"
       doctitle="Scala Compiler ${version.number} API"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler">
