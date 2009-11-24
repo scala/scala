@@ -1563,9 +1563,9 @@ self =>
      */
     private def normalize(mods: Modifiers): Modifiers =
       if ((mods hasFlag Flags.PRIVATE) && mods.privateWithin != nme.EMPTY.toTypeName)
-        mods &~ Flags.PRIVATE
+        normalize(mods &~ Flags.PRIVATE)
       else if ((mods hasFlag Flags.ABSTRACT) && (mods hasFlag Flags.OVERRIDE))
-        mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE
+        normalize(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
       else
         mods
 
