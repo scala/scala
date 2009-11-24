@@ -60,7 +60,10 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
    *  @return  the element at position <code>n</code> in this linear sequence.
    *  @throws Predef.NoSuchElementException if the linear sequence is too short.
    */
-  def apply(n: Int): A = drop(n).head
+  def apply(n: Int): A = {
+    require(n >= 0)
+    drop(n).head
+  }
 
   /** Returns the elements in the sequence as an iterator
    */
