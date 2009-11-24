@@ -24,22 +24,27 @@ abstract class Base
     val isNullable: Boolean
   }
 
-  /** Alt( R,R,R* ) */
-  case class Alt(rs: _regexpT*) extends RegExp {
-    // check rs \in R,R,R*
-    // @todo: flattening
-    if (rs.size < 2)
-      throw new SyntaxError("need at least 2 branches in Alt")
-
-    final val isNullable = rs forall (_.isNullable)
+  object Alt {
+    /** Alt( R,R,R* ) */
+    def apply(rs: _regexpT*) =
+      if (rs.size < 2) throw new SyntaxError("need at least 2 branches in Alt")
+      else new Alt(rs: _*)
+    // Can't enforce that statically without changing the interface
+    // def apply(r1: _regexpT, r2: _regexpT, rs: _regexpT*) = new Alt(Seq(r1, r2) ++ rs: _*)
+    def unapplySeq(x: Alt) = Some(x.rs)
   }
 
-  case class Sequ(rs: _regexpT*) extends RegExp {
-    // @todo: flattening
-    // check rs \in R,R*
-    if (rs.isEmpty)
-      throw new SyntaxError("need at least 1 item in Sequ")
+  class Alt private (val rs: _regexpT*) extends RegExp {
+    final val isNullable = rs exists (_.isNullable)
+  }
 
+  object Sequ {
+    /** Sequ( R,R* ) */
+    def apply(rs: _regexpT*) = if (rs.isEmpty) Eps else new Sequ(rs: _*)
+    def unapplySeq(x: Sequ) = Some(x.rs)
+  }
+
+  class Sequ private (val rs: _regexpT*) extends RegExp {
     final val isNullable = rs forall (_.isNullable)
   }
 
@@ -47,6 +52,7 @@ abstract class Base
     final lazy val isNullable = true
   }
 
+  // The empty Sequ.
   case object Eps extends RegExp {
     final lazy val isNullable = true
     override def toString() = "Eps"
@@ -57,7 +63,4 @@ abstract class Base
     final val isNullable = r1.isNullable
     def r = r1
   }
-
-  final def mkSequ(rs: _regexpT *): RegExp =
-    if (rs.isEmpty) Eps else Sequ(rs : _*)
 }

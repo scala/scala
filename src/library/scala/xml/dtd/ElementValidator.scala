@@ -114,7 +114,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
     case _: ELEMENTS =>
       dfa isFinal {
         getIterable(nodes, false).foldLeft(0) { (q, e) =>
-          (dfa delta q get e) getOrElse (throw ValidationException("element %s not allowed here" format e))
+          (dfa delta q).getOrElse(e, throw ValidationException("element %s not allowed here" format e))
         }
       }
   }
