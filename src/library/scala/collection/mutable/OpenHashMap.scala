@@ -24,9 +24,10 @@ object OpenHashMap{
 
   def empty[K, V] = new OpenHashMap[K, V];
 
-  private[mutable] class Entry[Key, Value](val key : Key,
-                                           val hash : Int,
-                                           var value : Option[Value])
+  final private class OpenEntry[Key, Value](val key: Key,
+                                            val hash: Int,
+                                            var value: Option[Value])
+                extends HashEntry[Key, OpenEntry[Key, Value]]
 
   private[mutable] def highestOneBit(j : Int) = { // This should really go somewhere central as we're now code sharing by cut and paste. :(
     var i = j;
@@ -41,8 +42,6 @@ object OpenHashMap{
   private[mutable] def nextPowerOfTwo(i : Int) = highestOneBit(i) << 1;
 }
 
-import OpenHashMap.Entry;
-
 /**
  * A mutable hash map based on an open hashing scheme. The precise scheme is undefined,
  * but it should make a reasonable effort to ensure that an insert with consecutive hash
@@ -52,15 +51,20 @@ import OpenHashMap.Entry;
  * @author David MacIver
  * @since  2.7
  */
-class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutable.Map[Key, Value]{
+class OpenHashMap[Key, Value](initialSize : Int) extends Map[Key, Value]
+  with MapLike[Key, Value, OpenHashMap[Key, Value]] {
+
+  import OpenHashMap.OpenEntry
+  type Entry = OpenEntry[Key, Value]
+
   def this() = this(8);
 
-  override def empty = OpenHashMap.empty
+  override def empty: OpenHashMap[Key, Value] = OpenHashMap.empty[Key, Value]
 
   private[this] val actualInitialSize = OpenHashMap.nextPowerOfTwo(initialSize);
 
   private var mask = actualInitialSize - 1;;
-  private var table : Array[Entry[Key, Value]] = new Array[Entry[Key, Value]](actualInitialSize);
+  private var table : Array[Entry] = new Array[Entry](actualInitialSize);
   private var _size = 0;
   private var deleted = 0;
 
@@ -80,7 +84,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     val oldSize = mask + 1;
     val newSize = 4 * oldSize;
     val oldTable = table;
-    table = new Array[Entry[Key, Value]](newSize);
+    table = new Array[Entry](newSize);
     mask = newSize - 1;
     oldTable.foreach( entry =>
       if (entry != null && entry.value != None) addEntry(entry));
@@ -104,7 +108,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     index;
   }
 
-  private[this] def addEntry(entry : Entry[Key, Value]) =
+  private[this] def addEntry(entry : Entry) =
     if (entry != null) table(findIndex(entry.key, entry.hash)) = entry;
 
   override def update(key : Key, value : Value) {
@@ -122,7 +126,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     val index = findIndex(key, hash);
     val entry = table(index);
     if (entry == null) {
-      table(index) = new Entry(key, hash, Some(value));
+      table(index) = new OpenEntry(key, hash, Some(value));
       modCount += 1;
       size += 1;
       None
@@ -189,7 +193,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     }
   }
 
-  override def clone : OpenHashMap[Key, Value] = {
+  override def clone = {
     val it = new OpenHashMap[Key, Value]
     foreachUndeletedEntry(entry => it.put(entry.key, entry.hash, entry.value.get));
     it
@@ -216,7 +220,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends scala.collection.mutabl
     );
   }
 
-  private[this] def foreachUndeletedEntry(f : Entry[Key, Value] => Unit){
+  private[this] def foreachUndeletedEntry(f : Entry => Unit){
     table.foreach(entry => if (entry != null && entry.value != None) f(entry));
   }
   override def transform(f : (Key, Value) => Value) = {
