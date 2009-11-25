@@ -57,11 +57,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
 
   // convenience methods
   private def LL[A](x: A*): List[List[A]] = List(List(x:_*))
-  private def const(x: Any) = x match {
-    case s: runtime.RichString  => Literal(Constant(s.toString))  // not our finest hour
-    case s: collection.immutable.StringLike[_] => Literal(Constant(s.toString))  // not our finest hour
-    case _                      => Literal(Constant(x))
-  }
+  private def const(x: Any) = Literal(Constant(x))
   private def wild                          = Ident(nme.WILDCARD)
   private def wildStar                      = Ident(nme.WILDCARD_STAR.toTypeName)
   private def _scala(name: Name)            = Select(Select(Ident(nme.ROOTPKG), nme.scala_), name)

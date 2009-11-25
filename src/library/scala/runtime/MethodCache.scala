@@ -14,6 +14,8 @@ package scala.runtime
 import java.lang.reflect.{ Method => JMethod }
 import java.lang.{ Class => JClass }
 
+import scala.annotation.tailrec
+
 /** An element of a polymorphic object cache.
   * This class is refered to by the CleanUp phase. Each PolyMethodCache chain
   * must only relate to one method as PolyMethodCache does not identify
@@ -59,16 +61,24 @@ final class PolyMethodCache(
   private[this] val complexity: Int
 ) extends MethodCache {
 
-  def find(forReceiver: JClass[_]): JMethod =
-    if (forReceiver eq receiver)
-      return method
-    else
-      return next.find(forReceiver) // tail call is optimised, confirm with -Ylog:tailcalls
+  /** To achieve tail recursion this must be a separate method
+   *  from find, because the type of next is not PolyMethodCache.
+   */
+  @tailrec private def findInternal(forReceiver: JClass[_]): JMethod =
+    if (forReceiver eq receiver) method
+    else next match {
+      case x: PolyMethodCache => x findInternal forReceiver
+      case _                  => next find forReceiver
+    }
+
+  def find(forReceiver: JClass[_]): JMethod = findInternal(forReceiver)
+
+  // TODO: come up with a more realistic number
+  final private val MaxComplexity = 160
 
   def add(forReceiver: JClass[_], forMethod: JMethod): MethodCache =
-    if (complexity < 160) // TODO: come up with a more realistic number
-      return new PolyMethodCache(this, forReceiver, forMethod, complexity + 1)
+    if (complexity < MaxComplexity)
+      new PolyMethodCache(this, forReceiver, forMethod, complexity + 1)
     else
-      return new MegaMethodCache(forMethod.getName, forMethod.getParameterTypes)
-
+      new MegaMethodCache(forMethod.getName, forMethod.getParameterTypes)
 }
