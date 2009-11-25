@@ -945,7 +945,7 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case nme.ScalaATTR =>
           isScalaRaw = true
-        case nme.InnerClassesATTR if !isScala =>
+        case nme.InnerClassesATTR =>
           val entries = in.nextChar.toInt
           for (i <- 0 until entries) {
             val innerIndex = in.nextChar.toInt
