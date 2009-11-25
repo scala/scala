@@ -75,13 +75,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			// 2.8 compatibility
 			implicit def symbolsToParameters(syms: List[Symbol]): xsbti.api.ParameterList =
 			{
-				val isImplicitList = syms match { case Nil => false; case head :: _ => isImplicit(head) }
+				val isImplicitList = syms match { case head :: _ => isImplicit(head); case _ => false }
 				new xsbti.api.ParameterList(syms.map(parameterS).toArray, isImplicitList)
 			}
 			// 2.7 compatibility
 			implicit def typesToParameters(syms: List[Type]): xsbti.api.ParameterList =
 			{
-				val isImplicitList = false// TODO: how was this done in 2.7?
+				val isImplicitList = t.isInstanceOf[ImplicitMethodType]
 				new xsbti.api.ParameterList(syms.map(parameterT).toArray, isImplicitList)
 			}
 			t match
@@ -93,7 +93,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				case MethodType(params, resultType) => // in 2.7, params is of type List[Type], in 2.8 it is List[Symbol]
 					build(resultType, typeParams, (params: xsbti.api.ParameterList) :: valueParameters)
 				case returnType =>
-					new xsbti.api.Def(valueParameters.toArray, processType(returnType), typeParams, s.fullNameString, getAccess(s), getModifiers(s))
+					new xsbti.api.Def(valueParameters.toArray, processType(returnType), typeParams, s.fullNameString, getAccess(s), getModifiers(s), annotations(s))
 			}
 		}
 		def parameterS(s: Symbol): xsbti.api.MethodParameter = makeParameter(s.nameString, s.info, s.info.typeSymbol)
@@ -119,8 +119,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		class WithDefault { val DEFAULTPARAM = 0x02000000 }
 		s.hasFlag(Flags.DEFAULTPARAM)
 	}
-	private def fieldDef[T](s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers) => T): T =
-		create(processType(s.tpe), s.fullNameString, getAccess(s), getModifiers(s))
+	private def fieldDef[T](s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
+		create(processType(s.tpe), s.fullNameString, getAccess(s), getModifiers(s), annotations(s))
 	private def typeDef(s: Symbol): xsbti.api.TypeMember =
 	{
 		val (typeParams, tpe) =
@@ -132,13 +132,14 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		val name = s.fullNameString
 		val access = getAccess(s)
 		val modifiers = getModifiers(s)
+		val as = annotations(s)
 
 		if(s.isAliasType)
-			new xsbti.api.TypeAlias(processType(tpe), typeParams, name, access, modifiers)
+			new xsbti.api.TypeAlias(processType(tpe), typeParams, name, access, modifiers, as)
 		else if(s.isAbstractType)
 		{
 			val bounds = tpe.bounds
-			new xsbti.api.TypeDeclaration(processType(bounds.lo), processType(bounds.hi), typeParams, name, access, modifiers)
+			new xsbti.api.TypeDeclaration(processType(bounds.lo), processType(bounds.hi), typeParams, name, access, modifiers, as)
 		}
 		else
 			error("Unknown type member" + s)
@@ -159,8 +160,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(sym.isClass) classLike(sym)
 		else if(sym.isMethod) defDef(sym)
 		else if(sym.isTypeMember) typeDef(sym)
-		else if(sym.isVariable) fieldDef(sym, new xsbti.api.Var(_,_,_,_))
-		else fieldDef(sym, new xsbti.api.Val(_,_,_,_))
+		else if(sym.isVariable) fieldDef(sym, new xsbti.api.Var(_,_,_,_,_))
+		else fieldDef(sym, new xsbti.api.Val(_,_,_,_,_))
 	}
 	private def getModifiers(s: Symbol): xsbti.api.Modifiers =
 	{
@@ -197,19 +198,12 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				if(args.isEmpty) base else new xsbti.api.Parameterized(base, args.map(simpleType).toArray[SimpleType])
 			case SuperType(thistpe: Type, supertpe: Type) => error("Super type (not implemented)")
 			case at: AnnotatedType => annotatedType(at)
-			case rt: RefinedType/*(parents, defs)*/ => structure(rt)//parents, defs.toList)
+			case rt: RefinedType => structure(rt)
 			case ExistentialType(tparams, result) => new xsbti.api.Existential(processType(result), typeParameters(tparams))
 			case NoType => error("NoType")
 			case PolyType(typeParams, resultType) => println("polyType(" + typeParams + " , " + resultType + ")"); error("polyType")
 			case _ => error("Unhandled type " + t.getClass + " : " + t)
 		}
-	}
-	private def annotatedType(at: AnnotatedType): xsbti.api.Type =
-	{
-		// In 2.8, attributes is renamed to annotations
-		implicit def compat(a: AnyRef): WithAnnotations = new WithAnnotations
-		class WithAnnotations { def attributes = classOf[AnnotatedType].getMethod("annotations").invoke(at).asInstanceOf[List[AnnotationInfo]] }
-		if(at.attributes.isEmpty) processType(at.underlying) else annotated(at.attributes, at.underlying)
 	}
 	private def typeParameters(s: Symbol): Array[xsbti.api.TypeParameter] = typeParameters(s.typeParams)
 	private def typeParameters(s: List[Symbol]): Array[xsbti.api.TypeParameter] = s.map(typeParameter).toArray[xsbti.api.TypeParameter]
@@ -229,8 +223,6 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def classLike(c: Symbol): ClassLike =
 	{
 		val name = c.fullNameString
-		val access = getAccess(c)
-		val modifiers = getModifiers(c)
 		val isModule = c.isModuleClass || c.isModule
 		val defType =
 			if(c.isTrait) DefinitionType.Trait
@@ -240,7 +232,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				else DefinitionType.Module
 			}
 			else DefinitionType.ClassDef
-		new xsbti.api.ClassLike(defType, selfType(c), structure(c), typeParameters(c), name, access, modifiers)
+		new xsbti.api.ClassLike(defType, selfType(c), structure(c), typeParameters(c), name, getAccess(c), getModifiers(c), annotations(c))
 	}
 	private final class TopLevelHandler(sourceFile: File) extends TopLevelTraverser
 	{
@@ -290,4 +282,12 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			(sym ne null) && (sym != NoSymbol) && !sym.isImplClass && !sym.isNestedClass && sym.isStatic &&
 			!sym.hasFlag(Flags.SYNTHETIC) && !sym.hasFlag(Flags.JAVA)
 	}
+	
+		// In 2.8, attributes is renamed to annotations
+		implicit def compat(a: AnyRef): WithAnnotations = new WithAnnotations(a)
+		class WithAnnotations(a: AnyRef) { def attributes = a.getClass.getMethod("annotations").invoke(a).asInstanceOf[List[AnnotationInfo]] }
+
+	private def annotations(s: Symbol): Array[xsbti.api.Annotation] = annotations(s.attributes)
+	private def annotatedType(at: AnnotatedType): xsbti.api.Type =
+		if(at.attributes.isEmpty) processType(at.underlying) else annotated(at.attributes, at.underlying)
 }
