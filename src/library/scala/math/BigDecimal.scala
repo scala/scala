@@ -178,7 +178,8 @@ extends ScalaNumber with ScalaNumericConversions
     case x                => unifiedPrimitiveEquals(x)
   }
 
-  override protected def isWhole = (this remainder 1) == BigDecimal(0)
+  protected[math] def isWhole = (this remainder 1) == BigDecimal(0)
+  def underlying = bigDecimal
 
   /** Compares this BigDecimal with the specified BigDecimal for equality.
    */

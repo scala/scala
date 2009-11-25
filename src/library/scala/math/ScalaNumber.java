@@ -18,4 +18,5 @@ package scala.math;
  */
 public abstract class ScalaNumber extends java.lang.Number {
   protected abstract boolean isWhole();
+  public abstract Object underlying();
 }

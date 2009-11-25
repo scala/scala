@@ -15,6 +15,7 @@ package immutable
 import generic._
 import mutable.Builder
 import scala.util.matching.Regex
+import scala.math.ScalaNumber
 
 /**
  * @since 2.8
@@ -220,6 +221,11 @@ self =>
   }
   */
 
+  private def unwrapArg(arg: Any): AnyRef = arg match {
+    case x: ScalaNumber => x.underlying
+    case x              => x.asInstanceOf[AnyRef]
+  }
+
   /** <p>
    *  Uses the underlying string as a pattern (in a fashion similar to
    *  printf in C), and uses the supplied arguments to fill in the
@@ -228,14 +234,17 @@ self =>
    *  <p>
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
-   *    <code>java.util.Formatter</code></a>.
+   *    <code>java.util.Formatter</code></a>, with the addition that
+   *    classes deriving from ScalaNumber (such as scala.BigInt and
+   *    scala.BigDecimal) are unwrapped to pass a type which Formatter
+   *    understands.
    *  </p>
    *
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def format(args : Any*) : String =
-    java.lang.String.format(toString, args.asInstanceOf[scala.collection.Seq[AnyRef]]: _*)
+  def format(args : Any*): String =
+    java.lang.String.format(toString, args map unwrapArg: _*)
 
   /** <p>
    *  Like format(args*) but takes an initial Locale parameter
@@ -244,7 +253,10 @@ self =>
    *  <p>
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
-   *    <code>java.util.Formatter</code></a>.
+   *    <code>java.util.Formatter</code></a>, with the addition that
+   *    classes deriving from ScalaNumber (such as scala.BigInt and
+   *    scala.BigDecimal) are unwrapped to pass a type which Formatter
+   *    understands.
    *  </p>
    *
    *  @param locale an instance of java.util.Locale
@@ -252,6 +264,6 @@ self =>
    *  @throws java.lang.IllegalArgumentException
    */
   def format(l: java.util.Locale, args: Any*): String =
-    java.lang.String.format(l, toString, args.asInstanceOf[scala.collection.Seq[AnyRef]]: _*)
+    java.lang.String.format(l, toString, args map unwrapArg: _*)
 }
 

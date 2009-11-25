@@ -127,7 +127,8 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
     case x                => unifiedPrimitiveEquals(x)
   }
 
-  override protected def isWhole = true
+  protected[math] def isWhole = true
+  def underlying = bigInteger
 
   /** Compares this BigInt with the specified BigInt for equality.
    */
