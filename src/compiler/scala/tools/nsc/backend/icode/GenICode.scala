@@ -266,7 +266,7 @@ abstract class GenICode extends SubComponent  {
       val k = toTypeKind(arrayObj.tpe)
       val ARRAY(elem) = k
       var ctx1 = genLoad(arrayObj, ctx, k)
-      val elementType = (typeOfArrayOp get code) getOrElse abort("Unknown operation on arrays: " + tree + " code: " + code)
+      val elementType = typeOfArrayOp.getOrElse(code, abort("Unknown operation on arrays: " + tree + " code: " + code))
 
       var generatedType = expectedType
 

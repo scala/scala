@@ -152,7 +152,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
                 <span name={ tp.name }>{
                   tp.variance + tp.name + boundsToString(tp.hi, tp.lo)
                 }</span>
-              def tparams0(tpss: List[TypeParam]): NodeSeq = tpss match {
+              def tparams0(tpss: List[TypeParam]): NodeSeq = (tpss: @unchecked) match {
                 case tp :: Nil => tparam0(tp)
                 case tp :: tps => tparam0(tp) ++ Text(",") ++ tparams0(tps)
               }

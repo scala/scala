@@ -13,13 +13,11 @@ import symtab.Flags
 class EntityFactory(val global: Global, val settings: doc.Settings) { extractor =>
 
   import global._
+  import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage }
 
   /**  */
   def makeModel: Package =
-    makePackage(definitions.RootPackage, null) match {
-      case Some(pack) => pack
-      case None => throw new Error("no documentable class found in compilation units")
-    }
+    makePackage(RootPackage, null) getOrElse { throw new Error("no documentable class found in compilation units") }
 
   /** */
   protected val commentFactory = new CommentFactory(reporter)
@@ -43,11 +41,11 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
       val whichSym =
         if (comments isDefinedAt sym) Some(sym) else sym.allOverriddenSymbols find (comments isDefinedAt _)
       whichSym map { s =>
-        (commentCache get s) getOrElse {
+        commentCache.getOrElse(s, {
           val c = commentFactory.parse(comments(s), s.pos)
           commentCache += s -> c
           c
-        }
+        })
       }
     }
   }
@@ -126,9 +124,9 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
     val typeParams = if (sym.isClass) sym.typeParams map (makeTypeParam(_, this)) else Nil
     val parentType =
       if (sym.isPackage) None else
-        Some(makeType(RefinedType(sym.tpe.parents filter (_ != definitions.ScalaObjectClass.tpe), EmptyScope)))
+        Some(makeType(RefinedType(sym.tpe.parents filter (_ != ScalaObjectClass.tpe), EmptyScope)))
     val linearization = {
-      sym.ancestors filter (_ != definitions.ScalaObjectClass) map (makeTemplate(_))
+      sym.ancestors filter (_ != ScalaObjectClass) map (makeTemplate(_))
       // TODO: Register subclasses
     }
     private val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
@@ -136,18 +134,18 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
     def subClasses = subClassesCache.toList
     def memberSyms = sym.info.nonPrivateMembers
     val members: List[MemberEntity] = memberSyms flatMap (makeMember(_, this))
-    val templates = members flatMap {case c: DocTemplateEntity => Some(c) case _ => None}
-    val methods = members flatMap {case d: Def => Some(d) case _ => None}
-    val values = members flatMap {case v: Val => Some(v) case _ => None}
-    val abstractTypes = members flatMap {case t: AbstractType => Some(t) case _ => None}
-    val aliasTypes = members flatMap {case t: AliasType => Some(t) case _ => None}
+    val templates     = members partialMap { case c: DocTemplateEntity => c }
+    val methods       = members partialMap { case d: Def => d }
+    val values        = members partialMap { case v: Val => v }
+    val abstractTypes = members partialMap { case t: AbstractType => t }
+    val aliasTypes    = members partialMap { case t: AliasType => t }
     override val isTemplate = true
   }
 
   abstract class PackageImpl(sym: Symbol, inTpl: => PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
     override def inTemplate = inTpl
     override def toRoot: List[PackageImpl] = inTpl :: inTpl.toRoot
-    val packages = members flatMap {case p: Package => Some(p) case _ => None}
+    val packages = members partialMap { case p: Package => p }
   }
 
   abstract class NonTemplateMemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with NonTemplateMemberEntity {
@@ -164,9 +162,9 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
 
   /** */
   def normalizeTemplate(aSym: Symbol): Symbol = {
-    if (aSym == null || aSym == definitions.EmptyPackage || aSym == NoSymbol)
-      normalizeTemplate(definitions.RootPackage)
-    else if (aSym == definitions.ScalaObjectClass || aSym == definitions.ObjectClass)
+    if (aSym == null || aSym == EmptyPackage || aSym == NoSymbol)
+      normalizeTemplate(RootPackage)
+    else if (aSym == ScalaObjectClass || aSym == ObjectClass)
       normalizeTemplate(definitions.AnyRefClass)
     else if (aSym.isModuleClass || aSym.isPackageObject)
       normalizeTemplate(aSym.sourceModule)
@@ -182,7 +180,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
       Some(templatesCache(bSym, inTpl) match {case p: PackageImpl => p})
     else {
       val pack =
-        if (bSym == definitions.RootPackage)
+        if (bSym == RootPackage)
           new PackageImpl(bSym, null) {
             override val name = "root"
             override def inTemplate = this
@@ -191,8 +189,8 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
             override lazy val inheritedFrom = Nil
             override val isRootPackage = true
             override def memberSyms =
-              (bSym.info.members ++ definitions.EmptyPackage.info.members) filter { s =>
-                s != definitions.EmptyPackage && s != definitions.RootPackage
+              (bSym.info.members ++ EmptyPackage.info.members) filter { s =>
+                s != EmptyPackage && s != RootPackage
               }
           }
         else
@@ -205,7 +203,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
   /** */
   def makeTemplate(aSym: Symbol): TemplateImpl = {
     val bSym = normalizeTemplate(aSym)
-    if (bSym == definitions.RootPackage)
+    if (bSym == RootPackage)
       makePackage(bSym, null).get
     else
       makeTemplate(bSym, makeTemplate(bSym.owner))
@@ -250,7 +248,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
         val valueParams =
           List(sym.constrParamAccessors map (makeValueParam(_, this)))
         val constructors =
-          members flatMap {case d: Constructor => Some(d) case _ => None}
+          members partialMap { case d: Constructor => d }
         val primaryConstructor = (constructors find (_.isPrimary))
         val isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
       }
@@ -409,7 +407,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
           }
         /* Refined types */
         case RefinedType(parents, defs) =>
-          appendTypes0((if (parents.length > 1) parents.toList - definitions.ObjectClass.tpe else parents.toList), " with ")
+          appendTypes0((if (parents.length > 1) parents filterNot (_ == ObjectClass.tpe) else parents), " with ")
           if (!defs.isEmpty) {
             nameBuffer append " {...}" // TODO: actually print the refinement
           }

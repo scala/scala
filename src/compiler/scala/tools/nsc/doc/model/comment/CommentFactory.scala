@@ -58,116 +58,115 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     * @param comment The raw comment string (including start and end markers) to be parsed.
     * @param pos     The position of the comment in source. */
   def parse(comment: String, pos: Position): Comment = {
-
     /** The cleaned raw comment as a list of lines. Cleaning removes comment start and end markers, line start markers
       * and unnecessary whitespace. */
     val cleaned: List[String] = {
       def cleanLine(line: String): Option[String] = {
         line.trim match {
-        case CleanCommentLine(ctl) => Some(ctl)
-        case "" =>
-          None
-        case tl =>
-          reporter.warning(pos, "Comment has no start-of-line marker ('*')")
-          Some(tl)
-      }}
-      comment.trim.stripPrefix("/*").stripSuffix("*/").lines.toList flatMap (cleanLine(_))
+          case CleanCommentLine(ctl) => Some(ctl)
+          case "" =>
+            None
+          case tl =>
+            reporter.warning(pos, "Comment has no start-of-line marker ('*')")
+            Some(tl)
+      }
+    }
+    comment.trim.stripPrefix("/*").stripSuffix("*/").lines.toList flatMap (cleanLine(_))
+  }
+
+  /** Parses a comment (in the form of a list of lines) to a Comment instance, recursively on lines. To do so, it
+    * splits the whole comment into main body and tag bodies, then runs the `WikiParser` on each body before creating
+    * the comment instance.
+    *
+    * @param body       The body of the comment parsed until now.
+    * @param tags       All tags parsed until now.
+    * @param lastTagKey The last parsed tag, or `None` if the tag section hasn't started. Lines that are not tagged
+    *                   are part of the previous tag or, if none exists, of the body.
+    * @param remaining  The lines that must still recursively be parsed. */
+  def parse0(docBody: String, tags: Map[TagKey, List[String]], lastTagKey: Option[TagKey], remaining: List[String]): Comment =
+    remaining match {
+
+      case SymbolTag(name, sym, body) :: ls =>
+        val key = SymbolTagKey(name, sym)
+        val value = body :: tags.getOrElse(key, Nil)
+        parse0(docBody, tags + (key -> value), Some(key), ls)
+
+      case SimpleTag(name, body) :: ls =>
+        val key = SimpleTagKey(name)
+        val value = body :: tags.getOrElse(key, Nil)
+        parse0(docBody, tags + (key -> value), Some(key), ls)
+
+      case line :: ls if (lastTagKey.isDefined) =>
+        val key = lastTagKey.get
+        val value =
+          ((tags get key): @unchecked) match {
+            case Some(b :: bs) => (b + endOfLine + line) :: bs
+            case None => oops("lastTagKey set when no tag exists for key")
+          }
+        parse0(docBody, tags + (key -> value), lastTagKey, ls)
+
+      case line :: ls =>
+        val newBody =
+          if (docBody == "") line else docBody + endOfLine + line
+        parse0(newBody, tags, lastTagKey, ls)
+
+      case Nil =>
+
+        val bodyTags: mutable.Map[TagKey, List[Body]] =
+          mutable.Map((tags map { case (key, values) => key -> (values map (parseWiki(_, pos))) }).toSeq:_*)
+
+        def oneTag(key: SimpleTagKey): Option[Body] =
+          ((bodyTags remove key): @unchecked) match {
+            case Some(r :: rs) =>
+              if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
+              Some(r)
+            case None => None
+          }
+
+        def allTags(key: SimpleTagKey): List[Body] =
+          (bodyTags remove key) getOrElse Nil
+
+        def allSymsOneTag(key: TagKey): Map[String, Body] = {
+          val keys: Seq[SymbolTagKey] =
+            bodyTags.keysIterator.toSeq flatMap {
+              case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
+              case stk: SimpleTagKey if (stk.name == key.name) =>
+                reporter.warning(pos, "Tag '@" + stk.name + "' must be followed by a symbol name")
+                None
+              case _ => None
+            }
+          val pairs: Seq[(String, Body)] =
+            for (key <- keys) yield {
+              val bs = (bodyTags remove key).get
+              if (bs.length > 1)
+                reporter.warning(pos, "Only one '@" + key.name + "' tag for symbol " + key.symbol + " is allowed")
+              (key.symbol, bs.head)
+            }
+          Map.empty[String, Body] ++ pairs
+        }
+
+        val com = new Comment {
+          val body        = parseWiki(docBody, pos)
+          val authors     = allTags(SimpleTagKey("author"))
+          val see         = allTags(SimpleTagKey("see"))
+          val result      = oneTag(SimpleTagKey("return"))
+          val throws      = allSymsOneTag(SimpleTagKey("throws"))
+          val valueParams = allSymsOneTag(SimpleTagKey("param"))
+          val typeParams  = allSymsOneTag(SimpleTagKey("tparam"))
+          val version     = oneTag(SimpleTagKey("version"))
+          val since       = oneTag(SimpleTagKey("since"))
+          val todo        = allTags(SimpleTagKey("todo"))
+          val deprecated  = oneTag(SimpleTagKey("deprecated"))
+        }
+
+        for ((key, _) <- bodyTags)
+          reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
+
+        com
+
     }
 
-    /** Parses a comment (in the form of a list of lines) to a Comment instance, recursively on lines. To do so, it
-      * splits the whole comment into main body and tag bodies, then runs the `WikiParser` on each body before creating
-      * the comment instance.
-      *
-      * @param body       The body of the comment parsed until now.
-      * @param tags       All tags parsed until now.
-      * @param lastTagKey The last parsed tag, or `None` if the tag section hasn't started. Lines that are not tagged
-      *                   are part of the previous tag or, if none exists, of the body.
-      * @param remaining  The lines that must still recursively be parsed. */
-    def parse0(docBody: String, tags: Map[TagKey, List[String]], lastTagKey: Option[TagKey], remaining: List[String]): Comment =
-      remaining match {
-
-        case SymbolTag(name, sym, body) :: ls =>
-          val key = SymbolTagKey(name, sym)
-          val value = body :: ((tags get key) getOrElse Nil)
-          parse0(docBody, tags + (key -> value), Some(key), ls)
-
-        case SimpleTag(name, body) :: ls =>
-          val key = SimpleTagKey(name)
-          val value = body :: ((tags get key) getOrElse Nil)
-          parse0(docBody, tags + (key -> value), Some(key), ls)
-
-        case line :: ls if (lastTagKey.isDefined) =>
-          val key = lastTagKey.get
-          val value =
-            ((tags get key): @unchecked) match {
-              case Some(b :: bs) => (b + endOfLine + line) :: bs
-              case None => oops("lastTagKey set when no tag exists for key")
-            }
-          parse0(docBody, tags + (key -> value), lastTagKey, ls)
-
-        case line :: ls =>
-          val newBody =
-            if (docBody == "") line else docBody + endOfLine + line
-          parse0(newBody, tags, lastTagKey, ls)
-
-        case Nil =>
-
-          val bodyTags: mutable.Map[TagKey, List[Body]] =
-            mutable.Map((tags map { case (key, values) => key -> (values map (parseWiki(_, pos))) }).toSeq:_*)
-
-          def oneTag(key: SimpleTagKey): Option[Body] =
-            ((bodyTags remove key): @unchecked) match {
-              case Some(r :: rs) =>
-                if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
-                Some(r)
-              case None => None
-            }
-
-          def allTags(key: SimpleTagKey): List[Body] =
-            (bodyTags remove key) getOrElse Nil
-
-          def allSymsOneTag(key: TagKey): Map[String, Body] = {
-            val keys: Sequence[SymbolTagKey] =
-              bodyTags.keys.toSeq flatMap {
-                case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
-                case stk: SimpleTagKey if (stk.name == key.name) =>
-                  reporter.warning(pos, "Tag '@" + stk.name + "' must be followed by a symbol name")
-                  None
-                case _ => None
-              }
-            val pairs: Sequence[(String, Body)] =
-              for (key <- keys) yield {
-                val bs = (bodyTags remove key).get
-                if (bs.length > 1)
-                  reporter.warning(pos, "Only one '@" + key.name + "' tag for symbol " + key.symbol + " is allowed")
-                (key.symbol, bs.head)
-              }
-            Map.empty[String, Body] ++ pairs
-          }
-
-          val com = new Comment {
-            val body        = parseWiki(docBody, pos)
-            val authors     = allTags(SimpleTagKey("author"))
-            val see         = allTags(SimpleTagKey("see"))
-            val result      = oneTag(SimpleTagKey("return"))
-            val throws      = allSymsOneTag(SimpleTagKey("throws"))
-            val valueParams = allSymsOneTag(SimpleTagKey("param"))
-            val typeParams  = allSymsOneTag(SimpleTagKey("tparam"))
-            val version     = oneTag(SimpleTagKey("version"))
-            val since       = oneTag(SimpleTagKey("since"))
-            val todo        = allTags(SimpleTagKey("todo"))
-            val deprecated  = oneTag(SimpleTagKey("deprecated"))
-          }
-
-          for (key <- bodyTags.keys)
-            reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
-
-          com
-
-      }
-
     parse0("", Map.empty, None, cleaned)
-
   }
 
   /** Parses a string containing wiki syntax into a `Comment` object. Note that the string is assumed to be clean:

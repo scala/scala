@@ -66,13 +66,8 @@ trait PhaseAssembly { self: Global =>
     /* Given the name of a phase object, get the node for that name. If the
      * node object does not exits, then create it.
      */
-    def getNodeByPhase(name: String): Node = {
-      nodes.get(name).getOrElse {
-        val node = new Node(name)
-        nodes += (name -> node)
-        node
-      }
-    }
+    def getNodeByPhase(name: String): Node =
+      nodes.getOrElseUpdate(name, new Node(name))
 
     /* Connect the frm and to nodes with an edge and make it soft.
      * Also add the edge object to the set of edges, and to the dependency

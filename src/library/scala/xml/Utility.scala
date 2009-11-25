@@ -122,7 +122,7 @@ object Utility extends AnyRef with parsing.TokenTests
    *            entity.
    */
   final def unescape(ref: String, s: StringBuilder): StringBuilder =
-    (unescMap get ref) map (s append _) getOrElse null
+    (unescMap get ref) map (s append _) orNull
 
   /**
    * Returns a set of all namespaces used in a sequence of nodes
