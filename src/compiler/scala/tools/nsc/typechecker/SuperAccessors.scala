@@ -432,8 +432,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           || enclPackage(referencingClass) == enclPackage(sym.owner)) {
         assert(referencingClass.isClass)
         referencingClass
-      } else
+      } else if(referencingClass.owner.enclClass != NoSymbol)
         hostForAccessorOf(sym, referencingClass.owner.enclClass)
+      else referencingClass
     }
 
     /** Is 'tpe' the type of a member of an enclosing class? */
