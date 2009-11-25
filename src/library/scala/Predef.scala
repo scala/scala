@@ -150,7 +150,7 @@ object Predef extends LowPriorityImplicits {
   def print(x: Any) = Console.print(x)
   def println() = Console.println()
   def println(x: Any) = Console.println(x)
-  def printf(text: String, xs: Any*) = Console.printf(text, xs: _*)
+  def printf(text: String, xs: Any*) = Console.printf(format(text, xs: _*))
   def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
 
   def readLine(): String = Console.readLine()
