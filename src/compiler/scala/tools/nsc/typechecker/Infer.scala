@@ -181,7 +181,7 @@ trait Infer {
     case MethodType(params, restpe) if (!restpe.isDependent) =>
       if (util.Statistics.enabled) normM += 1
       functionType(params map (_.tpe), normalize(restpe))
-    case PolyType(List(), restpe) =>
+    case PolyType(List(), restpe) => // nullary method type
       if (util.Statistics.enabled) normP += 1
       normalize(restpe)
     case ExistentialType(tparams, qtpe) =>

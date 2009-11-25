@@ -829,15 +829,22 @@ trait Typers { self: Analyzer =>
           case Block(_, tree1) => tree1.symbol
           case _ => tree.symbol
         }
-        if (!meth.isConstructor &&
-            //isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
-            isFunctionType(pt))/* &&
-            (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType)))*/ { // (4.2)
+        if (!meth.isConstructor && isFunctionType(pt)) { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe)
-          val tree1 = etaExpand(context.unit, tree)
-          //println("eta "+tree+" ---> "+tree1+":"+tree1.tpe)
-          typed(tree1, mode, pt)
+          val tree0 = etaExpand(context.unit, tree)
+          // println("eta "+tree+" ---> "+tree0+":"+tree0.tpe+" undet: "+context.undetparams+ " mode: "+Integer.toHexString(mode))
+
+          if(meth.typeParams.nonEmpty) {
+            // #2624: need to infer type arguments for eta expansion of a polymorphic method
+            // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
+            // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
+            // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
+            // (note that (3) does not call typed to do the polymorphic type instantiation --
+            //  it is called after the tree has been typed with a polymorphic expected result type)
+            instantiate(typed(tree0, mode, WildcardType), mode, pt)
+          } else
+            typed(tree0, mode, pt)
         } else if (!meth.isConstructor && mt.params.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt, original)
         } else if (context.implicitsEnabled) {
@@ -2345,8 +2352,10 @@ trait Typers { self: Analyzer =>
                 if (targ == WildcardType) tparam.tpe else targ) //@M TODO: should probably be .tpeHK
               def typedArgToPoly(arg: Tree, formal: Type): Tree = {
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
+                // println("typedArgToPoly(arg, formal): "+(arg, formal))
                 val arg1 = typedArg(arg, argMode(fun, mode), POLYmode, lenientPt)
                 val argtparams = context.extractUndetparams()
+                // println("typedArgToPoly(arg1, argtparams): "+(arg1, argtparams))
                 if (!argtparams.isEmpty) {
                   val strictPt = formal.instantiateTypeParams(tparams, strictTargs)
                   inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
