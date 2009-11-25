@@ -14,7 +14,7 @@ package scala.runtime
 import scala.reflect.ClassManifest
 import scala.collection.Seq
 import scala.collection.mutable._
-import scala.collection.immutable.{List, Stream, Nil, ::}
+import scala.collection.immutable.{ List, Stream, Nil, :: }
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
@@ -52,7 +52,10 @@ object ScalaRunTime {
   def toArray[T](xs: scala.collection.Seq[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
-    for (x <- xs) arr(i) = x.asInstanceOf[AnyRef]
+    for (x <- xs) {
+      arr(i) = x.asInstanceOf[AnyRef]
+      i += 1
+    }
     arr
   }
 
@@ -87,16 +90,8 @@ object ScalaRunTime {
         throw exception
   }
 
-  def caseFields(x: Product): List[Any] = {
-    val arity = x.productArity
-    def fields(from: Int): List[Any] =
-      if (from == arity) List()
-      else x.productElement(from) :: fields(from + 1)
-    fields(0)
-  }
-
   def _toString(x: Product): String =
-    caseFields(x).mkString(x.productPrefix + "(", ",", ")")
+    x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
   def _hashCodeJenkins(x: Product): Int =
     scala.util.JenkinsHash.hashSeq(x.productPrefix.toSeq ++ x.productIterator.toSeq)
@@ -122,35 +117,9 @@ object ScalaRunTime {
     else x.equals(y)
 
   def _equals(x: Product, y: Any): Boolean = y match {
-    case y1: Product if x.productArity == y1.productArity =>
-      val arity = x.productArity
-      var i = 0
-      while (i < arity && x.productElement(i) == y1.productElement(i))
-        i += 1
-      i == arity
-    case _ =>
-      false
+    case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
+    case _                                              => false
   }
-
-  def _equalsWithVarArgs(x: Product, y: Any): Boolean = y match {
-    case y1: Product if x.productArity == y1.productArity =>
-      val arity = x.productArity
-      var i = 0
-      while (i < arity - 1 && x.productElement(i) == y1.productElement(i))
-        i += 1
-      i == arity - 1 && {
-        x.productElement(i) match {
-          case xs: Seq[_] =>
-            y1.productElement(i) match {
-              case ys: Seq[_] => xs sameElements ys
-            }
-        }
-      }
-    case _ =>
-      false
-  }
-
-  def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
 
   /** Given any Scala value, convert it to a String.
    *

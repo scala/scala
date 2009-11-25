@@ -14,7 +14,6 @@ package scala.collection
 import mutable.{Buffer, ArrayBuffer, ListBuffer, StringBuilder}
 import immutable.{List, Stream}
 import annotation.{ tailrec }
-// import immutable.{List, Nil, ::, Stream}
 
 /** The <code>Iterator</code> object provides various functions for
  *  creating specialized iterators.
@@ -1029,6 +1028,20 @@ trait Iterator[+A] { self =>
     val buffer = new ArrayBuffer[A]
     this copyToBuffer buffer
     buffer
+  }
+
+  /** Checks if the other iterator contains the same elements as this one.
+   *
+   *  @note will not terminate for infinite-sized iterators.
+   *  @param that  the other iterator
+   *  @return true, iff both iterators contain the same elements in the same order.
+   */
+  def sameElements(that: Iterator[_]): Boolean = {
+    while (hasNext && that.hasNext)
+      if (next != that.next)
+        return false
+
+    !hasNext && !that.hasNext
   }
 
   /** Returns a string representation of the elements in this iterator. The resulting string
