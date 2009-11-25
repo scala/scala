@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project relativePaths="false" version="4">
+<project version="4">
   <component name="AntConfiguration">
     <defaultAnt bundledAnt="true" />
     <buildFile url="file://$PROJECT_DIR$/build.xml">
@@ -46,7 +46,6 @@
         </ADDITIONAL_INDENT_OPTIONS>
       </value>
     </option>
-    <option name="USE_PER_PROJECT_SETTINGS" value="false" />
   </component>
   <component name="CompilerAPISettings">
     <option name="DEBUGGING_INFO" value="true" />
@@ -57,7 +56,6 @@
   </component>
   <component name="CompilerConfiguration">
     <option name="DEFAULT_COMPILER" value="Javac" />
-    <option name="DEPLOY_AFTER_MAKE" value="0" />
     <resourceExtensions>
       <entry name=".+\.(properties|xml|html|dtd|tld)" />
       <entry name=".+\.(gif|png|jpeg|jpg)" />
@@ -74,6 +72,7 @@
       <entry name="?*.tld" />
       <entry name="?*.ftl" />
     </wildcardResourcePatterns>
+    <annotationProcessing enabled="false" useClasspath="true" generatedDirName="generated" />
   </component>
   <component name="CopyrightManager" default="">
     <module2copyright />
@@ -95,7 +94,9 @@
     <option name="ADDITIONAL_OPTIONS_STRING" value="" />
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
-  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
+  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
+    <file url="file://$PROJECT_DIR$/src/compiler/scala/tools/nsc/symtab/classfile/ClassfileParser.scala" charset="UTF-8" />
+  </component>
   <component name="FacetAutodetectingManager">
     <autodetection-disabled>
       <facet-type id="Scala">
@@ -1162,15 +1163,6 @@
   </component>
   <component name="IdProvider" IDEtalkID="522B472C2EA573563CC2BA93160270BE" />
   <component name="InspectionProjectProfileManager">
-    <option name="PROJECT_PROFILE" value="Project Default" />
-    <option name="USE_PROJECT_PROFILE" value="true" />
-    <version value="1.0" />
-    <profiles>
-      <profile version="1.0" is_locked="false">
-        <option name="myName" value="Project Default" />
-        <option name="myLocal" value="false" />
-      </profile>
-    </profiles>
     <list size="5">
       <item index="0" class="java.lang.String" itemvalue="TYPO" />
       <item index="1" class="java.lang.String" itemvalue="SERVER PROBLEM" />
@@ -1336,10 +1328,9 @@
     <option name="projectName" value="scala-lang" />
   </component>
   <component name="ProjectDictionaryState">
-    <dictionary name="odersky" />
     <dictionary name="dragos" />
+    <dictionary name="odersky" />
   </component>
-  <component name="ProjectFileVersion" converted="true" />
   <component name="ProjectKey">
     <option name="state" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk/scala-lang.ipr" />
   </component>
@@ -1512,6 +1503,21 @@
         <root url="jar://$PROJECT_DIR$/lib/fjbg.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/ScalaCheck.jar!/" />
         <root url="jar://$PROJECT_DIR$/lib/msil.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="ant">
+      <CLASSES>
+        <root url="jar:///usr/share/ant/lib/ant.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="locker">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/build/locker/classes/library" />
+        <root url="file://$PROJECT_DIR$/build/locker/classes/compiler" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
