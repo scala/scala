@@ -45,23 +45,22 @@ class ByteArrayReader(content: Array[Byte]) {
    */
   def nextChar: Char = {
     bp += 2
-    (((buf(bp - 2) & 0xff) << 8) + (buf(bp - 1) & 0xff)).asInstanceOf[Char]
+    getChar(bp - 2)
   }
 
   /** read an integer
    */
   def nextInt: Int = {
     bp += 4
-    ((buf(bp - 4) & 0xff) << 24) +
-    ((buf(bp - 3) & 0xff) << 16) +
-    ((buf(bp - 2) & 0xff) <<  8) +
-     (buf(bp - 1) & 0xff)
+    getInt(bp - 4)
   }
 
   /** read a long
    */
-  def nextLong: Long =
-    (nextInt.toLong << 32) + (nextInt.toLong & 0xffffffffL)
+  def nextLong: Long = {
+    bp += 8
+    getLong(bp - 8)
+  }
 
   /** read a float
    */
@@ -71,55 +70,12 @@ class ByteArrayReader(content: Array[Byte]) {
    */
   def nextDouble: Double = java.lang.Double.longBitsToDouble(nextLong)
 
-  /** read the next integer number
-   */
-  def nextNat: Int = {
-    var x = 0
-    var b: Byte = 0
-    do {
-      b = buf(bp)
-      bp += 1
-      x = (x << 7) + (b & 0x7f)
-    } while ((b & 0x80) != 0)
-    x
-  }
-
-  /** read the next signed number in big endian format
-   */
-  def nextNum(n: Int): Long = {
-    var x: Long = 0
-    var i: Int = 0
-    while (i < n) {
-      x = (x << 8) + (nextByte & 0xff)
-      i += 1
-    }
-    val leading: Int = 64 - (n * 8)
-    x << leading >> leading
-  }
-
   /** read an UTF8 encoded string
    */
   def nextUTF8(len: Int): String = {
-    val cs: Array[Char] = new Array(len)
-    var i = bp
-    var j = 0
+    val cs = scala.io.Codec.toUTF8(buf.slice(bp, bp + len))
     bp += len
-    while (i < bp) {
-      var b: Int = buf(i) & 0xFF
-      i += 1
-      if (b >= 0xE0) {
-        b = ((b & 0x0F) << 12) | (buf(i) & 0x3F) << 6
-        i += 1
-        b = b | (buf(i) & 0x3F)
-        i += 1
-      } else if (b >= 0xC0) {
-        b = ((b & 0x1F) << 6) | (buf(i) & 0x3F)
-        i += 1
-      }
-      cs(j) = b.asInstanceOf[Char]
-      j += 1
-    }
-    new String(cs, 0, j)
+    new String(cs)
   }
 
   /** extract a character at position bp from buf

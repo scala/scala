@@ -28,6 +28,21 @@ object Classfiles {
   final val CONSTANT_INTFMETHODREF = 11
   final val CONSTANT_NAMEANDTYPE = 12
 
+  final val constantTagToString = Map(
+    CONSTANT_UTF8 -> "UTF8",
+    CONSTANT_UNICODE -> "Unicode",
+    CONSTANT_INTEGER -> "Int",
+    CONSTANT_FLOAT -> "Float",
+    CONSTANT_LONG -> "Long",
+    CONSTANT_DOUBLE -> "Double",
+    CONSTANT_CLASS -> "class",
+    CONSTANT_STRING -> "Asciz",
+    CONSTANT_FIELDREF -> "Field",
+    CONSTANT_METHODREF -> "Method",
+    CONSTANT_INTFMETHODREF -> "InterfaceMethod",
+    CONSTANT_NAMEANDTYPE -> "NameAndType"
+  )
+
   final val BAD_ATTR = 0x00000
   final val SOURCEFILE_ATTR = 0x00001
   final val SYNTHETIC_ATTR = 0x00002

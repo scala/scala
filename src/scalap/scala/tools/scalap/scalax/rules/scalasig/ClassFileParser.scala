@@ -62,27 +62,7 @@ class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
   def toInt = fold(0) { (x, b) => (x << 8) + (b & 0xFF)}
   def toLong = fold(0L) { (x, b) => (x << 8) + (b & 0xFF)}
 
-  // NOTE the UTF8 decoder in the Scala compiler is broken for pos > 0
-  // TODO figure out patch and submit
-  def toUTF8String = {
-    val sb = new StringBuilder(length)
-    var i = pos
-    val end = pos + length
-    while (i < end) {
-      var b = bytes(i) & 0xFF
-      i += 1
-      if (b >= 0xE0) {
-        b = ((b & 0x0F) << 12) | (bytes(i) & 0x3F) << 6
-        b = b | (bytes(i+1) & 0x3F)
-        i += 2
-      } else if (b >= 0xC0) {
-        b = ((b & 0x1F) << 6) | (bytes(i) & 0x3F)
-        i += 1
-      }
-      sb += b.toChar
-    }
-    sb.toString
-  }
+  def toUTF8String = io.Codec toUTF8 (bytes drop pos take length) mkString
 
   def byte(i : Int) = bytes(pos) & 0xFF
 }
@@ -100,9 +80,6 @@ trait ByteCodeReader extends RulesWithState {
   val u4 = bytes(4) ^^ (_ toInt) // should map to Long??
 
   def bytes(n : Int) = apply(_ next n)
-
-
-
 }
 
 object ClassFileParser extends ByteCodeReader {
