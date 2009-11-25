@@ -40,7 +40,7 @@ trait Publisher[Evt] {
   private val suspended = new HashSet[Sub]
 
   def subscribe(sub: Sub) { subscribe(sub, event => true) }
-  def subscribe(sub: Sub, filter: Filter) { filters(sub) += filter }
+  def subscribe(sub: Sub, filter: Filter) { filters.addBinding(sub, filter) }
   def suspendSubscription(sub: Sub) { suspended += sub }
   def activateSubscription(sub: Sub) { suspended -= sub }
   def removeSubscription(sub: Sub) { filters -= sub }
@@ -58,11 +58,7 @@ trait Publisher[Evt] {
    *  @return true, iff both publishers contain the same sequence of elements.
    */
   override def equals(obj: Any): Boolean = obj match {
-    case that: Publisher[_] =>
-      (this.filters equals that.filters) &&
-      (this.suspended equals that.suspended)
-    case _ =>
-      false
+    case that: Publisher[_] => filters == that.filters && suspended == that.suspended
+    case _                  => false
   }
-
 }
