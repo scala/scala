@@ -35,6 +35,11 @@ trait Infer {
 
   def isVarArgs(formals: List[Type]) = !formals.isEmpty && isRepeatedParamType(formals.last)
 
+  def isWildcard(tp: Type) = tp match {
+    case WildcardType | BoundedWildcardType(_) => true
+    case _ => false
+  }
+
   /** The formal parameter types corresponding to <code>formals</code>.
    *  If <code>formals</code> has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned.
@@ -93,7 +98,7 @@ trait Infer {
   object instantiate extends TypeMap {
     private var excludedVars = scala.collection.immutable.Set[TypeVar]()
     def apply(tp: Type): Type = tp match {
-      case WildcardType | NoType =>
+      case WildcardType | BoundedWildcardType(_) | NoType =>
         throw new NoInstance("undetermined type")
       case tv @ TypeVar(origin, constr) =>
         if (constr.inst == NoType) {
@@ -118,7 +123,7 @@ trait Infer {
    *  @return   ...
    */
   private[typechecker] def isFullyDefined(tp: Type): Boolean = tp match {
-    case WildcardType | NoType =>
+    case WildcardType | BoundedWildcardType(_) | NoType =>
       false
     case NoPrefix | ThisType(_) | ConstantType(_) =>
       true
@@ -237,7 +242,7 @@ trait Infer {
 
     def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) =
       treeSymTypeMsg(tree) + msg + argtpes.mkString("(", ",", ")") +
-       (if (pt == WildcardType) "" else " with expected result type " + pt)
+       (if (isWildcard(pt)) "" else " with expected result type " + pt)
 
     // todo: use also for other error messages
     private def existentialContext(tp: Type) = tp.existentialSkolems match {
@@ -584,7 +589,8 @@ trait Infer {
         (varianceInType(restpe)(tparam) & COVARIANT) == 0  // tparam occurred non-covariantly (in invariant or contravariant position)
 
       (tparams, targs).zipped map { (tparam, targ) =>
-        if (targ.typeSymbol == NothingClass && (restpe == WildcardType || notCovariantIn(tparam, restpe))) {
+        if (targ.typeSymbol == NothingClass &&
+            (isWildcard(restpe) || notCovariantIn(tparam, restpe))) {
           uninstantiated += tparam
           tparam.tpeHK  //@M tparam.tpe was wrong: we only want the type constructor,
             // not the type constructor applied to dummy arguments
