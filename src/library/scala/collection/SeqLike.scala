@@ -101,7 +101,7 @@ object SeqLike {
  *  It adds the following methods to class Iterable:
  *   `length`, `lengthCompare`, `apply`, `isDefinedAt`, `segmentLength`, `prefixLength`,
  *   `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`, `reverse`, `reverseIterator`,
- *   `startsWith`, `endsWith`, `indexOfSeq`, , `zip`, `zipAll`, `zipWithIndex`.
+ *   `startsWith`, `endsWith`, `indexOfSlice`, , `zip`, `zipAll`, `zipWithIndex`.
  *
  *
  *  @author  Martin Odersky
@@ -343,9 +343,9 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   /** @return -1 if <code>that</code> not contained in this, otherwise the
    *  first index where <code>that</code> is contained.
    */
-  def indexOfSeq[B >: A](that: Seq[B]): Int = indexOfSeq(that, 0)
+  def indexOfSlice[B >: A](that: Seq[B]): Int = indexOfSlice(that, 0)
 
-  def indexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int =
+  def indexOfSlice[B >: A](that: Seq[B], fromIndex: Int): Int =
     if (this.hasDefiniteSize && that.hasDefiniteSize)
       SeqLike.indexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
     else {
@@ -365,11 +365,11 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   *  last index where <code>that</code> is contained.
   *  @note may not terminate for infinite-sized collections.
   */
-  def lastIndexOfSeq[B >: A](that: Seq[B]): Int = lastIndexOfSeq(that, that.length)
+  def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, that.length)
 
   // since there's no way to find the last index in an infinite sequence,
   // we just document it may not terminate and assume it will.
-  def lastIndexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int =
+  def lastIndexOfSlice[B >: A](that: Seq[B], fromIndex: Int): Int =
     SeqLike.lastIndexOf(thisCollection, 0, length, that, 0, that.length, fromIndex)
 
   /** Tests if the given value <code>elem</code> is a member of this
@@ -629,8 +629,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   }
 
   /** Is <code>that</code> a slice in this? */
-  @deprecated("Should be replaced by <code>indexOfSeq(that) != -1</code>")
-  def containsSlice[B](that: Seq[B]): Boolean = indexOfSeq(that) != -1
+  def containsSlice[B](that: Seq[B]): Boolean = indexOfSlice(that) != -1
 
  /**
    * returns a projection that can be used to call non-strict <code>filter</code>,

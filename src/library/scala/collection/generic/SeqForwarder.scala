@@ -47,7 +47,7 @@ trait SeqForwarder[+A] extends Seq[A] with IterableForwarder[A] {
   override def reverseIterator: Iterator[A] = underlying.reverseIterator
   override def startsWith[B](that: Seq[B], offset: Int): Boolean = underlying.startsWith(that, offset)
   override def endsWith[B](that: Seq[B]): Boolean = underlying.endsWith(that)
-  override def indexOfSeq[B >: A](that: Seq[B]): Int = underlying.indexOfSeq(that)
+  override def indexOfSlice[B >: A](that: Seq[B]): Int = underlying.indexOfSlice(that)
   override def contains(elem: Any): Boolean = underlying.contains(elem)
   override def indices: Range = underlying.indices
 }

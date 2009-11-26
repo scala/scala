@@ -45,7 +45,7 @@ trait SeqProxyLike[+A, +This <: SeqLike[A, This] with Seq[A]] extends SeqLike[A,
   override def startsWith[B](that: Seq[B], offset: Int): Boolean = self.startsWith(that, offset)
   override def startsWith[B](that: Seq[B]): Boolean = self.startsWith(that)
   override def endsWith[B](that: Seq[B]): Boolean = self.endsWith(that)
-  override def indexOfSeq[B >: A](that: Seq[B]): Int = self.indexOfSeq(that)
+  override def indexOfSlice[B >: A](that: Seq[B]): Int = self.indexOfSlice(that)
   override def contains(elem: Any): Boolean = self.contains(elem)
   override def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.union(that)(bf)
   override def diff[B >: A, That](that: Seq[B]): This = self.diff(that)
@@ -57,5 +57,5 @@ trait SeqProxyLike[+A, +This <: SeqLike[A, This] with Seq[A]] extends SeqLike[A,
   override def view = self.view
   override def view(from: Int, until: Int) = self.view(from, until)
   override def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = (self zip that) forall { case (x,y) => f(x,y) }
-  override def containsSlice[B](that: Seq[B]): Boolean = self.indexOfSeq(that) != -1
+  override def containsSlice[B](that: Seq[B]): Boolean = self.indexOfSlice(that) != -1
 }

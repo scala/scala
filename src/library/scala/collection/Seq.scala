@@ -23,7 +23,7 @@ import mutable.Builder
  *    <code>prefixLength</code>, <code>indexWhere</code>, <code>indexOf</code>,
  *    <code>lastIndexWhere</code>, <code>lastIndexOf</code>, <code>reverse</code>,
  *    <code>reverseIterator</code>, <code>startsWith</code>,
- *    <code>endsWith</code>, <code>indexOfSeq</code>.
+ *    <code>endsWith</code>, <code>indexOfSlice</code>.
  *  </p>
  *
  *  @author  Martin Odersky

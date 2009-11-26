@@ -739,7 +739,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @return           the index within this string of the first occurrence
    *                    of the specified substring, starting at the specified index.
    */
-  def indexOf(str: String, fromIndex: Int): Int = indexOfSeq(str.toIndexedSeq, fromIndex)
+  def indexOf(str: String, fromIndex: Int): Int = indexOfSlice(str.toIndexedSeq, fromIndex)
 
   /** <p>
    *    Returns the index within this string of the rightmost occurrence
@@ -780,7 +780,7 @@ final class StringBuilder(initCapacity: Int, private val initValue: String)
    *  @return            the index within this sequence of the last occurrence
    *                     of the specified substring.
    */
-  def lastIndexOf(str: String, fromIndex: Int): Int = lastIndexOfSeq(str.toIndexedSeq, fromIndex)
+  def lastIndexOf(str: String, fromIndex: Int): Int = lastIndexOfSlice(str.toIndexedSeq, fromIndex)
 
   /** <p>
    *    Causes this character sequence to be replaced by the reverse of the

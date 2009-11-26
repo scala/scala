@@ -25,8 +25,8 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def contains(elem: Any): Boolean
   def diff[B >: A, That](that: Seq[B]): This
   def endsWith[B](that: Seq[B]): Boolean
-  def indexOfSeq[B >: A](that: Seq[B]): Int
-  def indexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int
+  def indexOfSlice[B >: A](that: Seq[B]): Int
+  def indexOfSlice[B >: A](that: Seq[B], fromIndex: Int): Int
   def indexOf[B >: A](elem: B): Int
   def indexOf[B >: A](elem: B, from: Int): Int
   def indexWhere(p: A => Boolean): Int
@@ -34,8 +34,8 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def indices: Range
   def intersect[B >: A, That](that: Seq[B]): This
   def isDefinedAt(x: Int): Boolean
-  def lastIndexOfSeq[B >: A](that: Seq[B]): Int
-  def lastIndexOfSeq[B >: A](that: Seq[B], fromIndex: Int): Int
+  def lastIndexOfSlice[B >: A](that: Seq[B]): Int
+  def lastIndexOfSlice[B >: A](that: Seq[B], fromIndex: Int): Int
   def lastIndexOf[B >: A](elem: B): Int
   def lastIndexOf[B >: A](elem: B, end: Int): Int
   def lastIndexWhere(p: A => Boolean): Int
