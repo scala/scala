@@ -305,6 +305,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
   @deprecated("use `span { x => !p(x) }` instead")
   def break(p: A => Boolean): (List[A], List[A]) = span { x => !p(x) }
 
+  @deprecated("use `filterNot' instead")
+  def remove(p: A => Boolean): List[A] = filterNot(p)
+
   /** Computes the difference between this list and the given list
    *  <code>that</code>.
    *

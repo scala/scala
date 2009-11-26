@@ -203,15 +203,6 @@ self =>
     b.result
   }
 
-  /** Returns a traversable with all elements of this traversable which do not satisfy the predicate
-   *  <code>p</code>.
-   *
-   *  @param p the predicate used to test elements
-   *  @return  the traversable without all elements that satisfy <code>p</code>
-   */
-  @deprecated("use `filterNot' instead")
-  def remove(p: A => Boolean): Repr = filterNot(p)
-
   /** Partitions this traversable in two traversables according to a predicate.
    *
    *  @param p the predicate on which to partition
