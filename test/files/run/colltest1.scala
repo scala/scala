@@ -112,7 +112,7 @@ object Test extends Application {
     assert(ten.startsWith(List(3, 4), 2))
     assert(ten.endsWith(List(9, 10)))
     assert(ten.endsWith(List()))
-    assert(ten.indexOfSeq(List(3, 4, 5)) == 2, ten.indexOfSeq(List(3, 4, 5)))
+    assert(ten.indexOfSlice(List(3, 4, 5)) == 2, ten.indexOfSlice(List(3, 4, 5)))
     assert(ten contains 1)
     assert(ten contains 10)
     assert(!(ten contains 0))

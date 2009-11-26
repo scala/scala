@@ -53,7 +53,7 @@ object Test {
     lazy val endsWith = Method(_ endsWith _, endsWithInputs, "%s endsWith %s")
 
     val indexOfSeqInputs: Inputs
-    private def subseqTest(s1: Seq[T], s2: Seq[T]) = (s1 indexOfSeq s2) != -1
+    private def subseqTest(s1: Seq[T], s2: Seq[T]) = (s1 indexOfSlice s2) != -1
     lazy val indexOfSeq = Method(subseqTest _, indexOfSeqInputs, "(%s indexOfSeq %s) != -1")
 
     val sameElementsInputs: Inputs
