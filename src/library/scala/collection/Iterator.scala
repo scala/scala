@@ -351,23 +351,22 @@ trait Iterator[+A] { self =>
    *  @param p the predicate used to filter the iterator.
    *  @return  the elements of this iterator satisfying <code>p</code>.
    */
-  def filter(p: A => Boolean): Iterator[A] = {
-    val self = buffered
-    new Iterator[A] {
-			var computedHasNext = false
-      private def skip() = {
-				while (self.hasNext && !p(self.head)) self.next()
-				computedHasNext = self.hasNext
-			}
-      def hasNext = { if (!computedHasNext) skip(); computedHasNext }
-      def next() = {
-				if (!computedHasNext)
-					skip()
-				computedHasNext = false
-				self.next()
-    	}
-		}
+  def filter(p: A => Boolean): Iterator[A] = new Iterator[A] {
+    private var hd: A = _
+    private var hdDefined: Boolean = false
+
+    def hasNext: Boolean = hdDefined || {
+      do {
+        if (!self.hasNext) return false
+        hd = self.next()
+      } while (!p(hd))
+      hdDefined = true
+      true
+    }
+
+    def next() = if (hasNext) { hdDefined = false; hd } else empty.next()
   }
+
 
   /** !!! Temporary, awaiting more general implementation.
    *  ... better wait longer, this fails once flatMap gets in the mix.
@@ -406,23 +405,18 @@ trait Iterator[+A] { self =>
    *  @param p the predicate used to filter the iterator.
    *  @return  the longest prefix of this iterator satisfying <code>p</code>.
    */
-  def takeWhile(p: A => Boolean): Iterator[A] = {
-    val self = buffered
-    new Iterator[A] {
-			var computedHasNext = false
+  def takeWhile(p: A => Boolean): Iterator[A] = new Iterator[A] {
+    private var hd: A = _
+    private var hdDefined: Boolean = false
+    private var tail: Iterator[A] = self
 
-      def hasNext = {
-				val result = computedHasNext || (self.hasNext && p(self.head))
-				computedHasNext = result
-				result
-			}
-
-      def next() = {
-				val result = (if (computedHasNext || hasNext) self else empty).next()
-				computedHasNext = false
-				result
-			}
+    def hasNext = hdDefined || tail.hasNext && {
+      hd = tail.next()
+      if (p(hd)) hdDefined = true
+      else tail = Iterator.empty
+      hdDefined
     }
+    def next() = if (hasNext) { hdDefined = false; hd } else empty.next()
   }
 
   /** Partitions this iterator in two iterators according to a predicate.
