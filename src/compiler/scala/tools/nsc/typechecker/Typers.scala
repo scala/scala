@@ -2079,7 +2079,14 @@ trait Typers { self: Analyzer =>
         moreToAdd = initSize != scope.size
         }
         if (newStats.isEmpty) stats
-        else newStats.toList ::: stats
+        else {
+          val (defaultGetters, others) = newStats.toList.partition {
+            case DefDef(mods, _, _, _, _, _) => mods.hasFlag(DEFAULTPARAM)
+            case _ => false
+          }
+          // default getters first: see #2489
+          defaultGetters ::: stats ::: others
+        }
       }
       val result = stats mapConserve (typedStat)
       if (phase.erasedTypes) result
