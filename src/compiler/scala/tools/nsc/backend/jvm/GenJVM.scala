@@ -500,8 +500,9 @@ abstract class GenJVM extends SubComponent {
         for (sym <- cls.info.decls.iterator if sym.isClass)
           innerClasses = innerClasses + sym;
       }
+
       // add inner classes which might not have been referenced yet
-      atPhase(currentRun.erasurePhase) {
+      atPhase(currentRun.erasurePhase.next) {
         addOwnInnerClasses(clasz.symbol)
         addOwnInnerClasses(clasz.symbol.linkedClassOfClass)
       }
