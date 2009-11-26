@@ -38,7 +38,6 @@ trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversabl
   override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.flatMap(f)(bf)
   override def filter(p: A => Boolean): This = self.filter(p)
   override def filterNot(p: A => Boolean): This = self.filterNot(p)
-  override def remove(p: A => Boolean): This = self.filterNot(p)
   override def partition(p: A => Boolean): (This, This) = self.partition(p)
   override def groupBy[K](f: A => K): Map[K, This] = self.groupBy(f)
   override def forall(p: A => Boolean): Boolean = self.forall(p)
