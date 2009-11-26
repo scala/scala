@@ -42,8 +42,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   val body =
     <body class={ if (tpl.isTrait || tpl.isClass) "type" else "value" }>
 
-      { if (tpl.isRootPackage || tpl.inTemplate.isRootPackage) NodeSeq.Empty
-        else <p id="owner">{ tpl.inTemplate.qualifiedName }</p>
+      { def ownerLinks(otl: DocTemplateEntity): NodeSeq =
+          if (otl.inTemplate.isRootPackage)
+            <a href={ relativeLinkTo(otl) }>{ otl.name }</a>
+          else ownerLinks(otl.inTemplate) ++ <xml:group>.<a href={ relativeLinkTo(otl) }>{ otl.name }</a></xml:group>
+        if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
+          NodeSeq.Empty
+        else
+          <p id="owner">{ ownerLinks(tpl.inTemplate) }</p>
       }
 
       <div id="definition">
@@ -136,7 +142,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case None => ""
       case Some(tpe) => pre + typeToHtml(tpe)
     }
-    bound0(hi, " ⊲ ") + bound0(lo, " ⊳ ")
+    bound0(hi, " <: ") + bound0(lo, " >: ")
   }
 
   /** name, tparams, params, result */

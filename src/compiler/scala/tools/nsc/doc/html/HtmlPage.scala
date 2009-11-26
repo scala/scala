@@ -10,9 +10,11 @@ package html
 import model._
 import comment._
 
-import java.io.File
-import scala.xml.dtd.{DocType, PublicID}
 import xml.{Unparsed, XML, NodeSeq}
+import xml.dtd.{DocType, PublicID}
+import scala.collection._
+import scala.util.NameTransformer
+import java.io.File
 
 /** An html page that is part of a Scaladoc site.
   * @author David Bernard
@@ -37,7 +39,7 @@ abstract class HtmlPage { thisPage =>
     * also defined by the generator.
     * @param generator The generator that is writing this page. */
   def writeFor(site: SiteFactory): Unit = {
-    val pageFile = new File(site.siteRoot, thisPage.path.reverse.mkString("/"))
+    val pageFile = new File(site.siteRoot, absoluteLinkTo(thisPage.path))
     val pageFolder = pageFile.getParentFile
     if (!pageFolder.exists) pageFolder.mkdirs()
     val doctype =
@@ -56,16 +58,16 @@ abstract class HtmlPage { thisPage =>
   }
 
   def templateToPath(tpl: TemplateEntity): List[String] = {
+    def doName(tpl: TemplateEntity): String =
+      NameTransformer.encode(tpl.name) + (if (tpl.isObject) "$" else "")
     def downPacks(pack: Package): List[String] =
-      if (pack.isRootPackage) Nil else (pack.name :: downPacks(pack.inTemplate))
+      if (pack.isRootPackage) Nil else (doName(pack) :: downPacks(pack.inTemplate))
     def downInner(nme: String, tpl: TemplateEntity): (String, Package) = {
       tpl.inTemplate match {
         case inPkg: Package => (nme + ".html", inPkg)
         case inTpl => downInner(doName(inTpl) + "$" + nme, inTpl)
       }
     }
-    def doName(tpl: TemplateEntity): String =
-      tpl.name + (if (tpl.isObject) "$" else "")
     val (file, pack) =
       tpl match {
         case p: Package => ("package.html", p)
@@ -95,6 +97,10 @@ abstract class HtmlPage { thisPage =>
         List.fill(fss.length - 1)("..") ::: tss
     }
     relativize(thisPage.path.reverse, destPath.reverse).mkString("/")
+  }
+
+  def absoluteLinkTo(destPath: List[String]): String = {
+    destPath.reverse.mkString("/")
   }
 
   /** Transforms an optional comment into an styled HTML tree representing its body if it is defined, or into an empty
