@@ -25,7 +25,7 @@ object Test extends Application {
     val secondFive = empty ++ (6 to 10)
     assert(firstFive ++ secondFive == ten, firstFive ++ secondFive)
     val odds = ten filter (_ % 2 != 0)
-    val evens = ten remove (_ % 2 != 0)
+    val evens = ten filterNot (_ % 2 != 0)
     assert(odds.size == evens.size)
     val (o, e) = ten.partition(_ % 2 == 0)
     assert(o.size == e.size)
@@ -119,7 +119,7 @@ object Test extends Application {
     assert((empty ++ (1 to 7) union empty ++ (3 to 10)) == List(1, 2, 3, 4, 5, 6, 7, 3, 4, 5, 6, 7, 8, 9, 10))
     assert((ten diff ten).isEmpty)
     assert((ten diff List()) == ten)
-    assert((ten diff (ten filter (_ % 2 == 0))) == (ten remove  (_ % 2 == 0)))
+    assert((ten diff (ten filter (_ % 2 == 0))) == (ten filterNot  (_ % 2 == 0)))
     assert((ten intersect ten) == ten)
     assert((ten intersect List(5)) == List(5))
     assert((ten ++ ten).removeDuplicates == ten)
@@ -186,7 +186,7 @@ object Test extends Application {
     def m3 = empty ++ m1
     assert(m1 == m3)
     println(m3)
-    val m4 = m3.remove { case (k, v) => k != "A" }
+    val m4 = m3 filterNot { case (k, v) => k != "A" }
     assert(m4.size == 1, m4)
   }
 
