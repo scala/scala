@@ -1079,8 +1079,9 @@ trait Symbols {
         else if (alts1.isEmpty) NoSymbol
         else if (alts1.tail.isEmpty) alts1.head
         else owner.newOverloaded(info.prefix, alts1)
-      } else if (cond(this)) this
-      else NoSymbol
+      } else if (this == NoSymbol || cond(this)) {
+        this
+      } else NoSymbol
 
     def suchThat(cond: Symbol => Boolean): Symbol = {
       val result = filter(cond)
