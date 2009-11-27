@@ -10,15 +10,15 @@
 
 package scala.tools.ant
 
-import java.io.{File,PrintWriter,BufferedWriter,FileWriter, IOException}
+import java.io.{File,PrintWriter,BufferedWriter,FileWriter}
 
 import org.apache.tools.ant.{ BuildException, Project, AntClassLoader }
 import org.apache.tools.ant.taskdefs.{MatchingTask,Java}
-import org.apache.tools.ant.types.{Path, Reference, FileSet}
+import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper,
                                   SourceFileScanner}
 
-import scala.tools.nsc.{Global, Settings, Properties}
+import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 
 /** <p>
@@ -561,63 +561,21 @@ class Scalac extends MatchingTask {
     if (!assemrefs.isEmpty) settings.assemrefs.value = assemrefs.get
 
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
-    // todo, process fs from addParams?
-    val fs = processArguments(settings, addParams.trim.split("""\s+""").toList)
+
+    // let CompilerCommand processes all params
+    val command = new CompilerCommand(addParams.trim.split("""\s+""").toList, settings, error, false)
 
     // resolve dependenciesFile path from project's basedir, so <ant antfile ...> call from other project works.
     // the dependenciesFile may be relative path to basedir or absolute path, in either case, the following code
     // will return correct answer.
-    settings.dependenciesFile.value match {
+    command.settings.dependenciesFile.value match {
       case "none" =>
       case x =>
         val depFilePath = scala.tools.nsc.io.Path(x)
-        settings.dependenciesFile.value = scala.tools.nsc.io.Path(getProject.getBaseDir).normalize resolve depFilePath path
+        command.settings.dependenciesFile.value = scala.tools.nsc.io.Path(getProject.getBaseDir).normalize resolve depFilePath path
     }
 
-    (settings, sourceFiles, javaOnly)
-  }
-
-    /** Process the arguments and update the settings accordingly.
-    * This method is called only once, during initialization.
-    * @return          Accumulated files to compile
-    */
-  protected def processArguments(settings: Settings, arguments: List[String]): List[String] = {
-    /** file extensions of files that the compiler can process */
-    lazy val fileEndings = Properties.fileEndings
-
-    // initialization
-    var ok = true
-    var fs: List[String] = Nil
-    var args = arguments
-    def errorAndNotOk(msg: String) = { error(msg) ; ok = false }
-
-    // given a @ argument expands it out
-    def doExpand(x: String) =
-      try   { args = scala.tools.nsc.util.ArgumentsExpander.expandArg(x) ::: args.tail }
-      catch { case ex: IOException  => errorAndNotOk(ex.getMessage) }
-
-    // true if it's a legit looking source file
-    def isSourceFile(x: String) =
-      (settings.script.value != "") ||
-      (fileEndings exists (x endsWith _))
-
-    // given an option for scalac finds out what it is
-    def doOption(x: String): Unit = {
-      val argsLeft = settings.parseParams(args)
-      if (args != argsLeft) args = argsLeft
-      else errorAndNotOk("bad option: '" + x + "'")
-    }
-
-    // cycle through args until empty or error
-    while (!args.isEmpty && ok) args.head match {
-      case x if x startsWith "@"  => doExpand(x)
-      case x if x startsWith "-"  => doOption(x)
-      case x if isSourceFile(x)   => fs = x :: fs ; args = args.tail
-      case ""                     => args = args.tail // quick fix [martin: for what?]
-      case x                      => errorAndNotOk("don't know what to do with " + x)
-    }
-
-    fs
+    (command.settings, sourceFiles, javaOnly)
   }
 
   override def execute() {
