@@ -16,9 +16,14 @@ trait DependencyAnalysis extends SubComponent with Files {
 
   lazy val maxDepth = settings.make.value match {
     case "changed" => 0
-    case "transitive" => Int.MaxValue
+    case "transitive" | "transitivenocp" => Int.MaxValue
     case "immediate" => 1
   }
+
+  def shouldCheckClasspath = settings.make.value != "transitivenocp"
+
+  // todo: order insensible checking and, also checking timestamp?
+  def validateClasspath(cp1: String, cp2: String): Boolean = cp1 == cp2
 
   def nameToFile(src: AbstractFile, name : String) =
     settings.outputDirs.outputDirFor(src)
@@ -64,9 +69,9 @@ trait DependencyAnalysis extends SubComponent with Files {
     dependenciesFile = f
     FileDependencies.readFrom(f, toFile) match {
       case Some(fd) =>
-        val success = fd.classpath == classpath
+        val success = if (shouldCheckClasspath) validateClasspath(fd.classpath, classpath) else true
         dependencies = if (success) fd else {
-          if(settings.debug.value){
+          if (settings.debug.value) {
             println("Classpath has changed. Nuking dependencies");
           }
           newDeps

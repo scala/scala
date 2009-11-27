@@ -748,7 +748,7 @@ trait ScalacSettings {
   val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val debuginfo     = DebugSetting      ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")
   val help          = BooleanSetting    ("-help", "Print a synopsis of standard options")
-  val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive"), "all") .
+  val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all") .
                                           withHelpSyntax("-make:<strategy>")
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings")
   val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program").withAbbreviation("-optimize")
