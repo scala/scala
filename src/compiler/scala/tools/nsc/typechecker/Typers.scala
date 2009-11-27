@@ -3898,7 +3898,26 @@ trait Typers { self: Analyzer =>
           if (util.Statistics.enabled) selcnt += 1
           var qual1 = checkDead(typedQualifier(qual, mode))
           if (name.isTypeName) qual1 = checkStable(qual1)
-          val tree1 = typedSelect(qual1, name)
+
+          val tree1 = // temporarily use `filter' and an alternative for `withFilter'
+            if (name == nme.withFilter)
+              silent(_ => typedSelect(qual1, name)) match {
+                case result1: Tree =>
+                  result1
+                case ex1: TypeError =>
+                  silent(_ => typed1(Select(qual1, nme.filter) setPos tree.pos, mode, pt)) match {
+                    case result2: Tree =>
+                      unit.deprecationWarning(
+                        tree.pos, "`withFilter' method does not yet exist on "+qual1.tpe.widen+
+                        ", using `filter' method instead")
+                      result2
+                    case ex2: TypeError =>
+                      reportTypeError(tree.pos, ex1)
+                      setError(tree)
+                  }
+              }
+            else
+              typedSelect(qual1, name)
 
           if (qual1.symbol == RootPackage) treeCopy.Ident(tree1, name)
           else tree1
