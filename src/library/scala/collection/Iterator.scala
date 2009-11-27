@@ -367,11 +367,52 @@ trait Iterator[+A] { self =>
     def next() = if (hasNext) { hdDefined = false; hd } else empty.next()
   }
 
+  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 
-  /** !!! Temporary, awaiting more general implementation.
-   *  ... better wait longer, this fails once flatMap gets in the mix.
-   */
-  // def withFilter(p: A => Boolean) = this.toStream withFilter p
+  final class WithFilter private[Iterator] (p: A => Boolean) {
+
+    def map[B](f: A => B): Iterator[B] = new Iterator[B] {
+      private var hd: A = _
+      private var hdDefined: Boolean = false
+
+      def hasNext: Boolean = hdDefined || {
+        do {
+          if (!self.hasNext) return false
+          hd = self.next()
+        } while (!p(hd))
+        hdDefined = true
+        true
+      }
+
+      def next() = if (hasNext) { hdDefined = false; f(hd) } else empty.next()
+    }
+
+    def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
+      private var cur: Iterator[B] = empty
+
+      @tailrec
+      def hasNext: Boolean = cur.hasNext || {
+        var x = null.asInstanceOf[A]
+        do {
+          if (!self.hasNext) return false
+          x = self.next()
+        } while (!p(x))
+        cur = f(x)
+        hasNext
+      }
+
+      def next(): B = (if (hasNext) cur else empty).next()
+    }
+
+    def foreach[U](f: A => U) {
+      while (self.hasNext) {
+        val x = self.next()
+        if (p(x)) f(x)
+      }
+    }
+
+    def withFilter(q: A => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
+  }
 
   /** Returns an iterator over all the elements of this iterator which
    *  do not satisfy the predicate <code>p</code>.
