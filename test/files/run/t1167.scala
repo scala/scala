@@ -3,7 +3,9 @@
  */
 
 trait Test1 {
- def testFunc(i:Int) = ((i:Int) => i + 5)(i)
+  def testFunc(i:Int): Unit = {
+    (i:Int) => i + 5
+  }
 }
 
 abstract class Foo {
