@@ -126,6 +126,11 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   def fromLessThan[T](cmp: (T, T) => Boolean): Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = if (cmp(x, y)) -1 else if (cmp(y, x)) 1 else 0
+    // overrides to avoid multiple comparisons
+    override def lt(x: T, y: T): Boolean = cmp(x, y)
+    override def gt(x: T, y: T): Boolean = cmp(y, x)
+    override def gteq(x: T, y: T): Boolean = !cmp(x, y)
+    override def lteq(x: T, y: T): Boolean = !cmp(y, x)
   }
 
   trait UnitOrdering extends Ordering[Unit] {
