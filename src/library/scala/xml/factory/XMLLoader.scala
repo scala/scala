@@ -24,12 +24,16 @@ trait XMLLoader[T <: Node]
   import scala.xml.Source._
   def adapter: FactoryAdapter = new NoBindingFactoryAdapter()
 
-  /* Override this to use a different SAXParser. */
-  def parser: SAXParser = {
+  private val saxFactory = {
     val f = SAXParserFactory.newInstance()
     f.setNamespaceAware(false)
-    f.newSAXParser()
+    // Discovered at: http://www.jdom.org/docs/faq.html#a0350 (see ticket #2725)
+    f.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+    f
   }
+
+  /* Override this to use a different SAXParser. */
+  def parser: SAXParser = saxFactory.newSAXParser()
 
   /** Loads XML from the given InputSource, using the supplied parser.
    *  The methods available in scala.xml.XML use the XML parser in the JDK.
