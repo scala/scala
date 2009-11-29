@@ -27,11 +27,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		def name = API.name
 		def run: Unit =
 		{
-			val start = System.currentTimeMillis
 			if(java.lang.Boolean.getBoolean("sbt.api.enable"))
+			{
+				val start = System.currentTimeMillis
 				currentRun.units.foreach(processUnit)
-			val stop = System.currentTimeMillis
-			println("API phase took : " + ((stop - start)/1000.0) + " s")
+				val stop = System.currentTimeMillis
+				println("API phase took : " + ((stop - start)/1000.0) + " s")
+			}
 		}
 		def processUnit(unit: CompilationUnit)
 		{
