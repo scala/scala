@@ -8,35 +8,58 @@ import scala.tools.nsc.SubComponent
 
 class ScaladocInterface
 {
-	def run(args: Array[String], maximumErrors: Int, log: Logger)
+	def run(args: Array[String], maximumErrors: Int, log: Logger) = (new Runner(args, maximumErrors, log)).run
+}
+private class Runner(args: Array[String], maximumErrors: Int, log: Logger)
+{
+	import scala.tools.nsc.{doc, CompilerCommand, Global}
+	val reporter = new LoggerReporter(maximumErrors, log)
+	val docSettings: doc.Settings = new doc.Settings(reporter.error)
+	val command = new CompilerCommand(args.toList, docSettings, error, false)
+
+	import forScope._
+	def run()
 	{
-		import scala.tools.nsc.{doc, CompilerCommand, Global}
-		val reporter = new LoggerReporter(maximumErrors, log)
-		val docSettings: doc.Settings = new doc.Settings(reporter.error)
-		val command = new CompilerCommand(args.toList, docSettings, error, false)
-		trait Compat27 { def computeInternalPhases(): Unit = () }
-		val phasesSet = scala.collection.mutable.Set[scala.tools.nsc.SubComponent]() // for 2.7 source compatibility
-		object compiler extends Global(command.settings, reporter) with Compat27
-		{
-			override def onlyPresentation = true
-			override def computeInternalPhases() {
-				phasesSet += syntaxAnalyzer
-				phasesSet += analyzer.namerFactory
-				phasesSet += analyzer.typerFactory
-			}
-		}
 		if(!reporter.hasErrors)
 		{
-			val run = new compiler.Run
-			run compile command.files
-			val generator = new doc.DefaultDocDriver
-			{
-				lazy val global: compiler.type = compiler
-				lazy val settings = docSettings
-			}
-			generator.process(run.units)
+			import doc._ // 2.8 has doc.Processor
+			val processor = new Processor(reporter, docSettings)
+			processor.document(command.files)
 		}
 		reporter.printSummary()
 		if(reporter.hasErrors) throw new InterfaceCompileFailed(args, "Scaladoc generation failed")
+	}
+
+	object forScope
+	{
+		class Processor(reporter: LoggerReporter, docSettings: doc.Settings) // 2.7 compatibility
+		{
+			object compiler extends Global(command.settings, reporter)
+			{
+				override def onlyPresentation = true
+				class DefaultDocDriver  // 2.8 compatibility
+				{
+					assert(false)
+					def process(units: Iterator[CompilationUnit]) = error("for 2.8 compatibility only")
+				}
+			}
+			def document(ignore: Seq[String])
+			{
+				import compiler._
+				val run = new Run
+				run compile command.files
+
+				val generator =
+				{
+					import doc._
+					new DefaultDocDriver
+					{
+						lazy val global: compiler.type = compiler
+						lazy val settings = docSettings
+					}
+				}
+				generator.process(run.units)
+			}
+		}
 	}
 }
