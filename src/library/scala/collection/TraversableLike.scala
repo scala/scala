@@ -16,81 +16,126 @@ import scala.reflect.ClassManifest
 import mutable.{Builder, StringBuilder, Buffer, ArrayBuffer, ListBuffer}
 import immutable.{List, Stream, Nil, ::}
 
-/** <p>
- *    A template trait for traversable collections.
- *    This is a base trait of all kinds of Scala collections. It implements
- *    the behavior common to all collections, in terms of a method
- *    <code>foreach</code> with signature:
- *  </p><pre>
- *   <b>def</b> foreach[U](f: Elem => U): Unit</pre>
- *  <p>
- *    Collection classes mixing in this trait provide a concrete
- *    <code>foreach</code> method which traverses all the
- *    elements contained in the collection, applying a given function to each.
- *    They also need to provide a method <code>newBuilder</code>
- *    which creates a builder for collections of the same kind.
- *  </p>
- *  <p>
- *    A traversable class might or might not have two properties: strictness
- *    and orderedness. Neither is represented as a type.
- *  </p>
- *  <p>
- *    The instances of a strict collection class have all their elements
- *    computed before they can be used as values. By contrast, instances of
- *    a non-strict collection class may defer computation of some of their
- *    elements until after the instance is available as a value.
- *    A typical example of a non-strict collection class is a
- *    <a href="../immutable/Stream.html" target="ContentFrame">
- *    <code>scala.collection.immutable.Stream</code></a>.
- *    A more general class of examples are <code>TraversableViews</code>.
- *  </p>
- *  <p>
- *    If a collection is an instance of an ordered collection class, traversing
- *    its elements with <code>foreach</code> will always visit elements in the
- *    same order, even for different runs of the program. If the class is not
- *    ordered, <code>foreach</code> can visit elements in different orders for
- *    different runs (but it will keep the same order in the same run).<br/>
- *    A typical example of a collection class which is not ordered is a
- *    <code>HashMap</code> of objects. The traversal order for hash maps will
- *    depend on the hash codes of its elements, and these hash codes might
- *    differ from one run to the next. By contrast, a <code>LinkedHashMap</code>
- *    is odered because it's <code>foreach</code> method visits elements in the
- *    order they were inserted into the <code>HashMap</code>.
- *  </p>
+/** A template trait for traversable collections.
+ *  This is a base trait of all kinds of Scala collections. It implements
+ *  the behavior common to all collections, in terms of a method
+ *  `foreach` with signature:
+ *  {{{
+ *     def foreach[U](f: Elem => U): Unit</pre>
+ *  }}}
+ *  Collection classes mixing in this trait provide a concrete
+ *  `foreach` method which traverses all the
+ *  elements contained in the collection, applying a given function to each.
+ *  They also need to provide a method `newBuilder`
+ *  which creates a builder for collections of the same kind.
+ *
+ *  A traversable class might or might not have two properties: strictness
+ *  and orderedness. Neither is represented as a type.
+ *
+ *  The instances of a strict collection class have all their elements
+ *  computed before they can be used as values. By contrast, instances of
+ *  a non-strict collection class may defer computation of some of their
+ *  elements until after the instance is available as a value.
+ *  A typical example of a non-strict collection class is a
+ *  <a href="../immutable/Stream.html" target="ContentFrame">
+ *  `scala.collection.immutable.Stream`</a>.
+ *  A more general class of examples are `TraversableViews`.
+ *
+ *  If a collection is an instance of an ordered collection class, traversing
+ *  its elements with `foreach` will always visit elements in the
+ *  same order, even for different runs of the program. If the class is not
+ *  ordered, `foreach` can visit elements in different orders for
+ *  different runs (but it will keep the same order in the same run).'
+ *
+ *  A typical example of a collection class which is not ordered is a
+ *  `HashMap` of objects. The traversal order for hash maps will
+ *  depend on the hash codes of its elements, and these hash codes might
+ *  differ from one run to the next. By contrast, a `LinkedHashMap`
+ *  is ordered because it's `foreach` method visits elements in the
+ *  order they were inserted into the `HashMap`.
  *
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
+ *
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
+ *
+ *  @define Coll Traversable
+ *  @define coll traversable collection
+ *  @define thatinfo
+ *    the class of the returned collection. Where possible, `That` is
+ *    the same class as the current collection class `Repr`, but this
+ *    depends on the element type `B` being admissible for that class,
+ *    which means that an implicit instance of type `CanBuildFrom[Repr, B, That]`
+ *    is found.
+ *  @define bfinfo
+ *    an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`.
+ *  @define orderDependent
+ *
+ *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *  @define orderDependentFold
+ *
+ *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    or the operator is associative and commutative.
+ *  @define mayNotTerminateInf
+ *
+ *    Note: may not terminate for infinite-sized collections.
+ *  @define willNotTerminateInf
+ *
+ *    Note: will not terminate for infinite-sized collections.
  */
 trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] {
 self =>
 
   import Traversable.breaks._
 
-  def repr: Repr = this.asInstanceOf[Repr]
-
-  protected[this] def thisCollection: Traversable[A] = this.asInstanceOf[Traversable[A]]
-  protected[this] def toCollection(repr: Repr): Traversable[A] = repr.asInstanceOf[Traversable[A]]
-
   /** The type implementing this traversable */
   protected type Self = Repr
 
-  /** Create a new builder for this collection type.
+  /** The collection of type $coll underlying this `TraversableLike` object.
+   *  By default this is implemented as the `TraversableLike` object itself, but this can be overridden.
+   */
+  def repr: Repr = this.asInstanceOf[Repr]
+
+  /** The underlying collection seen as an instance of `Traversable`.
+   *  By default this is implemented as the `TraversableLike` object itself, but this can be overridden.
+   */
+  protected[this] def thisCollection: Traversable[A] = this.asInstanceOf[Traversable[A]]
+
+  /** A conversion from collections of type `Repr` to `Traversable` objects.
+   *  By default this is implemented as just a cast, but this can be overridden.
+   */
+  protected[this] def toCollection(repr: Repr): Traversable[A] = repr.asInstanceOf[Traversable[A]]
+
+  /** Creates a new builder for this collection type.
    */
   protected[this] def newBuilder: Builder[A, Repr]
 
-  /** Apply a function <code>f</code> to all elements of this
-   *  traversable object.
+  /** Applies a function `f` to all elements of this $coll.
    *
-   *  @param  f   A function that is applied for its side-effect to every element.
-   *              The result (of arbitrary type U) of function `f` is discarded.
+   *  Note: this method underlies the implementation of most other bulk operations.
+   *  It's important to implement this method in an efficient way.
    *
-   *  @note This method underlies the implementation of most other bulk operations.
-   *        It's important to implement this method in an efficient way.
+   *  @param  f   the function that is applied for its side-effect to every element.
+   *              The result of function `f` is discarded.
+   *
+   *  @tparam  U  the type parameter describing the result of function `f`.
+   *              This result will always be ignored. Typically `U` is `Unit`,
+   *              but this is not necessary.
+   *
+   *  @usage def foreach(f: A => Unit): Unit
+   *
+   *  @param  f   the function that is applied for its side-effect to every element.
+   *              The result of function `f` is discarded.
    */
   def foreach[U](f: A => U): Unit
 
-  /** Does this collection contain no elements?
+  /** Tests whether the $coll is empty.
+   *
+   *  @return    `true` if the $coll contain no elements, `false` otherwise.
    */
   def isEmpty: Boolean = {
     var result = true
@@ -103,11 +148,15 @@ self =>
     result
   }
 
-  /** Does this collection contain some elements?
+  /** Tests whether the $coll is not empty.
+   *
+   *  @return    `true` if the $coll contains at least one element, `false` otherwise.
    */
   def nonEmpty: Boolean = !isEmpty
 
-  /** The number of elements in this collection
+  /** The size of this $coll.
+   *
+   *  @return    the number of elements in this $coll.
    */
   def size: Int = {
     var result = 0
@@ -115,19 +164,31 @@ self =>
     result
   }
 
-  /** Returns true if this collection is known to have finite size.
-   *  This is the case if the collection type is strict, or if the
-   *  collection type is non-strict (e.g. it's a Stream), but all
-   *  collection elements have been computed.
-   *  Many methods in this trait will not work on collections of
-   *  infinite sizes.
+  /** Tests whether this $coll is known to have a finite size.
+   *  All strict collections are known to have finite size. For a non-strict collection
+   *  such as `Stream`, the predicate returns `true` if all elements have been computed.
+   *  It returns `false` if the stream is not yet evaluated to the end.
+   *
+   *  Note: many collection methods will not work on collections of infinite sizes.
+   *
+   *  @return  `true` if this collection is known to have finite size, `false` otherwise.
    */
   def hasDefiniteSize = true
 
-  /** Creates a new traversable of type `That` which contains all elements of this traversable
-   *  followed by all elements of another traversable.
+  /** Concatenates this $coll with the elements of a traversable collection.
    *
-   *  @param that   The traversable to append
+   *  @param that   the traversable to append.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` which contains all elements of this $coll
+   *                followed by all elements of `that`.
+   *
+   *  @usage def ++(that: Traversable[A]): $Coll[A]
+   *
+   *  @param that   the traversable to append.
+   *  @return       a new $coll which contains all elements of this $coll
+   *                followed by all elements of `that`.
    */
   def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
@@ -136,10 +197,20 @@ self =>
     b.result
   }
 
-  /** Creates a new traversable of type `That` which contains all elements of this traversable
-   *  followed by all elements of an iterator.
+  /** Concatenates this $coll with the elements of an iterator.
    *
-   *  @param that  The iterator to append
+   *  @param that   the iterator to append.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` which contains all elements of this $coll
+   *                followed by all elements of `that`.
+   *
+   *  @usage def ++(that: Iterator[A]): $Coll[A]
+   *
+   *  @param that   the iterator to append.
+   *  @return       a new $coll which contains all elements of this $coll
+   *                followed by all elements of `that`.
    */
   def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
@@ -148,11 +219,21 @@ self =>
     b.result
   }
 
-  /** Returns the traversable that results from applying the given function
-   *  <code>f</code> to each element of this traversable and collecting the results
-   *  in a traversable of type `That`.
+  /** Builds a new collection by applying a function to all elements of this $coll.
    *
-   *  @param f function to apply to each element.
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results.
+   *
+   *  @usage def map[B](f: A => B): $Coll[B]
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @return       a new $coll resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results.
    */
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
@@ -160,10 +241,22 @@ self =>
     b.result
   }
 
-  /** Applies the given function <code>f</code> to each element of
-   *  this traversable, then concatenates the results in a traversable of type That.
+  /** Builds a new collection by applying a function to all elements of this $coll
+   *  and concatenating the results.
    *
-   *  @param f the function to apply on each element.
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the given collection-valued function
+   *                `f` to each element of this $coll and concatenating the results.
+   *
+   *  @usage def flatMap[B](f: A => Traversable[B]): $Coll[B]
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @return       a new $coll resulting from applying the given collection-valued function
+   *                `f` to each element of this $coll and concatenating the results.
    */
   def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
@@ -171,10 +264,11 @@ self =>
     b.result
   }
 
-  /** Returns all the elements of this traversable that satisfy the
-   *  predicate <code>p</code>. The order of the elements is preserved.
-   *  @param p the predicate used to filter the traversable.
-   *  @return the elements of this traversable satisfying <code>p</code>.
+  /** Selects all elements of this $coll which satisfy a predicate.
+   *
+   *  @param p     the predicate used used to test elements.
+   *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
+   *               predicate `p`. The order of the elements is preserved.
    */
   def filter(p: A => Boolean): Repr = {
     val b = newBuilder
@@ -183,33 +277,54 @@ self =>
     b.result
   }
 
-  /** Returns a traversable with all elements of this traversable which do not satisfy the predicate
-   *  <code>p</code>.
+  /** Selects all elements of this $coll which do not satisfy a predicate.
    *
-   *  @param p the predicate used to test elements
-   *  @return  the traversable without all elements that satisfy <code>p</code>
+   *  @param p     the predicate used to test elements.
+   *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
+   *               predicate `p`. The order of the elements is preserved.
    */
   def filterNot(p: A => Boolean): Repr = filter(!p(_))
 
-  /** Returns a new traversable based on the partial function <code>pf</code>,
-  *  containing pf(x) for all the elements which are defined on pf.
-  *  The order of the elements is preserved.
-  *  @param pf the partial function which filters and maps the traversable.
-  *  @return the new traversable.
-  */
+  /** Selects all elements of this $coll which do not satisfy a predicate.
+   *
+   *  @param p     the predicate used to test elements.
+   *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
+   *               predicate `p`. The order of the elements is preserved.
+   */
+  @deprecated("use `filterNot' instead")
+  def remove(p: A => Boolean): Repr = filterNot(p)
+
+  /** Builds a new collection by applying a partial function to all elements of this $coll
+   *  on which the function is defined.
+   *
+   *  @param pf     the partial function which filters and maps the $coll.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the partial function
+   *                `pf` to each element on which it is defined and collecting the results.
+   *                The order of the elements is preserved.
+   *
+   *  @usage def partialMap[B](pf: PartialFunction[Any, B]): $Coll[B]
+   *
+   *  @param pf     the partial function which filters and maps the $coll.
+   *  @return       a new $coll resulting from applying the given partial function
+   *                `pf` to each element on which it is defined and collecting the results.
+   *                The order of the elements is preserved.
+   */
   def partialMap[B, That](pf: PartialFunction[Any, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     for (x <- this) if (pf.isDefinedAt(x)) b += pf(x)
     b.result
   }
 
-  /** Partitions this traversable in two traversables according to a predicate.
+  /** Partitions this $coll in two ${coll}s according to a predicate.
    *
-   *  @param p the predicate on which to partition
-   *  @return  a pair of traversables: the traversable that satisfies the predicate
-   *           <code>p</code> and the traversable that does not.
-   *           The relative order of the elements in the resulting traversables
-   *           is the same as in the original traversable.
+   *  @param p the predicate on which to partition.
+   *  @return  a pair of ${coll}s: the first $coll consists of all elements that
+   *           satisfy the predicate `p` and the second $coll consists of all elements
+   *           that don't. The relative order of the elements in the resulting ${coll}s
+   *           is the same as in the original $coll.
    */
   def partition(p: A => Boolean): (Repr, Repr) = {
     val l, r = newBuilder
@@ -217,13 +332,21 @@ self =>
     (l.result, r.result)
   }
 
-  /** Partition this traversable into a map of traversables
-   *  according to some discriminator function.
-   *  @invariant   (xs partition f)(k) = xs filter (x => f(x) == k)
+  /** Partitions this $coll into a map of ${coll}s according to some discriminator function.
    *
-   *  @note This method is not re-implemented by views. This means
+   *  Note: this method is not re-implemented by views. This means
    *        when applied to a view it will always force the view and
-   *        return a new collection.
+   *        return a new $coll.
+   *
+   *  @param f     the discriminator function.
+   *  @tparam K    the type of keys returned by the discriminator function.
+   *  @return      A map from keys to ${coll}s such that the following invariant holds:
+   *               {{{
+   *                 (xs partition f)(k) = xs filter (x => f(x) == k)
+   *               }}}
+   *               That is, every key `k` is bound to a $coll of those elements `x`
+   *               for which `f(x)` equals `k`.
+   *
    */
   def groupBy[K](f: A => K): Map[K, Repr] = {
     var m = Map[K, Builder[A, Repr]]()
@@ -238,11 +361,13 @@ self =>
     m mapValues (_.result)
   }
 
-  /** Return true iff the given predicate `p` yields true for all elements
-   *  of this traversable.
+  /** Tests whether a predicate holds for all elements of this $coll.
    *
-   *  @note May not terminate for infinite-sized collections.
-   *  @param   p     the predicate
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used used to test elements.
+   *  @return        `true` if the given predicate `p` holds for all elements
+   *                 of this $coll, otherwise `false`.
    */
   def forall(p: A => Boolean): Boolean = {
     var result = true
@@ -253,11 +378,13 @@ self =>
     result
   }
 
-  /** Return true iff there is an element in this traversable for which the
-   *  given predicate `p` yields true.
+  /** Tests whether a predicate holds for some of the elements of this $coll.
    *
-   *  @note May not terminate for infinite-sized collections.
-   *  @param   p     the predicate
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used used to test elements.
+   *  @return        `true` if the given predicate `p` holds for some of the elements
+   *                 of this $coll, otherwise `false`.
    */
   def exists(p: A => Boolean): Boolean = {
     var result = false
@@ -268,11 +395,12 @@ self =>
     result
   }
 
-  /** Count the number of elements in the traversable which satisfy a predicate.
+  /** Counts the number of elements in the $coll which satisfy a predicate.
    *
-   *  @note Will not terminate for infinite-sized collections.
-   *  @param p the predicate for which to count
-   *  @return  the number of elements satisfying the predicate <code>p</code>.
+   *  @param p     the predicate  used used to test elements.
+   *  @return      the number of elements satisfying the predicate `p`.
+   *
+   *
    */
   def count(p: A => Boolean): Int = {
     var cnt = 0
@@ -282,14 +410,14 @@ self =>
     cnt
   }
 
-  /** Find and return the first element of the traversable object satisfying a
-   *  predicate, if any.
+  /** Finds the first element of the $coll satisfying a predicate, if any.
    *
-   *  @note may not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered.
-   *  @param p the predicate
-   *  @return an option containing the first element in the traversable object
-   *  satisfying <code>p</code>, or <code>None</code> if none exists.
+   *  $mayNotTerminateInf
+   *  $orderDependent
+   *
+   *  @param p    the predicate used used to test elements.
+   *  @return     an option value containing the first element in the $coll
+   *              that satisfies `p`, or `None` if none exists.
    */
   def find(p: A => Boolean): Option[A] = {
     var result: Option[A] = None
@@ -300,16 +428,21 @@ self =>
     result
   }
 
-  /** Combines the elements of this traversable object together using the binary
-   *  function <code>f</code>, from left to right, and starting with
-   *  the value <code>z</code>.
+  /** Applies a binary operator to a start value and all elements of this $coll, going left to right.
    *
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
-   *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
-   *          a<sub>n</sub>)</code> if the traversable is
-   *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param   z    the start value.
+   *  @param   op   the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *           going left to right with the start value `z` on the left:
+   *           {{{
+   *             op(...op(z, x_1), x_2, ..., x_n)
+   *           }}}
+   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var result = z
@@ -318,24 +451,37 @@ self =>
     result
   }
 
-  /** Similar to <code>foldLeft</code> but can be used as
-   *  an operator with the order of traversable and zero arguments reversed.
-   *  That is, <code>z /: xs</code> is the same as <code>xs foldLeft z</code>
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
+  /** Applies a binary operator to a start value and all elements of this $coll, going left to right.
+   *
+   *  Note: `/:` is alternate syntax for `foldLeft`; `z /: xs` is the same as `xs foldLeft z`.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param   z    the start value.
+   *  @param   op   the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *           going left to right with the start value `z` on the left:
+   *           {{{
+   *             op(...op(op(z, x_1), x_2), ..., x_n)
+   *           }}}
+   *           where `x_1, ..., x_n` are the elements of this $coll.
    */
   def /: [B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
-  /** Combines the elements of this traversable together using the binary
-   *  function <code>f</code>, from right to left, and starting with
-   *  the value <code>z</code>.
+  /** Applies a binary operator to all elements of this $coll and a start value, going right to left.
+   *  @param   z    the start value.
+   *  @param   op   the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *           going right to left with the start value `z` on the right:
+   *           {{{
+   *             op(x_1, op(x_2, ... op(x_n, z)...))
+   *           }}}
+   *           where `x_1, ..., x_n` are the elements of this $coll.
    *
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
-   *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
-   *          if the traversable is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
     var elems: List[A] = Nil
@@ -343,24 +489,37 @@ self =>
     elems.foldLeft(z)((x, y) => op(y, x))
   }
 
-  /** An alias for <code>foldRight</code>.
-   *  That is, <code>xs :\ z</code> is the same as <code>xs foldRight z</code>
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
+  /** Applies a binary operator to all elements of this $coll and a start value, going right to left.
+   *
+   *  Note: `:\` is alternate syntax for `foldRight`; `xs :\ z` is the same as `xs foldRight z`.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param   z    the start value
+   *  @param   op   the binary operator
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *           going right to left with the start value `z` on the right:
+   *           {{{
+   *             op(x_1, op(x_2, ... op(x_n, z)...))
+   *           }}}
+   *           where `x_1, ..., x_n` are the elements of this $coll.
    */
   def :\ [B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
-  /** Combines the elements of this traversable object together using the binary
-   *  operator <code>op</code>, from left to right
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
-   *  @param op  The operator to apply
-   *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
-      if the traversable object has elements
-   *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
-   *  @throws Predef.UnsupportedOperationException if the traversable object is empty.
+  /** Applies a binary operator to all elements of this $coll, going left to right.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *           going left to right:
+   *           {{{
+   *             op(...(op(x_1, x_2), ... ) , x_n)
+   *           }}}
+   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *  @throws `UnsupportedOperationException` if this $coll is empty.
    */
   def reduceLeft[B >: A](op: (B, A) => B): B = {
     if (isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
@@ -372,30 +531,32 @@ self =>
     result
   }
 
-  /** Combines the elements of this traversable object together using the binary
-   *  operator <code>op</code>, from left to right
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
-   *  @param op  The operator to apply
-   *  @return  If the traversable is non-empty, the result of the operations as an Option, otherwise None.
+  /** Optionally applies a binary operator to all elements of this $coll, going left to right.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  an option value containing the result of `reduceLeft(op)` is this $coll is nonempty,
+   *           `None` otherwise.
    */
   def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = {
     if (isEmpty) None else Some(reduceLeft(op))
   }
 
-  /** Combines the elements of this traversable object together using the binary
-   *  operator <code>op</code>, from right to left
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
-   *  @param op  The operator to apply
+  /** Applies a binary operator to all elements of this $coll, going right to left.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
    *
-   *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
-   *          if the traversable object has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
-   *          a<sub>n</sub></code>.
-   *
-   *  @throws Predef.UnsupportedOperationException if the iterator is empty.
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *           going right to left:
+   *           {{{
+   *             op(x_1, op(x_2, ..., op(x_(n-1), x_n)...))
+   *           }}}
+   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *  @throws `UnsupportedOperationException` if this $coll is empty.
    */
   def reduceRight[B >: A](op: (A, B) => B): B = {
     if (isEmpty) throw new UnsupportedOperationException("empty.reduceRight")
@@ -404,54 +565,91 @@ self =>
     elems.reduceLeft[B]((x, y) => op(y, x))
   }
 
- /** Combines the elements of this traversable object together using the binary
-   *  operator <code>op</code>, from right to left.
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this traversable is ordered, or
-   *        the operator is associative and commutative.
-   *  @param op  The operator to apply
-   *  @return  If the traversable is non-empty, the result of the operations as an Option, otherwise None.
+  /** Optionally applies a binary operator to all elements of this $coll, going right to left.
+   *  $willNotTerminateInf
+   *  $orderDependentFold
+   *
+   *  @param  op    the binary operator.
+   *  @tparam  B    the result type of the binary operator.
+   *  @return  an option value containing the result of `reduceRight(op)` is this $coll is nonempty,
+   *           `None` otherwise.
+   *  @throws `UnsupportedOperationException` if this $coll is empty.
    */
-  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = {
+  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] =
     if (isEmpty) None else Some(reduceRight(op))
-  }
 
-  /** Returns the sum of all elements with respect to the numeric operations in `num` */
+  /** Sums up the elements of this collection.
+   *
+   *   @param   num  an implicit parameter defining a set of numeric operations
+   *                 which includes the `+` operator to be used in forming the sum.
+   *   @tparam  B    the result type of the `+` operator.
+   *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
+   *
+   *   @usage sum: Num
+   *   @return       the sum of all elements in this $coll of numbers of type `Num`.
+   *                 `Num` must be a numeric type such as `Int`, `Double`, `BigDecimal`.
+   */
   def sum[B >: A](implicit num: Numeric[B]): B = {
     var acc = num.zero
     for (x <- self) acc = num.plus(acc, x)
     acc
   }
 
-  /** Returns the product of all elements with respect to the numeric operations in `num` */
+  /** Multiplies up the elements of this collection.
+   *
+   *   @param   num  an implicit parameter defining a set of numeric operations
+   *                 which includes the `*` operator to be used in forming the product.
+   *   @tparam  B    the result type of the `*` operator.
+   *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
+   *
+   *   @usage product: Num
+   *   @return       the product of all elements in this $coll of numbers of type `Num`.
+   *                 `Num` must be a numeric type such as `Int`, `Double`, `BigDecimal`.
+   */
   def product[B >: A](implicit num: Numeric[B]): B = {
     var acc = num.one
     for (x <- self) acc = num.times(acc, x)
     acc
   }
 
-  /** Returns the minimal element with respect to the given ordering `cmp` */
+  /** Finds the smallest element.
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The type over which the ordering is defined.
+   *  @return   the smallest element of this $coll with respect to the ordering `cmp`.
+   *
+   *  @usage min: A
+   *  @return   the smallest element of this $coll
+   */
   def min[B >: A](implicit cmp: Ordering[B]): A = {
-    require(!self.isEmpty, "<empty>.min")
+    if (isEmpty) throw new UnsupportedOperationException("empty.min")
     var acc = self.head
     for (x <- self)
       if (cmp.lt(x, acc)) acc = x
     acc
   }
 
-  /** Returns the maximal element with respect to the given ordering `cmp` */
+  /** Finds the largest element.
+   *
+   *  @param    cmp   An ordering to be used for comparing elements.
+   *  @tparam   B     The type over which the ordering is defined.
+   *  @return   the largest element of this $coll with respect to the ordering `cmp`.
+   *
+   *  @usage min: A
+   *  @return   the largest element of this $coll.
+   */
   def max[B >: A](implicit cmp: Ordering[B]): A = {
-    require(!self.isEmpty, "<empty>.max")
+    if (isEmpty) throw new UnsupportedOperationException("empty.max")
     var acc = self.head
     for (x <- self)
       if (cmp.gt(x, acc)) acc = x
     acc
   }
 
-  /** The first element of this traversable.
-   *
-   *  @note  Might return different results for different runs, unless this traversable is ordered
-   *  @throws Predef.NoSuchElementException if the traversable is empty.
+  /** Selects the first element.
+   *  $orderDependent
+   *  @return  the first element of this $coll.
+   *  @throws `NoSuchElementException` if the $coll is empty.
    */
   def head: A = {
     var result: () => A = () => throw new NoSuchElementException
@@ -464,25 +662,27 @@ self =>
     result()
   }
 
-  /** Returns as an option the first element of this traversable
-   *  or <code>None</code> if traversable is empty.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Optionally selects the first element.
+   *  $orderDependent
+   *  @return  the first element of this $coll$ if it is nonempty, `None` if it is empty.
    */
   def headOption: Option[A] = if (isEmpty) None else Some(head)
 
-  /** a traversable consisting of all elements of this traversable
-   *  except the first one.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Selects all elements except the first.
+   *  $orderDependent
+   *  @return  a $coll consisting of all elements of this $coll
+   *           except the first one.
+   *  @throws `UnsupportedOperationException` if the $coll is empty.
    */
   def tail: Repr = {
-    require(!self.isEmpty, "<empty>.tail")
+    if (isEmpty) throw new UnsupportedOperationException("empty.tail")
     drop(1)
   }
 
-  /** The last element of this traversable.
-   *
-   *  @throws Predef.NoSuchElementException if the traversable is empty.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Selects the last element.
+   *  $orderDependent
+   *  @return  the first element of this $coll.
+   *  @throws `NoSuchElementException` if the $coll is empty.
    */
   def last: A = {
     var lst = head
@@ -491,17 +691,17 @@ self =>
     lst
   }
 
-  /** Returns as an option the last element of this traversable or
-   *  <code>None</code> if traversable is empty.
-   *
-   *  @return the last element as an option.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Optionally selects the last element.
+   *  $orderDependent
+   *  @return  the last element of this $coll$ if it is nonempty, `None` if it is empty.
    */
   def lastOption: Option[A] = if (isEmpty) None else Some(last)
 
-  /** a traversable consisting of all elements of this traversable except the last one.
-   *  @throws Predef.UnsupportedOperationException if the stream is empty.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Selects all elements except the last.
+   *  $orderDependent
+   *  @return  a $coll consisting of all elements of this $coll
+   *           except the last one.
+   *  @throws `UnsupportedOperationException` if the $coll is empty.
    */
   def init: Repr = {
     if (isEmpty) throw new UnsupportedOperationException("empty.init")
@@ -516,12 +716,11 @@ self =>
     b.result
   }
 
-  /** Return a traversable consisting only of the first <code>n</code>
-   *  elements of this traversable, or else the whole traversable, if it has less
-   *  than <code>n</code> elements.
-   *
-   *  @param n the number of elements to take
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Selects first ''n'' elements.
+   *  $orderDependent
+   *  @param  n    The number of elements to take
+   *  @return a $coll consisting only of the first `n` elements of this $coll, or else the
+   *          whole $coll, if it has less than `n` elements.
    */
   def take(n: Int): Repr = {
     val b = newBuilder
@@ -536,13 +735,11 @@ self =>
     b.result
   }
 
-  /** Returns this traversable without its <code>n</code> first elements
-   *  If this traversable has less than <code>n</code> elements, the empty
-   *  traversable is returned.
-   *
-   *  @param n the number of elements to drop
-   *  @return  the new traversable
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Selects all elements except first ''n'' ones.
+   *  $orderDependent
+   *  @param  n    The number of elements to take
+   *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+   *          empty $coll, if this $coll has less than `n` elements.
    */
   def drop(n: Int): Repr = {
     val b = newBuilder
@@ -554,15 +751,16 @@ self =>
     b.result
   }
 
-  /** A sub-traversable starting at index `from`
-   *  and extending up to (but not including) index `until`.
+  /** Selects an interval of elements.
    *
-   *  @note c.slice(from, to)  is equivalent to (but possibly more efficient than)
-   *  c.drop(from).take(to - from)
+   *  Note: `c.slice(from, to)`  is equivalent to (but possibly more efficient than)
+   *  `c.drop(from).take(to - from)`
+   *  $orderDependent
    *
-   *  @param from   The index of the first element of the returned subsequence
-   *  @param until  The index of the element following the returned subsequence
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+   *  @param from   the index of the first returned element in this $coll.
+   *  @param until  the index one past the last returned element in this $coll.
+   *  @return  a $coll containing the elements starting at index `from`
+   *           and extending up to (but not including) index `until` of this $coll.
    */
   def slice(from: Int, until: Int): Repr = {
     val b = newBuilder
@@ -577,11 +775,11 @@ self =>
     b.result
   }
 
-  /** Returns the longest prefix of this traversable whose elements satisfy
-   *  the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Takes longest prefix of elements that satisfy a predicate.
+   *  $orderDependent
+   *  @param   p  The predicate used to test elements.
+   *  @return  the longest prefix of this $coll whose elements all satisfy
+   *           the predicate `p`.
    */
   def takeWhile(p: A => Boolean): Repr = {
     val b = newBuilder
@@ -594,11 +792,11 @@ self =>
     b.result
   }
 
-  /** Returns the longest suffix of this traversable whose first element
-   *  does not satisfy the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+  /** Drops longest prefix of elements that satisfy a predicate.
+   *  $orderDependent
+   *  @param   p  The predicate used to test elements.
+   *  @return  the longest suffix of this $coll whose first element
+   *           does not satisfy the predicate `p`.
    */
   def dropWhile(p: A => Boolean): Repr = {
     val b = newBuilder
@@ -610,13 +808,16 @@ self =>
     b.result
   }
 
- /** Returns a pair consisting of the longest prefix of the traversable whose
-   *  elements all satisfy the given predicate, and the rest of the traversable.
+  /** Spits this $coll into a prefix/suffix pair according to a predicate.
+   *
+   *  Note: `c span p`  is equivalent to (but possibly more efficient than)
+   *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the predicate `p`
+   *  does not cause any side-effects.
+   *  $orderDependent
    *
    *  @param p the test predicate
-   *  @return  a pair consisting of the longest prefix of the traversable whose
-   *           elements all satisfy <code>p</code>, and the rest of the traversable.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+   *  @return  a pair consisting of the longest prefix of this $coll whose
+   *           elements all satisfy `p`, and the rest of this $coll.
    */
   def span(p: A => Boolean): (Repr, Repr) = {
     val l, r = newBuilder
@@ -628,13 +829,14 @@ self =>
     (l.result, r.result)
   }
 
-  /** Split the traversable at a given point and return the two parts thus
-   *  created.
+  /** Splits this $coll into two at a given position.
+   *  Note: `c splitAt n` is equivalent to (but possibly more efficient than)
+   *         `(c take n, c drop n)`.
+   *  $orderDependent
    *
-   *  @param n the position at which to split
-   *  @return  a pair of traversables composed of the first <code>n</code>
-   *           elements, and the other elements.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
+   *  @param n the position at which to split.
+   *  @return  a pair of ${coll}s consisting of the first `n`
+   *           elements of this $coll, and the other elements.
    */
   def splitAt(n: Int): (Repr, Repr) = {
     val l, r = newBuilder
@@ -646,23 +848,33 @@ self =>
     (l.result, r.result)
   }
 
-  /** Copy all elements of this traversable to a given buffer
-   *  @note Will not terminate for infinite-sized collections.
-   *  @param  dest   The buffer to which elements are copied
+  /** Copies all elements of this $coll to a buffer.
+   *  $willNotTerminateInf
+   *  @param  dest   The buffer to which elements are copied.
    */
   def copyToBuffer[B >: A](dest: Buffer[B]) {
     for (x <- this) dest += x
   }
 
-  /** Fills the given array <code>xs</code> with at most `len` elements of
-   *  this traversable starting at position `start`.
-   *  Copying will stop once either the end of the current traversable is reached or
-   *  `len` elements have been copied or the end of the array is reached.
+  /** Copies selected elements of this $coll to an array.
+   *  Fills the given array `xs` with at most `len` elements of
+   *  this $coll, starting at position `start`.
+   *  Copying will stop once either the end of the current $coll is reached,
+   *  or the end of the array is reached, or `len` elements have been copied.
    *
-   *  @note Will not terminate for infinite-sized collections.
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   *  @param  len number of elements to copy
+   *  $willNotTerminateInf
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @param  len    the maximal number of elements to copy.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *
+   *  @usage copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @param  len    the maximal number of elements to copy.
    */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
     var i = start
@@ -676,21 +888,37 @@ self =>
     }
   }
 
-  /** Fills the given array <code>xs</code> with the elements of
-   *  this traversable starting at position <code>start</code>
-   *  until either the end of the current traversable or the end of array `xs` is reached.
+  /** Copies selected suffix of this $coll to an array.
+   *  Fills the given array `xs` with all elements of
+   *  this $coll, starting at position `start`.
+   *  Copying will stop once either the end of the current $coll is reached,
+   *  or the end of the array is reached.
    *
-   *  @note Will not terminate for infinite-sized collections.
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   *  @pre    the array must be large enough to hold all elements.
+   *  $willNotTerminateInf
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @usage def copyToArray(xs: Array[A], start: Int): Unit
+   *
+   *  @param  xs     the array to fill.
+   *  @param  start  the starting index.
    */
   def copyToArray[B >: A](xs: Array[B], start: Int) {
     copyToArray(xs, start, xs.length - start)
   }
 
-  /** Converts this traversable to a fresh Array containing all elements.
-   *  @note  Will not terminate for infinite-sized collections.
+  /** Converts this $coll to an array.
+   *  $willNotTerminateInf
+   *
+   *  @tparam B    the type of the elements of the array. A `ClassManifest` for this type must
+   *               be available.
+   *  @return  an array containing all elements of this $coll.
+   *
+   *  @usage toArray: Array[A]
+   *  @return  an array containing all elements of this $coll.
+   *           A `ClassManifest` must be available for the element type of this $coll.
    */
   def toArray[B >: A : ClassManifest]: Array[B] = {
     val result = new Array[B](size)
@@ -698,71 +926,89 @@ self =>
     result
   }
 
-  /** Returns a list with all elements of this traversable object.
-   *  @note Will not terminate for infinite-sized collections.
+  /** Converts this $coll to a list.
+   *  $willNotTerminateInf
+   *  @return a list containing all elements of this $coll.
    */
   def toList: List[A] = (new ListBuffer[A] ++= thisCollection).toList
 
-  /** Returns a traversable with all elements in this traversable object.
-   *  @note Will not terminate for infinite-sized collections.
+  /** Converts this $coll to an iterable collection.
+   *
+   *  Note:  Will not terminate for infinite-sized collections.
+   *
+   *  @return an `Iterable` containing all elements of this $coll.
    */
   def toIterable: Iterable[A] = toStream
 
-  /** Returns a sequence with all elements in this traversable object.
-   *  @note Will not terminate for infinite-sized collections.
+  /** Converts this $coll to a sequence.
+   *  $willNotTerminateInf
+   *  @return a sequence containing all elements of this $coll.
    */
   def toSeq: Seq[A] = toList
 
-  /** Returns a IndexedSeq with all elements in this traversable object.
-   *  @note Will not terminate for infinite-sized collections.
+  /** Converts this $coll to an indexed sequence.
+   *  $willNotTerminateInf
+   *  @return an indexed sequence containing all elements of this $coll.
    */
   def toIndexedSeq[B >: A]: mutable.IndexedSeq[B] = (new ArrayBuffer[B] ++= thisCollection)
 
-  /** Returns a stream with all elements in this traversable object.
+  /** Converts this $coll to a stream.
+   *  $willNotTerminateInf
+   *  @return a stream containing all elements of this $coll.
    */
   def toStream: Stream[A] = toList.toStream
 
-  /** Returns an immutable set with all unique elements in this traversable object.
+  /** Converts this $coll to a set.
+   *  $willNotTerminateInf
+   *  @return      a set containing all elements of this $coll.
    */
   def toSet[B >: A]: immutable.Set[B] = immutable.Set() ++ thisCollection
 
-  /** Returns a string representation of this traversable object. The resulting string
-   *  begins with the string <code>start</code> and is finished by the string
-   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
-   *  the method <code>toString()</code>) are separated by the string
-   *  <code>sep</code>.
+  /** Displays all elements of this $coll in a string using start, end, and separator strings.
    *
-   *  @ex  <code>List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"</code>
-   *  @param start starting string.
-   *  @param sep separator string.
-   *  @param end ending string.
-   *  @return a string representation of this traversable object.
+   *  @param start the starting string.
+   *  @param sep   the separator string.
+   *  @param end   the ending string.
+   *  @return      a string representation of this $coll. The resulting string
+   *               begins with the string `start` and is finished by the string
+   *               `end`. Inside, the string representations (w.r.t. the method `toString`)
+   *               of all elements of this $coll are separated by the string `sep`.
+   *
+   *  @ex  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
    */
   def mkString(start: String, sep: String, end: String): String =
     addString(new StringBuilder(), start, sep, end).toString
 
-  /** Returns a string representation of this traversable object. The string
-   *  representations of elements (w.r.t. the method <code>toString()</code>)
-   *  are separated by the string <code>sep</code>.
+  /** Displays all elements of this $coll in a string using a separator string.
    *
-   *  @param sep separator string.
-   *  @return a string representation of this traversable object.
+   *  @param sep   the separator string.
+   *  @return      a string representation of this $coll. In the resulting string
+   *               the string representations (w.r.t. the method `toString`)
+   *               of all elements of this $coll are separated by the string `sep`.
+   *
+   *  @ex  `List(1, 2, 3).mkString("|") = "1|2|3"`
    */
   def mkString(sep: String): String =
     addString(new StringBuilder(), sep).toString
 
-  /** Returns a string representation of this traversable object. The string
-   *  representations of elements (w.r.t. the method <code>toString()</code>)
-   *  follow each other without any separator string.
+  /** Displays all elements of this $coll in a string.
+   *  @return a string representation of this $coll. In the resulting string
+   *          the string representations (w.r.t. the method `toString`)
+   *          of all elements of this $coll follow each other without any separator string.
    */
   def mkString: String =
     addString(new StringBuilder()).toString
 
-  /** Write all elements of this traversable into given string builder.
-   *  The written text begins with the string <code>start</code> and is finished by the string
-   *  <code>end</code>. Inside, the string representations of elements (w.r.t.
-   *  the method <code>toString()</code>) are separated by the string
-   *  <code>sep</code>.
+  /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
+   *  The written text begins with the string `start` and is finished by the string
+   *  `end`. Inside, the string representations (w.r.t. the method `toString`)
+   *  of all elements of this $coll are separated by the string `sep`.
+   *
+   *  @param  b    the string builder to which elements are appended.
+   *  @param start the starting string.
+   *  @param sep   the separator string.
+   *  @param end   the ending string.
+   *  @return      the string builder `b` to which elements were appended.
    */
   def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     b append start
@@ -775,20 +1021,35 @@ self =>
     b append end
   }
 
-  /** Write all elements of this string into given string builder.
-   *  The string representations of elements (w.r.t. the method <code>toString()</code>)
-   *  are separated by the string <code>sep</code>.
+  /** Appends all elements of this $coll to a string builder using a separator string.
+   *  The written text consists of the string representations (w.r.t. the method `toString`)
+   *  of all elements of this $coll, separated by the string `sep`.
+   *
+   *  @param  b    the string builder to which elements are appended.
+   *  @param sep   the separator string.
+   *  @return      the string builder `b` to which elements were appended.
    */
   def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
 
-  /** Write all elements of this string into given string builder without using
-   *  any separator between consecutive elements.
+  /** Appends all elements of this $coll to a string builder.
+   *  The written text consists of the string representations (w.r.t. the method `toString`)
+   *  of all elements of this $coll without any separator string.
+   *
+   *  @param  b    the string builder to which elements are appended.
+   *  @return      the string builder `b` to which elements were appended.
    */
   def addString(b: StringBuilder): StringBuilder = addString(b, "")
 
+  /** Converts this $coll to a string
+   *  @returns  a string representation of this collection. By default this
+   *            string consists of the `stringPrefix` of this $coll,
+   *            followed by all elements separated by commas and enclosed in parentheses.
+   */
   override def toString = mkString(stringPrefix + "(", ", ", ")")
 
-  /** Defines the prefix of this object's <code>toString</code> representation.
+  /** Defines the prefix of this object's `toString` representation.
+   *  @return  a string representation which starts the result of `toString` applied to this $coll.
+   *           By default the string prefix is the simple name of the collection class $coll.
    */
   def stringPrefix : String = {
     var string = repr.asInstanceOf[AnyRef].getClass.getName
@@ -799,28 +1060,70 @@ self =>
     string
   }
 
-  /** Creates a view of this traversable @see TraversableView
+  /** Creates a non-strict view of this $coll.
+   *
+   *  @return a non-strict view of this $coll.
+   *  @see TraversableView
    */
   def view = new TraversableView[A, Repr] {
     protected lazy val underlying = self.repr
     override def foreach[B](f: A => B) = self foreach f
   }
 
-  /** A sub-traversable  starting at index `from`
+  /** Creates a non-strict view of a slice of this $coll.
+   *
+   *  Note: the difference between `view` and `slice` is that `view` produces
+   *        a view of the current $coll, whereas `slice` produces a new $coll.
+   *
+   *  Note: `view(from, to)` is equivalent to `view.slice(from, to)`
+   *  $orderDependent
+   *
+   *  @param from   the index of the first element of the view
+   *  @param until  the index of the element following the view
+   *  @return a non-strict view of a slice of this $coll, starting at index `from`
    *  and extending up to (but not including) index `until`.
-   *
-   *  @param from   The index of the first element of the slice
-   *  @param until  The index of the element following the slice
-   *  @note  The difference between `view` and `slice` is that `view` produces
-   *         a view of the current traversable, whereas `slice` produces a new traversable.
-   *
-   *  @note  Might return different results for different runs, unless this traversable is ordered
-   *  @note view(from, to)  is equivalent to view.slice(from, to)
    */
   def view(from: Int, until: Int): TraversableView[A, Repr] = view.slice(from, until)
 
+  /** Creates a non-strict filter of this $coll.
+   *
+   *  Note: the difference between `c filter p` and `c withFilter p` is that
+   *        the former creates a new collection, whereas the latter only restricts
+   *        the domain of subsequent `map`, `flatMap`, `foreach`, and `withFilter` operations.
+   *  $orderDependent
+   *
+   *  @param p   the predicate used to test elements.
+   *  @return    an object of class `WithFilter`, which supports
+   *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
+   *             All these operations apply to those elements of this $coll which
+   *             satify the predicate `p`.
+   */
+  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
+
+  /** A class supporting filtered operations. Instances of this class are returned by
+   *  method `withFilter`.
+   */
   class WithFilter(p: A => Boolean) {
 
+    /** Builds a new collection by applying a function to all elements of the
+     *  outer $coll containing this `WithFilter` instance that satisfy predicate `p`.
+     *
+     *  @param f      the function to apply to each element.
+     *  @tparam B     the element type of the returned collection.
+     *  @tparam That  $thatinfo
+     *  @param bf     $bfinfo
+     *  @return       a new collection of type `That` resulting from applying the given function
+     *                `f` to each element of the outer $coll that satisfies predicate `p`
+     *                and collecting the results.
+     *
+     *  @usage def map[B](f: A => B): $Coll[B]
+     *
+     *  @param f      the function to apply to each element.
+     *  @tparam B     the element type of the returned collection.
+     *  @return       a new $coll resulting from applying the given function
+     *                `f` to each element of the outer $coll that satisfies predicate `p`
+     *                and collecting the results.
+     */
     def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
       val b = bf(repr)
       for (x <- self)
@@ -828,6 +1131,23 @@ self =>
       b.result
     }
 
+    /** Builds a new collection by applying a function to all elements of the
+     *  outer $coll containing this `WithFilter` instance that satisfy predicate `p` and concatenating the results.
+     *
+     *  @param f      the function to apply to each element.
+     *  @tparam B     the element type of the returned collection.
+     *  @tparam That  $thatinfo
+     *  @param bf     $bfinfo
+     *  @return       a new collection of type `That` resulting from applying the given collection-valued function
+     *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
+     *
+     *  @usage def flatMap[B](f: A => Traversable[B]): $Coll[B]
+     *
+     *  @param f      the function to apply to each element.
+     *  @tparam B     the element type of the returned collection.
+     *  @return       a new $coll resulting from applying the given collection-valued function
+     *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
+     */
     def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
       val b = bf(repr)
       for (x <- self)
@@ -835,13 +1155,34 @@ self =>
       b.result
     }
 
+    /** Applies a function `f` to all elements of the outer $coll containing this `WithFilter` instance
+     *  that satisfy predicate `p`.
+     *
+     *  @param  f   the function that is applied for its side-effect to every element.
+     *              The result of function `f` is discarded.
+     *
+     *  @tparam  U  the type parameter describing the result of function `f`.
+     *              This result will always be ignored. Typically `U` is `Unit`,
+     *              but this is not necessary.
+     *
+     *  @usage def foreach(f: A => Unit): Unit
+     *
+     *  @param  f   the function that is applied for its side-effect to every element.
+     *              The result of function `f` is discarded.
+     */
     def foreach[U](f: A => U): Unit =
       for (x <- self)
         if (p(x)) f(x)
 
+    /** Further refines the filter for this $coll.
+     *
+     *  @param q   the predicate used to test elements.
+     *  @return    an object of class `WithFilter`, which supports
+     *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
+     *             All these operations apply to those elements of this $coll which
+     *             satify the predicate `q` in addition to the predicate `p`.
+     */
     def withFilter(q: A => Boolean): WithFilter =
       new WithFilter(x => p(x) && q(x))
   }
-
-  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 }
