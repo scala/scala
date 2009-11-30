@@ -383,6 +383,7 @@ trait Scanners {
             getIdentRest()
           } else if (isSpecial(ch)) {
             putChar(ch)
+            nextChar()
             getOperatorRest()
           } else {
             syntaxError("illegal character")
