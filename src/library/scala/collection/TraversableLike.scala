@@ -285,15 +285,6 @@ self =>
    */
   def filterNot(p: A => Boolean): Repr = filter(!p(_))
 
-  /** Selects all elements of this $coll which do not satisfy a predicate.
-   *
-   *  @param p     the predicate used to test elements.
-   *  @return      a new $coll consisting of all elements of this $coll that do not satisfy the given
-   *               predicate `p`. The order of the elements is preserved.
-   */
-  @deprecated("use `filterNot' instead")
-  def remove(p: A => Boolean): Repr = filterNot(p)
-
   /** Builds a new collection by applying a partial function to all elements of this $coll
    *  on which the function is defined.
    *
