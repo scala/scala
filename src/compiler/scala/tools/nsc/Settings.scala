@@ -420,9 +420,10 @@ object Settings {
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
     def dependsOn(s: Setting): this.type = dependsOn(s, "")
 
-    def isStandard: Boolean = !isAdvanced && !isPrivate && name != "-Y"
-    def isAdvanced: Boolean = (name startsWith "-X") && name != "-X"
-    def isPrivate:  Boolean = (name == "-P") || ((name startsWith "-Y") && name != "-Y")
+    def isStandard:    Boolean = !isFscSpecific && !isAdvanced && !isPrivate && name != "-Y"
+    def isFscSpecific: Boolean = (name == "-shutdown")
+    def isAdvanced:    Boolean = (name startsWith "-X") && name != "-X"
+    def isPrivate:     Boolean = (name == "-P") || ((name startsWith "-Y") && name != "-Y")
 
     // Ordered (so we can use TreeSet)
     def compare(that: Setting): Int = name compare that.name
@@ -850,6 +851,10 @@ trait ScalacSettings {
                           withPostSetHook(() =>
                             List(YwarnShadow, YwarnCatches, Xwarndeadcode, Xwarninit) foreach (_.value = true)
                           )
+  /**
+   * "fsc-specific" settings.
+   */
+  val fscShutdown   = BooleanSetting    ("-shutdown", "Shutdown the fsc daemon")
 
   /**
    * -P "Plugin" settings
