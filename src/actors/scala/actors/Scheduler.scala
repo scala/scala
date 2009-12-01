@@ -25,9 +25,10 @@ object Scheduler extends DelegatingScheduler {
 
   def makeNewScheduler: IScheduler = {
     // test on which JVM we are running
-    val jvmVendor = System.getProperty("java.vm.vendor")
-    val sched = if (jvmVendor.indexOf("IBM") != -1) {
-      Debug.info(this+": running on a "+jvmVendor+" JVM")
+    val jvmVersion = System.getProperty("java.version")
+    val jvmVendor =  System.getProperty("java.vm.vendor")
+    val sched = if (jvmVersion.indexOf("1.5") != -1 ||
+                    jvmVendor.indexOf("IBM") != -1) {
       // on IBM J9 1.6 do not use ForkJoinPool
       val s = new ResizableThreadPoolScheduler(false)
       s.start()
