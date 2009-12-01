@@ -33,15 +33,15 @@ import annotation.unchecked.uncheckedVariance
  *  @version 2.0, 19/01/2007
  *  @since   2.3
  */
-@serializable @SerialVersionUID(8886909077084990906L)
+@serializable @SerialVersionUID(1L)
 class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mutable.HashTable[A] {
 
   type Entry = scala.collection.mutable.DefaultEntry[A, Any]
 
-  protected var later: HashMap[A, B @uncheckedVariance] = null
-  protected var oldKey: A = _
-  protected var oldValue: Option[B @uncheckedVariance] = _
-  protected var deltaSize: Int = _
+  @transient protected var later: HashMap[A, B @uncheckedVariance] = null
+  @transient protected var oldKey: A = _
+  @transient protected var oldValue: Option[B @uncheckedVariance] = _
+  @transient protected var deltaSize: Int = _
 
   override def empty = HashMap.empty[A, B]
 
@@ -125,10 +125,12 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mut
   private def logLimit: Int = math.sqrt(table.length).toInt
 
   private[this] def markUpdated(key: A, ov: Option[B], delta: Int) {
-    val lv = loadFactor
+    val lf = loadFactor
     later = new HashMap[A, B] {
       override def initialSize = 0
-      override def loadFactor = lv
+      /* We need to do this to avoid a reference to the outer HashMap */
+      _loadFactor = lf
+      override def loadFactor = _loadFactor
       table     = HashMap.this.table
       tableSize = HashMap.this.tableSize
       threshold = HashMap.this.threshold
@@ -173,6 +175,14 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mut
     var m: HashMap[A, _ >: B] = this
     while (m.later != null) m = m.later
     if (m ne this) makeCopy(m)
+  }
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    serializeTo(out, _.value)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    init[B](in, new Entry(_, _))
   }
 }
 

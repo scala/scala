@@ -31,6 +31,7 @@ package mutable
  *  @since   1
  */
 trait HashTable[A] {
+  import HashTable._
 
   protected type Entry >: Null <: HashEntry[A, Entry]
 
@@ -47,33 +48,65 @@ trait HashTable[A] {
    */
   protected def initialThreshold: Int = newThreshold(initialCapacity)
 
+  @transient private[collection] var _loadFactor = loadFactor
+
   /** The actual hash table.
    */
-  protected var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
-
-  private def initialCapacity = if (initialSize == 0) 1 else powerOfTwo(initialSize)
-
-  /**
-   * Returns a power of two >= `target`.
-   */
-  private def powerOfTwo(target: Int): Int = {
-    /* See http://bits.stephan-brumme.com/roundUpToNextPowerOfTwo.html */
-    var c = target - 1;
-    c |= c >>>  1;
-    c |= c >>>  2;
-    c |= c >>>  4;
-    c |= c >>>  8;
-    c |= c >>> 16;
-    c + 1;
-  }
+  @transient protected var table: Array[HashEntry[A, Entry]] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
-  protected var tableSize: Int = 0
+  @transient protected var tableSize: Int = 0
 
   /** The next size value at which to resize (capacity * load factor).
    */
-  protected var threshold: Int = initialThreshold
+  @transient protected var threshold: Int = initialThreshold
+
+  private def initialCapacity = capacity(initialSize)
+
+  /**
+   * Initialises the collection from the input stream. `f` will be called for each key/value pair
+   * read from the input stream in the order determined by the stream. This is useful for
+   * structures where iteration order is important (e.g. LinkedHashMap).
+   */
+  private[collection] def init[B](in: java.io.ObjectInputStream, f: (A, B) => Entry) {
+    in.defaultReadObject
+
+    _loadFactor = in.readInt
+    assert(_loadFactor > 0)
+
+    val size = in.readInt
+    assert(size >= 0)
+
+    table = new Array(capacity(size * loadFactorDenum / _loadFactor))
+    threshold = newThreshold(table.size)
+
+    var index = 0
+    while (index < size) {
+      addEntry(f(in.readObject.asInstanceOf[A], in.readObject.asInstanceOf[B]))
+      index += 1
+    }
+  }
+
+  /**
+   * Serializes the collection to the output stream by saving the load factor, collection
+   * size, collection keys and collection values. `value` is responsible for providing a value
+   * from an entry.
+   *
+   * `foreach` determines the order in which the key/value pairs are saved to the stream. To
+   * deserialize, `init` should be used.
+   */
+  private[collection] def serializeTo[B](out: java.io.ObjectOutputStream, value: Entry => B) {
+    out.defaultWriteObject
+    out.writeInt(loadFactor)
+    out.writeInt(tableSize)
+    foreachEntry { entry =>
+      out.writeObject(entry.key)
+      out.writeObject(value(entry))
+    }
+  }
+
+  private def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
 
   /** Find entry with given key in table, null if not found
    */
@@ -172,9 +205,9 @@ trait HashTable[A] {
   }
 
   private def newThreshold(size: Int) =
-    ((size.toLong * loadFactor)/loadFactorDenum).toInt
+    ((size.toLong * _loadFactor)/loadFactorDenum).toInt
 
-  private def resize(newSize: Int) = {
+  private def resize(newSize: Int) {
     val oldTable = table
     table = new Array(newSize)
     var i = oldTable.length - 1
@@ -206,4 +239,19 @@ trait HashTable[A] {
   protected final def index(hcode: Int) = improve(hcode) & (table.length - 1)
 }
 
+private[collection] object HashTable {
 
+  /**
+   * Returns a power of two >= `target`.
+   */
+  private[collection] def powerOfTwo(target: Int): Int = {
+    /* See http://bits.stephan-brumme.com/roundUpToNextPowerOfTwo.html */
+    var c = target - 1;
+    c |= c >>>  1;
+    c |= c >>>  2;
+    c |= c >>>  4;
+    c |= c >>>  8;
+    c |= c >>> 16;
+    c + 1;
+  }
+}

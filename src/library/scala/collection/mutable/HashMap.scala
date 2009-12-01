@@ -17,7 +17,7 @@ import generic._
 /**
  * @since 1
  */
-@serializable @SerialVersionUID(-8682987922734091219L)
+@serializable @SerialVersionUID(1L)
 class HashMap[A, B] extends Map[A, B]
                        with MapLike[A, B, HashMap[A, B]]
                        with HashTable[A] {
@@ -83,6 +83,14 @@ class HashMap[A, B] extends Map[A, B]
     val iter = entriesIterator
     def hasNext = iter.hasNext
     def next = iter.next.value
+  }
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    serializeTo(out, _.value)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    init[B](in, new Entry(_, _))
   }
 }
 

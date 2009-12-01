@@ -17,7 +17,7 @@ import generic._
  *  Should be rewritten to be more efficient.
  *  @since 2.2
  */
-@serializable
+@serializable @SerialVersionUID(1L)
 class LinkedHashSet[A] extends Set[A]
                           with GenericSetTemplate[A, LinkedHashSet]
                           with SetLike[A, LinkedHashSet[A]]
@@ -25,7 +25,7 @@ class LinkedHashSet[A] extends Set[A]
 {
   override def companion: GenericCompanion[LinkedHashSet] = LinkedHashSet
 
-  protected val ordered = new ListBuffer[A]
+  @transient private var ordered = new ListBuffer[A]
 
   override def size = tableSize
 
@@ -52,6 +52,15 @@ class LinkedHashSet[A] extends Set[A]
   override def iterator = ordered.iterator
 
   override def foreach[U](f: A => U) = ordered foreach f
+
+  private def writeObject(s: java.io.ObjectOutputStream) {
+    serializeTo(s)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    ordered = new ListBuffer[A]
+    init(in, ordered += )
+  }
 }
 
 /** Factory object for `LinkedHashSet` class */

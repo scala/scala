@@ -29,7 +29,7 @@ object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
 /**
  * @since 2.7
  */
-@serializable
+@serializable @SerialVersionUID(1L)
 class LinkedHashMap[A, B] extends Map[A, B]
                              with MapLike[A, B, LinkedHashMap[A, B]]
                              with HashTable[A] {
@@ -39,8 +39,8 @@ class LinkedHashMap[A, B] extends Map[A, B]
 
   type Entry = LinkedEntry[A, B]
 
-  protected var firstEntry: Entry = null
-  protected var lastEntry: Entry = null
+  @transient protected var firstEntry: Entry = null
+  @transient protected var lastEntry: Entry = null
 
   def get(key: A): Option[B] = {
     val e = findEntry(key)
@@ -53,15 +53,19 @@ class LinkedHashMap[A, B] extends Map[A, B]
     if (e == null) {
       val e = new Entry(key, value)
       addEntry(e)
-      if (firstEntry == null) firstEntry = e
-      else { lastEntry.later = e; e.earlier = lastEntry }
-      lastEntry = e
+      updateLinkedEntries(e)
       None
     } else {
       val v = e.value
       e.value = value
       Some(v)
     }
+  }
+
+  private def updateLinkedEntries(e: Entry) {
+    if (firstEntry == null) firstEntry = e
+    else { lastEntry.later = e; e.earlier = lastEntry }
+    lastEntry = e
   }
 
   override def remove(key: A): Option[B] = {
@@ -114,5 +118,17 @@ class LinkedHashMap[A, B] extends Map[A, B]
   override def clear() {
     clearTable()
     firstEntry = null
+  }
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    serializeTo(out, _.value)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    init[B](in, { (key, value) =>
+      val entry = new Entry(key, value)
+      updateLinkedEntries(entry)
+      entry
+    })
   }
 }
