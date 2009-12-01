@@ -144,18 +144,20 @@ trait HashTable[A] {
     }
   }
 
-  protected final def foreachEntry[C](f: Entry => C) {
-    val t = table
-    var index = t.length - 1
-    while (index >= 0) {
-      var entry = t(index)
-      while (entry ne null) {
-        f(entry.asInstanceOf[Entry])
-        entry = entry.next
-      }
-      index -= 1
-    }
-  }
+  /*
+   * We should implement this as a primitive operation over the underlying array, but it can
+   * cause a behaviour change in edge cases where:
+   * - Someone modifies a map during iteration
+   * - The insertion point is close to the iteration point.
+   *
+   * The reason this happens is that the iterator prefetches the following element before
+   * returning from next (to simplify the implementation of hasNext) while the natural
+   * implementation of foreach does not.
+   *
+   * It should be mentioned that modifying a map during iteration leads to unpredictable
+   * results with either implementation.
+   */
+  protected final def foreachEntry[C](f: Entry => C) { entriesIterator.foreach(f) }
 
   /** An iterator returning all entries */
   @deprecated("use entriesIterator instead")
