@@ -1167,7 +1167,8 @@ self =>
         atPos(in.offset) {
           val name = unaryOp()
           in.token match {
-            case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => literal(true)
+            // Don't include double and float here else we lose -0.0
+            case INTLIT | LONGLIT => literal(true)
             case _ => Select(stripParens(simpleExpr()), name)
           }
         }
