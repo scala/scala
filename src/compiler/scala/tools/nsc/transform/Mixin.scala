@@ -649,9 +649,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  The result will be a tree of the form
        *  {
        *    if ((bitmap$n & MASK) == 0) {
-       *       synhronized(this) {
+       *       synchronized(this) {
        *         if ((bitmap$n & MASK) == 0) {
-       *           synhronized(this) {
+       *           synchronized(this) {
        *             init // l$ = <rhs>
        *           }
        *           bitmap$n = bimap$n | MASK

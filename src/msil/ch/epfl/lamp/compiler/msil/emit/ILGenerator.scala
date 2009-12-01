@@ -381,7 +381,9 @@ import ILGenerator._
      * (MSIL) instruction stream.
      */
     def BeginFinallyBlock() {
-	Emit(OpCodes.Leave, excStack.peekLabel())
+        val endExc: Label = excStack.popLabel()
+	Emit(OpCodes.Leave, endExc)
+        excStack.push(Label.Finally, endExc)
 	emitSpecialLabel(Label.Finally)
     }
 
@@ -482,9 +484,7 @@ import ILGenerator._
 	// compute new lastLabel (next label)
 	val stackSize: Int = lastLabel.getStacksize() + overridePOPUSH
 	if (stackSize < 0) {
-	    throw new RuntimeException
-	    //System.err.println
-		("ILGenerator.emit(): Stack underflow in method: " + owner)
+	    throw new RuntimeException("ILGenerator.emit(): Stack underflow in method: " + owner)
 	}
 	if (stackSize > maxstack)
 	    maxstack = stackSize

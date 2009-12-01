@@ -460,6 +460,23 @@ trait BasicBlocks {
       succs
     }
 
+    def directSuccessors: List[BasicBlock] = {
+      if (isEmpty) Nil else lastInstruction match {
+        case JUMP(whereto) => List(whereto)
+        case CJUMP(success, failure, _, _) => failure :: success :: Nil
+        case CZJUMP(success, failure, _, _) => failure :: success :: Nil
+        case SWITCH(_, labels) => labels
+        case RETURN(_) => Nil
+        case THROW() => Nil
+        case _ =>
+          if (closed) {
+            dump
+            global.abort("The last instruction is not a control flow instruction: " + lastInstruction)
+          }
+          else Nil
+      }
+    }
+
     /** Return a list of successors for 'b' that come from exception handlers
      *  covering b's (non-exceptional) successors. These exception handlers
      *  might not cover 'b' itself. This situation corresponds to an
