@@ -15,6 +15,7 @@ import scala.reflect.ClassManifest
 import scala.collection.Seq
 import scala.collection.mutable._
 import scala.collection.immutable.{ List, Stream, Nil, :: }
+import scala.util.control.ControlException
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
@@ -62,32 +63,33 @@ object ScalaRunTime {
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
 
-  abstract class Try[a] {
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b
-    def Finally(handler: Unit): a
+  abstract class Try[+A] {
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
+    def Finally(fin: => Unit): A
   }
 
-  def Try[a](block: => a): Try[a] = new Try[a] with Runnable {
-    var result: a = _
-    var exception: Throwable = ExceptionHandling.tryCatch(this)
+  def Try[A](block: => A): Try[A] = new Try[A] with Runnable {
+    private var result: A = _
+    private var exception: Throwable =
+      try   { run() ; null }
+      catch {
+        case e: ControlException  => throw e  // don't catch non-local returns etc
+        case e: Throwable         => e
+      }
 
-    def run(): Unit = result = block
+    def run() { result = block }
 
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
-      if (exception eq null)
-        result.asInstanceOf[b]
-      // !!! else if (exception is LocalReturn)
-      // !!!   // ...
-      else if (handler isDefinedAt exception)
-        handler(exception)
-      else
-        throw exception
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
+      if (exception == null) result
+      else if (handler isDefinedAt exception) handler(exception)
+      else throw exception
 
-    def Finally(handler: Unit): a =
-      if (exception eq null)
-        result.asInstanceOf[a]
-      else
-        throw exception
+    def Finally(fin: => Unit): A = {
+      fin
+
+      if (exception == null) result
+      else throw exception
+    }
   }
 
   def _toString(x: Product): String =
