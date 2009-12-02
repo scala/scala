@@ -892,39 +892,12 @@ trait Symbols {
      */
     private var triedCooking: Boolean = false
     final def cookJavaRawInfo() {
-      require(isTerm)
       // println("cookJavaRawInfo: "+(rawname, triedCooking))
-
       if(triedCooking) return else triedCooking = true // only try once...
-
-      def cook(sym: Symbol) {
-        require(sym hasFlag JAVA)
-        // @M: I think this is more desirable, but Martin prefers to leave raw-types as-is as much as possible
-        // object rawToExistentialInJava extends TypeMap {
-        //   def apply(tp: Type): Type = tp match {
-        //     // any symbol that occurs in a java sig, not just java symbols
-        //     // see http://lampsvn.epfl.ch/trac/scala/ticket/2454#comment:14
-        //     case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty =>
-        //       val eparams = typeParamsToExistentials(sym, sym.typeParams)
-        //       existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
-        //     case _ =>
-        //       mapOver(tp)
-        //   }
-        // }
-        val tpe1 = rawToExistential(sym.tpe)
-        // println("cooking: "+ sym +": "+ sym.tpe +" to "+ tpe1)
-        if (tpe1 ne sym.tpe) {
-          sym.setInfo(tpe1)
-        }
-      }
-
-      if (hasFlag(JAVA))
-        cook(this)
-      else if (hasFlag(OVERLOADED))
-        for (sym2 <- alternatives)
-          if (sym2 hasFlag JAVA)
-            cook(sym2)
+      doCookJavaRawInfo()
     }
+
+    protected def doCookJavaRawInfo(): Unit
 
 
     /** The type constructor of a symbol is:
@@ -1744,6 +1717,36 @@ trait Symbols {
       assert(hasFlag(LAZY), this)
       referenced
     }
+
+    protected def doCookJavaRawInfo() {
+      def cook(sym: Symbol) {
+        require(sym hasFlag JAVA)
+        // @M: I think this is more desirable, but Martin prefers to leave raw-types as-is as much as possible
+        // object rawToExistentialInJava extends TypeMap {
+        //   def apply(tp: Type): Type = tp match {
+        //     // any symbol that occurs in a java sig, not just java symbols
+        //     // see http://lampsvn.epfl.ch/trac/scala/ticket/2454#comment:14
+        //     case TypeRef(pre, sym, List()) if !sym.typeParams.isEmpty =>
+        //       val eparams = typeParamsToExistentials(sym, sym.typeParams)
+        //       existentialAbstraction(eparams, TypeRef(pre, sym, eparams map (_.tpe)))
+        //     case _ =>
+        //       mapOver(tp)
+        //   }
+        // }
+        val tpe1 = rawToExistential(sym.tpe)
+        // println("cooking: "+ sym +": "+ sym.tpe +" to "+ tpe1)
+        if (tpe1 ne sym.tpe) {
+          sym.setInfo(tpe1)
+        }
+      }
+
+      if (hasFlag(JAVA))
+        cook(this)
+      else if (hasFlag(OVERLOADED))
+        for (sym2 <- alternatives)
+          if (sym2 hasFlag JAVA)
+            cook(sym2)
+    }
   }
 
   /** A class for module symbols */
@@ -1850,6 +1853,20 @@ trait Symbols {
       super.reset(completer)
       tpePeriod = NoPeriod
       tyconRunId = NoRunId
+    }
+
+    /*** example:
+     * public class Test3<T> {}
+     * public class Test1<T extends Test3> {}
+     * info for T in Test1 should be >: Nothing <: Test3[_]
+     */
+    protected def doCookJavaRawInfo() {
+      // don't require hasFlag(JAVA), since T in the above example does not have that flag
+      val tpe1 = rawToExistential(info)
+      // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
+      if (tpe1 ne info) {
+        setInfo(tpe1)
+      }
     }
 
     def cloneSymbolImpl(owner: Symbol): Symbol =
@@ -2034,6 +2051,7 @@ trait Symbols {
     override def reset(completer: Type) {}
     override def info: Type = NoType
     override def rawInfo: Type = NoType
+    protected def doCookJavaRawInfo() {}
     override def accessBoundary(base: Symbol): Symbol = RootClass
     def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
   }

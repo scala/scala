@@ -955,6 +955,8 @@ abstract class RefChecks extends InfoTransform {
     private def checkTypeRef(tp: Type, pos: Position) = tp match {
       case TypeRef(pre, sym, args) =>
         checkDeprecated(sym, pos)
+        if(sym.hasFlag(JAVA))
+          sym.typeParams foreach (_.cookJavaRawInfo())
         if (!tp.isHigherKinded)
           checkBounds(pre, sym.owner, sym.typeParams, args, pos)
       case _ =>
