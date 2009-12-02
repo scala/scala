@@ -103,8 +103,8 @@ class HashSet[A] extends Set[A]
     later = new HashSet[A] {
       override def initialSize = 0
       /* We need to do this to avoid a reference to the outer HashMap */
-      _loadFactor = lf
-      override def loadFactor = _loadFactor
+      def _newLoadFactor = lf
+      override def loadFactor = _newLoadFactor
       table     = HashSet.this.table
       tableSize = HashSet.this.tableSize
       threshold = HashSet.this.threshold

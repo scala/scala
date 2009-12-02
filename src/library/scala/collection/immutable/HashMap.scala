@@ -129,8 +129,8 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with mut
     later = new HashMap[A, B] {
       override def initialSize = 0
       /* We need to do this to avoid a reference to the outer HashMap */
-      _loadFactor = lf
-      override def loadFactor = _loadFactor
+      def _newLoadFactor = lf
+      override def loadFactor = _newLoadFactor
       table     = HashMap.this.table
       tableSize = HashMap.this.tableSize
       threshold = HashMap.this.threshold
