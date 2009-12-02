@@ -137,30 +137,28 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       if (tme.isDef) "def" else if (tme.isVal) "val" else if (tme.isVar) "var" else "type"
   }
 
-  def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
-    def bound0(bnd: Option[TypeEntity], pre: String): String = bnd match {
-      case None => ""
-      case Some(tpe) => pre + typeToHtml(tpe)
+  def boundsToHtml(hi: Option[TypeEntity], lo: Option[TypeEntity], hasLinks: Boolean): NodeSeq = {
+    def bound0(bnd: Option[TypeEntity], pre: String): NodeSeq = bnd match {
+      case None => NodeSeq.Empty
+      case Some(tpe) => xml.Text(pre) ++ typeToHtml(tpe, hasLinks)
     }
-    bound0(hi, " <: ") + bound0(lo, " >: ")
+    bound0(hi, " <: ") ++ bound0(lo, " >: ")
   }
 
   /** name, tparams, params, result */
   def signature(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
-    val inside: NodeSeq =
+    def inside(hasLinks: Boolean): NodeSeq =
       <xml:group>
-      <div class="kind">{ kindToString(mbr) }</div>
-      <div class="symbol">
-        <span class="name">{ if (mbr.isConstructor) tpl.name else mbr.name }</span>
-        { def tparamsToHtml(tpss: List[TypeParam]): NodeSeq =
+      <span class="kind">{ kindToString(mbr) }</span>
+      <span class="symbol">
+        <span class="name">{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
+          def tparamsToHtml(tpss: List[TypeParam]): NodeSeq =
             if (tpss.isEmpty) NodeSeq.Empty else {
               def tparam0(tp: TypeParam): NodeSeq =
-                <span name={ tp.name }>{
-                  tp.variance + tp.name + boundsToString(tp.hi, tp.lo)
-                }</span>
+                <span name={ tp.name }>{ tp.variance + tp.name }{ boundsToHtml(tp.hi, tp.lo, hasLinks)}</span>
               def tparams0(tpss: List[TypeParam]): NodeSeq = (tpss: @unchecked) match {
                 case tp :: Nil => tparam0(tp)
-                case tp :: tps => tparam0(tp) ++ Text(",") ++ tparams0(tps)
+                case tp :: tps => tparam0(tp) ++ Text(", ") ++ tparams0(tps)
               }
               <span class="tparams">[{ tparams0(tpss) }]</span>
             }
@@ -169,16 +167,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             case dfe: Def => tparamsToHtml(dfe.typeParams)
             case _ => NodeSeq.Empty
           }
-        }
-        { def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
+        }{
+          def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
             def param0(vl: ValueParam): NodeSeq =
-              <span name={ vl.name }>{
-                vl.name + ": " + typeToHtml(vl.resultType)
-              }</span>
+              <span name={ vl.name }>{ vl.name + ": " }{ typeToHtml(vl.resultType, hasLinks) }</span>
             def params0(vlss: List[ValueParam]): NodeSeq = vlss match {
               case Nil => NodeSeq.Empty
               case vl :: Nil => param0(vl)
-              case vl :: vls => param0(vl) ++ Text(",") ++ params0(vls)
+              case vl :: vls => param0(vl) ++ Text(", ") ++ params0(vls)
             }
             vlsss map { vlss => <span class="params">({ params0(vlss) })</span> }
           }
@@ -188,32 +184,32 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             case dfe: Def => paramsToHtml(dfe.valueParams)
             case _ => NodeSeq.Empty
           }
-        }
-        { mbr match {
+        }{
+          mbr match {
             case tpl: DocTemplateEntity if (!tpl.isPackage) =>
               tpl.parentType match {
-                case Some(st) => <span class="result">extends<span>{ typeToHtml(st) }</span></span>
+                case Some(st) => <span class="result"> extends { typeToHtml(st, hasLinks) }</span>
                 case None =>NodeSeq.Empty
               }
             case tme: MemberEntity if (tme.isDef || tme.isVal || tme.isVar) =>
-              <span class="result">:<span>{ typeToHtml(tme.resultType) }</span></span>
+              <span class="result">: { typeToHtml(tme.resultType, hasLinks) }</span>
             case abt: AbstractType =>
-              val b2s = boundsToString(abt.hi, abt.lo)
-              if (b2s != "")
-                <span class="result"><span>{ b2s }</span></span>
+              val b2s = boundsToHtml(abt.hi, abt.lo, hasLinks)
+              if (b2s != NodeSeq.Empty)
+                <span class="result">{ b2s }</span>
               else NodeSeq.Empty
             case alt: AliasType =>
-              <span class="result">=<span>{ typeToHtml(alt.alias) }</span></span>
+              <span class="result"> = { typeToHtml(alt.alias, hasLinks) }</span>
             case _ => NodeSeq.Empty
           }
         }
-      </div>
-        </xml:group>
+      </span>
+      </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        <a class="signature" href={ relativeLinkTo(dte) }>{ inside }</a>
+        <a class="signature" href={ relativeLinkTo(dte) }>{ inside(hasLinks = false) }</a>
       case _ =>
-        <div class="signature">{ inside }</div>
+        <div class="signature">{ inside(hasLinks = true) }</div>
     }
   }
 

@@ -1,17 +1,29 @@
 * {
 	color: black;
 	text-decoration: none;
-	font-size: 11pt;
-	font-family: sans-serif;
+	font-family: inherit;
+	font-size: inherit;
 	border-width: 0px;
 	padding: 0px;
 	margin: 0px;
 }
 
+body {
+	font-family: sans-serif;
+	font-size: 10pt;
+}
+
+a {
+	cursor: pointer;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
 #owner {
-	padding: 12px;
+	padding: 4px;
 	font-size: 12pt;
-	position: relative;
 	display: block;
 }
 
@@ -47,115 +59,8 @@
 	background-color: #561414;
 }
 
-.signature {
-	clear: both;
-	display: block;
-	background-color: #cccccc;
-}
-
-.value #definition + .signature {
-	background-color: #ced8f4;
-}
-
-.type #definition + .signature {
-	background-color: #f4cece;
-}
-
-.signature .kind {
-	font-weight: bold;
-	font-size: 12pt;
-	padding: 4px;
-	text-align: right;
-	float: left;
-	width: 72px;
-}
-
-.signature .symbol {
-	display: block;
-	font-size: 12pt;
-	margin-left: 80px;
-}
-
-.signature .name {
-	display: inline-block;
-	padding-bottom: 4px;
-	padding-top: 4px;
-	font-weight: bold;
-}
-
-.signature .tparams {
-	padding: 4px;
-}
-
-.signature .tparams > span {
-	margin-right: 2px;
-	margin-left: 2px;
-	padding: 4px;
-}
-
-.signature .params {
-	padding: 4px;
-}
-
-.signature .params > span {
-	margin-right: 2px;
-	margin-left: 2px;
-	padding: 4px;
-}
-
-.signature .result {
-	padding-left: 0px;
-	padding-bottom: 4px;
-	padding-right: 4px;
-	padding-top: 4px;
-}
-
-.signature .result span {
-	margin-right: 2px;
-	margin-left: 2px;
-	padding: 4px;
-}
-
-#comment > p {
-	margin: 8px;
-}
-
-#mbrsel {
-	padding: 4px;
-	background-color: #cccccc;
-	display: block;
-}
-
-#mbrsel > div > h3 {
-	padding: 4px;
-	display: block;
-	float: left;
-}
-
-#mbrsel > div > ol {
-	margin-left: 80px;
-}
-
-#mbrsel > div > ol > li {
-	display: block;
-	padding: 4px 8px 4px 8px;
-	font-weight: bold;
-	background-color: white;
-	display: inline-block;
-	cursor: crosshair;
-}
-
-#mbrsel > div > ol > li.in {
-	background-color: white;
-}
-
-#mbrsel > div > ol > li.out {
-	color: #888888;
-	background-color: #bbbbbb;
-}
-
-#template > div.members > ol {
-	background-color: white;
+#comment {
+	padding-left: 8px;
 }
 
 #values > h3 {
@@ -180,6 +85,43 @@
 	font-weight: bold;
 	font-size: 12pt;
 	background-color: #000000;
+}
+
+.signature {
+	padding: 1px;
+	font-family: monospace;
+	font-size: 10pt;
+	clear: both;
+	display: block;
+	background-color: #dddddd;
+}
+
+.signature .kind {
+	text-align: right;
+	float: left;
+	width: 72px;
+}
+
+.signature .symbol {
+	display: block;
+	margin-left: 80px;
+}
+
+.signature .name {
+	display: inline-block;
+	font-weight: bold;
+}
+
+#values .signature .name {
+	color: #142556;
+}
+
+#types .signature .name {
+	color: #561414;
+}
+
+#template > div.members > ol {
+	background-color: white;
 }
 
 .members > ol > li {
@@ -218,11 +160,43 @@
 	margin-left: 80px;
 }
 
-.members .comment > p {
-	margin-left: 0px;
+.comment > p {
 	margin-bottom: 4px;
-	margin-right: 4px;
 	margin-top: 4px;
 	display: block;
+}
+
+#mbrsel {
+	padding: 4px;
+	background-color: #cccccc;
+	display: block;
+}
+
+#mbrsel > div > h3 {
+	padding: 4px;
+	display: block;
+	float: left;
+}
+
+#mbrsel > div > ol {
+	margin-left: 80px;
+}
+
+#mbrsel > div > ol > li {
+	display: block;
+	padding: 4px 8px 4px 8px;
+	font-weight: bold;
+	background-color: white;
+	display: inline-block;
+	cursor: crosshair;
+}
+
+#mbrsel > div > ol > li.in {
+	background-color: white;
+}
+
+#mbrsel > div > ol > li.out {
+	color: #888888;
+	background-color: #bbbbbb;
 }
 

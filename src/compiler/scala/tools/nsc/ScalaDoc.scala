@@ -62,7 +62,7 @@ object ScalaDoc {
             docSettings.assemrefs.value = docSettings.assemrefs.value + File.pathSeparator + libpath
         }
 
-        val docProcessor = new scala.tools.nsc.doc.Processor(reporter, docSettings)
+        val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)
         docProcessor.document(command.files)
 
       }

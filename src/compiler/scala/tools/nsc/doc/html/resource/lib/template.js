@@ -17,6 +17,20 @@ $(document).ready(function(){
 		};
 		filterInherit();
 	});
+	$(".signature .symbol .extype").hover(
+		function(event){
+			var full = $(this).attr("name");
+			var short = $(this).text();
+			$(this).attr("name", short);
+			$(this).text(full);
+		},
+		function(event){
+			var short = $(this).attr("name");
+			var full = $(this).text();
+			$(this).attr("name", full);
+			$(this).text(short);
+		}
+	);
 });
 
 function filterInherit() {

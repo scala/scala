@@ -30,7 +30,7 @@ class Index(modelRoot: Package) extends HtmlPage {
   def body =
     <body>
       <div id="browser">
-        <input id="quickflt" type="text"/>
+        <input id="quickflt" type="text" accesskey="/"/>
         <div id="tpl">{
           def packageElem(pack: model.Package): NodeSeq = {
             <xml:group>

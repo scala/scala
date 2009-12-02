@@ -1,11 +1,23 @@
 * {
-	color: black;
+	color: inherit;
+	font-size: 10pt;
 	text-decoration: none;
-	font-size: inherit;
 	font-family: sans-serif;
 	border-width: 0px;
 	padding: 0px;
 	margin: 0px;
+}
+
+a {
+	cursor: pointer;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+h1 {
+	display: none;
 }
 
 #browser {
@@ -15,10 +27,11 @@
 	width: 300px;
 	display: block;
 	position: fixed;
-	overflow: auto;
 }
 
 #quickflt {
+	display: block;
+	position: fixed;
 	height: 22px;
 	right: 0px;
 	left: 0px;
@@ -28,11 +41,13 @@
 	font-weight: bold;
 	color: #993300;
 	padding: 5px;
-	font-size: 12px;
 	background-color: white;
 }
 
 #tpl {
+	display: block;
+	position: fixed;
+	overflow: auto;
 	right: 0px;
 	left: 0px;
 	bottom: 0px;
@@ -41,29 +56,25 @@
 	display: block;
 }
 
-#tpl h3 {
-	background-color: #142556;
-	color: white;
-	font-weight: bold;
-	padding: 2px;
+#tpl .packhide {
 	display: block;
-	font-size: 14px;
-	border-bottom-color: white;
-	border-bottom-style: solid;
-	border-bottom-width: 1px;
+	float: right;
+	font-weight: normal;
+	color: white;
+	padding: 1px 4px 1px 4px;
 }
 
-#tpl h3 a {
+#tpl .packages > li > h3 {
+	display: block;
+	background-color: #142556;
 	color: white;
+	padding: 1px 4px 1px 4px;
+	font-weight: bold;
+	display: block;
 }
 
 #tpl ol > li {
 	display: block;
-	font-size: 14px;
-	background-color: #cccccc;
-	border-bottom-color: white;
-	border-bottom-style: solid;
-	border-bottom-width: 1px;
 }
 
 #tpl ol > li .icon {
@@ -74,7 +85,7 @@
 #content {
 	border-left-width: 1px;
 	border-left-color: black;
-	border-left-style: solid;
+	border-left-style: white;
 	right: 0px;
 	left: 0px;
 	bottom: 0px;

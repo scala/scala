@@ -23,10 +23,15 @@
 		    	<span class="result">extends<span>A[X]</span> with <span>C[Y]</span> with <span>B</span></span>
 		    </div>
 		</div>
-		<div id="comment">
+		<div id="comment" class="comment">
 			<p>This class can be used as an adaptor to create mutable maps from immutable map implementations. Only method empty has to be redefined if the immutable map on which this mutable map is originally based is not empty. empty is supposed to return the representation of an empty map.</p>
 			<p>A subtrait of collection.IndexedSeq which represents sequences that can be mutated.</p>
-			<p>The canonical builder for collections that are addable, i.e. that support an efficient + method which adds an element to the collection. Collections are built from their empty element using this + method.</p>
+			<p>The canonical builder for collections that are addable, i.e. that support an efficient + method which adds an element to the collection. Collections are <code>built</code> from their empty element using this + method.</p>
+			<code class="block">
+				Once upon a time<br/>
+				In a land far far away<br/>
+				There was a man
+			</code>
 		</div>
 		<div id="template">
 			<div id="mbrsel">
@@ -53,8 +58,8 @@
 							<div class="kind">def</div>
 							<div class="symbol">
 								<span class="name">transform</span>
-								<span class="tparams">[<span name="T">T</span>,<span name="U">U ⊲ Int</span>]</span>
-								<span class="params">(<span name="f">f: (A, B) => B</span>,<span name="b">b: Double</span>)</span>
+								<span class="tparams">[<span name="T">T</span>, <span name="U">U ⊲ Int</span>]</span>
+								<span class="params">(<span name="f">f: (A, B) => B</span>, <span name="b">b: <span class="extype" name="scala.Double">Double</span></span>)</span>
 								<span class="result">:<span>ImmutableMapAdaptor[A, B]</span></span>
 							</div>
 						</div>
@@ -83,8 +88,7 @@
 							<div class="kind">def</div>
 							<div class="symbol">
 								<span class="name">curry</span>
-								<span class="params">(<span name="f">f: (A, B) => B</span>,<span name="b">b: Double</span>)</span><span class="params">(<span name="g">g: Int => B</span>,<span name="c">c: Double</span>)</span>
-								<span class="result">:<span>ImmutableMapAdaptor[A, B]</span></span>
+								<span class="params">(<span name="f">f: (A, B) => B</span>, <span name="b">b: Double</span>)</span><span class="params">(<span name="g">g: Int => B</span>, <span name="c">c: Double</span>)</span><span class="result">: <span>ImmutableMapAdaptor[A, B]</span></span>
 							</div>
 						</div>
 					</li>
@@ -92,8 +96,7 @@
 						<div class="signature">
 							<div class="kind">val</div>
 							<div class="symbol">
-								<span class="name">randomize</span>
-								<span class="result">:<span>ImmutableMapAdaptor[A, B]</span></span>
+								<span class="name">randomize</span><span class="result">: <span>ImmutableMapAdaptor[A, B]</span></span>
 							</div>
 						</div>
 						<div class="comment">
@@ -181,22 +184,32 @@
 					</li>
 					<li>
 						<div class="signature">
-							<div class="kind">type</div>
-							<div class="symbol">
+							<span class="kind">type</span>
+							<span class="symbol">
 								<span class="name">U</span>
-								<span class="result">=<span>ImmutableMapAdaptor[A, B]</span></span>
-							</div>
-						</div>
-						<div class="comment">
-							<p>A subtrait of collection.IndexedSeq which represents sequences that can be mutated.</p>
+								<span class="result">=<span><a href="">ImmutableMapAdaptor</a>[A, B]</span></span>
+							</span>
 						</div>
 					</li>
+					<li name="scala.CountedIterator">
+      					<a href="CountedIterator.html" class="signature">
+      						<span class="kind">trait</span>
+      						<span class="symbol">
+        						<span class="name">CountedIterator</span>
+        						<span class="tparams">[<span name="A">+A</span>]</span>
+        						<span class="result">extends Iterator[A]</span>
+      						</span>
+        				</a>
+      					<div class="comment">
+      						<p>Counted iterators keep track of the number of elements seen so far</p>
+						</div>
+    				</li>
 					<li>
 						<div class="signature">
 							<div class="kind">type</div>
 							<div class="symbol">
 								<span class="name">V</span>
-								<span class="result">⊲<span>Int</span>⊳<span>Boolean</span></span>
+								<span class="result">⊲ Int ⊳ Boolean</span>
 							</div>
 						</div>
 						<div class="comment">

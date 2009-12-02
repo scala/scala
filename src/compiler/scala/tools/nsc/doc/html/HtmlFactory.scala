@@ -16,7 +16,7 @@ import scala.collection._
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
-class SiteFactory(val reporter: Reporter, val settings: Settings) {
+class HtmlFactory(val reporter: Reporter, val settings: Settings) {
 
   /** The character encoding to be used for generated Scaladoc sites. This value is currently always UTF-8. */
   def encoding: String = "UTF-8"

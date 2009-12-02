@@ -38,7 +38,7 @@ abstract class HtmlPage { thisPage =>
   /** Writes this page as a file. The file's location is relative to the generator's site root, and the encoding is
     * also defined by the generator.
     * @param generator The generator that is writing this page. */
-  def writeFor(site: SiteFactory): Unit = {
+  def writeFor(site: HtmlFactory): Unit = {
     val pageFile = new File(site.siteRoot, absoluteLinkTo(thisPage.path))
     val pageFolder = pageFile.getParentFile
     if (!pageFolder.exists) pageFolder.mkdirs()
@@ -145,12 +145,34 @@ abstract class HtmlPage { thisPage =>
     case Text(text) => Unparsed(text)
   }
 
-  def typeToHtml(tpe: model.TypeEntity): NodeSeq = {
-
-    // TODO: Generate links using tpe's refEntity map
-
-    xml.Text(tpe.name)
-
+  def typeToHtml(tpe: model.TypeEntity, hasLinks: Boolean): NodeSeq = {
+    val string = tpe.name
+    def toLinksOut(inPos: Int, starts: List[Int]): NodeSeq = {
+      if (starts.isEmpty && (inPos == string.length))
+        NodeSeq.Empty
+      else if (starts.isEmpty)
+        xml.Text(string.slice(inPos, string.length))
+      else if (inPos == starts.head)
+        toLinksIn(inPos, starts)
+      else {
+        xml.Text(string.slice(inPos, starts.head)) ++ toLinksIn(starts.head, starts)
+      }
+    }
+    def toLinksIn(inPos: Int, starts: List[Int]): NodeSeq = {
+      val (tpl, width) = tpe.refEntity(inPos)
+      (tpl match {
+        case dtpl:DocTemplateEntity if hasLinks =>
+          <a href={ relativeLinkTo(tpl) } class="extype" name={ dtpl.qualifiedName }>{
+            string.slice(inPos, inPos + width)
+          }</a>
+        case tpl =>
+          <span class="extype" name={ tpl.qualifiedName }>{ string.slice(inPos, inPos + width) }</span>
+      }) ++ toLinksOut(inPos + width, starts.tail)
+    }
+    if (hasLinks)
+      toLinksOut(0, tpe.refEntity.keySet.toList)
+    else
+      xml.Text(string)
   }
 
 }

@@ -31,13 +31,14 @@ trait TemplateEntity extends Entity {
   def isTrait: Boolean
   def isClass: Boolean
   def isObject: Boolean
+  def isDocTemplate: Boolean
 }
 trait NoDocTemplate extends TemplateEntity
 
 /** A member of a class, trait, object or package. */
 trait MemberEntity extends Entity {
   def inTemplate: DocTemplateEntity
-  def toRoot: List[DocTemplateEntity]
+  def toRoot: List[MemberEntity]
   def inDefinitionTemplate: TemplateEntity
   def definitionName: String
   def visibility: Option[Paragraph]
@@ -123,7 +124,6 @@ trait AliasType extends NonTemplateMemberEntity {
 
 trait ParameterEntity extends Entity {
   def inTemplate: DocTemplateEntity
-  def toRoot: List[DocTemplateEntity]
   def isTypeParam: Boolean
   def isValueParam: Boolean
 }

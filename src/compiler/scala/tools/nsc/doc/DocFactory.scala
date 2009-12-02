@@ -24,7 +24,7 @@ import reporters.Reporter
   * @param settings The settings to be used by the documenter and compiler for generating documentation.
   *
   * @author Gilles Dubochet */
-class Processor(val reporter: Reporter, val settings: doc.Settings) { processor =>
+class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor =>
 
   /** The unique compiler instance used by this processor and constructed from its `settings`. */
   object compiler extends Global(settings, reporter) {
@@ -49,8 +49,13 @@ class Processor(val reporter: Reporter, val settings: doc.Settings) { processor 
   def document(files: List[String]): Unit = {
     (new compiler.Run()) compile files
     compiler.addSourceless
-    if (!reporter.hasErrors)
-      (new html.SiteFactory(reporter, settings)) generate (new model.EntityFactory(compiler, settings)).makeModel
+    if (!reporter.hasErrors) {
+      val modelFactory = (new model.ModelFactory(compiler, settings))
+      val htmlFactory = (new html.HtmlFactory(reporter, settings))
+      val docModel = modelFactory.makeModel
+      println("model contains " + modelFactory.templatesCount + " documentable templates")
+      htmlFactory generate docModel
+    }
   }
 
 }

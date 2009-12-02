@@ -10,10 +10,13 @@ import scala.collection._
 import symtab.Flags
 
 /** This trait extracts all required information for documentation from compilation units */
-class EntityFactory(val global: Global, val settings: doc.Settings) { extractor =>
+class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =>
 
   import global._
   import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage }
+
+  private var droppedPackages = 0
+  def templatesCount = templatesCache.size - droppedPackages
 
   /**  */
   def makeModel: Package =
@@ -35,7 +38,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
   abstract class EntityImpl(val sym: Symbol, inTpl: => TemplateImpl) extends Entity {
     val name = sym.nameString
     def inTemplate = inTpl
-    def toRoot: List[EntityImpl] = inTpl :: inTpl.toRoot
+    def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
     val comment = {
       val whichSym =
@@ -63,13 +66,15 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
     * `SymbolicEntity` to access the compiler symbol that underlies the entity. */
-  class NoDocTemplateImpl(sym: Symbol, inTpl: => TemplateImpl) extends EntityImpl(sym, inTpl) with TemplateImpl with NoDocTemplate
+  class NoDocTemplateImpl(sym: Symbol, inTpl: => TemplateImpl) extends EntityImpl(sym, inTpl) with TemplateImpl with NoDocTemplate {
+    def isDocTemplate = false
+  }
 
   /** Provides a default implementation for instances of the `MemberEntity` type. It must be instantiated as a
     * `SymbolicEntity` to access the compiler symbol that underlies the entity. */
   abstract class MemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with MemberEntity {
     override def inTemplate = inTpl
-    override def toRoot: List[DocTemplateImpl] = inTpl :: inTpl.toRoot
+    override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
     lazy val inDefinitionTemplate = if (sym.owner == inTpl.sym) inTpl else makeTemplate(sym.owner)
     val visibility = {
       def qual = {
@@ -118,6 +123,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
     * * All ancestors of the template (as weak templates);
     * * All non-package members (including other templates, as full templates). */
   abstract class DocTemplateImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with TemplateImpl with DocTemplateEntity {
+    //if (inTpl != null) println("mbr " + sym + " in " + (inTpl.toRoot map (_.sym)).mkString(" > "))
     templatesCache += ((sym, inTpl) -> this)
     override def definitionName = inDefinitionTemplate.qualifiedName + "." + name
     val inSource = if (sym.sourceFile != null) Some(sym.sourceFile, sym.pos.line) else None
@@ -140,11 +146,12 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
     val abstractTypes = members partialMap { case t: AbstractType => t }
     val aliasTypes    = members partialMap { case t: AliasType => t }
     override val isTemplate = true
+    def isDocTemplate = true
   }
 
   abstract class PackageImpl(sym: Symbol, inTpl: => PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
     override def inTemplate = inTpl
-    override def toRoot: List[PackageImpl] = inTpl :: inTpl.toRoot
+    override def toRoot: List[PackageImpl] = this :: inTpl.toRoot
     val packages = members partialMap { case p: Package => p }
   }
 
@@ -155,7 +162,6 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
 
   abstract class ParameterImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with ParameterEntity {
     override def inTemplate = inTpl
-    override def toRoot: List[DocTemplateImpl] = inTpl :: inTpl.toRoot
   }
 
   /* ============== MAKER METHODS ============== */
@@ -184,7 +190,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
           new PackageImpl(bSym, null) {
             override val name = "root"
             override def inTemplate = this
-            override def toRoot = Nil
+            override def toRoot = this :: Nil
             override def qualifiedName = "_root_"
             override lazy val inheritedFrom = Nil
             override val isRootPackage = true
@@ -195,7 +201,11 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
           }
         else
           new PackageImpl(bSym, inTpl) {}
-      if (pack.templates.isEmpty) None else Some(pack)
+      if (pack.templates.isEmpty) {
+        droppedPackages += 1
+        None
+      }
+      else Some(pack)
     }
 
   }
@@ -306,8 +316,9 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
       })
     else if (aSym.isPackage)
       inTpl match { case inPkg: PackageImpl =>  makePackage(aSym, inPkg) }
-    else if ((aSym.isClass || aSym.isModule) && (aSym.sourceFile != null) && aSym.isPublic && !aSym.isLocal)
-        (inTpl.toRoot find (_.sym == aSym )) orElse Some(makeDocTemplate(aSym, inTpl))
+    else if ((aSym.isClass || aSym.isModule) && (aSym.sourceFile != null) && aSym.isPublic && !aSym.isLocal) {
+      (inTpl.toRoot find (_.sym == aSym )) orElse Some(makeDocTemplate(aSym, inTpl))
+    }
     else
       None
   }
@@ -363,7 +374,7 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
   def makeType(aType: Type): TypeEntity =
     new TypeEntity {
       private val nameBuffer = new StringBuilder
-      private var refBuffer = new immutable.TreeMap[Int, (Entity, Int)]
+      private var refBuffer = new immutable.TreeMap[Int, (TemplateEntity, Int)]
       private def appendTypes0(types: List[Type], sep: String): Unit = types match {
         case Nil =>
         case tp :: Nil =>
@@ -392,13 +403,13 @@ class EntityFactory(val global: Global, val settings: doc.Settings) { extractor 
           nameBuffer append ')'
         case TypeRef(pre, aSym, targs) =>
           val bSym = normalizeTemplate(aSym)
-          if (bSym.isType)
+          if (bSym.isTypeMember)
             nameBuffer append bSym.name
           else {
-            val refClass = makeTemplate(bSym)
+            val tpl = makeTemplate(bSym)
             val pos0 = nameBuffer.length
-            nameBuffer append refClass.name
-            refBuffer += pos0 -> (refClass, nameBuffer.length)
+            refBuffer += pos0 -> (tpl, tpl.name.length)
+            nameBuffer append tpl.name
           }
           if (!targs.isEmpty) {
             nameBuffer append '['
