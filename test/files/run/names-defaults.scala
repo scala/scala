@@ -268,6 +268,15 @@ object Test extends Application {
   // #2489
   class A2489 { def foo { def bar(a: Int = 1) = a; bar(); val u = 0 } }
 
+  // a bug reported on the mailing lists, related to #2489
+  class Test2489 {
+    def foo(): Int = {
+      val i = 10
+      case class Foo(j: Int)
+      i
+    }
+  }
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
