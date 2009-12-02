@@ -109,11 +109,10 @@ class Worker(val fileManager: FileManager) extends Actor {
   }
 
   def createOutputDir(dir: File, fileBase: String, kind: String): File = {
-    val outDir = new File(dir, fileBase + "-" + kind + ".obj")
-    if (!outDir.exists)
-      outDir.mkdir()
-    createdOutputDirs = outDir :: createdOutputDirs
-    outDir
+    val outDir = io.Path(dir) / io.Directory("%s-%s.obj".format(fileBase, kind))
+    outDir.createDirectory()
+    createdOutputDirs ::= outDir.jfile
+    outDir.jfile
   }
 
   /* Note: not yet used/tested. */
@@ -304,34 +303,19 @@ class Worker(val fileManager: FileManager) extends Actor {
   }
 
   def compareOutput(dir: File, fileBase: String, kind: String, logFile: File): String = {
+    def getCheckFile(s: String) = {
+      val f = io.Path(dir) / io.File("%s%s.check".format(fileBase, s))
+      if (f.isFile && f.canRead) Some(f) else None
+    }
+
     // if check file exists, compare with log file
-    val checkFile = {
-      val chkFile = new File(dir, fileBase + ".check")
-      if (chkFile.isFile)
-        chkFile
-      else
-        new File(dir, fileBase + "-" + kind + ".check")
+    (getCheckFile("") orElse getCheckFile("-" + kind)) match {
+      case Some(f)  => fileManager.compareFiles(logFile, f.jfile)
+      case _        => file2String(logFile)
     }
-    if (!checkFile.exists || !checkFile.canRead) {
-      val reader = new BufferedReader(new FileReader(logFile))
-      val swriter = new StringWriter
-      val pwriter = new PrintWriter(swriter, true)
-      val appender = new StreamAppender(reader, pwriter)
-      appender.run()
-      swriter.toString
-    }
-    else fileManager.compareFiles(logFile, checkFile)
   }
 
-  def file2String(logFile: File) = {
-    val logReader = new BufferedReader(new FileReader(logFile))
-    val strWriter = new StringWriter
-    val logWriter = new PrintWriter(strWriter, true)
-    val logAppender = new StreamAppender(logReader, logWriter)
-    logAppender.run()
-    logReader.close()
-    strWriter.toString
-  }
+  def file2String(logFile: File) = io.File(logFile).slurp()
 
   /** Runs a list of tests.
    *

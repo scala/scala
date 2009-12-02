@@ -797,7 +797,6 @@ trait ScalacSettings {
   val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show object info", "")
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases")
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader")
-  val newArrays     = BooleanSetting    ("-Ynewarrays", "Generate code for new array scheme")
 
   /**
    * -Y "Private" settings
