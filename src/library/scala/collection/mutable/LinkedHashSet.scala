@@ -25,7 +25,7 @@ class LinkedHashSet[A] extends Set[A]
 {
   override def companion: GenericCompanion[LinkedHashSet] = LinkedHashSet
 
-  @transient private var ordered = new ListBuffer[A]
+  @transient private[this] var ordered = new ListBuffer[A]
 
   override def size = tableSize
 
