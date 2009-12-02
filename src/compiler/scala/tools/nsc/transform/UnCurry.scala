@@ -318,68 +318,63 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      */
     def transformFunction(fun: Function): Tree = {
       val fun1 = deEta(fun)
+      def owner = fun.symbol.owner
+      def targs = fun.tpe.typeArgs
+      def isPartial = fun.tpe.typeSymbol == PartialFunctionClass
+
       if (fun1 ne fun) fun1
       else {
-        val anonClass = fun.symbol.owner.newAnonymousFunctionClass(fun.pos)
-          .setFlag(FINAL | SYNTHETIC | inConstructorFlag)
-        val formals = fun.tpe.typeArgs.init
-        val restpe = fun.tpe.typeArgs.last
-        anonClass setInfo ClassInfoType(
-          List(ObjectClass.tpe, fun.tpe, ScalaObjectClass.tpe), new Scope, anonClass);
-        val applyMethod = anonClass.newMethod(fun.pos, nme.apply).setFlag(FINAL)
-        applyMethod.setInfo(MethodType(applyMethod.newSyntheticValueParams(formals), restpe))
-        anonClass.info.decls enter applyMethod;
-        for (vparam <- fun.vparams) vparam.symbol.owner = applyMethod;
-        new ChangeOwnerTraverser(fun.symbol, applyMethod).traverse(fun.body);
-        def applyMethodDef(body: Tree) =
-          DefDef(Modifiers(FINAL), nme.apply, List(), List(fun.vparams), TypeTree(restpe), body)
-            .setSymbol(applyMethod)
-/*
-        def toStringMethodDefs = fun match {
-          case etaExpansion(_, fn, _) if (fn.hasSymbol) =>
-            List(
-              DefDef(Modifiers(FINAL | OVERRIDE), nme.toString_, List(), List(List()), TypeTree(StringClass.tpe),
-                     Literal(fn.symbol.name)))
-          case _ =>
-            List()
-        }
-*/
-        def mkUnchecked(tree: Tree) = tree match {
-          case Match(selector, cases) =>
-            atPos(tree.pos) {
-              Match(
-                Annotated(New(TypeTree(UncheckedClass.tpe), List(List())), selector),
-                cases)
-            }
-          case _ =>
-            tree
-        }
-        val members = {
-          if (fun.tpe.typeSymbol == PartialFunctionClass) {
-            val isDefinedAtMethod = anonClass.newMethod(fun.pos, nme.isDefinedAt).setFlag(FINAL)
-            isDefinedAtMethod.setInfo(MethodType(isDefinedAtMethod.newSyntheticValueParams(formals),
-                                                 BooleanClass.tpe))
-            anonClass.info.decls enter isDefinedAtMethod
-            def idbody(idparam: Symbol) = fun.body match {
-              case Match(selector, cases) =>
-                val substParam = new TreeSymSubstituter(List(fun.vparams.head.symbol), List(idparam))
-                def transformCase(cdef: CaseDef): CaseDef =
-                  substParam(
-                    resetLocalAttrs(
-                      CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true))))
-                if (cases exists treeInfo.isDefaultCase) Literal(true)
-                else
-                  Match(
-                    substParam(resetLocalAttrs(selector.duplicate)),
-                    (cases map transformCase) :::
-                      List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))))
-            }
-            List(applyMethodDef(mkUnchecked(fun.body)),
-                 DefDef(isDefinedAtMethod, mkUnchecked(idbody(isDefinedAtMethod.paramss.head.head))))
-          } else {
-            List(applyMethodDef(fun.body))
+        val (formals, restpe) = (targs.init, targs.last)
+        val anonClass = owner newAnonymousFunctionClass fun.pos setFlag (FINAL | SYNTHETIC | inConstructorFlag)
+        def parents =
+          if (isFunctionType(fun.tpe)) List(abstractFunctionForFunctionType(fun.tpe))
+          else List(ObjectClass.tpe, fun.tpe)
+
+        anonClass setInfo ClassInfoType(parents, new Scope, anonClass)
+        val applyMethod = anonClass.newMethod(fun.pos, nme.apply) setFlag FINAL
+        applyMethod setInfo MethodType(applyMethod newSyntheticValueParams formals, restpe)
+        anonClass.info.decls enter applyMethod
+
+        fun.vparams foreach (_.symbol.owner = applyMethod)
+        new ChangeOwnerTraverser(fun.symbol, applyMethod) traverse fun.body
+
+        def mkUnchecked(tree: Tree) = {
+          def newUnchecked(expr: Tree) = Annotated(New(gen.scalaDot(UncheckedClass.name), List(Nil)), expr)
+          tree match {
+            case Match(selector, cases) => atPos(tree.pos) { Match(newUnchecked(selector), cases) }
+            case _                      => tree
           }
-        } /* ::: toStringMethodDefs */
+        }
+
+        def applyMethodDef() = {
+          val body = if (isPartial) mkUnchecked(fun.body) else fun.body
+          DefDef(Modifiers(FINAL), nme.apply, Nil, List(fun.vparams), TypeTree(restpe), body) setSymbol applyMethod
+        }
+        def isDefinedAtMethodDef() = {
+          val m = anonClass.newMethod(fun.pos, nme.isDefinedAt) setFlag FINAL
+          m setInfo MethodType(m newSyntheticValueParams formals, BooleanClass.tpe)
+          anonClass.info.decls enter m
+
+          val Match(selector, cases) = fun.body
+          val vparam = fun.vparams.head.symbol
+          val idparam = m.paramss.head.head
+          val substParam = new TreeSymSubstituter(List(vparam), List(idparam))
+          def substTree[T <: Tree](t: T): T = substParam(resetLocalAttrs(t))
+
+          def transformCase(cdef: CaseDef): CaseDef =
+            substTree(CaseDef(cdef.pat.duplicate, cdef.guard.duplicate, Literal(true)))
+          def defaultCase = CaseDef(Ident(nme.WILDCARD), EmptyTree, Literal(false))
+
+          DefDef(m, mkUnchecked(
+            if (cases exists treeInfo.isDefaultCase) Literal(true)
+            else Match(substTree(selector.duplicate), (cases map transformCase) ::: List(defaultCase))
+          ))
+        }
+
+        val members =
+          if (isPartial) List(applyMethodDef, isDefinedAtMethodDef)
+          else List(applyMethodDef)
+
         localTyper.typed {
           atPos(fun.pos) {
             Block(
@@ -387,7 +382,6 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
               Typed(
                 New(TypeTree(anonClass.tpe), List(List())),
                 TypeTree(fun.tpe)))
-
           }
         }
       }

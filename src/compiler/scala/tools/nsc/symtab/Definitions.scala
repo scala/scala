@@ -270,6 +270,7 @@ trait Definitions {
     lazy val TupleClass     = mkArityArray("Tuple", MaxTupleArity)
     lazy val ProductClass   = mkArityArray("Product", MaxProductArity)
     lazy val FunctionClass  = mkArityArray("Function", MaxFunctionArity, 0)
+    lazy val AbstractFunctionClass = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
 
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): Boolean = cond(tp.normalize) {
@@ -322,6 +323,14 @@ trait Definitions {
         val sym = FunctionClass(formals.length)
         typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
       } else NoType
+
+    def abstractFunctionForFunctionType(tp: Type) = tp.normalize match {
+      case tr @ TypeRef(_, _, args) if isFunctionType(tr) =>
+        val sym = AbstractFunctionClass(args.length - 1)
+        typeRef(sym.typeConstructor.prefix, sym, args)
+      case _ =>
+        NoType
+    }
 
     def isFunctionType(tp: Type): Boolean = tp.normalize match {
       case TypeRef(_, sym, args) =>
