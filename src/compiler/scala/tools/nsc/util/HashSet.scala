@@ -26,6 +26,22 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
 
   private def index(x: Int): Int = math.abs(x % capacity)
 
+  def findEntryOrUpdate(x: T): T = {
+    var h = index(x.hashCode())
+    var entry = table(h)
+    while (entry ne null) {
+      if (x == entry)
+        return entry.asInstanceOf[T]
+
+      h = index(h + 1)
+      entry = table(h)
+    }
+    table(h) = x
+    used += 1
+    if (used > (capacity >> 2)) growTable()
+    x
+  }
+
   def findEntry(x: T): T = {
     var h = index(x.hashCode())
     var entry = table(h)
@@ -41,7 +57,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     var entry = table(h)
     while (entry ne null) {
       if (entry == x) return
-      h = index((h + 1))
+      h = index(h + 1)
       entry = table(h)
     }
     table(h) = x
@@ -60,6 +76,16 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
       else null
   }
 
+  private def addOldEntry(x: T) {
+    var h = index(x.hashCode())
+    var entry = table(h)
+    while (entry ne null) {
+      h = index(h + 1)
+      entry = table(h)
+    }
+    table(h) = x
+  }
+
   private def growTable() {
     val oldtable = table
     val growthFactor =
@@ -70,13 +96,11 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     capacity *= growthFactor
     table = new Array[AnyRef](capacity)
     var i = 0
-    used = 0
     while (i < oldtable.length) {
       val entry = oldtable(i)
-      if (entry ne null) addEntry(entry.asInstanceOf[T])
+      if (entry ne null) addOldEntry(entry.asInstanceOf[T])
       i += 1
     }
-    // System.err.println("Grown: " + this)
   }
   override def toString() = "HashSet %s(%d / %d)".format(label, used, capacity)
 }
