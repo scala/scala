@@ -57,7 +57,7 @@ import java.lang.reflect.*;
  * pools with greater than the maximum result in
  * IllegalArgumentExceptions.
  */
-public class ForkJoinPool extends AbstractExecutorService {
+public class ForkJoinPool /*extends AbstractExecutorService*/ {
 
     /*
      * See the extended comments interspersed below for design,
@@ -69,6 +69,10 @@ public class ForkJoinPool extends AbstractExecutorService {
 
     /** Max pool size -- must be a power of two minus 1 */
     private static final int MAX_THREADS =  0x7FFF;
+
+    // placeholder for java.util.concurrent.RunnableFuture
+    interface RunnableFuture<T> extends Runnable {
+    }
 
     /**
      * Factory for creating new ForkJoinWorkerThreads.  A
