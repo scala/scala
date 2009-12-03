@@ -15,7 +15,7 @@ import scheduler.{DelegatingScheduler, ForkJoinScheduler, ResizableThreadPoolSch
 
 /**
  * The <code>Scheduler</code> object is used by <code>Actor</code> to
- * execute tasks of an execution of an actor.
+ * execute tasks of an actor execution.
  *
  * @author Philipp Haller
  */
@@ -24,12 +24,24 @@ object Scheduler extends DelegatingScheduler {
   Debug.info("initializing "+this+"...")
 
   def makeNewScheduler: IScheduler = {
-    // test on which JVM we are running
-    val jvmVersion = System.getProperty("java.version")
-    val jvmVendor =  System.getProperty("java.vm.vendor")
-    val sched = if (jvmVersion.indexOf("1.5") != -1 ||
-                    jvmVendor.indexOf("IBM") != -1) {
-      // on IBM J9 1.6 do not use ForkJoinPool
+    val useForkJoin = try {
+      val fjProp = System.getProperty("actors.enableForkJoin")
+      if (fjProp != null)
+        fjProp.equals("true")
+      else {
+        val javaVersion = System.getProperty("java.version")
+        val jvmVendor =   System.getProperty("java.vm.vendor")
+        Debug.info(this+": java.version = "+javaVersion)
+        Debug.info(this+": java.vm.vendor = "+jvmVendor)
+        (javaVersion.indexOf("1.6") != -1 ||
+         javaVersion.indexOf("1.7") != -1) &&
+        // on IBM J9 1.6 do not use ForkJoinPool
+        (jvmVendor.indexOf("Sun") != -1)
+      }
+    } catch {
+      case se: SecurityException => false
+    }
+    val sched = if (!useForkJoin) {
       val s = new ResizableThreadPoolScheduler(false)
       s.start()
       s
