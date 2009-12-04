@@ -1321,48 +1321,17 @@ trait Typers { self: Analyzer =>
       case ValDef(mods, name, tpt, rhs)
         if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL).toLong && !stat.symbol.isModuleVar =>
 
-        /** The annotations amongst `annots` that should go on a member of class
-         *  `memberClass` (field, getter, setter, beanGetter, beanSetter)
-         */
-        def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol) = {
-
-          def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
-            // either one of the meta-annotations matches the `memberClass`
-            metaAnnots.exists(_.atp.typeSymbol == memberClass) ||
-            // else, if there is no `target` meta-annotation at all, use the default case
-            (metaAnnots.forall(ann => {
-              val annClass = ann.atp.typeSymbol
-              annClass != GetterClass && annClass != SetterClass &&
-              annClass != BeanGetterClass && annClass != BeanSetterClass
-            }) && orElse)
-          }
-
-          // there was no meta-annotation on `ann`. Look if the class annotations of
-          // `ann` has a `target` annotation, otherwise put `ann` only on fields.
-          def noMetaAnnot(ann: AnnotationInfo) = {
-            hasMatching(ann.atp.typeSymbol.annotations, memberClass == FieldClass)
-          }
-
-          annots.filter(ann => ann.atp match {
-            // the annotation type has meta-annotations, e.g. @(foo @getter)
-            case AnnotatedType(metaAnnots, _, _) =>
-              hasMatching(metaAnnots, noMetaAnnot(ann))
-            // there are no meta-annotations, e.g. @foo
-            case _ => noMetaAnnot(ann)
-          })
-        }
-
         val isDeferred = mods hasFlag DEFERRED
         val value = stat.symbol
         val allAnnots = value.annotations
         if (!isDeferred)
-          value.setAnnotations(memberAnnots(allAnnots, FieldClass))
+          value.setAnnotations(memberAnnots(allAnnots, FieldTargetClass))
 
         val getter = if (isDeferred) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
         if (getter hasFlag OVERLOADED)
           error(getter.pos, getter+" is defined twice")
-        getter.setAnnotations(memberAnnots(allAnnots, GetterClass))
+        getter.setAnnotations(memberAnnots(allAnnots, GetterTargetClass))
 
         if (value.hasFlag(LAZY)) List(stat)
         else {
@@ -1385,7 +1354,7 @@ trait Typers { self: Analyzer =>
           }
           checkNoEscaping.privates(getter, getterDef.tpt)
           def setterDef(setter: Symbol, isBean: Boolean = false): DefDef = {
-            setter.setAnnotations(memberAnnots(allAnnots, if (isBean) BeanSetterClass else SetterClass))
+            setter.setAnnotations(memberAnnots(allAnnots, if (isBean) BeanSetterTargetClass else SetterTargetClass))
             val result = typed {
               atPos(vdef.pos.focus) {
                 DefDef(
@@ -1417,7 +1386,7 @@ trait Typers { self: Analyzer =>
               (if (value.hasAnnotation(BooleanBeanPropertyAttr)) "is" else "get") +
               nameSuffix
             val beanGetter = value.owner.info.decl(beanGetterName)
-            beanGetter.setAnnotations(memberAnnots(allAnnots, BeanGetterClass))
+            beanGetter.setAnnotations(memberAnnots(allAnnots, BeanGetterTargetClass))
             if (mods hasFlag MUTABLE) {
               val beanSetterName = "set" + nameSuffix
               val beanSetter = value.owner.info.decl(beanSetterName)
@@ -1434,6 +1403,38 @@ trait Typers { self: Analyzer =>
 
       case _ =>
         List(stat)
+    }
+
+    /** The annotations amongst `annots` that should go on a member of class
+     *  `memberClass` (field, getter, setter, beanGetter, beanSetter, param)
+     */
+    protected def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol) = {
+
+      def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
+        // either one of the meta-annotations matches the `memberClass`
+        metaAnnots.exists(_.atp.typeSymbol == memberClass) ||
+        // else, if there is no `target` meta-annotation at all, use the default case
+        (metaAnnots.forall(ann => {
+          val annClass = ann.atp.typeSymbol
+          annClass != FieldTargetClass && annClass != GetterTargetClass &&
+          annClass != SetterTargetClass && annClass != BeanGetterTargetClass &&
+          annClass != BeanSetterTargetClass && annClass != ParamTargetClass
+        }) && orElse)
+      }
+
+      // there was no meta-annotation on `ann`. Look if the class annotations of
+      // `ann` has a `target` annotation, otherwise put `ann` only on fields.
+      def noMetaAnnot(ann: AnnotationInfo) = {
+        hasMatching(ann.atp.typeSymbol.annotations, memberClass == FieldTargetClass)
+      }
+
+      annots.filter(ann => ann.atp match {
+        // the annotation type has meta-annotations, e.g. @(foo @getter)
+        case AnnotatedType(metaAnnots, _, _) =>
+          hasMatching(metaAnnots, noMetaAnnot(ann))
+        // there are no meta-annotations, e.g. @foo
+        case _ => noMetaAnnot(ann)
+      })
     }
 
     protected def enterSyms(txt: Context, trees: List[Tree]) = {
@@ -1726,6 +1727,17 @@ trait Typers { self: Analyzer =>
 
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
+
+      // for `val` and `var` parameter, look at `target` meta-annotation
+      if (phase.id <= currentRun.typerPhase.id && meth.isPrimaryConstructor) {
+        for (vparams <- ddef.vparamss; vd <- vparams) {
+          if (vd hasFlag PARAMACCESSOR) {
+            val sym = vd.symbol
+            sym.setAnnotations(memberAnnots(sym.annotations, ParamTargetClass))
+          }
+        }
+      }
+
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
