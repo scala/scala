@@ -624,7 +624,7 @@ trait Trees {
     var vparamss1 =
       vparamss map (vps => vps.map { vd =>
         atPos(vd.pos.focus) {
-          val pa = if (vd.hasFlag(PRIVATE | LOCAL)) OL else PARAMACCESSOR
+          val pa = if (vd.hasFlag(PRIVATE | LOCAL)) 0L else PARAMACCESSOR
           ValDef(
             Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM) | PARAM | pa) withAnnotations vd.mods.annotations,
             vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
