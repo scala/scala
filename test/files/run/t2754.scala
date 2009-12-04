@@ -1,4 +1,4 @@
-object Main {
+object Test {
     def main(args: Array[String]) {
         val v: FooBarPlus[Int] = new FooBarPlusImpl()
         v.foo += 10
