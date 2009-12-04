@@ -18,23 +18,26 @@ object Test {
   }
 
   def main(args:Array[String]) : Unit = {
-    val format = new java.text.DecimalFormat("000.00'ms'")
-    var iter = 1
-    val done = 11
-    while (iter < done) {
-      val start = System.nanoTime()
-      val result = compute()
-      val time = System.nanoTime() - start
-      result match {
-        case Some(result) =>
-          //printf("Iteration %2d succeeded after %s %n", iter, format.format(time / 1e6))
-          printf("Iteration %2d succeeded%n", iter)
-          iter += 1
-        case None =>
-          printf(">>>> Iteration %2d failed after %s <<<<< %n", iter, format.format(time / 1e6))
-          iter = done
+    val ft = Futures.future {
+      val format = new java.text.DecimalFormat("000.00'ms'")
+      var iter = 1
+      val done = 11
+      while (iter < done) {
+        val start = System.nanoTime()
+        val result = compute()
+        val time = System.nanoTime() - start
+        result match {
+          case Some(result) =>
+            //printf("Iteration %2d succeeded after %s %n", iter, format.format(time / 1e6))
+            printf("Iteration %2d succeeded%n", iter)
+            iter += 1
+          case None =>
+            printf(">>>> Iteration %2d failed after %s <<<<< %n", iter, format.format(time / 1e6))
+            iter = done
+        }
       }
     }
+    ft()
   }
 
 }
