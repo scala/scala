@@ -10,6 +10,7 @@ package interactive
 import scala.collection._
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.util.control.Breaks._
+import scala.tools.nsc.symtab.Flags
 
 import dependencies._
 import util.FakePos
@@ -90,6 +91,12 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     val coll: mutable.Map[AbstractFile, immutable.Set[AbstractFile]] =
         mutable.HashMap[AbstractFile, immutable.Set[AbstractFile]]()
 
+    // See if we really have coresponding symbols, not just those
+    // which share the name
+    def isCorrespondingSym(from: Symbol, to: Symbol): Boolean =
+      (from.hasFlag(Flags.TRAIT) == to.hasFlag(Flags.TRAIT)) &&
+      (from.hasFlag(Flags.MODULE) == to.hasFlag(Flags.MODULE))
+
     def update0(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
       deleteClassfiles(files)
       val run = compiler.newRun()
@@ -113,7 +120,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
         else {
           val syms = defs(src)
           for (sym <- syms) {
-            definitions(src).find(_.fullNameString == sym.fullNameString) match {
+            definitions(src).find(
+               s => (s.fullNameString == sym.fullNameString) &&
+                    isCorrespondingSym(s, sym)) match {
               case Some(oldSym) =>
                 changesOf(oldSym) = changeSet(oldSym, sym)
               case _ =>
@@ -122,10 +131,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           }
           // Create a change for the top level classes that were removed
           val removed = definitions(src) filterNot ((s: Symbol) =>
-            syms.find(_.fullNameString == s.fullNameString) match {
-              case None => false
-              case _    => true
-            })
+            syms.find(_.fullNameString == s.fullNameString) != None)
           for (sym <- removed) {
             changesOf(sym) = List(removeChangeSet(sym))
           }

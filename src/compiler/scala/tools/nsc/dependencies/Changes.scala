@@ -42,7 +42,7 @@ abstract class Changes {
   private def sameType(tp1: Type, tp2: Type) = {
     def typeOf(tp: Type): String = tp.toString + "[" + tp.getClass + "]"
     val res = sameType0(tp1, tp2)
-//    if (!res) println("\t different types: " + typeOf(tp1) + " : " + typeOf(tp2))
+    //if (!res) println("\t different types: " + typeOf(tp1) + " : " + typeOf(tp2))
     res
   }
 
@@ -139,6 +139,8 @@ abstract class Changes {
     implicit val defaultReason = "types"
 //     println("changeSet " + from + "(" + from.info + ")"
 //             + " vs " + to + "(" + to.info + ")")
+
+    def omitSymbols(s: Symbol): Boolean = !s.hasFlag(Flags.LOCAL | Flags.LIFTED | Flags.PRIVATE)
     val cs = new mutable.ListBuffer[Change]
 
     if ((from.info.parents zip to.info.parents) exists { case (t1, t2) => !sameType(t1, t2) })
@@ -148,28 +150,26 @@ abstract class Changes {
 
     // new members not yet visited
     val newMembers = mutable.HashSet[Symbol]()
-    newMembers ++= to.info.decls.iterator
+    newMembers ++= to.info.decls.iterator filter omitSymbols
 
-    for (o <- from.info.decls.iterator;
-         val n = to.info.decl(o.name)) {
+    for (o <- from.info.decls.iterator filter omitSymbols) {
+      val n = to.info.decl(o.name)
       newMembers -= n
 
-      if (!o.hasFlag(Flags.PRIVATE | Flags.LOCAL | Flags.LIFTED)) {
-        if (o.isClass)
-          cs ++= changeSet(o, n)
-        else if (n == NoSymbol)
-          cs += Removed(toEntity(o))
-        else {
-          val newSym = n.suchThat(ov => sameType(ov.tpe, o.tpe))
-          if (newSym == NoSymbol || moreRestrictive(o.flags, newSym.flags)) {
-            cs += Changed(toEntity(o))(n + " changed from " + o.tpe + " to " + n.tpe + " flags: " + Flags.flagsToString(o.flags))
-          } else
-            newMembers -= newSym
-        }
+      if (o.isClass)
+        cs ++= changeSet(o, n)
+      else if (n == NoSymbol)
+        cs += Removed(toEntity(o))
+      else {
+        val newSym = n.suchThat(ov => sameType(ov.tpe, o.tpe))
+        if (newSym == NoSymbol || moreRestrictive(o.flags, newSym.flags))
+          cs += Changed(toEntity(o))(n + " changed from " + o.tpe + " to " + n.tpe + " flags: " + Flags.flagsToString(o.flags))
+        else
+          newMembers -= newSym
       }
-    }
-    cs ++= (newMembers map (Added compose toEntity))
+    }: Unit // Give the type explicitly until #2281 is fixed
 
+    cs ++= (newMembers map (Added compose toEntity))
     cs.toList
   }
   def removeChangeSet(sym: Symbol): Change = Removed(toEntity(sym))

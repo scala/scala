@@ -63,7 +63,7 @@ object BuildManagerTest extends EvalLoop {
       }
       val result =  fs.foldRight((List[AbstractFile](), List[String]()))(partition)
       if (!result._2.isEmpty)
-        println("No such file(s): " + result._2.mkString(","))
+        Console.err.println("No such file(s): " + result._2.mkString(","))
       Set.empty ++ result._1
     }
 
