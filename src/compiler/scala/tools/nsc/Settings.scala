@@ -117,7 +117,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
           case _ => parse(from, i + 1, args)
         }
       } else { // done
-        if (i >= from) {
+        if (i > from) {
           fetchArg(from, i) :: args
         } else args
       }
