@@ -34,7 +34,7 @@ class TestFile(kind: String, val file: File, val fileManager: FileManager, creat
       val reader = new BufferedReader(new java.io.FileReader(flagsFile))
       val flags = reader.readLine
       if (flags ne null)
-        settings.parseParams(flags)
+        settings.parseParams(settings.splitParams(flags))
     }
   }
 

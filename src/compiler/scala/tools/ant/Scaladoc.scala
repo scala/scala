@@ -496,9 +496,7 @@ class Scaladoc extends MatchingTask {
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
-    var args =
-      if (addParams.trim() == "") Nil
-      else addParams.trim().split(" ").toList.map(_.trim())
+    var args = docSettings.splitParams(addParams)
 
     while (!args.isEmpty) {
       if (args.head startsWith "-") {
