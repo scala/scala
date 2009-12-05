@@ -228,7 +228,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     }
     else if ((bSym.sourceFile != null) && bSym.isPublic && !bSym.isLocal) inTpl match {
       case inDTpl: DocTemplateImpl => makeDocTemplate(bSym, inDTpl)
-      case _ => throw new Error("documentable '" + bSym + "' must be in a documentable template")
+      case _ => new NoDocTemplateImpl(bSym, inTpl) // The owner is private
     }
     else
       new NoDocTemplateImpl(bSym, inTpl)
