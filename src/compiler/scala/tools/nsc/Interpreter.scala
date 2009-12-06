@@ -79,7 +79,8 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
   import compiler.{
     Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
-    ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef }
+    ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef,
+    EmptyTree }
   import compiler.{ nme, newTermName }
   import nme.{
     INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX, INTERPRETER_LINE_PREFIX,
@@ -362,6 +363,11 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       else                      Some(trees)
     }
   }
+
+  /** For :power - create trees and type aliases from code snippets. */
+  def mkTree(code: String): Tree = mkTrees(code).headOption getOrElse EmptyTree
+  def mkTrees(code: String): List[Tree] = parse(code) getOrElse Nil
+  def mkType(name: String, what: String) = interpret("type " + name + " = " + what)
 
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false othrewise.
@@ -823,17 +829,17 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   def powerUser(): String = {
     beQuietDuring {
-      val mkTypeCmd =
-        """def mkType(name: String, what: String) = interpreter.interpret("type " + name + " = " + what)"""
-
       this.bind("interpreter", "scala.tools.nsc.Interpreter", this)
-      interpret(mkTypeCmd)
+      this.bind("global", "scala.tools.nsc.Global", compiler)
+      interpret("""import interpreter.{ mkType, mkTree, mkTrees }""")
     }
 
     """** Power User mode enabled - BEEP BOOP      **
-      |** New vals! Try interpreter.<tab>          **
-      |** New defs! Try mkType("T", "String")      **
-      |** New cmds! :help to discover them         **""".stripMargin
+      |** New vals! Try interpreter, global        **
+      |** New cmds! :help to discover them         **
+      |** New defs! Give these a whirl:            **
+      |**   mkType("Fn", "(String, Int) => Int")   **
+      |**   mkTree("def f(x: Int, y: Int) = x+y")  **""".stripMargin
   }
 
   def nameOfIdent(line: String): Option[Name] = {
