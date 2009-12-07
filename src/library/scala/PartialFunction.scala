@@ -41,6 +41,8 @@ trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
     def isDefinedAt(x: A): Boolean = PartialFunction.this.isDefinedAt(x)
     def apply(x: A): C = k(PartialFunction.this.apply(x))
   }
+
+  def lift: A => Option[B] = { x => if (isDefinedAt(x)) Some(this(x)) else None }
 }
 
 /** A few handy operations which leverage the extra bit of information
