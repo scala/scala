@@ -1,4 +1,5 @@
-package plugintemplate.standalone
+package plugintemplate
+package standalone
 
 import scala.tools.nsc.{Global, Settings, SubComponent}
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
