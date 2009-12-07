@@ -42,10 +42,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     def qualifiedName = name
     val comment = {
       val whichSym =
-        if (comments isDefinedAt sym) Some(sym) else sym.allOverriddenSymbols find (comments isDefinedAt _)
+        if (docComments isDefinedAt sym) Some(sym) else sym.allOverriddenSymbols find (docComments isDefinedAt _)
       whichSym map { s =>
         commentCache.getOrElse(s, {
-          val c = commentFactory.parse(comments(s), s.pos)
+          val c = commentFactory.parse(expandedDocComment(s), s.pos) // !!! which one should it be?
           commentCache += s -> c
           c
         })

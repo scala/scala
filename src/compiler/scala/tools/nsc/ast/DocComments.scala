@@ -23,7 +23,7 @@ trait DocComments { self: SymbolTable =>
     override def default(key: Symbol) = Map()
   }
 
-  def getDocComment(sym: Symbol): Option[DocComment] = {
+  private def getDocComment(sym: Symbol): Option[DocComment] = {
     docComments get sym match {
       case None =>
         mapFind(sym.allOverriddenSymbols)(docComments.get)
@@ -41,31 +41,33 @@ trait DocComments { self: SymbolTable =>
     res
   }
 
+  /** Return the javadoc format of doc comment string `s`, including wiki expansion
+   */
+  def toJavaDoc(s: String): String = expandWiki(s)
+
   /** The raw doc comment of symbol `sym`, as it appears in the source text, "" if missing.
    */
   def rawDocComment(sym: Symbol): String = getDocComment(sym) map (_.raw) getOrElse ""
 
-  /** The processed doc comment of symbol `sym`, where
-   *  Wiki syntax is expanded and @usecase or @define parts are removed.
-   *  No variables are expanded yet. "" if missing.
-   */
-  def templateDocComment(sym: Symbol): String = getDocComment(sym) map (_.template) getOrElse ""
-
-  /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
+  /** The doc comment of symbol `sym` after variable expansion, or "" if missing.
    *  @param sym  The symbol for which doc comment is returned
    *  @param site The class for which doc comments are generated
    */
-  def cookedDocComment(sym: Symbol, site: Symbol): String =
+  def expandedDocComment(sym: Symbol, site: Symbol): String =
     getDocComment(sym) map (_.expanded(site)) getOrElse ""
 
-  /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
+  /** The expanded doc comment of symbol `sym` after variable expansion, or "" if missing.
    *  @param sym  The symbol for which doc comment is returned (site is always the containing class)
    */
-  def cookedDocComment(sym: Symbol): String = cookedDocComment(sym, sym.owner)
+  def expandedDocComment(sym: Symbol): String = expandedDocComment(sym, sym.owner)
 
   /** The position of the doc comment of symbol `sym`, or NoPosition if missing */
   def docCommentPos(sym: Symbol): Position = getDocComment(sym) map (_.pos) getOrElse NoPosition
 
+  /** The list of use cases of doc comment of symbol `sym` seen as a member of class
+   *  `site`. Each use case consists of a synthetic symbol (which is entered nowhere else),
+   *  and an expanded doc comment string.
+   */
   def useCases(sym: Symbol, site: Symbol): List[(Symbol, String)] = {
     def getUseCases(dc: DocComment) = {
       for (uc <- dc.useCases; defn <- uc.expandedDefs(site)) yield
@@ -204,9 +206,9 @@ trait DocComments { self: SymbolTable =>
     lazy val (template, defines, useCases) = {
       val parts = decompose(raw)
       val (defines, usecases) = parts.tail partition (_._1 startsWith definePrefix)
-      val templ = expandWiki(parts.head._1)
+      val templ = parts.head._1
       (templ,
-       defines map (d => expandWiki(d._1)),
+       defines map (_._1),
        usecases map (decomposeUseCase(_, templ)))
     }
 
@@ -291,8 +293,8 @@ trait DocComments { self: SymbolTable =>
   }
 
   case class UseCase(comment: DocComment, body: String, pos: Position) {
-    var defined: List[Symbol] = List()
-    var aliases: List[Symbol] = List()
+    var defined: List[Symbol] = List() // initialized by Typer
+    var aliases: List[Symbol] = List() // initialized by Typer
 
     def expandedDefs(site: Symbol): List[Symbol] = {
 
