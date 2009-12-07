@@ -538,7 +538,7 @@ abstract class UnPickler {
             case other => errorBadSignature("Document comment not a string (" + other + ")")
           }
           val definition = readTreeRef()
-          DocDef(comment, definition)
+          DocDef(DocComment(comment, NoPosition), definition)
 
         case TEMPLATEtree =>
           setSym()

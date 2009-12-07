@@ -420,13 +420,13 @@ self =>
     */
     def joinComment(trees: => List[Tree]): List[Tree] = {
       val doc = in.flushDoc
-      if ((doc ne null) && doc._1.length > 0) {
+      if ((doc ne null) && doc.raw.length > 0) {
         val ts = trees
         val main = ts.find(_.pos.isOpaqueRange)
         ts map {
           t =>
-            val dd = DocDef(doc._1, t)
-            val pos = doc._2.withEnd(t.pos.endOrPoint)
+            val dd = DocDef(doc, t)
+            val pos = doc.pos.withEnd(t.pos.endOrPoint)
             dd setPos (if (t eq main) pos else pos.makeTransparent)
         }
       }

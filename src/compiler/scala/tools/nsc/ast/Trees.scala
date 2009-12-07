@@ -570,7 +570,7 @@ trait Trees {
     // It's used primarily as a marker to check that the import has been typechecked.
 
   /** Documented definition, eliminated by analyzer */
-  case class DocDef(comment: String, definition: Tree)
+  case class DocDef(comment: DocComment, definition: Tree)
        extends Tree {
     override def symbol: Symbol = definition.symbol
     override def symbol_=(sym: Symbol) { definition.symbol = sym }
@@ -1072,7 +1072,7 @@ trait Trees {
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree): TypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]): Import
-    def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
+    def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef
@@ -1127,7 +1127,7 @@ trait Trees {
       new LabelDef(name, params, rhs).copyAttrs(tree)
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]) =
       new Import(expr, selectors).copyAttrs(tree)
-    def DocDef(tree: Tree, comment: String, definition: Tree) =
+    def DocDef(tree: Tree, comment: DocComment, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]) =
       new Template(parents, self, body).copyAttrs(tree)
@@ -1244,7 +1244,7 @@ trait Trees {
       if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => treeCopy.Import(tree, expr, selectors)
     }
-    def DocDef(tree: Tree, comment: String, definition: Tree) = tree match {
+    def DocDef(tree: Tree, comment: DocComment, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
       if (comment0 == comment) && (definition0 == definition) => t
       case _ => treeCopy.DocDef(tree, comment, definition)

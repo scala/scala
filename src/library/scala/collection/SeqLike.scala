@@ -10,20 +10,19 @@
 
 
 package scala.collection
-import generic._
+
 import mutable.{ListBuffer, HashMap, GenericArray}
 import immutable.{List, Range}
-
-// import immutable.{List, Nil, ::}
 import generic._
 
-/** Contains a KMP implementation, based on the undoubtedly reliable wikipedia entry.
- *
- *  @author paulp
- *  @since  2.8
+/** The companion object for trait `SeqLike`.
  */
 object SeqLike {
 
+  /**  A KMP implementation, based on the undoubtedly reliable wikipedia entry.
+   *  @author paulp
+   *  @since  2.8
+   */
   private def KMP[B](S: Seq[B], W: Seq[B]): Option[Int] = {
     // trivial cases
     if (W.isEmpty) return Some(0)
@@ -73,6 +72,8 @@ object SeqLike {
     None
   }
 
+  /** Waiting for a doc comment from Paul
+   */
   def indexOf[B](
     source: Seq[B], sourceOffset: Int, sourceCount: Int,
     target: Seq[B], targetOffset: Int, targetCount: Int,
@@ -82,6 +83,8 @@ object SeqLike {
         case Some(x) => x + fromIndex
       }
 
+  /** Waiting for a doc comment from Paul
+   */
   def lastIndexOf[B](
     source: Seq[B], sourceOffset: Int, sourceCount: Int,
     target: Seq[B], targetOffset: Int, targetCount: Int,
@@ -96,41 +99,89 @@ object SeqLike {
     }
 }
 
-/** Class <code>Seq[A]</code> represents sequences of elements
- *  of type <code>A</code>.
- *  It adds the following methods to class Iterable:
- *   `length`, `lengthCompare`, `apply`, `isDefinedAt`, `segmentLength`, `prefixLength`,
- *   `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`, `reverse`, `reverseIterator`,
- *   `startsWith`, `endsWith`, `indexOfSlice`, , `zip`, `zipAll`, `zipWithIndex`.
+/** A template trait for sequences of type `Seq[A]`, representing
+ *  sequences of elements of type <code>A</code>.
  *
+ *  Sequences are special cases of iterable collections of class `Iterable`.
+ *  Unlike iterables, sequences always have a defined order of elements.
+ *  Sequences provide a method `apply` for indexing. Indices range from `0` up the the `length` of
+ *  a sequence. Sequences support a number to find occurrences of elements or subsequences, including
+ *  `segmentLength`, `prefixLength`, `indexWhere`, `indexOf`, `lastIndexWhere`, `lastIndexOf`,
+ *  `startsWith`, `endsWith`, `indexOfSlice`.
+ *
+ *  Another way to see a sequence is as a `PartialFunction` from `Int` values
+ *  to the element type of the sequence. The `isDefinedAt` method of a sequence
+ *  returns `true` for the interval from `0` until `length`.
+ *
+ *  Sequences can be accessed in reverse order of their elements, using methods
+ *  `reverse` and `reverseIterator`.
+ *
+ *  Sequences have two principle subtraits, `IndexedSeq` and `LinearSeq`, which give different guarantees for performance.
+ *  An `IndexedSeq` provides fast random-access of elements and a fast `length` operation.
+ *  A `LinearSeq` provides fast access only to the first element via `head`, but also
+ *  has a fast `tail` operation.
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  *  @since   2.8
+ *
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
+ *
+ *  @define Coll Seq
+ *  @define coll sequence
+ *  @define thatinfo the class of the returned collection. Where possible, `That` is
+ *    the same class as the current collection class `Repr`, but this
+ *    depends on the element type `B` being admissible for that class,
+ *    which means that an implicit instance of type `CanBuildFrom[Repr, B, That]`
+ *    is found.
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`.
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *
+ *    Note: may not terminate for infinite-sized collections.
+ *  @define willNotTerminateInf
+ *
+ *    Note: will not terminate for infinite-sized collections.
  */
 trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   override protected[this] def thisCollection: Seq[A] = this.asInstanceOf[Seq[A]]
   override protected[this] def toCollection(repr: Repr): Seq[A] = repr.asInstanceOf[Seq[A]]
 
-  /** Returns the length of the sequence.
+  /** The length of the $coll.
+   *
+   *  $willNotTerminateInf
+   *
+   *  Note: `xs.length` and `xs.size` yield the same result.
+   *
+   *  @return     the number of elements in this $coll.
    */
   def length: Int
 
-  /** Returns the elements at position `idx`
+  /** Selects an element by its index in the $coll
+   *
+   *  @param  idx  The index to select
+   *  @return the element of tyh
    */
   def apply(idx: Int): A
 
-  /** Result of comparing <code>length</code> with operand <code>len</code>.
-   *  returns <code>x</code> where
-   *  <code>x &lt; 0</code>    iff    <code>this.length &lt; len</code>
-   *  <code>x == 0</code>   iff    <code>this.length == len</code>
-   *  <code>x &gt; 0</code>    iff    <code>this.length &gt; len</code>.
+  /** Compares the length of this $coll to a test value.
    *
-   *  The method as implemented here does not call length directly; its running time
-   *  is O(length min len) instead of O(length). The method should be overwritten
-   *  if computing length is cheap.
+   *   @param   len   the test value that gets compared with the length.
+   *   @return  A value `x` where
+   *   {{{
+   *        x <  0       if this.length <  len
+   *        x == 0       if this.length == len
+   *        x >  0       if this.length >  len
+   *   }}}
+   *  The method as implemented here does not call `length` directly; its running time
+   *  is `O(length min len)` instead of `O(length)`. The method should be overwritten
+   *  if computing `length` is cheap.
    */
   def lengthCompare(len: Int): Int = {
     var i = 0
@@ -142,18 +193,32 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     i - len
   }
 
-  /** Should always be <code>length</code> */
+  /** The size of this $coll, equivalent to `length`.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @return    the number of elements in this $coll.
+   */
   override def size = length
 
-  /** Is this partial function defined for the index <code>x</code>?
+  /** Tests whether this $coll contains given index.
+   *
+   *  The implementations of methods `apply` and `isDefinedAt` turn a `Seq[A]` into
+   *  a `PartialFunction[Int, A]`.
+   *
+   * @param    idx     the index to test
+   * @return   `true` if this $coll contains an element at position `idx`, `false` otherwise.
    */
-  def isDefinedAt(x: Int): Boolean = (x >= 0) && (x < length)
+  def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < length)
 
-  /** Returns length of longest segment starting from a start index `from`
-   *  such that every element of the segment satisfies predicate `p`.
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  p the predicate
-   *  @param  from  the start index
+  /** Computes length of longest segment whose elements all satisfy some preficate.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @param   from  the index where the search starts.
+   *  @return  the length of the longest segment of this $coll starting from index `from`
+   *           such that every element of the segment satisfies the predicate `p`.
    */
   def segmentLength(p: A => Boolean, from: Int): Int = {
     var i = 0
@@ -163,26 +228,34 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     i
   }
 
-  /** Returns length of longest prefix of this seqence
-   *  such that every element of the prefix satisfies predicate `p`.
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  p the predicate
+  /** Returns the length of the longest prefix whose elements all satisfy some preficate.
+   *
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the length of the longest prefix of this $coll
+   *           such that every element of the segment satisfies the predicate `p`.
    */
   def prefixLength(p: A => Boolean) = segmentLength(p, 0)
 
-  /** Returns index of the first element satisfying a predicate, or -1, if none exists.
+  /** Finds index of first element satisfying some predicate.
    *
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  p the predicate
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index of the first element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
    */
   def indexWhere(p: A => Boolean): Int = indexWhere(p, 0)
 
-  /** Returns index of the first element starting from a start index
-   *  satisying a predicate, or -1, if none exists.
+  /** Finds index of the first element satisfying some predicate after or at some start index.
    *
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  p the predicate
-   *  @param  from  the start index
+   *  $mayNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @param   from   the start index
+   *  @return  the index `>= from` of the first element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
    */
   def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = from
@@ -192,63 +265,95 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     if (it.hasNext) i else -1
   }
 
-  /** Returns index of the first element satisying a predicate, or -1. */
-  @deprecated("Use `indexWhere' instead")
+  /** Returns index of the first element satisying a predicate, or `-1`.
+   *  @deprecated "Use `indexWhere` instead"
+   */
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
-  /** Returns the index of the first occurence of the specified
-   *  object in this sequence.
+  /** Finds index of first occurrence of some value in this $coll.
    *
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  elem  element to search for.
-   *  @return the index in this sequence of the first occurence of the
-   *          specified element, or -1 if the sequence does not contain
-   *          this element.
+   *  $mayNotTerminateInf
+   *
+   *  @param   elem   the element value to search for.
+   *  @tparam  B      the type of the element `elem`.
+   *  @return  the index of the first element of this $coll that is equal (wrt `==`)
+   *           tp `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def indexOf(elem: A): Int
+   *
+   *  @param   elem   the element value to search for.
+   *  @return  the index of the first element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
    */
   def indexOf[B >: A](elem: B): Int = indexOf(elem, 0)
 
-  /** Returns the index of the first occurence of the specified
-   *  object in this sequence, starting from a start index, or
-   *  -1, if none exists.
+  /** Finds index of first occurrence of some value in this $coll after or at some start index.
    *
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  elem  element to search for.
+   *  $mayNotTerminateInf
+   *
+   *  @param   elem   the element value to search for.
+   *  @tparam  B      the type of the element `elem`.
+   *  @param   from   the start index
+   *  @return  the index `>= from` of the first element of this $coll that is equal (wrt `==`)
+   *           tp `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def indexOf(elem: A): Int
+   *
+   *  @param   elem   the element value to search for.
+   *  @param   from   the start index
+   *  @return  the index `>= from` of the first element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
    */
   def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem ==, from)
 
- /** Returns the index of the last occurence of the specified element
-   *  in this sequence, or -1 if the sequence does not contain this element.
+  /** Finds index of last occurrence of some value in this $coll.
    *
-   *  @param  elem   element to search for.
-   *  @return the index in this sequence of the last occurence of the
-   *          specified element, or -1 if the sequence does not contain
-   *          this element.
+   *  $willNotTerminateInf
+   *
+   *  @param   elem   the element value to search for.
+   *  @tparam  B      the type of the element `elem`.
+   *  @return  the index of the last element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def lastIndexOf(elem: A): Int
+   *
+   *  @param   elem   the element value to search for.
+   *  @return  the index of the last element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
    */
   def lastIndexOf[B >: A](elem: B): Int = lastIndexWhere(elem ==)
 
-  /** Returns the index of the last
-    *  occurence of the specified element in this sequence
-    *  before or at a given end index,
-    *  or -1 if the sequence does not contain this element.
-    *
-    *  @param  elem   element to search for.
-    *  @param  end    the end index
-    */
+  /** Finds index of last occurrence of some value in this $coll before or at a given end index.
+   *
+   *  @param   elem   the element value to search for.
+   *  @param   end    the end index.
+   *  @tparam  B      the type of the element `elem`.
+   *  @return  the index `<= end` of the last element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
+   *
+   *  @usecase def lastIndexOf(elem: A): Int
+   *
+   *  @param   elem   the element value to search for.
+   *  @return  the index `<= end` of the last element of this $coll that is equal (wrt `==`)
+   *           to `elem`, or `-1`, if none exists.
+   */
   def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem ==, end)
 
-  /** Returns index of the last element satisying a predicate, or -1, if none exists.
+  /** Finds index of last element satisfying some predicate.
    *
-   *  @param  p the predicate
-   *  @return   the index of the last element satisfying <code>p</code>,
-   *            or -1 if such an element does not exist
+   *  $willNotTerminateInf
+   *
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index of the last element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
    */
   def lastIndexWhere(p: A => Boolean): Int = lastIndexWhere(p, length - 1)
 
-  /** Returns index of the last element not exceeding a given end index
-   *  and satisying a predicate, or -1 if none exists.
+  /** Finds index of last element satisfying some predicate before or at given end index.
    *
-   *  @param  end the end index
-   *  @param  p the predicate
+   *  @param   p     the predicate used to test elements.
+   *  @return  the index `<= end` of the last element of this $coll that satisfies the predicate `p`,
+   *           or `-1`, if none exists.
    */
   def lastIndexWhere(p: A => Boolean, end: Int): Int = {
     var i = length - 1
@@ -257,8 +362,11 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     i
   }
 
-  /** A sequence of type <code>C</code> consisting of all elements of
-   *  this sequence in reverse order.
+  /** Returns new $coll wih elements in reversed order.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @return A new $coll with all elements of this $coll in reversed order.
    */
   def reverse: Repr = {
     var xs: List[A] = List()
@@ -270,18 +378,34 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b.result
   }
 
-  /** Apply a function to all the elements of the sequence, and return the
-   *  reversed sequence of results. This is equivalent to a call to <code>reverse</code>
-   *  followed by a call to <code>map</code>, but more efficient.
+  /**
+   *  Builds a new collection by applying a function to all elements of this $coll and
+   *  collecting the results in reversed order.
    *
-   *  @param f the function to apply to each elements.
-   *  @return  the reversed seq of results.
+   *  $willNotTerminateInf
+   *
+   *  Note: `xs.reverseMap(f)` is the same as `xs.reverse.map(f)` but might be more efficient.
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results in reversed order.
+   *
+   *  @usecase def reverseMap[B](f: A => B): $Coll[B]
+   *
+   *  Note: `xs.reverseMap(f)` is the same as `xs.reverse.map(f)` but might be more efficient.
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @return       a new $coll resulting from applying the given function
+   *                `f` to each element of this $coll and collecting the results in reversed order.
    */
   def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     var xs: List[A] = List()
     for (x <- this)
       xs = x :: xs
-
     val b = bf(repr)
     for (x <- xs)
       b += f(x)
@@ -289,25 +413,30 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b.result
   }
 
-  /** The elements of this sequence in reversed order
+  /** An iterator yielding elements in reversed order.
+   *
+   *   $willNotTerminateInf
+   *
+   * Note: `xs.reverseIterator` is the same as `xs.reverse.iterator` but might be more efficient.
+   *
+   *  @return  an iterator yielding the elements of this $coll in reversed order
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator
 
+  /** @deprecated use `reverseIterator` instead */
   @deprecated("use `reverseIterator' instead")
   def reversedElements = reverseIterator
 
-  /**
-   * Checks whether the argument sequence is contained at the
-   * specified index within the receiver object.
+  /** Checks whether this $coll contains the given sequence at a given index.
    *
    * If the both the receiver object, <code>this</code> and
    * the argument, <code>that</code> are infinite sequences
    * this method may not terminate.
    *
-   * @return true if <code>that</code> is contained in
-   * <code>this</code>, at the specified index, otherwise false
-   *
-   * @see String.startsWith
+   * @param  that    the candidate sequence
+   * @param  offset  the index where the sequence is searched.
+   * @return `true` if the sequence `that` is contained in this $coll at index `offset`,
+   *         otherwise `false`.
    */
   def startsWith[B](that: Seq[B], offset: Int): Boolean = {
     val i = this.iterator drop offset
@@ -319,10 +448,10 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     !j.hasNext
   }
 
-  /**
-   * Check whether the receiver object starts with the argument sequence.
+  /** Checks whether this $coll starts with the given sequence.
    *
-   * @return true if <code>that</code> is a prefix of <code>this</code>,
+   * @param  that    the candidate sequence
+   * @return `true` if this collection has `that` as a prefix, `false` otherwise.
    * otherwise false
    */
   def startsWith[B](that: Seq[B]): Boolean = startsWith(that, 0)

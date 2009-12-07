@@ -63,14 +63,12 @@ import immutable.{List, Stream, Nil, ::}
  *
  *  @define Coll Traversable
  *  @define coll traversable collection
- *  @define thatinfo
- *    the class of the returned collection. Where possible, `That` is
+ *  @define thatinfo the class of the returned collection. Where possible, `That` is
  *    the same class as the current collection class `Repr`, but this
  *    depends on the element type `B` being admissible for that class,
  *    which means that an implicit instance of type `CanBuildFrom[Repr, B, That]`
  *    is found.
- *  @define bfinfo
- *    an implicit value of class `CanBuildFrom` which determines the
+ *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`.
  *  @define orderDependent
@@ -100,12 +98,13 @@ self =>
    */
   def repr: Repr = this.asInstanceOf[Repr]
 
-  /** The underlying collection seen as an instance of `Traversable`.
-   *  By default this is implemented as the `TraversableLike` object itself, but this can be overridden.
+  /** The underlying collection seen as an instance of `$Coll`.
+   *  By default this is implemented as the current collection object itself,
+   *  but this can be overridden.
    */
   protected[this] def thisCollection: Traversable[A] = this.asInstanceOf[Traversable[A]]
 
-  /** A conversion from collections of type `Repr` to `Traversable` objects.
+  /** A conversion from collections of type `Repr` to `$Coll` objects.
    *  By default this is implemented as just a cast, but this can be overridden.
    */
   protected[this] def toCollection(repr: Repr): Traversable[A] = repr.asInstanceOf[Traversable[A]]
@@ -116,8 +115,9 @@ self =>
 
   /** Applies a function `f` to all elements of this $coll.
    *
-   *  Note: this method underlies the implementation of most other bulk operations.
-   *  It's important to implement this method in an efficient way.
+   *    Note: this method underlies the implementation of most other bulk operations.
+   *    It's important to implement this method in an efficient way.
+   *
    *
    *  @param  f   the function that is applied for its side-effect to every element.
    *              The result of function `f` is discarded.
@@ -126,7 +126,7 @@ self =>
    *              This result will always be ignored. Typically `U` is `Unit`,
    *              but this is not necessary.
    *
-   *  @usage def foreach(f: A => Unit): Unit
+   *  @usecase def foreach(f: A => Unit): Unit
    *
    *  @param  f   the function that is applied for its side-effect to every element.
    *              The result of function `f` is discarded.
@@ -184,7 +184,7 @@ self =>
    *  @return       a new collection of type `That` which contains all elements of this $coll
    *                followed by all elements of `that`.
    *
-   *  @usage def ++(that: Traversable[A]): $Coll[A]
+   *  @usecase def ++(that: Traversable[A]): $Coll[A]
    *
    *  @param that   the traversable to append.
    *  @return       a new $coll which contains all elements of this $coll
@@ -206,7 +206,7 @@ self =>
    *  @return       a new collection of type `That` which contains all elements of this $coll
    *                followed by all elements of `that`.
    *
-   *  @usage def ++(that: Iterator[A]): $Coll[A]
+   *  @usecase def ++(that: Iterator[A]): $Coll[A]
    *
    *  @param that   the iterator to append.
    *  @return       a new $coll which contains all elements of this $coll
@@ -228,7 +228,7 @@ self =>
    *  @return       a new collection of type `That` resulting from applying the given function
    *                `f` to each element of this $coll and collecting the results.
    *
-   *  @usage def map[B](f: A => B): $Coll[B]
+   *  @usecase def map[B](f: A => B): $Coll[B]
    *
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.
@@ -251,7 +251,7 @@ self =>
    *  @return       a new collection of type `That` resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
    *
-   *  @usage def flatMap[B](f: A => Traversable[B]): $Coll[B]
+   *  @usecase def flatMap[B](f: A => Traversable[B]): $Coll[B]
    *
    *  @param f      the function to apply to each element.
    *  @tparam B     the element type of the returned collection.
@@ -266,7 +266,7 @@ self =>
 
   /** Selects all elements of this $coll which satisfy a predicate.
    *
-   *  @param p     the predicate used used to test elements.
+   *  @param p     the predicate used to test elements.
    *  @return      a new $coll consisting of all elements of this $coll that satisfy the given
    *               predicate `p`. The order of the elements is preserved.
    */
@@ -296,7 +296,7 @@ self =>
    *                `pf` to each element on which it is defined and collecting the results.
    *                The order of the elements is preserved.
    *
-   *  @usage def partialMap[B](pf: PartialFunction[Any, B]): $Coll[B]
+   *  @usecase def partialMap[B](pf: PartialFunction[Any, B]): $Coll[B]
    *
    *  @param pf     the partial function which filters and maps the $coll.
    *  @return       a new $coll resulting from applying the given partial function
@@ -308,6 +308,34 @@ self =>
     for (x <- this) if (pf.isDefinedAt(x)) b += pf(x)
     b.result
   }
+
+  /** Builds a new collection by applying an option-valued function to all elements of this $coll
+   *  on which the function is defined.
+   *
+   *  @param f      the option-valued function which filters and maps the $coll.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` resulting from applying the option-valued function
+   *                `f` to each element and collecting all defined results.
+   *                The order of the elements is preserved.
+   *
+   *  @usecase def filterMap[B](f: A => Option[B]): $Coll[B]
+   *
+   *  @param pf     the partial function which filters and maps the $coll.
+   *  @return       a new $coll resulting from applying the given option-valued function
+   *                `f` to each element and collecting all defined results.
+   *                The order of the elements is preserved.
+  def filterMap[B, That](f: A => Option[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    val b = bf(repr)
+    for (x <- this)
+      f(x) match {
+        case Some(y) => b += y
+        case _ =>
+      }
+    b.result
+  }
+   */
 
   /** Partitions this $coll in two ${coll}s according to a predicate.
    *
@@ -356,7 +384,7 @@ self =>
    *
    *  $mayNotTerminateInf
    *
-   *  @param   p     the predicate used used to test elements.
+   *  @param   p     the predicate used to test elements.
    *  @return        `true` if the given predicate `p` holds for all elements
    *                 of this $coll, otherwise `false`.
    */
@@ -373,7 +401,7 @@ self =>
    *
    *  $mayNotTerminateInf
    *
-   *  @param   p     the predicate used used to test elements.
+   *  @param   p     the predicate used to test elements.
    *  @return        `true` if the given predicate `p` holds for some of the elements
    *                 of this $coll, otherwise `false`.
    */
@@ -388,7 +416,7 @@ self =>
 
   /** Counts the number of elements in the $coll which satisfy a predicate.
    *
-   *  @param p     the predicate  used used to test elements.
+   *  @param p     the predicate  used to test elements.
    *  @return      the number of elements satisfying the predicate `p`.
    *
    *
@@ -406,7 +434,7 @@ self =>
    *  $mayNotTerminateInf
    *  $orderDependent
    *
-   *  @param p    the predicate used used to test elements.
+   *  @param p    the predicate used to test elements.
    *  @return     an option value containing the first element in the $coll
    *              that satisfies `p`, or `None` if none exists.
    */
@@ -419,6 +447,28 @@ self =>
     result
   }
 
+  /** Applies option-valued function to successive elements of this $coll
+   *  until a defined value is found.
+   *
+   *  $mayNotTerminateInf
+   *  $orderDependent
+   *
+   *  @param f    the function to be applied to successive elements.
+   *  @return     an option value containing the first defined result of
+   *              `f`, or `None` if `f` returns `None` for all all elements.
+  def mapFind[B](f: A => Option[B]): Option[B] = {
+    var result: Option[B] = None
+    breakable {
+      for (x <- this)
+        f(x) match {
+          case s @ Some(_) => result = s; break
+          case _ =>
+        }
+    }
+    result
+  }
+   */
+
   /** Applies a binary operator to a start value and all elements of this $coll, going left to right.
    *
    *  $willNotTerminateInf
@@ -430,9 +480,9 @@ self =>
    *  @return  the result of inserting `op` between consecutive elements of this $coll$,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(z, x_1), x_2, ..., x_n)
+   *             op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)
    *           }}}
-   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
@@ -454,9 +504,9 @@ self =>
    *  @return  the result of inserting `op` between consecutive elements of this $coll$,
    *           going left to right with the start value `z` on the left:
    *           {{{
-   *             op(...op(op(z, x_1), x_2), ..., x_n)
+   *             op(...op(op(z, x,,1,,), x,,2,,), ..., x,,n,,)
    *           }}}
-   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
   def /: [B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
@@ -467,9 +517,9 @@ self =>
    *  @return  the result of inserting `op` between consecutive elements of this $coll$,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x_1, op(x_2, ... op(x_n, z)...))
+   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
    *           }}}
-   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *
    *  $willNotTerminateInf
    *  $orderDependentFold
@@ -492,9 +542,9 @@ self =>
    *  @return  the result of inserting `op` between consecutive elements of this $coll$,
    *           going right to left with the start value `z` on the right:
    *           {{{
-   *             op(x_1, op(x_2, ... op(x_n, z)...))
+   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
    *           }}}
-   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
   def :\ [B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
@@ -507,9 +557,9 @@ self =>
    *  @return  the result of inserting `op` between consecutive elements of this $coll$,
    *           going left to right:
    *           {{{
-   *             op(...(op(x_1, x_2), ... ) , x_n)
+   *             op(...(op(x,,1,,, x,,2,,), ... ) , x,,n,,)
    *           }}}
-   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *  @throws `UnsupportedOperationException` if this $coll is empty.
    */
   def reduceLeft[B >: A](op: (B, A) => B): B = {
@@ -544,9 +594,9 @@ self =>
    *  @return  the result of inserting `op` between consecutive elements of this $coll$,
    *           going right to left:
    *           {{{
-   *             op(x_1, op(x_2, ..., op(x_(n-1), x_n)...))
+   *             op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))
    *           }}}
-   *           where `x_1, ..., x_n` are the elements of this $coll.
+   *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    *  @throws `UnsupportedOperationException` if this $coll is empty.
    */
   def reduceRight[B >: A](op: (A, B) => B): B = {
@@ -576,9 +626,13 @@ self =>
    *   @tparam  B    the result type of the `+` operator.
    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
    *
-   *   @usage sum: Num
-   *   @return       the sum of all elements in this $coll of numbers of type `Num`.
-   *                 `Num` must be a numeric type such as `Int`, `Double`, `BigDecimal`.
+   *   @usecase def sum: Int
+   *
+   *   @return       the sum of all elements in this $coll of numbers of type `Int`.
+   *   Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
+   *   can be used as element type of the $coll and as result type of `sum`.
+   *   Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
+   *
    */
   def sum[B >: A](implicit num: Numeric[B]): B = {
     var acc = num.zero
@@ -593,9 +647,12 @@ self =>
    *   @tparam  B    the result type of the `*` operator.
    *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
    *
-   *   @usage product: Num
-   *   @return       the product of all elements in this $coll of numbers of type `Num`.
-   *                 `Num` must be a numeric type such as `Int`, `Double`, `BigDecimal`.
+   *   @usecase def product: Int
+   *
+   *   @return       the product of all elements in this $coll of numbers of type `Int`.
+   *   Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
+   *   can be used as element type of the $coll and as result type of `product`.
+   *   Examples of such types are: `Long`, `Float`, `Double`, `BigInt`.
    */
   def product[B >: A](implicit num: Numeric[B]): B = {
     var acc = num.one
@@ -609,7 +666,7 @@ self =>
    *  @tparam   B     The type over which the ordering is defined.
    *  @return   the smallest element of this $coll with respect to the ordering `cmp`.
    *
-   *  @usage min: A
+   *  @usecase def min: A
    *  @return   the smallest element of this $coll
    */
   def min[B >: A](implicit cmp: Ordering[B]): A = {
@@ -626,7 +683,7 @@ self =>
    *  @tparam   B     The type over which the ordering is defined.
    *  @return   the largest element of this $coll with respect to the ordering `cmp`.
    *
-   *  @usage min: A
+   *  @usecase def min: A
    *  @return   the largest element of this $coll.
    */
   def max[B >: A](implicit cmp: Ordering[B]): A = {
@@ -861,7 +918,7 @@ self =>
    *  @tparam B      the type of the elements of the array.
    *
    *
-   *  @usage copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
    *
    *  @param  xs     the array to fill.
    *  @param  start  the starting index.
@@ -891,7 +948,7 @@ self =>
    *  @param  start  the starting index.
    *  @tparam B      the type of the elements of the array.
    *
-   *  @usage def copyToArray(xs: Array[A], start: Int): Unit
+   *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
    *
    *  @param  xs     the array to fill.
    *  @param  start  the starting index.
@@ -907,7 +964,7 @@ self =>
    *               be available.
    *  @return  an array containing all elements of this $coll.
    *
-   *  @usage toArray: Array[A]
+   *  @usecase def toArray: Array[A]
    *  @return  an array containing all elements of this $coll.
    *           A `ClassManifest` must be available for the element type of this $coll.
    */
@@ -1054,7 +1111,6 @@ self =>
   /** Creates a non-strict view of this $coll.
    *
    *  @return a non-strict view of this $coll.
-   *  @see TraversableView
    */
   def view = new TraversableView[A, Repr] {
     protected lazy val underlying = self.repr
@@ -1107,7 +1163,7 @@ self =>
      *                `f` to each element of the outer $coll that satisfies predicate `p`
      *                and collecting the results.
      *
-     *  @usage def map[B](f: A => B): $Coll[B]
+     *  @usecase def map[B](f: A => B): $Coll[B]
      *
      *  @param f      the function to apply to each element.
      *  @tparam B     the element type of the returned collection.
@@ -1132,7 +1188,7 @@ self =>
      *  @return       a new collection of type `That` resulting from applying the given collection-valued function
      *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
      *
-     *  @usage def flatMap[B](f: A => Traversable[B]): $Coll[B]
+     *  @usecase def flatMap[B](f: A => Traversable[B]): $Coll[B]
      *
      *  @param f      the function to apply to each element.
      *  @tparam B     the element type of the returned collection.
@@ -1156,7 +1212,7 @@ self =>
      *              This result will always be ignored. Typically `U` is `Unit`,
      *              but this is not necessary.
      *
-     *  @usage def foreach(f: A => Unit): Unit
+     *  @usecase def foreach(f: A => Unit): Unit
      *
      *  @param  f   the function that is applied for its side-effect to every element.
      *              The result of function `f` is discarded.

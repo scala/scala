@@ -39,7 +39,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     override def onlyPresentation = true
     lazy val addSourceless = {
       val sless = new SourcelessComments { val global = compiler }
-      comments ++= sless.comments
+      docComments ++= sless.comments
     }
   }
 

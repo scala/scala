@@ -636,6 +636,21 @@ trait Iterator[+A] { self =>
     res
   }
 
+  /** Applies option-valued function to successive elements of this iterator
+   *  until a defined value is found.
+   *
+   *  @param f    the function to be applied to successive elements.
+   *  @return     an option value containing the first defined result of
+   *              `f`, or `None` if `f` returns `None` for all all elements.
+  def mapFind[B](f: A => Option[B]): Option[B] = {
+    var res: Option[B] = None
+    while (res.isEmpty && hasNext) {
+      res = f(next())
+    }
+    res
+  }
+   */
+
   /** Returns index of the first element satisfying a predicate, or -1.
    *
    *  @note may not terminate for infinite-sized collections.

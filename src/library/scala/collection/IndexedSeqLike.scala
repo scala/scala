@@ -77,7 +77,18 @@ trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
     val i = prefixLength(!p(_))
     if (i < length) Some(this(i)) else None
   }
-
+/*
+  override def mapFind[B](f: A => Option[B]): Option[B] = {
+    var i = 0
+    var res: Option[B] = None
+    val len = length
+    while (res.isEmpty && i < len) {
+      res = f(this(i))
+      i += 1
+    }
+    res
+  }
+*/
   @tailrec
   private def foldl[B](start: Int, end: Int, z: B, op: (B, A) => B): B =
     if (start == end) z

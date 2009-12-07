@@ -152,7 +152,17 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     }
     None
   }
-
+/*
+  override def mapFind[B](f: A => Option[B]): Option[B] = {
+    var res: Option[B] = None
+    var these = this
+    while (res.isEmpty && !these.isEmpty) {
+      res = f(these.head)
+      these = these.tail
+    }
+    res
+  }
+*/
   /** Combines the elements of this list together using the binary
    *  function <code>f</code>, from left to right, and starting with
    *  the value <code>z</code>.

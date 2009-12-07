@@ -41,6 +41,15 @@ abstract class Reporter {
   private var source: SourceFile = _
   def setSource(source: SourceFile) { this.source = source }
   def getSource: SourceFile = source
+  def withSource[A](src: SourceFile)(op: => A) = {
+    val oldSource = source
+    try {
+      source = src
+      op
+    } finally {
+      source = oldSource
+    }
+  }
 
   def    info(pos: Position, msg: String, force: Boolean) { info0(pos, msg,    INFO, force) }
   def warning(pos: Position, msg: String                ) { info0(pos, msg, WARNING, false) }

@@ -21,9 +21,9 @@ abstract class SourcelessComments {
 
   lazy val comments = {
 
-    val comment = mutable.HashMap.empty[Symbol, String]
+    val comment = mutable.HashMap.empty[Symbol, DocComment]
 
-    comment(NothingClass) = """
+    comment(NothingClass) = new DocComment("""
       /** <p>
         * Class <code>Nothing</code> is - together with class <a href="Null.html">
         * <code>Null</code></a> - at the bottom of the
@@ -44,9 +44,9 @@ abstract class SourcelessComments {
         * instance of <code><a href="List.html">List</a>[T]</code>, for
         * any element type <code>T</code>.
         * </p> */
-      """
+      """)
 
-     comment(NullClass) = """
+     comment(NullClass) = new DocComment("""
        /** <p>
          * Class <code>Null</code> is - together with class <a href="Nothing.html">
          * <code>Nothing</code> - at the bottom of the
@@ -61,12 +61,12 @@ abstract class SourcelessComments {
          * it is not possible to assign <code>null</code> to a variable of
          * type <a href="Int.html"><code>Int</code></a>.
          * </p> */
-       """
+       """)
 
      /*******************************************************************/
      /* Documentation for Any */
 
-     comment(AnyClass) = """
+     comment(AnyClass) = new DocComment("""
       /** <p>
         * Class <code>Any</code> is the root of the <a
         * href="http://scala-lang.org/"
@@ -77,9 +77,9 @@ abstract class SourcelessComments {
         * <a href="AnyRef.html"><code>AnyRef</code></a> and
         * <a href="AnyVal.html"><code>AnyVal</code></a>.
         * </p> */
-      """
+      """)
 
-    comment(Any_equals) = """
+    comment(Any_equals) = new DocComment("""
       /** This method is used to compare the receiver object (<code>this</code>)
         * with the argument object (<code>arg0</code>) for equivalence.
         *
@@ -113,34 +113,34 @@ abstract class SourcelessComments {
         * @param arg0 the object to compare against this object for equality.
         * @return <code>true</code> if the receiver object is equivalent to the argument; <code>false</code> otherwise.
         * </p> */
-      """
+      """)
 
-    comment(Any_==) = """
+    comment(Any_==) = new DocComment("""
       /** `o == arg0` is the same as `o.equals(arg0)`.
         * <p>
         * @param arg0 the object to compare against this object for equality.
         * @return `true` if the receiver object is equivalent to the argument; `false` otherwise.
         * </p> */
-      """
+      """)
 
-    comment(Any_!=) = """
+    comment(Any_!=) = new DocComment("""
       /** `o != arg0` is the same as `!(o == (arg0))`.
         * <p>
         * @param arg0 the object to compare against this object for dis-equality.
         * @return `false` if the receiver object is equivalent to the argument; `true` otherwise.
         * </p> */
-      """
+      """)
 
-    comment(Any_toString) = """
+    comment(Any_toString) = new DocComment("""
       /** Returns a string representation of the object.
         * <p>
         * The default representation is platform dependent.
         *
         * @return a string representation of the object.
         * </p>*/
-      """
+      """)
 
-    comment(Any_asInstanceOf) = """
+    comment(Any_asInstanceOf) = new DocComment("""
       /**This method is used to cast the receiver object to be of type <code>T0</code>.
         *
         * <p>Note that the success of a cast at runtime is modulo Scala's
@@ -156,9 +156,9 @@ abstract class SourcelessComments {
         * instance of erasure of type <code>T0</code>.
         * @return the receiver object.
         * </p> */
-      """
+      """)
 
-    comment(Any_isInstanceOf) = """
+    comment(Any_isInstanceOf) = new DocComment("""
       /** This method is used to test whether the dynamic type of the receiver object is <code>T0</code>.
         *
         * <p>Note that the test result of the test is modulo Scala's erasure
@@ -172,9 +172,9 @@ abstract class SourcelessComments {
         *
         * @return <code>true</code> if the receiver object is an
         * instance of erasure of type <code>T0</code>; <code>false</code> otherwise. */
-      """
+      """)
 
-    comment(Any_hashCode) = """
+    comment(Any_hashCode) = new DocComment("""
       /** Returns a hash code value for the object.
         *
         * <p>
@@ -195,36 +195,36 @@ abstract class SourcelessComments {
         * <p>
         * @return the hash code value for the object.
         * </p> */
-      """
+      """)
 
      /*******************************************************************/
      /* Documentation for AnyRef */
 
-     comment(AnyRefClass) = """
+     comment(AnyRefClass) = new DocComment("""
        /** <p>
          * Class <code>AnyRef</code> is the root class of all
          * <em>reference types</em>.
          * </p> */
-       """
+       """)
 
-    comment(Object_==) = """
+    comment(Object_==) = new DocComment("""
       /** <code>o == arg0</code> is the same as <code>if (o eq null) arg0 eq null else o.equals(arg0)</code>.
         * <p>
         * @param arg0 the object to compare against this object for equality.
         * @return <code>true</code> if the receiver object is equivalent to the argument; <code>false</code> otherwise.
         * </p> */
-      """
+      """)
 
-    comment(Object_ne) = """
+    comment(Object_ne) = new DocComment("""
       /** <code>o.ne(arg0)</code> is the same as <code>!(o.eq(arg0))</code>.
         * <p>
         * @param arg0 the object to compare against this object for reference dis-equality.
         * @return <code>false</code> if the argument is not a reference to the receiver object; <code>true</code> otherwise.
         * </p> */
-      """
+      """)
 
 
-    comment(Object_finalize) = """
+    comment(Object_finalize) = new DocComment("""
       /** This method is called by the garbage collector on the receiver object when garbage
         * collection determines that there are no more references to the object.
         * <p>
@@ -232,9 +232,9 @@ abstract class SourcelessComments {
         * invoked, as well as the interaction between <code>finalize</code>
         * and non-local returns and exceptions, are all platform dependent.
         * </p> */
-      """
+      """)
 
-    comment(Object_clone) = """
+    comment(Object_clone) = new DocComment("""
       /** This method creates and returns a copy of the receiver object.
         *
         * <p>
@@ -242,9 +242,9 @@ abstract class SourcelessComments {
         *
         * @return a copy of the receiver object.
         * </p> */
-      """
+      """)
 
-    comment(Object_getClass) = """
+    comment(Object_getClass) = new DocComment("""
       /** Returns a representation that corresponds to the dynamic class of the receiver object.
         *
         * <p>
@@ -252,17 +252,17 @@ abstract class SourcelessComments {
         *
         * @return a representation that corresponds to the dynamic class of the receiver object.
         * </p> */
-      """
+      """)
 
-    comment(Object_notify) = """
+    comment(Object_notify) = new DocComment("""
       /** Wakes up a single thread that is waiting on the receiver object's monitor. */
-      """
+      """)
 
-    comment(Object_notifyAll) = """
+    comment(Object_notifyAll) = new DocComment("""
       /** Wakes up all threads that are waiting on the receiver object's monitor. */
-      """
+      """)
 
-    comment(Object_eq) = """
+    comment(Object_eq) = new DocComment("""
       /** This method is used to test whether the argument (<code>arg0</code>) is a reference to the
         * receiver object (<code>this</code>).
         *
@@ -304,11 +304,11 @@ abstract class SourcelessComments {
         * @param arg0 the object to compare against this object for reference equality.
         * @return <code>true</code> if the argument is a reference to the receiver object; <code>false</code> otherwise.
         * </p> */
-      """
+      """)
 
     /*******************************************************************/
 
-    comment(AnyValClass) = """
+    comment(AnyValClass) = new DocComment("""
       /** <p>
         * Class <code>AnyVal</code> is the root class of all
         * <em>value types</em>.
@@ -338,25 +338,25 @@ abstract class SourcelessComments {
         * <a href="Double.html"><code>Double</code></a> are called
         * <em>floating point types</em>.
         * </p> */
-      """
+      """)
 
-    comment(BooleanClass) = """
+    comment(BooleanClass) = new DocComment("""
       /** <p>
         * Class <code>Boolean</code> has only two values: <code>true</code>
         * and <code>false</code>.
         * </p> */
-      """
+      """)
 
-    comment(UnitClass) = """
+    comment(UnitClass) = new DocComment("""
       /** <p>
         * Class <code>Unit</code> has only one value: <code>()</code>.
         * </p> */
-      """
+      """)
 
     List(ByteClass, CharClass, DoubleClass, LongClass, FloatClass, IntClass, ShortClass) foreach { sym =>
       val maxValue = "MAX_" + sym.name.toString().toUpperCase()
       val minValue = "MIN_" + sym.name.toString().toUpperCase()
-      comment(sym) = """
+      comment(sym) = new DocComment("""
         /** <p>
           * Class <code>""" + sym.name + """</code> belongs to the value
           * classes whose instances are not represented as objects by the
@@ -370,7 +370,7 @@ abstract class SourcelessComments {
           *  Values <code>""" + maxValue + """</code> and <code>""" + minValue + """</code>
           *  are in defined in object <a href="Math$object.html">scala.Math</a>.
           * </p> */
-        """
+        """)
     }
 
     comment

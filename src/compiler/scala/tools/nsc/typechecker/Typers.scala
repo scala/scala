@@ -15,7 +15,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.control.ControlException
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.interactive.RangePositions
-import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile }
+import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile, BatchSourceFile }
 import symtab.Flags._
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
@@ -689,8 +689,8 @@ trait Typers { self: Analyzer =>
         else qual.tpe.nonLocalMember(name)
     }
 
-    def silent(op: Typer => Tree): AnyRef /* in fact, TypeError or Tree */ = {
-      val start = System.nanoTime()
+    def silent[T](op: Typer => T): Any /* in fact, TypeError or T */ = {
+//      val start = System.nanoTime()
       try {
       if (context.reportGeneralErrors) {
         val context1 = context.makeSilent(context.reportAmbiguousErrors)
@@ -709,7 +709,7 @@ trait Typers { self: Analyzer =>
     } catch {
       case ex: CyclicReference => throw ex
       case ex: TypeError =>
-        failedSilent += System.nanoTime() - start
+//        failedSilent += System.nanoTime() - start
         ex
     }}
 
@@ -1707,6 +1707,45 @@ trait Typers { self: Analyzer =>
           }
         case _ =>
       }
+    }
+
+    def typedUseCase(useCase: UseCase) {
+      def stringParser(str: String): syntaxAnalyzer.Parser = {
+        val file = new BatchSourceFile(context.unit.source.file, str) {
+          override def positionInUltimateSource(pos: Position) = {
+            pos.withSource(context.unit.source, useCase.pos.start)
+          }
+        }
+        val unit = new CompilationUnit(file)
+        new syntaxAnalyzer.UnitParser(unit)
+      }
+      val trees = stringParser(useCase.body+";").nonLocalDefOrDcl
+      val enclClass = context.enclClass.owner
+      def defineAlias(name: Name) =
+        if (context.scope.lookup(name) == NoSymbol) {
+          lookupVariable(name.toString.substring(1), enclClass) match {
+            case Some(repl) =>
+              silent(_.typedTypeConstructor(stringParser(repl).typ())) match {
+                case tpt: Tree =>
+                  val alias = enclClass.newAliasType(useCase.pos, name)
+                  val tparams = cloneSymbols(tpt.tpe.typeSymbol.typeParams, alias)
+                  alias setInfo polyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
+                  context.scope.enter(alias)
+                case _ =>
+              }
+            case _ =>
+          }
+        }
+      for (tree <- trees; t <- tree)
+        t match {
+          case Ident(name) if (name.length > 0 && name(0) == '$') => defineAlias(name)
+          case _ =>
+        }
+      useCase.aliases = context.scope.toList
+      namer.enterSyms(trees)
+      typedStats(trees, NoSymbol)
+      useCase.defined = context.scope.toList -- useCase.aliases
+//      println("defined use cases: "+(useCase.defined map (sym => sym+":"+sym.tpe)))
     }
 
     /**
@@ -3701,12 +3740,18 @@ trait Typers { self: Analyzer =>
           labelTyper(ldef).typedLabelDef(ldef)
 
         case ddef @ DocDef(comment, defn) =>
-          val ret = typed(defn, mode, pt)
-          if ((comments ne null) && (defn.symbol ne null) && (defn.symbol ne NoSymbol)) {
-            comments(defn.symbol) = comment
-            commentOffsets(defn.symbol) = ddef.pos.startOrPoint
+          if (onlyPresentation && (sym ne null) && (sym ne NoSymbol)) {
+            docComments(sym) = comment
+            comment.defineVariables(sym)
+            val typer1 = newTyper(context.makeNewScope(tree, context.owner))
+            for (useCase <- comment.useCases)
+              typer1.silent(_.typedUseCase(useCase)) match {
+                case ex: TypeError =>
+                  unit.warning(useCase.pos, ex.msg)
+                case _ =>
+              }
           }
-          ret
+          typed(defn, mode, pt)
 
         case Annotated(constr, arg) =>
           typedAnnotated(constr, typed(arg, mode, pt))

@@ -6,7 +6,7 @@
 
 package scala.tools.nsc
 package symtab
-import ast.Trees
+import ast.{Trees, DocComments}
 
 import util._
 
@@ -23,6 +23,7 @@ abstract class SymbolTable extends Names
                               with AnnotationCheckers
                               with Trees
                               with Positions
+                              with DocComments
 {
   def settings: Settings
   def rootLoader: LazyType

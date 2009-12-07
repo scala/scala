@@ -115,31 +115,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   val treeBrowser = treeBrowsers.create()
 
-
-//  val copy = new LazyTreeCopier()
-
-  /** A map of all doc comments, indexed by symbols.
-   *  Only active in onlyPresentation mode
-   */
-  val comments =
-    if (onlyPresentation) new HashMap[Symbol,String]
-    else null
-
-  /** A map of all doc comments source file offsets,
-   *  indexed by symbols.
-   *  Only active in onlyPresentation mode
-   */
-  val commentOffsets =
-    if (onlyPresentation) new HashMap[Symbol,Int]
-    else null
-
-  /** A map of argument names for methods
-   *  !!! can be dropped once named method arguments are in !!!
-   */
-  val methodArgumentNames =
-    if (onlyPresentation) new HashMap[Symbol,List[List[Symbol]]]
-    else null
-
   // ------------ Hooks for interactive mode-------------------------
 
   /** Called every time an AST node is succesfully typedchecked in typerPhase.
@@ -302,8 +277,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       val unit0 = currentRun.currentUnit
       try {
         currentRun.currentUnit = unit
-        reporter.setSource(unit.source)
-        if (!cancelled(unit)) apply(unit)
+        if (!cancelled(unit))
+          reporter.withSource(unit.source) { apply(unit) }
         currentRun.advanceUnit
       } finally {
         //assert(currentRun.currentUnit == unit)
@@ -889,11 +864,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       var localPhase = firstPhase.asInstanceOf[GlobalPhase]
       while (localPhase != null && (localPhase.id  < globalPhase.id || localPhase.id <= namerPhase.id)/* && !reporter.hasErrors*/) {
         val oldSource = reporter.getSource
-        reporter.setSource(unit.source)
-        atPhase(localPhase)(localPhase.applyPhase(unit))
+        reporter.withSource(unit.source) {
+          atPhase(localPhase)(localPhase.applyPhase(unit))
+        }
         val newLocalPhase = localPhase.next.asInstanceOf[GlobalPhase]
         localPhase = if (localPhase == newLocalPhase) null else newLocalPhase
-        reporter.setSource(oldSource)
       }
       refreshProgress
     }

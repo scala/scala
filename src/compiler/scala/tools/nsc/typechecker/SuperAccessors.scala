@@ -151,6 +151,17 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               decls.enter(s)
             }
           }
+          if (settings.verbose.value && onlyPresentation && !sym.isAnonymousClass) {
+            println("========== scaladoc of "+sym+" =============================")
+            for (member <- sym.info.members) {
+              println(member+":"+sym.thisType.memberInfo(member)+"\n"+
+                      cookedDocComment(member, sym))
+              for ((useCase, comment) <- useCases(member, sym)) {
+                println("usecase "+useCase+":"+useCase.info)
+                println(comment)
+              }
+            }
+          }
           super.transform(tree)
         case ModuleDef(_, _, _) =>
           checkCompanionNameClashes(sym)

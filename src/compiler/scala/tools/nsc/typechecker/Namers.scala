@@ -758,9 +758,6 @@ trait Namers { self: Analyzer =>
         tpt setPos meth.pos.focus
       }
 
-      if (onlyPresentation && methodArgumentNames != null)
-        methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
-
       def convertToDeBruijn(vparams: List[Symbol], level: Int): TypeMap = new TypeMap {
         def debruijnFor(param: Symbol) =
           DeBruijnIndex(level, vparams indexOf param)

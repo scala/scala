@@ -103,6 +103,15 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   override def updated[B1 >: B](key: A, value: B1): mutable.Map[A, B1] = this + ((key, value))
 
+  /** If given key is already in this map, returns associated value
+   *  Otherwise, computes value from given expression `op`, stores with key
+   *  in map and returns that value.
+   */
+  def cached(key: A, op: => B) = get(key) match {
+    case Some(v) => v
+    case None => val v = op; update(key, v); v
+  }
+
   /** Add a new key/value mapping and return the map itself.
    *
    *  @param kv    the key/value mapping to be added

@@ -103,11 +103,11 @@ trait Scanners {
     /** buffer for the documentation comment
      */
     var docBuffer: StringBuilder = null
-    var docOffset: Position = null
+    var docPos: Position = null
 
     /** Return current docBuffer and set docBuffer to null */
-    def flushDoc = {
-      val ret = if (docBuffer != null) (docBuffer.toString, docOffset) else null
+    def flushDoc: DocComment = {
+      val ret = if (docBuffer != null) DocComment(docBuffer.toString, docPos) else null
       docBuffer = null
       ret
     }
@@ -1091,8 +1091,8 @@ trait Scanners {
     }
 
     override def foundDocComment(value: String, start: Int, end: Int) {
-      docOffset = new RangePosition(unit.source, start, start, end)
-      unit.comment(docOffset, value)
+      docPos = new RangePosition(unit.source, start, start, end)
+      unit.comment(docPos, value)
     }
   }
 

@@ -215,7 +215,7 @@ abstract class TreePrinters {
           }
 
         case DocDef(comment, definition) =>
-          print(comment); println; print(definition)
+          print(comment.raw); println; print(definition)
 
         case Template(parents, self, body) =>
           val currentOwner1 = currentOwner
