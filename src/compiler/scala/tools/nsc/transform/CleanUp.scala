@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyrights 2005-2009 LAMP/EPFL
+ * Copyrights 2005-2010 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$

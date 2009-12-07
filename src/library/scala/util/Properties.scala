@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -51,7 +51,7 @@ private[scala] trait PropertiesTrait
    *  or "version (unknown)" if it cannot be determined.
    */
   val versionString         = "version " + prop("version.number", "(unknown)")
-  val copyrightString       = prop("copyright.string", "(c) 2002-2009 LAMP/EPFL")
+  val copyrightString       = prop("copyright.string", "(c) 2002-2010 LAMP/EPFL")
 
   /** This is the encoding to use reading in source files, overridden with -encoding
    *  Note that it uses "prop" i.e. looks in the scala jar, not the system properties.

@@ -3,7 +3,7 @@
 rem ##########################################################################
 rem # Scala code runner 2.7.0-final
 rem ##########################################################################
-rem # (c) 2002-2009 LAMP/EPFL
+rem # (c) 2002-2010 LAMP/EPFL
 rem #
 rem # This is free software; see the distribution for copying conditions.
 rem # There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
