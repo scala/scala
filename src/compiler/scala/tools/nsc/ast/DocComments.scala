@@ -88,7 +88,7 @@ trait DocComments { self: SymbolTable =>
     var idx = in
     do {
       idx += 1
-    } while (idx < str.length && (str charAt idx) == ' ' || (str charAt idx) == '\t')
+    } while (idx < str.length && ((str charAt idx) == ' ' || (str charAt idx) == '\t'))
     idx
   }
 
@@ -239,7 +239,8 @@ trait DocComments { self: SymbolTable =>
         if ((str charAt idx) == '\n') {
           eolIdx = idx
           idx = skipLineLead(str, idx, end)
-          if ((str charAt idx) == '@' &&
+          if (idx < end &&
+              (str charAt idx) == '@' &&
               (str.startsWith(definePrefix, idx) || str.startsWith(usecasePrefix, idx))) {
             var segment = str.substring(segstart, eolIdx)
             if (segstart == 0) segment += "*/"
