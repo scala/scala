@@ -986,9 +986,11 @@ abstract class GenJVM extends SubComponent {
           if (settings.debug.value)
             log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
                 " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+          val cls = if (e.cls == NoSymbol || e.cls == definitions.ThrowableClass) null
+                    else javaName(e.cls)
           jcode.addExceptionHandler(p._1, p._2,
                                     labels(e.startBlock).getAnchor(),
-                                    if (e.cls == NoSymbol) null else javaName(e.cls))
+                                    cls)
         } else
           log("Empty exception range: " + p)
       }
