@@ -1737,6 +1737,11 @@ trait Trees {
     val typeSubst = new SubstTypeMap(from, to)
     override def traverse(tree: Tree) {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
+      if (tree.isDef) {
+        val sym = tree.symbol
+        val info1 = typeSubst(sym.info)
+        if (info1 ne sym.info) sym.setInfo(info1)
+      }
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
