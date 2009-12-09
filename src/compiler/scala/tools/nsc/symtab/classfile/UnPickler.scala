@@ -198,7 +198,7 @@ abstract class UnPickler {
           if (sym == NoSymbol && !owner.hasFlag(OVERLOADED)) {
             errorMissingRequirement(
               "reference " + (if (name.isTypeName) "type " else "value ") +
-              name.decode + " of " + owner + " refers to nonexisting symbol.")
+              name.decode + " of " + owner.tpe.wide + " refers to nonexisting symbol.")
           }
         case NONEsym =>
           sym = NoSymbol
