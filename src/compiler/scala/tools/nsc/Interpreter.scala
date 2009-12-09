@@ -53,7 +53,7 @@ import Interpreter._
  *    all variables defined by that code.  To extract the result of an
  *    interpreted line to show the user, a second "result object" is created
  *    which imports the variables exported by the above object and then
- *    exports a single member named "result".  To accomodate user expressions
+ *    exports a single member named "scala_repl_result".  To accomodate user expressions
  *    that read from variables or methods defined in previous statements, "import"
  *    statements are used.
  *  </p>
@@ -701,7 +701,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     def resultObjectSourceCode: String = stringFrom { code =>
       val preamble = """
       | object %s {
-      |   val result: String = {
+      |   val scala_repl_result: String = {
       |     %s    // evaluate object to make sure constructor is run
       |     (""   // an initial "" so later code can uniformly be: + etc
       """.stripMargin.format(resultObjectName, objectName + accessPath)
@@ -783,7 +783,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
       val resultObject: Class[_] = loadByName(resultObjectName)
-      val resultValMethod: reflect.Method = resultObject getMethod "result"
+      val resultValMethod: reflect.Method = resultObject getMethod "scala_repl_result"
       // XXX if wrapperExceptions isn't type-annotated we crash scalac
       val wrapperExceptions: List[Class[_ <: Throwable]] =
         List(classOf[InvocationTargetException], classOf[ExceptionInInitializerError])
@@ -887,7 +887,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
         else {
           val result = prevRequests.last.resultObjectName
           val resultObj = (classLoader tryToInitializeClass result).get
-          val valMethod = resultObj getMethod "result"
+          val valMethod = resultObj getMethod "scala_repl_result"
           val str = valMethod.invoke(resultObj).toString
 
           str.substring(str.indexOf('=') + 1).trim .
