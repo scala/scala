@@ -16,7 +16,6 @@ trait Entity {
   def inTemplate: TemplateEntity
   def toRoot: List[Entity]
   def qualifiedName: String
-  def comment: Option[Comment]
   override def toString = qualifiedName
 }
 
@@ -37,9 +36,10 @@ trait NoDocTemplate extends TemplateEntity
 
 /** A member of a class, trait, object or package. */
 trait MemberEntity extends Entity {
+  def comment: Option[Comment]
   def inTemplate: DocTemplateEntity
   def toRoot: List[MemberEntity]
-  def inDefinitionTemplate: TemplateEntity
+  def inDefinitionTemplates: List[TemplateEntity]
   def definitionName: String
   def visibility: Option[Paragraph]
   def flags: List[Paragraph]

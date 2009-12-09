@@ -182,7 +182,7 @@ trait DocComments { self: SymbolTable =>
                   out append replacement
                   start = idx
                 case None =>
-                  println("no replacement for "+vname) // !!!
+                  //println("no replacement for "+vname) // !!!
               }
             } else {
               idx += 1
@@ -289,7 +289,7 @@ trait DocComments { self: SymbolTable =>
         if (idx < str.length && (str charAt idx) == ' ') idx += 1
         defs(sym) += vble -> str.substring(idx)
       }
-      if (defs(sym).nonEmpty) println("vars of "+sym+" = "+defs(sym))  // !!!
+      //if (defs(sym).nonEmpty) println("vars of "+sym+" = "+defs(sym))  // !!!
     }
   }
 

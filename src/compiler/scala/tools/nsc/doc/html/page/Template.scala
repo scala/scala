@@ -58,10 +58,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       </div>
 
       { signature(tpl, true) }
-
-      { if (tpl.comment.isEmpty) NodeSeq.Empty else
-          <div id="comment">{ commentToHtml(tpl.comment) }</div>
-      }
+      { memberToCommentHtml(tpl, true) }
 
       <div id="template">
 
@@ -103,31 +100,88 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     val attributes: List[comment.Body] = Nil
     <li name={ mbr.definitionName }>
       { signature(mbr, false) }
+      { memberToCommentHtml(mbr, false) }
+    </li>
+  }
+
+  def memberToCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = mbr match {
+    case dte: DocTemplateEntity if isSelf && mbr.comment.isDefined =>
+      <div id="comment" class="fullcomment">{ memberToFullCommentHtml(mbr, isSelf) }</div>
+    case dte: DocTemplateEntity if !isSelf && mbr.comment.isDefined =>
+      <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
+    case _ if mbr.comment.isDefined =>
+      <p class="shortcomment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
+      <div class="fullcomment">{ memberToFullCommentHtml(mbr, isSelf) }</div>
+    case _ => NodeSeq.Empty
+  }
+
+  def memberToFullCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
+    <xml:group>
+      { if (mbr.comment.isEmpty) NodeSeq.Empty else
+          <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
+      }
       { val prs: List[ParameterEntity] = mbr match {
-          case cls: Class if cls.isCaseClass => cls.typeParams ::: (cls.primaryConstructor map (_.valueParams.flatten)).toList.flatten
+          case cls: Class if cls.isCaseClass =>
+            cls.typeParams ::: (cls.primaryConstructor map (_.valueParams.flatten)).toList.flatten
           case trt: Trait => trt.typeParams
           case dfe: Def => dfe.typeParams ::: dfe.valueParams.flatten
           case ctr: Constructor => ctr.valueParams.flatten
           case _ => Nil
         }
-        def paramCommentToHtml(pr: ParameterEntity) =
-          if (pr.comment.isEmpty) NodeSeq.Empty else
-            <li class={ if (pr.isTypeParam) "tparam" else "param" } name={ pr.name }>{
-              commentToHtml(pr.comment.get)
-            }</li>
-        if (prs.isEmpty) NodeSeq.Empty else
-          <ol class="paramcmts">{ prs map (paramCommentToHtml(_)) }</ol>
+        def mbrCmt = mbr.comment.get
+        def paramCommentToHtml(prs: List[ParameterEntity]): NodeSeq = prs match {
+          case Nil =>
+            NodeSeq.Empty
+          case (tp: TypeParam) :: rest =>
+            val paramEntry: NodeSeq = {
+              <dt class="tparam">{ tp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.typeParams(tp.name)) }</dd>
+            }
+            paramEntry ++ paramCommentToHtml(rest)
+          case (vp: ValueParam) :: rest  =>
+            val paramEntry: NodeSeq = {
+              <dt class="param">{ vp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.valueParams(vp.name)) }</dd>
+            }
+            paramEntry ++ paramCommentToHtml(rest)
+        }
+        if (mbr.comment.isEmpty) NodeSeq.Empty else {
+          val cmtedPrs = prs filter {
+            case tp: TypeParam => mbrCmt.typeParams isDefinedAt tp.name
+            case vp: ValueParam => mbrCmt.valueParams isDefinedAt vp.name
+          }
+          if (cmtedPrs.isEmpty) NodeSeq.Empty else
+            <dl class="paramcmts block">{
+              paramCommentToHtml(cmtedPrs) ++ (
+              mbrCmt.result match {
+                case None => NodeSeq.Empty
+                case Some(cmt) =>
+                  <dt>returns</dt><dd class="cmt">{ bodyToHtml(cmt) }</dd>
+              })
+            }</dl>
+        }
       }
       { val fvs: List[comment.Paragraph] = mbr.visibility.toList ::: mbr.flags
         if (fvs.isEmpty) NodeSeq.Empty else
-          <ol class="attributes">{ fvs map { fv => <li>{ inlineToHtml(fv.text) }</li> } }</ol>
-
+          <div class="block">{ fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }</div>
       }
-      { if (mbr.comment.isEmpty) NodeSeq.Empty else
-          <div class="comment">{ commentToHtml(mbr.comment) }</div>
+      { def inheritanceElem(tpl: TemplateEntity): NodeSeq = tpl match {
+          case (dTpl: DocTemplateEntity) =>
+            <a href={ relativeLinkTo(dTpl) }>{ dTpl.name }</a>
+          case (ndTpl: NoDocTemplate) =>
+            xml.Text(ndTpl.name)
+        }
+        def inheritanceChain(tplss: List[TemplateEntity]): NodeSeq = (tplss: @unchecked) match {
+          case tpl :: Nil => inheritanceElem(tpl)
+          case tpl :: tpls =>
+            inheritanceElem(tpl) ++ xml.Text(" ⇐ ") ++ inheritanceChain(tpls)
+        }
+        val inDefTpls = mbr.inDefinitionTemplates
+        if (inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) NodeSeq.Empty else {
+          <div class="block">
+            definition classes: { inheritanceChain(inDefTpls) }
+          </div>
+        }
       }
-    </li>
-  }
+    </xml:group>
 
   def kindToString(mbr: MemberEntity): String = mbr match {
     case tpl: DocTemplateEntity =>
@@ -207,9 +261,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       </xml:group>
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
-        <a class="signature" href={ relativeLinkTo(dte) }>{ inside(hasLinks = false) }</a>
+        <h4 class="signature"><a href={ relativeLinkTo(dte) }>{ inside(hasLinks = false) }</a></h4>
       case _ =>
-        <div class="signature">{ inside(hasLinks = true) }</div>
+        <h4 class="signature">{ inside(hasLinks = true) }</h4>
     }
   }
 

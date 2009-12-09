@@ -40,17 +40,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     def inTemplate = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
-    val comment = {
-      val whichSym =
-        if (docComments isDefinedAt sym) Some(sym) else sym.allOverriddenSymbols find (docComments isDefinedAt _)
-      whichSym map { s =>
-        commentCache.getOrElse(s, {
-          val c = commentFactory.parse(expandedDocComment(s), s.pos) // !!! which one should it be?
-          commentCache += s -> c
-          c
-        })
-      }
-    }
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -73,9 +62,19 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
   /** Provides a default implementation for instances of the `MemberEntity` type. It must be instantiated as a
     * `SymbolicEntity` to access the compiler symbol that underlies the entity. */
   abstract class MemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with MemberEntity {
+    val comment =
+      if (inTpl == null) None else {
+        val rawComment = expandedDocComment(sym, inTpl.sym)
+        if (rawComment == "") None else {
+          val c = commentFactory.parse(rawComment, docCommentPos(sym))
+          commentCache += sym -> c
+          Some(c)
+        }
+      }
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
-    lazy val inDefinitionTemplate = if (sym.owner == inTpl.sym) inTpl else makeTemplate(sym.owner)
+    def inDefinitionTemplates =
+      (if (sym.owner == inTpl.sym) inTpl else makeTemplate(sym.owner)) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
     val visibility = {
       def qual = {
         val qq =
@@ -94,7 +93,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
       val fgs = mutable.ListBuffer.empty[Paragraph]
       if (sym hasFlag Flags.IMPLICIT) fgs += Paragraph(Text("implicit"))
       if (sym hasFlag Flags.SEALED) fgs += Paragraph(Text("sealed"))
-      if (sym hasFlag Flags.OVERRIDE) fgs += Paragraph(Text("override"))
       if (!sym.isTrait && (sym hasFlag Flags.ABSTRACT)) fgs += Paragraph(Text("abstract"))
       if (!sym.isTrait && (sym hasFlag Flags.DEFERRED)) fgs += Paragraph(Text("abstract"))
       if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
@@ -125,7 +123,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
   abstract class DocTemplateImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with TemplateImpl with DocTemplateEntity {
     //if (inTpl != null) println("mbr " + sym + " in " + (inTpl.toRoot map (_.sym)).mkString(" > "))
     templatesCache += ((sym, inTpl) -> this)
-    override def definitionName = inDefinitionTemplate.qualifiedName + "." + name
+    override def definitionName = inDefinitionTemplates.head.qualifiedName + "." + name
     val inSource = if (sym.sourceFile != null) Some(sym.sourceFile, sym.pos.line) else None
     val typeParams = if (sym.isClass) sym.typeParams map (makeTypeParam(_, this)) else Nil
     val parentType =
@@ -157,7 +155,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
 
   abstract class NonTemplateMemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with NonTemplateMemberEntity {
     override def qualifiedName = inTemplate.qualifiedName + "#" + name
-    override def definitionName = inDefinitionTemplate.qualifiedName + "#" + name
+    override def definitionName = inDefinitionTemplates.head.qualifiedName + "#" + name
   }
 
   abstract class ParameterImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with ParameterEntity {

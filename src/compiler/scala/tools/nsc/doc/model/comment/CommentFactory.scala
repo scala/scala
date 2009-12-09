@@ -28,6 +28,12 @@ final class CommentFactory(val reporter: Reporter) { parser =>
   protected def oops(msg: String): Nothing =
     throw FatalError("program logic: " + msg)
 
+  protected val CleanHtml =
+  new Regex("""</?(p|h\d|pre|dl|dt|dd|ol|ul|li|blockquote|div|hr|br|br)\s*/?>""")
+
+  protected val ShortLineEnd =
+  new Regex("""\.|</(p|h\d|pre|dd|li|div|blockquote)>|<(hr|table)\s*/?>""")
+
   /** The body of a comment, dropping start and end markers. */
   protected val CleanComment =
     new Regex("""(?s)\s*/\*\*((?:[^\*]\*)*)\*/\s*""")
@@ -157,6 +163,19 @@ final class CommentFactory(val reporter: Reporter) { parser =>
           val since       = oneTag(SimpleTagKey("since"))
           val todo        = allTags(SimpleTagKey("todo"))
           val deprecated  = oneTag(SimpleTagKey("deprecated"))
+          val short = {
+            val shortText = ShortLineEnd.findFirstMatchIn(docBody) match {
+              case None => docBody
+              case Some(m) => docBody.take(m.start)
+            }
+            val safeText = CleanHtml.replaceAllIn(shortText, "") // get rid of all layout-busting html tags
+            parseWiki(safeText, pos) match {
+              case Body(Paragraph(inl) :: _) => inl
+              case _ =>
+                reporter.warning(pos, "Comment must start with a sentence")
+                Text("")
+            }
+          }
         }
 
         for ((key, _) <- bodyTags)

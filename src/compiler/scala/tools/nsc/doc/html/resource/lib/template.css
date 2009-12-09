@@ -3,6 +3,7 @@
 	text-decoration: none;
 	font-family: inherit;
 	font-size: inherit;
+	font-weight: normal;
 	border-width: 0px;
 	padding: 0px;
 	margin: 0px;
@@ -87,6 +88,18 @@ a:hover {
 	background-color: #000000;
 }
 
+/* Member cells */
+
+div.members > ol {
+	background-color: white;
+}
+
+div.members > ol > li {
+	display: block;
+}
+
+/* Member signatures */
+
 .signature {
 	padding: 1px;
 	font-family: monospace;
@@ -120,51 +133,95 @@ a:hover {
 	color: #561414;
 }
 
-#template > div.members > ol {
-	background-color: white;
+/* Comments text formating */
+
+.cmt {}
+
+.cmt p {
+	margin: 2px 0 2px 0;
 }
 
-.members > ol > li {
+.cmt code {
+	font-family: monospace;
+	font-size: small;
+}
+
+.cmt pre {
 	display: block;
+	font-family: monospace;
+	font-size: small;
+	margin: 2px 0 2px 0;
 }
 
-.members .paramcmts {
+/* Comments structured layout */
+
+p.comment {
+	display: block;
 	margin-left: 80px;
 }
 
-.members .paramcmts > li.tparam {
-	background-color: #ffcc66;
-	display: none;
-}
-
-.members .paramcmts > li.param {
-	background-color: #cc99ff;
-	display: none;
-}
-
-.members .attributes {
-	border-bottom-color: black;
-	border-bottom-style: solid;
-	border-bottom-width: 1px;
+p.shortcomment {
+	display: block;
 	margin-left: 80px;
+	cursor: help;
 }
 
-.members .attributes > li {
-	padding: 2px;
-	font-size: 10pt;
+div.fullcomment {
+	display: block;
+	margin: 10px 0 10px 0;
+}
+
+#template div.fullcomment {
+	margin: 6px 0 6px 80px;
+}
+
+div.fullcomment .block {
+	padding: 2px 0 2px 0;
+	border-top: 1px solid black;
+	border-bottom: 1px solid black;
+}
+
+div.fullcomment .block + .block {
+	border-top: none;
+}
+
+div.fullcomment .block > h5 {
+	font-style: italic;
+	font-weight: normal;
 	display: inline-block;
 }
 
-.members .comment {
-	display: block;
-	margin-left: 80px;
+div.fullcomment .comment {
+	margin: 6px 0 6px 0;
 }
 
-.comment > p {
-	margin-bottom: 4px;
-	margin-top: 4px;
+div.fullcomment dl.paramcmts > dt {
 	display: block;
+	float: left;
+	font-weight: bold;
+	margin: 2px 4px 2px 0;
 }
+
+div.fullcomment dl.paramcmts > dd {
+	display: block;
+	padding-left: 80px;
+	border-top: 1px dashed black;
+	border-bottom: 1px dashed black;
+}
+
+div.fullcomment dl.paramcmts > dt:first-child + dd {
+	border-top: none;
+}
+
+div.fullcomment dl.paramcmts > dd:last-child {
+	border-bottom: none;
+}
+
+div.fullcomment dl.paramcmts > dd + dt + dd {
+	border-top: none;
+}
+
+/* Members filter tool */
 
 #mbrsel {
 	padding: 4px;

@@ -14,7 +14,8 @@ import xml.{Unparsed, XML, NodeSeq}
 import xml.dtd.{DocType, PublicID}
 import scala.collection._
 import scala.util.NameTransformer
-import java.io.File
+import java.nio.channels.Channels
+import java.io.{FileOutputStream, File}
 
 /** An html page that is part of a Scaladoc site.
   * @author David Bernard
@@ -54,7 +55,15 @@ abstract class HtmlPage { thisPage =>
         </head>
         { body }
       </html>
-    XML.save(pageFile.getPath, html, site.encoding, xmlDecl = false, doctype = doctype)
+    val fos = new FileOutputStream(pageFile.getPath)
+    val w = Channels.newWriter(fos.getChannel, site.encoding)
+    try {
+      w.write("<?xml version='1.0' encoding='" + site.encoding + "'?>\n")
+      w.write( doctype.toString + "\n")
+      w.write(xml.Xhtml.toXhtml(html))
+    }
+    finally { w.close() ; fos.close() }
+    //XML.save(pageFile.getPath, html, site.encoding, xmlDecl = false, doctype = doctype)
   }
 
   def templateToPath(tpl: TemplateEntity): List[String] = {
@@ -121,7 +130,7 @@ abstract class HtmlPage { thisPage =>
     case Title(in, 3) => <h3>{ inlineToHtml(in) }</h3>
     case Title(in, _) => <h4>{ inlineToHtml(in) }</h4>
     case Paragraph(in) => <p>{ inlineToHtml(in) }</p>
-    case Code(data) => <p><code>{ Unparsed(data) }</code></p>
+    case Code(data) => <pre>{ Unparsed(data) }</pre>
     case UnorderedList(items) =>
       <ul>{items map { i => <li>{ blockToHtml(i) }</li>}}</ul>
     case OrderedList(items) =>
