@@ -121,7 +121,7 @@ class Classfile(in: ByteArrayReader) {
   /** **/
   case class Member(field: Boolean, flags: Int, name: Int, tpe: Int, attribs: List[Attribute])
   case class Attribute(name: Int, data: Array[Byte]) {
-    override def toString = pool(name) match {
+    override def toString = (pool(name): @unchecked) match {
       case pool.UTF8(s) => s
     }
     def reader: ByteArrayReader = new ByteArrayReader(data)
