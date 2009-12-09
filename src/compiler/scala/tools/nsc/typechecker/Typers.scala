@@ -3479,7 +3479,9 @@ trait Typers { self: Analyzer =>
               if (name == nme.CONSTRUCTOR)
                 qual.tpe.widen+" does not have a constructor"
               else
-                decode(name)+" is not a member of "+qual.tpe.widen +
+                decode(name)+" is not a member of "+
+								(if (qual.tpe.typeSymbol.isTypeParameterOrSkolem) "type parameter " else "") +
+								qual.tpe.widen +
                 (if ((context.unit ne null) && // Martin: why is this condition needed?
                      qual.pos.isDefined && tree.pos.isDefined && qual.pos.line < tree.pos.line)
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
