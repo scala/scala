@@ -52,94 +52,106 @@ trait AnyValManifest[T] extends Manifest[T] {
   * </p>
   */
 object Manifest {
-  val Byte = new (AnyValManifest[Byte] @serializable) {
+  val Byte: AnyValManifest[Byte] = new (AnyValManifest[Byte] @serializable) {
     def erasure = java.lang.Byte.TYPE
     override def toString = "Byte"
     override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
     override def newWrappedArray(len: Int): WrappedArray[Byte] = new WrappedArray.ofByte(new Array[Byte](len))
     override def newArrayBuilder(): ArrayBuilder[Byte] = new ArrayBuilder.ofByte()
+    private def readResolve(): Any = Manifest.Byte
   }
 
-  val Short = new (AnyValManifest[Short] @serializable) {
+  val Short: AnyValManifest[Short] = new (AnyValManifest[Short] @serializable) {
     def erasure = java.lang.Short.TYPE
     override def toString = "Short"
     override def newArray(len: Int): Array[Short] = new Array[Short](len)
     override def newWrappedArray(len: Int): WrappedArray[Short] = new WrappedArray.ofShort(new Array[Short](len))
     override def newArrayBuilder(): ArrayBuilder[Short] = new ArrayBuilder.ofShort()
+    private def readResolve(): Any = Manifest.Short
   }
 
-  val Char = new (AnyValManifest[Char] @serializable) {
+  val Char: AnyValManifest[Char] = new (AnyValManifest[Char] @serializable) {
     def erasure = java.lang.Character.TYPE
     override def toString = "Char"
     override def newArray(len: Int): Array[Char] = new Array[Char](len)
     override def newWrappedArray(len: Int): WrappedArray[Char] = new WrappedArray.ofChar(new Array[Char](len))
     override def newArrayBuilder(): ArrayBuilder[Char] = new ArrayBuilder.ofChar()
+    private def readResolve(): Any = Manifest.Char
   }
 
-  val Int = new (AnyValManifest[Int] @serializable) {
+  val Int: AnyValManifest[Int] = new (AnyValManifest[Int] @serializable) {
     def erasure = java.lang.Integer.TYPE
     override def toString = "Int"
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
     override def newWrappedArray(len: Int): WrappedArray[Int] = new WrappedArray.ofInt(new Array[Int](len))
     override def newArrayBuilder(): ArrayBuilder[Int] = new ArrayBuilder.ofInt()
+    private def readResolve(): Any = Manifest.Int
   }
 
-  val Long = new (AnyValManifest[Long] @serializable) {
+  val Long: AnyValManifest[Long] = new (AnyValManifest[Long] @serializable) {
     def erasure = java.lang.Long.TYPE
     override def toString = "Long"
     override def newArray(len: Int): Array[Long] = new Array[Long](len)
     override def newWrappedArray(len: Int): WrappedArray[Long] = new WrappedArray.ofLong(new Array[Long](len))
     override def newArrayBuilder(): ArrayBuilder[Long] = new ArrayBuilder.ofLong()
+    private def readResolve(): Any = Manifest.Long
   }
 
-  val Float = new (AnyValManifest[Float] @serializable) {
+  val Float: AnyValManifest[Float] = new (AnyValManifest[Float] @serializable) {
     def erasure = java.lang.Float.TYPE
     override def toString = "Float"
     override def newArray(len: Int): Array[Float] = new Array[Float](len)
     override def newWrappedArray(len: Int): WrappedArray[Float] = new WrappedArray.ofFloat(new Array[Float](len))
     override def newArrayBuilder(): ArrayBuilder[Float] = new ArrayBuilder.ofFloat()
+    private def readResolve(): Any = Manifest.Float
   }
 
-  val Double = new (AnyValManifest[Double] @serializable) {
+  val Double: AnyValManifest[Double] = new (AnyValManifest[Double] @serializable) {
     def erasure = java.lang.Double.TYPE
     override def toString = "Double"
     override def newArray(len: Int): Array[Double] = new Array[Double](len)
     override def newWrappedArray(len: Int): WrappedArray[Double] = new WrappedArray.ofDouble(new Array[Double](len))
     override def newArrayBuilder(): ArrayBuilder[Double] = new ArrayBuilder.ofDouble()
+    private def readResolve(): Any = Manifest.Double
   }
 
-  val Boolean = new (AnyValManifest[Boolean] @serializable) {
+  val Boolean: AnyValManifest[Boolean] = new (AnyValManifest[Boolean] @serializable) {
     def erasure = java.lang.Boolean.TYPE
     override def toString = "Boolean"
     override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
     override def newWrappedArray(len: Int): WrappedArray[Boolean] = new WrappedArray.ofBoolean(new Array[Boolean](len))
     override def newArrayBuilder(): ArrayBuilder[Boolean] = new ArrayBuilder.ofBoolean()
+    private def readResolve(): Any = Manifest.Boolean
   }
 
-  val Unit = new (AnyValManifest[Unit] @serializable) {
+  val Unit: AnyValManifest[Unit] = new (AnyValManifest[Unit] @serializable) {
     def erasure = java.lang.Void.TYPE
     override def toString = "Unit"
     override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
     override def newWrappedArray(len: Int): WrappedArray[Unit] = new WrappedArray.ofUnit(new Array[Unit](len))
     override def newArrayBuilder(): ArrayBuilder[Unit] = new ArrayBuilder.ofUnit()
+    private def readResolve(): Any = Manifest.Unit
   }
 
   val Any: Manifest[Any] = new ClassTypeManifest[Any](None, classOf[java.lang.Object], List()) {
     override def toString = "Any"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    private def readResolve(): Any = Manifest.Any
   }
 
   val Object: Manifest[Object] = new ClassTypeManifest[Object](None, classOf[java.lang.Object], List()) {
     override def toString = "Object"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    private def readResolve(): Any = Manifest.Object
   }
 
   val AnyVal: Manifest[AnyVal] = new ClassTypeManifest[AnyVal](None, classOf[java.lang.Object], List()) {
     override def toString = "AnyVal"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    private def readResolve(): Any = Manifest.AnyVal
   }
 
   val Null: Manifest[Null] = new ClassTypeManifest[Null](None, classOf[java.lang.Object], List()) {
@@ -147,12 +159,14 @@ object Manifest {
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    private def readResolve(): Any = Manifest.Null
   }
 
   val Nothing: Manifest[Nothing] = new ClassTypeManifest[Nothing](None, classOf[java.lang.Object], List()) {
     override def toString = "Nothing"
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    private def readResolve(): Any = Manifest.Nothing
   }
 
   /** Manifest for the singleton type `value.type'. */
