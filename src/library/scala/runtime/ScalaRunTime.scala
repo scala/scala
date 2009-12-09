@@ -99,8 +99,8 @@ object ScalaRunTime {
     scala.util.JenkinsHash.hashSeq(x.productPrefix.toSeq ++ x.productIterator.toSeq)
 
   def _hashCode(x: Product): Int = {
-    var code = x.productPrefix.hashCode()
     val arr =  x.productArity
+    var code = arr
     var i = 0
     while (i < arr) {
       val elem = x.productElement(i)
