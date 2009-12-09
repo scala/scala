@@ -52,8 +52,18 @@ trait ClassManifest[T] extends OptManifest[T] {
         case _ => false
       }
     }
-    (this.erasure == that.erasure || subtype(this.erasure, that.erasure)) &&
-    subargs(this.typeArguments, that.typeArguments)
+
+    import Manifest.{ AnyVal, Nothing, Null }
+
+    that match {
+      // All types which conform to AnyVal will override <:<.
+      case _: AnyValManifest[_]     => false
+      // Anything which conforms to a bottom type will override <:<.
+      case AnyVal | Nothing | Null  => false
+      case _  =>
+        (this.erasure == that.erasure || subtype(this.erasure, that.erasure)) &&
+        subargs(this.typeArguments, that.typeArguments)
+    }
   }
 
   /** Tests whether the type represented by this manifest is a supertype
@@ -68,7 +78,8 @@ trait ClassManifest[T] extends OptManifest[T] {
     * implementation is an approximation, as the test is done on the
     * erasure of the type. */
   override def equals(that: Any): Boolean = that match {
-    case m: ClassManifest[_] => this.erasure == m.erasure
+    case _: AnyValManifest[_] => false
+    case m: ClassManifest[_]  => this.erasure == m.erasure
     case _ => false
   }
 
@@ -153,7 +164,7 @@ object ClassManifest {
     case _ => classType[T with AnyRef](clazz).asInstanceOf[ClassManifest[T]]
   }
 
-  def singleType[T](value: Any): Manifest[T] = Manifest.singleType(value)
+  def singleType[T <: AnyRef](value: AnyRef): Manifest[T] = Manifest.singleType(value)
 
   /** ClassManifest for the class type `clazz', where `clazz' is
     * a top-level or static class.

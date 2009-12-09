@@ -34,6 +34,13 @@ trait Manifest[T] extends ClassManifest[T] {
     Manifest.classType[Array[T]](arrayClass[T](erasure))
 }
 
+@serializable
+trait AnyValManifest[T] extends Manifest[T] {
+  import Manifest.{ Any, AnyVal }
+  override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any) || (that eq AnyVal)
+  override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+}
+
 /** <ps>
   *   This object is used by the compiler and <b>should not be used in client
   *   code</b>. The object <code>Manifest</code> defines factory methods for
@@ -45,8 +52,7 @@ trait Manifest[T] extends ClassManifest[T] {
   * </p>
   */
 object Manifest {
-
-  val Byte = new (Manifest[Byte] @serializable) {
+  val Byte = new (AnyValManifest[Byte] @serializable) {
     def erasure = java.lang.Byte.TYPE
     override def toString = "Byte"
     override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
@@ -54,7 +60,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Byte] = new ArrayBuilder.ofByte()
   }
 
-  val Short = new (Manifest[Short] @serializable) {
+  val Short = new (AnyValManifest[Short] @serializable) {
     def erasure = java.lang.Short.TYPE
     override def toString = "Short"
     override def newArray(len: Int): Array[Short] = new Array[Short](len)
@@ -62,7 +68,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Short] = new ArrayBuilder.ofShort()
   }
 
-  val Char = new (Manifest[Char] @serializable) {
+  val Char = new (AnyValManifest[Char] @serializable) {
     def erasure = java.lang.Character.TYPE
     override def toString = "Char"
     override def newArray(len: Int): Array[Char] = new Array[Char](len)
@@ -70,7 +76,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Char] = new ArrayBuilder.ofChar()
   }
 
-  val Int = new (Manifest[Int] @serializable) {
+  val Int = new (AnyValManifest[Int] @serializable) {
     def erasure = java.lang.Integer.TYPE
     override def toString = "Int"
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
@@ -78,7 +84,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Int] = new ArrayBuilder.ofInt()
   }
 
-  val Long = new (Manifest[Long] @serializable) {
+  val Long = new (AnyValManifest[Long] @serializable) {
     def erasure = java.lang.Long.TYPE
     override def toString = "Long"
     override def newArray(len: Int): Array[Long] = new Array[Long](len)
@@ -86,7 +92,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Long] = new ArrayBuilder.ofLong()
   }
 
-  val Float = new (Manifest[Float] @serializable) {
+  val Float = new (AnyValManifest[Float] @serializable) {
     def erasure = java.lang.Float.TYPE
     override def toString = "Float"
     override def newArray(len: Int): Array[Float] = new Array[Float](len)
@@ -94,7 +100,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Float] = new ArrayBuilder.ofFloat()
   }
 
-  val Double = new (Manifest[Double] @serializable) {
+  val Double = new (AnyValManifest[Double] @serializable) {
     def erasure = java.lang.Double.TYPE
     override def toString = "Double"
     override def newArray(len: Int): Array[Double] = new Array[Double](len)
@@ -102,7 +108,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Double] = new ArrayBuilder.ofDouble()
   }
 
-  val Boolean = new (Manifest[Boolean] @serializable) {
+  val Boolean = new (AnyValManifest[Boolean] @serializable) {
     def erasure = java.lang.Boolean.TYPE
     override def toString = "Boolean"
     override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
@@ -110,7 +116,7 @@ object Manifest {
     override def newArrayBuilder(): ArrayBuilder[Boolean] = new ArrayBuilder.ofBoolean()
   }
 
-  val Unit = new (Manifest[Unit] @serializable) {
+  val Unit = new (AnyValManifest[Unit] @serializable) {
     def erasure = java.lang.Void.TYPE
     override def toString = "Unit"
     override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
@@ -120,37 +126,42 @@ object Manifest {
 
   val Any: Manifest[Any] = new ClassTypeManifest[Any](None, classOf[java.lang.Object], List()) {
     override def toString = "Any"
-    // todo: re-implement <:<
+    override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
+    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
   }
 
   val Object: Manifest[Object] = new ClassTypeManifest[Object](None, classOf[java.lang.Object], List()) {
     override def toString = "Object"
-    // todo: re-implement <:<
+    override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
+    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
   }
 
   val AnyVal: Manifest[AnyVal] = new ClassTypeManifest[AnyVal](None, classOf[java.lang.Object], List()) {
     override def toString = "AnyVal"
-    // todo: re-implement <:<
+    override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
+    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
   }
 
   val Null: Manifest[Null] = new ClassTypeManifest[Null](None, classOf[java.lang.Object], List()) {
     override def toString = "Null"
-    // todo: re-implement <:<
+    override def <:<(that: ClassManifest[_]): Boolean =
+      (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
+    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
   }
 
   val Nothing: Manifest[Nothing] = new ClassTypeManifest[Nothing](None, classOf[java.lang.Object], List()) {
     override def toString = "Nothing"
-    // todo: re-implement <:<
+    override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
+    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
   }
 
   /** Manifest for the singleton type `value.type'. */
-  def singleType[T](value: Any): Manifest[T] =
+  def singleType[T <: AnyRef](value: AnyRef): Manifest[T] =
     new (Manifest[T] @serializable) {
-      lazy val erasure =
-        value match {
-          case anyRefValue: AnyRef => anyRefValue.getClass
-          case anyValue => error("There is no singleton type for AnyVal values")
-        }
+      /** Note - this was doing a type match on value to exclude AnyVal, which does not work.
+       *  Pattern matching _: AnyRef matches everything because of boxing.
+       */
+      lazy val erasure = value.getClass
       override lazy val toString = value.toString + ".type"
     }
 

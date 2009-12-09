@@ -724,16 +724,20 @@ self: Analyzer =>
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
-        else
-          typed { atPos(tree.pos.focus) {
-            Apply(
-              TypeApply(
-                Select(gen.mkAttributedRef(if (full) FullManifestModule else PartialManifestModule), constructor),
-                List(TypeTree(tparg))
-              ),
-              args.toList
-            )
-          }}
+        else typedPos(tree.pos.focus) {
+          Apply(
+            TypeApply(
+              Select(gen.mkAttributedRef(if (full) FullManifestModule else PartialManifestModule), constructor),
+              List(TypeTree(tparg))
+            ),
+            args.toList
+          )
+        }
+
+      /** Creates a tree representing one of the singleton manifests.*/
+      def findSingletonManifest(name: String) = typedPos(tree.pos.focus) {
+        Select(gen.mkAttributedRef(FullManifestModule), name)
+      }
 
       /** Re-wraps a type in a manifest before calling inferImplicit on the result */
       def findManifest(tp: Type, manifestClass: Symbol = if (full) FullManifestClass else PartialManifestClass) =
@@ -750,9 +754,9 @@ self: Analyzer =>
             manifestOfType(tp1.deconst, full)
           case TypeRef(pre, sym, args) =>
             if (isValueClass(sym) || isPhantomClass(sym)) {
-              typed { atPos(tree.pos.focus) {
-                Select(gen.mkAttributedRef(FullManifestModule), sym.name.toString)
-              }}
+              findSingletonManifest(sym.name.toString)
+            } else if (sym == ObjectClass || sym == AnyRefClass) {
+              findSingletonManifest("Object")
             } else if (sym == ArrayClass && args.length == 1) {
               manifestFactoryCall("arrayType", args.head, findSubManifest(args.head))
             } else if (sym.isClass) {
