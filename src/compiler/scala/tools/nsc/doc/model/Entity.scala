@@ -58,6 +58,7 @@ trait MemberEntity extends Entity {
 /** A ''documentable'' class, trait or object (that is, a documentation page will be generated for it in the current
   * site). */
 trait DocTemplateEntity extends TemplateEntity with MemberEntity {
+  def toRoot: List[DocTemplateEntity]
   def inSource: Option[(io.AbstractFile, Int)]
   def typeParams: List[TypeParam]
   def parentType: Option[TypeEntity]

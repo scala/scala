@@ -74,7 +74,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
     def inDefinitionTemplates =
-      (if (sym.owner == inTpl.sym) inTpl else makeTemplate(sym.owner)) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
+      if (inTpl == null)
+        makePackage(RootPackage, null).toList
+      else if (sym.owner == inTpl.sym)
+        inTpl :: Nil
+      else
+        makeTemplate(sym.owner) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
     val visibility = {
       def qual = {
         val qq =
@@ -124,17 +129,26 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     //if (inTpl != null) println("mbr " + sym + " in " + (inTpl.toRoot map (_.sym)).mkString(" > "))
     templatesCache += ((sym, inTpl) -> this)
     override def definitionName = inDefinitionTemplates.head.qualifiedName + "." + name
+    override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
     val inSource = if (sym.sourceFile != null) Some(sym.sourceFile, sym.pos.line) else None
     val typeParams = if (sym.isClass) sym.typeParams map (makeTypeParam(_, this)) else Nil
     val parentType =
       if (sym.isPackage) None else
         Some(makeType(RefinedType(sym.tpe.parents filter (_ != ScalaObjectClass.tpe), EmptyScope)))
     val linearization = {
+      sym.info.parents map { prt =>
+        makeTemplate(prt.typeSymbol) match {
+          case dtpl: DocTemplateImpl => dtpl.registerSubClass(this)
+          case _ =>
+        }
+      }
       sym.ancestors filter (_ != ScalaObjectClass) map (makeTemplate(_))
-      // TODO: Register subclasses
     }
-    private val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
-    def registerSubClass(sc: DocTemplateEntity) = subClassesCache += sc
+    private lazy val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
+    def registerSubClass(sc: DocTemplateEntity) = {
+      assert(subClassesCache != null)
+      subClassesCache += sc
+    }
     def subClasses = subClassesCache.toList
     def memberSyms = sym.info.nonPrivateMembers
     val members: List[MemberEntity] = memberSyms flatMap (makeMember(_, this))

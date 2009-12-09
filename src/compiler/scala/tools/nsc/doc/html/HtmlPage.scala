@@ -184,4 +184,19 @@ abstract class HtmlPage { thisPage =>
       xml.Text(string)
   }
 
+  /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */
+  def templateToHtml(tpl: TemplateEntity) = tpl match {
+    case dTpl: DocTemplateEntity =>
+      <a href={ relativeLinkTo(dTpl) }>{ dTpl.name }</a>
+    case ndTpl: NoDocTemplate =>
+      xml.Text(ndTpl.name)
+  }
+
+  /** Returns the HTML code that represents the templates in `tpls` as a list of hyperlinked names. */
+  def templatesToHtml(tplss: List[TemplateEntity], sep: NodeSeq): NodeSeq = tplss match {
+    case Nil         => NodeSeq.Empty
+    case tpl :: Nil  => templateToHtml(tpl)
+    case tpl :: tpls => templateToHtml(tpl) ++ sep ++ templatesToHtml(tpls, sep)
+  }
+
 }

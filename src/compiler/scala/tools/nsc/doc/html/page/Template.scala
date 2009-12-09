@@ -42,14 +42,10 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   val body =
     <body class={ if (tpl.isTrait || tpl.isClass) "type" else "value" }>
 
-      { def ownerLinks(otl: DocTemplateEntity): NodeSeq =
-          if (otl.inTemplate.isRootPackage)
-            <a href={ relativeLinkTo(otl) }>{ otl.name }</a>
-          else ownerLinks(otl.inTemplate) ++ <xml:group>.<a href={ relativeLinkTo(otl) }>{ otl.name }</a></xml:group>
-        if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
+      { if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
           NodeSeq.Empty
         else
-          <p id="owner">{ ownerLinks(tpl.inTemplate) }</p>
+          <p id="owner">{ templatesToHtml(tpl.inTemplate.toRoot.reverse.tail, xml.Text(".")) }</p>
       }
 
       <div id="definition">
@@ -105,9 +101,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   }
 
   def memberToCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = mbr match {
-    case dte: DocTemplateEntity if isSelf && mbr.comment.isDefined =>
+    case dte: DocTemplateEntity if isSelf =>
       <div id="comment" class="fullcomment">{ memberToFullCommentHtml(mbr, isSelf) }</div>
-    case dte: DocTemplateEntity if !isSelf && mbr.comment.isDefined =>
+    case dte: DocTemplateEntity if mbr.comment.isDefined =>
       <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
     case _ if mbr.comment.isDefined =>
       <p class="shortcomment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
@@ -161,24 +157,25 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
       { val fvs: List[comment.Paragraph] = mbr.visibility.toList ::: mbr.flags
         if (fvs.isEmpty) NodeSeq.Empty else
-          <div class="block">{ fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }</div>
+          <div class="block">
+            attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
+          </div>
       }
-      { def inheritanceElem(tpl: TemplateEntity): NodeSeq = tpl match {
-          case (dTpl: DocTemplateEntity) =>
-            <a href={ relativeLinkTo(dTpl) }>{ dTpl.name }</a>
-          case (ndTpl: NoDocTemplate) =>
-            xml.Text(ndTpl.name)
-        }
-        def inheritanceChain(tplss: List[TemplateEntity]): NodeSeq = (tplss: @unchecked) match {
-          case tpl :: Nil => inheritanceElem(tpl)
-          case tpl :: tpls =>
-            inheritanceElem(tpl) ++ xml.Text(" ⇐ ") ++ inheritanceChain(tpls)
-        }
-        val inDefTpls = mbr.inDefinitionTemplates
+      { val inDefTpls = mbr.inDefinitionTemplates
         if (inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) NodeSeq.Empty else {
           <div class="block">
-            definition classes: { inheritanceChain(inDefTpls) }
+            definition classes: { templatesToHtml(inDefTpls, xml.Text(" ⇐ ")) }
           </div>
+        }
+      }
+      { mbr match {
+          case dtpl: DocTemplateEntity if isSelf =>
+            val subClss = dtpl.subClasses
+            if (subClss.isEmpty) NodeSeq.Empty else
+              <div class="block">
+                known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
+              </div>
+          case _ => NodeSeq.Empty
         }
       }
     </xml:group>
