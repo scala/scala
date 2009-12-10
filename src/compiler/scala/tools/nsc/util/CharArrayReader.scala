@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package util
 
-import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
+import Chars.{LF, FF, CR, SU}
 
 abstract class CharArrayReader { self =>
 

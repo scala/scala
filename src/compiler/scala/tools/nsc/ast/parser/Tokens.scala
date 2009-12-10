@@ -146,7 +146,7 @@ object Tokens {
   case ' ' | '\t' => true
   case _ => false
   }
-  import scala.tools.nsc.util.SourceFile._
+  import util.Chars._
 
   def isNewLine(at : Char) = at match {
   case CR | LF | FF => true

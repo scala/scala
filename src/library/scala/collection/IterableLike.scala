@@ -79,17 +79,7 @@ self =>
    *    Note: this method underlies the implementation of most other bulk operations.
    *    Subclasses should re-implement this method if a more efficient implementation exists.
    *
-   *  @param  f   the function that is applied for its side-effect to every element.
-   *              The result of function `f` is discarded.
-   *
-   *  @tparam  U  the type parameter describing the result of function `f`.
-   *              This result will always be ignored. Typically `U` is `Unit`,
-   *              but this is not necessary.
-   *
    *  @usecase def foreach(f: A => Unit): Unit
-   *
-   *  @param  f   the function that is applied for its side-effect to every element.
-   *              The result of function `f` is discarded.
    */
   def foreach[U](f: A => U): Unit =
     iterator.foreach(f)

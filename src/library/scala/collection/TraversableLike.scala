@@ -127,9 +127,6 @@ self =>
    *              but this is not necessary.
    *
    *  @usecase def foreach(f: A => Unit): Unit
-   *
-   *  @param  f   the function that is applied for its side-effect to every element.
-   *              The result of function `f` is discarded.
    */
   def foreach[U](f: A => U): Unit
 
@@ -155,6 +152,8 @@ self =>
   def nonEmpty: Boolean = !isEmpty
 
   /** The size of this $coll.
+   *
+   *  $willNotTerminateInf
    *
    *  @return    the number of elements in this $coll.
    */
@@ -186,7 +185,6 @@ self =>
    *
    *  @usecase def ++(that: Traversable[A]): $Coll[A]
    *
-   *  @param that   the traversable to append.
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.
    */
@@ -208,7 +206,6 @@ self =>
    *
    *  @usecase def ++(that: Iterator[A]): $Coll[A]
    *
-   *  @param that   the iterator to append.
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.
    */
@@ -230,8 +227,6 @@ self =>
    *
    *  @usecase def map[B](f: A => B): $Coll[B]
    *
-   *  @param f      the function to apply to each element.
-   *  @tparam B     the element type of the returned collection.
    *  @return       a new $coll resulting from applying the given function
    *                `f` to each element of this $coll and collecting the results.
    */
@@ -253,8 +248,6 @@ self =>
    *
    *  @usecase def flatMap[B](f: A => Traversable[B]): $Coll[B]
    *
-   *  @param f      the function to apply to each element.
-   *  @tparam B     the element type of the returned collection.
    *  @return       a new $coll resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
    */
@@ -298,7 +291,6 @@ self =>
    *
    *  @usecase def partialMap[B](pf: PartialFunction[Any, B]): $Coll[B]
    *
-   *  @param pf     the partial function which filters and maps the $coll.
    *  @return       a new $coll resulting from applying the given partial function
    *                `pf` to each element on which it is defined and collecting the results.
    *                The order of the elements is preserved.
@@ -919,10 +911,6 @@ self =>
    *
    *
    *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
-   *
-   *  @param  xs     the array to fill.
-   *  @param  start  the starting index.
-   *  @param  len    the maximal number of elements to copy.
    */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
     var i = start
@@ -949,9 +937,6 @@ self =>
    *  @tparam B      the type of the elements of the array.
    *
    *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
-   *
-   *  @param  xs     the array to fill.
-   *  @param  start  the starting index.
    */
   def copyToArray[B >: A](xs: Array[B], start: Int) {
     copyToArray(xs, start, xs.length - start)
@@ -1165,8 +1150,6 @@ self =>
      *
      *  @usecase def map[B](f: A => B): $Coll[B]
      *
-     *  @param f      the function to apply to each element.
-     *  @tparam B     the element type of the returned collection.
      *  @return       a new $coll resulting from applying the given function
      *                `f` to each element of the outer $coll that satisfies predicate `p`
      *                and collecting the results.
@@ -1190,8 +1173,6 @@ self =>
      *
      *  @usecase def flatMap[B](f: A => Traversable[B]): $Coll[B]
      *
-     *  @param f      the function to apply to each element.
-     *  @tparam B     the element type of the returned collection.
      *  @return       a new $coll resulting from applying the given collection-valued function
      *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
      */
@@ -1213,9 +1194,6 @@ self =>
      *              but this is not necessary.
      *
      *  @usecase def foreach(f: A => Unit): Unit
-     *
-     *  @param  f   the function that is applied for its side-effect to every element.
-     *              The result of function `f` is discarded.
      */
     def foreach[U](f: A => U): Unit =
       for (x <- self)

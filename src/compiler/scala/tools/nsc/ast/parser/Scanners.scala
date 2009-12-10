@@ -7,11 +7,12 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.tools.nsc.util._
-import SourceFile.{LF, FF, CR, SU}
+import Chars.{LF, FF, CR, SU}
 import Tokens._
 import scala.annotation.switch
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.xml.Utility.{ isNameStart }
+import util.Chars._
 
 trait Scanners {
   val global : Global
@@ -882,32 +883,6 @@ trait Scanners {
       nextToken()
     }
   } // end Scanner
-
-  // ------------- character classification --------------------------------
-
-  def isIdentifierStart(c: Char): Boolean =
-    ('A' <= c && c <= 'Z') ||
-    ('a' <= c && c <= 'a') ||
-    (c == '_') || (c == '$') ||
-    Character.isUnicodeIdentifierStart(c)
-
-  def isIdentifierPart(c: Char) =
-    isIdentifierStart(c) ||
-    ('0' <= c && c <= '9') ||
-    Character.isUnicodeIdentifierPart(c)
-
-  def isSpecial(c: Char) = {
-    val chtp = Character.getType(c)
-    chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
-  }
-
-  def isOperatorPart(c : Char) : Boolean = (c: @switch) match {
-    case '~' | '!' | '@' | '#' | '%' |
-         '^' | '*' | '+' | '-' | '<' |
-         '>' | '?' | ':' | '=' | '&' |
-         '|' | '/' | '\\' => true
-    case c => isSpecial(c)
-  }
 
   // ------------- keyword configuration -----------------------------------
 

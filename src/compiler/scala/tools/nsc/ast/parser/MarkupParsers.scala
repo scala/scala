@@ -13,7 +13,7 @@ import scala.util.control.ControlException
 import scala.tools.nsc.util.{Position,NoPosition,SourceFile,CharArrayReader}
 import scala.xml.{ Text, TextBuffer }
 import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
-import SourceFile.{ SU, LF }
+import util.Chars.{ SU, LF }
 import scala.annotation.switch
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
