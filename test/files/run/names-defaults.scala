@@ -277,6 +277,12 @@ object Test extends Application {
     }
   }
 
+  // #2784
+  class Test2784 {
+    object t { def f(x: Int) = x }
+    val one = t f (x = 1)
+  }
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
