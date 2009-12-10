@@ -187,7 +187,7 @@ trait FlatHashTable[A] {
         assert(false, i+" "+table(i)+" "+table.toString)
   }
 
-  protected def elemHashCode(elem: A) = elem.hashCode()
+  protected def elemHashCode(elem: A) = if (elem == null) 0 else elem.hashCode()
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)
