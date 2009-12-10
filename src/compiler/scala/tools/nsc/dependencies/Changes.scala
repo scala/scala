@@ -88,7 +88,7 @@ abstract class Changes {
     case (MethodType(params1, res1), MethodType(params2, res2)) =>
       // new dependent types: probably fix this, use substSym as done for PolyType
       (sameTypes(tp1.paramTypes, tp2.paramTypes) &&
-      ((tp1.params zip tp2.params).forall(p => p._1.fullNameString == p._2.fullNameString)) &&
+      ((tp1.params, tp2.params).zipped forall sameSymbol) &&
        sameType(res1, res2) &&
        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
 
