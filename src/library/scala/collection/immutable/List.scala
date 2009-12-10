@@ -613,7 +613,7 @@ object List extends SeqFactory[List] {
    * Returns the `Left` values in the given `Iterable`
    * of `Either`s.
    */
-  @deprecated("use `Either.lefts' instead")
+  @deprecated("use `xs partialMap { case Left(x: A) => x }' instead")
   def lefts[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[A]](Nil)((e, as) => e match {
       case Left(a) => a :: as
@@ -623,7 +623,7 @@ object List extends SeqFactory[List] {
   /**
    * Returns the `Right` values in the given`Iterable` of  `Either`s.
    */
-  @deprecated("use `Either.rights' instead")
+  @deprecated("use `xs partialMap { case Right(x: B) => x }' instead")
   def rights[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[B]](Nil)((e, bs) => e match {
       case Left(_) => bs
@@ -636,7 +636,7 @@ object List extends SeqFactory[List] {
    *  @return a pair of lists.
    */
   @deprecated("use `Either.separate' instead")
-  def separate[A,B](es: Iterable[Either[A,B]]): (List[A], List[B]) =
+  def separate[A,B](es: Iterable[Either[A, B]]): (List[A], List[B]) =
       es.foldRight[(List[A], List[B])]((Nil, Nil)) {
       case (Left(a), (lefts, rights)) => (a :: lefts, rights)
       case (Right(b), (lefts, rights)) => (lefts, b :: rights)
@@ -679,13 +679,25 @@ object List extends SeqFactory[List] {
     res
   }
 
-  /** Returns the given string as a list of characters.
+  /** Parses a string which contains substrings separated by a
+   *  separator character and returns a list of all substrings.
    *
-   *  @param str the string to convert.
-   *  @return    the string as a list of characters.
+   *  @param str       the string to parse
+   *  @param separator the separator character
+   *  @return          the list of substrings
    */
-  @deprecated("use `str.toList' instead")
-  def fromString(str: String): List[Char] = str.toList
+  @deprecated("use `str.split(separator).toList' instead")
+  def fromString(str: String, separator: Char): List[String] = {
+    var words: List[String] = Nil
+    var pos = str.length()
+    while (pos > 0) {
+      val pos1 = str.lastIndexOf(separator, pos - 1)
+      if (pos1 + 1 < pos)
+        words = str.substring(pos1 + 1, pos) :: words
+      pos = pos1
+    }
+    words
+  }
 
   /** Returns the given list of characters as a string.
    *
