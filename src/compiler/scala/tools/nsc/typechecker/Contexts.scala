@@ -486,11 +486,7 @@ trait Contexts { self: Analyzer =>
     }
 
     def implicitss: List[List[ImplicitInfo]] = {
-      val nextOuter =
-        if (owner.isConstructor) {
-          if (outer.tree.isInstanceOf[Template]) outer.outer.outer
-          else outer.outer.outer
-        } else outer
+      val nextOuter = if (owner.isConstructor) outer.outer.outer else outer
         // can we can do something smarter to bring back the implicit cache?
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
