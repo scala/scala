@@ -430,7 +430,7 @@ trait Iterator[+A] { self =>
   *  @param pf the partial function which filters and maps the iterator.
   *  @return the new iterator.
   */
-  def partialMap[B](pf: PartialFunction[Any, B]): Iterator[B] = {
+  def partialMap[B](pf: PartialFunction[A, B]): Iterator[B] = {
     val self = buffered
     new Iterator[B] {
       private def skip() = while (self.hasNext && !pf.isDefinedAt(self.head)) self.next()
