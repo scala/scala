@@ -126,7 +126,11 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
               case Some(oldSym) =>
                 changesOf(oldSym) = changeSet(oldSym, sym)
               case _ =>
-                // a new top level definition, no need to process
+                // a new top level definition
+                changesOf(sym) =
+                    sym.info.parents.filter(_.typeSymbol hasFlag Flags.SEALED).map(
+                      p => changeChangeSet(p.typeSymbol,
+                                           sym+" extends a sealed "+p.typeSymbol))
             }
           }
           // Create a change for the top level classes that were removed
