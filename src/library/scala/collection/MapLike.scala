@@ -14,13 +14,19 @@ import generic._
 import mutable.{Builder, StringBuilder, MapBuilder}
 import PartialFunction._
 
-/**
- *    A generic template for maps from keys of type `A` to values
- *    of type `B`.
+/** A template trait for maps of type `Map[A, B]` which associate keys of type `A`
+ *  with values of type `B`.
  *
- *    To implement a concrete map, 'you' need to provide implementations of the
- *    following methods (where `This` is the type of the map in
- *    question):
+ *  @tparam A    the type of the keys.
+ *  @tparam B    the type of associated values.
+ *  @tparam This the type of the `Map` itself.
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
+ *  $mapnote
+ *  @define $mapnote  @note
+ *    To implement a concrete map, you need to provide implementations of the
+ *    following methods
  *    {{{
  *       def get(key: A): Option[B]
  *
@@ -30,18 +36,13 @@ import PartialFunction._
  *
  *       def -(key: A): This</pre>
  *    }}}
- *    If you wish that methods <code>like</code>, <code>take</code>, <code>drop</code>,
- *    <code>filter</code> return the same kind of map, you should also override:
+ *    If you wish that methods like `take`, `drop`, `filter` also return the same kind of map
+ *    you should also override:
  *    {{{
  *       def empty: This
  *    }}}
- *
  *    It is also good idea to override methods `foreach` and
  *    `size` for efficiency.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
  */
 trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends PartialFunction[A, B]

@@ -153,6 +153,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           }
           if (settings.verbose.value && onlyPresentation && !sym.isAnonymousClass) {
             println("========== scaladoc of "+sym+" =============================")
+            println(toJavaDoc(expandedDocComment(sym)))
             for (member <- sym.info.members) {
               println(member+":"+sym.thisType.memberInfo(member)+"\n"+
                       toJavaDoc(expandedDocComment(member, sym)))

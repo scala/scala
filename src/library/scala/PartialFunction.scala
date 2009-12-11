@@ -12,22 +12,32 @@
 package scala
 
 /** A partial function of type <code>PartialFunction[A, B]</code> is a
- *  unary function where the domain does not include all values of type
+ *  unary function where the domain does not necessarily include all values of type
  *  <code>A</code>. The function <code>isDefinedAt</code> allows to
- *  test dynamically, if a value is in the domain of the function.
+ *  test dynamically if a value is in the domain of the function.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
  */
-trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
+trait PartialFunction[-A, +B] extends (A => B) {
 
-  /** Checks if a value is contained in the functions domain.
+  /** Checks if a value is contained in the function's domain.
    *
    *  @param  x   the value to test
-   *  @return true, iff <code>x</code> is in the domain of this function.
+   *  @return `true`, iff <code>x</code> is in the domain of this function, `false` otherwise.
    */
   def isDefinedAt(x: A): Boolean
 
+  /** Composes this partial function with a fallback partial function which gets applied where this partial function
+   *  is not defined.
+   *
+   *  @param   that    the fallback function
+   *  @tparam  A1      the argument type of the fallback function
+   *  @tparam  B1      the result type of the fallback function
+   *  @return  a partial function which has as domain the union of the domains
+   *           of this partial function and `that`. The resulting partial function
+   *           takes `x` to `this(x)` where `this` is defined, and to `that(x)` where it is not.
+   */
   def orElse[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] =
     new PartialFunction[A1, B1] {
     def isDefinedAt(x: A1): Boolean =
@@ -37,11 +47,22 @@ trait PartialFunction[-A, +B] extends AnyRef with (A => B) {
       else that.apply(x)
   }
 
+  /**  Composes this partial function with a transformation function that gets applied
+   *   to results of this partial function.
+   *   @param  k  the transformation function
+   *   @tparam C  the result type of the transformation function.
+   *   @return a partial function with the same domain as this partial function, which maps
+   *           arguments `x` to `k(this(x))`.
+   */
   override def andThen[C](k: B => C) : PartialFunction[A, C] = new PartialFunction[A, C] {
     def isDefinedAt(x: A): Boolean = PartialFunction.this.isDefinedAt(x)
     def apply(x: A): C = k(PartialFunction.this.apply(x))
   }
 
+  /** Turns this partial function into an plain function returning an `Option` result.
+   *  @return  a function that takes an argument `x` to `Some(this(x))` if `this`
+   *           is defined for `x`, and to `None` otherwise.
+   */
   def lift: A => Option[B] = { x => if (isDefinedAt(x)) Some(this(x)) else None }
 }
 

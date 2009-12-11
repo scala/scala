@@ -41,12 +41,12 @@ trait DocComments { self: SymbolTable =>
    */
   def cookedDocComment(sym: Symbol): String = {
     val ownComment = docComments get sym map (_.template) getOrElse ""
-    sym.allOverriddenSymbols.view map cookedDocComment find ("" !=) match {
+    superComment(sym) match {
       case None =>
         ownComment
-      case Some(superComment) =>
-        if (ownComment == "") superComment
-        else merge(superComment, ownComment, sym)
+      case Some(sc) =>
+        if (ownComment == "") sc
+        else merge(sc, ownComment, sym)
     }
   }
 
@@ -59,7 +59,7 @@ trait DocComments { self: SymbolTable =>
    *                                  interpreted as a recursive variable definition.
    */
   def expandedDocComment(sym: Symbol, site: Symbol): String =
-    expandVariables(cookedDocComment(sym), site)
+    expandVariables(cookedDocComment(sym), sym, site)
 
   /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
    *  @param sym  The symbol for which doc comment is returned (site is always the containing class)
@@ -80,7 +80,7 @@ trait DocComments { self: SymbolTable =>
     def getUseCases(dc: DocComment) = {
       for (uc <- dc.useCases; defn <- uc.expandedDefs(site)) yield
         (defn,
-         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn, copyFirstPara = true), site))
+         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn, copyFirstPara = true), sym, site))
     }
     getDocComment(sym) map getUseCases getOrElse List()
   }
@@ -116,6 +116,10 @@ trait DocComments { self: SymbolTable =>
     case some => some
   }
 
+  /** The cooked doc comment of an overridden symbol */
+  private def superComment(sym: Symbol): Option[String] =
+    sym.allOverriddenSymbols.view map cookedDocComment find ("" !=)
+
   private def mapFind[A, B](xs: Iterable[A])(f: A => Option[B]): Option[B] = {
     var res: Option[B] = None
     val it = xs.iterator
@@ -124,6 +128,11 @@ trait DocComments { self: SymbolTable =>
     }
     res
   }
+
+  private def isMovable(str: String, sec: (Int, Int)): Boolean =
+    startsWithTag(str, sec, "@param") ||
+    startsWithTag(str, sec, "@tparam") ||
+    startsWithTag(str, sec, "@return")
 
   /** Merge elements of doccomment `src` into doc comment `dst` for symbol `sym`.
    *  In detail:
@@ -141,13 +150,7 @@ trait DocComments { self: SymbolTable =>
     val dstTParams = paramDocs(dst, "@tparam", dstSections)
     val out = new StringBuilder
     var copied = 0
-
-    var tocopy = startTag(
-      dst,
-      dstSections dropWhile (sec =>
-        !startsWithTag(dst, sec, "@param") &&
-        !startsWithTag(dst, sec, "@tparam") &&
-        !startsWithTag(dst, sec, "@return")))
+    var tocopy = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
 
     if (copyFirstPara) {
       val eop = // end of first para, which is delimited by blank line, or tag, or end of comment
@@ -215,10 +218,11 @@ trait DocComments { self: SymbolTable =>
    *  a expandLimit is exceeded.
    *
    *  @param str   The string to be expanded
+   *  @param sym   The symbol for which doc comments are generated
    *  @param site  The class for which doc comments are generated
    *  @return      Expanded string
    */
-  private def expandVariables(str: String, site: Symbol): String =
+  private def expandVariables(str: String, sym: Symbol, site: Symbol): String =
     if (expandCount < expandLimit) {
       try {
         val out = new StringBuilder
@@ -228,27 +232,33 @@ trait DocComments { self: SymbolTable =>
           if ((str charAt idx) == '$') {
             val vstart = idx
             idx = skipVariable(str, idx + 1)
-            val vname = variableName(str.substring(vstart + 1, idx))
-            if (vname.length > 0) {
-              lookupVariable(vname, site) match {
-                case Some(replacement) =>
-                  out append str.substring(copied, vstart)
-                  out append replacement
-                  copied = idx
-                case None =>
-                  //println("no replacement for "+vname) // !!!
-              }
-            } else {
-              idx += 1
+            def replaceWith(repl: String) {
+              out append str.substring(copied, vstart)
+              out append repl
+              copied = idx
             }
-          } else {
-            idx += 1
-          }
+            val vname = variableName(str.substring(vstart + 1, idx))
+            if (vname == "super") {
+              superComment(sym) match {
+                case Some(sc) =>
+                  val superSections = tagIndex(sc)
+                  replaceWith(sc.substring(3, startTag(sc, superSections)))
+                  for (sec @ (start, end) <- superSections)
+                    if (!isMovable(sc, sec)) out append sc.substring(start, end)
+                case None =>
+              }
+            } else if (vname.length > 0) {
+              lookupVariable(vname, site) match {
+                case Some(replacement) => replaceWith(replacement)
+                case None =>  //println("no replacement for "+vname) // DEBUG
+              }
+            } else idx += 1
+          } else idx += 1
         }
         if (out.length == 0) str
         else {
           out append str.substring(copied)
-          expandVariables(out.toString, site)
+          expandVariables(out.toString, sym, site)
         }
       } finally {
         expandCount -= 1
