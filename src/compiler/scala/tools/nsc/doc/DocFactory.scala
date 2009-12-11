@@ -31,6 +31,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     override protected def computeInternalPhases() {
       phasesSet += syntaxAnalyzer
       phasesSet += analyzer.namerFactory
+      phasesSet += analyzer.packageObjects
       phasesSet += analyzer.typerFactory
       phasesSet += superAccessors
       phasesSet += pickler

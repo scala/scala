@@ -521,7 +521,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   protected def computeInternalPhases() {
     phasesSet += syntaxAnalyzer                        // The parser
     phasesSet += analyzer.namerFactory                 // note: types are there because otherwise
-    phasesSet += analyzer.typerFactory                 // consistency check after refchecks would fail.
+    phasesSet += analyzer.packageObjects               // consistency check after refchecks would fail.
+    phasesSet += analyzer.typerFactory
     phasesSet += superAccessors			       // add super accessors
     phasesSet += pickler			       // serialize symbol tables
     phasesSet += refchecks			       // perform reference and override checking, translate nested objects
@@ -733,7 +734,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
       val depSources = dependencyAnalysis.filter(_sources.removeDuplicates) // bug #1268, scalac confused by duplicated filenames
-      val sources = pkgObjectsFirst(depSources)
+      val sources = scalaObjectFirst(depSources)
       if (reporter.hasErrors)
         return  // there is a problem already, e.g. a
                 // plugin was passed a bad option
@@ -883,18 +884,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
 
-    private def pkgObjectsFirst(files: List[SourceFile]) = {
+    private def scalaObjectFirst(files: List[SourceFile]) = {
       def inScalaFolder(f: SourceFile) =
         f.file.container.name == "scala"
       val res = new ListBuffer[SourceFile]
-      var scalaObject: Option[SourceFile] = None
       for (file <- files) file.file.name match {
-        case "ScalaObject.scala" if inScalaFolder(file) => scalaObject = Some(file)
-        case "package.scala" => file +=: res // prepend package objects
-        case _ => res += file                // append all others
+        case "ScalaObject.scala" if inScalaFolder(file) => file +=: res
+        case _ => res += file
       }
-      scalaObject.map(res.+=:(_)) // ScalaObject 1st
-      res.toList                  // then package objects, then others
+      res.toList
     }
   } // class Run
 

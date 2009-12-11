@@ -37,13 +37,39 @@ trait Analyzer extends AnyRef
     }
   }
 
+  object packageObjects extends SubComponent {
+    val global: Analyzer.this.global.type = Analyzer.this.global
+    val phaseName = "packageobjects"
+    val runsAfter = List[String]()
+    val runsRightAfter= Some("namer")
+
+    def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
+      import global._
+
+      val openPackageObjectsTraverser = new Traverser {
+        override def traverse(tree: Tree): Unit = tree match {
+          case ModuleDef(_, _, _) =>
+            if (tree.symbol.name == nme.PACKAGEkw) {
+              loaders.openPackageModule(tree.symbol)()
+            }
+          case ClassDef(_, _, _, _) => () // make it fast
+          case _ => super.traverse(tree)
+        }
+      }
+
+      def apply(unit: CompilationUnit) {
+        openPackageObjectsTraverser(unit.body)
+      }
+    }
+  }
+
   var typerTime = 0L
 
   object typerFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "typer"
     val runsAfter = List[String]()
-    val runsRightAfter = Some("namer")
+    val runsRightAfter = Some("packageobjects")
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       resetTyper()
       override def run {

@@ -1136,10 +1136,6 @@ trait Namers { self: Analyzer =>
               val clazz = sym.moduleClass
               clazz.setInfo(newNamer(context.makeNewScope(tree, clazz)).templateSig(impl))
               //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
-              tree.symbol.setInfo(clazz.tpe) // initialize module to avoid cycles
-              if (tree.symbol.name == nme.PACKAGEkw) {
-                loaders.openPackageModule(tree.symbol)
-              }
               clazz.tpe
 
             case DefDef(mods, _, tparams, vparamss, tpt, rhs) =>
