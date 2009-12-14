@@ -193,8 +193,9 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		private val findClass0 = reflect[Option[AnyRef]]("findClass", classOf[String])
 		findClass0.force(classPath) // force discovery, so that an exception is thrown if method doesn't exist
 		private val extractClass0 = reflect[Option[AbstractFile]]("binary")
+		private def translate(name: String): String = name.replace(File.separatorChar, '.') // 2.8 uses '.', 2.7 uses '/'
 		def findClass(name: String): Option[AbstractFile] =
-			findClass0(classPath, name).flatMap(a => extractClass0(a))
+			findClass0(classPath, translate(name)).flatMap {a => extractClass0(a) }
 	}
 	private class LegacyFinder extends ClassFinder
 	{

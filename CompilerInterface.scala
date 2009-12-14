@@ -76,7 +76,7 @@ class CompilerInterface
 		if(!reporter.hasErrors)
 		{
 			val run = new compiler.Run
-			debug(args.mkString("Calling compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
+			debug(args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
 			run compile command.files
 		}
 		reporter.printSummary()
