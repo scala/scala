@@ -13,17 +13,21 @@ package mutable
 
 import generic._
 
-/** The canonical builder for collections that are addable, i.e. that support an efficient + method
+/** The canonical builder for collections that are addable, i.e. that support an efficient `+` method
  *  which adds an element to the collection.
- *  Collections are built from their empty element using this + method.
- *  @param empty   The empty element of the collection.
+ *  Collections are built from their empty element using this `+` method.
+ *  @param empty  the empty element of the collection.
+ *  @tparam Elem  the type of elements that get added to the builder.
+ *  @tparam To    the type of the built collection.
  *
+ *  @author Martin Odersky
+ *  @version 2.8
  *  @since 2.8
  */
-class AddingBuilder[A, Coll <: Addable[A, Coll] with scala.collection.Iterable[A] with scala.collection.IterableLike[A, Coll]](empty: Coll)
-extends Builder[A, Coll] {
-  protected var elems: Coll = empty
-  def +=(x: A): this.type = { elems = elems + x; this }
+class AddingBuilder[Elem, To <: Addable[Elem, To] with scala.collection.Iterable[Elem] with scala.collection.IterableLike[Elem, To]](empty: To)
+extends Builder[Elem, To] {
+  protected var elems: To = empty
+  def +=(x: Elem): this.type = { elems = elems + x; this }
   def clear() { elems = empty }
-  def result: Coll = elems
+  def result: To = elems
 }

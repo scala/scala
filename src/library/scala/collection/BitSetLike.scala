@@ -15,9 +15,24 @@ import BitSetLike._
 import generic._
 import mutable.StringBuilder
 
-/** common base class for mutable and immutable bit sets
+/** A template trait for bitsets.
+ *  $bitsetinfo
  *
+ * This trait provides most of the operations of a `BitSet` independently of its representation.
+ * It is inherited by all concrete implementations of bitsets.
+ *
+ * @tparam  This the type of the bitset itself.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
  *  @since 2.8
+ *  @define coll bitset
+ *  @define Coll BitSet
+ *  define bitsetinfo
+ *  Bitsets are sets of non-negative integers which are represented as
+ *  variable-size arrays of bits packed into 64-bit words. The size of a bitset is
+ *  determined by the largest number stored in it.
+
  */
 trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, This] { self =>
 
@@ -31,12 +46,10 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
    */
   protected def word(idx: Int): Long
 
-  /** Create a new set of this kind from an array of longs
+  /** Creates a new set of this kind from an array of longs
    */
   protected def fromArray(elems: Array[Long]): This
 
-  /** The number of elements in the bitset.
-   */
   override def size: Int = {
     var s = 0
     var i = nwords
@@ -68,7 +81,12 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
     }
   }
 
-  /** A new bitset which is the logical or of this set and the given argument set.
+  /** Computes the union between this bitset and another bitset by performing
+   *  a bitwise "or".
+   *
+   *  @param   other  the bitset to form the union with.
+   *  @return  a new bitset consisting of all bits that are in this
+   *           bitset or in the given bitset `other`.
    */
   def | (other: BitSet): This = {
     val len = this.nwords max other.nwords
@@ -78,7 +96,11 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
     fromArray(words)
   }
 
-  /** A new bitset which is the logical and of this set and the given argument set.
+  /** Computes the intersection between this bitset and another bitset by performing
+   *  a bitwise "and".
+   *  @param   that  the bitset to intersect with.
+   *  @return  a new bitset consisting of all elements that are both in this
+   *  bitset and in the given bitset `other`.
    */
   def & (other: BitSet): This = {
     val len = this.nwords min other.nwords
@@ -88,7 +110,12 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
     fromArray(words)
   }
 
-  /** A new bitset which is the logical and-not of this set and the given argument set.
+  /** Computes the difference of this bitset and another bitset by performing
+   *  a bitwise "and-not".
+   *
+   *  @param that the set of bits to exclude.
+   *  @return     a bitset containing those bits of this
+   *              bitset that are not also contained in the given bitset `other`.
    */
   def &~ (other: BitSet): This = {
     val len = this.nwords
@@ -98,7 +125,12 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
     fromArray(words)
   }
 
-  /** A new bitset which is the logical exclusive or of this set and the given argument set.
+  /** Computes the symmetric difference of this bitset and another bitset by performing
+   *  a bitwise "exclusive-or".
+   *
+   *  @param that the other bitset to take part in the symmetric difference.
+   *  @return     a bitset containing those bits of this
+   *              bitset or the other bitset that are not contained in both bitsets.
    */
   def ^ (other: BitSet): This = {
     val len = this.nwords max other.nwords
@@ -108,18 +140,18 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
     fromArray(words)
   }
 
-  /** Does the set contain the given element?
-   */
   def contains(elem: Int): Boolean =
     0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
-  /** Is the set a subset of the given bitset
+  /** Tests whether this bitset is a subset of another bitset.
+   *
+   *  @param that  the bitset to test.
+   *  @return     `true` if this bitset is a subset of `other`, i.e. if
+   *              every bit of this set is also an element in `other`.
    */
-  def subSet(other: BitSet): Boolean =
+  def subsetOf(other: BitSet): Boolean =
     (0 until nwords) forall (idx => (this.word(idx) & ~ other.word(idx)) == 0L)
 
-  /** Add bitset elements as numbers to string buffer
-   */
   override def addString(sb: StringBuilder, start: String, sep: String, end: String) = {
     sb append start
     var pre = ""
@@ -134,6 +166,7 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
   override def stringPrefix = "BitSet"
 }
 
+/** Companion object for BitSets. Contains private data only */
 object BitSetLike {
   private[collection] val LogWL = 6
   private val WordLength = 64

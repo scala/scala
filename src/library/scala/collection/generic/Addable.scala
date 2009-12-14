@@ -11,47 +11,55 @@
 package scala.collection
 package generic
 
-/** This class represents collections that can be added to other
- *  collections using a '+' operator.
- *
+/** This trait represents collection-like objects that can be added to
+ *  using a '+' operator. It defines variants of `+` and `++`
+ *  as convenience methods in terms of single-element addition `+`.
+ *  @tparam   A    the type of the elements of the $coll
+ *  @tparam   Repr the type of the $coll itself
  *  @author   Martin Odersky
- *  @owner   Martin Odersky
  *  @version 2.8
  *  @since   2.8
+ *  @define  $coll collection
+ *  @define  $Coll Addable
  */
-trait Addable[A, +This <: Addable[A, This]] { self =>
+trait Addable[A, +Repr <: Addable[A, Repr]] { self =>
 
-  protected def repr: This
-
-  /** Creates a new collection with an additional element, unless the element is already present.
-   *  @param elem the element to be added
-   *  @return a fresh collection
+  /** The representation object of type `Repr` which contains the collection's elements
    */
-  def +(elem: A): This
+  protected def repr: Repr
 
-  /** Adds two or more elements to this collection and returns
-   *  a new collection.
+  /** Creates a new $coll with an additional element, unless the element is already present.
+   *  @param elem the element to add
+   *  @return a fresh collection with `elem` added.
+   */
+  def +(elem: A): Repr
+
+  /** Creates a new $coll with additional elements.
    *
+   *  This method takes two or more elements to be added. Another overloaded
+   *  variant of this method handles the case where a single element is
+   *  added.
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
+   *  @return   a new $coll with the given elements added.
    */
-  def + (elem1: A, elem2: A, elems: A*): This =
+  def + (elem1: A, elem2: A, elems: A*): Repr =
     this + elem1 + elem2 ++ elems
 
-  /** Adds a number of elements provided by a traversable object
-   *  and returns a new collection with the added elements.
+  /** Creates a new $coll by adding all elements contained in another collection to this $coll.
    *
-   *  @param elems     the traversable object.
+   *  @param elems     the collection containing the added elements.
+   *  @return a new $coll with the given elements added.
    */
-  def ++ (elems: Traversable[A]): This = (repr /: elems) (_ + _)
+  def ++ (elems: Traversable[A]): Repr = (repr /: elems) (_ + _)
 
-  /** Adds a number of elements provided by an iterator
-   *  and returns a new collection with the added elements.
+  /** Creates a new $coll by adding all elements produced by an iterator to this $coll.
    *
-   *  @param iter   the iterator
+   *  @param iter     the iterator producing the added elements.
+   *  @return a new $coll with the given elements added.
    */
-  def ++ (iter: Iterator[A]): This = (repr /: iter) (_ + _)
+  def ++ (iter: Iterator[A]): Repr = (repr /: iter) (_ + _)
 }
 
 

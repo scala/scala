@@ -16,41 +16,7 @@ import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
 import scala.util.control.Breaks
 
 /** A template trait for traversable collections.
- *
- *  Collection classes mixing in this trait provide a method
- *  `foreach` which traverses all the elements contained in the collection, applying
- *  a given procedure to each element.
- *  They also provide a method <code>newBuilder</code>
- *  which creates a builder for collections of the same kind.
- *
- *  A traversable class might or might not have two properties: strictness
- *  and orderedness. Neither is represented as a type.
- *
- *  The instances of a strict collection class have all their elements
- *  computed before they can be used as values. By contrast, instances of
- *  a non-strict collection class may defer computation of some of their
- *  elements until after the instance is available as a value.
- *  A typical example of a non-strict collection class is a
- *  <a href="../immutable/Stream.html" target="ContentFrame">
- *  `scala.collection.immutable.Stream`</a>.
- *  A more general class of examples are `TraversableViews`.
- *
- *  If a collection is an instance of an ordered collection class, traversing
- *  its elements with `foreach` will always visit elements in the
- *  same order, even for different runs of the program. If the class is not
- *  ordered, `foreach` can visit elements in different orders for
- *  different runs (but it will keep the same order in the same run).'
- *
- *  A typical example of a collection class which is not ordered is a
- *  `HashMap` of objects. The traversal order for hash maps will
- *  depend on the hash codes of its elements, and these hash codes might
- *  differ from one run to the next. By contrast, a `LinkedHashMap`
- *  is ordered because it's `foreach` method visits elements in the
- *  order they were inserted into the `HashMap`.
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
+ *  $traversableinfo
  *
  *  @tparam A    The element type of the collection
  */
@@ -105,7 +71,7 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def toIterable: Iterable[A]
   override def toSeq: Seq[A]
   override def toStream: Stream[A]
-//  override def sortWith(lt : (A,A) => Boolean): Traversable[A]
+  override def sortWith(lt : (A,A) => Boolean): Traversable[A]
   override def mkString(start: String, sep: String, end: String): String
   override def mkString(sep: String): String
   override def mkString: String
@@ -119,17 +85,15 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   */
 }
 
-/** Factory methods and utilities for instances of type <code>Traversable</code>.
- *
- *  @author Martin Odersky
- *  @version 2.8
- */
+/** $factoryInfo */
 object Traversable extends TraversableFactory[Traversable] { self =>
 
-  /** provide break functionality separate from client code */
+  /** Provides break functionality separate from client code */
   private[collection] val breaks: Breaks = new Breaks
 
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]
+
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 }
 

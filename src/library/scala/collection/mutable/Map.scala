@@ -14,8 +14,11 @@ package mutable
 
 import generic._
 
-/**
- * @since 1
+/** This trait represents mutable maps.
+ *  All implementations od mutable maps inherit from it.
+ *
+ *  @tparam A    the type of the keys of the map.
+ *  @tparam B    the type of associated values.
  */
 trait Map[A, B]
   extends Iterable[(A, B)]
@@ -36,8 +39,9 @@ trait Map[A, B]
   }
   */
 }
-/* Factory object for `Map` class
- * Currently this returns a HashMap.
+
+/* The standard factory for mutable maps.
+ * Currently this uses `HashMap` as the implementation class.
  */
 object Map extends MutableMapFactory[Map] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]

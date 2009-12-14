@@ -15,27 +15,38 @@ package mutable
 import generic._
 import script._
 
-/** <p>
- *    A generic template for mutable sets of elements of type <code>A</code>.
+/** A template trait for mutable sets of type `mutable.Set[A]`.
+ *  @tparam A    the type of the elements of the set
+ *  @tparam This the type of the set itself.
+ *
+ *  $setnote
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *  @since 2.8
+ *
+ *  @define setnote @note
+ *    This trait provides most of the operations of a `mutable.Set` independently of its representation.
+ *    It is typically inherited by concrete implementations of sets.
+ *
  *    To implement a concrete mutable set, you need to provide implementations
  *    of the following methods:
- *  </p><pre>
- *    <b>def</b> contains(elem: A): Boolean
- *    <b>def</b> iterator: Iterator[A]
- *    <b>def</b> += (elem: A): <b>this.type</b>
- *    <b>def</b> -= (elem: A): <b>this.type</b></pre>
- *  <p>
- *    If you wish that methods <code>like</code>, <code>take</code>,
- *    <code>drop</code>, <code>filter</code> return the same kind of map,
+ *    {{{
+ *       def contains(elem: A): Boolean
+ *       def iterator: Iterator[A]
+ *       def += (elem: A): this.type
+ *       def -= (elem: A): this.type</pre>
+ *    }}}
+ *    If you wish that methods like `take`,
+ *    `drop`, `filter` return the same kind of set,
  *    you should also override:
- *  </p><pre>
- *    <b>def</b> empty: This</pre>
- *  <p>
- *    It is also good idea to override methods <code>foreach</code> and
- *    <code>size</code> for efficiency.
- *  </p>
- *
- *  @since 2.8
+ *    {{{
+ *       def empty: This</pre>
+ *    }}}
+ *    It is also good idea to override methods `foreach` and
+ *    `size` for efficiency.
+ *  @define coll mutable set
+ *  @define Coll mutable.Set
  */
 trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   extends scala.collection.SetLike[A, This]
@@ -46,16 +57,16 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
      with Cloneable[mutable.Set[A]]
 { self =>
 
-  /** A common implementation of <code>newBuilder</code> for all mutable sets
-   *  in terms of <code>empty</code>. Overrides <code>SetLike</code>
-   *  implementation for better efficiency.
+  /** A common implementation of `newBuilder` for all mutable sets
+   *  in terms of `empty`. Overrides the implementation in `collection.SetLike`
+   *  for better efficiency.
    */
   override protected[this] def newBuilder: Builder[A, This] = empty
 
-  /** Adds a new element to the set.
+  /** Adds an element to this $coll.
    *
    *  @param elem the element to be added
-   *  @return true if the element was not yet present in the set.
+   *  @return `true` if the element was not yet present in the set, `false` otherwise.
    */
   def add(elem: A): Boolean = {
     val r = contains(elem)
@@ -63,10 +74,10 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
     r
   }
 
-  /** Removes a single element from a set.
+  /** Removes an element from this set.
    *
    *  @param elem  The element to be removed.
-   *  @return  true if the element was already present in the set.
+   *  @return  `true` if the element was previously present in the set, `false` otherwise.
    */
   def remove(elem: A): Boolean = {
     val r = contains(elem)
@@ -74,29 +85,32 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
     r
   }
 
-  /** This method allows one to add or remove an element <code>elem</code>
-   *  from this set depending on the value of parameter <code>included</code>.
-   *  Typically, one would use the following syntax:
-   *  <pre>set(elem) = true</pre>
+  /** Updates the presence of a single element in this set.
    *
+   * This method allows one to add or remove an element `elem`
+   *  from this set depending on the value of parameter `included`.
+   *  Typically, one would use the following syntax:
+   *  {{{
+   *     set(elem) = true  // adds element
+   *     set(elem) = false // removes element
+   *  }}}
+   *
+   *  @param elem     the element to be added or removed
+   *  @param included a flag indicating whether element should be included or excluded.
    */
   def update(elem: A, included: Boolean) {
     if (included) this += elem else this -= elem
   }
 
-  /** Adds a new element to the set.
-   *
-   *  @param elem the element to be added
-   */
-  def +=(elem: A): this.type
+  // abstract methods from Growable/Shrinkable
 
-  /** Removes a single element from a set.
-   *  @param elem  The element to be removed.
-   */
+  def +=(elem: A): this.type
   def -=(elem: A): this.type
 
-  /** Removes all elements from the set for which the predicate <code>p</code>
-   *  yields the value <code>false</code>.
+  /** Removes all elements from the set for which do not satisfy a predicate.
+   *  @param  p  the predicate used to test elements. Only elements for
+   *             while `p` returns `true` are retained in the set; all others
+   *             are removed.
    */
   def retain(p: A => Boolean): Unit = for (elem <- this.toList) if (!p(elem)) this -= elem
 
@@ -107,6 +121,9 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 
   override def clone(): mutable.Set[A] = empty ++= repr
 
+  /** The result when this set is used as a builder
+   *  @return  the set representation itself.
+   */
   def result: This = repr
 
   /** Adds a single element to this collection and returns
@@ -143,7 +160,6 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
     for (elem <- iter) +=(elem)
     repr
   }
-
 
   /** Adds a number of elements provided by an iterator and returns
    *  the collection itself.
@@ -207,7 +223,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   /** Send a message to this scriptable object.
    *
    *  @param cmd  the message to send.
-   *  @throws <code>Predef.UnsupportedOperationException</code>
+   *  @throws `Predef.UnsupportedOperationException`
    *  if the message was not understood.
    */
    def <<(cmd: Message[A]): Unit = cmd match {

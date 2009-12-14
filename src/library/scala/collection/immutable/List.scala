@@ -16,11 +16,12 @@ import generic._
 import mutable.{Builder, ListBuffer}
 import annotation.tailrec
 
-/** A class representing an ordered collection of elements of type
- *  `a`. This class comes with two implementing case
- *  classes `scala.Nil` and `scala.::` that
- *  implement the abstract members `isEmpty`,
- *  `head` and `tail`.
+/** A class for immutable linked lists representing ordered collections
+ *  of elements of type.
+ *
+ * This class comes with two implementing case classes `scala.Nil`
+ * and `scala.::` that implement the abstract members `isEmpty`,
+ * `head` and `tail`.
  *
  *  @author  Martin Odersky and others
  *  @version 2.8
@@ -50,58 +51,40 @@ sealed abstract class List[+A] extends LinearSeq[A]
 
   import scala.collection.{Iterable, Traversable, Seq, IndexedSeq}
 
-  /** Returns true if the list does not contain any elements.
-   *  @return `true`, iff the list is empty.
-   */
   def isEmpty: Boolean
-
-  /** Returns this first element of the list.
-   *
-   *  @return the first element of this list.
-   *  @throws Predef.NoSuchElementException if the list is empty.
-   */
   def head: A
-
-  /** Returns this list without its first element.
-   *
-   *  @return this list without its first element.
-   *  @throws Predef.NoSuchElementException if the list is empty.
-   */
   def tail: List[A]
 
   // New methods in List
 
-  /** <p>
-   *    Add an element `x` at the beginning of this list.
-   *  </p>
-   *
+  /** Adds an element at the beginning of this list.
    *  @param x the element to prepend.
-   *  @return  the list with `x` added at the beginning.
+   *  @return  a list which contains `x` as first element and
+   *           which continues with this list.
    *  @ex `1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)`
+   *  @usecase def ::(x: A): List[A]
    */
   def ::[B >: A] (x: B): List[B] =
     new scala.collection.immutable.::(x, this)
 
-  /** <p>
-   *    Returns a list resulting from the concatenation of the given
+  /** Adds the elements of a given list in front of this list.
+   *  @param prefix  The list elements to prepend.
+   *  @return a list resulting from the concatenation of the given
    *    list `prefix` and this list.
-   *  </p>
-   *
-   *  @param prefix the list to concatenate at the beginning of this list.
-   *  @return the concatenation of the two lists.
    *  @ex `List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)`
+   *  @usecase def :::(prefix: List[A]): List[A]
    */
   def :::[B >: A](prefix: List[B]): List[B] =
     if (isEmpty) prefix
     else (new ListBuffer[B] ++= prefix).prependToList(this)
 
-  /** Reverse the given prefix and append the current list to that.
-   *  This function is equivalent to an application of `reverse`
-   *  on the prefix followed by a call to `:::`, but is more
-   *  efficient.
+  /** Adds the elements of a given list in reverse order in front of this list.
+   *  `xs reverse_::: ys` is equivalent to
+   *  `xs.reverse ::: ys` but is more efficient.
    *
    *  @param prefix the prefix to reverse and then prepend
    *  @return       the concatenation of the reversed prefix and the current list.
+   *  @usecase def reverse_:::(prefix: List[A]): List[A]
    */
   def reverse_:::[B >: A](prefix: List[B]): List[B] = {
     var these: List[B] = this
@@ -113,9 +96,17 @@ sealed abstract class List[+A] extends LinearSeq[A]
     these
   }
 
-  /** Like xs map f, but returns `xs` unchanged if function
+  /** Builds a new list by applying a function to all elements of this list.
+   *  Like `xs map f`, but returns `xs` unchanged if function
    *  `f` maps all elements to themselves (wrt ==).
-   *  @note Unlike `map`, `mapConserve` is not tail-recursive.
+   *
+   *  Note: Unlike `map`, `mapConserve` is not tail-recursive.
+   *
+   *  @param f      the function to apply to each element.
+   *  @tparam B     the element type of the returned collection.
+   *  @return       a list resulting from applying the given function
+   *                `f` to each element of this list and collecting the results.
+   *  @usecase def mapConserve[B](f: A => B): List[A]
    */
   def mapConserve[B >: A] (f: A => B): List[B] = {
     def loop(ys: List[A]): List[B] =
@@ -144,33 +135,17 @@ sealed abstract class List[+A] extends LinearSeq[A]
 
   // Overridden methods from IterableLike or overloaded variants of such methods
 
-  /** Create a new list which contains all elements of this list
-   *  followed by all elements of Traversable `that'
-   */
   override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     val b = bf(this)
     if (b.isInstanceOf[ListBuffer[_]]) (this ::: that.toList).asInstanceOf[That]
     else super.++(that)
   }
 
-  /** Create a new list which contains all elements of this list
-   *  followed by all elements of Iterator `that'
-   */
   override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[List[A], B, That]): That =
     this ++ that.toList
 
-  /** Overrides the method in Iterable for efficiency.
-   *
-   *  @return  the list itself
-   */
   override def toList: List[A] = this
 
-  /** Returns the `n` first elements of this list, or else the whole
-   *  list, if it has less than `n` elements.
-
-   *  @param n the number of elements to take.
-   *  @return the `n` first elements of this list.
-   */
   override def take(n: Int): List[A] = {
     val b = new ListBuffer[A]
     var i = 0
@@ -184,12 +159,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     else b.toList
   }
 
-  /** Returns the list without its `n` first elements.
-   *  If this list has less than `n` elements, the empty list is returned.
-   *
-   *  @param n the number of elements to drop.
-   *  @return the list without its `n` first elements.
-   */
   override def drop(n: Int): List[A] = {
     var these = this
     var count = n
@@ -200,23 +169,12 @@ sealed abstract class List[+A] extends LinearSeq[A]
     these
   }
 
-  /** Returns the list with elements belonging to the given index range.
-   *
-   *  @param start the start position of the list slice.
-   *  @param end   the end position (exclusive) of the list slice.
-   *  @return the list with elements belonging to the given index range.
-   */
   override def slice(start: Int, end: Int): List[A] = {
     var len = end
     if (start > 0) len -= start
     drop(start) take len
   }
 
-  /** Returns the rightmost `n` elements from this list.
-   *
-   *  @param n the number of elements to take
-   *  @return the suffix of length `n` of the list
-   */
   override def takeRight(n: Int): List[A] = {
     @tailrec
     def loop(lead: List[A], lag: List[A]): List[A] = lead match {
@@ -226,15 +184,8 @@ sealed abstract class List[+A] extends LinearSeq[A]
     loop(drop(n), this)
   }
 
-  // dropRight is inherited from Stream
+  // dropRight is inherited from LinearSeq
 
-  /** Split the list at a given point and return the two parts thus
-   *  created.
-   *
-   *  @param n the position at which to split
-   *  @return  a pair of lists composed of the first `n`
-   *           elements, and the other elements.
-   */
   override def splitAt(n: Int): (List[A], List[A]) = {
     val b = new ListBuffer[A]
     var i = 0
@@ -247,13 +198,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     (b.toList, these)
   }
 
-  /** Returns the longest prefix of this list whose elements satisfy
-   *  the predicate `p`.
-   *
-   *  @param p the test predicate.
-   *  @return  the longest prefix of this list whose elements satisfy
-   *           the predicate `p`.
-   */
   override def takeWhile(p: A => Boolean): List[A] = {
     val b = new ListBuffer[A]
     var these = this
@@ -264,13 +208,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     b.toList
   }
 
-  /** Returns the longest suffix of this list whose first element
-   *  does not satisfy the predicate `p`.
-   *
-   *  @param p the test predicate.
-   *  @return  the longest suffix of the list whose first element
-   *           does not satisfy the predicate `p`.
-   */
   override def dropWhile(p: A => Boolean): List[A] = {
     @tailrec
     def loop(xs: List[A]): List[A] =
@@ -280,13 +217,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     loop(this)
   }
 
-  /** Returns the longest prefix of the list whose elements all satisfy
-   *  the given predicate, and the rest of the list.
-   *
-   *  @param p the test predicate
-   *  @return  a pair consisting of the longest prefix of the list whose
-   *           elements all satisfy `p`, and the rest of the list.
-   */
   override def span(p: A => Boolean): (List[A], List[A]) = {
     val b = new ListBuffer[A]
     var these = this
@@ -297,8 +227,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     (b.toList, these)
   }
 
-  /** A list consisting of all elements of this list in reverse order.
-   */
   override def reverse: List[A] = {
     var result: List[A] = Nil
     var these = this
@@ -454,7 +382,7 @@ case object Nil extends List[Nothing] {
   override def head: Nothing =
     throw new NoSuchElementException("head of empty list")
   override def tail: List[Nothing] =
-    throw new NoSuchElementException("tail of empty list")
+    throw new UnsupportedOperationException("tail of empty list")
   // Removal of equals method here might lead to an infinite recusion similar to IntMap.equals.
   override def equals(that: Any) = that match {
     case that1: Seq[_] => that1.isEmpty
@@ -463,7 +391,9 @@ case object Nil extends List[Nothing] {
 }
 
 /** A non empty list characterized by a head and a tail.
- *
+ *  @param hd   the first element of the list
+ *  @param tl   the list containing the remaining elements of this list after the first one.
+ *  @tparam B   the type of the list elements.
  *  @author  Martin Odersky
  *  @version 1.0, 15/07/2003
  *  @since   2.8
@@ -498,18 +428,14 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
   }
 }
 
-/** This object provides methods for creating specialized lists, and for
- *  transforming special kinds of lists (e.g. lists of lists).
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
- */
+/** $factoryInfo */
 object List extends SeqFactory[List] {
 
   import scala.collection.{Iterable, Seq, IndexedSeq}
 
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, List[A]] = new GenericCanBuildFrom[A]
+
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer[A]
 
   override def empty[A]: List[A] = Nil

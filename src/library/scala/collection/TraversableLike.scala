@@ -16,7 +16,13 @@ import scala.reflect.ClassManifest
 import mutable.{Builder, StringBuilder, Buffer, ArrayBuffer, ListBuffer}
 import immutable.{List, Stream, Nil, ::}
 
-/** A template trait for traversable collections.
+/** A template trait for traversable collections of type `Traversable[A]`.
+ *  $traversableinfo
+ *
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
+ *
+ *  @define traversableinfo
  *  This is a base trait of all kinds of Scala collections. It implements
  *  the behavior common to all collections, in terms of a method
  *  `foreach` with signature:
@@ -57,10 +63,7 @@ import immutable.{List, Stream, Nil, ::}
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
- *
- *  @tparam A    the element type of the collection
- *  @tparam Repr the type of the actual collection containing the elements.
- *
+
  *  @define Coll Traversable
  *  @define coll traversable collection
  *  @define thatinfo the class of the returned collection. Where possible, `That` is
@@ -69,7 +72,7 @@ import immutable.{List, Stream, Nil, ::}
  *    which means that an implicit instance of type `CanBuildFrom[Repr, B, That]`
  *    is found.
  *  @define bfinfo an implicit value of class `CanBuildFrom` which determines the
- *    result class `That` from the current representation type `Repr`
+ *    result class `That` from the current representation type `Repr` and
  *    and the new element type `B`.
  *  @define orderDependent
  *
@@ -130,7 +133,7 @@ self =>
    */
   def foreach[U](f: A => U): Unit
 
-  /** Tests whether the $coll is empty.
+  /** Tests whether this $coll is empty.
    *
    *  @return    `true` if the $coll contain no elements, `false` otherwise.
    */
@@ -686,7 +689,7 @@ self =>
     acc
   }
 
-  /** Selects the first element.
+  /** Selects the first element of this $coll.
    *  $orderDependent
    *  @return  the first element of this $coll.
    *  @throws `NoSuchElementException` if the $coll is empty.
@@ -758,7 +761,7 @@ self =>
 
   /** Selects first ''n'' elements.
    *  $orderDependent
-   *  @param  n    The number of elements to take
+   *  @param  n    Tt number of elements to take from this $coll.
    *  @return a $coll consisting only of the first `n` elements of this $coll, or else the
    *          whole $coll, if it has less than `n` elements.
    */
@@ -777,7 +780,7 @@ self =>
 
   /** Selects all elements except first ''n'' ones.
    *  $orderDependent
-   *  @param  n    The number of elements to take
+   *  @param  n    the number of elements to drop from this $coll.
    *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
    *          empty $coll, if this $coll has less than `n` elements.
    */
@@ -1003,7 +1006,7 @@ self =>
    *  @param sep   the separator string.
    *  @param end   the ending string.
    *  @return      a string representation of this $coll. The resulting string
-   *               begins with the string `start` and is finished by the string
+   *               begins with the string `start` and ends with the string
    *               `end`. Inside, the string representations (w.r.t. the method `toString`)
    *               of all elements of this $coll are separated by the string `sep`.
    *
@@ -1033,7 +1036,7 @@ self =>
     addString(new StringBuilder()).toString
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
-   *  The written text begins with the string `start` and is finished by the string
+   *  The written text begins with the string `start` and ends with the string
    *  `end`. Inside, the string representations (w.r.t. the method `toString`)
    *  of all elements of this $coll are separated by the string `sep`.
    *

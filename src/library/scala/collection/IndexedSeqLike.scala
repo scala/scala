@@ -31,6 +31,8 @@ import scala.annotation.tailrec
  *
  *  @tparam A    the element type of the $coll
  *  @tparam Repr the type of the actual $coll containing the elements.
+ *  @define willNotTerminateInf
+ *  @define mayNotTerminateInf
  */
 trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
 

@@ -11,22 +11,54 @@
 package scala.collection
 package generic
 
-/** A template for companion objects of Traversable and subclasses thereof.
+/** A template for companion objects of `Traversable` and subclasses thereof.
+ *  This class provides a set of operations to create `$Coll` objects.
+ *  It is typically inherited by companion objects of subclasses of `Traversable`.
  *
  *  @since 2.8
+ *
+ *  @define $coll collection
+ *  @define @Coll Traversable
+ *  @define factoryInfo
+ *    This object provides a set of operations to create `$Coll` values.
+ *    @author Martin Odersky
+ *    @version 2.8
+ *  @define canBuildFromInfo
+ *    The standard `CanBuildFrom` instance for $Coll objects.
+ *    @see CanBuildFrom
+ *  @define genericCanBuildFromInfo
+ *    The standard `CanBuildFrom` instance for $Coll objects.
+ *    The created value is an instance of class `GenericCanBuildFrom`,
+ *    which forwards calls to create a new builder to the
+ *    `genericBuilder` method of the requesting collection.
+ *    @see CanBuildFrom
+ *    @see GenericCanBuildFrom
  */
 abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversableTemplate[X, CC]]
   extends GenericCompanion[CC] {
 
+  /** A generic implementation of the `CanBuildFrom` trait, which forwards
+   *  all calls to `apply(from)` to the `genericBuilder` methof of
+   *  $coll `from`, and which forwards all calls of `apply()` to the
+   *  `newBuilder` method of this factory.
+   */
   class GenericCanBuildFrom[A] extends CanBuildFrom[CC[_], A, CC[A]] {
+    /** Creates a new builder on request of a collection.
+     *  @param from  the collection requesting the builder to be created.
+     *  @return the result of invoking the `genericBuilder` method on `from`.
+     */
     def apply(from: Coll) = from.genericBuilder[A]
+
+    /** Creates a new builder from scratch
+     *  @return the result of invoking the `newBuilder` method of this factory.
+     */
     def apply() = newBuilder[A]
   }
 
-  /** Concatenate all the argument collections into a single collection.
+  /** Concatenates all argument collections into a single $coll.
    *
-   *  @param xss the collections that are to be concatenated
-   *  @return the concatenation of all the collections
+   *  @param xss the collections that are to be concatenated.
+   *  @return the concatenation of all the collections.
    */
   def concat[A](xss: Traversable[A]*): CC[A] = {
     val b = newBuilder[A]
@@ -34,9 +66,10 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
     b.result
   }
 
-  /** A traversable that contains the results of some element computation a number of times.
-   *  @param   n  the number of elements returned
+  /** Produces a $coll containing the results of some element computation a number of times.
+   *  @param   n  the number of elements contained in the $coll.
    *  @param   elem the element computation
+   *  @return  A $coll that contains the results of `n` evaluations of `elem`.
    */
   def fill[A](n: Int)(elem: => A): CC[A] = {
     val b = newBuilder[A]
@@ -48,48 +81,52 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
     b.result
   }
 
-  /** A two-dimensional traversable that contains the results of some element computation a number of times.
+  /** Produces a two-dimensional $coll containing the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   elem the element computation
+   *  @return  A $coll that contains the results of `n1 x n2` evaluations of `elem`.
    */
   def fill[A](n1: Int, n2: Int)(elem: => A): CC[CC[A]] =
     tabulate(n1)(_ => fill(n2)(elem))
 
-  /** A three-dimensional traversable that contains the results of some element computation a number of times.
+  /** Produces a three-dimensional $coll containing the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   elem the element computation
+   *  @return  A $coll that contains the results of `n1 x n2 x n3` evaluations of `elem`.
    */
   def fill[A](n1: Int, n2: Int, n3: Int)(elem: => A): CC[CC[CC[A]]] =
     tabulate(n1)(_ => fill(n2, n3)(elem))
 
-  /** A four-dimensional traversable that contains the results of some element computation a number of times.
+  /** Produces a four-dimensional $coll containing the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   elem the element computation
+   *  @return  A $coll that contains the results of `n1 x n2 x n3 x n4` evaluations of `elem`.
    */
   def fill[A](n1: Int, n2: Int, n3: Int, n4: Int)(elem: => A): CC[CC[CC[CC[A]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4)(elem))
 
-  /** A five-dimensional traversable that contains the results of some element computation a number of times.
+  /** Produces a five-dimensional $coll containing the results of some element computation a number of times.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   n5  the number of elements in the 5th dimension
    *  @param   elem the element computation
+   *  @return  A $coll that contains the results of `n1 x n2 x n3 x n4 x n5` evaluations of `elem`.
    */
   def fill[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(elem: => A): CC[CC[CC[CC[CC[A]]]]] =
     tabulate(n1)(_ => fill(n2, n3, n4, n5)(elem))
 
-  /** A traversable containing values of a given function over a range of integer values starting from 0.
-   *  @param  n   The number of elements in the traversable
+  /** Produces a $coll containing values of a given function over a range of integer values starting from 0.
+   *  @param  n   The number of elements in the $coll
    *  @param  f   The function computing element values
-   *  @return A traversable consisting of elements `f(0), ..., f(n -1)`
+   *  @return A $coll consisting of elements `f(0), ..., f(n -1)`
    */
   def tabulate[A](n: Int)(f: Int => A): CC[A] = {
     val b = newBuilder[A]
@@ -101,58 +138,65 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
     b.result
   }
 
-  /** A two-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
+  /** Produces a two-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   f   The function computing element values
+   *  @return A $coll consisting of elements `f(i1, i2)`
+   *          for `0 <= i1 < n1` and `0 <= i2 < n2`.
    */
   def tabulate[A](n1: Int, n2: Int)(f: (Int, Int) => A): CC[CC[A]] =
     tabulate(n1)(i1 => tabulate(n2)(f(i1, _)))
 
-  /** A three-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
+  /** Produces a three-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   f   The function computing element values
+   *  @return A $coll consisting of elements `f(i1, i2, i3)`
+   *          for `0 <= i1 < n1`, `0 <= i2 < n2`, and `0 <= i3 < n3`.
    */
   def tabulate[A](n1: Int, n2: Int, n3: Int)(f: (Int, Int, Int) => A): CC[CC[CC[A]]] =
     tabulate(n1)(i1 => tabulate(n2, n3)(f(i1, _, _)))
 
-  /** A four-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
+  /** Produces a four-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   f   The function computing element values
+   *  @return A $coll consisting of elements `f(i1, i2, i3, i4)`
+   *          for `0 <= i1 < n1`, `0 <= i2 < n2`, `0 <= i3 < n3`, and `0 <= i4 < n4`.
    */
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int)(f: (Int, Int, Int, Int) => A): CC[CC[CC[CC[A]]]] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4)(f(i1, _, _, _)))
 
-  /** A five-dimensional traversable containing values of a given function over ranges of integer values starting from 0.
+  /** Produces a five-dimensional $coll containing values of a given function over ranges of integer values starting from 0.
    *  @param   n1  the number of elements in the 1st dimension
    *  @param   n2  the number of elements in the 2nd dimension
    *  @param   n3  the number of elements in the 3nd dimension
    *  @param   n4  the number of elements in the 4th dimension
    *  @param   n5  the number of elements in the 5th dimension
    *  @param   f   The function computing element values
+   *  @return A $coll consisting of elements `f(i1, i2, i3, i4, i5)`
+   *          for `0 <= i1 < n1`, `0 <= i2 < n2`, `0 <= i3 < n3`, `0 <= i4 < n4`, and `0 <= i5 < n5`.
    */
   def tabulate[A](n1: Int, n2: Int, n3: Int, n4: Int, n5: Int)(f: (Int, Int, Int, Int, Int) => A): CC[CC[CC[CC[CC[A]]]]] =
     tabulate(n1)(i1 => tabulate(n2, n3, n4, n5)(f(i1, _, _, _, _)))
 
-  /** A traversable containing a sequence of increasing integers in a range.
+  /** Produces a $coll containing a sequence of increasing of integers.
    *
-   *  @param from the start value of the traversable
-   *  @param end the end value of the traversable (the first value NOT returned)
-   *  @return  the traversable with values in range `start, start + 1, ..., end - 1`
-   *  up to, but exclusding, `end`.
+   *  @param from the first element of the $coll
+   *  @param end the end value of the $coll (the first value NOT contained)
+   *  @return  a $coll with values `start, start + 1, ..., end - 1`
    */
   def range(start: Int, end: Int): CC[Int] = range(start, end, 1)
 
-  /** A traversable containing equally spaced values in some integer interval.
-    *  @param start the start value of the traversable
-   *  @param end   the end value of the traversable (the first value NOT returned)
-   *  @param step  the increment value of the traversable (must be positive or negative)
-   *  @return      the traversable with values in `start, start + step, ...` up to, but excluding `end`
+  /** Produces a $coll containing equally spaced values in some integer interval.
+   *  @param start the start value of the $coll
+   *  @param end   the end value of the $coll (the first value NOT contained)
+   *  @param step  the difference between successive elements of the $coll (must be positive or negative)
+   *  @return      a $coll with values `start, start + step, ...` up to, but excluding `end`
    */
   def range(start: Int, end: Int, step: Int): CC[Int] = {
     if (step == 0) throw new IllegalArgumentException("zero step")
@@ -165,12 +209,12 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
     b.result
   }
 
-  /** A traversable containing repeated applications of a function to a start value.
+  /** Produces a $coll containing repeated applications of a function to a start value.
    *
-   *  @param start the start value of the traversable
-   *  @param len   the number of elements returned by the traversable
+   *  @param start the start value of the $coll
+   *  @param len   the number of elements contained inthe $coll
    *  @param f     the function that's repeatedly applied
-   *  @return      the traversable returning `len` values in the sequence `start, f(start), f(f(start)), ...`
+   *  @return      a $coll with `len` values in the sequence `start, f(start), f(f(start)), ...`
    */
   def iterate[A](start: A, len: Int)(f: A => A): CC[A] = {
     val b = newBuilder[A]

@@ -41,7 +41,7 @@ extends IndexedSeq[T]
 {
   import num._
 
-  private def fail(msg: String) = throw new UnsupportedOperationException(msg)
+  private def fail(msg: String) = throw new IllegalArgumentException(msg)
 
   if (step equiv zero)
     fail("NumericRange step cannot be zero.")

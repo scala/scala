@@ -112,8 +112,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def insertAll(n: Int, seq: Traversable[A]) {
-    if ((n < 0) || (n > size0))
-      throw new IndexOutOfBoundsException(n.toString)
+    if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
     val xs = seq.toList
     val len = xs.length
     ensureSize(size0 + len)
@@ -130,8 +129,8 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   override def remove(n: Int, count: Int) {
-    if ((n < 0) || (n >= size0) && count > 0)
-      throw new IndexOutOfBoundsException(n.toString)
+    require(count >= 0, "removing negative number of elements")
+    if (n < 0 || n > size0 - count) throw new IndexOutOfBoundsException(n.toString)
     copy(n + count, n, size0 - (n + count))
     size0 -= count
   }

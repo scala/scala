@@ -18,32 +18,46 @@ import generic._
  *  elements to the builder with += and then converting to the required
  *  collection type with `result`.
  *
+ *  @tparam  Elem  the type of elements that get added to the builder.
+ *  @tparam  To    the type of collection that it produced.
+ *
  *  @since 2.8
  */
 trait Builder[-Elem, +To] extends Growable[Elem] {
 
   /** Adds a single element to the builder.
-   *  @param elem The element to be added
+   *  @param elem the element to be added.
+   *  @return the builder itself.
    */
   def +=(elem: Elem): this.type
 
-  /** Clear the contents of this builder
+  /** Clears the contents of this builder.
+   *  After execution of this method the builder will contain no elements.
    */
   def clear()
 
-  /** Returns collection resulting from this builder. The buffer's contents
-   *  are undefined afterwards.
+  /** Produces a collection from the added elements.
+   *  The builder's contents are undefined after this operation.
+   *  @return a collection containing the elements added to this builder.
    */
   def result(): To
 
-  /** Give a hint how many elements are expected to be added
-   *  when the next `result` is called.
+  /** Gives a hint how many elements are expected to be added
+   *  when the next `result` is called. Some builder classes
+   *  will optimize their representation based on the hint. However,
+   *  builder implementations are still required to work correctly even if the hint is
+   *  wrong, i.e. a different number of elements is added.
+   *
+   *  @size  the hint how many elements will be added.
    */
   def sizeHint(size: Int) {}
 
-  /** Create a new builder which is the same as the current builder except
-   *  that a given function is applied to the current builder's result.
-   *  @param  f   the function to apply to the builder's result
+  /** Creates a new builder by applying a transformation function to
+   *  the results of this builder.
+   *  @param  f     the transformation function.
+   *  @tparam NewTo the type of collection returned by `f`.
+   *  @return a new builder which is the same as the current builder except
+   *          that a transformation function is applied to this builder's result.
    */
   def mapResult[NewTo](f: To => NewTo): Builder[Elem, NewTo] =
     new Builder[Elem, NewTo] with Proxy {

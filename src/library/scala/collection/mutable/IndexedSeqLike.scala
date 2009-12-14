@@ -23,6 +23,12 @@ trait IndexedSeqLike[A, +Repr] extends scala.collection.IndexedSeqLike[A, Repr] 
   override protected[this] def thisCollection: IndexedSeq[A] = this.asInstanceOf[IndexedSeq[A]]
   override protected[this] def toCollection(repr: Repr): IndexedSeq[A] = repr.asInstanceOf[IndexedSeq[A]]
 
+  /** Replaces element at given index with a new value.
+   *
+   *  @param n       the index of the element to replace.
+   *  @param lem     the new value.
+   *  @throws   IndexOutofBoundsException if the index is not valid.
+   */
   def update(idx: Int, elem: A)
 
   /** Creates a view of this iterable @see Iterable.View

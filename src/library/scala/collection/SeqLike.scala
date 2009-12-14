@@ -101,7 +101,12 @@ object SeqLike {
 
 /** A template trait for sequences of type `Seq[A]`, representing
  *  sequences of elements of type <code>A</code>.
+ *  $seqInfo
  *
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
+ *
+ *  @define seqInfo
  *  Sequences are special cases of iterable collections of class `Iterable`.
  *  Unlike iterables, sequences always have a defined order of elements.
  *  Sequences provide a method `apply` for indexing. Indices range from `0` up the the `length` of
@@ -125,9 +130,6 @@ object SeqLike {
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  *  @since   2.8
- *
- *  @tparam A    the element type of the collection
- *  @tparam Repr the type of the actual collection containing the elements.
  *
  *  @define Coll Seq
  *  @define coll sequence
@@ -265,7 +267,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   }
 
   /** Returns index of the first element satisying a predicate, or `-1`.
-   *  @deprecated "Use `indexWhere` instead"
    */
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
@@ -402,7 +403,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   def reverseIterator: Iterator[A] = toCollection(reverse).iterator
 
-  /** @deprecated use `reverseIterator` instead */
   @deprecated("use `reverseIterator' instead")
   def reversedElements = reverseIterator
 
@@ -849,12 +849,20 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   override def toString = super[IterableLike].toString
 
   /** Returns index of the last element satisying a predicate, or -1.
-   * @deprecated use `lastIndexWhere' instead
    */
   def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
 
-  /** @deprecated Use `corresponds` instead.
+  /** Tests whether every element of this $coll relates to the
+   *  corresponding element of another sequence by satisfying a test predicate.
+   *
+   *  @param   that  the other sequence
+   *  @param   p     the test predicate, which relates elements from both sequences
+   *  @tparam  B     the type of the elements of `that`
+   *  @return  `true` if both sequences have the same length and
+   *                  `p(x, y)` is `true` for all corresponding elements `x` of this $coll
+   *                  and `y` of `that`, otherwise `false`.
    */
+  @deprecated("use `corresponds` instead")
   def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
     val i = this.iterator
     val j = that.iterator
@@ -865,7 +873,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     !i.hasNext && !j.hasNext
   }
 
- /** @deprecated Use `view' instead.
+ /**
    * returns a projection that can be used to call non-strict <code>filter</code>,
    * <code>map</code>, and <code>flatMap</code> methods that build projections
    * of the collection.
