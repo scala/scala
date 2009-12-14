@@ -772,7 +772,8 @@ abstract class ClassfileParser {
           sym.setFlag(BRIDGE)
           in.skip(attrLen)
         case nme.DeprecatedATTR =>
-          sym.setFlag(DEPRECATED)
+          val arg = Literal(Constant("see corresponding Javadoc for more information."))
+          sym.addAnnotation(AnnotationInfo(definitions.DeprecatedAttr.tpe, List(arg), List()))
           in.skip(attrLen)
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar)

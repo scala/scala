@@ -455,14 +455,18 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addAnnotations(jmember: JMember, annotations: List[AnnotationInfo]) {
-      val toEmit = annotations.filter(shouldEmitAnnotation(_))
+      if (annotations.exists(_.atp.typeSymbol == definitions.DeprecatedAttr)) {
+        val attr = jmember.getContext().JOtherAttribute(
+          jmember.getJClass(), jmember, nme.DeprecatedATTR.toString,
+          new Array[Byte](0), 0)
+        jmember.addAttribute(attr)
+      }
 
+      val toEmit = annotations.filter(shouldEmitAnnotation(_))
       if (toEmit.isEmpty) return
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
-
       emitJavaAnnotations(jmember.getConstantPool, buf, toEmit)
-
       addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
     }
 

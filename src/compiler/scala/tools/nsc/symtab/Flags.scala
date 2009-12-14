@@ -31,7 +31,7 @@ object Flags {
   final val MUTABLE       = 0x00001000    // symbol is a mutable variable.
   final val PARAM         = 0x00002000    // symbol is a (value or type) parameter to a method
   final val PACKAGE       = 0x00004000    // symbol is a java package
-  final val DEPRECATED    = 0x00008000    // symbol is deprecated.
+  // available: 0x00008000
 
   final val COVARIANT     = 0x00010000    // symbol is a covariant type variable
   final val CAPTURED      = 0x00010000    // variable is accessed from nested function.
@@ -306,7 +306,6 @@ object Flags {
       case MUTABLE       => "<mutable>"
       case PARAM         => "<param>"
       case PACKAGE       => "<package>"
-      case DEPRECATED    => "<deprecated>"
 
       case COVARIANT     => "<covariant/captured/byname>"
       case CONTRAVARIANT => "<contravariant/label/inconstr/defaultinit>"
