@@ -26,6 +26,8 @@ import jline._
 import java.net.URL
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.DelayedLazyVal
+import scala.collection.mutable.HashSet
+import scala.util.NameTransformer.{ decode, encode }
 
 // REPL completor - queries supplied interpreter for valid completions
 // based on current contents of buffer.
@@ -48,9 +50,22 @@ class Completion(val interpreter: Interpreter) extends Completor {
   val agent = new CompletionAgent
   import agent._
 
+  import java.lang.reflect.Modifier.{ isPrivate, isProtected, isPublic, isStatic }
+  private def isSingleton(x: Int, isJava: Boolean) = !isJava || isStatic(x)
+  private def existsAndPublic(s: String): Boolean =
+    (dottedPaths containsKey s) || {
+      val clazz =
+        try Class.forName(s)
+        catch { case _: ClassNotFoundException | _: SecurityException => return false }
+
+      isPublic(clazz.getModifiers)
+    }
+
   // One instance of a command line
   class Buffer(s: String) {
     val buffer = if (s == null) "" else s
+    def isEmptyBuffer = buffer == ""
+
     val segments = buffer.split("\\.", -1).toList
     val lastDot = buffer.lastIndexOf('.')
     val hasDot = segments.size > 0 && segments.last == ""
@@ -86,22 +101,17 @@ class Completion(val interpreter: Interpreter) extends Completor {
         case _                                    => Result(ids ::: pkgs, 0)
       }
 
-      // a few keywords which don't appear as methods via reflection
-      val memberKeywords = List("isInstanceOf", "asInstanceOf")
       def doDotted(): Result = {
         def pkgs = membersOfPath(path)
         def ids = membersOfId(path)
-        def idExtras = memberKeywords  // isInstanceOf and asInstanceOf
+        def idExtras = List("isInstanceOf", "asInstanceOf", "toString")
         def statics = completeStaticMembers(path)
         def pkgMembers = completePackageMembers(path)
 
-        val idList = filt(
-          if (!pkgs.isEmpty) pkgs
-          else if (!ids.isEmpty) ids ::: idExtras
-          else statics ::: idExtras
-        ) ::: filt(pkgMembers)
+        def calcList = if (pkgs.isEmpty) ids ::: idExtras ::: statics else pkgs
+        def idList = filt(calcList ::: pkgMembers)
 
-        Result(idList, path.length + 1)
+        Result(idList.removeDuplicates, path.length + 1)
       }
 
       segments.size match {
@@ -117,40 +127,53 @@ class Completion(val interpreter: Interpreter) extends Completor {
 
     def isValidId(s: String) = interpreter.unqualifiedIds contains s
     def membersOfId(s: String) = interpreter membersOfIdentifier s
+    def membersOfPath(s: String) = {
+      val xs = getOrElse(dottedPaths, s, Nil)
 
-    def membersOfPath(s: String) = getOrElse(dottedPaths, s, Nil)
-
-    // XXX generalize this to look through imports
-    def membersOfScala() = membersOfPath("scala")
-    def membersOfJavaLang() = membersOfPath("java.lang")
-    def membersOfPredef() = membersOfId("scala.Predef")
-    def defaultMembers = {
-      val xs = membersOfScala ::: membersOfJavaLang ::: membersOfPredef
-      val excludes = List("""Tuple\d+""".r, """Product\d+""".r, """Function\d+""".r,
-        """.*Exception$""".r, """.*Error$""".r)
-      xs filter (x => excludes forall (r => r.findFirstMatchIn(x).isEmpty))
+      s match {
+        case "scala"      => xs filterNot scalaToHide
+        case "java.lang"  => xs filterNot javaLangToHide
+        case _            => xs
+      }
     }
+    def membersOfPredef() = membersOfId("scala.Predef")
+
+    def javaLangToHide(s: String) =
+      (s endsWith "Exception") ||
+      (s endsWith "Error") ||
+      (s endsWith "Impl") ||
+      (s startsWith "CharacterData") ||
+      !existsAndPublic("java.lang." + s)
+
+    def scalaToHide(s: String) =
+      (List("Tuple", "Product", "Function") exists (x => (x + """\d+""").r findPrefixMatchOf s isDefined)) ||
+      (List("Exception", "Error") exists (s endsWith _))
+
+    def defaultMembers = (List("scala", "java.lang") flatMap membersOfPath) ::: membersOfPredef
 
     def pkgsStartingWith(s: String) = topLevelPackages() filter (_ startsWith s)
-    def idsStartingWith(s: String) = (interpreter.unqualifiedIds ::: defaultMembers) filter (_ startsWith s)
+    def idsStartingWith(s: String) = {
+      // on a totally empty buffer, filter out res*
+      val unqIds =
+        if (s == "") interpreter.unqualifiedIds filterNot (_ startsWith INTERPRETER_VAR_PREFIX)
+        else interpreter.unqualifiedIds
+
+      (unqIds ::: defaultMembers) filter (_ startsWith s)
+    }
 
     def complete(clist: JList[String]): Int = {
       val res = analyzeBuffer(clist)
-      res.getCandidates foreach (clist add _)
+      res.getCandidates foreach (x => clist add decode(x))
       res.position
     }
   }
 
-  import java.lang.reflect.Modifier.{ isPrivate, isProtected, isStatic }
-  private def isVisible(x: Int) = !isPrivate(x) && !isProtected(x)
-  private def isSingleton(x: Int, isJava: Boolean) = !isJava || isStatic(x)
-
   private def getMembers(c: Class[_], isJava: Boolean): List[String] =
     c.getMethods.toList .
-      filter (x => isVisible(x.getModifiers)) .
+      filter (x => isPublic(x.getModifiers)) .
       filter (x => isSingleton(x.getModifiers, isJava)) .
       map (_.getName) .
-      filter (isValidCompletion)
+      filterNot (shouldHide)
 
   private def getClassObject(path: String): Option[Class[_]] =
     (interpreter getClassObject path) orElse
@@ -159,7 +182,7 @@ class Completion(val interpreter: Interpreter) extends Completor {
 
   // jline's completion comes through here - we ask a Buffer for the candidates.
   override def complete(_buffer: String, cursor: Int, candidates: JList[String]): Int =
-    new Buffer(_buffer).complete(candidates)
+    new Buffer(_buffer) complete candidates
 
   def completePackageMembers(path: String): List[String] =
     getClassObject(path + "." + "package") map (getMembers(_, false)) getOrElse Nil
@@ -179,6 +202,12 @@ object Completion
   import java.io.File
   import java.util.jar.{ JarEntry, JarFile }
 
+  val EXPAND_SEPARATOR_STRING = "$$"
+  val ANON_CLASS_NAME = "$anon"
+  val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
+  val IMPL_CLASS_SUFFIX ="$class"
+  val INTERPRETER_VAR_PREFIX = "res"
+
   def enumToList[T](e: java.util.Enumeration[T]): List[T] = enumToList(e, Nil)
   def enumToList[T](e: java.util.Enumeration[T], xs: List[T]): List[T] =
     if (e == null || !e.hasMoreElements) xs else enumToList(e, e.nextElement :: xs)
@@ -188,18 +217,18 @@ object Completion
 
   private def exists(path: String) = new File(path) exists
 
-  def isValidCompletion(x: String) = !(x contains "$$") && !(excludeMethods contains x)
-  def isClass(x: String)    = x endsWith ".class"
-  def dropClass(x: String)  = x.substring(0, x.length - 6)  // drop .class
+  def shouldHide(x: String) =
+    (excludeMethods contains x) ||
+    (x contains ANON_CLASS_NAME) ||
+    (x contains TRAIT_SETTER_SEPARATOR_STRING) ||
+    (x endsWith IMPL_CLASS_SUFFIX)
 
   def getClassFiles(path: String): List[String] = {
     if (!exists(path)) return Nil
 
-    enumToList(new JarFile(path).entries) .
-      map (_.getName) .
-      filter (isClass) .
-      map (dropClass) .
-      filter (isValidCompletion)
+    (enumToList(new JarFile(path).entries) map (_.getName)) .
+      partialMap { case x: String if x endsWith ".class" => x dropRight 6 } .
+      filterNot { shouldHide }
   }
 
   // all the dotted path to classfiles we can find by poking through the jars
@@ -216,23 +245,31 @@ object Completion
     // for e.g. foo.bar.baz.C, returns (foo -> bar), (foo.bar -> baz), (foo.bar.baz -> C)
     // and scala.Range$BigInt needs to go scala -> Range -> BigInt
     def subpaths(s: String): List[(String, String)] = {
-      val segs = s.split('.')
-      for (i <- List.range(0, segs.length - 1)) yield {
-        val k = segs.take(i+1).mkString(".")
-        val v = segs(i+1)
-        (k -> v)
+      val segs = decode(s).split("""[/.]""")
+      val components = segs dropRight 1
+
+      (1 to components.length).toList flatMap { i =>
+        val k = components take i mkString "."
+        if (segs(i) contains "$") {
+          val dollarsegs = segs(i).split("$").toList
+          for (j <- 1 to (dollarsegs.length - 1) toList) yield {
+            val newk = k + "." + (dollarsegs take j mkString ".")
+            (k -> dollarsegs(j))
+          }
+        }
+        else List(k -> segs(i))
       }
     }
 
     def oneJar(jar: String): Unit = {
-      def cleanup(s: String): String = {
-        val tr = s map { c => if (c == '/' || c == '$') '.' else c }
-        tr stripSuffix "." stripSuffix ".class"
-      }
-      val classfiles = Completion getClassFiles jar map cleanup
+      val classfiles = Completion getClassFiles jar
 
       for (cl <- classfiles.removeDuplicates ; (k, v) <- subpaths(cl)) {
-        if (map containsKey k) map.put(k, v :: map.get(k))
+        if (map containsKey k) {
+          val vs = map.get(k)
+          if (vs contains v) ()
+          else map.put(k, v :: vs)
+        }
         else map.put(k, List(v))
       }
     }

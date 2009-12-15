@@ -878,7 +878,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    *  fields and methods of x via reflection and returns their names to jline.
    */
   def membersOfIdentifier(line: String): List[String] = {
-    import Completion.{ isValidCompletion }
+    import Completion.{ shouldHide }
     import NameTransformer.{ decode, encode }   // e.g. $plus$plus => ++
 
     val res = beQuietDuring {
@@ -893,7 +893,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
           str.substring(str.indexOf('=') + 1).trim .
           split(" ").toList .
           map(decode) .
-          filter(isValidCompletion) .
+          filterNot(shouldHide) .
           removeDuplicates
         }
       }
