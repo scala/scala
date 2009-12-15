@@ -111,7 +111,7 @@ self =>
    *   @tparam  B1       the result type of the default computation.
    *   @return  the value assocuated with `key` if it exists,
    *            otherwise the result of the `default` computation.
-   *   @usecase getOrElse(key: A, default: => B): B
+   *   @usecase def getOrElse(key: A, default: => B): B
    */
   def getOrElse[B1 >: B](key: A, default: => B1): B1 = get(key) match {
     case Some(v) => v

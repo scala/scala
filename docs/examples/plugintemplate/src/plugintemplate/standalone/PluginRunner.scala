@@ -1,6 +1,6 @@
-package plugintemplate
-package standalone
+package plugintemplate.standalone
 
+import plugintemplate.{TemplateAnnotationChecker, TemplatePlugin}
 import scala.tools.nsc.{Global, Settings, SubComponent}
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 
@@ -12,7 +12,7 @@ extends Global(settings, reporter) {
   def this(settings: Settings) = this(settings, new ConsoleReporter(settings))
 
   val annotChecker = new TemplateAnnotationChecker {
-      val global: PluginRunner.this.type = PluginRunner.this
+    val global: PluginRunner.this.type = PluginRunner.this
   }
   addAnnotationChecker(annotChecker.checker)
 
@@ -20,7 +20,7 @@ extends Global(settings, reporter) {
    *
    *  @todo: Adapt to specific plugin implementation
    */
-  override protected def computeInternalPhases() : Unit = {
+  override protected def computeInternalPhases() {
     phasesSet += syntaxAnalyzer
     phasesSet += analyzer.namerFactory
     phasesSet += analyzer.typerFactory

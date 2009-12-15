@@ -1,6 +1,6 @@
-package plugintemplate
-package standalone
+package plugintemplate.standalone
 
+import plugintemplate.PluginProperties
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.Settings
 
