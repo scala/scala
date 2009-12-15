@@ -57,8 +57,8 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
 
   def owner: Window = UIElement.cachedWrapper(peer.getOwner)
 
-  def open() { peer.show() }
-  def close() { peer.hide() }
+  def open() { peer setVisible true }
+  def close() { peer setVisible false }
 
   peer.addWindowListener(new java.awt.event.WindowListener {
     def windowActivated(e: java.awt.event.WindowEvent) { publish(WindowActivated(outer)) }

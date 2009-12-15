@@ -145,7 +145,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleCompiler {
   import fileManager.{latestCompFile, latestPartestFile}
 
-  val sepUrls = Array(latestCompFile.toURL, latestPartestFile.toURL)
+  val sepUrls = Array(latestCompFile.toURI.toURL, latestPartestFile.toURI.toURL)
   //NestUI.verbose("constructing URLClassLoader from URLs "+latestCompFile+" and "+latestPartestFile)
 
   val sepLoader = new java.net.URLClassLoader(sepUrls, null)

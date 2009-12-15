@@ -125,7 +125,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       catching(classOf[MalformedURLException]) opt new URL(s)
 
     val classpathPart =
-      ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURL)
+      ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURI.toURL)
     val codebasePart =
       (compiler.settings.Xcodebase.value.split(" ")).toList flatMap parseURL
 

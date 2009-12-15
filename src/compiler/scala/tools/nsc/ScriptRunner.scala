@@ -308,7 +308,7 @@ object ScriptRunner
 		scriptArgs: List[String]): Boolean =
 	{
     def fileToURL(f: JFile): Option[URL] =
-      try Some(f.toURL) catch { case _: Exception => None }
+      try Some(f.toURI.toURL) catch { case _: Exception => None }
 
     def paths(str: String, expandStar: Boolean): List[URL] =
       for {

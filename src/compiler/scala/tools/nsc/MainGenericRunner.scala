@@ -80,7 +80,7 @@ object MainGenericRunner {
       if (b) exitSuccess else exitFailure(null)
 
     def fileToURL(f: File): Option[URL] =
-      try { Some(f.toURL) }
+      try { Some(f.toURI.toURL) }
       catch { case e => Console.println(e); None }
 
     def paths(str: String): List[URL] =

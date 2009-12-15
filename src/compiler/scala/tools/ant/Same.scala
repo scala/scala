@@ -37,7 +37,7 @@ import org.apache.tools.ant.types.Mapper
 class Same extends MatchingTask {
 
   /** The unique Ant file utilities instance to use in this task. */
-  private val fileUtils = FileUtils.newFileUtils()
+  private val fileUtils = FileUtils.getFileUtils()
 
 /*============================================================================*\
 **                             Ant user-properties                            **

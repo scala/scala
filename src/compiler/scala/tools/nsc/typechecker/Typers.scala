@@ -1744,7 +1744,7 @@ trait Typers { self: Analyzer =>
       useCase.aliases = context.scope.toList
       namer.enterSyms(trees)
       typedStats(trees, NoSymbol)
-      useCase.defined = context.scope.toList -- useCase.aliases
+      useCase.defined = context.scope.toList filterNot (useCase.aliases contains _)
 //      println("defined use cases: "+(useCase.defined map (sym => sym+":"+sym.tpe)))
     }
 

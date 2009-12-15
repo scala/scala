@@ -122,10 +122,10 @@ class Worker(val fileManager: FileManager) extends Actor {
                    latestPartestFile}
 
     val classpath: List[URL] =
-      outDir.toURL ::
-      //List(file.getParentFile.toURL) :::
-      List(latestCompFile.toURL, latestLibFile.toURL, latestActFile.toURL, latestPartestFile.toURL) :::
-      ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x).toURL))
+      outDir.toURI.toURL ::
+      //List(file.getParentFile.toURI.toURL) :::
+      List(latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestActFile.toURI.toURL, latestPartestFile.toURI.toURL) :::
+      ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x).toURI.toURL))
 
     NestUI.verbose("ObjectRunner classpath: "+classpath)
 
@@ -469,11 +469,11 @@ class Worker(val fileManager: FileManager) extends Actor {
             NestUI.verbose("compilation of "+file+" succeeded\n")
 
             val libs = new File(fileManager.LIB_DIR)
-            val scalacheckURL = new File(libs, "ScalaCheck.jar") toURL
-            val outURL = outDir.getCanonicalFile.toURL
+            val scalacheckURL = (new File(libs, "ScalaCheck.jar")).toURI.toURL
+            val outURL = outDir.getCanonicalFile.toURI.toURL
             val classpath: List[URL] =
-              List(outURL, scalacheckURL, latestCompFile.toURL, latestLibFile.toURL,
-                   latestActFile.toURL, latestPartestFile.toURL).removeDuplicates
+              List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL,
+                   latestActFile.toURI.toURL, latestPartestFile.toURI.toURL).removeDuplicates
 
             // XXX this is a big cut-and-paste mess, but the revamp is coming
             val logOut    = new FileOutputStream(logFile)

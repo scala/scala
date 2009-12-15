@@ -72,7 +72,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 class Scalac extends MatchingTask {
 
   /** The unique Ant file utilities instance to use in this task. */
-  private val fileUtils = FileUtils.newFileUtils()
+  private val fileUtils = FileUtils.getFileUtils()
 
 /*============================================================================*\
 **                             Ant user-properties                            **

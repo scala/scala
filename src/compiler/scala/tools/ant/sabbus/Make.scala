@@ -23,6 +23,6 @@ class Make extends Task with TaskArgs {
     if (!compilationPath.isEmpty) settings.classpath = compilationPath.get
     if (!sourcePath.isEmpty) settings.sourcepath = sourcePath.get
     if (!params.isEmpty) settings.more = params.get
-    Compilers.make(id.get, (compilerPath.get.list.map{ path => new File(path).toURL }), settings)
+    Compilers.make(id.get, (compilerPath.get.list.map{ path => new File(path).toURI.toURL }), settings)
   }
 }
