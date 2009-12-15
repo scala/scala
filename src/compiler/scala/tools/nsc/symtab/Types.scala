@@ -1655,12 +1655,21 @@ A type's typeSymbol should never be inspected directly.
         super.normalize
       }
 
+   // track number of type parameters that we saw when caching normalization,
+   // so we can refresh our cache when the known list of type parameters changes (due to further class file loading)
+   // TODO: this would not be necessary if we could replace the call to sym.unsafeTypeParams in typeParamsDirect
+   // by a call to sym.typeParams, but need to verify that that does not lead to spurious "illegal cycle" errors
+   // the need for refreshing the cache is illustrated by #2278
+   // TODO: no test case in the suite because don't know how to tell partest to compile in different runs,
+   //       and in a specific order
+    private var normalizeTyparCount = -1
     override def normalize: Type =
       if (phase.erasedTypes) normalize0
-      else {
-        if (normalized == null) normalized = normalize0
+      else if (normalized == null || typeParamsDirect.length != normalizeTyparCount) {
+        normalizeTyparCount = typeParamsDirect.length
+        normalized = normalize0
         normalized
-      }
+      } else normalized
 
     override def decls: Scope = {
       sym.info match {
