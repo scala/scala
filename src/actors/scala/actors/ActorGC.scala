@@ -67,7 +67,7 @@ trait ActorGC extends TerminationMonitor {
   }
 
   /** Checks whether all actors have terminated. */
-  override def allTerminated: Boolean = synchronized {
+  override private[actors] def allActorsTerminated: Boolean = synchronized {
     activeActors <= 0
   }
 

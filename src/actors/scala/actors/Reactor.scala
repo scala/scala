@@ -32,7 +32,7 @@ private object Reactor {
 trait Reactor extends OutputChannel[Any] {
 
   /* The actor's mailbox. */
-  private[actors] val mailbox = new MessageQueue("Reactor")
+  private[actors] val mailbox = new MQueue("Reactor")
 
   // guarded by this
   private[actors] val sendBuffer = new Queue[(Any, OutputChannel[Any])]
@@ -93,7 +93,7 @@ trait Reactor extends OutputChannel[Any] {
 
   private[actors] def startSearch(msg: Any, replyTo: OutputChannel[Any], handler: Any => Boolean) =
     () => scheduler execute (makeReaction(() => {
-      val startMbox = new MessageQueue("Start")
+      val startMbox = new MQueue("Start")
       synchronized { startMbox.append(msg, replyTo) }
       searchMailbox(startMbox, handler, true)
     }))
@@ -123,7 +123,7 @@ trait Reactor extends OutputChannel[Any] {
   def receiver: Actor = this.asInstanceOf[Actor]
 
   // guarded by this
-  private[actors] def drainSendBuffer(mbox: MessageQueue) {
+  private[actors] def drainSendBuffer(mbox: MQueue) {
     while (!sendBuffer.isEmpty) {
       val item = sendBuffer.dequeue()
       mbox.append(item._1, item._2)
@@ -131,7 +131,7 @@ trait Reactor extends OutputChannel[Any] {
   }
 
   // assume continuation != null
-  private[actors] def searchMailbox(startMbox: MessageQueue,
+  private[actors] def searchMailbox(startMbox: MQueue,
                                     handlesMessage: Any => Boolean,
                                     resumeOnSameThread: Boolean) {
     var tmpMbox = startMbox
@@ -144,7 +144,7 @@ trait Reactor extends OutputChannel[Any] {
         synchronized {
           // in mean time new stuff might have arrived
           if (!sendBuffer.isEmpty) {
-            tmpMbox = new MessageQueue("Temp")
+            tmpMbox = new MQueue("Temp")
             drainSendBuffer(tmpMbox)
             // keep going
           } else {

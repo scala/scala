@@ -50,7 +50,7 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
 
           gc()
 
-          if (allTerminated)
+          if (allActorsTerminated)
             throw new QuitException
         }
       }

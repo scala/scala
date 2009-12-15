@@ -42,7 +42,7 @@ abstract class TerminationService(terminate: Boolean)
           if (terminating)
             throw new QuitException
 
-          if (terminate && allTerminated)
+          if (terminate && allActorsTerminated)
             throw new QuitException
         }
       }

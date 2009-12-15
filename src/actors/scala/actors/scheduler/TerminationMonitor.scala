@@ -61,10 +61,13 @@ trait TerminationMonitor {
   }
 
   /** Checks whether all actors have terminated. */
-  @deprecated("this method is going to be removed in a future release")
-  def allTerminated: Boolean = synchronized {
+  private[actors] def allActorsTerminated: Boolean = synchronized {
     started && activeActors <= 0
   }
+
+  /** Deprecated non-actor-private version */
+  @deprecated("this method is going to be removed in a future release")
+  def allTerminated: Boolean = allActorsTerminated
 
   /** Checks for actors that have become garbage. */
   protected def gc() {}

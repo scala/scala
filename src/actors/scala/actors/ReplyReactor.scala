@@ -62,7 +62,7 @@ trait ReplyReactor extends Reactor with ReplyableReactor {
   }
 
   // assume continuation != null
-  private[actors] override def searchMailbox(startMbox: MessageQueue,
+  private[actors] override def searchMailbox(startMbox: MQueue,
                                              handlesMessage: Any => Boolean,
                                              resumeOnSameThread: Boolean) {
     var tmpMbox = startMbox
@@ -78,7 +78,7 @@ trait ReplyReactor extends Reactor with ReplyableReactor {
         synchronized {
           // in mean time new stuff might have arrived
           if (!sendBuffer.isEmpty) {
-            tmpMbox = new MessageQueue("Temp")
+            tmpMbox = new MQueue("Temp")
             drainSendBuffer(tmpMbox)
             // keep going
           } else {

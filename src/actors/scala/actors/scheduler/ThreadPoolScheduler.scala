@@ -57,7 +57,7 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
             case _: InterruptedException =>
           }
 
-          if (terminating || (terminate && allTerminated))
+          if (terminating || (terminate && allActorsTerminated))
             throw new QuitException
 
           gc()

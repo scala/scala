@@ -122,7 +122,7 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
             if (coreSize - activeBlocked < numCores && coreSize < maxSize) {
               coreSize = numCores + activeBlocked
               executor.setCorePoolSize(coreSize)
-            } else if (terminate && allTerminated) {
+            } else if (terminate && allActorsTerminated) {
               // if all worker threads idle terminate
               if (executor.getActiveCount() == 0) {
                 Debug.info(this+": initiating shutdown...")
