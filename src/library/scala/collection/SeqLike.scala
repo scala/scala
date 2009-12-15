@@ -498,7 +498,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int =
     SeqLike.lastIndexOf(thisCollection, 0, length, that, 0, that.length, end)
 
-
   /** Tests whether this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
    *  @param  that    the sequence to test

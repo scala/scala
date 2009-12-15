@@ -86,10 +86,11 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
 
   /** Converts this $coll of traversable collections into
    *  a $coll in which all element collections are concatenated.
-   *  @B the type of the elements of each traversable collection.
-   *  @asTraversable an implicit conversion which asserts that the element type of this
-   *          $coll is a `Traversable`.
-   *  @return a new $coll reuslting from concatenating all element ${coll}s.
+   *  @tparam B the type of the elements of each traversable collection.
+   *  @param asTraversable an implicit conversion which asserts that the element type of this
+   *         $coll is a `Traversable`.
+   *  @return a new $coll resulting from concatenating all element ${coll}s.
+   *  @usecase def flatten[B]: $Coll[B]
    */
   def flatten[B](implicit asTraversable: A => /*<:<!!!*/ Traversable[B]): CC[B] = {
     val b = genericBuilder[B]

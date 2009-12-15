@@ -221,7 +221,7 @@ self =>
   /** Returns a $coll formed from this $coll and another iterable collection
    *  by combining corresponding elements in pairs.
    *  If one of the two collections is shorter than the other,
-   *  placeholder elements are used to extend the collection to the longer length.
+   *  placeholder elements are used to extend the shorter collection to the length of the longer.
    *
    *  $orderDependent
    *

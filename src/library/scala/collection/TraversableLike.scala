@@ -478,7 +478,6 @@ self =>
    *             op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
-   *
    */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
     var result = z
@@ -506,6 +505,9 @@ self =>
   def /: [B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
   /** Applies a binary operator to all elements of this $coll and a start value, going right to left.
+   *
+   *  $willNotTerminateInf
+   *  $orderDependentFold
    *  @param   z    the start value.
    *  @param   op   the binary operator.
    *  @tparam  B    the result type of the binary operator.
@@ -515,9 +517,6 @@ self =>
    *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
-   *
-   *  $willNotTerminateInf
-   *  $orderDependentFold
    */
   def foldRight[B](z: B)(op: (A, B) => B): B = {
     var elems: List[A] = Nil
@@ -609,7 +608,6 @@ self =>
    *  @tparam  B    the result type of the binary operator.
    *  @return  an option value containing the result of `reduceRight(op)` is this $coll is nonempty,
    *           `None` otherwise.
-   *  @throws `UnsupportedOperationException` if this $coll is empty.
    */
   def reduceRightOption[B >: A](op: (A, B) => B): Option[B] =
     if (isEmpty) None else Some(reduceRight(op))
@@ -899,7 +897,7 @@ self =>
     for (x <- this) dest += x
   }
 
-  /** Copies selected elements of this $coll to an array.
+  /** Copies elements of this $coll to an array.
    *  Fills the given array `xs` with at most `len` elements of
    *  this $coll, starting at position `start`.
    *  Copying will stop once either the end of the current $coll is reached,
@@ -927,7 +925,7 @@ self =>
     }
   }
 
-  /** Copies selected suffix of this $coll to an array.
+  /** Copies elements of this $coll to an array.
    *  Fills the given array `xs` with all elements of
    *  this $coll, starting at position `start`.
    *  Copying will stop once either the end of the current $coll is reached,
@@ -943,6 +941,23 @@ self =>
    */
   def copyToArray[B >: A](xs: Array[B], start: Int) {
     copyToArray(xs, start, xs.length - start)
+  }
+
+  /** Copies elements of this $coll to an array.
+   *  Fills the given array `xs` with all elements of
+   *  this $coll, starting at position `0`.
+   *  Copying will stop once either the end of the current $coll is reached,
+   *  or the end of the array is reached.
+   *
+   *  $willNotTerminateInf
+   *
+   *  @param  xs     the array to fill.
+   *  @tparam B      the type of the elements of the array.
+   *
+   *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
+   */
+  def copyToArray[B >: A](xs: Array[B]) {
+    copyToArray(xs, 0)
   }
 
   /** Converts this $coll to an array.
