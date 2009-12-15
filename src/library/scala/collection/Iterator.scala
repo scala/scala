@@ -839,22 +839,6 @@ trait Iterator[+A] { self =>
       } else self.next
   }
 
-  /** Since I cannot reliably get take(n) to influence the original
-   *  iterator (it seems to depend on some ordering issue I don't
-   *  understand) this method takes the way one might expect, leaving
-   *  the original iterator with 'size' fewer elements.
-   *  todo: remove
-   */
-  private def takeDestructively(size: Int): Seq[A] = {
-    val buf = new ArrayBuffer[A]
-    var i = 0
-    while (self.hasNext && i < size) {
-      buf += self.next
-      i += 1
-    }
-    buf
-  }
-
   /** A flexible iterator for transforming an `Iterator[A]` into an
    *  Iterator[Seq[A]], with configurable sequence size, step, and
    *  strategy for dealing with elements which don't fit evenly.
@@ -882,6 +866,20 @@ trait Iterator[+A] { self =>
       this
     }
 
+    /** For reasons which remain to be determined, calling
+     *  self.take(n).toSeq cause an infinite loop, so we have
+     *  a slight variation on take for local usage.
+     */
+    private def takeDestructively(size: Int): Seq[A] = {
+      val buf = new ArrayBuffer[A]
+      var i = 0
+      while (self.hasNext && i < size) {
+        buf += self.next
+        i += 1
+      }
+      buf
+    }
+
     private def padding(x: Int) = List.fill(x)(pad.get())
     private def gap = (step - size) max 0
 
@@ -891,7 +889,7 @@ trait Iterator[+A] { self =>
       // If there is padding defined we insert it immediately
       // so the rest of the code can be oblivious
       val xs: Seq[B] = {
-        val res = self takeDestructively count
+        val res = takeDestructively(count)
         // extra checks so we don't calculate length unless there's reason
         if (pad.isDefined && !self.hasNext) {
           val shortBy = count - res.length
