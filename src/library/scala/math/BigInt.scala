@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2006-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2006-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -127,7 +127,8 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
     case x                => unifiedPrimitiveEquals(x)
   }
 
-  override protected def isWhole = true
+  protected[math] def isWhole = true
+  def underlying = bigInteger
 
   /** Compares this BigInt with the specified BigInt for equality.
    */

@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -36,9 +36,9 @@ trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversabl
   override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.++(that)(bf)
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = self.map(f)(bf)
   override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.flatMap(f)(bf)
+  override def partialMap[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That  = self.partialMap(pf)(bf)
   override def filter(p: A => Boolean): This = self.filter(p)
   override def filterNot(p: A => Boolean): This = self.filterNot(p)
-  override def remove(p: A => Boolean): This = self.filterNot(p)
   override def partition(p: A => Boolean): (This, This) = self.partition(p)
   override def groupBy[K](f: A => K): Map[K, This] = self.groupBy(f)
   override def forall(p: A => Boolean): Boolean = self.forall(p)

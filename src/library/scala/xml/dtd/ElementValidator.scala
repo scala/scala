@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://www.scala-lang.org/           **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -114,7 +114,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
     case _: ELEMENTS =>
       dfa isFinal {
         getIterable(nodes, false).foldLeft(0) { (q, e) =>
-          (dfa delta q get e) getOrElse (throw ValidationException("element %s not allowed here" format e))
+          (dfa delta q).getOrElse(e, throw ValidationException("element %s not allowed here" format e))
         }
       }
   }

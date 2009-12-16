@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -57,8 +57,8 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
 
   def owner: Window = UIElement.cachedWrapper(peer.getOwner)
 
-  def open() { peer.show() }
-  def close() { peer.hide() }
+  def open() { peer setVisible true }
+  def close() { peer setVisible false }
 
   peer.addWindowListener(new java.awt.event.WindowListener {
     def windowActivated(e: java.awt.event.WindowEvent) { publish(WindowActivated(outer)) }

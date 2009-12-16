@@ -1,6 +1,6 @@
 /*     ___ ____ ___   __   ___   ___
 **    / _// __// _ | / /  / _ | / _ \    Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003-2009, LAMP/EPFL
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/    (c) 2003-2010, LAMP/EPFL
 ** /____/\___/_/ |_/____/_/ |_/_/        http://scala-lang.org/
 **
 */
@@ -92,11 +92,15 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
       }
     }
 
-  def getName(n: Int): String = cf.pool(n) match {
-    case cf.UTF8(str) => str
-    case cf.StringConst(m) => getName(m)
-    case cf.ClassRef(m) => getName(m)
-    case x => "<error>"
+  def getName(n: Int): String = {
+    import cf.pool._
+
+    cf.pool(n) match {
+      case UTF8(str) => str
+      case StringConst(m) => getName(m)
+      case ClassRef(m) => getName(m)
+      case _ => "<error>"
+    }
   }
 
   def getClassName(n: Int): String = nameToClass(getName(n))

@@ -1,12 +1,12 @@
 /* NSC -- new scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
 
 package scala.tools.nsc
 package symtab
-import ast.Trees
+import ast.{Trees, DocComments}
 
 import util._
 
@@ -23,6 +23,7 @@ abstract class SymbolTable extends Names
                               with AnnotationCheckers
                               with Trees
                               with Positions
+                              with DocComments
 {
   def settings: Settings
   def rootLoader: LazyType

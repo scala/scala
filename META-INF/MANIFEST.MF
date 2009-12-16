@@ -33,7 +33,11 @@ Export-Package:
  scala.tools.nsc.transform,
  scala.tools.nsc.typechecker,
  scala.tools.nsc.util,
- ch.epfl.lamp.fjbg
+ ch.epfl.lamp.compiler.msil,
+ ch.epfl.lamp.compiler.msil.emit,
+ ch.epfl.lamp.compiler.msil.util,
+ ch.epfl.lamp.fjbg,
+ ch.epfl.lamp.util
 Require-Bundle: 
  org.apache.ant,
  scala.library

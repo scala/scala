@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  */
 
 package scala.tools.nsc
@@ -36,6 +36,33 @@ object Process
 {
   lazy val javaVmArguments = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments()
   lazy val runtime = Runtime.getRuntime()
+
+  class Pipe[T](xs: Seq[T], stringify: T => String) {
+    def |(cmd: String): Seq[String] = {
+      val p = Process(cmd)
+      xs foreach (x => p.stdin println stringify(x))
+      p.stdin.close()
+      p.stdin.flush()
+      p.stdout.toList
+    }
+  }
+
+  object Pipe {
+    /* After importing this implicit you can say for instance
+     *   xs | "grep foo" | "grep bar"
+     * and it will execute shells and pipe input/output.  You can
+     * also implicitly or explicitly supply a function which translates
+     * the opening sequence into Strings; if none is given toString is used.
+     *
+     * Also, once you use :sh in the repl, this is auto-imported.
+     */
+    implicit def seqToPipelinedProcess[T]
+      (xs: Seq[T])
+      (implicit stringify: T => String = (x: T) => x.toString): Pipe[T] =
+    {
+      new Pipe(xs, stringify)
+    }
+  }
 
   private[Process] class ProcessBuilder(val pb: JProcessBuilder)
   {

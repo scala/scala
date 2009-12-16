@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -440,13 +440,13 @@ trait TypeKinds { self: ICodes =>
         REFERENCE(sym)
 
     case SingleType(pre, sym) =>
-      (primitiveTypeMap get sym) getOrElse REFERENCE(sym)
+      primitiveTypeMap.getOrElse(sym, REFERENCE(sym))
 
     case ConstantType(value) =>
       toTypeKind(t.underlying)
 
     case TypeRef(_, sym, args) =>
-      (primitiveTypeMap get sym) getOrElse arrayOrClassType(sym, args)
+      primitiveTypeMap.getOrElse(sym, arrayOrClassType(sym, args))
 
     case ClassInfoType(_, _, sym) =>
       primitiveTypeMap get sym match {

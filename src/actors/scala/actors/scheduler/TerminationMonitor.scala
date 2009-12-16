@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -61,10 +61,13 @@ trait TerminationMonitor {
   }
 
   /** Checks whether all actors have terminated. */
-  @deprecated("this method is going to be removed in a future release")
-  def allTerminated: Boolean = synchronized {
+  private[actors] def allActorsTerminated: Boolean = synchronized {
     started && activeActors <= 0
   }
+
+  /** Deprecated non-actor-private version */
+  @deprecated("this method is going to be removed in a future release")
+  def allTerminated: Boolean = allActorsTerminated
 
   /** Checks for actors that have become garbage. */
   protected def gc() {}

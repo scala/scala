@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -12,7 +12,7 @@
 
 package scala
 
-import scala.collection.{ TraversableLike, IterableLike }
+import scala.collection.{TraversableLike, IterableLike}
 import scala.collection.generic.CanBuildFrom
 
 
@@ -24,11 +24,9 @@ case class Tuple3[+T1, +T2, +T3](_1:T1,_2:T2,_3:T3)
 {
   override def toString() = "(" + _1 + "," + _2 + "," + _3 + ")"
 
-// TODO: probably loosen zip and zipped from <:< to <%<
-
-  def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 <:< TraversableLike[El1, Repr1],
-                                             w2:   T2 <:< Iterable[El2],
-                                             w3:   T3 <:< Iterable[El3],
+  def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 => TraversableLike[El1, Repr1],
+                                             w2:   T2 => Iterable[El2],
+                                             w3:   T3 => Iterable[El3],
                                              cbf1: CanBuildFrom[Repr1, (El1, El2, El3), To]): To = {
     val coll1: TraversableLike[El1, Repr1] = _1
     val coll2: Iterable[El2] = _2
@@ -44,10 +42,10 @@ case class Tuple3[+T1, +T2, +T3](_1:T1,_2:T2,_3:T3)
     b1.result
   }
 
-	def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 <:< TraversableLike[El1, Repr1],
-	                                                        w2: T2 <:< IterableLike[El2, Repr2],
-	                                                        w3: T3 <:< IterableLike[El3, Repr3]): Zipped[Repr1, El1, Repr2, El2, Repr3, El3]
-		= new Zipped[Repr1, El1, Repr2, El2, Repr3, El3](_1, _2, _3)
+  def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 => TraversableLike[El1, Repr1],
+                                                          w2: T2 => IterableLike[El2, Repr2],
+                                                          w3: T3 => IterableLike[El3, Repr3]): Zipped[Repr1, El1, Repr2, El2, Repr3, El3]
+    = new Zipped[Repr1, El1, Repr2, El2, Repr3, El3](_1, _2, _3)
 
   class Zipped[+Repr1, +El1, +Repr2, +El2, +Repr3, +El3](coll1: TraversableLike[El1, Repr1],
                                                          coll2: IterableLike[El2, Repr2],

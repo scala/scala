@@ -52,14 +52,14 @@ object Test {
     val endsWithInputs: Inputs
     lazy val endsWith = Method(_ endsWith _, endsWithInputs, "%s endsWith %s")
 
-    val indexOfSeqInputs: Inputs
-    private def subseqTest(s1: Seq[T], s2: Seq[T]) = (s1 indexOfSeq s2) != -1
-    lazy val indexOfSeq = Method(subseqTest _, indexOfSeqInputs, "(%s indexOfSeq %s) != -1")
+    val indexOfSliceInputs: Inputs
+    private def subseqTest(s1: Seq[T], s2: Seq[T]) = (s1 indexOfSlice s2) != -1
+    lazy val indexOfSlice = Method(subseqTest _, indexOfSliceInputs, "(%s indexOfSlice %s) != -1")
 
     val sameElementsInputs: Inputs
     lazy val sameElements = Method(_ sameElements _, sameElementsInputs, "%s sameElements %s")
 
-    def methodList = List(eqeq, startsWith, endsWith, indexOfSeq, sameElements)
+    def methodList = List(eqeq, startsWith, endsWith, indexOfSlice, sameElements)
   }
 
   object test1 extends Data[Int] {
@@ -75,7 +75,7 @@ object Test {
       List(0 :: seq, List(5,2,3,4,5), List(3,4), List(5,6))
     )
 
-    val indexOfSeqInputs = (
+    val indexOfSliceInputs = (
       List(Nil, List(1), List(3), List(5), List(1,2), List(2,3,4), List(4,5), seq),
       List(List(1,2,3,5), List(6), List(5,4,3,2,1), List(2,1))
     )

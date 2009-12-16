@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -57,7 +57,7 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
             case _: InterruptedException =>
           }
 
-          if (terminating || (terminate && allTerminated))
+          if (terminating || (terminate && allActorsTerminated))
             throw new QuitException
 
           gc()

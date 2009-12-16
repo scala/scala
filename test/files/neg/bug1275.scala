@@ -1,4 +1,4 @@
-// tested using Scala compiler version 2.6.0-RC1 -- (c) 2002-2009 LAMP/EPFL
+// tested using Scala compiler version 2.6.0-RC1 -- (c) 2002-2010 LAMP/EPFL
 
 // prompted by "Covariant return types" mailing list question
 object TestCovariance {

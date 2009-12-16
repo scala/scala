@@ -1,6 +1,6 @@
 /*     ___ ____ ___   __   ___   ___
 **    / _// __// _ | / /  / _ | / _ \  Scala classfile decoder
-**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2009, LAMP/EPFL
+**  __\ \/ /__/ __ |/ /__/ __ |/ ___/  (c) 2003-2010, LAMP/EPFL
 ** /____/\___/_/ |_/____/_/ |_/_/      http://scala-lang.org/
 **
 */
@@ -128,7 +128,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         val baos = new ByteArrayOutputStream
         val stream = new PrintStream(baos)
         val printer = new ScalaSigPrinter(stream, printPrivates)
-//        printer.printMethodType(m.infoType, false)
+        printer.printMethodType(m.infoType, false)(())
         baos.toString
       case None =>
         ""

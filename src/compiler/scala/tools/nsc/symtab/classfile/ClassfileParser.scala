@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -408,6 +408,25 @@ abstract class ClassfileParser {
     var nameIdx = in.nextChar
     externalName = pool.getClassName(nameIdx)
     val c = if (externalName.toString.indexOf('$') < 0) pool.getClassSymbol(nameIdx) else clazz
+
+    /** Parse parents for Java classes. For Scala, return AnyRef, since the real type will be unpickled.
+     *  Updates the read pointer of 'in'. */
+    def parseParents: List[Type] = {
+      if (isScala) {
+        in.nextChar              // skip superclass
+        val ifaces = in.nextChar
+        in.bp += ifaces * 2     // .. and iface count interfaces
+        List(definitions.AnyRefClass.tpe) // dummy superclass, will be replaced by pickled information
+      } else {
+        val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
+                        else pool.getSuperClass(in.nextChar).tpe
+        val ifaceCount = in.nextChar
+        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
+        if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
+        superType :: ifaces
+      }
+    }
+
     if (c != clazz && externalName.toString.indexOf("$") < 0) {
       if ((clazz eq NoSymbol) && (c ne NoSymbol)) clazz = c
       else throw new IOException("class file '" + in.file + "' contains wrong " + c)
@@ -415,16 +434,10 @@ abstract class ClassfileParser {
 
     addEnclosingTParams(clazz)
     parseInnerClasses() // also sets the isScala / isScalaRaw / hasMeta flags, see r15956
-    val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
-                    else pool.getSuperClass(in.nextChar).tpe
-    val ifaceCount = in.nextChar
-    var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
-    if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
-    val parents = superType :: ifaces
     // get the class file parser to reuse scopes.
     instanceDefs = new Scope
     staticDefs = new Scope
-    val classInfo = ClassInfoType(parents, instanceDefs, clazz)
+    val classInfo = ClassInfoType(parseParents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
     if (!isScala && !isScalaRaw) {
@@ -759,7 +772,8 @@ abstract class ClassfileParser {
           sym.setFlag(BRIDGE)
           in.skip(attrLen)
         case nme.DeprecatedATTR =>
-          sym.setFlag(DEPRECATED)
+          val arg = Literal(Constant("see corresponding Javadoc for more information."))
+          sym.addAnnotation(AnnotationInfo(definitions.DeprecatedAttr.tpe, List(arg), List()))
           in.skip(attrLen)
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar)

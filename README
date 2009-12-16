@@ -66,7 +66,7 @@ Part III. Requirements for SABBUS
 --------------------------------------------------------------------------------
 
 The Scala build system is based on Apache Ant. Most required pre-compiled libraries are part of the repository (in 'lib/'). The following however is assumed to be installed on the build machine:
-  - A Java runtime environment (JRE) or SDK 1.5 or above.
+  - A Java runtime environment (JRE) or SDK 1.6 or above.
   - Apache Ant version 1.7.0 or above.
 
 Part IV. Common use-cases

@@ -67,7 +67,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
           if (terminating)
             throw new QuitException
 
-          if (allTerminated) {
+          if (allActorsTerminated) {
             Debug.info(this+": all actors terminated")
             terminating = true
             throw new QuitException

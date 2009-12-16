@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2009 LAMP/EPFL
+ * Copyright 2007-2010 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -109,11 +109,10 @@ class Worker(val fileManager: FileManager) extends Actor {
   }
 
   def createOutputDir(dir: File, fileBase: String, kind: String): File = {
-    val outDir = new File(dir, fileBase + "-" + kind + ".obj")
-    if (!outDir.exists)
-      outDir.mkdir()
-    createdOutputDirs = outDir :: createdOutputDirs
-    outDir
+    val outDir = io.Path(dir) / io.Directory("%s-%s.obj".format(fileBase, kind))
+    outDir.createDirectory()
+    createdOutputDirs ::= outDir.jfile
+    outDir.jfile
   }
 
   /* Note: not yet used/tested. */
@@ -123,10 +122,10 @@ class Worker(val fileManager: FileManager) extends Actor {
                    latestPartestFile}
 
     val classpath: List[URL] =
-      outDir.toURL ::
-      //List(file.getParentFile.toURL) :::
-      List(latestCompFile.toURL, latestLibFile.toURL, latestActFile.toURL, latestPartestFile.toURL) :::
-      ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x).toURL))
+      outDir.toURI.toURL ::
+      //List(file.getParentFile.toURI.toURL) :::
+      List(latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestActFile.toURI.toURL, latestPartestFile.toURI.toURL) :::
+      ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x).toURI.toURL))
 
     NestUI.verbose("ObjectRunner classpath: "+classpath)
 
@@ -304,34 +303,19 @@ class Worker(val fileManager: FileManager) extends Actor {
   }
 
   def compareOutput(dir: File, fileBase: String, kind: String, logFile: File): String = {
+    def getCheckFile(s: String) = {
+      val f = io.Path(dir) / io.File("%s%s.check".format(fileBase, s))
+      if (f.isFile && f.canRead) Some(f) else None
+    }
+
     // if check file exists, compare with log file
-    val checkFile = {
-      val chkFile = new File(dir, fileBase + ".check")
-      if (chkFile.isFile)
-        chkFile
-      else
-        new File(dir, fileBase + "-" + kind + ".check")
+    (getCheckFile("") orElse getCheckFile("-" + kind)) match {
+      case Some(f)  => fileManager.compareFiles(logFile, f.jfile)
+      case _        => file2String(logFile)
     }
-    if (!checkFile.exists || !checkFile.canRead) {
-      val reader = new BufferedReader(new FileReader(logFile))
-      val swriter = new StringWriter
-      val pwriter = new PrintWriter(swriter, true)
-      val appender = new StreamAppender(reader, pwriter)
-      appender.run()
-      swriter.toString
-    }
-    else fileManager.compareFiles(logFile, checkFile)
   }
 
-  def file2String(logFile: File) = {
-    val logReader = new BufferedReader(new FileReader(logFile))
-    val strWriter = new StringWriter
-    val logWriter = new PrintWriter(strWriter, true)
-    val logAppender = new StreamAppender(logReader, logWriter)
-    logAppender.run()
-    logReader.close()
-    strWriter.toString
-  }
+  def file2String(logFile: File) = io.File(logFile).slurp()
 
   /** Runs a list of tests.
    *
@@ -485,11 +469,11 @@ class Worker(val fileManager: FileManager) extends Actor {
             NestUI.verbose("compilation of "+file+" succeeded\n")
 
             val libs = new File(fileManager.LIB_DIR)
-            val scalacheckURL = new File(libs, "ScalaCheck.jar") toURL
-            val outURL = outDir.getCanonicalFile.toURL
+            val scalacheckURL = (new File(libs, "ScalaCheck.jar")).toURI.toURL
+            val outURL = outDir.getCanonicalFile.toURI.toURL
             val classpath: List[URL] =
-              List(outURL, scalacheckURL, latestCompFile.toURL, latestLibFile.toURL,
-                   latestActFile.toURL, latestPartestFile.toURL).removeDuplicates
+              List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL,
+                   latestActFile.toURI.toURL, latestPartestFile.toURI.toURL).removeDuplicates
 
             // XXX this is a big cut-and-paste mess, but the revamp is coming
             val logOut    = new FileOutputStream(logFile)

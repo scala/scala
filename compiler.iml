@@ -4,8 +4,9 @@
     <facet type="Scala" name="Scala">
       <configuration>
         <option name="takeFromSettings" value="true" />
-        <option name="myScalaCompilerJarPath" value="$MODULE_DIR$/build/locker/classes/compiler:/localhome/dragos/workspace-laptop/git/scala/lib/fjbg.jar" />
-        <option name="myScalaSdkJarPath" value="$MODULE_DIR$/build/locker/classes/library" />
+        <option name="isRelativeToProjectPath" value="true" />
+        <option name="myScalaCompilerJarPath" value="build/locker/classes/compiler lib/fjbg.jar lib/msil.jar" />
+        <option name="myScalaSdkJarPath" value="build/locker/classes/library" />
       </configuration>
     </facet>
   </component>
@@ -18,10 +19,10 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Scala SDK" level="application" />
     <orderEntry type="library" name="Project ant library" level="project" />
-    <orderEntry type="library" name="ant" level="application" />
     <orderEntry type="library" name="Project Scala SDK" level="project" />
+    <orderEntry type="library" name="ant" level="project" />
+    <orderEntry type="library" name="locker" level="project" />
   </component>
 </module>
 

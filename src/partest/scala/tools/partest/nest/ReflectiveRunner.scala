@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2009 LAMP/EPFL
+ * Copyright 2007-2010 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -47,7 +47,7 @@ class ReflectiveRunner extends RunnerUtils {
     val files =
       Array(latestCompFile, latestLibFile, latestActFile, latestPartestFile, latestFjbgFile)
 
-    val sepUrls   = files map { _.toURL }
+    val sepUrls   = files map { _.toURI.toURL }
     val sepLoader = new URLClassLoader(sepUrls, null)
 
     if (fileManager.debug)

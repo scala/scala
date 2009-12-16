@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -215,7 +215,7 @@ abstract class TreePrinters {
           }
 
         case DocDef(comment, definition) =>
-          print(comment); println; print(definition)
+          print(comment.raw); println; print(definition)
 
         case Template(parents, self, body) =>
           val currentOwner1 = currentOwner

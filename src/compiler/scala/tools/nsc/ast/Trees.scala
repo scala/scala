@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -570,7 +570,7 @@ trait Trees {
     // It's used primarily as a marker to check that the import has been typechecked.
 
   /** Documented definition, eliminated by analyzer */
-  case class DocDef(comment: String, definition: Tree)
+  case class DocDef(comment: DocComment, definition: Tree)
        extends Tree {
     override def symbol: Symbol = definition.symbol
     override def symbol_=(sym: Symbol) { definition.symbol = sym }
@@ -624,8 +624,9 @@ trait Trees {
     var vparamss1 =
       vparamss map (vps => vps.map { vd =>
         atPos(vd.pos.focus) {
+          val pa = if (vd.hasFlag(PRIVATE | LOCAL)) 0L else PARAMACCESSOR
           ValDef(
-            Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM) | PARAM) withAnnotations vd.mods.annotations,
+            Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM) | PARAM | pa) withAnnotations vd.mods.annotations,
             vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
         }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
@@ -1071,7 +1072,7 @@ trait Trees {
     def TypeDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree): TypeDef
     def LabelDef(tree: Tree, name: Name, params: List[Ident], rhs: Tree): LabelDef
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]): Import
-    def DocDef(tree: Tree, comment: String, definition: Tree): DocDef
+    def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]): Template
     def Block(tree: Tree, stats: List[Tree], expr: Tree): Block
     def CaseDef(tree: Tree, pat: Tree, guard: Tree, body: Tree): CaseDef
@@ -1126,7 +1127,7 @@ trait Trees {
       new LabelDef(name, params, rhs).copyAttrs(tree)
     def Import(tree: Tree, expr: Tree, selectors: List[ImportSelector]) =
       new Import(expr, selectors).copyAttrs(tree)
-    def DocDef(tree: Tree, comment: String, definition: Tree) =
+    def DocDef(tree: Tree, comment: DocComment, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
     def Template(tree: Tree, parents: List[Tree], self: ValDef, body: List[Tree]) =
       new Template(parents, self, body).copyAttrs(tree)
@@ -1243,7 +1244,7 @@ trait Trees {
       if (expr0 == expr) && (selectors0 == selectors) => t
       case _ => treeCopy.Import(tree, expr, selectors)
     }
-    def DocDef(tree: Tree, comment: String, definition: Tree) = tree match {
+    def DocDef(tree: Tree, comment: DocComment, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
       if (comment0 == comment) && (definition0 == definition) => t
       case _ => treeCopy.DocDef(tree, comment, definition)
@@ -1736,6 +1737,11 @@ trait Trees {
     val typeSubst = new SubstTypeMap(from, to)
     override def traverse(tree: Tree) {
       if (tree.tpe ne null) tree.tpe = typeSubst(tree.tpe)
+      if (tree.isDef) {
+        val sym = tree.symbol
+        val info1 = typeSubst(sym.info)
+        if (info1 ne sym.info) sym.setInfo(info1)
+      }
       super.traverse(tree)
     }
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)

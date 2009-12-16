@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  *
  */
@@ -109,6 +109,9 @@ trait Position {
   /** The same position with a different point value (if a range or offset) */
   def withPoint(off: Int) = this
 
+  /** The same position with a different source value, and its values shifted by given offset */
+  def withSource(source: SourceFile, shift: Int) = this
+
   /** If this is a range, the union with the other range, with the point of this position.
    *  Otherwise, this position
    */
@@ -200,6 +203,7 @@ class OffsetPosition(override val source: SourceFile, override val point: Int) e
   override def isDefined = true
   override def pointOrElse(default: Int): Int = point
   override def withPoint(off: Int) = new OffsetPosition(source, off)
+  override def withSource(source: SourceFile, shift: Int) = new OffsetPosition(source, point + shift)
 
   override def line: Int = source.offsetToLine(point) + 1
 
@@ -240,6 +244,7 @@ extends OffsetPosition(source, point) {
   override def withStart(off: Int) = new RangePosition(source, off, point, end)
   override def withEnd(off: Int) = new RangePosition(source, start, point, off)
   override def withPoint(off: Int) = new RangePosition(source, start, off, end)
+  override def withSource(source: SourceFile, shift: Int) = new RangePosition(source, start + shift, point + shift, end + shift)
   override def focusStart = new OffsetPosition(source, start)
   override def focus = {
     if (focusCache eq NoPosition) focusCache = new OffsetPosition(source, point)

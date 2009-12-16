@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * Copyright 2007 Google Inc. All Rights Reserved.
  * Author: bqe@google.com (Burak Emir)
  */
@@ -15,7 +15,6 @@ import collection._
 import mutable.ListBuffer
 import immutable.IntMap
 import annotation.elidable
-import Function.tupled
 
 trait ParallelMatching extends ast.TreeDSL
       with MatchSupport
@@ -583,7 +582,7 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       lazy val failure =
-        mkFail(remaining map tupled((p1, p2) => rest rows p1 insert p2))
+        mkFail(remaining map { case (p1, p2) => rest rows p1 insert p2 })
 
       final def tree(): Tree = codegen
     }
@@ -620,7 +619,7 @@ trait ParallelMatching extends ast.TreeDSL
         def isNotAlternative(p: Pattern) = !cond(p.tree) { case _: Alternative => true }
 
         // classify all the top level patterns - alternatives come back unaltered
-        val newPats: List[Pattern] = pats.zipWithIndex map tupled(classifyPat)
+        val newPats: List[Pattern] = pats.zipWithIndex map classifyPat.tuple
         // see if any alternatives were in there
         val (ps, others) = newPats span isNotAlternative
         // make a new row for each alternative, with it spliced into the original position

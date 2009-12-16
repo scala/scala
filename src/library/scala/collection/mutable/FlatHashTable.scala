@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -27,18 +27,63 @@ trait FlatHashTable[A] {
 
   private final val tableDebug = false
 
+  @transient private[collection] var _loadFactor = loadFactor
+
   /** The actual hash table.
    */
-  protected var table: Array[AnyRef] =
-    if (initialSize == 0) null else new Array(initialSize)
+  @transient protected var table: Array[AnyRef] = new Array(initialCapacity)
 
   /** The number of mappings contained in this hash table.
    */
-  protected var tableSize = 0
+  @transient protected var tableSize = 0
 
   /** The next size value at which to resize (capacity * load factor).
    */
-  protected var threshold: Int = newThreshold(initialSize)
+  @transient protected var threshold: Int = newThreshold(initialCapacity)
+
+  import HashTable.powerOfTwo
+  private def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
+  private def initialCapacity = capacity(initialSize)
+
+  /**
+   * Initialises the collection from the input stream. `f` will be called for each element
+   * read from the input stream in the order determined by the stream. This is useful for
+   * structures where iteration order is important (e.g. LinkedHashSet).
+   *
+   * The serialization format expected is the one produced by `serializeTo`.
+   */
+  private[collection] def init(in: java.io.ObjectInputStream, f: A => Unit) {
+    in.defaultReadObject
+
+    _loadFactor = in.readInt
+    assert(_loadFactor > 0)
+
+    val size = in.readInt
+    assert(size >= 0)
+
+    table = new Array(capacity(size * loadFactorDenum / _loadFactor))
+    threshold = newThreshold(table.size)
+
+    var index = 0
+    while (index < size) {
+      val elem = in.readObject.asInstanceOf[A]
+      f(elem)
+      addEntry(elem)
+      index += 1
+    }
+  }
+
+  /**
+   * Serializes the collection to the output stream by saving the load factor, collection
+   * size and collection elements. `foreach` determines the order in which the elements are saved
+   * to the stream. To deserialize, `init` should be used.
+   */
+  private[collection] def serializeTo(out: java.io.ObjectOutputStream) {
+    out.defaultWriteObject
+    out.writeInt(_loadFactor)
+    out.writeInt(tableSize)
+    iterator.foreach(out.writeObject)
+  }
 
   def findEntry(elem: A): Option[A] = {
     var h = index(elemHashCode(elem))
@@ -142,7 +187,7 @@ trait FlatHashTable[A] {
         assert(false, i+" "+table(i)+" "+table.toString)
   }
 
-  protected def elemHashCode(elem: A) = elem.hashCode()
+  protected def elemHashCode(elem: A) = if (elem == null) 0 else elem.hashCode()
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)
@@ -154,7 +199,7 @@ trait FlatHashTable[A] {
   protected final def index(hcode: Int) = improve(hcode) & (table.length - 1)
 
   private def newThreshold(size: Int) = {
-    val lf = loadFactor
+    val lf = _loadFactor
     assert(lf < (loadFactorDenum / 2), "loadFactor too large; must be < 0.5")
     (size.toLong * lf / loadFactorDenum ).toInt
   }

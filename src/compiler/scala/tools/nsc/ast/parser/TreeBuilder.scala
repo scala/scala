@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -145,8 +145,14 @@ abstract class TreeBuilder {
 
   /** Create tree representing (unencoded) binary operation expression or pattern. */
   def makeBinop(isExpr: Boolean, left: Tree, op: Name, right: Tree, opPos: Position): Tree = {
+    def mkNamed(args: List[Tree]) =
+      if (isExpr) args map {
+        case a @ Assign(id @ Ident(name), rhs) =>
+          atPos(a.pos) { AssignOrNamedArg(id, rhs) }
+        case e => e
+      } else args
     val arguments = right match {
-      case Parens(args) => args
+      case Parens(args) => mkNamed(args)
       case _ => List(right)
     }
     if (isExpr) {

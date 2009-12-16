@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -7,29 +7,14 @@
 
 package scala.tools.nsc
 package util
+
 import scala.tools.nsc.io.{AbstractFile, VirtualFile}
 import scala.collection.mutable.ArrayBuffer
 import annotation.{ tailrec, switch }
+import Chars._
 
-object SourceFile {
-  // Be very careful touching these.
-  // Apparently trivial changes to the way you write these constants
-  // will cause Scanners.scala to go from a nice efficient switch to
-  // a ghastly nested if statement which will bring the type checker
-  // to its knees. See ticket #1456
-  final val LF = '\u000A'
-  final val FF = '\u000C'
-  final val CR = '\u000D'
-  final val SU = '\u001A'
-
-  @inline def isLineBreakChar(c: Char) = (c: @switch) match {
-    case LF|FF|CR|SU  => true
-    case _            => false
-  }
-}
 /** abstract base class of a source file used in the compiler */
 abstract class SourceFile {
-  import SourceFile._
   def content : Array[Char]         // normalized, must end in SU
   def file    : AbstractFile
   def isLineBreak(idx : Int) : Boolean
@@ -64,7 +49,6 @@ abstract class SourceFile {
 
 /** a file whose contents do not change over time */
 class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends SourceFile {
-  import SourceFile._
 
   def this(_file: AbstractFile)                 = this(_file, _file.toCharArray)
   def this(sourceName: String, cs: Seq[Char])   = this(new VirtualFile(sourceName), cs.toArray)
@@ -84,10 +68,7 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
 
   override def identifier(pos: Position, compiler: Global) =
     if (pos.isDefined && pos.source == this && pos.point != -1) {
-      def isOK(c: Char) = {
-        import compiler.syntaxAnalyzer.{ isOperatorPart, isIdentifierPart }
-        isIdentifierPart(c) || isOperatorPart(c)
-      }
+      def isOK(c: Char) = isIdentifierPart(c) || isOperatorPart(c)
       Some(new String(content drop pos.point takeWhile isOK))
     } else {
       super.identifier(pos, compiler)
@@ -211,7 +192,7 @@ extends BatchSourceFile(name, contents)
 
 object CompoundSourceFile {
   private[util] def stripSU(chars: Array[Char]) =
-    if (chars.length > 0 && chars.last == SourceFile.SU)
+    if (chars.length > 0 && chars.last == SU)
       chars.slice(0, chars.length-1)
     else
       chars

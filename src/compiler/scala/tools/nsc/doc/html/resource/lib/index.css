@@ -1,0 +1,102 @@
+* {
+	color: inherit;
+	font-size: 10pt;
+	text-decoration: none;
+	font-family: sans-serif;
+	border-width: 0px;
+	padding: 0px;
+	margin: 0px;
+}
+
+a {
+	cursor: pointer;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+h1 {
+	display: none;
+}
+
+#browser {
+	top: 0px;
+	left: 0px;
+	bottom: 0px;
+	width: 300px;
+	display: block;
+	position: fixed;
+}
+
+#quickflt {
+	display: block;
+	position: fixed;
+	height: 22px;
+	right: 0px;
+	left: 0px;
+	top: 0px;
+	position: absolute;
+	display: block;
+	font-weight: bold;
+	color: #993300;
+	padding: 5px;
+	background-color: white;
+}
+
+#tpl {
+	display: block;
+	position: fixed;
+	overflow: auto;
+	right: 0px;
+	left: 0px;
+	bottom: 0px;
+	top: 30px;
+	position: absolute;
+	display: block;
+}
+
+#tpl .packhide {
+	display: block;
+	float: right;
+	font-weight: normal;
+	color: white;
+	padding: 1px 4px 1px 4px;
+}
+
+#tpl .packages > li > h3 {
+	display: block;
+	background-color: #142556;
+	color: white;
+	padding: 1px 4px 1px 4px;
+	font-weight: bold;
+	display: block;
+}
+
+#tpl ol > li {
+	display: block;
+}
+
+#tpl ol > li .icon {
+	bottom: -2px;
+	position: relative;
+}
+
+#content {
+	border-left-width: 1px;
+	border-left-color: black;
+	border-left-style: white;
+	right: 0px;
+	left: 0px;
+	bottom: 0px;
+	top: 0px;
+	position: fixed;
+	margin-left: 300px;
+	display: block;
+}
+
+#content > iframe {
+	display: block;
+	height: 100%;
+	width: 100%;
+}

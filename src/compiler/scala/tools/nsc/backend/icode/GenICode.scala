@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 
@@ -266,7 +266,7 @@ abstract class GenICode extends SubComponent  {
       val k = toTypeKind(arrayObj.tpe)
       val ARRAY(elem) = k
       var ctx1 = genLoad(arrayObj, ctx, k)
-      val elementType = (typeOfArrayOp get code) getOrElse abort("Unknown operation on arrays: " + tree + " code: " + code)
+      val elementType = typeOfArrayOp.getOrElse(code, abort("Unknown operation on arrays: " + tree + " code: " + code))
 
       var generatedType = expectedType
 
@@ -320,7 +320,7 @@ abstract class GenICode extends SubComponent  {
           ctx2
         }, List(
           // tree.tpe / fun.tpe is object, which is no longer true after this transformation
-          (NoSymbol, expectedType, exhCtx => {
+          (ThrowableClass, expectedType, exhCtx => {
             exhCtx.bb.emit(Seq(
               LOAD_LOCAL(monitor),
               MONITOR_EXIT() setPos tree.pos,
@@ -1469,11 +1469,11 @@ abstract class GenICode extends SubComponent  {
           val pred = block.predecessors;
           log("Preds: " + pred + " of " + block + " (" + optCont + ")");
           pred foreach { p =>
+            changed = true
             p.lastInstruction match {
-              case CJUMP(succ, fail, cond, kind) =>
+              case CJUMP(succ, fail, cond, kind) if (succ == block || fail == block) =>
                 if (settings.debug.value)
                   log("Pruning empty if branch.");
-                changed = true
                 p.replaceInstruction(p.lastInstruction,
                                      if (block == succ)
                                        if (block == fail)
@@ -1485,10 +1485,9 @@ abstract class GenICode extends SubComponent  {
                                      else
                                        abort("Could not find block in preds: " + method + " " + block + " " + pred + " " + p))
 
-              case CZJUMP(succ, fail, cond, kind) =>
+              case CZJUMP(succ, fail, cond, kind) if (succ == block || fail == block) =>
                 if (settings.debug.value)
                   log("Pruning empty ifz branch.");
-                changed = true
                 p.replaceInstruction(p.lastInstruction,
                                      if (block == succ)
                                        if (block == fail)
@@ -1500,20 +1499,22 @@ abstract class GenICode extends SubComponent  {
                                      else
                                        abort("Could not find block in preds"))
 
-              case JUMP(b) =>
+              case JUMP(b) if (b == block) =>
                 if (settings.debug.value)
                   log("Pruning empty JMP branch.");
-                changed = true
                 val replaced = p.replaceInstruction(p.lastInstruction, JUMP(cont))
                 if (settings.debug.value)
                   assert(replaced, "Didn't find p.lastInstruction")
 
-              case SWITCH(tags, labels) =>
+              case SWITCH(tags, labels) if (labels contains block) =>
                 if (settings.debug.value)
                   log("Pruning empty SWITCH branch.");
-                changed = true
                 p.replaceInstruction(p.lastInstruction,
                                      SWITCH(tags, labels map (l => if (l == block) cont else l)))
+
+              // the last instr of the predecessor `p` is not a jump to the block `block`.
+              // this happens when `block` is part of an exception handler covering `b`.
+              case _ => ()
             }
           }
           if (changed) {
@@ -1653,8 +1654,8 @@ abstract class GenICode extends SubComponent  {
       /** The current monitors or finalizers, to be cleaned up upon `return'. */
       var cleanups: List[Cleanup] = Nil
 
-      /** The current exception handler, when we generate code for one. */
-      var currentExceptionHandler: Option[ExceptionHandler] = None
+      /** The exception handlers we are currently generating code for */
+      var currentExceptionHandlers: List[ExceptionHandler] = Nil
 
       /** The current local variable scope. */
       var scope: Scope = EmptyScope
@@ -1685,7 +1686,7 @@ abstract class GenICode extends SubComponent  {
         this.handlers = other.handlers
         this.handlerCount = other.handlerCount
         this.cleanups = other.cleanups
-        this.currentExceptionHandler = other.currentExceptionHandler
+        this.currentExceptionHandlers = other.currentExceptionHandlers
         this.scope = other.scope
       }
 
@@ -1754,10 +1755,7 @@ abstract class GenICode extends SubComponent  {
       def newBlock: Context = {
         val block = method.code.newBlock
         handlers foreach (h => h addCoveredBlock block)
-        currentExceptionHandler match {
-          case Some(e) => e.addBlock(block)
-          case None    => ()
-        }
+        currentExceptionHandlers foreach (h => h.addBlock(block))
         block.varsInScope = new HashSet()
         block.varsInScope ++= scope.varsInScope
         new Context(this) setBasicBlock block
@@ -1804,10 +1802,14 @@ abstract class GenICode extends SubComponent  {
        * exception handler.
        */
       def enterHandler(exh: ExceptionHandler): Context = {
-        currentExceptionHandler = Some(exh)
+        currentExceptionHandlers = exh :: currentExceptionHandlers
         val ctx = newBlock
         exh.setStartBlock(ctx.bb)
         ctx
+      }
+
+      def endHandler() {
+        currentExceptionHandlers = currentExceptionHandlers.tail
       }
 
       /** Remove the given handler from the list of active exception handlers. */
@@ -1853,7 +1855,7 @@ abstract class GenICode extends SubComponent  {
       def Try(body: Context => Context,
               handlers: List[(Symbol, TypeKind, (Context => Context))],
               finalizer: Tree,
-              tree: Tree) = {
+              tree: Tree) = if (forMSIL) TryMsil(body, handlers, finalizer, tree) else {
 
         val outerCtx = this.dup       // context for generating exception handlers, covered by finalizer
         val finalizerCtx = this.dup   // context for generating finalizer handler
@@ -1893,6 +1895,7 @@ abstract class GenICode extends SubComponent  {
           ctx1.bb.emit(THROW());
           ctx1.bb.enterIgnoreMode;
           ctx1.bb.close
+          finalizerCtx.endHandler()
           exh
         }) else None
 
@@ -1905,6 +1908,7 @@ abstract class GenICode extends SubComponent  {
             val ctx2 = emitFinalizer(ctx1)
             ctx2.bb.emit(JUMP(afterCtx.bb))
             ctx2.bb.close
+            outerCtx.endHandler()
             exh
           }
         val bodyCtx = this.newBlock
@@ -1913,6 +1917,64 @@ abstract class GenICode extends SubComponent  {
 
         var finalCtx = body(bodyCtx)
         finalCtx = emitFinalizer(finalCtx)
+
+        outerCtx.bb.emit(JUMP(bodyCtx.bb))
+        outerCtx.bb.close
+
+        finalCtx.bb.emit(JUMP(afterCtx.bb))
+        finalCtx.bb.close
+
+        afterCtx
+      }
+
+
+      /** try-catch-finally blocks are actually simpler to emit in MSIL, because there
+       *  is support for `finally` in bytecode.
+       *
+       *  A
+       *    try { .. } catch { .. } finally { .. }
+       *  blocks is de-sugared into
+       *    try { try { ..} catch { .. } } finally { .. }
+       *
+       *  A `finally` block is represented exactly the same as an exception handler, but
+       *  with `NoSymbol` as the exception class. The covered blocks are all blocks of
+       *  the `try { .. } catch { .. }`.
+       */
+      def TryMsil(body: Context => Context,
+                  handlers: List[(Symbol, TypeKind, (Context => Context))],
+                  finalizer: Tree,
+                  tree: Tree) = {
+
+        val outerCtx = this.dup       // context for generating exception handlers, covered by finalizer
+        val finalizerCtx = this.dup   // context for generating finalizer handler
+        val afterCtx = outerCtx.newBlock
+
+        if (finalizer != EmptyTree) {
+          // finalizer is covers try and all catch blocks, i.e.
+          //   try { try { .. } catch { ..} } finally { .. }
+          val exh = outerCtx.newHandler(NoSymbol, UNIT)
+          this.addActiveHandler(exh)
+          val ctx = finalizerCtx.enterHandler(exh)
+          if (settings.Xdce.value) ctx.bb.emit(LOAD_EXCEPTION())
+          val ctx1 = genLoad(finalizer, ctx, UNIT)
+          ctx1.bb.emit(JUMP(afterCtx.bb))
+          ctx1.bb.close
+          finalizerCtx.endHandler()
+        }
+
+        for (handler <- handlers) {
+          val exh = this.newHandler(handler._1, handler._2)
+          var ctx1 = outerCtx.enterHandler(exh)
+          if (settings.Xdce.value) ctx1.bb.emit(LOAD_EXCEPTION())
+          ctx1 = handler._3(ctx1)
+          ctx1.bb.emit(JUMP(afterCtx.bb))
+          ctx1.bb.close
+          outerCtx.endHandler()
+        }
+
+        val bodyCtx = this.newBlock
+
+        val finalCtx = body(bodyCtx)
 
         outerCtx.bb.emit(JUMP(bodyCtx.bb))
         outerCtx.bb.close

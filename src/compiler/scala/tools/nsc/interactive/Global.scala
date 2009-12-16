@@ -512,11 +512,8 @@ self =>
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
       val oldSource = reporter.getSource
-      try {
-        reporter.setSource(unit.source)
+      reporter.withSource(unit.source) {
         atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
-      } finally {
-        reporter setSource oldSource
       }
     }
   }

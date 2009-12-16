@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -93,12 +93,68 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
    */
   lazy val outputDirs = new OutputDirs
 
-
-  /** Try to add additional command line parameters.
-   *  Returns unconsumed arguments.
+  /**
+   * Split command line parameters by space, properly process quoted parameter
    */
-  def parseParams(line: String): List[String] =
-    parseParams(line.trim.split("""\s+""").toList)
+  def splitParams(line: String): List[String] = {
+    def parse(from: Int, i: Int, args: List[String]): List[String] = {
+      if (i < line.length) {
+        line.charAt(i) match {
+          case ' ' =>
+            val args1 = fetchArg(from, i) :: args
+            val j = skipS(i + 1)
+            if (j >= 0) {
+              parse(j, j, args1)
+            } else args1
+          case '"' =>
+            val j = skipTillQuote(i + 1)
+            if (j > 0) {
+              parse(from, j + 1, args)
+            } else {
+              errorFn("Parameters '" + line + "' with unmatched quote at " + i + ".")
+              Nil
+            }
+          case _ => parse(from, i + 1, args)
+        }
+      } else { // done
+        if (i > from) {
+          fetchArg(from, i) :: args
+        } else args
+      }
+    }
+
+    def fetchArg(from: Int, until: Int) = {
+      if (line.charAt(from) == '"') {
+        line.substring(from + 1, until - 1)
+      } else {
+        line.substring(from, until)
+      }
+    }
+
+    def skipTillQuote(i: Int): Int = {
+      if (i < line.length) {
+        line.charAt(i) match {
+          case '"' => i
+          case _ => skipTillQuote(i + 1)
+        }
+      } else -1
+    }
+
+    def skipS(i: Int): Int = {
+      if (i < line.length) {
+        line.charAt(i) match {
+          case ' ' => skipS(i + 1)
+          case _ => i
+        }
+      } else -1
+    }
+
+    // begin split
+    val j = skipS(0)
+    if (j >= 0) {
+      parse(j, j, Nil).reverse
+    } else Nil
+  }
 
   def parseParams(args: List[String]): List[String] = {
     // verify command exists and call setter
@@ -216,20 +272,20 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   /**
    *  The canonical creators for Setting objects.
    */
-  import Function.{ tupled, untupled }
+  import Function.{ untupled }
   import Setting._
 
   // A bit too clever, but I haven't found any other way to compose
   // functions with arity 2+ without having to annotate parameter types
-  lazy val IntSetting          = untupled(tupled(sint _) andThen add[IntSetting])
-  lazy val BooleanSetting      = untupled(tupled(bool _) andThen add[BooleanSetting])
-  lazy val StringSetting       = untupled(tupled(str _) andThen add[StringSetting])
-  lazy val MultiStringSetting  = untupled(tupled(multi _) andThen add[MultiStringSetting])
-  lazy val ChoiceSetting       = untupled(tupled(choice _) andThen add[ChoiceSetting])
-  lazy val DebugSetting        = untupled(tupled(sdebug _) andThen add[DebugSetting])
-  lazy val PhasesSetting       = untupled(tupled(phase _) andThen add[PhasesSetting])
+  lazy val IntSetting          = untupled((sint _).tuple andThen add[IntSetting])
+  lazy val BooleanSetting      = untupled((bool _).tuple andThen add[BooleanSetting])
+  lazy val StringSetting       = untupled((str _).tuple andThen add[StringSetting])
+  lazy val MultiStringSetting  = untupled((multi _).tuple andThen add[MultiStringSetting])
+  lazy val ChoiceSetting       = untupled((choice _).tuple andThen add[ChoiceSetting])
+  lazy val DebugSetting        = untupled((sdebug _).tuple andThen add[DebugSetting])
+  lazy val PhasesSetting       = untupled((phase _).tuple andThen add[PhasesSetting])
   lazy val DefinesSetting      = add(defines())
-  lazy val OutputSetting       = untupled(tupled(output _) andThen add[OutputSetting])
+  lazy val OutputSetting       = untupled((output _).tuple andThen add[OutputSetting])
 
   override def toString() =
     "Settings(\n%s)" format (settingSet filter (s => !s.isDefault) map ("  " + _ + "\n") mkString)
@@ -308,7 +364,7 @@ object Settings {
       singleOutDir match {
         case Some(d) => d
         case None =>
-          (outputs find Function.tupled(isBelow)) match {
+          (outputs find (isBelow _).tuple) match {
             case Some((_, d)) => d
             case _ =>
               throw new FatalError("Could not find an output directory for "
@@ -420,9 +476,10 @@ object Settings {
     def dependsOn(s: Setting, value: String): this.type = { dependency = Some((s, value)); this }
     def dependsOn(s: Setting): this.type = dependsOn(s, "")
 
-    def isStandard: Boolean = !isAdvanced && !isPrivate && name != "-Y"
-    def isAdvanced: Boolean = (name startsWith "-X") && name != "-X"
-    def isPrivate:  Boolean = (name == "-P") || ((name startsWith "-Y") && name != "-Y")
+    def isStandard:    Boolean = !isFscSpecific && !isAdvanced && !isPrivate && name != "-Y"
+    def isFscSpecific: Boolean = (name == "-shutdown")
+    def isAdvanced:    Boolean = (name startsWith "-X") && name != "-X"
+    def isPrivate:     Boolean = (name == "-P") || ((name startsWith "-Y") && name != "-Y")
 
     // Ordered (so we can use TreeSet)
     def compare(that: Setting): Int = name compare that.name
@@ -748,7 +805,7 @@ trait ScalacSettings {
   val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
   val debuginfo     = DebugSetting      ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")
   val help          = BooleanSetting    ("-help", "Print a synopsis of standard options")
-  val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive"), "all") .
+  val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all") .
                                           withHelpSyntax("-make:<strategy>")
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings")
   val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program").withAbbreviation("-optimize")
@@ -796,7 +853,6 @@ trait ScalacSettings {
   val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show object info", "")
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases")
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader")
-  val newArrays     = BooleanSetting    ("-Ynewarrays", "Generate code for new array scheme")
 
   /**
    * -Y "Private" settings
@@ -850,6 +906,10 @@ trait ScalacSettings {
                           withPostSetHook(() =>
                             List(YwarnShadow, YwarnCatches, Xwarndeadcode, Xwarninit) foreach (_.value = true)
                           )
+  /**
+   * "fsc-specific" settings.
+   */
+  val fscShutdown   = BooleanSetting    ("-shutdown", "Shutdown the fsc daemon")
 
   /**
    * -P "Plugin" settings

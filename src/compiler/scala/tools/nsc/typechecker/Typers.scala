@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -15,7 +15,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.control.ControlException
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.interactive.RangePositions
-import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile }
+import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile, BatchSourceFile }
 import symtab.Flags._
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
@@ -689,8 +689,8 @@ trait Typers { self: Analyzer =>
         else qual.tpe.nonLocalMember(name)
     }
 
-    def silent(op: Typer => Tree): AnyRef /* in fact, TypeError or Tree */ = {
-      val start = System.nanoTime()
+    def silent[T](op: Typer => T): Any /* in fact, TypeError or T */ = {
+//      val start = System.nanoTime()
       try {
       if (context.reportGeneralErrors) {
         val context1 = context.makeSilent(context.reportAmbiguousErrors)
@@ -709,7 +709,7 @@ trait Typers { self: Analyzer =>
     } catch {
       case ex: CyclicReference => throw ex
       case ex: TypeError =>
-        failedSilent += System.nanoTime() - start
+//        failedSilent += System.nanoTime() - start
         ex
     }}
 
@@ -829,15 +829,22 @@ trait Typers { self: Analyzer =>
           case Block(_, tree1) => tree1.symbol
           case _ => tree.symbol
         }
-        if (!meth.isConstructor &&
-            //isCompatible(tparamsToWildcards(mt, context.undetparams), pt) &&
-            isFunctionType(pt))/* &&
-            (pt <:< functionType(mt.paramTypes map (t => WildcardType), WildcardType)))*/ { // (4.2)
+        if (!meth.isConstructor && isFunctionType(pt)) { // (4.2)
           if (settings.debug.value) log("eta-expanding "+tree+":"+tree.tpe+" to "+pt)
           checkParamsConvertible(tree.pos, tree.tpe)
-          val tree1 = etaExpand(context.unit, tree)
-          //println("eta "+tree+" ---> "+tree1+":"+tree1.tpe)
-          typed(tree1, mode, pt)
+          val tree0 = etaExpand(context.unit, tree)
+          // println("eta "+tree+" ---> "+tree0+":"+tree0.tpe+" undet: "+context.undetparams+ " mode: "+Integer.toHexString(mode))
+
+          if(meth.typeParams.nonEmpty) {
+            // #2624: need to infer type arguments for eta expansion of a polymorphic method
+            // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
+            // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
+            // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
+            // (note that (3) does not call typed to do the polymorphic type instantiation --
+            //  it is called after the tree has been typed with a polymorphic expected result type)
+            instantiate(typed(tree0, mode, WildcardType), mode, pt)
+          } else
+            typed(tree0, mode, pt)
         } else if (!meth.isConstructor && mt.params.isEmpty) { // (4.3)
           adapt(typed(Apply(tree, List()) setPos tree.pos), mode, pt, original)
         } else if (context.implicitsEnabled) {
@@ -1314,48 +1321,17 @@ trait Typers { self: Analyzer =>
       case ValDef(mods, name, tpt, rhs)
         if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL).toLong && !stat.symbol.isModuleVar =>
 
-        /** The annotations amongst `annots` that should go on a member of class
-         *  `memberClass` (field, getter, setter, beanGetter, beanSetter)
-         */
-        def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol) = {
-
-          def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
-            // either one of the meta-annotations matches the `memberClass`
-            metaAnnots.exists(_.atp.typeSymbol == memberClass) ||
-            // else, if there is no `target` meta-annotation at all, use the default case
-            (metaAnnots.forall(ann => {
-              val annClass = ann.atp.typeSymbol
-              annClass != GetterClass && annClass != SetterClass &&
-              annClass != BeanGetterClass && annClass != BeanSetterClass
-            }) && orElse)
-          }
-
-          // there was no meta-annotation on `ann`. Look if the class annotations of
-          // `ann` has a `target` annotation, otherwise put `ann` only on fields.
-          def noMetaAnnot(ann: AnnotationInfo) = {
-            hasMatching(ann.atp.typeSymbol.annotations, memberClass == FieldClass)
-          }
-
-          annots.filter(ann => ann.atp match {
-            // the annotation type has meta-annotations, e.g. @(foo @getter)
-            case AnnotatedType(metaAnnots, _, _) =>
-              hasMatching(metaAnnots, noMetaAnnot(ann))
-            // there are no meta-annotations, e.g. @foo
-            case _ => noMetaAnnot(ann)
-          })
-        }
-
         val isDeferred = mods hasFlag DEFERRED
         val value = stat.symbol
         val allAnnots = value.annotations
         if (!isDeferred)
-          value.setAnnotations(memberAnnots(allAnnots, FieldClass))
+          value.setAnnotations(memberAnnots(allAnnots, FieldTargetClass))
 
         val getter = if (isDeferred) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
         if (getter hasFlag OVERLOADED)
           error(getter.pos, getter+" is defined twice")
-        getter.setAnnotations(memberAnnots(allAnnots, GetterClass))
+        getter.setAnnotations(memberAnnots(allAnnots, GetterTargetClass))
 
         if (value.hasFlag(LAZY)) List(stat)
         else {
@@ -1378,7 +1354,7 @@ trait Typers { self: Analyzer =>
           }
           checkNoEscaping.privates(getter, getterDef.tpt)
           def setterDef(setter: Symbol, isBean: Boolean = false): DefDef = {
-            setter.setAnnotations(memberAnnots(allAnnots, if (isBean) BeanSetterClass else SetterClass))
+            setter.setAnnotations(memberAnnots(allAnnots, if (isBean) BeanSetterTargetClass else SetterTargetClass))
             val result = typed {
               atPos(vdef.pos.focus) {
                 DefDef(
@@ -1410,7 +1386,7 @@ trait Typers { self: Analyzer =>
               (if (value.hasAnnotation(BooleanBeanPropertyAttr)) "is" else "get") +
               nameSuffix
             val beanGetter = value.owner.info.decl(beanGetterName)
-            beanGetter.setAnnotations(memberAnnots(allAnnots, BeanGetterClass))
+            beanGetter.setAnnotations(memberAnnots(allAnnots, BeanGetterTargetClass))
             if (mods hasFlag MUTABLE) {
               val beanSetterName = "set" + nameSuffix
               val beanSetter = value.owner.info.decl(beanSetterName)
@@ -1427,6 +1403,38 @@ trait Typers { self: Analyzer =>
 
       case _ =>
         List(stat)
+    }
+
+    /** The annotations amongst `annots` that should go on a member of class
+     *  `memberClass` (field, getter, setter, beanGetter, beanSetter, param)
+     */
+    protected def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol) = {
+
+      def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
+        // either one of the meta-annotations matches the `memberClass`
+        metaAnnots.exists(_.atp.typeSymbol == memberClass) ||
+        // else, if there is no `target` meta-annotation at all, use the default case
+        (metaAnnots.forall(ann => {
+          val annClass = ann.atp.typeSymbol
+          annClass != FieldTargetClass && annClass != GetterTargetClass &&
+          annClass != SetterTargetClass && annClass != BeanGetterTargetClass &&
+          annClass != BeanSetterTargetClass && annClass != ParamTargetClass
+        }) && orElse)
+      }
+
+      // there was no meta-annotation on `ann`. Look if the class annotations of
+      // `ann` has a `target` annotation, otherwise put `ann` only on fields.
+      def noMetaAnnot(ann: AnnotationInfo) = {
+        hasMatching(ann.atp.typeSymbol.annotations, memberClass == FieldTargetClass)
+      }
+
+      annots.filter(ann => ann.atp match {
+        // the annotation type has meta-annotations, e.g. @(foo @getter)
+        case AnnotatedType(metaAnnots, _, _) =>
+          hasMatching(metaAnnots, noMetaAnnot(ann))
+        // there are no meta-annotations, e.g. @foo
+        case _ => noMetaAnnot(ann)
+      })
     }
 
     protected def enterSyms(txt: Context, trees: List[Tree]) = {
@@ -1504,8 +1512,12 @@ trait Typers { self: Analyzer =>
 
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
-      if (sym.hasAnnotation(definitions.VolatileAttr) && !sym.hasFlag(MUTABLE))
-        error(vdef.pos, "values cannot be volatile")
+      if (sym.hasAnnotation(definitions.VolatileAttr)) {
+        if (!sym.hasFlag(MUTABLE))
+          error(vdef.pos, "values cannot be volatile")
+        else if (sym.hasFlag(FINAL))
+          error(vdef.pos, "final vars cannot be volatile")
+      }
       val rhs1 =
         if (vdef.rhs.isEmpty) {
           if (sym.isVariable && sym.owner.isTerm && phase.id <= currentRun.typerPhase.id)
@@ -1697,6 +1709,45 @@ trait Typers { self: Analyzer =>
       }
     }
 
+    def typedUseCase(useCase: UseCase) {
+      def stringParser(str: String): syntaxAnalyzer.Parser = {
+        val file = new BatchSourceFile(context.unit.source.file, str) {
+          override def positionInUltimateSource(pos: Position) = {
+            pos.withSource(context.unit.source, useCase.pos.start)
+          }
+        }
+        val unit = new CompilationUnit(file)
+        new syntaxAnalyzer.UnitParser(unit)
+      }
+      val trees = stringParser(useCase.body+";").nonLocalDefOrDcl
+      val enclClass = context.enclClass.owner
+      def defineAlias(name: Name) =
+        if (context.scope.lookup(name) == NoSymbol) {
+          lookupVariable(name.toString.substring(1), enclClass) match {
+            case Some(repl) =>
+              silent(_.typedTypeConstructor(stringParser(repl).typ())) match {
+                case tpt: Tree =>
+                  val alias = enclClass.newAliasType(useCase.pos, name)
+                  val tparams = cloneSymbols(tpt.tpe.typeSymbol.typeParams, alias)
+                  alias setInfo polyType(tparams, appliedType(tpt.tpe, tparams map (_.tpe)))
+                  context.scope.enter(alias)
+                case _ =>
+              }
+            case _ =>
+          }
+        }
+      for (tree <- trees; t <- tree)
+        t match {
+          case Ident(name) if (name.length > 0 && name(0) == '$') => defineAlias(name)
+          case _ =>
+        }
+      useCase.aliases = context.scope.toList
+      namer.enterSyms(trees)
+      typedStats(trees, NoSymbol)
+      useCase.defined = context.scope.toList filterNot (useCase.aliases contains _)
+//      println("defined use cases: "+(useCase.defined map (sym => sym+":"+sym.tpe)))
+    }
+
     /**
      *  @param ddef ...
      *  @return     ...
@@ -1715,6 +1766,17 @@ trait Typers { self: Analyzer =>
 
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
+
+      // for `val` and `var` parameter, look at `target` meta-annotation
+      if (phase.id <= currentRun.typerPhase.id && meth.isPrimaryConstructor) {
+        for (vparams <- ddef.vparamss; vd <- vparams) {
+          if (vd hasFlag PARAMACCESSOR) {
+            val sym = vd.symbol
+            sym.setAnnotations(memberAnnots(sym.annotations, ParamTargetClass))
+          }
+        }
+      }
+
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
@@ -2072,7 +2134,14 @@ trait Typers { self: Analyzer =>
         moreToAdd = initSize != scope.size
         }
         if (newStats.isEmpty) stats
-        else newStats.toList ::: stats
+        else {
+          val (defaultGetters, others) = newStats.toList.partition {
+            case DefDef(mods, _, _, _, _, _) => mods.hasFlag(DEFAULTPARAM)
+            case _ => false
+          }
+          // default getters first: see #2489
+          defaultGetters ::: stats ::: others
+        }
       }
       val result = stats mapConserve (typedStat)
       if (phase.erasedTypes) result
@@ -2345,8 +2414,10 @@ trait Typers { self: Analyzer =>
                 if (targ == WildcardType) tparam.tpe else targ) //@M TODO: should probably be .tpeHK
               def typedArgToPoly(arg: Tree, formal: Type): Tree = {
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
+                // println("typedArgToPoly(arg, formal): "+(arg, formal))
                 val arg1 = typedArg(arg, argMode(fun, mode), POLYmode, lenientPt)
                 val argtparams = context.extractUndetparams()
+                // println("typedArgToPoly(arg1, argtparams): "+(arg1, argtparams))
                 if (!argtparams.isEmpty) {
                   val strictPt = formal.instantiateTypeParams(tparams, strictTargs)
                   inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
@@ -3408,7 +3479,9 @@ trait Typers { self: Analyzer =>
               if (name == nme.CONSTRUCTOR)
                 qual.tpe.widen+" does not have a constructor"
               else
-                decode(name)+" is not a member of "+qual.tpe.widen +
+                decode(name)+" is not a member of "+
+								(if (qual.tpe.typeSymbol.isTypeParameterOrSkolem) "type parameter " else "") +
+								qual.tpe.widen +
                 (if ((context.unit ne null) && // Martin: why is this condition needed?
                      qual.pos.isDefined && tree.pos.isDefined && qual.pos.line < tree.pos.line)
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
@@ -3669,12 +3742,18 @@ trait Typers { self: Analyzer =>
           labelTyper(ldef).typedLabelDef(ldef)
 
         case ddef @ DocDef(comment, defn) =>
-          val ret = typed(defn, mode, pt)
-          if ((comments ne null) && (defn.symbol ne null) && (defn.symbol ne NoSymbol)) {
-            comments(defn.symbol) = comment
-            commentOffsets(defn.symbol) = ddef.pos.startOrPoint
+          if (onlyPresentation && (sym ne null) && (sym ne NoSymbol)) {
+            docComments(sym) = comment
+            comment.defineVariables(sym)
+            val typer1 = newTyper(context.makeNewScope(tree, context.owner))
+            for (useCase <- comment.useCases)
+              typer1.silent(_.typedUseCase(useCase)) match {
+                case ex: TypeError =>
+                  unit.warning(useCase.pos, ex.msg)
+                case _ =>
+              }
           }
-          ret
+          typed(defn, mode, pt)
 
         case Annotated(constr, arg) =>
           typedAnnotated(constr, typed(arg, mode, pt))

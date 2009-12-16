@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package util
 
-import scala.tools.nsc.util.SourceFile.{LF, FF, CR, SU}
+import Chars.{LF, FF, CR, SU}
 
 class JavaCharArrayReader(buf: IndexedSeq[Char], start: Int, /* startline: int, startcol: int, */
                       decodeUni: Boolean, error: String => Unit) extends Iterator[Char] with Cloneable {

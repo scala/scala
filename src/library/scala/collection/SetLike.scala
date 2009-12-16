@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,49 +14,61 @@ import generic._
 import mutable.{Builder, AddingBuilder}
 import PartialFunction._
 
-/** <p>
- *    A generic template for sets of type <code>A</code>.<br/>
- *    To implement a concrete set, you need to provide implementations of the
- *    following methods (where <code>This</code> is the type of the set in
- *    question):
- *  </p>
- *  <pre>
- *    <b>def</b> contains(key: A): Boolean
- *    <b>def</b> iterator: Iterator[A]
- *    <b>def</b> +(elem: A): This
- *    <b>def</b> -(elem: A): This</pre>
- *  <p>
- *    If you wish that methods <code>like</code>, <code>take</code>, <code>drop</code>,
- *    <code>filter</code> return the same kind of set, you should also override:
- *  </p>
- *  <pre>
- *   <b>def</b> empty: This</pre>
- *  <p>
- *    It is also good idea to override methods <code>foreach</code> and
- *    <code>size</code> for efficiency.
- *  </p>
+/** A template trait for sets of type `Set[A]`.
+ *
+ * This trait provides most of the operations of a `Set` independently of its representation.
+ * It is typically inherited by concrete implementations of sets.
+ *
+ * $setnote
+ *
+ *  @tparam A    the type of the elements of the set
+ *  @tparam This the type of the set itself.
  *
  *  @author  Martin Odersky
  *  @version 2.8
+ *  @define setnote
+ *    To implement a concrete set, you need  to provide implementations of the
+ *    following methods:
+ *    {{{
+ *       def contains(key: A): Boolean
+ *       def iterator: Iterator[A]
+ *       def +(elem: A): This
+ *       def -(elem: A): This
+ *    }}}
+ *    If you wish that methods like `take`, `drop`,
+ *    `filter` return the same kind of set, you should also override:
+ *    {{{
+ *       def empty: This
+ *    }}}
+ *    It is also good idea to override methods `foreach` and
+ *    `size` for efficiency.
+ *   @define coll set
+ *   @define Coll Set
+ *   @define willNotTerminateInf
+ *   @define mayNotTerminateInf
  */
-trait SetLike[A, +This <: SetLike[A, This] with Set[A]] extends IterableLike[A, This] with Addable[A, This] with Subtractable[A, This] {
+trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
+extends IterableLike[A, This]
+   with Addable[A, This]
+   with Subtractable[A, This] {
 self =>
 
-  /* The empty set of the dame type as this set */
+  /* The empty set of the same type as this set
+   * @return  an empty set of type `This`.
+   */
   def empty: This
 
-  /** A common implementation of <code>newBuilder</code> for all sets in terms
-   *  of <code>empty</code>. Overridden for mutable sets in
+  /** A common implementation of `newBuilder` for all sets in terms
+   *  of `empty`. Overridden for mutable sets in
    *  <a href="mutable/SetLike.html" target="ContentFrame">
-   *  <code>mutable.SetLike</code></a>.
+   *  `mutable.SetLike`</a>.
    */
   override protected[this] def newBuilder: Builder[A, This] = new AddingBuilder[A, This](empty)
 
-  /** Checks if this set contains element <code>elem</code>.
+  /** Tests if some element is contained in this set.
    *
-   *  @param elem the element to check for membership.
-   *  @return     <code>true</code> iff <code>elem</code> is contained in
-   *              this set.
+   *  @param elem the element to test for membership.
+   *  @return     `true` if `elem` is contained in this set, `false` otherwise.
    */
   def contains(elem: A): Boolean
 
@@ -64,116 +76,118 @@ self =>
    *  already present.
    *
    *  @param elem the element to be added
+   *  @return a new set that contains all elements of this set and that also
+   *          contains `elem`.
    */
   def + (elem: A): This
 
-  /** Creates a new set with given element removed from this set, unless the
-   *  element is not present.
+  /** Creates a new set with a given element removed from this set.
    *
    *  @param elem the element to be removed
+   *  @return a new set that contains all elements of this set but that does not
+   *          contain `elem`.
    */
   def - (elem: A): This
 
-  /** Checks if this set is empty.
+  /** Tests if this set is empty.
    *
-   *  @return <code>true</code> iff there is no element in the set.
+   *  @return `true` if there is no element in the set, `false` otherwise.
    */
   override def isEmpty: Boolean = size == 0
 
-  /** This method allows sets to be interpreted as predicates.
-   *  It returns <code>true</code>, iff this set contains element
-   *  <code>elem</code>.
+  /** Tests if some element is contained in this set.
    *
-   *  @param elem the element to check for membership.
-   *  @return     <code>true</code> iff <code>elem</code> is contained in
-   *              this set.
+   *  This method is equivalent to `contains`. It allows sets to be interpreted as predicates.
+   *  @param elem the element to test for membership.
+   *  @return  `true` if `elem` is contained in this set, `false` otherwise.
    */
   def apply(elem: A): Boolean = contains(elem)
 
-  /** Returns a new set consisting of all elements that are both in the current
-   *  set and in the argument set.
+  /** Computes the intersection between this set and another set.
    *
-   *  @param that the set to intersect with.
+   *  @param   that  the set to intersect with.
+   *  @return  a new set consisting of all elements that are both in this
+   *  set and in the given set `that`.
    */
   def intersect(that: Set[A]): This = filter(that.contains)
 
-  /** Returns a new set consisting of all elements that are both in the current
-   *  set and in the argument set.
+  /** Computes the intersection between this set and another set.
    *
-   *  @param that the set to intersect with.
-   *  @note  same as <code>intersect</code>.
+   *  @param   that  the set to intersect with.
+   *  @return  a new set consisting of all elements that are both in this
+   *  set and in the given set `that`.
+   *  @note  Same as `intersect`.
    */
   def &(that: Set[A]): This = intersect(that)
 
- /**  This method is an alias for <code>intersect</code>.
-   *  It computes an intersection with set <code>that</code>.
-   *  It removes all the elements that are not present in <code>that</code>.
+ /**  This method is an alias for `intersect`.
+   *  It computes an intersection with set `that`.
+   *  It removes all the elements that are not present in `that`.
    *
    *  @param that the set to intersect with
    */
   @deprecated("use & instead") def ** (that: Set[A]): This = intersect(that)
 
-  /** The union of this set and the given set <code>that</code>.
+  /** Computes the union between of set and another set.
    *
-   *  @param that the set of elements to add
-   *  @return     a set containing the elements of this
-   *              set and those of the given set <code>that</code>.
+   *  @param   that  the set to form the union with.
+   *  @return  a new set consisting of all elements that are in this
+   *  set or in the given set `that`.
    */
   def union(that: Set[A]): This = this.++(that)
 
-  /** The union of this set and the given set <code>that</code>.
+  /** Computes the union between this set and another set.
    *
-   *  @param that the set of elements to add
-   *  @return     a set containing the elements of this
-   *              set and those of the given set <code>that</code>.
-   *  @note       same as <code>union</code>.
+   *  @param   that  the set to form the union with.
+   *  @return  a new set consisting of all elements that are in this
+   *  set or in the given set `that`.
+   *  @note       Same as `union`.
    */
   def | (that: Set[A]): This = union(that)
 
-  /** The difference of this set and the given set <code>that</code>.
+  /** Computes the difference of this set and another set.
    *
-   *  @param that the set of elements to remove
+   *  @param that the set of elements to exclude.
    *  @return     a set containing those elements of this
-   *              set that are not also contained in the given set <code>that</code>.
+   *              set that are not also contained in the given set `that`.
    */
   def diff(that: Set[A]): This = --(that)
 
-  /** The difference of this set and the given set <code>that</code>.
+  /** The difference of this set and another set.
    *
-   *  @param that the set of elements to remove
+   *  @param that the set of elements to exclude.
    *  @return     a set containing those elements of this
-   *              set that are not also contained in the given set <code>that</code>.
-   *  @note       same as <code>diff</code>.
+   *              set that are not also contained in the given set `that`.
+   *  @note       Same as `diff`.
    */
   def &~(that: Set[A]): This = diff(that)
 
-  /** Checks if this set is a subset of set <code>that</code>.
+  /** Tests whether this set is a subset of another set.
    *
-   *  @param that another set.
-   *  @return     <code>true</code> iff the other set is a superset of
-   *              this set.
-   *  todo: rename to isSubsetOf
+   *  @param that  the set to test.
+   *  @return     `true` if this set is a subset of `that`, i.e. if
+   *              every element of this set is also an element of `that`.
    */
   def subsetOf(that: Set[A]): Boolean = forall(that.contains)
 
-  /** Defines the prefix of this object's <code>toString</code> representation.
+  /** Defines the prefix of this object's `toString` representation.
+   *  @return  a string representation which starts the result of `toString` applied to this set.
+   *           Unless overridden this is simply `"Set"`.
    */
   override def stringPrefix: String = "Set"
 
-  /** Need to override string, so that it's not the Function1's string that gets mixed in.
-   */
   override def toString = super[IterableLike].toString
-
   override def hashCode() = this map (_.hashCode) sum
 
-  /** Compares this set with another object and returns true, iff the
-   *  other object is also a set which contains the same elements as
-   *  this set.
+  /** Compares this set with another object for equality.
    *
    *  @param that the other object
-   *  @note not necessarily run-time type safe.
-   *  @return     <code>true</code> iff this set and the other set
-   *              contain the same elements.
+   *  @return     `true` if `that` is a set which contains the same elements
+   *              as this set.
+   *  @note This operation contains an unchecked cast: if `that`
+   *        is a set, it will assume with an unchecked cast
+   *        that it has the same element type as this set.
+   *        Any subsequuent ClassCastException is treated as a `false` result.
    */
   override def equals(that: Any): Boolean = that match {
     case that: Set[_] =>

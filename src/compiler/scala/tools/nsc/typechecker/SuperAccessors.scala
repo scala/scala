@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author Martin Odersky
  */
 // $Id$
@@ -149,6 +149,18 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
               decls.unlink(s)
               s.expandName(s.privateWithin)
               decls.enter(s)
+            }
+          }
+          if (settings.verbose.value && onlyPresentation && !sym.isAnonymousClass) {
+            println("========== scaladoc of "+sym+" =============================")
+            println(toJavaDoc(expandedDocComment(sym)))
+            for (member <- sym.info.members) {
+              println(member+":"+sym.thisType.memberInfo(member)+"\n"+
+                      toJavaDoc(expandedDocComment(member, sym)))
+              for ((useCase, comment) <- useCases(member, sym)) {
+                println("usecase "+useCase+":"+useCase.info)
+                println(toJavaDoc(comment))
+              }
             }
           }
           super.transform(tree)
@@ -432,8 +444,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           || enclPackage(referencingClass) == enclPackage(sym.owner)) {
         assert(referencingClass.isClass)
         referencingClass
-      } else
+      } else if(referencingClass.owner.enclClass != NoSymbol)
         hostForAccessorOf(sym, referencingClass.owner.enclClass)
+      else referencingClass
     }
 
     /** Is 'tpe' the type of a member of an enclosing class? */

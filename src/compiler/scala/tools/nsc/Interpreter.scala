@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -53,7 +53,7 @@ import Interpreter._
  *    all variables defined by that code.  To extract the result of an
  *    interpreted line to show the user, a second "result object" is created
  *    which imports the variables exported by the above object and then
- *    exports a single member named "result".  To accomodate user expressions
+ *    exports a single member named "scala_repl_result".  To accomodate user expressions
  *    that read from variables or methods defined in previous statements, "import"
  *    statements are used.
  *  </p>
@@ -79,7 +79,8 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
   import compiler.{
     Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
-    ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef }
+    ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef,
+    EmptyTree }
   import compiler.{ nme, newTermName }
   import nme.{
     INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX, INTERPRETER_LINE_PREFIX,
@@ -124,7 +125,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       catching(classOf[MalformedURLException]) opt new URL(s)
 
     val classpathPart =
-      ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURL)
+      ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURI.toURL)
     val codebasePart =
       (compiler.settings.Xcodebase.value.split(" ")).toList flatMap parseURL
 
@@ -362,6 +363,11 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       else                      Some(trees)
     }
   }
+
+  /** For :power - create trees and type aliases from code snippets. */
+  def mkTree(code: String): Tree = mkTrees(code).headOption getOrElse EmptyTree
+  def mkTrees(code: String): List[Tree] = parse(code) getOrElse Nil
+  def mkType(name: String, what: String) = interpret("type " + name + " = " + what)
 
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false othrewise.
@@ -695,7 +701,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     def resultObjectSourceCode: String = stringFrom { code =>
       val preamble = """
       | object %s {
-      |   val result: String = {
+      |   val scala_repl_result: String = {
       |     %s    // evaluate object to make sure constructor is run
       |     (""   // an initial "" so later code can uniformly be: + etc
       """.stripMargin.format(resultObjectName, objectName + accessPath)
@@ -777,7 +783,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
       val resultObject: Class[_] = loadByName(resultObjectName)
-      val resultValMethod: reflect.Method = resultObject getMethod "result"
+      val resultValMethod: reflect.Method = resultObject getMethod "scala_repl_result"
       // XXX if wrapperExceptions isn't type-annotated we crash scalac
       val wrapperExceptions: List[Class[_ <: Throwable]] =
         List(classOf[InvocationTargetException], classOf[ExceptionInInitializerError])
@@ -823,17 +829,17 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   def powerUser(): String = {
     beQuietDuring {
-      val mkTypeCmd =
-        """def mkType(name: String, what: String) = interpreter.interpret("type " + name + " = " + what)"""
-
       this.bind("interpreter", "scala.tools.nsc.Interpreter", this)
-      interpret(mkTypeCmd)
+      this.bind("global", "scala.tools.nsc.Global", compiler)
+      interpret("""import interpreter.{ mkType, mkTree, mkTrees }""")
     }
 
     """** Power User mode enabled - BEEP BOOP      **
-      |** New vals! Try interpreter.<tab>          **
-      |** New defs! Try mkType("T", "String")      **
-      |** New cmds! :help to discover them         **""".stripMargin
+      |** New vals! Try interpreter, global        **
+      |** New cmds! :help to discover them         **
+      |** New defs! Give these a whirl:            **
+      |**   mkType("Fn", "(String, Int) => Int")   **
+      |**   mkTree("def f(x: Int, y: Int) = x+y")  **""".stripMargin
   }
 
   def nameOfIdent(line: String): Option[Name] = {
@@ -872,7 +878,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    *  fields and methods of x via reflection and returns their names to jline.
    */
   def membersOfIdentifier(line: String): List[String] = {
-    import Completion.{ isValidCompletion }
+    import Completion.{ shouldHide }
     import NameTransformer.{ decode, encode }   // e.g. $plus$plus => ++
 
     val res = beQuietDuring {
@@ -881,13 +887,13 @@ class Interpreter(val settings: Settings, out: PrintWriter)
         else {
           val result = prevRequests.last.resultObjectName
           val resultObj = (classLoader tryToInitializeClass result).get
-          val valMethod = resultObj getMethod "result"
+          val valMethod = resultObj getMethod "scala_repl_result"
           val str = valMethod.invoke(resultObj).toString
 
           str.substring(str.indexOf('=') + 1).trim .
           split(" ").toList .
           map(decode) .
-          filter(isValidCompletion) .
+          filterNot(shouldHide) .
           removeDuplicates
         }
       }

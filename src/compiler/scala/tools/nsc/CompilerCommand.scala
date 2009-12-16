@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -52,6 +52,7 @@ class CompilerCommand(
 
   /** Messages explaining usage and options */
   def usageMsg    = createUsageMsg("where possible standard", _.isStandard)
+  def fscUsageMsg = createUsageMsg("where possible standard", ( st => st.isStandard || st.isFscSpecific ))
   def xusageMsg   = createUsageMsg("Possible advanced", _.isAdvanced)
   def yusageMsg   = createUsageMsg("Possible private", _.isPrivate)
 
@@ -59,6 +60,8 @@ class CompilerCommand(
   // an informative message of some sort should be printed instead.
   // (note: do not add "files.isEmpty" do this list)
   val stopSettings = List[(() => Boolean, (Global) => String)](
+    ((() => (settings.help.value _)() && (cmdName == "fsc")),
+                                    fscUsageMsg + _.pluginOptionsHelp),
     (settings.help.value _,         usageMsg + _.pluginOptionsHelp),
     (settings.Xhelp.value _,        _ => xusageMsg),
     (settings.Yhelp.value _,        _ => yusageMsg),

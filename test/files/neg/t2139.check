@@ -1,0 +1,6 @@
+t2139.scala:13: error: type mismatch;
+ found   : Int(4)
+ required: Nothing
+  val z:Int=(u.f _)(4)
+                    ^
+one error found

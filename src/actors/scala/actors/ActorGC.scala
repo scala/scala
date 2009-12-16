@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -67,7 +67,7 @@ trait ActorGC extends TerminationMonitor {
   }
 
   /** Checks whether all actors have terminated. */
-  override def allTerminated: Boolean = synchronized {
+  override private[actors] def allActorsTerminated: Boolean = synchronized {
     activeActors <= 0
   }
 

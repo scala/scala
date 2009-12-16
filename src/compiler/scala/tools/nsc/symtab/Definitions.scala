@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -121,11 +121,12 @@ trait Definitions {
     lazy val TailrecClass               = getClass("scala.annotation.tailrec")
     lazy val SwitchClass                = getClass("scala.annotation.switch")
     lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
-    lazy val FieldClass                 = getClass("scala.annotation.target.field")
-    lazy val GetterClass                = getClass("scala.annotation.target.getter")
-    lazy val SetterClass                = getClass("scala.annotation.target.setter")
-    lazy val BeanGetterClass            = getClass("scala.annotation.target.beanGetter")
-    lazy val BeanSetterClass            = getClass("scala.annotation.target.beanSetter")
+    lazy val FieldTargetClass           = getClass("scala.annotation.target.field")
+    lazy val GetterTargetClass          = getClass("scala.annotation.target.getter")
+    lazy val SetterTargetClass          = getClass("scala.annotation.target.setter")
+    lazy val BeanGetterTargetClass      = getClass("scala.annotation.target.beanGetter")
+    lazy val BeanSetterTargetClass      = getClass("scala.annotation.target.beanSetter")
+    lazy val ParamTargetClass           = getClass("scala.annotation.target.param")
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
@@ -270,6 +271,7 @@ trait Definitions {
     lazy val TupleClass     = mkArityArray("Tuple", MaxTupleArity)
     lazy val ProductClass   = mkArityArray("Product", MaxProductArity)
     lazy val FunctionClass  = mkArityArray("Function", MaxFunctionArity, 0)
+    lazy val AbstractFunctionClass = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
 
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): Boolean = cond(tp.normalize) {
@@ -322,6 +324,14 @@ trait Definitions {
         val sym = FunctionClass(formals.length)
         typeRef(sym.typeConstructor.prefix, sym, formals ::: List(restpe))
       } else NoType
+
+    def abstractFunctionForFunctionType(tp: Type) = tp.normalize match {
+      case tr @ TypeRef(_, _, args) if isFunctionType(tr) =>
+        val sym = AbstractFunctionClass(args.length - 1)
+        typeRef(sym.typeConstructor.prefix, sym, args)
+      case _ =>
+        NoType
+    }
 
     def isFunctionType(tp: Type): Boolean = tp.normalize match {
       case TypeRef(_, sym, args) =>

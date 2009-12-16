@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -15,32 +15,7 @@ import generic._
 import scala.util.control.Breaks._
 import mutable.Builder
 
-/** <p>
- *    A template trait for iterable collections.
- *  </p>
- *  <p>
- *    Collection classes mixing in this trait provide a method
- *    <code>iterator</code> which returns an iterator over all the
- *    elements contained in the collection. They also provide a method
- *    <code>newBuilder</code> which creates a builder for collections
- *    of the same kind.
- *  </p>
- *  <p>
- *    This trait implements <code>Traversable</code>'s <code>foreach</code>
- *    method by stepping through all elements. Subclasses of <code>Iterable</code>
- *    should re-implement <code>foreach</code> with something more efficient,
- *    if possible.
- *  </p>
- *  <p>
- *    This trait adds methods <code>iterator</code>, <code>zip</code>,
- *    <code>zipAll</code>, <code>zipWithIndex</code>, <code>sameElements</code>,
- *    <code>takeRight</code>, <code>dropRight</code> to the methods inherited
- *    from trait <code>Traversable</code>.
- *  </p>
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** $iterableInfo
  */
 trait Iterable[+A] extends Traversable[A]
                       with GenericTraversableTemplate[A, Iterable]
@@ -59,22 +34,21 @@ trait Iterable[+A] extends Traversable[A]
 
 }
 
-/** Factory methods and utilities for instances of type <code>Iterable</code>.
- *
- *  @author Martin Odersky
- *  @version 2.8
+/** $factoryInfo
  */
 object Iterable extends TraversableFactory[Iterable] {
 
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = new GenericCanBuildFrom[A]
+
   def newBuilder[A]: Builder[A, Iterable[A]] = immutable.Iterable.newBuilder[A]
 
   /** The minimum element of a non-empty sequence of ordered elements */
-  @deprecated("use seq.min instead")
+  @deprecated("use <seq>.min instead, where <seq> is the sequence for which you want to compute the minimum")
   def min[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.min
 
   /** The maximum element of a non-empty sequence of ordered elements */
-  @deprecated("use seq.max instead")
+  @deprecated("use <seq>.max instead, where <seq> is the sequence for which you want to compute the maximum")
   def max[A](seq: Iterable[A])(implicit ord: Ordering[A]): A = seq.max
 
   @deprecated("use View instead")

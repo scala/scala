@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -63,7 +63,7 @@ object genprod {
     def header = """
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -200,9 +200,12 @@ trait {className}{contraCoArgs} extends AnyRef {{ self =>
 }}
 </file>
 }
+
+  private def commaXs = xdefs.mkString("(", ", ", ")")
+
   // (x1: T1) => (x2: T2) => (x3: T3) => (x4: T4) => apply(x1,x2,x3,x4)
   def shortCurry = {
-    val body = xdefs.mkString("apply(", ",", ")")
+    val body = "apply" + commaXs
     List.map2(xdefs, targs)("(%s: %s) => ".format(_, _)).mkString("", "", body)
   }
 
@@ -210,24 +213,36 @@ trait {className}{contraCoArgs} extends AnyRef {{ self =>
   def longCurry = (List.map2(xdefs, targs)(_ + ": " + _) drop 1).mkString(
     "(x1: T1) => ((",
     ", ",
-    ") => self.apply(%s)).curry".format(xdefs mkString ",")
+    ") => self.apply%s).curry".format(commaXs)
   )
 
   // f(x1,x2,x3,x4,x5,x6)  == (f.curry)(x1)(x2)(x3)(x4)(x5)(x6)
   def curryComment = { """
-  /** f(%s)  == (f.curry)%s
+  /** f%s  == (f.curry)%s
    */
-""".format(xdefs mkString ",", xdefs map ("(" + _ + ")") mkString)
+""".format(commaXs, xdefs map ("(" + _ + ")") mkString)
+  }
+
+  def tupleMethod = {
+    def comment = """
+  /* f%s == (f.tuple)(Tuple%d%s)
+   */
+""".format(commaXs, i, commaXs)
+    def body = "case Tuple%d%s => apply%s".format(i, commaXs, commaXs)
+
+    comment + "  def tuple: Tuple%d%s => R = {\n    %s\n  }\n".format(i, invariantArgs, body)
   }
 
   def curryMethod = {
     val body = if (i < 5) shortCurry else longCurry
+
+    curryComment +
     "  def curry: %s => R = {\n    %s\n  }\n".format(
       targs mkString " => ", body
     )
   }
 
-  override def moreMethods = curryComment + curryMethod
+  override def moreMethods = curryMethod + tupleMethod
 } // object Function
 
 

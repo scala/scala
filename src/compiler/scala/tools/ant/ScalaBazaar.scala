@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala Ant Tasks                      **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -56,7 +56,7 @@ package scala.tools.ant {
   class ScalaBazaar extends Task {
 
     /** The unique Ant file utilities instance to use in this task. */
-    private val fileUtils = FileUtils.newFileUtils()
+    private val fileUtils = FileUtils.getFileUtils()
 
 /******************************************************************************\
 **                             Ant user-properties                            **

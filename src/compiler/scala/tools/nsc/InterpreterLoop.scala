@@ -1,16 +1,17 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author Alexander Spoon
  */
 // $Id$
 
 package scala.tools.nsc
 
-import java.io.{BufferedReader, File, FileReader, PrintWriter}
+import java.io.{ BufferedReader, File, FileReader, PrintWriter }
 import java.io.IOException
 
-import scala.tools.nsc.{InterpreterResults => IR}
-import scala.tools.nsc.interpreter._
+import scala.tools.nsc.{ InterpreterResults => IR }
+import interpreter._
+import io.{ Process }
 
 // Classes to wrap up interpreter commands and their results
 // You can add new commands by adding entries to val commands
@@ -35,9 +36,7 @@ object InterpreterControl {
   }
 
   case class LineArg(name: String, help: String, f: (String) => Result) extends Command {
-    def apply(args: List[String]) =
-      if (args.size == 1) f(args.head)
-      else error("requires a line of input")
+    def apply(args: List[String]) = f(args mkString " ")
   }
 
   case class OneArg(name: String, help: String, f: (String) => Result) extends Command {
@@ -167,6 +166,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
        NoArgs("power", "enable power user mode", power),
        NoArgs("quit", "exits the interpreter", () => Result(false, None)),
        NoArgs("replay", "resets execution and replays all previous commands", replay),
+       LineArg("sh", "forks a shell and runs a command", runShellCmd),
        NoArgs("silent", "disable/enable automatic printing of results", verbosity)
     )
   }
@@ -254,6 +254,20 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       command(cmd)
       out.println
     }
+  }
+
+  /** fork a shell and run a command */
+  def runShellCmd(line: String) {
+    // we assume if they're using :sh they'd appreciate being able to pipeline
+    interpreter.beQuietDuring {
+      interpreter.interpret("import _root_.scala.tools.nsc.io.Process.Pipe._")
+    }
+    val p = Process(line)
+    // only bind non-empty streams
+    def add(name: String, it: Iterator[String]) =
+      if (it.hasNext) interpreter.bind(name, "scala.List[String]", it.toList)
+
+    List(("stdout", p.stdout), ("stderr", p.stderr)) foreach (add _).tuple
   }
 
   def withFile(filename: String)(action: String => Unit) {

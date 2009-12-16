@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -758,9 +758,6 @@ trait Namers { self: Analyzer =>
         tpt setPos meth.pos.focus
       }
 
-      if (onlyPresentation && methodArgumentNames != null)
-        methodArgumentNames(meth) = vparamss.map(_.map(_.symbol));
-
       def convertToDeBruijn(vparams: List[Symbol], level: Int): TypeMap = new TypeMap {
         def debruijnFor(param: Symbol) =
           DeBruijnIndex(level, vparams indexOf param)
@@ -1139,10 +1136,6 @@ trait Namers { self: Analyzer =>
               val clazz = sym.moduleClass
               clazz.setInfo(newNamer(context.makeNewScope(tree, clazz)).templateSig(impl))
               //clazz.typeOfThis = singleType(sym.owner.thisType, sym);
-              tree.symbol.setInfo(clazz.tpe) // initialize module to avoid cycles
-              if (tree.symbol.name == nme.PACKAGEkw) {
-                loaders.openPackageModule(tree.symbol)
-              }
               clazz.tpe
 
             case DefDef(mods, _, tparams, vparamss, tpt, rhs) =>

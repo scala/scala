@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -21,7 +21,7 @@ import generic._
  *  @version 2.0, 31/12/2006
  *  @since   1
  */
-@serializable
+@serializable @SerialVersionUID(1L)
 class HashSet[A] extends Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]
@@ -51,6 +51,14 @@ class HashSet[A] extends Set[A]
   }
 
   override def clone(): Set[A] = new HashSet[A] ++= this
+
+  private def writeObject(s: java.io.ObjectOutputStream) {
+    serializeTo(s)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    init(in, x => x)
+  }
 }
 
 /** Factory object for `HashSet` class */

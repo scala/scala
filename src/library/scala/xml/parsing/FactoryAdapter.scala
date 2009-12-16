@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -135,7 +135,7 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
 
     hStack push null
     var m: MetaData = Null
-    var scpe: NamespaceBinding = TopScope
+    var scpe: NamespaceBinding = scopeStack.top
 
     for (i <- 0 until attributes.getLength()) {
       val qname = attributes getQName i

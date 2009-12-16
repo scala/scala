@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -121,13 +121,13 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
         case Exit(from, reason) =>
           exitReason = Some(reason)
         case any =>
-          value = Some(any)
+          fvalue = Some(any)
       }
 
       def apply(): Any =
         if (isSet) {
-          if (!value.isEmpty)
-            value.get
+          if (!fvalue.isEmpty)
+            fvalue.get
           else if (!exitReason.isEmpty) {
             val reason = exitReason.get
             if (reason.isInstanceOf[Throwable])
@@ -143,7 +143,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
  	else
           inputChannel.react(handleReply andThen {(x: Unit) => k(apply())})
 
-      def isSet = (value match {
+      def isSet = (fvalue match {
         case None =>
           val handleTimeout: PartialFunction[Any, Boolean] = {
             case TIMEOUT =>

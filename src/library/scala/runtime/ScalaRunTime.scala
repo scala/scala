@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,7 +14,8 @@ package scala.runtime
 import scala.reflect.ClassManifest
 import scala.collection.Seq
 import scala.collection.mutable._
-import scala.collection.immutable.{List, Stream, Nil, ::}
+import scala.collection.immutable.{ List, Stream, Nil, :: }
+import scala.util.control.ControlException
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
@@ -52,58 +53,54 @@ object ScalaRunTime {
   def toArray[T](xs: scala.collection.Seq[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
-    for (x <- xs) arr(i) = x.asInstanceOf[AnyRef]
+    for (x <- xs) {
+      arr(i) = x.asInstanceOf[AnyRef]
+      i += 1
+    }
     arr
   }
 
   def checkInitialized[T <: AnyRef](x: T): T =
     if (x == null) throw new UninitializedError else x
 
-  abstract class Try[a] {
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b
-    def Finally(handler: Unit): a
+  abstract class Try[+A] {
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
+    def Finally(fin: => Unit): A
   }
 
-  def Try[a](block: => a): Try[a] = new Try[a] with Runnable {
-    var result: a = _
-    var exception: Throwable = ExceptionHandling.tryCatch(this)
+  def Try[A](block: => A): Try[A] = new Try[A] with Runnable {
+    private var result: A = _
+    private var exception: Throwable =
+      try   { run() ; null }
+      catch {
+        case e: ControlException  => throw e  // don't catch non-local returns etc
+        case e: Throwable         => e
+      }
 
-    def run(): Unit = result = block
+    def run() { result = block }
 
-    def Catch[b >: a](handler: PartialFunction[Throwable, b]): b =
-      if (exception eq null)
-        result.asInstanceOf[b]
-      // !!! else if (exception is LocalReturn)
-      // !!!   // ...
-      else if (handler isDefinedAt exception)
-        handler(exception)
-      else
-        throw exception
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
+      if (exception == null) result
+      else if (handler isDefinedAt exception) handler(exception)
+      else throw exception
 
-    def Finally(handler: Unit): a =
-      if (exception eq null)
-        result.asInstanceOf[a]
-      else
-        throw exception
-  }
+    def Finally(fin: => Unit): A = {
+      fin
 
-  def caseFields(x: Product): List[Any] = {
-    val arity = x.productArity
-    def fields(from: Int): List[Any] =
-      if (from == arity) List()
-      else x.productElement(from) :: fields(from + 1)
-    fields(0)
+      if (exception == null) result
+      else throw exception
+    }
   }
 
   def _toString(x: Product): String =
-    caseFields(x).mkString(x.productPrefix + "(", ",", ")")
+    x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
   def _hashCodeJenkins(x: Product): Int =
     scala.util.JenkinsHash.hashSeq(x.productPrefix.toSeq ++ x.productIterator.toSeq)
 
   def _hashCode(x: Product): Int = {
-    var code = x.productPrefix.hashCode()
     val arr =  x.productArity
+    var code = arr
     var i = 0
     while (i < arr) {
       val elem = x.productElement(i)
@@ -122,35 +119,9 @@ object ScalaRunTime {
     else x.equals(y)
 
   def _equals(x: Product, y: Any): Boolean = y match {
-    case y1: Product if x.productArity == y1.productArity =>
-      val arity = x.productArity
-      var i = 0
-      while (i < arity && x.productElement(i) == y1.productElement(i))
-        i += 1
-      i == arity
-    case _ =>
-      false
+    case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
+    case _                                              => false
   }
-
-  def _equalsWithVarArgs(x: Product, y: Any): Boolean = y match {
-    case y1: Product if x.productArity == y1.productArity =>
-      val arity = x.productArity
-      var i = 0
-      while (i < arity - 1 && x.productElement(i) == y1.productElement(i))
-        i += 1
-      i == arity - 1 && {
-        x.productElement(i) match {
-          case xs: Seq[_] =>
-            y1.productElement(i) match {
-              case ys: Seq[_] => xs sameElements ys
-            }
-        }
-      }
-    case _ =>
-      false
-  }
-
-  def Seq[a](xs: a*): Seq[a] = null // interpreted specially by new backend.
 
   /** Given any Scala value, convert it to a String.
    *

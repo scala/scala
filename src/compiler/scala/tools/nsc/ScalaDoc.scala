@@ -1,5 +1,5 @@
 /* scaladoc, a documentation generator for Scala
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  * @author  Geoffrey Washburn
  */
@@ -9,7 +9,6 @@ package scala.tools.nsc
 
 import java.io.File
 
-import scala.tools.nsc.doc.DefaultDocDriver
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
 
@@ -19,78 +18,69 @@ import scala.tools.nsc.util.FakePos //{Position}
  */
 object ScalaDoc {
 
-  val versionMsg = "Scala documentation generator " +
+  val versionMsg: String =
+    "Scaladoc " +
     Properties.versionString + " -- " +
     Properties.copyrightString
 
   var reporter: ConsoleReporter = _
 
-  def error(msg: String) {
-    reporter.error(/*new Position */FakePos("scalac"),
-                   msg + "\n  scalac -help  gives more information")
+  def error(msg: String): Unit = {
+    reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
   }
 
-  def process(args: Array[String]) {
-    val docSettings : doc.Settings = new doc.Settings(error)
+  def process(args: Array[String]): Unit = {
+
+    val docSettings: doc.Settings =
+      new doc.Settings(error)
+
     reporter = new ConsoleReporter(docSettings)
-    val command = new CompilerCommand(args.toList, docSettings, error, false)
-    if (command.settings.version.value)
-      reporter.info(null, versionMsg, true)
-    else {
-      if (command.settings.target.value == "msil") {
-        val libpath = System.getProperty("msil.libpath")
-        if (libpath != null)
-          command.settings.assemrefs.value =
-            command.settings.assemrefs.value + File.pathSeparator + libpath
+
+    val command =
+      new CompilerCommand(args.toList, docSettings, error, false)
+
+    if (!reporter.hasErrors) { // No need to continue if reading the command generated errors
+
+      if (docSettings.version.value)
+        reporter.info(null, versionMsg, true)
+      else if (docSettings.help.value) {
+        reporter.info(null, command.usageMsg, true)
       }
-      try {
-        object compiler extends Global(command.settings, reporter) {
-          override protected def computeInternalPhases() {
-            phasesSet += syntaxAnalyzer
-            phasesSet += analyzer.namerFactory
-            phasesSet += analyzer.typerFactory
-          }
-          override def onlyPresentation = true
-        }
-        if (reporter.hasErrors) {
-          reporter.flush()
-          return
+      else if (docSettings.Xhelp.value)
+        reporter.info(null, command.xusageMsg, true)
+      else if (docSettings.Yhelp.value)
+        reporter.info(null, command.yusageMsg, true)
+      else if (docSettings.showPlugins.value)
+        reporter.warning(null, "Plugins are not available when using Scaladoc")
+      else if (docSettings.showPhases.value)
+        reporter.warning(null, "Phases are restricted when using Scaladoc")
+      else try {
+
+        if (docSettings.target.value == "msil") {
+          val libpath = System.getProperty("msil.libpath")
+          if (libpath != null)
+            docSettings.assemrefs.value = docSettings.assemrefs.value + File.pathSeparator + libpath
         }
 
-        if (command.settings.help.value || command.settings.Xhelp.value || command.settings.Yhelp.value) {
-          if (command.settings.help.value) {
-              reporter.info(null, command.usageMsg, true)
-            reporter.info(null, compiler.pluginOptionsHelp, true)
-          }
-          if (command.settings.Xhelp.value)
-            reporter.info(null, command.xusageMsg, true)
-          if (command.settings.Yhelp.value)
-            reporter.info(null, command.yusageMsg, true)
-        } else if (command.settings.showPlugins.value)
-          reporter.info(null, compiler.pluginDescriptions, true)
-        else if (command.settings.showPhases.value)
-          reporter.info(null, compiler.phaseDescriptions, true)
-        else {
-            val run = new compiler.Run()
-            run compile command.files
-            val generator = new DefaultDocDriver {
-              lazy val global: compiler.type = compiler
-              lazy val settings = docSettings
-            }
-            generator.process(run.units)
-            reporter.printSummary()
-        }
-      } catch {
+        val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)
+        docProcessor.document(command.files)
+
+      }
+      catch {
         case ex @ FatalError(msg) =>
-          if (command.settings.debug.value)
-            ex.printStackTrace();
-        reporter.error(null, "fatal error: " + msg)
+          if (docSettings.debug.value) ex.printStackTrace();
+          reporter.error(null, "fatal error: " + msg)
+      }
+      finally {
+        reporter.printSummary()
       }
     }
+
   }
 
-  def main(args: Array[String]) {
+  def main(args: Array[String]): Unit = {
     process(args)
     exit(if (reporter.hasErrors) 1 else 0)
   }
+
 }

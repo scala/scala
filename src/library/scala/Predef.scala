@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2002-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2002-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -150,7 +150,7 @@ object Predef extends LowPriorityImplicits {
   def print(x: Any) = Console.print(x)
   def println() = Console.println()
   def println(x: Any) = Console.println(x)
-  def printf(text: String, xs: Any*) = Console.printf(text, xs: _*)
+  def printf(text: String, xs: Any*) = Console.printf(format(text, xs: _*))
   def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
 
   def readLine(): String = Console.readLine()
@@ -277,8 +277,19 @@ object Predef extends LowPriorityImplicits {
   // reusing `Function2` and `identity` leads to ambiguities (any2stringadd is inferred)
   // to constrain any abstract type T that's in scope in a method's argument list (not just the method's own type parameters)
   // simply add an implicit argument of type `T <:< U`, where U is the required upper bound (for lower-bounds, use: `U <: T`)
+  // in part contributed by Jason Zaugg
   sealed abstract class <:<[-From, +To] extends (From => To)
-  implicit def conforms[A]: A <:< A = new (A <:< A) {def apply(x: A) = x}
+  implicit def conforms[A]: A <:< A = new (A <:< A) {def apply(x: A) = x} // not in the <:< companion object because it is also intended to subsume identity (which is no longer implicit)
+
+  sealed abstract class =:=[From, To] extends (From => To)
+  object =:= {
+    implicit def tpEquals[A]: A =:= A = new (A =:= A) {def apply(x: A) = x}
+  }
+
+  sealed abstract class <%<[-From, +To] extends (From => To)
+  object <%< {
+    implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}
+  }
 
   /** A type for which there is aways an implicit value.
    *  @see fallbackCanBuildFrom in Array.scala

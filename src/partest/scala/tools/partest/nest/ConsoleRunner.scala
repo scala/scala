@@ -1,5 +1,5 @@
 /* NEST (New Scala Test)
- * Copyright 2007-2009 LAMP/EPFL
+ * Copyright 2007-2010 LAMP/EPFL
  * @author Philipp Haller
  */
 
@@ -32,7 +32,8 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
               "Testing resident compiler"),
       TestSet("shootout", fileFilter, "shootout", "Testing shootout tests"),
       TestSet("script", fileFilter, "script", "Testing script tests"),
-      TestSet("scalacheck", fileFilter, "scalacheck", "Testing ScalaCheck tests"))
+      TestSet("scalacheck", fileFilter, "scalacheck", "Testing ScalaCheck tests"),
+      TestSet("scalap", fileFilter, "scalap", "Run scalap decompiler tests"))
   }
 
   var fileManager: ConsoleFileManager = _

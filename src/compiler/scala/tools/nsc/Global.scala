@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -114,31 +114,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   } with TreeBrowsers
 
   val treeBrowser = treeBrowsers.create()
-
-
-//  val copy = new LazyTreeCopier()
-
-  /** A map of all doc comments, indexed by symbols.
-   *  Only active in onlyPresentation mode
-   */
-  val comments =
-    if (onlyPresentation) new HashMap[Symbol,String]
-    else null
-
-  /** A map of all doc comments source file offsets,
-   *  indexed by symbols.
-   *  Only active in onlyPresentation mode
-   */
-  val commentOffsets =
-    if (onlyPresentation) new HashMap[Symbol,Int]
-    else null
-
-  /** A map of argument names for methods
-   *  !!! can be dropped once named method arguments are in !!!
-   */
-  val methodArgumentNames =
-    if (onlyPresentation) new HashMap[Symbol,List[List[Symbol]]]
-    else null
 
   // ------------ Hooks for interactive mode-------------------------
 
@@ -302,8 +277,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       val unit0 = currentRun.currentUnit
       try {
         currentRun.currentUnit = unit
-        reporter.setSource(unit.source)
-        if (!cancelled(unit)) apply(unit)
+        if (!cancelled(unit))
+          reporter.withSource(unit.source) { apply(unit) }
         currentRun.advanceUnit
       } finally {
         //assert(currentRun.currentUnit == unit)
@@ -546,7 +521,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   protected def computeInternalPhases() {
     phasesSet += syntaxAnalyzer                        // The parser
     phasesSet += analyzer.namerFactory                 // note: types are there because otherwise
-    phasesSet += analyzer.typerFactory                 // consistency check after refchecks would fail.
+    phasesSet += analyzer.packageObjects               // consistency check after refchecks would fail.
+    phasesSet += analyzer.typerFactory
     phasesSet += superAccessors			       // add super accessors
     phasesSet += pickler			       // serialize symbol tables
     phasesSet += refchecks			       // perform reference and override checking, translate nested objects
@@ -758,7 +734,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
       val depSources = dependencyAnalysis.filter(_sources.removeDuplicates) // bug #1268, scalac confused by duplicated filenames
-      val sources = pkgObjectsFirst(depSources)
+      val sources = scalaObjectFirst(depSources)
       if (reporter.hasErrors)
         return  // there is a problem already, e.g. a
                 // plugin was passed a bad option
@@ -889,11 +865,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       var localPhase = firstPhase.asInstanceOf[GlobalPhase]
       while (localPhase != null && (localPhase.id  < globalPhase.id || localPhase.id <= namerPhase.id)/* && !reporter.hasErrors*/) {
         val oldSource = reporter.getSource
-        reporter.setSource(unit.source)
-        atPhase(localPhase)(localPhase.applyPhase(unit))
+        reporter.withSource(unit.source) {
+          atPhase(localPhase)(localPhase.applyPhase(unit))
+        }
         val newLocalPhase = localPhase.next.asInstanceOf[GlobalPhase]
         localPhase = if (localPhase == newLocalPhase) null else newLocalPhase
-        reporter.setSource(oldSource)
       }
       refreshProgress
     }
@@ -908,18 +884,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
 
-    private def pkgObjectsFirst(files: List[SourceFile]) = {
+    private def scalaObjectFirst(files: List[SourceFile]) = {
       def inScalaFolder(f: SourceFile) =
         f.file.container.name == "scala"
       val res = new ListBuffer[SourceFile]
-      var scalaObject: Option[SourceFile] = None
       for (file <- files) file.file.name match {
-        case "ScalaObject.scala" if inScalaFolder(file) => scalaObject = Some(file)
-        case "package.scala" => file +=: res // prepend package objects
-        case _ => res += file                // append all others
+        case "ScalaObject.scala" if inScalaFolder(file) => file +=: res
+        case _ => res += file
       }
-      scalaObject.map(res.+=:(_)) // ScalaObject 1st
-      res.toList                  // then package objects, then others
+      res.toList
     }
   } // class Run
 

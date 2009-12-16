@@ -13,7 +13,7 @@ import java.awt.{Color, Dimension, Graphics, Graphics2D, Point, geom}
 object LinePainting extends SimpleSwingApplication {
   lazy val ui = new Panel {
     background = Color.white
-    preferredSize = (200,200)
+    preferredSize = ((200,200): Dimension)
 
     focusable = true
     listenTo(mouse.clicks, mouse.moves, keys)

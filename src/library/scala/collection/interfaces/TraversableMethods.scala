@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -24,7 +24,7 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This] with Traversable[
   // maps/iteration
   def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That
-  def partialMap[B, That](pf: PartialFunction[Any, B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def partialMap[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That
 
   // new collections
   def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[This, B, That]): That

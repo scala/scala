@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -122,7 +122,7 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
             if (coreSize - activeBlocked < numCores && coreSize < maxSize) {
               coreSize = numCores + activeBlocked
               executor.setCorePoolSize(coreSize)
-            } else if (terminate && allTerminated) {
+            } else if (terminate && allActorsTerminated) {
               // if all worker threads idle terminate
               if (executor.getActiveCount() == 0) {
                 Debug.info(this+": initiating shutdown...")

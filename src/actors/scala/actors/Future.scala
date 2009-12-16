@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2005-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2005-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -27,8 +27,14 @@ import scheduler.DefaultThreadPoolScheduler
  * @author Philipp Haller
  */
 abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T] with Function0[T] {
+  private[actors] var fvalue: Option[Any] = None
+  private[actors] def fvalueTyped = fvalue.get.asInstanceOf[T]
+
   @deprecated("this member is going to be removed in a future release")
-  protected var value: Option[Any] = None
+  protected def value: Option[Any] = fvalue
+  @deprecated("this member is going to be removed in a future release")
+  protected def value_=(x: Option[Any]) { fvalue = x }
+
   def isSet: Boolean
 }
 
@@ -145,19 +151,19 @@ object Futures {
   private[actors] def fromInputChannel[T](inputChannel: InputChannel[T]): Future[T] =
     new Future[T](inputChannel) {
       def apply() =
-        if (isSet) value.get.asInstanceOf[T]
+        if (isSet) fvalueTyped
         else inputChannel.receive {
-          case any => value = Some(any); value.get.asInstanceOf[T]
+          case any => fvalue = Some(any); fvalueTyped
         }
       def respond(k: T => Unit): Unit =
-        if (isSet) k(value.get.asInstanceOf[T])
+        if (isSet) k(fvalueTyped)
         else inputChannel.react {
- 	  case any => value = Some(any); k(value.get.asInstanceOf[T])
+          case any => fvalue = Some(any); k(fvalueTyped)
         }
-      def isSet = value match {
+      def isSet = fvalue match {
         case None => inputChannel.receiveWithin(0) {
           case TIMEOUT => false
-          case any => value = Some(any); true
+          case any => fvalue = Some(any); true
         }
         case Some(_) => true
       }

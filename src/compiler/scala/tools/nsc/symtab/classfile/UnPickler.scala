@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -198,7 +198,7 @@ abstract class UnPickler {
           if (sym == NoSymbol && !owner.hasFlag(OVERLOADED)) {
             errorMissingRequirement(
               "reference " + (if (name.isTypeName) "type " else "value ") +
-              name.decode + " of " + owner + " refers to nonexisting symbol.")
+              name.decode + " of " + owner.tpe.widen + " refers to nonexisting symbol.")
           }
         case NONEsym =>
           sym = NoSymbol
@@ -538,7 +538,7 @@ abstract class UnPickler {
             case other => errorBadSignature("Document comment not a string (" + other + ")")
           }
           val definition = readTreeRef()
-          DocDef(comment, definition)
+          DocDef(DocComment(comment, NoPosition), definition)
 
         case TEMPLATEtree =>
           setSym()

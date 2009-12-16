@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -14,21 +14,9 @@ package scala.collection
 import generic._
 import mutable.Builder
 
-/** <p>
- *    Class <code>Seq[A]</code> represents sequences of elements
- *    of type <code>A</code>.<br/>
- *    It adds the following methods to class <code>Iterable</code>:
- *    <code>length</code>, <code>lengthCompare</code>, <code>apply</code>,
- *    <code>isDefinedAt</code>, <code>segmentLength</code>,
- *    <code>prefixLength</code>, <code>indexWhere</code>, <code>indexOf</code>,
- *    <code>lastIndexWhere</code>, <code>lastIndexOf</code>, <code>reverse</code>,
- *    <code>reverseIterator</code>, <code>startsWith</code>,
- *    <code>endsWith</code>, <code>indexOfSeq</code>.
- *  </p>
- *
- *  @author  Martin Odersky
- *  @author  Matthias Zenger
- *  @version 1.0, 16/07/2003
+/** A base trait for sequences.
+ *  $seqInfo
+ *  @tparam A    the element type of the $coll
  */
 trait Seq[+A] extends PartialFunction[Int, A]
                       with Iterable[A]
@@ -37,16 +25,14 @@ trait Seq[+A] extends PartialFunction[Int, A]
   override def companion: GenericCompanion[Seq] = Seq
 }
 
-/** Factory object for <code>Seq</code> trait.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- */
+/** $factoryInfo */
 object Seq extends SeqFactory[Seq] {
 
   private[collection] val hashSeed = "Seq".hashCode
 
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = new GenericCanBuildFrom[A]
+
   def newBuilder[A]: Builder[A, Seq[A]] = immutable.Seq.newBuilder[A]
 
   @deprecated("use View instead")

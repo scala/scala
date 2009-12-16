@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -32,16 +32,16 @@ import generic._
  *  @version 2.8
  *  @since   2.3
  */
-@serializable @SerialVersionUID(4020728942921483037L)
+@serializable @SerialVersionUID(1L)
 class HashSet[A] extends Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]
                     with mutable.FlatHashTable[A] {
   override def companion: GenericCompanion[HashSet] = HashSet
 
-  protected var later: HashSet[A] = null
-  protected var changedElem: A = _
-  protected var deleted: Boolean = _
+  @transient protected var later: HashSet[A] = null
+  @transient protected var changedElem: A = _
+  @transient protected var deleted: Boolean = _
 
   def contains(elem: A): Boolean = synchronized {
     var m = this
@@ -99,10 +99,12 @@ class HashSet[A] extends Set[A]
   private def logLimit: Int = math.sqrt(table.length).toInt
 
   private def markUpdated(elem: A, del: Boolean) {
-    val lv = loadFactor
+    val lf = loadFactor
     later = new HashSet[A] {
       override def initialSize = 0
-      override def loadFactor = lv
+      /* We need to do this to avoid a reference to the outer HashMap */
+      def _newLoadFactor = lf
+      override def loadFactor = _newLoadFactor
       table     = HashSet.this.table
       tableSize = HashSet.this.tableSize
       threshold = HashSet.this.threshold
@@ -131,6 +133,14 @@ class HashSet[A] extends Set[A]
     var m = this
     while (m.later != null) m = m.later
     if (m ne this) makeCopy(m)
+  }
+
+  private def writeObject(s: java.io.ObjectOutputStream) {
+    serializeTo(s)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    init(in, x => x)
   }
 }
 

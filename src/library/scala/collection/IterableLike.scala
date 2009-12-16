@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -13,34 +13,48 @@ import generic._
 import immutable.{List, Stream}
 import annotation.unchecked.uncheckedVariance
 
-/** <p>
- *    A template trait for iterable collections.
- *  </p>
- *  <p>
- *    Collection classes mixing in this trait provide a method
- *    <code>iterator</code> which returns an iterator over all the
- *    elements contained in the collection. They also provide a method
- *    <code>newBuilder</code> which creates a builder for collections of the
- *    same kind.
- *  </p>
- *  <p>
- *    This trait implements <code>Iterable</code>'s <code>foreach</code>
- *    method by stepping through all elements. Subclasses of <code>Iterable</code>
- *    should re-implement <code>foreach</code> with something more efficient,
- *    if possible.
- *  </p>
- *  <p>
- *    This trait adds methods <code>iterator</code>, <code>sameElements</code>,
- *    <code>takeRight</code>, <code>dropRight</code> to the methods inherited
- *    from trait <a href="../Iterable.html" target="ContentFrame">
- *    <code>Iterable</code></a>.
- *  </p>
+/** A template trait for iterable collections of type `Iterable[A]`.
+ *  $iterableInfo
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
+ *  @define iterableInfo
+ *    This is a base trait for all scala collections that define an `iterator`
+ *    method to step through one-by-one the collection's elements.
+ *    Implementations of this trait need to provide a concrete method with
+ *    signature:
+ *    {{{
+ *       def iterator: Iterator[A]
+ *    }}}
+ *    They also need to provide a method `newBuilder`
+ *    which creates a builder for collections of the same kind.
  *
- *  @note  This trait replaces every method that uses breaks in the original by an iterator version.
+ *    This trait implements `Iterable`'s `foreach`
+ *    method by stepping through all elements using `iterator`.
+ *    Subclasses should re-implement `foreach` with something more efficient,
+ *    if possible.
+
+ *    This trait adds methods `iterator`, `sameElements`,
+ *    `takeRight`, `dropRight` to the methods inherited
+ *    from trait <a href="../Traversable.html" target="ContentFrame">
+ *    `Traversable`</a>.
+
+ *    Note: This trait replaces every method that uses `break` in
+ *    `TraversableLike` by an iterator version.
  *
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
+ *
+ *  @define Coll Iterable
+ *  @define coll iterable collection
+ *  @define zipthatinfo the class of the returned collection. Where possible, `That` is
+ *    the same class as the current collection class `Repr`, but this
+ *    depends on the element type `(A1, B)` being admissible for that class,
+ *    which means that an implicit instance of type `CanBuildFrom[Repr, (A1, B), That]`.
+ *    is found.
+ *  @define zipbfinfo  an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `(A1, B)`.
  */
 trait IterableLike[+A, +Repr] extends Equals with TraversableLike[A, Repr] {
 self =>
@@ -58,102 +72,40 @@ self =>
   @deprecated("use `iterator' instead")
   def elements = iterator
 
-  /** Apply a function <code>f</code> to all elements of this
-   *  iterable object.
+  /** Applies a function `f` to all elements of this $coll.
    *
-   *  @param  f   A function that is applied for its side-effect to every element.
-   *              The result (of arbitrary type U) of function `f` is discarded.
+   *    Note: this method underlies the implementation of most other bulk operations.
+   *    Subclasses should re-implement this method if a more efficient implementation exists.
    *
-   *  @note This method underlies the implementation of most other bulk operations.
-   *        Implementing `foreach` with `iterator` is often suboptimal.
-   *        So `foreach` should be overridden in concrete collection classes if a more
-   *        efficient implementation is available.
+   *  @usecase def foreach(f: A => Unit): Unit
    */
-  def foreach[U](f: A => U): Unit = iterator.foreach(f)
+  def foreach[U](f: A => U): Unit =
+    iterator.foreach(f)
 
+  override /*TraversableLike*/ def forall(p: A => Boolean): Boolean =
+    iterator.forall(p)
+  override /*TraversableLike*/ def exists(p: A => Boolean): Boolean =
+    iterator.exists(p)
+  override /*TraversableLike*/ def find(p: A => Boolean): Option[A] =
+    iterator.find(p)
+/*
+  override /*TraversableLike*/ def mapFind[B](f: A => Option[B]): Option[B] =
+    iterator.mapFind(f)
+*/
+  override /*TraversableLike*/ def isEmpty: Boolean =
+    !iterator.hasNext
+  override /*TraversableLike*/ def foldRight[B](z: B)(op: (A, B) => B): B =
+    iterator.foldRight(z)(op)
+  override /*TraversableLike*/ def reduceRight[B >: A](op: (A, B) => B): B =
+    iterator.reduceRight(op)
+  override /*TraversableLike*/ def toIterable: Iterable[A] =
+    thisCollection
 
-  /** Return true iff the given predicate `p` yields true for all elements
-   *  of this iterable.
-   *
-   *  @note May not terminate for infinite-sized collections.
-   *  @param   p     the predicate
-   */
-  override def forall(p: A => Boolean): Boolean = iterator.forall(p)
+  override /*TraversableLike*/ def head: A =
+    if (isEmpty) throw new NoSuchElementException
+    else iterator.next
 
-  /** Return true iff there is an element in this iterable for which the
-   *  given predicate `p` yields true.
-   *
-   *  @note May not terminate for infinite-sized collections.
-   *  @param   p     the predicate
-   */
-  override def exists(p: A => Boolean): Boolean = iterator.exists(p)
-
-  /** Find and return the first element of the iterable object satisfying a
-   *  predicate, if any.
-   *
-   *  @note may not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this iterable is ordered.
-   *  @param p the predicate
-   *  @return an option containing the first element in the iterable object
-   *  satisfying <code>p</code>, or <code>None</code> if none exists.
-   */
-  override def find(p: A => Boolean): Option[A] = iterator.find(p)
-
-  /** Does this iterable contain no elements?
-   */
-  override def isEmpty: Boolean = !this.iterator.hasNext
-
-  /** Combines the elements of this iterable together using the binary
-   *  function <code>f</code>, from right to left, and starting with
-   *  the value <code>z</code>.
-   *
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this iterable is ordered, or
-   *        the operator is associative and commutative.
-   *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
-   *          if the iterable is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
-   */
-  override def foldRight[B](z: B)(op: (A, B) => B): B =
-    this.iterator.foldRight(z)(op)
-
-  /** Combines the elements of this iterable object together using the binary
-   *  operator <code>op</code>, from right to left
-   *  @note Will not terminate for infinite-sized collections.
-   *  @note Might return different results for different runs, unless this iterable is ordered, or
-   *        the operator is associative and commutative.
-   *  @param op  The operator to apply
-   *
-   *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
-   *          if the iterable object has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
-   *          a<sub>n</sub></code>.
-   *
-   *  @throws Predef.UnsupportedOperationException if the iterator is empty.
-   */
-  override def reduceRight[B >: A](op: (A, B) => B): B =
-    this.iterator.reduceRight(op)
-
-  /** The iterable itself */
-  override def toIterable: Iterable[A] = thisCollection
-
-  /** The first element of this iterable.
-   *
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   *  @throws Predef.NoSuchElementException if the iterable is empty.
-   */
-  override def head: A =
-    if (isEmpty)
-      throw new NoSuchElementException
-    else
-      this.iterator.next
-
-  /** Return an iterable consisting only of the first <code>n</code>
-   *  elements of this iterable, or else the whole iterable, if it has less
-   *  than <code>n</code> elements.
-   *
-   *  @param n the number of elements to take
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  override def take(n: Int): Repr = {
+  override /*TraversableLike*/ def take(n: Int): Repr = {
     val b = newBuilder
     var i = 0
     val it = iterator
@@ -164,17 +116,7 @@ self =>
     b.result
   }
 
-  /** A sub-iterable starting at index `from`
-   *  and extending up to (but not including) index `until`.
-   *
-   *  @note c.slice(from, to)  is equivalent to (but possibly more efficient than)
-   *  c.drop(from).take(to - from)
-   *
-   *  @param from   The index of the first element of the returned subsequence
-   *  @param until  The index of the element following the returned subsequence
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  override def slice(from: Int, until: Int): Repr = {
+  override /*TraversableLike*/ def slice(from: Int, until: Int): Repr = {
     val b = newBuilder
     var i = from
     val it = iterator drop from
@@ -185,13 +127,7 @@ self =>
     b.result
   }
 
-  /** Returns the longest prefix of this iterable whose elements satisfy
-   *  the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   */
-  override def takeWhile(p: A => Boolean): Repr = {
+  override /*TraversableLike*/ def takeWhile(p: A => Boolean): Repr = {
     val b = newBuilder
     val it = iterator
     while (it.hasNext) {
@@ -202,10 +138,12 @@ self =>
     b.result
   }
 
-  /** Returns the rightmost <code>n</code> elements from this iterable.
+  /** Selects last ''n'' elements.
+   *  $orderDependent
    *
    *  @param n the number of elements to take
-   *  @note  Might return different results for different runs, unless this iterable is ordered
+   *  @return a $coll consisting only of the last `n` elements of this $coll, or else the
+   *          whole $coll, if it has less than `n` elements.
    */
   def takeRight(n: Int): Repr = {
     val b = newBuilder
@@ -219,10 +157,12 @@ self =>
     b.result
   }
 
-  /** Returns the iterable wihtout its rightmost <code>n</code> elements.
+  /** Selects all elements except first ''n'' ones.
+   *  $orderDependent
    *
-   *  @param n the number of elements to take
-   *  @note  Might return different results for different runs, unless this iterable is ordered
+   *  @param  n    The number of elements to take
+   *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+   *          empty $coll, if this $coll has less than `n` elements.
    */
   def dropRight(n: Int): Repr = {
     val b = newBuilder
@@ -235,17 +175,7 @@ self =>
     b.result
   }
 
-  /** Fills the given array <code>xs</code> with at most `len` elements of
-   *  this iterable starting at position `start`.
-   *  Copying will stop once either the end of the current iterable is reached or
-   *  `len` elements have been copied or the end of the array is reached.
-   *
-   *  @note Will not terminate for infinite-sized collections.
-   *  @param  xs the array to fill.
-   *  @param  start starting index.
-   *  @param  len number of elements to copy
-   */
-  override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
+  override /*TraversableLike*/ def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) {
     var i = start
     val end = (start + len) min xs.length
     val it = iterator
@@ -255,10 +185,29 @@ self =>
     }
   }
 
-  /** Returns an iterable formed from this iterable and another iterable
+  /** Returns a $coll formed from this $coll and another iterable collection
    *  by combining corresponding elements in pairs.
-   *  If one of the two iterables is longer than the other, its remaining elements are ignored.
+   *  If one of the two collections is longer than the other, its remaining elements are ignored.
+   *
+   *  $orderDependent
+   *
    *  @param   that  The iterable providing the second half of each result pair
+   *  @tparam  A1    the type of the first half of the returned pairs (this is always a supertype
+   *                 of the collection's element type `A`).
+   *  @tparam  B     the type of the second half of the returned pairs
+   *  @tparam  That  $zipthatinfo
+   *  @param   bf    $zipbfinfo
+   *  @return        a new collection of type `That` containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the minimum of the lengths of this $coll$ and `that`.
+   *
+   *  @usecase def zip[B](that: Iterable[B]): $Coll[(A, B)]
+   *
+   *  @param   that  The iterable providing the second half of each result pair
+   *  @tparam  B     the type of the second half of the returned pairs
+   *  @return        a new $coll containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the minimum of the lengths of this $coll$ and `that`.
    */
   def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
@@ -269,25 +218,33 @@ self =>
     b.result
   }
 
-  /** Returns an iterable formed from this iterable and the specified iterable
-   *  <code>that</code> by associating each element of the former with
-   *  the element at the same position in the latter.
+  /** Returns a $coll formed from this $coll and another iterable collection
+   *  by combining corresponding elements in pairs.
+   *  If one of the two collections is shorter than the other,
+   *  placeholder elements are used to extend the shorter collection to the length of the longer.
    *
-   *  @param that     iterable <code>that</code> may have a different length
-   *                  as the self iterable.
-   *  @param thisElem element <code>thisElem</code> is used to fill up the
-   *                  resulting iterable if the self iterable is shorter than
-   *                  <code>that</code>
-   *  @param thatElem element <code>thatElem</code> is used to fill up the
-   *                  resulting iterable if <code>that</code> is shorter than
-   *                  the self iterable
-   *  @return         <code>Sequence((a<sub>0</sub>,b<sub>0</sub>), ...,
-   *                  (a<sub>n</sub>,b<sub>n</sub>), (elem,b<sub>n+1</sub>),
-   *                  ..., {elem,b<sub>m</sub>})</code>
-   *                  when <code>[a<sub>0</sub>, ..., a<sub>n</sub>] zip
-   *                  [b<sub>0</sub>, ..., b<sub>m</sub>]</code> is
-   *                  invoked where <code>m &gt; n</code>.
+   *  $orderDependent
    *
+   *  @param that     the iterable providing the second half of each result pair
+   *  @param thisElem the element to be used to fill up the result if this $coll is shorter than `that`.
+   *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
+   *  @return        a new collection of type `That` containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the maximum of the lengths of this $coll$ and `that`.
+   *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
+   *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
+   *
+   *  @usecase def zipAll[B](that: Iterable[B], thisElem: A, thatElem: B): $Coll[(A, B)]
+   *
+   *  @param   that  The iterable providing the second half of each result pair
+   *  @param thisElem the element to be used to fill up the result if this $coll is shorter than `that`.
+   *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
+   *  @tparam  B     the type of the second half of the returned pairs
+   *  @return        a new $coll containing pairs consisting of
+   *                 corresponding elements of this $coll and `that`. The length
+   *                 of the returned collection is the maximum of the lengths of this $coll$ and `that`.
+   *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
+   *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
    */
   def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
@@ -302,7 +259,30 @@ self =>
     b.result
   }
 
-  /** Zips this iterable with its indices (startiong from 0).
+  /** Zips this $coll with its indices.
+   *
+   *  $orderDependent
+   *
+   *  @tparam  A1    the type of the first half of the returned pairs (this is always a supertype
+   *                 of the collection's element type `A`).
+   *  @tparam  That  the class of the returned collection. Where possible, `That` is
+   *    the same class as the current collection class `Repr`, but this
+   *    depends on the element type `(A1, Int)` being admissible for that class,
+   *    which means that an implicit instance of type `CanBuildFrom[Repr, (A1, Int), That]`.
+   *    is found.
+   *  @tparam  bf    an implicit value of class `CanBuildFrom` which determines the
+   *    result class `That` from the current representation type `Repr`
+   *    and the new element type `(A1, Int)`.
+   *  @return        A new collection of type `That` containing pairs consisting of all elements of this
+   *                 $coll paired with their index. Indices start at `0`.
+   *
+   *  @usecase def zipWithIndex: $Coll[(A, Int)]
+   *
+   *  @return        A new $coll containing pairs consisting of all elements of this
+   *                 $coll paired with their index. Indices start at `0`.
+   *  @example
+   *    `List("a", "b", "c").zipWithIndex = List(("a", 0), ("b", 1), ("c", 2))`
+   *
    */
   def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
@@ -314,12 +294,19 @@ self =>
     b.result
   }
 
-  /** Checks if the other iterable object contains the same elements as this one.
+  /** Checks if the other iterable collection contains the same elements in the same order as this $coll.
    *
-   *  @note will not terminate for infinite-sized iterables.
-   *  @param that  the other iterable
-   *  @return true, iff both iterables contain the same elements in the same order.
-   *  @note  Might return different results for different runs, unless this iterable is ordered
+   *  $orderDependent
+   *  $willNotTerminateInf
+   *
+   *  @param that  the collection to compare with.
+   *  @tparam B    the type of the elements of collection `that`.
+   *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
+   *
+   *  @usecase  def sameElements(that: Iterable[A]): Boolean
+   *
+   *  @param that  the collection to compare with.
+   *  @return `true`, if both collections contain the same elements in the same order, `false` otherwise.
    */
   def sameElements[B >: A](that: Iterable[B]): Boolean = {
     val these = this.iterator
@@ -331,43 +318,32 @@ self =>
     !these.hasNext && !those.hasNext
   }
 
-  /** Returns a stream with all elements in this iterable object.
-   */
-  override def toStream: Stream[A] = iterator.toStream
+  override /*TraversableLike*/ def toStream: Stream[A] = iterator.toStream
 
   /** Method called from equality methods, so that user-defined subclasses can
    *  refuse to be equal to other collections of the same kind.
+   *  @param   that   The object with which this $coll should be compared
+   *  @return  `true`, if this $coll can possibly equal `that`, `false` otherwise. The test
+   *           takes into consideration only the run-time types of objects but ignores their elements.
    */
-  override def canEqual(that: Any) = true
+  override /*TraversableLike*/ def canEqual(that: Any) = true
 
-  /** Creates a view of this iterable @see IterableView
-   */
-  override def view = new IterableView[A, Repr] {
+  override /*TraversableLike*/ def view = new IterableView[A, Repr] {
     protected lazy val underlying = self.repr
     override def iterator = self.iterator
   }
 
-  /** A sub-iterable view  starting at index `from`
-   *  and extending up to (but not including) index `until`.
-   *
-   *  @param from   The index of the first element of the slice
-   *  @param until  The index of the element following the slice
-   *  @note  The difference between `view` and `slice` is that `view` produces
-   *         a view of the current iterable, whereas `slice` produces a new iterable.
-   *
-   *  @note  Might return different results for different runs, unless this iterable is ordered
-   *  @note view(from, to)  is equivalent to view.slice(from, to)
-   */
-  override def view(from: Int, until: Int) = view.slice(from, until)
+  override /*TraversableLike*/ def view(from: Int, until: Int) = view.slice(from, until)
 
   @deprecated("use `head' instead") def first: A = head
 
-  /** <code>None</code> if iterable is empty. */
+  /** `None` if iterable is empty.
+   */
   @deprecated("use `headOption' instead") def firstOption: Option[A] = headOption
 
   /**
-   * returns a projection that can be used to call non-strict <code>filter</code>,
-   * <code>map</code>, and <code>flatMap</code> methods that build projections
+   * returns a projection that can be used to call non-strict `filter`,
+   * `map`, and `flatMap` methods that build projections
    * of the collection.
    */
   @deprecated("use `view' instead")

@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -149,7 +149,7 @@ object JavaTokens {
     case ' ' | '\t' => true
     case _ => false
   }
-  import scala.tools.nsc.util.SourceFile._
+  import util.Chars._
 
   def isNewLine(at : Char) = at match {
     case CR | LF | FF => true

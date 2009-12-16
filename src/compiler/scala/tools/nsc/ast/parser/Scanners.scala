@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -7,11 +7,12 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.tools.nsc.util._
-import SourceFile.{LF, FF, CR, SU}
+import Chars.{LF, FF, CR, SU}
 import Tokens._
 import scala.annotation.switch
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.xml.Utility.{ isNameStart }
+import util.Chars._
 
 trait Scanners {
   val global : Global
@@ -103,11 +104,11 @@ trait Scanners {
     /** buffer for the documentation comment
      */
     var docBuffer: StringBuilder = null
-    var docOffset: Position = null
+    var docPos: Position = null
 
     /** Return current docBuffer and set docBuffer to null */
-    def flushDoc = {
-      val ret = if (docBuffer != null) (docBuffer.toString, docOffset) else null
+    def flushDoc: DocComment = {
+      val ret = if (docBuffer != null) DocComment(docBuffer.toString, docPos) else null
       docBuffer = null
       ret
     }
@@ -383,6 +384,7 @@ trait Scanners {
             getIdentRest()
           } else if (isSpecial(ch)) {
             putChar(ch)
+            nextChar()
             getOperatorRest()
           } else {
             syntaxError("illegal character")
@@ -882,32 +884,6 @@ trait Scanners {
     }
   } // end Scanner
 
-  // ------------- character classification --------------------------------
-
-  def isIdentifierStart(c: Char): Boolean =
-    ('A' <= c && c <= 'Z') ||
-    ('a' <= c && c <= 'a') ||
-    (c == '_') || (c == '$') ||
-    Character.isUnicodeIdentifierStart(c)
-
-  def isIdentifierPart(c: Char) =
-    isIdentifierStart(c) ||
-    ('0' <= c && c <= '9') ||
-    Character.isUnicodeIdentifierPart(c)
-
-  def isSpecial(c: Char) = {
-    val chtp = Character.getType(c)
-    chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
-  }
-
-  def isOperatorPart(c : Char) : Boolean = (c: @switch) match {
-    case '~' | '!' | '@' | '#' | '%' |
-         '^' | '*' | '+' | '-' | '<' |
-         '>' | '?' | ':' | '=' | '&' |
-         '|' | '/' | '\\' => true
-    case c => isSpecial(c)
-  }
-
   // ------------- keyword configuration -----------------------------------
 
   /** Keyword array; maps from name indices to tokens */
@@ -1090,8 +1066,8 @@ trait Scanners {
     }
 
     override def foundDocComment(value: String, start: Int, end: Int) {
-      docOffset = new RangePosition(unit.source, start, start, end)
-      unit.comment(docOffset, value)
+      docPos = new RangePosition(unit.source, start, start, end)
+      unit.comment(docPos, value)
     }
   }
 

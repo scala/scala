@@ -9,8 +9,8 @@ package scala.tools.nsc
 package backend
 package icode;
 
-import scala.tools.nsc.ast._;
-import scala.collection.mutable.{Stack, HashSet, BitSet};
+import scala.tools.nsc.ast._
+import scala.collection.mutable.{Stack, HashSet, BitSet, ListBuffer}
 
 trait Linearizers { self: ICodes =>
   import opcodes._;
@@ -201,4 +201,142 @@ trait Linearizers { self: ICodes =>
     }
   }
 
+  /** The MSIL linearizer is used only for methods with at least one exception handler.
+   *  It makes sure that all the blocks belonging to a `try`, `catch` or `finally` block
+   *  are emitted in an order that allows the lexical nesting of try-catch-finally, just
+   *  like in the source code.
+   */
+  class MSILLinearizer extends Linearizer {
+    /** The MSIL linearizer first calls a NormalLInearizer. This is because the ILGenerator checks
+     *  the stack size before emitting instructions. For instance, to emit a `store`, there needs
+     *  to be some value on the stack. This can blow up in situations like this:
+     *       ...
+     *       jump 3
+     *    4: store_local 0
+     *       jump 5
+     *    3: load_value
+     *       jump 4
+     *    5: ...
+     *  here, 3 must be scheduled first.
+     *
+     *  The NormalLinearizer also removes dead blocks (blocks without predecessor). This is important
+     *  in the following example:
+     *     try { throw new Exception }
+     *     catch { case e => throw e }
+     *  which adds a dead block containing just a "throw" (which, again, would blow up code generation
+     *  because of the stack size; there's no value on the stack when emitting that `throw`)
+     */
+    val normalLinearizer = new NormalLinearizer()
+
+    def linearize(m: IMethod): List[BasicBlock] = {
+
+      val handlersByCovered = m.exh.groupBy(_.covered)
+
+      // number of basic blocks covered by the entire try-catch expression
+      def size(covered: collection.immutable.Set[BasicBlock]) = {
+        val hs = handlersByCovered(covered)
+        covered.size + (hs :\ 0)((h, s) => h.blocks.length + s)
+      }
+
+      val tryBlocks = handlersByCovered.keysIterator.toList.sortWith(size(_) > size(_))
+
+      var result = normalLinearizer.linearize(m)
+
+      val frozen = HashSet[BasicBlock](result.head)
+      for (tryBlock <- tryBlocks) {
+        result = groupBlocks(m, result, handlersByCovered(tryBlock), frozen)
+      }
+      result
+    }
+
+    /** @param handlers a list of handlers covering the same blocks (same try, multiple catches)
+     *  @param frozen blocks can't be moved (fist block of a method, blocks directly following a try-catch)
+     */
+    def groupBlocks(method: IMethod, blocks: List[BasicBlock], handlers: List[ExceptionHandler], frozen: HashSet[BasicBlock]) = {
+      assert(blocks.head == method.code.startBlock, method)
+
+      // blocks before the try, and blocks for the try
+      val beforeAndTry = new ListBuffer[BasicBlock]()
+      // blocks for the handlers
+      val catches = handlers map (_ => new ListBuffer[BasicBlock]())
+      // blocks to be put at the end
+      val after = new ListBuffer[BasicBlock]()
+
+      var beforeTry = true
+      val head = handlers.head
+
+      for (b <- blocks) {
+        if (head covers b) {
+          beforeTry = false
+          beforeAndTry += b
+        } else {
+          val handlerIndex = handlers.indexWhere(_.blocks.contains(b))
+          if (handlerIndex >= 0) {
+            catches(handlerIndex) += b
+          } else if (beforeTry) {
+            beforeAndTry += b
+          } else {
+            after += b
+          }
+        }
+      }
+
+      // reorder the blocks in "catches" so that the "firstBlock" is actually first
+      for ((lb, handler) <- catches.zip(handlers)) {
+        lb -= handler.startBlock
+        handler.startBlock +=: lb
+      }
+
+      // The first block emitted after a try-catch must be the the one that the try / catch
+      // blocks jump to (because in msil, these jumps cannot be emitted manually)
+      var firstAfter: Option[BasicBlock] = None
+
+      // Find the (hopefully) unique successor, look at the try and all catch blocks
+      var blks = head.covered.toList :: handlers.map(_.blocks)
+      while (firstAfter.isEmpty && !blks.isEmpty) {
+        val b = blks.head
+        blks = blks.tail
+
+        val leaving = leavingBlocks(b)
+        // no leaving blocks when the try or catch ends with THROW or RET
+        if (!leaving.isEmpty) {
+          assert(leaving.size <= 1, leaving)
+          firstAfter = Some(leaving.head)
+        }
+      }
+      if (firstAfter.isDefined) {
+        val b = firstAfter.get
+        if (frozen contains b) {
+          assert(after contains b, b +", "+ method)
+        } else {
+          frozen += b
+          if (beforeAndTry contains b) {
+            beforeAndTry -= b
+          } else {
+            assert(after contains b, after)
+            after -= b
+          }
+          b +=: after
+        }
+      }
+
+      for (lb <- catches) { beforeAndTry ++= lb }
+      beforeAndTry ++= after
+      beforeAndTry.toList
+    }
+
+    /** Returns all direct successors of `blocks` wich are not part
+     *  that list, i.e. successors outside the `blocks` list.
+     */
+    private def leavingBlocks(blocks: List[BasicBlock]) = {
+      val res = new HashSet[BasicBlock]()
+      for (b <- blocks; s <- b.directSuccessors; if (!blocks.contains(s)))
+        res += s
+      res
+    }
+
+    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
+      error("not implemented")
+    }
+  }
 }

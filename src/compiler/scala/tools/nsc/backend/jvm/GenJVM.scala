@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Iulian Dragos
  */
 
@@ -455,14 +455,18 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addAnnotations(jmember: JMember, annotations: List[AnnotationInfo]) {
-      val toEmit = annotations.filter(shouldEmitAnnotation(_))
+      if (annotations.exists(_.atp.typeSymbol == definitions.DeprecatedAttr)) {
+        val attr = jmember.getContext().JOtherAttribute(
+          jmember.getJClass(), jmember, nme.DeprecatedATTR.toString,
+          new Array[Byte](0), 0)
+        jmember.addAttribute(attr)
+      }
 
+      val toEmit = annotations.filter(shouldEmitAnnotation(_))
       if (toEmit.isEmpty) return
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
-
       emitJavaAnnotations(jmember.getConstantPool, buf, toEmit)
-
       addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
     }
 
@@ -500,8 +504,9 @@ abstract class GenJVM extends SubComponent {
         for (sym <- cls.info.decls.iterator if sym.isClass)
           innerClasses = innerClasses + sym;
       }
+
       // add inner classes which might not have been referenced yet
-      atPhase(currentRun.erasurePhase) {
+      atPhase(currentRun.erasurePhase.next) {
         addOwnInnerClasses(clasz.symbol)
         addOwnInnerClasses(clasz.symbol.linkedClassOfClass)
       }
@@ -838,7 +843,7 @@ abstract class GenJVM extends SubComponent {
         atPhase(currentRun.picklerPhase) (
           m.owner != definitions.ObjectClass
           && m.isMethod
-          && !m.hasFlag(Flags.CASE | Flags.PROTECTED)
+          && !m.hasFlag(Flags.CASE | Flags.PROTECTED | Flags.DEFERRED)
           && !m.isConstructor
           && !m.isStaticMember
           && !(m.owner == definitions.AnyClass)
@@ -985,9 +990,11 @@ abstract class GenJVM extends SubComponent {
           if (settings.debug.value)
             log("Adding exception handler " + e + "at block: " + e.startBlock + " for " + method +
                 " from: " + p._1 + " to: " + p._2 + " catching: " + e.cls);
+          val cls = if (e.cls == NoSymbol || e.cls == definitions.ThrowableClass) null
+                    else javaName(e.cls)
           jcode.addExceptionHandler(p._1, p._2,
                                     labels(e.startBlock).getAnchor(),
-                                    if (e.cls == NoSymbol) null else javaName(e.cls))
+                                    cls)
         } else
           log("Empty exception range: " + p)
       }

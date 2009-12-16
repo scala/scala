@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -16,33 +16,49 @@ import mutable.ListBuffer
 import immutable.List
 import scala.util.control.Breaks._
 
-/** Class <code>Linear[A]</code> represents linear sequences of elements.
- *  For such sequences `isEmpty`, `head` and `tail` are guaranteed to be
- *  efficient constant time (or near so) operations.
- *  It does not add any methods to <code>Seq</code> but overrides
- *  several methods with optimized implementations.
+/** A template trait for linear sequences of type `LinearSeq[A]`.
  *
+ *  $linearSeqInfo
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 1.0, 16/07/2003
  *  @since   2.8
+ *
+ *  @define  Coll  LinearSeq
+ *  @define  linearSeqInfo
+ *  Linear sequences are defined in terms of three abstract methods, which are assumed
+ *  to have efficient implementations. These are:
+ *  {{{
+ *     def isEmpty: Boolean
+ *     def head: A
+ *     def tail: Repr
+ *  }}}
+ *  Here, `A` is the type of the sequence elements and `Repr` is the type of the sequence itself.
+ *
+ *  Linear sequences do not define any new methods wrt `Seq`. However, abstract `Seq` methods
+ *  are defined in terms of `isEmpty`, `head`, and `tail`, and several other methods are overridden
+ *  with optimized implementations.
+ *
+ *  @tparam A    the element type of the $coll
+ *  @tparam Repr the type of the actual $coll containing the elements.
  */
 trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr] { self: Repr =>
 
   override protected[this] def thisCollection: LinearSeq[A] = this.asInstanceOf[LinearSeq[A]]
   override protected[this] def toCollection(repr: Repr): LinearSeq[A] = repr.asInstanceOf[LinearSeq[A]]
 
-  /** Abstract method to be implemented in a subclass */
   def isEmpty: Boolean
 
-  /** Abstract method to be implemented in a subclass */
   def head: A
 
-  /** Abstract method to be implemented in a subclass */
   def tail: Repr
 
-   /** Returns the number of elements in the linear sequence.
-    */
+  /** The length of the $coll.
+   *
+   *  $willNotTerminateInf
+   *
+   *  Note: the execution of `length` may take time proportial to the length of the sequence.
+   */
   def length: Int = {
     var these = self
     var len = 0
@@ -53,21 +69,18 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     len
   }
 
-  /** Returns the <code>n</code>-th element of this linear sequence. The first element
-   *  (head of the linear sequence) is at position 0.
-   *
-   *  @param n index of the element to return
-   *  @return  the element at position <code>n</code> in this linear sequence.
-   *  @throws Predef.NoSuchElementException if the linear sequence is too short.
+  /** Selects an element by its index in the $coll.
+   *  Note: the execution of `apply` may take time proportial to the index value.
+   *  @throws `IndexOutOfBoundsEsxception` if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(n: Int): A = {
-    require(n >= 0)
-    drop(n).head
+    val rest = drop(n)
+    if (n < 0 || rest.isEmpty) throw new IndexOutOfBoundsException
+    rest.head
   }
 
-  /** Returns the elements in the sequence as an iterator
-   */
-  override def iterator: Iterator[A] = new Iterator[A] {
+  override /*IterableLike*/
+  def iterator: Iterator[A] = new Iterator[A] {
     var these = self
     def hasNext: Boolean = !these.isEmpty
     def next: A =
@@ -77,12 +90,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     override def toList: List[A] = these.toList
   }
 
-  /** Apply the given function <code>f</code> to each element of this linear sequence
-   *  (while respecting the order of the elements).
-   *
-   *  @param f the treatment to apply to each element.
-   */
-  override def foreach[B](f: A => B) {
+  override /*IterableLike*/
+  def foreach[B](f: A => B) {
     var these = this
     while (!these.isEmpty) {
       f(these.head)
@@ -90,14 +99,9 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     }
   }
 
-  /** Tests if the predicate <code>p</code> is satisfied by all elements
-   *  in this list.
-   *
-   *  @param p the test predicate.
-   *  @return  <code>true</code> iff all elements of this list satisfy the
-   *           predicate <code>p</code>.
-   */
-  override def forall(p: A => Boolean): Boolean = {
+
+  override /*IterableLike*/
+  def forall(p: A => Boolean): Boolean = {
     var these = this
     while (!these.isEmpty) {
       if (!p(these.head)) return false
@@ -106,14 +110,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     true
   }
 
-  /** Tests the existence in this list of an element that satisfies the
-   *  predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @return  <code>true</code> iff there exists an element in this list that
-   *           satisfies the predicate <code>p</code>.
-   */
-  override def exists(p: A => Boolean): Boolean = {
+  override /*IterableLike*/
+  def exists(p: A => Boolean): Boolean = {
     var these = this
     while (!these.isEmpty) {
       if (p(these.head)) return true
@@ -122,12 +120,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     false
   }
 
-  /** Count the number of elements in the iterable which satisfy a predicate.
-   *
-   *  @param p the predicate for which to count
-   *  @return  the number of elements satisfying the predicate <code>p</code>.
-   */
-  override def count(p: A => Boolean): Int = {
+  override /*TraversableLike*/
+  def count(p: A => Boolean): Int = {
     var these = this
     var cnt = 0
     while (!these.isEmpty) {
@@ -137,14 +131,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     cnt
   }
 
-  /** Find and return the first element of the list satisfying a
-   *  predicate, if any.
-   *
-   *  @param p the predicate
-   *  @return the first element in the list satisfying <code>p</code>,
-   *  or <code>None</code> if none exists.
-   */
-  override def find(p: A => Boolean): Option[A] = {
+  override /*IterableLike*/
+  def find(p: A => Boolean): Option[A] = {
     var these = this
     while (!these.isEmpty) {
       if (p(these.head)) return Some(these.head)
@@ -152,16 +140,19 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     }
     None
   }
-
-  /** Combines the elements of this list together using the binary
-   *  function <code>f</code>, from left to right, and starting with
-   *  the value <code>z</code>.
-   *
-   *  @return <code>f(... (f(f(z, a<sub>0</sub>), a<sub>1</sub>) ...),
-   *          a<sub>n</sub>)</code> if the list is
-   *          <code>[a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub>]</code>.
-   */
-  override def foldLeft[B](z: B)(f: (B, A) => B): B = {
+/*
+  override def mapFind[B](f: A => Option[B]): Option[B] = {
+    var res: Option[B] = None
+    var these = this
+    while (res.isEmpty && !these.isEmpty) {
+      res = f(these.head)
+      these = these.tail
+    }
+    res
+  }
+*/
+  override /*TraversableLike*/
+  def foldLeft[B](z: B)(f: (B, A) => B): B = {
     var acc = z
     var these = this
     while (!these.isEmpty) {
@@ -171,50 +162,24 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     acc
   }
 
-  /** Combines the elements of this list together using the binary
-   *  function <code>f</code>, from right to left, and starting with
-   *  the value <code>z</code>.
-   *
-   *  @return <code>f(a<sub>0</sub>, f(a<sub>1</sub>, f(..., f(a<sub>n</sub>, z)...)))</code>
-   *          if the list is <code>[a<sub>0</sub>, a1, ..., a<sub>n</sub>]</code>.
-   */
-  override def foldRight[B](z: B)(f: (A, B) => B): B =
+  override /*IterableLike*/
+  def foldRight[B](z: B)(f: (A, B) => B): B =
     if (this.isEmpty) z
     else f(head, tail.foldRight(z)(f))
 
-  /** Combines the elements of this list together using the binary
-   *  operator <code>op</code>, from left to right
-   *  @param op  The operator to apply
-   *  @return <code>op(... op(a<sub>0</sub>,a<sub>1</sub>), ..., a<sub>n</sub>)</code>
-      if the list has elements
-   *          <code>a<sub>0</sub>, a<sub>1</sub>, ..., a<sub>n</sub></code>.
-   *  @throws Predef.UnsupportedOperationException if the list is empty.
-   */
-  override def reduceLeft[B >: A](f: (B, A) => B): B =
+  override /*TraversableLike*/
+  def reduceLeft[B >: A](f: (B, A) => B): B =
     if (isEmpty) throw new UnsupportedOperationException("empty.reduceLeft")
     else tail.foldLeft[B](head)(f)
 
-  /** Combines the elements of this iterable object together using the binary
-   *  operator <code>op</code>, from right to left
-   *  @note Will not terminate for infinite-sized collections.
-   *  @param op  The operator to apply
-   *
-   *  @return <code>a<sub>0</sub> op (... op (a<sub>n-1</sub> op a<sub>n</sub>)...)</code>
-   *          if the iterable object has elements <code>a<sub>0</sub>, a<sub>1</sub>, ...,
-   *          a<sub>n</sub></code>.
-   *
-   *  @throws Predef.UnsupportedOperationException if the iterator is empty.
-   */
-  override def reduceRight[B >: A](op: (A, B) => B): B =
+  override /*IterableLike*/
+  def reduceRight[B >: A](op: (A, B) => B): B =
     if (isEmpty) throw new UnsupportedOperationException("Nil.reduceRight")
     else if (tail.isEmpty) head
     else op(head, tail.reduceRight(op))
 
-  /** The last element of this linear sequence.
-   *
-   *  @throws Predef.NoSuchElementException if the linear sequence is empty.
-   */
-  override def last: A = {
+  override /*TraversableLike*/
+  def last: A = {
     if (isEmpty) throw new NoSuchElementException
     var these = this
     var nx = these.tail
@@ -225,7 +190,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     these.head
   }
 
-  override def take(n: Int): Repr = {
+  override /*IterableLike*/
+  def take(n: Int): Repr = {
     val b = newBuilder
     var i = 0
     var these = repr
@@ -237,7 +203,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     b.result
   }
 
-  override def drop(n: Int): Repr = {
+  override /*TraversableLike*/
+  def drop(n: Int): Repr = {
     var these: Repr = repr
     var count = n
     while (!these.isEmpty && count > 0) {
@@ -247,10 +214,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     these
   }
 
-  /** Returns the rightmost <code>n</code> elements from this iterable.
-   *  @param n the number of elements to take
-   */
-  override def dropRight(n: Int): Repr = {
+  override /*IterableLike*/
+  def dropRight(n: Int): Repr = {
     val b = newBuilder
     var these = this
     var lead = this drop n
@@ -262,17 +227,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     b.result
   }
 
-  /** A sub-traversable starting at index `from`
-   *  and extending up to (but not including) index `until`.
-   *
-   *  @note c.slice(from, to)  is equivalent to (but possibly more efficient than)
-   *  c.drop(from).take(to - from)
-   *
-   *  @param from   The index of the first element of the returned subsequence
-   *  @param until  The index of the element following the returned subsequence
-   *  @note  Might return different results for different runs, unless this traversable is ordered
-   */
-  override def slice(from: Int, until: Int): Repr = {
+  override /*IterableLike*/
+  def slice(from: Int, until: Int): Repr = {
     val b = newBuilder
     var i = from
     var these = this drop from
@@ -284,13 +240,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     b.result
   }
 
-  /** Returns the longest prefix of this traversable whose elements satisfy
-   *  the predicate <code>p</code>.
-   *
-   *  @param p the test predicate.
-   *  @note  Might return different results for different runs, unless this traversable is ordered
-   */
-  override def takeWhile(p: A => Boolean): Repr = {
+  override /*IterableLike*/
+  def takeWhile(p: A => Boolean): Repr = {
     val b = newBuilder
     var these = this
     while (!these.isEmpty && p(these.head)) {
@@ -300,12 +251,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     b.result
   }
 
-  /** Returns a pair consisting of the longest prefix of the linear sequence whose
-   *  elements all satisfy the given predicate, and the rest of the linear sequence.
-   *
-   *  @param p the test predicate
-   */
-  override def span(p: A => Boolean): (Repr, Repr) = {
+  override /*TraversableLike*/
+  def span(p: A => Boolean): (Repr, Repr) = {
     var these: Repr = repr
     val b = newBuilder
     while (!these.isEmpty && p(these.head)) {
@@ -315,13 +262,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     (b.result, these)
   }
 
-  /** Returns <code>true</code> iff the other linear sequence contains the
-   *  same elements as this one.
-   *
-   *  @note will not terminate for two infinite-sized linear sequences.
-   *  @param that  the other linear sequence
-   */
-  override def sameElements[B >: A](that: Iterable[B]): Boolean = that match {
+  override /*IterableLike*/
+  def sameElements[B >: A](that: Iterable[B]): Boolean = that match {
     case that1: LinearSeq[_] =>
       var these = this
       var those = that1
@@ -334,15 +276,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
       super.sameElements(that)
   }
 
-  // Overridden methods from Seq
-
-  /** Result of comparing <code>length</code> with operand <code>len</code>.
-   *  returns <code>x</code> where
-   *  <code>x &lt; 0</code>    iff    <code>this.length &lt; len</code>
-   *  <code>x == 0</code>   iff    <code>this.length == len</code>
-   *  <code>x &gt; 0</code>    iff    <code>this.length &gt; len</code>.
-   */
-  override def lengthCompare(len: Int): Int =  {
+  override /*SeqLike*/
+  def lengthCompare(len: Int): Int =  {
     var i = 0
     var these = self
     while (!these.isEmpty && i <= len) {
@@ -352,17 +287,11 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     i - len
   }
 
-  /** Is this partial function defined for the index <code>x</code>?
-   */
-  override def isDefinedAt(x: Int): Boolean = x >= 0 && lengthCompare(x) > 0
+  override /*SeqLike*/
+  def isDefinedAt(x: Int): Boolean = x >= 0 && lengthCompare(x) > 0
 
-  /** Returns length of longest segment starting from a start index `from`
-   *  such that every element of the segment satisfies predicate `p`.
-   *  @note may not terminate for infinite-sized collections.
-   *  @param  p the predicate
-   *  @param  from  the start index
-   */
-  override def segmentLength(p: A => Boolean, from: Int): Int = {
+  override /*SeqLike*/
+  def segmentLength(p: A => Boolean, from: Int): Int = {
     var i = 0
     var these = this drop from
     while (!these.isEmpty && p(these.head)) {
@@ -372,14 +301,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     i
   }
 
-  /** Returns index of the first element starting from a start index
-   *  satisying a predicate, or -1, if none exists.
-   *
-   *  @note may not terminate for infinite-sized linear sequences.
-   *  @param  p the predicate
-   *  @param  from  the start index
-   */
-  override def indexWhere(p: A => Boolean, from: Int): Int = {
+  override /*SeqLike*/
+  def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = from
     var these = this drop from
     while (!these.isEmpty && !p(these.head)) {
@@ -389,13 +312,8 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
     if (these.isEmpty) -1 else i
   }
 
-  /** Returns index of the last element satisying a predicate, or -1, if none exists.
-   *
-   *  @param  p the predicate
-   *  @return   the index of the last element satisfying <code>p</code>,
-   *            or -1 if such an element does not exist
-   */
-  override def lastIndexWhere(p: A => Boolean, end: Int): Int = {
+  override /*SeqLike*/
+  def lastIndexWhere(p: A => Boolean, end: Int): Int = {
     var i = 0
     var these = this
     var last = -1

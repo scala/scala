@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -420,13 +420,13 @@ self =>
     */
     def joinComment(trees: => List[Tree]): List[Tree] = {
       val doc = in.flushDoc
-      if ((doc ne null) && doc._1.length > 0) {
+      if ((doc ne null) && doc.raw.length > 0) {
         val ts = trees
         val main = ts.find(_.pos.isOpaqueRange)
         ts map {
           t =>
-            val dd = DocDef(doc._1, t)
-            val pos = doc._2.withEnd(t.pos.endOrPoint)
+            val dd = DocDef(doc, t)
+            val pos = doc.pos.withEnd(t.pos.endOrPoint)
             dd setPos (if (t eq main) pos else pos.makeTransparent)
         }
       }
@@ -1167,7 +1167,8 @@ self =>
         atPos(in.offset) {
           val name = unaryOp()
           in.token match {
-            case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => literal(true)
+            // Don't include double and float here else we lose -0.0
+            case INTLIT | LONGLIT => literal(true)
             case _ => Select(stripParens(simpleExpr()), name)
           }
         }

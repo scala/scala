@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -15,20 +15,10 @@ import generic._
 import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
 import scala.util.control.Breaks
 
-/** <p>
- *    A template trait for traversable collections.
- *  </p>
- *  <p>
- *    Collection classes mixing in this trait provide a method
- *    <code>foreach</code> which traverses all the
- *    elements contained in the collection, applying a given procedure to each.
- *    They also provide a method <code>newBuilder</code>
- *    which creates a builder for collections of the same kind.
- *  </p>
+/** A template trait for traversable collections.
+ *  $traversableinfo
  *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
+ *  @tparam A    The element type of the collection
  */
 trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
                          with GenericTraversableTemplate[A, Traversable] {
@@ -81,7 +71,7 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def toIterable: Iterable[A]
   override def toSeq: Seq[A]
   override def toStream: Stream[A]
-//  override def sortWith(lt : (A,A) => Boolean): Traversable[A]
+  override def sortWith(lt : (A,A) => Boolean): Traversable[A]
   override def mkString(start: String, sep: String, end: String): String
   override def mkString(sep: String): String
   override def mkString: String
@@ -95,17 +85,15 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   */
 }
 
-/** Factory methods and utilities for instances of type <code>Traversable</code>.
- *
- *  @author Martin Odersky
- *  @version 2.8
- */
+/** $factoryInfo */
 object Traversable extends TraversableFactory[Traversable] { self =>
 
-  /** provide break functionality separate from client code */
+  /** Provides break functionality separate from client code */
   private[collection] val breaks: Breaks = new Breaks
 
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]
+
   def newBuilder[A]: Builder[A, Traversable[A]] = immutable.Traversable.newBuilder[A]
 }
 

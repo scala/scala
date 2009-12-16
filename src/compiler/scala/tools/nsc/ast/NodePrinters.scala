@@ -1,5 +1,5 @@
 /* NSC -- new Scala compiler
- * Copyright 2005-2009 LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
 // $Id$
@@ -76,7 +76,6 @@ abstract class NodePrinters {
           if (sym hasFlag MUTABLE      ) buf.append(" | MUTABLE")
           if (sym hasFlag PARAM        ) buf.append(" | PARAM")
           if (sym hasFlag PACKAGE      ) buf.append(" | PACKAGE")
-          if (sym hasFlag DEPRECATED   ) buf.append(" | DEPRECATED")
 
           if (sym hasFlag COVARIANT    ) buf.append(" | COVARIANT")
           if (sym hasFlag CAPTURED     ) buf.append(" | CAPTURED")

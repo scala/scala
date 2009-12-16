@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2003-2009, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -122,7 +122,7 @@ object Utility extends AnyRef with parsing.TokenTests
    *            entity.
    */
   final def unescape(ref: String, s: StringBuilder): StringBuilder =
-    (unescMap get ref) map (s append _) getOrElse null
+    (unescMap get ref) map (s append _) orNull
 
   /**
    * Returns a set of all namespaces used in a sequence of nodes
