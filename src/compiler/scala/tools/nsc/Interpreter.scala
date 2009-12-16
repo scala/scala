@@ -873,6 +873,9 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     | map(_.getName) .
     | mkString(" ")""".stripMargin.format(filterFlags)
 
+  private def getOriginalName(name: String): String =
+    nme.originalName(newTermName(name)).toString
+
   /** The main entry point for tab-completion.  When the user types x.<tab>
    *  this method is called with "x" as an argument, and it discovers the
    *  fields and methods of x via reflection and returns their names to jline.
@@ -892,7 +895,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
           str.substring(str.indexOf('=') + 1).trim .
           split(" ").toList .
-          map(decode) .
+          map(x => decode(getOriginalName(x))) .
           filterNot(shouldHide) .
           removeDuplicates
         }
