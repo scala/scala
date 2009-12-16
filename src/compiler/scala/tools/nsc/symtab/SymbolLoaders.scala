@@ -236,15 +236,6 @@ abstract class SymbolLoaders {
   }
 
   class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader {
-
-    /**
-     * @FIXME: iulian,
-     * there should not be a new ClassfileParser for every loaded classfile, this object
-     * should be outside the class ClassfileLoader! This was changed by Sean in r5494.
-     *
-     * However, when pulling it out, loading "java.lang.Object" breaks with:
-     *   "illegal class file dependency between java.lang.Object and java.lang.Class"
-     */
     private object classfileParser extends ClassfileParser {
       val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     }
