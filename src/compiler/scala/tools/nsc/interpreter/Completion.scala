@@ -38,10 +38,7 @@ class Completion(val interpreter: Interpreter) extends Completor {
 
   // it takes a little while to look through the jars so we use a future and a concurrent map
   class CompletionAgent {
-    val dottedPaths = new ConcurrentHashMap[String, List[String]]
-    // TODO - type aliases defined in package objects, like scala.List.<tab>
-    // val typeAliases = new ConcurrentHashMap[String, String]
-    // val packageObjects = new ConcurrentHashMap[String, List[String]]
+    val dottedPaths = new ConcurrentHashMap[String, List[CompletionInfo]]
     val topLevelPackages = new DelayedLazyVal(
       () => enumToList(dottedPaths.keys) filterNot (_ contains '.'),
       getDottedPaths(dottedPaths, interpreter)
@@ -121,14 +118,12 @@ class Completion(val interpreter: Interpreter) extends Completor {
       }
     }
 
-    def getOrElse[K, V](map: ConcurrentHashMap[K, V], key: K, value: => V) =
-      if (map containsKey key) map get key
-      else value
-
     def isValidId(s: String) = interpreter.unqualifiedIds contains s
     def membersOfId(s: String) = interpreter membersOfIdentifier s
     def membersOfPath(s: String) = {
-      val xs = getOrElse(dottedPaths, s, Nil)
+      val xs =
+        if (dottedPaths containsKey s) dottedPaths get s map (_.visibleName)
+        else Nil
 
       s match {
         case "scala"      => xs filterNot scalaToHide
@@ -191,7 +186,11 @@ class Completion(val interpreter: Interpreter) extends Completor {
     // java style, static methods
     val js = getClassObject(path) map (getMembers(_, true)) getOrElse Nil
     // scala style, methods on companion object
-    val ss = getClassObject(path + "$") map (getMembers(_, false)) getOrElse Nil
+    // if getClassObject fails, see if there is a type alias
+    val clazz = getClassObject(path + "$") orElse {
+      (ByteCode aliasForType path) flatMap (x => getClassObject(x + "$"))
+    }
+    val ss = clazz map (getMembers(_, false)) getOrElse Nil
 
     js ::: ss
   }
@@ -201,12 +200,31 @@ object Completion
 {
   import java.io.File
   import java.util.jar.{ JarEntry, JarFile }
+  import scala.tools.nsc.io.Streamable
 
   val EXPAND_SEPARATOR_STRING = "$$"
   val ANON_CLASS_NAME = "$anon"
   val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
   val IMPL_CLASS_SUFFIX ="$class"
   val INTERPRETER_VAR_PREFIX = "res"
+
+  case class CompletionInfo(visibleName: String, className: String, jar: String) {
+    lazy val jarfile = new JarFile(jar)
+    lazy val entry = jarfile getEntry className
+
+    override def hashCode = visibleName.hashCode
+    override def equals(other: Any) = other match {
+      case x: CompletionInfo  => visibleName == x.visibleName
+      case _                  => false
+    }
+
+    def getBytes(): Array[Byte] = {
+      if (entry == null) Array() else {
+        val x = new Streamable.Bytes { def inputStream() = jarfile getInputStream entry }
+        x.toByteArray()
+      }
+    }
+  }
 
   def enumToList[T](e: java.util.Enumeration[T]): List[T] = enumToList(e, Nil)
   def enumToList[T](e: java.util.Enumeration[T], xs: List[T]): List[T] =
@@ -233,7 +251,7 @@ object Completion
 
   // all the dotted path to classfiles we can find by poking through the jars
   def getDottedPaths(
-    map: ConcurrentHashMap[String, List[String]],
+    map: ConcurrentHashMap[String, List[CompletionInfo]],
     interpreter: Interpreter): Unit =
   {
     val cp =
@@ -264,7 +282,9 @@ object Completion
     def oneJar(jar: String): Unit = {
       val classfiles = Completion getClassFiles jar
 
-      for (cl <- classfiles.removeDuplicates ; (k, v) <- subpaths(cl)) {
+      for (cl <- classfiles.removeDuplicates ; (k, _v) <- subpaths(cl)) {
+        val v = CompletionInfo(_v, cl, jar)
+
         if (map containsKey k) {
           val vs = map.get(k)
           if (vs contains v) ()

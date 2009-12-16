@@ -145,8 +145,8 @@ class Interpreter(val settings: Settings, out: PrintWriter)
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  private var classLoader: ScalaClassLoader = makeClassLoader()
-  private def makeClassLoader(): ScalaClassLoader = {
+  private var classLoader: AbstractFileClassLoader = makeClassLoader()
+  private def makeClassLoader(): AbstractFileClassLoader = {
     val parent =
       if (parentClassLoader == null)  ScalaClassLoader fromURLs compilerClasspath
       else                            new URLClassLoader(compilerClasspath, parentClassLoader)
@@ -907,12 +907,13 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   /** Another entry point for tab-completion, ids in scope */
   def unqualifiedIds(): List[String] =
-    allBoundNames .
-      map(_.toString) .
-      filter(!isSynthVarName(_))
+    allBoundNames map (_.toString) filterNot isSynthVarName
 
   /** For static/object method completion */
   def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path
+
+  /** Parse the ScalaSig to find type aliases */
+  def aliasForType(path: String) = ByteCode.aliasForType(path)
 
   // debugging
   private var debuggingOutput = false
