@@ -4026,6 +4026,9 @@ trait Typers { self: Analyzer =>
             // and we try again (@see tryTypedApply). In that case we can assign
             // whatever type to tree; we just have to survive until a real error message is issued.
             tree setType AnyClass.tpe
+        case Import(expr, selectors) =>
+          assert(onlyPresentation) // should not happen in normal circumstances.
+          tree setType tree.symbol.tpe
         case _ =>
           throw new Error("unexpected tree: " + tree.getClass + "\n" + tree)//debug
       }
