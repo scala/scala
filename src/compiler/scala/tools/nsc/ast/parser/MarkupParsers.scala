@@ -50,9 +50,16 @@ trait MarkupParsers
 
   import global._
 
-  class MarkupParser(parser: UnitParser, final val preserveWS: Boolean) {
+  class MarkupParser(parser: UnitParser, final val preserveWS: Boolean) extends scala.xml.parsing.MarkupParserCommon {
 
     import Tokens.{ EMPTY, LBRACE, RBRACE }
+
+    type PositionType = Position
+    val eof = false
+
+    def xHandleError(that: Char, msg: String) =
+      if (ch == SU) throw TruncatedXML
+      else reportSyntaxError(msg)
 
     var input : CharArrayReader = _
 
@@ -72,15 +79,6 @@ trait MarkupParsers
       try body
       finally setter(saved)
     }
-
-    /** munch expected XML token, report syntax error for unexpected.
-     *
-     *  @param that ...
-     */
-    def xToken(that: Char): Unit =
-      if (ch == that) nextch
-      else if (ch == SU) throw TruncatedXML
-      else reportSyntaxError("'%s' expected instead of '%s'".format(that, ch))
 
     private var debugLastStartElement = new mutable.Stack[(Int, String)]
     private def debugLastPos = debugLastStartElement.top._1
@@ -421,18 +419,6 @@ trait MarkupParsers
       buf.toString.intern
     }
 
-    /** scan [S] '=' [S]*/
-    def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
-
-    /** skip optional space S? */
-    def xSpaceOpt = { while (isSpace(ch)) { nextch }}
-
-    /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
-    def xSpace =
-      if (isSpace(ch)) { nextch; xSpaceOpt }
-      else if (ch == SU) throw TruncatedXML
-      else reportSyntaxError("whitespace expected")
-
     /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
      *
      * see [15]
@@ -558,8 +544,9 @@ trait MarkupParsers
      */
     def xScalaPatterns: List[Tree] = escapeToScala(parser.patterns(true), "pattern")
 
+    def reportSyntaxError(pos: Int, str: String) = parser.syntaxError(pos, str)
     def reportSyntaxError(str: String) = {
-      parser.syntaxError(curOffset, "in XML literal: " + str)
+      reportSyntaxError(curOffset, "in XML literal: " + str)
       nextch
     }
 

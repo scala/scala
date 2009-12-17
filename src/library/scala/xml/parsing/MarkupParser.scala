@@ -6,9 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
-
 package scala.xml
 package parsing
 
@@ -30,9 +27,13 @@ import Utility.Escapes.{ pairs => unescape }
  * @author  Burak Emir
  * @version 1.0
  */
-trait MarkupParser extends AnyRef with TokenTests
+trait MarkupParser extends MarkupParserCommon with TokenTests
 {
   self: MarkupParser with MarkupHandler =>
+
+  type PositionType = Int
+
+  def xHandleError(that: Char, msg: String) = reportSyntaxError(msg)
 
   val input: Source
 
@@ -239,8 +240,6 @@ trait MarkupParser extends AnyRef with TokenTests
   /** append Unicode character to name buffer*/
   protected def putChar(c: Char) = cbuf.append(c)
 
-  //var xEmbeddedBlock = false;
-
   /** As the current code requires you to call nextch once manually
    *  after construction, this method formalizes that suboptimal reality.
    */
@@ -250,7 +249,7 @@ trait MarkupParser extends AnyRef with TokenTests
   }
 
   /** this method assign the next character to ch and advances in input */
-  def nextch {
+  def nextch = {
     if (curInput.hasNext) {
       ch = curInput.next
       pos = curInput.pos
@@ -265,22 +264,8 @@ trait MarkupParser extends AnyRef with TokenTests
         ch = 0.asInstanceOf[Char]
       }
     }
+    ch
   }
-
-  //final val enableEmbeddedExpressions: Boolean = false;
-
-  /** munch expected XML token, report syntax error for unexpected
-  */
-  def xToken(that: Char) {
-    if (ch == that)
-      nextch
-    else  {
-      reportSyntaxError("'" + that + "' expected instead of '" + ch + "'")
-      error("FATAL")
-    }
-  }
-
-  def xToken(that: Seq[Char]): Unit = that foreach xToken
 
   /** parse attribute and create namespace scope, metadata
    *  [41] Attributes    ::= { S Name Eq AttValue }
@@ -469,42 +454,32 @@ trait MarkupParser extends AnyRef with TokenTests
   def content(pscope: NamespaceBinding): NodeSeq = {
     var ts = new NodeBuffer
     var exit = eof
-    while (! exit) {
-      //Console.println("in content, ch = '"+ch+"' line="+scala.io.Position.line(pos));
-      /*      if( xEmbeddedBlock ) {
-       ts.append( xEmbeddedExpr );
-       } else {*/
-        tmppos = pos;
-        exit = eof;
-        if(!eof)
-          ch match {
-          case '<' => // another tag
-            //Console.println("before ch = '"+ch+"' line="+scala.io.Position.line(pos)+" pos="+pos);
-            nextch;
-            //Console.println("after ch = '"+ch+"' line="+scala.io.Position.line(pos)+" pos="+pos);
+    // todo: optimize seq repr.
+    def done = new NodeSeq { val theSeq = ts.toList }
 
-            if('/' ==ch)
-              exit = true;                    // end tag
-            else
-              content1(pscope, ts)
-          //case '{' =>
-/*            if( xCheckEmbeddedBlock ) {
-              ts.appendAll(xEmbeddedExpr);
-            } else {*/
-          //    val str = new StringBuilder("{");
-          //    str.append(xText);
-          //    appendText(tmppos, ts, str.toString());
-            /*}*/
-          // postcond: xEmbeddedBlock == false!
-          case '&' => // EntityRef or CharRef
-            nextch;
-            if (ch == '#') {    // CharacterRef
+    while (!exit) {
+      tmppos = pos
+      exit = eof
+
+      if (eof)
+        return done
+
+      ch match {
+        case '<' => // another tag
+          nextch match {
+            case '/'    => exit = true  // end tag
+            case _      => content1(pscope, ts)
+          }
+
+        // postcond: xEmbeddedBlock == false!
+        case '&' => // EntityRef or CharRef
+          nextch match {
+            case '#'  =>  // CharacterRef
               nextch
               val theChar = handle.text(tmppos, xCharRef(() => ch, () => nextch))
               xToken(';');
               ts &+ theChar
-            }
-            else {      // EntityRef
+            case _ =>     // EntityRef
               val n = xName
               xToken(';')
 
@@ -512,17 +487,12 @@ trait MarkupParser extends AnyRef with TokenTests
                 handle.entityRef(tmppos, n)
                 ts &+ unescape(n)
               } else push(n)
-            }
-          case _ => // text content
-            appendText(tmppos, ts, xText);
           }
-    /*}*/
+        case _ => // text content
+          appendText(tmppos, ts, xText);
+      }
     }
-    val list = ts.toList
-    // 2do: optimize seq repr.
-    new NodeSeq {
-      val theSeq = list
-    }
+    done
   } // content(NamespaceBinding)
 
   /** externalID ::= SYSTEM S syslit
@@ -572,47 +542,17 @@ trait MarkupParser extends AnyRef with TokenTests
     if ((null != extID) && isValidating) {
 
       pushExternal(extID.systemId)
-      //val extSubsetSrc = externalSource( extID.systemId );
-
       extIndex = inpStack.length
-      /*
-       .indexOf(':') != -1) { // assume URI
-         Source.fromFile(new java.net.URI(extID.systemLiteral));
-       } else {
-         Source.fromFile(extID.systemLiteral);
-       }
-      */
-      //Console.println("I'll print it now");
-      //val old = curInput;
-      //tmppos = curInput.pos;
-      //val oldch = ch;
-      //curInput = extSubsetSrc;
-      //pos = 0;
-      //nextch;
 
       extSubset()
-
       pop()
-
       extIndex = -1
-
-      //curInput = old;
-      //pos = curInput.pos;
-      //ch = curInput.ch;
-      //eof = false;
-      //while(extSubsetSrc.hasNext)
-      //Console.print(extSubsetSrc.next);
-
-      //Console.println("returned from external, current ch = "+ch )
     }
 
     if ('[' == ch) { // internal subset
       nextch
       /* TODO */
-      //Console.println("hello");
       intSubset()
-      //while(']' != ch)
-      //  nextch;
       // TODO: do the DTD parsing?? ?!?!?!?!!
       xToken(']')
       xSpaceOpt
@@ -639,15 +579,14 @@ trait MarkupParser extends AnyRef with TokenTests
    */
   def element1(pscope: NamespaceBinding): NodeSeq = {
     val pos = this.pos
-    val Tuple3(qname, aMap, scope) = xTag(pscope)
-    val Tuple2(pre, local) = Utility.prefix(qname) match {
-      case Some(p) => (p,qname.substring(p.length+1, qname.length))
-      case _       => (null,qname)
+    val (qname, aMap, scope) = xTag(pscope)
+    val (pre, local) = Utility.prefix(qname) match {
+      case Some(p) => (p, qname drop p.length)
+      case _       => (null, qname)
     }
     val ts = {
       if (ch == '/') {  // empty element
-        xToken('/')
-        xToken('>')
+        xToken("/>")
         handle.elemStart(pos, pre, local, aMap, scope)
         NodeSeq.Empty
       }
@@ -685,17 +624,6 @@ trait MarkupParser extends AnyRef with TokenTests
     }
   }
 
-  /** scan [S] '=' [S]*/
-  def xEQ = { xSpaceOpt; xToken('='); xSpaceOpt }
-
-  /** skip optional space S? */
-  def xSpaceOpt = while (isSpace(ch) && !eof) { nextch; }
-
-  /** scan [3] S ::= (#x20 | #x9 | #xD | #xA)+ */
-  def xSpace =
-    if (isSpace(ch)) { nextch; xSpaceOpt }
-    else reportSyntaxError("whitespace expected")
-
   /** '&lt;?' ProcInstr ::= Name [S ({Char} - ({Char}'&gt;?' {Char})]'?&gt;'
    *
    * see [15]
@@ -715,8 +643,7 @@ trait MarkupParser extends AnyRef with TokenTests
         nextch
       }
     };
-    xToken('?')
-    xToken('>')
+    xToken("?>")
     handle.procInstr(tmppos, n, sb.toString)
   }
 
@@ -724,28 +651,17 @@ trait MarkupParser extends AnyRef with TokenTests
    *   precondition: xEmbeddedBlock == false (we are not in a scala block)
    */
   def xText: String = {
-    //if( xEmbeddedBlock ) throw FatalError("internal error: encountered embedded block"); // assert
+    var exit = false;
+    while (! exit) {
+      putChar(ch);
+      val opos = pos;
+      nextch;
 
-    /*if( xCheckEmbeddedBlock )
-      return ""
-    else {*/
-    //Console.println("in xText! ch = '"+ch+"'");
-      var exit = false;
-      while (! exit) {
-        //Console.println("LOOP in xText! ch = '"+ch+"' + pos="+pos);
-        putChar(ch);
-        val opos = pos;
-        nextch;
-
-        //Console.println("STILL LOOP in xText! ch = '"+ch+"' + pos="+pos+" opos="+opos);
-
-
-        exit = eof || /*{ nextch; xCheckEmbeddedBlock }||*/( ch == '<' ) || ( ch == '&' );
-      }
-      val str = cbuf.toString();
-      cbuf.length = 0;
-      str
-    /*}*/
+      exit = eof || ( ch == '<' ) || ( ch == '&' )
+    }
+    val str = cbuf.toString();
+    cbuf.length = 0;
+    str
   }
 
   /** attribute value, terminated by either ' or ". value may not contain &lt;.
@@ -766,7 +682,6 @@ trait MarkupParser extends AnyRef with TokenTests
     cbuf.length = 0
     str
   }
-
 
   /* [12]       PubidLiteral ::=        '"' PubidChar* '"' | "'" (PubidChar - "'")* "'" */
   def pubidLiteral(): String = {
@@ -846,34 +761,16 @@ trait MarkupParser extends AnyRef with TokenTests
               val ent = xName
               xToken(';')
               xSpaceOpt
-            /*
-              Console.println("hello, pushing!");
-            {
-              val test =  replacementText(ent);
-              while(test.hasNext)
-                Console.print(test.next);
-            } */
+
               push(ent)
               xSpaceOpt
-              //Console.println("hello, getting name");
               val stmt = xName
-              //Console.println("hello, got name");
               xSpaceOpt
-            //Console.println("how can we be eof = "+eof);
 
-            // eof = true because not external?!
-              //if(!eof)
-              //  error("expected only INCLUDE or IGNORE");
-
-              //pop();
-
-              //Console.println("hello, popped");
               stmt match {
                 // parameter entity
-                case "INCLUDE" =>
-                  doInclude()
-                case "IGNORE" =>
-                  doIgnore()
+                case "INCLUDE"  => doInclude()
+                case "IGNORE"   => doIgnore()
               }
             case 'I' =>
               nextch
@@ -958,11 +855,10 @@ trait MarkupParser extends AnyRef with TokenTests
     val n = xName
     xSpace
     var attList: List[AttrDecl] = Nil
+
     // later: find the elemDecl for n
     while ('>' != ch) {
       val aname = xName
-      //Console.println("attribute name: "+aname);
-      var defdecl: DefaultDecl = null
       xSpace
       // could be enumeration (foo,bar) parse this later :-/
       while ('"' != ch && '\'' != ch && '#' != ch && '<' != ch) {
@@ -972,29 +868,24 @@ trait MarkupParser extends AnyRef with TokenTests
       }
       val atpe = cbuf.toString()
       cbuf.length = 0
-      //Console.println("attr type: "+atpe);
-      ch match {
+
+      val defdecl: DefaultDecl = ch match {
         case '\'' | '"' =>
-          val defValue = xAttributeValue() // default value
-          defdecl = DEFAULT(false, defValue)
+          DEFAULT(false, xAttributeValue())
 
         case '#' =>
           nextch
           xName match {
-            case "FIXED" =>
-              xSpace
-              val defValue = xAttributeValue() // default value
-              defdecl = DEFAULT(true, defValue)
-            case "IMPLIED" =>
-              defdecl = IMPLIED
-            case "REQUIRED" =>
-              defdecl = REQUIRED
+            case "FIXED"    => xSpace ; DEFAULT(true, xAttributeValue())
+            case "IMPLIED"  => IMPLIED
+            case "REQUIRED" => REQUIRED
           }
         case _ =>
+          null
       }
       xSpaceOpt
 
-      attList = AttrDecl(aname, atpe, defdecl) :: attList
+      attList ::= AttrDecl(aname, atpe, defdecl)
       cbuf.length = 0
     }
     nextch
@@ -1086,9 +977,6 @@ trait MarkupParser extends AnyRef with TokenTests
   def reportValidationError(pos: Int, str: String): Unit = reportSyntaxError(pos, str)
 
   def push(entityName: String) {
-    //Console.println("BEFORE PUSHING  "+ch)
-    //Console.println("BEFORE PUSHING  "+pos)
-    //Console.print("[PUSHING "+entityName+"]")
     if (!eof)
       inpStack = curInput :: inpStack
 
