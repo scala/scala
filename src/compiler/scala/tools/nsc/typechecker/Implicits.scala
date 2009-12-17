@@ -725,14 +725,13 @@ self: Analyzer =>
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
-          util.trace("manif fact ")(
           Apply(
             TypeApply(
               Select(gen.mkAttributedRef(if (full) FullManifestModule else PartialManifestModule), constructor),
               List(TypeTree(tparg))
             ),
             args.toList
-          ))
+          )
         }
 
       /** Creates a tree representing one of the singleton manifests.*/

@@ -225,6 +225,18 @@ object Manifest {
       override def toString = prefix.toString+"#"+name+argString
     }
 
+  /** Manifest for the abstract type `prefix # name'. `upperBound' is not
+    * strictly necessary as it could be obtained by reflection. It was
+    * added so that erasure can be calculated without reflection.
+    * todo: remove after next bootstrap
+    */
+  def abstractType[T](prefix: Manifest[_], name: String, upperbound: ClassManifest[_], args: Manifest[_]*): Manifest[T] =
+    new (Manifest[T] @serializable) {
+      def erasure = upperbound.erasure
+      override val typeArguments = args.toList
+      override def toString = prefix.toString+"#"+name+argString
+    }
+
   /** Manifest for the intersection type `parents_0 with ... with parents_n'. */
   def intersectionType[T](parents: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
