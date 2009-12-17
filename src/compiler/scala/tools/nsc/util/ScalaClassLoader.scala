@@ -90,4 +90,12 @@ object ScalaClassLoader {
 
     search(getContextLoader())
   }
+
+  def findBytesForClassName(s: String): Array[Byte] = {
+    val name = s.replaceAll("""\.""", "/") + ".class"
+    val url = getSystemLoader.getResource(name)
+
+    if (url == null) Array()
+    else new io.Streamable.Bytes { def inputStream() = url.openStream } . toByteArray()
+  }
 }
