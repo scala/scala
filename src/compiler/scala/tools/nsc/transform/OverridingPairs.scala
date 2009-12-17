@@ -104,6 +104,10 @@ abstract class OverridingPairs {
      */
     private val index = new HashMap[Symbol, Int]
 
+    // Note: overridingPairs can be called at odd instances by the Eclipse plugin
+    // Soemtimes symbols are not yet defined and we get missing keys.
+    // The implementation here is hardened so that it does not crash on a missing key.
+
     { var i = 0
       for (bc <- base.info.baseClasses) {
         index(bc) = i
@@ -126,22 +130,37 @@ abstract class OverridingPairs {
     { for (i <- List.range(0, size))
         subParents(i) = new BitSet(size);
       for (p <- parents) {
-        val pIndex = index(p.typeSymbol)
-        for (bc <- p.baseClasses)
-          if (p.baseType(bc) =:= self.baseType(bc))
-            include(subParents(index(bc)), pIndex)
-          else if (settings.debug.value)
-            log("SKIPPING "+p+" -> "+p.baseType(bc)+" / "+self.baseType(bc)+" from "+base)
+        index get p.typeSymbol match {
+          case Some(pIndex) =>
+            for (bc <- p.baseClasses)
+              if (p.baseType(bc) =:= self.baseType(bc))
+                index get bc match {
+                  case Some(bcIndex) =>
+                    include(subParents(bcIndex), pIndex)
+                  case None =>
+                }
+              else if (settings.debug.value)
+                log("SKIPPING "+p+" -> "+p.baseType(bc)+" / "+self.baseType(bc)+" from "+base)
+          case None =>
+        }
       }
-    }
+   }
 
     /** Do `sym1` and `sym2` have a common subclass in `parents`?
      *  In that case we do not follow their overriding pairs
      */
     private def hasCommonParentAsSubclass(sym1: Symbol, sym2: Symbol) = {
-      val index1 = index(sym1.owner)
-      val index2 = index(sym2.owner)
-      intersectionContainsElementLeq(subParents(index1), subParents(index2), index1 min index2)
+      index get sym1.owner match {
+        case Some(index1) =>
+          index get sym2.owner match {
+            case Some(index2) =>
+              intersectionContainsElementLeq(subParents(index1), subParents(index2), index1 min index2)
+            case None =>
+              false
+          }
+        case None =>
+          false
+      }
     }
 
     /** The scope entries that have already been visited as overridden

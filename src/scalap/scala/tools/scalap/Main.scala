@@ -9,7 +9,6 @@
 
 package scala.tools.scalap
 
-
 import java.io.{File, PrintStream, OutputStreamWriter, ByteArrayOutputStream}
 import scalax.rules.scalasig._
 import tools.nsc.io.AbstractFile
@@ -46,7 +45,7 @@ object Main {
   def isScalaFile(bytes: Array[Byte]): Boolean = {
     val byteCode = ByteCode(bytes)
     val classFile = ClassFileParser.parse(byteCode)
-    classFile.attribute("ScalaSig") match {case Some(_) => true; case None => false}
+    classFile.attribute("ScalaSig").isDefined
   }
 
   /**Processes the given Java class file.

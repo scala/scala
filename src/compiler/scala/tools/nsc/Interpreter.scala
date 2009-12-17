@@ -145,8 +145,8 @@ class Interpreter(val settings: Settings, out: PrintWriter)
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  private var classLoader: ScalaClassLoader = makeClassLoader()
-  private def makeClassLoader(): ScalaClassLoader = {
+  private var classLoader: AbstractFileClassLoader = makeClassLoader()
+  private def makeClassLoader(): AbstractFileClassLoader = {
     val parent =
       if (parentClassLoader == null)  ScalaClassLoader fromURLs compilerClasspath
       else                            new URLClassLoader(compilerClasspath, parentClassLoader)
@@ -873,6 +873,9 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     | map(_.getName) .
     | mkString(" ")""".stripMargin.format(filterFlags)
 
+  private def getOriginalName(name: String): String =
+    nme.originalName(newTermName(name)).toString
+
   /** The main entry point for tab-completion.  When the user types x.<tab>
    *  this method is called with "x" as an argument, and it discovers the
    *  fields and methods of x via reflection and returns their names to jline.
@@ -892,7 +895,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
           str.substring(str.indexOf('=') + 1).trim .
           split(" ").toList .
-          map(decode) .
+          map(x => decode(getOriginalName(x))) .
           filterNot(shouldHide) .
           removeDuplicates
         }
@@ -904,12 +907,13 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
   /** Another entry point for tab-completion, ids in scope */
   def unqualifiedIds(): List[String] =
-    allBoundNames .
-      map(_.toString) .
-      filter(!isSynthVarName(_))
+    allBoundNames map (_.toString) filterNot isSynthVarName
 
   /** For static/object method completion */
   def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path
+
+  /** Parse the ScalaSig to find type aliases */
+  def aliasForType(path: String) = ByteCode.aliasForType(path)
 
   // debugging
   private var debuggingOutput = false

@@ -118,16 +118,23 @@ trait Types {
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {
       val before = log
-      val result = block
-      undoTo(before)
+      val result = try {
+        block
+      } finally {
+        undoTo(before)
+      }
       result
     }
 
     // if `block` evaluates to false, it should not affect constraints on typevars
     def undoUnless(block: => Boolean): Boolean = {
       val before = log
-      val result = block
-      if(!result) undoTo(before)
+      var result = false
+      try {
+        result = block
+      } finally {
+        if(!result) undoTo(before)
+      }
       result
     }
   }

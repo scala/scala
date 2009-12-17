@@ -1541,9 +1541,15 @@ FORWARDED TARGETS FOR PACKAGING
   <target name="distpack" depends="dist.done">
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
   </target>
+
+  <target name="distpack-opt"
+    description="Builds an optimised distribution.">
+    <antcall target="distpack">
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
   
   <!-- Used by the scala-installer script -->
-  <target name="alldistpack" depends="distpack"/>
   <target name="allallclean" depends="all.clean"/>
 
 <!-- ===========================================================================

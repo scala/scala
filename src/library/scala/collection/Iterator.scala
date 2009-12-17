@@ -1098,7 +1098,7 @@ trait Iterator[+A] { self =>
    *  @param  dest The buffer to which elements are copied
    */
   def copyToBuffer[B >: A](dest: Buffer[B]) {
-    while (hasNext) dest += next
+    while (hasNext) dest += next()
   }
 
   /** Traverses this iterator and returns all produced values in a list.

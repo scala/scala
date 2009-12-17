@@ -18,7 +18,7 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
     extends ClassLoader(parent)
     with ScalaClassLoader
 {
-  override def findClass(name: String): Class[_] = {
+  def getBytesForClass(name: String): Array[Byte] = {
     def onull[T](x: T): T = if (x == null) throw new ClassNotFoundException(name) else x
     var file: AbstractFile = root
     val pathParts = name.split("[./]").toList
@@ -27,7 +27,11 @@ class AbstractFileClassLoader(root: AbstractFile, parent: ClassLoader)
       file = onull(file.lookupName(dirPart, true))
 
     file = onull(file.lookupName(pathParts.last+".class", false))
-    val bytes = file.toByteArray
+    file.toByteArray
+  }
+
+  override def findClass(name: String): Class[_] = {
+    val bytes = getBytesForClass(name)
     defineClass(name, bytes, 0, bytes.length)
   }
 }

@@ -67,7 +67,7 @@ object ScalaClassLoader {
 
   def setContextLoader(cl: JavaClassLoader) = Thread.currentThread.setContextClassLoader(cl)
   def getContextLoader() = Thread.currentThread.getContextClassLoader()
-  def getSystemLoader() = JavaClassLoader.getSystemClassLoader()
+  def getSystemLoader(): ScalaClassLoader = new JavaClassLoader(JavaClassLoader.getSystemClassLoader()) with ScalaClassLoader
   def defaultParentClassLoader() = findExtClassLoader()
 
   def fromURLs(urls: Seq[URL]): URLClassLoader =
