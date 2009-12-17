@@ -218,9 +218,9 @@ object Manifest {
   /** Manifest for the abstract type `prefix # name'. `upperBound' is not
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
-  def abstractType[T](prefix: Manifest[_], name: String, upperBound: Manifest[_], args: Manifest[_]*): Manifest[T] =
+  def abstractType[T](prefix: Manifest[_], name: String, clazz: Predef.Class[_], args: Manifest[_]*): Manifest[T] =
     new (Manifest[T] @serializable) {
-      def erasure = upperBound.erasure
+      def erasure = clazz
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
     }

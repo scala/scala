@@ -725,13 +725,14 @@ self: Analyzer =>
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
         if (args contains EmptyTree) EmptyTree
         else typedPos(tree.pos.focus) {
+          util.trace("manif fact ")(
           Apply(
             TypeApply(
               Select(gen.mkAttributedRef(if (full) FullManifestModule else PartialManifestModule), constructor),
               List(TypeTree(tparg))
             ),
             args.toList
-          )
+          ))
         }
 
       /** Creates a tree representing one of the singleton manifests.*/
@@ -770,10 +771,13 @@ self: Analyzer =>
                 EmptyTree // todo: change to existential parameter manifest
               else if (sym.isTypeParameterOrSkolem)
                 EmptyTree  // a manifest should have been found by normal searchImplicit
-              else
+              else {
+                val era = erasure.erasure(tp1)
+                val base = tp1.baseType(era.typeSymbol)
                 manifestFactoryCall(
                   "abstractType", tp,
-                  findSubManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp1.bounds.hi) :: (args map findSubManifest): _*)
+                  findSubManifest(pre) :: Literal(sym.name.toString) :: gen.mkClassOf(base) :: (args map findSubManifest): _*)
+              }
             } else {
               EmptyTree  // a manifest should have been found by normal searchImplicit
             }
