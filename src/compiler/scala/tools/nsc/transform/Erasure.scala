@@ -146,7 +146,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
               apply(restpe))
         case RefinedType(parents, decls) =>
           if (parents.isEmpty) erasedTypeRef(ObjectClass)
-          else apply(parents.head)
+          else {
+            // implement new spec for erasure of refined types.
+            val psyms = parents map (_.typeSymbol)
+            def isUnshadowed(psym: Symbol) =
+              !(psyms exists (qsym => (psym ne qsym) && (qsym isNonBottomSubClass psym)))
+            val cs = parents.iterator.filter { p => // isUnshadowed is a bit expensive, so try classes first
+              val psym = p.typeSymbol
+              psym.isClass && !psym.isTrait && isUnshadowed(psym)
+            }
+            apply((if (cs.hasNext) cs else parents.iterator.filter(p => isUnshadowed(p.typeSymbol))).next())
+          }
         case AnnotatedType(_, atp, _) =>
           apply(atp)
         case ClassInfoType(parents, decls, clazz) =>
