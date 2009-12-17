@@ -39,7 +39,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     /** Is `tp` an unbounded generic type (i.e. which could be instantiated
      *  with primitive as well as class types)?.
      */
-    private def genericCore(tp: Type): Type = tp match {
+    private def genericCore(tp: Type): Type = tp.normalize match {
       case TypeRef(_, argsym, _) if (argsym.isAbstractType && !(argsym.owner hasFlag JAVA)) =>
         tp
       case ExistentialType(tparams, restp) =>
@@ -52,7 +52,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
      *  then Some(N, T) where N is the number of Array constructors enclosing `T`,
      *  otherwise None. Existentials on any level are ignored.
      */
-    def unapply(tp: Type): Option[(Int, Type)] = tp match {
+    def unapply(tp: Type): Option[(Int, Type)] = tp.normalize match {
       case TypeRef(_, ArrayClass, List(arg)) =>
         genericCore(arg) match {
           case NoType =>
