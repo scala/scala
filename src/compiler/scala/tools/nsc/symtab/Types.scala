@@ -4188,7 +4188,7 @@ A type's typeSymbol should never be inspected directly.
         } else if (sym1 == NullClass) {
           tp2 match {
             case TypeRef(_, sym2, _) =>
-              (sym2 isNonBottomSubClass ObjectClass) &&
+              sym2.isClass && (sym2 isNonBottomSubClass ObjectClass) &&
               !(tp2.normalize.typeSymbol isNonBottomSubClass NotNullClass)
             case _ =>
               isSingleType(tp2) && tp1 <:< tp2.widen

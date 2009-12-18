@@ -20,7 +20,7 @@ import java.util.concurrent.Callable
  *
  *  @author Philipp Haller
  */
-private[actors] class ReactorTask[T <: Reactor](var reactor: T, var fun: () => Unit)
+private[actors] class ReactorTask[T >: Null <: Reactor](var reactor: T, var fun: () => Unit)
   extends Callable[Unit] with Runnable {
 
   def run() {

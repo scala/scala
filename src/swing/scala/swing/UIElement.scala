@@ -32,7 +32,7 @@ object UIElement {
    * it will return that wrapper. Otherwise it returns `null`. This
    * method never throws an exception.
    */
-  private[swing] def cachedWrapper[C<:UIElement](c: java.awt.Component): C = {
+  private[swing] def cachedWrapper[C>:Null<:UIElement](c: java.awt.Component): C = {
     val w = c match {
       case c: javax.swing.JComponent => c.getClientProperty(ClientKey)
       case _ => wrapperCache.get(c)
