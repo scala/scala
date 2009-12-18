@@ -809,6 +809,10 @@ abstract class ClassfileParser {
 
         // TODO 2: also parse RuntimeInvisibleAnnotation / RuntimeInvisibleParamAnnotation,
         // i.e. java annotations with RetentionPolicy.CLASS?
+
+        case nme.ExceptionsATTR if (!isScala) =>
+          parseExceptions(attrLen)
+
         case _ =>
           in.skip(attrLen)
       }
@@ -870,6 +874,20 @@ abstract class ClassfileParser {
           global.inform("dropping annotation on " + sym +
                         ", an error occured during parsing (e.g. annotation  class not found)")
         None // ignore malformed annotations ==> t1135
+    }
+
+    /**
+     * Parse the "Exceptions" attribute which denotes the exceptions
+     * thrown by a method.
+     */
+    def parseExceptions(len: Int) {
+      val nClasses = in.nextChar
+      for (n <- 0 until nClasses) {
+        val cls = pool.getClassSymbol(in.nextChar.toInt)
+        sym.addAnnotation(AnnotationInfo(definitions.ThrowsClass.tpe,
+                                         Literal(Constant(cls.tpe)) :: Nil,
+                                         Nil))
+      }
     }
 
     /** Parse a sequence of annotations and attach them to the

@@ -118,6 +118,7 @@ trait Definitions {
     lazy val uncheckedStableClass       = getClass("scala.annotation.unchecked.uncheckedStable")
     lazy val uncheckedVarianceClass     = getClass("scala.annotation.unchecked.uncheckedVariance")
     lazy val UncheckedClass             = getClass("scala.unchecked")
+    lazy val ThrowsClass                = getClass("scala.throws")
     lazy val TailrecClass               = getClass("scala.annotation.tailrec")
     lazy val SwitchClass                = getClass("scala.annotation.switch")
     lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
