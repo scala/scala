@@ -1,0 +1,4 @@
+t2779.scala:16: error: method f is defined twice
+    override def f = List(M1)
+                 ^
+one error found
