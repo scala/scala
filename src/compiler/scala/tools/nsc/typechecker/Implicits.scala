@@ -770,10 +770,16 @@ self: Analyzer =>
                 EmptyTree // todo: change to existential parameter manifest
               else if (sym.isTypeParameterOrSkolem)
                 EmptyTree  // a manifest should have been found by normal searchImplicit
-              else
+              else {
+                // the following is tricky! We want to find the parameterized version of
+                // what will become the erasure of the upper bound.
+                var era = erasure.erasure(tp1)
+                if (era.typeSymbol.typeParams.nonEmpty)
+                  era = tp1.baseType(era.typeSymbol)
                 manifestFactoryCall(
                   "abstractType", tp,
-                  findSubManifest(pre) :: Literal(sym.name.toString) :: findManifest(tp1.bounds.hi) :: (args map findSubManifest): _*)
+                  findSubManifest(pre) :: Literal(sym.name.toString) :: gen.mkClassOf(era) :: (args map findSubManifest): _*)
+              }
             } else {
               EmptyTree  // a manifest should have been found by normal searchImplicit
             }

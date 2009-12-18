@@ -39,7 +39,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     /** Is `tp` an unbounded generic type (i.e. which could be instantiated
      *  with primitive as well as class types)?.
      */
-    private def genericCore(tp: Type): Type = tp match {
+    private def genericCore(tp: Type): Type = tp.normalize match {
       case TypeRef(_, argsym, _) if (argsym.isAbstractType && !(argsym.owner hasFlag JAVA)) =>
         tp
       case ExistentialType(tparams, restp) =>
@@ -52,7 +52,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
      *  then Some(N, T) where N is the number of Array constructors enclosing `T`,
      *  otherwise None. Existentials on any level are ignored.
      */
-    def unapply(tp: Type): Option[(Int, Type)] = tp match {
+    def unapply(tp: Type): Option[(Int, Type)] = tp.normalize match {
       case TypeRef(_, ArrayClass, List(arg)) =>
         genericCore(arg) match {
           case NoType =>
@@ -146,7 +146,17 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
               apply(restpe))
         case RefinedType(parents, decls) =>
           if (parents.isEmpty) erasedTypeRef(ObjectClass)
-          else apply(parents.head)
+          else {
+            // implement new spec for erasure of refined types.
+            val psyms = parents map (_.typeSymbol)
+            def isUnshadowed(psym: Symbol) =
+              !(psyms exists (qsym => (psym ne qsym) && (qsym isNonBottomSubClass psym)))
+            val cs = parents.iterator.filter { p => // isUnshadowed is a bit expensive, so try classes first
+              val psym = p.typeSymbol
+              psym.isClass && !psym.isTrait && isUnshadowed(psym)
+            }
+            apply((if (cs.hasNext) cs else parents.iterator.filter(p => isUnshadowed(p.typeSymbol))).next())
+          }
         case AnnotatedType(_, atp, _) =>
           apply(atp)
         case ClassInfoType(parents, decls, clazz) =>

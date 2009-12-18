@@ -93,7 +93,6 @@ abstract class GenJVM extends SubComponent {
     val TransientAtt     = definitions.getClass("scala.transient")
     val VolatileAttr     = definitions.getClass("scala.volatile")
     val RemoteAttr       = definitions.getClass("scala.remote")
-    val ThrowsAttr       = definitions.getClass("scala.throws")
     val BeanInfoAttr     = definitions.getClass("scala.reflect.BeanInfo")
     val BeanInfoSkipAttr = definitions.getClass("scala.reflect.BeanInfoSkip")
     val BeanDisplayNameAttr = definitions.getClass("scala.reflect.BeanDisplayName")
@@ -333,7 +332,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (AnnotationInfo(tp, List(exc), _) <- excs.removeDuplicates if tp.typeSymbol == ThrowsAttr) {
+      for (AnnotationInfo(tp, List(exc), _) <- excs.removeDuplicates if tp.typeSymbol == definitions.ThrowsClass) {
         val Literal(const) = exc
         buf.putShort(
           cpool.addClass(
@@ -626,7 +625,7 @@ abstract class GenJVM extends SubComponent {
       }
 
       addGenericSignature(jmethod, m.symbol, clasz.symbol)
-      val (excs, others) = splitAnnotations(m.symbol.annotations, ThrowsAttr)
+      val (excs, others) = splitAnnotations(m.symbol.annotations, definitions.ThrowsClass)
       addExceptionsAttribute(jmethod, excs)
       addAnnotations(jmethod, others)
       addParamAnnotations(jmethod, m.params.map(_.sym.annotations))
@@ -634,7 +633,7 @@ abstract class GenJVM extends SubComponent {
 
     private def addRemoteException(jmethod: JMethod, meth: Symbol) {
       def isRemoteThrows(ainfo: AnnotationInfo) = ainfo match {
-        case AnnotationInfo(tp, List(arg), _) if tp.typeSymbol == ThrowsAttr =>
+        case AnnotationInfo(tp, List(arg), _) if tp.typeSymbol == definitions.ThrowsClass =>
           arg match {
             case Literal(Constant(tpe: Type)) if tpe.typeSymbol == RemoteException.typeSymbol => true
             case _ => false
@@ -645,7 +644,7 @@ abstract class GenJVM extends SubComponent {
       if (remoteClass ||
           (meth.hasAnnotation(RemoteAttr) && jmethod.isPublic())) {
         val c = Constant(RemoteException)
-        val ainfo = AnnotationInfo(ThrowsAttr.tpe, List(Literal(c).setType(c.tpe)), List())
+        val ainfo = AnnotationInfo(definitions.ThrowsClass.tpe, List(Literal(c).setType(c.tpe)), List())
         if (!meth.annotations.exists(isRemoteThrows)) {
           meth.addAnnotation(ainfo)
         }
@@ -810,7 +809,7 @@ abstract class GenJVM extends SubComponent {
       if (!m.hasFlag(Flags.DEFERRED))
         addGenericSignature(mirrorMethod, m, module)
 
-      val (throws, others) = splitAnnotations(m.annotations, ThrowsAttr)
+      val (throws, others) = splitAnnotations(m.annotations, definitions.ThrowsClass)
       addExceptionsAttribute(mirrorMethod, throws)
       addAnnotations(mirrorMethod, others)
       addParamAnnotations(mirrorMethod, m.info.params.map(_.annotations))

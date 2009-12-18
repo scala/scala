@@ -316,7 +316,7 @@ abstract class RefChecks extends InfoTransform {
                    (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
           overrideError("cannot override a mutable variable")
         } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-                   !(member.owner isSubClass other.owner) &&
+                   !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&
                    !member.isDeferred && !other.isDeferred &&
                    intersectionIsEmpty(member.allOverriddenSymbols, other.allOverriddenSymbols)) {
           overrideError("cannot override a concrete member without a third member that's overridden by both "+
