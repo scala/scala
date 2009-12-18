@@ -771,8 +771,12 @@ self: Analyzer =>
               else if (sym.isTypeParameterOrSkolem)
                 EmptyTree  // a manifest should have been found by normal searchImplicit
               else {
-                // the following is tricky! We want to find the parameterized version of
+                // The following is tricky! We want to find the parameterized version of
                 // what will become the erasure of the upper bound.
+                // But there is a case where the erasure is not a superclass of the current type:
+                // Any erases to Object. So an abstract type having Any as upper bound will not see
+                // Object as a baseType. That's why we do the basetype trick only when we must,
+                // i.e. when the baseclass is parameterized.
                 var era = erasure.erasure(tp1)
                 if (era.typeSymbol.typeParams.nonEmpty)
                   era = tp1.baseType(era.typeSymbol)
