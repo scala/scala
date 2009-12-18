@@ -1058,13 +1058,7 @@ self =>
           Throw(expr())
         }
       case IMPLICIT =>
-        val start = in.skipToken()
-        val param0 = convertToParam(atPos(in.offset)(Ident(ident())))
-        val param = treeCopy.ValDef(param0, param0.mods | Flags.IMPLICIT, param0.name, param0.tpt, param0.rhs)
-        atPos(start, in.offset) {
-          accept(ARROW)
-          Function(List(param), if (location != InBlock) expr() else block())
-        }
+        implicitClosure(in.skipToken(), location)
       case _ =>
         var t = postfixExpr()
         if (in.token == EQUALS) {
@@ -1122,6 +1116,17 @@ self =>
           }
         }
         stripParens(t)
+    }
+
+    /** Expr ::= implicit Id => Expr
+     */
+    def implicitClosure(start: Int, location: Int): Tree = {
+      val param0 = convertToParam(atPos(in.offset)(Ident(ident())))
+      val param = treeCopy.ValDef(param0, param0.mods | Flags.IMPLICIT, param0.name, param0.tpt, param0.rhs)
+      atPos(start, in.offset) {
+        accept(ARROW)
+        Function(List(param), if (location != InBlock) expr() else block())
+      }
     }
 
     /** PostfixExpr   ::= InfixExpr [Id [nl]]
@@ -2560,12 +2565,15 @@ self =>
     }
     */
 
-    def localDef : List[Tree] = {
+    def localDef(implicitMod: Int): List[Tree] = {
       val annots = annotations(true, false)
       val pos = in.offset
-      val mods = localModifiers() withAnnotations annots
-      if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(pos, mods)
-      else List(tmplDef(pos, mods))
+      val mods = (localModifiers() | implicitMod) withAnnotations annots
+      val defs =
+        if (!(mods hasFlag ~(Flags.IMPLICIT | Flags.LAZY))) defOrDcl(pos, mods)
+        else List(tmplDef(pos, mods))
+      if (in.token != RBRACE && in.token != CASE) defs
+      else defs ::: List(Literal(()).setPos(o2p(in.offset)))
     }
 
     /** BlockStatSeq ::= { BlockStat semi } [ResultExpr]
@@ -2584,11 +2592,14 @@ self =>
           stats += statement(InBlock)
           if (in.token != RBRACE && in.token != CASE) acceptStatSep()
         } else if (isDefIntro || isLocalModifier || in.token == AT) {
-          stats ++= localDef
-          if (in.token == RBRACE || in.token == CASE) {
-            //syntaxError("block must end in result expression, not in definition", false)
-            stats += Literal(()).setPos(o2p(in.offset))
-          } else acceptStatSep()
+          if (in.token == IMPLICIT) {
+            val start = in.skipToken()
+            if (isIdent) stats += implicitClosure(start, InBlock)
+            else stats ++= localDef(Flags.IMPLICIT)
+          } else {
+            stats ++= localDef(0)
+          }
+          if (in.token != RBRACE && in.token != CASE) acceptStatSep()
         } else if (isStatSep) {
           in.nextToken()
         } else {

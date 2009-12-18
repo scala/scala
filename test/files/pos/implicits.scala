@@ -12,6 +12,17 @@ class C1435 {
   }
 }
 
+// #1492
+class C1492 {
+
+  class X
+
+  def foo(x: X => X) {}
+
+  foo ( implicit x => implicitly[X] )
+  foo { implicit x => implicitly[X] }
+}
+
 // #1579
 object Test1579 {
   class Column

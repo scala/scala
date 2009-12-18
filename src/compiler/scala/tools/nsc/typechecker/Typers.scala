@@ -2111,10 +2111,12 @@ trait Typers { self: Analyzer =>
                     (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
                   // default getters are defined twice when multiple overloads have defaults. an
                   // error for this is issued in RefChecks.checkDefaultsInOverloaded
-                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasFlag(DEFAULTPARAM))
+                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasFlag(DEFAULTPARAM)) {
                     error(e.sym.pos, e1.sym+" is defined twice"+
                           {if(!settings.debug.value) "" else " in "+unit.toString})
-                e1 = scope.lookupNextEntry(e1);
+                    scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
+                  }
+                e1 = scope.lookupNextEntry(e1)
               }
             }
 

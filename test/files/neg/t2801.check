@@ -1,0 +1,6 @@
+t2801.scala:2: error: type mismatch;
+ found   : Null(null)
+ required: A
+  def f[A <: AnyRef] = { val a: A = null ; a }
+                                    ^
+one error found

@@ -104,6 +104,9 @@ class Scaladoc extends MatchingTask {
   /** The document title of the generated HTML documentation. */
   private var doctitle: Option[String] = None
 
+  /** The document version, to be added to the title. */
+  private var docversion: Option[String] = None
+
   /** Instruct the compiler to use additional parameters */
   private var addParams: String = ""
 
@@ -493,6 +496,7 @@ class Scaladoc extends MatchingTask {
     if (!extdirs.isEmpty) docSettings.extdirs.value = asString(getExtdirs)
     if (!encoding.isEmpty) docSettings.encoding.value = encoding.get
     if (!doctitle.isEmpty) docSettings.doctitle.value = decodeEscapes(doctitle.get)
+    if (!docversion.isEmpty) docSettings.docversion.value = decodeEscapes(docversion.get)
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
