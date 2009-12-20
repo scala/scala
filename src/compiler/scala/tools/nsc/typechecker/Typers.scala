@@ -2474,9 +2474,17 @@ trait Typers { self: Analyzer =>
             }
             val (unappFormal, freeVars) = freshArgType(unappType)
             val context1 = context.makeNewScope(context.tree, context.owner)
-            freeVars foreach(sym => context1.scope.enter(sym))
+            freeVars foreach context1.scope.enter
             val typer1 = newTyper(context1)
-            arg.tpe = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
+            val pattp = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
+            // turn any unresolved type variables in freevars into existential skolems
+            val skolems = freeVars map { fv =>
+              val skolem = new TypeSkolem(context1.owner, fun.pos, fv.name, fv)
+              skolem.setInfo(fv.info.cloneInfo(skolem))
+                .setFlag(fv.flags | EXISTENTIAL).resetFlag(PARAM)
+              skolem
+            }
+            arg.tpe = pattp.substSym(freeVars, skolems)
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
             argDummy.setInfo(arg.tpe) // bq: this line fixed #1281. w.r.t. comment ^^^, maybe good enough?
           }
@@ -2523,25 +2531,10 @@ trait Typers { self: Analyzer =>
             if (formals1.length == args.length) {
               val args1 = typedArgs(args, mode, formals0, formals1)
               if (!isFullyDefined(pt)) assert(false, tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
-              // <pending-change>
-              //   this would be a better choice (from #1196), but fails due to (broken?) refinements
               val itype =  glb(List(pt, arg.tpe))
-              // </pending-change>
               // restore old type (arg is a dummy tree, just needs to pass typechecking)
               arg.tpe = oldArgType
-              UnApply(fun1, args1) setPos tree.pos setType itype //pt
-              //
-              // if you use the better itype, then the following happens.
-              // the required type looks wrong...
-              //
-              ///files/pos/bug0646.scala                                [FAILED]
-              //
-              //failed with type mismatch;
-              // found   : scala.xml.NodeSeq{ ... }
-              // required: scala.xml.NodeSeq{ ... } with scala.xml.NodeSeq{ ... } with scala.xml.Node on: temp3._data().==("Blabla").&&({
-              //  exit(temp0);
-              //  true
-              //})
+              UnApply(fun1, args1) setPos tree.pos setType itype
             } else {
               errorTree(tree, "wrong number of arguments for "+treeSymTypeMsg(fun))
             }

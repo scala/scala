@@ -1942,7 +1942,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
     private def wildcardArgsString(available: Set[Symbol], args: List[Type]): List[String] = args match {
-      case TypeRef(_, sym, _) :: args1 if (quantified contains sym) =>
+      case TypeRef(_, sym, _) :: args1 if (available contains sym) =>
         ("_"+sym.infoString(sym.info)) :: wildcardArgsString(available - sym, args1)
       case arg :: args1 if !(quantified exists (arg contains _)) =>
         arg.toString :: wildcardArgsString(available, args1)
