@@ -5,6 +5,7 @@ package xsbt
 
 import xsbti.Logger
 import scala.tools.nsc.SubComponent
+import Log.debug
 
 class ScaladocInterface
 {
@@ -20,10 +21,11 @@ private class Runner(args: Array[String], maximumErrors: Int, log: Logger)
 	import forScope._
 	def run()
 	{
+		debug(log, "Calling Scaladoc with arguments:\n\t" + args.mkString("\n\t"))
 		if(!reporter.hasErrors)
 		{
-			import doc._ // 2.8 has doc.Processor
-			val processor = new Processor(reporter, docSettings)
+			import doc._ // 2.8 trunk and Beta1-RC4 have doc.DocFactory.  For other Scala versions, the next line creates forScope.DocFactory
+			val processor = new DocFactory(reporter, docSettings)
 			processor.document(command.files)
 		}
 		reporter.printSummary()
@@ -32,12 +34,12 @@ private class Runner(args: Array[String], maximumErrors: Int, log: Logger)
 
 	object forScope
 	{
-		class Processor(reporter: LoggerReporter, docSettings: doc.Settings) // 2.7 compatibility
+		class DocFactory(reporter: LoggerReporter, docSettings: doc.Settings) // 2.7 compatibility
 		{
 			object compiler extends Global(command.settings, reporter)
 			{
 				override def onlyPresentation = true
-				class DefaultDocDriver  // 2.8 compatibility
+				class DefaultDocDriver  // 2.8 source compatibility
 				{
 					assert(false)
 					def process(units: Iterator[CompilationUnit]) = error("for 2.8 compatibility only")

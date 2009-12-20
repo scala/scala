@@ -5,15 +5,15 @@ package xsbt
 
 import xsbti.{AnalysisCallback,Logger}
 import scala.tools.nsc.{Phase, SubComponent}
+import Log.debug
 
 class CompilerInterface
 {
 	def run(args: Array[String], callback: AnalysisCallback, maximumErrors: Int, log: Logger)
 	{
-			def debug(msg: => String) = log.debug(Message(msg))
 			import scala.tools.nsc.{CompilerCommand, Global, Settings}
 
-		debug("Interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
+		debug(log, "Interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
 
 		val reporter = new LoggerReporter(maximumErrors, log)
 		val settings = new Settings(reporter.error)
@@ -76,13 +76,13 @@ class CompilerInterface
 		if(!reporter.hasErrors)
 		{
 			val run = new compiler.Run
-			debug(args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
+			debug(log, args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
 			run compile command.files
 		}
 		reporter.printSummary()
 		if(reporter.hasErrors)
 		{
-			debug("Compilation failed (CompilerInterface)")
+			debug(log, "Compilation failed (CompilerInterface)")
 			throw new InterfaceCompileFailed(args, "Compilation failed")
 		}
 	}
