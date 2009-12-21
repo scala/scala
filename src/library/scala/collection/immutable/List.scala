@@ -493,7 +493,7 @@ object List extends SeqFactory[List] {
    *  @param xss the list of lists that are to be concatenated
    *  @return    the concatenation of all the lists
    */
-  @deprecated("use `xss.flatten' instead")
+  @deprecated("use `xss.flatten' instead of `List.flatten(xss)'")
   def flatten[A](xss: List[List[A]]): List[A] = {
     val b = new ListBuffer[A]
     for (xs <- xss) {
@@ -511,7 +511,7 @@ object List extends SeqFactory[List] {
    *  @param xs the list of pairs to unzip
    *  @return a pair of lists.
    */
-  @deprecated("use `xs.unzip' instead")
+  @deprecated("use `xs.unzip' instead of `List.unzip(xs)'")
   def unzip[A,B](xs: List[(A,B)]): (List[A], List[B]) = {
     val b1 = new ListBuffer[A]
     val b2 = new ListBuffer[B]
@@ -529,7 +529,7 @@ object List extends SeqFactory[List] {
    *  @param xs the iterable of pairs to unzip
    *  @return a pair of lists.
    */
-  @deprecated("use `xs.unzip' instead")
+  @deprecated("use `xs.unzip' instead of `List.unzip(xs)'")
   def unzip[A,B](xs: Iterable[(A,B)]): (List[A], List[B]) =
       xs.foldRight[(List[A], List[B])]((Nil, Nil)) {
         case ((x, y), (xs, ys)) => (x :: xs, y :: ys)
@@ -539,7 +539,7 @@ object List extends SeqFactory[List] {
    * Returns the `Left` values in the given `Iterable`
    * of `Either`s.
    */
-  @deprecated("use `xs partialMap { case Left(x: A) => x }' instead")
+  @deprecated("use `xs partialMap { case Left(x: A) => x }' instead of `List.lefts(xs)'")
   def lefts[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[A]](Nil)((e, as) => e match {
       case Left(a) => a :: as
@@ -549,7 +549,7 @@ object List extends SeqFactory[List] {
   /**
    * Returns the `Right` values in the given`Iterable` of  `Either`s.
    */
-  @deprecated("use `xs partialMap { case Right(x: B) => x }' instead")
+  @deprecated("use `xs partialMap { case Right(x: B) => x }' instead of `List.rights(xs)'")
   def rights[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[B]](Nil)((e, bs) => e match {
       case Left(_) => bs
@@ -574,7 +574,7 @@ object List extends SeqFactory[List] {
    *  @return   a list that contains the elements returned by successive
    *            calls to `it.next`
    */
-  @deprecated("use `it.toList' instead")
+  @deprecated("use `it.toList' instead of `List.toList(it)'")
   def fromIterator[A](it: Iterator[A]): List[A] = it.toList
 
   /** Converts an array into a list.
@@ -583,7 +583,7 @@ object List extends SeqFactory[List] {
    *  @return    a list that contains the same elements than `arr`
    *             in the same order
    */
-  @deprecated("use `array.toList' instead")
+  @deprecated("use `array.toList' instead of `List.fromArray(array)'")
   def fromArray[A](arr: Array[A]): List[A] = fromArray(arr, 0, arr.length)
 
   /** Converts a range of an array into a list.
@@ -594,7 +594,7 @@ object List extends SeqFactory[List] {
    *  @return      a list that contains the same elements than `arr`
    *               in the same order
    */
-  @deprecated("use `array.view(start, end).toList' instead")
+  @deprecated("use `array.view(start, end).toList' instead of `List.fromArray(array, start, end)'")
   def fromArray[A](arr: Array[A], start: Int, len: Int): List[A] = {
     var res: List[A] = Nil
     var i = start + len
@@ -612,7 +612,7 @@ object List extends SeqFactory[List] {
    *  @param separator the separator character
    *  @return          the list of substrings
    */
-  @deprecated("use `str.split(separator).toList' instead")
+  @deprecated("use `str.split(separator).toList' instead of `List.fromString(str, separator)'")
   def fromString(str: String, separator: Char): List[String] = {
     var words: List[String] = Nil
     var pos = str.length()
@@ -630,7 +630,7 @@ object List extends SeqFactory[List] {
    *  @param xs the list to convert.
    *  @return   the list in form of a string.
    */
-  @deprecated("use `xs.mkString' instead")
+  @deprecated("use `xs.mkString' instead of `List.toString(xs)'")
   def toString(xs: List[Char]): String = {
     val sb = new StringBuilder()
     var xc = xs
@@ -644,7 +644,7 @@ object List extends SeqFactory[List] {
   /** Like xs map f, but returns `xs` unchanged if function
    *  `f` maps all elements to themselves.
    */
-  @deprecated("use `xs.mapConserve(f)' instead")
+  @deprecated("use `xs.mapConserve(f)' instead of `List.mapConserve(xs, f)'")
   def mapConserve[A <: AnyRef](xs: List[A])(f: A => A): List[A] = {
     def loop(ys: List[A]): List[A] =
       if (ys.isEmpty) xs
@@ -678,7 +678,7 @@ object List extends SeqFactory[List] {
    *          `[a0, ..., ak]`, `[b0, ..., bl]` and
    *          `n = min(k,l)`
    */
-  @deprecated("use `(xs, ys).zipped.map(f)' instead")
+  @deprecated("use `(xs, ys).zipped.map(f)' instead of `List.map2(xs, ys)(f)'")
   def map2[A,B,C](xs: List[A], ys: List[B])(f: (A, B) => C): List[C] = {
     val b = new ListBuffer[C]
     var xc = xs
@@ -702,7 +702,7 @@ object List extends SeqFactory[List] {
    *           `[c<sub>0</sub>, ..., c<sub>m</sub>]` and
    *           `n = min(k,l,m)`
    */
-  @deprecated("use `(xs, ys, zs).zipped.map(f)' instead")
+  @deprecated("use `(xs, ys, zs).zipped.map(f)' instead of `List.map3(xs, ys, zs)(f)'")
   def map3[A,B,C,D](xs: List[A], ys: List[B], zs: List[C])(f: (A, B, C) => D): List[D] = {
     val b = new ListBuffer[D]
     var xc = xs
@@ -727,7 +727,7 @@ object List extends SeqFactory[List] {
    *           `[b<sub>0</sub>, ..., b<sub>l</sub>]`
    *           and `n = min(k,l)`
    */
-  @deprecated("use `(xs, ys).zipped.forall(f)' instead")
+  @deprecated("use `(xs, ys).zipped.forall(f)' instead of `List.forall2(xs, ys)(f)'")
   def forall2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys
@@ -749,7 +749,7 @@ object List extends SeqFactory[List] {
    *           `[b<sub>0</sub>, ..., b<sub>l</sub>]` and
    *           `n = min(k,l)`
    */
-  @deprecated("use `(xs, ys).zipped.exists(f)' instead")
+  @deprecated("use `(xs, ys).zipped.exists(f)' instead of `List.exists2(xs, ys)(f)'")
   def exists2[A,B](xs: List[A], ys: List[B])(f: (A, B) => Boolean): Boolean = {
     var xc = xs
     var yc = ys
@@ -767,7 +767,7 @@ object List extends SeqFactory[List] {
    *  @param xss the list of lists
    *  @return    the transposed list of lists
    */
-  @deprecated("use `xss.transpose' instead")
+  @deprecated("use `xss.transpose' instead of `List.transpose(xss)'")
   def transpose[A](xss: List[List[A]]): List[List[A]] = {
     val buf = new ListBuffer[List[A]]
     var yss = xss
