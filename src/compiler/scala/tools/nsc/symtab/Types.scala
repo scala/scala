@@ -139,8 +139,6 @@ trait Types {
     }
   }
 
-
-
   /** A map from lists to compound types that have the given list as parents.
    *  This is used to avoid duplication in the computation of base type sequences and baseClasses.
    *  It makes use of the fact that these two operations depend only on the parents,
@@ -1763,7 +1761,7 @@ A type's typeSymbol should never be inspected directly.
         packagePrefix + str
       else if (sym.isModuleClass)
         objectPrefix + str
-      else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value)
+      else if (sym.isAnonymousClass && sym.isInitialized && !settings.debug.value && !phase.erasedTypes)
         thisInfo.parents.mkString(" with ") + {
           if (sym.isStructuralRefinement)
             ((decls.toList filter { entry =>
