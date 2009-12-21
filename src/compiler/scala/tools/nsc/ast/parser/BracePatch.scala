@@ -10,3 +10,4 @@ package ast.parser
  *  @param inserted  If true, brace needs to be inserted, otherwise brace needs to be deleted.
  */
 case class BracePatch(off: Int, inserted: Boolean)
+extends Patch(off, if (inserted) Insertion("{") else Deletion(1))
