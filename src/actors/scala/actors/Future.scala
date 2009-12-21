@@ -105,9 +105,8 @@ object Futures {
    *                  aborted
    *  @param  fts     the futures to be awaited
    *  @return         the list of optional future values
-   *  @throws         `java.lang.IllegalArgumentException` if timeout
-   *                  is negative, or timeout + `System.currentTimeMillis()`
-   *                  is negative.
+   *  @throws java.lang.IllegalArgumentException  if timeout is negative,
+   *                  or timeout + `System.currentTimeMillis()` is negative.
    */
   def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
     var resultsMap: collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]
