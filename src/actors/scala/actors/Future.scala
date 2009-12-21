@@ -110,12 +110,6 @@ object Futures {
    *                  is negative.
    */
   def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
-    val thisActor = Actor.self
-    val timerTask = new java.util.TimerTask {
-      def run() { thisActor ! TIMEOUT }
-    }
-    Actor.timer.schedule(timerTask, timeout)
-
     var resultsMap: collection.mutable.Map[Int, Option[Any]] = new collection.mutable.HashMap[Int, Option[Any]]
 
     var cnt = 0
@@ -134,6 +128,12 @@ object Futures {
       }
       singleCase
     })
+
+    val thisActor = Actor.self
+    val timerTask = new java.util.TimerTask {
+      def run() { thisActor ! TIMEOUT }
+    }
+    Actor.timer.schedule(timerTask, timeout)
 
     def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[Int, Any]]]) {
       val reaction: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
