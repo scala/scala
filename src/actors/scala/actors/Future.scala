@@ -10,21 +10,15 @@
 
 package scala.actors
 
-import scheduler.DefaultThreadPoolScheduler
-
-/**
- * <p>
- *   A <code>Future[T]</code> is a function of arity 0 that
- *   returns a value of type <code>T</code>.
- *   Applying a future blocks the current actor (<code>self</code>)
- *   until the future's value is available.
- * </p>
- * <p>
- *   A future can be queried to find out whether its value
- *   is already available.
- * </p>
+/** A `Future[T]` is a function of arity 0 that returns
+ *  a value of type `T`.
+ *  Applying a future blocks the current actor (`Actor.self`)
+ *  until the future's value is available.
  *
- * @author Philipp Haller
+ *  A future can be queried to find out whether its value
+ *  is already available without blocking.
+ *
+ *  @author Philipp Haller
  */
 abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T] with Function0[T] {
   private[actors] var fvalue: Option[Any] = None
@@ -35,18 +29,29 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
   @deprecated("this member is going to be removed in a future release")
   protected def value_=(x: Option[Any]) { fvalue = x }
 
+  /** Tests whether the future's result is available.
+   *
+   *  @return `true`  if the future's result is available,
+   *          `false` otherwise.
+   */
   def isSet: Boolean
 }
 
-/**
- * The <code>Futures</code> object contains methods that operate on Futures.
+/** The <code>Futures</code> object contains methods that operate on futures.
  *
- * @author Philipp Haller
+ *  @author Philipp Haller
  */
 object Futures {
 
   private case object Eval
 
+  /** Arranges for the asynchronous execution of `body`,
+   *  returning a future representing the result.
+   *
+   *  @param  body the computation to be carried out asynchronously
+   *  @return      the future representing the result of the
+   *               computation
+   */
   def future[T](body: => T): Future[T] = {
     val a = new DaemonActor {
       def act() {
@@ -59,29 +64,50 @@ object Futures {
     a !! (Eval, { case any => any.asInstanceOf[T] })
   }
 
-  def alarm(t: Long) = future {
-    Actor.reactWithin(t) {
+  /** Creates a future that resolves after a given time span.
+   *
+   *  @param  timespan the time span in ms after which the future resolves
+   *  @return          the future
+   */
+  def alarm(timespan: Long) = future {
+    Actor.reactWithin(timespan) {
       case TIMEOUT => {}
     }
   }
 
-  def awaitEither[a, b](ft1: Future[a], ft2: Future[b]): Any = {
+  /** Waits for the first result returned by one of two
+   *  given futures.
+   *
+   *  @param  ft1 the first future
+   *  @param  ft2 the second future
+   *  @return the result of the future that resolves first
+   */
+  def awaitEither[A, B >: A](ft1: Future[A], ft2: Future[B]): B = {
     val FutCh1 = ft1.inputChannel
     val FutCh2 = ft2.inputChannel
     Actor.receive {
-      case FutCh1 ! arg1 => arg1
-      case FutCh2 ! arg2 => arg2
+      case FutCh1 ! arg1 => arg1.asInstanceOf[B]
+      case FutCh2 ! arg2 => arg2.asInstanceOf[B]
     }
   }
 
-  /**
-   * <p>
-   *   Awaits all futures returning an option containing a list of replies,
-   *   or timeouts returning <code>None</code>.
-   * </p>
-   * <p>
-   *   Note that some of the futures might already have been awaited.
-   * </p>
+  /** Waits until either all futures are resolved or a given
+   *  time span has passed. Results are collected in a list of
+   *  options. The result of a future that resolved during the
+   *  time span is its value wrapped in `Some`. The result of a
+   *  future that did not resolve during the time span is `None`.
+   *
+   *  Note that some of the futures might already have been awaited,
+   *  in which case their value is returned wrapped in `Some`.
+   *  Passing a timeout of 0 causes `awaitAll` to return immediately.
+   *
+   *  @param  timeout the time span in ms after which waiting is
+   *                  aborted
+   *  @param  fts     the futures to be awaited
+   *  @return         the list of optional future values
+   *  @throws         `java.lang.IllegalArgumentException` if timeout
+   *                  is negative, or timeout + `System.currentTimeMillis()`
+   *                  is negative.
    */
   def awaitAll(timeout: Long, fts: Future[Any]*): List[Option[Any]] = {
     val thisActor = Actor.self

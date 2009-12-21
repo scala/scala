@@ -193,7 +193,7 @@ abstract class TailCalls extends Transform
                 isTransformed = true
                 val newThis = newCtx.currentMethod
                   . newValue (tree.pos, nme.THIS)
-                  . setInfo (currentClass.tpe)
+                  . setInfo (currentClass.typeOfThis)
                   . setFlag (Flags.SYNTHETIC)
 
                 typed(atPos(tree.pos)(Block(

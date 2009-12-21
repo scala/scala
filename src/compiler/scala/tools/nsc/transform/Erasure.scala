@@ -116,6 +116,22 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
    *  </ul>
    */
   val erasure = new TypeMap {
+
+    // Compute the erasure of the intersection type with given `parents` according to new spec.
+    private def intersectionErasure(parents: List[Type]): Type =
+      if (parents.isEmpty) erasedTypeRef(ObjectClass)
+      else {
+        // implement new spec for erasure of refined types.
+        val psyms = parents map (_.typeSymbol)
+        def isUnshadowed(psym: Symbol) =
+          !(psyms exists (qsym => (psym ne qsym) && (qsym isNonBottomSubClass psym)))
+        val cs = parents.iterator.filter { p => // isUnshadowed is a bit expensive, so try classes first
+          val psym = p.typeSymbol
+          psym.isClass && !psym.isTrait && isUnshadowed(psym)
+        }
+        apply((if (cs.hasNext) cs else parents.iterator.filter(p => isUnshadowed(p.typeSymbol))).next())
+      }
+
     def apply(tp: Type): Type = {
       tp match {
         case ConstantType(_) =>
@@ -129,6 +145,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             else typeRef(apply(pre), sym, args map this)
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
+          else if (sym.isRefinementClass) intersectionErasure(tp.parents)
           else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
           else apply(sym.info) // alias type or abstract type
         case PolyType(tparams, restpe) =>
@@ -145,18 +162,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             else
               apply(restpe))
         case RefinedType(parents, decls) =>
-          if (parents.isEmpty) erasedTypeRef(ObjectClass)
-          else {
-            // implement new spec for erasure of refined types.
-            val psyms = parents map (_.typeSymbol)
-            def isUnshadowed(psym: Symbol) =
-              !(psyms exists (qsym => (psym ne qsym) && (qsym isNonBottomSubClass psym)))
-            val cs = parents.iterator.filter { p => // isUnshadowed is a bit expensive, so try classes first
-              val psym = p.typeSymbol
-              psym.isClass && !psym.isTrait && isUnshadowed(psym)
-            }
-            apply((if (cs.hasNext) cs else parents.iterator.filter(p => isUnshadowed(p.typeSymbol))).next())
-          }
+          intersectionErasure(parents)
         case AnnotatedType(_, atp, _) =>
           apply(atp)
         case ClassInfoType(parents, decls, clazz) =>

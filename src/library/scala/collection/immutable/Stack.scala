@@ -12,17 +12,19 @@
 package scala.collection
 package immutable
 
-import scala.annotation.tailrec
+import generic._
+import mutable.{ ArrayBuffer, Builder }
 
-object Stack {
-  val Empty: Stack[Nothing] = new Stack(Nil)
-  def apply[A](elems: A*) = new Stack(elems.toList)
+object Stack extends SeqFactory[Stack] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = new GenericCanBuildFrom[A]
+  def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
+
+  @deprecated("Use Stack.empty instead")
+  val Empty: Stack[Nothing] = Stack()
 }
 
 /** This class implements immutable stacks using a list-based data
- *  structure. Instances of <code>Stack</code> represent
- *  empty stacks; they can be either created by calling the constructor
- *  directly, or by applying the function <code>Stack.Empty</code>.
+ *  structure.
  *
  *  @note    This class exists only for historical reason and as an
  *           analogue of mutable stacks
@@ -33,7 +35,10 @@ object Stack {
  *  @since   1
  */
 @serializable @SerialVersionUID(1976480595012942526L)
-class Stack[+A] protected (protected val elems: List[A]) extends Seq[A] {
+class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]
+                    with GenericTraversableTemplate[A, Stack]
+                    with LinearSeqLike[A, Stack[A]] {
+  override def companion: GenericCompanion[Stack] = Stack
 
   def this() = this(Nil)
 
@@ -43,9 +48,8 @@ class Stack[+A] protected (protected val elems: List[A]) extends Seq[A] {
    */
   override def isEmpty: Boolean = elems.isEmpty
 
-  /** The number of elements in the stack
-   */
-  def length: Int = elems.length
+  override def head = elems.head
+  override def tail = new Stack(elems.tail)
 
   /** Push an element on the stack.
    *
@@ -90,7 +94,7 @@ class Stack[+A] protected (protected val elems: List[A]) extends Seq[A] {
    *  @return the top element.
    */
   def top: A =
-    if (!elems.isEmpty) elems.head
+    if (!isEmpty) elems.head
     else throw new NoSuchElementException("top of empty stack")
 
   /** Removes the top element from the stack.
@@ -100,31 +104,14 @@ class Stack[+A] protected (protected val elems: List[A]) extends Seq[A] {
    *  @return the new stack without the former top element.
    */
   def pop: Stack[A] =
-    if (!elems.isEmpty) new Stack(elems.tail)
+    if (!isEmpty) new Stack(elems.tail)
     else throw new NoSuchElementException("pop of empty stack")
 
   def pop2: (A, Stack[A]) =
-    if (!elems.isEmpty) (elems.head, new Stack(elems.tail))
+    if (!isEmpty) (elems.head, new Stack(elems.tail))
     else throw new NoSuchElementException("pop of empty stack")
 
-  /** Returns the n-th element of this stack. The bottom element has index
-   *  0, elements above are indexed with increasing numbers.
-   *
-   *  @throws Predef.NoSuchElementException
-   *  @param   n      the index number.
-   *  @return the n-th element on the stack.
-   */
-  def apply(n: Int): A = {
-    @tailrec
-    def walk(i: Int, xs: List[A]): A =
-      (i == 0, xs.isEmpty) match {
-        case (_, true)  => throw new NoSuchElementException("index out of range")
-        case (true, _)  => xs.head
-        case (false, _) => walk(i - 1, xs.tail)
-      }
-
-    walk(n, elems)
-  }
+  override def reverse: Stack[A] = new Stack(elems.reverse)
 
   /** Returns an iterator over all elements on the stack. The iterator
    *  issues elements in the reversed order they were inserted into the
@@ -132,23 +119,10 @@ class Stack[+A] protected (protected val elems: List[A]) extends Seq[A] {
    *
    *  @return an iterator over all stack elements.
    */
-  override def iterator: Iterator[A] = new Iterator[A] {
-    private var cur = Stack.this
-    def hasNext: Boolean = !cur.isEmpty
-    def next: A = { val r = top; cur = cur.pop; r }
-  }
-
-  /** Returns the hash code for this stack.
-   *
-   *  @return the hash code of the stack.
-   */
-  override def hashCode(): Int = //"Stack".hashCode
-    if (isEmpty) 0
-    else pop2 match { case (x,y) => x.hashCode + y.hashCode }
+  override def iterator: Iterator[A] = elems.iterator
 
   /** Returns a string representation of this stack.
    */
   override def toString() = elems.mkString("Stack(", ", ", ")")
-
 }
 
