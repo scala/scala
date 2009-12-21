@@ -7,8 +7,10 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.tools.nsc.util.Position
+import symtab.Flags._
+
 import scala.collection.mutable.ListBuffer
-  import symtab.Flags._
 
 /**
  *  @author Lukas Rytz
@@ -132,8 +134,15 @@ trait NamesDefaults { self: Analyzer =>
             case TypeRef(pre, sym, args)
             if (!args.forall(a => context.undetparams contains a.typeSymbol)) =>
               args.map(TypeTree(_))
-            case _ => Nil
+            case _ =>
+              Nil
           }
+          (baseFun, Nil, targsInSource)
+
+        case Select(TypeApply(New(TypeTree()), targs), _) if isConstr =>
+          val targsInSource =
+            if (targs.forall(a => context.undetparams contains a.symbol)) Nil
+            else targs
           (baseFun, Nil, targsInSource)
 
         case _ => (baseFun, Nil, Nil)
@@ -170,28 +179,41 @@ trait NamesDefaults { self: Analyzer =>
         b
       }
 
+      def moduleQual(pos: Position, tree: Symbol => Tree) = {
+        val module = baseFun.symbol.owner.linkedModuleOfClass
+        if (module == NoSymbol) None
+        else Some(atPos(pos.focus)(tree(module)))
+      }
+
       baseFun1 match {
         // constructor calls
 
         case Select(New(TypeTree()), _) if isConstr =>
           blockWithoutQualifier(None)
+        case Select(TypeApply(New(TypeTree()), _), _) if isConstr =>
+          blockWithoutQualifier(None)
 
         case Select(New(Ident(_)), _) if isConstr =>
           blockWithoutQualifier(None)
+        case Select(TypeApply(New(Ident(_)), _), _) if isConstr =>
+          blockWithoutQualifier(None)
 
-        case Select(nev @ New(sel @ Select(qual, typeName)), constr) if isConstr =>
-          // #2057
-          val module = baseFun.symbol.owner.linkedModuleOfClass
-          val defaultQual =
-            if (module == NoSymbol) None
-            else Some(atPos(qual.pos.focus)(gen.mkAttributedSelect(qual.duplicate, module)))
+        case Select(New(Select(qual, _)), _) if isConstr =>
           // in `new q.C()', q is always stable
           assert(treeInfo.isPureExpr(qual), qual)
+          // #2057
+          val defaultQual = moduleQual(qual.pos, mod => gen.mkAttributedSelect(qual.duplicate, mod))
+          blockWithoutQualifier(defaultQual)
+
+        case Select(TypeApply(New(Select(qual, _)), _), _) if isConstr =>
+          assert(treeInfo.isPureExpr(qual), qual)
+          val defaultQual = moduleQual(qual.pos, mod => gen.mkAttributedSelect(qual.duplicate, mod))
           blockWithoutQualifier(defaultQual)
 
         // super constructor calls
         case Select(Super(_, _), _) if isConstr =>
-          blockWithoutQualifier(None)
+          val defaultQual = moduleQual(baseFun.pos, mod => gen.mkAttributedRef(mod))
+          blockWithoutQualifier(defaultQual)
 
         // self constructor calls (in secondary constructors)
         case Select(qual, name) if isConstr =>

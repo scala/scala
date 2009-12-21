@@ -283,6 +283,12 @@ object Test extends Application {
     val one = t f (x = 1)
   }
 
+  // #2820
+  class Test2820 {
+    class A[T](f: String = "ski!")
+    class C extends A
+  }
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
