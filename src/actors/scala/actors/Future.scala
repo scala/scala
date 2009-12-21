@@ -10,6 +10,8 @@
 
 package scala.actors
 
+import scala.actors.scheduler.DaemonScheduler
+
 /** A `Future[T]` is a function of arity 0 that returns
  *  a value of type `T`.
  *  Applying a future blocks the current actor (`Actor.self`)
@@ -21,6 +23,7 @@ package scala.actors
  *  @author Philipp Haller
  */
 abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T] with Function0[T] {
+  @volatile
   private[actors] var fvalue: Option[Any] = None
   private[actors] def fvalueTyped = fvalue.get.asInstanceOf[T]
 
@@ -37,13 +40,46 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
   def isSet: Boolean
 }
 
-/** The <code>Futures</code> object contains methods that operate on futures.
+/** The `Futures` object contains methods that operate on futures.
  *
  *  @author Philipp Haller
  */
 object Futures {
 
   private case object Eval
+
+  private class FutureActor[T](fun: () => T, channel: Channel[T])
+    extends Future[T](channel) with DaemonActor {
+
+    def isSet = !fvalue.isEmpty
+
+    def apply(): T = {
+      if (fvalue.isEmpty)
+        this !? Eval
+      fvalueTyped
+    }
+
+    def respond(k: T => Unit) {
+      if (isSet) k(fvalueTyped)
+      else {
+        val ft = this !! Eval
+        ft.inputChannel.react {
+          case _ => k(fvalueTyped)
+        }
+      }
+    }
+
+    def act() {
+      val res = fun()
+      fvalue =  Some(res)
+      channel ! res
+      Actor.loop {
+        Actor.react {
+          case Eval => Actor.reply()
+        }
+      }
+    }
+  }
 
   /** Arranges for the asynchronous execution of `body`,
    *  returning a future representing the result.
@@ -53,15 +89,10 @@ object Futures {
    *               computation
    */
   def future[T](body: => T): Future[T] = {
-    val a = new DaemonActor {
-      def act() {
-        Actor.react {
-          case Eval => Actor.reply(body)
-        }
-      }
-    }
+    val c = new Channel[T](Actor.self(DaemonScheduler))
+    val a = new FutureActor[T](() => body, c)
     a.start()
-    a !! (Eval, { case any => any.asInstanceOf[T] })
+    a
   }
 
   /** Creates a future that resolves after a given time span.
