@@ -62,7 +62,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
    * <code>f</code>. This also allows to recover a more
    * precise type for the reply value.
    */
-  override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
+  override def !![A](msg: Any, f: Any =>? A): Future[A] = {
     val ftch = new Channel[A](Actor.self(thiz.scheduler))
     thiz.send(msg, new OutputChannel[Any] {
       def !(msg: Any) =
@@ -108,7 +108,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
         Futures.fromInputChannel(someChan)
       }
       // should never be invoked; return dummy value
-      override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
+      override def !![A](msg: Any, f: Any =>? A): Future[A] = {
         val someChan = new Channel[A](Actor.self(thiz.scheduler))
         Futures.fromInputChannel(someChan)
       }
@@ -117,7 +117,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
     thiz.send(msg, linkedChannel)
     new Future[Any](ftch) {
       var exitReason: Option[Any] = None
-      val handleReply: PartialFunction[Any, Unit] = {
+      val handleReply: Any =>? Unit = {
         case Exit(from, reason) =>
           exitReason = Some(reason)
         case any =>
@@ -145,7 +145,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
 
       def isSet = (fvalue match {
         case None =>
-          val handleTimeout: PartialFunction[Any, Boolean] = {
+          val handleTimeout: Any =>? Boolean = {
             case TIMEOUT =>
               false
           }

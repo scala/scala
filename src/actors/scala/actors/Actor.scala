@@ -160,7 +160,7 @@ object Actor {
    * @param  f a partial function specifying patterns and actions
    * @return   the result of processing the received message
    */
-  def receive[A](f: PartialFunction[Any, A]): A =
+  def receive[A](f: Any =>? A): A =
     self.receive(f)
 
   /**
@@ -175,7 +175,7 @@ object Actor {
    * @param  f    a partial function specifying patterns and actions
    * @return      the result of processing the received message
    */
-  def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R =
+  def receiveWithin[R](msec: Long)(f: Any =>? R): R =
     self.receiveWithin(msec)(f)
 
   /**
@@ -188,7 +188,7 @@ object Actor {
    * @param  f a partial function specifying patterns and actions
    * @return   this function never returns
    */
-  def react(f: PartialFunction[Any, Unit]): Nothing =
+  def react(f: Any =>? Unit): Nothing =
     rawSelf.react(f)
 
   /**
@@ -202,14 +202,14 @@ object Actor {
    * @param  f    a partial function specifying patterns and actions
    * @return      this function never returns
    */
-  def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing =
+  def reactWithin(msec: Long)(f: Any =>? Unit): Nothing =
     self.reactWithin(msec)(f)
 
-  def eventloop(f: PartialFunction[Any, Unit]): Nothing =
+  def eventloop(f: Any =>? Unit): Nothing =
     rawSelf.react(new RecursiveProxyHandler(rawSelf, f))
 
-  private class RecursiveProxyHandler(a: Reactor, f: PartialFunction[Any, Unit])
-          extends PartialFunction[Any, Unit] {
+  private class RecursiveProxyHandler(a: Reactor, f: Any =>? Unit)
+          extends (Any =>? Unit) {
     def isDefinedAt(m: Any): Boolean =
       true // events are immediately removed from the mailbox
     def apply(m: Any) {
@@ -261,9 +261,9 @@ object Actor {
    * }
    * </pre>
    */
-  def respondOn[A, B](fun: PartialFunction[A, Unit] => Nothing):
-    PartialFunction[A, B] => Responder[B] =
-      (caseBlock: PartialFunction[A, B]) => new Responder[B] {
+  def respondOn[A, B](fun: A =>? Unit => Nothing):
+    A =>? B => Responder[B] =
+      (caseBlock: A =>? B) => new Responder[B] {
         def respond(k: B => Unit) = fun(caseBlock andThen k)
       }
 
@@ -428,7 +428,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    * @param  f    a partial function with message patterns and actions
    * @return      result of processing the received value
    */
-  def receive[R](f: PartialFunction[Any, R]): R = {
+  def receive[R](f: Any =>? R): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
 
     synchronized {
@@ -479,7 +479,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    * @param  f    a partial function with message patterns and actions
    * @return      result of processing the received value
    */
-  def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
+  def receiveWithin[R](msec: Long)(f: Any =>? R): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
 
     synchronized {
@@ -559,7 +559,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    *
    * @param  f    a partial function with message patterns and actions
    */
-  override def react(f: PartialFunction[Any, Unit]): Nothing = {
+  override def react(f: Any =>? Unit): Nothing = {
     assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
     synchronized {
       if (shouldExit) exit() // links
@@ -580,7 +580,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
    * @param  msec the time span before timeout
    * @param  f    a partial function with message patterns and actions
    */
-  def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
+  def reactWithin(msec: Long)(f: Any =>? Unit): Nothing = {
     assert(Actor.self(scheduler) == this, "react on channel belonging to other actor")
 
     synchronized {
@@ -646,7 +646,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
   }
 
   // guarded by lock of this
-  private[actors] override def scheduleActor(f: PartialFunction[Any, Unit], msg: Any) =
+  private[actors] override def scheduleActor(f: Any =>? Unit, msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
     }

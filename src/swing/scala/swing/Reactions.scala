@@ -27,7 +27,7 @@ object Reactions {
     }
   }
 
-  type Reaction = PartialFunction[Event, Unit]
+  type Reaction = Event =>? Unit
 
   /**
    * A Reaction implementing this trait is strongly referenced in the reaction list

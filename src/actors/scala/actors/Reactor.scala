@@ -41,7 +41,7 @@ trait Reactor extends OutputChannel[Any] {
    * message handler that react was called with.
    */
   @volatile
-  private[actors] var continuation: PartialFunction[Any, Unit] = null
+  private[actors] var continuation: Any =>? Unit = null
 
   /* Whenever this Actor executes on some thread, waitingFor is
    * guaranteed to be equal to waitingForNone.
@@ -61,7 +61,7 @@ trait Reactor extends OutputChannel[Any] {
    */
   def act(): Unit
 
-  protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] =
+  protected[actors] def exceptionHandler: Exception =>? Unit =
     Map()
 
   protected[actors] def scheduler: IScheduler =
@@ -159,7 +159,7 @@ trait Reactor extends OutputChannel[Any] {
     }
   }
 
-  protected[actors] def react(f: PartialFunction[Any, Unit]): Nothing = {
+  protected[actors] def react(f: Any =>? Unit): Nothing = {
     assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
     synchronized { drainSendBuffer(mailbox) }
     continuation = f
@@ -172,7 +172,7 @@ trait Reactor extends OutputChannel[Any] {
    *
    * assume handler != null
    */
-  private[actors] def scheduleActor(handler: PartialFunction[Any, Unit], msg: Any) = {
+  private[actors] def scheduleActor(handler: Any =>? Unit, msg: Any) = {
     val fun = () => handler(msg)
     val task = new ReactorTask(this, fun)
     scheduler executeFromActor task

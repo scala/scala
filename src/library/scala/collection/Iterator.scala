@@ -411,7 +411,7 @@ trait Iterator[+A] { self =>
   *  @return a new iterator which yields each value `x` produced by this iterator for
   *          which `pf` is defined the image `pf(x)`.
   */
-  def partialMap[B](pf: PartialFunction[A, B]): Iterator[B] = {
+  def partialMap[B](pf: A =>? B): Iterator[B] = {
     val self = buffered
     new Iterator[B] {
       private def skip() = while (self.hasNext && !pf.isDefinedAt(self.head)) self.next()

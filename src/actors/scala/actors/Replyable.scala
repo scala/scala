@@ -59,7 +59,7 @@ trait Replyable[-T, +R] {
    * @param    f the function to be applied to the response
    * @return     the future
    */
-  def !![P](msg: T, f: PartialFunction[R, P]): () => P =
+  def !![P](msg: T, f: R =>? P): () => P =
     () => f(this !? msg)
 
 }

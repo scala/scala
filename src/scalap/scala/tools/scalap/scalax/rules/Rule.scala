@@ -56,9 +56,9 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
 
   def ^^[B](fa2b : A => B) = map(fa2b)
 
-  def ^^?[B](pf : PartialFunction[A, B]) = filter (pf.isDefinedAt(_)) ^^ pf
+  def ^^?[B](pf : A =>? B) = filter (pf.isDefinedAt(_)) ^^ pf
 
-  def ??(pf : PartialFunction[A, Any]) = filter (pf.isDefinedAt(_))
+  def ??(pf : A =>? Any) = filter (pf.isDefinedAt(_))
 
   def -^[B](b : B) = map { any => b }
 
@@ -73,7 +73,7 @@ trait Rule[-In, +Out, +A, +X] extends (In => Result[Out, A, X]) {
 
   def >->[Out2, B, X2 >: X](fa2resultb : A => Result[Out2, B, X2]) = flatMap { a => any => fa2resultb(a) }
 
-  def >>?[Out2, B, X2 >: X](pf : PartialFunction[A, Rule[Out, Out2, B, X2]]) = filter(pf isDefinedAt _) flatMap pf
+  def >>?[Out2, B, X2 >: X](pf : A =>? Rule[Out, Out2, B, X2]) = filter(pf isDefinedAt _) flatMap pf
 
   def >>&[B, X2 >: X](fa2ruleb : A => Out => Result[Any, B, X2]) = flatMap { a => out => fa2ruleb(a)(out) mapOut { any => out } }
 

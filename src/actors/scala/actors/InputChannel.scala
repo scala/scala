@@ -25,7 +25,7 @@ trait InputChannel[+Msg] {
    * @param  f    a partial function with message patterns and actions
    * @return      result of processing the received value
    */
-  def receive[R](f: PartialFunction[Msg, R]): R
+  def receive[R](f: Msg =>? R): R
 
   /**
    * Receives a message from this <code>InputChannel</code> within
@@ -35,7 +35,7 @@ trait InputChannel[+Msg] {
    * @param  f    a partial function with message patterns and actions
    * @return      result of processing the received value
    */
-  def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R
+  def receiveWithin[R](msec: Long)(f: Any =>? R): R
 
   /**
    * Receives a message from this <code>InputChannel</code>.
@@ -45,7 +45,7 @@ trait InputChannel[+Msg] {
    *
    * @param  f    a partial function with message patterns and actions
    */
-  def react(f: PartialFunction[Msg, Unit]): Nothing
+  def react(f: Msg =>? Unit): Nothing
 
   /**
    * Receives a message from this <code>InputChannel</code> within
@@ -57,7 +57,7 @@ trait InputChannel[+Msg] {
    * @param  msec the time span before timeout
    * @param  f    a partial function with message patterns and actions
    */
-  def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing
+  def reactWithin(msec: Long)(f: Any =>? Unit): Nothing
 
   /**
    * Receives the next message from this <code>Channel</code>.
