@@ -422,6 +422,7 @@ trait Contexts { self: Analyzer =>
          ||
          (accessWithin(ab) || accessWithin(ab.linkedClassOfClass)) &&
          (!sym.hasFlag(LOCAL) ||
+          sym.owner.isImplClass || // allow private local accesses to impl classes
           (sym hasFlag PROTECTED) && isSubThisType(pre, sym.owner) ||
           pre =:= sym.owner.thisType)
          ||

@@ -2312,7 +2312,9 @@ A type's typeSymbol should never be inspected directly.
 
   /** The canonical creator for this-types */
   def mkThisType(sym: Symbol): Type = {
-    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType)
+    if (!phase.erasedTypes) unique(new ThisType(sym) with UniqueType)
+    else if (sym.isImplClass) sym.typeOfThis
+    else sym.tpe
   }
 
   /** The canonical creator for single-types */
