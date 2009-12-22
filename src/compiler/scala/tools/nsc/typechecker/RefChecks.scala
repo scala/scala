@@ -87,7 +87,7 @@ abstract class RefChecks extends InfoTransform {
             if (!others.isEmpty) {
               val all = x :: others
               val rest = if (all.exists(_.owner != clazz)) ".\nThe members with defaults are defined in "+
-                         all.map(_.owner).mkString("", " and ", ".") else ""
+                         all.map(_.owner).mkString("", " and ", ".") else "."
               unit.error(clazz.pos, "in "+ clazz +", multiple overloaded alternatives of "+ x +
                          " define default arguments"+ rest)
               }
