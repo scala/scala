@@ -1164,7 +1164,7 @@ trait Namers { self: Analyzer =>
               val expr1 = typer.typedQualifier(expr)
               val base = expr1.tpe
               typer.checkStable(expr1)
-              if (expr1.symbol.isRootPackage) context.error(tree.pos, "_root_ cannot be imported")
+              if ((expr1.symbol ne null) && expr1.symbol.isRootPackage) context.error(tree.pos, "_root_ cannot be imported")
               def checkNotRedundant(pos: Position, from: Name, to: Name): Boolean = {
                 if (!tree.symbol.hasFlag(SYNTHETIC) &&
                     !((expr1.symbol ne null) && expr1.symbol.isInterpreterWrapper) &&
