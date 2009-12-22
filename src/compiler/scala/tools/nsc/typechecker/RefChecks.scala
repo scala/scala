@@ -78,7 +78,7 @@ abstract class RefChecks extends InfoTransform {
     private def checkDefaultsInOverloaded(clazz: Symbol) {
       def check(members: List[Symbol]): Unit = members match {
         case x :: xs =>
-          if (x.paramss.exists(_.exists(p => p.hasFlag(DEFAULTPARAM)))) {
+          if (x.paramss.exists(_.exists(p => p.hasFlag(DEFAULTPARAM))) && !nme.isProtectedAccessor(x.name)) {
             val others = xs.filter(alt => {
               alt.name == x.name &&
               alt.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM))) &&
@@ -87,7 +87,7 @@ abstract class RefChecks extends InfoTransform {
             if (!others.isEmpty) {
               val all = x :: others
               val rest = if (all.exists(_.owner != clazz)) ".\nThe members with defaults are defined in "+
-                         all.map(_.owner).mkString("", " and ", ".")
+                         all.map(_.owner).mkString("", " and ", ".") else ""
               unit.error(clazz.pos, "in "+ clazz +", multiple overloaded alternatives of "+ x +
                          " define default arguments"+ rest)
               }
