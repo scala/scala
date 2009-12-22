@@ -4350,7 +4350,7 @@ A type's typeSymbol should never be inspected directly.
         }
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
 
-        println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen)))
+        //println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen)))
 
         tvar setInst (
           if (up) {

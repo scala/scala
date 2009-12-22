@@ -425,7 +425,7 @@ abstract class RefChecks extends InfoTransform {
               infoString(member) + " is marked `abstract' and `override'" +
               (if (other != NoSymbol)
                 " and overrides incomplete superclass member " + infoString(other)
-               else ""))
+               else ", but no concrete implementation could be found in a base class"))
           }
 
         // 3. Check that concrete classes do not have deferred definitions
