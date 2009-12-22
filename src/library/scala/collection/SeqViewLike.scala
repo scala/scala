@@ -117,10 +117,16 @@ trait SeqViewLike[+A,
   }
 
   trait Reversed extends Transformed[A] {
-    override def iterator: Iterator[A] = self.reverseIterator
+    override def iterator: Iterator[A] = createReversedIterator
     override def length: Int = self.length
     override def apply(idx: Int): A = self.apply(length - 1 - idx)
     override def stringPrefix = self.stringPrefix+"R"
+
+    private def createReversedIterator = {
+      var lst = List[A]()
+      for (elem <- self) lst ::= elem
+      lst.iterator
+    }
   }
 
   trait Patched[B >: A] extends Transformed[B] {
@@ -165,6 +171,9 @@ trait SeqViewLike[+A,
 
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That =
     patch(length, fill(len - length)(elem), 0)
+
+  override def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That =
+    reverse.map(f)
 
   override def stringPrefix = "SeqView"
 }
