@@ -24,47 +24,24 @@ import TraversableView.NoBuilder
 trait IndexedSeqViewLike[+A,
                          +Coll,
                          +This <: IndexedSeqView[A, Coll] with IndexedSeqViewLike[A, Coll, This]]
-  extends IndexedSeq[A] with IndexedSeqLike[A, This] with SeqView[A, Coll] with SeqViewLike[A, Coll, This]
+  extends IndexedSeq[A]
+      with IndexedSeqLike[A, This]
+      with SeqView[A, Coll]
+      with SeqViewLike[A, Coll, This]
+      with views.IndexedSeqTransformations[A, Coll, This]
 { self =>
 
-  trait Transformed[+B] extends IndexedSeqView[B, Coll] with super.Transformed[B]
+  trait Transformed[+B] extends views.IndexedSeqLike[B, Coll] with super.Transformed[B]
 
-  trait Sliced extends Transformed[A] with super.Sliced {
-    /** Override to use IndexedSeq's foreach; todo: see whether this is really faster */
-    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait Mapped[B] extends Transformed[B] with super.Mapped[B] {
-    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait FlatMapped[B] extends Transformed[B] with super.FlatMapped[B] {
-    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait Appended[B >: A] extends Transformed[B] with super.Appended[B] {
-    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait Filtered extends Transformed[A] with super.Filtered {
-    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait TakenWhile extends Transformed[A] with super.TakenWhile {
-    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait DroppedWhile extends Transformed[A] with super.DroppedWhile {
-    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait Reversed extends Transformed[A] with super.Reversed {
-    override def foreach[U](f: A =>  U) = super[Transformed].foreach(f)
-  }
-
-  trait Patched[B >: A] extends Transformed[B] with super.Patched[B] {
-    override def foreach[U](f: B =>  U) = super[Transformed].foreach(f)
-  }
+  trait Sliced extends Transformed[A] with super.Sliced
+  trait Mapped[B] extends Transformed[B] with super.Mapped[B]
+  trait FlatMapped[B] extends Transformed[B] with super.FlatMapped[B]
+  trait Appended[B >: A] extends Transformed[B] with super.Appended[B]
+  trait Filtered extends Transformed[A] with super.Filtered
+  trait TakenWhile extends Transformed[A] with super.TakenWhile
+  trait DroppedWhile extends Transformed[A] with super.DroppedWhile
+  trait Reversed extends Transformed[A] with super.Reversed
+  trait Patched[B >: A] extends Transformed[B] with super.Patched[B]
 
   trait Zipped[B] extends Transformed[(A, B)] {
     protected[this] val other: Iterable[B]
@@ -87,23 +64,6 @@ trait IndexedSeqViewLike[+A,
       (z1, z2)
     }
     override def stringPrefix = self.stringPrefix+"Z"
-  }
-
-  /** Boilerplate method, to override in each subclass
-   *  This method could be eliminated if Scala had virtual classes
-   */
-  protected override def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
-  protected override def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected override def newFlatMapped[B](f: A => Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
-  protected override def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
-  protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
-  protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
-  protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
-  protected override def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] { val other = that }
-  protected override def newZippedAll[A1 >: A, B](that: Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new ZippedAll[A1, B] { val other = that; val thisElem = _thisElem; val thatElem = _thatElem }
-  protected override def newReversed: Transformed[A] = new Reversed { }
-  protected override def newPatched[B >: A](_from: Int, _patch: Seq[B], _replaced: Int): Transformed[B] = new Patched[B] {
-    val from = _from; val patch = _patch; val replaced = _replaced
   }
   override def stringPrefix = "IndexedSeqView"
 }

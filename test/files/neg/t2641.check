@@ -29,7 +29,7 @@ t2641.scala:27: error: illegal inheritance; superclass Any
   trait Sliced extends Transformed[A] with super.Sliced {
                        ^
 t2641.scala:27: error: illegal inheritance; superclass Any
- is not a subclass of the superclass Object
+ is not a subclass of the superclass TraversableLike
  of the mixin trait Sliced
   trait Sliced extends Transformed[A] with super.Sliced {
                                                  ^

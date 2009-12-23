@@ -24,10 +24,14 @@ import TraversableView.NoBuilder
 trait IterableViewLike[+A,
                        +Coll,
                        +This <: IterableView[A, Coll] with IterableViewLike[A, Coll, This]]
-extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] with TraversableViewLike[A, Coll, This]
+  extends Iterable[A]
+      with IterableLike[A, This]
+      with TraversableView[A, Coll]
+      with TraversableViewLike[A, Coll, This]
+      with views.IterableTransformations[A, Coll, This]
 { self =>
 
-  trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B]
+  trait Transformed[+B] extends views.IterableLike[B, Coll] with super.Transformed[B]
 
   trait Sliced extends Transformed[A] with super.Sliced {
     override def iterator = self.iterator slice (from, until)
@@ -83,26 +87,6 @@ extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] wit
 
   override def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[This, (A1, B), That]): That =
     newZippedAll(that, thisElem, thatElem).asInstanceOf[That]
-
-  protected def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] {
-    val other = that
-  }
-  protected def newZippedAll[A1 >: A, B](that: Iterable[B], _thisElem: A1, _thatElem: B): Transformed[(A1, B)] = new ZippedAll[A1, B] {
-    val other: Iterable[B] = that
-    val thisElem = _thisElem
-    val thatElem = _thatElem
-  }
-
-  /** Boilerplate method, to override in each subclass
-   *  This method could be eliminated if Scala had virtual classes
-   */
-  protected override def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
-  protected override def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected override def newFlatMapped[B](f: A => Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
-  protected override def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
-  protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
-  protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
-  protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
 
   override def stringPrefix = "IterableView"
 }
