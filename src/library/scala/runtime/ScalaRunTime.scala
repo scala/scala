@@ -30,13 +30,49 @@ object ScalaRunTime {
   def isValueClass(clazz: Class[_]) = clazz.isPrimitive()
 
   /** Retrieve generic array element */
-  def array_apply(xs: AnyRef, idx: Int): Any = java.lang.reflect.Array.get(xs, idx)
+  def array_apply(xs: AnyRef, idx: Int): Any = xs match {
+    case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
+    case x: Array[Int]     => x(idx).asInstanceOf[Any]
+    case x: Array[Double]  => x(idx).asInstanceOf[Any]
+    case x: Array[Long]    => x(idx).asInstanceOf[Any]
+    case x: Array[Float]   => x(idx).asInstanceOf[Any]
+    case x: Array[Char]    => x(idx).asInstanceOf[Any]
+    case x: Array[Byte]    => x(idx).asInstanceOf[Any]
+    case x: Array[Short]   => x(idx).asInstanceOf[Any]
+    case x: Array[Boolean] => x(idx).asInstanceOf[Any]
+    case x: Array[Unit]    => x(idx).asInstanceOf[Any]
+    case null => throw new NullPointerException
+  }
 
   /** update generic array element */
-  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = java.lang.reflect.Array.set(xs, idx, value)
+  def array_update(xs: AnyRef, idx: Int, value: Any): Unit = xs match {
+    case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
+    case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]
+    case x: Array[Double]  => x(idx) = value.asInstanceOf[Double]
+    case x: Array[Long]    => x(idx) = value.asInstanceOf[Long]
+    case x: Array[Float]   => x(idx) = value.asInstanceOf[Float]
+    case x: Array[Char]    => x(idx) = value.asInstanceOf[Char]
+    case x: Array[Byte]    => x(idx) = value.asInstanceOf[Byte]
+    case x: Array[Short]   => x(idx) = value.asInstanceOf[Short]
+    case x: Array[Boolean] => x(idx) = value.asInstanceOf[Boolean]
+    case x: Array[Unit]    => x(idx) = value.asInstanceOf[Unit]
+    case null => throw new NullPointerException
+  }
 
   /** Get generic array length */
-  def array_length(xs: AnyRef): Int = java.lang.reflect.Array.getLength(xs)
+  def array_length(xs: AnyRef): Int = xs match {
+    case x: Array[AnyRef]  => x.length
+    case x: Array[Int]     => x.length
+    case x: Array[Double]  => x.length
+    case x: Array[Long]    => x.length
+    case x: Array[Float]   => x.length
+    case x: Array[Char]    => x.length
+    case x: Array[Byte]    => x.length
+    case x: Array[Short]   => x.length
+    case x: Array[Boolean] => x.length
+    case x: Array[Unit]    => x.length
+    case null => throw new NullPointerException
+  }
 
   /** Convert a numeric value array to an object array.
    *  Needed to deal with vararg arguments of primtive types that are passed
@@ -64,7 +100,7 @@ object ScalaRunTime {
     if (x == null) throw new UninitializedError else x
 
   abstract class Try[+A] {
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
+    def Catch[B >: A](handler: Throwable =>? B): B
     def Finally(fin: => Unit): A
   }
 
@@ -79,7 +115,7 @@ object ScalaRunTime {
 
     def run() { result = block }
 
-    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
+    def Catch[B >: A](handler: Throwable =>? B): B =
       if (exception == null) result
       else if (handler isDefinedAt exception) handler(exception)
       else throw exception

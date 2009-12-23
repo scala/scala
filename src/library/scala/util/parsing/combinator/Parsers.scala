@@ -93,7 +93,7 @@ trait Parsers {
      *         `f' applied to the result of this `ParseResult', packaged up as a new `ParseResult'.
      *         If `f' is not defined, `Failure'.
      */
-    def mapPartial[U](f: PartialFunction[T, U], error: T => String): ParseResult[U]
+    def mapPartial[U](f: T =>? U, error: T => String): ParseResult[U]
 
     def flatMapWithNext[U](f: T => Input => ParseResult[U]): ParseResult[U]
 
@@ -119,7 +119,7 @@ trait Parsers {
    */
   case class Success[+T](result: T, override val next: Input) extends ParseResult[T] {
     def map[U](f: T => U) = Success(f(result), next)
-    def mapPartial[U](f: PartialFunction[T, U], error: T => String): ParseResult[U]
+    def mapPartial[U](f: T =>? U, error: T => String): ParseResult[U]
        = if(f.isDefinedAt(result)) Success(f(result), next)
          else Failure(error(result), next)
 
@@ -146,7 +146,7 @@ trait Parsers {
       lastNoSuccess = this
 
     def map[U](f: Nothing => U) = this
-    def mapPartial[U](f: PartialFunction[Nothing, U], error: Nothing => String): ParseResult[U] = this
+    def mapPartial[U](f: Nothing =>? U, error: Nothing => String): ParseResult[U] = this
 
     def flatMapWithNext[U](f: Nothing => Input => ParseResult[U]): ParseResult[U]
       = this
@@ -345,7 +345,7 @@ trait Parsers {
      * @return a parser that succeeds if the current parser succeeds <i>and</i> `f' is applicable
      *         to the result. If so, the result will be transformed by `f'.
      */
-    def ^? [U](f: PartialFunction[T, U], error: T => String): Parser[U] = Parser{ in =>
+    def ^? [U](f: T =>? U, error: T => String): Parser[U] = Parser{ in =>
       this(in).mapPartial(f, error)}.named(toString+"^?")
 
     /** A parser combinator for partial function application
@@ -358,7 +358,7 @@ trait Parsers {
      * @return a parser that succeeds if the current parser succeeds <i>and</i> `f' is applicable
      *         to the result. If so, the result will be transformed by `f'.
      */
-    def ^? [U](f: PartialFunction[T, U]): Parser[U] = ^?(f, r => "Constructor function not defined at "+r)
+    def ^? [U](f: T =>? U): Parser[U] = ^?(f, r => "Constructor function not defined at "+r)
 
 
     /** A parser combinator that parameterises a subsequent parser with the result of this one
@@ -495,7 +495,7 @@ trait Parsers {
    * @return A parser that succeeds if `f' is applicable to the first element of the input,
    *         applying `f' to it to produce the result.
    */
-  def accept[U](expected: String, f: PartialFunction[Elem, U]): Parser[U] = acceptMatch(expected, f)
+  def accept[U](expected: String, f: Elem =>? U): Parser[U] = acceptMatch(expected, f)
 
 
   def acceptIf(p: Elem => Boolean)(err: Elem => String): Parser[Elem] = Parser { in =>
@@ -503,7 +503,7 @@ trait Parsers {
     else Failure(err(in.first), in)
   }
 
-  def acceptMatch[U](expected: String, f: PartialFunction[Elem, U]): Parser[U] = Parser{ in =>
+  def acceptMatch[U](expected: String, f: Elem =>? U): Parser[U] = Parser{ in =>
     if (f.isDefinedAt(in.first)) Success(f(in.first), in.rest)
     else Failure(expected+" expected", in)
   }

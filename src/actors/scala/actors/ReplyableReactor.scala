@@ -70,7 +70,7 @@ private[actors] trait ReplyableReactor extends Replyable[Any, Any] {
    * <code>f</code>. This also allows to recover a more
    * precise type for the reply value.
    */
-  override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
+  override def !![A](msg: Any, f: Any =>? A): Future[A] = {
     val myself = Actor.rawSelf(this.scheduler)
     val ftch = new ReactChannel[A](myself)
     val res = new scala.concurrent.SyncVar[A]

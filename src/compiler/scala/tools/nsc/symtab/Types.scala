@@ -2312,7 +2312,9 @@ A type's typeSymbol should never be inspected directly.
 
   /** The canonical creator for this-types */
   def mkThisType(sym: Symbol): Type = {
-    if (phase.erasedTypes) sym.tpe else unique(new ThisType(sym) with UniqueType)
+    if (!phase.erasedTypes) unique(new ThisType(sym) with UniqueType)
+    else if (sym.isImplClass) sym.typeOfThis
+    else sym.tpe
   }
 
   /** The canonical creator for single-types */
@@ -4031,6 +4033,7 @@ A type's typeSymbol should never be inspected directly.
   /** Does type `tp1' conform to `tp2'?
    */
   private def isSubType2(tp1: Type, tp2: Type, depth: Int): Boolean = {
+    if (tp1 eq tp2) return true
     if (isErrorOrWildcard(tp1)) return true
     if (isErrorOrWildcard(tp2)) return true
     if (tp1 eq NoType) return false
@@ -4348,6 +4351,8 @@ A type's typeSymbol should never be inspected directly.
           }
         }
         tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
+
+        //println("solving "+tvar+" "+up+" "+(if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds)+((if (up) (tvar.constr.hiBounds) else tvar.constr.loBounds) map (_.widen)))
 
         tvar setInst (
           if (up) {

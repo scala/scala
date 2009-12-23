@@ -40,6 +40,5 @@ trait RichCompilationUnits { self: Global =>
     def targetPos_=(p: Position) { _targetPos = p }
 
     var contexts: Contexts = new Contexts
-
   }
 }

@@ -36,10 +36,12 @@ object ThreadPoolConfig {
     }
   }
 
-  val maxPoolSize = getIntegerProp("actors.maxPoolSize") match {
-    case Some(i) if (i >= corePoolSize) => i
-    case Some(i) if (i < corePoolSize) => corePoolSize
-    case _ => 256
+  val maxPoolSize = {
+    val preMaxSize = getIntegerProp("actors.maxPoolSize") match {
+      case Some(i) => i
+      case _       => 256
+    }
+    if (preMaxSize >= corePoolSize) preMaxSize else corePoolSize
   }
 
   private[actors] def useForkJoin: Boolean =

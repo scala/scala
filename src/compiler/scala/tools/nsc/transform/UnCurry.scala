@@ -296,11 +296,11 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *    }
      *    new $anon()
      *
-     *  transform a function node (x => body) of type PartialFunction[T, R] where
+     *  transform a function node (x => body) of type T =>? R where
      *    body = expr match { case P_i if G_i => E_i }_i=1..n
      *  to:
      *
-     *    class $anon() extends Object() with PartialFunction[T, R] with ScalaObject {
+     *    class $anon() extends Object() with T =>? R with ScalaObject {
      *      def apply(x: T): R = (expr: @unchecked) match {
      *        { case P_i if G_i => E_i }_i=1..n
      *      def isDefinedAt(x: T): boolean = (x: @unchecked) match {

@@ -422,6 +422,7 @@ trait Contexts { self: Analyzer =>
          ||
          (accessWithin(ab) || accessWithin(ab.linkedClassOfClass)) &&
          (!sym.hasFlag(LOCAL) ||
+          sym.owner.isImplClass || // allow private local accesses to impl classes
           (sym hasFlag PROTECTED) && isSubThisType(pre, sym.owner) ||
           pre =:= sym.owner.thisType)
          ||
@@ -506,6 +507,9 @@ trait Contexts { self: Analyzer =>
           } else if (imports != nextOuter.imports) {
             assert(imports.tail == nextOuter.imports)
             collectImplicitImports(imports.head)
+          } else if (owner.isPackageClass) {
+ 	    // the corresponding package object may contain implicit members.
+ 	    collectImplicits(owner.tpe.implicitMembers, owner.tpe)
           } else List()
         implicitsCache = if (newImplicits.isEmpty) nextOuter.implicitss
                          else newImplicits :: nextOuter.implicitss

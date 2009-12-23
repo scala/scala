@@ -48,7 +48,8 @@ trait Publisher[Evt] {
 
   protected def publish(event: Evt) {
     filters.keysIterator.foreach(sub =>
-      if (filters.entryExists(sub, p => p(event)))
+      if (!suspended.contains(sub) &&
+          filters.entryExists(sub, p => p(event)))
         sub.notify(self, event)
     )
   }
