@@ -3534,12 +3534,27 @@ trait Typers { self: Analyzer =>
         var pre: Type = NoPrefix         // the prefix type of defSym, if a class member
         var qual: Tree = EmptyTree       // the qualififier tree if transformed tree is a select
 
-        // if we are in a constructor of a pattern, ignore all definitions
+        // a symbol is stale if it is toplevel, to be loaded from a classfile, and
+        // the classfile is produced from a sourcefile which is compiled in the current run.
+        def isStale(sym: Symbol): Boolean = {
+          sym.owner.isPackageClass &&
+          sym.rawInfo.isInstanceOf[loaders.ClassfileLoader] && {
+            sym.rawInfo.load(sym)
+            (sym.sourceFile ne null) &&
+            (currentRun.compiledFiles contains sym.sourceFile)
+          }
+        }
+
+        // A symbol qualifies if it exists and is not stale. Stale symbols
+        // are made to disappear here. In addition,
+        // if we are in a constructor of a pattern, we ignore all definitions
         // which are methods (note: if we don't do that
         // case x :: xs in class List would return the :: method).
-        def qualifies(sym: Symbol): Boolean =
+        def qualifies(sym: Symbol): Boolean = {
+          if (isStale(sym)) sym.setInfo(NoType)
           sym.exists &&
           ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) || !sym.isSourceMethod)
+        }
 
         if (defSym == NoSymbol) {
           var defEntry: ScopeEntry = null // the scope entry of defSym, if defined in a local scope
