@@ -255,11 +255,11 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	}
 	private object Constants
 	{
+		val local = new xsbti.api.ThisQualifier
 		val public = new xsbti.api.Public
 		val privateLocal = new xsbti.api.Private(local)
 		val protectedLocal = new xsbti.api.Protected(local)
 		val unqualified = new xsbti.api.Unqualified
-		val local = new xsbti.api.ThisQualifier
 		val emptyPath = new xsbti.api.Path(Array())
 		val thisPath = new xsbti.api.This
 		val emptyType = new xsbti.api.EmptyType
