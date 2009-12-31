@@ -15,6 +15,7 @@ import parsing.{ FactoryAdapter, NoBindingFactoryAdapter }
 import org.xml.sax.InputSource
 import java.io.{ InputStream, Reader, StringReader, File, FileDescriptor, FileInputStream }
 import javax.xml.parsers.{ SAXParser, SAXParserFactory }
+import java.net.URL
 
 /** Presents collection of XML loading methods which use the parser
  *  created by "def parser".
@@ -53,11 +54,12 @@ trait XMLLoader[T <: Node]
   def loadFile(fd: FileDescriptor): T  = loadXML(fromFile(fd), parser)
   def loadFile(name: String): T        = loadXML(fromFile(name), parser)
 
-  /** loads XML from given InputStream, Reader, sysID, or InputSource. */
+  /** loads XML from given InputStream, Reader, sysID, InputSource, or URL. */
   def load(is: InputStream): T         = loadXML(fromInputStream(is), parser)
   def load(reader: Reader): T          = loadXML(fromReader(reader), parser)
   def load(sysID: String): T           = loadXML(fromSysId(sysID), parser)
   def load(source: InputSource): T     = loadXML(source, parser)
+  def load(url: URL): T                = loadXML(fromInputStream(url.openStream()), parser)
 
   /** Loads XML from the given String. */
   def loadString(string: String): T    = loadXML(fromString(string), parser)
