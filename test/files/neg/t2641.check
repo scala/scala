@@ -9,10 +9,6 @@ t2641.scala:18: error: illegal inheritance;
  self-type ManagedSeq does not conform to scala.collection.TraversableView[A,ManagedSeqStrict[A]]'s selftype scala.collection.TraversableView[A,ManagedSeqStrict[A]]
         with TraversableView[A, ManagedSeqStrict[A]]
              ^
-t2641.scala:19: error: illegal inheritance;
- self-type ManagedSeq does not conform to scala.collection.TraversableViewLike[A,ManagedSeqStrict[A],<error>]'s selftype scala.collection.TraversableViewLike[A,Coll,This]
-        with TraversableViewLike[A, ManagedSeqStrict[A], ManagedSeq[A]]
-             ^
 t2641.scala:17: error: illegal inheritance;
  self-type ManagedSeq does not conform to ScalaObject's selftype ScalaObject
         extends ManagedSeqStrict[A]
@@ -36,4 +32,4 @@ t2641.scala:27: error: illegal inheritance; superclass Any
 t2641.scala:28: error: value managedIterator is not a member of ManagedSeq
     override def managedIterator = self.managedIterator slice (from, until)
                                         ^
-10 errors found
+9 errors found

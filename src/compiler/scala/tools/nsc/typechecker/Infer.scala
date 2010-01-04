@@ -21,11 +21,6 @@ trait Infer {
   import global._
   import definitions._
 
-  // statistics
-  var normM = 0
-  var normP = 0
-  var normO = 0
-
   private final val inferInfo = false //@MDEBUG
 
 /* -- Type parameter inference utility functions --------------------------- */
@@ -181,18 +176,17 @@ trait Infer {
    *  A method type becomes the corresponding function type.
    *  A nullary method type becomes its result type.
    *  Implicit parameters are skipped.
+   *  This method seems to be performance critical.
    */
-  def normalize(tp: Type): Type = skipImplicit(tp) match {
+  def normalize(tp: Type): Type = tp match {
     case MethodType(params, restpe) if (!restpe.isDependent) =>
-      if (util.Statistics.enabled) normM += 1
-      functionType(params map (_.tpe), normalize(restpe))
+      if (tp.isInstanceOf[ImplicitMethodType]) normalize(restpe)
+      else functionType(params map (_.tpe), normalize(restpe))
     case PolyType(List(), restpe) => // nullary method type
-      if (util.Statistics.enabled) normP += 1
       normalize(restpe)
     case ExistentialType(tparams, qtpe) =>
       ExistentialType(tparams, normalize(qtpe))
     case tp1 =>
-      if (util.Statistics.enabled) normO += 1
       tp1 // @MAT aliases already handled by subtyping
   }
 
@@ -401,32 +395,51 @@ trait Infer {
         isPlausiblyCompatible(mt.resultType, pt)
       case ExistentialType(tparams, qtpe) =>
         isPlausiblyCompatible(qtpe, pt)
-      case MethodType(params, _) =>
-        val formals = tp.paramTypes
-        pt.normalize match {
+      case MethodType(params, restpe) =>
+        if (tp.isInstanceOf[ImplicitMethodType]) isPlausiblyCompatible(restpe, pt)
+        else pt match {
           case TypeRef(pre, sym, args) =>
-            !sym.isClass || {
+            if (sym.isAliasType) {
+              isPlausiblyCompatible(tp, pt.dealias)
+            } else if (sym.isAbstractType) {
+              isPlausiblyCompatible(tp, pt.bounds.lo)
+            } else {
               val l = args.length - 1
-              l == formals.length &&
-              sym == FunctionClass(l) &&
-              ((args, formals).zipped forall isPlausiblySubType) &&
-              isPlausiblySubType(tp.resultApprox, args.last)
+              l == params.length &&
+              sym == FunctionClass(l) && {
+                var curargs = args
+                var curparams = params
+                while (curparams.nonEmpty) {
+                  if (!isPlausiblySubType(curargs.head, curparams.head.tpe))
+                    return false
+                  curargs = curargs.tail
+                  curparams = curparams.tail
+                }
+                isPlausiblySubType(restpe, curargs.head)
+              }
             }
           case _ =>
-            true
+            false
         }
       case _ =>
-        true
+        isPlausiblySubType(tp, pt)
     }
 
-    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = tp1.normalize match {
+    private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean = tp1 match {
       case TypeRef(_, sym1, _) =>
-        !sym1.isClass || {
-          tp2.normalize match {
-            case TypeRef(_, sym2, _) =>
-              !sym2.isClass || (sym1 isSubClass sym2) || isNumericSubType(tp1, tp2)
-            case _ => true
-          }
+        if (sym1.isAliasType) isPlausiblySubType(tp1.dealias, tp2)
+        else if (!sym1.isClass) true
+        else tp2 match {
+          case TypeRef(_, sym2, _) =>
+            if (sym2.isAliasType) isPlausiblySubType(tp1, tp2.dealias)
+            else if (!sym2.isClass) true
+            else if (sym1 isSubClass sym2) true
+            else
+              isNumericValueClass(sym1) &&
+              isNumericValueClass(sym2) &&
+              (sym1 == sym2 || numericWidth(sym1) < numericWidth(sym2))
+          case _ =>
+            true
         }
       case _ =>
         true
@@ -435,6 +448,41 @@ trait Infer {
     def isCompatible(tp: Type, pt: Type): Boolean = {
       val tp1 = normalize(tp)
       (tp1 <:< pt) || isCoercible(tp1, pt)
+    }
+
+    final def normSubType(tp: Type, pt: Type): Boolean = tp match {
+      case MethodType(params, restpe) =>
+        if (tp.isInstanceOf[ImplicitMethodType]) normSubType(restpe, pt)
+        else  pt match {
+          case TypeRef(pre, sym, args) =>
+            if (sym.isAliasType) {
+              normSubType(tp, pt.dealias)
+            } else if (sym.isAbstractType) {
+              normSubType(tp, pt.bounds.lo)
+            } else {
+              val l = args.length - 1
+              l == params.length &&
+              sym == FunctionClass(l) && {
+                var curargs = args
+                var curparams = params
+                while (curparams.nonEmpty) {
+                  if (!(curargs.head <:< curparams.head.tpe))
+                    return false
+                  curargs = curargs.tail
+                  curparams = curparams.tail
+                }
+                normSubType(restpe, curargs.head)
+              }
+            }
+          case _ =>
+            tp <:< pt
+        }
+      case PolyType(List(), restpe) => // nullary method type
+        normSubType(restpe, pt)
+      case ExistentialType(tparams, qtpe) =>
+        normalize(tp) <:< pt
+      case _ =>
+        tp <:< pt
     }
 
     def isCompatibleArg(tp: Type, pt: Type): Boolean = {

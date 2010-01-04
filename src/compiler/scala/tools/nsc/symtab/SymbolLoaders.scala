@@ -18,6 +18,8 @@ import scala.tools.nsc.util.{Position, NoPosition, ClassPath, ClassRep, JavaClas
 import classfile.ClassfileParser
 import Flags._
 
+import util.Statistics._
+
 /** This class ...
  *
  *  @author  Martin Odersky
@@ -243,7 +245,9 @@ abstract class SymbolLoaders {
     protected def description = "class file "+ classfile.toString
 
     protected def doComplete(root: Symbol) {
+      val start = startTimer(classReadNanos)
       classfileParser.parse(classfile, root)
+      stopTimer(classReadNanos, start)
     }
   }
 

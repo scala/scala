@@ -13,10 +13,11 @@ package typechecker
 
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.control.ControlException
-import scala.compat.Platform.currentTime
 import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile, BatchSourceFile }
 import symtab.Flags._
+
+import util.Statistics._
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -29,22 +30,14 @@ trait Typers { self: Analyzer =>
   import global._
   import definitions._
 
-  var appcnt = 0
-  var idcnt = 0
-  var selcnt = 0
-  var implcnt = 0
-  var impltime = 0l
-
-  var failedApplies = 0L
-  var failedOpEqs = 0L
-  var failedSilent = 0L
-
   // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
   // is cached here and re-used in typedDefDef / typedValDef
   private val transformed = new HashMap[Tree, Tree]
 
   // currently not used at all (March 09)
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
+
+  final val shortenImports = false
 
   def resetTyper() {
     resetContexts
@@ -708,28 +701,35 @@ trait Typers { self: Analyzer =>
     }
 
     def silent[T](op: Typer => T): Any /* in fact, TypeError or T */ = {
-//      val start = System.nanoTime()
+      val rawTypeStart = startCounter(rawTypeFailed)
+      val findMemberStart = startCounter(findMemberFailed)
+      val subtypeStart = startCounter(subtypeFailed)
+      val failedSilentStart = startTimer(failedSilentNanos)
       try {
-      if (context.reportGeneralErrors) {
-        val context1 = context.makeSilent(context.reportAmbiguousErrors)
-        context1.undetparams = context.undetparams
-        context1.savedTypeBounds = context.savedTypeBounds
-        context1.namedApplyBlockInfo = context.namedApplyBlockInfo
-        val typer1 = newTyper(context1)
-        val result = op(typer1)
-        context.undetparams = context1.undetparams
-        context.savedTypeBounds = context1.savedTypeBounds
-        context.namedApplyBlockInfo = context1.namedApplyBlockInfo
-        result
-      } else {
-        op(this)
+        if (context.reportGeneralErrors) {
+          val context1 = context.makeSilent(context.reportAmbiguousErrors)
+          context1.undetparams = context.undetparams
+          context1.savedTypeBounds = context.savedTypeBounds
+          context1.namedApplyBlockInfo = context.namedApplyBlockInfo
+          val typer1 = newTyper(context1)
+          val result = op(typer1)
+          context.undetparams = context1.undetparams
+          context.savedTypeBounds = context1.savedTypeBounds
+          context.namedApplyBlockInfo = context1.namedApplyBlockInfo
+          result
+        } else {
+          op(this)
+        }
+      } catch {
+        case ex: CyclicReference => throw ex
+        case ex: TypeError =>
+          stopCounter(rawTypeFailed, rawTypeStart)
+          stopCounter(findMemberFailed, findMemberStart)
+          stopCounter(subtypeFailed, subtypeStart)
+          stopTimer(failedSilentNanos, failedSilentStart)
+          ex
       }
-    } catch {
-      case ex: CyclicReference => throw ex
-      case ex: TypeError =>
-//        failedSilent += System.nanoTime() - start
-        ex
-    }}
+    }
 
     /** Utility method: Try op1 on tree. If that gives an error try op2 instead.
      */
@@ -1233,7 +1233,8 @@ trait Typers { self: Analyzer =>
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
               !(context.owner hasFlag SYNTHETIC) && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
-              !(settings.suppressVTWarn.value))
+              !(settings.suppressVTWarn.value) &&
+              !selfType.isErroneous && !parent.tpe.isErroneous)
           {
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG
@@ -3261,12 +3262,12 @@ trait Typers { self: Analyzer =>
        *  insert an implicit conversion.
        */
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
-        val start = System.nanoTime()
+        val start = startTimer(failedApplyNanos)
         silent(_.doTypedApply(tree, fun, args, mode, pt)) match {
           case t: Tree =>
             t
           case ex: TypeError =>
-            failedApplies += System.nanoTime() - start
+            stopTimer(failedApplyNanos, start)
             def errorInResult(tree: Tree): Boolean = tree.pos == ex.pos || {
               tree match {
                 case Block(_, r) => errorInResult(r)
@@ -3305,11 +3306,12 @@ trait Typers { self: Analyzer =>
           typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
         } else {
           val funpt = if ((mode & PATTERNmode) != 0) pt else WildcardType
-          val start = System.nanoTime()
+          val appStart = startTimer(failedApplyNanos)
+          val opeqStart = startTimer(failedOpEqNanos)
           silent(_.typed(fun, funMode(mode), funpt)) match {
             case fun1: Tree =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
-              if (util.Statistics.enabled) appcnt += 1
+              incCounter(typedApplyCount)
               val res =
                 if (phase.id <= currentRun.typerPhase.id &&
                     fun2.isInstanceOf[Select] &&
@@ -3338,14 +3340,15 @@ trait Typers { self: Analyzer =>
               else res
               */
             case ex: TypeError =>
-              failedOpEqs += System.nanoTime() - start
               fun match {
                 case Select(qual, name)
                 if (mode & PATTERNmode) == 0 && nme.isOpAssignmentName(name.decode) =>
                   val qual1 = typedQualifier(qual)
                   if (treeInfo.isVariableOrGetter(qual1)) {
+                    stopTimer(failedOpEqNanos, opeqStart)
                     convertToAssignment(fun, qual1, name, args, ex)
                   } else {
+                    stopTimer(failedApplyNanos, appStart)
                     if ((qual1.symbol ne null) && qual1.symbol.isValue)
                       error(tree.pos, "reassignment to val")
                     else
@@ -3353,6 +3356,7 @@ trait Typers { self: Analyzer =>
                     setError(tree)
                   }
                 case _ =>
+                  stopTimer(failedApplyNanos, appStart)
                   reportTypeError(fun.pos, ex)
                   setError(tree)
               }
@@ -3644,7 +3648,9 @@ trait Typers { self: Analyzer =>
                 imports1 = imports1.tail
               }
               defSym = impSym
-              qual = atPos(tree.pos.focusStart)(resetPos(imports.head.qual.duplicate))
+              val qual0 = imports.head.qual
+              if (!(shortenImports && qual0.symbol.isPackage)) // optimization: don't write out package prefixes
+                qual = atPos(tree.pos.focusStart)(resetPos(qual0.duplicate))
               pre = qual.tpe
             } else {
               if (settings.debug.value) {
@@ -3970,7 +3976,7 @@ trait Typers { self: Analyzer =>
           typedSelect(qual1, nme.CONSTRUCTOR)
 
         case Select(qual, name) =>
-          if (util.Statistics.enabled) selcnt += 1
+          incCounter(typedSelectCount)
           var qual1 = checkDead(typedQualifier(qual, mode))
           if (name.isTypeName) qual1 = checkStable(qual1)
 
@@ -3998,7 +4004,7 @@ trait Typers { self: Analyzer =>
           else tree1
 
         case Ident(name) =>
-          if (util.Statistics.enabled) idcnt += 1
+          incCounter(typedIdentCount)
           if ((name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode) ||
               (name == nme.WILDCARD.toTypeName && (mode & TYPEmode) != 0))
             tree setType makeFullyDefined(pt)

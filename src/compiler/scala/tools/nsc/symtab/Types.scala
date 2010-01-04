@@ -9,9 +9,11 @@ package symtab
 
 import scala.collection.immutable
 import scala.collection.mutable.{ListBuffer, HashMap, WeakHashMap}
-import scala.tools.nsc.ast.TreeGen
-import scala.tools.nsc.util.{HashSet, Position, NoPosition}
+import ast.TreeGen
+import util.{HashSet, Position, NoPosition}
+import util.Statistics._
 import Flags._
+
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -64,16 +66,7 @@ trait Types {
 
 
   //statistics
-  var singletonBaseTypeSeqCount = 0
-  var compoundBaseTypeSeqCount = 0
-  var typerefBaseTypeSeqCount = 0
-  var findMemberCount = 0
-  var noMemberCount = 0
-  var multMemberCount = 0
-  var findMemberNanos = 0l
-  var subtypeCount = 0
-  var sametypeCount = 0
-  var subtypeNanos = 0l
+  def uniqueTypeCount = if (uniques == null) 0 else uniques.size
 
   private var explainSwitch = false
 
@@ -499,9 +492,13 @@ trait Types {
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
       if (!isTrivial && (!phase.erasedTypes || pre.typeSymbol == ArrayClass)) {
+        incCounter(asSeenFromCount)
+        val start = startTimer(asSeenFromNanos)
         val m = new AsSeenFromMap(pre.normalize, clazz)
         val tp = m apply this
-        existentialAbstraction(m.capturedParams, tp)
+        val result = existentialAbstraction(m.capturedParams, tp)
+        stopTimer(asSeenFromNanos, start)
+        result
       } else this
 
     /** The info of `sym', seen as a member of this type.
@@ -597,31 +594,36 @@ trait Types {
 
     /** Is this type a subtype of that type? */
     def <:<(that: Type): Boolean = {
-//      val startTime = if (util.Statistics.enabled) System.nanoTime() else 0l
-//      val result =
-        ((this eq that) ||
-         (if (explainSwitch) explain("<:", isSubType, this, that)
-          else isSubType(this, that, AnyDepth)))
-//      if (util.Statistics.enabled) {
-//        subtypeNanos += System.nanoTime() - startTime
-//        subtypeCount += 1
-//      }
-//      result
+      if (util.Statistics.enabled) stat_<:<(that)
+      else
+        (this eq that) ||
+        (if (explainSwitch) explain("<:", isSubType, this, that)
+         else isSubType(this, that, AnyDepth))
+    }
+
+    def stat_<:<(that: Type): Boolean = {
+      incCounter(subtypeCount)
+      val start = startTimer(subtypeNanos)
+      val result =
+        (this eq that) ||
+        (if (explainSwitch) explain("<:", isSubType, this, that)
+         else isSubType(this, that, AnyDepth))
+      stopTimer(subtypeNanos, start)
+      result
     }
 
     /** Is this type a weak subtype of that type? True also for numeric types, i.e. Int weak_<:< Long.
      */
-    def weak_<:<(that: Type): Boolean =
-//      val startTime = if (util.Statistics.enabled) System.nanoTime() else 0l
-//      val result =
+    def weak_<:<(that: Type): Boolean = {
+      incCounter(subtypeCount)
+      val start = startTimer(subtypeNanos)
+      val result =
         ((this eq that) ||
          (if (explainSwitch) explain("weak_<:", isWeakSubType, this, that)
           else isWeakSubType(this, that)))
-//      if (util.Statistics.enabled) {
-//        subtypeNanos += System.nanoTime() - startTime
-//        subtypeCount += 1
-//      }
-//      result
+      stopTimer(subtypeNanos, start)
+      result
+    }
 
     /** Is this type equivalent to that type? */
     def =:=(that: Type): Boolean = (
@@ -785,8 +787,9 @@ trait Types {
       // See (t0851) for a situation where this happens.
       if (!this.isGround)
         return typeVarToOriginMap(this).findMember(name, excludedFlags, requiredFlags, stableOnly)
-      if (util.Statistics.enabled) findMemberCount += 1
-//      val startTime = if (util.Statistics.enabled) System.nanoTime() else 0l
+
+      incCounter(findMemberCount)
+      val start = startTimer(findMemberNanos)
 
       //Console.println("find member " + name.decode + " in " + this + ":" + this.baseClasses)//DEBUG
       var members: Scope = null
@@ -812,7 +815,7 @@ trait Types {
                    sym.getFlag(PRIVATE | LOCAL) != (PRIVATE | LOCAL).toLong ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
                 if (name.isTypeName || stableOnly && sym.isStable) {
-//                  if (util.Statistics.enabled) findMemberNanos += System.nanoTime() - startTime
+                  stopTimer(findMemberNanos, start)
                   return sym
                 } else if (member == NoSymbol) {
                   member = sym
@@ -852,14 +855,13 @@ trait Types {
         } // while (!bcs.isEmpty)
         excluded = excludedFlags
       } // while (continue)
-//      if (util.Statistics.enabled) findMemberNanos += System.nanoTime() - startTime
+      stopTimer(findMemberNanos, start)
       if (members eq null) {
-        if (util.Statistics.enabled) if (member == NoSymbol) noMemberCount += 1;
+        if (member == NoSymbol) incCounter(noMemberCount)
         member
       } else {
-        if (util.Statistics.enabled) multMemberCount += 1;
-        //val pre = if (this.typeSymbol.isClass) this.typeSymbol.thisType else this;
-        (baseClasses.head.newOverloaded(this, members.toList))
+        incCounter(multMemberCount)
+        baseClasses.head.newOverloaded(this, members.toList)
       }
     }
 
@@ -970,7 +972,7 @@ trait Types {
     override def isVolatile = underlying.isVolatile
     override def widen: Type = underlying.widen
     override def baseTypeSeq: BaseTypeSeq = {
-      if (util.Statistics.enabled) singletonBaseTypeSeqCount += 1
+      incCounter(singletonBaseTypeSeqCount)
       underlying.baseTypeSeq prepend this
     }
     override def safeToString: String = prefixString + "type"
@@ -1179,8 +1181,7 @@ trait Types {
             val bts = copyRefinedType(this.asInstanceOf[RefinedType], parents map varToParam, varToParam mapOver decls).baseTypeSeq
             baseTypeSeqCache = bts lateMap paramToVar
           } else {
-            if (util.Statistics.enabled)
-              compoundBaseTypeSeqCount += 1
+            incCounter(compoundBaseTypeSeqCount)
             baseTypeSeqCache = undetBaseTypeSeq
             baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
           }
@@ -1711,13 +1712,11 @@ A type's typeSymbol should never be inspected directly.
       if (period != currentPeriod) {
         baseTypeSeqPeriod = currentPeriod
         if (!isValidForBaseClasses(period)) {
-          if (util.Statistics.enabled)
-            typerefBaseTypeSeqCount += 1
+          incCounter(typerefBaseTypeSeqCount)
           baseTypeSeqCache = undetBaseTypeSeq
           baseTypeSeqCache =
             if (sym.isAbstractType) transform(bounds.hi).baseTypeSeq prepend this
             else sym.info.baseTypeSeq map transform
-
         }
       }
       if (baseTypeSeqCache == undetBaseTypeSeq)
@@ -2642,9 +2641,8 @@ A type's typeSymbol should never be inspected directly.
   private var uniques: HashSet[AnyRef] = _
   private var uniqueRunId = NoRunId
 
-  def uniqueTypeCount = if (uniques == null) 0 else uniques.size // for statistics
-
   private def unique[T <: AnyRef](tp: T): T = {
+    incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = new HashSet("uniques", initialUniquesCapacity)
       uniqueRunId = currentRunId
@@ -3757,7 +3755,7 @@ A type's typeSymbol should never be inspected directly.
   /** Do `tp1' and `tp2' denote equivalent types?
    */
   def isSameType(tp1: Type, tp2: Type): Boolean = try {
-    sametypeCount += 1
+    incCounter(sametypeCount)
     subsametypeRecursions += 1
     undoLog undoUnless {
       isSameType0(tp1, tp2)
