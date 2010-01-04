@@ -11,13 +11,13 @@ package util
 object Statistics {
 
   var enabled = false
-  var phasesShown = List("typer", "erasure", "cleanup")
+  var phasesShown = List("parser", "typer", "erasure", "cleanup")
 
   def currentTime() =
     if (enabled) System.nanoTime() else 0L
 
   private def showPercent(x: Double, base: Double) =
-    if (base == 0) "" else " ("+"%2.1f".format(x / base * 100)+")"
+    if (base == 0) "" else " ("+"%2.1f".format(x / base * 100)+"%)"
 
   def incCounter(c: Counter) {
     if (enabled) c.value += 1
@@ -154,7 +154,8 @@ abstract class Statistics {
   def showRelative(base: Long)(value: Long) =
     value+showPercent(value, base)
 
-  def showRelTyper(timer: Timer) = showRelative(typerNanos.nanos)(timer.nanos)
+  def showRelTyper(timer: Timer) =
+    timer.nanos+"ns"+showPercent(timer.nanos, typerNanos.nanos)
 
   def showCounts(counts: ClassCounts) =
     counts.toSeq.sortWith(_._2 > _._2).map {
@@ -163,14 +164,10 @@ abstract class Statistics {
     }
 
   def print(phase: Phase) = if (phasesShown contains phase.name) {
-    if (phase.name == "parser") {
-      inform("*** Cumulative statistics at phase " + phase)
-      inform("#created tree nodes  : " + nodeCount)
-      inform("#created tree nodes by type: "+showCounts(nodeByType))
-    } else {
-      inform("*** Cumulative statistics at phase " + phase)
-      inform("#created tree nodes  : " + nodeCount)
-      inform("#created tree nodes by type: "+showCounts(nodeByType))
+    inform("*** Cumulative statistics at phase " + phase)
+    inform("#created tree nodes  : " + nodeCount)
+    inform("#created tree nodes by type: "+showCounts(nodeByType))
+    if (phase.name != "parser") {
       val counts = new ClassCounts
       for (u <- currentRun.units; t <- u.body) counts(t.getClass) += 1
       inform("#retained nodes          : " + counts.valuesIterable.sum)
@@ -179,8 +176,8 @@ abstract class Statistics {
       inform("#typechecked selections  : " + typedSelectCount)
       inform("#typechecked applications: " + typedApplyCount)
       inform("#raw type creations      : " + rawTypeCount)
-      inform("  of which failed        : " + rawTypeFailed)
-      inform("  of which implicits     : " + rawTypeImpl)
+      inform("  of which in failed     : " + rawTypeFailed)
+      inform("  of which in implicits  : " + rawTypeImpl)
       inform("#unique types            : " + uniqueTypeCount)
       inform("#symbols                 : " + symbolCount)
       inform("  of which type symbols  : " + typeSymbolCount)
@@ -191,41 +188,41 @@ abstract class Statistics {
       inform("#compound base type seqs : " + compoundBaseTypeSeqCount)
       inform("#typeref base type seqs  : " + typerefBaseTypeSeqCount)
       inform("#findMember ops          : " + findMemberCount)
-      inform("  of which failed        : " + findMemberFailed)
-      inform("  of which implicits     : " + findMemberImpl)
+      inform("  of which in failed     : " + findMemberFailed)
+      inform("  of which in implicits  : " + findMemberImpl)
       inform("#notfound member         : " + noMemberCount)
       inform("#multiple member         : " + multMemberCount)
       inform("#asSeenFrom ops          : " + asSeenFromCount)
       inform("#subtype                 : " + subtypeCount)
-      inform("  of which failed        : " + subtypeFailed)
-      inform("  of which implicits     : " + subtypeImpl)
-      inform("  of which app impl      : " + subtypeAppInfos)
-      inform("  of which improv        : " + subtypeImprovCount)
+      inform("  of which in failed     : " + subtypeFailed)
+      inform("  of which in implicits  : " + subtypeImpl)
+      inform("  of which in app impl   : " + subtypeAppInfos)
+      inform("  of which in improv     : " + subtypeImprovCount)
       inform("#sametype                : " + sametypeCount)
       inform("ms type-flow-analysis: " + analysis.timer.millis)
 
       if (phase.name == "typer") {
-        inform("time spent typechecking: "+showRelTyper(typerNanos))
-        inform("time classfilereading  : "+showRelTyper(classReadNanos))
-        inform("time spent in implicits: "+showRelTyper(implicitNanos))
-        inform("    successful in scope: "+showRelTyper(inscopeSucceedNanos))
-        inform("        failed in scope: "+showRelTyper(inscopeFailNanos))
-        inform("     successful of type: "+showRelTyper(oftypeSucceedNanos))
-        inform("         failed of type: "+showRelTyper(oftypeFailNanos))
-        inform("       assembling parts: "+showRelTyper(subtypeETNanos))
-        inform("              matchesPT: "+showRelTyper(matchesPtNanos))
-        inform("implicit cache hits    : "+showRelative(implicitCacheHits.value + implicitCacheMisses.value)(implicitCacheHits.value))
-        inform("time spent in failed   : "+showRelTyper(failedSilentNanos))
-        inform("       failed apply    : "+showRelTyper(failedApplyNanos))
-        inform("       failed op=      : "+showRelTyper(failedOpEqNanos))
-        inform("time spent in <:<      : "+showRelTyper(subtypeNanos))
-        inform("time spent in findmember: "+showRelTyper(findMemberNanos))
-        inform("time spent in asSeenFrom: "+showRelTyper(asSeenFromNanos))
+        inform("time spent typechecking  : "+showRelTyper(typerNanos))
+        inform("time classfilereading    : "+showRelTyper(classReadNanos))
+        inform("time spent in implicits  : "+showRelTyper(implicitNanos))
+        inform("    successful in scope  : "+showRelTyper(inscopeSucceedNanos))
+        inform("        failed in scope  : "+showRelTyper(inscopeFailNanos))
+        inform("     successful of type  : "+showRelTyper(oftypeSucceedNanos))
+        inform("         failed of type  : "+showRelTyper(oftypeFailNanos))
+        inform("       assembling parts  : "+showRelTyper(subtypeETNanos))
+        inform("              matchesPT  : "+showRelTyper(matchesPtNanos))
+        inform("implicit cache hits      : "+showRelative(implicitCacheHits.value + implicitCacheMisses.value)(implicitCacheHits.value))
+        inform("time spent in failed     : "+showRelTyper(failedSilentNanos))
+        inform("       failed apply      : "+showRelTyper(failedApplyNanos))
+        inform("       failed op=        : "+showRelTyper(failedOpEqNanos))
+        inform("time spent in <:<        : "+showRelTyper(subtypeNanos))
+        inform("time spent in findmember : "+showRelTyper(findMemberNanos))
+        inform("time spent in asSeenFrom : "+showRelTyper(asSeenFromNanos))
         inform("#implicit searches       : " + implicitSearchCount)
         inform("#tried, plausible, matching, typed, found implicits: "+triedImplicits+", "+plausiblyCompatibleImplicits+", "+matchingImplicits+", "+typedImplicits+", "+foundImplicits)
         inform("#implicit improves tests : " + improvesCount)
-        inform("#implicit inscope hits : " + inscopeImplicitHits)
-        inform("#implicit oftype hits  : " + oftypeImplicitHits)
+        inform("#implicit inscope hits   : " + inscopeImplicitHits)
+        inform("#implicit oftype hits    : " + oftypeImplicitHits)
       }
       //for (t <- uniques.iterator) println("unique: "+t)
     }
