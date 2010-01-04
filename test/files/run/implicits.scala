@@ -19,7 +19,6 @@ object Test extends Application {
   import A.B._
   val c = new C("OK")
   val i = new c.Inner
-  import c.Inner._
   val s: String = i
   Console.println(s)
   Console.println(2: String)

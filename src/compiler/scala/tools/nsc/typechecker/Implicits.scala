@@ -646,7 +646,8 @@ self: Analyzer =>
      *    - the parts of its base types
      */
     private def parts(tp: Type): List[Type] = {
-      val partMap = new collection.mutable.LinkedHashMap[Symbol, List[Type]]
+      val partMap = new LinkedHashMap[Symbol, List[Type]]
+
       /** Add a new type to partMap, unless a subtype of it with the same
        *  type symbol exists already.
        */
@@ -711,7 +712,7 @@ self: Analyzer =>
      */
     private def companionImplicits(tp: Type): List[List[ImplicitInfo]] = {
 
-      val parts = new HashSet[Symbol]
+      val partMap = new LinkedHashMap[Symbol, Type]
 
       /** Enter all parts of `tp` into `parts` set.
        *  This method is performance critical: about 2-4% of all type checking is spent here
@@ -722,18 +723,21 @@ self: Analyzer =>
             if (sym.isClass) {
               if (!((sym.name == nme.REFINE_CLASS_NAME.toTypeName) ||
                     (sym.name startsWith nme.ANON_CLASS_NAME) ||
-                    (sym.name == nme.ROOT.toTypeName) ||
-                    (parts.findEntry(sym) != null))) {
-                parts.addEntry(sym)
-                val bts = tp.baseTypeSeq
-                var i = 1
-                while (i < bts.length) {
-                  getParts(bts(i))
-                  i += 1
+                    (sym.name == nme.ROOT.toTypeName)))
+                partMap get sym match {
+                  case Some(pre1) =>
+                    if (!(pre =:= pre1)) partMap(sym) = NoType // ambiguous prefix - ignore implicit members
+                  case None =>
+                    if (pre.isStable) partMap(sym) = pre
+                    val bts = tp.baseTypeSeq
+                    var i = 1
+                    while (i < bts.length) {
+                      getParts(bts(i))
+                      i += 1
+                    }
+                    getParts(pre)
+                    args foreach getParts
                 }
-                getParts(pre)
-                args foreach getParts
-              }
             } else if (sym.isAliasType) {
               getParts(tp.dealias)
             } else if (sym.isAbstractType) {
@@ -755,13 +759,13 @@ self: Analyzer =>
 
       getParts(tp)
       val buf = new ListBuffer[List[ImplicitInfo]]
-      for (clazz <- parts.iterator) {
-        if (clazz.isStatic) {
-          clazz.linkedClassOfClass match {
-            case mc: ModuleClassSymbol =>
-              buf += (mc.implicitMembers map (im => new ImplicitInfo(im.name, mc.thisType, im)))
-            case _ =>
-          }
+      for ((clazz, pre) <- partMap) {
+        val companion = clazz.linkedModuleOfClass
+        companion.moduleClass match {
+          case mc: ModuleClassSymbol =>
+            buf += (mc.implicitMembers map (im =>
+              new ImplicitInfo(im.name, SingleType(pre, companion), im)))
+          case _ =>
         }
       }
       //println("companion implicits of "+tp+" = "+buf.toList) // DEBUG
