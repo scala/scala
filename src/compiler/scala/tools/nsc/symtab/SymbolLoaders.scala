@@ -248,6 +248,10 @@ abstract class SymbolLoaders {
   }
 
   class MSILTypeLoader(typ: MSILType) extends SymbolLoader {
+    private object typeParser extends clr.TypeParser {
+      val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
+    }
+
     protected def description = "MSILType "+ typ.FullName + ", assembly "+ typ.Assembly.FullName
     protected def doComplete(root: Symbol) { typeParser.parse(typ, root) }
   }
@@ -261,10 +265,6 @@ abstract class SymbolLoaders {
   object moduleClassLoader extends SymbolLoader {
     protected def description = "module class loader"
     protected def doComplete(root: Symbol) { root.sourceModule.initialize }
-  }
-
-  private object typeParser extends clr.TypeParser {
-    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
   }
 
   object clrTypes extends clr.CLRTypes {
