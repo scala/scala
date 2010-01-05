@@ -545,6 +545,14 @@ self: Analyzer =>
       /** A set containing names that are shadowed by implicit infos */
       lazy val shadowed = new HashSet[Name]("shadowed", 512)
 
+      /** Is `sym' the standard conforms method in Predef?
+       *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def'
+       *  which does a member lookup (it can't be a lazy val because we might reload Predef
+       *  during resident compilations).
+       */
+      def isConformsMethod(sym: Symbol) =
+        sym.name == nme.conforms && sym.owner == PredefModule.moduleClass
+
       /** Try implicit `info` to see whether it is applicable for expected type `pt`.
        *  This is the case if all of the following holds:
        *   - the info's type is not erroneous,
@@ -553,15 +561,14 @@ self: Analyzer =>
        *   - the result of typedImplicit is non-empty.
        *   @return A search result with an attributed tree containing the implicit if succeeded,
        *           SearchFailure if not.
+       *   @note Extreme hotspot!
        */
       def tryImplicit(info: ImplicitInfo): SearchResult = {
         incCounter(triedImplicits)
         if (info.isCyclicOrErroneous ||
             (isLocal && shadowed.contains(info.name)) ||
-            (isView && (info.sym == Predef_identity || info.sym == Predef_conforms)) || //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
+            (isView && isConformsMethod(info.sym)) || //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
             !isPlausiblyCompatible(info.tpe, wildPt))
-            // TODO: remove `info.sym == Predef_identity` once we have a new STARR that only has conforms as an implicit
-            // one example is removeNames in NamesDefaults, which relies on the type checker failing in case of ambiguity between an assignment/named arg
            SearchFailure
         else
           typedImplicit(info)
@@ -629,86 +636,13 @@ self: Analyzer =>
       }
     } // end searchImplicit
 
-    /** The implicits made available directly by class type `tp`.
-     *  If `tp` refers to class C, these are all implicit members of the companion object of C.
-     */
-    private def implicitsOfClass(tp: Type): List[ImplicitInfo] = tp match {
-      case TypeRef(pre, clazz, _) =>
-        clazz.initialize.linkedClassOfClass.info.members.toList.filter(_.hasFlag(IMPLICIT)) map
-        (sym => new ImplicitInfo(sym.name, pre.memberType(clazz.linkedModuleOfClass), sym))
-      case _ =>
-        List()
-    }
-
     /** The parts of a type is the smallest set of types that contains
      *    - the type itself
      *    - the parts of its immediate components (prefix and argument)
      *    - the parts of its base types
-     */
-    private def parts(tp: Type): List[Type] = {
-      val partMap = new LinkedHashMap[Symbol, List[Type]]
-
-      /** Add a new type to partMap, unless a subtype of it with the same
-       *  type symbol exists already.
-       */
-      def addType(newtp: Type): Boolean = {
-        val tsym = newtp.typeSymbol
-        partMap.get(tsym) match {
-          case Some(ts) =>
-            if (ts exists (_ <:< newtp)) false
-            else { partMap.put(tsym, newtp :: ts); true }
-          case None =>
-            partMap.put(tsym, List(newtp)); true
-        }
-      }
-      /** Enter all parts of `tp` into `partMap`
-       */
-      def getParts(tp: Type) {
-        tp match {
-          case TypeRef(pre, sym, args) if (!sym.isPackageClass) =>
-            if (sym.isClass && !sym.isRefinementClass && !sym.isAnonymousClass) {
-              if (addType(tp)) {
-                for (bc <- sym.ancestors)
-                  getParts(tp.baseType(bc))
-                getParts(pre)
-                args foreach getParts
-              }
-            } else if (sym.isAliasType) {
-              getParts(tp.normalize)
-            } else if (sym.isAbstractType) {
-              getParts(tp.bounds.hi)
-            }
-          case ThisType(_) =>
-            getParts(tp.widen)
-          case _: SingletonType =>
-            getParts(tp.widen)
-          case RefinedType(ps, _) =>
-            for (p <- ps) getParts(p)
-          case AnnotatedType(_, t, _) =>
-            getParts(t)
-          case ExistentialType(tparams, t) =>
-            getParts(t)
-          case _ =>
-        }
-      }
-      /** Gives a list of typerefs with the same type symbol,
-       *  remove all those that have a prefix which is a supertype
-       *  of some other elements's prefix.
-       */
-      def compactify(ts: List[Type]): List[Type] = ts match {
-        case List() => ts
-        case (t @ TypeRef(pre, _, _)) :: ts1 =>
-          if (ts1 exists (_.prefix <:< pre)) compactify(ts1)
-          else t :: compactify(ts1 filterNot (pre <:< _.prefix))
-      }
-      getParts(tp)
-      for ((k, ts) <- partMap.iterator.toList; t <- compactify(ts)) yield t
-    }
-
-    /** The parts of a type is the smallest set of types that contains
-     *    - the type itself
-     *    - the parts of its immediate components (prefix and argument)
-     *    - the parts of its base types
+     *  @return For those parts that refer to classes with companion objects that
+     *  can be accessed with unambiguous stable prefixes, the implicits infos
+     *  which are members of these companion objects.
      */
     private def companionImplicits(tp: Type): List[List[ImplicitInfo]] = {
 
@@ -760,12 +694,14 @@ self: Analyzer =>
       getParts(tp)
       val buf = new ListBuffer[List[ImplicitInfo]]
       for ((clazz, pre) <- partMap) {
-        val companion = clazz.linkedModuleOfClass
-        companion.moduleClass match {
-          case mc: ModuleClassSymbol =>
-            buf += (mc.implicitMembers map (im =>
-              new ImplicitInfo(im.name, SingleType(pre, companion), im)))
-          case _ =>
+        if (pre != NoType) {
+          val companion = clazz.linkedModuleOfClass
+          companion.moduleClass match {
+            case mc: ModuleClassSymbol =>
+              buf += (mc.implicitMembers map (im =>
+                new ImplicitInfo(im.name, SingleType(pre, companion), im)))
+            case _ =>
+          }
         }
       }
       //println("companion implicits of "+tp+" = "+buf.toList) // DEBUG
@@ -783,8 +719,7 @@ self: Analyzer =>
       case None                 =>
         incCounter(implicitCacheMisses)
         val start = startTimer(subtypeETNanos)
-        val implicitInfoss = if (true || settings.Xexperimental.value) companionImplicits(pt)
-                             else parts(pt).iterator.map(implicitsOfClass).toList
+        val implicitInfoss = companionImplicits(pt)
         stopTimer(subtypeETNanos, start)
         implicitsCache(pt) = implicitInfoss
         if (implicitsCache.size >= sizeLimit)
@@ -934,7 +869,7 @@ self: Analyzer =>
       }
 
       if (result == SearchFailure && settings.debug.value)
-        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+parts(pt)+implicitsOfExpectedType)
+        log("no implicits found for "+pt+" "+pt.typeSymbol.info.baseClasses+" "+implicitsOfExpectedType)
 
       result
     }

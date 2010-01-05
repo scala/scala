@@ -137,6 +137,10 @@ object Statistics {
   val subtypeImprovCount = new SubCounter(subtypeCount)
   val subtypeETNanos = new Timer
   val matchesPtNanos = new Timer
+  val counter1: SubCounter = new SubCounter(findMemberCount)
+  val counter2: SubCounter = new SubCounter(findMemberCount)
+  val timer1: Timer = new Timer
+  val timer2: Timer = new Timer
 }
 
 abstract class Statistics {
@@ -224,6 +228,11 @@ abstract class Statistics {
         inform("#implicit inscope hits   : " + inscopeImplicitHits)
         inform("#implicit oftype hits    : " + oftypeImplicitHits)
       }
+
+      if (counter1 != null) inform("#counter1                : " + counter1)
+      if (counter2 != null) inform("#counter2                : " + counter2)
+      if (timer1   != null) inform("#timer1                  : " + timer1)
+      if (timer2   != null) inform("#timer2                  : " + timer2)
       //for (t <- uniques.iterator) println("unique: "+t)
     }
   }
