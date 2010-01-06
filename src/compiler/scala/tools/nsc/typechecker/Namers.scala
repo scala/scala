@@ -874,14 +874,15 @@ trait Namers { self: Analyzer =>
           }
 
           for (vparams <- vparamss) {
-            var pfs = resultPt.paramTypes
+            var pps = resultPt.params
             for (vparam <- vparams) {
               if (vparam.tpt.isEmpty) {
-                vparam.tpt defineType pfs.head
+                val paramtpe = pps.head.tpe
+                vparam.symbol setInfo paramtpe
+                vparam.tpt defineType paramtpe
                 vparam.tpt setPos vparam.pos.focus
-                vparam.symbol setInfo pfs.head
               }
-              pfs = pfs.tail
+              pps = pps.tail
             }
             resultPt = resultPt.resultType
           }

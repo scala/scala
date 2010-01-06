@@ -642,6 +642,8 @@ self: Analyzer =>
      *    - the type itself
      *    - the parts of its immediate components (prefix and argument)
      *    - the parts of its base types
+     *    - for alias types and abstract types, we take instead the parts
+     *    - of their upper bounds.
      *  @return For those parts that refer to classes with companion objects that
      *  can be accessed with unambiguous stable prefixes, the implicits infos
      *  which are members of these companion objects.
@@ -675,7 +677,7 @@ self: Analyzer =>
                     args foreach getParts
                 }
             } else if (sym.isAliasType) {
-              getParts(tp.dealias)
+              getParts(tp.normalize)
             } else if (sym.isAbstractType) {
               getParts(tp.bounds.hi)
             }
@@ -687,7 +689,9 @@ self: Analyzer =>
             for (p <- ps) getParts(p)
           case AnnotatedType(_, t, _) =>
             getParts(t)
-          case ExistentialType(tparams, t) =>
+          case ExistentialType(_, t) =>
+            getParts(t)
+          case PolyType(_, t) =>
             getParts(t)
           case _ =>
         }

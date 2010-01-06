@@ -685,7 +685,7 @@ trait Typers { self: Analyzer =>
         case Select(qual, _) => qual.tpe
         case _ => NoPrefix
       }
-      if (tree.tpe.isInstanceOf[MethodType] && pre.isStable && sym.tpe.paramTypes.isEmpty &&
+      if (tree.tpe.isInstanceOf[MethodType] && pre.isStable && sym.tpe.params.isEmpty &&
           (isStableContext(tree, mode, pt) || sym.isModule))
         tree.setType(MethodType(List(), singleType(pre, sym)))
       else tree
@@ -820,7 +820,7 @@ trait Typers { self: Analyzer =>
         if (!context.undetparams.isEmpty/* && (mode & POLYmode) == 0 disabled to make implicits in new collection work; we should revisit this. */) { // (9)
           // println("adapt IMT: "+(context.undetparams, pt)) //@MDEBUG
           context.undetparams = inferExprInstance(
-            tree, context.extractUndetparams(), pt, mt.paramTypes exists isManifest)
+            tree, context.extractUndetparams(), pt, mt.params exists (p => isManifest(p.tpe)))
               // if we are looking for a manifest, instantiate type to Nothing anyway,
               // as we would get amnbiguity errors otherwise. Example
               // Looking for a manifest of Nil: This mas many potential types,
@@ -1577,11 +1577,11 @@ trait Typers { self: Analyzer =>
       def decompose(call: Tree): (Tree, List[Tree]) = call match {
         case Apply(fn, args) =>
           val (superConstr, args1) = decompose(fn)
-          val formals = fn.tpe.paramTypes
-          val args2 = if (formals.isEmpty || !isRepeatedParamType(formals.last)) args
-                      else args.take(formals.length - 1) ::: List(EmptyTree)
-          if (args2.length != formals.length)
-            assert(false, "mismatch " + clazz + " " + formals + " " + args2);//debug
+          val params = fn.tpe.params
+          val args2 = if (params.isEmpty || !isRepeatedParamType(params.last.tpe)) args
+                      else args.take(params.length - 1) ::: List(EmptyTree)
+          if (args2.length != params.length)
+            assert(false, "mismatch " + clazz + " " + (params map (_.tpe)) + " " + args2);//debug
           (superConstr, args1 ::: args2)
         case Block(stats, expr) if !stats.isEmpty =>
           decompose(stats.last)
@@ -1825,8 +1825,6 @@ trait Typers { self: Analyzer =>
         } else {
           transformedOrTyped(ddef.rhs, tpt1.tpe)
         }
-
-      checkMethodStructuralCompatible(meth)
 
       if (meth.isPrimaryConstructor && meth.isClassConstructor &&
           phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
@@ -2177,7 +2175,7 @@ trait Typers { self: Analyzer =>
 
     def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
       def newmode(i: Int) =
-        if (isVarArgs(originalFormals) && i >= originalFormals.length - 1) STARmode else 0
+        if (isVarArgTpes(originalFormals) && i >= originalFormals.length - 1) STARmode else 0
 
       for (((arg, formal), i) <- (args zip adaptedFormals).zipWithIndex) yield
         typedArg(arg, mode, newmode(i), formal)
@@ -2213,14 +2211,6 @@ trait Typers { self: Analyzer =>
     def isNamedApplyBlock(tree: Tree) =
       context.namedApplyBlockInfo exists (_._1 == tree)
 
-    /**
-     *  @param tree ...
-     *  @param fun0 ...
-     *  @param args ...
-     *  @param mode ...
-     *  @param pt   ...
-     *  @return     ...
-     */
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
       var fun = fun0
       if (fun.hasSymbol && (fun.symbol hasFlag OVERLOADED)) {
@@ -2281,8 +2271,9 @@ trait Typers { self: Analyzer =>
           doTypedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
 
         case mt @ MethodType(params, _) =>
+          val paramTypes = mt.paramTypes
           // repeat vararg as often as needed, remove by-name
-          val formals = formalTypes(mt.paramTypes, args.length)
+          val formals = formalTypes(paramTypes, args.length)
 
           /** Try packing all arguments into a Tuple and apply `fun'
            *  to that. This is the last thing which is tried (after
@@ -2383,7 +2374,7 @@ trait Typers { self: Analyzer =>
           } else {
             val tparams = context.extractUndetparams()
             if (tparams.isEmpty) { // all type params are defined
-              val args1 = typedArgs(args, argMode(fun, mode), mt.paramTypes, formals)
+              val args1 = typedArgs(args, argMode(fun, mode), paramTypes, formals)
               val restpe = mt.resultType(args1 map (_.tpe)) // instantiate dependent method types
               def ifPatternSkipFormals(tp: Type) = tp match {
                 case MethodType(_, rtp) if ((mode & PATTERNmode) != 0) => rtp

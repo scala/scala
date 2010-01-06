@@ -795,8 +795,9 @@ trait Types {
       var members: Scope = null
       var member: Symbol = NoSymbol
       var excluded = excludedFlags | DEFERRED
-      var self: Type = null
       var continue = true
+      lazy val self: Type = this.narrow
+      lazy val membertpe = self.memberType(member)
       while (continue) {
         continue = false
         val bcs0 = baseClasses
@@ -820,24 +821,22 @@ trait Types {
                 } else if (member == NoSymbol) {
                   member = sym
                 } else if (members eq null) {
+//                  val start = startTimer(timer1)
                   if (member.name != sym.name ||
                       !(member == sym ||
                         member.owner != sym.owner &&
-                        !sym.hasFlag(PRIVATE) && {
-                          if (self eq null) self = this.narrow;
-                          (self.memberType(member) matches self.memberType(sym))
-                        })) {
+                        !sym.hasFlag(PRIVATE) &&
+                        (membertpe matches self.memberType(sym)))) {
                     members = new Scope(List(member, sym))
                   }
+//                  stopTimer(timer1, start)
                 } else {
                   var prevEntry = members.lookupEntry(sym.name)
                   while ((prevEntry ne null) &&
                          !(prevEntry.sym == sym ||
                            prevEntry.sym.owner != sym.owner &&
-                           !sym.hasFlag(PRIVATE) && {
-                             if (self eq null) self = this.narrow;
-                             (self.memberType(prevEntry.sym) matches self.memberType(sym))
-                           })) {
+                           !sym.hasFlag(PRIVATE) &&
+                           (self.memberType(prevEntry.sym) matches self.memberType(sym)))) {
                     prevEntry = members lookupNextEntry prevEntry
                   }
                   if (prevEntry eq null) {
@@ -1795,7 +1794,7 @@ A type's typeSymbol should never be inspected directly.
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type {
     override val isTrivial: Boolean =
-      paramTypes.forall(_.isTrivial) && resultType.isTrivial
+      params.forall(_.tpe.isTrivial) && resultType.isTrivial
 
     //assert(paramTypes forall (pt => !pt.typeSymbol.isImplClass))//DEBUG
     override def paramSectionCount: Int = resultType.paramSectionCount + 1
@@ -1909,6 +1908,10 @@ A type's typeSymbol should never be inspected directly.
     override def boundSyms: List[Symbol] = quantified
     override def prefix = maybeRewrap(underlying.prefix)
     override def typeArgs = underlying.typeArgs map maybeRewrap
+    override def params = underlying.params mapConserve { param =>
+      val tpe1 = rewrap(param.tpe)
+      if (tpe1 eq param.tpe) param else param.cloneSymbol.setInfo(tpe1)
+    }
     override def paramTypes = underlying.paramTypes map maybeRewrap
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
 //      maybeRewrap(underlying.instantiateTypeParams(formals, actuals))
@@ -4151,7 +4154,7 @@ A type's typeSymbol should never be inspected directly.
         tp1 match {
           case MethodType(params1, res1) =>
             (params1.length == params2.length &&
-             matchingParams(tp1.paramTypes, tp2.paramTypes, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
+             matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
              (res1 <:< res2) &&
              tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
           case _ =>
@@ -4244,13 +4247,71 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A function implementing `tp1' matches `tp2' */
-  def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = {
+  final def matchesType(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = {
+    def matchesQuantified(tparams1: List[Symbol], tparams2: List[Symbol], res1: Type, res2: Type): Boolean =
+      tparams1.length == tparams2.length &&
+      matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
+    def lastTry =
+      tp2 match {
+        case ExistentialType(_, res2) if alwaysMatchSimple =>
+          matchesType(tp1, res2, true)
+        case MethodType(_, _) =>
+          false
+        case PolyType(tparams2, res2) =>
+          tparams2.isEmpty && matchesType(tp1, res2, alwaysMatchSimple)
+        case _ =>
+          alwaysMatchSimple || tp1 =:= tp2
+      }
+    tp1 match {
+      case MethodType(params1, res1) =>
+        tp2 match {
+          case MethodType(params2, res2) =>
+            params1.length == params2.length && // useful pre-secreening optimization
+            matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
+            matchesType(res1, res2, alwaysMatchSimple) &&
+            tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
+          case PolyType(List(), res2) =>
+            if (params1.isEmpty) matchesType(res1, res2, alwaysMatchSimple)
+            else matchesType(tp1, res2, alwaysMatchSimple)
+          case ExistentialType(_, res2) =>
+            alwaysMatchSimple && matchesType(tp1, res2, true)
+          case _ =>
+            false
+        }
+      case PolyType(tparams1, res1) =>
+        tp2 match {
+          case PolyType(tparams2, res2) =>
+            matchesQuantified(tparams1, tparams2, res1, res2)
+          case MethodType(List(), res2) if (tparams1.isEmpty) =>
+            matchesType(res1, res2, alwaysMatchSimple)
+          case ExistentialType(_, res2) =>
+            alwaysMatchSimple && matchesType(tp1, res2, true)
+          case _ =>
+            tparams1.isEmpty && matchesType(res1, tp2, alwaysMatchSimple)
+        }
+      case ExistentialType(tparams1, res1) =>
+        tp2 match {
+          case ExistentialType(tparams2, res2) =>
+            matchesQuantified(tparams1, tparams2, res1, res2)
+          case _ =>
+            if (alwaysMatchSimple) matchesType(res1, tp2, true)
+            else lastTry
+        }
+      case _ =>
+        lastTry
+    }
+  }
+
+/** matchesType above is an optimized version of the following implementation:
+
+  def matchesType2(tp1: Type, tp2: Type, alwaysMatchSimple: Boolean): Boolean = {
     def matchesQuantified(tparams1: List[Symbol], tparams2: List[Symbol], res1: Type, res2: Type): Boolean =
       tparams1.length == tparams2.length &&
       matchesType(res1, res2.substSym(tparams2, tparams1), alwaysMatchSimple)
     (tp1, tp2) match {
       case (MethodType(params1, res1), MethodType(params2, res2)) =>
-        matchingParams(tp1.paramTypes, tp2.paramTypes, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
+        params1.length == params2.length && // useful pre-secreening optimization
+        matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
         matchesType(res1, res2, alwaysMatchSimple) &&
         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
@@ -4277,14 +4338,25 @@ A type's typeSymbol should never be inspected directly.
         alwaysMatchSimple || tp1 =:= tp2
     }
   }
+*/
 
-  /** Are `tps1' and `tps2' lists of pairwise equivalent types? */
-  private def matchingParams(tps1: List[Type], tps2: List[Type], tps1isJava: Boolean, tps2isJava: Boolean): Boolean =
-    (tps1.length == tps2.length) &&
-    ((tps1, tps2).zipped forall ((tp1, tp2) =>
-      (tp1 =:= tp2) ||
-      tps1isJava && tp2.typeSymbol == ObjectClass && tp1.typeSymbol == AnyClass ||
-      tps2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass))
+  /** Are `syms1' and `syms2' parameter lists with pairwise equivalent types? */
+  private def matchingParams(syms1: List[Symbol], syms2: List[Symbol], syms1isJava: Boolean, syms2isJava: Boolean): Boolean = syms1 match {
+    case Nil =>
+      syms2.isEmpty
+    case sym1 :: rest1 =>
+      syms2 match {
+        case Nil =>
+          false
+        case sym2 :: rest2 =>
+          val tp1 = sym1.tpe
+          val tp2 = sym2.tpe
+          (tp1 =:= tp2 ||
+           syms1isJava && tp2.typeSymbol == ObjectClass && tp1.typeSymbol == AnyClass ||
+           syms2isJava && tp1.typeSymbol == ObjectClass && tp2.typeSymbol == AnyClass) &&
+          matchingParams(rest1, rest2, syms1isJava, syms2isJava)
+      }
+  }
 
   /** like map2, but returns list `xs' itself - instead of a copy - if function
    *  `f' maps all elements to themselves.
