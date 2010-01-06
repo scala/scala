@@ -67,7 +67,9 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	}
 
 	private def annotations(as: List[AnnotationInfo]): Array[xsbti.api.Annotation] = as.toArray[AnnotationInfo].map(annotation)
-	private def annotation(a: AnnotationInfo) = new xsbti.api.Annotation(simpleType(a.atp), a.args.map(_.hashCode.toString).toArray[String])
+	private def annotation(a: AnnotationInfo) =
+		new xsbti.api.Annotation(simpleType(a.atp),
+			a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument] )
 	private def annotated(as: List[AnnotationInfo], tpe: Type) = new xsbti.api.Annotated(simpleType(tpe), annotations(as))
 
 	private def defDef(s: Symbol) =
@@ -180,7 +182,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		else
 		{
 			val within = c.privateWithin
-			val qualifier = if(within == NoSymbol) Constants.unqualified else new xsbti.api.IdQualifier(c.fullNameString)
+			val qualifier = if(within == NoSymbol) Constants.unqualified else new xsbti.api.IdQualifier(within.fullNameString)
 			if(c.hasFlag(Flags.PRIVATE)) new xsbti.api.Private(qualifier)
 			else if(c.hasFlag(Flags.PROTECTED)) new xsbti.api.Protected(qualifier)
 			else new xsbti.api.Pkg(qualifier)
