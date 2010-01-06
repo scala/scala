@@ -372,6 +372,37 @@ object Settings {
           }
       }
     }
+
+    /** Return the source file path(s) which correspond to the given
+     *  classfile path and SourceFile attribute value, subject to the
+     *  condition that source files are arranged in the filesystem
+     *  according to Java package layout conventions.
+     *
+     *  The given classfile path must be contained in at least one of
+     *  the specified output directories. If it does not then this
+     *  method returns Nil.
+     *
+     *  Note that the source file is not required to exist, so assuming
+     *  a valid classfile path this method will always return a list
+     *  containing at least one element.
+     *
+     *  Also that if two or more source path elements target the same
+     *  output directory there will be two or more candidate source file
+     *  paths.
+     */
+    def srcFilesFor(classFile : AbstractFile, srcPath : String) : List[AbstractFile] = {
+      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
+        classFile.path.startsWith(outDir.path)
+
+      singleOutDir match {
+        case Some(d) => Nil
+        case None =>
+          (outputs filter (isBelow _).tuple) match {
+            case Nil => Nil
+            case matches => matches.map(_._1.lookupPath(srcPath, false))
+          }
+      }
+    }
   }
 
   // The Setting companion object holds all the factory methods

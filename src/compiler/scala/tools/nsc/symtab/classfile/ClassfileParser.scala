@@ -8,7 +8,7 @@ package scala.tools.nsc
 package symtab
 package classfile
 
-import java.io.IOException
+import java.io.{ File, IOException }
 import java.lang.Integer.toHexString
 
 import scala.collection.immutable.{Map, ListMap}
@@ -41,6 +41,9 @@ abstract class ClassfileParser {
   protected var busy: Option[Symbol] = None // lock to detect recursive reads
   private var   externalName: Name = _      // JVM name of the current class
   protected var classTParams = Map[Name,Symbol]()
+  protected var srcfile0 : Option[AbstractFile] = None
+
+  def srcfile = srcfile0
 
   private object metaParser extends MetaParser {
     val global: ClassfileParser.this.global.type = ClassfileParser.this.global
@@ -813,6 +816,13 @@ abstract class ClassfileParser {
         case nme.ExceptionsATTR if (!isScala) =>
           parseExceptions(attrLen)
 
+        case nme.SourceFileATTR =>
+          val srcfileLeaf = pool.getName(in.nextChar).toString.trim
+          val srcpath = sym.enclosingPackage match {
+            case NoSymbol => srcfileLeaf
+            case pkg => pkg.fullNameString(File.separatorChar)+File.separator+srcfileLeaf
+          }
+          srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
         case _ =>
           in.skip(attrLen)
       }

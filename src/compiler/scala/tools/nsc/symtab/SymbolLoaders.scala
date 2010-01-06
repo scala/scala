@@ -249,6 +249,7 @@ abstract class SymbolLoaders {
       classfileParser.parse(classfile, root)
       stopTimer(classReadNanos, start)
     }
+    override protected def sourcefile = classfileParser.srcfile
   }
 
   class MSILTypeLoader(typ: MSILType) extends SymbolLoader {
