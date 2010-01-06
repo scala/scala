@@ -157,6 +157,17 @@ trait DependencyAnalysis extends SubComponent with Files {
               buf += cdef.symbol
               super.traverse(tree)
 
+            case ddef: DefDef =>
+              atPhase(currentRun.erasurePhase.prev) {
+                val resTpeSym = ddef.symbol.tpe.resultType.typeSymbol
+                  if (resTpeSym.isAbstractType)
+                    references += file -> (references(file) + resTpeSym.fullNameString)
+                  for (s <- ddef.symbol.tpe.params)
+                    if (s.isAbstractType)
+                      references += file -> (references(file) + resTpeSym.fullNameString)
+              }
+              super.traverse(tree)
+
             case _ =>
               super.traverse(tree)
           }

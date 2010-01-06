@@ -3529,6 +3529,7 @@ A type's typeSymbol should never be inspected directly.
 
   class MissingAliasException extends Exception
   val missingAliasException = new MissingAliasException
+  class MissingTypeException extends Exception
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
@@ -3540,7 +3541,8 @@ A type's typeSymbol should never be inspected directly.
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
-          assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
+          throw new MissingTypeException // For build manager purposes
+          //assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
         }
         /** The two symbols have the same fully qualified name */
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
@@ -3586,6 +3588,8 @@ A type's typeSymbol should never be inspected directly.
           } catch {
             case ex: MissingAliasException =>
               apply(tp.dealias)
+            case _: MissingTypeException =>
+              NoType
           }
         }
       case MethodType(params, restp) =>
