@@ -567,7 +567,9 @@ self: Analyzer =>
         incCounter(triedImplicits)
         if (info.isCyclicOrErroneous ||
             (isLocal && shadowed.contains(info.name)) ||
-            (isView && isConformsMethod(info.sym)) || //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
+            (isView && isConformsMethod(info.sym)) ||
+            //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
+            // one example is removeNames in NamesDefaults, which relies on the type checker failing in case of ambiguity between an assignment/named arg
             !isPlausiblyCompatible(info.tpe, wildPt))
            SearchFailure
         else
