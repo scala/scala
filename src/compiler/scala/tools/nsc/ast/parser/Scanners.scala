@@ -332,7 +332,7 @@ trait Scanners {
           nextChar()
           if (isIdentifierStart(ch))
             charLitOr(getIdentRest)
-          else if (isSpecial(ch))
+          else if (isOperatorPart(ch) && (ch != '\\'))
             charLitOr(getOperatorRest)
           else {
             getLitChar()
