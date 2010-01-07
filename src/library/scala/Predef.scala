@@ -117,7 +117,7 @@ object Predef extends LowPriorityImplicits {
       throw new IllegalArgumentException("requirement failed: "+ message)
   }
 
-  class Ensuring[A](x: A) {
+  final class Ensuring[A](val x: A) {
     def ensuring(cond: Boolean): A = { assert(cond); x }
     def ensuring(cond: Boolean, msg: Any): A = { assert(cond, msg); x }
     def ensuring(cond: A => Boolean): A = { assert(cond(x)); x }
@@ -139,7 +139,7 @@ object Predef extends LowPriorityImplicits {
     def unapply[A, B, C](x: Tuple3[A, B, C]): Option[Tuple3[A, B, C]] = Some(x)
   }
 
-  class ArrowAssoc[A](x: A) {
+  final class ArrowAssoc[A](val x: A) {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(x, y)
     def →[B](y: B): Tuple2[A, B] = ->(y)
   }

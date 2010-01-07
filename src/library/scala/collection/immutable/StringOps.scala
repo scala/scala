@@ -17,7 +17,7 @@ import mutable.StringBuilder
 /**
  * @since 2.8
  */
-class StringOps(override val repr: String) extends StringLike[String] {
+final class StringOps(override val repr: String) extends StringLike[String] {
 
   override protected[this] def thisCollection: WrappedString = new WrappedString(repr)
   override protected[this] def toCollection(repr: String): WrappedString = new WrappedString(repr)
