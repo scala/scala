@@ -1,5 +1,5 @@
 /* sbt -- Simple Build Tool
- * Copyright 2008, 2009 Mark Harrah
+ * Copyright 2008, 2009, 2010 Mark Harrah
  */
 package xsbt
 
@@ -38,6 +38,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		def processUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
+			//println("Processing " + sourceFile)
 			val traverser = new TopLevelHandler(sourceFile)
 			traverser.apply(unit.body)
 			val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
@@ -50,7 +51,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def pathComponents(sym: Symbol, postfix: List[PathComponent]): List[PathComponent] =
 	{
 		if(sym == NoSymbol || sym.isRoot || sym.isRootPackage) postfix
-		else pathComponents(sym.owner, new xsbti.api.Id(sym.simpleName.toString) :: postfix)
+		else pathComponents(sym.owner, new xsbti.api.Id(simpleName(sym)) :: postfix)
 	}
 	private def simpleType(t: Type): SimpleType =
 		processType(t) match
@@ -61,7 +62,12 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def types(t: List[Type]): Array[xsbti.api.Type] = t.toArray[Type].map(processType)
 	private def projectionType(pre: Type, sym: Symbol) =
 	{
-		if(pre == NoPrefix) new xsbti.api.ParameterRef(sym.id)
+		if(pre == NoPrefix)
+		{
+			if(sym.isLocalClass) Constants.emptyType
+			else if(sym.isType) new xsbti.api.ParameterRef(sym.id)
+			else error("Unknown prefixless type: " + sym)
+		}
 		else if(sym.isRoot || sym.isRootPackage) Constants.emptyType
 		else new xsbti.api.Projection(simpleType(pre), sym.nameString)
 	}
@@ -74,6 +80,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 
 	private def defDef(s: Symbol) =
 	{
+			//println("\tProcessing def " + s.fullNameString)
 		def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def =
 		{
 			// 2.8 compatibility
@@ -97,7 +104,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				case MethodType(params, resultType) => // in 2.7, params is of type List[Type], in 2.8 it is List[Symbol]
 					build(resultType, typeParams, (params: xsbti.api.ParameterList) :: valueParameters)
 				case returnType =>
-					new xsbti.api.Def(valueParameters.toArray, processType(returnType), typeParams, s.fullNameString, getAccess(s), getModifiers(s), annotations(s))
+					new xsbti.api.Def(valueParameters.toArray, processType(returnType), typeParams, simpleName(s), getAccess(s), getModifiers(s), annotations(s))
 			}
 		}
 		def parameterS(s: Symbol): xsbti.api.MethodParameter = makeParameter(s.nameString, s.info, s.info.typeSymbol)
@@ -124,16 +131,20 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		s.hasFlag(Flags.DEFAULTPARAM)
 	}
 	private def fieldDef[T](s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
-		create(processType(s.tpe), s.fullNameString, getAccess(s), getModifiers(s), annotations(s))
+	{
+			//println("\tProcessing field " + s.fullNameString)
+		create(processType(s.tpe), simpleName(s), getAccess(s), getModifiers(s), annotations(s))
+	}
 	private def typeDef(s: Symbol): xsbti.api.TypeMember =
 	{
+			//println("\tProcessing type " + s.fullNameString)
 		val (typeParams, tpe) =
 			s.info match
 			{
 				case PolyType(typeParams0, base) => (typeParameters(typeParams0), base)
 				case t => (Array[xsbti.api.TypeParameter](), t)
 			}
-		val name = s.fullNameString
+		val name = simpleName(s)
 		val access = getAccess(s)
 		val modifiers = getModifiers(s)
 		val as = annotations(s)
@@ -182,7 +193,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		else
 		{
 			val within = c.privateWithin
-			val qualifier = if(within == NoSymbol) Constants.unqualified else new xsbti.api.IdQualifier(within.fullNameString)
+			val qualifier = if(within == NoSymbol) Constants.unqualified else new xsbti.api.IdQualifier(fullName(within))
 			if(c.hasFlag(Flags.PRIVATE)) new xsbti.api.Private(qualifier)
 			else if(c.hasFlag(Flags.PROTECTED)) new xsbti.api.Protected(qualifier)
 			else new xsbti.api.Pkg(qualifier)
@@ -199,13 +210,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			case ConstantType(value) => error("Constant type (not implemented)")
 			case TypeRef(pre, sym, args) =>
 				val base = projectionType(pre, sym)
-				if(args.isEmpty) base else new xsbti.api.Parameterized(base, args.map(simpleType).toArray[SimpleType])
+				if(args.isEmpty) base else new xsbti.api.Parameterized(base, args.map(processType).toArray[xsbti.api.Type])
 			case SuperType(thistpe: Type, supertpe: Type) => error("Super type (not implemented)")
 			case at: AnnotatedType => annotatedType(at)
 			case rt: RefinedType => structure(rt)
 			case ExistentialType(tparams, result) => new xsbti.api.Existential(processType(result), typeParameters(tparams))
 			case NoType => error("NoType")
-			case PolyType(typeParams, resultType) => println("polyType(" + typeParams + " , " + resultType + ")"); error("polyType")
+			case PolyType(typeParams, resultType) => new xsbti.api.Polymorphic(processType(resultType), typeParameters(typeParams))
 			case _ => error("Unhandled type " + t.getClass + " : " + t)
 		}
 	}
@@ -226,7 +237,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def selfType(s: Symbol): xsbti.api.Type = if(s.thisSym eq s) Constants.normalSelf else processType(s.typeOfThis)
 	private def classLike(c: Symbol): ClassLike =
 	{
-		val name = c.fullNameString
+		val name = fullName(c)
+			//println("\tProcessing class " + name)
 		val isModule = c.isModuleClass || c.isModule
 		val defType =
 			if(c.isTrait) DefinitionType.Trait
@@ -250,7 +262,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				()
 			else
 			{
-				packages += p.fullNameString
+				packages += fullName(p)
 				`package`(p.enclosingPackage)
 			}
 		}
@@ -291,7 +303,12 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		implicit def compat(a: AnyRef): WithAnnotations = new WithAnnotations(a)
 		class WithAnnotations(a: AnyRef) { def attributes = a.getClass.getMethod("annotations").invoke(a).asInstanceOf[List[AnnotationInfo]] }
 
-	private def annotations(s: Symbol): Array[xsbti.api.Annotation] = annotations(s.attributes)
+	private def annotations(s: Symbol): Array[xsbti.api.Annotation] = annotations(s.tpe.attributes)
 	private def annotatedType(at: AnnotatedType): xsbti.api.Type =
-		if(at.attributes.isEmpty) processType(at.underlying) else annotated(at.attributes, at.underlying)
+	{
+		val annots = at.attributes
+		if(annots.isEmpty) processType(at.underlying) else annotated(annots, at.underlying)
+	}
+	private def fullName(s: Symbol): String = s.fullNameString
+	private def simpleName(s: Symbol): String = s.simpleName.toString.trim
 }
