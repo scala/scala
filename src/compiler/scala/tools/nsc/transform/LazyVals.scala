@@ -94,7 +94,9 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
       }
 
       val bmps = bitmaps(methSym) map (ValDef(_, ZERO))
-      def isMatch(params: List[Ident]) = (params.tail, methSym.tpe.paramTypes).zipped forall (_.tpe == _)
+
+      // Martin to Iulian: Don't we need to compare lengths here?
+      def isMatch(params: List[Ident]) = (params.tail, methSym.tpe.params).zipped forall (_.tpe == _.tpe)
 
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, rhs1))

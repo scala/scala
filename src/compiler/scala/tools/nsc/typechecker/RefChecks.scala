@@ -740,7 +740,7 @@ abstract class RefChecks extends InfoTransform {
                 sym = sym.info.bounds.hi.widen.typeSymbol
               sym
             }
-            val formal = underlyingClass(fn.tpe.paramTypes.head)
+            val formal = underlyingClass(fn.tpe.params.head.tpe)
             val actual = underlyingClass(args.head.tpe)
             val receiver = underlyingClass(qual.tpe)
             def nonSensibleWarning(what: String, alwaysEqual: Boolean) =
@@ -948,7 +948,7 @@ abstract class RefChecks extends InfoTransform {
     private def isRepeatedParamArg(tree: Tree) = currentApplication match {
       case Apply(fn, args) =>
         !args.isEmpty && (args.last eq tree) &&
-        fn.tpe.paramTypes.length == args.length && isRepeatedParamType(fn.tpe.paramTypes.last)
+        fn.tpe.params.length == args.length && isRepeatedParamType(fn.tpe.params.last.tpe)
       case _ =>
         false
     }

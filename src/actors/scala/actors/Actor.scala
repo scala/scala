@@ -646,6 +646,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
   }
 
   // guarded by lock of this
+  // never throws SuspendActorException
   private[actors] override def scheduleActor(f: Any =>? Unit, msg: Any) =
     if ((f eq null) && (continuation eq null)) {
       // do nothing (timeout is handled instead)
@@ -825,6 +826,13 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
           resumeActor()
         else if (waitingFor ne waitingForNone) {
           scheduleActor(continuation, null)
+          /* Here we should not throw a SuspendActorException,
+             since the current method is called from an actor that
+             is in the process of exiting.
+
+             Therefore, the contract for scheduleActor is that
+             it never throws a SuspendActorException.
+           */
         }
       }
   }

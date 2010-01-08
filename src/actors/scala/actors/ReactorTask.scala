@@ -46,6 +46,7 @@ private[actors] class ReactorTask[T >: Null <: Reactor](var reactor: T, var fun:
 
       case e: Exception =>
         Debug.info(reactor+": caught "+e)
+        Debug.doInfo { e.printStackTrace() }
         reactor.terminated()
         afterExecuting(e)
     } finally {

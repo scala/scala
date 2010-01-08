@@ -145,7 +145,7 @@ class PartestTask extends Task {
       Array()
 
   private def getPosFiles       = getFilesAndDirs(posFiles)
-  private def getNegFiles       = getFiles(negFiles)
+  private def getNegFiles       = getFilesAndDirs(negFiles)
   private def getRunFiles       = getFiles(runFiles)
   private def getJvmFiles       = getFilesAndDirs(jvmFiles)
   private def getResidentFiles  = getFiles(residentFiles)

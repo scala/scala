@@ -9,6 +9,7 @@ package symtab
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.Map
 import math.max
+import util.Statistics._
 
 /** A base type sequence (BaseTypeSeq) is an ordered sequence spanning all the base types
  *  of a type. It characterized by the following two laws:
@@ -31,6 +32,9 @@ trait BaseTypeSeqs {
 
   class BaseTypeSeq(parents: List[Type], elems: Array[Type]) {
   self =>
+
+    incCounter(baseTypeSeqCount)
+    incCounter(baseTypeSeqLenTotal, elems.length)
 
     /** The number of types in the sequence */
     def length: Int = elems.length

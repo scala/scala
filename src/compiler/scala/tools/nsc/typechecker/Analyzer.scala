@@ -7,6 +7,8 @@
 package scala.tools.nsc
 package typechecker
 
+import util.Statistics._
+
 /** The main attribution phase.
  */
 trait Analyzer extends AnyRef
@@ -63,8 +65,6 @@ trait Analyzer extends AnyRef
     }
   }
 
-  var typerTime = 0L
-
   object typerFactory extends SubComponent {
     val global: Analyzer.this.global.type = Analyzer.this.global
     val phaseName = "typer"
@@ -73,10 +73,9 @@ trait Analyzer extends AnyRef
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       resetTyper()
       override def run {
-        val start = if (util.Statistics.enabled) System.nanoTime() else 0L
+        val start = startTimer(typerNanos)
         currentRun.units foreach applyPhase
-        if (util.Statistics.enabled)
-          typerTime += System.nanoTime() - start
+        stopTimer(typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
         try {

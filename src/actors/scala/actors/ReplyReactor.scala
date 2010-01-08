@@ -57,8 +57,11 @@ trait ReplyReactor extends Reactor with ReplyableReactor {
     // assert continuation != null
     if (onSameThread)
       continuation(item._1)
-    else
+    else {
       scheduleActor(continuation, item._1)
+      // see Reactor.resumeReceiver
+      throw Actor.suspendException
+    }
   }
 
   // assume continuation != null
@@ -83,7 +86,8 @@ trait ReplyReactor extends Reactor with ReplyableReactor {
             // keep going
           } else {
             waitingFor = handlesMessage
-            done = true
+            // see Reactor.searchMailbox
+            throw Actor.suspendException
           }
         }
       } else {

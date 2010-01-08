@@ -18,6 +18,8 @@ import scala.tools.nsc.util.{Position, NoPosition, ClassPath, ClassRep, JavaClas
 import classfile.ClassfileParser
 import Flags._
 
+import util.Statistics._
+
 /** This class ...
  *
  *  @author  Martin Odersky
@@ -243,11 +245,18 @@ abstract class SymbolLoaders {
     protected def description = "class file "+ classfile.toString
 
     protected def doComplete(root: Symbol) {
+      val start = startTimer(classReadNanos)
       classfileParser.parse(classfile, root)
+      stopTimer(classReadNanos, start)
     }
+    override protected def sourcefile = classfileParser.srcfile
   }
 
   class MSILTypeLoader(typ: MSILType) extends SymbolLoader {
+    private object typeParser extends clr.TypeParser {
+      val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
+    }
+
     protected def description = "MSILType "+ typ.FullName + ", assembly "+ typ.Assembly.FullName
     protected def doComplete(root: Symbol) { typeParser.parse(typ, root) }
   }
@@ -261,10 +270,6 @@ abstract class SymbolLoaders {
   object moduleClassLoader extends SymbolLoader {
     protected def description = "module class loader"
     protected def doComplete(root: Symbol) { root.sourceModule.initialize }
-  }
-
-  private object typeParser extends clr.TypeParser {
-    val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
   }
 
   object clrTypes extends clr.CLRTypes {

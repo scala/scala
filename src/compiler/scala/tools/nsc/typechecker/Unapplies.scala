@@ -94,8 +94,8 @@ trait Unapplies extends ast.TreeDSL
   }
   /** returns unapply member's parameter type. */
   def unapplyParameterType(extractor: Symbol) = {
-    val tps = extractor.tpe.paramTypes
-    if (tps.length == 1) tps.head.typeSymbol
+    val ps = extractor.tpe.params
+    if (ps.length == 1) ps.head.tpe.typeSymbol
     else NoSymbol
   }
 

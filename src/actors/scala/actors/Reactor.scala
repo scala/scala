@@ -108,8 +108,17 @@ trait Reactor extends OutputChannel[Any] {
     // assert continuation != null
     if (onSameThread)
       continuation(item._1)
-    else
+    else {
       scheduleActor(continuation, item._1)
+      /* Here, we throw a SuspendActorException to avoid
+         terminating this actor when the current ReactorTask
+         is finished.
+
+         The SuspendActorException skips the termination code
+         in ReactorTask.
+       */
+      throw Actor.suspendException
+    }
   }
 
   def !(msg: Any) {
@@ -149,7 +158,14 @@ trait Reactor extends OutputChannel[Any] {
             // keep going
           } else {
             waitingFor = handlesMessage
-            done = true
+            /* Here, we throw a SuspendActorException to avoid
+               terminating this actor when the current ReactorTask
+               is finished.
+
+               The SuspendActorException skips the termination code
+               in ReactorTask.
+             */
+            throw Actor.suspendException
           }
         }
       } else {
@@ -171,6 +187,8 @@ trait Reactor extends OutputChannel[Any] {
    * an actors act method.
    *
    * assume handler != null
+   *
+   * never throws SuspendActorException
    */
   private[actors] def scheduleActor(handler: Any =>? Unit, msg: Any) = {
     val fun = () => handler(msg)

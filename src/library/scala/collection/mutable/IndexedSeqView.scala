@@ -13,7 +13,6 @@ package scala.collection
 package mutable
 
 import generic._
-
 import TraversableView.NoBuilder
 
 /** A non-strict view of a mutable IndexedSeq.
@@ -30,9 +29,7 @@ self =>
 
   def update(idx: Int, elem: A)
 
-  trait Transformed[B] extends IndexedSeqView[B, Coll] with super.Transformed[B] {
-    def update(idx: Int, elem: B)
-  }
+  trait Transformed[B] extends views.MutableIndexedSeq[B, Coll] with IndexedSeqView[B, Coll] with super.Transformed[B]
 
   trait Sliced extends Transformed[A] with super.Sliced {
     override def update(idx: Int, elem: A) =

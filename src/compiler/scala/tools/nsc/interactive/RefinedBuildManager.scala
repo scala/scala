@@ -40,13 +40,15 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   protected def newCompiler(settings: Settings) = new BuilderGlobal(settings)
 
   val compiler = newCompiler(settings)
-  import compiler.Symbol
+  import compiler.{Symbol, atPhase, currentRun}
+
+  private case class Symbols(sym: Symbol, symBefErasure: Symbol)
 
   /** Managed source files. */
   private val sources: mutable.Set[AbstractFile] = new mutable.HashSet[AbstractFile]
 
-  private val definitions: mutable.Map[AbstractFile, List[Symbol]] =
-    new mutable.HashMap[AbstractFile, List[Symbol]] {
+  private val definitions: mutable.Map[AbstractFile, List[Symbols]] =
+    new mutable.HashMap[AbstractFile, List[Symbols]] {
       override def default(key: AbstractFile) = Nil
     }
 
@@ -70,7 +72,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
    */
   private def invalidatedByRemove(files: Set[AbstractFile]): Set[AbstractFile] = {
     val changes = new mutable.HashMap[Symbol, List[Change]]
-    for (f <- files; sym <- definitions(f))
+    for (f <- files; Symbols(sym, _) <- definitions(f))
       changes += sym -> List(Removed(Class(sym.fullNameString)))
     invalidated(files, changes)
   }
@@ -121,10 +123,16 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           val syms = defs(src)
           for (sym <- syms) {
             definitions(src).find(
-               s => (s.fullNameString == sym.fullNameString) &&
-                    isCorrespondingSym(s, sym)) match {
-              case Some(oldSym) =>
-                changesOf(oldSym) = changeSet(oldSym, sym)
+               s => (s.sym.fullNameString == sym.fullNameString) &&
+                    isCorrespondingSym(s.sym, sym)) match {
+              case Some(Symbols(oldSym, oldSymEras)) =>
+                val changes = changeSet(oldSym, sym)
+                val changesErasure =
+                    atPhase(currentRun.erasurePhase.prev) {
+                        changeSet(oldSymEras, sym)
+                    }
+
+                changesOf(oldSym) = (changes ++ changesErasure).removeDuplicates
               case _ =>
                 // a new top level definition
                 changesOf(sym) =
@@ -134,10 +142,10 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
             }
           }
           // Create a change for the top level classes that were removed
-          val removed = definitions(src) filterNot ((s: Symbol) =>
-            syms.find(_.fullNameString == s.fullNameString) != None)
-          for (sym <- removed) {
-            changesOf(sym) = List(removeChangeSet(sym))
+          val removed = definitions(src) filterNot ((s:Symbols) =>
+            syms.find(_.fullNameString == (s.sym.fullNameString)) != None)
+          for (s <- removed) {
+            changesOf(s.sym) = List(removeChangeSet(s.sym))
           }
         }
       }
@@ -192,8 +200,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       println("invalidate " + file + " because " + reason + " [" + change + "]")
       buf += file
       directDeps -= file
-      for (sym <- definitions(file))     // fixes #2557
-        newChangesOf(sym) = List(change)
+      for (syms <- definitions(file))     // fixes #2557
+        newChangesOf(syms.sym) = List(change)
       break
     }
 
@@ -255,8 +263,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
         for (file <- directDeps) {
           breakable {
-            for (cls <- definitions(file)) checkParents(cls, file)
-            for (cls <- definitions(file)) checkInterface(cls, file)
+            for (cls <- definitions(file)) checkParents(cls.sym, file)
+            for (cls <- definitions(file)) checkInterface(cls.sym, file)
             checkReferences(file)
           }
         }
@@ -270,7 +278,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   /** Update the map of definitions per source file */
   private def updateDefinitions(files: Set[AbstractFile]) {
     for (src <- files; val localDefs = compiler.dependencyAnalysis.definitions(src)) {
-      definitions(src) = (localDefs map (_.cloneSymbol))
+      definitions(src) = (localDefs map (s => {
+        Symbols(s.cloneSymbol, atPhase(currentRun.erasurePhase.prev) {s.cloneSymbol})
+      }))
     }
     this.references = compiler.dependencyAnalysis.references
   }

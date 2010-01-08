@@ -21,7 +21,8 @@ abstract class Changes {
   /** Are the new modifiers more restrictive than the old ones? */
   private def moreRestrictive(from: Long, to: Long): Boolean =
     ((((to & PRIVATE) != 0L) && (from & PRIVATE) == 0L)
-     || (((to & PROTECTED) != 0L) && (from & PROTECTED) == 0L))
+     || (((to & PROTECTED) != 0L) && (from & PROTECTED) == 0L)) ||
+    ((from & IMPLICIT) != (to & IMPLICIT))
 
   /** An entity in source code, either a class or a member definition.
    *  Name is fully-qualified.
@@ -38,6 +39,8 @@ abstract class Changes {
 
   private def sameSymbol(sym1: Symbol, sym2: Symbol): Boolean =
     sym1.fullNameString == sym2.fullNameString
+  private def sameFlags(sym1: Symbol, sym2: Symbol): Boolean =
+    sym1.flags == sym2.flags
 
   private def sameType(tp1: Type, tp2: Type) = {
     def typeOf(tp: Type): String = tp.toString + "[" + tp.getClass + "]"
@@ -88,9 +91,10 @@ abstract class Changes {
     case (MethodType(params1, res1), MethodType(params2, res2)) =>
       // new dependent types: probably fix this, use substSym as done for PolyType
       (sameTypes(tp1.paramTypes, tp2.paramTypes) &&
-      ((tp1.params, tp2.params).zipped forall sameSymbol) &&
-       sameType(res1, res2) &&
-       tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
+      ((tp1.params, tp2.params).zipped forall ((t1, t2) =>
+        (sameSymbol(t1, t1) && sameFlags(t1, t2)))) &&
+      sameType(res1, res2) &&
+      tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
 
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       sameTypeParams(tparams1, tparams2) && sameType(res1, res2)
@@ -141,7 +145,7 @@ abstract class Changes {
 //     println("changeSet " + from + "(" + from.info + ")"
 //             + " vs " + to + "(" + to.info + ")")
 
-    def omitSymbols(s: Symbol): Boolean = !s.hasFlag(Flags.LOCAL | Flags.LIFTED | Flags.PRIVATE)
+    def omitSymbols(s: Symbol): Boolean = !s.hasFlag(LOCAL | LIFTED | PRIVATE)
     val cs = new mutable.ListBuffer[Change]
 
     if ((from.info.parents zip to.info.parents) exists { case (t1, t2) => !sameType(t1, t2) })

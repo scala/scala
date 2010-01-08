@@ -278,10 +278,13 @@ abstract class Inliners extends SubComponent {
        assert(pending.isEmpty, "Pending NEW elements: " + pending)
      }
 
+    /** The current iclass */
+    private var currentIClazz: IClass = _
+
     def analyzeClass(cls: IClass): Unit = if (settings.inline.value) {
       if (settings.debug.value)
       	log("Analyzing " + cls);
-
+      this.currentIClazz = cls
       cls.methods filterNot (_.symbol.isConstructor) foreach analyzeMethod
     }
 
@@ -311,6 +314,12 @@ abstract class Inliners extends SubComponent {
               if (!retry) {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
+                    def warnNoInline(reason: String) = {
+                      if (msym.hasAnnotation(ScalaInlineAttr))
+                        currentIClazz.cunit.warning(i.pos,
+                          "Could not inline required method %s because %s.".format(msym.originalName.decode, reason))
+                    }
+
                     val receiver = info.stack.types.drop(msym.info.paramTypes.length).head match {
                       case REFERENCE(s) => s;
                       case _ => NoSymbol;
@@ -361,12 +370,18 @@ abstract class Inliners extends SubComponent {
                                   + "\n\tinc.code ne null: " + (inc.code ne null) + (if (inc.code ne null)
                                     "\n\tisSafeToInline(m, inc, info.stack): " + isSafeToInline(m, inc, info.stack)
                                     + "\n\tshouldInline heuristics: " + shouldInline(m, inc) else ""));
+                            warnNoInline(
+                              if (inc.code eq null) "bytecode was unavailable"
+                              else if (!isSafeToInline(m, inc, info.stack)) "it is unsafe (target may reference private fields)"
+                              else "a bug (run with -Ylog:inline -Ydebug for more information)")
                           }
                         case None =>
+                          warnNoInline("bytecode was not available")
                           if (settings.debug.value)
                             log("could not find icode\n\treceiver: " + receiver + "\n\tmethod: " + concreteMethod)
                       }
-                    }
+                    } else
+                      warnNoInline(if (icodes.available(receiver)) "it is not final" else "bytecode was not available")
 
                   case _ => ();
                 }
@@ -375,14 +390,6 @@ abstract class Inliners extends SubComponent {
         if (tfa.stat) log(m.symbol.fullNameString + " iterations: " + tfa.iterations + " (size: " + m.code.blocks.length + ")")
       }} while (retry && count < 15)
       m.normalize
-//    } catch {
-//      case e =>
-//        Console.println("############# Caught exception: " + e + " #################");
-//        Console.println("\nMethod: " + m +
-//                        "\nMethod owner: " + m.symbol.owner);
-//        e.printStackTrace();
-//        m.dump
-//        throw e
 		}
 
 

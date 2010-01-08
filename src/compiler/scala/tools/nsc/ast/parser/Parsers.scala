@@ -2165,6 +2165,7 @@ self =>
       atPos(accept(THIS)) {
         newLineOptWhenFollowedBy(LBRACE)
         var t = Apply(Ident(nme.CONSTRUCTOR), argumentExprs())
+        newLineOptWhenFollowedBy(LBRACE)
         while (in.token == LPAREN || in.token == LBRACE) {
           t = Apply(t, argumentExprs())
           newLineOptWhenFollowedBy(LBRACE)

@@ -33,7 +33,9 @@ import TraversableView.NoBuilder
 trait TraversableViewLike[+A,
                           +Coll,
                           +This <: TraversableView[A, Coll] with TraversableViewLike[A, Coll, This]]
-  extends Traversable[A] with TraversableLike[A, This] {
+  extends Traversable[A]
+  with TraversableLike[A, This]
+  with views.TraversableTransformations[A, Coll, This] {
 self =>
 
   override protected[this] def newBuilder: Builder[A, This] =
@@ -41,14 +43,14 @@ self =>
 
   protected def underlying: Coll
 
+  trait Transformed[+B] extends views.TraversableLike[B, Coll] {
+    lazy val underlying = self.underlying
+  }
+
   def force[B >: A, That](implicit bf: CanBuildFrom[Coll, B, That]) = {
     val b = bf(underlying)
     b ++= this
     b.result()
-  }
-
-  trait Transformed[+B] extends TraversableView[B, Coll] {
-    lazy val underlying = self.underlying
   }
 
   /** pre: from >= 0
@@ -130,17 +132,6 @@ self =>
     }
     override def stringPrefix = self.stringPrefix+"D"
   }
-
-  /** Boilerplate method, to override in each subclass
-   *  This method could be eliminated if Scala had virtual classes
-   */
-  protected def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
-  protected def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected def newFlatMapped[B](f: A => Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
-  protected def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
-  protected def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
-  protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
-  protected def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
 
   override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
     newAppended(that).asInstanceOf[That]

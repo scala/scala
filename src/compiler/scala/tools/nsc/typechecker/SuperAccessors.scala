@@ -42,22 +42,14 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       case Some((_, buf)) => buf
       case None => throw new AssertionError("no acc def buf for "+clazz)
     }
-/*
-    private def transformArgs(args: List[Tree], formals: List[Type]) = {
-      if (!formals.isEmpty && formals.last.symbol == definitions.ByNameParamClass)
-        ((args take (formals.length - 1) map transform) :::
-         withInvalidOwner { args drop (formals.length - 1) map transform })
-      else
-        args map transform
-    }
-*/
-    private def transformArgs(args: List[Tree], formals: List[Type]) =
-      ((args, formals).zipped map { (arg, formal) =>
-        if (formal.typeSymbol == definitions.ByNameParamClass)
-          withInvalidOwner { checkPackedConforms(transform(arg), formal.typeArgs.head) }
+
+    private def transformArgs(args: List[Tree], params: List[Symbol]) =
+      ((args, params).zipped map { (arg, param) =>
+        if (param.tpe.typeSymbol == definitions.ByNameParamClass)
+          withInvalidOwner { checkPackedConforms(transform(arg), param.tpe.typeArgs.head) }
         else transform(arg)
       }) :::
-      (args drop formals.length map transform)
+      (args drop params.length map transform)
 
     private def checkPackedConforms(tree: Tree, pt: Type): Tree = {
       if (tree.tpe exists (_.typeSymbol.isExistentialSkolem)) {
@@ -223,7 +215,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case Apply(fn, args) =>
           assert(fn.tpe != null, tree)
-          treeCopy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.paramTypes))
+          treeCopy.Apply(tree, transform(fn), transformArgs(args, fn.tpe.params))
         case Function(vparams, body) =>
           withInvalidOwner {
             treeCopy.Function(tree, vparams, transform(body))

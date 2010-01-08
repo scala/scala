@@ -16,8 +16,11 @@ package scala.ref
 class WeakReference[+T <: AnyRef](value: T, queue: ReferenceQueue[T]) extends ReferenceWrapper[T] {
   def this(value: T) = this(value, null)
   val underlying: java.lang.ref.WeakReference[_ <: T] =
-    if (queue == null) new java.lang.ref.WeakReference[T](value)
-    else new java.lang.ref.WeakReference[T](value, queue.underlying.asInstanceOf[java.lang.ref.ReferenceQueue[T]])
-  if (queue != null)
-    queue.register(this)
+    new WeakReferenceWithWrapper[T](value, queue, this)
 }
+
+/**
+ *  @author Philipp Haller
+ */
+private class WeakReferenceWithWrapper[T <: AnyRef](value: T, queue: ReferenceQueue[T], val wrapper: WeakReference[T])
+  extends java.lang.ref.WeakReference[T](value, if (queue == null) null else queue.underlying.asInstanceOf[java.lang.ref.ReferenceQueue[T]]) with ReferenceWithWrapper[T]

@@ -27,6 +27,15 @@ object Debug {
 
   def error(s: String) =
     if (lev > 0) System.err.println("Error: " + s)
+
+  def doInfo(b: => Unit) =
+    if (lev > 2) b
+
+  def doWarning(b: => Unit) =
+    if (lev > 1) b
+
+  def doError(b: => Unit) =
+    if (lev > 0) b
 }
 
 class Debug(tag: String) {

@@ -10,8 +10,9 @@ package symtab
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.Map
-import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position, NoPosition, BatchSourceFile}
+import io.AbstractFile
+import util.{Position, NoPosition, BatchSourceFile}
+import util.Statistics._
 import Flags._
 
 //todo: get rid of MONOMORPHIC flag
@@ -21,11 +22,7 @@ trait Symbols {
   import definitions._
 
   private var ids = 0
-
-  //for statistics:
-  def symbolCount = ids
-  var typeSymbolCount = 0
-  var classSymbolCount = 0
+  def symbolCount = ids // statistics
 
   val emptySymbolArray = new Array[Symbol](0)
   val emptySymbolSet = Set.empty[Symbol]
@@ -1872,7 +1869,7 @@ trait Symbols {
     def cloneSymbolImpl(owner: Symbol): Symbol =
       new TypeSymbol(owner, pos, name)
 
-    if (util.Statistics.enabled) typeSymbolCount = typeSymbolCount + 1
+    incCounter(typeSymbolCount)
   }
 
   /** A class for type parameters viewed from inside their scopes
@@ -2009,7 +2006,7 @@ trait Symbols {
     override def children: Set[Symbol] = childSet
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
-    if (util.Statistics.enabled) classSymbolCount = classSymbolCount + 1
+    incCounter(classSymbolCount)
   }
 
   /** A class for module class symbols
@@ -2025,6 +2022,7 @@ trait Symbols {
       setSourceModule(module)
     }
     override def sourceModule = module
+    lazy val implicitMembers = info.implicitMembers
     def setSourceModule(module: Symbol) { this.module = module }
   }
 

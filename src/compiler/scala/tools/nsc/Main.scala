@@ -40,6 +40,7 @@ object Main extends AnyRef with EvalLoop {
     loop { line =>
       val args = line.split(' ').toList
       val command = new CompilerCommand(args, new Settings(error), error, true)
+      compiler.reporter.reset
       new compiler.Run() compile command.files
     }
   }

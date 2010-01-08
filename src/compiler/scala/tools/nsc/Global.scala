@@ -673,9 +673,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       refreshProgress
     }
     private def refreshProgress =
-      if (fileset.size > 0)
-        progress((phasec * fileset.size) + unitc,
-                 (phaseDescriptors.length-1) * fileset.size) // terminal phase not part of the progress display
+      if (compiledFiles.size > 0)
+        progress((phasec * compiledFiles.size) + unitc,
+                 (phaseDescriptors.length-1) * compiledFiles.size) // terminal phase not part of the progress display
 
     // ----- finding phases --------------------------------------------
 
@@ -704,12 +704,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     // ----------- Units and top-level classes and objects --------
 
     private var unitbuf = new ListBuffer[CompilationUnit]
-    private var fileset = new HashSet[AbstractFile]
+    var compiledFiles = new HashSet[AbstractFile]
 
     /** add unit to be compiled in this run */
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
-      fileset += unit.source.file
+      compiledFiles += unit.source.file
     }
 
     /* An iterator returning all the units being compiled in this run */
@@ -847,12 +847,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
      *  to phase "namer".
      */
     def compileLate(file: AbstractFile) {
-      if (fileset eq null) {
+      if (compiledFiles eq null) {
         val msg = "No class file for " + file +
                   " was found\n(This file cannot be loaded as a source file)"
         inform(msg)
         throw new FatalError(msg)
-      } else if (!(fileset contains file)) {
+      } else if (!(compiledFiles contains file)) {
         compileLate(new CompilationUnit(getSourceFile(file)))
       }
     }
@@ -863,7 +863,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def compileLate(unit: CompilationUnit) {
       addUnit(unit)
       var localPhase = firstPhase.asInstanceOf[GlobalPhase]
-      while (localPhase != null && (localPhase.id  < globalPhase.id || localPhase.id <= namerPhase.id)/* && !reporter.hasErrors*/) {
+      while (localPhase != null && (localPhase.id  < globalPhase.id || localPhase.id < typerPhase.id)/* && !reporter.hasErrors*/) {
         val oldSource = reporter.getSource
         reporter.withSource(unit.source) {
           atPhase(localPhase)(localPhase.applyPhase(unit))

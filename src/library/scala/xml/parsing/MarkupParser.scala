@@ -581,7 +581,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     val pos = this.pos
     val (qname, aMap, scope) = xTag(pscope)
     val (pre, local) = Utility.prefix(qname) match {
-      case Some(p) => (p, qname drop p.length)
+      case Some(p) => (p, qname drop p.length+1)
       case _       => (null, qname)
     }
     val ts = {

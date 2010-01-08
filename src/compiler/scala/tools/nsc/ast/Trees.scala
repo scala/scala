@@ -102,9 +102,8 @@ trait Trees {
   //def kindingIrrelevant(tp: Type) = (tp eq null) || phase.name == "erasure" || phase.erasedTypes
 
   abstract class Tree extends Product {
-    {
-      import util.Statistics
-      if (Statistics.enabled) nodeCount += 1
+    if (util.Statistics.enabled) {
+      util.Statistics.nodeByType(getClass) += 1
     }
 
     val id = nodeCount

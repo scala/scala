@@ -149,18 +149,52 @@ trait DependencyAnalysis extends SubComponent with Files {
               && (!tree.symbol.isPackage)
               && (!tree.symbol.hasFlag(Flags.JAVA))
               && ((tree.symbol.sourceFile eq null)
-                  || (tree.symbol.sourceFile.path != file.path))) {
-            references += file -> (references(file) + tree.symbol.fullNameString)
+                  || (tree.symbol.sourceFile.path != file.path))
+              && (!tree.symbol.isClassConstructor)) {
+            updateReferences(tree.symbol.fullNameString)
           }
+
           tree match {
             case cdef: ClassDef if !cdef.symbol.hasFlag(Flags.PACKAGE) =>
               buf += cdef.symbol
+              atPhase(currentRun.erasurePhase.prev) {
+                for (s <- cdef.symbol.info.decls)
+                  s match {
+                    case ts: TypeSymbol if !ts.isClass =>
+                      checkType(s.tpe)
+                    case _ =>
+                  }
+              }
               super.traverse(tree)
 
-            case _ =>
+            case ddef: DefDef =>
+              atPhase(currentRun.typerPhase.prev) {
+                checkType(ddef.symbol.tpe)
+              }
+              super.traverse(tree)
+
+            case _            =>
               super.traverse(tree)
           }
         }
+
+        def checkType(tpe: Type): Unit =
+          tpe match {
+            case t: MethodType =>
+              checkType(t.resultType)
+              for (s <- t.params) checkType(s.tpe)
+
+            case t: TypeRef    =>
+              updateReferences(t.typeSymbol.fullNameString)
+              for (tp <- t.args) checkType(tp)
+
+            case t             =>
+              updateReferences(t.typeSymbol.fullNameString)
+          }
+
+        def updateReferences(s: String): Unit =
+          references += file -> (references(file) + s)
+
       }).apply(unit.body)
 
       definitions(unit.source.file) = buf.toList
