@@ -114,7 +114,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	private def classFile(sym: Symbol): Option[AbstractFile] =
 	{
 		import scala.tools.nsc.symtab.Flags
-		val name = sym.fullNameString(File.separatorChar) + (if (sym.hasFlag(Flags.MODULE)) "$" else "")
+		val name = sym.fullNameString(finder.classSeparator) + (if (sym.hasFlag(Flags.MODULE)) "$" else "")
 		finder.findClass(name) orElse {
 			if(isTopLevelModule(sym))
 			{
@@ -186,32 +186,29 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	private lazy val finder = try { new LegacyFinder } catch { case _ => new NewFinder }
 	private trait ClassFinder
 	{
+		def classSeparator: Char
 		def findClass(name: String): Option[AbstractFile]
 	}
 	private class NewFinder extends ClassFinder
 	{
-		private val findClass0 = reflect[Option[AnyRef]]("findClass", classOf[String])
-		findClass0.force(classPath) // force discovery, so that an exception is thrown if method doesn't exist
-		private val extractClass0 = reflect[Option[AbstractFile]]("binary")
-		private def translate(name: String): String = name.replace(File.separatorChar, '.') // 2.8 uses '.', 2.7 uses '/'
+		class Compat27 { def findClass(name: String) = this; def flatMap(f: Compat27 => AnyRef) = Predef.error("Should never be called"); def binary = None }
+		implicit def compat27(any: AnyRef): Compat27 = new Compat27
+
+		def classSeparator = '.' // 2.8 uses . when searching for classes
 		def findClass(name: String): Option[AbstractFile] =
-			findClass0(classPath, translate(name)).flatMap {a => extractClass0(a) }
+			classPath.findClass(name).flatMap(_.binary.asInstanceOf[Option[AbstractFile]])
 	}
 	private class LegacyFinder extends ClassFinder
 	{
-		private val root = { val m = reflect[AnyRef]("root"); m(classPath) }
-		private val find0 = reflect[AnyRef]("find", classOf[String], classOf[Boolean])
-		find0.force(root) // force discovery, so that an exception is thrown if method doesn't exist
-		private val classFile = reflect[AbstractFile]("classFile")
+		class Compat28 { def root: Compat28 = invalid; def find(n: String, b: Boolean) = this; def classFile = invalid; def invalid = Predef.error("Should never be called") }
+		implicit def compat28(any: AnyRef): Compat28 = new Compat28
+
+		def classSeparator = File.separatorChar // 2.7 uses / or \ when searching for classes
+		private val root = classPath.root
 		def findClass(name: String): Option[AbstractFile] =
 		{
-			val entry = find0(root, name, boolean2Boolean(false))
-			if (entry eq null)
-				None
-			else
-				Some( classFile(entry) )
+			val entry = root.find(name, false)
+			if(entry eq null) None else Some(entry.classFile)
 		}
 	}
-	import scala.reflect.Manifest
-	private def reflect[T](name: String, tpes: Class[_]*)(implicit mf: Manifest[T]) = new CachedMethod(name, tpes : _*)(mf)
 }
