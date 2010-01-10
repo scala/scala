@@ -1238,7 +1238,7 @@ trait Symbols {
         // appears to succeed but highly opaque errors come later: see bug #1286
         if (res == false) {
           val (f1, f2) = (this.sourceFile, that.sourceFile)
-          if (f1 != null && f2 != null && f1 != f2)
+          if (f1 != null && f2 != null && f1.path != f2.path)
             throw FatalError("Companions '" + this + "' and '" + that + "' must be defined in same file.")
         }
 
