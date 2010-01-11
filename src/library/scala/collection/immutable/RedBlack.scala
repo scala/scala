@@ -33,7 +33,7 @@ abstract class RedBlack[A] {
     def isBlack: Boolean
     def lookup(x: A): Tree[B]
     def update[B1 >: B](k: A, v: B1): Tree[B1] = blacken(upd(k, v))
-    def delete(k: A): Tree[B] = del(k)
+    def delete(k: A): Tree[B] = blacken(del(k))
     def foreach[U](f: (A, B) =>  U)
     @deprecated("use `foreach' instead")
     def visit[T](input: T)(f: (T, A, B) => (Boolean, T)): (Boolean, T)
@@ -80,16 +80,77 @@ abstract class RedBlack[A] {
       else if (isSmaller(key, k)) balanceRight(isBlack, key, value, left, right.upd(k, v))
       else mkTree(isBlack, k, v, left, right)
     }
+    // Based on Stefan Kahrs' Haskell version of Okasaki's Red&Black Trees
+    // http://www.cse.unsw.edu.au/~dons/data/RedBlackTree.html
     def del(k: A): Tree[B] = {
-      if (isSmaller(k, key)) mkTree(isBlack, key, value, left.del(k), right)
-      else if (isSmaller(key, k)) mkTree(isBlack, key, value, left, right.del(k))
-      else if (left.isEmpty) right
-      else if (right.isEmpty) left
-      else {
-        val s = right.smallest
-        mkTree(isBlack, s.key, s.value, left, right.del(s.key))
+      def balance(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
+        case (RedTree(y, yv, a, b), RedTree(z, zv, c, d)) =>
+          RedTree(x, xv, BlackTree(y, yv, a, b), BlackTree(z, zv, c, d))
+        case (RedTree(y, yv, RedTree(z, zv, a, b), c), d) =>
+          RedTree(y, yv, BlackTree(z, zv, a, b), BlackTree(x, xv, c, d))
+        case (RedTree(y, yv, a, RedTree(z, zv, b, c)), d) =>
+          RedTree(z, zv, BlackTree(y, yv, a, b), BlackTree(x, xv, c, d))
+        case (a, RedTree(y, yv, b, RedTree(z, zv, c, d))) =>
+          RedTree(y, yv, BlackTree(x, xv, a, b), BlackTree(z, zv, c, d))
+        case (a, RedTree(y, yv, RedTree(z, zv, b, c), d)) =>
+          RedTree(z, zv, BlackTree(x, xv, a, b), BlackTree(y, yv, c, d))
+        case (a, b) =>
+          BlackTree(x, xv, a, b)
+      }
+      def subl(t: Tree[B]) = t match {
+        case BlackTree(x, xv, a, b) => RedTree(x, xv, a, b)
+        case _ => error("Defect: invariance violation; expected black, got "+t)
+      }
+      def balLeft(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
+        case (RedTree(y, yv, a, b), c) =>
+          RedTree(x, xv, BlackTree(y, yv, a, b), c)
+        case (bl, BlackTree(y, yv, a, b)) =>
+          balance(x, xv, bl, RedTree(y, yv, a, b))
+        case (bl, RedTree(y, yv, BlackTree(z, zv, a, b), c)) =>
+          RedTree(z, zv, BlackTree(x, xv, bl, a), balance(y, yv, b, subl(c)))
+        case _ => error("Defect: invariance violation at "+right)
+      }
+      def balRight(x: A, xv: B, tl: Tree[B], tr: Tree[B]) = (tl, tr) match {
+        case (a, RedTree(y, yv, b, c)) =>
+          RedTree(x, xv, a, BlackTree(y, yv, b, c))
+        case (BlackTree(y, yv, a, b), bl) =>
+          balance(x, xv, RedTree(y, yv, a, b), bl)
+        case (RedTree(y, yv, a, BlackTree(z, zv, b, c)), bl) =>
+          RedTree(z, zv, balance(y, yv, subl(a), b), BlackTree(x, xv, c, bl))
+        case _ => error("Defect: invariance violation at "+left)
+      }
+      def delLeft = left match {
+        case _: BlackTree[_] => balLeft(key, value, left.del(k), right)
+        case _ => RedTree(key, value, left.del(k), right)
+      }
+      def delRight = right match {
+        case _: BlackTree[_] => balRight(key, value, left, right.del(k))
+        case _ => RedTree(key, value, left, right.del(k))
+      }
+      def append(tl: Tree[B], tr: Tree[B]): Tree[B] = (tl, tr) match {
+        case (Empty, t) => t
+        case (t, Empty) => t
+        case (RedTree(x, xv, a, b), RedTree(y, yv, c, d)) =>
+          append(b, c) match {
+            case RedTree(z, zv, bb, cc) => RedTree(z, zv, RedTree(x, xv, a, bb), RedTree(y, yv, cc, d))
+            case bc => RedTree(x, xv, a, RedTree(y, yv, bc, d))
+          }
+        case (BlackTree(x, xv, a, b), BlackTree(y, yv, c, d)) =>
+          append(b, c) match {
+            case RedTree(z, zv, bb, cc) => RedTree(z, zv, BlackTree(x, xv, a, bb), BlackTree(y, yv, cc, d))
+            case bc => balLeft(x, xv, a, BlackTree(y, yv, bc, d))
+          }
+        case (a, RedTree(x, xv, b, c)) => RedTree(x, xv, append(a, b), c)
+        case (RedTree(x, xv, a, b), c) => RedTree(x, xv, a, append(b, c))
+      }
+      // RedBlack is neither A : Ordering[A], nor A <% Ordered[A]
+      k match {
+        case _ if isSmaller(k, key) => delLeft
+        case _ if isSmaller(key, k) => delRight
+        case _ => append(left, right)
       }
     }
+
     def smallest: NonEmpty[B] = if (left.isEmpty) this else left.smallest
 
     def toStream: Stream[(A,B)] =
