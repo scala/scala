@@ -38,9 +38,9 @@ object InteractiveReader {
   /** Create an interactive reader.  Uses <code>JLineReader</code> if the
    *  library is available, but otherwise uses a <code>SimpleReader</code>.
    */
-  def createDefault(interpreter: Interpreter): InteractiveReader =
+  def createDefault(interpreter: Interpreter, intLoop: InterpreterLoop = null): InteractiveReader =
     catching(exes: _*)
-      . opt (new JLineReader(interpreter))
+      . opt (new JLineReader(interpreter, intLoop))
       . getOrElse (new SimpleReader)
 }
 

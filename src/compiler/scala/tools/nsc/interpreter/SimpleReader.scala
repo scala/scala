@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package interpreter
 
-import java.io.{BufferedReader, PrintWriter}
+import java.io.{ BufferedReader, PrintWriter }
 
 /** Reads using standard JDK API */
 class SimpleReader(

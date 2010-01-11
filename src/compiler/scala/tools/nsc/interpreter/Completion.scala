@@ -31,7 +31,12 @@ import scala.util.NameTransformer.{ decode, encode }
 
 // REPL completor - queries supplied interpreter for valid completions
 // based on current contents of buffer.
-class Completion(val interpreter: Interpreter) extends Completor {
+class Completion(
+  val interpreter: Interpreter,
+  val intLoop: InterpreterLoop)
+extends Completor {
+  def this(interpreter: Interpreter) = this(interpreter, null)
+
   import Completion._
   import java.util.{ List => JList }
   import interpreter.compilerClasspath
@@ -59,7 +64,7 @@ class Completion(val interpreter: Interpreter) extends Completor {
     }
 
   // One instance of a command line
-  class Buffer(s: String) {
+  class Buffer(s: String, verbose: Boolean) {
     val buffer = if (s == null) "" else s
     def isEmptyBuffer = buffer == ""
 
@@ -133,25 +138,29 @@ class Completion(val interpreter: Interpreter) extends Completor {
     }
     def membersOfPredef() = membersOfId("scala.Predef")
 
-    def javaLangToHide(s: String) =
+    def javaLangToHide(s: String) = (
       (s endsWith "Exception") ||
       (s endsWith "Error") ||
       (s endsWith "Impl") ||
       (s startsWith "CharacterData") ||
       !existsAndPublic("java.lang." + s)
+    )
 
     def scalaToHide(s: String) =
       (List("Tuple", "Product", "Function") exists (x => (x + """\d+""").r findPrefixMatchOf s isDefined)) ||
       (List("Exception", "Error") exists (s endsWith _))
 
-    def defaultMembers = (List("scala", "java.lang") flatMap membersOfPath) ::: membersOfPredef
+    /** Hide all default members not verbose */
+    def defaultMembers =
+      if (verbose) (List("scala", "java.lang") flatMap membersOfPath) ::: membersOfPredef
+      else Nil
 
     def pkgsStartingWith(s: String) = topLevelPackages() filter (_ startsWith s)
     def idsStartingWith(s: String) = {
-      // on a totally empty buffer, filter out res*
+      // only print res* when verbose
       val unqIds =
-        if (s == "") interpreter.unqualifiedIds filterNot (_ startsWith INTERPRETER_VAR_PREFIX)
-        else interpreter.unqualifiedIds
+        if (verbose) interpreter.unqualifiedIds
+        else interpreter.unqualifiedIds filterNot (_ startsWith INTERPRETER_VAR_PREFIX)
 
       (unqIds ::: defaultMembers) filter (_ startsWith s)
     }
@@ -175,9 +184,21 @@ class Completion(val interpreter: Interpreter) extends Completor {
     (interpreter getClassObject ("scala." + path)) orElse
     (interpreter getClassObject ("java.lang." + path))
 
+  def lastHistoryItem =
+    for (loop <- Option(intLoop) ; h <- loop.history) yield
+      h.getHistoryList.get(h.size - 1)
+
+  // Is the buffer the same it was last time they hit tab?
+  private var lastTab: (String, String) = (null, null)
+
   // jline's completion comes through here - we ask a Buffer for the candidates.
-  override def complete(_buffer: String, cursor: Int, candidates: JList[String]): Int =
-    new Buffer(_buffer) complete candidates
+  override def complete(_buffer: String, cursor: Int, candidates: JList[String]): Int = {
+    // println("_buffer = %s, cursor = %d".format(_buffer, cursor))
+    val verbose = (_buffer, lastHistoryItem orNull) == lastTab
+    lastTab = (_buffer, lastHistoryItem orNull)
+
+    new Buffer(_buffer, verbose) complete candidates
+  }
 
   def completePackageMembers(path: String): List[String] =
     getClassObject(path + "." + "package") map (getMembers(_, false)) getOrElse Nil

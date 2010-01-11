@@ -484,6 +484,9 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     interpret("val %s = %s.value".format(name, binderName))
   }
 
+  def quietBind(name: String, boundType: String, value: Any): IR.Result =
+    beQuietDuring { bind(name, boundType, value) }
+
   /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {
     virtualDirectory.clear
@@ -789,7 +792,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
         List(classOf[InvocationTargetException], classOf[ExceptionInInitializerError])
 
       def onErr: Catcher[(String, Boolean)] = { case t: Throwable =>
-        beQuietDuring { bind("lastException", "java.lang.Throwable", t) }
+        quietBind("lastException", "java.lang.Throwable", t)
         (stringFrom(t.printStackTrace(_)), false)
       }
 
