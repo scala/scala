@@ -5,6 +5,9 @@ import com.sun.xml.internal.fastinfoset.sax._
 import scala.xml.parsing.NoBindingFactoryAdapter
 import scala.xml._
 
+// Note - this is in pending because com.sun.xml.etc is not standard,
+// and I don't have time to extract a smaller test.
+
 object Test {
 	def main(args: Array[String]) {
 		val node = <test/>
