@@ -284,8 +284,8 @@ object Main {
      * The short name of the package (without prefix)
      */
     def name: String = ""
-    def classes: List[ClassRep[AbstractFile]] = Nil
-    def packages: List[ClassPath[AbstractFile]] = Nil
-    def sourcepaths: List[AbstractFile] = Nil
+    val classes: List[ClassRep[AbstractFile]] = Nil
+    val packages: List[ClassPath[AbstractFile]] = Nil
+    val sourcepaths: List[AbstractFile] = Nil
   }
 }
