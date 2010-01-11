@@ -504,13 +504,13 @@ trait Types {
     /** The info of `sym', seen as a member of this type.
      */
     def memberInfo(sym: Symbol): Type = {
-      incCounter(ctr1)
+      // incCounter(ctr1)
       sym.info.asSeenFrom(this, sym.owner)
     }
 
     /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
-      incCounter(ctr2)
+      // incCounter(ctr2)
       //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
       sym.tpeHK match {
         case ov @ OverloadedType(pre, alts) =>
