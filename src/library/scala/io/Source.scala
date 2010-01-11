@@ -313,7 +313,7 @@ abstract class Source extends Iterator[Char]
   }
 
   /** The close() method closes the underlying resource. */
-  def close: Unit     =
+  def close(): Unit     =
     if (closeFunction != null) closeFunction()
 
   /** The reset() method creates a fresh copy of this Source. */
