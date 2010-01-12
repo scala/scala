@@ -101,7 +101,7 @@ abstract class Changes {
     case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
       sameTypeParams(tparams1, tparams2) && sameType(res1, res2)
     case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
-        sameType(lo1, lo2) && sameType(hi1, hi2)
+      sameType(lo1, lo2) && sameType(hi1, hi2)
     case (BoundedWildcardType(bounds), _) =>
       bounds containsType tp2
     case (_, BoundedWildcardType(bounds)) =>
@@ -133,36 +133,36 @@ abstract class Changes {
     }
 
   private def sameTypeParams(tparams1: List[Symbol], tparams2: List[Symbol]) =
-    sameTypes(tparams1 map (_.info), tparams2 map (_.info))
+    sameTypes(tparams1 map (_.info), tparams2 map (_.info)) &&
+    sameTypes(tparams1 map (_.tpe), tparams2 map (_.tpe))
 
   def sameTypes(tps1: List[Type], tps2: List[Type]): Boolean =
     (tps1.length == tps2.length) && ((tps1, tps2).zipped forall sameType)
 
-  /** Return the list of changes between 'from' and 'to'.
+  /** Return the list of changes between 'from' and 'toSym.info'.
    */
-  def changeSet(from: Symbol, to: Symbol): List[Change] = {
+  def changeSet(from: Type, toSym: Symbol): List[Change] = {
     implicit val defaultReason = "types"
-//     println("changeSet " + from + "(" + from.info + ")"
-//             + " vs " + to + "(" + to.info + ")")
 
+    val to = toSym.info
     def omitSymbols(s: Symbol): Boolean = !s.hasFlag(LOCAL | LIFTED | PRIVATE)
     val cs = new mutable.ListBuffer[Change]
 
-    if ((from.info.parents zip to.info.parents) exists { case (t1, t2) => !sameType(t1, t2) })
-      cs += Changed(toEntity(from))(from.info.parents.zip(to.info.parents).toString)
-    if (from.typeParams != to.typeParams)
-      cs += Changed(toEntity(from))(" tparams: " + from.typeParams.zip(to.typeParams))
+    if ((from.parents zip to.parents) exists { case (t1, t2) => !sameType(t1, t2) })
+      cs += Changed(toEntity(toSym))(from.parents.zip(to.parents).toString)
+    if (!sameTypeParams(from.typeParams, to.typeParams))
+      cs += Changed(toEntity(toSym))(" tparams: " + from.typeParams.zip(to.typeParams))
 
     // new members not yet visited
     val newMembers = mutable.HashSet[Symbol]()
-    newMembers ++= to.info.decls.iterator filter omitSymbols
+    newMembers ++= to.decls.iterator filter omitSymbols
 
-    for (o <- from.info.decls.iterator filter omitSymbols) {
-      val n = to.info.decl(o.name)
+    for (o <- from.decls.iterator filter omitSymbols) {
+      val n = to.decl(o.name)
       newMembers -= n
 
       if (o.isClass)
-        cs ++= changeSet(o, n)
+        cs ++= changeSet(o.info, n)
       else if (n == NoSymbol)
         cs += Removed(toEntity(o))
       else {
