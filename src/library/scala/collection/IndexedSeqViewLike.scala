@@ -45,7 +45,11 @@ trait IndexedSeqViewLike[+A,
 
   trait Zipped[B] extends Transformed[(A, B)] {
     protected[this] val other: Iterable[B]
-    def length = self.length min other.size
+    /** Have to be careful here - other may be an infinite sequence. */
+    def length =
+      if (other.hasDefiniteSize) self.length min other.size
+      else other take self.length size
+
     def apply(idx: Int): (A, B) = (self.apply(idx), other.iterator drop idx next)
     override def stringPrefix = self.stringPrefix+"Z"
   }
