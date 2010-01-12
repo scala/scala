@@ -362,7 +362,7 @@ abstract class GenICode extends SubComponent  {
       thenCtx = genLoad(thenp, thenCtx, resKind)
       elseCtx = genLoad(elsep, elseCtx, resKind)
 
-      assert(!settings.debug.value || expectedType == UNIT,
+      assert(!settings.debug.value || !(hasUnitBranch && expectedType != UNIT),
         "I produce UNIT in a context where " + expectedType + " is expected!")
 
       thenCtx.bb.emitOnly(JUMP(contCtx.bb))

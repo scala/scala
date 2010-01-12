@@ -146,10 +146,12 @@ abstract class CopyPropagation {
         target match {
           case Deref(LocalVar(l)) =>
             val alias = getAlias(l)
+            val derefAlias = Deref(LocalVar(alias))
             getBinding(alias) match {
-              case Record(_, _) => Some(Deref(LocalVar(alias)))
+              case Record(_, _) => Some(derefAlias)
               case Deref(Field(r1, f1)) =>
-                getFieldNonRecordValue(r1, f1) orElse Some(Deref(LocalVar(alias)))
+                getFieldNonRecordValue(r1, f1) orElse Some(derefAlias)
+              case Boxed(_) => Some(derefAlias)
               case v => Some(v)
             }
           case Deref(Field(r1, f1)) =>
