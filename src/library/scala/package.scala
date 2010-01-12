@@ -64,7 +64,7 @@ package object scala {
   type Range = scala.collection.immutable.Range
   val Range = scala.collection.immutable.Range
 
-  type =>? [-A, +B] = PartialFunction[A, B]
+  @deprecated("use PartialFunction instead") type =>? [-A, +B] = PartialFunction[A, B]
 
   // Migrated from Predef
 
