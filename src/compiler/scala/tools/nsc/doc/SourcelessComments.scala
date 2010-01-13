@@ -6,12 +6,11 @@ package doc
 import scala.collection._
 
 /**
- * This class contains comments to all symbols which pre-exist in Scala, such as Any, Nothing, ...
- * It also contains a HashSet of the given symbols
- * The comments are to be added to a HashMap called comments, which resides in the Global.scala file
- *  @author Manohar Jonnalagedda, Stephane Micheloud, Sean McDirmid, Geoffrey Washburn
- *  @version 1.0
- */
+  * A class that provides comments for all symbols which pre-exist in Scala (Any, Nothing, ...)
+  * It also contains a HashSet of the given symbols
+  * The comments are to be added to a HashMap called comments, which resides in the Global.scala file
+  * @author Manohar Jonnalagedda, Stephane Micheloud, Sean McDirmid, Geoffrey Washburn
+  * @version 1.0 */
 abstract class SourcelessComments {
 
   val global: Global

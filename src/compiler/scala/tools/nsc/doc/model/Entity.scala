@@ -94,7 +94,9 @@ trait Package extends Object {
   def packages: List[Package]
 }
 
-trait NonTemplateMemberEntity extends MemberEntity
+trait NonTemplateMemberEntity extends MemberEntity {
+  def isUseCase: Boolean
+}
 
 /** A method (`def`) of a ''documentable'' class, trait or object. */
 trait Def extends NonTemplateMemberEntity {

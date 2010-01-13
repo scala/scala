@@ -68,7 +68,7 @@ trait DocComments { self: SymbolTable =>
 
   /** The list of use cases of doc comment of symbol `sym` seen as a member of class
    *  `site`. Each use case consists of a synthetic symbol (which is entered nowhere else),
-   *  and an expanded doc comment string.
+   *  of an expanded doc comment string, and of its position.
    *
    *  @param sym  The symbol for which use cases are returned
    *  @param site The class for which doc comments are generated
@@ -76,16 +76,17 @@ trait DocComments { self: SymbolTable =>
    *                                  of the same string are done, which is
    *                                  interpreted as a recursive variable definition.
    */
-  def useCases(sym: Symbol, site: Symbol): List[(Symbol, String)] = {
+  def useCases(sym: Symbol, site: Symbol): List[(Symbol, String, Position)] = {
     def getUseCases(dc: DocComment) = {
       for (uc <- dc.useCases; defn <- uc.expandedDefs(site)) yield
         (defn,
-         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn, copyFirstPara = true), sym, site))
+         expandVariables(merge(cookedDocComment(sym), uc.comment.raw, defn, copyFirstPara = true), sym, site),
+         uc.pos)
     }
     getDocComment(sym) map getUseCases getOrElse List()
   }
 
-  def useCases(sym: Symbol): List[(Symbol, String)] = useCases(sym, sym)
+  def useCases(sym: Symbol): List[(Symbol, String, Position)] = useCases(sym, sym)
 
   /** Returns the javadoc format of doc comment string `s`, including wiki expansion
    */
@@ -357,6 +358,7 @@ trait DocComments { self: SymbolTable =>
           }
         }
         val parts = getParts(0)
+        assert(parts.length > 0, "parts is empty '" + str + "' in site " + site)
         val partnames = (parts.init map newTermName) ::: List(newTypeName(parts.last))
         val (start, rest) =
           if (parts.head == "this")
@@ -375,7 +377,7 @@ trait DocComments { self: SymbolTable =>
         for (alias <- aliases) yield
           lookupVariable(alias.name.toString.substring(1), site) match {
             case Some(repl) =>
-              val tpe = getType(repl)
+              val tpe = getType(repl.trim)
               if (tpe != NoType) tpe
               else {
                 val alias1 = alias.cloneSymbol(definitions.RootClass)

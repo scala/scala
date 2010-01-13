@@ -149,7 +149,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             for (member <- sym.info.members) {
               println(member+":"+sym.thisType.memberInfo(member)+"\n"+
                       toJavaDoc(expandedDocComment(member, sym)))
-              for ((useCase, comment) <- useCases(member, sym)) {
+              for ((useCase, comment, pos) <- useCases(member, sym)) {
                 println("usecase "+useCase+":"+useCase.info)
                 println(toJavaDoc(comment))
               }
