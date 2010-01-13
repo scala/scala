@@ -25,5 +25,8 @@ final class StringOps(override val repr: String) extends StringLike[String] {
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = new StringBuilder
 
+  override def slice(from: Int, until: Int): String =
+    repr.substring(from max 0, until min repr.length)
+
   override def toString = repr
 }
