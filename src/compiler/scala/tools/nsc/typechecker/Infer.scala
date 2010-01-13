@@ -159,6 +159,9 @@ trait Infer {
     if (!solve(tvars, tparams, variances, upper, depth)) {
 //    no panic, it's good enough to just guess a solution, we'll find out
 //    later whether it works.
+// @M danger, Will Robinson! this means that you should never trust inferred type arguments!
+// need to call checkBounds on the args/typars or type1 on the tree for the expression that results from type inference
+// see e.g., #2421: implicit search had been ignoring this caveat
 //      throw new DeferredNoInstance(() =>
 //        "no solution exists for constraints"+(tvars map boundsString))
     }
