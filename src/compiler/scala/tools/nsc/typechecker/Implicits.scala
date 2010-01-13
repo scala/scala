@@ -477,7 +477,14 @@ self: Analyzer =>
               // #2421b: since type inference (which may have been performed during implicit search)
               // does not check whether inferred arguments meet the bounds of the corresponding parameter (see note in solvedTypes),
               // must check again here:
-              typed1(itree2, EXPRmode, wildPt)
+              itree2 match { // roughly equivalent to typed1(itree2, EXPRmode, wildPt),
+                // since typed1 only forces checking of the outer tree and calls typed on the subtrees
+                // (they have already been type checked, by the typed1(itree...) above, so the subtrees are skipped by typed)
+                // inlining the essential bit here for clarity
+                //TODO: verify that these subtrees don't need re-checking
+                case TypeApply(fun, args) => typedTypeApply(itree2, EXPRmode, fun, args)
+                case _ =>
+              }
 
               val result = new SearchResult(itree2, subst)
               incCounter(foundImplicits)
