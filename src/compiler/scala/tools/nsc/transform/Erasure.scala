@@ -120,16 +120,23 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     // Compute the erasure of the intersection type with given `parents` according to new spec.
     private def intersectionErasure(parents: List[Type]): Type =
       if (parents.isEmpty) erasedTypeRef(ObjectClass)
-      else {
-        // implement new spec for erasure of refined types.
+      else apply {
         val psyms = parents map (_.typeSymbol)
-        def isUnshadowed(psym: Symbol) =
-          !(psyms exists (qsym => (psym ne qsym) && (qsym isNonBottomSubClass psym)))
-        val cs = parents.iterator.filter { p => // isUnshadowed is a bit expensive, so try classes first
-          val psym = p.typeSymbol
-          psym.isClass && !psym.isTrait && isUnshadowed(psym)
+        if (psyms contains ArrayClass) {
+          // treat arrays specially
+          arrayType(
+            intersectionErasure(
+              parents filter (_.typeSymbol == ArrayClass) map (_.typeArgs.head)))
+        } else {
+          // implement new spec for erasure of refined types.
+          def isUnshadowed(psym: Symbol) =
+            !(psyms exists (qsym => (psym ne qsym) && (qsym isNonBottomSubClass psym)))
+          val cs = parents.iterator.filter { p => // isUnshadowed is a bit expensive, so try classes first
+            val psym = p.typeSymbol
+            psym.isClass && !psym.isTrait && isUnshadowed(psym)
+          }
+          (if (cs.hasNext) cs else parents.iterator.filter(p => isUnshadowed(p.typeSymbol))).next()
         }
-        apply((if (cs.hasNext) cs else parents.iterator.filter(p => isUnshadowed(p.typeSymbol))).next())
       }
 
     def apply(tp: Type): Type = {
