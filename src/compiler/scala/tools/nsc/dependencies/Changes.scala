@@ -166,7 +166,13 @@ abstract class Changes {
       else if (n == NoSymbol)
         cs += Removed(toEntity(o))
       else {
-        val newSym = n.suchThat(ov => sameType(ov.tpe, o.tpe))
+        val newSym =
+            o match {
+              case _:TypeSymbol if o.isAliasType =>
+                n.suchThat(ov => sameType(ov.info, o.info))
+              case _                             =>
+                n.suchThat(ov => sameType(ov.tpe, o.tpe))
+             }
         if (newSym == NoSymbol || moreRestrictive(o.flags, newSym.flags))
           cs += Changed(toEntity(o))(n + " changed from " + o.tpe + " to " + n.tpe + " flags: " + Flags.flagsToString(o.flags))
         else
