@@ -103,6 +103,18 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     }
   }
 
+  /** whether to bind the lastException variable */
+  private var bindLastException = true
+
+  /** Temporarily stop binding lastException */
+  def withoutBindingLastException[T](operation: => T): T = {
+    val wasBinding = bindLastException
+    ultimately(bindLastException = wasBinding) {
+      bindLastException = false
+      operation
+    }
+  }
+
   /** interpreter settings */
   lazy val isettings = new InterpreterSettings(this)
 
@@ -477,10 +489,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     val binderObject = loadByName(binderName)
     val setterMethod = methodByName(binderObject, "set")
 
-    // this roundabout approach is to ensure the value is boxed
-    var argsHolder: Array[Any] = null
-    argsHolder = List(value).toArray
-    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]]: _*)
+    setterMethod.invoke(null, value.asInstanceOf[AnyRef])
     interpret("val %s = %s.value".format(name, binderName))
   }
 
@@ -791,9 +800,13 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       val wrapperExceptions: List[Class[_ <: Throwable]] =
         List(classOf[InvocationTargetException], classOf[ExceptionInInitializerError])
 
-      def onErr: Catcher[(String, Boolean)] = { case t: Throwable =>
-        quietBind("lastException", "java.lang.Throwable", t)
-        (stringFrom(t.printStackTrace(_)), false)
+      /** We turn off the binding to accomodate ticket #2817 */
+      def onErr: Catcher[(String, Boolean)] = {
+        case t: Throwable if bindLastException =>
+          withoutBindingLastException {
+            quietBind("lastException", "java.lang.Throwable", t)
+            (stringFrom(t.printStackTrace(_)), false)
+          }
       }
 
       catching(onErr) {
