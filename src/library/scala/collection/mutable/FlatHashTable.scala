@@ -184,7 +184,7 @@ trait FlatHashTable[A] {
   private def checkConsistent() {
     for (i <- 0 until table.length)
       if (table(i) != null && !containsEntry(table(i).asInstanceOf[A]))
-        assert(false, i+" "+table(i)+" "+table.toString)
+        assert(false, i+" "+table(i)+" "+table.mkString)
   }
 
   protected def elemHashCode(elem: A) = if (elem == null) 0 else elem.hashCode()

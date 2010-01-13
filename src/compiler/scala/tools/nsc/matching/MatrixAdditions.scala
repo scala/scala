@@ -115,7 +115,7 @@ trait MatrixAdditions extends ast.TreeDSL
       object lxtt extends Transformer {
         override def transform(tree: Tree): Tree = tree match {
           case blck @ Block(vdefs, ld @ LabelDef(name, params, body)) =>
-            def shouldInline(t: FinalState) = t.isReachedOnce && (t.label eq ld.symbol)
+            def shouldInline(t: FinalState) = t.isReachedOnce && (t.labelSym eq ld.symbol)
 
             if (targets exists shouldInline) squeezedBlock(vdefs, body)
             else blck

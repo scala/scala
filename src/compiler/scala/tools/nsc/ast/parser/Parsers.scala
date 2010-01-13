@@ -427,7 +427,10 @@ self =>
           t =>
             val dd = DocDef(doc, t)
             val pos = doc.pos.withEnd(t.pos.endOrPoint)
-            dd setPos (if (t eq main) pos else pos.makeTransparent)
+            dd setPos (
+              if (main exists (_ eq t)) pos
+              else pos.makeTransparent
+            )
         }
       }
       else trees

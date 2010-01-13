@@ -14,7 +14,6 @@ import java.io.File
 
 import org.apache.tools.ant.types.{Path, Reference}
 
-@cloneable
 class Settings {
 
   private var gBf: Option[String] = None
