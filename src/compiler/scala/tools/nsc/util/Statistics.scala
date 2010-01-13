@@ -10,35 +10,53 @@ package util
 
 object Statistics {
 
-  var enabled = false
+  private var _enabled = false
+
+  def enabled = _enabled
+  def enabled_=(cond: Boolean) = {
+    if (cond && !_enabled) {
+      val test = new Timer()
+      val start = System.nanoTime()
+      var total = 0L
+      for (i <- 1 to 10000) {
+        val time = System.nanoTime()
+        total += System.nanoTime() - time
+      }
+      val total2 = System.nanoTime() - start
+      println("Enabling statistics, measuring overhead = "+
+              total/10000.0+"ns to "+total2/10000.0+"ns per timer")
+      _enabled = true
+    }
+  }
+
   var phasesShown = List("parser", "typer", "erasure", "cleanup")
 
   def currentTime() =
-    if (enabled) System.nanoTime() else 0L
+    if (_enabled) System.nanoTime() else 0L
 
   private def showPercent(x: Double, base: Double) =
     if (base == 0) "" else " ("+"%2.1f".format(x / base * 100)+"%)"
 
   def incCounter(c: Counter) {
-    if (enabled) c.value += 1
+    if (_enabled) c.value += 1
   }
 
   def incCounter(c: Counter, delta: Int) {
-    if (enabled) c.value += delta
+    if (_enabled) c.value += delta
   }
 
   def startCounter(sc: SubCounter): IntPair =
-    if (enabled) sc.start() else null
+    if (_enabled) sc.start() else null
 
   def stopCounter(sc: SubCounter, start: IntPair) {
-    if (enabled) sc.stop(start)
+    if (_enabled) sc.stop(start)
   }
 
   def startTimer(tm: Timer): LongPair =
-    if (enabled) tm.start() else null
+    if (_enabled) tm.start() else null
 
   def stopTimer(tm: Timer, start: LongPair) {
-    if (enabled) tm.stop(start)
+    if (_enabled) tm.stop(start)
   }
 
   case class IntPair(x: Int, y: Int)
@@ -52,9 +70,9 @@ object Statistics {
   class SubCounter(c: Counter) {
     var value: Int = 0
     def start(): IntPair =
-      if (enabled) IntPair(value, c.value) else null
+      if (_enabled) IntPair(value, c.value) else null
     def stop(prev: IntPair) {
-      if (enabled) {
+      if (_enabled) {
         val IntPair(value0, cvalue0) = prev
         value = value0 + c.value - cvalue0
       }
@@ -64,16 +82,21 @@ object Statistics {
   }
 
   class Timer {
-    var nanos: Long = 0L
+    var nanos: Long = 0
+    var timings = 0
     def start(): LongPair =
-      if (enabled) LongPair(nanos, System.nanoTime()) else null
+      if (_enabled) {
+        timings += 1
+        LongPair(nanos, System.nanoTime())
+      } else null
     def stop(prev: LongPair) {
-      if (enabled) {
+      if (_enabled) {
         val LongPair(nanos0, start) = prev
         nanos = nanos0 + System.nanoTime() - start
+        timings += 1
       }
     }
-    override def toString = nanos.toString+"ns"
+    override def toString = (timings/2)+" spans, "+nanos.toString+"ns"
   }
 
   class ClassCounts extends scala.collection.mutable.HashMap[Class[_], Int] {
@@ -81,6 +104,11 @@ object Statistics {
   }
 
   var nodeByType = new ClassCounts
+
+  var microsByType = new ClassCounts
+  var visitsByType = new ClassCounts
+  var pendingTreeTypes: List[Class[_]] = List()
+  var typerTime: Long = 0L
 
   val singletonBaseTypeSeqCount = new Counter
   val compoundBaseTypeSeqCount = new Counter
@@ -137,8 +165,11 @@ object Statistics {
   val subtypeImprovCount = new SubCounter(subtypeCount)
   val subtypeETNanos = new Timer
   val matchesPtNanos = new Timer
-  val counter1: SubCounter = new SubCounter(findMemberCount)
-  val counter2: SubCounter = new SubCounter(findMemberCount)
+  val ctr1 = new Counter
+  val ctr2 = new Counter
+  val ctr3 = new Counter
+  val counter1: SubCounter = new SubCounter(subtypeCount)
+  val counter2: SubCounter = new SubCounter(subtypeCount)
   val timer1: Timer = new Timer
   val timer2: Timer = new Timer
 }
@@ -159,7 +190,7 @@ abstract class Statistics {
     value+showPercent(value, base)
 
   def showRelTyper(timer: Timer) =
-    timer.nanos+"ns"+showPercent(timer.nanos, typerNanos.nanos)
+    timer+showPercent(timer.nanos, typerNanos.nanos)
 
   def showCounts(counts: ClassCounts) =
     counts.toSeq.sortWith(_._2 > _._2).map {
@@ -219,6 +250,11 @@ abstract class Statistics {
         inform("time spent in failed     : "+showRelTyper(failedSilentNanos))
         inform("       failed apply      : "+showRelTyper(failedApplyNanos))
         inform("       failed op=        : "+showRelTyper(failedOpEqNanos))
+        inform("micros by tree node      : "+showCounts(microsByType))
+        inform("#visits by tree node     : "+showCounts(visitsByType))
+        val average = new ClassCounts
+        for (c <- microsByType.keysIterator) average(c) = microsByType(c)/visitsByType(c)
+        inform("avg micros by tree node  : "+showCounts(average))
         inform("time spent in <:<        : "+showRelTyper(subtypeNanos))
         inform("time spent in findmember : "+showRelTyper(findMemberNanos))
         inform("time spent in asSeenFrom : "+showRelTyper(asSeenFromNanos))
@@ -229,6 +265,9 @@ abstract class Statistics {
         inform("#implicit oftype hits    : " + oftypeImplicitHits)
       }
 
+      if (ctr1 != null)     inform("#ctr1                    : " + ctr1)
+      if (ctr2 != null)     inform("#ctr2                    : " + ctr2)
+      if (ctr3 != null)     inform("#ctr3                    : " + ctr3)
       if (counter1 != null) inform("#counter1                : " + counter1)
       if (counter2 != null) inform("#counter2                : " + counter2)
       if (timer1   != null) inform("#timer1                  : " + timer1)
