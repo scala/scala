@@ -1188,8 +1188,17 @@ trait Namers { self: Analyzer =>
               def checkSelectors(selectors: List[ImportSelector]): Unit = selectors match {
                 case ImportSelector(from, _, to, _) :: rest =>
                   if (from != nme.WILDCARD && base != ErrorType) {
-                    if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
+                    if (base.member(from) == NoSymbol &&
+                        base.member(from.toTypeName) == NoSymbol)
                       context.error(tree.pos, from.decode + " is not a member of " + expr);
+/* The previous test should be:
+                    if (base.nonLocalMember(from) == NoSymbol &&
+                        base.nonLocalMember(from.toTypeName) == NoSymbol)
+                      context.error(tree.pos, from.decode + " is not a member of " + expr);
+
+ * but this breaks the jvm/interpreter.scala test, because
+ * it seems it imports a local member of a $iw object
+ */
                     if (checkNotRedundant(tree.pos, from, to))
                       checkNotRedundant(tree.pos, from.toTypeName, to.toTypeName)
                   }

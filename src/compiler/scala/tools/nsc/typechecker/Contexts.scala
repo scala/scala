@@ -180,7 +180,7 @@ trait Contexts { self: Analyzer =>
              scope: Scope, imports: List[ImportInfo]): Context = {
       val c = new Context
       c.unit = unit
-      c.tree = sanitize(tree)
+      c.tree = /*sanitize*/(tree) // used to be for IDE
       c.owner = owner
       c.scope = scope
 
@@ -464,20 +464,35 @@ trait Contexts { self: Analyzer =>
       implicitsCache = null
       if (outer != null && outer != this) outer.resetCache
     }
-    private def collectImplicits(syms: List[Symbol], pre: Type): List[ImplicitInfo] =
-      for (sym <- syms if sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
+
+    /** A symbol `sym` qualifies as an implicit if it has the IMPLICIT flag set,
+     *  it is accessible, and if it is imported there is not already a local symbol
+     *  with the same names. Local symbols override imported ones. This fixes #2866.
+     */
+    private def isQualifyingImplicit(sym: Symbol, pre: Type, imported: Boolean) =
+      sym.hasFlag(IMPLICIT) &&
+      isAccessible(sym, pre, false) &&
+      !(imported && {
+        val e = scope.lookupEntry(sym.name)
+        (e ne null) && (e.owner == scope)
+      })
+
+    private def collectImplicits(syms: List[Symbol], pre: Type, imported: Boolean = false): List[ImplicitInfo] =
+      for (sym <- syms if isQualifyingImplicit(sym, pre, imported))
       yield new ImplicitInfo(sym.name, pre, sym)
 
     private def collectImplicitImports(imp: ImportInfo): List[ImplicitInfo] = {
       val pre = imp.qual.tpe
       def collect(sels: List[ImportSelector]): List[ImplicitInfo] = sels match {
-        case List() => List()
-        case List(ImportSelector(nme.WILDCARD, _, _, _)) => collectImplicits(pre.implicitMembers, pre)
+        case List() =>
+          List()
+        case List(ImportSelector(nme.WILDCARD, _, _, _)) =>
+          collectImplicits(pre.implicitMembers, pre, imported = true)
         case ImportSelector(from, _, to, _) :: sels1 =>
           var impls = collect(sels1) filter (info => info.name != from)
           if (to != nme.WILDCARD) {
             for (sym <- imp.importedSymbol(to).alternatives)
-              if (sym.hasFlag(IMPLICIT) && isAccessible(sym, pre, false))
+              if (isQualifyingImplicit(sym, pre, imported = true))
                 impls = new ImplicitInfo(to, pre, sym) :: impls
           }
           impls
@@ -488,7 +503,6 @@ trait Contexts { self: Analyzer =>
 
     def implicitss: List[List[ImplicitInfo]] = {
       val nextOuter = if (owner.isConstructor) outer.outer.outer else outer
-        // can we can do something smarter to bring back the implicit cache?
       if (implicitsRunId != currentRunId) {
         implicitsRunId = currentRunId
         implicitsCache = List()
@@ -545,7 +559,7 @@ trait Contexts { self: Analyzer =>
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
       case ImportType(expr) => expr
-      case ErrorType => tree
+      case ErrorType => tree setType NoType // fix for #2870
       case _ => throw new FatalError("symbol " + tree.symbol + " has bad type: " + tree.symbol.info);//debug
     }
 
@@ -561,16 +575,16 @@ trait Contexts { self: Analyzer =>
       var renamed = false
       var selectors = tree.selectors
       while (selectors != Nil && result == NoSymbol) {
-        if (selectors.head.name != nme.WILDCARD)
-          notifyImport(name, qual.tpe, selectors.head.name, selectors.head.rename)
+//        if (selectors.head.name != nme.WILDCARD) // used to be for IDE
+//          notifyImport(name, qual.tpe, selectors.head.name, selectors.head.rename)
 
         if (selectors.head.rename == name.toTermName)
-          result = qual.tpe.member(
+          result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
             if (name.isTypeName) selectors.head.name.toTypeName else selectors.head.name)
         else if (selectors.head.name == name.toTermName)
           renamed = true
         else if (selectors.head.name == nme.WILDCARD && !renamed)
-          result = qual.tpe.member(name)
+          result = qual.tpe.nonLocalMember(name)
         selectors = selectors.tail
       }
       result
