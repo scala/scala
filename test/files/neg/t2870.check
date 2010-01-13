@@ -1,0 +1,7 @@
+t2870.scala:1: error: not found: type Jar
+class Jars(jar: Jar)
+                ^
+t2870.scala:6: error: illegal cyclic reference involving value <import>
+  val scala = fromClasspathString(javaClassPath) 
+                                  ^
+two errors found
