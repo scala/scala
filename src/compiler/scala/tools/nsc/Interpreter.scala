@@ -517,12 +517,14 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** A traverser that finds all mentioned identifiers, i.e. things
    *  that need to be imported.  It might return extra names.
    */
-  private class ImportVarsTraverser(definedVars: List[Name]) extends Traverser {
+  private class ImportVarsTraverser extends Traverser {
     val importVars = new HashSet[Name]()
 
     override def traverse(ast: Tree) = ast match {
-      case Ident(name)  => importVars += name
-      case _            => super.traverse(ast)
+      // XXX this is obviously inadequate but it's going to require some effort
+      // to get right.
+      case Ident(name) if !(name.toString startsWith "x$")  => importVars += name
+      case _                                                => super.traverse(ast)
     }
   }
 
@@ -530,9 +532,9 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    *  in a single interpreter request.
    */
   private sealed abstract class MemberHandler(val member: Tree) {
-    val usedNames: List[Name] = {
-      val ivt = new ImportVarsTraverser(boundNames)
-      ivt.traverseTrees(List(member))
+    lazy val usedNames: List[Name] = {
+      val ivt = new ImportVarsTraverser()
+      ivt traverse member
       ivt.importVars.toList
     }
     def boundNames: List[Name] = Nil
@@ -547,6 +549,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
     def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
     def resultExtractionCode(req: Request, code: PrintWriter) { }
+    override def toString = "%s(usedNames = %s)".format(this.getClass, usedNames)
   }
 
   private class GenericHandler(member: Tree) extends MemberHandler(member)
