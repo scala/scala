@@ -92,7 +92,7 @@ abstract class Changes {
       // new dependent types: probably fix this, use substSym as done for PolyType
       (sameTypes(tp1.paramTypes, tp2.paramTypes) &&
       ((tp1.params, tp2.params).zipped forall ((t1, t2) =>
-        (sameSymbol(t1, t1) && sameFlags(t1, t2)))) &&
+        (sameSymbol(t1, t2) && sameFlags(t1, t2)))) &&
       sameType(res1, res2) &&
       tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
 
