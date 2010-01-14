@@ -400,7 +400,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
   protected[actors] override def scheduler: IScheduler = Scheduler
 
-  private[actors] override def startSearch(msg: Any, replyTo: OutputChannel[Any], handler: Any => Boolean) =
+  private[actors] override def startSearch(msg: Any, replyTo: OutputChannel[Any], handler: PartialFunction[Any, Any]) =
     if (isSuspended) {
       () => synchronized {
         mailbox.append(msg, replyTo)
@@ -411,7 +411,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
   private[actors] override def makeReaction(fun: () => Unit): Runnable =
     new ActorTask(this, fun)
 
-  private[actors] override def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
+  private[actors] override def resumeReceiver(item: (Any, OutputChannel[Any]), handler: PartialFunction[Any, Any], onSameThread: Boolean) {
     synchronized {
       if (!onTimeout.isEmpty) {
         onTimeout.get.cancel()
@@ -419,7 +419,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
       }
     }
     senders = List(item._2)
-    super.resumeReceiver(item, onSameThread)
+    super.resumeReceiver(item, handler, onSameThread)
   }
 
   /**
@@ -451,7 +451,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
             drainSendBuffer(mailbox)
             // keep going
           } else {
-            waitingFor = f.isDefinedAt
+            waitingFor = f
             isSuspended = true
             scheduler.managedBlock(blocker)
             drainSendBuffer(mailbox)
@@ -517,7 +517,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
             done = true
             receiveTimeout
           } else {
-            waitingFor = f.isDefinedAt
+            waitingFor = f
             received = None
             isSuspended = true
             val thisActor = this
@@ -565,8 +565,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
       if (shouldExit) exit() // links
       drainSendBuffer(mailbox)
     }
-    continuation = f
-    searchMailbox(mailbox, f.isDefinedAt, false)
+    searchMailbox(mailbox, f, false)
     throw Actor.suspendException
   }
 
@@ -616,8 +615,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
             done = true
             receiveTimeout
           } else {
-            waitingFor = f.isDefinedAt
-            continuation = f
+            waitingFor = f
             val thisActor = this
             onTimeout = Some(new TimerTask {
               def run() { thisActor.send(TIMEOUT, thisActor) }
@@ -647,14 +645,12 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 
   // guarded by lock of this
   // never throws SuspendActorException
-  private[actors] override def scheduleActor(f: Any =>? Unit, msg: Any) =
-    if ((f eq null) && (continuation eq null)) {
+  private[actors] override def scheduleActor(f: Any =>? Any, msg: Any) =
+    if (f eq null) {
       // do nothing (timeout is handled instead)
     }
     else {
-      val task = new Reaction(this,
-                              if (f eq null) continuation else f,
-                              msg)
+      val task = new Reaction(this, f, msg)
       scheduler executeFromActor task
     }
 
@@ -825,7 +821,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
         if (isSuspended)
           resumeActor()
         else if (waitingFor ne waitingForNone) {
-          scheduleActor(continuation, null)
+          scheduleActor(waitingFor, null)
           /* Here we should not throw a SuspendActorException,
              since the current method is called from an actor that
              is in the process of exiting.

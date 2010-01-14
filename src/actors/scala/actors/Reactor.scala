@@ -35,25 +35,24 @@ trait Reactor extends OutputChannel[Any] {
   private[actors] val mailbox = new MQueue("Reactor")
 
   // guarded by this
-  private[actors] val sendBuffer = new Queue[(Any, OutputChannel[Any])]
+  private[actors] val sendBuffer = new MQueue("SendBuffer")
 
-  /* If the actor waits in a react, continuation holds the
-   * message handler that react was called with.
-   */
-  @volatile
-  private[actors] var continuation: Any =>? Unit = null
-
-  /* Whenever this Actor executes on some thread, waitingFor is
+  /* Whenever this actor executes on some thread, waitingFor is
    * guaranteed to be equal to waitingForNone.
    *
    * In other words, whenever waitingFor is not equal to
-   * waitingForNone, this Actor is guaranteed not to execute on some
+   * waitingForNone, this actor is guaranteed not to execute on some
    * thread.
    */
-  private[actors] val waitingForNone = (m: Any) => false
+  private[actors] val waitingForNone = new PartialFunction[Any, Unit] {
+    def isDefinedAt(x: Any) = false
+    def apply(x: Any) {}
+  }
 
-  // guarded by lock of this
-  private[actors] var waitingFor: Any => Boolean = waitingForNone
+  /* If the actor waits in a react, waitingFor holds the
+   * message handler that react was called with.
+   */
+  private[actors] var waitingFor: PartialFunction[Any, Any] = waitingForNone // guarded by lock of this
 
   /**
    * The behavior of an actor is specified by implementing this
@@ -84,14 +83,14 @@ trait Reactor extends OutputChannel[Any] {
         waitingFor = waitingForNone
         startSearch(msg, replyTo, savedWaitingFor)
       } else {
-        sendBuffer.enqueue((msg, replyTo))
+        sendBuffer.append(msg, replyTo)
         () => { /* do nothing */ }
       }
     }
     todo()
   }
 
-  private[actors] def startSearch(msg: Any, replyTo: OutputChannel[Any], handler: Any => Boolean) =
+  private[actors] def startSearch(msg: Any, replyTo: OutputChannel[Any], handler: PartialFunction[Any, Any]) =
     () => scheduler execute (makeReaction(() => {
       val startMbox = new MQueue("Start")
       synchronized { startMbox.append(msg, replyTo) }
@@ -101,15 +100,11 @@ trait Reactor extends OutputChannel[Any] {
   private[actors] def makeReaction(fun: () => Unit): Runnable =
     new ReactorTask(this, fun)
 
-  /* Note that this method is called without holding a lock.
-   * Therefore, to read an up-to-date continuation, it must be @volatile.
-   */
-  private[actors] def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
-    // assert continuation != null
+  private[actors] def resumeReceiver(item: (Any, OutputChannel[Any]), handler: PartialFunction[Any, Any], onSameThread: Boolean) {
     if (onSameThread)
-      continuation(item._1)
+      handler(item._1)
     else {
-      scheduleActor(continuation, item._1)
+      scheduleActor(handler, item._1)
       /* Here, we throw a SuspendActorException to avoid
          terminating this actor when the current ReactorTask
          is finished.
@@ -133,22 +128,18 @@ trait Reactor extends OutputChannel[Any] {
 
   // guarded by this
   private[actors] def drainSendBuffer(mbox: MQueue) {
-    while (!sendBuffer.isEmpty) {
-      val item = sendBuffer.dequeue()
-      mbox.append(item._1, item._2)
-    }
+    sendBuffer.foreachDequeue(mbox)
   }
 
-  // assume continuation != null
   private[actors] def searchMailbox(startMbox: MQueue,
-                                    handlesMessage: Any => Boolean,
+                                    handler: PartialFunction[Any, Any],
                                     resumeOnSameThread: Boolean) {
     var tmpMbox = startMbox
     var done = false
     while (!done) {
-      val qel = tmpMbox.extractFirst((msg: Any, replyTo: OutputChannel[Any]) => handlesMessage(msg))
+      val qel = tmpMbox.extractFirst(handler)
       if (tmpMbox ne mailbox)
-        tmpMbox.foreach((m, s) => mailbox.append(m, s))
+        tmpMbox.foreachAppend(mailbox)
       if (null eq qel) {
         synchronized {
           // in mean time new stuff might have arrived
@@ -157,7 +148,7 @@ trait Reactor extends OutputChannel[Any] {
             drainSendBuffer(tmpMbox)
             // keep going
           } else {
-            waitingFor = handlesMessage
+            waitingFor = handler
             /* Here, we throw a SuspendActorException to avoid
                terminating this actor when the current ReactorTask
                is finished.
@@ -169,7 +160,7 @@ trait Reactor extends OutputChannel[Any] {
           }
         }
       } else {
-        resumeReceiver((qel.msg, qel.session), resumeOnSameThread)
+        resumeReceiver((qel.msg, qel.session), handler, resumeOnSameThread)
         done = true
       }
     }
@@ -178,8 +169,7 @@ trait Reactor extends OutputChannel[Any] {
   protected[actors] def react(f: Any =>? Unit): Nothing = {
     assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
     synchronized { drainSendBuffer(mailbox) }
-    continuation = f
-    searchMailbox(mailbox, f.isDefinedAt, false)
+    searchMailbox(mailbox, f, false)
     throw Actor.suspendException
   }
 
@@ -190,7 +180,7 @@ trait Reactor extends OutputChannel[Any] {
    *
    * never throws SuspendActorException
    */
-  private[actors] def scheduleActor(handler: Any =>? Unit, msg: Any) = {
+  private[actors] def scheduleActor(handler: Any =>? Any, msg: Any) = {
     val fun = () => handler(msg)
     val task = new ReactorTask(this, fun)
     scheduler executeFromActor task

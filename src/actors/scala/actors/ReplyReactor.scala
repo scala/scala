@@ -52,28 +52,26 @@ trait ReplyReactor extends Reactor with ReplyableReactor {
     send(msg, Actor.sender)
   }
 
-  private[actors] override def resumeReceiver(item: (Any, OutputChannel[Any]), onSameThread: Boolean) {
+  private[actors] override def resumeReceiver(item: (Any, OutputChannel[Any]), handler: PartialFunction[Any, Any], onSameThread: Boolean) {
     senders = List(item._2)
-    // assert continuation != null
     if (onSameThread)
-      continuation(item._1)
+      handler(item._1)
     else {
-      scheduleActor(continuation, item._1)
+      scheduleActor(handler, item._1)
       // see Reactor.resumeReceiver
       throw Actor.suspendException
     }
   }
 
-  // assume continuation != null
   private[actors] override def searchMailbox(startMbox: MQueue,
-                                             handlesMessage: Any => Boolean,
+                                             handler: PartialFunction[Any, Any],
                                              resumeOnSameThread: Boolean) {
     var tmpMbox = startMbox
     var done = false
     while (!done) {
       val qel = tmpMbox.extractFirst((msg: Any, replyTo: OutputChannel[Any]) => {
         senders = List(replyTo)
-        handlesMessage(msg)
+        handler.isDefinedAt(msg)
       })
       if (tmpMbox ne mailbox)
         tmpMbox.foreach((m, s) => mailbox.append(m, s))
@@ -85,13 +83,13 @@ trait ReplyReactor extends Reactor with ReplyableReactor {
             drainSendBuffer(tmpMbox)
             // keep going
           } else {
-            waitingFor = handlesMessage
+            waitingFor = handler
             // see Reactor.searchMailbox
             throw Actor.suspendException
           }
         }
       } else {
-        resumeReceiver((qel.msg, qel.session), resumeOnSameThread)
+        resumeReceiver((qel.msg, qel.session), handler, resumeOnSameThread)
         done = true
       }
     }

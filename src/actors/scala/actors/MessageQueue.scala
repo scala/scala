@@ -62,12 +62,40 @@ private[actors] class MQueue(protected val label: String) {
     last = el
   }
 
+  def append(el: MQueueElement) {
+    changeSize(1) // size always increases by 1
+
+    if (isEmpty) first = el
+    else last.next = el
+
+    last = el
+  }
+
   def foreach(f: (Any, OutputChannel[Any]) => Unit) {
     var curr = first
     while (curr != null) {
       f(curr.msg, curr.session)
       curr = curr.next
     }
+  }
+
+  def foreachAppend(target: MQueue) {
+    var curr = first
+    while (curr != null) {
+      target.append(curr)
+      curr = curr.next
+    }
+  }
+
+  def foreachDequeue(target: MQueue) {
+    var curr = first
+    while (curr != null) {
+      target.append(curr)
+      curr = curr.next
+    }
+    first = null
+    last = null
+    _size = 0
   }
 
   def foldLeft[B](z: B)(f: (B, Any) => B): B = {
@@ -107,6 +135,43 @@ private[actors] class MQueue(protected val label: String) {
    */
   def extractFirst(p: (Any, OutputChannel[Any]) => Boolean): MQueueElement =
     removeInternal(0)(p) orNull
+
+  def extractFirst(pf: PartialFunction[Any, Any]): MQueueElement = {
+    if (isEmpty)    // early return
+      return null
+
+    // special handling if returning the head
+    if (pf.isDefinedAt(first.msg)) {
+      val res = first
+      first = first.next
+      if (res eq last)
+        last = null
+
+      changeSize(-1)
+      res
+    }
+    else {
+      var curr = first.next   // init to element #2
+      var prev = first
+
+      while (curr != null) {
+        if (pf.isDefinedAt(curr.msg)) {
+          prev.next = curr.next
+          if (curr eq last)
+            last = prev
+
+          changeSize(-1)
+          return curr // early return
+        }
+        else {
+          prev = curr
+          curr = curr.next
+        }
+      }
+      // not found
+      null
+    }
+  }
 
   private def removeInternal(n: Int)(p: (Any, OutputChannel[Any]) => Boolean): Option[MQueueElement] = {
     var pos = 0
