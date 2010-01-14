@@ -408,7 +408,7 @@ trait DocComments { self: SymbolTable =>
       }
 
       for (defn <- defined) yield {
-        defn.cloneSymbol(site).setInfo(
+        defn.cloneSymbol(site).setFlag(Flags.SYNTHETIC).setInfo(
           substAliases(defn.info).asSeenFrom(site.thisType, defn.owner))
       }
     }

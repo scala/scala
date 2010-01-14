@@ -103,7 +103,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   def memberToCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
     val useCaseCommentHtml = mbr match {
       case nte: NonTemplateMemberEntity if nte.isUseCase =>
-        inlineToHtml(comment.Text("(Usecase) "))
+        inlineToHtml(comment.Text("[use case] "))
       case _ => NodeSeq.Empty
     }
     mbr match {
