@@ -1112,9 +1112,10 @@ trait Iterator[+A] { self =>
     res.toList
   }
 
-  /** Traverses this iterator and returns all produced values in a list.
+  /** Lazily wraps a Stream around this iterator so its values are memoized.
    *
-   *  @return  a stream which contains all values produced by this iterator.
+   *  @return  a Stream which can repeatedly produce all the values
+   *           produced by this iterator.
    */
   def toStream: Stream[A] =
     if (hasNext) Stream.cons(next, toStream) else Stream.empty
