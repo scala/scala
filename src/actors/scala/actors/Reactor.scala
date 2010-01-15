@@ -60,7 +60,7 @@ trait Reactor extends OutputChannel[Any] {
    */
   def act(): Unit
 
-  protected[actors] def exceptionHandler: Exception =>? Unit =
+  protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] =
     Map()
 
   protected[actors] def scheduler: IScheduler =
@@ -166,7 +166,7 @@ trait Reactor extends OutputChannel[Any] {
     }
   }
 
-  protected[actors] def react(f: Any =>? Unit): Nothing = {
+  protected[actors] def react(f: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
     synchronized { drainSendBuffer(mailbox) }
     searchMailbox(mailbox, f, false)
@@ -180,7 +180,7 @@ trait Reactor extends OutputChannel[Any] {
    *
    * never throws SuspendActorException
    */
-  private[actors] def scheduleActor(handler: Any =>? Any, msg: Any) = {
+  private[actors] def scheduleActor(handler: PartialFunction[Any, Any], msg: Any) = {
     val fun = () => handler(msg)
     val task = new ReactorTask(this, fun)
     scheduler executeFromActor task

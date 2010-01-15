@@ -153,7 +153,7 @@ object Futures {
 
     val partFuns = unsetFts.map((p: Pair[Int, Future[Any]]) => {
       val FutCh = p._2.inputChannel
-      val singleCase: Any =>? Pair[Int, Any] = {
+      val singleCase: PartialFunction[Any, Pair[Int, Any]] = {
         case FutCh ! any => Pair(p._1, any)
       }
       singleCase
@@ -165,8 +165,8 @@ object Futures {
     }
     Actor.timer.schedule(timerTask, timeout)
 
-    def awaitWith(partFuns: Seq[Any =>? Pair[Int, Any]]) {
-      val reaction: Any =>? Unit = new (Any =>? Unit) {
+    def awaitWith(partFuns: Seq[PartialFunction[Any, Pair[Int, Any]]]) {
+      val reaction: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
         def isDefinedAt(msg: Any) = msg match {
           case TIMEOUT => true
           case _ => partFuns exists (_ isDefinedAt msg)

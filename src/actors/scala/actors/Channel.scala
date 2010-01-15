@@ -76,7 +76,7 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
    * @param  f    a partial function with message patterns and actions
    * @return      result of processing the received value
    */
-  def receive[R](f: Msg =>? R): R = {
+  def receive[R](f: PartialFunction[Msg, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
     val recvActor = receiver.asInstanceOf[Actor]
     recvActor.receive {
@@ -99,7 +99,7 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
    * @param  f    a partial function with message patterns and actions
    * @return      result of processing the received value
    */
-  def receiveWithin[R](msec: Long)(f: Any =>? R): R = {
+  def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
     val recvActor = receiver.asInstanceOf[Actor]
     recvActor.receiveWithin(msec) {
@@ -116,7 +116,7 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
    *
    * @param  f    a partial function with message patterns and actions
    */
-  def react(f: Msg =>? Unit): Nothing = {
+  def react(f: PartialFunction[Msg, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
     receiver.react {
       case C ! msg if (f.isDefinedAt(msg.asInstanceOf[Msg])) => f(msg.asInstanceOf[Msg])
@@ -133,7 +133,7 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
    * @param  msec the time span before timeout
    * @param  f    a partial function with message patterns and actions
    */
-  def reactWithin(msec: Long)(f: Any =>? Unit): Nothing = {
+  def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
     val recvActor = receiver.asInstanceOf[Actor]
     recvActor.reactWithin(msec) {
