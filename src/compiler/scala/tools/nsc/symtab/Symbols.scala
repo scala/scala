@@ -1254,21 +1254,28 @@ trait Symbols {
       else NoSymbol
     }
 
+    /** A helper method that factors the common code used the discover a companion module of a class. If a companion
+      * module exists, its symbol is returned, otherwise, `NoSymbol` is returned. The method assumes that `this`
+      * symbol has already been checked to be a class (using `isClass`). */
+    private final def linkedModuleOfClass0: Symbol =
+      flatOwnerInfo.decl(name.toTermName).suchThat(
+          sym => (sym hasFlag MODULE) && (sym isCoDefinedWith this))
+
     /** The module or case class factory with the same name in the same
      *  package as this class. A better name would be companionModuleOfClass.
      */
     final def linkedModuleOfClass: Symbol =
-      if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass) {
-        flatOwnerInfo.decl(name.toTermName).suchThat(
-          sym => (sym hasFlag MODULE) && (sym isCoDefinedWith this))
-      } else NoSymbol
+      if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass)
+        linkedModuleOfClass0
+      else NoSymbol
 
     /** For a module its linked class, for a class its linked module or case
      *  factory otherwise.
      */
     final def linkedSym: Symbol =
       if (isTerm) linkedClassOfModule
-      else if (isClass) flatOwnerInfo.decl(name.toTermName).suchThat(_ isCoDefinedWith this)
+      else if (isClass)
+        linkedModuleOfClass0
       else NoSymbol
 
     /** For a module class its linked class, for a plain class
