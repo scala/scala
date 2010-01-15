@@ -219,6 +219,8 @@ trait Definitions {
       def ArrayModule_apply = getMember(ArrayModule, nme.apply)
 
     // reflection / structural types
+    lazy val SoftReferenceClass     = getClass("java.lang.ref.SoftReference")
+    lazy val WeakReferenceClass     = getClass("java.lang.ref.WeakReference")
     lazy val MethodClass            = getClass(sn.MethodAsObject)
     lazy val EmptyMethodCacheClass  = getClass("scala.runtime.EmptyMethodCache")
     lazy val MethodCacheClass       = getClass("scala.runtime.MethodCache")
