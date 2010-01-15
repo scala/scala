@@ -175,10 +175,13 @@ trait SyntheticMethods extends ast.TreeDSL {
       def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
         val varName             = context.unit.fresh.newName(clazz.pos.focus, acc.name + "$")
         val (eqMethod, binding) =
-          if (isRepeatedParamType(cpt))  (nme.sameElements, Star(WILD()))
-          else                           (nme.EQ          , WILD()      )
-
-        ((varName DOT eqMethod)(Ident(acc)), varName BIND binding)
+          if (isRepeatedParamType(cpt))
+            (TypeApply(varName DOT nme.sameElements, List(TypeTree(cpt.baseType(SeqClass).typeArgs.head))),
+             Star(WILD()))
+          else
+            ((varName DOT nme.EQ): Tree,
+             WILD())
+        (eqMethod APPLY Ident(acc), varName BIND binding)
       }
 
       // Creates list of parameters and a guard for each

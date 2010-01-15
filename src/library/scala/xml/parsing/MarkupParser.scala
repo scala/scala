@@ -32,6 +32,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   self: MarkupParser with MarkupHandler =>
 
   type PositionType = Int
+  type InputType = Source
 
   def xHandleError(that: Char, msg: String) = reportSyntaxError(msg)
 
@@ -47,6 +48,15 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   //
 
   var curInput: Source = input
+  def lookahead(): BufferedIterator[Char] = new BufferedIterator[Char] {
+    val stream = curInput.toStream
+    curInput = Source.fromIterable(stream)
+    val underlying = Source.fromIterable(stream).buffered
+
+    def hasNext = underlying.hasNext
+    def next = underlying.next
+    def head = underlying.head
+  }
 
   /** the handler of the markup, returns this */
   private val handle: MarkupHandler = this
@@ -56,7 +66,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
 
   /** holds the position in the source file */
   var pos: Int = _
-
 
   /* used when reading external subset */
   var extIndex = -1
@@ -379,20 +388,8 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    */
   def xCharData: NodeSeq = {
     xToken("[CDATA[")
-    val pos1 = pos
-    val sb: StringBuilder = new StringBuilder()
-    while (true) {
-      if (ch==']' &&
-          { sb.append(ch); nextch; ch == ']' } &&
-          { sb.append(ch); nextch; ch == '>' } ) {
-            sb.setLength(sb.length - 2);
-            nextch;
-            return PCData(sb.toString)
-          } else sb.append( ch );
-      nextch;
-    }
-    // bq: (todo) increase grace when meeting CDATA section
-    throw FatalError("this cannot happen");
+    def mkResult(pos: Int, s: String): NodeSeq = PCData(s)
+    xTakeUntil(mkResult, () => pos, "]]>")
   }
 
   /** CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"

@@ -292,13 +292,13 @@ self =>
    *                `pf` to each element on which it is defined and collecting the results.
    *                The order of the elements is preserved.
    *
-   *  @usecase def partialMap[B](pf: A =>? B): $Coll[B]
+   *  @usecase def partialMap[B](pf: PartialFunction[A, B]): $Coll[B]
    *
    *  @return       a new $coll resulting from applying the given partial function
    *                `pf` to each element on which it is defined and collecting the results.
    *                The order of the elements is preserved.
    */
-  def partialMap[B, That](pf: A =>? B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def partialMap[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     for (x <- this) if (pf.isDefinedAt(x)) b += pf(x)
     b.result
@@ -984,9 +984,7 @@ self =>
   def toList: List[A] = (new ListBuffer[A] ++= thisCollection).toList
 
   /** Converts this $coll to an iterable collection.
-   *
-   *  Note:  Will not terminate for infinite-sized collections.
-   *
+   *  $willNotTerminateInf
    *  @return an `Iterable` containing all elements of this $coll.
    */
   def toIterable: Iterable[A] = toStream
@@ -1014,6 +1012,22 @@ self =>
    *  @return      a set containing all elements of this $coll.
    */
   def toSet[B >: A]: immutable.Set[B] = immutable.Set() ++ thisCollection
+
+  /** Converts this $coll to a map.  This method is unavailable unless
+   *  the elements are members of Tuple2, each ((K, V)) becoming a key-value
+   *  pair in the map.  Duplicate keys will be overwritten by later keys:
+   *  if this is an unordered collection, which key is in the resulting map
+   *  is undefined.
+   *  $willNotTerminateInf
+   *  @return      a map containing all elements of this $coll.
+   */
+  def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
+    val b = immutable.Map.newBuilder[T, U]
+    for (x <- this)
+      b += x
+
+    b.result
+  }
 
   /** Displays all elements of this $coll in a string using start, end, and separator strings.
    *

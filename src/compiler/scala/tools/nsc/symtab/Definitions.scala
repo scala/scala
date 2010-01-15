@@ -19,7 +19,7 @@ trait Definitions {
 
     // Working around bug #2133
     private object definitionHelpers {
-      def cond[T](x: T)(f: T =>? Boolean) = (f isDefinedAt x) && f(x)
+      def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
     }
     import definitionHelpers._
 

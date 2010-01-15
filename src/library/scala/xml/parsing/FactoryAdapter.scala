@@ -135,7 +135,9 @@ abstract class FactoryAdapter extends DefaultHandler with factory.XMLLoader[Node
 
     hStack push null
     var m: MetaData = Null
-    var scpe: NamespaceBinding = scopeStack.top
+    var scpe: NamespaceBinding =
+      if (scopeStack.isEmpty) TopScope
+      else scopeStack.top
 
     for (i <- 0 until attributes.getLength()) {
       val qname = attributes getQName i

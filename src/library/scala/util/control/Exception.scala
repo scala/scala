@@ -23,14 +23,14 @@ object Exception
   // We get lots of crashes using this, so for now we just use Class[_]
   // type ExClass = Class[_ <: Throwable]
 
-  type Catcher[+T] = Throwable =>? T
-  type ExceptionCatcher[+T] = Exception =>? T
+  type Catcher[+T] = PartialFunction[Throwable, T]
+  type ExceptionCatcher[+T] = PartialFunction[Exception, T]
 
   // due to the magic of contravariance, Throwable => T is a subtype of
   // Exception => T, not the other way around.  So we manually construct
   // a Throwable => T and simply rethrow the non-Exceptions.
   implicit def fromExceptionCatcher[T](pf: ExceptionCatcher[T]): Catcher[T] = {
-    new (Throwable =>? T) {
+    new PartialFunction[Throwable, T] {
       def isDefinedAt(x: Throwable) = x match {
         case e: Exception if pf.isDefinedAt(e)  => true
         case _                                  => false
@@ -101,7 +101,7 @@ object Exception
     /** Create a new Catch with the same isDefinedAt logic as this one,
       * but with the supplied apply method replacing the current one. */
     def withApply[U](f: (Throwable) => U): Catch[U] = {
-      val pf2 = new (Throwable =>? U) {
+      val pf2 = new PartialFunction[Throwable, U] {
         def isDefinedAt(x: Throwable) = pf isDefinedAt x
         def apply(x: Throwable) = f(x)
       }
@@ -139,8 +139,8 @@ object Exception
     override def toString() = List("Try(<body>)", catcher.toString) mkString " "
   }
 
-  final val nothingCatcher: Throwable =>? Nothing =
-    new (Throwable =>? Nothing) {
+  final val nothingCatcher: PartialFunction[Throwable, Nothing] =
+    new PartialFunction[Throwable, Nothing] {
       def isDefinedAt(x: Throwable) = false
       def apply(x: Throwable) = throw x
     }
@@ -207,7 +207,7 @@ object Exception
     classes exists (_ isAssignableFrom x.getClass)
 
   private def pfFromExceptions(exceptions: Class[_]*) =
-    new (Throwable =>? Nothing) {
+    new PartialFunction[Throwable, Nothing] {
       def apply(x: Throwable) = throw x
       def isDefinedAt(x: Throwable) = wouldMatch(x, exceptions)
     }

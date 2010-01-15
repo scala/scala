@@ -280,7 +280,9 @@ trait ParallelMatching extends ast.TreeDSL
 
       lazy val pvgroup  = PatternVarGroup.fromBindings(subst.get())
 
-      final def tree(): Tree = squeezedBlock(pvgroup.valDefs, codegen)
+      final def tree(): Tree =
+        if (guard.isEmpty) success
+        else squeezedBlock(pvgroup.valDefs, codegen)
     }
 
     /** Mixture rule for all literal ints (and chars) i.e. hopefully a switch

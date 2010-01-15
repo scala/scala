@@ -399,7 +399,7 @@ object Settings {
         case None =>
           (outputs filter (isBelow _).tuple) match {
             case Nil => Nil
-            case matches => matches.map(_._1.lookupPath(srcPath, false))
+            case matches => matches.map(_._1.lookupPathUnchecked(srcPath, false))
           }
       }
     }

@@ -1188,8 +1188,10 @@ trait Namers { self: Analyzer =>
               def checkSelectors(selectors: List[ImportSelector]): Unit = selectors match {
                 case ImportSelector(from, _, to, _) :: rest =>
                   if (from != nme.WILDCARD && base != ErrorType) {
-                    if (base.member(from) == NoSymbol && base.member(from.toTypeName) == NoSymbol)
-                      context.error(tree.pos, from.decode + " is not a member of " + expr);
+                    if (base.nonLocalMember(from) == NoSymbol &&
+                        base.nonLocalMember(from.toTypeName) == NoSymbol)
+                      context.error(tree.pos, from.decode + " is not a member of " + expr)
+
                     if (checkNotRedundant(tree.pos, from, to))
                       checkNotRedundant(tree.pos, from.toTypeName, to.toTypeName)
                   }

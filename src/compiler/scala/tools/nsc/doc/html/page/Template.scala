@@ -100,15 +100,22 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     </li>
   }
 
-  def memberToCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = mbr match {
-    case dte: DocTemplateEntity if isSelf =>
-      <div id="comment" class="fullcomment">{ memberToFullCommentHtml(mbr, isSelf) }</div>
-    case dte: DocTemplateEntity if mbr.comment.isDefined =>
-      <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
-    case _ if mbr.comment.isDefined =>
-      <p class="shortcomment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
-      <div class="fullcomment">{ memberToFullCommentHtml(mbr, isSelf) }</div>
-    case _ => NodeSeq.Empty
+  def memberToCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
+    val useCaseCommentHtml = mbr match {
+      case nte: NonTemplateMemberEntity if nte.isUseCase =>
+        inlineToHtml(comment.Text("[use case] "))
+      case _ => NodeSeq.Empty
+    }
+    mbr match {
+      case dte: DocTemplateEntity if isSelf =>
+        <div id="comment" class="fullcomment">{ memberToFullCommentHtml(mbr, isSelf) }</div>
+      case dte: DocTemplateEntity if mbr.comment.isDefined =>
+        <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
+      case _ if mbr.comment.isDefined =>
+        <p class="shortcomment cmt">{ useCaseCommentHtml }{ inlineToHtml(mbr.comment.get.short) }</p>
+        <div class="fullcomment">{ useCaseCommentHtml }{ memberToFullCommentHtml(mbr, isSelf) }</div>
+      case _ => useCaseCommentHtml
+    }
   }
 
   def memberToFullCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
@@ -176,6 +183,15 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
                 known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
               </div>
           case _ => NodeSeq.Empty
+        }
+      }
+      { tpl.companion match {
+          case Some(companion) =>
+            <div class="block">
+              Go to: <a href={relativeLinkTo(companion)}>companion</a>
+            </div>
+          case None =>
+            NodeSeq.Empty
         }
       }
     </xml:group>

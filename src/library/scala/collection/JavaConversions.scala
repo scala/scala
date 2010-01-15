@@ -53,6 +53,7 @@ package scala.collection
  */
 object JavaConversions {
   import java.{ lang => jl, util => ju }
+  import java.util.{ concurrent => juc }
   import scala.collection.{ generic, immutable, mutable, Traversable }
   import scala.reflect.ClassManifest
 
@@ -178,8 +179,15 @@ object JavaConversions {
    * @return A Java <code>Map</code> view of the argument.
    */
   implicit def asMap[A, B](m : mutable.Map[A, B])(implicit ma : ClassManifest[A]) : ju.Map[A, B] = m match {
+    //case JConcurrentMapWrapper(wrapped) => wrapped
     case JMapWrapper(wrapped) => wrapped
     case _ => new MutableMapWrapper(m)(ma)
+  }
+
+  implicit def asConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B])
+    (implicit ma: ClassManifest[A], mb: ClassManifest[B]): juc.ConcurrentMap[A, B] = m match {
+    case JConcurrentMapWrapper(wrapped) => wrapped
+    case _ => new ConcurrentMapWrapper(m)(ma, mb)
   }
 
   // Java => Scala
@@ -303,8 +311,31 @@ object JavaConversions {
    * @return A Scala mutable <code>Map</code> view of the argument.
    */
   implicit def asMap[A, B](m : ju.Map[A, B]) = m match {
+    //case ConcurrentMapWrapper(wrapped) => wrapped
     case MutableMapWrapper(wrapped) => wrapped
-    case _ =>new JMapWrapper(m)
+    case _ => new JMapWrapper(m)
+  }
+
+  /**
+   * Implicitly converts a Java <code>ConcurrentMap</code> to a Scala mutable <code>ConcurrentMap</code>.
+   * The returned Scala <code>ConcurrentMap</code> is backed by the provided Java
+   * <code>ConcurrentMap</code> and any side-effects of using it via the Scala interface will
+   * be visible via the Java interface and vice versa.
+   * <p>
+   * If the Java <code>ConcurrentMap</code> was previously obtained from an implicit or
+   * explicit call of <code>asConcurrentMap(scala.collection.mutable.ConcurrentMap)</code> then the original
+   * Scala <code>ConcurrentMap</code> will be returned.
+   *
+   * @param m The <code>ConcurrentMap</code> to be converted.
+   * @return A Scala mutable <code>ConcurrrentMap</code> view of the argument.
+   */
+  implicit def asConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]) = m match {
+    case ConcurrentMapWrapper(wrapped) => wrapped
+    case _ => new JConcurrentMapWrapper(m)
+  }
+
+  implicit def asMap(p: ju.Properties): mutable.Map[String, String] = p match {
+    case _ => new JPropertiesWrapper(p)
   }
 
   // Private implementations ...
@@ -410,7 +441,8 @@ object JavaConversions {
     override def empty = JSetWrapper(new ju.HashSet[A])
   }
 
-  case class MutableMapWrapper[A, B](underlying : mutable.Map[A, B])(m : ClassManifest[A]) extends ju.AbstractMap[A, B] {
+  abstract class MutableMapWrapperLike[A, B](underlying: mutable.Map[A, B])(m: ClassManifest[A])
+  extends ju.AbstractMap[A, B] {
     self =>
     override def size = underlying.size
 
@@ -462,7 +494,12 @@ object JavaConversions {
     }
   }
 
-  case class JMapWrapper[A, B](underlying : ju.Map[A, B]) extends mutable.Map[A, B] with mutable.MapLike[A, B, JMapWrapper[A, B]] {
+  case class MutableMapWrapper[A, B](underlying : mutable.Map[A, B])(m : ClassManifest[A])
+  extends MutableMapWrapperLike[A, B](underlying)(m)
+
+  abstract class JMapWrapperLike[A, B, +Repr <: mutable.MapLike[A, B, Repr] with mutable.Map[A, B]]
+    (underlying: ju.Map[A, B])
+  extends mutable.Map[A, B] with mutable.MapLike[A, B, Repr] {
     override def size = underlying.size
 
     def get(k : A) = {
@@ -498,6 +535,127 @@ object JavaConversions {
 
     override def clear = underlying.clear
 
+    override def empty: Repr = null.asInstanceOf[Repr]
+  }
+
+  case class JMapWrapper[A, B](underlying : ju.Map[A, B])
+  extends JMapWrapperLike[A, B, JMapWrapper[A, B]](underlying) {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
+
+  case class ConcurrentMapWrapper[A, B](underlying: mutable.ConcurrentMap[A, B])
+    (m: ClassManifest[A], mv: ClassManifest[B])
+  extends MutableMapWrapperLike[A, B](underlying)(m) with juc.ConcurrentMap[A, B] {
+    self =>
+
+    override def remove(k : AnyRef) = {
+      if (!m.erasure.isInstance(k))
+        null.asInstanceOf[B]
+      else {
+        val k1 = k.asInstanceOf[A]
+        underlying.remove(k1) match {
+          case Some(v) => v
+          case None => null.asInstanceOf[B]
+        }
+      }
+    }
+
+    def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
+      case Some(v) => v
+      case None => null.asInstanceOf[B]
+    }
+
+    def remove(k: AnyRef, v: AnyRef) = {
+      if (!m.erasure.isInstance(k) || !mv.erasure.isInstance(v))
+        false
+      else {
+        val k1 = k.asInstanceOf[A]
+        val v1 = v.asInstanceOf[B]
+        underlying.remove(k1, v1)
+      }
+    }
+
+    def replace(k: A, v: B): B = underlying.replace(k, v) match {
+      case Some(v) => v
+      case None => null.asInstanceOf[B]
+    }
+
+    def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
+
+  }
+
+  case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B])
+  extends JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]](underlying) with mutable.ConcurrentMap[A, B] {
+    override def get(k: A) = {
+      val v = underlying.get(k)
+      if (v != null) Some(v)
+      else None
+    }
+
+    override def empty = new JConcurrentMapWrapper(new juc.ConcurrentHashMap[A, B])
+
+    def putIfAbsent(k: A, v: B): Option[B] = {
+      val r = underlying.putIfAbsent(k, v)
+      if (r != null) Some(r) else None
+    }
+
+    def remove(k: A, v: B): Boolean = underlying.remove(k, v)
+
+    def replace(k: A, v: B): Option[B] = {
+      val prev = underlying.replace(k, v)
+      if (prev != null) Some(prev) else None
+    }
+
+    def replace(k: A, oldvalue: B, newvalue: B): Boolean = underlying.replace(k, oldvalue, newvalue)
+
+  }
+
+  case class JPropertiesWrapper(underlying: ju.Properties)
+  extends mutable.Map[String, String] with mutable.MapLike[String, String, JPropertiesWrapper] {
+    override def size = underlying.size
+
+    def get(k : String) = {
+      val v = underlying.get(k)
+      if (v != null)
+        Some(v.asInstanceOf[String])
+      else
+        None
+    }
+
+    def +=(kv: (String, String)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -=(key: String): this.type = { underlying.remove(key); this }
+
+    override def put(k : String, v : String): Option[String] = {
+      val r = underlying.put(k, v)
+      if (r != null) Some(r.asInstanceOf[String]) else None
+    }
+
+    override def update(k : String, v : String) { underlying.put(k, v) }
+
+    override def remove(k : String): Option[String] = {
+      val r = underlying.remove(k)
+      if (r != null) Some(r.asInstanceOf[String]) else None
+    }
+
+    def iterator = new Iterator[(String, String)] {
+      val ui = underlying.entrySet.iterator
+      def hasNext = ui.hasNext
+      def next = { val e = ui.next ; (e.getKey.asInstanceOf[String], e.getValue.asInstanceOf[String]) }
+    }
+
+    override def clear = underlying.clear
+
+    override def empty = JPropertiesWrapper(new ju.Properties)
+
+    def getProperty(key: String) = underlying.getProperty(key)
+
+    def getProperty(key: String, defaultValue: String) = underlying.getProperty(key, defaultValue)
+
+    def setProperty(key: String, value: String) = underlying.setProperty(key, value)
+  }
+
 }
+
+
+
+

@@ -1,0 +1,6 @@
+/**
+ * Foo
+ */
+object Scaladoc8 {
+
+}

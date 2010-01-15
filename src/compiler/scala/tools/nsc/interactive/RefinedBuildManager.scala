@@ -40,15 +40,15 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   protected def newCompiler(settings: Settings) = new BuilderGlobal(settings)
 
   val compiler = newCompiler(settings)
-  import compiler.{Symbol, atPhase, currentRun}
+  import compiler.{Symbol, Type, atPhase, currentRun}
 
-  private case class Symbols(sym: Symbol, symBefErasure: Symbol)
+  private case class SymWithHistory(sym: Symbol, befErasure: Type)
 
   /** Managed source files. */
   private val sources: mutable.Set[AbstractFile] = new mutable.HashSet[AbstractFile]
 
-  private val definitions: mutable.Map[AbstractFile, List[Symbols]] =
-    new mutable.HashMap[AbstractFile, List[Symbols]] {
+  private val definitions: mutable.Map[AbstractFile, List[SymWithHistory]] =
+    new mutable.HashMap[AbstractFile, List[SymWithHistory]] {
       override def default(key: AbstractFile) = Nil
     }
 
@@ -72,7 +72,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
    */
   private def invalidatedByRemove(files: Set[AbstractFile]): Set[AbstractFile] = {
     val changes = new mutable.HashMap[Symbol, List[Change]]
-    for (f <- files; Symbols(sym, _) <- definitions(f))
+    for (f <- files; SymWithHistory(sym, _) <- definitions(f))
       changes += sym -> List(Removed(Class(sym.fullNameString)))
     invalidated(files, changes)
   }
@@ -125,13 +125,12 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
             definitions(src).find(
                s => (s.sym.fullNameString == sym.fullNameString) &&
                     isCorrespondingSym(s.sym, sym)) match {
-              case Some(Symbols(oldSym, oldSymEras)) =>
-                val changes = changeSet(oldSym, sym)
+              case Some(SymWithHistory(oldSym, info)) =>
+                val changes = changeSet(oldSym.info, sym)
                 val changesErasure =
                     atPhase(currentRun.erasurePhase.prev) {
-                        changeSet(oldSymEras, sym)
+                        changeSet(info, sym)
                     }
-
                 changesOf(oldSym) = (changes ++ changesErasure).removeDuplicates
               case _ =>
                 // a new top level definition
@@ -142,7 +141,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
             }
           }
           // Create a change for the top level classes that were removed
-          val removed = definitions(src) filterNot ((s:Symbols) =>
+          val removed = definitions(src) filterNot ((s:SymWithHistory) =>
             syms.find(_.fullNameString == (s.sym.fullNameString)) != None)
           for (s <- removed) {
             changesOf(s.sym) = List(removeChangeSet(s.sym))
@@ -279,7 +278,11 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   private def updateDefinitions(files: Set[AbstractFile]) {
     for (src <- files; val localDefs = compiler.dependencyAnalysis.definitions(src)) {
       definitions(src) = (localDefs map (s => {
-        Symbols(s.cloneSymbol, atPhase(currentRun.erasurePhase.prev) {s.cloneSymbol})
+        SymWithHistory(
+          s.cloneSymbol,
+          atPhase(currentRun.erasurePhase.prev) {
+            s.info.cloneInfo(s)
+          })
       }))
     }
     this.references = compiler.dependencyAnalysis.references

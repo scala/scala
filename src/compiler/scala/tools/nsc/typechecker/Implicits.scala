@@ -459,7 +459,9 @@ self: Analyzer =>
               if (traceImplicits) println("tvars = "+tvars+"/"+(tvars map (_.constr)))
               val targs = solvedTypes(tvars, undetParams, undetParams map varianceInType(pt),
                                       false, lubDepth(List(itree2.tpe, pt)))
-              checkBounds(itree2.pos, NoPrefix, NoSymbol, undetParams, targs, "inferred ") // #2421
+
+              // #2421: check that we correctly instantiated type parameters outside of the implicit tree:
+              checkBounds(itree2.pos, NoPrefix, NoSymbol, undetParams, targs, "inferred ")
 
               // filter out failures from type inference, don't want to remove them from undetParams!
               // we must be conservative in leaving type params in undetparams
@@ -471,6 +473,18 @@ self: Analyzer =>
 
               val subst = new TreeTypeSubstituter(okParams, okArgs)
               subst traverse itree2
+
+              // #2421b: since type inference (which may have been performed during implicit search)
+              // does not check whether inferred arguments meet the bounds of the corresponding parameter (see note in solvedTypes),
+              // must check again here:
+              itree2 match { // roughly equivalent to typed1(itree2, EXPRmode, wildPt),
+                // since typed1 only forces checking of the outer tree and calls typed on the subtrees
+                // (they have already been type checked, by the typed1(itree...) above, so the subtrees are skipped by typed)
+                // inlining the essential bit here for clarity
+                //TODO: verify that these subtrees don't need re-checking
+                case TypeApply(fun, args) => typedTypeApply(itree2, EXPRmode, fun, args)
+                case _ =>
+              }
 
               val result = new SearchResult(itree2, subst)
               incCounter(foundImplicits)

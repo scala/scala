@@ -26,6 +26,9 @@ class WrappedString(override val self: String) extends IndexedSeq[Char] with Str
 
   /** Creates a string builder buffer as builder for this class */
   override protected[this] def newBuilder = WrappedString.newBuilder
+
+  override def slice(from: Int, until: Int): WrappedString =
+    new WrappedString(self.substring(from max 0, until min self.length))
 }
 
 /**

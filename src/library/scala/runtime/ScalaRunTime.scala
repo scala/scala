@@ -100,7 +100,7 @@ object ScalaRunTime {
     if (x == null) throw new UninitializedError else x
 
   abstract class Try[+A] {
-    def Catch[B >: A](handler: Throwable =>? B): B
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B
     def Finally(fin: => Unit): A
   }
 
@@ -115,7 +115,7 @@ object ScalaRunTime {
 
     def run() { result = block }
 
-    def Catch[B >: A](handler: Throwable =>? B): B =
+    def Catch[B >: A](handler: PartialFunction[Throwable, B]): B =
       if (exception == null) result
       else if (handler isDefinedAt exception) handler(exception)
       else throw exception

@@ -35,7 +35,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
 {
   import ord._
 
-  private class ResizableArrayAccess[A] extends ResizableArray[A] {
+  private final class ResizableArrayAccess[A] extends ResizableArray[A] {
     @inline def p_size0 = size0
     @inline def p_size0_=(s: Int) = size0 = s
     @inline def p_array = array

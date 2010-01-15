@@ -1,0 +1,4 @@
+t2421b.scala:12: error: could not find implicit value for parameter aa: Test.F[Test.A]
+  f
+  ^
+one error found

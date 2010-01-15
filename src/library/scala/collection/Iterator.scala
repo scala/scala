@@ -411,7 +411,7 @@ trait Iterator[+A] { self =>
   *  @return a new iterator which yields each value `x` produced by this iterator for
   *          which `pf` is defined the image `pf(x)`.
   */
-  def partialMap[B](pf: A =>? B): Iterator[B] = {
+  def partialMap[B](pf: PartialFunction[A, B]): Iterator[B] = {
     val self = buffered
     new Iterator[B] {
       private def skip() = while (self.hasNext && !pf.isDefinedAt(self.head)) self.next()
@@ -1112,9 +1112,10 @@ trait Iterator[+A] { self =>
     res.toList
   }
 
-  /** Traverses this iterator and returns all produced values in a list.
+  /** Lazily wraps a Stream around this iterator so its values are memoized.
    *
-   *  @return  a stream which contains all values produced by this iterator.
+   *  @return  a Stream which can repeatedly produce all the values
+   *           produced by this iterator.
    */
   def toStream: Stream[A] =
     if (hasNext) Stream.cons(next, toStream) else Stream.empty

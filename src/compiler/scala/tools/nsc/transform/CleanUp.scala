@@ -280,7 +280,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         val testForBoolean: Tree    = (qual IS_OBJ BoxedBooleanClass.tpe)
         val testForNumberOrBoolean  = testForNumber OR testForBoolean
 
-        val getPrimitiveReplacementForStructuralCall: Name =>? (Symbol, Tree) = {
+        val getPrimitiveReplacementForStructuralCall: PartialFunction[Name, (Symbol, Tree)] = {
           val testsForNumber = Map() ++ List(
             nme.UNARY_+ -> "positive",
             nme.UNARY_- -> "negate",

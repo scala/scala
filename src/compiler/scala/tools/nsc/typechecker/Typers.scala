@@ -2900,6 +2900,56 @@ trait Typers { self: Analyzer =>
       TypeTree(ExistentialType(typeParams, tpe)) setOriginal tree
     }
 
+    // lifted out of typed1 because it's needed in typedImplicit0
+    protected def typedTypeApply(tree: Tree, mode: Int, fun: Tree, args: List[Tree]): Tree = fun.tpe match {
+      case OverloadedType(pre, alts) =>
+        inferPolyAlternatives(fun, args map (_.tpe))
+        val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
+        val args1 = if(args.length == tparams.length) {
+          //@M: in case TypeApply we can't check the kind-arities of the type arguments,
+          // as we don't know which alternative to choose... here we do
+          map2Conserve(args, tparams) {
+            //@M! the polytype denotes the expected kind
+            (arg, tparam) => typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
+          }
+        } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
+         // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
+         // inferPolyAlternatives loops...  -- I have no idea why :-(
+         // ...actually this was looping anyway, see bug #278.
+          return errorTree(fun, "wrong number of type parameters for "+treeSymTypeMsg(fun))
+
+        typedTypeApply(tree, mode, fun, args1)
+      case SingleType(_, _) =>
+        typedTypeApply(tree, mode, fun setType fun.tpe.widen, args)
+      case PolyType(tparams, restpe) if (tparams.length != 0) =>
+        if (tparams.length == args.length) {
+          val targs = args map (_.tpe)
+          checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
+          if (fun.symbol == Predef_classOf) {
+            checkClassType(args.head, true, false)
+            atPos(tree.pos) { gen.mkClassOf(targs.head) }
+          } else {
+            if (phase.id <= currentRun.typerPhase.id &&
+                fun.symbol == Any_isInstanceOf && !targs.isEmpty)
+              checkCheckable(tree.pos, targs.head, "")
+            val resultpe = restpe.instantiateTypeParams(tparams, targs)
+            //@M substitution in instantiateParams needs to be careful!
+            //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]
+            //@M    --> first, m[a] gets changed to m[Int], then m gets substituted for List,
+            //          this must preserve m's type argument, so that we end up with List[Int], and not List[a]
+            //@M related bug: #1438
+            //println("instantiating type params "+restpe+" "+tparams+" "+targs+" = "+resultpe)
+            treeCopy.TypeApply(tree, fun, args) setType resultpe
+          }
+        } else {
+          errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun))
+        }
+      case ErrorType =>
+        setError(tree)
+      case _ =>
+        errorTree(tree, treeSymTypeMsg(fun)+" does not take type parameters.")
+    }
+
     /**
      *  @param tree ...
      *  @param mode ...
@@ -3182,55 +3232,6 @@ trait Typers { self: Analyzer =>
           expr1
         case _ =>
           errorTree(expr1, "_ must follow method; cannot follow " + expr1.tpe)
-      }
-
-      def typedTypeApply(fun: Tree, args: List[Tree]): Tree = fun.tpe match {
-        case OverloadedType(pre, alts) =>
-          inferPolyAlternatives(fun, args map (_.tpe))
-          val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
-          val args1 = if(args.length == tparams.length) {
-            //@M: in case TypeApply we can't check the kind-arities of the type arguments,
-            // as we don't know which alternative to choose... here we do
-            map2Conserve(args, tparams) {
-              //@M! the polytype denotes the expected kind
-              (arg, tparam) => typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
-            }
-          } else // @M: there's probably something wrong when args.length != tparams.length... (triggered by bug #320)
-           // Martin, I'm using fake trees, because, if you use args or arg.map(typedType),
-           // inferPolyAlternatives loops...  -- I have no idea why :-(
-           // ...actually this was looping anyway, see bug #278.
-            return errorTree(fun, "wrong number of type parameters for "+treeSymTypeMsg(fun))
-
-          typedTypeApply(fun, args1)
-        case SingleType(_, _) =>
-          typedTypeApply(fun setType fun.tpe.widen, args)
-        case PolyType(tparams, restpe) if (tparams.length != 0) =>
-          if (tparams.length == args.length) {
-            val targs = args map (_.tpe)
-            checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
-            if (fun.symbol == Predef_classOf) {
-              checkClassType(args.head, true, false)
-              atPos(tree.pos) { gen.mkClassOf(targs.head) }
-            } else {
-              if (phase.id <= currentRun.typerPhase.id &&
-                  fun.symbol == Any_isInstanceOf && !targs.isEmpty)
-                checkCheckable(tree.pos, targs.head, "")
-              val resultpe = restpe.instantiateTypeParams(tparams, targs)
-              //@M substitution in instantiateParams needs to be careful!
-              //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]
-              //@M    --> first, m[a] gets changed to m[Int], then m gets substituted for List,
-              //          this must preserve m's type argument, so that we end up with List[Int], and not List[a]
-              //@M related bug: #1438
-              //println("instantiating type params "+restpe+" "+tparams+" "+targs+" = "+resultpe)
-              treeCopy.TypeApply(tree, fun, args) setType resultpe
-            }
-          } else {
-            errorTree(tree, "wrong number of type parameters for "+treeSymTypeMsg(fun))
-          }
-        case ErrorType =>
-          setError(tree)
-        case _ =>
-          errorTree(tree, treeSymTypeMsg(fun)+" does not take type parameters.")
       }
 
       /**
@@ -3922,7 +3923,7 @@ trait Typers { self: Analyzer =>
                       }
 
           //@M TODO: context.undetparams = undets_fun ?
-          typedTypeApply(fun1, args1)
+          typedTypeApply(tree, mode, fun1, args1)
 
         case Apply(Block(stats, expr), args) =>
           typed1(atPos(tree.pos)(Block(stats, Apply(expr, args))), mode, pt)

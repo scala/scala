@@ -159,6 +159,9 @@ trait Infer {
     if (!solve(tvars, tparams, variances, upper, depth)) {
 //    no panic, it's good enough to just guess a solution, we'll find out
 //    later whether it works.
+// @M danger, Will Robinson! this means that you should never trust inferred type arguments!
+// need to call checkBounds on the args/typars or type1 on the tree for the expression that results from type inference
+// see e.g., #2421: implicit search had been ignoring this caveat
 //      throw new DeferredNoInstance(() =>
 //        "no solution exists for constraints"+(tvars map boundsString))
     }
@@ -990,12 +993,12 @@ trait Infer {
         val specificCount = (if (isAsSpecific(ftpe1, ftpe2)) 1 else 0) -
                             (if (isAsSpecific(ftpe2, ftpe1) &&
                                  // todo: move to isAsSepecific test
-                                 (!ftpe2.isInstanceOf[OverloadedType] || ftpe1.isInstanceOf[OverloadedType]) &&
+//                                 (!ftpe2.isInstanceOf[OverloadedType] || ftpe1.isInstanceOf[OverloadedType]) &&
                                  (!phase.erasedTypes || covariantReturnOverride(ftpe1, ftpe2))) 1 else 0)
         val subClassCount = (if (isInProperSubClassOrObject(sym1, sym2)) 1 else 0) -
                             (if (isInProperSubClassOrObject(sym2, sym1)) 1 else 0)
-        //println("is more specific? "+sym1+sym1.locationString+"/"+sym2+sym2.locationString+":"+
-        //        specificCount+"/"+subClassCount)
+//        println("is more specific? "+sym1+":"+ftpe1+sym1.locationString+"/"+sym2+":"+ftpe2+sym2.locationString+":"+
+//                specificCount+"/"+subClassCount)
         specificCount + subClassCount > 0
       }
     }
@@ -1714,6 +1717,7 @@ trait Infer {
             })
 
           def improves(sym1: Symbol, sym2: Symbol) =
+//            util.trace("improve "+sym1+sym1.locationString+" on "+sym2+sym2.locationString)(
             sym2 == NoSymbol || sym2.isError ||
             isStrictlyMoreSpecific(followApply(pre.memberType(sym1)),
                                    followApply(pre.memberType(sym2)), sym1, sym2)

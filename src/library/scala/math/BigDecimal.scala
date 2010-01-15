@@ -100,7 +100,7 @@ object BigDecimal
    */
   def apply(x: Array[Char]): BigDecimal = apply(x, defaultMathContext)
   def apply(x: Array[Char], mc: MathContext): BigDecimal =
-    new BigDecimal(new BigDec(x.toString, mc), mc)
+    new BigDecimal(new BigDec(x.mkString, mc), mc)
 
   /** Translates the decimal String representation of a <code>BigDecimal</code>
    *  into a <code>BigDecimal</code>.

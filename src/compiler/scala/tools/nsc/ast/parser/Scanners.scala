@@ -166,6 +166,11 @@ trait Scanners {
             sepRegions = sepRegions.tail
         case _ =>
       }
+      (lastToken: @switch) match {
+        case RBRACE | RBRACKET | RPAREN =>
+          docBuffer = null
+        case _ =>
+      }
 
       // Read a token or copy it from `next` tokenData
       if (next.token == EMPTY) {

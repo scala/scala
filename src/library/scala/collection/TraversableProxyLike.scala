@@ -36,7 +36,7 @@ trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversabl
   override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.++(that)(bf)
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = self.map(f)(bf)
   override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.flatMap(f)(bf)
-  override def partialMap[B, That](pf: A =>? B)(implicit bf: CanBuildFrom[This, B, That]): That  = self.partialMap(pf)(bf)
+  override def partialMap[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That  = self.partialMap(pf)(bf)
   override def filter(p: A => Boolean): This = self.filter(p)
   override def filterNot(p: A => Boolean): This = self.filterNot(p)
   override def partition(p: A => Boolean): (This, This) = self.partition(p)

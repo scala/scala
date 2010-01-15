@@ -70,6 +70,7 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def values: List[Val]
   def abstractTypes: List[AbstractType]
   def aliasTypes: List[AliasType]
+  def companion: Option[DocTemplateEntity]
 }
 
 /** A ''documentable'' trait. */
@@ -94,7 +95,9 @@ trait Package extends Object {
   def packages: List[Package]
 }
 
-trait NonTemplateMemberEntity extends MemberEntity
+trait NonTemplateMemberEntity extends MemberEntity {
+  def isUseCase: Boolean
+}
 
 /** A method (`def`) of a ''documentable'' class, trait or object. */
 trait Def extends NonTemplateMemberEntity {

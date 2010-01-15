@@ -38,7 +38,7 @@ trait PartialFunction[-A, +B] extends (A => B) {
    *           of this partial function and `that`. The resulting partial function
    *           takes `x` to `this(x)` where `this` is defined, and to `that(x)` where it is not.
    */
-  def orElse[A1 <: A, B1 >: B](that: A1 =>? B1) : A1 =>? B1 =
+  def orElse[A1 <: A, B1 >: B](that: PartialFunction[A1, B1]) : PartialFunction[A1, B1] =
     new PartialFunction[A1, B1] {
     def isDefinedAt(x: A1): Boolean =
       PartialFunction.this.isDefinedAt(x) || that.isDefinedAt(x)
@@ -54,7 +54,7 @@ trait PartialFunction[-A, +B] extends (A => B) {
    *   @return a partial function with the same domain as this partial function, which maps
    *           arguments `x` to `k(this(x))`.
    */
-  override def andThen[C](k: B => C): A =>? C = new PartialFunction[A, C] {
+  override def andThen[C](k: B => C) : PartialFunction[A, C] = new PartialFunction[A, C] {
     def isDefinedAt(x: A): Boolean = PartialFunction.this.isDefinedAt(x)
     def apply(x: A): C = k(PartialFunction.this.apply(x))
   }
@@ -92,7 +92,7 @@ object PartialFunction
    *  @param  pf  the partial function
    *  @return true, iff `x` is in the domain of `pf` and `pf(x) == true`.
    */
-  def cond[T](x: T)(pf: T =>? Boolean): Boolean =
+  def cond[T](x: T)(pf: PartialFunction[T, Boolean]): Boolean =
     (pf isDefinedAt x) && pf(x)
 
   /** Transforms a PartialFunction[T, U] `pf' into Function1[T, Option[U]] `f'
@@ -104,6 +104,6 @@ object PartialFunction
    *  @param  pf    the PartialFunction[T, U]
    *  @return `Some(pf(x))` if `pf isDefinedAt x`, `None` otherwise.
    */
-  def condOpt[T,U](x: T)(pf: T =>? U): Option[U] =
+  def condOpt[T,U](x: T)(pf: PartialFunction[T, U]): Option[U] =
     if (pf isDefinedAt x) Some(pf(x)) else None
 }

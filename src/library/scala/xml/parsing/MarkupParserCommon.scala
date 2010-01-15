@@ -18,9 +18,16 @@ import Utility.Escapes.{ pairs => unescape }
  *  All members should be accessed through those.
  */
 private[scala] trait MarkupParserCommon extends TokenTests {
-  // type InputType    // Source, CharArrayReader
+  private final val SU: Char = 0x1A
+  protected def unreachable = Predef.error("Cannot be reached.")
+
   // type HandleType   // MarkupHandler, SymbolicXMLBuilder
-  // type PositionType // Int, Position
+
+  type InputType        // Source, CharArrayReader
+  type PositionType     // Int, Position
+
+  /** Create a lookahead reader which does not influence the input */
+  def lookahead(): BufferedIterator[Char]
 
   def ch: Char
   def nextch: Char
@@ -48,4 +55,41 @@ private[scala] trait MarkupParserCommon extends TokenTests {
 
   //
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
+
+  /** Take characters from input stream until given String "until"
+   *  is seen.  Once seen, the accumulated characters are passed
+   *  along with the current Position to the supplied handler function.
+   */
+  protected def xTakeUntil[T](
+    handler: (PositionType, String) => T,
+    positioner: () => PositionType,
+    until: String): T =
+  {
+    val sb = new StringBuilder
+    val head = until charAt 0
+    val rest = until drop 1
+
+    while (true) {
+      if (ch == head && peek(rest))
+        return handler(positioner(), sb.toString)
+      else if (ch == SU)
+        xHandleError(ch, "")  // throws TruncatedXML in compiler
+
+      sb append ch
+      nextch
+    }
+    unreachable
+  }
+
+  /** Create a non-destructive lookahead reader and see if the head
+   *  of the input would match the given String.  If yes, return true
+   *  and drop the entire String from input; if no, return false
+   *  and leave input unchanged.
+   */
+  private def peek(lookingFor: String): Boolean =
+    (lookahead() take lookingFor.length sameElements lookingFor.iterator) && {
+      // drop the chars from the real reader (all lookahead + orig)
+      (0 to lookingFor.length) foreach (_ => nextch)
+      true
+    }
 }

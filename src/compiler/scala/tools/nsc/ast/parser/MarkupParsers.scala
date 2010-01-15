@@ -36,6 +36,9 @@ trait MarkupParsers
 {
   self: Parsers =>
 
+  type PositionType = Position
+  type InputType = CharArrayReader
+
   case object MissingEndTagException extends RuntimeException with ControlException {
     override def getMessage = "start tag was here: "
   }
@@ -62,6 +65,8 @@ trait MarkupParsers
       else reportSyntaxError(msg)
 
     var input : CharArrayReader = _
+    def lookahead(): BufferedIterator[Char] =
+      (input.buf drop input.charOffset).iterator.buffered
 
     import parser.{ symbXMLBuilder => handle, o2p, r2p }
 
@@ -83,7 +88,6 @@ trait MarkupParsers
     private var debugLastStartElement = new mutable.Stack[(Int, String)]
     private def debugLastPos = debugLastStartElement.top._1
     private def debugLastElem = debugLastStartElement.top._2
-    private def unreachable = Predef.error("Cannot be reached.")
 
     private def errorBraces() = {
       reportSyntaxError("in XML content, please use '}}' to express '}'")
@@ -190,55 +194,13 @@ trait MarkupParsers
       xToken('>')
     }
 
-    /** Create a non-destructive lookahead reader and see if the head
-     *  of the input would match the given String.  If yes, return true
-     *  and drop the entire String from input; if no, return false
-     *  and leave input unchanged.
-     */
-    private def peek(lookingFor: String): Boolean = {
-      val la = input.lookaheadReader
-      for (c <- lookingFor) {
-        la.nextChar()
-        if (la.ch != c)
-          return false
-      }
-      // drop the chars from the real reader (all lookahead + orig)
-      (0 to lookingFor.length) foreach (_ => nextch)
-      true
-    }
-
-    /** Take characters from input stream until given String "until"
-     *  is seen.  Once seen, the accumulated characters are passed
-     *  along with the current Position to the supplied handler function.
-     */
-    private def xTakeUntil[T](
-      handler: (Position, String) => T,
-      positioner: () => Position,
-      until: String): T =
-    {
-      val sb = new StringBuilder
-      val head = until charAt 0
-      val rest = until drop 1
-
-      while (true) {
-        if (ch == head && peek(rest))
-          return handler(positioner(), sb.toString)
-        else if (ch == SU)
-          throw TruncatedXML
-
-        sb append ch
-        nextch
-      }
-      unreachable
-    }
-
     /** '<! CharData ::= [CDATA[ ( {char} - {char}"]]>"{char} ) ']]>'
      *
      * see [15]
      */
     def xCharData: Tree = {
       val start = curOffset
-      "[CDATA[" foreach xToken
+      xToken("[CDATA[")
       val mid = curOffset
       xTakeUntil(handle.charData, () => r2p(start, mid, curOffset), "]]>")
     }
@@ -284,7 +246,7 @@ trait MarkupParsers
      */
     def xComment: Tree = {
       val start = curOffset - 2   // Rewinding to include "<!"
-      "--" foreach xToken
+      xToken("--")
       xTakeUntil(handle.comment, () => r2p(start, start, curOffset), "-->")
     }
 
@@ -374,7 +336,7 @@ trait MarkupParsers
       val start = curOffset
       val (qname, attrMap) = xTag
       if (ch == '/') { // empty element
-        "/>" foreach xToken
+        xToken("/>")
         handle.element(r2p(start, start, curOffset), qname, attrMap, new ListBuffer[Tree])
       }
       else { // handle content

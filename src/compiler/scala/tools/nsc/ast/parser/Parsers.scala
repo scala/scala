@@ -421,14 +421,19 @@ self =>
     def joinComment(trees: => List[Tree]): List[Tree] = {
       val doc = in.flushDoc
       if ((doc ne null) && doc.raw.length > 0) {
-        val ts = trees
-        val main = ts.find(_.pos.isOpaqueRange)
-        ts map {
+        val joined = trees map {
           t =>
             val dd = DocDef(doc, t)
-            val pos = doc.pos.withEnd(t.pos.endOrPoint)
-            dd setPos (if (t eq main) pos else pos.makeTransparent)
+            val defnPos = t.pos
+            val pos = doc.pos.withEnd(defnPos.endOrPoint)
+            dd setPos (if (defnPos.isOpaqueRange) pos else pos.makeTransparent)
         }
+        joined.find(_.pos.isOpaqueRange) foreach {
+          main =>
+            val mains = List(main)
+            joined foreach { t => if (t ne main) ensureNonOverlapping(t, mains) }
+        }
+        joined
       }
       else trees
     }
@@ -2460,14 +2465,15 @@ self =>
       val stats = new ListBuffer[Tree]
       while (in.token != RBRACE && in.token != EOF) {
         if (in.token == PACKAGE) {
+          in.flushDoc
           val start = in.skipToken()
           stats += {
             if (in.token == OBJECT) makePackageObject(start, objectDef(in.offset, NoMods))
             else packaging(start)
           }
         } else if (in.token == IMPORT) {
+          in.flushDoc
           stats ++= importClause()
-          // XXX: IDE hook this all.
         } else if (in.token == CLASS ||
                    in.token == CASECLASS ||
                    in.token == TRAIT ||
@@ -2498,6 +2504,7 @@ self =>
       var self: ValDef = emptyValDef
       val stats = new ListBuffer[Tree]
       if (isExprIntro) {
+        in.flushDoc
         val first = expr(InTemplate) // @S: first statement is potentially converted so cannot be stubbed.
         if (in.token == ARROW) {
           first match {
@@ -2518,8 +2525,10 @@ self =>
       }
       while (in.token != RBRACE && in.token != EOF) {
         if (in.token == IMPORT) {
+          in.flushDoc
           stats ++= importClause()
         } else if (isExprIntro) {
+          in.flushDoc
           stats += statement(InTemplate)
         } else if (isDefIntro || isModifier || in.token == LBRACKET /*todo: remove */ || in.token == AT) {
           stats ++= joinComment(nonLocalDefOrDcl)
@@ -2618,6 +2627,7 @@ self =>
         while (in.token == SEMI) in.nextToken()
         val start = in.offset
         if (in.token == PACKAGE) {
+          in.flushDoc
           in.nextToken()
           if (in.token == OBJECT) {
             ts += makePackageObject(start, objectDef(in.offset, NoMods))
@@ -2645,10 +2655,14 @@ self =>
         }
         ts.toList
       }
-      val start = caseAwareTokenOffset max 0
       topstats() match {
         case List(stat @ PackageDef(_, _)) => stat
-        case stats => makePackaging(start, atPos(o2p(start)) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
+        case stats =>
+          val start = stats match {
+            case Nil => 0
+            case _ => wrappingPos(stats).startOrPoint
+          }
+          makePackaging(start, atPos(start, start, start) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
       }
     }
   }

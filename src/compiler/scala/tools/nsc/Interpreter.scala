@@ -103,6 +103,18 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     }
   }
 
+  /** whether to bind the lastException variable */
+  private var bindLastException = true
+
+  /** Temporarily stop binding lastException */
+  def withoutBindingLastException[T](operation: => T): T = {
+    val wasBinding = bindLastException
+    ultimately(bindLastException = wasBinding) {
+      bindLastException = false
+      operation
+    }
+  }
+
   /** interpreter settings */
   lazy val isettings = new InterpreterSettings(this)
 
@@ -477,12 +489,12 @@ class Interpreter(val settings: Settings, out: PrintWriter)
     val binderObject = loadByName(binderName)
     val setterMethod = methodByName(binderObject, "set")
 
-    // this roundabout approach is to ensure the value is boxed
-    var argsHolder: Array[Any] = null
-    argsHolder = List(value).toArray
-    setterMethod.invoke(null, argsHolder.asInstanceOf[Array[AnyRef]]: _*)
+    setterMethod.invoke(null, value.asInstanceOf[AnyRef])
     interpret("val %s = %s.value".format(name, binderName))
   }
+
+  def quietBind(name: String, boundType: String, value: Any): IR.Result =
+    beQuietDuring { bind(name, boundType, value) }
 
   /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {
@@ -505,12 +517,14 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** A traverser that finds all mentioned identifiers, i.e. things
    *  that need to be imported.  It might return extra names.
    */
-  private class ImportVarsTraverser(definedVars: List[Name]) extends Traverser {
+  private class ImportVarsTraverser extends Traverser {
     val importVars = new HashSet[Name]()
 
     override def traverse(ast: Tree) = ast match {
-      case Ident(name)  => importVars += name
-      case _            => super.traverse(ast)
+      // XXX this is obviously inadequate but it's going to require some effort
+      // to get right.
+      case Ident(name) if !(name.toString startsWith "x$")  => importVars += name
+      case _                                                => super.traverse(ast)
     }
   }
 
@@ -518,9 +532,9 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    *  in a single interpreter request.
    */
   private sealed abstract class MemberHandler(val member: Tree) {
-    val usedNames: List[Name] = {
-      val ivt = new ImportVarsTraverser(boundNames)
-      ivt.traverseTrees(List(member))
+    lazy val usedNames: List[Name] = {
+      val ivt = new ImportVarsTraverser()
+      ivt traverse member
       ivt.importVars.toList
     }
     def boundNames: List[Name] = Nil
@@ -535,6 +549,7 @@ class Interpreter(val settings: Settings, out: PrintWriter)
 
     def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
     def resultExtractionCode(req: Request, code: PrintWriter) { }
+    override def toString = "%s(usedNames = %s)".format(this.getClass, usedNames)
   }
 
   private class GenericHandler(member: Tree) extends MemberHandler(member)
@@ -788,9 +803,13 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       val wrapperExceptions: List[Class[_ <: Throwable]] =
         List(classOf[InvocationTargetException], classOf[ExceptionInInitializerError])
 
-      def onErr: Catcher[(String, Boolean)] = { case t: Throwable =>
-        beQuietDuring { bind("lastException", "java.lang.Throwable", t) }
-        (stringFrom(t.printStackTrace(_)), false)
+      /** We turn off the binding to accomodate ticket #2817 */
+      def onErr: Catcher[(String, Boolean)] = {
+        case t: Throwable if bindLastException =>
+          withoutBindingLastException {
+            quietBind("lastException", "java.lang.Throwable", t)
+            (stringFrom(t.printStackTrace(_)), false)
+          }
       }
 
       catching(onErr) {

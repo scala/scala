@@ -315,7 +315,7 @@ abstract class Inliners extends SubComponent {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
                     def warnNoInline(reason: String) = {
-                      if (msym.hasAnnotation(ScalaInlineAttr))
+                      if (msym.hasAnnotation(ScalaInlineAttr) && !m.symbol.hasFlag(Flags.BRIDGE))
                         currentIClazz.cunit.warning(i.pos,
                           "Could not inline required method %s because %s.".format(msym.originalName.decode, reason))
                     }

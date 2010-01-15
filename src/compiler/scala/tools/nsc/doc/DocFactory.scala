@@ -12,10 +12,10 @@ import reporters.Reporter
   * * A simplified compiler instance (with only the front-end phases enabled) is created, and additional
   *   ''sourceless'' comments are registered.
   * * Documentable files are compiled, thereby filling the compiler's symbol table.
-  * * A documentation model is extracted from the post-compilation compiler's symbol table.
+  * * A documentation model is extracted from the post-compilation symbol table.
   * * A generator is used to transform the model into the correct final format (HTML).
   *
-  * A processor contains a single compiler instantiated from the processor's settings. Each call to the `run` method
+  * A processor contains a single compiler instantiated from the processor's `settings`. Each call to `document`
   * uses the same compiler instance with the same symbol table. In particular, this implies that the scaladoc site
   * obtained from a call to `run` will contain documentation about files compiled during previous calls to the same
   * processor's `run` method.
@@ -50,6 +50,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
   def document(files: List[String]): Unit = {
     (new compiler.Run()) compile files
     compiler.addSourceless
+    assert(settings.docformat.value == "html")
     if (!reporter.hasErrors) {
       val modelFactory = (new model.ModelFactory(compiler, settings))
       val htmlFactory = (new html.HtmlFactory(reporter, settings))

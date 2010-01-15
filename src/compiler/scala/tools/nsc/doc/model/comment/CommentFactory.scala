@@ -495,7 +495,7 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     final def getRead(): String = {
       val bld = readBuilder.toString
       readBuilder.clear()
-      bld
+      if (bld.length < 6) bld.intern else bld
     }
 
     final def readUntil(ch: Char): Int = {
