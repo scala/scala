@@ -70,6 +70,7 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def values: List[Val]
   def abstractTypes: List[AbstractType]
   def aliasTypes: List[AliasType]
+  def companion: Option[DocTemplateEntity]
 }
 
 /** A ''documentable'' trait. */

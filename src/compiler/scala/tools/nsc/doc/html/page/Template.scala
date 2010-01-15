@@ -185,6 +185,15 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           case _ => NodeSeq.Empty
         }
       }
+      { tpl.companion match {
+          case Some(companion) =>
+            <div class="block">
+              Go to: <a href={relativeLinkTo(companion)}>companion</a>
+            </div>
+          case None =>
+            NodeSeq.Empty
+        }
+      }
     </xml:group>
 
   def kindToString(mbr: MemberEntity): String = mbr match {
