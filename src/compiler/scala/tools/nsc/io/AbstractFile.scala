@@ -8,7 +8,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ File => JFile, FileOutputStream, IOException, InputStream, OutputStream }
+import java.io.{ File => JFile, FileOutputStream, IOException, InputStream, OutputStream, BufferedOutputStream }
 import java.net.URL
 import PartialFunction._
 
@@ -125,6 +125,9 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
   /** Returns an output stream for writing the file */
   def output: OutputStream
+
+  /** Returns an unbuffered output stream for writing the file - defaults to out */
+  def bufferedOutput: BufferedOutputStream = new BufferedOutputStream(output)
 
   /** size of this file if it is a concrete file. */
   def sizeOption: Option[Int] = None

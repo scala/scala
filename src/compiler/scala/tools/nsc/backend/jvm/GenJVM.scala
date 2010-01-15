@@ -8,7 +8,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.io.{DataOutputStream, File, OutputStream}
+import java.io.{ DataOutputStream, File, OutputStream }
 import java.nio.ByteBuffer
 
 import scala.collection.immutable.{Set, ListSet}
@@ -145,7 +145,7 @@ abstract class GenJVM extends SubComponent {
       addInnerClasses(jclass)
 
       val outfile = getFile(sym, jclass, ".class")
-      val outstream = new DataOutputStream(outfile.output)
+      val outstream = new DataOutputStream(outfile.bufferedOutput)
       jclass.writeTo(outstream)
       outstream.close()
       informProgress("wrote " + outfile)
@@ -314,7 +314,7 @@ abstract class GenJVM extends SubComponent {
 
       // write the bean information class file.
       val outfile = getFile(c.symbol, beanInfoClass, ".class")
-      val outstream = new DataOutputStream(outfile.output)
+      val outstream = new DataOutputStream(outfile.bufferedOutput)
       beanInfoClass.writeTo(outstream)
       outstream.close()
       informProgress("wrote BeanInfo " + outfile)
@@ -1819,8 +1819,6 @@ abstract class GenJVM extends SubComponent {
       }
       dir.fileNamed(pathParts.last + suffix)
     }
-
-
 
     /** Merge adjacent ranges. */
     private def mergeEntries(ranges: List[(Int, Int)]): List[(Int, Int)] =
