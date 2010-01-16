@@ -342,7 +342,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   def power() {
     powerUserOn = true
-    interpreter.powerUser()
+    out println interpreter.powerUser()
     interpreter.quietBind("history", "scala.collection.immutable.List[String]", historyList.toList)
   }
 
@@ -387,7 +387,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     * to be recorded for replay, if any.
     */
   def interpretStartingWith(code: String): Option[String] =
-    interpreter.interpret(code) match {
+    if (code startsWith ".") interpretStartingWith(interpreter.mostRecentVar + code)
+    else interpreter.interpret(code) match {
       case IR.Error       => None
       case IR.Success     => Some(code)
       case IR.Incomplete  =>
