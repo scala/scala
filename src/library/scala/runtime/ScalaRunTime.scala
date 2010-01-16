@@ -74,6 +74,20 @@ object ScalaRunTime {
     case null => throw new NullPointerException
   }
 
+  def array_clone(xs: AnyRef): AnyRef = xs match {
+    case x: Array[AnyRef]  => ArrayRuntime.cloneArray(x)
+    case x: Array[Int]     => ArrayRuntime.cloneArray(x)
+    case x: Array[Double]  => ArrayRuntime.cloneArray(x)
+    case x: Array[Long]    => ArrayRuntime.cloneArray(x)
+    case x: Array[Float]   => ArrayRuntime.cloneArray(x)
+    case x: Array[Char]    => ArrayRuntime.cloneArray(x)
+    case x: Array[Byte]    => ArrayRuntime.cloneArray(x)
+    case x: Array[Short]   => ArrayRuntime.cloneArray(x)
+    case x: Array[Boolean] => ArrayRuntime.cloneArray(x)
+    case x: Array[Unit]    => x
+    case null => throw new NullPointerException
+  }
+
   /** Convert a numeric value array to an object array.
    *  Needed to deal with vararg arguments of primtive types that are passed
    *  to a generic Java vararg parameter T ...

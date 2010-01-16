@@ -365,7 +365,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           def isArrayMethodSignature =
             (methSym.name == nme.length && params.isEmpty) ||
             (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass)) ||
-            (methSym.name == nme.apply  && params.size == 1)
+            (methSym.name == nme.apply  && params.size == 1) ||
+            (methSym.name == nme.clone_ && params.isEmpty)
 
           def isDefinitelyArray = isArrayMethodSignature && (qualSym == ArrayClass)
           def isMaybeArray = isArrayMethodSignature && (qualSym == ObjectClass) // precondition: !isDefinitelyArray
@@ -374,6 +375,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
             case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
             case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
+            case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
           }
           def genArrayTest = {
             def oneTest(s: Symbol) = qual IS_OBJ arrayType(s.tpe)

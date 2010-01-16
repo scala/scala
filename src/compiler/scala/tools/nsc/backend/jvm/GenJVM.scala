@@ -82,6 +82,7 @@ abstract class GenJVM extends SubComponent {
 
     val StringBuilderType = new JObjectType(StringBuilderClass)
     val toStringType      = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
+    val arrayCloneType    = new JMethodType(JObjectType.JAVA_LANG_OBJECT, JType.EMPTY_ARRAY)
     val MethodTypeType    = new JObjectType("java.dyn.MethodType")
     val JavaLangClassType = new JObjectType("java.lang.Class")
     val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
@@ -1086,6 +1087,11 @@ abstract class GenJVM extends SubComponent {
 
           case CALL_PRIMITIVE(primitive) =>
             genPrimitive(primitive, instr.pos)
+
+          /** Special handling to access native Array.clone() */
+          case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
+            val target: String = javaType(call.targetTypeKind).getSignature()
+            jcode.emitINVOKEVIRTUAL(target, "clone", arrayCloneType)
 
           case call @ CALL_METHOD(method, style) =>
             val owner: String = javaName(method.owner)
