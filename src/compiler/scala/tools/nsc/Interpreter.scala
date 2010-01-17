@@ -240,13 +240,18 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    *  This way, compiler error messages read better.
    */
   private final val spaces = List.fill(7)(" ").mkString
-  def indentCode(code: String) =
+  def indentCode(code: String) = {
+    /** Heuristic to avoid indenting and thereby corrupting """-strings and XML literals. */
+    val noIndent = (code contains "\n") && (List("\"\"\"", "</", "/>") exists (code contains _))
     stringFrom(str =>
       for (line <- code.lines) {
-        str.print(spaces)
+        if (!noIndent)
+          str.print(spaces)
+
         str.print(line + "\n")
         str.flush()
       })
+  }
 
   implicit def name2string(name: Name) = name.toString
 

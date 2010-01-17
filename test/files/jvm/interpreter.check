@@ -189,7 +189,7 @@ scala>
 scala> 
 scala>      |      |      |      | res8: scala.xml.Elem = 
 <a>
-       <b d="dd" c="c"></b></a>
+<b d="dd" c="c"></b></a>
 
 scala> 
 scala> 
@@ -199,9 +199,9 @@ scala>
 scala> 
 scala>      |      |      | res9: java.lang.String = 
 
-       hello
-       there
-       
+hello
+there
+
 
 scala> 
 scala>      |      | You typed two blank lines.  Starting a new command.
