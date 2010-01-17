@@ -41,6 +41,8 @@ object ShowPickled extends Names {
     case CLASSINFOtpe   => "CLASSINFOtpe"
     case METHODtpe      => "METHODtpe"
     case POLYtpe        => "POLYtpe"
+    case IMPLICITMETHODtpe => "IMPLICITMETHODtpe"
+    case SUPERtpe       => "SUPERtpe"
     case LITERALunit    => "LITERALunit"
     case LITERALboolean => "LITERALboolean"
     case LITERALbyte    => "LITERALbyte"
@@ -53,7 +55,17 @@ object ShowPickled extends Names {
     case LITERALstring  => "LITERALstring"
     case LITERALnull    => "LITERALnull"
     case LITERALclass   => "LITERALclass"
+    case LITERALenum    => "LITERALenum"
+    case SYMANNOT       => "SYMANNOT"
     case CHILDREN       => "CHILDREN"
+    case ANNOTATEDtpe   => "ANNOTATEDtpe"
+    case ANNOTINFO      => "ANNOTINFO"
+    case ANNOTARGARRAY  => "ANNOTARGARRAY"
+    case DEBRUIJNINDEXtpe => "DEBRUIJNINDEXtpe"
+    case EXISTENTIALtpe => "EXISTENTIALtpe"
+    case TREE           => "TREE"
+    case MODIFIERS      => "MODIFIERS"
+
     case _ => "***BAD TAG***(" + tag + ")"
   }
 
@@ -75,6 +87,9 @@ object ShowPickled extends Names {
     def printSymbolRef() = printNat()
     def printTypeRef() = printNat()
     def printConstantRef() = printNat()
+    def printAnnotInfoRef() = printNat()
+    def printConstAnnotArgRef() = printNat()
+    def printAnnotArgRef() = printNat()
 
     def printSymInfo() {
       printNameRef()
@@ -85,6 +100,10 @@ object ShowPickled extends Names {
       printTypeRef()
     }
 
+    /** Note: the entries which require some semantic analysis to be correctly
+     *  interpreted are for the most part going to tell you the wrong thing.
+     *  It's not so easy to duplicate the logic applied in the UnPickler.
+     */
     def printEntry(i: Int) {
       buf.readIndex = index(i)
       out.print(i + "," + buf.readIndex + ": ")
@@ -144,18 +163,31 @@ object ShowPickled extends Names {
           out.print(" " + longBitsToDouble(buf.readLong(len)))
         case LITERALstring  =>
           printNameRef()
+        case LITERALenum    =>
+          printSymbolRef()
         case LITERALnull    =>
           out.print(" <null>")
         case LITERALclass   =>
           printTypeRef()
         case CHILDREN       =>
           printSymbolRef(); buf.until(end, printSymbolRef)
+        case SYMANNOT       =>
+          printSymbolRef(); printTypeRef(); buf.until(end, printAnnotArgRef)
+        case ANNOTATEDtpe   =>
+          printTypeRef(); buf.until(end, printAnnotInfoRef);
+        case ANNOTINFO      =>
+          printTypeRef(); buf.until(end, printAnnotArgRef)
+        case ANNOTARGARRAY  =>
+          buf.until(end, printConstAnnotArgRef)
+
         case _ =>
       }
       out.println()
-      if (buf.readIndex != end)
-        out.println("BAD ENTRY END: , computed = " + end +
-                    ", factual = " + buf.readIndex)
+      if (buf.readIndex != end) {
+        out.println("BAD ENTRY END: computed = %d, actual = %d, bytes = %s".format(
+          end, buf.readIndex, buf.bytes.slice(index(i), (end max buf.readIndex)).mkString(", ")
+        ))
+      }
     }
 
     for (i <- 0 until index.length) printEntry(i)
