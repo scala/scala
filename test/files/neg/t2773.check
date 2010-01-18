@@ -1,0 +1,7 @@
+t2773.scala:5: error: x is not a member of c
+  import c.x
+         ^
+t2773.scala:6: error: not found: value x
+  println(x)
+          ^
+two errors found
