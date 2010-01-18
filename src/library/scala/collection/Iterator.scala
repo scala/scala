@@ -554,7 +554,7 @@ trait Iterator[+A] { self =>
    *                  of the returned iterator is the maximum of the lengths of this iterator and `that`.
    *                  If this iterator is shorter than `that`, `thisElem` values are used to pad the result.
    *                  If `that` is shorter than this iterator, `thatElem` values are used to pad the result.
-   *  @usecase def zipAll[B](that: Iterator[B], thisElem: A, thatElem: B): Iterator[(A, B1)]
+   *  @usecase def zipAll[B](that: Iterator[B], thisElem: A, thatElem: B): Iterator[(A, B)]
    */
   def zipAll[B, A1 >: A, B1 >: B](that: Iterator[B], thisElem: A1, thatElem: B1) = new Iterator[(A1, B1)] {
     def hasNext = self.hasNext || that.hasNext

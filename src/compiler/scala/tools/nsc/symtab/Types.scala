@@ -504,13 +504,11 @@ trait Types {
     /** The info of `sym', seen as a member of this type.
      */
     def memberInfo(sym: Symbol): Type = {
-      // incCounter(ctr1)
       sym.info.asSeenFrom(this, sym.owner)
     }
 
     /** The type of `sym', seen as a member of this type. */
     def memberType(sym: Symbol): Type = {
-      // incCounter(ctr2)
       //@M don't prematurely instantiate higher-kinded types, they will be instantiated by transform, typedTypeApply, etc. when really necessary
       sym.tpeHK match {
         case ov @ OverloadedType(pre, alts) =>
@@ -584,12 +582,12 @@ trait Types {
 
     def stat_<:<(that: Type): Boolean = {
       incCounter(subtypeCount)
-//      val start = startTimer(subtypeNanos)
+      val start = startTimer(subtypeNanos)
       val result =
         (this eq that) ||
         (if (explainSwitch) explain("<:", isSubType, this, that)
          else isSubType(this, that, AnyDepth))
-//      stopTimer(subtypeNanos, start)
+      stopTimer(subtypeNanos, start)
       result
     }
 
@@ -597,12 +595,12 @@ trait Types {
      */
     def weak_<:<(that: Type): Boolean = {
       incCounter(subtypeCount)
-//      val start = startTimer(subtypeNanos)
+      val start = startTimer(subtypeNanos)
       val result =
         ((this eq that) ||
          (if (explainSwitch) explain("weak_<:", isWeakSubType, this, that)
           else isWeakSubType(this, that)))
-//      stopTimer(subtypeNanos, start)
+      stopTimer(subtypeNanos, start)
       result
     }
 
@@ -1301,15 +1299,16 @@ trait Types {
       def contributesAbstractMembers(p: Type) =
         p.deferredMembers exists isVisible
 
-      (parents exists (_.isVolatile)) ||
-      (parents dropWhile (! _.typeSymbol.isAbstractType) match {
-        case ps @ (_ :: ps1) =>
-          (ps ne parents) ||
-          (ps1 exists contributesAbstractMembers) ||
-          (decls.iterator exists (m => m.isDeferred && isVisible(m)))
-        case _ =>
-          false
-       })
+      ((parents exists (_.isVolatile))
+       ||
+       (parents dropWhile (! _.typeSymbol.isAbstractType) match {
+         case ps @ (_ :: ps1) =>
+           (ps ne parents) ||
+           (ps1 exists contributesAbstractMembers) ||
+           (decls.iterator exists (m => m.isDeferred && isVisible(m)))
+         case _ =>
+           false
+       }))
     }
 
     override def kind = "RefinedType"
@@ -3739,12 +3738,12 @@ A type's typeSymbol should never be inspected directly.
     (beginsWithTypeVarOrIsRefined(pre1) || beginsWithTypeVarOrIsRefined(pre2)) && (pre1 =:= pre2)
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
-    if (sym1 == sym2) phase.erasedTypes || pre1 =:= pre2
+    if (sym1 == sym2) sym1.hasFlag(PACKAGE) || phase.erasedTypes || pre1 =:= pre2
     else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
 
   /** Do `tp1' and `tp2' denote equivalent types?
    */
-  def isSameType(tp1: Type, tp2: Type): Boolean = { val start = startTimer(timer1); try {
+  def isSameType(tp1: Type, tp2: Type): Boolean = try {
     incCounter(sametypeCount)
     subsametypeRecursions += 1
     undoLog undoUnless {
@@ -3753,8 +3752,7 @@ A type's typeSymbol should never be inspected directly.
   } finally {
     subsametypeRecursions -= 1
     if (subsametypeRecursions == 0) undoLog.clear
-    stopTimer(timer1, start)
-  }}
+  }
 
   def isDifferentType(tp1: Type, tp2: Type): Boolean = try {
     subsametypeRecursions += 1
@@ -3763,7 +3761,7 @@ A type's typeSymbol should never be inspected directly.
     }
   } finally {
     subsametypeRecursions -= 1
-    if (subsametypeRecursions == 0) undoLog clear
+    if (subsametypeRecursions == 0) undoLog.clear
   }
 
   def isDifferentTypeConstructor(tp1: Type, tp2: Type): Boolean = tp1 match {
@@ -3789,7 +3787,7 @@ A type's typeSymbol should never be inspected directly.
     case _ => tp.normalize
   }
   */
-
+/*
   private def isSameType0(tp1: Type, tp2: Type): Boolean = {
     if (tp1 eq tp2) return true
     ((tp1, tp2) match {
@@ -3894,7 +3892,7 @@ A type's typeSymbol should never be inspected directly.
       ((tp1n ne tp1) || (tp2n ne tp2)) && isSameType(tp1n, tp2n)
     }
   }
-
+*/
   private def isSameType1(tp1: Type, tp2: Type): Boolean = {
     if ((tp1 eq tp2) ||
         (tp1 eq ErrorType) || (tp1 eq WildcardType) ||
@@ -3925,27 +3923,27 @@ A type's typeSymbol should never be inspected directly.
                isSameTypes(tr1.args, tr2.args))
           case _ =>
         }
-      case ThisType(sym1) =>
+      case tt1: ThisType =>
         tp2 match {
-          case ThisType(sym2) =>
-            if (sym1 == sym2) return true
+          case tt2: ThisType =>
+            if (tt1.sym == tt2.sym) return true
           case _ =>
         }
-      case SingleType(pre1, sym1) =>
+      case st1: SingleType =>
         tp2 match {
-          case SingleType(pre2, sym2) =>
-            if (equalSymsAndPrefixes(sym1, pre1, sym2, pre2)) return true
+          case st2: SingleType =>
+            if (equalSymsAndPrefixes(st1.sym, st1.pre, st2.sym, st2.pre)) return true
           case _ =>
         }
-      case ConstantType(value1) =>
+      case ct1: ConstantType =>
         tp2 match {
-          case ConstantType(value2) =>
-            return (value1 == value2)
+          case ct2: ConstantType =>
+            return (ct1.value == ct2.value)
           case _ =>
         }
-      case RefinedType(parents1, ref1) =>
+      case rt1: RefinedType =>
         tp2 match {
-          case RefinedType(parents2, ref2) =>
+          case rt2: RefinedType => //
             def isSubScope(s1: Scope, s2: Scope): Boolean = s2.toList.forall {
               sym2 =>
                 var e1 = s1.lookupEntry(sym2.name)
@@ -3960,16 +3958,19 @@ A type's typeSymbol should never be inspected directly.
                 }
             }
             //Console.println("is same? " + tp1 + " " + tp2 + " " + tp1.typeSymbol.owner + " " + tp2.typeSymbol.owner)//DEBUG
-            return isSameTypes(parents1, parents2) &&
-              isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
+            return isSameTypes(rt1.parents, rt2.parents) && {
+              val decls1 = rt1.decls
+              val decls2 = rt2.decls
+              isSubScope(decls1, decls2) && isSubScope(decls2, decls1)
+            }
           case _ =>
         }
-      case MethodType(params1, res1) =>
+      case mt1: MethodType =>
         tp2 match {
-          case MethodType(params2, res2) =>
+          case mt2: MethodType =>
             // new dependent types: probably fix this, use substSym as done for PolyType
-            return isSameTypes(tp1.paramTypes, tp2.paramTypes) &&
-              res1 =:= res2 &&
+            return isSameTypes(mt1.paramTypes, mt2.paramTypes) &&
+              mt1.resultType =:= mt2.resultType &&
               tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
           case _ =>
         }
@@ -4018,12 +4019,12 @@ A type's typeSymbol should never be inspected directly.
       case _ =>
     }
     tp1 match {
-      case AnnotatedType(_,_,_) =>
+      case _: AnnotatedType =>
         return annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAnnotations =:= tp2.withoutAnnotations
       case _ =>
     }
     tp2 match {
-      case AnnotatedType(_,_,_) =>
+      case _: AnnotatedType =>
         return annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAnnotations =:= tp2.withoutAnnotations
       case _ =>
     }
@@ -4284,16 +4285,18 @@ A type's typeSymbol should never be inspected directly.
     def thirdTry = tp2 match {
       case tr2: TypeRef =>
         thirdTryRef(tp1, tr2)
-      case RefinedType(parents2, ref2) =>
-        (parents2 forall (tp1 <:< _)) &&
-        (ref2.toList forall tp1.specializes)
-      case et: ExistentialType =>
-        et.withTypeVars(tp1 <:< _, depth) || fourthTry
-      case NotNullType(ntp2) =>
-        tp1.isNotNull && tp1 <:< ntp2
-      case MethodType(params2, res2) =>
+      case rt2: RefinedType =>
+        (rt2.parents forall (tp1 <:< _)) &&
+        (rt2.decls.toList forall tp1.specializes)
+      case et2: ExistentialType =>
+        et2.withTypeVars(tp1 <:< _, depth) || fourthTry
+      case nn2: NotNullType =>
+        tp1.isNotNull && tp1 <:< nn2.underlying
+      case mt2: MethodType =>
         tp1 match {
           case MethodType(params1, res1) =>
+            val params2 = mt2.params
+            val res2 = mt2.resultType
             (params1.length == params2.length &&
              matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
              (res1 <:< res2) &&
@@ -4301,11 +4304,11 @@ A type's typeSymbol should never be inspected directly.
           case _ =>
             false
         }
-      case PolyType(List(), res2) =>
+      case pt2 @ PolyType(List(), _) =>
         tp1 match {
-          case PolyType(List(), res1) =>
+          case pt1 @ PolyType(List(), _) =>
             // other polytypes were already checked in isHKSubType
-            res1 <:< res2
+            pt1.resultType <:< pt2.resultType
           case _ =>
             false
         }
@@ -4324,7 +4327,7 @@ A type's typeSymbol should never be inspected directly.
      *   - handle typerefs, refined types, notnull and singleton types.
      */
     def fourthTry = tp1 match {
-      case TypeRef(pre1, sym1, args1) =>
+      case tr1 @ TypeRef(_, sym1, _) =>
         if (sym1.isAliasType) {
           isSubType(tp1.normalize, tp2.normalize, depth)
         } else if (sym1.isAbstractType) {
@@ -4340,14 +4343,14 @@ A type's typeSymbol should never be inspected directly.
             case _ =>
               isSingleType(tp2) && tp1 <:< tp2.widen
           }
-        } else if (isRaw(sym1, args1)) {
+        } else if (isRaw(sym1, tr1.args)) {
           isSubType(rawToExistential(tp1), tp2, depth)
         } else if (sym1.isRefinementClass) {
           isSubType(sym1.info, tp2, depth)
         } else {
           false
         }
-      case RefinedType(parents1, ref1) =>
+      case RefinedType(parents1, _) =>
         parents1 exists (_ <:< tp2)
       case _: SingletonType | _: NotNullType =>
         tp1.underlying <:< tp2
