@@ -32,7 +32,13 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   self: MarkupParser with MarkupHandler =>
 
   type PositionType = Int
-  type InputType = Source
+  type InputType    = Source
+  type ElementType  = NodeSeq
+  type AttributesType = (MetaData, NamespaceBinding)
+  type NamespaceType = NamespaceBinding
+
+  def truncatedError(msg: String): Nothing = throw FatalError(msg)
+  def errorNoEnd(tag: String) = throw FatalError("expected closing tag of " + tag)
 
   def xHandleError(that: Char, msg: String) = reportSyntaxError(msg)
 
@@ -106,8 +112,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    *  // this is a bit more lenient than necessary...
    */
   def prolog(): Tuple3[Option[String], Option[String], Option[Boolean]] = {
-
-    //Console.println("(DEBUG) prolog")
     var n = 0
     var info_ver: Option[String] = None
     var info_enc: Option[String] = None
@@ -176,7 +180,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     if (m.length - n != 0) {
       reportSyntaxError("VersionInfo EncodingDecl? or '?>' expected!");
     }
-    //Console.println("[MarkupParser::textDecl] finished parsing textdecl");
     Tuple2(info_ver, info_enc);
   }
 
@@ -190,8 +193,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    */
 
   def document(): Document = {
-
-    //Console.println("(DEBUG) document")
     doc = new Document()
 
     this.dtd = null
@@ -204,7 +205,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     nextch // is prolog ?
     var children: NodeSeq = null
     if ('?' == ch) {
-      //Console.println("[MarkupParser::document] starts with xml declaration");
       nextch;
       info_prolog = prolog()
       doc.version    = info_prolog._1
@@ -212,10 +212,8 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       doc.standAlone = info_prolog._3
 
       children = content(TopScope) // DTD handled as side effect
-    } else {
-      //Console.println("[MarkupParser::document] does not start with xml declaration");
- //
-
+    }
+    else {
       val ts = new NodeBuffer();
       content1(TopScope, ts); // DTD handled as side effect
       ts &+ content(TopScope);
@@ -256,6 +254,14 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     nextch
     this
   }
+
+  def ch_returning_nextch = { val res = ch ; nextch ; res }
+  def mkProcInstr(position: Int, name: String, text: String): NodeSeq =
+    handle.procInstr(position, name, text)
+
+  def mkAttributes(name: String, pscope: NamespaceBinding) =
+    if (isNameStart (ch)) xAttributes(pscope)
+    else (Null, pscope)
 
   /** this method assign the next character to ch and advances in input */
   def nextch = {
@@ -315,27 +321,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     (aMap,scope)
   }
 
-  /** attribute value, terminated by either ' or ". value may not contain &lt;.
-   *       AttValue     ::= `'` { _  } `'`
-   *                      | `"` { _ } `"`
-   */
-  def xAttributeValue(): String = {
-    val endch = ch
-    nextch
-    while (ch != endch) {
-      if ('<' == ch)
-        reportSyntaxError( "'<' not allowed in attrib value" );
-      putChar(ch)
-      nextch
-    }
-    nextch
-    val str = cbuf.toString()
-    cbuf.length = 0
-
-    // well-formedness constraint
-    normalizeAttributeValue(str)
-  }
-
   /** entity value, terminated by either ' or ". value may not contain &lt;.
    *       AttValue     ::= `'` { _  } `'`
    *                      | `"` { _ } `"`
@@ -353,35 +338,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     str
   }
 
-
-  /** parse a start or empty tag.
-   *  [40] STag         ::= '&lt;' Name { S Attribute } [S]
-   *  [44] EmptyElemTag ::= '&lt;' Name { S Attribute } [S]
-   */
-  protected def xTag(pscope:NamespaceBinding): (String, MetaData, NamespaceBinding) = {
-    val qname = xName
-
-    xSpaceOpt
-    val (aMap: MetaData, scope: NamespaceBinding) = {
-      if (isNameStart(ch))
-        xAttributes(pscope)
-      else
-        (Null, pscope)
-    }
-    (qname, aMap, scope)
-  }
-
-  /** [42]  '&lt;' xmlEndTag ::=  '&lt;' '/' Name S? '&gt;'
-   */
-  def xEndTag(n: String) = {
-    xToken('/')
-    val m = xName
-    if (n != m)
-      reportSyntaxError("expected closing tag of " + n/* +", not "+m*/);
-    xSpaceOpt
-    xToken('>')
-  }
-
   /** '&lt;! CharData ::= [CDATA[ ( {char} - {char}"]]&gt;"{char} ) ']]&gt;'
    *
    * see [15]
@@ -391,14 +347,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     def mkResult(pos: Int, s: String): NodeSeq = PCData(s)
     xTakeUntil(mkResult, () => pos, "]]>")
   }
-
-  /** CharRef ::= "&amp;#" '0'..'9' {'0'..'9'} ";"
-   *            | "&amp;#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
-   *
-   * see [66]
-   */
-  def xCharRef(ch: () => Char, nextch: () => Unit): String =
-    Utility.parseCharRef(ch, nextch, reportSyntaxError _)
 
   /** Comment ::= '&lt;!--' ((Char - '-') | ('-' (Char - '-')))* '--&gt;'
    *
@@ -576,7 +524,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    */
   def element1(pscope: NamespaceBinding): NodeSeq = {
     val pos = this.pos
-    val (qname, aMap, scope) = xTag(pscope)
+    val (qname, (aMap, scope)) = xTag(pscope)
     val (pre, local) = Utility.prefix(qname) match {
       case Some(p) => (p, qname drop p.length+1)
       case _       => (null, qname)
@@ -598,50 +546,6 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     val res = handle.elem(pos, pre, local, aMap, scope, ts)
     handle.elemEnd(pos, pre, local)
     res
-  }
-
-  //def xEmbeddedExpr: MarkupType;
-
-  /** Name ::= (Letter | '_' | ':') (NameChar)*
-   *
-   *  see  [5] of XML 1.0 specification
-   */
-  def xName: String = {
-    if (isNameStart(ch)) {
-      while (isNameChar(ch)) {
-        putChar(ch)
-        nextch
-      }
-      val n = cbuf.toString().intern()
-      cbuf.length = 0
-      n
-    } else {
-      reportSyntaxError("name expected")
-      ""
-    }
-  }
-
-  /** '&lt;?' ProcInstr ::= Name [S ({Char} - ({Char}'&gt;?' {Char})]'?&gt;'
-   *
-   * see [15]
-   */
-  def xProcInstr: NodeSeq = {
-    val sb:StringBuilder = new StringBuilder()
-    val n = xName
-    if (isSpace(ch)) {
-      xSpace
-      while (true) {
-        if (ch == '?' && { sb.append( ch ); nextch; ch == '>' }) {
-          sb.length = sb.length - 1;
-          nextch;
-          return handle.procInstr(tmppos, n, sb.toString);
-        } else
-          sb.append(ch);
-        nextch
-      }
-    };
-    xToken("?>")
-    handle.procInstr(tmppos, n, sb.toString)
   }
 
   /** parse character data.
@@ -996,50 +900,4 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     pos = curInput.pos
     eof = false // must be false, because of places where entity refs occur
   }
-
-  /** for the moment, replace only character references
-   *  see spec 3.3.3
-   *  precond: cbuf empty
-   */
-  def normalizeAttributeValue(attval: String): String = {
-    val s: Seq[Char] = attval
-    val it = s.iterator
-    while (it.hasNext) {
-      it.next match {
-        case ' '|'\t'|'\n'|'\r' =>
-          cbuf.append(' ');
-        case '&' => it.next match {
-          case '#' =>
-            var c = it.next
-            val s = xCharRef ({ () => c }, { () => c = it.next })
-            cbuf.append(s)
-          case nchar =>
-            val nbuf = new StringBuilder()
-            var d = nchar
-            do {
-              nbuf.append(d)
-              d = it.next
-            } while(d != ';');
-            nbuf.toString() match {
-              case "lt"    => cbuf.append('<')
-              case "gt"    => cbuf.append('>')
-              case "amp"   => cbuf.append('&')
-              case "apos"  => cbuf.append('\'')
-              case "quot"  => cbuf.append('"')
-              case "quote" => cbuf.append('"')
-              case name =>
-                cbuf.append('&')
-                cbuf.append(name)
-                cbuf.append(';')
-            }
-        }
-        case c =>
-          cbuf.append(c)
-      }
-    }
-    val name = cbuf.toString()
-    cbuf.length = 0
-    name
-  }
-
 }

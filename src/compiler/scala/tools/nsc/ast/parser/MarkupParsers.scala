@@ -14,7 +14,6 @@ import scala.tools.nsc.util.{Position,NoPosition,SourceFile,CharArrayReader}
 import scala.xml.{ Text, TextBuffer }
 import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
 import util.Chars.{ SU, LF }
-import scala.annotation.switch
 
 // XXX/Note: many/most of the functions in here are almost direct cut and pastes
 // from another file - scala.xml.parsing.MarkupParser, it looks like.
@@ -36,9 +35,6 @@ trait MarkupParsers
 {
   self: Parsers =>
 
-  type PositionType = Position
-  type InputType = CharArrayReader
-
   case object MissingEndTagException extends RuntimeException with ControlException {
     override def getMessage = "start tag was here: "
   }
@@ -58,8 +54,16 @@ trait MarkupParsers
     import Tokens.{ EMPTY, LBRACE, RBRACE }
 
     type PositionType = Position
+    type InputType    = CharArrayReader
+    type ElementType  = Tree
+    type AttributesType = mutable.Map[String, Tree]
+    type NamespaceType = Any  // namespaces ignored
+
+    def mkAttributes(name: String, other: NamespaceType): AttributesType = xAttributes
+
     val eof = false
 
+    def truncatedError(msg: String): Nothing = throw TruncatedXML
     def xHandleError(that: Char, msg: String) =
       if (ch == SU) throw TruncatedXML
       else reportSyntaxError(msg)
@@ -75,15 +79,12 @@ trait MarkupParsers
     def ch = input.ch
     /** this method assign the next character to ch and advances in input */
     def nextch = { val result = input.ch; input.nextChar(); result }
+    def ch_returning_nextch = nextch
+
+    def mkProcInstr(position: Position, name: String, text: String): Tree =
+      parser.symbXMLBuilder.procInstr(position, name, text)
 
     var xEmbeddedBlock = false
-
-    /** Execute body with a variable saved and restored after execution */
-    def saving[A,B](getter: A, setter: (A) => Unit)(body: => B): B = {
-      val saved = getter
-      try body
-      finally setter(saved)
-    }
 
     private var debugLastStartElement = new mutable.Stack[(Int, String)]
     private def debugLastPos = debugLastStartElement.top._1
@@ -93,13 +94,9 @@ trait MarkupParsers
       reportSyntaxError("in XML content, please use '}}' to express '}'")
       throw ConfusedAboutBracesException
     }
-    private def errorNoEnd(tag: String) = {
+    def errorNoEnd(tag: String) = {
       reportSyntaxError("expected closing tag of " + tag)
       throw MissingEndTagException
-    }
-    private def errorAndResult[T](msg: String, x: T): T = {
-      reportSyntaxError(msg)
-      x
     }
 
     /** checks whether next character starts a Scala block, if yes, skip it.
@@ -128,9 +125,7 @@ trait MarkupParsers
         val mid = curOffset
         val value: Tree = ch match {
           case '"' | '\'' =>
-            nextch
-            val tmp = xAttributeValue(delim)
-            nextch
+            val tmp = xAttributeValue(ch_returning_nextch)
 
             try handle.parseAttribute(r2p(start, mid, curOffset), tmp)
             catch {
@@ -157,43 +152,6 @@ trait MarkupParsers
       aMap
     }
 
-    /** attribute value, terminated by either ' or ". value may not contain <.
-     *  @param endch either ' or "
-     */
-    def xAttributeValue(endCh: Char): String = {
-      val buf = new StringBuilder
-      while (ch != endCh) {
-        // well-formedness constraint
-        if (ch == '<') return errorAndResult("'<' not allowed in attrib value", "")
-        else if (ch == SU) throw TruncatedXML
-        else buf append nextch
-      }
-      // @todo: normalize attribute value
-      buf.toString
-    }
-
-    /** parse a start or empty tag.
-     *  [40] STag         ::= '<' Name { S Attribute } [S]
-     *  [44] EmptyElemTag ::= '<' Name { S Attribute } [S]
-     */
-    def xTag: (String, mutable.Map[String, Tree]) = {
-      val elemName = xName
-      xSpaceOpt
-
-      (elemName, xAttributes)
-    }
-
-    /** [42]  '<' xmlEndTag ::=  '<' '/' Name S? '>'
-     */
-    def xEndTag(startName: String) {
-      xToken('/')
-      if (xName != startName)
-        errorNoEnd(startName)
-
-      xSpaceOpt
-      xToken('>')
-    }
-
     /** '<! CharData ::= [CDATA[ ( {char} - {char}"]]>"{char} ) ']]>'
      *
      * see [15]
@@ -208,36 +166,6 @@ trait MarkupParsers
     def xUnparsed: Tree = {
       val start = curOffset
       xTakeUntil(handle.unparsed, () => r2p(start, start, curOffset), "</xml:unparsed>")
-    }
-
-    /** CharRef ::= "&#" '0'..'9' {'0'..'9'} ";"
-     *            | "&#x" '0'..'9'|'A'..'F'|'a'..'f' { hexdigit } ";"
-     *
-     * see [66]
-     */
-    def xCharRef: String = {
-      val hex = (ch == 'x') && { nextch; true }
-      val base = if (hex) 16 else 10
-      var i = 0
-      while (ch != ';') {
-        (ch: @switch) match {
-          case '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' =>
-            i = i * base + ch.asDigit
-          case 'a' | 'b' | 'c' | 'd' | 'e' | 'f'
-             | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' =>
-            if (!hex)
-              reportSyntaxError("hex char not allowed in decimal char ref\n"
-                           +"Did you mean to write &#x ?");
-            else
-              i = i * base + ch.asDigit
-          case SU =>
-            throw TruncatedXML
-          case _ =>
-            reportSyntaxError("character '"+ch+"' not allowed in char ref")
-        }
-        nextch
-      }
-      i.toChar.toString
     }
 
     /** Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
@@ -334,7 +262,7 @@ trait MarkupParsers
      */
     def element: Tree = {
       val start = curOffset
-      val (qname, attrMap) = xTag
+      val (qname, attrMap) = xTag(())
       if (ch == '/') { // empty element
         xToken("/>")
         handle.element(r2p(start, start, curOffset), qname, attrMap, new ListBuffer[Tree])
@@ -354,42 +282,6 @@ trait MarkupParsers
           case _ => handle.element(pos, qname, attrMap, ts)
         }
       }
-    }
-
-    /** actually, Name ::= (Letter | '_' | ':') (NameChar)*  but starting with ':' cannot happen
-     *  Name ::= (Letter | '_') (NameChar)*
-     *
-     *  see  [5] of XML 1.0 specification
-     *
-     *  pre-condition:  ch != ':' // assured by definition of XMLSTART token
-     *  post-condition: name does neither start, nor end in ':'
-     */
-    def xName: String = {
-      if (ch == SU) throw TruncatedXML
-      else if (!isNameStart(ch))
-        return errorAndResult("name expected, but char '%s' cannot start a name" format ch, "")
-
-      val buf = new StringBuilder
-
-      do buf append nextch
-      while (isNameChar(ch))
-
-      if (buf.last == ':') {
-        reportSyntaxError( "name cannot end in ':'" )
-        buf setLength (buf.length - 1)
-      }
-      buf.toString.intern
-    }
-
-    /** '<?' ProcInstr ::= Name [S ({Char} - ({Char}'>?' {Char})]'?>'
-     *
-     * see [15]
-     */
-    // <?xml2 version="1.0" encoding="UTF-8" standalone="yes"?>
-    def xProcInstr: Tree = {
-      val n = xName
-      xSpaceOpt
-      xTakeUntil(handle.procInstr(_: Position, n, _:String), () => tmppos, "?>")
     }
 
     /** parse character data.
