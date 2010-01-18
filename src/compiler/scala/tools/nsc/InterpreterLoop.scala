@@ -311,7 +311,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     def add(name: String, it: Iterator[String]) =
       if (it.hasNext) interpreter.bind(name, "scala.List[String]", it.toList)
 
-    List(("stdout", p.stdout), ("stderr", p.stderr)) foreach (add _).tuple
+    List(("stdout", p.stdout), ("stderr", p.stderr)) foreach (add _).tupled
   }
 
   def withFile(filename: String)(action: String => Unit) {
