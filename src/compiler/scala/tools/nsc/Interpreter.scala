@@ -185,12 +185,17 @@ class Interpreter(val settings: Settings, out: PrintWriter)
   /** Generates names pre0, pre1, etc. via calls to apply method */
   class NameCreator(pre: String) {
     private var x = -1
+    var mostRecent: String = null
+
     def apply(): String = {
       x += 1
       val name = pre + x.toString
       // make sure we don't overwrite their unwisely named res3 etc.
-      if (allBoundNames exists (_.toString == name)) apply()
-      else name
+      mostRecent =
+        if (allBoundNames exists (_.toString == name)) apply()
+        else name
+
+      mostRecent
     }
     def reset(): Unit = x = -1
     def didGenerate(name: String) =
@@ -235,13 +240,18 @@ class Interpreter(val settings: Settings, out: PrintWriter)
    *  This way, compiler error messages read better.
    */
   private final val spaces = List.fill(7)(" ").mkString
-  def indentCode(code: String) =
+  def indentCode(code: String) = {
+    /** Heuristic to avoid indenting and thereby corrupting """-strings and XML literals. */
+    val noIndent = (code contains "\n") && (List("\"\"\"", "</", "/>") exists (code contains _))
     stringFrom(str =>
       for (line <- code.lines) {
-        str.print(spaces)
+        if (!noIndent)
+          str.print(spaces)
+
         str.print(line + "\n")
         str.flush()
       })
+  }
 
   implicit def name2string(name: Name) = name.toString
 
@@ -867,6 +877,18 @@ class Interpreter(val settings: Settings, out: PrintWriter)
       case _                    => None
     }
   }
+
+  /** Returns the name of the most recent interpreter result.
+   *  Mostly this exists so you can conveniently invoke methods on
+   *  the previous result.
+   */
+  def mostRecentVar: String =
+    prevRequests.last.handlers.last.member match {
+      case x: ValOrDefDef           => x.name
+      case Assign(Ident(name), _)   => name
+      case ModuleDef(_, name, _)    => name
+      case _                        => varNameCreator.mostRecent
+    }
 
   private def requestForName(name: Name): Option[Request] = {
     for (req <- prevRequests.toList.reverse) {

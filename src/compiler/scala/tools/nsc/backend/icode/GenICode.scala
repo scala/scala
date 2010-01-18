@@ -730,16 +730,25 @@ abstract class GenICode extends SubComponent  {
               else ctx
 
             ctx1 = genLoadArguments(args, sym.info.paramTypes, ctx1)
+            val cm = CALL_METHOD(sym, invokeStyle)
 
-            val hostClass = fun match {
-              case Select(qualifier, _)
-              if (qualifier.tpe.typeSymbol != ArrayClass) =>
-                qualifier.tpe.typeSymbol
-              case _ => sym.owner
+            /** In a couple cases, squirrel away a little extra information in the
+             *  CALL_METHOD for use by GenJVM.
+             */
+            fun match {
+              case Select(qual, _) =>
+                val qualSym = qual.tpe.typeSymbol
+                if (qualSym == ArrayClass) cm setTargetTypeKind toTypeKind(qual.tpe)
+                else cm setHostClass qualSym
+
+                if (settings.debug.value) log(
+                  if (qualSym == ArrayClass) "Stored target type kind " + toTypeKind(qual.tpe) + " for " + sym.fullNameString
+                  else "Set more precise host class for " + sym.fullNameString + " host: " + qualSym
+                )
+              case _ =>
             }
-            if (settings.debug.value && hostClass != sym.owner)
-              log("Set more precise host class for " + sym.fullNameString + " host: " + hostClass);
-            ctx1.bb.emit(CALL_METHOD(sym, invokeStyle) setHostClass hostClass, tree.pos)
+            ctx1.bb.emit(cm, tree.pos)
+
             if (sym == ctx1.method.symbol) {
               ctx1.method.recursive = true
             }

@@ -17,6 +17,7 @@ import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile, BatchSourceFile }
 import symtab.Flags._
 
+import util.Statistics
 import util.Statistics._
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
@@ -297,7 +298,7 @@ trait Typers { self: Analyzer =>
         val savedSTABLE = tree.symbol getFlag STABLE
         tree.symbol setInfo AnyRefClass.tpe
         tree.symbol setFlag STABLE
-       val result = treeInfo.isPureExpr(tree)
+        val result = treeInfo.isPureExpr(tree)
         tree.symbol setInfo savedTpe
         tree.symbol setFlag savedSTABLE
         result
@@ -4068,6 +4069,14 @@ trait Typers { self: Analyzer =>
       }
 
       try {
+        if (Statistics.enabled) {
+          val t = currentTime()
+          if (pendingTreeTypes.nonEmpty) {
+            microsByType(pendingTreeTypes.head) += ((t - typerTime) / 1000).toInt
+          }
+          typerTime = t
+          pendingTreeTypes = tree.getClass :: pendingTreeTypes
+        }
         if (context.retyping &&
             (tree.tpe ne null) && (tree.tpe.isErroneous || !(tree.tpe <:< pt))) {
           tree.tpe = null
@@ -4105,6 +4114,14 @@ trait Typers { self: Analyzer =>
           Console.println("exception when typing "+tree+", pt = "+pt)
           throw ex
 */ //debug
+      } finally {
+        if (Statistics.enabled) {
+          val t = currentTime()
+          microsByType(pendingTreeTypes.head) += ((t - typerTime) / 1000).toInt
+          visitsByType(pendingTreeTypes.head) += 1
+          typerTime = t
+          pendingTreeTypes = pendingTreeTypes.tail
+        }
       }
     }
 

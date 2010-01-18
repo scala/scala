@@ -209,37 +209,37 @@ trait {className}{contraCoArgs} extends AnyRef {{ self =>
     List.map2(xdefs, targs)("(%s: %s) => ".format(_, _)).mkString("", "", body)
   }
 
-  // (x1: T1) => ((x2: T2, x3: T3, x4: T4, x5: T5, x6: T6, x7: T7) => self.apply(x1,x2,x3,x4,x5,x6,x7)).curry
+  // (x1: T1) => ((x2: T2, x3: T3, x4: T4, x5: T5, x6: T6, x7: T7) => self.apply(x1,x2,x3,x4,x5,x6,x7)).curried
   def longCurry = (List.map2(xdefs, targs)(_ + ": " + _) drop 1).mkString(
     "(x1: T1) => ((",
     ", ",
-    ") => self.apply%s).curry".format(commaXs)
+    ") => self.apply%s).curried".format(commaXs)
   )
 
-  // f(x1,x2,x3,x4,x5,x6)  == (f.curry)(x1)(x2)(x3)(x4)(x5)(x6)
+  // f(x1,x2,x3,x4,x5,x6)  == (f.curried)(x1)(x2)(x3)(x4)(x5)(x6)
   def curryComment = { """
-  /** f%s  == (f.curry)%s
+  /** f%s  == (f.curried)%s
    */
 """.format(commaXs, xdefs map ("(" + _ + ")") mkString)
   }
 
   def tupleMethod = {
     def comment = """
-  /* f%s == (f.tuple)(Tuple%d%s)
+  /* f%s == (f.tupled)(Tuple%d%s)
    */
 """.format(commaXs, i, commaXs)
     def body = "case Tuple%d%s => apply%s".format(i, commaXs, commaXs)
 
-    comment + "  def tuple: Tuple%d%s => R = {\n    %s\n  }\n".format(i, invariantArgs, body)
+    comment + "  def tupled: Tuple%d%s => R = {\n    %s\n  }\n".format(i, invariantArgs, body)
   }
 
   def curryMethod = {
     val body = if (i < 5) shortCurry else longCurry
 
     curryComment +
-    "  def curry: %s => R = {\n    %s\n  }\n".format(
+    "  def curried: %s => R = {\n    %s\n  }\n".format(
       targs mkString " => ", body
-    )
+    ) + """  @deprecated("Use 'curried' instead")""" + "\n  def curry = curried\n"
   }
 
   override def moreMethods = curryMethod + tupleMethod

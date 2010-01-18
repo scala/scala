@@ -115,17 +115,20 @@ class HashSet[A] extends Set[A]
 
   private def makeCopy(last: HashSet[A]) {
     def undo(m: HashSet[A]) {
-      if (m ne last) {
-        undo(m.later)
-        if (m.deleted) addEntry(m.changedElem)
-        else removeEntry(m.changedElem)
-      }
+      if (m.deleted) addEntry(m.changedElem)
+      else removeEntry(m.changedElem)
     }
     table = new scala.Array[AnyRef](last.table.length)
     scala.Array.copy(last.table, 0, table, 0, table.length)
     tableSize = last.tableSize
     threshold = last.threshold
-    undo(this)
+
+    // we need to work from the end of the list but non-tail-recursion
+    // potentially blows the stack, so instead we create a stack on the heap.
+    // See ticket #408.
+    val toUndo = new mutable.Stack[HashSet[A]]
+    toUndo pushAll ((Iterator iterate this)(_.later) takeWhile (_ ne last))
+    toUndo foreach undo
     later = null
   }
 

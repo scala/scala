@@ -477,17 +477,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     private def cast(tree: Tree, pt: Type): Tree =
       tree AS_ATTR pt
 
-    /** Is symbol a member of unboxed arrays (which will be expanded directly
-     *  later)?
-     *
-     *  @param sym ..
-     *  @return    <code>true</code> if ..
-     */
-    private def isUnboxedArrayMember(sym: Symbol) = sym.name match {
-      case nme.apply | nme.length | nme.update  => true
-      case _                                    => sym.owner == ObjectClass
-    }
-
     private def isUnboxedValueMember(sym: Symbol) =
       sym != NoSymbol && isValueClass(sym.owner)
 

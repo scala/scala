@@ -150,7 +150,7 @@ trait Files { self : SubComponent =>
   }
 
   def writeToFile[T](file: AbstractFile)(f: OutputStream => T) : T = {
-    val out = file.output
+    val out = file.bufferedOutput
     try {
       f(out)
     } finally {

@@ -228,6 +228,9 @@ abstract class TreeGen
   def mkOr(tree1: Tree, tree2: Tree): Tree =
     Apply(Select(tree1, Boolean_or), List(tree2))
 
+  // wrap the given expression in a SoftReference so it can be gc-ed
+  def mkSoftRef(expr: Tree): Tree = New(TypeTree(SoftReferenceClass.tpe), List(List(expr)))
+
   def mkCached(cvar: Symbol, expr: Tree): Tree = {
     val cvarRef = if (cvar.owner.isClass) Select(This(cvar.owner), cvar) else Ident(cvar)
     Block(

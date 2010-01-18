@@ -1237,7 +1237,7 @@ self =>
           val npos = r2p(nstart, nstart, in.lastOffset)
           val tstart = in.offset
           val (parents, argss, self, stats) = template(false)
-          val cpos = r2p(tstart, tstart, in.lastOffset)
+          val cpos = r2p(tstart, tstart, in.lastOffset max tstart)
           makeNew(parents, self, stats, argss, npos, cpos)
         case _ =>
           syntaxErrorOrIncomplete("illegal start of simple expression", true)

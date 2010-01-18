@@ -325,17 +325,20 @@ trait Opcodes { self: ICodes =>
       var hostClass: Symbol = method.owner;
       def setHostClass(cls: Symbol): this.type = { hostClass = cls; this }
 
-      override def consumed = {
-        var result = method.tpe.paramTypes.length;
-        result = result + (style match {
+      /** This is specifically for preserving the target native Array type long
+       *  enough that clone() can generate the right call.
+       */
+      var targetTypeKind: TypeKind = UNIT // the default should never be used, so UNIT should fail fast.
+      def setTargetTypeKind(tk: TypeKind) = targetTypeKind = tk
+
+      override def consumed = method.tpe.paramTypes.length + (
+        style match {
           case Dynamic | InvokeDynamic => 1
           case Static(true) => 1
           case Static(false) => 0
           case SuperCall(_) => 1
-        });
-
-        result;
-      }
+        }
+      )
 
       override def consumedTypes = {
         val args = method.tpe.paramTypes map toTypeKind

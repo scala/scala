@@ -381,6 +381,18 @@ object Test {
     check_success("PolyObject.tramp", PolyObject.tramp[Int](max), 0)
   }
 
+  // testing explicit tailcalls.
+
+  import scala.util.control.TailCalls._
+
+  def isEven(xs: List[Int]): TailRec[Boolean] =
+    if (xs.isEmpty) done(true) else tailcall(isOdd(xs.tail))
+
+  def isOdd(xs: List[Int]): TailRec[Boolean] =
+    if (xs.isEmpty) done(false) else tailcall(isEven(xs.tail))
+
+  assert(isEven((1 to 100000).toList).result)
+
 }
 
 //############################################################################

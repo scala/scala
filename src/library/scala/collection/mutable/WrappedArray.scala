@@ -43,6 +43,9 @@ abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedAr
   def array: Array[T]
   override def stringPrefix = "WrappedArray"
 
+  /** Clones this object, including the underlying Array. */
+  override def clone: WrappedArray[T] = WrappedArray make array.clone()
+
   /** Creates new builder for this collection ==> move to subclasses
    */
   override protected[this] def newBuilder: Builder[T, WrappedArray[T]] =
@@ -50,7 +53,6 @@ abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedAr
 }
 
 object WrappedArray {
-
   def make[T](x: AnyRef): WrappedArray[T] = x match {
     case x: Array[AnyRef] => wrapRefArray[AnyRef](x).asInstanceOf[WrappedArray[T]]
     case x: Array[Int] => wrapIntArray(x).asInstanceOf[WrappedArray[T]]

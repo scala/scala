@@ -154,6 +154,7 @@ trait Definitions {
       def arrayApplyMethod = getMember(ScalaRunTimeModule, "array_apply")
       def arrayUpdateMethod = getMember(ScalaRunTimeModule, "array_update")
       def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
+      def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
 
     // classes with special meanings
     lazy val NotNullClass         = getClass("scala.NotNull")
@@ -215,10 +216,13 @@ trait Definitions {
       def Array_apply   = getMember(ArrayClass, nme.apply)
       def Array_update  = getMember(ArrayClass, nme.update)
       def Array_length  = getMember(ArrayClass, nme.length)
+      lazy val Array_clone   = getMember(ArrayClass, nme.clone_)
     lazy val ArrayModule  = getModule("scala.Array")
       def ArrayModule_apply = getMember(ArrayModule, nme.apply)
 
     // reflection / structural types
+    lazy val SoftReferenceClass     = getClass("java.lang.ref.SoftReference")
+    lazy val WeakReferenceClass     = getClass("java.lang.ref.WeakReference")
     lazy val MethodClass            = getClass(sn.MethodAsObject)
     lazy val EmptyMethodCacheClass  = getClass("scala.runtime.EmptyMethodCache")
     lazy val MethodCacheClass       = getClass("scala.runtime.MethodCache")

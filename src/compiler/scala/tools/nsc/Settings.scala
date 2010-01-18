@@ -277,15 +277,15 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
   // A bit too clever, but I haven't found any other way to compose
   // functions with arity 2+ without having to annotate parameter types
-  lazy val IntSetting          = untupled((sint _).tuple andThen add[IntSetting])
-  lazy val BooleanSetting      = untupled((bool _).tuple andThen add[BooleanSetting])
-  lazy val StringSetting       = untupled((str _).tuple andThen add[StringSetting])
-  lazy val MultiStringSetting  = untupled((multi _).tuple andThen add[MultiStringSetting])
-  lazy val ChoiceSetting       = untupled((choice _).tuple andThen add[ChoiceSetting])
-  lazy val DebugSetting        = untupled((sdebug _).tuple andThen add[DebugSetting])
-  lazy val PhasesSetting       = untupled((phase _).tuple andThen add[PhasesSetting])
+  lazy val IntSetting          = untupled((sint _).tupled andThen add[IntSetting])
+  lazy val BooleanSetting      = untupled((bool _).tupled andThen add[BooleanSetting])
+  lazy val StringSetting       = untupled((str _).tupled andThen add[StringSetting])
+  lazy val MultiStringSetting  = untupled((multi _).tupled andThen add[MultiStringSetting])
+  lazy val ChoiceSetting       = untupled((choice _).tupled andThen add[ChoiceSetting])
+  lazy val DebugSetting        = untupled((sdebug _).tupled andThen add[DebugSetting])
+  lazy val PhasesSetting       = untupled((phase _).tupled andThen add[PhasesSetting])
   lazy val DefinesSetting      = add(defines())
-  lazy val OutputSetting       = untupled((output _).tuple andThen add[OutputSetting])
+  lazy val OutputSetting       = untupled((output _).tupled andThen add[OutputSetting])
 
   override def toString() =
     "Settings(\n%s)" format (settingSet filter (s => !s.isDefault) map ("  " + _ + "\n") mkString)
@@ -364,7 +364,7 @@ object Settings {
       singleOutDir match {
         case Some(d) => d
         case None =>
-          (outputs find (isBelow _).tuple) match {
+          (outputs find (isBelow _).tupled) match {
             case Some((_, d)) => d
             case _ =>
               throw new FatalError("Could not find an output directory for "
@@ -397,7 +397,7 @@ object Settings {
       singleOutDir match {
         case Some(d) => Nil
         case None =>
-          (outputs filter (isBelow _).tuple) match {
+          (outputs filter (isBelow _).tupled) match {
             case Nil => Nil
             case matches => matches.map(_._1.lookupPathUnchecked(srcPath, false))
           }

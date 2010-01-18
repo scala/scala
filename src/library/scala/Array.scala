@@ -538,4 +538,12 @@ final class Array[T](_length: Int) {
    *          <code>length <= i</code>
    */
   def update(i: Int, x: T) { throw new Error() }
+
+  /** <p>
+   *    Clone the Array.
+   *  </p>
+   *
+   *  @return A clone of the Array.
+   */
+  override def clone: Array[T] = throw new Error()
 }

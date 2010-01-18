@@ -52,27 +52,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private def typedWithPos(pos: Position)(tree: Tree) =
       localTyper typed { atPos(pos)(tree) }
 
-    private def classConstantMethod(pos: Position, sig: String): Symbol =
-      classConstantMeth.getOrElseUpdate(sig, {
-        val forName = getMember(ClassClass.linkedModuleOfClass, nme.forName)
-        val owner = currentOwner.enclClass
-
-        val cvar = owner.newVariable(pos, unit.fresh.newName(pos, "class$Cache"))
-          .setFlag(PRIVATE | STATIC | MUTABLE | SYNTHETIC).setInfo(ClassClass.tpe)
-        owner.info.decls enter cvar
-        val cdef = typedWithPos(pos) { VAL(cvar) === NULL }
-
-        val meth = owner.newMethod(pos, unit.fresh.newName(pos, "class$Method"))
-          .setFlag(PRIVATE | STATIC | SYNTHETIC).setInfo(MethodType(List(), ClassClass.tpe))
-        owner.info.decls enter meth
-        val mdef = typedWithPos(pos)(DEF(meth) ===
-          gen.mkCached(cvar, Apply(REF(forName), List(Literal(sig))))
-        )
-
-        newDefs.append(cdef, mdef)
-        meth
-      })
-
     override def transformUnit(unit: CompilationUnit) =
       unit.body = transform(unit.body)
 
@@ -185,7 +164,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
             case MONO_CACHE =>
 
-              /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)":
+              /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)"
+                 (but with a SoftReference wrapping reflClass$Cache, similarly in the poly Cache) :
 
                 var reflParams$Cache: Array[Class[_]] = Array[JClass](classOf[A], classOf[B])
 
@@ -210,16 +190,19 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 addStaticVariableToClass("reflMethod$Cache", MethodClass.tpe, NULL, false)
 
               val reflClassCacheSym: Symbol =
-                addStaticVariableToClass("reflClass$Cache", ClassClass.tpe, NULL, false)
+                addStaticVariableToClass("reflClass$Cache", SoftReferenceClass.tpe, NULL, false)
 
               def getMethodSym = ClassClass.tpe member nme.getMethod_
+
+              def isCacheEmpty(receiver: Symbol): Tree =
+                reflClassCacheSym.IS_NULL() OR (reflClassCacheSym.GET() ANY_NE REF(receiver))
 
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe) {
                 case Pair(reflMethodSym, List(forReceiverSym)) =>
                   BLOCK(
-                    IF (REF(reflClassCacheSym) ANY_NE REF(forReceiverSym)) THEN BLOCK(
+                    IF (isCacheEmpty(forReceiverSym)) THEN BLOCK(
                       REF(reflMethodCacheSym) === ((REF(forReceiverSym) DOT getMethodSym)(LIT(method), REF(reflParamsCacheSym))) ,
-                      REF(reflClassCacheSym) === REF(forReceiverSym),
+                      REF(reflClassCacheSym) === gen.mkSoftRef(REF(forReceiverSym)),
                       UNIT
                     ) ENDIF,
                     REF(reflMethodCacheSym)
@@ -228,7 +211,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
             case POLY_CACHE =>
 
-              /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)":
+              /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)"
+                 (but with the addition of a SoftReference wrapped around the MethodCache holder
+                 so that it does not interfere with classloader garbage collection, see ticket
+                 #2365 for details):
 
                 var reflParams$Cache: Array[Class[_]] = Array[JClass](classOf[A], classOf[B])
 
@@ -250,23 +236,25 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               val reflParamsCacheSym: Symbol =
                 addStaticVariableToClass("reflParams$Cache", theTypeClassArray, fromTypesToClassArrayLiteral(paramTypes), true)
 
-              val reflPolyCacheSym: Symbol =
-                addStaticVariableToClass("reflPoly$Cache", MethodCacheClass.tpe, NEW(TypeTree(EmptyMethodCacheClass.tpe)), false)
+              def mkNewPolyCache = gen.mkSoftRef(NEW(TypeTree(EmptyMethodCacheClass.tpe)))
+              val reflPolyCacheSym: Symbol = addStaticVariableToClass("reflPoly$Cache", SoftReferenceClass.tpe, mkNewPolyCache, false)
+              def getPolyCache = fn(REF(reflPolyCacheSym), nme.get) AS_ATTR MethodCacheClass.tpe
 
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe)
                 { case Pair(reflMethodSym, List(forReceiverSym)) =>
                   val methodSym = reflMethodSym.newVariable(ad.pos, mkTerm("method")) setInfo MethodClass.tpe
 
                   BLOCK(
-                    VAL(methodSym) === ((REF(reflPolyCacheSym) DOT methodCache_find)(REF(forReceiverSym))) ,
+                    IF (getPolyCache ANY_EQ NULL) THEN (REF(reflPolyCacheSym) === mkNewPolyCache) ENDIF,
+                    VAL(methodSym) === ((getPolyCache DOT methodCache_find)(REF(forReceiverSym))) ,
                     IF (REF(methodSym) OBJ_!= NULL) .
                       THEN (Return(REF(methodSym)))
                     ELSE {
                       def methodSymRHS  = ((REF(forReceiverSym) DOT Class_getMethod)(LIT(method), REF(reflParamsCacheSym)))
-                      def cacheRHS      = ((REF(reflPolyCacheSym) DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
+                      def cacheRHS      = ((getPolyCache DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
                       BLOCK(
                         REF(methodSym)        === methodSymRHS,
-                        REF(reflPolyCacheSym) === cacheRHS,
+                        REF(reflPolyCacheSym) === gen.mkSoftRef(cacheRHS),
                         Return(REF(methodSym))
                       )
                     }
@@ -377,7 +365,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           def isArrayMethodSignature =
             (methSym.name == nme.length && params.isEmpty) ||
             (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass)) ||
-            (methSym.name == nme.apply  && params.size == 1)
+            (methSym.name == nme.apply  && params.size == 1) ||
+            (methSym.name == nme.clone_ && params.isEmpty)
 
           def isDefinitelyArray = isArrayMethodSignature && (qualSym == ArrayClass)
           def isMaybeArray = isArrayMethodSignature && (qualSym == ObjectClass) // precondition: !isDefinitelyArray
@@ -386,6 +375,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
             case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
             case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
+            case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
           }
           def genArrayTest = {
             def oneTest(s: Symbol) = qual IS_OBJ arrayType(s.tpe)

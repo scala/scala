@@ -8,7 +8,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.io.{DataOutputStream, File, OutputStream}
+import java.io.{ DataOutputStream, File, OutputStream }
 import java.nio.ByteBuffer
 
 import scala.collection.immutable.{Set, ListSet}
@@ -82,6 +82,7 @@ abstract class GenJVM extends SubComponent {
 
     val StringBuilderType = new JObjectType(StringBuilderClass)
     val toStringType      = new JMethodType(JObjectType.JAVA_LANG_STRING, JType.EMPTY_ARRAY)
+    val arrayCloneType    = new JMethodType(JObjectType.JAVA_LANG_OBJECT, JType.EMPTY_ARRAY)
     val MethodTypeType    = new JObjectType("java.dyn.MethodType")
     val JavaLangClassType = new JObjectType("java.lang.Class")
     val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
@@ -145,7 +146,7 @@ abstract class GenJVM extends SubComponent {
       addInnerClasses(jclass)
 
       val outfile = getFile(sym, jclass, ".class")
-      val outstream = new DataOutputStream(outfile.output)
+      val outstream = new DataOutputStream(outfile.bufferedOutput)
       jclass.writeTo(outstream)
       outstream.close()
       informProgress("wrote " + outfile)
@@ -314,7 +315,7 @@ abstract class GenJVM extends SubComponent {
 
       // write the bean information class file.
       val outfile = getFile(c.symbol, beanInfoClass, ".class")
-      val outstream = new DataOutputStream(outfile.output)
+      val outstream = new DataOutputStream(outfile.bufferedOutput)
       beanInfoClass.writeTo(outstream)
       outstream.close()
       informProgress("wrote BeanInfo " + outfile)
@@ -1087,6 +1088,11 @@ abstract class GenJVM extends SubComponent {
           case CALL_PRIMITIVE(primitive) =>
             genPrimitive(primitive, instr.pos)
 
+          /** Special handling to access native Array.clone() */
+          case call @ CALL_METHOD(definitions.Array_clone, Dynamic) =>
+            val target: String = javaType(call.targetTypeKind).getSignature()
+            jcode.emitINVOKEVIRTUAL(target, "clone", arrayCloneType)
+
           case call @ CALL_METHOD(method, style) =>
             val owner: String = javaName(method.owner)
             // reference the type of the receiver instead of the method owner (if not an interface!)
@@ -1819,8 +1825,6 @@ abstract class GenJVM extends SubComponent {
       }
       dir.fileNamed(pathParts.last + suffix)
     }
-
-
 
     /** Merge adjacent ranges. */
     private def mergeEntries(ranges: List[(Int, Int)]): List[(Int, Int)] =
