@@ -508,7 +508,7 @@ abstract class ClassfileParser {
       val info = pool.getType(in.nextChar)
       val sym = getOwner(jflags)
         .newValue(NoPosition, name).setFlag(sflags)
-      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else mkConstantType(Constant(sym)))
+      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else ConstantType(Constant(sym)))
       setPrivateWithin(sym, jflags)
       parseAttributes(sym, info)
       getScope(jflags).enter(sym)
@@ -620,12 +620,12 @@ abstract class ClassfileParser {
                     case variance @ ('+' | '-' | '*') =>
                       index += 1
                       val bounds = variance match {
-                        case '+' => mkTypeBounds(definitions.NothingClass.tpe,
-                                                 sig2type(tparams, skiptvs))
-                        case '-' => mkTypeBounds(sig2type(tparams, skiptvs),
-                                                 definitions.AnyClass.tpe)
-                        case '*' => mkTypeBounds(definitions.NothingClass.tpe,
-                                                 definitions.AnyClass.tpe)
+                        case '+' => TypeBounds(definitions.NothingClass.tpe,
+                                               sig2type(tparams, skiptvs))
+                        case '-' => TypeBounds(sig2type(tparams, skiptvs),
+                                               definitions.AnyClass.tpe)
+                        case '*' => TypeBounds(definitions.NothingClass.tpe,
+                                               definitions.AnyClass.tpe)
                       }
                       val newtparam = sym.newExistential(sym.pos, "?"+i) setInfo bounds
                       existentials += newtparam
@@ -702,7 +702,7 @@ abstract class ClassfileParser {
         if (sig(index) != ':') // guard against empty class bound
           ts += objToAny(sig2type(tparams, skiptvs))
       }
-      mkTypeBounds(definitions.NothingClass.tpe, intersectionType(ts.toList, sym))
+      TypeBounds(definitions.NothingClass.tpe, intersectionType(ts.toList, sym))
     }
 
     var tparams = classTParams
@@ -781,7 +781,7 @@ abstract class ClassfileParser {
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
-          if (c1 ne null) sym.setInfo(mkConstantType(c1))
+          if (c1 ne null) sym.setInfo(ConstantType(c1))
           else println("failure to convert " + c + " to " + symtype); //debug
         case nme.ScalaSignatureATTR =>
           unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())

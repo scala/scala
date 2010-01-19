@@ -42,7 +42,7 @@ abstract class ConstantFolder {
   private def fold(tree: Tree, compX: => Constant): Tree =
     try {
       val x = compX
-      if ((x ne null) && x.tag != UnitTag) tree setType mkConstantType(x)
+      if ((x ne null) && x.tag != UnitTag) tree setType ConstantType(x)
       else tree
     } catch {
       case _: ArithmeticException => tree   // the code will crash at runtime,

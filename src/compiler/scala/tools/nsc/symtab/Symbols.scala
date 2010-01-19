@@ -171,7 +171,7 @@ trait Symbols {
     final def newLocalDummy(pos: Position) =
       newValue(pos, nme.LOCAL(this)).setInfo(NoType)
     final def newMethod(pos: Position, name: Name) =
-      newValue(pos, name).setFlag(METHOD)
+      new MethodSymbol(this, pos, name).setFlag(METHOD)
     final def newLabel(pos: Position, name: Name) =
       newMethod(pos, name).setFlag(LABEL)
     final def newConstructor(pos: Position) =
@@ -978,11 +978,11 @@ trait Symbols {
      */
     def existentialBound: Type =
       if (this.isClass)
-         polyType(this.typeParams, mkTypeBounds(NothingClass.tpe, this.classBound))
+         polyType(this.typeParams, TypeBounds(NothingClass.tpe, this.classBound))
       else if (this.isAbstractType)
          this.info
       else if (this.isTerm)
-         mkTypeBounds(NothingClass.tpe, intersectionType(List(this.tpe, SingletonClass.tpe)))
+         TypeBounds(NothingClass.tpe, intersectionType(List(this.tpe, SingletonClass.tpe)))
       else
         throw new Error("unexpected alias type: "+this)
 
@@ -1672,11 +1672,13 @@ trait Symbols {
     protected var referenced: Symbol = NoSymbol
     protected var defGetter: Symbol = NoSymbol
 
-    def cloneSymbolImpl(owner: Symbol): Symbol = {
-      val clone = new TermSymbol(owner, pos, name)
-      clone.referenced = referenced
-      clone.defGetter = defGetter
-      clone
+    def cloneSymbolImpl(owner: Symbol): Symbol =
+      new TermSymbol(owner, pos, name).copyAttrsFrom(this)
+
+    def copyAttrsFrom(original: TermSymbol): this.type = {
+      referenced = original.referenced
+      defGetter = original.defGetter
+      this
     }
 
     private val validAliasFlags = SUPERACCESSOR | PARAMACCESSOR | MIXEDIN | SPECIALIZED
@@ -1774,10 +1776,33 @@ trait Symbols {
         flatname
       } else rawname
 
-    override def cloneSymbolImpl(owner: Symbol): Symbol = {
-      val clone = new ModuleSymbol(owner, pos, name)
-      clone.referenced = referenced
-      clone
+    override def cloneSymbolImpl(owner: Symbol): Symbol =
+      new ModuleSymbol(owner, pos, name).copyAttrsFrom(this)
+  }
+
+  /** A class for method symbols */
+  class MethodSymbol(initOwner: Symbol, initPos: Position, initName: Name)
+  extends TermSymbol(initOwner, initPos, initName) {
+
+    private var mtpePeriod = NoPeriod
+    private var mtpePre: Type = _
+    private var mtpeResult: Type = _
+
+    override def cloneSymbolImpl(owner: Symbol): Symbol =
+      new MethodSymbol(owner, pos, name).copyAttrsFrom(this)
+
+    def typeAsMemberOf(pre: Type): Type = {
+      if (mtpePeriod == currentPeriod) {
+        if (mtpePre eq pre) return mtpeResult
+      } else if (isValid(mtpePeriod)) {
+        mtpePeriod = currentPeriod
+        if (mtpePre eq pre) return mtpeResult
+      }
+      val res = pre.computeMemberType(this)
+      mtpePeriod = currentPeriod
+      mtpePre = pre
+      mtpeResult = res
+      res
     }
   }
 
@@ -1977,7 +2002,7 @@ trait Symbols {
       val period = thisTypePeriod
       if (period != currentPeriod) {
         thisTypePeriod = currentPeriod
-        if (!isValid(period)) thisTypeCache = mkThisType(this)
+        if (!isValid(period)) thisTypeCache = ThisType(this)
       }
       thisTypeCache
     }

@@ -2507,7 +2507,7 @@ trait Typers { self: Analyzer =>
               //Console.println(" contains?"+sym.tpe.decls.lookup(fun.symbol.name));
               if(sym != fun.symbol.owner && (sym.isPackageClass||sym.isModuleClass) /*(1)*/ ) { // (1) see 'files/pos/unapplyVal.scala'
                 if(fun.symbol.owner.isClass) {
-                  mkThisType(fun.symbol.owner)
+                  ThisType(fun.symbol.owner)
                 } else {
                 //Console.println("2 ThisType("+fun.symbol.owner+")")
                   NoPrefix                                                 // see 'files/run/unapplyComplex.scala'
@@ -3046,7 +3046,7 @@ trait Typers { self: Analyzer =>
                 context.owner.newAliasType(tree.pos, name) setInfo pt
               else
                 context.owner.newAbstractType(tree.pos, name) setInfo
-                  mkTypeBounds(NothingClass.tpe, AnyClass.tpe)
+                  TypeBounds(NothingClass.tpe, AnyClass.tpe)
           val rawInfo = vble.rawInfo
           vble = if (vble.name == nme.WILDCARD.toTypeName) context.scope.enter(vble)
                  else namer.enterInScope(vble)
@@ -3439,7 +3439,7 @@ trait Typers { self: Analyzer =>
             } else {
               findMixinSuper(clazz.info)
             }
-          tree setSymbol clazz setType mkSuperType(clazz.thisType, owntype)
+          tree setSymbol clazz setType SuperType(clazz.thisType, owntype)
         }
       }
 
@@ -4007,7 +4007,7 @@ trait Typers { self: Analyzer =>
         case Literal(value) =>
           tree setType (
             if (value.tag == UnitTag) UnitClass.tpe
-            else mkConstantType(value))
+            else ConstantType(value))
 
         case SingletonTypeTree(ref) =>
           val ref1 = checkStable(
@@ -4028,7 +4028,7 @@ trait Typers { self: Analyzer =>
         case TypeBoundsTree(lo, hi) =>
           val lo1 = typedType(lo, mode)
           val hi1 = typedType(hi, mode)
-          treeCopy.TypeBoundsTree(tree, lo1, hi1) setType mkTypeBounds(lo1.tpe, hi1.tpe)
+          treeCopy.TypeBoundsTree(tree, lo1, hi1) setType TypeBounds(lo1.tpe, hi1.tpe)
 
         case etpt @ ExistentialTypeTree(_, _) =>
           newTyper(context.makeNewScope(tree, context.owner)).typedExistentialTypeTree(etpt, mode)

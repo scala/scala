@@ -78,7 +78,7 @@ abstract class MetaParser{
     val hi =
       if (token == "<") { nextToken(); parseType() }
       else definitions.AnyClass.tpe
-    sym.setInfo(mkTypeBounds(lo, hi))
+    sym.setInfo(TypeBounds(lo, hi))
     locals enter sym;
     sym
   }

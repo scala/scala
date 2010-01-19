@@ -173,7 +173,7 @@ self: Analyzer =>
   object HasMethodMatching {
     def apply(name: Name, argtpes: List[Type], restpe: Type): Type = {
       def templateArgType(argtpe: Type) =
-        new BoundedWildcardType(mkTypeBounds(argtpe, AnyClass.tpe))
+        new BoundedWildcardType(TypeBounds(argtpe, AnyClass.tpe))
       val dummyMethod = new TermSymbol(NoSymbol, NoPosition, "typer$dummy")
       val mtpe = MethodType(dummyMethod.newSyntheticValueParams(argtpes map templateArgType), restpe)
       memberWildcardType(name, mtpe)

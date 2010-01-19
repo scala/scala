@@ -245,6 +245,7 @@ abstract class UnPickler {
                 }
             case VALsym =>
               sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
+                    else if ((flags & METHOD) != 0) owner.newMethod(NoPosition, name)
                     else owner.newValue(NoPosition, name)
               sym.defaultGetter = defaultGetter
             case _ =>
@@ -274,7 +275,7 @@ abstract class UnPickler {
         case NOPREFIXtpe =>
           NoPrefix
         case THIStpe =>
-          mkThisType(readSymbolRef())
+          ThisType(readSymbolRef())
         case SINGLEtpe =>
           singleType(readTypeRef(), readSymbolRef())
         case SUPERtpe =>
@@ -282,14 +283,14 @@ abstract class UnPickler {
           val supertpe = readTypeRef()
           SuperType(thistpe, supertpe)
         case CONSTANTtpe =>
-          mkConstantType(readConstantRef())
+          ConstantType(readConstantRef())
         case TYPEREFtpe =>
           val pre = readTypeRef()
           val sym = readSymbolRef()
           var args = until(end, readTypeRef)
           rawTypeRef(pre, sym, args)
         case TYPEBOUNDStpe =>
-          mkTypeBounds(readTypeRef(), readTypeRef())
+          TypeBounds(readTypeRef(), readTypeRef())
         case REFINEDtpe =>
           val clazz = readSymbolRef()
 /*
