@@ -1,4 +1,4 @@
-// © 2009 EPFL/LAMP
+// Â© 2009 EPFL/LAMP
 // written by Gilles Dubochet with contributions by Johannes Rudolph and "spiros"
 
 $(document).ready(function(){
@@ -16,9 +16,15 @@ $(document).ready(function(){
 	});
 	function search() {
 		var query = $("#quickflt").attr("value");
-		// Regexp that matches CamelCase subbits: "BiSe" is
-		// "[a-z]*Bi[a-z]*Se" and matches "BitSet", "ABitSet", ...
-		var queryRegExp = new RegExp(query.replace(/([A-Z])/g,"[a-z]*$1"));
+		var queryRegExp;
+		if (query.toLowerCase() != query)
+		    // Regexp that matches CamelCase subbits: "BiSe" is
+			// "[a-z]*Bi[a-z]*Se" and matches "BitSet", "ABitSet", ...
+			queryRegExp = new RegExp(query.replace(/([A-Z])/g,"[a-z]*$1"));
+		else
+			// if query is all lower case make a normal case insensitive search
+			queryRegExp = new RegExp(query, "i");
+
 		$("#tpl ol.templates > li").each(function(){
 			var item = $(this).attr("title");
 			if (item == "" || queryRegExp.test(item)) {
@@ -34,14 +40,22 @@ $(document).ready(function(){
 		pendingTimeout = undefined;
 	};
 	var pendingTimeout = undefined;
-	$("#quickflt").bind("keyup", function(event) { 
-    	if (event.keyCode == 27) { // escape 
- 		    $("#quickflt").attr("value", "");
- 		}
+	$("#quickflt").bind("keyup", function(event) {
  		if (pendingTimeout != undefined) {
  			clearTimeout(pendingTimeout);
  		}
- 		pendingTimeout = setTimeout(search, 200); //delay 0.2 sec
+        if (event.keyCode == 27) { // escape
+ 		    $("#quickflt").attr("value", "");
+			search();
+ 		}
+ 		else if (event.keyCode == 13) { // return key:
+			// search immediately and go into first entry
+			search();
+			$("#tpl ol.templates > li:not(.hide) a:first").click();
+		}
+		else {
+ 		    pendingTimeout = setTimeout(search, 200); //delay 0.2 sec
+		}
  	});
 	$("#tpl .packages > li").prepend("<a class='packhide'>hide</a>");
 	$("#tpl .packages > li > a.packhide").click(function(event){
