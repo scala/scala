@@ -359,7 +359,7 @@ abstract class CopyPropagation {
             if (onInstance) {
               val obj = out.stack.drop(method.info.paramTypes.length).head
 //              if (method.isPrimaryConstructor) {
-              if (method.isPrimaryConstructor/* && isClosureClass(method.owner)*/) {
+              if (method.isPrimaryConstructor) {
                 obj match {
                   case Record(_, bindings) =>
                     for (v <- out.stack.take(method.info.paramTypes.length + 1)
@@ -591,18 +591,6 @@ abstract class CopyPropagation {
       if (settings.debug.value) log("\t" + bindings)
       bindings
     }
-
-    /** Is <code>cls</code> a closure class?
-     *
-     *  @param cls ...
-     *  @return    ...
-     */
-    final def isClosureClass(cls: Symbol): Boolean =
-        cls.isFinal &&
-        cls.tpe.parents.exists { t =>
-          val TypeRef(_, sym, _) = t;
-          definitions.FunctionClass exists sym.==
-        }
 
     /** Is symbol <code>m</code> a pure method?
      *

@@ -544,13 +544,10 @@ abstract class Inliners extends SubComponent {
      }
   } /* class Inliner */
 
-  /** Is the given class a subtype of a function trait? */
+  /** Is the given class a closure? */
   def isClosureClass(cls: Symbol): Boolean = {
-    val res = cls.isFinal && cls.hasFlag(Flags.SYNTHETIC) && !cls.isModuleClass &&
-        cls.tpe.parents.exists { t =>
-          val TypeRef(_, sym, _) = t;
-          definitions.FunctionClass exists sym.==
-        }
+    val res = (cls.isFinal && cls.hasFlag(Flags.SYNTHETIC)
+      && !cls.isModuleClass && cls.isAnonymousFunction)
     res
   }
 
