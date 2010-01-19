@@ -61,9 +61,9 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   private def guessedScalaExtDirs: Option[String] =
     guess(List("lib"), _.isDirectory)
 
-  override def hashCode() = allSettings.hashCode
+  override def hashCode() = settingSet.hashCode
   override def equals(that: Any) = that match {
-    case s: Settings  => this.allSettings == s.allSettings
+    case s: Settings  => this.settingSet == s.settingSet
     case _            => false
   }
 
@@ -75,7 +75,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
       case _ => "" == value
     }
 
-    for (setting <- allSettings ; (dep, value) <- setting.dependency)
+    for (setting <- settingSet ; (dep, value) <- setting.dependency)
       if (!setting.isDefault && !hasValue(dep, value)) {
         errorFn("incomplete option " + setting.name + " (requires " + dep.name + ")")
         return false
@@ -811,7 +811,6 @@ trait ScalacSettings {
   /** A list of all settings */
   protected var allsettings: Set[Setting] = TreeSet[Setting]()
   def settingSet: Set[Setting] = allsettings
-  def allSettings: List[Setting] = settingSet.toList
 
   /** Disable a setting */
   def disable(s: Setting) = allsettings -= s

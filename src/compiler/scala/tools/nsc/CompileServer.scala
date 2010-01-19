@@ -82,63 +82,70 @@ class StandardCompileServer extends SocketServer
     val password = compileSocket getPassword port
     val guessedPassword = in.readLine()
     val input = in.readLine()
-    if ((input ne null) && password == guessedPassword) {
-      val args = input.split("\0",-1).toList
-      if (args contains "-shutdown") {
-        out.println("[Compile server exited]")
-        shutDown = true
-        return
-      }
-      if (args contains "-reset") {
-        out.println("[Compile server was reset]")
-        compiler = null
-        return
-      }
-      def error(msg: String) {
-        out.println(/*new Position*/ FakePos("fsc"),
-                    msg + "\n  fsc -help  gives more information")
-      }
-      val command = newOfflineCompilerCommand(args, new Settings(error), error, false)
 
-      reporter = new ConsoleReporter(command.settings, in, out) {
-        // disable prompts, so that compile server cannot block
-        override def displayPrompt = ()
-      }
+    if (input == null || password != guessedPassword)
+      return
 
-      if (command.shouldStopWithInfo) {
-        reporter.info(null,
-                        command.getInfoMessage(newGlobal(command.settings, reporter)), true)
-        } else if (command.files.isEmpty)
-            reporter.info(null, command.usageMsg, true)
-          else {
-            try {
-              if ((compiler ne null) && settingsAreCompatible(command.settings, compiler.settings)) {
-                compiler.settings = command.settings
-                compiler.reporter = reporter
-              } else {
-                if (args contains "-verbose")
-                  out.println("[Starting new compile server instance]")
-                compiler = newGlobal(command.settings, reporter)
-              }
-              val c = compiler
-              val run = new c.Run()
-              run compile command.files
-            } catch {
-              case ex @ FatalError(msg) =>
-                if (command.settings.debug.value)
-                  ex.printStackTrace(out);
-              reporter.error(null, "fatal error: " + msg)
-              compiler = null
-              case ex: Throwable =>
-                ex.printStackTrace(out);
-              reporter.error(null, "fatal error (server aborted): " + ex.getMessage())
-              shutDown = true
-            }
-            reporter.printSummary()
-            if (isMemoryFullEnough)
-              compiler = null
-          }
+    val args = input.split("\0", -1).toList
+    if (args contains "-shutdown") {
+      out.println("[Compile server exited]")
+      shutDown = true
+      return
     }
+    if (args contains "-reset") {
+      out.println("[Compile server was reset]")
+      compiler = null
+      return
+    }
+
+    def error(msg: String) {
+      out.println(FakePos("fsc"), msg + "\n  fsc -help  gives more information")
+    }
+
+    val command = newOfflineCompilerCommand(args, new Settings(error), error, false)
+
+    reporter = new ConsoleReporter(command.settings, in, out) {
+      // disable prompts, so that compile server cannot block
+      override def displayPrompt = ()
+    }
+
+    if (command.shouldStopWithInfo)
+      reporter.info(null, command.getInfoMessage(newGlobal(command.settings, reporter)), true)
+    else if (command.files.isEmpty)
+      reporter.info(null, command.usageMsg, true)
+    else {
+      try {
+        if (compiler != null && command.settings == compiler.settings) {
+          compiler.settings = command.settings
+          compiler.reporter = reporter
+        }
+        else {
+          if (args contains "-verbose") {
+            val reason = if (compiler == null) "compiler is null" else "settings not equal"
+            out.println("[Starting new compile server instance because %s]".format(reason))
+          }
+          compiler = newGlobal(command.settings, reporter)
+        }
+        val c = compiler
+        val run = new c.Run()
+        run compile command.files
+      }
+      catch {
+        case ex @ FatalError(msg) =>
+          if (command.settings.debug.value)
+            ex.printStackTrace(out);
+        reporter.error(null, "fatal error: " + msg)
+        compiler = null
+        case ex: Throwable =>
+          ex.printStackTrace(out);
+        reporter.error(null, "fatal error (server aborted): " + ex.getMessage())
+        shutDown = true
+      }
+    }
+
+    reporter.printSummary()
+    if (isMemoryFullEnough)
+      compiler = null
   }
 
   /** A directory holding redirected output */

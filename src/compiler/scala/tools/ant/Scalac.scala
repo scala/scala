@@ -616,7 +616,7 @@ class Scalac extends MatchingTask {
         val out = new PrintWriter(new BufferedWriter(new FileWriter(file)))
 
         try {
-          for (setting <- settings.allSettings ; arg <- setting.unparse)
+          for (setting <- settings.settingSet ; arg <- setting.unparse)
             out println escapeArgument(arg)
           for (file <- sourceFiles)
             out println file.getAbsolutePath

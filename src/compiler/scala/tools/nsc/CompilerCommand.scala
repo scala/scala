@@ -33,7 +33,7 @@ class CompilerCommand(
   val cmdName = "scalac"
 
   private val helpSyntaxColumnWidth: Int =
-    (settings.allSettings map (_.helpSyntax.length)) max
+    (settings.settingSet map (_.helpSyntax.length)) max
 
   private def format(s: String): String = {
     val buf = new StringBuilder(s)
@@ -44,7 +44,7 @@ class CompilerCommand(
 
   /** Creates a help message for a subset of options based on cond */
   def createUsageMsg(label: String, cond: (Setting) => Boolean): String =
-    settings.allSettings .
+    settings.settingSet .
       filter(cond) .
       map(s => format(s.helpSyntax) + "  " + s.helpDescription) .
       mkString("Usage: %s <options> <source files>\n%s options include:\n  " .
