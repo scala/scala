@@ -213,16 +213,34 @@ INITIALISATION
     <condition property="os.win">
       <os family="windows"/>
     </condition>
-  <!-- Finding out SVN revision -->
+  <!-- Finding out SVN revision, svn style -->
     <exec executable="svn" outputproperty="svn.out"
       failifexecutionfails="false">
       <arg line=" info ${basedir}"/>
     </exec>
     <propertyregex
-      property="svn.number" input="${svn.out}" select="\1"
+      property="svn.number.svn" input="${svn.out}" select="\1"
       regexp="Revision: ([0-9]+)"
       defaultValue="0"/>
+
+    <if>
+	  <equals arg1="${svn.number.svn}" arg2="0" />
+	  <then>
+        <!-- Finding SVN revision, git style -->
+	    <exec executable="bin/git-get-rev" outputproperty="svn.number.git" failifexecutionfails="false" />
+	    <condition property="svn.number" value="${svn.number.git}" >
+		  <isset property="svn.number.git" />
+	    </condition>
+	  </then>
+    </if>
+	<!-- if svn failed and git succeeded, this will be ignored. -->
+	<property name="svn.number" value="${svn.number.svn}" />
+    <echo message="SVN says ${svn.number.svn}" />
+    <echo message="GIT says ${svn.number.git}" />
+    <echo message="FINAL says ${svn.number}" />
+
     <property name="init.avail" value="yes"/>
+
   <!-- Generating version number -->
     <property file="${basedir}/build.number"/>
     <property
