@@ -305,11 +305,14 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
   def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = from
     var these = this drop from
-    while (!these.isEmpty && !p(these.head)) {
+    while (these.nonEmpty) {
+      if (p(these.head))
+        return i
+
       i += 1
       these = these.tail
     }
-    if (these.isEmpty) -1 else i
+    -1
   }
 
   override /*SeqLike*/

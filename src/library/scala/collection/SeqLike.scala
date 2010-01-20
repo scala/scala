@@ -261,9 +261,12 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = from
     var it = iterator.drop(from)
-    while (it.hasNext && !p(it.next()))
-      i += 1
-    if (it.hasNext) i else -1
+    while (it.hasNext) {
+      if (p(it.next())) return i
+      else i += 1
+    }
+
+    -1
   }
 
   /** Returns index of the first element satisying a predicate, or `-1`.
@@ -721,7 +724,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b ++= thisCollection
     while (diff > 0) {
       b += elem
-      diff -=1
+      diff -= 1
     }
     b.result
   }
@@ -839,8 +842,8 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   override def hashCode() = (Seq.hashSeed /: this)(_ * 41 + _.hashCode)
 
   override def equals(that: Any): Boolean = that match {
-    case that: Seq[_]  => (that canEqual this) && (this sameElements that)
-    case _                  => false
+    case that: Seq[_] => (that canEqual this) && (this sameElements that)
+    case _            => false
   }
 
   /* Need to override string, so that it's not the Function1's string that gets mixed in.
