@@ -57,6 +57,12 @@ trait DependencyAnalysis extends SubComponent with Files {
       override def default(f : AbstractFile) = immutable.Set()
     }
 
+  /** External references for inherited members used in the source file */
+  val inherited: mutable.Map[AbstractFile, immutable.Set[Inherited]] =
+    new mutable.HashMap[AbstractFile, immutable.Set[Inherited]] {
+      override def default(f : AbstractFile) = immutable.Set()
+    }
+
   /** Write dependencies to the current file. */
   def saveDependencies(fromFile: AbstractFile => String) =
     if(dependenciesFile.isDefined)
@@ -106,6 +112,8 @@ trait DependencyAnalysis extends SubComponent with Files {
       filtered
     }
 
+  case class Inherited(q: String, name: Name)
+
   class AnalysisPhase(prev : Phase) extends StdPhase(prev){
     def apply(unit : global.CompilationUnit) {
       val f = unit.source.file.file;
@@ -139,6 +147,7 @@ trait DependencyAnalysis extends SubComponent with Files {
       // find all external references in this compilation unit
       val file = unit.source.file
       references += file -> immutable.Set.empty[String]
+      inherited += file -> immutable.Set.empty[Inherited]
 
       val buf = new mutable.ListBuffer[Symbol]
 
@@ -172,7 +181,16 @@ trait DependencyAnalysis extends SubComponent with Files {
                 checkType(ddef.symbol.tpe)
               }
               super.traverse(tree)
-
+            case a @ Select(q, n) if (q.symbol != null) => // #2556
+              if (!a.symbol.isConstructor && !a.symbol.owner.isPackage) {
+                val tpe1 = q.symbol.tpe match {
+                  case MethodType(_, t) => t // Constructor
+                  case t                => t
+                }
+                if (!isSameType(tpe1, a.symbol.owner.tpe))
+                  inherited += file -> (inherited(file) + Inherited(tpe1.safeToString, n))
+              }
+              super.traverse(tree)
             case _            =>
               super.traverse(tree)
           }

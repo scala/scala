@@ -18,6 +18,9 @@ abstract class Changes {
 
   abstract class Change
 
+  private lazy val annotationsChecked =
+      List(definitions.getClass("scala.specialized")) // Any others that should be checked?
+
   /** Are the new modifiers more restrictive than the old ones? */
   private def moreRestrictive(from: Long, to: Long): Boolean =
     ((((to & PRIVATE) != 0L) && (from & PRIVATE) == 0L)
@@ -36,11 +39,15 @@ abstract class Changes {
   case class Changed(e: Entity)(implicit val reason: String) extends Change {
     override def toString = "Changed(" + e + ")[" + reason + "]"
   }
+  case class ParentChanged(e: Entity) extends Change
 
   private def sameSymbol(sym1: Symbol, sym2: Symbol): Boolean =
     sym1.fullNameString == sym2.fullNameString
   private def sameFlags(sym1: Symbol, sym2: Symbol): Boolean =
     sym1.flags == sym2.flags
+  private def sameAnnotations(sym1: Symbol, sym2: Symbol): Boolean =
+    annotationsChecked.forall(a =>
+      (sym1.hasAnnotation(a) == sym2.hasAnnotation(a)))
 
   private def sameType(tp1: Type, tp2: Type) = {
     def typeOf(tp: Type): String = tp.toString + "[" + tp.getClass + "]"
@@ -69,6 +76,7 @@ abstract class Changes {
       value1 == value2
     case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
       sameType(pre1, pre2) && sameSymbol(sym1, sym2) &&
+      (sym1.variance == sym2.variance) &&
       ((tp1.isHigherKinded && tp2.isHigherKinded && tp1.normalize =:= tp2.normalize) ||
          sameTypes(args1, args2))
          // @M! normalize reduces higher-kinded case to PolyType's
@@ -133,7 +141,8 @@ abstract class Changes {
 
   private def sameTypeParams(tparams1: List[Symbol], tparams2: List[Symbol]) =
     sameTypes(tparams1 map (_.info), tparams2 map (_.info)) &&
-    sameTypes(tparams1 map (_.tpe), tparams2 map (_.tpe))
+    sameTypes(tparams1 map (_.tpe), tparams2 map (_.tpe)) &&
+    (tparams1 corresponds tparams2)((t1, t2) => sameAnnotations(t1, t2))
 
   def sameTypes(tps1: List[Type], tps2: List[Type]) = (tps1 corresponds tps2)(sameType)
 
@@ -183,6 +192,7 @@ abstract class Changes {
   }
   def removeChangeSet(sym: Symbol): Change = Removed(toEntity(sym))
   def changeChangeSet(sym: Symbol, msg: String): Change = Changed(toEntity(sym))(msg)
+  def parentChangeSet(sym: Symbol): Change = ParentChanged(toEntity(sym))
 
   private def toEntity(sym: Symbol): Entity =
     if (sym.isClass) Class(sym.fullNameString)

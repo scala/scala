@@ -41,6 +41,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
   val compiler = newCompiler(settings)
   import compiler.{Symbol, Type, atPhase, currentRun}
+  import compiler.dependencyAnalysis.Inherited
 
   private case class SymWithHistory(sym: Symbol, befErasure: Type)
 
@@ -54,6 +55,15 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
   /** External references used by source file. */
   private var references: mutable.Map[AbstractFile, immutable.Set[String]] = _
+
+  /** External references for inherited members */
+  private var inherited: mutable.Map[AbstractFile, immutable.Set[Inherited]] = _
+
+  /** Reverse of definitions, used for caching */
+  private var classes: mutable.Map[String, AbstractFile] =
+    new mutable.HashMap[String, AbstractFile] {
+      override def default(key: String) = null
+  }
 
   /** Add the given source files to the managed build process. */
   def addSourceFiles(files: Set[AbstractFile]) {
@@ -200,7 +210,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       buf += file
       directDeps -= file
       for (syms <- definitions(file))     // fixes #2557
-        newChangesOf(syms.sym) = List(change)
+        newChangesOf(syms.sym) = List(change, parentChangeSet(syms.sym))
       break
     }
 
@@ -260,11 +270,32 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
         }
       }
 
+      def checkInheritedReferences(file: AbstractFile) {
+        val refs = inherited(file)
+        if (!inherited.isEmpty)
+          change match {
+            case ParentChanged(Class(name)) =>
+              refs.find(p => (p != null && p.q == name)) match {
+                  case Some(Inherited(q, member)) =>
+                    findSymbol(q) match {
+                        case Some(s) =>
+                          if (s.tpe.nonPrivateMember(member) == compiler.NoSymbol)
+                            invalidate(file, "it references invalid (no longer inherited) defintion", change)
+                        case None => // TODO: log/throw error?
+                    }
+                  case None =>
+              }
+              ()
+            case _ => ()
+        }
+      }
+
         for (file <- directDeps) {
           breakable {
             for (cls <- definitions(file)) checkParents(cls.sym, file)
             for (cls <- definitions(file)) checkInterface(cls.sym, file)
             checkReferences(file)
+            checkInheritedReferences(file)
           }
         }
     }
@@ -274,10 +305,26 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       invalidated(buf.clone() --= processed, newChangesOf, processed ++ buf)
   }
 
+  private def findSymbol(classFullName: String): Option[Symbol] = {
+      classes.get(classFullName) match {
+          case Some(file) =>
+            definitions.get(file) match {
+                case Some(defs) =>
+                  defs.find(p => (p.sym.fullNameString == classFullName)) match {
+                      case Some(s) => Some(s.sym)
+                      case _ => None
+                  }
+                case None => None
+            }
+          case None => None
+      }
+  }
+
   /** Update the map of definitions per source file */
   private def updateDefinitions(files: Set[AbstractFile]) {
     for (src <- files; val localDefs = compiler.dependencyAnalysis.definitions(src)) {
       definitions(src) = (localDefs map (s => {
+        this.classes += s.fullNameString -> src
         SymWithHistory(
           s.cloneSymbol,
           atPhase(currentRun.erasurePhase.prev) {
@@ -286,6 +333,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       }))
     }
     this.references = compiler.dependencyAnalysis.references
+    this.inherited = compiler.dependencyAnalysis.inherited
   }
 
   /** Load saved dependency information. */
