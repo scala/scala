@@ -125,6 +125,10 @@ div.members > ol > li {
 	font-weight: bold;
 }
 
+.signature .symbol .params .default {
+	font-style: italic;
+}
+
 #values .signature .name {
 	color: #142556;
 }
@@ -179,6 +183,11 @@ div.fullcomment .block {
 	padding: 2px 0 2px 0;
 	border-top: 1px solid black;
 	border-bottom: 1px solid black;
+}
+
+div.fullcomment div.block ol li p, 
+div.fullcomment div.block ol li {
+	display:inline
 }
 
 div.fullcomment .block + .block {

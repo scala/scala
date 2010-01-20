@@ -185,12 +185,56 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           case _ => NodeSeq.Empty
         }
       }
+      { for(comment <- mbr.comment.toList) yield {
+        <xml:group>
+          { if(!comment.deprecated.isEmpty)
+              <div class="block"><ol>deprecated:
+                { for(body <- comment.deprecated.toList) yield <li>{bodyToHtml(body)}</li> }
+              </ol></div>
+           else NodeSeq.Empty
+          }
+          { if(mbr.isDeprecated)
+              <div class="block"><ol>deprecated:
+                { for(str <- mbr.deprecationMessage.toList) yield <li>{str}</li> }
+              </ol></div>
+            else NodeSeq.Empty
+          }
+          { if(!comment.version.isEmpty)
+            <div class="block"><ol>version
+              { for(body <- comment.version.toList) yield <li>{bodyToHtml(body)}</li> }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+          { if(!comment.since.isEmpty)
+            <div class="block"><ol>since
+              { for(body <- comment.since.toList) yield <li>{bodyToHtml(body)}</li> }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+          { if(!comment.see.isEmpty)
+            <div class="block"><ol>see also:
+              { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li>{bodyToHtml(see)}</li> )
+                seeXml.reduceLeft(_ ++ Text(", ") ++ _)
+              }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+          { if(!comment.authors.isEmpty)
+            <div class="block"><ol>authors:
+              { val authorsXml:List[scala.xml.NodeSeq]=(for(author <- comment.authors ) yield <li>{bodyToHtml(author)}</li> )
+                authorsXml.reduceLeft(_ ++ Text(", ") ++ _)
+              }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+        </xml:group>
+      }}
       { tpl.companion match {
-          case Some(companion) =>
+          case Some(companion) if isSelf =>
             <div class="block">
               Go to: <a href={relativeLinkTo(companion)}>companion</a>
             </div>
-          case None =>
+          case _ =>
             NodeSeq.Empty
         }
       }
@@ -237,7 +281,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }{
           def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
             def param0(vl: ValueParam): NodeSeq =
-              <span name={ vl.name }>{ vl.name + ": " }{ typeToHtml(vl.resultType, hasLinks) }</span>
+              // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
+              <span name={ vl.name }>{ Text(vl.name + ": ") }{ typeToHtml(vl.resultType, hasLinks) }{
+                if(!vl.defaultValue.isEmpty) {
+                  Text(" = ") ++ <span class="default">{vl.defaultValue.get}</span>
+                }
+                else NodeSeq.Empty
+              }</span>
             def params0(vlss: List[ValueParam]): NodeSeq = vlss match {
               case Nil => NodeSeq.Empty
               case vl :: Nil => param0(vl)

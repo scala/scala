@@ -126,6 +126,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
       if (inTemplate.sym == this.sym.owner || inTemplate.sym.isPackage) Nil else
         makeTemplate(this.sym.owner) :: (sym.allOverriddenSymbols map { os => makeTemplate(os.owner) })
     def isDeprecated = sym.isDeprecated
+    def deprecationMessage = sym.deprecationMessage
     def resultType = makeType(sym.tpe.finalResultType, inTemplate, sym)
     def isDef = false
     def isVal = false
@@ -401,16 +402,26 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
   }
 
   /** */
-  def makeValueParam(aSym: Symbol, inTpl: => DocTemplateImpl, newName: String): ValueParam = {
+  def makeValueParam(aSym: Symbol, inTpl: => DocTemplateImpl, newName: String): ValueParam =
     new ParameterImpl(aSym, inTpl) with ValueParam {
       override val name = newName
       def isTypeParam = false
       def isValueParam = true
-      def resultType = {
+      def defaultValue =
+        if (aSym.hasFlag(Flags.DEFAULTPARAM))
+          // units.filter should return only one element
+          (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
+            case List(unit) =>
+              (unit.body find (_.symbol == aSym)) match {
+                case Some(ValDef(_,_,_,rhs)) => Some(rhs.toString)
+                case _ => None
+              }
+            case _ => None
+          }
+        else None
+      def resultType =
         makeType(sym.tpe, inTpl, sym)
-      }
     }
-  }
 
   /** */
   def makeType(aType: Type, seeInTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {

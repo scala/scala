@@ -45,6 +45,7 @@ trait MemberEntity extends Entity {
   def flags: List[Paragraph]
   def inheritedFrom: List[TemplateEntity]
   def isDeprecated: Boolean
+  def deprecationMessage: Option[String]
   def resultType: TypeEntity
   def isDef: Boolean
   def isVal: Boolean
@@ -141,5 +142,6 @@ trait TypeParam extends ParameterEntity {
 
 /** A value parameter to a constructor or to a method. */
 trait ValueParam extends ParameterEntity {
-  def resultType : TypeEntity
+  def resultType: TypeEntity
+  def defaultValue: Option[String]
 }
