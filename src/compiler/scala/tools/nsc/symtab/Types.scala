@@ -1824,6 +1824,13 @@ A type's typeSymbol should never be inspected directly.
     override val isTrivial: Boolean =
       params.forall(_.tpe.isTrivial) && resultType.isTrivial
 
+    // The comment at ImplicitMethodType says the class is no longer needed,
+    // "a method type is implicit if the first parameter has the IMPLICIT flag".
+    // Should that change be pursued, then this method should be:
+    // def isImplicit = vparams.nonEmpty && (vparams.head hasFlag IMPLICIT)
+    def isImplicit = false
+    def isJava = false
+
     //assert(paramTypes forall (pt => !pt.typeSymbol.isImplClass))//DEBUG
     override def paramSectionCount: Int = resultType.paramSectionCount + 1
 
@@ -1868,9 +1875,13 @@ A type's typeSymbol should never be inspected directly.
 
   // todo: this class is no longer needed, a method type is implicit if the first
   // parameter has the IMPLICIT flag
-  class ImplicitMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt)
+  class ImplicitMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt) {
+    override def isImplicit = true
+  }
 
-  class JavaMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt)
+  class JavaMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt) {
+    override def isJava = true
+  }
 
   /** A class representing a polymorphic type or, if tparams.length == 0,
    *  a parameterless method type.
@@ -3856,18 +3867,14 @@ A type's typeSymbol should never be inspected directly.
         // new dependent types: probably fix this, use substSym as done for PolyType
         (isSameTypes(tp1.paramTypes, tp2.paramTypes) &&
          res1 =:= res2 &&
-         tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
+         tp1.isImplicit == tp2.isImplicit)
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
-//        assert((tparams1 map (_.typeParams.length)) == (tparams2 map (_.typeParams.length)))
-        (tparams1.length == tparams2.length &&
-         (tparams1, tparams2).zipped.forall
-           ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) && //@M looks like it might suffer from same problem as #2210
-         res1 =:= res2.substSym(tparams2, tparams1))
+        // assert((tparams1 map (_.typeParams.length)) == (tparams2 map (_.typeParams.length)))
+        (tparams1 corresponds tparams2)(_.info =:= _.info.substSym(tparams2, tparams1)) && // @M looks like it might suffer from same problem as #2210
+          res1 =:= res2.substSym(tparams2, tparams1)
       case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
-        (tparams1.length == tparams2.length &&
-         (tparams1, tparams2).zipped.forall
-           ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) && //@M looks like it might suffer from same problem as #2210
-         res1 =:= res2.substSym(tparams2, tparams1))
+        (tparams1 corresponds tparams2)(_.info =:= _.info.substSym(tparams2, tparams1)) && // @M looks like it might suffer from same problem as #2210
+          res1 =:= res2.substSym(tparams2, tparams1)
       case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
         lo1 =:= lo2 && hi1 =:= hi2
       case (BoundedWildcardType(bounds), _) =>
@@ -3981,26 +3988,28 @@ A type's typeSymbol should never be inspected directly.
             // new dependent types: probably fix this, use substSym as done for PolyType
             return isSameTypes(mt1.paramTypes, mt2.paramTypes) &&
               mt1.resultType =:= mt2.resultType &&
-              tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
+              mt1.isImplicit == mt2.isImplicit
           case _ =>
         }
       case PolyType(tparams1, res1) =>
         tp2 match {
           case PolyType(tparams2, res2) =>
 //            assert((tparams1 map (_.typeParams.length)) == (tparams2 map (_.typeParams.length)))
-            return tparams1.length == tparams2.length &&
-              (tparams1, tparams2).zipped.forall((p1, p2) =>
-                p1.info =:= p2.info.substSym(tparams2, tparams1)) && //@M looks like it might suffer from same problem as #2210
-              res1 =:= res2.substSym(tparams2, tparams1)
+              // @M looks like it might suffer from same problem as #2210
+              return (
+                (tparams1 corresponds tparams2)(_.info =:= _.info.substSym(tparams2, tparams1)) &&
+                res1 =:= res2.substSym(tparams2, tparams1)
+              )
           case _ =>
         }
       case ExistentialType(tparams1, res1) =>
         tp2 match {
           case ExistentialType(tparams2, res2) =>
-            return (tparams1.length == tparams2.length &&
-               (tparams1, tparams2).zipped.forall
-               ((p1, p2) => p1.info =:= p2.info.substSym(tparams2, tparams1)) && //@M looks like it might suffer from same problem as #2210
-               res1 =:= res2.substSym(tparams2, tparams1))
+            // @M looks like it might suffer from same problem as #2210
+            return (
+              (tparams1 corresponds tparams2)(_.info =:= _.info.substSym(tparams2, tparams1)) &&
+              res1 =:= res2.substSym(tparams2, tparams1)
+            )
           case _ =>
         }
       case TypeBounds(lo1, hi1) =>
@@ -4064,8 +4073,7 @@ A type's typeSymbol should never be inspected directly.
   /** Are `tps1' and `tps2' lists of pairwise equivalent
    *  types?
    */
-  def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean =
-    tps1.length == tps2.length && ((tps1, tps2).zipped forall (_ =:= _))
+  def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
 
   private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
   private var basetypeRecursions: Int = 0
@@ -4145,18 +4153,17 @@ A type's typeSymbol should never be inspected directly.
     ((tp1.normalize, tp2.normalize) match {
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) => // @assume tp1.isHigherKinded && tp2.isHigherKinded (as they were both normalized to PolyType)
         tparams1.length == tparams2.length && {
-          if(tparams1.isEmpty) res1 <:< res2 // fast-path: monomorphic nullary method type
-          else if(tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
-            ((tparams1, tparams2).zipped forall ((p1, p2) =>
-              p2.info.substSym(tparams2, tparams1) <:< p1.info)) &&
+          if (tparams1.isEmpty) res1 <:< res2 // fast-path: monomorphic nullary method type
+          else if (tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
+            (tparams1 corresponds tparams2)((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
             res1 <:< res2.substSym(tparams2, tparams1)
           } else { // normalized higher-kinded type
             //@M for an example of why we need to generate fresh symbols, see neg/tcpoly_ticket2101.scala
             val tpsFresh = cloneSymbols(tparams1) // @M cloneSymbols(tparams2) should be equivalent -- TODO: check
 
-            ((tparams1, tparams2).zipped forall ((p1, p2) =>
-              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh))) &&
-              res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh)
+            (tparams1 corresponds tparams2)((p1, p2) =>
+              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&   // @PP: corresponds
+            res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh)
 
             //@M the forall in the previous test could be optimised to the following,
             // but not worth the extra complexity since it only shaves 1s from quick.comp
@@ -4306,13 +4313,13 @@ A type's typeSymbol should never be inspected directly.
         tp1.isNotNull && tp1 <:< nn2.underlying
       case mt2: MethodType =>
         tp1 match {
-          case MethodType(params1, res1) =>
+          case mt1 @ MethodType(params1, res1) =>
             val params2 = mt2.params
             val res2 = mt2.resultType
             (params1.length == params2.length &&
-             matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
+             matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
              (res1 <:< res2) &&
-             tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
+             mt1.isImplicit == mt2.isImplicit)
           case _ =>
             false
         }
@@ -4382,8 +4389,7 @@ A type's typeSymbol should never be inspected directly.
    *  that all elements of `tps1' conform to corresponding elements
    *  of `tps2'?
    */
-  def isSubTypes(tps1: List[Type], tps2: List[Type]): Boolean =
-    tps1.length == tps2.length && ((tps1, tps2).zipped forall (_ <:< _))
+  def isSubTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ <:< _)
 
   /** Does type `tp' implement symbol `sym' with same or
    *  stronger type? Exact only if `sym' is a member of some
@@ -4424,13 +4430,13 @@ A type's typeSymbol should never be inspected directly.
           alwaysMatchSimple || tp1 =:= tp2
       }
     tp1 match {
-      case MethodType(params1, res1) =>
+      case mt1 @ MethodType(params1, res1) =>
         tp2 match {
-          case MethodType(params2, res2) =>
-            params1.length == params2.length && // useful pre-secreening optimization
-            matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
+          case mt2 @ MethodType(params2, res2) =>
+            params1.length == params2.length && // useful pre-screening optimization
+            matchingParams(params1, params2, mt1.isJava, mt2.isJava) &&
             matchesType(res1, res2, alwaysMatchSimple) &&
-            tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
+            mt1.isImplicit == mt2.isImplicit
           case PolyType(List(), res2) =>
             if (params1.isEmpty) matchesType(res1, res2, alwaysMatchSimple)
             else matchesType(tp1, res2, alwaysMatchSimple)
@@ -4616,7 +4622,7 @@ A type's typeSymbol should never be inspected directly.
    */
   def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): Boolean = {
     val bounds = instantiatedBounds(pre, owner, tparams, targs)
-    (bounds, targs).zipped forall (_ containsType _)
+    (bounds corresponds targs)(_ containsType _)  // @PP: corresponds
   }
 
   def instantiatedBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): List[TypeBounds] =

@@ -175,8 +175,10 @@ trait Infer {
     tvars map instantiate
   }
 
-  def skipImplicit(tp: Type) =
-    if (tp.isInstanceOf[ImplicitMethodType]) tp.resultType else tp
+  def skipImplicit(tp: Type) = tp match {
+    case mt: MethodType if mt.isImplicit  => mt.resultType
+    case _                                => tp
+  }
 
   /** Automatically perform the following conversions on expression types:
    *  A method type becomes the corresponding function type.
@@ -185,8 +187,8 @@ trait Infer {
    *  This method seems to be performance critical.
    */
   def normalize(tp: Type): Type = tp match {
-    case MethodType(params, restpe) if (!restpe.isDependent) =>
-      if (tp.isInstanceOf[ImplicitMethodType]) normalize(restpe)
+    case mt @ MethodType(params, restpe) if (!restpe.isDependent) =>
+      if (mt.isImplicit) normalize(restpe)
       else functionType(params map (_.tpe), normalize(restpe))
     case PolyType(List(), restpe) => // nullary method type
       normalize(restpe)
@@ -401,8 +403,8 @@ trait Infer {
         isPlausiblyCompatible(mt.resultType, pt)
       case ExistentialType(tparams, qtpe) =>
         isPlausiblyCompatible(qtpe, pt)
-      case MethodType(params, restpe) =>
-        if (tp.isInstanceOf[ImplicitMethodType]) isPlausiblyCompatible(restpe, pt)
+      case mt @ MethodType(params, restpe) =>
+        if (mt.isImplicit) isPlausiblyCompatible(restpe, pt)
         else pt match {
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType) {
@@ -457,8 +459,8 @@ trait Infer {
     }
 
     final def normSubType(tp: Type, pt: Type): Boolean = tp match {
-      case MethodType(params, restpe) =>
-        if (tp.isInstanceOf[ImplicitMethodType]) normSubType(restpe, pt)
+      case mt @ MethodType(params, restpe) =>
+        if (mt.isImplicit) normSubType(restpe, pt)
         else  pt match {
           case TypeRef(pre, sym, args) =>
             if (sym.isAliasType) {
@@ -517,8 +519,8 @@ trait Infer {
 
     def isCoercible(tp: Type, pt: Type): Boolean = false
 
-    def isCompatibleArgs(tps: List[Type], pts: List[Type]): Boolean =
-      (tps, pts).zipped forall isCompatibleArg
+    def isCompatibleArgs(tps: List[Type], pts: List[Type]) =
+      (tps corresponds pts)(isCompatibleArg)  // @PP: corresponds
 
     /* -- Type instantiation------------------------------------------------ */
 

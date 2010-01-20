@@ -88,13 +88,12 @@ abstract class Changes {
       }
       sameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
 
-    case (MethodType(params1, res1), MethodType(params2, res2)) =>
+    case (mt1 @ MethodType(params1, res1), mt2 @ MethodType(params2, res2)) =>
       // new dependent types: probably fix this, use substSym as done for PolyType
       (sameTypes(tp1.paramTypes, tp2.paramTypes) &&
-      ((tp1.params, tp2.params).zipped forall ((t1, t2) =>
-        (sameSymbol(t1, t2) && sameFlags(t1, t2)))) &&
+      (tp1.params corresponds tp2.params)((t1, t2) => sameSymbol(t1, t2) && sameFlags(t1, t2)) && // @PP: corresponds
       sameType(res1, res2) &&
-      tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType])
+      mt1.isImplicit == mt2.isImplicit)
 
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       sameTypeParams(tparams1, tparams2) && sameType(res1, res2)
@@ -136,8 +135,7 @@ abstract class Changes {
     sameTypes(tparams1 map (_.info), tparams2 map (_.info)) &&
     sameTypes(tparams1 map (_.tpe), tparams2 map (_.tpe))
 
-  def sameTypes(tps1: List[Type], tps2: List[Type]): Boolean =
-    (tps1.length == tps2.length) && ((tps1, tps2).zipped forall sameType)
+  def sameTypes(tps1: List[Type], tps2: List[Type]) = (tps1 corresponds tps2)(sameType)
 
   /** Return the list of changes between 'from' and 'toSym.info'.
    */

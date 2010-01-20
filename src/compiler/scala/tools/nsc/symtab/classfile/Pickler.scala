@@ -586,9 +586,9 @@ abstract class Pickler extends SubComponent {
           writeRef(tp.typeSymbol); writeRefs(parents); REFINEDtpe
         case ClassInfoType(parents, decls, clazz) =>
           writeRef(clazz); writeRefs(parents); CLASSINFOtpe
-        case MethodType(formals, restpe) =>
+        case mt @ MethodType(formals, restpe) =>
           writeRef(restpe); writeRefs(formals)
-          if (entry.isInstanceOf[ImplicitMethodType]) IMPLICITMETHODtpe
+          if (mt.isImplicit) IMPLICITMETHODtpe
           else METHODtpe
         case PolyType(tparams, restpe) =>
           writeRef(restpe); writeRefs(tparams); POLYtpe
@@ -1037,8 +1037,8 @@ abstract class Pickler extends SubComponent {
           print("REFINEDtpe "); printRef(tp.typeSymbol); printRefs(parents);
         case ClassInfoType(parents, decls, clazz) =>
           print("CLASSINFOtpe "); printRef(clazz); printRefs(parents);
-        case MethodType(formals, restpe) =>
-          print(if (entry.isInstanceOf[ImplicitMethodType]) "IMPLICITMETHODtpe " else "METHODtpe ");
+        case mt @ MethodType(formals, restpe) =>
+          print(if (mt.isImplicit) "IMPLICITMETHODtpe " else "METHODtpe ");
           printRef(restpe); printRefs(formals)
         case PolyType(tparams, restpe) =>
           print("POLYtpe "); printRef(restpe); printRefs(tparams);

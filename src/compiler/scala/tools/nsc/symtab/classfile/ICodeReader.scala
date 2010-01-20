@@ -145,17 +145,15 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   /** Checks if tp1 is the same type as tp2, modulo implict methods.
-   *  We don't care about the distinction between implcit and explicit
+   *  We don't care about the distinction between implicit and explicit
    *  methods as this point, and we can't get back the information from
    *  bytecode anyway.
    */
   private def sameType(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
-    case (MethodType(args1, resTpe1), MethodType(args2, resTpe2)) =>
-      if (tp1.isInstanceOf[ImplicitMethodType] || tp2.isInstanceOf[ImplicitMethodType]) {
-        MethodType(args1, resTpe1) =:= MethodType(args2, resTpe2)
-      } else
-        tp1 =:= tp2
-    case _ => tp1 =:= tp2
+    case (mt1 @ MethodType(args1, resTpe1), mt2 @ MethodType(args2, resTpe2)) if mt1.isImplicit || mt2.isImplicit =>
+      MethodType(args1, resTpe1) =:= MethodType(args2, resTpe2)
+    case _ =>
+      tp1 =:= tp2
   }
 
   override def parseMethod() {

@@ -903,7 +903,7 @@ abstract class RefChecks extends InfoTransform {
           val clazz = pat.tpe.typeSymbol;
           clazz == seltpe.typeSymbol &&
           clazz.isClass && (clazz hasFlag CASE) &&
-          ((args, clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes).zipped forall isIrrefutable)
+          (args corresponds clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable) // @PP: corresponds
         case Typed(pat, tpt) =>
           seltpe <:< tpt.tpe
         case Ident(nme.WILDCARD) =>

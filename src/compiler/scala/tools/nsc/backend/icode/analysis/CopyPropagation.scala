@@ -58,18 +58,13 @@ abstract class CopyPropagation {
 
     class State(val bindings: Bindings, var stack: List[Value]) {
       override def equals(that: Any): Boolean =
-        (this eq that.asInstanceOf[AnyRef]) ||
-        that.isInstanceOf[State] && {
-          val other = that.asInstanceOf[State]
-
+        (this eq that.asInstanceOf[AnyRef]) || (that match {
           /* comparison with bottom is reference equality! */
-          if ((other eq bottom) || (this eq bottom))
-            (this eq other)
-          else {
+          case other: State if (this ne bottom) && (other ne bottom) =>
             (this.bindings == other.bindings) &&
-            ((this.stack, other.stack).zipped forall (_ == _))
-          }
-        }
+            (this.stack corresponds other.stack)(_ == _)  // @PP: corresponds
+          case _ => false
+        })
 
       /* Return an alias for the given local. It returns the last
        * local in the chain of aliased locals. Cycles are not allowed

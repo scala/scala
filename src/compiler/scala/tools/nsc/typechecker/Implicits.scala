@@ -387,9 +387,9 @@ self: Analyzer =>
         result
       }
 
-      def matchesPtView(tp: Type, ptarg: Type, ptres: Type, undet: List[Symbol]): Boolean =  tp match {
-        case MethodType(params, restpe) =>
-          if (tp.isInstanceOf[ImplicitMethodType]) matchesPtView(restpe, ptarg, ptres, undet)
+      def matchesPtView(tp: Type, ptarg: Type, ptres: Type, undet: List[Symbol]): Boolean = tp match {
+        case mt @ MethodType(params, restpe) =>
+          if (mt.isImplicit) matchesPtView(restpe, ptarg, ptres, undet)
           else params.length == 1 && matchesArgRes(params.head.tpe, restpe, ptarg, ptres, undet)
         case ExistentialType(tparams, qtpe) =>
           matchesPtView(normalize(tp), ptarg, ptres, undet)
