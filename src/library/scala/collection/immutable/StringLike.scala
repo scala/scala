@@ -263,7 +263,7 @@ self =>
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
-  def format(l: java.util.Locale, args: Any*): String =
+  def formatLocal(l: java.util.Locale, args: Any*): String =
     java.lang.String.format(l, toString, args map unwrapArg: _*)
 }
 
