@@ -834,9 +834,10 @@ trait Definitions {
 
         // additional methods of Object
         newMethod(ObjectClass, "clone", List(), AnyRefClass.typeConstructor)
-        newMethod(ObjectClass, "wait", List(), unitType)
-        newMethod(ObjectClass, "wait", List(longType), unitType)
-        newMethod(ObjectClass, "wait", List(longType, intType), unitType)
+        // wait in Java returns void, on .NET Wait returns boolean. by putting
+        //  `booltype` the compiler adds a `drop` after calling wait.
+        newMethod(ObjectClass, "wait", List(), booltype)
+        newMethod(ObjectClass, "wait", List(longType), booltype)
         newMethod(ObjectClass, "notify", List(), unitType)
         newMethod(ObjectClass, "notifyAll", List(), unitType)
 

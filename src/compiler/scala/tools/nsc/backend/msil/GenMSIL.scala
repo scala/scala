@@ -601,10 +601,18 @@ abstract class GenMSIL extends SubComponent {
 
       genBlocks(linearization)
 
+      // RETURN inside exception blocks are replaced by Leave. The target of the
+      // levae is a `Ret` outside any exception block (generated here).
+      if (handlerReturnMethod == m) {
+        mcode.MarkLabel(handlerReturnLabel)
+        if (handlerReturnKind != UNIT)
+          mcode.Emit(OpCodes.Ldloc, handlerReturnLocal)
+        mcode.Emit(OpCodes.Ret)
+      }
+
       beginExBlock.clear()
       beginCatchBlock.clear()
       endExBlock.clear()
-      omitJumpBlocks.clear()
     }
 
     def genBlocks(blocks: List[BasicBlock], previous: BasicBlock = null) {
@@ -622,15 +630,36 @@ abstract class GenMSIL extends SubComponent {
     val beginCatchBlock = new HashMap[BasicBlock, ExceptionHandler]()
     val endExBlock = new HashMap[BasicBlock, List[ExceptionHandler]]()
 
-    // at the end of a try or catch block, the jumps must not be emitted.
-    // the automatically generated leave will do the job.
-    val omitJumpBlocks: HashSet[BasicBlock] = new HashSet()
+    // when emitting the code (genBlock), the number of currently active try / catch
+    // blocks. When seeing a `RETURN' inside a try / catch, we need to replace
+    // it with Leave
+    var currentHandlers = 0
+    // The IMethod the Local/Label/Kind below belong to
+    var handlerReturnMethod: IMethod = _
+    // Stores the result when returning inside an exception block
+    var handlerReturnLocal: LocalBuilder = _
+    // Label for a return instruction outside any exception block
+    var handlerReturnLabel: Label = _
+    // The result kind.
+    var handlerReturnKind: TypeKind = _
+    def returnFromHandler(kind: TypeKind): (LocalBuilder, Label) = {
+      if (handlerReturnMethod != method) {
+        handlerReturnMethod = method
+        if (kind != UNIT) {
+          handlerReturnLocal = mcode.DeclareLocal(msilType(kind))
+          handlerReturnLocal.SetLocalSymInfo("$handlerReturn")
+        }
+        handlerReturnLabel = mcode.DefineLabel()
+        handlerReturnKind = kind
+      }
+      (handlerReturnLocal, handlerReturnLabel)
+    }
 
     /** Computes which blocks are the beginning / end of a try or catch block */
     private def computeExceptionMaps(blocks: List[BasicBlock], m: IMethod): List[BasicBlock] = {
       val visitedBlocks = new HashSet[BasicBlock]()
 
-      // handlers which have not been intruduced so far
+      // handlers which have not been introduced so far
       var openHandlers = m.exh
 
 
@@ -661,8 +690,6 @@ abstract class GenMSIL extends SubComponent {
       // tail is all following catch blocks. Example *2*: Stack(List(h3), List(h4, h5))
       val currentCatchHandlers = new Stack[List[ExceptionHandler]]()
 
-      var prev: BasicBlock = null
-
       for (b <- blocks) {
 
         // are we past the current catch blocks?
@@ -676,12 +703,12 @@ abstract class GenMSIL extends SubComponent {
                      "Bad linearization of basic blocks inside catch. Found block not part of the handler\n"+
                      b.fullString +"\nwhile in catch-part of\n"+ handler)
 
-              omitJumpBlocks += prev
-
               val rest = currentCatchHandlers.pop.tail
               if (rest.isEmpty) {
+                // all catch blocks of that exception handler are covered
                 res = handler :: endHandlers()
               } else {
+                // there are more catch blocks for that try (handlers covering the same)
                 currentCatchHandlers.push(rest)
                 beginCatchBlock(b) = rest.head
               }
@@ -708,7 +735,6 @@ abstract class GenMSIL extends SubComponent {
             val handlers = currentTryHandlers.pop
             currentCatchHandlers.push(handlers)
             beginCatchBlock(b) = handler
-            omitJumpBlocks += prev
           }
         }
 
@@ -745,7 +771,6 @@ abstract class GenMSIL extends SubComponent {
         }
         beginExBlock(b) = beginHandlers.toList
         visitedBlocks += b
-        prev = b
       }
 
       // if there handlers left (i.e. handlers covering nothing, or a
@@ -769,7 +794,6 @@ abstract class GenMSIL extends SubComponent {
       if (rest.isEmpty) {
         liveBlocks
       } else {
-        omitJumpBlocks += prev
         val b = m.code.newBlock
         b.emit(Seq(
           NEW(REFERENCE(definitions.ThrowableClass)),
@@ -802,14 +826,18 @@ abstract class GenMSIL extends SubComponent {
 
       var lastLineNr: Int = 0
 
-      mcode.MarkLabel(labels(block))
+      // EndExceptionBlock must happen before MarkLabel because it adds the
+      // Leave instruction. Otherwise, labels(block) points to the Leave
+      // (inside the catch) instead of the instruction afterwards.
+      for (handlers <- endExBlock.get(block); exh <- handlers) {
+        currentHandlers -= 1
+        mcode.EndExceptionBlock()
+      }
 
+      mcode.MarkLabel(labels(block))
       if (settings.debug.value)
         log("Generating code for block: " + block)
 
-      for (handlers <- endExBlock.get(block); exh <- handlers) {
-        mcode.EndExceptionBlock()
-      }
       for (handler <- beginCatchBlock.get(block)) {
         if (handler.cls == NoSymbol) {
           // `finally` blocks are represented the same as `catch`, but with no catch-type
@@ -820,6 +848,7 @@ abstract class GenMSIL extends SubComponent {
         }
       }
       for (handlers <- beginExBlock.get(block); exh <- handlers) {
+        currentHandlers += 1
         mcode.BeginExceptionBlock()
       }
 
@@ -1131,7 +1160,7 @@ abstract class GenMSIL extends SubComponent {
             //    if the int on stack is 4, and 4 is in the second list => jump
             //    to second label
             // branches is List[BasicBlock]
-            //    the labels to jump to (the last one ist the default one)
+            //    the labels to jump to (the last one is the default one)
 
             val switchLocal = mcode.DeclareLocal(MINT)
             // several switch variables will appear with the same name in the
@@ -1150,12 +1179,17 @@ abstract class GenMSIL extends SubComponent {
               i += 1
             }
             val defaultTarget = labels(branches(i))
-            if (next != defaultTarget && !omitJumpBlocks.contains(block))
+            if (next != defaultTarget)
               mcode.Emit(OpCodes.Br, defaultTarget)
 
-
           case JUMP(whereto) =>
-            if (next != whereto && !omitJumpBlocks.contains(block))
+            val (leaveHandler, leaveFinally) = leavesHandler(block, whereto, method.exh)
+            if (leaveHandler) {
+              if (leaveFinally)
+                mcode.Emit(OpCodes.Endfinally)
+              else
+                mcode.Emit(OpCodes.Leave, labels(whereto))
+            } else if (next != whereto)
               mcode.Emit(OpCodes.Br, labels(whereto))
 
           case CJUMP(success, failure, cond, kind) =>
@@ -1163,30 +1197,21 @@ abstract class GenMSIL extends SubComponent {
             // values EQ, NE, LT, GE LE, GT
             // kind is TypeKind
             val isFloat = kind == FLOAT || kind == DOUBLE
-            if (next == success || omitJumpBlocks.contains(block)) {
-              emitBr(cond.negate, labels(failure), isFloat)
-            } else {
-              emitBr(cond, labels(success), isFloat)
-              if (next != failure && !omitJumpBlocks.contains(block)) {
-                mcode.Emit(OpCodes.Br, labels(failure))
-              }
-            }
+            val emit = (c: TestOp, l: Label) => emitBr(c, l, isFloat)
+            emitCondBr(block, cond, success, failure, next, method.exh, emit)
 
           case CZJUMP(success, failure, cond, kind) =>
-            (kind: @unchecked) match {
-              case BOOL | REFERENCE(_) =>
-                if (next == success || omitJumpBlocks.contains(block)) {
-                  emitBrBool(cond.negate, labels(failure))
-                } else {
-                  emitBrBool(cond, labels(success))
-                  if (next != failure && !omitJumpBlocks.contains(block)) {
-                    mcode.Emit(OpCodes.Br, labels(failure))
-                  }
-                }
-            }
+            emitCondBr(block, cond, success, failure, next, method.exh, emitBrBool(_, _))
 
           case RETURN(kind) =>
-            mcode.Emit(OpCodes.Ret)
+            if (currentHandlers == 0)
+              mcode.Emit(OpCodes.Ret)
+            else {
+              val (local, label) = returnFromHandler(kind)
+              if (kind != UNIT)
+                mcode.Emit(OpCodes.Stloc, local)
+              mcode.Emit(OpCodes.Leave, label)
+            }
 
           case THROW() =>
             mcode.Emit(OpCodes.Throw)
@@ -1335,8 +1360,63 @@ abstract class GenMSIL extends SubComponent {
           code.Emit(OpCodes.Ldloc, localBuilders(local))
     }
 
-    ////////////////////// labels ///////////////////////
+    ////////////////////// branches ///////////////////////
 
+    def leavesHandler(from: BasicBlock, to: BasicBlock, handlers: List[ExceptionHandler]) =
+      if (currentHandlers == 0) (false, false)
+      else {
+        val h = handlers.find(e => {
+          e.covers(from) != e.covers(to) ||
+          e.blocks.contains(from) != e.blocks.contains(to)
+        })
+        if (h.isDefined) {
+          val leavesFinalizerHandler =
+            h.get.cls == NoSymbol && h.get.blocks.contains(from) != h.get.blocks.contains(to)
+          (true, leavesFinalizerHandler)
+        } else (false, false)
+      }
+
+    def emitCondBr(block: BasicBlock, cond: TestOp, success: BasicBlock, failure: BasicBlock,
+                   next: BasicBlock, handlers: List[ExceptionHandler], emitBrFun: (TestOp, Label) => Unit) {
+      val (sLeaveHandler, sLeaveFinally) = leavesHandler(block, success, handlers)
+      val (fLeaveHandler, fLeaveFinally) = leavesHandler(block, failure, handlers)
+
+      if (sLeaveHandler || fLeaveHandler) {
+        val sLabelOpt = if (sLeaveHandler) {
+          val leaveSLabel = mcode.DefineLabel()
+          emitBrFun(cond, leaveSLabel)
+          Some(leaveSLabel)
+        } else {
+          emitBrFun(cond, labels(success))
+          None
+        }
+
+        if (fLeaveHandler) {
+          if (fLeaveFinally)
+            mcode.Emit(OpCodes.Endfinally)
+          else
+            mcode.Emit(OpCodes.Leave, labels(failure))
+        } else
+          mcode.Emit(OpCodes.Br, labels(failure))
+
+        sLabelOpt.map(l => {
+          mcode.MarkLabel(l)
+          if (sLeaveFinally)
+            mcode.Emit(OpCodes.Endfinally)
+          else
+            mcode.Emit(OpCodes.Leave, labels(success))
+        })
+      } else {
+        if (next == success) {
+          emitBrFun(cond.negate, labels(failure))
+        } else {
+          emitBrFun(cond, labels(success))
+          if (next != failure) {
+            mcode.Emit(OpCodes.Br, labels(failure))
+          }
+        }
+      }
+    }
 
     def emitBr(condition: TestOp, dest: Label, isFloat: Boolean) {
       condition match {

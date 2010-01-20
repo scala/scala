@@ -301,6 +301,15 @@ abstract class GenICode extends SubComponent  {
     private def genSynchronized(tree: Apply, ctx: Context, expectedType: TypeKind): (Context, TypeKind) = {
       val Apply(fun, args) = tree
       val monitor = ctx.makeLocal(tree.pos, ObjectClass.tpe, "monitor")
+      var monitorResult: Local = null
+
+      // if the synchronized block returns a result, store it in a local variable. just leaving
+      // it on the stack is not valid in MSIL (stack is cleaned when leaving try-blocks)
+      val argTpe = args.head.tpe
+      val hasResult = expectedType != UNIT
+      if (hasResult)
+        monitorResult = ctx.makeLocal(tree.pos, argTpe, "monitorResult")
+
       var ctx1 = genLoadQualifier(fun, ctx)
       ctx1.bb.emit(Seq(
         DUP(ANY_REF_CLASS),
@@ -313,6 +322,8 @@ abstract class GenICode extends SubComponent  {
       ctx1 = ctx1.Try(
         bodyCtx => {
           val ctx2 = genLoad(args.head, bodyCtx, expectedType /* toTypeKind(tree.tpe.resultType) */)
+          if (hasResult)
+            ctx2.bb.emit(STORE_LOCAL(monitorResult))
           ctx2.bb.emit(Seq(
             LOAD_LOCAL(monitor),
             MONITOR_EXIT() setPos tree.pos
@@ -332,7 +343,8 @@ abstract class GenICode extends SubComponent  {
 
       debugLog("synchronized block end with block %s closed=%s".format(ctx1.bb, ctx1.bb.closed))
       ctx1.exitSynchronized(monitor)
-
+      if (hasResult)
+        ctx1.bb.emit(LOAD_LOCAL(monitorResult))
       (ctx1, expectedType)
     }
 
@@ -1477,10 +1489,10 @@ abstract class GenICode extends SubComponent  {
 
       def prune0(block: BasicBlock): Unit = {
         val optCont = block.lastInstruction match {
-          case JUMP(b) if (b != block) => Some(b);
+          case JUMP(b) if (b != block) => Some(b)
           case _ => None
         }
-        if (block.size == 1 && optCont != None) {
+        if (block.size == 1 && optCont.isDefined) {
           val Some(cont) = optCont;
           val pred = block.predecessors;
           log("Preds: " + pred + " of " + block + " (" + optCont + ")");
@@ -1954,12 +1966,16 @@ abstract class GenICode extends SubComponent  {
        *
        *  A
        *    try { .. } catch { .. } finally { .. }
-       *  blocks is de-sugared into
+       *  block is de-sugared into
        *    try { try { ..} catch { .. } } finally { .. }
        *
-       *  A `finally` block is represented exactly the same as an exception handler, but
-       *  with `NoSymbol` as the exception class. The covered blocks are all blocks of
+       *  In ICode `finally` block is represented exactly the same as an exception handler,
+       *  but with `NoSymbol` as the exception class. The covered blocks are all blocks of
        *  the `try { .. } catch { .. }`.
+       *
+       *  Also, TryMsil does not enter any Finalizers into the `cleanups', because the
+       *  CLI takes care of running the finalizer when seeing a `leave' statement inside
+       *  a try / catch.
        */
       def TryMsil(body: Context => Context,
                   handlers: List[(Symbol, TypeKind, (Context => Context))],
@@ -1978,6 +1994,7 @@ abstract class GenICode extends SubComponent  {
           val ctx = finalizerCtx.enterHandler(exh)
           if (settings.Xdce.value) ctx.bb.emit(LOAD_EXCEPTION())
           val ctx1 = genLoad(finalizer, ctx, UNIT)
+          // need jump for the ICode to be valid. MSIL backend will emit `Endfinally` instead.
           ctx1.bb.emit(JUMP(afterCtx.bb))
           ctx1.bb.close
           finalizerCtx.endHandler()
@@ -1988,6 +2005,7 @@ abstract class GenICode extends SubComponent  {
           var ctx1 = outerCtx.enterHandler(exh)
           if (settings.Xdce.value) ctx1.bb.emit(LOAD_EXCEPTION())
           ctx1 = handler._3(ctx1)
+          // msil backend will emit `Leave` to jump out of a handler
           ctx1.bb.emit(JUMP(afterCtx.bb))
           ctx1.bb.close
           outerCtx.endHandler()
@@ -2000,6 +2018,7 @@ abstract class GenICode extends SubComponent  {
         outerCtx.bb.emit(JUMP(bodyCtx.bb))
         outerCtx.bb.close
 
+        // msil backend will emit `Leave` to jump out of a try-block
         finalCtx.bb.emit(JUMP(afterCtx.bb))
         finalCtx.bb.close
 
