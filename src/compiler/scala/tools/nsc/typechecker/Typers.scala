@@ -2076,6 +2076,17 @@ trait Typers { self: Analyzer =>
       def includesTargetPos(tree: Tree) =
         tree.pos.isRange && context.unit != null && (tree.pos includes context.unit.targetPos)
       val localTarget = stats exists includesTargetPos
+      val companionOfTarget: Option[Tree] =
+        if (localTarget) {
+          stats span (!includesTargetPos(_)) match {
+            case (pre, (cd: ClassDef) :: _) if cd.symbol hasFlag CASE =>
+              pre find {
+                case md: ModuleDef => md.symbol.name == cd.symbol.name
+                case _ => false
+              }
+            case _ => None
+          }
+        } else None
       def typedStat(stat: Tree): Tree = {
         if (context.owner.isRefinementClass && !treeInfo.isDeclaration(stat))
           errorTree(stat, "only declarations allowed here")
@@ -2090,7 +2101,7 @@ trait Typers { self: Analyzer =>
               } else
                 EmptyTree
             case _ =>
-              if (localTarget && !includesTargetPos(stat)) {
+              if (localTarget && !includesTargetPos(stat) && companionOfTarget != Some(stat)) {
                 stat
               } else {
                 val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this

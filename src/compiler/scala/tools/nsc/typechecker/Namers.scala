@@ -290,6 +290,7 @@ trait Namers { self: Analyzer =>
       if (m.isModule && inCurrentScope(m) && currentRun.compiles(m)) m
       else enterSyntheticSym(creator)
     }
+
     private def enterSymFinishWith(tree: Tree, tparams: List[TypeDef]) {
       val sym = tree.symbol
       if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
