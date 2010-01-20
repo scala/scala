@@ -235,10 +235,6 @@ INITIALISATION
     </if>
 	<!-- if svn failed and git succeeded, this will be ignored. -->
 	<property name="svn.number" value="${svn.number.svn}" />
-    <echo message="SVN says ${svn.number.svn}" />
-    <echo message="GIT says ${svn.number.git}" />
-    <echo message="FINAL says ${svn.number}" />
-
     <property name="init.avail" value="yes"/>
 
   <!-- Generating version number -->
