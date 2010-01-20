@@ -796,7 +796,7 @@ abstract class GenMSIL extends SubComponent {
        *  - load arguments
        *  - NewObj(constructor) => reference on stack
        *
-       * This variable tells wether the previous instruction was a NEW,
+       * This variable tells whether the previous instruction was a NEW,
        * we expect a DUP which is not emitted. */
       var previousWasNEW = false
 

@@ -62,20 +62,7 @@ object ClassPath {
     if (expandStar) splitPath(path).flatMap(expandS(_))
     else splitPath(path)
 
-
-  def validPackage(name: String) =
-    !(name.equals("META-INF") || name.startsWith("."))
-
-  def validSourceFile(name: String) =
-    (name.endsWith(".scala") || name.endsWith(".java"))
-
   var XO = false
-  def validClassFile(name: String) =
-    if (name.endsWith(".class")) {
-      val className = name.substring(0, name.length - 6)
-      (!className.endsWith("$class") || XO)
-    } else false
-
 
   def collectTypes(assemFile: AbstractFile) = {
     var res: Array[MSILType] = MSILType.EmptyTypes
@@ -98,7 +85,7 @@ case class ClassRep[T](binary: Option[T], source: Option[AbstractFile]) {
     if (binary.isDefined) binary.get match {
       case f: AbstractFile =>
         assert(f.name.endsWith(".class"), f.name)
-        f.name.substring(0, f.name.length - 6)
+        f.name dropRight 6
       case t: MSILType =>
         t.Name
       case c =>
@@ -107,11 +94,11 @@ case class ClassRep[T](binary: Option[T], source: Option[AbstractFile]) {
       assert(source.isDefined)
       val nme = source.get.name
       if (nme.endsWith(".scala"))
-        nme.substring(0, nme.length - 6)
+        nme dropRight 6
       else if (nme.endsWith(".java"))
-        nme.substring(0, nme.length - 5)
+        nme dropRight 5
       else
-        throw new FatalError("Unexpected source file ending: "+ nme)
+        throw new FatalError("Unexpected source file ending: " + nme)
     }
   }
 }
@@ -128,6 +115,23 @@ abstract class ClassPath[T] {
   val packages: List[ClassPath[T]]
   val sourcepaths: List[AbstractFile]
 
+  /** Whether this classpath is being used for an optimized build.
+   *  Why this is necessary is something which should really be documented,
+   *  since it seems to have little to do with a ClassPath.
+   */
+  def isOptimized: Boolean
+
+  /** Filters for assessing validity of various entities.
+   */
+  def validClassFile(name: String) =
+    (name endsWith ".class") && (isOptimized || !(name endsWith "$class.class"))
+
+  def validPackage(name: String) =
+    !(name.equals("META-INF") || name.startsWith("."))
+
+  def validSourceFile(name: String) =
+    (name.endsWith(".scala") || name.endsWith(".java"))
+
   /**
    * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
    * Does not support nested classes on .NET
@@ -137,8 +141,8 @@ abstract class ClassPath[T] {
     if (i < 0) {
       classes.find(c => c.name == name)
     } else {
-      val pkg = name.substring(0, i)
-      val rest = name.substring(i + 1, name.length)
+      val pkg = name take i
+      val rest = name drop (i + 1)
       packages.find(p => p.name == pkg).flatMap(_.findClass(rest))
     }
   }
@@ -147,13 +151,13 @@ abstract class ClassPath[T] {
 /**
  * A Classpath containing source files
  */
-class SourcePath[T](dir: AbstractFile) extends ClassPath[T] {
+class SourcePath[T](dir: AbstractFile, val isOptimized: Boolean) extends ClassPath[T] {
   def name = dir.name
 
   lazy val classes = {
     val cls = new ListBuffer[ClassRep[T]]
     for (f <- dir.iterator) {
-      if (!f.isDirectory && ClassPath.validSourceFile(f.name))
+      if (!f.isDirectory && validSourceFile(f.name))
         cls += ClassRep[T](None, Some(f))
     }
     cls.toList
@@ -162,8 +166,8 @@ class SourcePath[T](dir: AbstractFile) extends ClassPath[T] {
   lazy val packages = {
     val pkg = new ListBuffer[SourcePath[T]]
     for (f <- dir.iterator) {
-      if (f.isDirectory && ClassPath.validPackage(f.name))
-        pkg += new SourcePath[T](f)
+      if (f.isDirectory && validPackage(f.name))
+        pkg += new SourcePath[T](f, isOptimized)
     }
     pkg.toList
   }
@@ -176,13 +180,13 @@ class SourcePath[T](dir: AbstractFile) extends ClassPath[T] {
 /**
  * A directory (or a .jar file) containing classfiles and packages
  */
-class DirectoryClassPath(dir: AbstractFile) extends ClassPath[AbstractFile] {
+class DirectoryClassPath(dir: AbstractFile, val isOptimized: Boolean) extends ClassPath[AbstractFile] {
   def name = dir.name
 
   lazy val classes = {
     val cls = new ListBuffer[ClassRep[AbstractFile]]
     for (f <- dir.iterator) {
-      if (!f.isDirectory && ClassPath.validClassFile(f.name))
+      if (!f.isDirectory && validClassFile(f.name))
         cls += ClassRep(Some(f), None)
     }
     cls.toList
@@ -191,8 +195,8 @@ class DirectoryClassPath(dir: AbstractFile) extends ClassPath[AbstractFile] {
   lazy val packages = {
     val pkg = new ListBuffer[DirectoryClassPath]
     for (f <- dir.iterator) {
-      if (f.isDirectory && ClassPath.validPackage(f.name))
-        pkg += new DirectoryClassPath(f)
+      if (f.isDirectory && validPackage(f.name))
+        pkg += new DirectoryClassPath(f, isOptimized)
     }
     pkg.toList
   }
@@ -207,15 +211,15 @@ class DirectoryClassPath(dir: AbstractFile) extends ClassPath[AbstractFile] {
 /**
  * A assembly file (dll / exe) containing classes and namespaces
  */
-class AssemblyClassPath(types: Array[MSILType], namespace: String) extends ClassPath[MSILType] {
+class AssemblyClassPath(types: Array[MSILType], namespace: String, val isOptimized: Boolean) extends ClassPath[MSILType] {
   def name = {
     val i = namespace.lastIndexOf('.')
     if (i < 0) namespace
-    else namespace.substring(i + 1, namespace.length)
+    else namespace drop (i + 1)
   }
 
-  def this(assemFile: AbstractFile) {
-    this(ClassPath.collectTypes(assemFile), "")
+  def this(assemFile: AbstractFile, isOptimized: Boolean) {
+    this(ClassPath.collectTypes(assemFile), "", isOptimized)
   }
 
   private lazy val first: Int = {
@@ -257,7 +261,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String) extends Class
       i += 1
     }
     for (ns <- nsSet.toList)
-      yield new AssemblyClassPath(types, ns)
+      yield new AssemblyClassPath(types, ns, isOptimized)
   }
 
   val sourcepaths: List[AbstractFile] = Nil
@@ -269,6 +273,8 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String) extends Class
  * A classpath unifying multiple class- and sourcepath entries.
  */
 abstract class MergedClassPath[T] extends ClassPath[T] {
+  outer =>
+
   protected val entries: List[ClassPath[T]]
 
   def name = entries.head.name
@@ -317,6 +323,7 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
   private def newMergedClassPath(entrs: List[ClassPath[T]]): MergedClassPath[T] =
     new MergedClassPath[T] {
       protected val entries = entrs
+      override def isOptimized = outer.isOptimized
     }
 
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
@@ -326,7 +333,7 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
  * The classpath when compiling with target:jvm. Binary files (classfiles) are represented
  * as AbstractFile. nsc.io.ZipArchive is used to view zip/jar archives as directories.
  */
-class JavaClassPath(boot: String, ext: String, user: String, source: String, Xcodebase: String)
+class JavaClassPath(boot: String, ext: String, user: String, source: String, Xcodebase: String, val isOptimized: Boolean)
 extends MergedClassPath[AbstractFile] {
 
   protected val entries: List[ClassPath[AbstractFile]] = assembleEntries()
@@ -335,7 +342,7 @@ extends MergedClassPath[AbstractFile] {
     val etr = new ListBuffer[ClassPath[AbstractFile]]
 
     def addFilesInPath(path: String, expand: Boolean,
-          ctr: AbstractFile => ClassPath[AbstractFile] = x => new DirectoryClassPath(x)) {
+          ctr: AbstractFile => ClassPath[AbstractFile] = x => new DirectoryClassPath(x, isOptimized)) {
       for (fileName <- expandPath(path, expandStar = expand)) {
         val file = AbstractFile.getDirectory(fileName)
         if (file ne null) etr += ctr(file)
@@ -353,7 +360,7 @@ extends MergedClassPath[AbstractFile] {
           val name = file.name.toLowerCase
           if (name.endsWith(".jar") || name.endsWith(".zip") || file.isDirectory) {
             val archive = AbstractFile.getDirectory(new File(dir.file, name))
-            if (archive ne null) etr += new DirectoryClassPath(archive)
+            if (archive ne null) etr += new DirectoryClassPath(archive, isOptimized)
           }
         }
       }
@@ -369,7 +376,7 @@ extends MergedClassPath[AbstractFile] {
       while (urlStrtok.hasMoreTokens()) try {
         val url = new URL(urlStrtok.nextToken())
         val archive = AbstractFile.getURL(url)
-        if (archive ne null) etr += new DirectoryClassPath(archive)
+        if (archive ne null) etr += new DirectoryClassPath(archive, isOptimized)
       }
       catch {
         case e =>
@@ -380,7 +387,7 @@ extends MergedClassPath[AbstractFile] {
 
     // 5. Source path
     if (source != "")
-      addFilesInPath(source, false, x => new SourcePath[AbstractFile](x))
+      addFilesInPath(source, false, x => new SourcePath[AbstractFile](x, isOptimized))
 
     etr.toList
   }
@@ -390,7 +397,7 @@ extends MergedClassPath[AbstractFile] {
  * The classpath when compiling with target:msil. Binary files are represented as
  * MSILType values.
  */
-class MsilClassPath(ext: String, user: String, source: String) extends MergedClassPath[MSILType] {
+class MsilClassPath(ext: String, user: String, source: String, val isOptimized: Boolean) extends MergedClassPath[MSILType] {
   protected val entries: List[ClassPath[MSILType]] = assembleEntries()
 
   private def assembleEntries(): List[ClassPath[MSILType]] = {
@@ -406,7 +413,7 @@ class MsilClassPath(ext: String, user: String, source: String) extends MergedCla
           val name = file.name.toLowerCase
           if (name.endsWith(".dll") || name.endsWith(".exe")) {
             names += name
-            etr += new AssemblyClassPath(file)
+            etr += new AssemblyClassPath(file, isOptimized)
           }
         }
       }
@@ -419,7 +426,7 @@ class MsilClassPath(ext: String, user: String, source: String) extends MergedCla
         val name = file.name.toLowerCase
         if (name.endsWith(".dll") || name.endsWith(".exe")) {
           names += name
-          etr += new AssemblyClassPath(file)
+          etr += new AssemblyClassPath(file, isOptimized)
         }
       }
     }
@@ -435,7 +442,7 @@ class MsilClassPath(ext: String, user: String, source: String) extends MergedCla
     // 3. Source path
     for (dirName <- expandPath(source, expandStar = false)) {
       val file = AbstractFile.getDirectory(dirName)
-      if (file ne null) etr += new SourcePath[MSILType](file)
+      if (file ne null) etr += new SourcePath[MSILType](file, isOptimized)
     }
 
     etr.toList

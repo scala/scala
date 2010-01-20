@@ -102,7 +102,7 @@ trait Symbols {
 
     private var rawannots: List[AnnotationInfoBase] = Nil
 
-    /* Used in namer to check wether annotations were already assigned or not */
+    /* Used in namer to check whether annotations were already assigned or not */
     def rawAnnotations:List[AnnotationInfoBase] = rawannots
 
     /** After the typer phase (before, look at the definition's Modifiers), contains

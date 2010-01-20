@@ -265,9 +265,9 @@ object Main {
       val path = arguments.getArgument("-classpath") match {
         case None => arguments.getArgument("-cp") match {
           case None => EmptyClasspath
-          case Some(path) => new JavaClassPath("", "", path, "", "")
+          case Some(path) => new JavaClassPath("", "", path, "", "", false)
         }
-        case Some(path) => new JavaClassPath("", "", path, "", "")
+        case Some(path) => new JavaClassPath("", "", path, "", "", false)
       }
       // print the classpath if output is verbose
       if (verbose) {
@@ -287,5 +287,6 @@ object Main {
     val classes: List[ClassRep[AbstractFile]] = Nil
     val packages: List[ClassPath[AbstractFile]] = Nil
     val sourcepaths: List[AbstractFile] = Nil
+    def isOptimized = false
   }
 }

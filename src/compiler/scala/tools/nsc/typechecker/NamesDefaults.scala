@@ -392,7 +392,7 @@ trait NamesDefaults { self: Analyzer =>
         } else if (argPos contains pos) {
           errorTree(arg, "parameter specified twice: "+ name)
         } else {
-          // for named arguments, check wether the assignment expression would
+          // for named arguments, check whether the assignment expression would
           // typecheck. if it does, report an ambiguous error.
           val param = params(pos)
           val paramtpe = params(pos).tpe.cloneInfo(param)

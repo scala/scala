@@ -211,16 +211,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
     }
 
-  lazy val classPath = {
-    ClassPath.XO = settings.XO.value
+  lazy val classPath =
     if (forMSIL)
-      new MsilClassPath(settings.assemextdirs.value, settings.assemrefs.value,
-                       settings.sourcepath.value)
+      new MsilClassPath(settings.assemextdirs.value, settings.assemrefs.value, settings.sourcepath.value, settings.XO.value)
     else
       new JavaClassPath(settings.bootclasspath.value, settings.extdirs.value,
                         settings.classpath.value, settings.sourcepath.value,
-                        settings.Xcodebase.value)
-  }
+                        settings.Xcodebase.value, settings.XO.value)
 
   if (settings.verbose.value) {
     inform("[Classpath = " + classPath + "]")
