@@ -175,6 +175,13 @@ trait SyntheticMethods extends ast.TreeDSL {
       def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
         val varName             = context.unit.fresh.newName(clazz.pos.focus, acc.name + "$")
         val (eqMethod, binding) =
+          if (isRepeatedParamType(cpt))  (nme.sameElements, Star(WILD()))
+          else                           (nme.EQ          , WILD()      )
+
+        ((varName DOT eqMethod)(Ident(acc)), varName BIND binding)
+/** The three lines above were replaced by the following to fix #2867. But this makes lift fail, because
+ *  an explicitly given type paramter violates its bound. Not sure what to do here.
+ *
           if (isRepeatedParamType(cpt))
             (TypeApply(varName DOT nme.sameElements, List(TypeTree(cpt.baseType(SeqClass).typeArgs.head))),
              Star(WILD()))
@@ -182,6 +189,7 @@ trait SyntheticMethods extends ast.TreeDSL {
             ((varName DOT nme.EQ): Tree,
              WILD())
         (eqMethod APPLY Ident(acc), varName BIND binding)
+ */
       }
 
       // Creates list of parameters and a guard for each
