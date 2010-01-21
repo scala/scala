@@ -8,19 +8,19 @@ package scala.tools.nsc
 package interpreter
 
 import java.io.File
-import jline.{ History, ConsoleReader, ArgumentCompletor }
+import jline.{ ConsoleReader, ArgumentCompletor, History => JHistory }
 
 /** Reads from the console using JLine */
 class JLineReader(interpreter: Interpreter, intLoop: InterpreterLoop) extends InteractiveReader {
   def this() = this(null, null)
   def this(interpreter: Interpreter) = this(interpreter, null)
-  def history: History = consoleReader.getHistory
+  override def history = Some(new History(consoleReader.getHistory))
 
   val consoleReader = {
     val history =
-      try new History(new File(System.getProperty("user.home"), ".scala_history"))
+      try new JHistory(new File(System.getProperty("user.home"), ".scala_history"))
       // do not store history if error
-      catch { case _: Exception => new History() }
+      catch { case _: Exception => new JHistory() }
 
     val r = new jline.ConsoleReader()
     r setHistory history

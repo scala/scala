@@ -20,7 +20,12 @@ class InterpreterSettings(repl: Interpreter) {
    *  more than this number of characters, then the printout is
    *  truncated.
    */
-  var maxPrintString = 2400
+  var maxPrintString = 800
+
+  /** String unwrapping can be disabled if it is causing issues.
+   *  Settings this to false means you will see Strings like "$iw.$iw.".
+   */
+  var unwrapStrings = true
 
   def deprecation_=(x: Boolean) = {
     val old = repl.settings.deprecation.value
@@ -30,14 +35,20 @@ class InterpreterSettings(repl: Interpreter) {
   }
   def deprecation: Boolean = repl.settings.deprecation.value
 
-  override def toString =
-    "InterpreterSettings {\n" +
-//    "  loadPath = " + loadPath + "\n" +
-    "  maxPrintString = " + maxPrintString + "\n" +
-    "}"
+  def allSettings = Map(
+    "maxPrintString" -> maxPrintString,
+    "unwrapStrings" -> unwrapStrings,
+    "deprecation" -> deprecation
+  )
+
+  private def allSettingsString =
+    allSettings.toList sortBy (_._1) map { case (k, v) => "  " + k + " = " + v + "\n" } mkString
+
+  override def toString = """
+    | InterpreterSettings {
+    | %s
+    | }""".stripMargin.format(allSettingsString)
 }
-
-
 
 /* Utilities for the InterpreterSettings class
  *
@@ -48,6 +59,10 @@ object InterpreterSettings {
   /** Source code for the InterpreterSettings class.  This is
    *  used so that the interpreter is sure to have the code
    *  available.
+   *
+   *  XXX I'm not seeing why this degree of defensiveness is necessary.
+   *  If files are missing the repl's not going to work, it's not as if
+   *  we have string source backups for anything else.
    */
   val sourceCodeForClass =
 """

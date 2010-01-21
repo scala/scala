@@ -24,6 +24,8 @@ package interpreter
 
 import jline._
 import java.net.URL
+import java.lang.reflect
+import java.util.{ List => JList }
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.DelayedLazyVal
 import scala.collection.mutable.HashSet
@@ -38,7 +40,6 @@ extends Completor {
   def this(interpreter: Interpreter) = this(interpreter, null)
 
   import Completion._
-  import java.util.{ List => JList }
   import interpreter.compilerClasspath
 
   // it takes a little while to look through the jars so we use a future and a concurrent map
@@ -52,7 +53,7 @@ extends Completor {
   val agent = new CompletionAgent
   import agent._
 
-  import java.lang.reflect.Modifier.{ isPrivate, isProtected, isPublic, isStatic }
+  import reflect.Modifier.{ isPrivate, isProtected, isPublic, isStatic }
   private def isSingleton(x: Int, isJava: Boolean) = !isJava || isStatic(x)
   private def existsAndPublic(s: String): Boolean =
     (dottedPaths containsKey s) || {
@@ -184,17 +185,18 @@ extends Completor {
     (interpreter getClassObject ("scala." + path)) orElse
     (interpreter getClassObject ("java.lang." + path))
 
-  def lastHistoryItem =
-    for (loop <- Option(intLoop) ; h <- loop.history) yield
-      h.getHistoryList.get(h.size - 1)
+  def lastHistoryItem = Option(intLoop) map (_.historyList.last)
 
-  // Is the buffer the same it was last time they hit tab?
+  // For recording the buffer on the last tab hit
   private var lastTab: (String, String) = (null, null)
+
+  // Does this represent two consecutive tabs?
+  def isConsecutiveTabs(buf: String) = (buf, lastHistoryItem orNull) == lastTab
 
   // jline's completion comes through here - we ask a Buffer for the candidates.
   override def complete(_buffer: String, cursor: Int, candidates: JList[String]): Int = {
     // println("_buffer = %s, cursor = %d".format(_buffer, cursor))
-    val verbose = (_buffer, lastHistoryItem orNull) == lastTab
+    val verbose = isConsecutiveTabs(_buffer)
     lastTab = (_buffer, lastHistoryItem orNull)
 
     new Buffer(_buffer, verbose) complete candidates
@@ -228,6 +230,12 @@ object Completion
   val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
   val IMPL_CLASS_SUFFIX ="$class"
   val INTERPRETER_VAR_PREFIX = "res"
+
+  /** Interface for objects which supply their own completion contents.
+   */
+  trait Special {
+    def tabCompletions(): List[String]
+  }
 
   case class CompletionInfo(visibleName: String, className: String, jar: String) {
     lazy val jarfile = new JarFile(jar)
@@ -316,5 +324,32 @@ object Completion
     }
 
     jars foreach oneJar
+  }
+
+  /** The methods below this point exist to simplify repl-generated code.
+   */
+
+  // XXX at the moment this is imperfect because scala's protected semantics
+  // differ from java's, so protected methods appear public via reflection;
+  // yet scala enforces the protection.  The result is that protected members
+  // appear in completion yet cannot actually be called.  Fixing this
+  // properly requires a scala.reflect.* API.  Fixing it uglily is possible
+  // too (cast to structural type!) but I deem poor use of energy.
+  private def skipModifiers(m: reflect.Method) = {
+    import java.lang.reflect.Modifier._
+    val flags = STATIC | PRIVATE | PROTECTED
+    (m.getModifiers & flags) == 0
+  }
+  private def getAnyClass(x: Any): Class[_] = x.asInstanceOf[AnyRef].getClass
+
+  def methodsOf(target: Any): List[String] =
+    getAnyClass(target).getMethods filter skipModifiers map (_.getName) toList
+
+  // getAnyClass(target).getInterfaces exists (_ == specialClazz)
+  // private val specialClazz = classOf[Special]
+
+  def selfDefinedMembers(target: Any) = target match {
+    case x: Special => Some(x.tabCompletions())
+    case _          => None
   }
 }

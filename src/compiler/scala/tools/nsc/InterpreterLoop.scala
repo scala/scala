@@ -10,7 +10,6 @@ import java.io.{ BufferedReader, File, FileReader, PrintWriter }
 import java.io.IOException
 
 import scala.tools.nsc.{ InterpreterResults => IR }
-import scala.collection.JavaConversions.asBuffer
 import interpreter._
 import io.{ Process }
 
@@ -79,12 +78,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** The input stream from which commands come, set by main() */
   var in: InteractiveReader = _
-  def history = in match {
-    case x: JLineReader => Some(x.history)
-    case _              => None
-  }
-  def historyList: Seq[String] =
-    history map (x => asBuffer(x.getHistoryList): Seq[String]) getOrElse Nil
+  def historyList = in.history map (_.asList) getOrElse Nil
 
   /** The context class loader at the time this object was created */
   protected val originalClassLoader = Thread.currentThread.getContextClassLoader
@@ -127,10 +121,11 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** Bind the settings so that evaluated code can modify them */
   def bindSettings() {
-    interpreter.beQuietDuring {
-      interpreter.compileString(InterpreterSettings.sourceCodeForClass)
-      interpreter.bind("settings", "scala.tools.nsc.InterpreterSettings", isettings)
-    }
+    isettings
+    // interpreter.beQuietDuring {
+    //   interpreter.compileString(InterpreterSettings.sourceCodeForClass)
+    //   interpreter.bind("settings", "scala.tools.nsc.InterpreterSettings", isettings)
+    // }
   }
 
   /** print a friendly help message */
@@ -159,10 +154,10 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def printHistory(xs: List[String]) {
     val defaultLines = 20
 
-    if (history.isEmpty)
+    if (in.history.isEmpty)
       return println("No history available.")
 
-    val current = history.get.getCurrentIndex
+    val current = in.history.get.index
     val count = try xs.head.toInt catch { case _: Exception => defaultLines }
     val lines = historyList takeRight count
     val offset = current - lines.size + 1
@@ -175,10 +170,10 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def searchHistory(_cmdline: String) {
     val cmdline = _cmdline.toLowerCase
 
-    if (history.isEmpty)
+    if (in.history.isEmpty)
       return println("No history available.")
 
-    val current = history.get.getCurrentIndex
+    val current = in.history.get.index
     val offset = current - historyList.size + 1
 
     for ((line, index) <- historyList.zipWithIndex ; if line.toLowerCase contains cmdline)
@@ -343,7 +338,10 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def power() {
     powerUserOn = true
     out println interpreter.powerUser()
-    interpreter.quietBind("history", "scala.collection.immutable.List[String]", historyList.toList)
+    if (in.history.isDefined)
+      interpreter.quietBind("history", "scala.collection.immutable.List[String]", historyList)
+
+    interpreter.quietBind("repl", "scala.tools.nsc.Interpreter#ReplVars", interpreter.replVarsObject())
   }
 
   def verbosity() = {
