@@ -466,8 +466,8 @@ self =>
   /** The typer run */
   class TyperRun extends Run {
     // units is always empty
-    // symSource, symData are ignored
-    override def compiles(sym: Symbol) = false
+
+    //override def compiles(sym: Symbol) = false
 
     def typeCheck(unit: CompilationUnit): Unit = applyPhase(typerPhase, unit)
 
@@ -503,6 +503,7 @@ self =>
     def typedTree(unit: RichCompilationUnit): Tree = {
       assert(unit.status >= JustParsed)
       unit.targetPos = NoPosition
+      symSource.clear()
       typeCheck(unit)
       unit.body
     }
@@ -511,6 +512,7 @@ self =>
      *  @return true iff typechecked correctly
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
+      symSource.clear()
       val oldSource = reporter.getSource
       reporter.withSource(unit.source) {
         atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
