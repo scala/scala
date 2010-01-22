@@ -143,8 +143,17 @@ final class PEModule extends Module {
             Assembly assem = getAssembly(name);
 	    type = assem.GetType(typeName);
 	    if (type == null) {
-		throw new RuntimeException("Failed to locate type " +
-                                           typeName + " in assembly " + assem);
+                // HACK: the IKVM.OpenJDK.Core assembly is compiled against mscorlib.dll v2.0
+                // The MSIL library cannot parse the v2.0 mscorlib because of generics, so we
+                // use the v1.0
+                // However, the java.io.FileDescriptor.FlushFileBuffers method uses a type
+                // Microsoft.Win32.SafeHandles.SafeFileHandle, which only exists in mscorlib
+                // v2.0
+                // For now, jsut return Object (fine as long as we don't use that method).
+                Assembly asmb = getAssembly("mscorlib");
+                type = asmb.GetType("System.Object");
+		//throw new RuntimeException("Failed to locate type " +
+                                           //typeName + " in assembly " + assem);
 	    }
 	    break;
 	case ModuleDef.ID:

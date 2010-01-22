@@ -125,8 +125,13 @@ END-USER TARGETS
   </target>
 
   <target name="newlibs"
-    description="Requires libraries (MSIL, FJBG, FORKJOIN) to be rebuilt. Add this target before any other if class file format is incompatible.">
+    description="Requires libraries (MSIL, FJBG) to be rebuilt. Add this target before any other if class file format is incompatible.">
     <property name="libs.outdated" value="yes"/>
+  </target>
+
+  <target name="newforkjoin"
+    description="Requires forkjoin library to be rebuilt. Add this target before any other if class file format is incompatible.">
+    <property name="forkjoin.outdated" value="yes"/>
   </target>
 
 <!-- ===========================================================================
@@ -529,19 +534,27 @@ QUICK BUILD (QUICK)
   
   <target name="quick.newlibs" depends="quick.lib" if="libs.outdated">
     <antcall target="libs.done">
-      <param name="forkjoin.jar" value="${build-libs.dir}/forkjoin.jar"/>
       <param name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
       <param name="msil.jar" value="${build-libs.dir}/msil.jar"/>
     </antcall>
   </target>
   
   <target name="quick.libs" depends="quick.newlibs" unless="libs.outdated">
-    <property name="forkjoin.jar" value="${lib.dir}/forkjoin.jar"/>
     <property name="fjbg.jar" value="${lib.dir}/fjbg.jar"/>
     <property name="msil.jar" value="${lib.dir}/msil.jar"/>
   </target>
-  
-  <target name="quick.pre-comp" depends="quick.libs">
+
+  <target name="quick.newforkjoin" depends="quick.libs" if="forkjoin.outdated">
+    <antcall target="forkjoin.done">
+      <param name="forkjoin.jar" value="${build-libs.dir}/forkjoin.jar"/>
+    </antcall>
+  </target>
+
+  <target name="quick.forkjoin" depends="quick.newforkjoin" unless="forkjoin.outdated">
+    <property name="forkjoin.jar" value="${lib.dir}/forkjoin.jar"/>
+  </target>
+
+  <target name="quick.pre-comp" depends="quick.forkjoin">
     <uptodate property="quick.comp.available" targetfile="${build-quick.dir}/compiler.complete">
       <srcfiles dir="${src.dir}/compiler"/>
     </uptodate>
@@ -1158,6 +1171,7 @@ LIBRARIES (MSIL, FJBG maybe later)
       classpath="${build-libs.dir}/classes/msil"
       includes="**/*.java"
       excludes="**/tests/**"
+      debug="true"
       target="1.5" source="1.4">
         <compilerarg line="${javac.args}"/>
     </javac>
@@ -1216,8 +1230,10 @@ LIBRARIES (MSIL, FJBG maybe later)
       <fileset dir="${build-libs.dir}/classes/fjbg"/>
     </jar>
   </target>
-  
-  <target name="libs.done" depends="libs.msilpack, libs.fjbgpack, libs.forkjoinpack"/>
+
+  <target name="libs.done" depends="libs.msilpack, libs.fjbgpack"/>
+
+  <target name="forkjoin.done" depends="libs.forkjoinpack"/>
 
   <target name="libs.clean" depends="pack.clean">
     <delete dir="${build-libs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
