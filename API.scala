@@ -65,7 +65,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(pre == NoPrefix)
 		{
 			if(sym.isLocalClass) Constants.emptyType
-			else if(sym.isType) new xsbti.api.ParameterRef(sym.id)
+			else if(sym.isTypeParameterOrSkolem || sym.isExistential) new xsbti.api.ParameterRef(sym.id)
 			else error("Unknown prefixless type: " + sym)
 		}
 		else if(sym.isRoot || sym.isRootPackage) Constants.emptyType
@@ -121,6 +121,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 					(tpe, Plain)
 			new xsbti.api.MethodParameter(name, processType(t), hasDefault(s), special)
 		}
+		
 		build(s.info, Array(), Nil)
 	}
 	private def hasDefault(s: Symbol) =
@@ -168,7 +169,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		structure(info.baseClasses.map(_.tpe), declared, inherited) // linearization instead of parents
 	}
 	private def structure(parents: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure =
-		new xsbti.api.Structure(types(parents), processDefinitions(declared), processDefinitions(inherited))
+		new xsbti.api.Structure(types(parents), processDefinitions(declared), Array())//processDefinitions(inherited))
 	private def processDefinitions(defs: List[Symbol]): Array[xsbti.api.Definition] = defs.toArray.map(definition)
 	private def definition(sym: Symbol): xsbti.api.Definition =
 	{
@@ -226,11 +227,12 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	{
 		val varianceInt = s.variance
 		import xsbti.api.Variance._
+		val annots = annotations(s)
 		val variance = if(varianceInt < 0) Contravariant else if(varianceInt > 0) Covariant else Invariant
 		s.info match
 		{
-			case TypeBounds(low, high) => new xsbti.api.TypeParameter( s.id, typeParameters(s), variance, processType(low), processType(high) )
-			case PolyType(typeParams, base) => new xsbti.api.TypeParameter( s.id, typeParameters(typeParams), variance, processType(base.bounds.lo),  processType(base.bounds.hi))
+			case TypeBounds(low, high) => new xsbti.api.TypeParameter( s.id, annots, typeParameters(s), variance, processType(low), processType(high) )
+			case PolyType(typeParams, base) => new xsbti.api.TypeParameter( s.id, annots, typeParameters(typeParams), variance, processType(base.bounds.lo),  processType(base.bounds.hi))
 			case x => error("Unknown type parameter info: " + x.getClass)
 		}
 	}
