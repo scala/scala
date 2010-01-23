@@ -166,7 +166,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	{
 		val s = info.typeSymbol
 		val (declared, inherited) = info.members.partition(_.owner == s)
-		structure(info.baseClasses.map(_.tpe), declared, inherited) // linearization instead of parents
+		// would be nice to know how to do this properly:
+		//  baseClasses contains symbols in proper linearization order, but tpe doesn't have type parameters applied
+		//  baseTypeSeq contains the types with parameters properly applied
+		val bases = info.baseClasses.tail
+		val bs = info.baseTypeSeq.toList.tail
+		val baseTypes = bases.map(base => bs.find(_.typeSymbol eq base).get)
+		structure(baseTypes, declared, inherited)
 	}
 	private def structure(parents: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure =
 		new xsbti.api.Structure(types(parents), processDefinitions(declared), Array())//processDefinitions(inherited))
