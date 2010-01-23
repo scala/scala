@@ -467,11 +467,19 @@ self =>
   class TyperRun extends Run {
     // units is always empty
 
-    //override def compiles(sym: Symbol) = false
+    /** notCompiles is used to detect double declarations in multiple source files.
+     *  Since the IDE rechecks units several times in the same run, these tests
+     *  are disabled by always returning true here.
+     */
+    override def notCompiles(sym: Symbol) = true
 
-    def typeCheck(unit: CompilationUnit): Unit = applyPhase(typerPhase, unit)
+    def typeCheck(unit: CompilationUnit): Unit = {
+      applyPhase(typerPhase, unit)
+    }
 
-    def enterNames(unit: CompilationUnit): Unit = applyPhase(namerPhase, unit)
+    def enterNames(unit: CompilationUnit): Unit = {
+      applyPhase(namerPhase, unit)
+    }
 
     /** Return fully attributed tree at given position
      *  (i.e. largest tree that's contained by position)
@@ -503,7 +511,6 @@ self =>
     def typedTree(unit: RichCompilationUnit): Tree = {
       assert(unit.status >= JustParsed)
       unit.targetPos = NoPosition
-      symSource.clear()
       typeCheck(unit)
       unit.body
     }
@@ -512,7 +519,6 @@ self =>
      *  @return true iff typechecked correctly
      */
     private def applyPhase(phase: Phase, unit: CompilationUnit) {
-      symSource.clear()
       val oldSource = reporter.getSource
       reporter.withSource(unit.source) {
         atPhase(phase) { phase.asInstanceOf[GlobalPhase] applyPhase unit }
