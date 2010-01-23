@@ -78,14 +78,12 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** The input stream from which commands come, set by main() */
   var in: InteractiveReader = _
-  def historyList = in.history map (_.asList) getOrElse Nil
 
   /** The context class loader at the time this object was created */
   protected val originalClassLoader = Thread.currentThread.getContextClassLoader
 
   var settings: Settings = _          // set by main()
   var interpreter: Interpreter = _    // set by createInterpreter()
-  def isettings = interpreter.isettings
 
   // XXX
   var addedClasspath: List[String] = Nil
@@ -119,15 +117,6 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     interpreter.setContextClassLoader()
   }
 
-  /** Bind the settings so that evaluated code can modify them */
-  def bindSettings() {
-    isettings
-    // interpreter.beQuietDuring {
-    //   interpreter.compileString(InterpreterSettings.sourceCodeForClass)
-    //   interpreter.bind("settings", "scala.tools.nsc.InterpreterSettings", isettings)
-    // }
-  }
-
   /** print a friendly help message */
   def printHelp() = {
     out println "All commands can be abbreviated - for example :he instead of :help.\n"
@@ -159,7 +148,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
     val current = in.history.get.index
     val count = try xs.head.toInt catch { case _: Exception => defaultLines }
-    val lines = historyList takeRight count
+    val lines = in.historyList takeRight count
     val offset = current - lines.size + 1
 
     for ((line, index) <- lines.zipWithIndex)
@@ -174,9 +163,9 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       return println("No history available.")
 
     val current = in.history.get.index
-    val offset = current - historyList.size + 1
+    val offset = current - in.historyList.size + 1
 
-    for ((line, index) <- historyList.zipWithIndex ; if line.toLowerCase contains cmdline)
+    for ((line, index) <- in.historyList.zipWithIndex ; if line.toLowerCase contains cmdline)
       println("%d %s".format(index + offset, line))
   }
 
@@ -249,12 +238,13 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
     /* For some reason, the first interpreted command always takes
      * a second or two.  So, wait until the welcome message
-     * has been printed before calling bindSettings.  That way,
+     * has been printed before calling isettings.  That way,
      * the user can read the welcome message while this
      * command executes.
      */
     val futLine = scala.concurrent.ops.future(readOneLine)
-    bindSettings()
+    interpreter.isettings // evaluates lazy val
+
     if (!processLine(futLine()))
       return
 
@@ -339,7 +329,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     powerUserOn = true
     out println interpreter.powerUser()
     if (in.history.isDefined)
-      interpreter.quietBind("history", "scala.collection.immutable.List[String]", historyList)
+      interpreter.quietBind("history", "scala.collection.immutable.List[String]", in.historyList)
 
     interpreter.quietBind("repl", "scala.tools.nsc.Interpreter#ReplVars", interpreter.replVarsObject())
   }
@@ -384,21 +374,38 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     * read, go ahead and interpret it.  Return the full string
     * to be recorded for replay, if any.
     */
-  def interpretStartingWith(code: String): Option[String] =
-    if (code startsWith ".") interpretStartingWith(interpreter.mostRecentVar + code)
-    else interpreter.interpret(code) match {
-      case IR.Error       => None
-      case IR.Success     => Some(code)
-      case IR.Incomplete  =>
-        if (in.interactive && code.endsWith("\n\n")) {
-          out.println("You typed two blank lines.  Starting a new command.")
-          None
-        }
-        else in.readLine("     | ") match {
-          case null => None         // end of file
-          case line => interpretStartingWith(code + "\n" + line)
-        }
+  def interpretStartingWith(code: String): Option[String] = {
+    def reallyInterpret = {
+      interpreter.interpret(code) match {
+        case IR.Error       => None
+        case IR.Success     => Some(code)
+        case IR.Incomplete  =>
+          if (in.interactive && code.endsWith("\n\n")) {
+            out.println("You typed two blank lines.  Starting a new command.")
+            None
+          }
+          else in.readLine("     | ") match {
+            case null => None         // end of file
+            case line => interpretStartingWith(code + "\n" + line)
+          }
+      }
     }
+
+    /** Here we place ourselves between the user and the interpreter and examine
+     *  the input they are ostensibly submitting.  It may turn out to be the result
+     *  of tab-completion, in which case it might be meaningless to scala but
+     *  evaluable by the CompletionAware unit which created it.
+     */
+    if (code == "") None
+    else if (code startsWith ".") interpretStartingWith(interpreter.mostRecentVar + code)
+    else {
+      val result = for (comp <- in.completion ; res <- comp execute code) yield res
+      result match {
+        case Some(res)  => injectAndName(res) ; None   // completion took responsibility, so do not parse
+        case _          => reallyInterpret
+      }
+    }
+  }
 
   // runs :load <file> on any files passed via -i
   def loadFiles(settings: Settings) = settings match {
@@ -425,7 +432,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         // the interpeter is passed as an argument to expose tab completion info
         if (settings.Xnojline.value || emacsShell) new SimpleReader
         else if (settings.noCompletion.value) InteractiveReader.createDefault()
-        else InteractiveReader.createDefault(interpreter, this)
+        else InteractiveReader.createDefault(interpreter)
     }
 
     loadFiles(settings)
@@ -435,20 +442,26 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
       printWelcome()
       repl()
-    } finally {
-      closeInterpreter()
-    }
+    } finally closeInterpreter()
   }
+
+  private def objName(x: Any) = x.asInstanceOf[AnyRef].getClass.getName
 
   // injects one value into the repl; returns pair of name and class
   def injectOne(name: String, obj: Any): Tuple2[String, String] = {
-    val className = obj.asInstanceOf[AnyRef].getClass.getName
+    val className = objName(obj)
     interpreter.quietBind(name, className, obj)
+    (name, className)
+  }
+  def injectAndName(obj: Any): Tuple2[String, String] = {
+    val name = interpreter.getVarName
+    val className = objName(obj)
+    interpreter.bind(name, className, obj)
     (name, className)
   }
 
   // injects list of values into the repl; returns summary string
-  def inject(args: List[Any]): String = {
+  def injectDebug(args: List[Any]): String = {
     val strs =
       for ((arg, i) <- args.zipWithIndex) yield {
         val varName = "p" + (i + 1)

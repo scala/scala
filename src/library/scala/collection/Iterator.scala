@@ -1121,6 +1121,17 @@ trait Iterator[+A] { self =>
     res.toList
   }
 
+  /** Traverses this iterator and returns all produced values in a set.
+   *  $willNotTerminateInf
+   *
+   *  @return  a set which contains all values produced by this iterator.
+   */
+  def toSet[B >: A]: immutable.Set[B] = {
+    val res = new ListBuffer[B]
+    while (hasNext) res += next
+    res.toSet
+  }
+
   /** Lazily wraps a Stream around this iterator so its values are memoized.
    *
    *  @return  a Stream which can repeatedly produce all the values
@@ -1138,6 +1149,20 @@ trait Iterator[+A] { self =>
     val buffer = new ArrayBuffer[A]
     this copyToBuffer buffer
     buffer
+  }
+
+  /** Traverses this iterator and returns all produced values in a map.
+   *  $willNotTerminateInf
+   *  @see    TraversableLike.toMap
+   *
+   *  @return  a map containing all elements of this iterator.
+   */
+  def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
+    val b = immutable.Map.newBuilder[T, U]
+    while (hasNext)
+      b += next
+
+    b.result
   }
 
   /** Tests if another iterator produces the same valeus as this one.
