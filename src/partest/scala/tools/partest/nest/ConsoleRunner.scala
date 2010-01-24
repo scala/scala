@@ -24,12 +24,13 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
     List(
       TestSet("pos", fileFilter, "pos",
               "Testing compiler (on files whose compilation should succeed)"),
-      TestSet("neg",  fileFilter, "neg",
+      TestSet("neg", fileFilter, "neg",
               "Testing compiler (on files whose compilation should fail)"),
-      TestSet("run",  fileFilter, "run", "Testing JVM backend"),
-      TestSet("jvm",  fileFilter, "jvm", "Testing JVM backend"),
-      TestSet("res",  Some((".res", false)), "res",
+      TestSet("run", fileFilter, "run", "Testing JVM backend"),
+      TestSet("jvm", fileFilter, "jvm", "Testing JVM backend"),
+      TestSet("res", Some((".res", false)), "res",
               "Testing resident compiler"),
+      TestSet("buildmanager", Some((".nothing", true)), "buildmanager", "Testing Build Manager"),
       TestSet("shootout", fileFilter, "shootout", "Testing shootout tests"),
       TestSet("script", fileFilter, "script", "Testing script tests"),
       TestSet("scalacheck", fileFilter, "scalacheck", "Testing ScalaCheck tests"),
@@ -210,6 +211,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
             case "sho" => "shootout"
             case "scr" => "script"
             case "sca" => "scalacheck"
+            case "bui" => "buildmanager"
           }
         }
       }

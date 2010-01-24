@@ -40,6 +40,10 @@ class PartestTask extends Task {
     residentFiles = Some(input)
   }
 
+  def addConfiguredBuildManagerTests(input: FileSet) {
+    buildManagerFiles = Some(input)
+  }
+
   def addConfiguredScriptTests(input: FileSet) {
     scriptFiles = Some(input)
   }
@@ -111,6 +115,7 @@ class PartestTask extends Task {
   private var runFiles: Option[FileSet] = None
   private var jvmFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
+  private var buildManagerFiles: Option[FileSet] = None
   private var scriptFiles: Option[FileSet] = None
   private var shootoutFiles: Option[FileSet] = None
   private var scalapFiles: Option[FileSet] = None
@@ -144,14 +149,15 @@ class PartestTask extends Task {
     else
       Array()
 
-  private def getPosFiles       = getFilesAndDirs(posFiles)
-  private def getNegFiles       = getFilesAndDirs(negFiles)
-  private def getRunFiles       = getFiles(runFiles)
-  private def getJvmFiles       = getFilesAndDirs(jvmFiles)
-  private def getResidentFiles  = getFiles(residentFiles)
-  private def getScriptFiles    = getFiles(scriptFiles)
-  private def getShootoutFiles  = getFiles(shootoutFiles)
-  private def getScalapFiles    = getFiles(scalapFiles)
+  private def getPosFiles          = getFilesAndDirs(posFiles)
+  private def getNegFiles          = getFilesAndDirs(negFiles)
+  private def getRunFiles          = getFiles(runFiles)
+  private def getJvmFiles          = getFilesAndDirs(jvmFiles)
+  private def getResidentFiles     = getFiles(residentFiles)
+  private def getBuildManagerFiles = getFiles(buildManagerFiles)
+  private def getScriptFiles       = getFiles(scriptFiles)
+  private def getShootoutFiles     = getFiles(shootoutFiles)
+  private def getScalapFiles       = getFiles(scalapFiles)
 
   override def execute() {
     if (debug)
@@ -220,6 +226,7 @@ class PartestTask extends Task {
       (getRunFiles, "run", "Compiling and running files"),
       (getJvmFiles, "jvm", "Compiling and running files"),
       (getResidentFiles, "res", "Running resident compiler scenarii"),
+      (getBuildManagerFiles, "buildmanager", "Running Build Manager scenarii"),
       (getScriptFiles, "script", "Running script files"),
       (getShootoutFiles, "shootout", "Running shootout tests"),
       (getScalapFiles, "scalap", "Running scalap tests")

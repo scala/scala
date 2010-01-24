@@ -24,6 +24,7 @@ Other arguments:
   * --run          next files test the interpreter and all backends
   * --jvm          next files test the JVM backend
   * --res          next files test the resident compiler
+  * --buildmanager next files test the build manager
   * --shootout     next files are shootout tests
   * --script       next files test the script runner
   * ''-Dscalatest.scalac_opts=...'' -> add compiler options

@@ -8,7 +8,9 @@
 package scala.tools.partest
 package nest
 
-import java.io.{File, FilenameFilter, IOException, StringWriter}
+import java.io.{File, FilenameFilter, IOException, StringWriter,
+                FileInputStream, FileOutputStream, BufferedReader,
+                FileReader, PrintWriter, FileWriter}
 import java.net.URI
 import scala.tools.nsc.io.Directory
 
@@ -75,5 +77,44 @@ trait FileManager {
   def logFileExists(file: File, kind: String): Boolean = {
     val logFile = getLogFile(file, kind)
     logFile.exists && logFile.canRead
+  }
+
+  def overwriteFileWith(dest: File, file: File): Boolean =
+    if (dest.exists && dest.isFile)
+        copyFile(file, dest)
+    else
+      false
+
+  def copyFile(from: File, to: File): Boolean =
+    try {
+      val fromReader = new BufferedReader(new FileReader(from))
+      val toWriter = new PrintWriter(new FileWriter(to))
+
+      new StreamAppender(fromReader, toWriter).run()
+
+      fromReader.close()
+      toWriter.close()
+      true
+    } catch {
+      case _:IOException => false
+    }
+
+  def mapFile(file: File, suffix: String, dir: File, replace: String => String) {
+    val tmpFile = File.createTempFile("tmp", suffix, dir) // prefix required by API
+    val fileReader = new BufferedReader(new FileReader(file))
+    val tmpFilePrinter = new PrintWriter(new FileWriter(tmpFile))
+    val appender = new StreamAppender(fileReader, tmpFilePrinter)
+
+    appender.runAndMap(replace)
+
+    fileReader.close()
+    tmpFilePrinter.close()
+
+    val tmpFileReader = new BufferedReader(new FileReader(tmpFile))
+    val filePrinter= new PrintWriter(new FileWriter(file), true)
+    (new StreamAppender(tmpFileReader, filePrinter)).run
+    tmpFileReader.close()
+    filePrinter.close()
+    tmpFile.delete()
   }
 }

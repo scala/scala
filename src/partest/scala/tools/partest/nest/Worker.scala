@@ -19,7 +19,11 @@ import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
 import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
+import io.{AbstractFile, PlainFile}
+
 import scala.collection.mutable.HashMap
+
+import scala.tools.nsc.interactive.{BuildManager, RefinedBuildManager}
 
 case class RunTests(kind: String, files: List[File])
 case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])
@@ -136,32 +140,13 @@ class Worker(val fileManager: FileManager) extends Actor {
 
       // grab global lock
       fileManager.synchronized {
-
-        val oldStdOut = System.out
-        val oldStdErr = System.err
-        System.setOut(logWriter)
-        System.setErr(logWriter)
-
-        /*
-         " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
-         " -Dscalatest.output="+outDir.getAbsolutePath+
-         " -Dscalatest.lib="+LATEST_LIB+
-         " -Dscalatest.cwd="+outDir.getParent+
-         " -Djavacmd="+JAVACMD+
-         */
-
-        System.setProperty("java.library.path", logFile.getParentFile.getCanonicalFile.getAbsolutePath)
-        System.setProperty("scalatest.output", outDir.getCanonicalFile.getAbsolutePath)
-        System.setProperty("scalatest.lib", LATEST_LIB)
-        System.setProperty("scalatest.cwd", outDir.getParent)
-
-        ObjectRunner.run(classpath, "Test", List("jvm"))
-
-        logWriter.flush()
-        logWriter.close()
-
-        System.setOut(oldStdOut)
-        System.setErr(oldStdErr)
+        withOutputRedirected(logWriter) {
+          System.setProperty("java.library.path", logFile.getParentFile.getCanonicalFile.getAbsolutePath)
+          System.setProperty("scalatest.output", outDir.getCanonicalFile.getAbsolutePath)
+          System.setProperty("scalatest.lib", LATEST_LIB)
+          System.setProperty("scalatest.cwd", outDir.getParent)
+          ObjectRunner.run(classpath, "Test", List("jvm"))
+        }
       }
 
       /*val out = new FileOutputStream(logFile, true)
@@ -475,20 +460,11 @@ class Worker(val fileManager: FileManager) extends Actor {
               List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL,
                    latestActFile.toURI.toURL, latestPartestFile.toURI.toURL).removeDuplicates
 
-            // XXX this is a big cut-and-paste mess, but the revamp is coming
-            val logOut    = new FileOutputStream(logFile)
-            val logWriter = new PrintStream(logOut)
-            val oldStdOut = System.out
-            val oldStdErr = System.err
-            System.setOut(logWriter)
-            System.setErr(logWriter)
+            val logWriter = new PrintStream(new FileOutputStream(logFile))
 
-            ObjectRunner.run(classpath, "Test", Nil)
-
-            logWriter.flush()
-            logWriter.close()
-            System.setOut(oldStdOut)
-            System.setErr(oldStdErr)
+            withOutputRedirected(logWriter) {
+              ObjectRunner.run(classpath, "Test", Nil)
+            }
 
             NestUI.verbose(io.File(logFile).slurp())
             // obviously this must be improved upon
@@ -534,6 +510,143 @@ class Worker(val fileManager: FileManager) extends Actor {
 
       case "jvm" =>
         runJvmTest(file, kind)
+
+      case "buildmanager" =>
+        val logFile = createLogFile(file, kind)
+        if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
+          val swr = new StringWriter
+          val wr = new PrintWriter(swr)
+          succeeded = true; diff = ""
+          printInfoStart(file, wr)
+          val (outDir, testFile, changesDir, fileBase) =
+
+          if (!file.isDirectory) {
+            succeeded = false
+            (null, null, null, null)
+          } else {
+            val fileBase: String = basename(file.getName)
+            NestUI.verbose(this+" running test "+fileBase)
+            val outDir = createOutputDir(file, fileBase, kind)
+            if (!outDir.exists) outDir.mkdir()
+            val testFile = new File(file, fileBase + ".test")
+            val changesDir = new File(file, fileBase + ".changes")
+            if (changesDir.exists && !changesDir.isDirectory) {
+              // if changes exists then it has to be a dir
+              succeeded = false
+              (null, null, null, null)
+            } else {
+              copyTestFiles(file, outDir)
+              NestUI.verbose("outDir:  "+outDir)
+              NestUI.verbose("logFile: "+logFile)
+              (outDir, testFile, changesDir, fileBase)
+            }
+          }
+
+          if (succeeded) {
+            // Pre-conditions satisfied
+
+            try {
+              val sourcepath = outDir.getAbsolutePath+File.separator
+
+              // configure input/output files
+              val logWriter = new PrintStream(new FileOutputStream(logFile))
+              val testReader = new BufferedReader(new FileReader(testFile))
+              //val logConsoleWriter = new PrintWriter(new OutputStreamWriter(logOut))
+              val logConsoleWriter = new PrintWriter(logWriter)
+
+              // create proper settings for the compiler
+              val settings = new Settings(error)
+              settings.outdir.value = outDir.getCanonicalFile.getAbsolutePath
+              settings.sourcepath.value = sourcepath
+              settings.classpath.value = fileManager.CLASSPATH
+
+              // simulate Build Manager loop
+              val prompt = "builder > "
+              reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
+              val bM: BuildManager =
+                  new RefinedBuildManager(settings) {
+                    override protected def newCompiler(settings: Settings) =
+                        new BuilderGlobal(settings, reporter)
+                  }
+
+              val testCompile = (line: String) => {
+                NestUI.verbose("compiling " + line)
+                val args = (line split ' ').toList
+                val command = new CompilerCommand(args, settings, error, true)
+                bM.update(filesToSet(settings.sourcepath.value, command.files), Set.empty)
+                !reporter.hasErrors
+              }
+
+              val updateFiles = (line: String) => {
+                NestUI.verbose("updating " + line)
+                val res =
+                  ((line split ' ').toList).forall(u => {
+                    (u split "=>").toList match {
+                        case origFileName::(newFileName::Nil) =>
+                          val newFile = new File(changesDir, newFileName)
+                          if (newFile.exists && newFile.isFile) {
+                            val v = overwriteFileWith(new File(outDir, origFileName), newFile)
+                            if (!v)
+                              NestUI.verbose("'update' operation on " + u + " failed")
+                            v
+                          } else {
+                            NestUI.verbose("File " + newFile + " is invalid")
+                            false
+                          }
+                        case a =>
+                          NestUI.verbose("Other =: " + a)
+                          false
+                    }
+                  })
+                if (!res)
+                  NestUI.verbose("updating failed")
+                else
+                  NestUI.verbose("updating succeeded")
+                res
+              }
+
+              def loop() {
+                val command = testReader.readLine()
+                if ((command ne null) && command.length() > 0) {
+                  val commandResult = command match {
+                    case s if (s.startsWith(">>update "))   =>
+                      updateFiles(s.stripPrefix(">>update "))
+                    case s if (s.startsWith(">>compile "))  =>
+                      val files = s.stripPrefix(">>compile ")
+                      logWriter.println(prompt + files)
+                      testCompile(files) // In the end, it can finish with an error
+                    case _                                  =>
+                      NestUI.verbose("wrong command in test file: " + command)
+                      false
+                    }
+
+                  if (commandResult) loop()
+
+                } else {
+                  NestUI.verbose("finished")
+                  succeeded = true
+                }
+              }
+
+              withOutputRedirected(logWriter) {
+                loop()
+                testReader.close()
+              }
+
+              fileManager.mapFile(logFile, "tmp", file, {s => s.replace(sourcepath, "")})
+
+              diff = compareOutput(file, fileBase, kind, logFile)
+              if (!diff.equals("")) {
+                NestUI.verbose("output differs from log file\n")
+                succeeded = false
+              }
+
+            }
+            LogContext(logFile, Some((swr, wr)))
+          } else
+            LogContext(logFile, None)
+        } else
+          LogContext(logFile, None)
 
       case "res" => {
           // when option "--failed" is provided
@@ -632,48 +745,25 @@ class Worker(val fileManager: FileManager) extends Actor {
                 loop(action)
               }
             }
-            val oldStdOut = System.out
-            val oldStdErr = System.err
-            System.setOut(logWriter)
-            System.setErr(logWriter)
-            loop(resCompile)
-            resReader.close()
-            logWriter.flush()
-            logWriter.close()
 
-            System.setOut(oldStdOut)
-            System.setErr(oldStdErr)
-
-            val tempLogFile = new File(dir, fileBase+".temp.log")
-            val logFileReader = new BufferedReader(new FileReader(logFile))
-            val tempLogFilePrinter = new PrintWriter(new FileWriter(tempLogFile))
-            val appender =
-              new StreamAppender(logFileReader, tempLogFilePrinter)
-
-	    // function that removes a given string from another string
-	    def removeFrom(line: String, path: String): String = {
-              // find `path` in `line`
-              val index = line.indexOf(path)
-              if (index != -1) {
-                line.substring(0, index) + line.substring(index + path.length, line.length)
-              } else line
+            withOutputRedirected(logWriter) {
+              loop(resCompile)
+              resReader.close()
             }
 
-            appender.runAndMap({ s =>
-              val woPath = removeFrom(s, dir.getAbsolutePath/*.replace(File.separatorChar,'/')*/+File.separator)
-              // now replace single '\' with '/'
-              woPath.replace('\\', '/')
-            })
-            logFileReader.close()
-            tempLogFilePrinter.close()
+            def replaceSlashes(s: String): String = {
+                val path = dir.getAbsolutePath/*.replace(File.separatorChar,'/')*/+
+                             File.separator
+                // find `path` in `line`
+                val index = s.indexOf(path)
+                val line =
+                  if (index != -1)
+                    s.substring(0, index) + s.substring(index + path.length, s.length)
+                  else s
+                line.replace('\\', '/')
+            }
 
-            val tempLogFileReader = new BufferedReader(new FileReader(tempLogFile))
-            val logFilePrinter= new PrintWriter(new FileWriter(logFile), true)
-            (new StreamAppender(tempLogFileReader, logFilePrinter)).run
-            tempLogFileReader.close()
-            logFilePrinter.close()
-
-            tempLogFile.delete()
+            fileManager.mapFile(logFile, "tmp", dir, replaceSlashes)
 
             diff = compareOutput(dir, fileBase, kind, logFile)
             if (!diff.equals("")) {
@@ -980,6 +1070,37 @@ class Worker(val fileManager: FileManager) extends Actor {
           }
       }
     }
+  }
+
+  private def withOutputRedirected(out: PrintStream)(func: => Unit) {
+    val oldStdOut = System.out
+    val oldStdErr = System.err
+
+    try {
+      System.setOut(out)
+      System.setErr(out)
+      func
+      out.flush()
+      out.close()
+    } finally {
+      System.setOut(oldStdOut)
+      System.setErr(oldStdErr)
+    }
+  }
+
+  private def filesToSet(pre: String, fs: List[String]): Set[AbstractFile] = {
+      Set.empty ++ fs.map( s => AbstractFile.getFile(pre + s)).filter(_ != null)
+  }
+
+  private def copyTestFiles(testDir: File, destDir: File) {
+    val filter =
+        new FilenameFilter {
+          def accept(dir: File, name: String) =
+            (name.endsWith(".scala") || name.endsWith(".java")) &&
+            ((new File(dir, name).isFile))
+        }
+    (testDir.listFiles(filter)).foreach( f =>
+        fileManager.copyFile(f, new File(destDir, f.getName)) )
   }
 
   def showLog(logFile: File) {

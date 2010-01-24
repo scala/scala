@@ -102,6 +102,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   private def update(files: Set[AbstractFile]) = {
     val coll: mutable.Map[AbstractFile, immutable.Set[AbstractFile]] =
         mutable.HashMap[AbstractFile, immutable.Set[AbstractFile]]()
+    compiler.reporter.reset
 
     // See if we really have coresponding symbols, not just those
     // which share the name
@@ -117,7 +118,6 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
       run.compileFiles(files.toList)
       if (compiler.reporter.hasErrors) {
-        compiler.reporter.reset
         return
       }
 
@@ -158,7 +158,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           }
         }
       }
-      println("Changes: " + changesOf)
+      compiler.inform("Changes: " + changesOf)
       updateDefinitions(files)
       val invalid = invalidated(files, changesOf, additionalDefs)
       update0(checkCycles(invalid, files, coll))
@@ -206,7 +206,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       compiler.dependencyAnalysis.dependencies.dependentFiles(1, files)
 
     def invalidate(file: AbstractFile, reason: String, change: Change) = {
-      println("invalidate " + file + " because " + reason + " [" + change + "]")
+      compiler.inform("invalidate " + file + " because " + reason + " [" + change + "]")
       buf += file
       directDeps -= file
       for (syms <- definitions(file))     // fixes #2557
@@ -217,7 +217,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     for ((oldSym, changes) <- changesOf; change <- changes) {
       def checkParents(cls: Symbol, file: AbstractFile) {
         val parentChange = cls.info.parents.exists(_.typeSymbol.fullNameString == oldSym.fullNameString)
-          // println("checkParents " + cls + " oldSym: " + oldSym + " parentChange: " + parentChange + " " + cls.info.parents)
+          // compiler.inform("checkParents " + cls + " oldSym: " + oldSym + " parentChange: " + parentChange + " " + cls.info.parents)
         change match {
           case Changed(Class(_)) if parentChange =>
             invalidate(file, "parents have changed", change)
@@ -249,7 +249,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       }
 
       def checkReferences(file: AbstractFile) {
-        // println(file + ":" + references(file))
+        // compiler.inform(file + ":" + references(file))
         val refs = references(file)
         if (refs.isEmpty)
           invalidate(file, "it is a direct dependency and we don't yet have finer-grained dependency information", change)
