@@ -218,7 +218,7 @@ abstract class DeadCodeElimination extends SubComponent {
     private def computeCompensations(m: IMethod): mutable.Map[(BasicBlock, Int), List[Instruction]] = {
       val compensations: mutable.Map[(BasicBlock, Int), List[Instruction]] = new mutable.HashMap
 
-      for (bb <- m.code.blocks.toList) {
+      for (bb <- m.code.blocks) {
         assert(bb.closed, "Open block in computeCompensations")
         for ((i, idx) <- bb.toList.zipWithIndex) {
           if (!useful(bb)(idx)) {
@@ -226,8 +226,20 @@ abstract class DeadCodeElimination extends SubComponent {
               log("Finding definitions of: " + i + "\n\t" + consumedType + " at depth: " + depth)
               val defs = rdef.findDefs(bb, idx, 1, depth)
               for (d <- defs) {
-                if (!compensations.isDefinedAt(d))
-                  compensations(d) = List(DROP(consumedType))
+                val (bb, idx) = d
+                bb(idx) match {
+                  case DUP(_) if idx > 0 =>
+                    bb(idx - 1) match {
+                      case nw @ NEW(_) =>
+                        val init = findInstruction(bb, nw.init)
+                        log("Moving DROP to after <init> call: " + nw.init)
+                        compensations(init) = List(DROP(consumedType))
+                      case _ =>
+                        compensations(d) = List(DROP(consumedType))
+                    }
+                  case _ =>
+                    compensations(d) = List(DROP(consumedType))
+                }
               }
             }
           }
