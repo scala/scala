@@ -456,7 +456,7 @@ self =>
       }
     }
     //util.trace("typeMembers =")(
-    members.valuesIterator.toList)
+    members.valuesIterator.toList
   }
 
   // ---------------- Helper classes ---------------------------
