@@ -331,7 +331,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     if (in.history.isDefined)
       interpreter.quietBind("history", "scala.collection.immutable.List[String]", in.historyList)
 
-    interpreter.quietBind("repl", "scala.tools.nsc.Interpreter#ReplVars", interpreter.replVarsObject())
+    interpreter.quietBind("repl", "scala.tools.nsc.interpreter.CompletionAware", interpreter.replVarsObject())
   }
 
   def verbosity() = {

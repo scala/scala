@@ -60,6 +60,8 @@ trait CompletionAware {
     ) filterNot filterNotFunction map mapFunction sortWith (sortFunction _)
   }
 
+  /** TODO - unify this and completionsFor under a common traverser.
+   */
   def executionFor(buf: String): Option[Any] = {
     val parsed = new Parsed(buf)
     import parsed._
@@ -79,6 +81,21 @@ object CompletionAware {
     case _                  => None
   }
 
-  def apply(xs: List[String]) = new CompletionAware { val completions = xs }
+  /** Create a CompletionAware object from the given functions.
+   *  The first should generate the list of completions whenever queried,
+   *  and the second should return Some(CompletionAware) object if
+   *  subcompletions are possible.
+   */
+  def apply(terms: () => List[String], followFunction: String => Option[CompletionAware]): CompletionAware =
+    new CompletionAware {
+      def completions = terms()
+      override def follow(id: String) = followFunction(id)
+    }
+
+  /** Convenience factories.
+   */
+  def apply(terms: () => List[String]): CompletionAware = apply(terms, _ => None)
+  def apply(map: collection.Map[String, CompletionAware]): CompletionAware =
+    apply(() => map.keysIterator.toList, map.get _)
 }
 

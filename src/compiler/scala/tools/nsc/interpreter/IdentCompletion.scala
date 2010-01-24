@@ -12,8 +12,10 @@ package interpreter
 class IdentCompletion(repl: Interpreter) extends CompletionAware {
   def completions() = repl.unqualifiedIds
   override def follow(id: String) =
-    if (completions contains id)
-      repl completionAware id orElse Some(new InstanceCompletion(repl clazzForIdent id))
-    else
-      None
+    if (completions contains id) {
+      (repl completionAware id) orElse
+      (repl completionAwareImplicit id) orElse
+      Some(new InstanceCompletion(repl clazzForIdent id))
+    }
+    else None
 }

@@ -229,7 +229,7 @@ scala>
 scala> 
 plusOne: (x: Int)Int
 res0: Int = 6
-res0: java.lang.String = after reset
+res1: java.lang.String = after reset
 <console>:5: error: not found: value plusOne
        plusOne(5) // should be undefined now
        ^
