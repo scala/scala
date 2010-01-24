@@ -726,12 +726,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
-    /** Opposite of compiles, but is overridden in interactive
-     *  notCompiles is used to detect double declarations in multiple source files.
-     *  Since the IDE rechecks units several times in the same run, it should
-     *  always return true there.
+    /** Is this run allowed to redefine the given symbol? Usually this is true
+     *  if the run does not already compile `sym`, but for interactive mode
+     *  we have a more liberal interpretation.
      */
-    def notCompiles(sym: Symbol) = !compiles(sym)
+    def canRedefine(sym: Symbol) = !compiles(sym)
 
     // --------------- Compilation methods ----------------------------
 

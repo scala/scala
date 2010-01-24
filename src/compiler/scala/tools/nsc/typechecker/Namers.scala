@@ -197,7 +197,7 @@ trait Namers { self: Analyzer =>
 
     def enterClassSymbol(tree : ClassDef): Symbol = {
       var c: Symbol = context.scope.lookup(tree.name)
-      if (c.isType && c.owner.isPackageClass && context.scope == c.owner.info.decls && currentRun.notCompiles(c)) {
+      if (c.isType && c.owner.isPackageClass && context.scope == c.owner.info.decls && currentRun.canRedefine(c)) {
         updatePosFlags(c, tree.pos, tree.mods.flags)
         setPrivateWithin(tree, c, tree.mods)
       } else {
@@ -214,7 +214,7 @@ trait Namers { self: Analyzer =>
         }
         clazz.sourceFile = file
         if (clazz.sourceFile ne null) {
-          assert(currentRun.notCompiles(clazz) || clazz.sourceFile == currentRun.symSource(c));
+          assert(currentRun.canRedefine(clazz) || clazz.sourceFile == currentRun.symSource(c));
           currentRun.symSource(c) = clazz.sourceFile
         }
       }
@@ -229,7 +229,7 @@ trait Namers { self: Analyzer =>
       var m: Symbol = context.scope.lookup(tree.name)
       val moduleFlags = tree.mods.flags | MODULE | FINAL
       if (m.isModule && !m.isPackage && inCurrentScope(m) &&
-          (currentRun.notCompiles(m) || (m hasFlag SYNTHETIC))) {
+          (currentRun.canRedefine(m) || (m hasFlag SYNTHETIC))) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
         context.unit.synthetics -= m

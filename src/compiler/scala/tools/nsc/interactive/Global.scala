@@ -398,18 +398,24 @@ self =>
   }
 
   def typeMembers(pos: Position): List[TypeMember] = {
-    val tree1 = typedTreeAt(pos)
-    val tree0 = tree1 match {
-      case tt : TypeTree => tt.original
-      case t => t
-    }
-    val tree = tree0 match {
-      case s@Select(qual, name) if s.tpe == ErrorType => qual
-      case t => t
+    var tree = typedTreeAt(pos)
+    tree match {
+      case tt : TypeTree => tree = tt.original
+      case _ =>
     }
 
-    println("typeMembers at "+tree+" "+tree.tpe)
+    tree match {
+      case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+      case _ =>
+    }
+
     val context = doLocateContext(pos)
+
+    if (tree.tpe == null)
+      tree = analyzer.newTyper(context).typedQualifier(tree)
+
+    println("typeMembers at "+tree+" "+tree.tpe)
+
     val superAccess = tree.isInstanceOf[Super]
     val scope = new Scope
     val members = new LinkedHashMap[Symbol, TypeMember]
@@ -449,7 +455,8 @@ self =>
         addTypeMember(sym, vpre, false, view.tree.symbol)
       }
     }
-    members.valuesIterator.toList
+    //util.trace("typeMembers =")(
+    members.valuesIterator.toList)
   }
 
   // ---------------- Helper classes ---------------------------
@@ -467,11 +474,11 @@ self =>
   class TyperRun extends Run {
     // units is always empty
 
-    /** notCompiles is used to detect double declarations in multiple source files.
+    /** canRedefine is used to detect double declarations in multiple source files.
      *  Since the IDE rechecks units several times in the same run, these tests
      *  are disabled by always returning true here.
      */
-    override def notCompiles(sym: Symbol) = true
+    override def canRedefine(sym: Symbol) = true
 
     def typeCheck(unit: CompilationUnit): Unit = {
       applyPhase(typerPhase, unit)
