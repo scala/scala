@@ -1,0 +1,11 @@
+builder > A.scala B.scala
+compiling Set(A.scala, B.scala)
+Changes: Map()
+builder > A.scala
+compiling Set(A.scala)
+Changes: Map(class A -> List(Removed(Definition(A.foo))))
+invalidate B.scala because inherited method removed [Removed(Definition(A.foo))]
+compiling Set(B.scala)
+B.scala:2: error: method foo overrides nothing
+  override def foo = 2
+               ^
