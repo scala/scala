@@ -38,7 +38,6 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		def processUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
-			//println("Processing " + sourceFile)
 			val traverser = new TopLevelHandler(sourceFile)
 			traverser.apply(unit.body)
 			val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
@@ -75,12 +74,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def annotations(as: List[AnnotationInfo]): Array[xsbti.api.Annotation] = as.toArray[AnnotationInfo].map(annotation)
 	private def annotation(a: AnnotationInfo) =
 		new xsbti.api.Annotation(simpleType(a.atp),
-			a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument] )
+			if(a.assocs.isEmpty) Array(new xsbti.api.AnnotationArgument("", a.args.mkString("(", ",", ")"))) // what else to do with a Tree?
+			else a.assocs.map { case (name, value) => new xsbti.api.AnnotationArgument(name.toString, value.toString) }.toArray[xsbti.api.AnnotationArgument]
+		)
 	private def annotated(as: List[AnnotationInfo], tpe: Type) = new xsbti.api.Annotated(simpleType(tpe), annotations(as))
 
 	private def defDef(s: Symbol) =
 	{
-			//println("\tProcessing def " + s.fullNameString)
 		def build(t: Type, typeParams: Array[xsbti.api.TypeParameter], valueParameters: List[xsbti.api.ParameterList]): xsbti.api.Def =
 		{
 			// 2.8 compatibility
@@ -132,13 +132,10 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		s.hasFlag(Flags.DEFAULTPARAM)
 	}
 	private def fieldDef[T](s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
-	{
-			//println("\tProcessing field " + s.fullNameString)
 		create(processType(s.tpe), simpleName(s), getAccess(s), getModifiers(s), annotations(s))
-	}
+		
 	private def typeDef(s: Symbol): xsbti.api.TypeMember =
 	{
-			//println("\tProcessing type " + s.fullNameString)
 		val (typeParams, tpe) =
 			s.info match
 			{
@@ -246,7 +243,6 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def classLike(c: Symbol): ClassLike =
 	{
 		val name = fullName(c)
-			//println("\tProcessing class " + name)
 		val isModule = c.isModuleClass || c.isModule
 		val defType =
 			if(c.isTrait) DefinitionType.Trait
@@ -311,7 +307,10 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		implicit def compat(a: AnyRef): WithAnnotations = new WithAnnotations(a)
 		class WithAnnotations(a: AnyRef) { def attributes = a.getClass.getMethod("annotations").invoke(a).asInstanceOf[List[AnnotationInfo]] }
 
-	private def annotations(s: Symbol): Array[xsbti.api.Annotation] = annotations(s.tpe.attributes)
+	private def annotations(s: Symbol): Array[xsbti.api.Annotation] =
+		atPhase(currentRun.typerPhase) {
+			annotations(s.attributes)
+		}
 	private def annotatedType(at: AnnotatedType): xsbti.api.Type =
 	{
 		val annots = at.attributes
