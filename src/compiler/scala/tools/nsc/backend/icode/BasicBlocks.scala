@@ -189,7 +189,7 @@ trait BasicBlocks {
       var i = 0
       var changed = false
       while (i < instrs.length && !changed) {
-        if (instrs(i) == oldInstr) {
+        if (instrs(i) eq oldInstr) {
           newInstr.setPos(oldInstr.pos)
           instrs(i) = newInstr
           changed = true
