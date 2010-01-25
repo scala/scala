@@ -154,7 +154,7 @@ class PartestTask extends Task {
   private def getRunFiles          = getFiles(runFiles)
   private def getJvmFiles          = getFilesAndDirs(jvmFiles)
   private def getResidentFiles     = getFiles(residentFiles)
-  private def getBuildManagerFiles = getFiles(buildManagerFiles)
+  private def getBuildManagerFiles = getFilesAndDirs(buildManagerFiles)
   private def getScriptFiles       = getFiles(scriptFiles)
   private def getShootoutFiles     = getFiles(shootoutFiles)
   private def getScalapFiles       = getFiles(scalapFiles)

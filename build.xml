@@ -1402,10 +1402,11 @@ BOOTRAPING TEST AND TEST SUITE
       <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
       <residenttests dir="${test.dir}/files/res" includes="*.res"/>
       <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
+      <buildmanagertests dir="${test.dir}/files/buildmanager" includes="*"/>
       <scalaptests dir="${test.dir}/files/scalap" includes="**/*.scala"/>
     </partest>
   </target>
-  
+
   <target name="test.done" depends="test.suite, test.stability"/>
 
 <!-- ===========================================================================
