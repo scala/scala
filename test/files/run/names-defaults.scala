@@ -135,6 +135,10 @@ object Test extends Application {
   println(bn4())
   println(bn4(a = 0))
 
+  class t2929(x: => Int = 1) {
+    def foo = x
+  }
+  println((new t2929()).foo)
 
   // constructors
   val a1 = new A(b = "dlkfj")(d = 102)
