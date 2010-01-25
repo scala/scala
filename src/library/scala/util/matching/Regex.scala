@@ -289,6 +289,11 @@ object Regex {
     def unapply(m: Match): Some[String] = Some(m.matched)
   }
 
+  /** An extractor object that yields groups in the match. */
+  object Groups {
+    def unapplySeq(m: Match): Option[Seq[String]] = if (m.groupCount > 0) Some(1 to m.groupCount map m.group) else None
+  }
+
   /** A class to step through a sequence of regex matches
    */
   class MatchIterator(val source: java.lang.CharSequence, val regex: Regex, val groupNames: Seq[String])
