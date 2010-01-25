@@ -455,7 +455,6 @@ self =>
         addTypeMember(sym, vpre, false, view.tree.symbol)
       }
     }
-    //util.trace("typeMembers =")(
     members.valuesIterator.toList
   }
 

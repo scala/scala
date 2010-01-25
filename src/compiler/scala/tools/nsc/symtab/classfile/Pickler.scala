@@ -1044,6 +1044,7 @@ abstract class Pickler extends SubComponent {
           print("POLYtpe "); printRef(restpe); printRefs(tparams);
         case ExistentialType(tparams, restpe) =>
           print("EXISTENTIALtpe "); printRef(restpe); printRefs(tparams);
+          print("||| "+entry)
         case DeBruijnIndex(l, i) =>
           print("DEBRUIJNINDEXtpe "); print(l+" "+i)
         case c @ Constant(_) =>
@@ -1099,7 +1100,7 @@ abstract class Pickler extends SubComponent {
         println("Pickled info for "+rootName+" V"+MajorVersion+"."+MinorVersion)
       }
       for (i <- 0 until ep) {
-        if (showSig) {
+        if (showSig/* || rootName.toString == "StaticCompletion"*/) {
           print((i formatted "%3d: ")+(writeIndex formatted "%5d: "))
           printEntry(entries(i))
         }

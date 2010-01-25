@@ -42,7 +42,7 @@ class StaticCompletion(jarEntryName: String) extends CompletionAware {
   def isScalaClazz(cl: Class[_]) = allInterfaces(cl) exists (_.getName == "scala.ScalaObject")
   def isJava = !isScalaClazz(clazz)
 
-  lazy val clazz = {
+  lazy val clazz: Class[_] = {
     val cl = Class.forName(className)
     if (className.last != '$' && isScalaClazz(cl)) {
       try Class.forName(className + "$")

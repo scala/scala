@@ -8,7 +8,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.collection.immutable
-import scala.collection.mutable.{ListBuffer, HashMap, WeakHashMap}
+import scala.collection.mutable.{ListBuffer, WeakHashMap}
 import ast.TreeGen
 import util.{HashSet, Position, NoPosition}
 import util.Statistics._
