@@ -32,6 +32,14 @@ class Index(modelRoot: Package) extends HtmlPage {
       <div id="browser">
         <input id="quickflt" type="text" accesskey="/"/>
         <div id="tpl">{
+          def isExcluded(t : DocTemplateEntity) = {
+            val qname=t.qualifiedName
+            (qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") ||
+            qname.startsWith("scala.Function")) &&
+            !(qname=="scala.Function1" || qname=="scala.Function2" || qname=="scala.Function"
+             || qname=="scala.Product1" || qname=="scala.Product2" || qname=="scala.Product"
+             || qname=="scala.Tuple1" || qname=="scala.Tuple2")
+          }
           def packageElem(pack: model.Package): NodeSeq = {
             <xml:group>
               { if (!pack.isRootPackage)
@@ -40,7 +48,7 @@ class Index(modelRoot: Package) extends HtmlPage {
               }
               <ol class="templates">{
                 val tpls: Map[String, Seq[DocTemplateEntity]] =
-                  (pack.templates filter (!_.isPackage)) groupBy (_.name)
+                  (pack.templates filter (t => !t.isPackage && !isExcluded(t) )) groupBy (_.name)
                 for (tn <- tpls.keySet.toSeq sortWith (_.toLowerCase < _.toLowerCase)) yield {
                   val entries = tpls(tn) sortWith { (less, more) => less.isTrait || more.isObject }
                   def doEntry(ety: DocTemplateEntity, firstEty: Boolean): NodeSeq = {
