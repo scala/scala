@@ -553,7 +553,7 @@ trait Typers { self: Analyzer =>
       sym.rawInfo.isInstanceOf[loaders.ClassfileLoader] && {
         sym.rawInfo.load(sym)
         (sym.sourceFile ne null) &&
-        (currentRun.compiledFiles contains sym.sourceFile)
+        (currentRun.compiledFiles contains sym.sourceFile.path)
       }
     }
 

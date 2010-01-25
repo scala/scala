@@ -55,10 +55,10 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
   def this(file: AbstractFile, cs: Seq[Char])   = this(file, cs.toArray)
 
   override def equals(that : Any) = that match {
-    case that : BatchSourceFile => file == that.file
+    case that : BatchSourceFile => file.path == that.file.path
     case _ => false
   }
-  override def hashCode = file.hashCode
+  override def hashCode = file.path.hashCode
   val length = content.length
 
   // in SourceFileFragments, these are overridden to compensate during offset calculation

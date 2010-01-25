@@ -701,12 +701,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     // ----------- Units and top-level classes and objects --------
 
     private var unitbuf = new ListBuffer[CompilationUnit]
-    var compiledFiles = new HashSet[AbstractFile]
+    var compiledFiles = new HashSet[String]
 
     /** add unit to be compiled in this run */
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
-      compiledFiles += unit.source.file
+      compiledFiles += unit.source.file.path
     }
 
     /* An iterator returning all the units being compiled in this run */
@@ -855,7 +855,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                   " was found\n(This file cannot be loaded as a source file)"
         inform(msg)
         throw new FatalError(msg)
-      } else if (!(compiledFiles contains file)) {
+      } else if (!(compiledFiles contains file.path)) {
         compileLate(new CompilationUnit(getSourceFile(file)))
       }
     }
