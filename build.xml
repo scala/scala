@@ -533,10 +533,9 @@ QUICK BUILD (QUICK)
   </target>
   
   <target name="quick.newlibs" depends="quick.lib" if="libs.outdated">
-    <antcall target="libs.done">
-      <param name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
-      <param name="msil.jar" value="${build-libs.dir}/msil.jar"/>
-    </antcall>
+    <antcall target="libs.done" inheritRefs="true"/>
+    <property name="fjbg.jar" value="${build-libs.dir}/fjbg.jar"/>
+    <property name="msil.jar" value="${build-libs.dir}/msil.jar"/>
   </target>
   
   <target name="quick.libs" depends="quick.newlibs" unless="libs.outdated">
@@ -545,9 +544,8 @@ QUICK BUILD (QUICK)
   </target>
 
   <target name="quick.newforkjoin" depends="quick.libs" if="forkjoin.outdated">
-    <antcall target="forkjoin.done">
-      <param name="forkjoin.jar" value="${build-libs.dir}/forkjoin.jar"/>
-    </antcall>
+    <antcall target="forkjoin.done" inheritRefs="true"/>
+    <property name="forkjoin.jar" value="${build-libs.dir}/forkjoin.jar"/>
   </target>
 
   <target name="quick.forkjoin" depends="quick.newforkjoin" unless="forkjoin.outdated">
@@ -1123,6 +1121,13 @@ LIBRARIES (MSIL, FJBG maybe later)
   <target name="libs.start"/>
   
   <target name="libs.pre-forkjoin" depends="libs.start">
+    <property name="java6.home" value="/home/linuxsoft/apps/java-1.6"/>
+    <fail message="Compiling forkjoin.jar requires java 1.6. Please set the property `java6.home` in build.properties or using `-Djava6.home=/path/to/java6`">
+      <condition><not>
+        <available file="${java6.home}/bin/javac"/>
+      </not></condition>
+    </fail>
+
     <uptodate property="libs.forkjoin.available" targetfile="${build-libs.dir}/forkjoin.complete">
       <srcfiles dir="${src.dir}/forkjoin">
         <include name="**/*.java"/>
@@ -1134,6 +1139,9 @@ LIBRARIES (MSIL, FJBG maybe later)
   <target name="libs.forkjoin" depends="libs.pre-forkjoin" unless="libs.forkjoin.available">
     <mkdir dir="${build-libs.dir}/classes/forkjoin"/>
     <javac
+      executable="${java6.home}/bin/javac"
+      fork="yes"
+      compiler="javac1.6"
       srcdir="${src.dir}/forkjoin"
       destdir="${build-libs.dir}/classes/forkjoin"
       classpath="${build-libs.dir}/classes/forkjoin"
