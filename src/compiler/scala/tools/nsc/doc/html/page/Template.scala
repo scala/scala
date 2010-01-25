@@ -258,11 +258,12 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
   /** name, tparams, params, result */
   def signature(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
+    val isDeprecated = mbr.isDeprecated ||  (!mbr.comment.isEmpty && !mbr.comment.get.deprecated.isEmpty)
     def inside(hasLinks: Boolean): NodeSeq =
       <xml:group>
       <span class="kind">{ kindToString(mbr) }</span>
       <span class="symbol">
-        <span class="name">{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
+        <span class={"name" + (if(isDeprecated) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
           def tparamsToHtml(tpss: List[TypeParam]): NodeSeq =
             if (tpss.isEmpty) NodeSeq.Empty else {
               def tparam0(tp: TypeParam): NodeSeq =
@@ -293,7 +294,11 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               case vl :: Nil => param0(vl)
               case vl :: vls => param0(vl) ++ Text(", ") ++ params0(vls)
             }
-            vlsss map { vlss => <span class="params">({ params0(vlss) })</span> }
+            def implicitCheck(vlss: List[ValueParam]): NodeSeq = vlss match {
+              case vl :: vls => if(vl.isImplicit) { <span class="implicit">implicit </span> } else Text("")
+              case _ => Text("")
+            }
+            vlsss map { vlss => <span class="params">({implicitCheck(vlss) ++ params0(vlss) })</span> }
           }
           mbr match {
             case cls: Class if cls.isCaseClass => paramsToHtml(cls.primaryConstructor.get.valueParams)

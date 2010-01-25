@@ -144,4 +144,5 @@ trait TypeParam extends ParameterEntity {
 trait ValueParam extends ParameterEntity {
   def resultType: TypeEntity
   def defaultValue: Option[String]
+  def isImplicit: Boolean
 }

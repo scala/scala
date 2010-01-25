@@ -170,8 +170,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
       subClassesCache += sc
     }
     def subClasses = subClassesCache.toList
-    protected def memberSyms = sym.info.nonPrivateMembers
-    val members: List[MemberEntity] = memberSyms flatMap (makeMember(_, this))
+    protected def memberSyms =
+       // Only this class's constructors are part of its members, inherited constructors are not.
+      sym.info.nonPrivateMembers.filter(x => (!x.isConstructor || x.owner==sym))
+    val members       = memberSyms flatMap (makeMember(_, this))
     val templates     = members partialMap { case c: DocTemplateEntity => c }
     val methods       = members partialMap { case d: Def => d }
     val values        = members partialMap { case v: Val => v }
@@ -421,6 +423,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
         else None
       def resultType =
         makeType(sym.tpe, inTpl, sym)
+      def isImplicit = aSym.hasFlag(Flags.IMPLICIT)
     }
 
   /** */

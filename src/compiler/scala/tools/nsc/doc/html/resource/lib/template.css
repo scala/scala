@@ -125,6 +125,14 @@ div.members > ol > li {
 	font-weight: bold;
 }
 
+.signature .symbol .params .implicit {
+	font-style: italic;
+}
+
+.signature .symbol .name.deprecated {
+	text-decoration: line-through;
+}
+
 .signature .symbol .params .default {
 	font-style: italic;
 }
