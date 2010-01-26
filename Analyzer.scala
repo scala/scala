@@ -114,7 +114,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	private def classFile(sym: Symbol): Option[AbstractFile] =
 	{
 		import scala.tools.nsc.symtab.Flags
-		val name = sym.fullNameString(finder.classSeparator) + (if (sym.hasFlag(Flags.MODULE)) "$" else "")
+		val name = flatname(sym, finder.classSeparator) + moduleSuffix(sym)
 		finder.findClass(name) orElse {
 			if(isTopLevelModule(sym))
 			{
@@ -129,26 +129,18 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		}
 	}
 
+	// doesn't seem to be in 2.7.7, so copied from GenJVM to here
+	private def moduleSuffix(sym: Symbol) =
+		if (sym.hasFlag(Flags.MODULE) && !sym.isMethod && !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$" else "";
+	private def flatname(s: Symbol, separator: Char) =
+		atPhase(currentRun.flattenPhase.next) { s.fullNameString(separator) }
+
 	private def isTopLevelModule(sym: Symbol): Boolean =
 		atPhase (currentRun.picklerPhase.next) {
 			sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
 		}
 	private def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
-		fileForClass(outputDirectory, s, separatorRequired, ".class")
-	private def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean, postfix: String): File =
-	{
-		if(s.owner.isPackageClass && s.isPackageClass)
-			new File(packageFile(outputDirectory, s), postfix)
-		else
-			fileForClass(outputDirectory, s.owner.enclClass, true, s.simpleName + (if(separatorRequired) "$" else "") + postfix)
-	}
-	private def packageFile(outputDirectory: File, s: Symbol): File =
-	{
-		if(s.isEmptyPackageClass || s.isRoot)
-			outputDirectory
-		else
-			new File(packageFile(outputDirectory, s.owner.enclClass), s.simpleName.toString)
-	}
+		new File(outputDirectory, flatname(s, File.separatorChar) + (if(separatorRequired) "$" else "") + ".class")
 
 	private def hasMainMethod(sym: Symbol): Boolean =
 	{
