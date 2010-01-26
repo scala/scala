@@ -218,6 +218,19 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   /** Available commands */
   def commands: List[Command] = standardCommands ::: (if (powerUserOn) powerCommands else Nil)
 
+  /* For some reason, the first interpreted command always takes
+   * a second or two.  So, wait until the welcome message
+   * has been printed before calling isettings.  That way,
+   * the user can read the welcome message while this
+   * command executes.
+   */
+  private def initInterpreter() {
+    // forces something to be compiled
+    interpreter.isettings
+    // signals completion it's okay to proceed
+    interpreter.setInitialized
+  }
+
   /** The main read-eval-print loop for the interpreter.  It calls
    *  <code>command()</code> for each line of input, and stops when
    *  <code>command()</code> returns <code>false</code>.
@@ -238,12 +251,12 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
     /* For some reason, the first interpreted command always takes
      * a second or two.  So, wait until the welcome message
-     * has been printed before calling isettings.  That way,
+     * has been printed before calling initInterpreter.  That way,
      * the user can read the welcome message while this
      * command executes.
      */
     val futLine = scala.concurrent.ops.future(readOneLine)
-    interpreter.isettings // evaluates lazy val
+    initInterpreter()
 
     if (!processLine(futLine()))
       return
@@ -445,7 +458,15 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     } finally closeInterpreter()
   }
 
-  private def objName(x: Any) = x.asInstanceOf[AnyRef].getClass.getName
+  private def objClass(x: Any) = x.asInstanceOf[AnyRef].getClass
+  private def objName(x: Any) = {
+    val clazz = objClass(x)
+    val typeParams = clazz.getTypeParameters
+    val basename = clazz.getName
+    val tpString = if (typeParams.isEmpty) "" else "[%s]".format(typeParams map (_ => "_") mkString ", ")
+
+    basename + tpString
+  }
 
   // injects one value into the repl; returns pair of name and class
   def injectOne(name: String, obj: Any): Tuple2[String, String] = {

@@ -14,6 +14,7 @@ class Parsed(_buf: String) {
   lazy val hd :: tl = segments
   def stub = firstDot + hd + "."
   def remainder = buffer stripPrefix stub
+  def unqualifiedPart = segments.last
 
   def isEmpty = segments.size == 0
   def isUnqualified = segments.size == 1

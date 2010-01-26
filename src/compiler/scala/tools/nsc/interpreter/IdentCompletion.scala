@@ -10,12 +10,16 @@ package interpreter
  *  delegates to an InstanceCompletion.
  */
 class IdentCompletion(repl: Interpreter) extends CompletionAware {
-  def completions() = repl.unqualifiedIds
+  val INTERPRETER_VAR_PREFIX = "res"
+
+  def completions() = repl.unqualifiedIds ::: List("classOf")
   override def follow(id: String) =
+    // XXX this will be nice but needs solidifying.
+    // (repl completionAwareImplicit id) orElse
     if (completions contains id) {
-      (repl completionAware id) orElse
-      (repl completionAwareImplicit id) orElse
-      Some(new InstanceCompletion(repl clazzForIdent id))
+      (repl completionAware id) orElse {
+        repl clazzForIdent id map (x => new InstanceCompletion(x))
+      }
     }
     else None
 }

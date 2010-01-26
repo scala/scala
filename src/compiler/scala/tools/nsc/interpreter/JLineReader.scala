@@ -15,26 +15,14 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
   def this() = this(null)
 
   override lazy val history = Some(History(consoleReader))
-  override lazy val completion =
-    if (interpreter == null) None
-    else Some(new Completion(interpreter))
+  override lazy val completion = Option(interpreter) map (x => new Completion(x))
 
   val consoleReader = {
     val r = new jline.ConsoleReader()
     r setHistory (History().jhistory)
     r setBellEnabled false
-
-    if (interpreter != null) {
-      // have to specify all delimiters for completion to work nicely
-      val delims = new ArgumentCompletor.AbstractArgumentDelimiter {
-        // val delimChars = "(){}[],`;'\" \t".toArray
-        val delimChars = "(){},`; \t".toArray
-        def isDelimiterChar(s: String, pos: Int) = delimChars contains s.charAt(pos)
-      }
-      val comp = new ArgumentCompletor(completion.get, delims)
-      comp setStrict false
-      r addCompletor comp
-      // XXX make this use a setting
+    completion foreach { c =>
+      r addCompletor c.jline
       r setAutoprintThreshhold 250
     }
 

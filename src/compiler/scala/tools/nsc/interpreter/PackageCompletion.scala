@@ -35,15 +35,27 @@ class PackageCompletion(classpath: List[URL]) extends CompletionAware {
     else None
 
   class SubCompletor(root: String) extends CompletionAware {
-    private def infos = dottedPaths get root
-    def completions() = infos map (_.visibleName)
+    // Look for a type alias
+    private def aliasCompletor(path: String): Option[CompletionAware] =
+      for (name <- ByteCode aliasForType path ; clazz <- classForName(name + "$")) yield
+        new StaticCompletion(clazz)
+
+    lazy val pkgObject = classForName(root + ".package$") map (x => new InstanceCompletion(x))
+    def pkgObjectMembers = pkgObject map (_.completions) getOrElse Nil
+
+    private def infos = Option(dottedPaths get root) getOrElse Nil
+    def completions() = {
+      val xs = infos map (_.visibleName) filterNot (_ == "package")
+      xs ::: pkgObjectMembers
+    }
 
     override def follow(segment: String): Option[CompletionAware] = {
       PackageCompletion.this.follow(root + "." + segment) orElse {
         for (CompletionInfo(`segment`, className, _) <- infos) {
           return Some(new StaticCompletion(className))
         }
-        None
+
+        aliasCompletor(root + "." + segment)
       }
     }
   }
@@ -54,17 +66,29 @@ object PackageCompletion {
   import java.util.jar.{ JarEntry, JarFile }
   import scala.tools.nsc.io.Streamable
 
+  val EXPAND_SEPARATOR_STRING = "$$"
+  val ANON_CLASS_NAME = "$anon"
+  val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
+  val IMPL_CLASS_SUFFIX ="$class"
+
+  def ignoreClassName(x: String) =
+    (x contains EXPAND_SEPARATOR_STRING) ||
+    (x contains ANON_CLASS_NAME) ||
+    (x contains TRAIT_SETTER_SEPARATOR_STRING) ||
+    (x endsWith IMPL_CLASS_SUFFIX) ||
+    (x matches """.*\$\d+$""")
+
   def enumToList[T](e: java.util.Enumeration[T]): List[T] = enumToListInternal(e, Nil)
   private def enumToListInternal[T](e: java.util.Enumeration[T], xs: List[T]): List[T] =
     if (e == null || !e.hasMoreElements) xs else enumToListInternal(e, e.nextElement :: xs)
 
   def getClassFiles(path: String): List[String] = {
     def exists(path: String) = { new File(path) exists }
-    if (!exists(path)) return Nil
-
-    (enumToList(new JarFile(path).entries) map (_.getName)) .
-      partialMap { case x: String if x endsWith ".class" => x dropRight 6 } .
-      filterNot { ReflectionCompletion.shouldHide }
+    if (!exists(path)) Nil else {
+      (enumToList(new JarFile(path).entries) map (_.getName))
+      . partialMap { case x: String if x endsWith ".class" => x dropRight 6 }
+      . filterNot { ignoreClassName }
+    }
   }
 
   case class CompletionInfo(visibleName: String, className: String, jar: String) {

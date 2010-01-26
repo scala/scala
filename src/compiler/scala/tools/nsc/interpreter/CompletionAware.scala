@@ -20,7 +20,7 @@ trait CompletionAware {
 
   /** Default filter to apply to completions.
    */
-  def filterNotFunction(s: String): Boolean = ReflectionCompletion shouldHide s
+  def filterNotFunction(s: String): Boolean = false
 
   /** Default sort.
    */
@@ -28,7 +28,7 @@ trait CompletionAware {
 
   /** Default map.
    */
-  def mapFunction(s: String): String = s
+  def mapFunction(s: String) = NameTransformer decode s
 
   /** The next completor in the chain.
    */
@@ -76,6 +76,8 @@ trait CompletionAware {
 }
 
 object CompletionAware {
+  val Empty = new CompletionAware { val completions = Nil }
+
   def unapply(that: Any): Option[CompletionAware] = that match {
     case x: CompletionAware => Some((x))
     case _                  => None

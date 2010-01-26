@@ -7,119 +7,96 @@ package scala.tools.nsc
 package interpreter
 
 import java.lang.reflect
-import reflect.Modifier.{ isPrivate, isProtected, isPublic, isStatic }
+import reflect.{ Modifier, AccessibleObject }
+import Modifier.{ isPrivate, isProtected, isStatic }
 import scala.util.NameTransformer
 import scala.collection.mutable.HashMap
 import ReflectionCompletion._
+
+trait ReflectionCompletion extends CompletionAware {
+  def clazz: Class[_]
+  protected def visibleMembers: List[AccessibleObject]
+  protected def memberCompletions = visibleMembers filter isPublic map reflectName
+
+  def reflectName(m: AccessibleObject) = m match {
+    case x: reflect.Method  => x.getName
+    case x: reflect.Field   => x.getName
+    case x                  => error(x.toString)
+  }
+  def isPublic(m: AccessibleObject) = m match {
+    case x: reflect.Method  => Modifier isPublic x.getModifiers
+    case x: reflect.Field   => Modifier isPublic x.getModifiers
+    case x                  => error(x.toString)
+  }
+
+  override def filterNotFunction(s: String): Boolean = {
+    (excludeMethods contains s) ||
+    (s contains "$$super") ||
+    (s == "MODULE$")
+  }
+
+  lazy val (staticMethods, instanceMethods) = clazz.getMethods.toList partition (x => isStatic(x.getModifiers))
+  lazy val (staticFields, instanceFields) = clazz.getFields.toList partition (x => isStatic(x.getModifiers))
+
+  def isScalaClazz(cl: Class[_]) = allInterfacesFor(cl) exists (_.getName == "scala.ScalaObject")
+  def allInterfacesFor(cl: Class[_]): List[Class[_]] = allInterfacesFor(cl, Nil)
+
+  // methods to leave out of completion
+  val excludeMethods = List("hashCode", "equals", "wait", "notify", "notifyAll")
+
+  private def allInterfacesFor(cl: Class[_], acc: List[Class[_]]): List[Class[_]] = {
+    if (cl == null) acc.removeDuplicates
+    else allInterfacesFor(cl.getSuperclass, acc ::: cl.getInterfaces.toList)
+  }
+}
 
 /** A completion aware object representing a single instance of some class.
  *  It completes to instance fields and methods, and delegates to another
  *  InstanceCompletion object if it can determine the result type of the element.
  */
-class InstanceCompletion(clazz: Class[_]) extends CompletionAware {
-  def methods = clazz.getMethods.toList filterNot (x => isStatic(x.getModifiers))
-  def fields = clazz.getFields.toList filterNot (x => isStatic(x.getModifiers))
-  val (zeroArg, otherArg) = methods partition (_.getParameterTypes.size == 0)
+class InstanceCompletion(val clazz: Class[_]) extends ReflectionCompletion {
+  protected def visibleMembers = instanceMethods ::: instanceFields
+  def extras = List("isInstanceOf", "asInstanceOf", "toString")
+  lazy val completions = memberCompletions ::: extras
 
-  lazy val completions = (methods ::: fields) map (_.getName)
-  override def mapFunction(s: String) = NameTransformer decode s
-
-  // TODO
-  // def idExtras = List("isInstanceOf", "asInstanceOf", "toString")
-
+  val (zeroArg, otherArg) = instanceMethods partition (_.getParameterTypes.size == 0)
   override def follow(id: String) = {
     val nextClazz = zeroArg find (m => m.getName == id) map (_.getReturnType)
     if (nextClazz.isDefined) nextClazz map (x => new InstanceCompletion(x))
-    else fields find (_.getName == id) map (x => new InstanceCompletion(x.getType))
+    else instanceFields find (_.getName == id) map (x => new InstanceCompletion(x.getType))
   }
 }
 
 /** The complementary class to InstanceCompletion.  It has logic to deal with
  *  java static members and scala companion object members.
  */
-class StaticCompletion(jarEntryName: String) extends CompletionAware {
-  def className = jarEntryName.replace('/', '.')
-  def isScalaClazz(cl: Class[_]) = allInterfaces(cl) exists (_.getName == "scala.ScalaObject")
+class StaticCompletion(val clazz: Class[_]) extends ReflectionCompletion {
+  def this(name: String) = this(classForName(name.replace('/', '.')).get)
+
+  protected def visibleMembers = whichMethods ::: whichFields
+  lazy val completions = memberCompletions
+
+  private def aliasForPath(path: String) = ByteCode aliasForType path flatMap (x => classForName(x + "$"))
+  def className = clazz.getName
   def isJava = !isScalaClazz(clazz)
 
-  lazy val clazz: Class[_] = {
-    val cl = Class.forName(className)
-    if (className.last != '$' && isScalaClazz(cl)) {
-      try Class.forName(className + "$")
-      catch { case _: Exception => cl }
-    }
-    else cl
+  private def whichMethods = if (isJava) staticMethods else instanceMethods
+  private def whichFields = if (isJava) staticFields else instanceFields
+  val (zeroArg, otherArg) = whichMethods partition (_.getParameterTypes.size == 0)
+
+  override def follow(id: String) = {
+    val nextClazz = zeroArg find (m => m.getName == id) map (_.getReturnType)
+    if (nextClazz.isDefined) nextClazz map (x => new InstanceCompletion(x))
+    else staticFields find (_.getName == id) map (x => new InstanceCompletion(x.getType))
   }
 
-  def methodFilter: reflect.Method => Boolean =
-    if (isJava) m => isStatic(m.getModifiers) && isPublic(m.getModifiers)
-    else m => isPublic(m.getModifiers)
-
-  def methods = clazz.getMethods.toList filter methodFilter
-  def fields = clazz.getFields.toList
-
-  lazy val completions = (methods ::: fields) map (_.getName)
-  override def mapFunction(s: String) = NameTransformer decode s
-
-  // TODO - old version.
-  //
-  // private def getClassObject(path: String): Option[Class[_]] = {
-  //   val cl = clazz.getClassLoader()
-  //   try Some(Class.forName(path, true, cl).asInstanceOf[Class[_]])
-  //   catch { case _ => None }
-  // }
-  //
-  // def completeStaticMembers(path: String): List[String] = {
-  //   // java style, static methods
-  //   val js = getClassObject(path) map (getMembers(_, true)) getOrElse Nil
-  //   // scala style, methods on companion object
-  //   // if getClassObject fails, see if there is a type alias
-  //   val clazz = getClassObject(path + "$") orElse {
-  //     (ByteCode aliasForType path) flatMap (x => getClassObject(x + "$"))
-  //   }
-  //   val ss = clazz map (getMembers(_, false)) getOrElse Nil
-  //
-  //   js ::: ss
-  // }
+  override def toString = "StaticCompletion(%s) => %s".format(clazz.getName, completions)
 }
 
-// TODO
-class PackageObjectCompletion(packageName: String) extends CompletionAware {
-  def completions() = error("TODO")
-
-  // def completePackageMembers(path: String): List[String] =
-  //   getClassObject(path + "." + "package") map (getMembers(_, false)) getOrElse Nil
-}
-
-class ReflectionCompletion { }
 object ReflectionCompletion {
   import java.io.File
   import java.util.jar.{ JarEntry, JarFile }
   import scala.tools.nsc.io.Streamable
-
-  val EXPAND_SEPARATOR_STRING = "$$"
-  val ANON_CLASS_NAME = "$anon"
-  val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
-  val IMPL_CLASS_SUFFIX ="$class"
-  val INTERPRETER_VAR_PREFIX = "res"
-
-  def allInterfaces(clazz: Class[_]): List[Class[_]] = allInterfaces(clazz, Nil)
-  def allInterfaces(clazz: Class[_], acc: List[Class[_]]): List[Class[_]] = {
-    if (clazz == null) acc.removeDuplicates
-    else allInterfaces(clazz.getSuperclass, acc ::: clazz.getInterfaces.toList)
-  }
-
-  // methods to leave out of completion
-  val excludeMethods = List("", "hashCode", "equals", "wait", "notify", "notifyAll")
-
-  def shouldHide(x: String) =
-    (excludeMethods contains x) ||
-    (x contains EXPAND_SEPARATOR_STRING) ||   // XXX
-    (x contains ANON_CLASS_NAME) ||
-    (x contains TRAIT_SETTER_SEPARATOR_STRING) ||
-    (x endsWith IMPL_CLASS_SUFFIX) ||
-    (x == "MODULE$") ||
-    (x matches """.*\$\d+$""")
 
   // XXX at the moment this is imperfect because scala's protected semantics
   // differ from java's, so protected methods appear public via reflection;

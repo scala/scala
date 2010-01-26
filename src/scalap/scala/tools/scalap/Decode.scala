@@ -23,9 +23,36 @@ object Decode {
     case _                      => NoSymbol
   }
 
+  /** private[scala] so nobody gets the idea this is a supported interface.
+   */
+  private[scala] def caseParamNames(path: String): Option[List[String]] = {
+    val (outer, inner) = (path indexOf '$') match {
+      case -1   => (path, "")
+      case x    => (path take x, path drop (x + 1))
+    }
+
+    for {
+      clazz <- getSystemLoader.tryToLoadClass[AnyRef](outer)
+      ssig <- ScalaSigParser.parse(clazz)
+    }
+    yield {
+      val f: PartialFunction[Symbol, List[String]] =
+        if (inner.isEmpty) {
+          case x: MethodSymbol if x.isCaseAccessor && (x.name endsWith " ") => List(x.name dropRight 1)
+        }
+        else {
+          case x: ClassSymbol if x.name == inner  =>
+            val xs = x.children filter (child => child.isCaseAccessor && (child.name endsWith " "))
+            xs.toList map (_.name dropRight 1)
+        }
+
+      (ssig.symbols partialMap f).flatten toList
+    }
+  }
+
   /** Returns a map of Alias -> Type for the given package.
    */
-  def typeAliases(pkg: String) = {
+  private[scala] def typeAliases(pkg: String) = {
     for {
       clazz <- getSystemLoader.tryToLoadClass[AnyRef](pkg + ".package")
       ssig <- ScalaSigParser.parse(clazz)
