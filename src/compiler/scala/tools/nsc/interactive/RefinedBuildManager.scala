@@ -111,7 +111,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       (from.hasFlag(Flags.MODULE) == to.hasFlag(Flags.MODULE))
 
     // For testing purposes only, order irrelevant for compilation
-    def toStringSorted(set: Set[AbstractFile]): String =  {
+    def toStringSet(set: Set[AbstractFile]): String =  {
         val s = (set.toList).sort(_.name < _.name)
         s.mkString("Set(", ", ", ")")
     }
@@ -119,7 +119,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
     def update0(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
       deleteClassfiles(files)
       val run = compiler.newRun()
-      compiler.inform("compiling " + toStringSorted(files))
+      compiler.inform("compiling " + toStringSet(files))
       buildingFiles(files)
 
       run.compileFiles(files.toList)
@@ -127,8 +127,17 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
         return
       }
 
-      // Use linked hash map to improve determinism required for testing purposes
-      val changesOf = new mutable.LinkedHashMap[Symbol, List[Change]]
+      // Deterministic behaviour required by partest
+      val changesOf = new mutable.HashMap[Symbol, List[Change]] {
+          override def toString: String = {
+            val syms = toList.sort(_._1.fullNameString < _._1.fullNameString)
+            val changesOrdered = syms.map(entry => {
+              val list = entry._2.sort(_.toString < _.toString)
+              entry._1.toString + " -> " + list.mkString("List(", ", ", ")")
+              })
+            changesOrdered.mkString("Map(", ", ", ")")
+          }
+      }
       val additionalDefs: mutable.HashSet[AbstractFile] = mutable.HashSet.empty
 
       val defs = compiler.dependencyAnalysis.definitions
