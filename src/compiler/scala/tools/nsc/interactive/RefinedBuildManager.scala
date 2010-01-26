@@ -288,19 +288,15 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
       def checkInheritedReferences(file: AbstractFile) {
         val refs = inherited(file)
-        if (!inherited.isEmpty)
+        if (!refs.isEmpty)
           change match {
             case ParentChanged(Class(name)) =>
-              refs.find(p => (p != null && p.q == name)) match {
-                  case Some(Inherited(q, member)) =>
-                    findSymbol(q) match {
-                        case Some(s) =>
-                          if (s.tpe.nonPrivateMember(member) == compiler.NoSymbol)
-                            invalidate(file, "it references invalid (no longer inherited) defintion", change)
-                        case None => // TODO: log/throw error?
-                    }
-                  case None =>
-              }
+              for (Inherited(q, member) <- refs.find(p => (p != null && p.qualifier == name));
+                   classFile <- classes.get(q);
+                   defs <- definitions.get(classFile);
+                   s <- defs.find(p => p.sym.fullNameString == q)
+                     if ((s.sym).tpe.nonPrivateMember(member) == compiler.NoSymbol))
+                invalidate(file, "it references invalid (no longer inherited) defintion", change)
               ()
             case _ => ()
         }
@@ -319,21 +315,6 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       processed
     else
       invalidated(buf.clone() --= processed, newChangesOf, processed ++ buf)
-  }
-
-  private def findSymbol(classFullName: String): Option[Symbol] = {
-      classes.get(classFullName) match {
-          case Some(file) =>
-            definitions.get(file) match {
-                case Some(defs) =>
-                  defs.find(p => (p.sym.fullNameString == classFullName)) match {
-                      case Some(s) => Some(s.sym)
-                      case _ => None
-                  }
-                case None => None
-            }
-          case None => None
-      }
   }
 
   /** Update the map of definitions per source file */

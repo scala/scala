@@ -112,7 +112,7 @@ trait DependencyAnalysis extends SubComponent with Files {
       filtered
     }
 
-  case class Inherited(q: String, name: Name)
+  case class Inherited(qualifier: String, member: Name)
 
   class AnalysisPhase(prev : Phase) extends StdPhase(prev){
     def apply(unit : global.CompilationUnit) {
@@ -182,13 +182,10 @@ trait DependencyAnalysis extends SubComponent with Files {
               }
               super.traverse(tree)
             case a @ Select(q, n) if (q.symbol != null) => // #2556
-              if (!a.symbol.isConstructor && !a.symbol.owner.isPackage) {
-                val tpe1 = q.symbol.tpe match {
-                  case MethodType(_, t) => t // Constructor
-                  case t                => t
-                }
-                if (!isSameType(tpe1, a.symbol.owner.tpe))
-                  inherited += file -> (inherited(file) + Inherited(tpe1.safeToString, n))
+              if (!a.symbol.isConstructor && !a.symbol.owner.isPackageClass) {
+                if (!isSameType(q.tpe, a.symbol.owner.tpe))
+                  inherited += file ->
+                    (inherited(file) + Inherited(q.symbol.tpe.resultType.safeToString, n))
               }
               super.traverse(tree)
             case _            =>
