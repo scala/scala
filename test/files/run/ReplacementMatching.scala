@@ -15,7 +15,7 @@ object Test {
 
   def replacementMatching {
     val regex = """\$\{(.+?)\}""".r
-    val replaced = regex.replaceAllMatchDataIn("Replacing: ${main}. And another method: ${foo}.",
+    val replaced = regex.replaceAllMatchesIn("Replacing: ${main}. And another method: ${foo}.",
         (m: util.matching.Regex.Match) => {
       val identifier = m.group(1)
       identifier

@@ -107,6 +107,13 @@ class Regex(regex: String, groupNames: String*) {
     m.replaceAll(replacement)
   }
 
+  /**
+   * Replaces all matches using a replacer function.
+   *
+   * @param target      The string to match.
+   * @param replacer    The function which maps a matched string to another string.
+   * @return            The target string after replacements.
+   */
   def replaceAllIn(target: java.lang.CharSequence, replacer: String => String): String = {
     val it = new Regex.MatchIterator(target, this, groupNames) with Replacement
     while (it.hasNext) {
@@ -120,10 +127,10 @@ class Regex(regex: String, groupNames: String*) {
    * Replaces all matches using a replacer function.
    *
    * @param target      The string to match.
-   * @param replacer    The function which maps match data to another string.
-   * @return            The resulting string.
+   * @param replacer    The function which maps a match to another string.
+   * @return            The target string after replacements.
    */
-  def replaceAllMatchDataIn(target: java.lang.CharSequence, replacer: Match => String): String = {
+  def replaceAllMatchesIn(target: java.lang.CharSequence, replacer: Match => String): String = {
     val it = new Regex.MatchIterator(target, this, groupNames).replacementData
     while (it.hasNext) {
       val matchdata = it.next
@@ -299,7 +306,7 @@ object Regex {
   class MatchIterator(val source: java.lang.CharSequence, val regex: Regex, val groupNames: Seq[String])
   extends Iterator[String] with MatchData { self =>
 
-    val matcher = regex.pattern.matcher(source)
+    protected val matcher = regex.pattern.matcher(source)
     private var nextSeen = false
 
     /** Is there another match? */
@@ -339,7 +346,7 @@ object Regex {
     }
 
     /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support */
-    def replacementData = new Iterator[Match] with Replacement {
+    private[matching] def replacementData = new Iterator[Match] with Replacement {
       def matcher = self.matcher
       def hasNext = self.hasNext
       def next = { self.next; new Match(source, matcher, groupNames).force }
@@ -350,8 +357,8 @@ object Regex {
    * A trait able to build a string with replacements assuming it has a matcher.
    * Meant to be mixed in with iterators.
    */
-  trait Replacement {
-    def matcher: Matcher
+  private[matching] trait Replacement {
+    protected def matcher: Matcher
 
     private var sb = new java.lang.StringBuffer
 
