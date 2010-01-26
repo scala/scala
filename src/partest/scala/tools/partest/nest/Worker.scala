@@ -14,12 +14,11 @@ import java.util.{Timer, TimerTask}
 
 import scala.tools.nsc.{ObjectRunner, GenericRunnerCommand}
 import scala.tools.nsc.io
+import io.{AbstractFile, PlainFile}
 
 import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
 import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
-
-import io.{AbstractFile, PlainFile}
 
 import scala.collection.mutable.HashMap
 
@@ -551,7 +550,6 @@ class Worker(val fileManager: FileManager) extends Actor {
               // configure input/output files
               val logWriter = new PrintStream(new FileOutputStream(logFile))
               val testReader = new BufferedReader(new FileReader(testFile))
-              //val logConsoleWriter = new PrintWriter(new OutputStreamWriter(logOut))
               val logConsoleWriter = new PrintWriter(logWriter)
 
               // create proper settings for the compiler
