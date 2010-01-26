@@ -1,0 +1,6 @@
+builder > A.scala B.java
+compiling Set(A.scala, B.java)
+Changes: Map()
+builder > B.java
+compiling Set(B.java)
+Changes: Map()
