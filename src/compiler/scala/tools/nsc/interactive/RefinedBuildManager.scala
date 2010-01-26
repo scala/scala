@@ -110,10 +110,16 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       (from.hasFlag(Flags.TRAIT) == to.hasFlag(Flags.TRAIT)) &&
       (from.hasFlag(Flags.MODULE) == to.hasFlag(Flags.MODULE))
 
+    // For testing purposes only, order irrelevant for compilation
+    def toStringSorted(set: Set[AbstractFile]): String =  {
+        val s = (set.toList).sort(_.name < _.name)
+        s.mkString("Set(", ", ", ")")
+    }
+
     def update0(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {
       deleteClassfiles(files)
       val run = compiler.newRun()
-      compiler.inform("compiling " + files)
+      compiler.inform("compiling " + toStringSorted(files))
       buildingFiles(files)
 
       run.compileFiles(files.toList)
@@ -121,7 +127,8 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
         return
       }
 
-      val changesOf = new mutable.HashMap[Symbol, List[Change]]
+      // Use linked hash map to improve determinism required for testing purposes
+      val changesOf = new mutable.LinkedHashMap[Symbol, List[Change]]
       val additionalDefs: mutable.HashSet[AbstractFile] = mutable.HashSet.empty
 
       val defs = compiler.dependencyAnalysis.definitions
