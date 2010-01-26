@@ -45,7 +45,7 @@ sealed abstract class Option[+A] extends Product {
   def isDefined: Boolean = !isEmpty
 
   /** get the value of this option.
-   *  @requires that the option is nonEmpty.
+   *  @note The option must be nonEmpty.
    *  @throws Predef.NoSuchElementException if the option is empty.
    */
   def get: A

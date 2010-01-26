@@ -719,8 +719,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       nextch
   }
 
-  /**  "rec-xml/#ExtSubset" pe references may not occur within markup
-   declarations
+  /**  "rec-xml/#ExtSubset" pe references may not occur within markup declarations
    */
   def intSubset() {
     //Console.println("(DEBUG) intSubset()")

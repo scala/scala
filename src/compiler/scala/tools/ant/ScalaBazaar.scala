@@ -177,19 +177,19 @@ package scala.tools.ant {
 \******************************************************************************/
 
     /** Gets the value of the file attribute in a Scala-friendly form.
-      * @returns The file as a file. */
+      * @return The file as a file. */
     private def getName: String =
       if (name.isEmpty) error("Name attribute must be defined first.")
       else name.get
 
     /** Gets the value of the file attribute in a Scala-friendly form.
-      * @returns The file as a file. */
+      * @return The file as a file. */
     private def getFile: File =
       if (file.isEmpty) error("Member 'file' is empty.")
       else getProject().resolveFile(file.get.toString())
 
     /** Gets the value of the adfile attribute in a Scala-friendly form.
-      * @returns The adfile as a file. */
+      * @return The adfile as a file. */
     private def getAdfile: File =
       if (adfile.isEmpty) error("Member 'adfile' is empty.")
       else getProject().resolveFile(adfile.get.toString())

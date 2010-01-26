@@ -61,7 +61,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @param x the element to prepend.
    *  @return  a list which contains `x` as first element and
    *           which continues with this list.
-   *  @ex `1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)`
+   *  @example `1 :: List(2, 3) = List(2, 3).::(1) = List(1, 2, 3)`
    *  @usecase def ::(x: A): List[A]
    */
   def ::[B >: A] (x: B): List[B] =
@@ -71,7 +71,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @param prefix  The list elements to prepend.
    *  @return a list resulting from the concatenation of the given
    *    list `prefix` and this list.
-   *  @ex `List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)`
+   *  @example `List(1, 2) ::: List(3, 4) = List(3, 4).:::(List(1, 2)) = List(1, 2, 3, 4)`
    *  @usecase def :::(prefix: List[A]): List[A]
    */
   def :::[B >: A](prefix: List[B]): List[B] =
@@ -299,7 +299,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *  @param lt the comparison function
    *  @return   a list sorted according to the comparison function
    *            `lt(e1: a, e2: a) =&gt; Boolean`.
-   *  @ex <pre>
+   *  @example <pre>
    *    List("Steve", "Tom", "John", "Bob")
    *      .sort((e1, e2) => (e1 compareTo e2) &lt; 0) =
    *    List("Bob", "John", "Steve", "Tom")</pre>

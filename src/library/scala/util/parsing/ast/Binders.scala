@@ -127,10 +127,8 @@ trait Binders extends AbstractSyntax with Mappable {
      * (e.g. the variable name in a local variable declaration)
      *
      * @param b a new binder that is distinct from the existing binders in this scope,
-     *           and shares their conceptual scope
-     * @pre canAddBinder(b)
-     * @post binds(b)
-     * @post getElementFor(b) eq b
+     *           and shares their conceptual scope. canAddBinder(b)` must hold.`
+     * @return `binds(b)` and `getElementFor(b) eq b` will hold.
      */
     def addBinder(b: binderType) { substitution += Pair(b, b) }
 
@@ -140,7 +138,7 @@ trait Binders extends AbstractSyntax with Mappable {
      *       linked to its `UnderBinder' (i.e., while parsing, BoundElements may be added to the Scope
      *       associated to the UnderBinder, but after that, no changes are allowed, except for substitution)?
      *
-     * @returns true if `b' had not been added yet
+     * @return true if `b' had not been added yet
      */
     def canAddBinder(b: binderType): Boolean = !binds(b)
 
@@ -150,17 +148,15 @@ trait Binders extends AbstractSyntax with Mappable {
      * a proxy for the element it is bound to by its binder, `substitute' may thus be thought of
      * as replacing all the bound occurrences of the given binder `b' by their new value `value'.
      *
-     * @param b    the binder whose bound occurrences should be given a new value
+     * @param b    the binder whose bound occurrences should be given a new value. `binds(b)` must hold.
      * @param value the new value for the bound occurrences of `b'
-     * @pre binds(b)
-     * @post getElementFor(b) eq value
+     * @return `getElementFor(b) eq value` will hold.
      */
     def substitute(b: binderType, value: Element): Unit = substitution(b) = value
 
     /** Returns the current value for the bound occurrences of `b'.
      *
-     * @param b the contained binder whose current value should be returned
-     * @pre binds(b)
+     * @param b the contained binder whose current value should be returned `binds(b)` must hold.
      */
     def getElementFor(b: binderType): Element = substitution(b)
 
@@ -173,7 +169,7 @@ trait Binders extends AbstractSyntax with Mappable {
     def allowForwardRef: Scope[binderType] = this // TODO
 
     /** Return a nested scope -- binders entered into it won't be visible in this scope, but if this scope allows forward references,
-        the binding in the returned scope also does, and thus the check that all variables are bound is deferred until this scope is left  **/
+      * the binding in the returned scope also does, and thus the check that all variables are bound is deferred until this scope is left  **/
     def nested: Scope[binderType] = this // TODO
 
     def onEnter {}
@@ -193,7 +189,7 @@ trait Binders extends AbstractSyntax with Mappable {
    * A `BoundElement' is represented textually by its bound element, followed by its scope's `id'.
    * For example: `x@1' represents the variable `x' that is bound in the scope with `id' `1'.
    *
-   * @invar scope.binds(el)
+   * @note `scope.binds(el)` holds before and after.
    */
   case class BoundElement[boundElement <: NameElement](el: boundElement, scope: Scope[boundElement]) extends NameElement with Proxy with BindingSensitive {
     /** Returns the element this `BoundElement' stands for.
@@ -300,7 +296,7 @@ trait Binders extends AbstractSyntax with Mappable {
    *
    * The name `sequence' comes from the fact that this method's type is equal to the type of monadic sequence.
    *
-   * @pre !orig.isEmpty implies orig.forall(ub => ub.scope eq orig(0).scope)
+   * @note `!orig.isEmpty` implies `orig.forall(ub => ub.scope eq orig(0).scope)`
    *
    */
   def sequence[bt <: NameElement, st <% Mappable[st]](orig: List[UnderBinder[bt, st]]): UnderBinder[bt, List[st]] =

@@ -55,7 +55,7 @@ trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends Seq
   }
 
   /** Insert linked list `that` at current position of this linked list
-   *  @pre this linked list is not empty
+   *  @note this linked list must not be empty
    */
   def insert(that: This): Unit = {
     require(nonEmpty, "insert into empty list")

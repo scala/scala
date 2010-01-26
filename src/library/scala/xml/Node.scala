@@ -213,9 +213,10 @@ abstract class Node extends NodeSeq {
    *  Martin to Burak: to do: if you make this method abstract, the compiler will now
    *  complain if there's no implementation in a subclass. Is this what we want? Note that
    *  this would break doc/DocGenator and doc/ModelToXML, with an error message like:
-doc\DocGenerator.scala:1219: error: object creation impossible, since there is a deferred declaration of method text in class Node of type => String which is not implemented in a subclass
-    new SpecialNode {
-    ^
-   */
+   * {{{
+   * doc\DocGenerator.scala:1219: error: object creation impossible, since there is a deferred declaration of method text in class Node of type => String which is not implemented in a subclass
+   * new SpecialNode {
+   * ^
+   * }}} */
   override def text: String = super.text
 }

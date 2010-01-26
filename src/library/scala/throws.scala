@@ -14,13 +14,13 @@ package scala
 /** <p>
  *    Annotation for specifying the exceptions thrown by a method.
  *    For example:
- *  </p><pre>
- *    <b>class</b> Reader(fname: String) {
- *      <b>private val</b> in =
- *        <b>new</b> BufferedReader(<b>new</b> <a class="java/io/FileReader" href="" target="_top">FileReader</a>(fname))
- *      @throws(classOf[<a class="java/io/IOException" href="" target="_top">IOException</a>])
- *      <b>def</b> read() = in.read()
- *    }</pre>
+ * {{{
+ * class Reader(fname: String) {
+ *   private val in = new BufferedReader(new FileReader(fname))
+ *   @throws(classOf[IOException])
+ *   def read() = in.read()
+ * }
+ * }}}
  *
  * @author  Nikolay Mihaylov
  * @version 1.0, 19/05/2006

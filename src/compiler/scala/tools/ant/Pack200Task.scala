@@ -99,7 +99,7 @@ class Pack200Task extends MatchingTask {
 \*============================================================================*/
 
   /** Gets the list of individual JAR files for processing.
-    * @returns The list of JAR files */
+    * @return The list of JAR files */
   private def getFileList: List[File] = {
     var files: List[File] = Nil
     val fs = getImplicitFileSet

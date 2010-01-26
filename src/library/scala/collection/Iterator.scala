@@ -328,7 +328,7 @@ trait Iterator[+A] { self =>
   }
 
   /** Concatenates this iterator with another.
-   *  @that   the other iterator
+   *  @param   that   the other iterator
    *  @return  a new iterator that first yields the values produced by this
    *  iterator followed by the values produced by iterator `that`.
    *  @usecase def ++(that: => Iterator[A]): Iterator[A]
@@ -1288,7 +1288,7 @@ trait Iterator[+A] { self =>
    *  @param  xs    the array to fill.
    *  @param  start the starting index.
    *  @param  sz    the maximum number of elements to be read.
-   *  @pre          the array must be large enough to hold `sz` elements.
+   *  @note          the array must be large enough to hold `sz` elements.
    */
   @deprecated("use copyToArray instead")
   def readInto[B >: A](xs: Array[B], start: Int, sz: Int) {

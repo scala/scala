@@ -84,7 +84,7 @@ object Utility extends AnyRef with parsing.TokenTests
 
   object Escapes {
     /** For reasons unclear escape and unescape are a long ways from
-        being logical inverses. */
+      * being logical inverses. */
     val pairs = Map(
       "lt"    -> '<',
       "gt"    -> '>',

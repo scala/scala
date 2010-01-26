@@ -17,14 +17,14 @@ import java.util.logging.Level
  *  to scalac.  Methods marked elidable will be omitted from
  *  generated code if the priority given the annotation is lower
  *  than to the command line argument.  Examples:
- *
+ *  {{{
  *  import annotation.elidable._
  *
  *    @elidable(WARNING) def foo = log("foo")
  *    @elidable(FINE) def bar = log("bar")
  *
  *  scalac -Xelide-methods-below=1000
- *
+ *  }}}
  *  @since 2.8
  */
 final class elidable(final val level: Int) extends StaticAnnotation {}

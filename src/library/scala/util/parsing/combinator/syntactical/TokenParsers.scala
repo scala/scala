@@ -12,13 +12,7 @@
 package scala.util.parsing.combinator.syntactical
 import scala.util.parsing.combinator._
 
-/** <p>
- *    This is the core component for token-based parsers.
- *  </p>
- *  <p>
- *    @requires lexical a component providing the tokens consumed by the
- *    parsers in this component.
- *  </p>
+/** This is the core component for token-based parsers.
  *
  *  @author Martin Odersky, Adriaan Moors
  */

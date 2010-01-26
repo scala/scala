@@ -23,7 +23,7 @@ import Utility.sbToString
  *  @version 1.0
  *
  *  @param width the width to fit the output into
- *  @step  indentation
+ *  @param step  indentation
  */
 class PrettyPrinter(width: Int, step: Int) {
 

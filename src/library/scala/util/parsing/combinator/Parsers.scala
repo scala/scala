@@ -48,35 +48,21 @@ import scala.annotation.tailrec
  *    of the input.
  *  </p>
  *
- * @requires Elem the type of elements the provided parsers consume
- *              (When consuming invidual characters, a parser is typically called a ``scanner'',
- *               which produces ``tokens'' that are consumed by what is normally called a ``parser''.
- *               Nonetheless, the same principles apply, regardless of the input type.)</p>
- *<p>
- * @provides Input = Reader[Elem]
- *              The type of input the parsers in this component expect.</p>
- *<p>
- * @provides Parser[+T] extends (Input => ParseResult[T])
- *              Essentially, a `Parser[T]' is a function from `Input' to `ParseResult[T]'.</p>
- *<p>
- * @provides ParseResult[+T] is like an `Option[T]', in the sense that it is either
- *              `Success[T]', which consists of some result (:T) (and the rest of the input) or
- *              `Failure[T]', which provides an error message (and the rest of the input).</p>
- *
  * @author Martin Odersky, Iulian Dragos, Adriaan Moors
  */
 trait Parsers {
-  /** the type of input elements */
+  /** the type of input elements the provided parsers consume (When consuming invidual characters, a parser is typically
+   * called a ``scanner'', which produces ``tokens'' that are consumed by what is normally called a ``parser''.
+   * Nonetheless, the same principles apply, regardless of the input type.) */
   type Elem
 
-  /** The parser input is an abstract reader of input elements */
+  /** The parser input is an abstract reader of input elements, i.e. the type of input the parsers in this component
+   * expect. */
   type Input = Reader[Elem]
 
-  /** A base class for parser results.
-   *  A result is either successful or not (failure may be fatal, i.e.,
-   *  an Error, or not, i.e., a Failure)
-   *  On success, provides a result of type <code>T</code>.
-   */
+  /** A base class for parser results. A result is either successful or not (failure may be fatal, i.e., an Error, or
+   * not, i.e., a Failure). On success, provides a result of type `T` which consists of some result (and the rest of
+   * the input). */
   sealed abstract class ParseResult[+T] {
     /** Functional composition of ParseResults
      *

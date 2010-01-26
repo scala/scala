@@ -23,13 +23,6 @@ import scala.util.parsing.input._
  *    {@see StdLexical}, for more functionality.
  *  </p>
  *
- *  @requires token      a parser that produces a token (from a stream of characters)
- *  @requires whitespace a unit-parser for white-space
- *  @provides Scanner    essentially a parser that parses a stream of characters
- *                       to produce `Token's, which are typically passed to a
- *                       syntactical parser (which operates on `Token's, not on
- *                       individual characters).
- *
  *  @author Martin Odersky, Adriaan Moors
  */
 trait Scanners extends Parsers {

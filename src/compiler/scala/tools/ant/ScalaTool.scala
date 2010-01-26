@@ -166,12 +166,12 @@ class ScalaTool extends MatchingTask {
 \*============================================================================*/
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
-      * @returns The class path as a list of files. */
+      * @return The class path as a list of files. */
     private def getUnixclasspath: String =
       transposeVariableMarkup(classpath.mkString("", ":", "").replace('\\', '/'), "${", "}")
 
     /** Gets the value of the classpath attribute in a Scala-friendly form.
-      * @returns The class path as a list of files. */
+      * @return The class path as a list of files. */
     private def getWinclasspath: String =
       transposeVariableMarkup(classpath.mkString("", ";", "").replace('/', '\\'), "%", "%")
 

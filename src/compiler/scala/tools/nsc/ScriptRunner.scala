@@ -240,7 +240,7 @@ object ScriptRunner
   /** Compile a script and then run the specified closure with
     * a classpath for the compiled script.
     *
-    * @returns true if compilation and the handler succeeds, false otherwise.
+    * @return true if compilation and the handler succeeds, false otherwise.
     */
   private def withCompiledScript(
     settings: GenericRunnerSettings,
@@ -300,7 +300,7 @@ object ScriptRunner
 
   /** Run a script after it has been compiled
    *
-   * @returns true if execution succeeded, false otherwise
+   * @return true if execution succeeded, false otherwise
    */
   private def runCompiled(
     settings: GenericRunnerSettings,
@@ -342,7 +342,7 @@ object ScriptRunner
   /** Run a script file with the specified arguments and compilation
    *  settings.
    *
-   * @returns true if compilation and execution succeeded, false otherwise.
+   * @return true if compilation and execution succeeded, false otherwise.
    */
   def runScript(
     settings: GenericRunnerSettings,
@@ -357,7 +357,7 @@ object ScriptRunner
 
   /** Run a command
    *
-   * @returns true if compilation and execution succeeded, false otherwise.
+   * @return true if compilation and execution succeeded, false otherwise.
    */
   def runCommand(
     settings: GenericRunnerSettings,

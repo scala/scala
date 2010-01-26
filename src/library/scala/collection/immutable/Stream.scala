@@ -420,9 +420,9 @@ object Stream extends SeqFactory[Stream] {
   import scala.collection.{Iterable, Seq, IndexedSeq}
 
   /** A builder for streams
-   *  @note: This builder is lazy only in the sense that it does not go downs the spine
-   *         of traversables that are added as a whole. If more laziness can be achieved,
-   *         this builder should be bypassed.
+   *  @note This builder is lazy only in the sense that it does not go downs the spine
+   *        of traversables that are added as a whole. If more laziness can be achieved,
+   *        this builder should be bypassed.
    */
   class StreamBuilder[A] extends scala.collection.mutable.LazyBuilder[A, Stream[A]] {
     def result: Stream[A] = (for (xs <- parts.iterator; x <- xs.toIterable.iterator) yield x).toStream

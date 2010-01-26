@@ -95,7 +95,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
   }
 
   /** check children, return true if conform to content model
-   *  @pre contentModel != null
+   *  @note contentModel != null
    */
   def check(nodes: Seq[Node]): Boolean = contentModel match {
     case ANY    => true
@@ -120,7 +120,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
   }
 
   /** applies various validations - accumulates error messages in exc
-   *  @todo: fail on first error, ignore other errors (rearranging conditions)
+   *  @todo fail on first error, ignore other errors (rearranging conditions)
    */
   def apply(n: Node): Boolean =
     //- ? check children

@@ -71,7 +71,7 @@ self =>
 
   /** Optionally returns the value associated with a key.
    *
-   *  @key    the key value
+   *  @param  key    the key value
    *  @return an option value containing the value associated with `key` in this map,
    *          or `None` if none exists.
    */

@@ -12,22 +12,19 @@
 package scala.util
 import scala.reflect.ClassManifest
 
-/** <p>
- *    The Sorting object provides functions that can sort various kinds of
- *    objects. You can provide a comparison function, or you can request a sort
- *    of items that are viewable as <code>Ordered</code>. Some sorts that
- *    operate directly on a subset of value types are also provided. These
- *    implementations are derived from those in the Sun JDK.
- *  </p>
- *  <p>
- *    Note that stability doesn't matter for value types, so use the quickSort
- *    variants for those. <code>stableSort</code> is intended to be used with
- *    objects when the prior ordering should be preserved, where possible.
- *  </p>
- *
- *  @author  Ross Judson
- *  @version 1.0
- */
+/** The Sorting object provides functions that can sort various kinds of
+  * objects. You can provide a comparison function, or you can request a sort
+  * of items that are viewable as <code>Ordered</code>. Some sorts that
+  * operate directly on a subset of value types are also provided. These
+  * implementations are derived from those in the Sun JDK.
+  *
+  * Note that stability doesn't matter for value types, so use the quickSort
+  * variants for those. <code>stableSort</code> is intended to be used with
+  * objects when the prior ordering should be preserved, where possible.
+  *
+  * @author  Ross Judson
+  * @version 1.0
+  */
 object Sorting {
 
   /** Provides implicit access to sorting on arbitrary sequences of orderable
@@ -49,7 +46,7 @@ object Sorting {
   def quickSort(a: Array[Float]) = sort1(a, 0, a.length)
 
   /** Sort an array of K where K is Ordered, preserving the existing order
-      where the values are equal. */
+    * where the values are equal. */
   def stableSort[K <% Ordered[K] : ClassManifest](a: Array[K]) {
     stableSort(a, 0, a.length-1, new Array[K](a.length), (a:K, b:K) => a < b)
   }

@@ -760,7 +760,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *              the desired ordering.
    *  @return     a $coll consisting of the elements of this $coll
    *              sorted according to the comparison function `lt`.
-   *  @ex {{{
+   *  @example {{{
    *    List("Steve", "Tom", "John", "Bob").sortWith(_.compareTo(_) < 0) =
    *    List("Bob", "John", "Steve", "Tom")
    *  }}}
@@ -805,7 +805,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *           sorted according to the ordering where `x < y` if
    *           `ord.lt(f(x), f(y))`.
    *
-   *  @ex {{{
+   *  @example {{{
    *    val words = "The quick brown fox jumped over the lazy dog".split(' ')
    *    // this works because scala.Ordering will implicitly provide an Ordering[Tuple2[Int, Char]]
    *    words.sortBy(x => (x.length, x.head))
@@ -823,7 +823,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Produces the range of all indices of this sequence.
    *
-   *  @range  a `Range` value from `0` to one less than the length of this $coll.
+   *  @return  a `Range` value from `0` to one less than the length of this $coll.
    */
   def indices: Range = 0 until length
 

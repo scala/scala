@@ -231,7 +231,7 @@ final class ListBuffer[A]
    *
    *  @param  n  the index which refers to the element to delete.
    *  @return n  the element that was formerly at position <code>n</code>.
-   *  @pre       an element exists at position <code>n</code>
+   *  @note      an element must exists at position <code>n</code>
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def remove(n: Int): A = {

@@ -106,7 +106,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
   final override def reverse: Range = new Range.Inclusive(last, start, -step)
 
   /** Make range inclusive.
-   * @pre if (step > 0) end != MaxInt else end != MinInt
+   * @note if (step > 0) end != MaxInt else end != MinInt
    */
   def inclusive = new Range.Inclusive(start, end, step)
 
@@ -148,18 +148,18 @@ object Range {
   def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Make an range from `start` to `end` inclusive with step value 1.
-   * @pre end != MaxInt
+   * @note end != MaxInt
    */
   def apply(start: Int, end: Int): Range with ByOne = new Range(start, end, 1) with ByOne
 
   /** Make an inclusive range from start to end with given step value.
-   * @pre step != 0
-   * @pre if (step > 0) end != MaxInt else end != MinInt
+   * @note step != 0
+   * @note if (step > 0) end != MaxInt else end != MinInt
    */
   def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
 
   /** Make an inclusive range from start to end with step value 1.
-   * @pre end != MaxInt
+   * @note end != MaxInt
    */
   def inclusive(start: Int, end: Int): Range.Inclusive with ByOne = new Inclusive(start, end, 1) with ByOne
 

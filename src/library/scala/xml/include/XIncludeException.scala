@@ -43,7 +43,7 @@ class XIncludeException(message: String) extends Exception(message) {
    * This method allows you to store the original exception.
    *
    * @param   nestedException   the underlying exception which
-   caused the XIncludeException to be thrown
+   * caused the XIncludeException to be thrown
    */
   def setRootCause(nestedException: Throwable ) {
     this.rootCause = nestedException

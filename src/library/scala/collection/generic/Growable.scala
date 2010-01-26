@@ -16,7 +16,6 @@ package generic
  *  a `clear` method.
  *
  *  @author   Martin Odersky
- *  @owner   Martin Odersky
  *  @version 2.8
  *  @since   2.8
  *  @define coll growable collection

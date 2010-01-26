@@ -195,11 +195,11 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   /** If given key is already in this map, returns associated value
    *  Otherwise, computes value from given expression `op`, stores with key
    *  in map and returns that value.
-   *  @param  the key to test
-   *  @param  the computation yielding the value to associate with `key`, if
-   *          `key` is previosuly unbound.
-   *  @return the value associated with key (either previously or as a result
-   *          of executing the method).
+   *  @param  key the key to test
+   *  @param  op  the computation yielding the value to associate with `key`, if
+   *              `key` is previosuly unbound.
+   *  @return     the value associated with key (either previously or as a result
+   *              of executing the method).
    */
   def getOrElseUpdate(key: A, op: => B): B =
     get(key) match {

@@ -30,10 +30,6 @@ import script._
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 2.8
- *  @since 2.8
- *  @author Matthias Zenger
- *  @author Martin Odersky
- *  @version 2.8
  *  @since   2.8
  *  @define buffernote @note
  *    This trait provides most of the operations of a `Buffer` independently of its representation.
