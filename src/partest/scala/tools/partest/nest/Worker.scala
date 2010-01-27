@@ -529,7 +529,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             if (!outDir.exists) outDir.mkdir()
             val testFile = new File(file, fileBase + ".test")
             val changesDir = new File(file, fileBase + ".changes")
-            if (changesDir.exists && !changesDir.isDirectory) {
+            if ((changesDir.exists && !changesDir.isDirectory) || !testFile.exists || !testFile.isFile) {
               // if changes exists then it has to be a dir
               succeeded = false
               (null, null, null, null)
@@ -557,6 +557,7 @@ class Worker(val fileManager: FileManager) extends Actor {
               settings.outdir.value = outDir.getCanonicalFile.getAbsolutePath
               settings.sourcepath.value = sourcepath
               settings.classpath.value = fileManager.CLASSPATH
+              settings.Ybuildmanagerdebug.value = true
 
               // simulate Build Manager loop
               val prompt = "builder > "

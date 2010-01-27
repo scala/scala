@@ -68,6 +68,7 @@ object BuildManagerTest extends EvalLoop {
     }
 
     val settings = new Settings(error)
+    settings.Ybuildmanagerdebug.value = true
     val command = new CompilerCommand(args.toList, settings, error, false)
 //    settings.make.value = "off"
 //    val buildManager: BuildManager = new SimpleBuildManager(settings)
@@ -78,7 +79,7 @@ object BuildManagerTest extends EvalLoop {
     // enter resident mode
     loop { line =>
       val args = line.split(' ').toList
-      val command = new CompilerCommand(args, new Settings(error), error, true)
+      val command = new CompilerCommand(args, settings, error, true)
       buildManager.update(command.files, Set.empty)
     }
 
