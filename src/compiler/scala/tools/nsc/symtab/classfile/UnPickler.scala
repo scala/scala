@@ -381,28 +381,26 @@ abstract class UnPickler {
     /** Read an annotation argument, which is pickled either
      *  as a Constant or a Tree.
      */
-    private def readAnnotArg(i: Int): Tree = {
+    private def readAnnotArg(): Tree = {
       if (peekByte() == TREE) {
-        at(i, readTree)
+        readTree()
       } else {
-        val const = at(i, readConstant)
+        val const = readConstant()
         Literal(const).setType(const.tpe)
       }
     }
 
     /** Read a ClassfileAnnotArg (argument to a classfile annotation)
      */
-    private def readClassfileAnnotArg(i: Int): ClassfileAnnotArg = bytes(index(i)) match {
-      case ANNOTINFO =>
-        NestedAnnotArg(at(i, readAnnotation))
-      case ANNOTARGARRAY =>
-        at(i, () => {
-          readByte() // skip the `annotargarray` tag
-          val end = readNat() + readIndex
-          ArrayAnnotArg(until(end, () => readClassfileAnnotArg(readNat())).toArray)
-        })
-      case _ =>
-        LiteralAnnotArg(at(i, readConstant))
+    private def readClassfileAnnotArg(): ClassfileAnnotArg = peekByte() match {
+      case ANNOTINFO      =>
+        NestedAnnotArg(readAnnotation())
+      case ANNOTARGARRAY  =>
+        readByte()
+        val end = readNat() + readIndex
+        ArrayAnnotArg(until(end, readClassfileAnnotArgRef).toArray)
+      case _              =>
+        LiteralAnnotArg(readConstant())
     }
 
     /** Read an AnnotationInfo. Not to be called directly, use
@@ -414,13 +412,10 @@ abstract class UnPickler {
       val assocs = new ListBuffer[(Name, ClassfileAnnotArg)]
       while (readIndex != end) {
         val argref = readNat()
-        if (isNameEntry(argref)) {
-          val name = at(argref, readName)
-          val arg = readClassfileAnnotArg(readNat())
-          assocs += ((name, arg))
-        }
+        if (isNameEntry(argref))
+          assocs += ((at(argref, readName), readClassfileAnnotArgRef))
         else
-          args += readAnnotArg(argref)
+          args += at(argref, readAnnotArg)
       }
       AnnotationInfo(atp, args.toList, assocs.toList)
     }
@@ -731,6 +726,10 @@ abstract class UnPickler {
     private def readSymbolRef(): Symbol = at(readNat(), readSymbol)
     private def readTypeRef(): Type = at(readNat(), readType)
     private def readConstantRef(): Constant = at(readNat(), readConstant)
+    private def readAnnotArgRef(): Tree =
+      at(readNat(), readAnnotArg)
+    private def readClassfileAnnotArgRef(): ClassfileAnnotArg =
+      at(readNat(), readClassfileAnnotArg)
     private def readAnnotationRef(): AnnotationInfo =
       at(readNat(), readAnnotation)
     private def readModifiersRef(): Modifiers =
