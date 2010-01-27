@@ -35,7 +35,7 @@ object PickleFormat {
  *                  | 12 NOPREFIXtpe len_Nat
  *                  | 13 THIStpe len_Nat sym_Ref
  *                  | 14 SINGLEtpe len_Nat type_Ref sym_Ref
- *                  | 15 CONSTANTtpe len_Nat type_Ref constant_Ref
+ *                  | 15 CONSTANTtpe len_Nat constant_Ref
  *                  | 16 TYPEREFtpe len_Nat type_Ref sym_Ref {targ_Ref}
  *                  | 17 TYPEBOUNDStpe len_Nat tpe_Ref tpe_Ref
  *                  | 18 REFINEDtpe len_Nat classsym_Ref {tpe_Ref}
