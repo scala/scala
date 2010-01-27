@@ -29,6 +29,7 @@ object A extends Actor {
           }
         }
         B ! 'next
+        receive { case 'done => }
         cnt = 0
         while (cnt < 501) {
           cnt += 1
@@ -56,6 +57,7 @@ object B extends Actor {
         for (_ <- 1 to 500) {
           A ! 'msg2
         }
+        A ! 'done
     }
   }
 }
