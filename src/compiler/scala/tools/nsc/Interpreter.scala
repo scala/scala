@@ -830,12 +830,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
     lazy val loadedResultObject = loadByName(resultObjectName)
 
-    def extractionValue(): AnyRef = {
+    def extractionValue(): Option[AnyRef] = {
       // ensure it has run
       extractionObjectRun
 
       // load it and retrieve the value
-      loadedResultObject getMethod "scala_repl_value" invoke loadedResultObject
+      try Some(loadedResultObject getMethod "scala_repl_value" invoke loadedResultObject)
+      catch { case _: Exception => None }
     }
 
     /** Compile the object file.  Returns whether the compilation succeeded.
@@ -988,7 +989,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   def extractionValueForIdent(id: String): Option[AnyRef] =
-    requestForIdent(id) map (_.extractionValue)
+    requestForIdent(id) flatMap (_.extractionValue)
 
   /** Executes code looking for a manifest of type T.
    */
@@ -1057,7 +1058,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     if (req == null || !req.compile || req.handlers.size != 1)
       evalError("Eval error.")
 
-    try req.extractionValue.asInstanceOf[T] catch {
+    try req.extractionValue.get.asInstanceOf[T] catch {
       case e: Exception => evalError(e.getMessage)
     }
   }
@@ -1065,7 +1066,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def interpretExpr[T: Manifest](code: String): Option[T] = beQuietDuring {
     interpret(code) match {
       case IR.Success =>
-        try Some(prevRequests.last.extractionValue.asInstanceOf[T])
+        try prevRequests.last.extractionValue map (_.asInstanceOf[T])
         catch { case e: Exception => println(e) ; None }
       case _ => None
     }
