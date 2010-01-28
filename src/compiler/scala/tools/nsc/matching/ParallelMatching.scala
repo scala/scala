@@ -700,18 +700,12 @@ trait ParallelMatching extends ast.TreeDSL
         referenceCount += 1
 
         if (isLabellable) {
-          // val mtype = MethodType(freeVars, bodyTpe)
-          val mtype = MethodType(args, bodyTpe)
+          val mtype = MethodType(freeVars, bodyTpe)
           _labelSym = owner.newLabel(body.pos, name) setInfo mtype
 
           TRACE("Creating index %d: mtype = %s".format(bx, mtype))
-          if (freeVars.size != args.size)
-            TRACE("We will be hosed! freeVars = %s, args = %s, vdefs = %s".format(freeVars, args, vdefs))
-
-          // Labelled expression - the symbols in the array (must be Idents!)
-          // are those the label takes as argument
-          _label = typer typedLabelDef LabelDef(_labelSym, args, body setType bodyTpe)
-          TRACE("[New label] def %s%s: %s = %s".format(name, pp(args), bodyTpe, body))
+          _label = typer typedLabelDef LabelDef(_labelSym, freeVars, body setType bodyTpe)
+          TRACE("[New label] def %s%s: %s = %s".format(name, pp(freeVars), bodyTpe, body))
         }
 
         ifLabellable(vdefs, squeezedBlock(vdefs, label))
