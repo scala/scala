@@ -208,8 +208,10 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     List(
       VarArgs("dump", "displays a view of the interpreter's internal state",
         (xs: List[String]) => interpreter dumpState xs),
-      VarArgs("tree", "displays ASTs for specified identifiers",
-        (xs: List[String]) => interpreter dumpTrees xs)
+      OneArg("search", "search the classpath for classes matching regex", search)
+
+      // VarArgs("tree", "displays ASTs for specified identifiers",
+      //   (xs: List[String]) => interpreter dumpTrees xs)
       // LineArg("meta", "given code which produces scala code, executes the results",
       //   (xs: List[String]) => )
     )
@@ -338,13 +340,45 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     replay()
   }
 
+  /** This isn't going to win any efficiency awards, but it's only
+   *  available in power mode so I'm unconcerned for the moment.
+   */
+  def search(arg: String) {
+    val MAX_RESULTS = 40
+    if (in.completion.isEmpty) return println("No classpath data available")
+    val comp = in.completion.get
+
+    import java.util.regex.PatternSyntaxException
+    import comp.pkgs.agent._
+    import scala.collection.JavaConversions._
+
+    try {
+      val regex = arg.r
+      val matches = (
+        for ((k, vs) <- dottedPaths) yield {
+          val pkgs = if (regex findFirstMatchIn k isDefined) List("package " + k) else Nil
+          val classes = vs filter (regex findFirstMatchIn _.visibleName isDefined) map ("  class " + k + "." + _.visibleName)
+
+          pkgs ::: classes
+        }
+      ).flatten
+
+      matches take MAX_RESULTS foreach println
+    }
+    catch {
+      case _: PatternSyntaxException =>
+        return println("Invalid regular expression: you must use java.util.regex.Pattern syntax.")
+    }
+  }
+
   def power() {
     powerUserOn = true
     out println interpreter.powerUser()
     if (in.history.isDefined)
       interpreter.quietBind("history", "scala.collection.immutable.List[String]", in.historyList)
 
-    interpreter.quietBind("repl", "scala.tools.nsc.interpreter.CompletionAware", interpreter.replVarsObject())
+    if (in.completion.isDefined)
+      interpreter.quietBind("replHelper", "scala.tools.nsc.interpreter.CompletionAware", interpreter.replVarsObject())
   }
 
   def verbosity() = {

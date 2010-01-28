@@ -85,17 +85,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
-  import compiler.definitions
   import compiler.{
     Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
     ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef,
-    ImportSelector, EmptyTree }
-  import compiler.{ nme, newTermName }
+    ImportSelector, EmptyTree, NoType }
+  import compiler.{ nme, newTermName, newTypeName }
   import nme.{
     INTERPRETER_VAR_PREFIX, INTERPRETER_SYNTHVAR_PREFIX, INTERPRETER_LINE_PREFIX,
     INTERPRETER_IMPORT_WRAPPER, INTERPRETER_WRAPPER_SUFFIX, USCOREkw
   }
 
+  import compiler.definitions
   import definitions.{ EmptyPackage, getMember }
 
   /** construct an interpreter that reports to Console */
@@ -442,9 +442,39 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** For :power - create trees and type aliases from code snippets. */
+  def mkContext(code: String = "") = compiler.analyzer.rootContext(mkUnit(code))
+  def mkAlias(name: String, what: String) = interpret("type " + name + " = " + what)
+  def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
+  def mkUnit(code: String) = new CompilationUnit(mkSourceFile(code))
+
   def mkTree(code: String): Tree = mkTrees(code).headOption getOrElse EmptyTree
   def mkTrees(code: String): List[Tree] = parse(code) getOrElse Nil
-  def mkType(name: String, what: String) = interpret("type " + name + " = " + what)
+  def mkTypedTrees(code: String*): List[compiler.Tree] = {
+    class TyperRun extends compiler.Run {
+      override def stopPhase(name: String) = name == "superaccessors"
+    }
+
+    reporter.reset
+    val run = new TyperRun
+    run compileSources (code.toList.zipWithIndex map {
+      case (s, i) => new BatchSourceFile("<console %d>".format(i), s)
+    })
+    run.units.toList map (_.body)
+  }
+  def mkTypedTree(code: String) = mkTypedTrees(code).head
+
+  def mkType(id: String): compiler.Type = {
+    // if it's a recognized identifier, the type of that; otherwise treat the
+    // String like it is itself a type (e.g. scala.collection.Map) .
+    val typeName = typeForIdent(id) getOrElse id
+
+    try definitions.getClass(newTermName(typeName)).tpe
+    catch { case _: Throwable => NoType }
+  }
+
+  private[nsc] val powerMkImports = List(
+    "mkContext", "mkTree", "mkTrees", "mkAlias", "mkSourceFile", "mkUnit", "mkType", "mkTypedTree", "mkTypedTrees"
+  )
 
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false othrewise.
@@ -661,8 +691,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private class DefHandler(defDef: DefDef) extends MemberHandler(defDef) {
-    lazy val DefDef(mods, name, _, _, _, _) = defDef
+    lazy val DefDef(mods, name, _, vparamss, _, _) = defDef
     override lazy val boundNames = List(name)
+    // true if 0-arity
+    override def generatesValue =
+      if (vparamss.isEmpty || vparamss.head.isEmpty) Some(name)
+      else None
 
     override def resultExtractionCode(req: Request, code: PrintWriter) =
       if (mods.isPublic) code print codegenln(name, ": ", req.typeOf(name))
@@ -936,26 +970,25 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         allBoundNames filter isSynthVarName size
       )
 
-  // very simple right now, will get more interesting
-  def dumpTrees(xs: List[String]): String = {
-    val treestrs = (xs map requestForIdent).flatten flatMap (_.trees)
-
-    if (treestrs.isEmpty) "No trees found."
-    else treestrs.map(t => t.toString + " (" + t.getClass.getSimpleName + ")\n").mkString
-  }
+  // def dumpTrees(xs: List[String]): String = {
+  //   val treestrs = (xs map requestForIdent).flatten flatMap (_.trees)
+  //
+  //   if (treestrs.isEmpty) "No trees found."
+  //   else treestrs.map(t => t.toString + " (" + t.getClass.getSimpleName + ")\n").mkString
+  // }
 
   def powerUser(): String = {
     beQuietDuring {
-      this.bind("interpreter", "scala.tools.nsc.Interpreter", this)
+      this.bind("repl", "scala.tools.nsc.Interpreter", this)
       this.bind("global", "scala.tools.nsc.Global", compiler)
-      interpret("""import interpreter.{ mkType, mkTree, mkTrees, eval }""", false)
+      interpret("import repl.{ %s, eval }".format(powerMkImports mkString ", "), false)
     }
 
     """** Power User mode enabled - BEEP BOOP      **
-      |** New vals! Try interpreter, global        **
+      |** New vals! Try repl, global               **
       |** New cmds! :help to discover them         **
       |** New defs! Give these a whirl:            **
-      |**   mkType("Fn", "(String, Int) => Int")   **
+      |**   mkAlias("Fn", "(String, Int) => Int")  **
       |**   mkTree("def f(x: Int, y: Int) = x+y")  **""".stripMargin
   }
 
