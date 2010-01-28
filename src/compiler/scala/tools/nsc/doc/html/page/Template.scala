@@ -146,12 +146,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }
             paramEntry ++ paramCommentToHtml(rest)
         }
-        if (mbr.comment.isEmpty) NodeSeq.Empty else {
+        if (mbr.comment.isEmpty) NodeSeq.Empty
+        else {
           val cmtedPrs = prs filter {
             case tp: TypeParam => mbrCmt.typeParams isDefinedAt tp.name
             case vp: ValueParam => mbrCmt.valueParams isDefinedAt vp.name
           }
-          if (cmtedPrs.isEmpty) NodeSeq.Empty else
+          if (cmtedPrs.isEmpty && mbrCmt.result.isEmpty) NodeSeq.Empty
+          else
             <dl class="paramcmts block">{
               paramCommentToHtml(cmtedPrs) ++ (
               mbrCmt.result match {
