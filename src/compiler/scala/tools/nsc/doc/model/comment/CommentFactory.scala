@@ -51,6 +51,14 @@ final class CommentFactory(val reporter: Reporter) { parser =>
   protected val SymbolTag =
     new Regex("""\s*@(param|tparam|throws)\s+(\S*)\s*(.*)""")
 
+  /** The start of a scaladoc code block */
+  protected val CodeBlockStart =
+    new Regex("""(.*)\{\{\{(.*)""")
+
+  /** The end of a scaladoc code block */
+  protected val CodeBlockEnd =
+    new Regex("""(.*)\}\}\}(.*)""")
+
   /** A key used for a tag map. The key is built from the name of the tag and from the linked symbol if the tag has one.
     * Equality on tag keys is structural. */
   protected sealed abstract class TagKey {
@@ -84,23 +92,40 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     * splits the whole comment into main body and tag bodies, then runs the `WikiParser` on each body before creating
     * the comment instance.
     *
-    * @param body       The body of the comment parsed until now.
-    * @param tags       All tags parsed until now.
-    * @param lastTagKey The last parsed tag, or `None` if the tag section hasn't started. Lines that are not tagged
-    *                   are part of the previous tag or, if none exists, of the body.
-    * @param remaining  The lines that must still recursively be parsed. */
-  def parse0(docBody: String, tags: Map[TagKey, List[String]], lastTagKey: Option[TagKey], remaining: List[String]): Comment =
+    * @param body        The body of the comment parsed until now.
+    * @param tags        All tags parsed until now.
+    * @param lastTagKey  The last parsed tag, or `None` if the tag section hasn't started. Lines that are not tagged
+    *                    are part of the previous tag or, if none exists, of the body.
+    * @param remaining   The lines that must still recursively be parsed.
+    * @param inCodeBlock Whether the next line is part of a code block (in which no tags must be read). */
+  def parse0(docBody: String, tags: Map[TagKey, List[String]], lastTagKey: Option[TagKey], remaining: List[String], inCodeBlock: Boolean): Comment = {
     remaining match {
 
-      case SymbolTag(name, sym, body) :: ls =>
+      case CodeBlockStart(before, after) :: ls if (!inCodeBlock) =>
+        if (before.trim != "")
+          parse0(docBody, tags, lastTagKey, before :: ("{{{" + after) :: ls, false)
+        else if (after.trim != "")
+          parse0(docBody, tags, lastTagKey, after :: ls, true)
+        else
+          parse0(docBody, tags, lastTagKey, ls, true)
+
+      case CodeBlockEnd(before, after) :: ls =>
+        if (before.trim != "")
+          parse0(docBody, tags, lastTagKey, before :: ("}}}" + after) :: ls, true)
+        else if (after.trim != "")
+          parse0(docBody, tags, lastTagKey, after :: ls, false)
+        else
+          parse0(docBody, tags, lastTagKey, ls, false)
+
+      case SymbolTag(name, sym, body) :: ls if (!inCodeBlock) =>
         val key = SymbolTagKey(name, sym)
         val value = body :: tags.getOrElse(key, Nil)
-        parse0(docBody, tags + (key -> value), Some(key), ls)
+        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
-      case SimpleTag(name, body) :: ls =>
+      case SimpleTag(name, body) :: ls if (!inCodeBlock) =>
         val key = SimpleTagKey(name)
         val value = body :: tags.getOrElse(key, Nil)
-        parse0(docBody, tags + (key -> value), Some(key), ls)
+        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
 
       case line :: ls if (lastTagKey.isDefined) =>
         val key = lastTagKey.get
@@ -109,12 +134,11 @@ final class CommentFactory(val reporter: Reporter) { parser =>
             case Some(b :: bs) => (b + endOfLine + line) :: bs
             case None => oops("lastTagKey set when no tag exists for key")
           }
-        parse0(docBody, tags + (key -> value), lastTagKey, ls)
+        parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock)
 
       case line :: ls =>
-        val newBody =
-          if (docBody == "") line else docBody + endOfLine + line
-        parse0(newBody, tags, lastTagKey, ls)
+        val newBody = if (docBody == "") line else docBody + endOfLine + line
+        parse0(newBody, tags, lastTagKey, ls, inCodeBlock)
 
       case Nil =>
 
@@ -163,6 +187,8 @@ final class CommentFactory(val reporter: Reporter) { parser =>
           val since       = oneTag(SimpleTagKey("since"))
           val todo        = allTags(SimpleTagKey("todo"))
           val deprecated  = oneTag(SimpleTagKey("deprecated"))
+          val note        = allTags(SimpleTagKey("note"))
+          val example     = allTags(SimpleTagKey("example"))
           val short = {
             val shortText = ShortLineEnd.findFirstMatchIn(docBody) match {
               case None => docBody
@@ -172,7 +198,8 @@ final class CommentFactory(val reporter: Reporter) { parser =>
             parseWiki(safeText, pos) match {
               case Body(Paragraph(inl) :: _) => inl
               case _ =>
-                reporter.warning(pos, "Comment must start with a sentence")
+                if (safeText != "")
+                  reporter.warning(pos, "Comment must start with a sentence")
                 Text("")
             }
           }
@@ -183,9 +210,9 @@ final class CommentFactory(val reporter: Reporter) { parser =>
 
         com
 
+      }
     }
-
-    parse0("", Map.empty, None, cleaned)
+    parse0("", Map.empty, None, cleaned, false)
   }
 
   /** Parses a string containing wiki syntax into a `Comment` object. Note that the string is assumed to be clean:
@@ -232,7 +259,7 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       jump("{{{")
       readUntil("}}}")
       if (char == endOfText)
-        reporter.warning(pos, "unclosed code block")
+        reportError(pos, "unclosed code block")
       else
         jump("}}}")
       blockEnded("code block")
@@ -245,7 +272,7 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       val text = inline(check(Array.fill(inLevel)('=')))
       val outLevel = repeatJump("=", inLevel)
       if (inLevel != outLevel)
-        reporter.warning(pos, "unbalanced or unclosed heading")
+        reportError(pos, "unbalanced or unclosed heading")
       blockEnded("heading")
       Title(text, inLevel)
     }
@@ -371,7 +398,7 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     /** {{{ eol ::= { whitespace } '\n' }}} */
     def blockEnded(blockType: String): Unit = {
       if (char != endOfLine && char != endOfText) {
-        reporter.warning(pos, "no additional content on same line after " + blockType)
+        reportError(pos, "no additional content on same line after " + blockType)
         jumpUntil(endOfLine)
       }
       while (char == endOfLine)
@@ -381,6 +408,9 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     def checkParaEnded(): Boolean = {
       char == endOfText || check(Array(endOfLine, endOfLine)) || check(Array(endOfLine, '{', '{', '{')) || check(Array(endOfLine, '\u003D'))
     }
+
+    def reportError(pos: Position, message: String): Unit =
+      reporter.warning(pos, message)
 
   }
 
