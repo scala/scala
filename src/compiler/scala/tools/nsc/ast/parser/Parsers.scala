@@ -1104,7 +1104,11 @@ self =>
           }
         } else if (in.token == MATCH) {
           t = atPos(t.pos.startOrPoint, in.skipToken()) {
-            Match(stripParens(t), surround(LBRACE, RBRACE)(caseClauses(), Nil))
+            /** For debugging pattern matcher transition issues */
+            if (settings.Ypmatnaive.value)
+              makeSequencedMatch(stripParens(t), surround(LBRACE, RBRACE)(caseClauses(), Nil))
+            else
+              Match(stripParens(t), surround(LBRACE, RBRACE)(caseClauses(), Nil))
           }
         }
         // in order to allow anonymous functions as statements (as opposed to expressions) inside

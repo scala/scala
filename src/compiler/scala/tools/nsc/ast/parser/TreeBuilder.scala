@@ -452,6 +452,37 @@ abstract class TreeBuilder {
   def makePatDef(pat: Tree, rhs: Tree): List[Tree] =
     makePatDef(Modifiers(0), pat, rhs)
 
+  /** For debugging only.  Desugar a match statement like so:
+   *  val x = scrutinee
+   *  x match {
+   *    case case1 => ...
+   *    case _ => x match {
+   *       case case2 => ...
+   *       case _ => x match ...
+   *    }
+   *  }
+   *
+   *  This way there are never transitions between nontrivial casedefs.
+   *  Of course many things break: exhaustiveness and unreachable checking
+   *  do not work, no switches will be generated, etc.
+   */
+  def makeSequencedMatch(selector: Tree, cases: List[CaseDef]): Tree = {
+    require(cases.nonEmpty)
+
+    val selectorName = freshName()
+    val valdef = atPos(selector.pos)(ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), selectorName, TypeTree(), selector))
+    val nselector = Ident(selectorName)
+
+    def loop(cds: List[CaseDef]): Match = {
+      def mkNext = CaseDef(Ident(nme.WILDCARD), EmptyTree, loop(cds.tail))
+
+      if (cds.size == 1) Match(nselector, cds)
+      else Match(selector, List(cds.head, mkNext))
+    }
+
+    Block(List(valdef), loop(cases))
+  }
+
   /** Create tree for pattern definition <mods val pat0 = rhs> */
   def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {
     case Some((name, tpt)) =>
