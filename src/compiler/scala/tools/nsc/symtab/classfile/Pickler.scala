@@ -136,7 +136,6 @@ abstract class Pickler extends SubComponent {
           if (sym.thisSym.tpeHK != sym.tpeHK)
             putType(sym.typeOfThis);
           putSymbol(sym.alias)
-          putSymbol(sym.defaultGetter)
           if (!sym.children.isEmpty) {
             val (locals, globals) = sym.children.toList.partition(_.isLocalClass)
             val children =
@@ -561,8 +560,6 @@ abstract class Pickler extends SubComponent {
           writeSymInfo(sym)
           if (sym.isAbstractType) TYPEsym else ALIASsym
         case sym: TermSymbol =>
-          if (!sym.isModule && sym.defaultGetter != NoSymbol)
-            writeRef(sym.defaultGetter)
           writeSymInfo(sym)
           if (sym.alias != NoSymbol) writeRef(sym.alias)
           if (sym.isModule) MODULEsym else VALsym
@@ -1017,7 +1014,6 @@ abstract class Pickler extends SubComponent {
         case sym: TermSymbol =>
           print(if (sym.isModule) "MODULEsym " else "VALsym ")
           printSymInfo(sym)
-          if (!sym.isModule) printRef(sym.defaultGetter)
           if (sym.alias != NoSymbol) printRef(sym.alias)
         case NoType =>
           print("NOtpe")

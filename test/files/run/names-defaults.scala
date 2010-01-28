@@ -256,6 +256,9 @@ object Test extends Application {
   def test11[T[P]](x: T[T[List[T[X forSome { type X }]]]] = List(1,2)) = x
   // (cannot call f using the default, List(1,2) doesn't match the param type)
 
+  def multinest = { def bar(x: Int = 1) = { def bar(x: Int = 2) = x; bar() + x }; bar() }
+  println(multinest)
+
 
   // #2290
   def spawn(a: Int, b: => Unit) = { () }

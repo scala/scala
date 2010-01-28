@@ -319,7 +319,6 @@ trait Namers { self: Analyzer =>
                (param, cparam) <- params.zip(cparams)) {
             // need to clone the type cparam.tpe??? problem is: we don't have the new owner yet (the new param symbol)
             param.tpt.setType(subst(cparam.tpe))
-            () // @LUC TODO workaround for #1996
           }
           ltype.complete(sym)
         }))
@@ -1033,12 +1032,10 @@ trait Namers { self: Analyzer =>
             }
             meth.owner.resetFlag(INTERFACE) // there's a concrete member now
             val default = parentNamer.enterSyntheticSym(defaultTree)
-            sym.defaultGetter = default
           } else if (baseHasDefault) {
             // the parameter does not have a default itself, but the corresponding parameter
             // in the base class does.
             sym.setFlag(DEFAULTPARAM)
-            sym.defaultGetter = baseParams.head.defaultGetter
           }
           posCounter += 1
           if (overrides) baseParams = baseParams.tail

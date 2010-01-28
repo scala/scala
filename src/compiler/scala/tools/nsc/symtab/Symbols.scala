@@ -1173,13 +1173,6 @@ trait Symbols {
      */
     def alias: Symbol = NoSymbol
 
-    /** For parameter symbols: the method computing its default value, NoSymbol
-     *  for all others
-     */
-    def defaultGetter: Symbol = NoSymbol
-    def defaultGetter_=(getter: Symbol): Unit =
-      throw new Error("defaultGetter cannot be set for " + this)
-
     /** For a lazy value, its lazy accessor. NoSymbol for all others */
     def lazyAccessor: Symbol = NoSymbol
 
@@ -1670,14 +1663,12 @@ trait Symbols {
     privateWithin = NoSymbol
 
     protected var referenced: Symbol = NoSymbol
-    protected var defGetter: Symbol = NoSymbol
 
     def cloneSymbolImpl(owner: Symbol): Symbol =
       new TermSymbol(owner, pos, name).copyAttrsFrom(this)
 
     def copyAttrsFrom(original: TermSymbol): this.type = {
       referenced = original.referenced
-      defGetter = original.defGetter
       this
     }
 
@@ -1695,10 +1686,6 @@ trait Symbols {
       referenced = alias
       this
     }
-
-    override def defaultGetter = defGetter
-    override def defaultGetter_=(getter: Symbol): Unit =
-      defGetter = getter
 
     override def outerSource: Symbol =
       if (name endsWith nme.OUTER) initialize.referenced

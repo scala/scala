@@ -2,7 +2,7 @@ case class CaseClass[A >: scala.Nothing <: scala.Seq[scala.Int]](i : A, s : scal
   val i : A = { /* compiled code */ }
   val s : scala.Predef.String = { /* compiled code */ }
   def foo : scala.Int = { /* compiled code */ }
-  def copy[A >: scala.Nothing <: scala.Seq[scala.Int]]() : CaseClass[A] = { /* compiled code */ }
+  def copy[A >: scala.Nothing <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) : CaseClass[A] = { /* compiled code */ }
   def copy$default$1[A >: scala.Nothing <: scala.Seq[scala.Int]] : A = { /* compiled code */ }
   def copy$default$2[A >: scala.Nothing <: scala.Seq[scala.Int]] : scala.Predef.String = { /* compiled code */ }
   override def hashCode() : scala.Int = { /* compiled code */ }

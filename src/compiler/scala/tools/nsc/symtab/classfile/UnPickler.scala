@@ -203,9 +203,9 @@ abstract class UnPickler {
         case NONEsym =>
           sym = NoSymbol
         case _ => // symbols that were pickled with Pickler.writeSymInfo
-          var defaultGetter: Symbol = NoSymbol
+          var defaultGetter: Symbol = NoSymbol // @deprecated, to be removed for 2.8 final
           var nameref = readNat()
-          if (tag == VALsym && isSymbolRef(nameref)) {
+          if (tag == VALsym && isSymbolRef(nameref)) {  // @deprecated, to be removed for 2.8 final
             defaultGetter = at(nameref, readSymbol)
             nameref = readNat()
           }
@@ -247,7 +247,6 @@ abstract class UnPickler {
               sym = if (name == moduleRoot.name && owner == moduleRoot.owner) moduleRoot.resetFlag(MODULE)
                     else if ((flags & METHOD) != 0) owner.newMethod(NoPosition, name)
                     else owner.newValue(NoPosition, name)
-              sym.defaultGetter = defaultGetter
             case _ =>
               errorBadSignature("bad symbol tag: " + tag)
           }
