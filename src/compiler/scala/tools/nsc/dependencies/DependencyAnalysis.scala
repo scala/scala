@@ -161,6 +161,9 @@ trait DependencyAnalysis extends SubComponent with Files {
                   || (tree.symbol.sourceFile.path != file.path))
               && (!tree.symbol.isClassConstructor)) {
             updateReferences(tree.symbol.fullNameString)
+            atPhase(currentRun.uncurryPhase.prev) {
+              checkType(tree.symbol.tpe)
+            }
           }
 
           tree match {
@@ -200,8 +203,13 @@ trait DependencyAnalysis extends SubComponent with Files {
               for (s <- t.params) checkType(s.tpe)
 
             case t: TypeRef    =>
+              if (t.sym.isAliasType) updateReferences(t.typeSymbolDirect.fullNameString)
               updateReferences(t.typeSymbol.fullNameString)
               for (tp <- t.args) checkType(tp)
+
+            case t: PolyType   =>
+              checkType(t.resultType)
+              updateReferences(t.typeSymbol.fullNameString)
 
             case t             =>
               updateReferences(t.typeSymbol.fullNameString)

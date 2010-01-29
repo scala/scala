@@ -686,6 +686,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val typerPhase = phaseNamed("typer")
     val picklerPhase = phaseNamed("pickler")
     val refchecksPhase = phaseNamed("refchecks")
+    val uncurryPhase = phaseNamed("uncurry")
 
     val explicitOuterPhase = phaseNamed("explicitouter")
     val erasurePhase = phaseNamed("erasure")

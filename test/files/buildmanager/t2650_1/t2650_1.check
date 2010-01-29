@@ -1,0 +1,11 @@
+builder > A.scala B.scala
+compiling Set(A.scala, B.scala)
+Changes: Map()
+builder > A.scala
+compiling Set(A.scala)
+Changes: Map(trait A -> List(Changed(Definition(A.S))[type S changed from A.this.S[_] to A.this.S flags: <deferred>]))
+invalidate B.scala because inherited method changed [Changed(Definition(A.S))[type S changed from A.this.S[_] to A.this.S flags: <deferred>]]
+compiling Set(B.scala)
+B.scala:2: error: B.this.S does not take type parameters
+    type F = S[Int]
+             ^
