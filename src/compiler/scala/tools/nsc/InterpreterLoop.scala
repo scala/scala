@@ -10,6 +10,8 @@ import java.io.{ BufferedReader, File, FileReader, PrintWriter }
 import java.io.IOException
 
 import scala.tools.nsc.{ InterpreterResults => IR }
+import scala.annotation.tailrec
+import scala.collection.mutable.ListBuffer
 import interpreter._
 import io.{ Process }
 
@@ -415,6 +417,89 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     }
   }
 
+  private val CONTINUATION_STRING = "     | "
+  private val PROMPT_STRING = "scala> "
+
+  /** If it looks like they're pasting in a scala interpreter
+   *  transcript, remove all the formatting we inserted so we
+   *  can make some sense of it.
+   */
+  private var pasteStamp: Long = 0
+
+  /** Returns true if it's long enough to quit. */
+  def updatePasteStamp(): Boolean = {
+    /* Enough milliseconds between readLines to call it a day. */
+    val PASTE_FINISH = 1000
+
+    val prevStamp = pasteStamp
+    pasteStamp = System.currentTimeMillis
+
+    (pasteStamp - prevStamp > PASTE_FINISH)
+
+  }
+  /** TODO - we could look for the usage of resXX variables in the transcript.
+   *  Right now backreferences to auto-named variables will break.
+   */
+
+  /** The trailing lines complication was an attempt to work around the introduction
+   *  of newlines in e.g. email messages of repl sessions.  It doesn't work because
+   *  an unlucky newline can always leave you with a syntactically valid first line,
+   *  which is executed before the next line is considered.  So this doesn't actually
+   *  accomplish anything, but I'm leaving it in case I decide to try harder.
+   */
+  case class PasteCommand(cmd: String, trailing: ListBuffer[String] = ListBuffer[String]())
+
+  /** Commands start on lines beginning with "scala>" and each successive
+   *  line which begins with the continuation string is appended to that command.
+   *  Everything else is discarded.  When the end of the transcript is spotted,
+   *  all the commands are replayed.
+   */
+  @tailrec private def cleanTranscript(lines: List[String], acc: List[PasteCommand]): List[PasteCommand] = lines match {
+    case Nil                                    => acc.reverse
+    case x :: xs if x startsWith PROMPT_STRING  =>
+      val first = x stripPrefix PROMPT_STRING
+      val (xs1, xs2) = xs span (_ startsWith CONTINUATION_STRING)
+      val rest = xs1 map (_ stripPrefix CONTINUATION_STRING)
+      val result = (first :: rest).mkString("", "\n", "\n")
+
+      cleanTranscript(xs2, PasteCommand(result) :: acc)
+
+    case ln :: lns =>
+      val newacc = acc match {
+        case Nil => Nil
+        case PasteCommand(cmd, trailing) :: accrest =>
+          PasteCommand(cmd, trailing :+ ln) :: accrest
+      }
+      cleanTranscript(lns, newacc)
+  }
+
+  /** The timestamp is for safety so it doesn't hang looking for the end
+   *  of a transcript.  Ad hoc parsing can't be too demanding.  You can
+   *  also use ctrl-D to start it parsing.
+   */
+  @tailrec private def interpretAsPastedTranscript(lines: List[String]) {
+    val line = in.readLine("")
+    val finished = updatePasteStamp()
+
+    if (line == null || finished || line.trim == PROMPT_STRING.trim) {
+      val xs = cleanTranscript(lines.reverse, Nil)
+      println("Replaying %d commands from interpreter transcript." format xs.size)
+      for (PasteCommand(cmd, trailing) <- xs) {
+        out.flush()
+        def runCode(code: String, extraLines: List[String]) {
+          (interpreter interpret code) match {
+            case IR.Incomplete if extraLines.nonEmpty =>
+              runCode(code + "\n" + extraLines.head, extraLines.tail)
+            case _ => ()
+          }
+        }
+        runCode(cmd, trailing.toList)
+      }
+    }
+    else
+      interpretAsPastedTranscript(line :: lines)
+  }
+
   /** Interpret expressions starting with the first line.
     * Read lines until a complete compilation unit is available
     * or until a syntax error has been seen.  If a full unit is
@@ -431,7 +516,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
             out.println("You typed two blank lines.  Starting a new command.")
             None
           }
-          else in.readLine("     | ") match {
+          else in.readLine(CONTINUATION_STRING) match {
             case null => None         // end of file
             case line => interpretStartingWith(code + "\n" + line)
           }
@@ -439,12 +524,20 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     }
 
     /** Here we place ourselves between the user and the interpreter and examine
-     *  the input they are ostensibly submitting.  It may turn out to be the result
-     *  of tab-completion, in which case it might be meaningless to scala but
-     *  evaluable by the CompletionAware unit which created it.
+     *  the input they are ostensibly submitting.  We intervene in several cases:
+     *
+     *  1) If the line starts with "." it is treated as an invocation on the last result.
+     *  2) If the line starts with "scala> " it is assumed to be an interpreter paste.
+     *  3) If the Completion object's execute returns Some(_), we inject that value
+     *     and avoid the interpreter, as it's likely not valid scala code.
      */
     if (code == "") None
     else if (code startsWith ".") interpretStartingWith(interpreter.mostRecentVar + code)
+    else if (code startsWith PROMPT_STRING) {
+      updatePasteStamp()
+      interpretAsPastedTranscript(List(code))
+      None
+    }
     else {
       val result = for (comp <- in.completion ; res <- comp execute code) yield res
       result match {
@@ -476,7 +569,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       case None       =>
         val emacsShell = System.getProperty("env.emacs", "") != ""
 
-        // the interpeter is passed as an argument to expose tab completion info
+        // the interpreter is passed as an argument to expose tab completion info
         if (settings.Xnojline.value || emacsShell) new SimpleReader
         else if (settings.noCompletion.value) InteractiveReader.createDefault()
         else InteractiveReader.createDefault(interpreter)
