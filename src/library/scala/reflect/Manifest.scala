@@ -39,6 +39,7 @@ trait AnyValManifest[T] extends Manifest[T] {
   import Manifest.{ Any, AnyVal }
   override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any) || (that eq AnyVal)
   override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+  override def hashCode = System.identityHashCode(this)
 }
 
 /** <ps>
@@ -137,6 +138,7 @@ object Manifest {
     override def toString = "Any"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Any
   }
 
@@ -144,6 +146,7 @@ object Manifest {
     override def toString = "Object"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Object
   }
 
@@ -151,6 +154,7 @@ object Manifest {
     override def toString = "AnyVal"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.AnyVal
   }
 
@@ -159,6 +163,7 @@ object Manifest {
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Null
   }
 
@@ -166,6 +171,7 @@ object Manifest {
     override def toString = "Nothing"
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Nothing
   }
 

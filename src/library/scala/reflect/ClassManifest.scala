@@ -82,6 +82,7 @@ trait ClassManifest[T] extends OptManifest[T] {
     case m: ClassManifest[_]  => this.erasure == m.erasure
     case _ => false
   }
+  override def hashCode = this.erasure.hashCode
 
   protected def arrayClass[T](tp: Predef.Class[_]): Predef.Class[Array[T]] =
     java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[Predef.Class[Array[T]]]
