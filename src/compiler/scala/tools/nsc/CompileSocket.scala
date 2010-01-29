@@ -12,10 +12,8 @@ import java.util.regex.Pattern
 import java.net._
 import java.security.SecureRandom
 
-import io.{ File, Path }
+import io.{ File, Path, Process, Socket }
 import scala.util.control.Exception.catching
-
-// class CompileChannel { }
 
 /** This class manages sockets for the fsc offline compiler.  */
 class CompileSocket {
@@ -80,23 +78,16 @@ class CompileSocket {
   /** The command which starts the compile server, given vm arguments.
     *
     *  @param vmArgs  the argument string to be passed to the java or scala command
-    *                 the string must be either empty or start with a ' '.
     */
-  private def serverCommand(vmArgs: String): String =
-    vmCommand + vmArgs + " " + serverClass
+  private def serverCommand(vmArgs: Seq[String]): Seq[String] =
+    Seq(vmCommand) ++ vmArgs ++ Seq(serverClass) filterNot (_ == "")
 
   /** Start a new server; returns true iff it succeeds */
   private def startNewServer(vmArgs: String) {
-    val cmd = serverCommand(vmArgs)
-    info("[Executed command: " + cmd + "]")
-    try {
-      Runtime.getRuntime().exec(cmd)
-//      val exitVal = proc.waitFor()
-//      info("[Exit value: " + exitVal + "]")
-    } catch {
-      case ex: IOException =>
-        fatal("Cannot start compilation daemon." +
-              "\ntried command: " + cmd)
+    val cmd = serverCommand(vmArgs split " " toSeq)
+    info("[Executed command: %s]" format cmd)
+    try Process exec cmd catch {
+      case ex: IOException => fatal("Cannot start compilation daemon.\ntried command: %s" format cmd)
     }
   }
 
@@ -157,25 +148,23 @@ class CompileSocket {
       if (attempts == 0) {
         error("Unable to establish connection to compilation daemon")
         null
-      } else {
+      }
+      else {
         val port = if(create) getPort(vmArgs) else pollPort()
         if(port < 0) return null
         val hostAdr = InetAddress.getLocalHost()
-        try {
-          val result = new Socket(hostAdr, port)
-          info("[Connected to compilation daemon at port " + port + "]")
-          result
-        } catch {
-          case e: /*IO+Security*/Exception =>
+        Socket(hostAdr, port).either match {
+          case Right(res) =>
+            info("[Connected to compilation daemon at port %d]" format port)
+            res
+          case Left(e) =>
             info(e.toString)
-            info("[Connecting to compilation daemon at port "  +
-                 port + " failed; re-trying...]")
+            info("[Connecting to compilation daemon at port %d failed; re-trying...]" format port)
 
             if (attempts % 2 == 0)
               portFile(port).delete // 50% chance to stop trying on this port
 
             Thread.sleep(100) // delay before retrying
-
             getsock(attempts - 1)
         }
       }
@@ -201,10 +190,7 @@ class CompileSocket {
   }
 
   def getSocket(hostName: String, port: Int): Socket =
-    try new Socket(hostName, port) catch {
-      case e @ (_: IOException | _: SecurityException) =>
-        fatal("Unable to establish connection to server %s:%d; exiting".format(hostName, port))
-    }
+    Socket(hostName, port).opt getOrElse fatal("Unable to establish connection to server %s:%d; exiting".format(hostName, port))
 
   def getPassword(port: Int): String = {
     val ff  = portFile(port)

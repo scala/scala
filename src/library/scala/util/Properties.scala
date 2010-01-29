@@ -56,12 +56,12 @@ private[scala] trait PropertiesTrait
   /** This is the encoding to use reading in source files, overridden with -encoding
    *  Note that it uses "prop" i.e. looks in the scala jar, not the system properties.
    */
-  val sourceEncoding        = prop("file.encoding", "UTF8")
+  val sourceEncoding        = prop("file.encoding", "UTF-8")
 
   /** This is the default text encoding, overridden (unreliably) with
    *  JAVA_OPTS="-Dfile.encoding=Foo"
    */
-  val encodingString        = sysprop("file.encoding", "UTF8")
+  val encodingString        = sysprop("file.encoding", "UTF-8")
 
   val isWin                 = sysprop("os.name") startsWith "Windows"
   val isMac                 = sysprop("java.vendor") startsWith "Apple"
@@ -72,6 +72,8 @@ private[scala] trait PropertiesTrait
   val javaVmInfo            = sysprop("java.vm.info")
   val javaVersion           = sysprop("java.version")
   val tmpDir                = sysprop("java.io.tmpdir")
+  val homeDir               = sysprop("user.home")
+  val currentDir            = sysprop("user.dir")
   val userName              = sysprop("user.name")
   val scalaHome             = sysprop("scala.home", null) // XXX places do null checks...
 
