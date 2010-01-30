@@ -20,22 +20,7 @@ trait MatrixAdditions extends ast.TreeDSL
   import symtab.Flags
   import CODE._
   import Debug._
-
-  // Extractors which can spot pure true/false expressions
-  // even through the haze of braces
-  abstract class SeeThroughBlocks[T] {
-    protected def unapplyImpl(x: Tree): T
-    def unapply(x: Tree): T = x match {
-      case Block(Nil, expr)         => unapply(expr)
-      case _                        => unapplyImpl(x)
-    }
-  }
-  object IsTrue extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure TRUE
-  }
-  object IsFalse extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure FALSE
-  }
+  import treeInfo.{ IsTrue, IsFalse }
 
   /** The Squeezer, responsible for all the squeezing.
    */

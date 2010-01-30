@@ -36,7 +36,9 @@ trait Trees {
     val trees: Trees.this.type = Trees.this
   } with TreePrinters
 
-  lazy val treePrinter = treePrinters.create()
+  lazy val treePrinter =
+    if (settings.Ycompacttrees.value) treePrinters.createCompact()
+    else treePrinters.create()
 
   object treeInfo extends {
     val trees: Trees.this.type = Trees.this
@@ -197,13 +199,9 @@ trait Trees {
       productIterator.toList flatMap subtrees
     }
 
-    override def toString(): String = {
-      val buffer = new StringWriter()
-      val printer = treePrinters.create(new PrintWriter(buffer))
-      printer.print(this)
-      printer.flush()
-      buffer.toString
-    }
+    override def toString(): String =
+      if (settings.Ycompacttrees.value) treePrinters.asCompactString(this)
+      else treePrinters.asString(this)
 
     override def hashCode(): Int = super.hashCode()
 
@@ -834,9 +832,10 @@ trait Trees {
 
   /** Self reference */
   case class This(qual: Name)
-        extends TermTree with SymTree
+        extends TermTree with SymTree {
     // The symbol of a This is the class to which the this refers.
     // For instance in C.this, it would be C.
+  }
 
   def This(sym: Symbol): Tree = This(sym.name) setSymbol sym
 

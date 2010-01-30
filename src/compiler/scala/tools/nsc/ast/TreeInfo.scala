@@ -350,4 +350,21 @@ abstract class TreeInfo {
     case TypeDef(_, _, _, _) => !isAbsTypeDef(tree)
     case _ => false
   }
+
+  /** Some handy extractors for spotting true and false expressions
+   *  through the haze of braces.
+   */
+  abstract class SeeThroughBlocks[T] {
+    protected def unapplyImpl(x: Tree): T
+    def unapply(x: Tree): T = x match {
+      case Block(Nil, expr)         => unapply(expr)
+      case _                        => unapplyImpl(x)
+    }
+  }
+  object IsTrue extends SeeThroughBlocks[Boolean] {
+    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure Literal(Constant(true))
+  }
+  object IsFalse extends SeeThroughBlocks[Boolean] {
+    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure Literal(Constant(false))
+  }
 }

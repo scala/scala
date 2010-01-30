@@ -80,7 +80,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** have to be careful completion doesn't start querying global before it's ready */
   private var _initialized = false
   def isInitialized = _initialized
-  private[nsc] def setInitialized = {
+  def initialize() = {
+    // forces something to be compiled
+    isettings
+
     _initialized = true
   }
 

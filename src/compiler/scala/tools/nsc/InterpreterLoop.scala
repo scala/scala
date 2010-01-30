@@ -222,19 +222,6 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   /** Available commands */
   def commands: List[Command] = standardCommands ::: (if (powerUserOn) powerCommands else Nil)
 
-  /* For some reason, the first interpreted command always takes
-   * a second or two.  So, wait until the welcome message
-   * has been printed before calling isettings.  That way,
-   * the user can read the welcome message while this
-   * command executes.
-   */
-  private def initInterpreter() {
-    // forces something to be compiled
-    interpreter.isettings
-    // signals completion it's okay to proceed
-    interpreter.setInitialized
-  }
-
   /** The main read-eval-print loop for the interpreter.  It calls
    *  <code>command()</code> for each line of input, and stops when
    *  <code>command()</code> returns <code>false</code>.
@@ -255,12 +242,12 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
     /* For some reason, the first interpreted command always takes
      * a second or two.  So, wait until the welcome message
-     * has been printed before calling initInterpreter.  That way,
+     * has been printed before calling initialize.  That way,
      * the user can read the welcome message while this
      * command executes.
      */
     val futLine = scala.concurrent.ops.future(readOneLine)
-    initInterpreter()
+    interpreter.initialize()
 
     if (!processLine(futLine()))
       return

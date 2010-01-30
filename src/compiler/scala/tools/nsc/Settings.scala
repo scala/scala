@@ -892,6 +892,7 @@ trait ScalacSettings {
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
   val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "")
+  val Ycompacttrees = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees")
   val noCompletion  = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL")
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages")

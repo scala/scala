@@ -390,6 +390,8 @@ class Names {
     def decode: String = (
       NameTransformer.decode(toString()) +
       (if (nameDebug && isTypeName) "!" else ""))//debug
+
+    def isOperatorName: Boolean = decode != toString
   }
 
   private class TermName(index: Int, len: Int, hash: Int) extends Name(index, len) {
