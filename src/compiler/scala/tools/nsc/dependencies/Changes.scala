@@ -75,7 +75,9 @@ abstract class Changes {
     case (ConstantType(value1), ConstantType(value2)) =>
       value1 == value2
     case (TypeRef(pre1, sym1, args1), TypeRef(pre2, sym2, args2)) =>
-      sameType(pre1, pre2) && sameSymbol(sym1, sym2) &&
+      sameType(pre1, pre2) &&
+      (sameSymbol(sym1, sym2) ||
+       ( sym1.isType && sym2.isType && sameType(sym1.info, sym2.info))) &&
       (sym1.variance == sym2.variance) &&
       ((tp1.isHigherKinded && tp2.isHigherKinded && tp1.normalize =:= tp2.normalize) ||
          sameTypes(args1, args2))
