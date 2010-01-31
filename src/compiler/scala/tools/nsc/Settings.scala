@@ -865,7 +865,6 @@ trait ScalacSettings {
   val genPhaseGraph = StringSetting     ("-Xgenerate-phase-graph", "file", "Generate the phase graphs (outputs .dot files) to fileX.dot", "")
   val XlogImplicits = BooleanSetting    ("-Xlog-implicits", "Show more info on why some implicits are not applicable")
   val nouescape     = BooleanSetting    ("-Xno-uescape", "Disables handling of \\u unicode escapes")
-  val XnoVarargsConversion = BooleanSetting("-Xno-varargs-conversion", "disable varags conversion")
   val Xnojline      = BooleanSetting    ("-Xnojline", "Do not use JLine for editing")
   val plugin        = MultiStringSetting("-Xplugin", "file", "Load a plugin from a file")
   val disable       = MultiStringSetting("-Xplugin-disable", "plugin", "Disable a plugin")

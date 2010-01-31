@@ -1015,7 +1015,7 @@ trait Scanners {
   class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends Scanner {
     def this(unit: CompilationUnit) = this(unit, List())
     val buf = unit.source.asInstanceOf[BatchSourceFile].content
-    val decodeUnit = !settings.nouescape.value
+    override val decodeUni: Boolean = !settings.nouescape.value
 
     def warning(off: Offset, msg: String) = unit.warning(unit.position(off), msg)
     def error  (off: Offset, msg: String) = unit.error(unit.position(off), msg)
