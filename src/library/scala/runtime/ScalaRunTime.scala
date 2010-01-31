@@ -13,7 +13,7 @@ package scala.runtime
 
 import scala.reflect.ClassManifest
 import scala.collection.Seq
-import scala.collection.mutable._
+import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ List, Stream, Nil, :: }
 import scala.util.control.ControlException
 
@@ -186,12 +186,10 @@ object ScalaRunTime {
    * @return a string representation of <code>arg</code>
    *
    */
-  def stringOf(arg : Any): String = arg match {
-    case null => "null"
-    case arg: AnyRef if isArray(arg) =>
-      val d: collection.IndexedSeq[Any] = WrappedArray.make(arg).deep
-      d.toString
-    case arg: WrappedArray[_] => arg.deep.toString
-    case arg => arg.toString
+  def stringOf(arg: Any): String = arg match {
+    case null                     => "null"
+    case x: AnyRef if isArray(x)  => WrappedArray make x map stringOf mkString ("Array(", ", ", ")")
+    case x: Traversable[_]        => x map stringOf mkString (x.stringPrefix + "(", ", ", ")")
+    case x                        => x toString
   }
 }
