@@ -834,9 +834,14 @@ abstract class GenJVM extends SubComponent {
         val mps = module.linkedClassOfModule.info.baseClasses
         cps.filter(mps contains)
       }
-      /* the setter doesn't show up in members so we inspect the name */
+      /* The setter doesn't show up in members so we inspect the name
+       * ... and clearly it helps to know how the name is encoded, see ticket #3003.
+       * This logic is grossly inadequate! Name mangling needs a devotee.
+       */
       def conflictsInCommonParent(name: Name) =
-        commonParents exists { cp => name startsWith (cp.name + "$") }
+        commonParents exists { cp =>
+          (name startsWith (cp.name + "$")) || (name containsName ("$" + cp.name + "$"))
+        }
 
       /** Should method `m' get a forwarder in the mirror class? */
       def shouldForward(m: Symbol): Boolean =
