@@ -155,7 +155,6 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	}
 	private def isVisible(sym: Symbol) = sym != NoSymbol && sym.isPublic && !sym.isDeferred
 	private def isMainType(tpe: Type): Boolean =
-	{
 		tpe match
 		{
 			// singleArgument is of type Symbol in 2.8.0 and type Type in 2.7.x
@@ -163,13 +162,15 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 			case PolyType(typeParams, result) => isMainType(result)
 			case _ =>  false
 		}
-	}
 	private lazy val StringArrayType = appliedType(definitions.ArrayClass.typeConstructor, definitions.StringClass.tpe :: Nil)
 	// isStringArray is overloaded to handle the incompatibility between 2.7.x and 2.8.0
-	private def isStringArray(tpe: Type): Boolean = tpe =:= StringArrayType
+	private def isStringArray(tpe: Type): Boolean =
+		tpe =:= StringArrayType ||
+		// needed for main defined in parent trait, not sure why
+		tpe.typeSymbol == definitions.ArrayClass && tpe.typeArgs.length == 1 && tpe.typeArgs(0).typeSymbol == definitions.StringClass
 	private def isStringArray(sym: Symbol): Boolean = isStringArray(sym.tpe)
 	private def isUnitType(tpe: Type) = tpe.typeSymbol == definitions.UnitClass
-
+	
 	// required because the 2.8 way to find a class is:
 	//   classPath.findClass(name).flatMap(_.binary)
 	// and the 2.7 way is:
