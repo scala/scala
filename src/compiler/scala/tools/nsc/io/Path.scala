@@ -92,6 +92,7 @@ class Path private[io] (val jfile: JFile)
   def name: String = jfile.getName()
   def path: String = jfile.getPath()
   def normalize: Path = Path(jfile.getCanonicalPath())
+  def isRootPath: Boolean = roots exists (_ isSame this)
 
   def resolve(other: Path) = if (other.isAbsolute || isEmpty) other else /(other)
   def relativize(other: Path) = {
@@ -113,17 +114,19 @@ class Path private[io] (val jfile: JFile)
   /**
    * @return The path of the parent directory, or root if path is already root
    */
-  def parent: Path = {
-    val p = path match {
-      case "" | "." => ".."
-      case _ if path endsWith ".." => path + separator + ".." // the only solution
-      case _ => jfile.getParent match {
-          case null if isAbsolute => path // it should be a root. BTW, don't need to worry about relative pathed root
-          case null => "."                // a file ot dir under pwd
-          case x => x
-        }
-    }
-    new Directory(new JFile(p))
+  def parent: Directory = path match {
+    case "" | "." => Directory("..")
+    case _        =>
+      // the only solution <-- a comment which could have used elaboration
+      if (segments.nonEmpty && segments.last == "..")
+        (path / "..").toDirectory
+      else jfile.getParent match {
+        case null =>
+          if (isAbsolute) toDirectory // it should be a root. BTW, don't need to worry about relative pathed root
+          else Directory(".")         // a dir under pwd
+        case x    =>
+          Directory(x)
+      }
   }
   def parents: List[Path] = {
     val p = parent

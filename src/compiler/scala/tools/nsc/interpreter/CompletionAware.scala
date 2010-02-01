@@ -12,6 +12,12 @@ import scala.reflect.NameTransformer
  *  will supply their own candidates and resolve their own paths.
  */
 trait CompletionAware {
+  /** The delimiters which are meaningful when this CompletionAware
+   *  object is in control.
+   */
+  // TODO
+  // def delimiters(): List[Char] = List('.')
+
   /** The complete list of unqualified Strings to which this
    *  object will complete.
    */
@@ -45,38 +51,42 @@ trait CompletionAware {
    *  to which it can complete.  This may involve delegating
    *  to other CompletionAware objects.
    */
-  def completionsFor(buf: String): List[String] = {
-    val parsed = new Parsed(buf)
+  def completionsFor(parsed: Parsed): List[String] = {
     import parsed._
 
-    (
+    val cs =
       if (isEmpty) completions()
-      else if (isFirstCharDot) Nil    // XXX for now
-      else if (isUnqualified && !isLastCharDot) completions(buf)
-      else follow(hd) match {
-        case Some(next) => next completionsFor remainder
-        case _          => Nil
-      }
-    ) filterNot filterNotFunction map mapFunction sortWith (sortFunction _)
+      else if (isUnqualified && !isLastDelimiter) completions(buffer)
+      else follow(bufferHead) map (_ completionsFor bufferTail) getOrElse Nil
+
+    cs filterNot filterNotFunction map mapFunction sortWith (sortFunction _)
   }
 
   /** TODO - unify this and completionsFor under a common traverser.
    */
-  def executionFor(buf: String): Option[Any] = {
-    val parsed = new Parsed(buf)
+  def executionFor(parsed: Parsed): Option[Any] = {
     import parsed._
 
-    if (isUnqualified && !isLastCharDot && (completions contains buf)) execute(buf)
+    if (isUnqualified && !isLastDelimiter && (completions contains buffer)) execute(buffer)
     else if (!isQualified) None
-    else follow(hd) match {
-      case Some(next) => next executionFor remainder
-      case _          => None
-    }
+    else follow(bufferHead) flatMap (_ executionFor bufferTail)
   }
 }
 
 object CompletionAware {
   val Empty = new CompletionAware { val completions = Nil }
+
+  // class Forwarder(underlying: CompletionAware) extends CompletionAware {
+  //   override def completions() = underlying.completions()
+  //   override def filterNotFunction(s: String) = underlying.filterNotFunction(s)
+  //   override def sortFunction(s1: String, s2: String) = underlying.sortFunction(s1, s2)
+  //   override def mapFunction(s: String) = underlying.mapFunction(s)
+  //   override def follow(id: String) = underlying.follow(id)
+  //   override def execute(id: String) = underlying.execute(id)
+  //   override def completionsFor(parsed: Parsed) = underlying.completionsFor(parsed)
+  //   override def executionFor(parsed: Parsed) = underlying.executionFor(parsed)
+  // }
+  //
 
   def unapply(that: Any): Option[CompletionAware] = that match {
     case x: CompletionAware => Some((x))

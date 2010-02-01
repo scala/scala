@@ -22,13 +22,24 @@ import jline._
 import java.net.URL
 import java.util.{ List => JList }
 import java.lang.reflect
+import io.{ Path, Directory }
 
-trait ForwardingCompletion extends CompletionAware {
-  def forwardTo: Option[CompletionAware]
+object Completion {
+  def looksLikeInvocation(code: String) = (
+        (code != null)
+    &&  (code startsWith ".")
+    && !(code startsWith "./")
+    && !(code startsWith "..")
+  )
 
-  override def completions() = forwardTo map (_.completions()) getOrElse Nil
-  override def follow(s: String) = forwardTo flatMap (_ follow s)
+  trait Forwarder extends CompletionAware {
+    def forwardTo: Option[CompletionAware]
+
+    override def completions() = forwardTo map (_.completions()) getOrElse Nil
+    override def follow(s: String) = forwardTo flatMap (_ follow s)
+  }
 }
+import Completion._
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
@@ -59,7 +70,7 @@ class Completion(repl: Interpreter) {
     )
   }
   // members of scala.*
-  val scalalang = new pkgs.SubCompletor("scala") with ForwardingCompletion {
+  val scalalang = new pkgs.SubCompletor("scala") with Forwarder {
     def forwardTo = pkgs follow "scala"
     val arityClasses = {
       val names = List("Tuple", "Product", "Function")
@@ -69,15 +80,15 @@ class Completion(repl: Interpreter) {
     }
 
     override def filterNotFunction(s: String) = {
-      val parsed = new Parsed(s)
+      val simple = s.reverse takeWhile (_ != '.') reverse
 
-      (arityClasses contains parsed.unqualifiedPart) ||
+      (arityClasses contains simple) ||
       (s endsWith "Exception") ||
       (s endsWith "Error")
     }
   }
   // members of java.lang.*
-  val javalang = new pkgs.SubCompletor("java.lang") with ForwardingCompletion {
+  val javalang = new pkgs.SubCompletor("java.lang") with Forwarder {
     def forwardTo = pkgs follow "java.lang"
     import reflect.Modifier.isPublic
     private def existsAndPublic(s: String): Boolean = {
@@ -99,19 +110,34 @@ class Completion(repl: Interpreter) {
     val parent = self
   }
 
+  def lastResult = new Forwarder {
+    def forwardTo = ids follow repl.mostRecentVar
+  }
+
+  def lastResultFor(parsed: Parsed) = {
+    /** The logic is a little tortured right now because normally '.' is
+     *  ignored as a delimiter, but on .<tab> it needs to be propagated.
+     */
+    val xs = lastResult completionsFor parsed
+    if (parsed.isEmpty) xs map ("." + _) else xs
+  }
+
   // the list of completion aware objects which should be consulted
   val topLevel: List[CompletionAware] = List(ids, pkgs, predef, scalalang, javalang, literals)
-  def topLevelFor(buffer: String) = topLevel flatMap (_ completionsFor buffer)
+
+  // the first tier of top level objects (doesn't include file completion)
+  def topLevelFor(parsed: Parsed) = topLevel flatMap (_ completionsFor parsed)
 
   // chasing down results which won't parse
   def execute(line: String): Option[Any] = {
-    val parsed = new Parsed(line)
-    import parsed._
+    val parsed = Parsed(line)
+    def noDotOrSlash = line forall (ch => ch != '.' && ch != '/')
 
-    if (!isQualified) None
+    if (noDotOrSlash) None  // we defer all unqualified ids to the repl.
     else {
-      (ids executionFor buffer) orElse
-      (pkgs executionFor buffer)
+      (ids executionFor parsed) orElse
+      (pkgs executionFor parsed) orElse
+      (FileCompletion executionFor line)
     }
   }
 
@@ -119,21 +145,8 @@ class Completion(repl: Interpreter) {
   def lastCommand: Option[String] = None
 
   // jline's entry point
-  lazy val jline: ArgumentCompletor = {
-    // TODO - refine the delimiters
-    //
-    //   public static interface ArgumentDelimiter {
-    //       ArgumentList delimit(String buffer, int argumentPosition);
-    //       boolean isDelimiter(String buffer, int pos);
-    //   }
-    val delimiters = new ArgumentCompletor.AbstractArgumentDelimiter {
-      // val delimChars = "(){},`; \t".toArray
-      val delimChars = "{},`; \t".toArray
-      def isDelimiterChar(s: String, pos: Int) = delimChars contains s.charAt(pos)
-    }
-
-    returning(new ArgumentCompletor(new JLineCompletion, delimiters))(_ setStrict false)
-  }
+  lazy val jline: ArgumentCompletor =
+    returning(new ArgumentCompletor(new JLineCompletion, new JLineDelimiter))(_ setStrict false)
 
   class JLineCompletion extends Completor {
     // For recording the buffer on the last tab hit
@@ -147,21 +160,34 @@ class Completion(repl: Interpreter) {
     private var verbosity = 0
 
     // This is jline's entry point for completion.
-    override def complete(_buffer: String, cursor: Int, candidates: JList[String]): Int = {
+    override def complete(buf: String, cursor: Int, candidates: JList[String]): Int = {
+      // println("complete: buf = %s, cursor = %d".format(buf, cursor))
       if (!isInitialized)
         return cursor
 
-      // println("_buffer = %s, cursor = %d".format(_buffer, cursor))
-      verbosity = if (isConsecutiveTabs(_buffer)) verbosity + 1 else 0
-      lastTab = (_buffer, lastCommand orNull)
+      verbosity = if (isConsecutiveTabs(buf)) verbosity + 1 else 0
+      lastTab = (buf, lastCommand orNull)
 
-      // parse the command buffer
-      val parsed = new Parsed(_buffer)
-      import parsed._
+      // we don't try lower priority completions unless higher ones return no results.
+      def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Int] = {
+        completionFunction(p) match {
+          case Nil  => None
+          case xs   =>
+            // modify in place and return the position
+            xs foreach (candidates add _)
+            Some(p.position)
+        }
+      }
 
-      // modify in place and return the position
-      topLevelFor(buffer) foreach (candidates add _)
-      position
+      // a single dot is special cased to completion on the previous result
+      def lastResultCompletion =
+        if (!looksLikeInvocation(buf)) None
+        else tryCompletion(Parsed.dotted(buf drop 1, cursor), lastResultFor)
+
+      def regularCompletion = tryCompletion(Parsed.dotted(buf, cursor), topLevelFor)
+      def fileCompletion    = tryCompletion(Parsed.undelimited(buf, cursor), FileCompletion completionsFor _.buffer)
+
+      (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse cursor
     }
   }
 }

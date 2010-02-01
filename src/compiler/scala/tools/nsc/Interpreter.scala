@@ -208,7 +208,18 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private val usedNameMap = new HashMap[Name, Request]()
   private val boundNameMap = new HashMap[Name, Request]()
   private def allHandlers = prevRequests.toList flatMap (_.handlers)
-  private def mostRecentHandler = prevRequests.last.handlers.last
+
+  /** Most recent handler which wasn't wholly synthetic. */
+  private def mostRecentHandler: MemberHandler = {
+    for {
+      req <- prevRequests.reverse
+      handler <- req.handlers.reverse
+      name <- handler.generatesValue
+      if !isSynthVarName(name)
+    } return handler
+
+    error("No handlers found.")
+  }
 
   def recordRequest(req: Request) {
     def tripart[T](set1: Set[T], set2: Set[T]) = {
@@ -1055,7 +1066,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   def clazzForIdent(id: String): Option[Class[_]] =
-    extractionValueForIdent(id) map (_.getClass)
+    extractionValueForIdent(id) flatMap (x => Option(x) map (_.getClass))
 
   private def methodsCode(name: String) =
     "%s.%s(%s)".format(classOf[ReflectionCompletion].getName, "methodsOf", name)

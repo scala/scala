@@ -513,17 +513,20 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     /** Here we place ourselves between the user and the interpreter and examine
      *  the input they are ostensibly submitting.  We intervene in several cases:
      *
-     *  1) If the line starts with "." it is treated as an invocation on the last result.
-     *  2) If the line starts with "scala> " it is assumed to be an interpreter paste.
+     *  1) If the line starts with "scala> " it is assumed to be an interpreter paste.
+     *  2) If the line starts with "." (but not ".." or "./") it is treated as an invocation
+     *     on the previous result.
      *  3) If the Completion object's execute returns Some(_), we inject that value
      *     and avoid the interpreter, as it's likely not valid scala code.
      */
     if (code == "") None
-    else if (code startsWith ".") interpretStartingWith(interpreter.mostRecentVar + code)
     else if (code startsWith PROMPT_STRING) {
       updatePasteStamp()
       interpretAsPastedTranscript(List(code))
       None
+    }
+    else if (Completion.looksLikeInvocation(code)) {
+      interpretStartingWith(interpreter.mostRecentVar + code)
     }
     else {
       val result = for (comp <- in.completion ; res <- comp execute code) yield res

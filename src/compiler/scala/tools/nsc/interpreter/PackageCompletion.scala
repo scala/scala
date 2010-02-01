@@ -58,6 +58,7 @@ class PackageCompletion(classpath: List[URL]) extends CompletionAware {
         aliasCompletor(root + "." + segment)
       }
     }
+    override def toString = "SubCompletor(%s)" format root
   }
 }
 
