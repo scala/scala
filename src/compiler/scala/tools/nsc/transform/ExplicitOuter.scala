@@ -63,7 +63,7 @@ abstract class ExplicitOuter extends InfoTransform
   }
 
   def outerAccessor(clazz: Symbol): Symbol = {
-    val firstTry = clazz.info.decl(clazz expandedName nme.OUTER)
+    val firstTry = clazz.info.decl(nme.expandedName(nme.OUTER, clazz))
     if (firstTry != NoSymbol && firstTry.outerSource == clazz) firstTry
     else clazz.info.decls find (_.outerSource == clazz) getOrElse NoSymbol
    }

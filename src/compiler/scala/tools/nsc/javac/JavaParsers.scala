@@ -9,7 +9,7 @@
 package scala.tools.nsc
 package javac
 
-import scala.tools.nsc.util.{Position, OffsetPosition, NoPosition, BatchSourceFile}
+import scala.tools.nsc.util.{OffsetPosition, BatchSourceFile}
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._

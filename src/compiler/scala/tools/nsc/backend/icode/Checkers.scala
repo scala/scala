@@ -84,13 +84,13 @@ abstract class Checkers {
       for (f1 <- cls.fields; f2 <- cls.fields if f1 ne f2)
         if (f1.symbol.name == f2.symbol.name)
           Checkers.this.global.error("Repetitive field name: " +
-                                     f1.symbol.fullNameString);
+                                     f1.symbol.fullName);
 
       for (m1 <- cls.methods; m2 <- cls.methods if m1 ne m2)
         if (m1.symbol.name == m2.symbol.name &&
             m1.symbol.tpe =:= m2.symbol.tpe)
           Checkers.this.global.error("Repetitive method: " +
-                                     m1.symbol.fullNameString);
+                                     m1.symbol.fullName);
       clasz.methods.foreach(check)
     }
 
@@ -241,15 +241,15 @@ abstract class Checkers {
           receiver match {
             case REFERENCE(sym) =>
               checkBool(sym.info.member(method.name) != NoSymbol,
-                        "Method " + method + " does not exist in " + sym.fullNameString);
+                        "Method " + method + " does not exist in " + sym.fullName);
               if (method hasFlag Flags.PRIVATE)
                 checkBool(method.owner == clasz.symbol,
-                          "Cannot call private method of " + method.owner.fullNameString
-                          + " from " + clasz.symbol.fullNameString);
+                          "Cannot call private method of " + method.owner.fullName
+                          + " from " + clasz.symbol.fullName);
               else if (method hasFlag Flags.PROTECTED)
                 checkBool(clasz.symbol isSubClass method.owner,
-                          "Cannot call protected method of " + method.owner.fullNameString
-                          + " from " + clasz.symbol.fullNameString);
+                          "Cannot call protected method of " + method.owner.fullName
+                          + " from " + clasz.symbol.fullName);
 
             case ARRAY(_) =>
               checkBool(receiver.toType.member(method.name) != NoSymbol,

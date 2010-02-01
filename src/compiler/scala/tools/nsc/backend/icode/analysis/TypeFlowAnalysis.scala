@@ -180,7 +180,7 @@ abstract class TypeFlowAnalysis {
           assert(visited.contains(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
       }
-//      log("" + method.symbol.fullNameString + " ["  + method.code.blocks.size + " blocks] "
+//      log("" + method.symbol.fullName + " ["  + method.code.blocks.size + " blocks] "
 //              + "\n\t" + iterations + " iterations: " + t + " ms."
 //              + "\n\tlubs: " + typeFlowLattice.lubs + " out of which " + icodes.lubs0 + " typer lubs")
     }

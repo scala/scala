@@ -14,7 +14,7 @@ import scala.collection.mutable._
 import scala.tools.nsc._
 import scala.tools.nsc.backend.icode._
 import scala.tools.nsc.io._
-import scala.tools.nsc.util.{Position, NoPosition, ClassRep}
+import scala.tools.nsc.util.ClassRep
 
 import ClassfileConstants._
 import Flags._
@@ -49,7 +49,7 @@ abstract class ICodeReader extends ClassfileParser {
 
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
-    val name = cls.fullNameString('.') + (if (sym.hasFlag(MODULE)) "$" else "")
+    val name = cls.fullName('.') + (if (sym.hasFlag(MODULE)) "$" else "")
     classPath.findClass(name) match {
       case Some(ClassRep(bin, _)) =>
         assert(bin.isDefined, "No classfile for " + cls)
@@ -159,7 +159,7 @@ abstract class ICodeReader extends ClassfileParser {
   override def parseMethod() {
     val (jflags, sym) = parseMember(false)
     if (sym != NoSymbol) {
-      log("Parsing method " + sym.fullNameString + ": " + sym.tpe);
+      log("Parsing method " + sym.fullName + ": " + sym.tpe);
       this.method = new IMethod(sym);
       this.method.returnType = toTypeKind(sym.tpe.resultType)
       getCode(jflags).addMethod(this.method)

@@ -528,7 +528,7 @@ abstract class CopyPropagation {
     final def invalidateRecords(state: copyLattice.State) {
       def shouldRetain(sym: Symbol): Boolean = {
         if (sym.hasFlag(symtab.Flags.MUTABLE))
-          log("dropping binding for " + sym.fullNameString)
+          log("dropping binding for " + sym.fullName)
         !sym.hasFlag(symtab.Flags.MUTABLE)
       }
       state.stack = state.stack map { v => v match {
@@ -575,7 +575,7 @@ abstract class CopyPropagation {
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
       for ((p, i) <- paramAccessors.zipWithIndex) {
-//        assert(p.tpe == paramTypes(i), "In: " + ctor.fullNameString
+//        assert(p.tpe == paramTypes(i), "In: " + ctor.fullName
 //               + " having acc: " + (paramAccessors map (_.tpe))+ " vs. params" + paramTypes
 //               + "\n\t failed at pos " + i + " with " + p.tpe + " == " + paramTypes(i))
         if (p.tpe == paramTypes(i))

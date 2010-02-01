@@ -83,7 +83,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   private def invalidatedByRemove(files: Set[AbstractFile]): Set[AbstractFile] = {
     val changes = new mutable.HashMap[Symbol, List[Change]]
     for (f <- files; SymWithHistory(sym, _) <- definitions(f))
-      changes += sym -> List(Removed(Class(sym.fullNameString)))
+      changes += sym -> List(Removed(Class(sym.fullName)))
     invalidated(files, changes)
   }
 
@@ -131,7 +131,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       // Deterministic behaviour required by partest
       val changesOf = new mutable.HashMap[Symbol, List[Change]] {
           override def toString: String = {
-            val syms = toList.sort(_._1.fullNameString < _._1.fullNameString)
+            val syms = toList.sort(_._1.fullName < _._1.fullName)
             val changesOrdered = syms.map(entry => {
               val list = entry._2.sort(_.toString < _.toString)
               entry._1.toString + " -> " + list.mkString("List(", ", ", ")")
@@ -150,7 +150,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           val syms = defs(src)
           for (sym <- syms) {
             definitions(src).find(
-               s => (s.sym.fullNameString == sym.fullNameString) &&
+               s => (s.sym.fullName == sym.fullName) &&
                     isCorrespondingSym(s.sym, sym)) match {
               case Some(SymWithHistory(oldSym, info)) =>
                 val changes = changeSet(oldSym.info, sym)
@@ -169,7 +169,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
           }
           // Create a change for the top level classes that were removed
           val removed = definitions(src) filterNot ((s:SymWithHistory) =>
-            syms.find(_.fullNameString == (s.sym.fullNameString)) != None)
+            syms.find(_.fullName == (s.sym.fullName)) != None)
           for (s <- removed) {
             changesOf(s.sym) = List(removeChangeSet(s.sym))
           }
@@ -235,7 +235,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
 
     for ((oldSym, changes) <- changesOf; change <- changes) {
       def checkParents(cls: Symbol, file: AbstractFile) {
-        val parentChange = cls.info.parents.exists(_.typeSymbol.fullNameString == oldSym.fullNameString)
+        val parentChange = cls.info.parents.exists(_.typeSymbol.fullName == oldSym.fullName)
           // if (settings.buildmanagerdebug.value)
           //   compiler.inform("checkParents " + cls + " oldSym: " + oldSym + " parentChange: " + parentChange + " " + cls.info.parents)
         change match {
@@ -258,10 +258,10 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       def checkInterface(cls: Symbol, file: AbstractFile) {
         change match {
           case Added(Definition(name)) =>
-            if (cls.info.decls.iterator.exists(_.fullNameString == name))
+            if (cls.info.decls.iterator.exists(_.fullName == name))
               invalidate(file, "of new method with existing name", change)
           case Changed(Class(name)) =>
-            if (cls.info.typeSymbol.fullNameString == name)
+            if (cls.info.typeSymbol.fullName == name)
               invalidate(file, "self type changed", change)
           case _ =>
             ()
@@ -299,7 +299,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
               for (Inherited(q, member) <- refs.find(p => (p != null && p.qualifier == name));
                    classFile <- classes.get(q);
                    defs <- definitions.get(classFile);
-                   s <- defs.find(p => p.sym.fullNameString == q)
+                   s <- defs.find(p => p.sym.fullName == q)
                      if ((s.sym).tpe.nonPrivateMember(member) == compiler.NoSymbol))
                 invalidate(file, "it references invalid (no longer inherited) defintion", change)
               ()
@@ -326,7 +326,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
   private def updateDefinitions(files: Set[AbstractFile]) {
     for (src <- files; val localDefs = compiler.dependencyAnalysis.definitions(src)) {
       definitions(src) = (localDefs map (s => {
-        this.classes += s.fullNameString -> src
+        this.classes += s.fullName -> src
         SymWithHistory(
           s.cloneSymbol,
           atPhase(currentRun.erasurePhase.prev) {

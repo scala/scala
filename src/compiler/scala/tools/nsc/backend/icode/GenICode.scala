@@ -11,7 +11,6 @@ package icode
 
 import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, HashSet}
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.util.Position
 import scala.annotation.switch
 import PartialFunction._
 
@@ -97,7 +96,7 @@ abstract class GenICode extends SubComponent  {
         gen(stats, ctx setPackage pid.name)
 
       case ClassDef(mods, name, _, impl) =>
-        log("Generating class: " + tree.symbol.fullNameString)
+        log("Generating class: " + tree.symbol.fullName)
         val outerClass = ctx.clazz
         ctx setClass (new IClass(tree.symbol) setCompilationUnit unit)
         addClassFields(ctx, tree.symbol);
@@ -215,7 +214,7 @@ abstract class GenICode extends SubComponent  {
             case scalaPrimitives.NOT =>
               ctx1.bb.emit(CALL_PRIMITIVE(Arithmetic(NOT, resKind)), larg.pos)
             case _ =>
-              abort("Unknown unary operation: " + fun.symbol.fullNameString +
+              abort("Unknown unary operation: " + fun.symbol.fullName +
                     " code: " + code)
           }
 
@@ -454,7 +453,7 @@ abstract class GenICode extends SubComponent  {
         genCoercion(tree, ctx1, code)
         (ctx1, scalaPrimitives.generatedKind(code))
       }
-      else abort("Primitive operation not handled yet: " + sym.fullNameString + "(" +
+      else abort("Primitive operation not handled yet: " + sym.fullName + "(" +
                   fun.symbol.simpleName + ") " + " at: " + (tree.pos))
     }
 
@@ -574,7 +573,7 @@ abstract class GenICode extends SubComponent  {
           val cast = sym match {
             case Object_isInstanceOf  => false
             case Object_asInstanceOf  => true
-            case _                    => abort("Unexpected type application " + fun + "[sym: " + sym.fullNameString + "]" + " in: " + tree)
+            case _                    => abort("Unexpected type application " + fun + "[sym: " + sym.fullName + "]" + " in: " + tree)
           }
 
           val Select(obj, _) = fun
@@ -658,7 +657,7 @@ abstract class GenICode extends SubComponent  {
             case rt @ REFERENCE(cls) =>
               if (settings.debug.value)
                 assert(ctor.owner == cls,
-                       "Symbol " + ctor.owner.fullNameString + " is different than " + tpt)
+                       "Symbol " + ctor.owner.fullName + " is different than " + tpt)
               val nw = NEW(rt)
               ctx.bb.emit(nw, tree.pos)
               ctx.bb.emit(DUP(generatedType))
@@ -675,7 +674,7 @@ abstract class GenICode extends SubComponent  {
 
         case Apply(fun @ _, List(expr)) if (definitions.isBox(fun.symbol)) =>
           if (settings.debug.value)
-            log("BOX : " + fun.symbol.fullNameString);
+            log("BOX : " + fun.symbol.fullName);
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           val nativeKind = toTypeKind(expr.tpe)
           if (settings.Xdce.value) {
@@ -692,7 +691,7 @@ abstract class GenICode extends SubComponent  {
 
         case Apply(fun @ _, List(expr)) if (definitions.isUnbox(fun.symbol)) =>
           if (settings.debug.value)
-            log("UNBOX : " + fun.symbol.fullNameString)
+            log("UNBOX : " + fun.symbol.fullName)
           val ctx1 = genLoad(expr, ctx, toTypeKind(expr.tpe))
           val boxType = toTypeKind(fun.symbol.owner.linkedClassOfClass.tpe)
           generatedType = boxType
@@ -754,8 +753,8 @@ abstract class GenICode extends SubComponent  {
                 else cm setHostClass qualSym
 
                 if (settings.debug.value) log(
-                  if (qualSym == ArrayClass) "Stored target type kind " + toTypeKind(qual.tpe) + " for " + sym.fullNameString
-                  else "Set more precise host class for " + sym.fullNameString + " host: " + qualSym
+                  if (qualSym == ArrayClass) "Stored target type kind " + toTypeKind(qual.tpe) + " for " + sym.fullName
+                  else "Set more precise host class for " + sym.fullName + " host: " + qualSym
                 )
               case _ =>
             }

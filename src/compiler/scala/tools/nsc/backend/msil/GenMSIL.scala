@@ -13,7 +13,6 @@ import java.nio.{ByteBuffer, ByteOrder}
 
 import scala.collection.mutable.{Map, HashMap, HashSet, Stack, ListBuffer}
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.util.Position
 
 import ch.epfl.lamp.compiler.msil.{Type => MsilType, _}
 import ch.epfl.lamp.compiler.msil.emit._
@@ -518,7 +517,7 @@ abstract class GenMSIL extends SubComponent {
           dumpMirrorClass(sym)
         else
           log("No mirror class for module with linked class: " +
-              sym.fullNameString)
+              sym.fullName)
       }
 
       addSymtabAttribute(sym, tBuilder)
@@ -1532,7 +1531,7 @@ abstract class GenMSIL extends SubComponent {
         return "scala.runtime.Null$"
 
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
-        sym.fullNameString
+        sym.fullName
        else
          sym.simpleName.toString().trim()) + suffix
     }
@@ -1677,7 +1676,7 @@ abstract class GenMSIL extends SubComponent {
       case None =>
         def typeString(sym: Symbol): String = {
           val s = if (sym.isNestedClass) typeString(sym.owner) +"+"+ sym.simpleName
-                  else sym.fullNameString
+                  else sym.fullName
           if (sym.isModuleClass && !sym.isTrait) s + "$" else s
         }
         val name = typeString(sym)
@@ -1755,7 +1754,7 @@ abstract class GenMSIL extends SubComponent {
       for (ifield <- iclass.fields) {
         val sym = ifield.symbol
         if (settings.debug.value)
-          log("Adding field: " + sym.fullNameString)
+          log("Adding field: " + sym.fullName)
 
         var attributes = msilFieldFlags(sym)
         val fBuilder = mtype.DefineField(msilName(sym), msilType(sym.tpe), attributes)
@@ -1768,7 +1767,7 @@ abstract class GenMSIL extends SubComponent {
         val sym = m.symbol
         if (settings.debug.value)
           log("Creating MethodBuilder for " + Flags.flagsToString(sym.flags) + " " +
-              sym.owner.fullNameString + "::" + sym.name)
+              sym.owner.fullName + "::" + sym.name)
 
         val ownerType = getType(sym.enclClass).asInstanceOf[TypeBuilder]
         assert(mtype == ownerType, "mtype = " + mtype + "; ownerType = " + ownerType)
@@ -1855,7 +1854,7 @@ abstract class GenMSIL extends SubComponent {
         case Some(sym) => sym
         case None =>
           //val mclass = types(moduleClassSym)
-          val mClass = clrTypes.getType(moduleClassSym.fullNameString + "$")
+          val mClass = clrTypes.getType(moduleClassSym.fullName + "$")
           val mfield = mClass.GetField("MODULE$")
           assert(mfield ne null, "module not found " + showsym(moduleClassSym))
           fields(moduleClassSym) = mfield
@@ -2039,7 +2038,7 @@ abstract class GenMSIL extends SubComponent {
         if (constr eq null) {
           System.out.println("Cannot find constructor " + sym.owner + "::" + sym.name)
           System.out.println("scope = " + sym.owner.tpe.decls)
-          throw new Error(sym.fullNameString)
+          throw new Error(sym.fullName)
         }
         else {
           mapConstructor(sym, constr)
@@ -2073,7 +2072,7 @@ abstract class GenMSIL extends SubComponent {
             if (method eq null) {
               System.out.println("Cannot find method " + sym.owner + "::" + msilName(sym))
               System.out.println("scope = " + sym.owner.tpe.decls)
-              throw new Error(sym.fullNameString)
+              throw new Error(sym.fullName)
             }
             else {
               mapMethod(sym, method)

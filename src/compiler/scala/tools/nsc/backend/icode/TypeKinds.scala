@@ -261,7 +261,7 @@ trait TypeKinds { self: ICodes =>
            "REFERENCE to NoSymbol not allowed!")
 
     override def toString(): String =
-      "REFERENCE(" + cls.fullNameString + ")"
+      "REFERENCE(" + cls.fullName + ")"
 
     /**
      * Approximate `lub'. The common type of two references is
@@ -306,7 +306,7 @@ trait TypeKinds { self: ICodes =>
 //       abort(toString() + " maxType " + other.toString());
 
 //     override def toString(): String =
-//       "VALUE(" + cls.fullNameString + ")";
+//       "VALUE(" + cls.fullName + ")";
 //   }
 
   def ArrayN(elem: TypeKind, dims: Int): ARRAY = {

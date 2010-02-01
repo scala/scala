@@ -9,7 +9,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.tools.nsc.util.Position
 import scala.collection.mutable.{ListBuffer, HashMap}
 
 abstract class CleanUp extends Transform with ast.TreeDSL {

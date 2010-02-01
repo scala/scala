@@ -162,7 +162,7 @@ abstract class TailCalls extends Transform
           newCtx.label.setInfo(MethodType(currentClassParam :: tree.symbol.tpe.params, tree.symbol.tpe.finalResultType))
           newCtx.tailPos = true
 
-          val isEligible = newCtx.currentMethod.isFinal || (newCtx.currentMethod.enclClass hasFlag Flags.MODULE)
+          val isEligible = newCtx.currentMethod.isEffectivelyFinal || (newCtx.currentMethod.enclClass hasFlag Flags.MODULE)
           // If -Ytailrecommend is given, we speculatively try transforming ineligible methods and
           // report where we would have been successful.
           val recommend = settings.Ytailrec.value
@@ -270,7 +270,7 @@ abstract class TailCalls extends Transform
 
         case Apply(tapply @ TypeApply(fun, targs), vargs) =>
           lazy val defaultTree = treeCopy.Apply(tree, tapply, transformTrees(vargs, mkContext(ctx, false)))
-          if ( ctx.currentMethod.isFinal &&
+          if ( ctx.currentMethod.isEffectivelyFinal &&
                ctx.tailPos &&
                isSameTypes(ctx.tparams, targs map (_.tpe.typeSymbol)) &&
                isRecursiveCall(fun)) {
@@ -299,7 +299,7 @@ abstract class TailCalls extends Transform
 
         case Apply(fun, args) =>
           lazy val defaultTree = treeCopy.Apply(tree, fun, transformTrees(args, mkContext(ctx, false)))
-          if (ctx.currentMethod.isFinal &&
+          if (ctx.currentMethod.isEffectivelyFinal &&
               ctx.tailPos &&
               isRecursiveCall(fun)) {
             fun match {

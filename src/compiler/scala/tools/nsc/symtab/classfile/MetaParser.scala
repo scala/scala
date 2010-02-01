@@ -11,7 +11,6 @@ package classfile
 import java.util.{StringTokenizer, NoSuchElementException}
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.{Position,NoPosition}
 
 abstract class MetaParser{
 

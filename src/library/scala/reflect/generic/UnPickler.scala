@@ -43,6 +43,8 @@ abstract class UnPickler {
     }
   }
 
+  /** To ne implemented in subclasses. Like `unpickle` but without the catch-all error handling.
+   */
   def scan(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String)
 
   abstract class Scan(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) extends PickleBuffer(bytes, offset, -1) {

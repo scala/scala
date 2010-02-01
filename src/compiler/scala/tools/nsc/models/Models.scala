@@ -8,7 +8,6 @@ package scala.tools.nsc
 package models
 
 import scala.tools.nsc.Global
-import scala.tools.nsc.util.{Position,NoPosition}
 
 /** This abstract class ...
  *

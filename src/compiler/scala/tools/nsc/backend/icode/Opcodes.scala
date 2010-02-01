@@ -170,7 +170,7 @@ trait Opcodes { self: ICodes =>
     case class LOAD_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "LOAD_FIELD " + (if (isStatic) field.fullNameString else field.toString());
+        "LOAD_FIELD " + (if (isStatic) field.fullName else field.toString());
 
       override def consumed = if (isStatic) 0 else 1
       override def produced = 1
@@ -320,7 +320,7 @@ trait Opcodes { self: ICodes =>
     case class CALL_METHOD(method: Symbol, style: InvokeStyle) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "CALL_METHOD " + hostClass.fullNameString + method.fullNameString +" ("+style.toString()+")";
+        "CALL_METHOD " + hostClass.fullName + method.fullName +" ("+style.toString()+")";
 
       var hostClass: Symbol = method.owner;
       def setHostClass(cls: Symbol): this.type = { hostClass = cls; this }

@@ -150,7 +150,7 @@ self =>
     val tree = locateTree(pos)
     val sw = new StringWriter
     val pw = new PrintWriter(sw)
-    treePrinters.create(pw).print(tree)
+    newTreePrinter(pw).print(tree)
     pw.flush
 
     val typed = new Response[Tree]
@@ -159,7 +159,7 @@ self =>
       case Some(tree) =>
         val sw = new StringWriter
         val pw = new PrintWriter(sw)
-        treePrinters.create(pw).print(tree)
+        newTreePrinter(pw).print(tree)
         pw.flush
         sw.toString
       case None => "<None>"

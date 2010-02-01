@@ -328,10 +328,10 @@ abstract class Inliners extends SubComponent {
                     if (receiver != msym.owner && receiver != NoSymbol) {
                       if (settings.debug.value)
                         log("" + i + " has actual receiver: " + receiver);
-                      if (!concreteMethod.isFinal && receiver.isFinal) {
+                      if (!concreteMethod.isEffectivelyFinal && receiver.isFinal) {
                         concreteMethod = lookupImpl(concreteMethod, receiver)
                         if (settings.debug.value)
-                          log("\tlooked up method: " + concreteMethod.fullNameString)
+                          log("\tlooked up method: " + concreteMethod.fullName)
                       }
                     }
 
@@ -342,11 +342,11 @@ abstract class Inliners extends SubComponent {
                       log("Treating " + i
                           + "\n\treceiver: " + receiver
                           + "\n\ticodes.available: " + icodes.available(receiver)
-                          + "\n\tconcreteMethod.isFinal: " + concreteMethod.isFinal);
+                          + "\n\tconcreteMethod.isEffectivelyFinal: " + concreteMethod.isFinal);
 
                     if (   icodes.available(receiver)
                         && (isClosureClass(receiver)
-                            || concreteMethod.isFinal
+                            || concreteMethod.isEffectivelyFinal
                             || receiver.isFinal)) {
                       icodes.icode(receiver).get.lookupMethod(concreteMethod) match {
                         case Some(inc) =>
@@ -387,7 +387,7 @@ abstract class Inliners extends SubComponent {
                 }
                 info = tfa.interpret(info, i)
               }}}
-        if (tfa.stat) log(m.symbol.fullNameString + " iterations: " + tfa.iterations + " (size: " + m.code.blocks.length + ")")
+        if (tfa.stat) log(m.symbol.fullName + " iterations: " + tfa.iterations + " (size: " + m.code.blocks.length + ")")
       }} while (retry && count < 15)
       m.normalize
 		}
@@ -402,7 +402,7 @@ abstract class Inliners extends SubComponent {
     /** Should the given method be loaded from disk? */
     def shouldLoad(receiver: Symbol, method: Symbol): Boolean = {
       if (settings.debug.value) log("shouldLoad: " + receiver + "." + method)
-      ((method.isFinal && isMonadMethod(method) && isHigherOrderMethod(method))
+      ((method.isEffectivelyFinal && isMonadMethod(method) && isHigherOrderMethod(method))
         || (receiver.enclosingPackage == definitions.ScalaRunTimeModule.enclosingPackage)
         || (receiver == definitions.PredefModule.moduleClass)
         || (method.hasAnnotation(ScalaInlineAttr)))
@@ -488,7 +488,7 @@ abstract class Inliners extends SubComponent {
     }
 
     private def lookupImpl(meth: Symbol, clazz: Symbol): Symbol = {
-      //println("\t\tlooking up " + meth + " in " + clazz.fullNameString + " meth.owner = " + meth.owner)
+      //println("\t\tlooking up " + meth + " in " + clazz.fullName + " meth.owner = " + meth.owner)
       if (meth.owner == clazz
           || clazz == definitions.NullClass
           || clazz == definitions.NothingClass) meth

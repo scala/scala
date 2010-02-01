@@ -219,8 +219,6 @@ trait Reifiers {
         if (rsym == reflect.NoSymbol) throw new TypeError("cannot reify symbol: " + tree.symbol)
         else reflect.Select(reify(qual), reify(tree.symbol))
 
-      case _ : StubTree => reflect.Literal(0)
-
       case Literal(constant) =>
         reflect.Literal(constant.value)
 

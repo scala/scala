@@ -7,7 +7,6 @@
 package scala.tools.nsc
 package transform
 
-import util.Position
 import scala.collection.mutable.{Map, HashMap}
 
 /** A base class for transforms.

@@ -9,7 +9,6 @@ package transform
 
 import symtab.Flags._
 import scala.collection.mutable.{HashMap, HashSet}
-import scala.tools.nsc.util.Position
 
 /*<export>*/
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
@@ -64,8 +63,6 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case MethodType(params, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
           assert(false, "unexpected curried method types with intervening exitential")
           tp0
-        case mt: ImplicitMethodType =>
-          apply(MethodType(mt.params, mt.resultType))
         case PolyType(List(), restpe) => // nullary method type
           apply(MethodType(List(), restpe))
         case PolyType(tparams, restpe) => // polymorphic nullary method type, since it didn't occur in a higher-kinded position

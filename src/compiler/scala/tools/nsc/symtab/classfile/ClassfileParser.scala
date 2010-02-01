@@ -14,7 +14,7 @@ import java.lang.Integer.toHexString
 import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position, NoPosition, ClassRep}
+import scala.tools.nsc.util.ClassRep
 import scala.annotation.switch
 
 /** This abstract class implements a class file parser.
@@ -244,7 +244,7 @@ abstract class ClassfileParser {
               log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
               f = if (tpe.isInstanceOf[MethodType]) owner.newMethod(owner.pos, name).setInfo(tpe)
                   else owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE)
-              log("created fake member " + f.fullNameString)
+              log("created fake member " + f.fullName)
             }
 //            println("\townerTpe.decls: " + ownerTpe.decls)
 //            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.typeSymbol + "\n\tand found: " + ownerTpe.members)
@@ -820,7 +820,7 @@ abstract class ClassfileParser {
           val srcfileLeaf = pool.getName(in.nextChar).toString.trim
           val srcpath = sym.enclosingPackage match {
             case NoSymbol => srcfileLeaf
-            case pkg => pkg.fullNameString(File.separatorChar)+File.separator+srcfileLeaf
+            case pkg => pkg.fullName(File.separatorChar)+File.separator+srcfileLeaf
           }
           srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
         case _ =>

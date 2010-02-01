@@ -14,6 +14,7 @@ package scala.util
 /**
  *  @author  Martin Odersky
  */
+@deprecated("use reflect.NameTransformer instead")
 object NameTransformer {
   private val nops = 128
   private val ncodes = 26 * 26

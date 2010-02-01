@@ -9,7 +9,6 @@ import comment._
 import scala.collection._
 
 import symtab.Flags
-import util.Position
 
 /** This trait extracts all required information for documentation from compilation units */
 class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =>
@@ -466,7 +465,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
           nameBuffer append ')'
         case TypeRef(pre, aSym, targs) =>
           val bSym = normalizeTemplate(aSym)
-          if (bSym.isTypeMember)
+          if (bSym.isNonClassType)
             nameBuffer append bSym.name
           else {
             val tpl = makeTemplate(bSym)

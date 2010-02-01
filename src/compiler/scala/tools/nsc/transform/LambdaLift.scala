@@ -11,7 +11,6 @@ import symtab._
 import Flags._
 import util.TreeSet
 import scala.collection.mutable.{HashMap, LinkedHashMap, ListBuffer}
-import scala.tools.nsc.util.{Position, NoPosition}
 
 abstract class LambdaLift extends InfoTransform {
   import global._

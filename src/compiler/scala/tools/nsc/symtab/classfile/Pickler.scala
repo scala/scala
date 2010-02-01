@@ -271,11 +271,11 @@ abstract class Pickler extends SubComponent {
             putEntry(from)
             putEntry(to)
           }
-
-        case DocDef(comment, definition) =>
+/*
+        case DocDef(comment, definition) =>  should not be needed
           putConstant(Constant(comment))
           putTree(definition)
-
+*/
         case Template(parents, self, body) =>
           writeNat(parents.length)
           putTrees(parents)

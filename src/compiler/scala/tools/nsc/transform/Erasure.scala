@@ -10,7 +10,6 @@ package transform
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 import scala.collection.mutable.{HashMap,ListBuffer}
 import scala.collection.immutable.Set
-import scala.tools.nsc.util.Position
 import symtab._
 import Flags._
 
@@ -192,7 +191,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             traverse(st.supertype)
           case TypeRef(pre, sym, args) =>
             if (sym == ArrayClass) args foreach traverse
-            else if (sym.isTypeParameterOrSkolem || sym.isExistential || !args.isEmpty) result = true
+            else if (sym.isTypeParameterOrSkolem || sym.isExistentiallyBound || !args.isEmpty) result = true
             else if (sym.isClass) traverse(rebindInnerClass(pre, sym)) // #2585
             else if (!sym.owner.isPackageClass) traverse(pre)
           case PolyType(_, _) | ExistentialType(_, _) =>
@@ -254,7 +253,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
               }
             }
           def classSig: String =
-            "L"+atPhase(currentRun.icodePhase)(sym.fullNameString + global.genJVM.moduleSuffix(sym)).replace('.', '/')
+            "L"+atPhase(currentRun.icodePhase)(sym.fullName + global.genJVM.moduleSuffix(sym)).replace('.', '/')
           def classSigSuffix: String =
             "."+sym.name
           if (sym == ArrayClass)
