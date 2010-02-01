@@ -203,7 +203,10 @@ trait DependencyAnalysis extends SubComponent with Files {
               for (s <- t.params) checkType(s.tpe)
 
             case t: TypeRef    =>
-              if (t.sym.isAliasType) updateReferences(t.typeSymbolDirect.fullNameString)
+              if (t.sym.isAliasType) {
+                  updateReferences(t.typeSymbolDirect.fullNameString)
+                  checkType(t.typeSymbolDirect.info)
+              }
               updateReferences(t.typeSymbol.fullNameString)
               for (tp <- t.args) checkType(tp)
 
