@@ -101,7 +101,7 @@ abstract class Changes {
     case (mt1 @ MethodType(params1, res1), mt2 @ MethodType(params2, res2)) =>
       // new dependent types: probably fix this, use substSym as done for PolyType
       (sameTypes(tp1.paramTypes, tp2.paramTypes) &&
-      (tp1.params corresponds tp2.params)((t1, t2) => sameSymbol(t1, t2) && sameFlags(t1, t2)) && // @PP: corresponds
+      (tp1.params corresponds tp2.params)((t1, t2) => sameSymbol(t1, t2) && sameFlags(t1, t2)) &&
       sameType(res1, res2) &&
       mt1.isImplicit == mt2.isImplicit)
 

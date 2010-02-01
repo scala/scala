@@ -167,7 +167,8 @@ trait DependencyAnalysis extends SubComponent with Files {
           }
 
           tree match {
-            case cdef: ClassDef if !cdef.symbol.hasFlag(Flags.PACKAGE) =>
+            case cdef: ClassDef if !cdef.symbol.hasFlag(Flags.PACKAGE) &&
+                                   !cdef.symbol.isAnonymousFunction =>
               buf += cdef.symbol
               atPhase(currentRun.erasurePhase.prev) {
                 for (s <- cdef.symbol.info.decls)

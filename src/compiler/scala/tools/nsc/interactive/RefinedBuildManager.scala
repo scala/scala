@@ -131,9 +131,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       // Deterministic behaviour required by partest
       val changesOf = new mutable.HashMap[Symbol, List[Change]] {
           override def toString: String = {
-            val syms = toList.sort(_._1.fullName < _._1.fullName)
+            val syms = toList.sortWith(_._1.fullName < _._1.fullName)
             val changesOrdered = syms.map(entry => {
-              val list = entry._2.sort(_.toString < _.toString)
+              val list = entry._2.sortWith(_.toString < _.toString)
               entry._1.toString + " -> " + list.mkString("List(", ", ", ")")
               })
             changesOrdered.mkString("Map(", ", ", ")")
