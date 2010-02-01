@@ -8,7 +8,6 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.HashMap
-import scala.tools.nsc.util.Position
 import symtab.Flags
 import symtab.Flags._
 
@@ -29,7 +28,7 @@ trait Namers { self: Analyzer =>
       case TypeRef(pre, sym, args)
       if (sym.isTypeSkolem && (tparams contains sym.deSkolemize)) =>
 //        println("DESKOLEMIZING "+sym+" in "+sym.owner)
-        mapOver(rawTypeRef(NoPrefix, sym.deSkolemize, args))
+        mapOver(TypeRef(NoPrefix, sym.deSkolemize, args))
 /*
       case PolyType(tparams1, restpe) =>
         new DeSkolemizeMap(tparams1 ::: tparams).mapOver(tp)
@@ -76,7 +75,7 @@ trait Namers { self: Analyzer =>
     }
 
     def inConstructorFlag: Long =
-      if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarly) INCONSTRUCTOR
+      if (context.owner.isConstructor && !context.inConstructorSuffix || context.owner.isEarlyInitialized) INCONSTRUCTOR
       else 0l
 
     def moduleClassFlags(moduleFlags: Long) =
@@ -127,6 +126,7 @@ trait Namers { self: Analyzer =>
         unsafeTypeParams foreach(sym => paramContext.scope.enter(sym))
         newNamer(paramContext)
       }
+
       def usePrimary = sym.isTerm && (
         (sym hasFlag PARAMACCESSOR) ||
         ((sym hasFlag PARAM) && sym.owner.isPrimaryConstructor)
@@ -837,9 +837,7 @@ trait Namers { self: Analyzer =>
         val params = vparams map (vparam =>
           if (meth hasFlag JAVA) vparam.setInfo(objToAny(vparam.tpe)) else vparam)
         val restpe1 = convertToDeBruijn(vparams, 1)(restpe) // new dependent types: replace symbols in restpe with the ones in vparams
-        if (!vparams.isEmpty && vparams.head.hasFlag(IMPLICIT))
-          ImplicitMethodType(params, restpe1)
-        else if (meth hasFlag JAVA) JavaMethodType(params, restpe1)
+        if (meth hasFlag JAVA) JavaMethodType(params, restpe1)
         else MethodType(params, restpe1)
       }
 
@@ -946,7 +944,7 @@ trait Namers { self: Analyzer =>
         // match empty and missing parameter list
         if (vparamss.isEmpty && baseParamss == List(Nil)) baseParamss = Nil
         if (vparamss == List(Nil) && baseParamss.isEmpty) baseParamss = List(Nil)
-        assert(!overrides || vparamss.length == baseParamss.length, ""+ meth.fullNameString + ", "+ overridden.fullNameString)
+        assert(!overrides || vparamss.length == baseParamss.length, ""+ meth.fullName + ", "+ overridden.fullName)
 
       var ownerNamer: Option[Namer] = None
       var moduleNamer: Option[(ClassDef, Namer)] = None
@@ -957,7 +955,7 @@ trait Namers { self: Analyzer =>
       // denotes the parameter lists which are on the left side of the current one. these get added
       // to the default getter. Example: "def foo(a: Int)(b: Int = a)" gives "foo$default$1(a: Int) = a"
       (List[List[ValDef]]() /: (vparamss))((previous: List[List[ValDef]], vparams: List[ValDef]) => {
-        assert(!overrides || vparams.length == baseParamss.head.length, ""+ meth.fullNameString + ", "+ overridden.fullNameString)
+        assert(!overrides || vparams.length == baseParamss.head.length, ""+ meth.fullName + ", "+ overridden.fullName)
         var baseParams = if (overrides) baseParamss.head else Nil
         for (vparam <- vparams) {
           val sym = vparam.symbol

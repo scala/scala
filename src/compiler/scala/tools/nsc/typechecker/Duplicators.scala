@@ -97,7 +97,7 @@ abstract class Duplicators extends Analyzer {
       val tpe2: Type = (new FixInvalidSyms)(tpe1)
       val tpe3 = tpe2 match {
         case TypeRef(_, sym, _) if (sym.owner == oldClassOwner) =>
-          log("seeing " + sym.fullNameString + " from a different angle")
+          log("seeing " + sym.fullName + " from a different angle")
           tpe2.asSeenFrom(newClassOwner.thisType, oldClassOwner)
         case _ => tpe2
       }

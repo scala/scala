@@ -192,7 +192,7 @@ abstract class TreeGen
     mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf))
 
   def mkClassOf(tp: Type): Tree =
-    Literal(Constant(tp)) setType Predef_classOfType(tp)
+    Literal(Constant(tp)) setType ClassType(tp)
 
   def mkCheckInit(tree: Tree): Tree = {
     val tpe =

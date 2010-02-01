@@ -14,7 +14,6 @@ import util.{HashSet, Position, NoPosition}
 import util.Statistics._
 import Flags._
 
-
 /* A standard type pattern match:
   case ErrorType =>
     // internal: error
@@ -60,8 +59,7 @@ import Flags._
   case DeBruijnIndex(level, index)
 */
 
-trait Types {
-  self: SymbolTable =>
+trait Types extends reflect.generic.Types { self: SymbolTable =>
   import definitions._
 
 
@@ -236,7 +234,7 @@ trait Types {
   }
 
   /** The base class for all types */
-  abstract class Type {
+  abstract class Type extends AbsType {
 
     /** Types for which asSeenFrom always is the identity, no matter what
      *  prefix or owner.
@@ -348,6 +346,11 @@ trait Types {
     def resultType: Type = this
 
     def resultType(actuals: List[Type]) = this
+
+    /** If this is a TypeRef `clazz`[`T`], return the argument `T`
+     *  otherwise return this type
+     */
+    def remove(clazz: Symbol): Type = this
 
     def resultApprox: Type = ApproximateDeBruijnMap(resultType)
 
@@ -719,16 +722,9 @@ trait Types {
         typeVarToOriginMap(this) eq this
     }
 
-    /** Is this type completed (i.e. not a lazy type)?
-     */
-    def isComplete: Boolean = true
-
     /** Is this type a varargs parameter?
      */
     def isVarargs: Boolean = typeSymbol == RepeatedParamClass
-
-    /** If this is a lazy type, assign a new type to `sym'. */
-    def complete(sym: Symbol) {}
 
     /** If this is a symbol loader type, load and assign a new type to
      *  `sym'.
@@ -899,23 +895,7 @@ trait Types {
 
     /** The kind of this type; used for debugging */
     def kind: String = "unknown type of class "+getClass()
-
-    override def toString: String =
-      if (tostringRecursions >= maxTostringRecursions)
-        "..."
-      else
-        try {
-          tostringRecursions += 1
-          safeToString
-        } finally {
-          tostringRecursions -= 1
-        }
-
-    def safeToString: String = super.toString
   }
-
-  private final val maxTostringRecursions = 50
-  private var tostringRecursions = 0
 
 // Subclasses ------------------------------------------------------------
 
@@ -1020,12 +1000,6 @@ trait Types {
     override def kind = "NoPrefixType"
   }
 
-  def ThisType(sym: Symbol) = {
-    if (!phase.erasedTypes) unique(new ThisType(sym) with UniqueType)
-    else if (sym.isImplClass) sym.typeOfThis
-    else sym.tpe
-  }
-
   /** A class for this-types of the form <sym>.this.type
    */
   abstract case class ThisType(sym: Symbol) extends SingletonType {
@@ -1039,7 +1013,7 @@ trait Types {
       if (settings.debug.value) sym.nameString + ".this."
       else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper || sym.isScalaPackageClass) ""
       else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
-      else if (sym.isModuleClass) sym.fullNameString + "."
+      else if (sym.isModuleClass) sym.fullName + "."
       else sym.nameString + ".this."
     override def safeToString: String =
       if (sym.isRoot) "<root>"
@@ -1047,6 +1021,13 @@ trait Types {
       else super.safeToString
     override def narrow: Type = this
     override def kind = "ThisType"
+  }
+
+  object ThisType extends ThisTypeExtractor {
+    def apply(sym: Symbol): Type =
+      if (!phase.erasedTypes) unique(new ThisType(sym) with UniqueType)
+      else if (sym.isImplClass) sym.typeOfThis
+      else sym.tpe
   }
 
   case class DeBruijnIndex(level: Int, paramId: Int) extends Type {
@@ -1102,22 +1083,9 @@ trait Types {
       else pre.prefixString + sym.nameString + "."
     override def kind = "SingleType"
   }
-/*
-  object SingleType {
-    def apply(pre: Type, sym: Symbol): Type = {
-      if (phase.erasedTypes)
-        sym.tpe.resultType
-      else if (sym.isRootPackage)
-        ThisType(RootClass)
-      else {
-        var sym1 = rebind(pre, sym)
-        val pre1 = removeSuper(pre, sym1)
-        if (pre1 ne pre) sym1 = rebind(pre1, sym1)
-        unique(new SingleType(pre1, sym1) with UniqueType)
-      }
-    }
-  }
-*/
+
+  object SingleType extends SingleTypeExtractor
+
   abstract case class SuperType(thistpe: Type, supertpe: Type) extends SingletonType {
     override val isTrivial: Boolean = thistpe.isTrivial && supertpe.isTrivial
     override def isNotNull = true;
@@ -1132,9 +1100,11 @@ trait Types {
     override def kind = "SuperType"
   }
 
-  def SuperType(thistp: Type, supertp: Type): Type =
-    if (phase.erasedTypes) supertp
-    else unique(new SuperType(thistp, supertp) with UniqueType)
+  object SuperType extends SuperTypeExtractor {
+    def apply(thistp: Type, supertp: Type): Type =
+      if (phase.erasedTypes) supertp
+      else unique(new SuperType(thistp, supertp) with UniqueType)
+  }
 
   /** A class for the bounds of abstract types and type parameters
    */
@@ -1151,8 +1121,10 @@ trait Types {
     override def kind = "TypeBoundsType"
   }
 
-  def TypeBounds(lo: Type, hi: Type): TypeBounds =
-    unique(new TypeBounds(lo, hi) with UniqueType)
+  object TypeBounds extends TypeBoundsExtractor {
+    def apply(lo: Type, hi: Type): TypeBounds =
+      unique(new TypeBounds(lo, hi) with UniqueType)
+  }
 
   /** A common base class for intersection types and class types
    */
@@ -1306,13 +1278,13 @@ trait Types {
       if (isHigherKinded)
         PolyType(
           typeParams,
-          refinementOfClass(
-            typeSymbol,
+          RefinedType(
             parents map {
               case TypeRef(pre, sym, List()) => TypeRef(pre, sym, dummyArgs)
               case p => p
             },
-            decls))
+            decls,
+            typeSymbol))
       else super.normalize
     }
 
@@ -1344,6 +1316,11 @@ trait Types {
     }
 
     override def kind = "RefinedType"
+  }
+
+  object RefinedType extends RefinedTypeExtractor {
+    def apply(parents: List[Type], decls: Scope, clazz: Symbol) =
+      new RefinedType(parents, decls) { override def typeSymbol = clazz }
   }
 
   /** A class representing a class info
@@ -1486,6 +1463,8 @@ trait Types {
     override def kind = "ClassInfoType"
   }
 
+  object ClassInfoType extends ClassInfoTypeExtractor
+
   class PackageClassInfoType(decls: Scope, clazz: Symbol)
   extends ClassInfoType(List(), decls, clazz)
 
@@ -1506,14 +1485,16 @@ trait Types {
     override def kind = "ConstantType"
   }
 
-  def ConstantType(value: Constant) = {
-    class UniqueConstantType extends ConstantType(value) with UniqueType {
-      /** Save the type of 'value'. For Java enums, it depends on finding the linked class,
-       *  which might not be found after 'flatten'. */
-      private lazy val _tpe: Type = value.tpe
-      override def underlying: Type = _tpe
+  object ConstantType extends ConstantTypeExtractor {
+    def apply(value: Constant): ConstantType = {
+      class UniqueConstantType extends ConstantType(value) with UniqueType {
+        /** Save the type of 'value'. For Java enums, it depends on finding the linked class,
+         *  which might not be found after 'flatten'. */
+        private lazy val _tpe: Type = value.tpe
+        override def underlying: Type = _tpe
+      }
+      unique(new UniqueConstantType)
     }
-    unique(new UniqueConstantType)
   }
 
   /** A class for named types of the form
@@ -1526,7 +1507,7 @@ trait Types {
    *  @param sym  ...
    *  @param args ...
    */
-  case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
+  abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends Type {
 //    assert(!sym.isAbstractType || pre.isStable || pre.isError)
 //    assert(!pre.isInstanceOf[ClassInfoType], this)
 //    assert(!(sym hasFlag (PARAM | EXISTENTIAL)) || pre == NoPrefix, this)
@@ -1567,10 +1548,10 @@ trait Types {
 
     def thisInfo     =
       if (sym.isAliasType) normalize
-      else if (sym.isTypeMember) transformInfo(sym.info)
+      else if (sym.isNonClassType) transformInfo(sym.info)
       else sym.info
 
-    def relativeInfo = if (sym.isTypeMember) transformInfo(pre.memberInfo(sym)) else pre.memberInfo(sym)
+    def relativeInfo = if (sym.isNonClassType) transformInfo(pre.memberInfo(sym)) else pre.memberInfo(sym)
 
     override def typeSymbol = if (sym.isAliasType) normalize.typeSymbol else sym
     override def termSymbol = if (sym.isAliasType) normalize.termSymbol else super.termSymbol
@@ -1632,7 +1613,7 @@ A type's typeSymbol should never be inspected directly.
     // (!result.isEmpty) IFF isHigherKinded
     override def typeParams: List[Symbol] = if (isHigherKinded) typeParamsDirect else List()
 
-    override def typeConstructor = rawTypeRef(pre, sym, List())
+    override def typeConstructor = TypeRef(pre, sym, List())
 
     // a reference (in a Scala program) to a type that has type parameters, but where the reference does not include type arguments
     // note that it doesn't matter whether the symbol refers to a java or scala symbol,
@@ -1661,6 +1642,9 @@ A type's typeSymbol should never be inspected directly.
         assert(xform ne this, this)
         xform.dealias
       } else this
+
+    override def remove(clazz: Symbol): Type =
+      if (sym == clazz && !args.isEmpty) args.head else this
 
     def normalize0: Type =
       if (sym.isAliasType) { // beta-reduce
@@ -1774,7 +1758,7 @@ A type's typeSymbol should never be inspected directly.
       }
       val monopart =
         if (!settings.debug.value &&
-            (shorthands contains sym.fullNameString) &&
+            (shorthands contains sym.fullName) &&
             (sym.ownerChain forall (_.isClass))) // ensure that symbol is not a local copy with a name coincidence
           sym.name.toString
         else
@@ -1808,13 +1792,20 @@ A type's typeSymbol should never be inspected directly.
                sym.isAnonymousClass || sym.isRefinementClass || sym.isScalaPackageClass)
         ""
       else if (sym.isPackageClass)
-        sym.fullNameString + "."
+        sym.fullName + "."
       else if (isStable && (sym.name.toString endsWith ".type"))
         sym.name.toString.substring(0, sym.name.length - 4)
       else
         super.prefixString
 
       override def kind = "TypeRef"
+  }
+
+  object TypeRef extends TypeRefExtractor {
+    def apply(pre: Type, sym: Symbol, args: List[Type]): Type = {
+      class rawTypeRef extends TypeRef(pre, sym, args) with UniqueType
+      unique(new rawTypeRef)
+    }
   }
 
   /** A class representing a method type with parameters.
@@ -1824,12 +1815,8 @@ A type's typeSymbol should never be inspected directly.
     override val isTrivial: Boolean =
       params.forall(_.tpe.isTrivial) && resultType.isTrivial
 
-    // The comment at ImplicitMethodType says the class is no longer needed,
-    // "a method type is implicit if the first parameter has the IMPLICIT flag".
-    // Should that change be pursued, then this method should be:
-    // def isImplicit = vparams.nonEmpty && (vparams.head hasFlag IMPLICIT)
-    def isImplicit = false
-    def isJava = false
+    def isImplicit = params.nonEmpty && params.head.isImplicit
+    def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
 
     //assert(paramTypes forall (pt => !pt.typeSymbol.isImplClass))//DEBUG
     override def paramSectionCount: Int = resultType.paramSectionCount + 1
@@ -1873,11 +1860,7 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "MethodType"
   }
 
-  // todo: this class is no longer needed, a method type is implicit if the first
-  // parameter has the IMPLICIT flag
-  class ImplicitMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt) {
-    override def isImplicit = true
-  }
+  object MethodType extends MethodTypeExtractor
 
   class JavaMethodType(ps: List[Symbol], rt: Type) extends MethodType(ps, rt) {
     override def isJava = true
@@ -1934,6 +1917,8 @@ A type's typeSymbol should never be inspected directly.
 
     override def kind = "PolyType"
   }
+
+  object PolyType extends PolyTypeExtractor
 
   case class ExistentialType(quantified: List[Symbol],
                              override val underlying: Type) extends RewrappingTypeProxy
@@ -2028,6 +2013,8 @@ A type's typeSymbol should never be inspected directly.
       }
     }
   }
+
+  object ExistentialType extends ExistentialTypeExtractor
 
   /** A class containing the alternatives and type prefix of an overloaded symbol.
    *  Not used after phase `typer'.
@@ -2305,6 +2292,8 @@ A type's typeSymbol should never be inspected directly.
     override def kind = "AnnotatedType"
   }
 
+  object AnnotatedType extends AnnotatedTypeExtractor
+
   /** A class representing types with a name. When an application uses
    *  named arguments, the named argument types for calling isApplicable
    *  are represented as NamedType.
@@ -2315,10 +2304,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** A class representing an as-yet unevaluated type.
    */
-  abstract class LazyType extends Type {
-    override def isComplete: Boolean = false
-    override def complete(sym: Symbol)
-    override def safeToString = "<?>"
+  abstract class LazyType extends Type with AbsLazyType {
     override def kind = "LazyType"
   }
 
@@ -2329,7 +2315,7 @@ A type's typeSymbol should never be inspected directly.
    */
   private def rebind(pre: Type, sym: Symbol): Symbol = {
     val owner = sym.owner
-    if (owner.isClass && owner != pre.typeSymbol && !sym.isFinal && !sym.isClass) {
+    if (owner.isClass && owner != pre.typeSymbol && !sym.isEffectivelyFinal && !sym.isClass) {
       //Console.println("rebind "+pre+" "+sym)//DEBUG
       val rebind = pre.nonPrivateMember(sym.name).suchThat(sym => sym.isType || sym.isStable)
       if (rebind == NoSymbol) sym
@@ -2345,7 +2331,7 @@ A type's typeSymbol should never be inspected directly.
    */
   private def removeSuper(tp: Type, sym: Symbol): Type = tp match {
     case SuperType(thistp, _) =>
-      if (sym.isFinal || sym.isDeferred) thistp
+      if (sym.isEffectivelyFinal || sym.isDeferred) thistp
       else tp
     case _ =>
       tp
@@ -2365,20 +2351,13 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  def refinementOfClass(clazz: Symbol, parents: List[Type], decls: Scope) = {
-   class RefinementOfClass extends RefinedType(parents, decls) {
-      override def typeSymbol: Symbol = clazz
-    }
-    new RefinementOfClass
-  }
-
   /** the canonical creator for a refined type with a given scope */
   def refinedType(parents: List[Type], owner: Symbol, decls: Scope, pos : Position): Type = {
     if (phase.erasedTypes)
       if (parents.isEmpty) ObjectClass.tpe else parents.head
     else {
       val clazz = owner.newRefinementClass(NoPosition)
-      val result = refinementOfClass(clazz, parents, decls)
+      val result = RefinedType(parents, decls, clazz)
       clazz.setInfo(result)
       result
     }
@@ -2427,7 +2406,7 @@ A type's typeSymbol should never be inspected directly.
       transform(sym1.info) // check there are no cycles
       sym1.unlock()
 */
-      rawTypeRef(pre, sym1, args) // don't expand type alias (cycles checked above)
+      TypeRef(pre, sym1, args) // don't expand type alias (cycles checked above)
     } else {
       val pre1 = removeSuper(pre, sym1)
       if (pre1 ne pre) {
@@ -2438,31 +2417,20 @@ A type's typeSymbol should never be inspected directly.
         // sharpen prefix so that it is maximal and still contains the class.
         var p = pre.parents.reverse
         while (!p.isEmpty && p.head.member(sym1.name) != sym1) p = p.tail
-        if (p.isEmpty) rawTypeRef(pre, sym1, args)
+        if (p.isEmpty) TypeRef(pre, sym1, args)
         else typeRef(p.head, sym1, args)
       } else {
-        rawTypeRef(pre, sym1, args)
+        TypeRef(pre, sym1, args)
       }
     }
   }
-
-  /** create a type-ref as found, without checks or rebinds */
-  def rawTypeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
-    class rawTypeRef extends TypeRef(pre, sym, args) with UniqueType
-    unique(new rawTypeRef)
-  }
-
-  /** The canonical creator for implicit method types */
-  def ImplicitMethodType(params: List[Symbol], resultType: Type): ImplicitMethodType =
-    new ImplicitMethodType(params, resultType) // don't unique this!
 
   /** The canonical creator for implicit method types */
   def JavaMethodType(params: List[Symbol], resultType: Type): JavaMethodType =
     new JavaMethodType(params, resultType) // don't unique this!
 
-  /** Create a new MethodType of the same class as tp, i.e. keep Java / ImplicitMethodType */
+  /** Create a new MethodType of the same class as tp, i.e. keep JavaMethodType */
   def copyMethodType(tp: Type, params: List[Symbol], restpe: Type): Type = tp match {
-    case _: ImplicitMethodType => ImplicitMethodType(params, restpe)
     case _: JavaMethodType => JavaMethodType(params, restpe)
     case _ => MethodType(params, restpe)
   }
@@ -4480,7 +4448,7 @@ A type's typeSymbol should never be inspected directly.
         params1.length == params2.length && // useful pre-secreening optimization
         matchingParams(params1, params2, tp1.isInstanceOf[JavaMethodType], tp2.isInstanceOf[JavaMethodType]) &&
         matchesType(res1, res2, alwaysMatchSimple) &&
-        tp1.isInstanceOf[ImplicitMethodType] == tp2.isInstanceOf[ImplicitMethodType]
+        tp1.isImplicit == tp2.isImplicit
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
         matchesQuantified(tparams1, tparams2, res1, res2)
       case (PolyType(List(), rtp1), MethodType(List(), rtp2)) =>

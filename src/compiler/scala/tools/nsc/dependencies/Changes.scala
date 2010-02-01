@@ -42,7 +42,7 @@ abstract class Changes {
   case class ParentChanged(e: Entity) extends Change
 
   private def sameSymbol(sym1: Symbol, sym2: Symbol): Boolean =
-    sym1.fullNameString == sym2.fullNameString
+    sym1.fullName == sym2.fullName
   private def sameFlags(sym1: Symbol, sym2: Symbol): Boolean =
     sym1.flags == sym2.flags
   private def sameAnnotations(sym1: Symbol, sym2: Symbol): Boolean =
@@ -197,6 +197,6 @@ abstract class Changes {
   def parentChangeSet(sym: Symbol): Change = ParentChanged(toEntity(sym))
 
   private def toEntity(sym: Symbol): Entity =
-    if (sym.isClass) Class(sym.fullNameString)
-    else Definition(sym.fullNameString)
+    if (sym.isClass) Class(sym.fullName)
+    else Definition(sym.fullName)
 }

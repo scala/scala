@@ -7,8 +7,6 @@
 package scala.tools.nsc
 package matching
 
-import util.Position
-import ast.{ TreePrinters, Trees }
 import symtab.SymbolTable
 import transform.ExplicitOuter
 import java.io.{ StringWriter, PrintWriter }

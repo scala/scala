@@ -33,4 +33,7 @@ self: scala.tools.nsc.symtab.SymbolTable =>
   def ensureNonOverlapping(tree: Tree, others: List[Tree]) {}
 
   def validatePositions(tree: Tree) {}
+
+  type Position = scala.tools.nsc.util.Position
+  val NoPosition = scala.tools.nsc.util.NoPosition
 }

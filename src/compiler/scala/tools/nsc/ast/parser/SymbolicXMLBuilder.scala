@@ -10,7 +10,6 @@ package ast.parser
 import collection.mutable.Map
 import xml.{ EntityRef, Text }
 import xml.XML.{ xmlns }
-import util.Position
 import symtab.Flags.MUTABLE
 
 /** This class builds instance of <code>Tree</code> that represent XML.

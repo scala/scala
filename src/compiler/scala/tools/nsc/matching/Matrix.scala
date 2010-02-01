@@ -7,7 +7,6 @@ package scala.tools.nsc
 package matching
 
 import transform.ExplicitOuter
-import util.Position
 import symtab.Flags
 
 trait Matrix extends MatrixAdditions {

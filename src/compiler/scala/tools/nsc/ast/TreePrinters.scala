@@ -12,14 +12,13 @@ import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import symtab.Flags._
 import symtab.SymbolTable
 
-abstract class TreePrinters {
-  val trees: SymbolTable
-  import trees._
+trait TreePrinters { trees: SymbolTable =>
+
   import treeInfo.{ IsTrue, IsFalse }
 
   final val showOuterTests = false
 
-  class TreePrinter(out: PrintWriter) {
+  class TreePrinter(out: PrintWriter) extends trees.AbsTreePrinter(out) {
     protected var indentMargin = 0
     protected val indentStep = 2
     protected var indentString = "                                        " // 40
@@ -32,7 +31,7 @@ abstract class TreePrinters {
     protected def doPrintPositions = settings.Xprintpos.value
     def printPosition(tree: Tree) = if (doPrintPositions) print(tree.pos.show)
 
-    def println {
+    def println() {
       out.println()
       while (indentMargin > indentString.length())
         indentString += indentString
@@ -49,8 +48,8 @@ abstract class TreePrinters {
     }
 
     def printColumn(ts: List[Tree], start: String, sep: String, end: String) {
-      print(start); indent; println
-      printSeq(ts){print}{print(sep); println}; undent; println; print(end)
+      print(start); indent; println()
+      printSeq(ts){print}{print(sep); println()}; undent; println(); print(end)
     }
 
     def printRow(ts: List[Tree], start: String, sep: String, end: String) {
@@ -138,7 +137,7 @@ abstract class TreePrinters {
 
       annots foreach (annot => print("@"+annot+" "))
       if (annots.nonEmpty)
-        println
+        println()
     }
 
     def print(str: String) { out.print(str) }
@@ -221,7 +220,7 @@ abstract class TreePrinters {
           }
 
         case DocDef(comment, definition) =>
-          print(comment.raw); println; print(definition)
+          print(comment.raw); println(); print(definition)
 
         case Template(parents, self, body) =>
           val currentOwner1 = currentOwner
@@ -287,10 +286,10 @@ abstract class TreePrinters {
           print(lhs); print(" = "); print(rhs)
 
         case If(cond, thenp, elsep) =>
-          print("if ("); print(cond); print(")"); indent; println
+          print("if ("); print(cond); print(")"); indent; println()
           print(thenp); undent
           if (!elsep.isEmpty) {
-            println; print("else"); indent; println; print(elsep); undent
+            println(); print("else"); indent; println(); print(elsep); undent
           }
 
         case Return(expr) =>
@@ -383,9 +382,6 @@ abstract class TreePrinters {
         case SelectFromArray(qualifier, name, _) =>
           print(qualifier); print(".<arr>"); print(symName(tree, name))
 
-        case tree: StubTree =>
-          print(tree.toString)
-
         case tree =>
           print("<unknown tree of class "+tree.getClass+">")
       }
@@ -399,7 +395,7 @@ abstract class TreePrinters {
       printRaw(
         if (tree.isDef && tree.symbol != NoSymbol && tree.symbol.isInitialized) {
           tree match {
-            case ClassDef(_, _, _, impl @ Template(ps, trees.emptyValDef, body))
+            case ClassDef(_, _, _, impl @ Template(ps, emptyValDef, body))
             if (tree.symbol.thisSym != tree.symbol) =>
               ClassDef(tree.symbol, Template(ps, ValDef(tree.symbol.thisSym), body))
             case ClassDef(_, _, _, impl)           => ClassDef(tree.symbol, impl)
@@ -415,14 +411,13 @@ abstract class TreePrinters {
     def print(unit: CompilationUnit) {
       print("// Scala source: " + unit.source + LINE_SEPARATOR)
       if (unit.body ne null) {
-        print(unit.body); println
+        print(unit.body); println()
       } else {
         print("<null>")
       }
-      println; flush
+      println(); flush
     }
   }
-
 
   /** A tree printer which is stingier about vertical whitespace and unnecessary
    *  punctuation than the standard one.
@@ -517,7 +512,7 @@ abstract class TreePrinters {
         // If thenp or elsep has only one statement, it doesn't need more than one line.
         case If(cond, thenp, elsep) =>
           def ifIndented(x: Tree) = {
-            indent ; println ; printRaw(x) ; undent
+            indent ; println() ; printRaw(x) ; undent
           }
 
           val List(thenStmts, elseStmts) = List(thenp, elsep) map allStatements
@@ -531,12 +526,12 @@ abstract class TreePrinters {
 
           if (elseStmts.nonEmpty) {
             print("else")
-            indent ; println
+            indent ; println()
             elseStmts match {
               case List(x)  => printRaw(x)
               case _        => printRaw(elsep)
             }
-            undent ; println
+            undent ; println()
           }
         case _        => s()
       }
@@ -648,16 +643,22 @@ abstract class TreePrinters {
     printer.flush()
     buffer.toString
   }
-  def asString(t: Tree): String = asStringInternal(t, create)
-  def asCompactString(t: Tree): String = asStringInternal(t, createCompact)
+  def asString(t: Tree): String = asStringInternal(t, newStandardTreePrinter)
+  def asCompactString(t: Tree): String = asStringInternal(t, newCompactTreePrinter)
 
-  def create(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
-  def create(stream: OutputStream): TreePrinter = create(new PrintWriter(stream))
-  def create(): TreePrinter = create(new PrintWriter(ConsoleWriter))
+  def newStandardTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
+  def newStandardTreePrinter(stream: OutputStream): TreePrinter = newStandardTreePrinter(new PrintWriter(stream))
+  def newStandardTreePrinter(): TreePrinter = newStandardTreePrinter(new PrintWriter(ConsoleWriter))
 
-  def createCompact(writer: PrintWriter): CompactTreePrinter = new CompactTreePrinter(writer)
-  def createCompact(stream: OutputStream): CompactTreePrinter = createCompact(new PrintWriter(stream))
-  def createCompact(): CompactTreePrinter = createCompact(new PrintWriter(ConsoleWriter))
+  def newCompactTreePrinter(writer: PrintWriter): CompactTreePrinter = new CompactTreePrinter(writer)
+  def newCompactTreePrinter(stream: OutputStream): CompactTreePrinter = newCompactTreePrinter(new PrintWriter(stream))
+  def newCompactTreePrinter(): CompactTreePrinter = newCompactTreePrinter(new PrintWriter(ConsoleWriter))
+
+  def newTreePrinter(writer: PrintWriter): TreePrinter =
+    if (settings.Ycompacttrees.value) newCompactTreePrinter(writer)
+    else newStandardTreePrinter(writer)
+  def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))
+  def newTreePrinter(): TreePrinter = newTreePrinter(new PrintWriter(ConsoleWriter))
 
   /** A writer that writes to the current Console and
    * is sensitive to replacement of the Console's

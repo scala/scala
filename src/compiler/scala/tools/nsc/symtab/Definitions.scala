@@ -11,10 +11,10 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.util.{Position, NoPosition}
 import Flags._
 
-trait Definitions {
+trait Definitions extends reflect.generic.StandardDefinitions {
   self: SymbolTable =>
 
-  object definitions {
+  object definitions extends AbsDefinitions {
     def isDefinitionsInitialized = isInitialized
 
     // Working around bug #2133
@@ -30,7 +30,7 @@ trait Definitions {
       val rp=NoSymbol.newValue(NoPosition, nme.ROOTPKG)
         .setFlag(FINAL | MODULE | PACKAGE | JAVA)
         .setInfo(PolyType(List(), RootClass.tpe))
-      RootClass.setSourceModule(rp)
+      RootClass.sourceModule = rp
       rp
     }
     lazy val RootClass: ModuleClassSymbol = NoSymbol.newModuleClass(NoPosition, nme.ROOT.toTypeName)
@@ -140,10 +140,6 @@ trait Definitions {
     // fundamental modules
     lazy val PredefModule: Symbol = getModule("scala.Predef")
       def Predef_classOf = getMember(PredefModule, nme.classOf)
-      def Predef_classOfType(classType: Type): Type =
-        if (!ClassClass.unsafeTypeParams.isEmpty && !phase.erasedTypes)
-          appliedType(ClassClass.tpe, List(classType))
-        else ClassClass.tpe
       def Predef_error    = getMember(PredefModule, nme.error)
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
@@ -348,6 +344,10 @@ trait Definitions {
 
     def seqType(arg: Type) = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
     def arrayType(arg: Type) = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))
+
+    def ClassType(arg: Type) =
+      if (ClassClass.unsafeTypeParams.isEmpty || phase.erasedTypes) ClassClass.tpe
+      else appliedType(ClassClass.tpe, List(arg))
 
     //
     // .NET backend
@@ -598,7 +598,7 @@ trait Definitions {
     val abbrvTag = new HashMap[Symbol, Char]
     val numericWidth = new HashMap[Symbol, Int]
 
-    private def newValueClass(name: Name, tag: Char, width: Int): Symbol = {
+    private[symtab] def newValueClass(name: Name, tag: Char, width: Int): Symbol = {
       val boxedName = sn.Boxed(name)
 
       val clazz = newClass(ScalaPackageClass, name, anyvalparam) setFlag (ABSTRACT | FINAL)
@@ -737,6 +737,7 @@ trait Definitions {
       case _ => false
     }
 
+    // todo: reconcile with javaSignature!!!
     def signature(tp: Type): String = {
       def erasure(tp: Type): Type = tp match {
         case st: SubType => erasure(st.supertype)
@@ -744,7 +745,7 @@ trait Definitions {
         case _ => tp
       }
       def flatNameString(sym: Symbol, separator: Char): String =
-        if (sym.owner.isPackageClass) sym.fullNameString('.') + (if (sym.isModuleClass) "$" else "")
+        if (sym.owner.isPackageClass) sym.fullName('.') + (if (sym.isModuleClass) "$" else "")
         else flatNameString(sym.owner, separator) + "$" + sym.simpleName;
       def signature1(etp: Type): String = {
         if (etp.typeSymbol == ArrayClass) "[" + signature1(erasure(etp.normalize.typeArgs.head))

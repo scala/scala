@@ -127,7 +127,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
 // ------------------ Reporting -------------------------------------
 
-  import util.NoPosition
   def error(msg: String) = reporter.error(NoPosition, msg)
   def warning(msg: String) = reporter.warning(NoPosition, msg)
   def inform(msg: String) = reporter.info(NoPosition, msg, true)
@@ -928,7 +927,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def getFile(clazz: Symbol, suffix: String): File = {
     val outdirname = settings.outputDirs.outputDirFor(clazz.sourceFile)
     var outdir = new File(if (outdirname.path == "") "." else outdirname.path)
-    val filename = clazz.fullNameString('.')
+    val filename = clazz.fullName
     var start = 0
     var end = filename.indexOf('.', start)
     while (end >= start) {

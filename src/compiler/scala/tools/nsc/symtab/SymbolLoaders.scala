@@ -14,7 +14,7 @@ import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position, NoPosition, ClassPath, ClassRep, JavaClassPath, MsilClassPath}
+import scala.tools.nsc.util.{ClassPath, ClassRep, JavaClassPath, MsilClassPath}
 import classfile.ClassfileParser
 import Flags._
 
@@ -110,7 +110,7 @@ abstract class SymbolLoaders {
     def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader) {
       val owner = if (root.isRoot) definitions.EmptyPackageClass else root
       val className = newTermName(name)
-      assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullNameString + "." + name)
+      assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullName + "." + name)
       val clazz = owner.newClass(NoPosition, name.toTypeName)
       val module = owner.newModule(NoPosition, name)
       clazz setInfo completer

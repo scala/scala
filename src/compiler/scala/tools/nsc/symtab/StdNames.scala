@@ -9,10 +9,9 @@ package symtab
 
 import scala.util.NameTransformer
 
-trait StdNames {
-  self: SymbolTable =>
+trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
 
-  object nme {
+  object nme extends StandardNames {
 
     // Scala keywords; enter them first to minimize scanner.maxKey
     val ABSTRACTkw = newTermName("abstract")
@@ -73,7 +72,6 @@ trait StdNames {
 
     val LOCALDUMMY_PREFIX_STRING = "<local "
     val SUPER_PREFIX_STRING = "super$"
-    val EXPAND_SEPARATOR_STRING = "$$"
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val TUPLE_FIELD_PREFIX_STRING = "_"
     val CHECK_IF_REFUTABLE_STRING = "check$ifrefutable$"
@@ -88,7 +86,7 @@ trait StdNames {
     def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name+">")
     def TUPLE_FIELD(index: Int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index)
 
-    val LOCAL_SUFFIX = newTermName(" ")
+    val LOCAL_SUFFIX = newTermName(LOCAL_SUFFIX_STRING)
     val SETTER_SUFFIX = encode("_=")
     val IMPL_CLASS_SUFFIX = newTermName("$class")
     val MODULE_SUFFIX = newTermName("$module")
@@ -116,9 +114,13 @@ trait StdNames {
         chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
       }
 
+    /** The expanded setter name of `name' relative to this class `base`
+     */
+    def expandedSetterName(name: Name, base: Symbol): Name =
+      expandedName(name, base, separator = TRAIT_SETTER_SEPARATOR_STRING)
+
     /** If `name' is an expandedName name, the original name.
      *  Otherwise `name' itself.
-     *  @see Symbol.expandedName
      */
     def originalName(name: Name): Name = {
       var i = name.length
@@ -183,19 +185,11 @@ trait StdNames {
     val LOCALCHILD = newTypeName("<local child>")
 
     val NOSYMBOL = newTermName("<none>")
-    val EMPTY = newTermName("")
     val ANYNAME = newTermName("<anyname>")
     val WILDCARD = newTermName("_")
     val WILDCARD_STAR = newTermName("_*")
 
-    val ANON_CLASS_NAME = newTermName("$anon")
-    val ANON_FUN_NAME = newTermName("$anonfun")
-    val REFINE_CLASS_NAME = newTermName("<refinement>")
-    val EMPTY_PACKAGE_NAME = newTermName("<empty>")
-    val IMPORT = newTermName("<import>")
     val STAR = newTermName("*")
-    val ROOT = newTermName("<root>")
-    val ROOTPKG = newTermName("_root_")
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>")
     val JAVA_REPEATED_PARAM_CLASS_NAME = newTermName("<repeated...>")
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>")

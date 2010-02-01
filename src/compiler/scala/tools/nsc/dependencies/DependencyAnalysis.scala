@@ -160,7 +160,7 @@ trait DependencyAnalysis extends SubComponent with Files {
               && ((tree.symbol.sourceFile eq null)
                   || (tree.symbol.sourceFile.path != file.path))
               && (!tree.symbol.isClassConstructor)) {
-            updateReferences(tree.symbol.fullNameString)
+            updateReferences(tree.symbol.fullName)
             atPhase(currentRun.uncurryPhase.prev) {
               checkType(tree.symbol.tpe)
             }
@@ -204,18 +204,18 @@ trait DependencyAnalysis extends SubComponent with Files {
 
             case t: TypeRef    =>
               if (t.sym.isAliasType) {
-                  updateReferences(t.typeSymbolDirect.fullNameString)
+                  updateReferences(t.typeSymbolDirect.fullName)
                   checkType(t.typeSymbolDirect.info)
               }
-              updateReferences(t.typeSymbol.fullNameString)
+              updateReferences(t.typeSymbol.fullName)
               for (tp <- t.args) checkType(tp)
 
             case t: PolyType   =>
               checkType(t.resultType)
-              updateReferences(t.typeSymbol.fullNameString)
+              updateReferences(t.typeSymbol.fullName)
 
             case t             =>
-              updateReferences(t.typeSymbol.fullNameString)
+              updateReferences(t.typeSymbol.fullName)
           }
 
         def updateReferences(s: String): Unit =

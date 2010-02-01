@@ -16,7 +16,7 @@ import java.security.MessageDigest
  *  @author  Martin Odersky
  *  @version 1.0, 05/02/2005
  */
-class Names {
+trait Names extends reflect.generic.Names {
 
 // Operations -------------------------------------------------------------
 
@@ -163,6 +163,9 @@ class Names {
    */
   def newTypeName(bs: Array[Byte], offset: Int, len: Int): Name =
     newTermName(bs, offset, len).toTypeName
+
+  def mkTermName(name: Name) = name.toTermName
+  def mkTypeName(name: Name) = name.toTypeName
 
   def nameChars: Array[Char] = chrs
 

@@ -15,7 +15,6 @@ import scala.collection.immutable.{Set, ListSet}
 import scala.collection.mutable.{Map, HashMap, HashSet}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
-import scala.tools.nsc.util.{Position, NoPosition}
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 
 import ch.epfl.lamp.fjbg._
@@ -77,7 +76,7 @@ abstract class GenJVM extends SubComponent {
     val MIN_SWITCH_DENSITY = 0.7
     val INNER_CLASSES_FLAGS =
       (ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED | ACC_STATIC | ACC_FINAL | ACC_INTERFACE | ACC_ABSTRACT)
-    val StringBuilderClass = definitions.getClass2("scala.StringBuilder", "scala.collection.mutable.StringBuilder").fullNameString
+    val StringBuilderClass = definitions.getClass2("scala.StringBuilder", "scala.collection.mutable.StringBuilder").fullName
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
     val StringBuilderType = new JObjectType(StringBuilderClass)
@@ -210,7 +209,7 @@ abstract class GenJVM extends SubComponent {
             dumpMirrorClass(c.symbol, c.cunit.source.toString);
           else
             log("No mirror class for module with linked class: " +
-                c.symbol.fullNameString)
+                c.symbol.fullName)
         }
       }
       else {
@@ -437,7 +436,7 @@ abstract class GenJVM extends SubComponent {
           && !(sym.isMethod && sym.hasFlag(Flags.LIFTED))
           && !(sym.ownerChain exists (_.isImplClass))) {  // @M don't generate java generics sigs for (members of) implementation classes, as they are monomorphic (TODO: ok?)
         val memberTpe = atPhase(currentRun.erasurePhase)(owner.thisType.memberInfo(sym))
-        // println("addGenericSignature sym: " + sym.fullNameString + " : " + memberTpe + " sym.info: " + sym.info)
+        // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
         erasure.javaSig(sym, memberTpe) match {
           case Some(sig) =>
@@ -543,7 +542,7 @@ abstract class GenJVM extends SubComponent {
 
     def genField(f: IField) {
       if (settings.debug.value)
-        log("Adding field: " + f.symbol.fullNameString);
+        log("Adding field: " + f.symbol.fullName);
       var attributes = 0
 
       f.symbol.annotations foreach { a => a match {
@@ -568,7 +567,7 @@ abstract class GenJVM extends SubComponent {
     def genMethod(m: IMethod) {
       if (m.isStaticCtor) return
 
-      log("Generating method " + m.symbol.fullNameString)
+      log("Generating method " + m.symbol.fullName)
       method = m
       endPC.clear
       computeLocalVarsIndex(m)
@@ -1142,11 +1141,11 @@ abstract class GenJVM extends SubComponent {
           case BOX(kind) =>
             val boxedType = definitions.boxedClass(kind.toType.typeSymbol)
             val mtype = new JMethodType(javaType(boxedType), Array(javaType(kind)))
-            jcode.emitINVOKESTATIC(BoxesRunTime, "boxTo" + boxedType.cleanNameString, mtype)
+            jcode.emitINVOKESTATIC(BoxesRunTime, "boxTo" + boxedType.decodedName, mtype)
 
           case UNBOX(kind) =>
             val mtype = new JMethodType(javaType(kind), Array(JObjectType.JAVA_LANG_OBJECT))
-            jcode.emitINVOKESTATIC(BoxesRunTime, "unboxTo" + kind.toType.typeSymbol.cleanNameString, mtype)
+            jcode.emitINVOKESTATIC(BoxesRunTime, "unboxTo" + kind.toType.typeSymbol.decodedName, mtype)
 
           case NEW(REFERENCE(cls)) =>
             val className = javaName(cls)
@@ -1715,7 +1714,7 @@ abstract class GenJVM extends SubComponent {
       }
 
       (if (sym.isClass || (sym.isModule && !sym.isMethod))
-        sym.fullNameString('/')
+        sym.fullName('/')
       else
         sym.simpleName.toString.trim()) + suffix
     }
@@ -1775,7 +1774,7 @@ abstract class GenJVM extends SubComponent {
 
     /** Calls to methods in 'sym' need invokeinterface? */
     def needsInterfaceCall(sym: Symbol): Boolean = {
-      log("checking for interface call: " + sym.fullNameString)
+      log("checking for interface call: " + sym.fullName)
       // the following call to 'info' may cause certain symbols to fail loading because we're
       // too late in the compilation chain (aliases to overloaded symbols will not be properly
       // resolved, see scala.Range, method super$++ that fails in UnPickler at LazyTypeRefAndAlias.complete

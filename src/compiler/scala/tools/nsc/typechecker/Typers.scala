@@ -14,7 +14,7 @@ package typechecker
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.control.ControlException
 import scala.tools.nsc.interactive.RangePositions
-import scala.tools.nsc.util.{ Position, Set, NoPosition, SourceFile, BatchSourceFile }
+import scala.tools.nsc.util.{Set, SourceFile, BatchSourceFile}
 import symtab.Flags._
 
 import util.Statistics
@@ -334,7 +334,7 @@ trait Typers { self: Analyzer =>
       tp match {
         case TypeRef(pre, sym, args) =>
           (checkNotLocked(sym)) && (
-            !sym.isTypeMember ||
+            !sym.isNonClassType ||
             checkNonCyclic(pos, appliedType(pre.memberInfo(sym), args), sym)   // @M! info for a type ref to a type parameter now returns a polytype
             // @M was: checkNonCyclic(pos, pre.memberInfo(sym).subst(sym.typeParams, args), sym)
           )
@@ -817,7 +817,7 @@ trait Typers { self: Analyzer =>
                       TypeTree(tparam.tpeHK) setPos tree.pos.focus)) setPos tree.pos //@M/tcpolyinfer: changed tparam.tpe to tparam.tpeHK
         context.undetparams = context.undetparams ::: tparams1
         adapt(tree1 setType restpe.substSym(tparams, tparams1), mode, pt, original)
-      case mt: ImplicitMethodType if ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
+      case mt: MethodType if mt.isImplicit && ((mode & (EXPRmode | FUNmode | LHSmode)) == EXPRmode) => // (4.1)
         if (!context.undetparams.isEmpty/* && (mode & POLYmode) == 0 disabled to make implicits in new collection work; we should revisit this. */) { // (9)
           // println("adapt IMT: "+(context.undetparams, pt)) //@MDEBUG
           context.undetparams = inferExprInstance(
@@ -1255,9 +1255,9 @@ trait Typers { self: Analyzer =>
 
 /*
       if (settings.Xshowcls.value != "" &&
-          settings.Xshowcls.value == context.owner.fullNameString)
+          settings.Xshowcls.value == context.owner.fullName)
         println("INFO "+context.owner+
-                ", baseclasses = "+(context.owner.info.baseClasses map (_.fullNameString))+
+                ", baseclasses = "+(context.owner.info.baseClasses map (_.fullName))+
                 ", lin = "+(context.owner.info.baseClasses map (context.owner.thisType.baseType)))
 */
     }
@@ -2676,7 +2676,7 @@ trait Typers { self: Analyzer =>
             for (name <- names) {
               if (!name.annotations.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List())) &&
                   !name.hasFlag(DEFAULTPARAM))
-                error(ann.pos, "annotation " + annType.typeSymbol.fullNameString + " is missing argument " + name.name)
+                error(ann.pos, "annotation " + annType.typeSymbol.fullName + " is missing argument " + name.name)
             }
 
             if (hasError) annotationError
@@ -3085,14 +3085,9 @@ trait Typers { self: Analyzer =>
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
-        def mayBeVarGetter(sym: Symbol) = sym.info match {
-          case PolyType(List(), _) => sym.owner.isClass && !sym.isStable
-          case _: ImplicitMethodType => sym.owner.isClass && !sym.isStable
-          case _ => false
-        }
         val lhs1 = typed(lhs, EXPRmode | LHSmode, WildcardType)
         val varsym = lhs1.symbol
-        if ((varsym ne null) && mayBeVarGetter(varsym))
+        if ((varsym ne null) && treeInfo.mayBeVarGetter(varsym))
           lhs1 match {
             case Select(qual, name) =>
               return typed(
@@ -3305,10 +3300,14 @@ trait Typers { self: Analyzer =>
             case fun1: Tree =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
               incCounter(typedApplyCount)
+              def isImplicitMethod(tpe: Type) = tpe match {
+                case mt: MethodType => mt.isImplicit
+                case _ => false
+              }
               val res =
                 if (phase.id <= currentRun.typerPhase.id &&
                     fun2.isInstanceOf[Select] &&
-                    !fun2.tpe.isInstanceOf[ImplicitMethodType] &&
+                    !isImplicitMethod(fun2.tpe) &&
                     ((fun2.symbol eq null) || !fun2.symbol.isConstructor) &&
                     (mode & (EXPRmode | SNDTRYmode)) == EXPRmode) {
                       tryTypedApply(fun2, args)
@@ -3698,7 +3697,7 @@ trait Typers { self: Analyzer =>
                   //@M! the polytype denotes the expected kind
               }
             val argtypes = args1 map (_.tpe)
-            val owntype = if (tpt1.symbol.isClass || tpt1.symbol.isTypeMember)
+            val owntype = if (tpt1.symbol.isClass || tpt1.symbol.isNonClassType)
                              // @M! added the latter condition
                              appliedType(tpt1.tpe, argtypes)
                           else tpt1.tpe.instantiateTypeParams(tparams, argtypes)

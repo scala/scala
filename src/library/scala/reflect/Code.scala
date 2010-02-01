@@ -12,7 +12,7 @@
 package scala.reflect
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
-class Code[Type](val tree: Tree)
+class Code[T](val tree: Tree)
 
 /** This type is required by the compiler and <b>should not be used in client code</b>. */
 object Code {

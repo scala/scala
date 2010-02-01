@@ -98,7 +98,7 @@ abstract class TreeInfo {
 
   def mayBeVarGetter(sym: Symbol) = sym.info match {
     case PolyType(List(), _) => sym.owner.isClass && !sym.isStable
-    case _: ImplicitMethodType => sym.owner.isClass && !sym.isStable
+    case mt: MethodType => mt.isImplicit && sym.owner.isClass && !sym.isStable
     case _ => false
   }
 

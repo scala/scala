@@ -9,7 +9,6 @@ package typechecker
 
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
-import util.Position
 
 /** This phase adds super accessors for all super calls that
  *  either appear in a trait or have as a target a member of some outer class.

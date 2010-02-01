@@ -7,20 +7,12 @@
 package scala.tools.nsc
 package ast
 
-import java.io.{PrintWriter, StringWriter}
-
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.symtab.{Flags, SymbolTable}
+import scala.tools.nsc.symtab.SymbolTable
 import scala.tools.nsc.symtab.Flags._
-import scala.tools.nsc.util.{FreshNameCreator, HashSet, Position, NoPosition, SourceFile}
+import scala.tools.nsc.util.{FreshNameCreator, HashSet, SourceFile}
 
-
-trait Trees {
-  self: SymbolTable =>
-
-  //statistics
-
-  var nodeCount = 0
+trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   trait CompilationUnitTrait {
     var body: Tree
@@ -32,13 +24,7 @@ trait Trees {
 
   // sub-components --------------------------------------------------
 
-  object treePrinters extends {
-    val trees: Trees.this.type = Trees.this
-  } with TreePrinters
-
-  lazy val treePrinter =
-    if (settings.Ycompacttrees.value) treePrinters.createCompact()
-    else treePrinters.create()
+  lazy val treePrinter = newTreePrinter()
 
   object treeInfo extends {
     val trees: Trees.this.type = Trees.this
@@ -46,131 +32,39 @@ trait Trees {
 
   val treeCopy = new LazyTreeCopier()
 
-  // modifiers --------------------------------------------------------
+  implicit def treeWrapper(tree: Tree): TreeOps = new TreeOps(tree)
 
-  /** @param privateWithin the qualifier for a private (a type name)
-   *    or nme.EMPTY.toTypeName, if none is given.
-   *  @param annotations the annotations for the definition.
-   *    <strong>Note:</strong> the typechecker drops these annotations,
-   *    use the AnnotationInfo's (Symbol.annotations) in later phases.
-   */
-  case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree], positions: Map[Long, Position]) {
-    def isCovariant     = hasFlag(COVARIANT    )  // marked with `+'
-    def isContravariant = hasFlag(CONTRAVARIANT)  // marked with `-'
-    def isPrivate   = hasFlag(PRIVATE  )
-    def isProtected = hasFlag(PROTECTED)
-    def isVariable  = hasFlag(MUTABLE  )
-    def isArgument  = hasFlag(PARAM    )
-    def isAccessor  = hasFlag(ACCESSOR )
-    def isOverride  = hasFlag(OVERRIDE )
-    def isAbstract  = hasFlag(ABSTRACT )
-    def isDeferred  = hasFlag(DEFERRED )
-    def isCase      = hasFlag(CASE     )
-    def isLazy      = hasFlag(LAZY     )
-    def isSealed    = hasFlag(SEALED   )
-    def isFinal     = hasFlag(FINAL    )
-    def isTrait     = hasFlag(TRAIT | notDEFERRED) // (part of DEVIRTUALIZE)
-    def isImplicit  = hasFlag(IMPLICIT )
-    def isPublic    = !isPrivate && !isProtected
-    def hasFlag(flag: Long) = (flag & flags) != 0L
-    def & (flag: Long): Modifiers = {
-      val flags1 = flags & flag
-      if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin, annotations, positions)
-    }
-    def &~ (flag: Long): Modifiers = {
-      val flags1 = flags & (~flag)
-      if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin, annotations, positions)
-    }
-    def | (flag: Long): Modifiers = {
-      val flags1 = flags | flag
-      if (flags1 == flags) this
-      else Modifiers(flags1, privateWithin, annotations, positions)
-    }
-    def withAnnotations(annots: List[Tree]) =
-      if (annots.isEmpty) this
-      else Modifiers(flags, privateWithin, annotations ::: annots, positions)
-    def withPosition(flag: Long, position: Position) =
-    	Modifiers(flags, privateWithin, annotations, positions + (flag -> position))
-  }
+  class TreeOps(tree: Tree) {
 
-  def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List(), new Map.EmptyMap)
-  def Modifiers(flags: Long): Modifiers = Modifiers(flags, nme.EMPTY.toTypeName)
-
-  val NoMods = Modifiers(0)
-
-  // @M helper method for asserts that check consistency in kinding
-  //def kindingIrrelevant(tp: Type) = (tp eq null) || phase.name == "erasure" || phase.erasedTypes
-
-  abstract class Tree extends Product {
-    if (util.Statistics.enabled) {
-      util.Statistics.nodeByType(getClass) += 1
+    def isTerm: Boolean = tree match {
+      case _: TermTree => true
+      case Bind(name, _) => name.isTermName
+      case Select(_, name) => name.isTermName
+      case Ident(name) => name.isTermName
+      case Annotated(_, arg) => arg.isTerm
+      case DocDef(_, defn) => defn.isTerm
+      case _ => false
     }
 
-    val id = nodeCount
-//    assert(id != 1223)
-    nodeCount += 1
-
-    private var rawpos: Position = NoPosition
-
-    def pos = rawpos
-
-    private[this] var rawtpe: Type = _
-
-    def tpe = rawtpe
-    def tpe_=(t: Type) = rawtpe = t
-
-    def setPos(pos: Position): this.type = {
-      rawpos = pos
-/*
-      for (c <- this.children)
-        if (c.pos.isOpaqueRange && !pos.includes(c.pos)) {
-          assert(false, "non-enclosing positions in "+this)
-        }
-*/
-      this
+    def isType: Boolean = tree match {
+      case _: TypTree => true
+      case Bind(name, _) => name.isTypeName
+      case Select(_, name) => name.isTypeName
+      case Ident(name) => name.isTypeName
+      case Annotated(_, arg) => arg.isType
+      case DocDef(_, defn) => defn.isType
+      case _ => false
     }
 
-    /** Set tpe to give `tp` and return this.
-     */
-    def setType(tp: Type): this.type = {
-      /*assert(kindingIrrelevant(tp) || !kindStar || !tp.isHigherKinded,
-               tp+" should not be higher-kinded"); */
-      tpe = tp
-      this
-    }
-
-    /** Like `setType`, but if this is a previously empty TypeTree
-     *  that fact is remembered so that resetType will snap back.
-     */
-    def defineType(tp: Type): this.type = setType(tp)
-
-    /** Reset type to `null`, with special handling of TypeTrees and the EmptyType
-     */
-    def resetType() { tpe = null }
-
-    def symbol: Symbol = null
-    def symbol_=(sym: Symbol) {
-      throw new Error("symbol_= inapplicable for " + this)
-    }
-    def setSymbol(sym: Symbol): this.type = { symbol = sym; this }
-
-    def hasSymbol = false
-    def isDef = false
-    def isTerm = false
-    def isType = false
-    def isEmpty = false
-
-    def isErroneous = (tpe ne null) && tpe.isErroneous
+    def isErroneous = (tree.tpe ne null) && tree.tpe.isErroneous
 
     /** Apply `f' to each subtree */
-    def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(this) }
+    def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(tree) }
 
     /** Find all subtrees matching predicate `p' */
     def filter(f: Tree => Boolean): List[Tree] = {
       val ft = new FilterTreeTraverser(f)
-      ft.traverse(this)
+      ft.traverse(tree)
       ft.hits.toList
     }
 
@@ -179,63 +73,20 @@ trait Trees {
      */
     def find(p: Tree => Boolean): Option[Tree] = {
       val ft = new FindTreeTraverser(p)
-      ft.traverse(this)
+      ft.traverse(tree)
       ft.result
     }
 
     /** Is there part of this tree which satisfies predicate `p'? */
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
-    /** The direct child trees of this tree
-     *  EmptyTrees are always omitted. Lists are collapsed.
-     */
-    def children: List[Tree] = {
-      def subtrees(x: Any): List[Tree] = x match {
-        case EmptyTree => List()
-        case t: Tree => List(t)
-        case xs: List[_] => xs flatMap subtrees
-        case _ => List()
-      }
-      productIterator.toList flatMap subtrees
-    }
-
-    override def toString(): String =
-      if (settings.Ycompacttrees.value) treePrinters.asCompactString(this)
-      else treePrinters.asString(this)
-
-    override def hashCode(): Int = super.hashCode()
-
-    override def equals(that: Any): Boolean = that match {
-      case t: Tree => this eq t
-      case _ => false
-    }
-    def hashCodeStructure: Int = {
-      var hc = getClass.hashCode
-      def f(what : Any) : Unit = what match {
-      case what : Tree => hc += what.hashCodeStructure
-      case what : Iterable[_] => what.foreach(f)
-      case what : Product => g(what)
-      case null =>
-      case what => hc += what.hashCode
-      }
-      def g(what: Product) {
-        hc += what.productArity
-        var i = 0
-        while (i < what.productArity) {
-          f(what.productElement(i))
-          i += 1
-        }
-      }
-      g(this)
-      hc
-    }
     def equalsStructure(that : Tree) = equalsStructure0(that){case (t0,t1) => false}
     def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = {
-      if (this == that) return true
-      if (this.getClass != that.getClass) return false
-      val this0 = this.asInstanceOf[Product]
+      if (tree == that) return true
+      if (tree.getClass != that.getClass) return false
+      val tree0 = tree.asInstanceOf[Product]
       val that0 = that.asInstanceOf[Product]
-      assert(this0.productArity == that0.productArity)
+      assert(tree0.productArity == that0.productArity)
       def equals0(thiz: Any, that: Any): Boolean = thiz match {
         case thiz: Tree =>
           f(thiz,that.asInstanceOf[Tree]) || thiz.equalsStructure0(that.asInstanceOf[Tree])(f)
@@ -250,130 +101,26 @@ trait Trees {
         case thiz =>
           thiz == that
       }
-      val results = for (i <- 0.until(this0.productArity).toList) yield
-        equals0(this0.productElement(i), that0.productElement(i))
+      val results = for (i <- 0.until(tree0.productArity).toList) yield
+        equals0(tree0.productElement(i), that0.productElement(i))
       val b = results.foldLeft(true)((x,y) => x && y)
-      if (b) (this,that) match {
-      case (this0 : TypeTree, that0 : TypeTree) if this0.original != null && that0.original != null =>
-        this0.original.equalsStructure0(that0.original)(f)
+      if (b) (tree,that) match {
+      case (tree0 : TypeTree, that0 : TypeTree) if tree0.original != null && that0.original != null =>
+        tree0.original.equalsStructure0(that0.original)(f)
       case _ => true
       } else false
     }
 
-    /** Make a copy of this tree, keeping all attributes,
-     *  except that all positions are focussed (so nothing
-     *  in this tree will be found when searching by position).
-     */
-    def duplicate: this.type =
-      (duplicator transform this).asInstanceOf[this.type]
-
-    def shallowDuplicate: this.type =
-      ((new ShallowDuplicator(this)) transform this).asInstanceOf[this.type]
-
-    def copyAttrs(tree: Tree): this.type = {
-      rawpos = tree.rawpos
-      tpe = tree.tpe
-      if (hasSymbol) symbol = tree.symbol
-      this
-    }
+    def shallowDuplicate: Tree =
+      (new ShallowDuplicator(tree)) transform tree
   }
 
-  trait SymTree extends Tree {
-    override def hasSymbol = true
-    override var symbol: Symbol = NoSymbol
-  }
+  private[scala] override def duplicateTree(tree: Tree): Tree = duplicator transform tree
 
-  trait RefTree extends SymTree {
-    def name: Name
-  }
+// ---- values and creators ---------------------------------------
 
-  abstract class DefTree extends SymTree {
-    def name: Name
-    override def isDef = true
-  }
-
-  trait TermTree extends Tree {
-    override def isTerm = true
-  }
-
-  /** A tree for a type.  Note that not all type trees implement
-    * this trait; in particular, Ident's are an exception. */
-  trait TypTree extends Tree {
-    override def isType = true
-  }
-
-// ----- auxiliary objects and methods ------------------------------
-
-  private lazy val duplicator = new Transformer {
-    override val treeCopy = new StrictTreeCopier
-    override def transform(t: Tree) = {
-      val t1 = super.transform(t)
-      if ((t1 ne t) && t1.pos.isRange) t1 setPos t.pos.focus
-      t1
-    }
-  }
-
-  private class ShallowDuplicator(orig: Tree) extends Transformer {
-    override val treeCopy = new StrictTreeCopier
-    override def transform(tree: Tree) =
-      if (tree eq orig)
-	super.transform(tree)
-      else
-	tree
-  }
-
-//  def nextPhase = if (phase.id > globalPhase.id) phase else phase.next;
-
-// ----- tree node alternatives --------------------------------------
-
-  /** The empty tree */
-  case object EmptyTree extends TermTree {
-    super.tpe_=(NoType)
-    override def tpe_=(t: Type) =
-      if (t != NoType) throw new Error("tpe_=("+t+") inapplicable for <empty>")
-    override def resetType() {}
-    override def isEmpty = true
-  }
-
-  abstract class MemberDef extends DefTree {
-    def mods: Modifiers
-    def keyword: String = this match {
-      case TypeDef(_, _, _, _)      => "type"
-      case ClassDef(mods, _, _, _)  => if (mods.isTrait) "trait" else "class"
-      case DefDef(_, _, _, _, _, _) => "def"
-      case ModuleDef(_, _, _)       => "object"
-      case PackageDef(_, _)         => "package"
-      case ValDef(mods, _, _, _)    => if (mods.isVariable) "var" else "val"
-      case _ => ""
-    }
-    final def hasFlag(mask: Long): Boolean = (mods.flags & mask) != 0L
-  }
-
-  /** Package clause
-   */
-  case class PackageDef(pid: RefTree, stats: List[Tree])
-       extends MemberDef {
-    def name = pid.name
-    def mods = NoMods
-  }
-
-/* disabled, as this is now dangerous
-  def PackageDef(sym: Symbol, stats: List[Tree]): PackageDef =
-    PackageDef(Ident(sym.name), stats) setSymbol sym
-*/
-
-  abstract class ImplDef extends MemberDef {
-    def impl: Template
-  }
-
-  /** Class definition */
-  case class ClassDef(mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template)
-       extends ImplDef
-
-  /**
-   *  @param sym       the class symbol
-   *  @param impl      ...
-   *  @return          ...
+  /** @param sym       the class symbol
+   *  @return          the implementation template
    */
   def ClassDef(sym: Symbol, impl: Template): ClassDef =
     atPos(sym.pos) {
@@ -393,7 +140,6 @@ trait Trees {
    *  @param argss      the supercall arguments
    *  @param body       the template statements without primary constructor
    *                    and value parameter fields.
-   *  @return          ...
    */
   def ClassDef(sym: Symbol, constrMods: Modifiers, vparamss: List[List[ValDef]], argss: List[List[Tree]], body: List[Tree], superPos: Position): ClassDef =
     ClassDef(sym,
@@ -401,44 +147,14 @@ trait Trees {
                if (sym.thisSym == sym || phase.erasedTypes) emptyValDef else ValDef(sym.thisSym),
                constrMods, vparamss, argss, body, superPos))
 
-  /** Singleton object definition
-   *
-   *  @param mods
-   *  @param name
-   *  @param impl
-   */
-  case class ModuleDef(mods: Modifiers, name: Name, impl: Template)
-       extends ImplDef
-
   /**
    *  @param sym       the class symbol
-   *  @param impl      ...
-   *  @return          ...
+   *  @param impl      the implementation template
    */
   def ModuleDef(sym: Symbol, impl: Template): ModuleDef =
     atPos(sym.pos) {
       ModuleDef(Modifiers(sym.flags), sym.name, impl) setSymbol sym
     }
-
-  abstract class ValOrDefDef extends MemberDef {
-    def tpt: Tree
-    def rhs: Tree
-  }
-
-  /** Value definition
-   *
-   *  @param mods
-   *  @param name
-   *  @param tpt
-   *  @param rhs
-   */
-  case class ValDef(mods: Modifiers, name: Name, tpt: Tree, rhs: Tree)
-       extends ValOrDefDef {
-    assert(tpt.isType, tpt)
-    //assert(kindingIrrelevant(tpt.tpe) || !tpt.tpe.isHigherKinded, tpt.tpe) //@M a value definition should never be typed with a higher-kinded type (values must be classified by types with kind *)
-    //tpt.kindStar=true //@M turn on consistency checking in Tree
-    assert(rhs.isTerm, rhs)
-  }
 
   def ValDef(sym: Symbol, rhs: Tree): ValDef =
     atPos(sym.pos) {
@@ -449,30 +165,12 @@ trait Trees {
 
   def ValDef(sym: Symbol): ValDef = ValDef(sym, EmptyTree)
 
-  object emptyValDef
-  extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) {
+  object emptyValDef extends ValDef(Modifiers(PRIVATE), nme.WILDCARD, TypeTree(NoType), EmptyTree) {
     override def isEmpty = true
     super.setPos(NoPosition)
     override def setPos(pos: Position) = { assert(false); this }
   }
 
-  /** Method definition
-   *
-   *  @param mods
-   *  @param name
-   *  @param tparams
-   *  @param vparamss
-   *  @param tpt
-   *  @param rhs
-   */
-  case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef],
-                    vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree)
-       extends ValOrDefDef {
-    assert(tpt.isType, tpt)
-    //assert(kindingIrrelevant(tpt.tpe) || !tpt.tpe.isHigherKinded, tpt.tpe) //@M a method definition should never be typed with a higher-kinded type (values must be classified by types with kind *)
-    //tpt.kindStar=true //@M turn on consistency checking in Tree
-    assert(rhs.isTerm, rhs)
-  }
 
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     atPos(sym.pos) {
@@ -498,10 +196,6 @@ trait Trees {
     DefDef(sym, rhs(sym.info.paramss))
   }
 
-  /** Abstract type, type parameter, or type alias */
-  case class TypeDef(mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree)
-       extends MemberDef
-
   /** A TypeDef node which defines given `sym' with given tight hand side `rhs'. */
   def TypeDef(sym: Symbol, rhs: Tree): TypeDef =
     atPos(sym.pos) {
@@ -512,90 +206,10 @@ trait Trees {
   def TypeDef(sym: Symbol): TypeDef =
     TypeDef(sym, TypeBoundsTree(TypeTree(sym.info.bounds.lo), TypeTree(sym.info.bounds.hi)))
 
-  /** <p>
-   *    Labelled expression - the symbols in the array (must be Idents!)
-   *    are those the label takes as argument
-   *  </p>
-   *  <p>
-   *    The symbol that is given to the labeldef should have a MethodType
-   *    (as if it were a nested function)
-   *  </p>
-   *  <p>
-   *    Jumps are apply nodes attributed with label symbol, the arguments
-   *    will get assigned to the idents.
-   *  </p>
-   *  <p>
-   *  Note: on 2005-06-09 Martin, Iuli, Burak agreed to have forward
-   *        jumps within a Block.
-   *  </p>
-   */
-  case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
-       extends DefTree with TermTree {
-    assert(rhs.isTerm)
-  }
-
-  /**
-   *  @param sym    the class symbol
-   *  @param params ...
-   *  @param rhs    ...
-   *  @return       ...
-   */
   def LabelDef(sym: Symbol, params: List[Symbol], rhs: Tree): LabelDef =
     atPos(sym.pos) {
       LabelDef(sym.name, params map Ident, rhs) setSymbol sym
     }
-
-  /** Import selector
-   *
-   * Representation of an imported name its optional rename and their optional positions
-   *
-   * @param name      the imported name
-   * @param namePos   its position or -1 if undefined
-   * @param rename    the name the import is renamed to (== name if no renaming)
-   * @param renamePos the position of the rename or -1 if undefined
-   */
-  case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int)
-
-  /** Import clause
-   *
-   *  @param expr
-   *  @param selectors
-   */
-  case class Import(expr: Tree, selectors: List[ImportSelector])
-       extends SymTree
-    // The symbol of an Import is an import symbol @see Symbol.newImport
-    // It's used primarily as a marker to check that the import has been typechecked.
-
-  /** Documented definition, eliminated by analyzer */
-  case class DocDef(comment: DocComment, definition: Tree)
-       extends Tree {
-    override def symbol: Symbol = definition.symbol
-    override def symbol_=(sym: Symbol) { definition.symbol = sym }
-    // sean: seems to be important to the IDE
-    override def isDef = definition.isDef
-    override def isTerm = definition.isTerm
-    override def isType = definition.isType
-  }
-
-  /** Instantiation template of a class or trait
-   *
-   *  @param parents
-   *  @param body
-   */
-  case class Template(parents: List[Tree], self: ValDef, body: List[Tree])
-       extends SymTree {
-    // the symbol of a template is a local dummy. @see Symbol.newLocalDummy
-    // the owner of the local dummy is the enclosing trait or class.
-    // the local dummy is itself the owner of any local blocks
-    // For example:
-    //
-    // class C {
-    //   def foo // owner is C
-    //   {
-    //      def bar  // owner is local dummy
-    //   }
-    // System.err.println("TEMPLATE: " + parents)
-  }
 
   /** Generates a template with constructor corresponding to
    *
@@ -667,119 +281,15 @@ trait Trees {
     Template(parents, self, gvdefs ::: vparamss2.flatten ::: constrs ::: etdefs ::: rest)
   }
 
-  /** Block of expressions (semicolon separated expressions) */
-  case class Block(stats: List[Tree], expr: Tree)
-       extends TermTree
-
-  /** Case clause in a pattern match, eliminated by TransMatch
-   *  (except for occurences in switch statements)
-   */
-  case class CaseDef(pat: Tree, guard: Tree, body: Tree)
-       extends Tree
-
   /** casedef shorthand */
   def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body)
-
-  /** Alternatives of patterns, eliminated by TransMatch, except for
-   *  occurences in encoded Switch stmt (=remaining Match(CaseDef(...))
-   */
-  case class Alternative(trees: List[Tree])
-       extends TermTree
-
-  /** Repetition of pattern, eliminated by TransMatch */
-  case class Star(elem: Tree)
-       extends TermTree
-
-  /** Bind of a variable to a rhs pattern, eliminated by TransMatch
-   *
-   *  @param name
-   *  @param body
-   */
-  case class Bind(name: Name, body: Tree)
-       extends DefTree {
-    override def isTerm = name.isTermName
-    override def isType = name.isTypeName
-  }
 
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym
 
-  case class UnApply(fun: Tree, args: List[Tree])
-       extends TermTree
 
-  /** Array of expressions, needs to be translated in backend,
-   */
-  case class ArrayValue(elemtpt: Tree, elems: List[Tree])
-       extends TermTree
-
-  /** Anonymous function, eliminated by analyzer */
-  case class Function(vparams: List[ValDef], body: Tree)
-       extends TermTree with SymTree
-    // The symbol of a Function is a synthetic value of name nme.ANON_FUN_NAME
-    // It is the owner of the function's parameters.
-
-  /** Assignment */
-  case class Assign(lhs: Tree, rhs: Tree)
-       extends TermTree
-
-  /** Either an assignment or a named argument. Only appears in argument lists,
-   *  eliminated by typecheck (doTypedApply)
-   */
-  case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
-       extends TermTree
-
-  /** Conditional expression */
-  case class If(cond: Tree, thenp: Tree, elsep: Tree)
-       extends TermTree
-
-  /** <p>
-   *    Pattern matching expression  (before <code>TransMatch</code>)
-   *    Switch statements            (after TransMatch)
-   *  </p>
-   *  <p>
-   *    After <code>TransMatch</code>, cases will satisfy the following
-   *    constraints:
-   *  </p>
-   *  <ul>
-   *    <li>all guards are EmptyTree,</li>
-   *    <li>all patterns will be either <code>Literal(Constant(x:Int))</code>
-   *      or <code>Alternative(lit|...|lit)</code></li>
-   *    <li>except for an "otherwise" branch, which has pattern
-   *      <code>Ident(nme.WILDCARD)</code></li>
-   *  </ul>
-   */
-  case class Match(selector: Tree, cases: List[CaseDef])
-       extends TermTree
-
-  /** Return expression */
-  case class Return(expr: Tree)
-       extends TermTree with SymTree
-    // The symbol of a Return node is the enclosing method.
-
-  case class Try(block: Tree, catches: List[CaseDef], finalizer: Tree)
-       extends TermTree
-
-  /** Throw expression */
-  case class Throw(expr: Tree)
-       extends TermTree
-
-  /** Object instantiation
-   *  One should always use factory method below to build a user level new.
-   *
-   *  @param tpt    a class type
-   */
-  case class New(tpt: Tree)
-       extends TermTree {
-    assert(tpt.isType)
-  }
-
-  /** Factory method for object creation <code>&lt;new tpt(args_1)...(args_n)&gt;</code>.
-   *  A New(t, as) is expanded to:
-   *    (new t).<init>(as)
-   *
-   *  @param tpt   ...
-   *  @param argss ...
-   *  @return      ...
+  /** Factory method for object creation `new tpt(args_1)...(args_n)`
+   *  A `New(t, as)` is expanded to: `(new t).<init>(as)`
    */
   def New(tpt: Tree, argss: List[List[Tree]]): Tree = {
     assert(!argss.isEmpty)
@@ -787,279 +297,56 @@ trait Trees {
     (superRef /: argss) (Apply)
   }
 
-  /** Type annotation, eliminated by explicit outer */
-  case class Typed(expr: Tree, tpt: Tree)
-       extends TermTree
-
-  // Martin to Sean: Should GenericApply/TypeApply/Apply not be SymTree's? After all,
-  // ApplyDynamic is a SymTree.
-  abstract class GenericApply extends TermTree {
-    val fun: Tree
-    val args: List[Tree]
-  }
-
-  /** Type application */
-  case class TypeApply(fun: Tree, args: List[Tree])
-       extends GenericApply {
-    override def symbol: Symbol = fun.symbol
-    override def symbol_=(sym: Symbol) { fun.symbol = sym }
-  }
-
-  /** Value application */
-  case class Apply(fun: Tree, args: List[Tree])
-       extends GenericApply {
-    override def symbol: Symbol = fun.symbol
-    override def symbol_=(sym: Symbol) { fun.symbol = sym }
-  }
-
-  /** Dynamic value application.
-   *  In a dynamic application   q.f(as)
-   *   - q is stored in qual
-   *   - as is stored in args
-   *   - f is stored as the node's symbol field.
-   */
-  case class ApplyDynamic(qual: Tree, args: List[Tree])
-       extends TermTree with SymTree
-    // The symbol of an ApplyDynamic is the function symbol of `qual', or NoSymbol, if there is none.
-
-  /** Super reference */
-  case class Super(qual: Name, mix: Name)
-       extends TermTree with SymTree
-    // The symbol of a Super is the class _from_ which the super reference is made.
-    // For instance in C.super(...), it would be C.
-
   def Super(sym: Symbol, mix: Name): Tree = Super(sym.name, mix) setSymbol sym
 
-  /** Self reference */
-  case class This(qual: Name)
-        extends TermTree with SymTree {
-    // The symbol of a This is the class to which the this refers.
-    // For instance in C.this, it would be C.
-  }
-
   def This(sym: Symbol): Tree = This(sym.name) setSymbol sym
-
-  /** Designator <qualifier> . <name> */
-  case class Select(qualifier: Tree, name: Name)
-       extends RefTree {
-    override def isTerm = name.isTermName
-    override def isType = name.isTypeName
-  }
 
   def Select(qualifier: Tree, sym: Symbol): Select =
     Select(qualifier, sym.name) setSymbol sym
 
-  /** Identifier <name> */
-  case class Ident(name: Name)
-       extends RefTree {
-    override def isTerm = name.isTermName
-    override def isType = name.isTypeName
-  }
-
-  class BackQuotedIdent(name: Name) extends Ident(name)
-
   def Ident(sym: Symbol): Ident =
     Ident(sym.name) setSymbol sym
-
-  /** Literal */
-  case class Literal(value: Constant)
-        extends TermTree {
-    assert(value ne null)
-  }
-
-  def Literal(value: Any): Literal =
-    Literal(Constant(value))
 
   /** A synthetic term holding an arbitrary type.  Not to be confused with
     * with TypTree, the trait for trees that are only used for type trees.
     * TypeTree's are inserted in several places, but most notably in
     * <code>RefCheck</code>, where the arbitrary type trees are all replaced by
     * TypeTree's. */
-  case class TypeTree() extends TypTree {
-    override def symbol = if (tpe == null) null else tpe.typeSymbol
-
+  case class TypeTree() extends AbsTypeTree {
     private var orig: Tree = null
-    private var wasEmpty: Boolean = false
+    private[Trees] var wasEmpty: Boolean = false
 
     def original: Tree = orig
-
     def setOriginal(tree: Tree): this.type = { orig = tree; setPos(tree.pos); this }
 
     override def defineType(tp: Type): this.type = {
       wasEmpty = isEmpty
       setType(tp)
     }
-
-    /** Reset type to null, unless type original was empty and then
-     *  got its type via a defineType
-     */
-    override def resetType() {
-      if (wasEmpty) tpe = null
-    }
-
-    override def isEmpty = (tpe eq null) || tpe == NoType
   }
+
+  object TypeTree extends TypeTreeExtractor
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
-  // def TypeTree(tp: Type, tree : Tree): TypeTree = TypeTree(tree) setType tp
 
-  /** A tree that has an annotation attached to it. Only used for annotated types and
-   *  annotation ascriptions, annotations on definitions are stored in the Modifiers.
-   *  Eliminated by typechecker (typedAnnotated), the annotations are then stored in
-   *  an AnnotatedType.
+  /** Documented definition, eliminated by analyzer */
+  case class DocDef(comment: DocComment, definition: Tree)
+       extends Tree {
+    override def symbol: Symbol = definition.symbol
+    override def symbol_=(sym: Symbol) { definition.symbol = sym }
+    // sean: seems to be important to the IDE
+    override def isDef = definition.isDef
+  }
+
+  /** Either an assignment or a named argument. Only appears in argument lists,
+   *  eliminated by typecheck (doTypedApply)
    */
-  case class Annotated(annot: Tree, arg: Tree) extends Tree {
-    override def isType = arg.isType
-    override def isTerm = arg.isTerm
-  }
-
-  /** Singleton type, eliminated by RefCheck */
-  case class SingletonTypeTree(ref: Tree)
-        extends TypTree
-
-  /** Type selection <qualifier> # <name>, eliminated by RefCheck */
-  case class SelectFromTypeTree(qualifier: Tree, name: Name)
-       extends TypTree with RefTree
-
-  /** Intersection type <parent1> with ... with <parentN> { <decls> }, eliminated by RefCheck */
-  case class CompoundTypeTree(templ: Template)
-       extends TypTree
-
-  /** Applied type <tpt> [ <args> ], eliminated by RefCheck */
-  case class AppliedTypeTree(tpt: Tree, args: List[Tree])
-       extends TypTree {
-    override def symbol: Symbol = tpt.symbol
-    override def symbol_=(sym: Symbol) { tpt.symbol = sym }
-  }
-
-  case class TypeBoundsTree(lo: Tree, hi: Tree)
-       extends TypTree
-
-  case class ExistentialTypeTree(tpt: Tree, whereClauses: List[Tree])
-       extends TypTree
+  case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
+       extends TermTree
 
   case class Parens(args: List[Tree]) extends Tree // only used during parsing
 
-  /** Array selection <qualifier> . <name> only used during erasure */
-  case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
-       extends TermTree with RefTree
-
-  trait StubTree extends Tree {
-    def underlying : AnyRef
-    override def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = this eq that
-  }
-
-/* A standard pattern match
-  case EmptyTree =>
-  case PackageDef(pid, stats) =>
-     // package pid { stats }
-  case ClassDef(mods, name, tparams, impl) =>
-     // mods class name [tparams] impl   where impl = extends parents { defs }
-  case ModuleDef(mods, name, impl) =>                             (eliminated by refcheck)
-     // mods object name impl  where impl = extends parents { defs }
-  case ValDef(mods, name, tpt, rhs) =>
-     // mods val name: tpt = rhs
-     // note missing type information is expressed by tpt = TypeTree()
-  case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-     // mods def name[tparams](vparams_1)...(vparams_n): tpt = rhs
-     // note missing type information is expressed by tpt = TypeTree()
-  case TypeDef(mods, name, tparams, rhs) =>                       (eliminated by erasure)
-     // mods type name[tparams] = rhs
-     // mods type name[tparams] >: lo <: hi,  where lo, hi are in a TypeBoundsTree,
-                                              and DEFERRED is set in mods
-  case LabelDef(name, params, rhs) =>
-     // used for tailcalls and like
-     // while/do are desugared to label defs as follows:
-     // while (cond) body ==> LabelDef($L, List(), if (cond) { body; L$() } else ())
-     // do body while (cond) ==> LabelDef($L, List(), body; if (cond) L$() else ())
-  case Import(expr, selectors) =>                                 (eliminated by typecheck)
-     // import expr.{selectors}
-     // Selectors are a list of pairs of names (from, to).
-     // The last (and maybe only name) may be a nme.WILDCARD
-     // for instance
-     //   import qual.{x, y => z, _}  would be represented as
-     //   Import(qual, List(("x", "x"), ("y", "z"), (WILDCARD, null)))
-  case DocDef(comment, definition) =>                             (eliminated by typecheck)
-     // /** comment */ definition
-  case Template(parents, self, body) =>
-     // extends parents { self => body }
-     // if self is missing it is represented as emptyValDef
-  case Block(stats, expr) =>
-     // { stats; expr }
-  case CaseDef(pat, guard, body) =>                               (eliminated by transmatch/explicitouter)
-    // case pat if guard => body
-  case Alternative(trees) =>                                      (eliminated by transmatch/explicitouter)
-    // pat1 | ... | patn
-  case Star(elem) =>                                              (eliminated by transmatch/explicitouter)
-    // pat*
-  case Bind(name, body) =>                                        (eliminated by transmatch/explicitouter)
-    // name @ pat
-  case UnApply(fun: Tree, args)                                   (introduced by typer, eliminated by transmatch/explicitouter)
-    // used for unapply's
-  case ArrayValue(elemtpt, trees) =>                              (introduced by uncurry)
-    // used to pass arguments to vararg arguments
-    // for instance, printf("%s%d", foo, 42) is translated to after uncurry to:
-    // Apply(
-    //   Ident("printf"),
-    //   Literal("%s%d"),
-    //   ArrayValue(<Any>, List(Ident("foo"), Literal(42))))
-  case Function(vparams, body) =>                                 (eliminated by lambdaLift)
-    // vparams => body  where vparams:List[ValDef]
-  case Assign(lhs, rhs) =>
-    // lhs = rhs
-  case AssignOrNamedArg(lhs, rhs) =>                              (eliminated by typecheck)
-    // lhs = rhs
-  case If(cond, thenp, elsep) =>
-    // if (cond) thenp else elsep
-  case Match(selector, cases) =>
-    // selector match { cases }
-  case Return(expr) =>
-    // return expr
-  case Try(block, catches, finalizer) =>
-    // try block catch { catches } finally finalizer where catches: List[CaseDef]
-  case Throw(expr) =>
-    // throw expr
-  case New(tpt) =>
-    // new tpt   always in the context: (new tpt).<init>[targs](args)
-  case Typed(expr, tpt) =>                                        (eliminated by erasure)
-    // expr: tpt
-  case TypeApply(fun, args) =>
-    // fun[args]
-  case Apply(fun, args) =>
-    // fun(args)
-    // for instance fun[targs](args)  is expressed as  Apply(TypeApply(fun, targs), args)
-  case ApplyDynamic(qual, args)                                   (introduced by erasure, eliminated by cleanup)
-    // fun(args)
-  case Super(qual, mix) =>
-    // qual.super[mix]     if qual and/or mix is empty, ther are nme.EMPTY.toTypeName
-  case This(qual) =>
-    // qual.this
-  case Select(qualifier, selector) =>
-    // qualifier.selector
-  case Ident(name) =>
-    // name
-    // note: type checker converts idents that refer to enclosing fields or methods
-    // to selects; name ==> this.name
-  case Literal(value) =>
-    // value
-  case TypeTree() =>                                              (introduced by refcheck)
-    // a type that's not written out, but given in the tpe attribute
-  case Annotated(annot, arg) =>                                   (eliminated by typer)
-    // arg @annot  for types,  arg: @annot for exprs
-  case SingletonTypeTree(ref) =>                                  (eliminated by uncurry)
-    // ref.type
-  case SelectFromTypeTree(qualifier, selector) =>                 (eliminated by uncurry)
-    // qualifier # selector, a path-dependent type p.T is expressed as p.type # T
-  case CompoundTypeTree(templ: Template) =>                       (eliminated by uncurry)
-    // parent1 with ... with parentN { refinement }
-  case AppliedTypeTree(tpt, args) =>                              (eliminated by uncurry)
-    // tpt[args]
-  case TypeBoundsTree(lo, hi) =>                                  (eliminated by uncurry)
-    // >: lo <: hi
-  case ExistentialTypeTree(tpt, whereClauses) =>                  (eliminated by uncurry)
-    // tpt forSome { whereClauses }
-
-*/
+// ----- auxiliary objects and methods ------------------------------
 
   abstract class TreeCopier {
     def ClassDef(tree: Tree, mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template): ClassDef
@@ -1543,10 +830,6 @@ trait Trees {
         treeCopy.ExistentialTypeTree(tree, transform(tpt), transformTrees(whereClauses))
       case SelectFromArray(qualifier, selector, erasure) =>
         treeCopy.SelectFromArray(tree, transform(qualifier), selector, erasure)
-      case tree : StubTree =>
-        tree.symbol = NoSymbol
-        tree.tpe = null
-        tree
     }
 
     def transformTrees(trees: List[Tree]): List[Tree] =
@@ -1694,7 +977,6 @@ trait Trees {
         traverse(qualifier)
       case Parens(ts) =>
         traverseTrees(ts)
-      case tree : StubTree =>
     }
 
     def traverseTrees(trees: List[Tree]) {
@@ -1716,6 +998,24 @@ trait Trees {
       traverse
       currentOwner = prevOwner
     }
+  }
+
+  private lazy val duplicator = new Transformer {
+    override val treeCopy = new StrictTreeCopier
+    override def transform(t: Tree) = {
+      val t1 = super.transform(t)
+      if ((t1 ne t) && t1.pos.isRange) t1 setPos t.pos.focus
+      t1
+    }
+  }
+
+  private class ShallowDuplicator(orig: Tree) extends Transformer {
+    override val treeCopy = new StrictTreeCopier
+    override def transform(tree: Tree) =
+      if (tree eq orig)
+	super.transform(tree)
+      else
+	tree
   }
 
   class TreeSubstituter(from: List[Symbol], to: List[Tree]) extends Transformer {
@@ -1853,7 +1153,14 @@ trait Trees {
         case _ =>
           if (tree.hasSymbol && isLocal(tree.symbol)) tree.symbol = NoSymbol
       }
-      tree.resetType()
+      tree match {
+        case tpt: TypeTree =>
+          if (tpt.wasEmpty) tree.tpe = null
+        case EmptyTree =>
+          ;
+        case _ =>
+          tree.tpe = null
+      }
       super.traverse(tree)
     }
   }
@@ -1874,15 +1181,6 @@ trait Trees {
       case _ =>
         super.traverse(tree)
     }
-  }
-
-  /* hook to memoize trees in IDE */
-  trait TreeKind {
-    def isType : Boolean
-    def isTerm : Boolean
-    def isDef : Boolean
-    def hasSymbol : Boolean
-    def isTop : Boolean
   }
 }
 

@@ -114,9 +114,7 @@ trait EtaExpansion { self: Analyzer =>
      *  @return     ...
      */
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
-      case mt: ImplicitMethodType =>
-        tree
-      case MethodType(paramSyms, restpe) =>
+      case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit =>
         val params = paramSyms map (sym =>
           ValDef(Modifiers(SYNTHETIC | PARAM),
                  sym.name, TypeTree(sym.tpe) , EmptyTree))

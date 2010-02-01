@@ -3,7 +3,6 @@ package symtab
 
 trait SymbolWalker {
   val global : Global
-  import scala.tools.nsc.util._
   import global._
   import scala.collection.mutable.LinkedHashSet
   trait Visitor {
@@ -32,8 +31,6 @@ trait SymbolWalker {
 
       def fs(l: List[Tree]) = l foreach f
       def fss(l: List[List[Tree]]) = l foreach fs
-
-      if (t.isInstanceOf[StubTree]) return
 
       val sym = (t, t.tpe) match {
         case (Super(_,_),SuperType(_,supertp)) if validSym(supertp) => supertp.typeSymbol

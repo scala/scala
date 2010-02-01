@@ -8,7 +8,6 @@ package scala.tools.nsc
 package typechecker
 
 import symtab.Flags._
-import scala.tools.nsc.util.{Position,NoPosition}
 import scala.collection.mutable.ListBuffer
 
 /** This trait ...
@@ -122,40 +121,6 @@ trait Contexts { self: Analyzer =>
     var savedTypeBounds: List[(Symbol, Type)] = List() // saved type bounds
        // for type parameters which are narrowed in a GADT
 
-    def intern0 : Context = {
-      if (this eq NoContext) return this
-      val txt = new Context
-      txt.unit = unit
-      txt.tree = tree
-      txt.owner = owner
-      txt.scope = scope
-      assert(outer ne this) // stupid
-      txt.outer = outer // already interned
-      def fix(what : Context) =
-        if (what eq this) txt
-        else what
-      txt.enclClass = fix(enclClass)
-      txt.enclMethod = fix(enclMethod)
-      txt.implicitsEnabled = implicitsEnabled
-      txt.variance = variance
-      txt._undetparams = _undetparams
-      txt.depth = depth
-      txt.imports = imports
-      txt.openImplicits = openImplicits
-      txt.prefix = prefix
-      txt.inConstructorSuffix = inConstructorSuffix
-      txt.returnsSeen = returnsSeen
-      txt.reportGeneralErrors = reportGeneralErrors
-      txt.checking = checking
-      txt.retyping = retyping
-      txt.savedTypeBounds = savedTypeBounds
-      txt
-    }
-    override def equals(that: Any): Boolean = that match {
-      case that: AnyRef if this eq that => true
-      case that                         => super.equals(that)
-    }
-
     def undetparams = _undetparams
     def undetparams_=(ps: List[Symbol]) = {
       //System.out.println("undetparams = " + ps);//debug
@@ -184,11 +149,7 @@ trait Contexts { self: Analyzer =>
       c.owner = owner
       c.scope = scope
 
-      c.outer = intern(this)
-      def internIf(txt : Context) = {
-        if (txt eq this) c.outer // already interned!
-        else txt
-      }
+      c.outer = this
 
       tree match {
         case Template(_, _, _) | PackageDef(_, _) =>
@@ -196,7 +157,7 @@ trait Contexts { self: Analyzer =>
           c.prefix = c.owner.thisType
           c.inConstructorSuffix = false
         case _ =>
-          c.enclClass = internIf(this.enclClass)
+          c.enclClass = this.enclClass
           c.prefix =
             if (c.owner != this.owner && c.owner.isTerm) NoPrefix
             else this.prefix
@@ -206,7 +167,7 @@ trait Contexts { self: Analyzer =>
         case DefDef(_, _, _, _, _, _) =>
           c.enclMethod = c
         case _ =>
-          c.enclMethod = internIf(this.enclMethod)
+          c.enclMethod = this.enclMethod
       }
       c.variance = this.variance
       c.depth = if (scope == this.scope) this.depth else this.depth + 1
@@ -530,30 +491,6 @@ trait Contexts { self: Analyzer =>
       }
       implicitsCache
     }
-    override def hashCode = {
-      var hc = 0
-      implicit def b2i(b : Boolean) = if (b) 1 else 0
-      // assum enclClass/enclMethod/outer are all interned already.
-      hc += tree.hashCodeStructure
-      def f(txt : Context) = if (txt eq this) 0 else System.identityHashCode(txt)
-      hc += f(enclClass)
-      hc += f(enclMethod)
-      hc += f(outer)
-      hc += owner.hashCode
-      hc += scope.hashCode
-      hc += variance.hashCode
-      hc += _undetparams.hashCode
-      hc += depth
-      hc += imports.hashCode
-      hc += prefix.hashCode
-      hc += inConstructorSuffix
-      hc += checking
-      hc += retyping
-      hc += savedTypeBounds.hashCode
-      hc += (if (unit eq null) 0 else unit.hashCode)
-      hc
-    }
-
   }
   class ImportInfo(val tree: Import, val depth: Int) {
     /** The prefix expression */
@@ -603,23 +540,9 @@ trait Contexts { self: Analyzer =>
     }
 
     override def toString() = tree.toString()
-
-    override def hashCode = tree.hashCodeStructure + depth
-    override def equals(that : Any) = that match {
-      case that : ImportInfo =>
-        depth == that.depth && (tree equalsStructure that.tree)
-      case _ => false
-    }
   }
 
   case class ImportType(expr: Tree) extends Type {
-    override def equals(that : Any) = that match {
-      case ImportType(expr) => this.expr == expr
-      case _                => false
-    }
-    override def hashCode = expr.hashCode
     override def safeToString = "ImportType("+expr+")"
   }
-  protected def intern(txt : Context) = txt
-
 }

@@ -6,22 +6,25 @@
 
 package scala.tools.nsc
 package symtab
-import ast.{Trees, DocComments}
+
+import ast.{Trees, TreePrinters, DocComments}
 
 import util._
 
-abstract class SymbolTable extends Names
+abstract class SymbolTable extends reflect.generic.Universe
+                              with Names
                               with Symbols
                               with Types
                               with Scopes
                               with Definitions
-                              with Constants
+                              with reflect.generic.Constants
                               with BaseTypeSeqs
                               with InfoTransformers
                               with StdNames
                               with AnnotationInfos
                               with AnnotationCheckers
                               with Trees
+                              with TreePrinters
                               with Positions
                               with DocComments
 {

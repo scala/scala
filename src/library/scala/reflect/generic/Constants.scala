@@ -2,18 +2,15 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
+// $Id: Constants.scala 20028 2009-12-07 11:49:19Z cunei $
 
-package scala.tools.nsc
-package symtab
-
+package scala.reflect
+package generic
 
 import java.lang.Integer.toOctalString
+import PickleFormat._
 
-import classfile.PickleFormat._
-
-trait Constants {
-  self: SymbolTable =>
+trait Constants { self: Universe =>
 
   import definitions._
 
@@ -33,8 +30,6 @@ trait Constants {
   // For supporting java enumerations inside java annotations (see ClassfileParser)
   final val EnumTag    = LITERALenum - LITERAL
 
-  def isNumeric(tag: Int) = ByteTag <= tag && tag <= DoubleTag
-
   case class Constant(value: Any) {
 
     val tag: Int =
@@ -53,6 +48,8 @@ trait Constants {
       else if (value == null) NullTag
       else throw new Error("bad constant value: " + value)
 
+    def isNumeric: Boolean = ByteTag <= tag && tag <= DoubleTag
+
     def tpe: Type = tag match {
       case UnitTag    => UnitClass.tpe
       case BooleanTag => BooleanClass.tpe
@@ -65,7 +62,7 @@ trait Constants {
       case DoubleTag  => DoubleClass.tpe
       case StringTag  => StringClass.tpe
       case NullTag    => NullClass.tpe
-      case ClassTag   => Predef_classOfType(value.asInstanceOf[Type])
+      case ClassTag   => ClassType(value.asInstanceOf[Type])
       case EnumTag    =>
         // given (in java): "class A { enum E { VAL1 } }"
         //  - symbolValue: the symbol of the actual enumeration value (VAL1)
@@ -82,11 +79,11 @@ trait Constants {
     override def equals(other: Any): Boolean = other match {
       case that: Constant =>
         this.tag == that.tag &&
-        (this.value == that.value || isNaN(this.value) && isNaN(that.value))
+        (this.value == that.value || this.isNaN && that.isNaN)
       case _ => false
     }
 
-    def isNaN(value: Any) = value match {
+    def isNaN = value match {
       case f: Float => f.isNaN
       case d: Double => d.isNaN
       case _ => false
@@ -233,7 +230,7 @@ trait Constants {
 
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
-    override def hashCode(): Int =
+    override def hashCode: Int =
       if (value == null) 0 else value.hashCode() * 41 + 17
   }
 }

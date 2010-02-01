@@ -13,9 +13,7 @@ import java.io.{ StringWriter, PrintWriter }
 /** Ancillary bits of ParallelMatching which are better off
  *  out of the way.
  */
-trait MatchSupport extends ast.TreeDSL
-{
-  self: ParallelMatching =>
+trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
 
   import global.{ typer => _, _ }
   import CODE._
@@ -102,7 +100,7 @@ trait MatchSupport extends ast.TreeDSL
 
       pp(x match {
         case s: String      => return clean(s)
-        case x: Tree        => treePrinters asCompactString x
+        case x: Tree        => asCompactString(x)
         case xs: List[_]    => pplist(xs map pp)
         case x: Tuple2[_,_] => "%s -> %s".format(pp(x._1), pp(x._2))
         case x              => x.toString

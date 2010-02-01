@@ -177,7 +177,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
 
   /** The name of the field representing a constructor parameter of a virtual class */
   protected def paramFieldName(clazz: Symbol, index: Int) = atPhase(ownPhase) {
-    clazz.expandedName(newTermName("param$"+index))
+    nme.expandedName(newTermName("param$"+index), clazz)
   }
 
   /** The name of the field representing a constructor parameter of a virtual class */

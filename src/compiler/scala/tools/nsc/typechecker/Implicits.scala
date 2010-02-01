@@ -12,7 +12,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.{LinkedHashMap, ListBuffer}
-import scala.tools.nsc.util.{ HashSet, Position, Set, NoPosition, SourceFile }
+import scala.tools.nsc.util.{HashSet, Set, SourceFile}
 import symtab.Flags._
 import util.Statistics._
 
@@ -798,7 +798,7 @@ self: Analyzer =>
                 (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
                  else findSubManifest(pre) :: suffix): _*)
             } else if (sym.isAbstractType) {
-              if (sym.isExistential)
+              if (sym.isExistentiallyBound)
                 EmptyTree // todo: change to existential parameter manifest
               else if (sym.isTypeParameterOrSkolem)
                 EmptyTree  // a manifest should have been found by normal searchImplicit

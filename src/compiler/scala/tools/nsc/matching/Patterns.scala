@@ -7,7 +7,6 @@ package scala.tools.nsc
 package matching
 
 import symtab.Flags
-import util.NoPosition
 import scala.util.NameTransformer.decode
 import PartialFunction._
 
@@ -131,7 +130,7 @@ trait Patterns extends ast.TreeDSL {
   case class ConstructorPattern(tree: Apply) extends ApplyPattern with NamePattern {
     require(fn.isType && this.isCaseClass)
     def name = tpe.typeSymbol.name
-    def cleanName = tpe.typeSymbol.cleanNameString
+    def cleanName = tpe.typeSymbol.decodedName
     def hasPrefix = tpe.prefix.prefixString != ""
     def prefixedName =
       if (hasPrefix) "%s.%s".format(tpe.prefix.prefixString, cleanName)

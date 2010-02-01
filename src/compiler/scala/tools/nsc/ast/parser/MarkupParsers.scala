@@ -10,7 +10,7 @@ package ast.parser
 import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer, HashMap }
 import scala.util.control.ControlException
-import scala.tools.nsc.util.{Position,NoPosition,SourceFile,CharArrayReader}
+import scala.tools.nsc.util.{SourceFile,CharArrayReader}
 import scala.xml.{ Text, TextBuffer }
 import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
 import util.Chars.{ SU, LF }
