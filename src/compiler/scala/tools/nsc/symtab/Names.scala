@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package symtab
 
-import scala.util.NameTransformer
+import scala.reflect.NameTransformer
 import scala.io.Codec
 import java.security.MessageDigest
 

@@ -15,7 +15,7 @@ import scala.tools.nsc.Global
 import scala.tools.nsc.symtab.{Flags, Names}
 import scala.tools.nsc.symtab.Flags.DEFERRED
 import scala.tools.nsc.util.{BatchSourceFile, SourceFile}
-import scala.util.NameTransformer
+import scala.reflect.NameTransformer
 
 class SemanticTokens(val compiler: Global) {
   import compiler._

@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package symtab
 
-import scala.util.NameTransformer
+import scala.reflect.NameTransformer
 
 trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
 

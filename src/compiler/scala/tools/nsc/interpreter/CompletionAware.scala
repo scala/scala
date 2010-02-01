@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.util.NameTransformer
+import scala.reflect.NameTransformer
 
 /** An interface for objects which are aware of tab completion and
  *  will supply their own candidates and resolve their own paths.

@@ -25,7 +25,7 @@ import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import util.{ SourceFile, BatchSourceFile, ClassPath }
-import scala.util.NameTransformer
+import scala.reflect.NameTransformer
 import scala.tools.nsc.{ InterpreterResults => IR }
 import interpreter._
 import Interpreter._

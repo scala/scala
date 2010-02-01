@@ -10,7 +10,7 @@ import java.net.URL
 import java.lang.reflect
 import java.util.concurrent.ConcurrentHashMap
 import scala.concurrent.DelayedLazyVal
-import scala.util.NameTransformer.{ decode, encode }
+import scala.reflect.NameTransformer.{ decode, encode }
 import PackageCompletion._
 
 /** Completion among all known packages.  It examines the jars in a

@@ -13,7 +13,7 @@ import comment._
 import xml.{Unparsed, XML, NodeSeq}
 import xml.dtd.{DocType, PublicID}
 import scala.collection._
-import scala.util.NameTransformer
+import scala.reflect.NameTransformer
 import java.nio.channels.Channels
 import java.io.{FileOutputStream, File}
 

@@ -7,7 +7,7 @@ package scala.tools.nsc
 package matching
 
 import symtab.Flags
-import scala.util.NameTransformer.decode
+import scala.reflect.NameTransformer.decode
 import PartialFunction._
 
 /** Patterns are wrappers for Trees with enhanced semantics.
