@@ -12,9 +12,10 @@
 package scala.runtime
 
 import scala.reflect.ClassManifest
-import scala.collection.Seq
+import scala.collection.{ Seq, IndexedSeq }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ List, Stream, Nil, :: }
+import scala.xml.Node
 import scala.util.control.ControlException
 
 /* The object <code>ScalaRunTime</code> provides ...
@@ -188,6 +189,8 @@ object ScalaRunTime {
    */
   def stringOf(arg: Any): String = arg match {
     case null                     => "null"
+    // Node extends NodeSeq extends Seq[Node] strikes again
+    case x: Node                  => x toString
     case x: AnyRef if isArray(x)  => WrappedArray make x map stringOf mkString ("Array(", ", ", ")")
     case x: Traversable[_]        => x map stringOf mkString (x.stringPrefix + "(", ", ", ")")
     case x                        => x toString
