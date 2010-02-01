@@ -453,6 +453,142 @@ trait Trees { self: Universe =>
     def unapply(tree: TypeTree): Boolean
   }
 
+  class Traverser {
+    protected var currentOwner: Symbol = definitions.RootClass
+    def traverse(tree: Tree): Unit = tree match {
+      case EmptyTree =>
+        ;
+      case PackageDef(pid, stats) =>
+        traverse(pid)
+        atOwner(tree.symbol.moduleClass) {
+          traverseTrees(stats)
+        }
+      case ClassDef(mods, name, tparams, impl) =>
+        atOwner(tree.symbol) {
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(impl)
+        }
+      case ModuleDef(mods, name, impl) =>
+        atOwner(tree.symbol.moduleClass) {
+          traverseTrees(mods.annotations); traverse(impl)
+        }
+      case ValDef(mods, name, tpt, rhs) =>
+        atOwner(tree.symbol) {
+          traverseTrees(mods.annotations); traverse(tpt); traverse(rhs)
+        }
+      case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        atOwner(tree.symbol) {
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverseTreess(vparamss); traverse(tpt); traverse(rhs)
+        }
+      case TypeDef(mods, name, tparams, rhs) =>
+        atOwner(tree.symbol) {
+          traverseTrees(mods.annotations); traverseTrees(tparams); traverse(rhs)
+        }
+      case LabelDef(name, params, rhs) =>
+        traverseTrees(params); traverse(rhs)
+      case Import(expr, selectors) =>
+        traverse(expr)
+      case Annotated(annot, arg) =>
+        traverse(annot); traverse(arg)
+      case DocDef(comment, definition) =>
+        traverse(definition)
+      case Template(parents, self, body) =>
+        traverseTrees(parents)
+        if (!self.isEmpty) traverse(self)
+        traverseStats(body, tree.symbol)
+      case Block(stats, expr) =>
+        traverseTrees(stats); traverse(expr)
+      case CaseDef(pat, guard, body) =>
+        traverse(pat); traverse(guard); traverse(body)
+      case Alternative(trees) =>
+        traverseTrees(trees)
+      case Star(elem) =>
+        traverse(elem)
+      case Bind(name, body) =>
+        traverse(body)
+      case UnApply(fun, args) =>
+        traverse(fun); traverseTrees(args)
+      case ArrayValue(elemtpt, trees) =>
+        traverse(elemtpt); traverseTrees(trees)
+      case Function(vparams, body) =>
+        atOwner(tree.symbol) {
+          traverseTrees(vparams); traverse(body)
+        }
+      case Assign(lhs, rhs) =>
+        traverse(lhs); traverse(rhs)
+      case AssignOrNamedArg(lhs, rhs) =>
+        traverse(lhs); traverse(rhs)
+      case If(cond, thenp, elsep) =>
+        traverse(cond); traverse(thenp); traverse(elsep)
+      case Match(selector, cases) =>
+        traverse(selector); traverseTrees(cases)
+      case Return(expr) =>
+        traverse(expr)
+      case Try(block, catches, finalizer) =>
+        traverse(block); traverseTrees(catches); traverse(finalizer)
+      case Throw(expr) =>
+        traverse(expr)
+      case New(tpt) =>
+        traverse(tpt)
+      case Typed(expr, tpt) =>
+        traverse(expr); traverse(tpt)
+      case TypeApply(fun, args) =>
+        traverse(fun); traverseTrees(args)
+      case Apply(fun, args) =>
+        traverse(fun); traverseTrees(args)
+      case ApplyDynamic(qual, args) =>
+        traverse(qual); traverseTrees(args)
+      case Super(_, _) =>
+        ;
+      case This(_) =>
+        ;
+      case Select(qualifier, selector) =>
+        traverse(qualifier)
+      case Ident(_) =>
+        ;
+      case Literal(_) =>
+        ;
+      case TypeTree() =>
+        ;
+      case SingletonTypeTree(ref) =>
+        traverse(ref)
+      case SelectFromTypeTree(qualifier, selector) =>
+        traverse(qualifier)
+      case CompoundTypeTree(templ) =>
+        traverse(templ)
+      case AppliedTypeTree(tpt, args) =>
+        traverse(tpt); traverseTrees(args)
+      case TypeBoundsTree(lo, hi) =>
+        traverse(lo); traverse(hi)
+      case ExistentialTypeTree(tpt, whereClauses) =>
+        traverse(tpt); traverseTrees(whereClauses)
+      case SelectFromArray(qualifier, selector, erasure) =>
+        traverse(qualifier)
+      case Parens(ts) =>
+        traverseTrees(ts)
+    }
+
+    def traverseTrees(trees: List[Tree]) {
+      trees foreach traverse
+    }
+    def traverseTreess(treess: List[List[Tree]]) {
+      treess foreach traverseTrees
+    }
+    def traverseStats(stats: List[Tree], exprOwner: Symbol) {
+      stats foreach (stat =>
+        if (exprOwner != currentOwner) atOwner(exprOwner)(traverse(stat))
+        else traverse(stat)
+      )
+    }
+    def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
+
+    def atOwner(owner: Symbol)(traverse: => Unit) {
+      val prevOwner = currentOwner
+      currentOwner = owner
+      traverse
+      currentOwner = prevOwner
+    }
+  }
+
   /** A synthetic term holding an arbitrary type.  Not to be confused with
     * with TypTree, the trait for trees that are only used for type trees.
     * TypeTree's are inserted in several places, but most notably in
@@ -497,7 +633,32 @@ trait Trees { self: Universe =>
 
   /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
-       extends TermTree with RefTree
+       extends TermTree with RefTree { }
+
+  /** Some shorter-lived tree types which we need to expose at this
+   *  level in order to have an abstract Tree traverser.
+   */
+
+  /** This one isn't even in ast.Trees, so it's 100% abstract. */
+  type AbsDocComment
+
+  /** Documented definition, eliminated by analyzer */
+  case class DocDef(comment: AbsDocComment, definition: Tree)
+       extends Tree {
+    override def symbol: Symbol = definition.symbol
+    override def symbol_=(sym: Symbol) { definition.symbol = sym }
+    // sean: seems to be important to the IDE
+    override def isDef = definition.isDef
+  }
+
+  /** Either an assignment or a named argument. Only appears in argument lists,
+   *  eliminated by typecheck (doTypedApply)
+   */
+  case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
+       extends TermTree
+
+  case class Parens(args: List[Tree]) extends Tree // only used during parsing
+
 
 /* A standard pattern match
   case EmptyTree =>
