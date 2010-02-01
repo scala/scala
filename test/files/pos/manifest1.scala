@@ -13,8 +13,9 @@ object Test {
   abstract class C { type T = String; val x: T }
   val c = new C { val x = "abc" }
   foo(c.x)
-  abstract class D { type T; val x: T }
-  val d: D = new D { type T = String; val x = "x" }
+  abstract class D { type T; implicit val m: Manifest[T]; val x: T }
+  val stringm = implicitly[Manifest[String]]
+  val d: D = new D { type T = String; val m = stringm; val x = "x" }
+  import d.m
   foo(d.x)
-
 }

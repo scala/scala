@@ -797,7 +797,11 @@ self: Analyzer =>
                 "classType", tp,
                 (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
                  else findSubManifest(pre) :: suffix): _*)
-            } else if (sym.isAbstractType) {
+            } else {
+              EmptyTree
+/* the following is dropped because it is dangerous
+ *
+             if (sym.isAbstractType) {
               if (sym.isExistentiallyBound)
                 EmptyTree // todo: change to existential parameter manifest
               else if (sym.isTypeParameterOrSkolem)
@@ -818,6 +822,7 @@ self: Analyzer =>
               }
             } else {
               EmptyTree  // a manifest should have been found by normal searchImplicit
+*/
             }
           case RefinedType(parents, decls) =>
             // refinement is not generated yet
