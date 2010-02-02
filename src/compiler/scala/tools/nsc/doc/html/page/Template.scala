@@ -29,15 +29,15 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     </xml:group>
 
   val valueMembers =
-    (tpl.methods ::: tpl.values ::: (tpl.templates filter { tpl => tpl.isObject || tpl.isPackage })) sortWith (_.name < _.name)
+    (tpl.methods ::: tpl.values ::: (tpl.templates filter { tpl => tpl.isObject || tpl.isPackage })) sortBy (_.name)
 
   val typeMembers =
-    (tpl.abstractTypes ::: tpl.aliasTypes ::: (tpl.templates filter { tpl => tpl.isTrait || tpl.isClass })) sortWith (_.name < _.name)
+    (tpl.abstractTypes ::: tpl.aliasTypes ::: (tpl.templates filter { tpl => tpl.isTrait || tpl.isClass })) sortBy (_.name)
 
   val constructors = (tpl match {
     case cls: Class => cls.constructors
     case _ => Nil
-  }) sortWith (_.name < _.name)
+  }) sortBy (_.name)
 
   val body =
     <body class={ if (tpl.isTrait || tpl.isClass) "type" else "value" }>

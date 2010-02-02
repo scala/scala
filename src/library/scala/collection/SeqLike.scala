@@ -814,6 +814,19 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sortWith(ord on f)
 
+  /** Sorts this $Coll according to the implicitly given Ordering ord.
+   *  For a $Coll[A] coll, it is equivalent to either of:
+   *
+   *    coll.sortBy(identity[A])
+   *    coll.sortWith(_ < _)
+   *
+   *  @param   ord the ordering assumed on domain `B`.
+   *  @return  a $coll consisting of the elements of this $coll
+   *           sorted according to the ordering where `x < y` if
+   *           `ord.lt(f(x), f(y))`.
+   */
+  def sorted[B >: A](implicit ord: Ordering[B]): Repr = sortWith(ord)
+
   /** Converts this $coll to a sequence.
    *  $willNotTerminateInf
    *

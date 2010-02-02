@@ -69,7 +69,7 @@ object ClassPath {
     val assem = Assembly.LoadFrom(assemFile.path)
     if (assem != null) {
       // DeclaringType == null: true for non-inner classes
-      res = assem.GetTypes().filter((typ: MSILType) => typ.DeclaringType == null)
+      res = assem.GetTypes() filter (_.DeclaringType == null)
       Sorting.stableSort(res, (t1: MSILType, t2: MSILType) => (t1.FullName compareTo t2.FullName) < 0)
     }
     res

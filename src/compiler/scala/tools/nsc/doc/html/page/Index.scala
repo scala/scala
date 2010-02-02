@@ -49,7 +49,7 @@ class Index(modelRoot: Package) extends HtmlPage {
               <ol class="templates">{
                 val tpls: Map[String, Seq[DocTemplateEntity]] =
                   (pack.templates filter (t => !t.isPackage && !isExcluded(t) )) groupBy (_.name)
-                for (tn <- tpls.keySet.toSeq sortWith (_.toLowerCase < _.toLowerCase)) yield {
+                for (tn <- tpls.keySet.toSeq sortBy (_.toLowerCase)) yield {
                   val entries = tpls(tn) sortWith { (less, more) => less.isTrait || more.isObject }
                   def doEntry(ety: DocTemplateEntity, firstEty: Boolean): NodeSeq = {
                     val etyTpe =
@@ -65,7 +65,7 @@ class Index(modelRoot: Package) extends HtmlPage {
                 }
               }</ol>
               <ol class="packages"> {
-                for (sp <- pack.packages sortWith (_.name.toLowerCase < _.name.toLowerCase)) yield
+                for (sp <- pack.packages sortBy (_.name.toLowerCase)) yield
                   <li>{ packageElem(sp) }</li>
               }</ol>
             </xml:group>

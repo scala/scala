@@ -514,8 +514,7 @@ object Settings {
 
     // Ordered (so we can use TreeSet)
     def compare(that: Setting): Int = name compare that.name
-    def compareLists[T <% Ordered[T]](xs: List[T], ys: List[T]): Boolean =
-      xs.sortWith(_ < _) == ys.sortWith(_ < _)
+    def compareLists[T: Ordering](xs: List[T], ys: List[T]) = xs.sorted == ys.sorted
 
     // Equality
     def eqValues: List[Any] = List(name, value)

@@ -31,7 +31,7 @@ class XMLCompletion(root: Node) extends CompletionAware {
       nodeCache(s) = node
 
       s :: res
-    }).sortWith (_ < _)
+    }).sorted
   }
 
   override def execute(id: String)  = getNode(id)

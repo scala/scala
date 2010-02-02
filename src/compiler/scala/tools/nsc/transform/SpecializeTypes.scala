@@ -198,8 +198,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val tvars = if (sym.isClass) env.keySet
                 else specializedTypeVars(sym.info).intersect(env.keySet)
     val (methparams, others) = tvars.toList.partition(_.owner.isMethod)
-    val tvars1 = methparams.sortWith(_.name.toString < _.name.toString)
-    val tvars2 = others.sortWith(_.name.toString < _.name.toString)
+    val tvars1 = methparams sortBy (_.name.toString)
+    val tvars2 = others sortBy (_.name.toString)
     log("specName(" + sym + ") env " + env)
     specializedName(sym.name, tvars1 map env, tvars2 map env)
   }

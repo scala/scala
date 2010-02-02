@@ -102,7 +102,7 @@ trait PhaseAssembly { self: Global =>
       var lvl = 1
       var nds = nodes.valuesIterator.filter(_.level == lvl).toList
       while(nds.size > 0) {
-        nds = nds.sortWith((n1,n2) => (n1.phasename compareTo n2.phasename) < 0)
+        nds = nds sortBy (_.phasename)
         for (n <- nds) {
           chain = chain ::: n.phaseobj.get
         }
@@ -167,7 +167,7 @@ trait PhaseAssembly { self: Global =>
           } else if (sanity.length > 1) {
             var msg = "Multiple phases want to run right after the phase " + sanity.head.to.phasename + "\n"
             msg += "Phases: "
-            sanity = sanity.sortWith((e1,e2) => (e1.frm.phasename compareTo e2.frm.phasename) < 0)
+            sanity = sanity sortBy (_.frm.phasename)
             for (edge <- sanity) {
               msg += edge.frm.phasename + ", "
             }

@@ -1129,7 +1129,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   } filterNot isSynthVarName
 
   /** Another entry point for tab-completion, ids in scope */
-  def unqualifiedIds() = (unqualifiedIdNames() map (_.toString)).removeDuplicates sortWith (_ < _)
+  def unqualifiedIds() = (unqualifiedIdNames() map (_.toString)).removeDuplicates.sorted
 
   /** For static/object method completion */
   def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path

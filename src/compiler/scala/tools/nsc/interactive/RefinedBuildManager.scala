@@ -134,9 +134,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
             val changesOrdered =
               toList.map(e => {
                 e._1.toString + " -> " +
-                e._2.sortWith(_.toString < _.toString).mkString("List(", ", ", ")")
+                e._2.sortBy(_.toString).mkString("List(", ", ", ")")
               })
-            changesOrdered.sortWith(_ < _).mkString("Map(", ", ", ")")
+            changesOrdered.sorted.mkString("Map(", ", ", ")")
           }
       }
       val additionalDefs: mutable.HashSet[AbstractFile] = mutable.HashSet.empty

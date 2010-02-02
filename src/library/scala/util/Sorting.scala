@@ -31,24 +31,24 @@ object Sorting {
    *  items. This doesn't quite work the way that I want yet -- K should be
    *  bounded as viewable, but the compiler rejects that.
    */
-  implicit def seq2RichSort[K <: Ordered[K] : ClassManifest](s: Seq[K]) = new RichSorting[K](s)
+  // implicit def seq2RichSort[K <: Ordered[K] : ClassManifest](s: Seq[K]) = new RichSorting[K](s)
 
   /** Quickly sort an array of Doubles. */
-  def quickSort(a: Array[Double]) = sort1(a, 0, a.length)
+  def quickSort(a: Array[Double]) { sort1(a, 0, a.length) }
 
-  /** Quickly sort an array of items that are viewable as ordered. */
-  def quickSort[K <% Ordered[K]](a: Array[K]) = sort1(a, 0, a.length)
+  /** Quickly sort an array of items with an implicit Ordering. */
+  def quickSort[K](a: Array[K])(implicit ord: Ordering[K]) { sort1(a, 0, a.length) }
 
   /** Quickly sort an array of Ints. */
-  def quickSort(a: Array[Int]) = sort1(a, 0, a.length)
+  def quickSort(a: Array[Int]) { sort1(a, 0, a.length) }
 
   /** Quickly sort an array of Floats. */
-  def quickSort(a: Array[Float]) = sort1(a, 0, a.length)
+  def quickSort(a: Array[Float]) { sort1(a, 0, a.length) }
 
   /** Sort an array of K where K is Ordered, preserving the existing order
     * where the values are equal. */
-  def stableSort[K <% Ordered[K] : ClassManifest](a: Array[K]) {
-    stableSort(a, 0, a.length-1, new Array[K](a.length), (a:K, b:K) => a < b)
+  def stableSort[K](a: Array[K])(implicit m: ClassManifest[K], ord: Ordering[K]) {
+    stableSort(a, 0, a.length-1, new Array[K](a.length), ord.lt _)
   }
 
   /** Sorts an array of <code>K</code> given an ordering function
@@ -74,8 +74,8 @@ object Sorting {
   }
 
   /** Sorts an arbitrary sequence of items that are viewable as ordered. */
-  def stableSort[K <% Ordered[K] : ClassManifest](a: Seq[K]): Array[K] =
-    stableSort(a, (a:K, b:K) => a < b)
+  def stableSort[K](a: Seq[K])(implicit m: ClassManifest[K], ord: Ordering[K]): Array[K] =
+    stableSort(a, ord.lt _)
 
   /** Stably sorts a sequence of items given an extraction function that will
    *  return an ordered key from an item.
@@ -84,10 +84,11 @@ object Sorting {
    *  @param  f the comparison function.
    *  @return the sorted sequence of items.
    */
-  def stableSort[K : ClassManifest, M <% Ordered[M]](a: Seq[K], f: K => M): Array[K] =
-    stableSort(a, (a: K, b: K) => f(a) < f(b))
+  def stableSort[K, M](a: Seq[K], f: K => M)(implicit m: ClassManifest[K], ord: Ordering[M]): Array[K] =
+    stableSort(a)(m, ord on f)
 
-  private def sort1[K <% Ordered[K]](x: Array[K], off: Int, len: Int) {
+  private def sort1[K](x: Array[K], off: Int, len: Int)(implicit ord: Ordering[K]) {
+    import ord._
     def swap(a: Int, b: Int) {
       val t = x(a)
       x(a) = x(b)
@@ -562,7 +563,7 @@ object Sorting {
       3.724737288678125E10f
 //      0.0f/0.0f
     )
-    Sorting quickSort tuples
+    Sorting.quickSort(tuples)
     println(tuples.toList)
 
     Sorting quickSort integers
@@ -582,8 +583,7 @@ object Sorting {
  *    the items are ordered.
  *  </p>
  */
-class RichSorting[K <: Ordered[K] : ClassManifest](s: Seq[K]) {
-
+class RichSorting[K](s: Seq[K])(implicit m: ClassManifest[K], ord: Ordering[K]) {
   /** Returns an array with a sorted copy of the RichSorting's sequence.
    */
   def sort = Sorting.stableSort(s)

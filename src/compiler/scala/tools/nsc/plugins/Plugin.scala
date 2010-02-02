@@ -133,8 +133,8 @@ object Plugin {
   {
     val alljars = jars ::: (for {
       dir <- dirs if dir.isDirectory
-      entry <- dir.toDirectory.files.toList sortWith (_.name <= _.name)
-      if entry.name.toLowerCase endsWith ".jar"
+      entry <- dir.toDirectory.files.toList sortBy (_.name)
+      if entry.extension == "jar"
       pdesc <- loadDescription(entry)
       if !(ignoring contains pdesc.name)
     } yield entry)
