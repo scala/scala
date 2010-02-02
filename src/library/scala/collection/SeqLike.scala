@@ -765,32 +765,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *    List("Bob", "John", "Steve", "Tom")
    *  }}}
    */
-  def sortWith(lt: (A, A) => Boolean): Repr = sortWith(Ordering fromLessThan lt)
-
-  /** Sorts this $coll according to an Ordering.
-   *
-   *  The sort is stable. That is, elements that are equal wrt `lt` appear in the
-   *  same order in the sorted sequence as in the original.
-   *
-   *  @see scala.math.Ordering
-   *
-   *  @param  ord the ordering to be used to compare elements.
-   *  @return     a $coll consisting of the elements of this $coll
-   *              sorted according to the ordering `ord`.
-   */
-  def sortWith[B >: A](ord: Ordering[B]): Repr = {
-    val arr = new GenericArray[A](this.length)
-    var i = 0
-    for (x <- this) {
-      arr(i) = x
-      i += 1
-    }
-    java.util.Arrays.sort(
-      arr.array, ord.asInstanceOf[Ordering[Object]])
-    val b = newBuilder
-    for (x <- arr) b += x
-    b.result
-  }
+  def sortWith(lt: (A, A) => Boolean): Repr = sorted(Ordering fromLessThan lt)
 
   /** Sorts this $Coll according to the Ordering which results from transforming
    *  an implicitly given Ordering with a transformation function.
@@ -812,20 +787,31 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *    res0: Array[String] = Array(The, dog, fox, the, lazy, over, brown, quick, jumped)
    *  }}}
    */
-  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sortWith(ord on f)
+  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sorted(ord on f)
 
-  /** Sorts this $Coll according to the implicitly given Ordering ord.
-   *  For a $Coll[A] coll, it is equivalent to either of:
+  /** Sorts this $coll according to an Ordering.
    *
-   *    coll.sortBy(identity[A])
-   *    coll.sortWith(_ < _)
+   *  The sort is stable. That is, elements that are equal wrt `lt` appear in the
+   *  same order in the sorted sequence as in the original.
    *
-   *  @param   ord the ordering assumed on domain `B`.
-   *  @return  a $coll consisting of the elements of this $coll
-   *           sorted according to the ordering where `x < y` if
-   *           `ord.lt(f(x), f(y))`.
+   *  @see scala.math.Ordering
+   *
+   *  @param  ord the ordering to be used to compare elements.
+   *  @return     a $coll consisting of the elements of this $coll
+   *              sorted according to the ordering `ord`.
    */
-  def sorted[B >: A](implicit ord: Ordering[B]): Repr = sortWith(ord)
+  def sorted[B >: A](implicit ord: Ordering[B]): Repr = {
+    val arr = new GenericArray[A](this.length)
+    var i = 0
+    for (x <- this) {
+      arr(i) = x
+      i += 1
+    }
+    java.util.Arrays.sort(arr.array, ord.asInstanceOf[Ordering[Object]])
+    val b = newBuilder
+    for (x <- arr) b += x
+    b.result
+  }
 
   /** Converts this $coll to a sequence.
    *  $willNotTerminateInf
