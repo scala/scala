@@ -39,11 +39,7 @@ trait Symbols { self: Universe =>
       else owner.enclClass.fullName(separator) + separator + encodedName
     }
 
-    private def stripLocalSuffix(s: String) =
-      if (s endsWith nme.LOCAL_SUFFIX_STRING)
-        s.substring(0, s.length - nme.LOCAL_SUFFIX_STRING.length)
-      else
-        s
+    private def stripLocalSuffix(s: String) = s stripSuffix nme.LOCAL_SUFFIX_STRING
 
     /** The encoded full path name of this symbol, where outer names and inner names
      *  are separated by periods.
@@ -123,37 +119,37 @@ trait Symbols { self: Universe =>
     final def isProtected = hasFlag(PROTECTED)
 
     /** Is this symbol a sealed class? */
-    final def isSealed = isClass && (hasFlag(SEALED) || definitions.isValueClass(this))
-    final def isOverride = hasFlag(OVERRIDE)
-    final def isCase = hasFlag(CASE)
-    final def isAbstractClass = isClass && hasFlag(ABSTRACT)
-    final def isAbstractOverride = isTerm && hasFlag(ABSTRACT) && hasFlag(OVERRIDE)
-    final def isDeferred = hasFlag(DEFERRED) && !isClass
-    final def isMethod = isTerm && hasFlag(METHOD)
-    final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD // exclude all accessors!!!
-    final def isModule = isTerm && hasFlag(MODULE)
-    final def isModuleClass = isClass && hasFlag(MODULE)
-    final def isInterface = hasFlag(INTERFACE)
-    final def isMutable = hasFlag(MUTABLE)
-    final def isParameter = hasFlag(PARAM)
-    final def isPackage = isModule && hasFlag(PACKAGE)
-    final def isPackageClass = isClass && hasFlag(PACKAGE)
-    final def isCovariant = isType && hasFlag(COVARIANT)
-    final def isContravariant = isType && hasFlag(CONTRAVARIANT)
-    final def isJavaDefined = hasFlag(JAVA)
-    final def isSynthetic = hasFlag(SYNTHETIC)
           def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
     final def hasDefault = isParameter && hasFlag(DEFAULTPARAM)
+    final def isAbstractClass = isClass && hasFlag(ABSTRACT)
+    final def isAbstractOverride = isTerm && hasFlag(ABSTRACT) && hasFlag(OVERRIDE)
     final def isBridge = hasFlag(BRIDGE)
-    final def isGetterOrSetter = hasFlag(ACCESSOR)
-    final def isSuperAccessor = hasFlag(SUPERACCESSOR)
-    final def isParamAccessor = hasFlag(PARAMACCESSOR)
+    final def isCase = hasFlag(CASE)
     final def isCaseAccessor = hasFlag(CASEACCESSOR)
-    final def isLazy = hasFlag(LAZY)
+    final def isContravariant = isType && hasFlag(CONTRAVARIANT)
+    final def isCovariant = isType && hasFlag(COVARIANT)
+    final def isDeferred = hasFlag(DEFERRED) && !isClass
     final def isExistentiallyBound = isType && hasFlag(EXISTENTIAL)
-    final def isTypeParameter = isType && isParameter && !isSkolem
-    final def isRefinementClass = isClass && name == mkTypeName(nme.REFINE_CLASS_NAME)
+    final def isGetterOrSetter = hasFlag(ACCESSOR)
+    final def isInterface = hasFlag(INTERFACE)
+    final def isJavaDefined = hasFlag(JAVA)
+    final def isLazy = hasFlag(LAZY)
+    final def isMethod = isTerm && hasFlag(METHOD)
+    final def isModule = isTerm && hasFlag(MODULE)
+    final def isModuleClass = isClass && hasFlag(MODULE)
+    final def isMutable = hasFlag(MUTABLE)
     final def isOverloaded = hasFlag(OVERLOADED)
+    final def isOverride = hasFlag(OVERRIDE)
+    final def isPackage = isModule && hasFlag(PACKAGE)
+    final def isPackageClass = isClass && hasFlag(PACKAGE)
+    final def isParamAccessor = hasFlag(PARAMACCESSOR)
+    final def isParameter = hasFlag(PARAM)
+    final def isRefinementClass = isClass && name == mkTypeName(nme.REFINE_CLASS_NAME)
+    final def isSealed = isClass && (hasFlag(SEALED) || definitions.isValueClass(this))
+    final def isSourceMethod = isTerm && (flags & (METHOD | STABLE)) == METHOD // exclude all accessors!!!
+    final def isSuperAccessor = hasFlag(SUPERACCESSOR)
+    final def isSynthetic = hasFlag(SYNTHETIC)
+    final def isTypeParameter = isType && isParameter && !isSkolem
 
     /** Is this symbol an implementation class for a mixin? */
     final def isImplClass = isClass && hasFlag(IMPLCLASS)
@@ -174,7 +170,7 @@ trait Symbols { self: Universe =>
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass
 
-  // creators
+    // creators
 
     def newValue(name: Name, pos: Position = NoPosition): Symbol
     def newAbstractType(name: Name, pos: Position = NoPosition): Symbol
@@ -184,7 +180,7 @@ trait Symbols { self: Universe =>
     def newMethod(name: Name, pos: Position = NoPosition): Symbol
     def newModule(name: Name, clazz: Symbol, pos: Position = NoPosition): Symbol
 
-  // access to related symbols
+    // access to related symbols
 
     /** The next enclosing class */
     def enclClass: Symbol = if (isClass) this else owner.enclClass

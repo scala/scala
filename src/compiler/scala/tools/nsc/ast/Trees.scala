@@ -171,7 +171,6 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     override def setPos(pos: Position) = { assert(false); this }
   }
 
-
   def DefDef(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree): DefDef =
     atPos(sym.pos) {
       assert(sym != NoSymbol)
@@ -329,7 +328,22 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   def TypeTree(tp: Type): TypeTree = TypeTree() setType tp
 
-  type AbsDocComment = DocComment
+  /** Documented definition, eliminated by analyzer */
+  case class DocDef(comment: DocComment, definition: Tree)
+       extends Tree {
+    override def symbol: Symbol = definition.symbol
+    override def symbol_=(sym: Symbol) { definition.symbol = sym }
+    // sean: seems to be important to the IDE
+    override def isDef = definition.isDef
+  }
+
+  /** Either an assignment or a named argument. Only appears in argument lists,
+   *  eliminated by typecheck (doTypedApply)
+   */
+  case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
+       extends TermTree
+
+  case class Parens(args: List[Tree]) extends Tree // only used during parsing
 
 // ----- auxiliary objects and methods ------------------------------
 
@@ -851,6 +865,19 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   }
 
   class Traverser extends super.Traverser {
+    /** Compiler specific tree types are handled here: the remainder are in
+     *  the library's abstract tree traverser.
+     */
+    override def traverse(tree: Tree): Unit = tree match {
+      case AssignOrNamedArg(lhs, rhs) =>
+        traverse(lhs); traverse(rhs)
+      case DocDef(comment, definition) =>
+        traverse(definition)
+      case Parens(ts) =>
+        traverseTrees(ts)
+      case _ => super.traverse(tree)
+    }
+
     /** The abstract traverser is not aware of Tree.isTerm, so we override this one.
      */
     override def traverseStats(stats: List[Tree], exprOwner: Symbol) {

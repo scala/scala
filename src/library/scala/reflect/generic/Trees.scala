@@ -22,23 +22,24 @@ trait Trees { self: Universe =>
    *    use the AnnotationInfo's (Symbol.annotations) in later phases.
    */
   case class Modifiers(flags: Long, privateWithin: Name, annotations: List[Tree], positions: Map[Long, Position]) {
-    def isCovariant     = hasFlag(COVARIANT    )  // marked with `+'
+    def isAbstract      = hasFlag(ABSTRACT )
+    def isAccessor      = hasFlag(ACCESSOR )
+    def isArgument      = hasFlag(PARAM    )
+    def isCase          = hasFlag(CASE     )
     def isContravariant = hasFlag(CONTRAVARIANT)  // marked with `-'
-    def isPrivate   = hasFlag(PRIVATE  )
-    def isProtected = hasFlag(PROTECTED)
-    def isVariable  = hasFlag(MUTABLE  )
-    def isArgument  = hasFlag(PARAM    )
-    def isAccessor  = hasFlag(ACCESSOR )
-    def isOverride  = hasFlag(OVERRIDE )
-    def isAbstract  = hasFlag(ABSTRACT )
-    def isDeferred  = hasFlag(DEFERRED )
-    def isCase      = hasFlag(CASE     )
-    def isLazy      = hasFlag(LAZY     )
-    def isSealed    = hasFlag(SEALED   )
-    def isFinal     = hasFlag(FINAL    )
-    def isTrait     = hasFlag(TRAIT    )
-    def isImplicit  = hasFlag(IMPLICIT )
-    def isPublic    = !isPrivate && !isProtected
+    def isCovariant     = hasFlag(COVARIANT    )  // marked with `+'
+    def isDeferred      = hasFlag(DEFERRED )
+    def isFinal         = hasFlag(FINAL    )
+    def isImplicit      = hasFlag(IMPLICIT )
+    def isLazy          = hasFlag(LAZY     )
+    def isOverride      = hasFlag(OVERRIDE )
+    def isPrivate       = hasFlag(PRIVATE  )
+    def isProtected     = hasFlag(PROTECTED)
+    def isPublic        = !isPrivate && !isProtected
+    def isSealed        = hasFlag(SEALED   )
+    def isTrait         = hasFlag(TRAIT    )
+    def isVariable      = hasFlag(MUTABLE  )
+
     def hasFlag(flag: Long) = (flag & flags) != 0L
     def & (flag: Long): Modifiers = {
       val flags1 = flags & flag
@@ -57,9 +58,9 @@ trait Trees { self: Universe =>
     }
     def withAnnotations(annots: List[Tree]) =
       if (annots.isEmpty) this
-      else Modifiers(flags, privateWithin, annotations ::: annots, positions)
+      else copy(annotations = annotations ::: annots)
     def withPosition(flag: Long, position: Position) =
-    	Modifiers(flags, privateWithin, annotations, positions + (flag -> position))
+      copy(positions = positions + (flag -> position))
   }
 
   def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List(), new Map.EmptyMap)
@@ -69,7 +70,6 @@ trait Trees { self: Universe =>
 
   abstract class Tree extends Product {
     val id = nodeCount
-//    assert(id != 1223)
     nodeCount += 1
 
     private[this] var rawpos: Position = NoPosition
@@ -489,8 +489,6 @@ trait Trees { self: Universe =>
         traverse(expr)
       case Annotated(annot, arg) =>
         traverse(annot); traverse(arg)
-      case DocDef(comment, definition) =>
-        traverse(definition)
       case Template(parents, self, body) =>
         traverseTrees(parents)
         if (!self.isEmpty) traverse(self)
@@ -514,8 +512,6 @@ trait Trees { self: Universe =>
           traverseTrees(vparams); traverse(body)
         }
       case Assign(lhs, rhs) =>
-        traverse(lhs); traverse(rhs)
-      case AssignOrNamedArg(lhs, rhs) =>
         traverse(lhs); traverse(rhs)
       case If(cond, thenp, elsep) =>
         traverse(cond); traverse(thenp); traverse(elsep)
@@ -563,8 +559,6 @@ trait Trees { self: Universe =>
         traverse(tpt); traverseTrees(whereClauses)
       case SelectFromArray(qualifier, selector, erasure) =>
         traverse(qualifier)
-      case Parens(ts) =>
-        traverseTrees(ts)
     }
 
     def traverseTrees(trees: List[Tree]) {
@@ -634,31 +628,6 @@ trait Trees { self: Universe =>
   /** Array selection <qualifier> . <name> only used during erasure */
   case class SelectFromArray(qualifier: Tree, name: Name, erasure: Type)
        extends TermTree with RefTree { }
-
-  /** Some shorter-lived tree types which we need to expose at this
-   *  level in order to have an abstract Tree traverser.
-   */
-
-  /** This one isn't even in ast.Trees, so it's 100% abstract. */
-  type AbsDocComment
-
-  /** Documented definition, eliminated by analyzer */
-  case class DocDef(comment: AbsDocComment, definition: Tree)
-       extends Tree {
-    override def symbol: Symbol = definition.symbol
-    override def symbol_=(sym: Symbol) { definition.symbol = sym }
-    // sean: seems to be important to the IDE
-    override def isDef = definition.isDef
-  }
-
-  /** Either an assignment or a named argument. Only appears in argument lists,
-   *  eliminated by typecheck (doTypedApply)
-   */
-  case class AssignOrNamedArg(lhs: Tree, rhs: Tree)
-       extends TermTree
-
-  case class Parens(args: List[Tree]) extends Tree // only used during parsing
-
 
 /* A standard pattern match
   case EmptyTree =>
