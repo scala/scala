@@ -3,7 +3,7 @@ compiling Set(A.scala, D.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(trait A -> List(), class B -> List(), class C -> List(), class E -> List(Changed(Class(A))[class E extends a sealed trait A]))
+Changes: Map(class B -> List(), class C -> List(), class E -> List(Changed(Class(A))[class E extends a sealed trait A]), trait A -> List())
 invalidate D.scala because it references changed class [Changed(Class(A))[class E extends a sealed trait A]]
 compiling Set(D.scala)
 D.scala:3: warning: match is not exhaustive!
