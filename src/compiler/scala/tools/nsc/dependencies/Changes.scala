@@ -97,14 +97,12 @@ abstract class Changes {
           }
       }
       sameTypes(parents1, parents2) && isSubScope(ref1, ref2) && isSubScope(ref2, ref1)
-
     case (mt1 @ MethodType(params1, res1), mt2 @ MethodType(params2, res2)) =>
       // new dependent types: probably fix this, use substSym as done for PolyType
-      (sameTypes(tp1.paramTypes, tp2.paramTypes) &&
+      sameTypes(tp1.paramTypes, tp2.paramTypes) &&
       (tp1.params corresponds tp2.params)((t1, t2) => sameSymbol(t1, t2) && sameFlags(t1, t2)) &&
       sameType(res1, res2) &&
-      mt1.isImplicit == mt2.isImplicit)
-
+      mt1.isImplicit == mt2.isImplicit
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       sameTypeParams(tparams1, tparams2) && sameType(res1, res2)
     case (ExistentialType(tparams1, res1), ExistentialType(tparams2, res2)) =>
@@ -115,12 +113,12 @@ abstract class Changes {
       bounds containsType tp2
     case (_, BoundedWildcardType(bounds)) =>
       bounds containsType tp1
-
     case (AnnotatedType(_,_,_), _) =>
-      annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAnnotations =:= tp2.withoutAnnotations
+      annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) &&
+      sameType(tp1.withoutAnnotations, tp2.withoutAnnotations)
     case (_, AnnotatedType(_,_,_)) =>
-      annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) && tp1.withoutAnnotations =:= tp2.withoutAnnotations
-
+      annotationsConform(tp1, tp2) && annotationsConform(tp2, tp1) &&
+      sameType(tp1.withoutAnnotations, tp2.withoutAnnotations)
     case (_: SingletonType, _: SingletonType) =>
       var origin1 = tp1
       while (origin1.underlying.isInstanceOf[SingletonType]) {
