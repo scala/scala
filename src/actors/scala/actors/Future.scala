@@ -46,10 +46,14 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
  */
 object Futures {
 
+  import scala.concurrent.SyncVar
+
   private case object Eval
 
-  private class FutureActor[T](fun: () => T, channel: Channel[T])
+  private class FutureActor[T](fun: SyncVar[T] => Unit, channel: Channel[T])
     extends Future[T](channel) with DaemonActor {
+
+    import Actor._
 
     def isSet = !fvalue.isEmpty
 
@@ -70,12 +74,17 @@ object Futures {
     }
 
     def act() {
-      val res = fun()
-      fvalue =  Some(res)
-      channel ! res
-      Actor.loop {
-        Actor.react {
-          case Eval => Actor.reply()
+      val res = new SyncVar[T]
+
+      {
+        fun(res)
+      } andThen {
+        fvalue =  Some(res.get)
+        channel ! res.get
+        loop {
+          react {
+            case Eval => reply()
+          }
         }
       }
     }
@@ -90,7 +99,7 @@ object Futures {
    */
   def future[T](body: => T): Future[T] = {
     val c = new Channel[T](Actor.self(DaemonScheduler))
-    val a = new FutureActor[T](() => body, c)
+    val a = new FutureActor[T](_.set(body), c)
     a.start()
     a
   }
@@ -100,10 +109,16 @@ object Futures {
    *  @param  timespan the time span in ms after which the future resolves
    *  @return          the future
    */
-  def alarm(timespan: Long) = future {
-    Actor.reactWithin(timespan) {
-      case TIMEOUT => {}
+  def alarm(timespan: Long): Future[Unit] = {
+    val c = new Channel[Unit](Actor.self(DaemonScheduler))
+    val fun = (res: SyncVar[Unit]) => {
+      Actor.reactWithin(timespan) {
+        case TIMEOUT => res.set({})
+      }
     }
+    val a = new FutureActor[Unit](fun, c)
+    a.start()
+    a
   }
 
   /** Waits for the first result returned by one of two
