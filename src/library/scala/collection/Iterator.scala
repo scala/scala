@@ -937,6 +937,8 @@ trait Iterator[+A] { self =>
       if (!filled)
         fill()
 
+      if (!filled)
+        throw new NoSuchElementException("next on empty iterator")
       filled = false
       buffer.toList
     }
