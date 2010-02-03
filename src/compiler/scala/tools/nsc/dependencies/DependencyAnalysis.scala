@@ -115,6 +115,10 @@ trait DependencyAnalysis extends SubComponent with Files {
   case class Inherited(qualifier: String, member: Name)
 
   class AnalysisPhase(prev : Phase) extends StdPhase(prev){
+
+    override def cancelled(unit: CompilationUnit) =
+      super.cancelled(unit) && !unit.isJava
+
     def apply(unit : global.CompilationUnit) {
       val f = unit.source.file.file;
       // When we're passed strings by the interpreter
@@ -185,12 +189,12 @@ trait DependencyAnalysis extends SubComponent with Files {
                 checkType(ddef.symbol.tpe)
               }
               super.traverse(tree)
-            case a @ Select(q, n) if (q.symbol != null) => // #2556
-              if (!a.symbol.isConstructor && !a.symbol.owner.isPackageClass) {
-                if (!isSameType(q.tpe, a.symbol.owner.tpe))
+            case a @ Select(q, n) if ((a.symbol != NoSymbol) && (q.symbol != null)) => // #2556
+              if (!a.symbol.isConstructor &&
+                  !a.symbol.owner.isPackageClass &&
+                  !isSameType(q.tpe, a.symbol.owner.tpe))
                   inherited += file ->
                     (inherited(file) + Inherited(q.symbol.tpe.resultType.safeToString, n))
-              }
               super.traverse(tree)
             case _            =>
               super.traverse(tree)
