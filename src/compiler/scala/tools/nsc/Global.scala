@@ -736,7 +736,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
-      val depSources = dependencyAnalysis.filter(_sources.removeDuplicates) // bug #1268, scalac confused by duplicated filenames
+      val depSources = dependencyAnalysis.filter(_sources.unique) // bug #1268, scalac confused by duplicated filenames
       val sources = scalaObjectFirst(depSources)
       if (reporter.hasErrors)
         return  // there is a problem already, e.g. a

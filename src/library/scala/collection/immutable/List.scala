@@ -288,6 +288,9 @@ sealed abstract class List[+A] extends LinearSeq[A]
     b.toList
   }
 
+  @deprecated("use `unique' instead")
+  def removeDuplicates: List[A] = unique
+
   /** <p>
    *    Sort the list according to the comparison function
    *    `lt(e1: a, e2: a) =&gt; Boolean`,

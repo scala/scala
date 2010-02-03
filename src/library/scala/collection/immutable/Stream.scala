@@ -344,9 +344,9 @@ self =>
   /** Builds a new stream from this stream in which any duplicates (wrt to ==) removed.
    *  Among duplicate elements, only the first one is retained in the result stream
    */
-  override def removeDuplicates: Stream[A] =
+  override def unique: Stream[A] =
     if (isEmpty) this
-    else new Stream.Cons(head, tail.filter(head !=).removeDuplicates)
+    else new Stream.Cons(head, tail.filter(head !=).unique)
 
   /** Returns a new sequence of given length containing the elements of this sequence followed by zero
    *  or more occurrences of given elements.

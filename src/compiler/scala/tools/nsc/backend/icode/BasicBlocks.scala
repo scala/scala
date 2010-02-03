@@ -490,7 +490,7 @@ trait BasicBlocks {
         ss ++ (ss flatMap findSucc)
       }
 
-      succs.flatMap(findSucc).removeDuplicates
+      succs flatMap findSucc unique
     }
 
     /** Returns the precessors of this block.     */

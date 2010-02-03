@@ -66,7 +66,7 @@ object Terms {
     override def toString() =
       a + (if (ts.isEmpty) "" else ts.mkString("(", ",", ")"));
     def map(s: Subst): Term = Con(a, ts map (t => t map s));
-    def tyvars = (ts flatMap (t => t.tyvars)).removeDuplicates;
+    def tyvars = (ts flatMap (t => t.tyvars)).unique;
   }
 
   private var count = 0;
@@ -113,7 +113,7 @@ object Programs {
 
   case class Clause(lhs: Term, rhs: List[Term]) {
     def tyvars =
-      (lhs.tyvars ::: (rhs flatMap (t => t.tyvars))).removeDuplicates;
+      (lhs.tyvars ::: (rhs flatMap (t => t.tyvars))).unique;
     def newInstance = {
       var s: Subst = List();
       for (val a <- tyvars) { s = Binding(a, newVar(a)) :: s }

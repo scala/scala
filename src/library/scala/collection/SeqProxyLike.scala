@@ -50,7 +50,7 @@ trait SeqProxyLike[+A, +This <: SeqLike[A, This] with Seq[A]] extends SeqLike[A,
   override def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.union(that)(bf)
   override def diff[B >: A, That](that: Seq[B]): This = self.diff(that)
   override def intersect[B >: A, That](that: Seq[B]): This = self.intersect(that)
-  override def removeDuplicates: This = self.removeDuplicates
+  override def unique: This = self.unique
   override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That = self.patch(from, patch, replaced)(bf)
   override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That = self.padTo(len, elem)(bf)
   override def indices: Range = self.indices
