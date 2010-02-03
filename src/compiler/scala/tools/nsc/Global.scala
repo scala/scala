@@ -12,7 +12,7 @@ import java.nio.charset._
 import compat.Platform.currentTime
 import scala.tools.nsc.io.{SourceReader, AbstractFile, Path}
 import scala.tools.nsc.reporters._
-import scala.tools.nsc.util.{ClassPath, MsilClassPath, JavaClassPath, SourceFile, BatchSourceFile, OffsetPosition, RangePosition}
+import scala.tools.nsc.util.{ClassPath, JavaClassPath, SourceFile, BatchSourceFile, OffsetPosition, RangePosition}
 
 import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
 
@@ -28,7 +28,6 @@ import transform._
 import backend.icode.{ICodes, GenICode, Checkers}
 import backend.ScalaPrimitives
 import backend.jvm.GenJVM
-import backend.msil.GenMSIL
 import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
 import backend.icode.analysis._
 
@@ -210,18 +209,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
     }
 
-  lazy val classPath =
-    if (forMSIL)
-      new MsilClassPath(settings.assemextdirs.value, settings.assemrefs.value, settings.sourcepath.value, settings.XO.value)
-    else
-      new JavaClassPath(settings.bootclasspath.value, settings.extdirs.value,
-                        settings.classpath.value, settings.sourcepath.value,
-                        settings.Xcodebase.value, settings.XO.value)
+  lazy val classPath: ClassPath[_] = new JavaClassPath(
+    settings.bootclasspath.value, settings.extdirs.value,
+    settings.classpath.value, settings.sourcepath.value,
+    settings.Xcodebase.value, settings.XO.value
+  )
 
-  if (settings.verbose.value) {
+  if (settings.verbose.value)
     inform("[Classpath = " + classPath + "]")
-    if (forMSIL) inform("[AssemRefs = " + settings.assemrefs.value + "]")
-  }
 
   def getSourceFile(f: AbstractFile): BatchSourceFile =
     new BatchSourceFile(f, reader.read(f))
@@ -237,9 +232,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   }
 
-  def rootLoader: LazyType =
-    if (forMSIL) new loaders.NamespaceLoader(classPath.asInstanceOf[MsilClassPath])
-    else new loaders.JavaPackageLoader(classPath.asInstanceOf[JavaClassPath])
+  def rootLoader: LazyType = new loaders.JavaPackageLoader(classPath.asInstanceOf[JavaClassPath])
 
 // ------------ Phases -------------------------------------------}
 
@@ -469,13 +462,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsRightAfter = None
   } with DependencyAnalysis
 
-  // phaseName = "msil"
-  object genMSIL extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List[String]("dce")
-    val runsRightAfter = None
-  } with GenMSIL
-
   // phaseName = "terminal"
   object terminal extends {
     val global: Global.this.type = Global.this
@@ -515,57 +501,50 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /* Add the internal compiler phases to the phases set
    */
   protected def computeInternalPhases() {
-    phasesSet += syntaxAnalyzer                        // The parser
-    phasesSet += analyzer.namerFactory                 // note: types are there because otherwise
-    phasesSet += analyzer.packageObjects               // consistency check after refchecks would fail.
+    phasesSet += syntaxAnalyzer             // The parser
+    phasesSet += analyzer.namerFactory      //   note: types are there because otherwise
+    phasesSet += analyzer.packageObjects    //   consistency check after refchecks would fail.
     phasesSet += analyzer.typerFactory
-    phasesSet += superAccessors			       // add super accessors
-    phasesSet += pickler			       // serialize symbol tables
-    phasesSet += refchecks			       // perform reference and override checking, translate nested objects
+    phasesSet += superAccessors             // add super accessors
+    phasesSet += pickler                    // serialize symbol tables
+    phasesSet += refchecks                  // perform reference and override checking, translate nested objects
+    // phasesSet += devirtualize               // Desugar virtual classes
 
-//    if (false && settings.Xexperimental.value)
-//	phasesSet += devirtualize		       // Desugar virtual classes4
-
-    phasesSet += uncurry			       // uncurry, translate function values to anonymous classes
-    phasesSet += tailCalls			       // replace tail calls by jumps
+    phasesSet += uncurry                    // uncurry, translate function values to anonymous classes
+    phasesSet += tailCalls                  // replace tail calls by jumps
     if (settings.specialize.value)
       phasesSet += specializeTypes
-    phasesSet += explicitOuter			       // replace C.this by explicit outer pointers, eliminate pattern matching
-    phasesSet += erasure			       // erase generic types to Java 1.4 types, add interfaces for traits
-    phasesSet += lazyVals			       //
-    phasesSet += lambdaLift			       // move nested functions to top level
-//    if (forJVM && settings.Xdetach.value)
-//      phasesSet += detach			       // convert detached closures
-    phasesSet += constructors			       // move field definitions into constructors
-    phasesSet += mixer				       // do mixin composition
-    phasesSet += cleanup			       // some platform-specific cleanups
-    phasesSet += genicode			       // generate portable intermediate code
-    phasesSet += inliner			       // optimization: do inlining
-    phasesSet += closureElimination		       // optimization: get rid of uncalled closures
-    phasesSet += deadCode			       // optimization: get rid of dead cpde
-    phasesSet += terminal                              // The last phase in the compiler chain
+    phasesSet += explicitOuter              // replace C.this by explicit outer pointers, eliminate pattern matching
+    phasesSet += erasure                    // erase types, add interfaces for traits
+    phasesSet += lazyVals
+    phasesSet += lambdaLift                 // move nested functions to top level
+    // if (forJVM && settings.Xdetach.value)
+    //   phasesSet += detach                // convert detached closures
 
-    if (! forMSIL) {
-      phasesSet += flatten			       // get rid of inner classes
-    }
+    phasesSet += constructors               // move field definitions into constructors
+    phasesSet += mixer                      // do mixin composition
+    phasesSet += cleanup                    // some platform-specific cleanups
+    phasesSet += genicode                   // generate portable intermediate code
+    phasesSet += inliner                    // optimization: do inlining
+    phasesSet += closureElimination         // optimization: get rid of uncalled closures
+    phasesSet += deadCode                   // optimization: get rid of dead cpde
+    phasesSet += terminal                   // The last phase in the compiler chain
+
     if (forJVM) {
-      phasesSet += liftcode			       // generate reified trees
-      phasesSet += genJVM			       // generate .class files
+      phasesSet += flatten                  // get rid of inner classes
+      phasesSet += liftcode                 // generate reified trees
+      phasesSet += genJVM                   // generate .class files
       if (settings.make.value != "all")
         phasesSet += dependencyAnalysis
     }
-    if (forMSIL) {
-      phasesSet += genMSIL			       // generate .msil files
-    }
   }
-
 
   /* Helper method for sequncing the phase assembly
    */
   private def computePhaseDescriptors: List[SubComponent] = {
-    computeInternalPhases()	       // Global.scala
-    computePluginPhases()	       // plugins/Plugins.scala
-    buildCompilerFromPhasesSet()       // PhaseAssembly.scala
+    computeInternalPhases()       // Global.scala
+    computePluginPhases()         // plugins/Plugins.scala
+    buildCompilerFromPhasesSet()  // PhaseAssembly.scala
   }
 
   /* The phase descriptor list */
@@ -577,10 +556,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /** A description of the phases that will run */
   def phaseDescriptions: String = {
     new Run // force some initialization
-    val messages =
-      for (phase <- phaseDescriptors)
-	yield phase.phaseName //todo: + " - " + phase.description
-    messages.mkString("\n")
+
+    phaseDescriptors map (_.phaseName) mkString "\n" // todo: + " - " + phase.description
   }
 
   // ----------- Runs ---------------------------------------
@@ -766,9 +743,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
             phase = globalPhase
             if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes
             else checker.checkTrees
-      	  }
-      	  else if (!settings.check.doAllPhases) {
-      	    warning("It is not possible to check the result of the "+globalPhase.name+" phase")
+          }
+          else if (!settings.check.doAllPhases) {
+            warning("It is not possible to check the result of the "+globalPhase.name+" phase")
           }
         }
         if (settings.Ystatistics.value) statistics.print(phase)
@@ -828,22 +805,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     /** Compile list of files given by their names */
     def compile(filenames: List[String]) {
-      try {
-        val scriptMain = settings.script.value
-        // Are we compiling a script?
-        if (scriptMain != "") {
-          if(filenames.length != 1)
-            error("can only compile one script at a time")
-          val scriptFile =
-	    ScriptRunner.wrappedScript(scriptMain, filenames.head, getSourceFile)
-          compileSources(List(scriptFile))
-        // No we are compiling regular source files
-	} else {
-          compileSources(filenames map getSourceFile)
-	}
-      } catch {
-        case ex: IOException => error(ex.getMessage())
+      val scriptMain = settings.script.value
+      def sources: List[SourceFile] = scriptMain match {
+        case ""                             => filenames map getSourceFile
+        case main if filenames.length == 1  => List(ScriptRunner.wrappedScript(main, filenames.head, getSourceFile))
+        case _                              => error("can only compile one script at a time") ; Nil
       }
+
+      try compileSources(sources)
+      catch { case ex: IOException => error(ex.getMessage()) }
     }
 
     /** Compile abstract file until `globalPhase`, but at least
