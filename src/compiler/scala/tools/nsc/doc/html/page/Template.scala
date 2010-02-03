@@ -170,6 +170,15 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
           </div>
       }
+      { tpl.companion match {
+          case Some(companion) if isSelf =>
+            <div class="block">
+              Go to: <a href={relativeLinkTo(companion)}>companion</a>
+            </div>
+          case _ =>
+            NodeSeq.Empty
+        }
+      }
       { val inDefTpls = mbr.inDefinitionTemplates
         if (inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) NodeSeq.Empty else {
           <div class="block">
@@ -178,29 +187,29 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }
       }
       { mbr match {
-          case dtpl: DocTemplateEntity if isSelf =>
-            val subClss = dtpl.subClasses
-            if (subClss.isEmpty) NodeSeq.Empty else
-              <div class="block">
-                known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
-              </div>
+          case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty) =>
+            <div class="block">
+              known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
+            </div>
           case _ => NodeSeq.Empty
         }
       }
+      { mbr match {
+          case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined) =>
+            val sourceUrl = tpl.sourceUrl.get
+            <div class="block">
+              source: { <a href={ sourceUrl.toString }>{ Text(new java.io.File(sourceUrl.getPath).getName) }</a> }
+            </div>
+          case _ => NodeSeq.Empty
+        }
+      }
+      { if(mbr.deprecation.isEmpty) NodeSeq.Empty else
+          <div class="block"><ol>deprecated:
+            { <li>{ bodyToHtml(mbr.deprecation.get) }</li> }
+          </ol></div>
+      }
       { for(comment <- mbr.comment.toList) yield {
         <xml:group>
-          { if(!comment.deprecated.isEmpty)
-              <div class="block"><ol>deprecated:
-                { for(body <- comment.deprecated.toList) yield <li>{bodyToHtml(body)}</li> }
-              </ol></div>
-           else NodeSeq.Empty
-          }
-          { if(mbr.isDeprecated)
-              <div class="block"><ol>deprecated:
-                { for(str <- mbr.deprecationMessage.toList) yield <li>{str}</li> }
-              </ol></div>
-            else NodeSeq.Empty
-          }
           { if(!comment.version.isEmpty)
             <div class="block"><ol>version
               { for(body <- comment.version.toList) yield <li>{bodyToHtml(body)}</li> }
@@ -231,15 +240,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           }
         </xml:group>
       }}
-      { tpl.companion match {
-          case Some(companion) if isSelf =>
-            <div class="block">
-              Go to: <a href={relativeLinkTo(companion)}>companion</a>
-            </div>
-          case _ =>
-            NodeSeq.Empty
-        }
-      }
     </xml:group>
 
   def kindToString(mbr: MemberEntity): String = mbr match {
@@ -260,12 +260,11 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
   /** name, tparams, params, result */
   def signature(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
-    val isDeprecated = mbr.isDeprecated ||  (!mbr.comment.isEmpty && !mbr.comment.get.deprecated.isEmpty)
     def inside(hasLinks: Boolean): NodeSeq =
       <xml:group>
       <span class="kind">{ kindToString(mbr) }</span>
       <span class="symbol">
-        <span class={"name" + (if(isDeprecated) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
+        <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
           def tparamsToHtml(tpss: List[TypeParam]): NodeSeq =
             if (tpss.isEmpty) NodeSeq.Empty else {
               def tparam0(tp: TypeParam): NodeSeq =

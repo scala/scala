@@ -26,6 +26,10 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
     * documented. 'Note:'' This setting is currently not used. */
   val docversion     = StringSetting    ("-doc-version", "doc-version", "An optional version number, to be appended to the title", "")
 
+  /** A setting that defines a URL to be concatenated with source locations and show a link to source files.
+   * If needed the sourcepath option can be used to exclude undesired initial part of the link to sources */
+  val docsourceurl   = StringSetting    ("-doc-source-url", "url", "The URL prefix where documentation will link to sources", "")
+
   // working around issue described in r18708.
   suppressVTWarn.value = true
 

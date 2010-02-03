@@ -29,10 +29,10 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     throw FatalError("program logic: " + msg)
 
   protected val CleanHtml =
-  new Regex("""</?(p|h\d|pre|dl|dt|dd|ol|ul|li|blockquote|div|hr|br|br)\s*/?>""")
+  new Regex("""</?(p|h\d|pre|dl|dt|dd|ol|ul|li|blockquote|div|hr|br|br).*/?>""")
 
   protected val ShortLineEnd =
-  new Regex("""\.|</(p|h\d|pre|dd|li|div|blockquote)>|<(hr|table)\s*/?>""")
+  new Regex("""\.|</?.*>""")
 
   /** The body of a comment, dropping start and end markers. */
   protected val CleanComment =
@@ -220,7 +220,7 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     *  * Removed start-of-line star and one whitespace afterwards (if present).
     *  * Removed all end-of-line whitespace.
     *  * Only `endOfLine` is used to mark line endings. */
-  protected def parseWiki(string: String, pos: Position): Body =
+  def parseWiki(string: String, pos: Position): Body =
     new WikiParser(string.toArray, pos).document()
 
   /** TODO

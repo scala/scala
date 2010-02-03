@@ -1269,7 +1269,10 @@ DOCUMENTATION
     <mkdir dir="${build-docs.dir}/library"/>
     <scaladoc
       destdir="${build-docs.dir}/library"
-      doctitle="Scala ${version.number} API"
+      doctitle="Scala Standard Libray"
+      docversion="${version.number}"
+      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/"
+      sourcepath="${src.dir}"
       classpathref="pack.classpath">
       <src>
         <files includes="${src.dir}/actors"/>
@@ -1289,6 +1292,7 @@ DOCUMENTATION
       <exclude name="runtime/ScalaRunTime.scala"/>
       <exclude name="runtime/StreamCons.scala"/>
       <exclude name="runtime/StringAdd.scala"/>
+      <exclude name="scala/swing/test/**"/>
     </scaladoc>
     <touch file="${build-docs.dir}/library.complete" verbose="no"/>
     <stopwatch name="docs.lib.timer" action="total"/>
@@ -1351,7 +1355,10 @@ DOCUMENTATION
     <mkdir dir="${build-docs.dir}/compiler"/>
     <scaladoc
       destdir="${build-docs.dir}/compiler"
-      doctitle="Scala Compiler ${version.number} API"
+      doctitle="Scala Compiler"
+      docversion="${version.number}"
+      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/"
+      sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler">
       <include name="**/*.scala"/>

@@ -25,7 +25,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
 
   object commentator {
 
-    private val factory = new CommentFactory(reporter)
+    val factory = new CommentFactory(reporter)
 
     private val commentCache = mutable.HashMap.empty[(Symbol, TemplateImpl), Comment]
 
@@ -94,8 +94,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     def inDefinitionTemplates =
       if (inTpl == null)
         makePackage(RootPackage, null).toList
-      else if (sym.owner == inTpl.sym)
-        inTpl :: Nil
       else
         makeTemplate(sym.owner) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
     def visibility = {
@@ -121,11 +119,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
       if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
       fgs.toList
     }
+    def deprecation =
+      if (sym.isDeprecated && sym.deprecationMessage.isDefined)
+        Some(commentator.factory.parseWiki(sym.deprecationMessage.get, NoPosition))
+      else if (sym.isDeprecated)
+        Some(Body(Nil))
+      else if (comment.isDefined)
+        comment.get.deprecated
+      else
+        None
     def inheritedFrom =
       if (inTemplate.sym == this.sym.owner || inTemplate.sym.isPackage) Nil else
         makeTemplate(this.sym.owner) :: (sym.allOverriddenSymbols map { os => makeTemplate(os.owner) })
-    def isDeprecated = sym.isDeprecated
-    def deprecationMessage = sym.deprecationMessage
     def resultType = makeType(sym.tpe.finalResultType, inTemplate, sym)
     def isDef = false
     def isVal = false
@@ -150,6 +155,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     override def definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
     def inSource = if (sym.sourceFile != null) Some(sym.sourceFile, sym.pos.line) else None
+    def sourceUrl = {
+      def fixPath(s: String) = s.replaceAll(java.io.File.separator, "/")
+      val assumedSourceRoot: String = {
+        val fixed = fixPath(settings.sourcepath.value)
+        if (fixed endsWith "/") fixed.dropRight(1) else fixed
+      }
+      if (!settings.docsourceurl.isDefault)
+        inSource map { case (file, _) =>
+          new java.net.URL(settings.docsourceurl.value + "/" + fixPath(file.path).replaceFirst("^" + assumedSourceRoot, ""))
+        }
+      else None
+    }
     def typeParams = if (sym.isClass) sym.typeParams map (makeTypeParam(_, this)) else Nil
     def parentType =
       if (sym.isPackage) None else
@@ -169,7 +186,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
       subClassesCache += sc
     }
     def subClasses = subClassesCache.toList
-    protected def memberSyms =
+    protected lazy val memberSyms =
        // Only this class's constructors are part of its members, inherited constructors are not.
       sym.info.nonPrivateMembers.filter(x => (!x.isConstructor || x.owner==sym))
     val members       = memberSyms flatMap (makeMember(_, this))
@@ -231,7 +248,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
             override def qualifiedName = "_root_"
             override def inheritedFrom = Nil
             override def isRootPackage = true
-            override protected def memberSyms =
+            override protected lazy val memberSyms =
               (bSym.info.members ++ EmptyPackage.info.members) filter { s =>
                 s != EmptyPackage && s != RootPackage
               }
@@ -358,13 +375,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
         })
       else if (bSym.isPackage)
         inTpl match { case inPkg: PackageImpl =>  makePackage(bSym, inPkg) }
-      else if ((bSym.isClass || bSym.isModule) && (bSym.sourceFile != null) && bSym.isPublic && !bSym.isLocal) {
+      else if ((bSym.isClass || bSym.isModule) && bSym.isPublic && !bSym.isLocal) {
         (inTpl.toRoot find (_.sym == bSym )) orElse Some(makeDocTemplate(bSym, inTpl))
       }
       else
         None
     }
-    if (!aSym.isPublic || (aSym hasFlag Flags.SYNTHETIC) || (aSym hasFlag Flags.BRIDGE) || aSym.isLocal || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
+    if ((!aSym.isPackage && aSym.sourceFile == null) || !aSym.isPublic || (aSym hasFlag Flags.SYNTHETIC) || aSym.isLocal || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>

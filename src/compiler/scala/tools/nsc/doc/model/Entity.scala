@@ -43,9 +43,8 @@ trait MemberEntity extends Entity {
   def definitionName: String
   def visibility: Option[Paragraph]
   def flags: List[Paragraph]
+  def deprecation: Option[Body]
   def inheritedFrom: List[TemplateEntity]
-  def isDeprecated: Boolean
-  def deprecationMessage: Option[String]
   def resultType: TypeEntity
   def isDef: Boolean
   def isVal: Boolean
@@ -61,6 +60,7 @@ trait MemberEntity extends Entity {
 trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def toRoot: List[DocTemplateEntity]
   def inSource: Option[(io.AbstractFile, Int)]
+  def sourceUrl: Option[java.net.URL]
   def typeParams: List[TypeParam]
   def parentType: Option[TypeEntity]
   def linearization: List[TemplateEntity]

@@ -2469,11 +2469,15 @@ self =>
       val stats = new ListBuffer[Tree]
       while (in.token != RBRACE && in.token != EOF) {
         if (in.token == PACKAGE) {
-          in.flushDoc
           val start = in.skipToken()
-          stats += {
-            if (in.token == OBJECT) makePackageObject(start, objectDef(in.offset, NoMods))
-            else packaging(start)
+          stats ++= {
+            if (in.token == OBJECT) {
+              joinComment(List(makePackageObject(start, objectDef(in.offset, NoMods))))
+            }
+            else {
+              in.flushDoc
+              List(packaging(start))
+            }
           }
         } else if (in.token == IMPORT) {
           in.flushDoc
@@ -2631,15 +2635,15 @@ self =>
         while (in.token == SEMI) in.nextToken()
         val start = in.offset
         if (in.token == PACKAGE) {
-          in.flushDoc
           in.nextToken()
           if (in.token == OBJECT) {
-            ts += makePackageObject(start, objectDef(in.offset, NoMods))
+            ts ++= joinComment(List(makePackageObject(start, objectDef(in.offset, NoMods))))
             if (in.token != EOF) {
               acceptStatSep()
               ts ++= topStatSeq()
             }
           } else {
+            in.flushDoc
             val pkg = qualId()
             newLineOptWhenFollowedBy(LBRACE)
             if (in.token == EOF) {
