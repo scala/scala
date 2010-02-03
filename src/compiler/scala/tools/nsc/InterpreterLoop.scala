@@ -117,6 +117,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
       override protected def parentClassLoader = classOf[InterpreterLoop].getClassLoader
     }
     interpreter.setContextClassLoader()
+    // interpreter.quietBind("settings", "scala.tools.nsc.InterpreterSettings", interpreter.isettings)
   }
 
   /** print a friendly help message */
@@ -240,19 +241,6 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         case _                          => true
       }
 
-    /* For some reason, the first interpreted command always takes
-     * a second or two.  So, wait until the welcome message
-     * has been printed before calling initialize.  That way,
-     * the user can read the welcome message while this
-     * command executes.
-     */
-    val futLine = scala.concurrent.ops.future(readOneLine)
-    interpreter.initialize()
-
-    if (!processLine(futLine()))
-      return
-
-    // loops until false, then returns
     while (processLine(readOneLine)) { }
   }
 

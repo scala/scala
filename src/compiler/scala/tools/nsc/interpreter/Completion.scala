@@ -46,8 +46,6 @@ import Completion._
 class Completion(repl: Interpreter) {
   self =>
 
-  import repl.isInitialized
-
   private def asURLs(xs: List[String]) = xs map (x => io.File(x).toURL)
   private def classPath = (
     // compiler jars, scala-library.jar etc.
@@ -106,7 +104,7 @@ class Completion(repl: Interpreter) {
     override def completions() = super.completions() filter existsAndPublic
   }
   val literals = new LiteralCompletion {
-    val global = repl.compiler
+    lazy val global = repl.compiler
     val parent = self
   }
 
@@ -162,9 +160,6 @@ class Completion(repl: Interpreter) {
     // This is jline's entry point for completion.
     override def complete(buf: String, cursor: Int, candidates: JList[String]): Int = {
       // println("complete: buf = %s, cursor = %d".format(buf, cursor))
-      if (!isInitialized)
-        return cursor
-
       verbosity = if (isConsecutiveTabs(buf)) verbosity + 1 else 0
       lastTab = (buf, lastCommand orNull)
 

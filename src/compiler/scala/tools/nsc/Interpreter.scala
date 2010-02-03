@@ -71,20 +71,38 @@ import Interpreter._
  * @author Lex Spoon
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
+  /** construct an interpreter that reports to Console */
+  def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
+  def this() = this(new Settings())
+
   /** directory to save .class files to */
   val virtualDirectory = new VirtualDirectory("(memory)", None)
 
-  /** the compiler to compile expressions with */
-  val compiler: Global = newCompiler(settings, reporter)
+  /** reporter */
+  object reporter extends ConsoleReporter(settings, null, out) {
+    override def printMessage(msg: String) {
+      out println clean(msg)
+      out.flush()
+    }
+  }
 
-  /** have to be careful completion doesn't start querying global before it's ready */
-  private var _initialized = false
-  def isInitialized = _initialized
-  def initialize() = {
-    // forces something to be compiled
-    isettings
+  /** We're going to go to some trouble to initialize the compiler asynchronously.
+   *  It's critical that nothing call into it until it's been initialized or we will
+   *  run into unrecoverable issues, but the perceived repl startup time goes
+   *  through the roof if we wait for it.  So we initialize it with a future and
+   *  use a lazy val to ensure that any attempt to use the compiler object waits
+   *  on the future.
+   */
+  private val _compiler: Global = newCompiler(settings, reporter)
+  private var _isInitialized: () => Boolean = scala.concurrent.ops.future {
+    new _compiler.Run()
+    true
+  }
 
-    _initialized = true
+  /** the public, go through the future compiler */
+  lazy val compiler: Global = {
+     _isInitialized() // blocks until it is
+    _compiler
   }
 
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
@@ -100,10 +118,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   import compiler.definitions
   import definitions.{ EmptyPackage, getMember }
-
-  /** construct an interpreter that reports to Console */
-  def this(settings: Settings) =
-    this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
 
   /** whether to print out result lines */
   private[nsc] var printResults: Boolean = true
@@ -130,11 +144,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** interpreter settings */
-  lazy val isettings = {
-    val x = new InterpreterSettings(this)
-    quietBind("settings", "scala.tools.nsc.InterpreterSettings", x)
-    x
-  }
+  lazy val isettings = new InterpreterSettings(this)
 
   /** Heuristically strip interpreter wrapper prefixes
    *  from an interpreter output string.
@@ -146,12 +156,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
     else str
 
-  object reporter extends ConsoleReporter(settings, null, out) {
-    override def printMessage(msg: String) {
-      out.print(clean(msg) + "\n"); out.flush()
-    }
-  }
-
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
@@ -160,14 +164,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** the compiler's classpath, as URL's */
-  val compilerClasspath: List[URL] = {
+  lazy val compilerClasspath: List[URL] = {
     def parseURL(s: String): Option[URL] =
       catching(classOf[MalformedURLException]) opt new URL(s)
 
     val classpathPart =
-      ClassPath.expandPath(compiler.settings.classpath.value).map(s => new File(s).toURI.toURL)
+      ClassPath.expandPath(settings.classpath.value) map (s => new File(s).toURI.toURL)
     val codebasePart =
-      (compiler.settings.Xcodebase.value.split(" ")).toList flatMap parseURL
+      (settings.Xcodebase.value split " ").toList flatMap parseURL
 
     classpathPart ::: codebasePart
   }
@@ -185,7 +189,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
          shadow the old ones, and old code objects refer to the old
          definitions.
   */
-  private var classLoader: AbstractFileClassLoader = makeClassLoader()
+  private var _classLoader: AbstractFileClassLoader = null
+  def resetClassLoader() = _classLoader = makeClassLoader()
+  def classLoader: AbstractFileClassLoader = {
+    if (_classLoader == null)
+      resetClassLoader()
+
+    _classLoader
+  }
   private def makeClassLoader(): AbstractFileClassLoader = {
     val parent =
       if (parentClassLoader == null)  ScalaClassLoader fromURLs compilerClasspath
@@ -231,6 +242,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     req.usedNames foreach (x => usedNameMap(x) = req)
     req.boundNames foreach (x => boundNameMap(x) = req)
 
+    // XXX temporarily putting this here because of tricky initialization order issues
+    // so right now it's not bound until after you issue a command.
+    if (prevRequests.size == 1)
+      quietBind("settings", "scala.tools.nsc.InterpreterSettings", isettings)
+
     // println("\n  s1 = %s\n  s2 = %s\n  s3 = %s".format(
     //   tripart(usedNameMap.keysIterator.toSet, boundNameMap.keysIterator.toSet): _*
     // ))
@@ -266,13 +282,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** allocate a fresh line name */
-  private val lineNameCreator = new NameCreator(INTERPRETER_LINE_PREFIX)
+  private lazy val lineNameCreator = new NameCreator(INTERPRETER_LINE_PREFIX)
 
   /** allocate a fresh var name */
-  private val varNameCreator = new NameCreator(INTERPRETER_VAR_PREFIX)
+  private lazy val varNameCreator = new NameCreator(INTERPRETER_VAR_PREFIX)
 
   /** allocate a fresh internal variable name */
-  private def synthVarNameCreator = new NameCreator(INTERPRETER_SYNTHVAR_PREFIX)
+  private lazy val synthVarNameCreator = new NameCreator(INTERPRETER_SYNTHVAR_PREFIX)
 
   /** Check if a name looks like it was generated by varNameCreator */
   private def isGeneratedVarName(name: String): Boolean = varNameCreator didGenerate name
@@ -291,7 +307,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     stringWriter.toString
   }
 
-  /** Truncate a string if it is longer than settings.maxPrintString */
+  /** Truncate a string if it is longer than isettings.maxPrintString */
   private def truncPrintString(str: String): String = {
     val maxpr = isettings.maxPrintString
     val trailer = "..."
@@ -524,10 +540,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private def requestFromLine(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
-    // initialize the compiler
-    if (prevRequests.isEmpty) new compiler.Run()
-
-    // parse
     val trees = parse(indentCode(line)) match {
       case None         => return Left(IR.Incomplete)
       case Some(Nil)    => return Left(IR.Error) // parse error or empty input
@@ -589,7 +601,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** A name creator used for objects created by <code>bind()</code>. */
-  private val newBinder = new NameCreator("binder")
+  private lazy val newBinder = new NameCreator("binder")
 
   /** Bind a specified name to a specified value.  The name may
    *  later be used by expressions passed to interpret.
@@ -622,7 +634,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** Reset this interpreter, forgetting all user-specified requests. */
   def reset() {
     virtualDirectory.clear
-    classLoader = makeClassLoader
+    resetClassLoader()
     lineNameCreator.reset()
     varNameCreator.reset()
     prevRequests.clear
