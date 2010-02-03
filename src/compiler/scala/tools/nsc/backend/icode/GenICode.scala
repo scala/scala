@@ -103,6 +103,7 @@ abstract class GenICode extends SubComponent  {
         classes += (tree.symbol -> ctx.clazz)
         unit.icode += ctx.clazz
         gen(impl, ctx)
+        ctx.clazz.methods = ctx.clazz.methods.reverse // preserve textual order
         ctx setClass outerClass
 
       // !! modules should be eliminated by refcheck... or not?
