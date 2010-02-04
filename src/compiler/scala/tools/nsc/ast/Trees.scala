@@ -886,6 +886,10 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
         else traverse(stat)
       )
     }
+
+    /** Leave apply available in the generic traverser to do something else.
+     */
+    def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
   }
 
   private lazy val duplicator = new Transformer {

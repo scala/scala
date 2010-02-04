@@ -573,7 +573,6 @@ trait Trees { self: Universe =>
         else traverse(stat)
       )
     }
-    def apply[T <: Tree](tree: T): T = { traverse(tree); tree }
 
     def atOwner(owner: Symbol)(traverse: => Unit) {
       val prevOwner = currentOwner

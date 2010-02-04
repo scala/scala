@@ -834,7 +834,7 @@ abstract class GenJVM extends SubComponent {
         cps.filter(mps contains)
       }
       /* The setter doesn't show up in members so we inspect the name
-       * ... and clearly it helps to know how the name is encoded, see ticket #3003.
+       * ... and clearly it helps to know how the name is encoded, see ticket #3004.
        * This logic is grossly inadequate! Name mangling needs a devotee.
        */
       def conflictsInCommonParent(name: Name) =

@@ -46,8 +46,11 @@ trait Symbols { self: Universe =>
      */
     final def fullName: String = fullName('.')
 
-    /** Does symbol have a flag in `mask` set? */
+    /** Does symbol have ANY flag in `mask` set? */
     final def hasFlag(mask: Long): Boolean = (flags & mask) != 0L
+
+    /** Does symbol have ALL the flags in `mask` set? */
+    final def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
 
     /** Set when symbol has a modifier of the form private[X], NoSymbol otherwise.
      */
@@ -106,19 +109,13 @@ trait Symbols { self: Universe =>
 
 // flags and kind tests
 
-    def isTerm         = false // to be overridden
-    def isType         = false // to be overridden
-    def isClass        = false // to be overridden
-    def isAliasType    = false      //to be overridden
-    def isAbstractType = false   //to be overridden
+    def isTerm         = false  // to be overridden
+    def isType         = false  // to be overridden
+    def isClass        = false  // to be overridden
+    def isAliasType    = false  // to be overridden
+    def isAbstractType = false  // to be overridden
     private[scala] def isSkolem = false // to be overridden
 
-    final def isImplicit = hasFlag(IMPLICIT)
-    final def isFinal = hasFlag(FINAL)
-    final def isPrivate = hasFlag(PRIVATE)
-    final def isProtected = hasFlag(PROTECTED)
-
-    /** Is this symbol a sealed class? */
           def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
     final def hasDefault = isParameter && hasFlag(DEFAULTPARAM)
     final def isAbstractClass = isClass && hasFlag(ABSTRACT)
@@ -129,8 +126,12 @@ trait Symbols { self: Universe =>
     final def isContravariant = isType && hasFlag(CONTRAVARIANT)
     final def isCovariant = isType && hasFlag(COVARIANT)
     final def isDeferred = hasFlag(DEFERRED) && !isClass
+    final def isEarlyInitialized: Boolean = isTerm && hasFlag(PRESUPER)
     final def isExistentiallyBound = isType && hasFlag(EXISTENTIAL)
+    final def isFinal = hasFlag(FINAL)
     final def isGetterOrSetter = hasFlag(ACCESSOR)
+    final def isImplClass = isClass && hasFlag(IMPLCLASS) // Is this symbol an implementation class for a mixin?
+    final def isImplicit = hasFlag(IMPLICIT)
     final def isInterface = hasFlag(INTERFACE)
     final def isJavaDefined = hasFlag(JAVA)
     final def isLazy = hasFlag(LAZY)
@@ -140,8 +141,6 @@ trait Symbols { self: Universe =>
     final def isMutable = hasFlag(MUTABLE)
     final def isOverloaded = hasFlag(OVERLOADED)
     final def isOverride = hasFlag(OVERRIDE)
-    final def isPackage = isModule && hasFlag(PACKAGE)
-    final def isPackageClass = isClass && hasFlag(PACKAGE)
     final def isParamAccessor = hasFlag(PARAMACCESSOR)
     final def isParameter = hasFlag(PARAM)
     final def isRefinementClass = isClass && name == mkTypeName(nme.REFINE_CLASS_NAME)
@@ -151,20 +150,20 @@ trait Symbols { self: Universe =>
     final def isSynthetic = hasFlag(SYNTHETIC)
     final def isTypeParameter = isType && isParameter && !isSkolem
 
-    /** Is this symbol an implementation class for a mixin? */
-    final def isImplClass = isClass && hasFlag(IMPLCLASS)
-
-    /** Is this symbol early initialized */
-    final def isEarlyInitialized: Boolean = isTerm && hasFlag(PRESUPER)
-
+    /** Access tests */
+    final def isPrivate = hasFlag(PRIVATE)
     final def isPrivateLocal = hasFlag(PRIVATE) && hasFlag(LOCAL)
+    final def isProtected = hasFlag(PROTECTED)
     final def isProtectedLocal = hasFlag(PROTECTED) && hasFlag(LOCAL)
     final def isPublic = !hasFlag(PRIVATE | PROTECTED) && privateWithin == NoSymbol
 
-    final def isRoot = isPackageClass && owner == NoSymbol
-    final def isRootPackage = isPackage && owner == NoSymbol
+    /** Package tests */
     final def isEmptyPackage = isPackage && name == nme.EMPTY_PACKAGE_NAME
     final def isEmptyPackageClass = isPackageClass && name == mkTypeName(nme.EMPTY_PACKAGE_NAME)
+    final def isPackage = isModule && hasFlag(PACKAGE)
+    final def isPackageClass = isClass && hasFlag(PACKAGE)
+    final def isRoot = isPackageClass && owner == NoSymbol
+    final def isRootPackage = isPackage && owner == NoSymbol
 
     /** Is this symbol an effective root for fullname string?
      */
@@ -172,13 +171,13 @@ trait Symbols { self: Universe =>
 
     // creators
 
-    def newValue(name: Name, pos: Position = NoPosition): Symbol
     def newAbstractType(name: Name, pos: Position = NoPosition): Symbol
     def newAliasType(name: Name, pos: Position = NoPosition): Symbol
     def newClass(name: Name, pos: Position = NoPosition): Symbol
-    def newModuleClass(name: Name, pos: Position = NoPosition): Symbol
     def newMethod(name: Name, pos: Position = NoPosition): Symbol
     def newModule(name: Name, clazz: Symbol, pos: Position = NoPosition): Symbol
+    def newModuleClass(name: Name, pos: Position = NoPosition): Symbol
+    def newValue(name: Name, pos: Position = NoPosition): Symbol
 
     // access to related symbols
 

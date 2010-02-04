@@ -168,9 +168,9 @@ class Flags {
       var mask=m
       var i=0
       while (i <= 62) {
-	if ((mask&1) == 1L) return i
-	mask >>= 1
-	i += 1
+        if ((mask&1) == 1L) return i
+        mask >>= 1
+        i += 1
       }
       throw new AssertionError()
     }
