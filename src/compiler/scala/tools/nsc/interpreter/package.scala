@@ -12,6 +12,12 @@ package object interpreter {
   /** Tracing */
   def tracing[T](msg: String)(x: T): T = { println("(" + msg + ") " + x) ; x }
 
+  /** Frequency counter */
+  def freq[T](seq: Seq[T]) = seq groupBy identity mapValues (_.length)
+
+  /** null becomes "", otherwise identity */
+  def onull(s: String) = if (s == null) "" else s
+
   /** Class objects */
   def classForName(name: String): Option[Class[_]] =
     try Some(Class forName name)

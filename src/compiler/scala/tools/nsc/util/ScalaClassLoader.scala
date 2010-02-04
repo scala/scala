@@ -91,6 +91,7 @@ object ScalaClassLoader {
     search(getContextLoader())
   }
 
+  /** The actual bytes for a class file, or an empty array if it can't be found. */
   def findBytesForClassName(s: String): Array[Byte] = {
     val name = s.replaceAll("""\.""", "/") + ".class"
     val url = getSystemLoader.getResource(name)
@@ -98,4 +99,9 @@ object ScalaClassLoader {
     if (url == null) Array()
     else new io.Streamable.Bytes { def inputStream() = url.openStream } . toByteArray()
   }
+
+  /** Finding what jar a clazz or instance came from */
+  def origin(x: Any): Option[URL] = originOfClass(x.asInstanceOf[AnyRef].getClass)
+  def originOfClass(x: Class[_]): Option[URL] =
+    Option(x.getProtectionDomain.getCodeSource) flatMap (x => Option(x.getLocation))
 }

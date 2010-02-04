@@ -30,7 +30,6 @@ private[scala] trait PropertiesTrait
     props
   }
 
-  protected def onull[T <: AnyRef](x: T) = if (x eq null) None else Some(x)
   private def quietlyDispose(action: => Unit, disposal: => Unit) =
     try     { action }
     finally {

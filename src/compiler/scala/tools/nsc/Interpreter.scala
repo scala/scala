@@ -220,16 +220,16 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private val boundNameMap = new HashMap[Name, Request]()
   private def allHandlers = prevRequests.toList flatMap (_.handlers)
 
-  /** Most recent handler which wasn't wholly synthetic. */
-  private def mostRecentHandler: MemberHandler = {
+  /** Most recent tree handled which wasn't wholly synthetic. */
+  private def mostRecentlyHandledTree: Option[Tree] = {
     for {
       req <- prevRequests.reverse
       handler <- req.handlers.reverse
       name <- handler.generatesValue
       if !isSynthVarName(name)
-    } return handler
+    } return Some(handler.member)
 
-    error("No handlers found.")
+    None
   }
 
   def recordRequest(req: Request) {
@@ -503,7 +503,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private[nsc] val powerMkImports = List(
-    "mkContext", "mkTree", "mkTrees", "mkAlias", "mkSourceFile", "mkUnit", "mkType", "mkTypedTree", "mkTypedTrees"
+    "mkContext", "mkTree", "mkTrees", "mkAlias", "mkSourceFile", "mkUnit", "mkType", "mkTypedTree", "mkTypedTrees",
+    "treeWrapper"
   )
 
   /** Compile an nsc SourceFile.  Returns true if there are
@@ -1022,12 +1023,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  Mostly this exists so you can conveniently invoke methods on
    *  the previous result.
    */
-  def mostRecentVar: String = mostRecentHandler.member match {
-    case x: ValOrDefDef           => x.name
-    case Assign(Ident(name), _)   => name
-    case ModuleDef(_, name, _)    => name
-    case _                        => varNameCreator.mostRecent
-  }
+  def mostRecentVar: String =
+    if (mostRecentlyHandledTree.isEmpty) ""
+    else mostRecentlyHandledTree.get match {
+      case x: ValOrDefDef           => x.name
+      case Assign(Ident(name), _)   => name
+      case ModuleDef(_, name, _)    => name
+      case _                        => onull(varNameCreator.mostRecent)
+    }
 
   private def requestForName(name: Name): Option[Request] =
     prevRequests.reverse find (_.boundNames contains name)

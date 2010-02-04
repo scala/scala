@@ -51,7 +51,6 @@ class Parsed private (
 }
 
 object Parsed {
-  def onull(s: String) = if (s == null) "" else s
   def apply(s: String): Parsed = apply(onull(s), onull(s).length)
   def apply(s: String, cursor: Int): Parsed = apply(onull(s), cursor, "(){},`; \t" contains _)
   def apply(s: String, cursor: Int, delimited: Char => Boolean): Parsed =

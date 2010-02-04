@@ -16,8 +16,8 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
 
   // optionizes a system property
-  private def syspropopt(name: String): Option[String] = onull(System.getProperty(name))
-  private def sysenvopt(name: String): Option[String] = onull(System.getenv(name))
+  private def syspropopt(name: String): Option[String] = Option(System.getProperty(name))
+  private def sysenvopt(name: String): Option[String] = Option(System.getenv(name))
 
   // given any number of possible path segments, flattens down to a
   // :-separated style path
@@ -43,9 +43,8 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   protected def pluginsDirDefault =
     guess(List("misc", "scala-devel", "plugins"), _.isDirectory) getOrElse ""
 
-  def onull[T <: AnyRef](x: T): Option[T] = if (x eq null) None else Some(x)
   def mkPath(base: String, segments: String*) = new File(base, segments.mkString(File.separator))
-  def scalaHome: Option[String] = onull(Properties.scalaHome)
+  def scalaHome: Option[String] = Option(Properties.scalaHome)
 
   // examine path relative to scala home and return Some(path) if it meets condition
   private def guess(xs: List[String], cond: (File) => Boolean): Option[String] = {
