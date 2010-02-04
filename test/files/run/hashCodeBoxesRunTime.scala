@@ -5,7 +5,7 @@ object Test
   import java.{ lang => jl }
   import scala.runtime.BoxesRunTime.{ hashFromNumber, hashFromObject }
 
-  def allSame[T](xs: List[T]) = assert(xs.unique.size == 1, "failed: " + xs)
+  def allSame[T](xs: List[T]) = assert(xs.distinct.size == 1, "failed: " + xs)
 
   def mkNumbers(x: Int): List[Number] =
     List(x.toByte, x.toShort, x, x.toLong, x.toFloat, x.toDouble)

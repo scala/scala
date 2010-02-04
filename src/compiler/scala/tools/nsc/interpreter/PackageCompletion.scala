@@ -113,7 +113,7 @@ object PackageCompletion {
   // all the dotted path to classfiles we can find by poking through the jars
   def getDottedPaths(map: ConcurrentHashMap[String, List[CompletionInfo]], classpath: List[URL]): Unit = {
     val cp = classpath map (_.getPath)
-    val jars = cp.unique filter (_ endsWith ".jar")
+    val jars = cp.distinct filter (_ endsWith ".jar")
 
     // for e.g. foo.bar.baz.C, returns (foo -> bar), (foo.bar -> baz), (foo.bar.baz -> C)
     // and scala.Range$BigInt needs to go scala -> Range -> BigInt
@@ -137,7 +137,7 @@ object PackageCompletion {
     def oneJar(jar: String): Unit = {
       val classfiles = getClassFiles(jar)
 
-      for (cl <- classfiles.unique ; (k, _v) <- subpaths(cl)) {
+      for (cl <- classfiles.distinct ; (k, _v) <- subpaths(cl)) {
         val v = CompletionInfo(_v, cl, jar)
 
         if (map containsKey k) {

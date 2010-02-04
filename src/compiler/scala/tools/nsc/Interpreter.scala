@@ -255,7 +255,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def keyList[T](x: collection.Map[T, _]): List[T] = x.keysIterator.toList sortBy (_.toString)
   def allUsedNames = keyList(usedNameMap)
   def allBoundNames = keyList(boundNameMap)
-  def allSeenTypes = prevRequests.toList flatMap (_.typeOf.valuesIterator.toList) unique
+  def allSeenTypes = prevRequests.toList flatMap (_.typeOf.valuesIterator.toList) distinct
   def allValueGeneratingNames = allHandlers flatMap (_.generatesValue)
   def allImplicits = partialFlatMap(allHandlers) {
     case x: MemberHandler if x.definesImplicit => x.boundNames
@@ -1141,7 +1141,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   } filterNot isSynthVarName
 
   /** Another entry point for tab-completion, ids in scope */
-  def unqualifiedIds() = (unqualifiedIdNames() map (_.toString)).unique.sorted
+  def unqualifiedIds() = (unqualifiedIdNames() map (_.toString)).distinct.sorted
 
   /** For static/object method completion */
   def getClassObject(path: String): Option[Class[_]] = classLoader tryToLoadClass path

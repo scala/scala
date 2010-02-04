@@ -727,7 +727,7 @@ trait Namers { self: Analyzer =>
           }
           if (!hasCopy(decls) &&
               !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
-              !parents.flatMap(_.baseClasses).unique.exists(bc => hasCopy(bc.info.decls)))
+              !parents.flatMap(_.baseClasses).distinct.exists(bc => hasCopy(bc.info.decls)))
             addCopyMethod(cdef, templateNamer)
         case None =>
       }

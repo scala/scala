@@ -305,9 +305,9 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
     factory
   }
 
-  def removeDuplicates(ts: List[Type]): List[Type] = ts match {
+  def distinct(ts: List[Type]): List[Type] = ts match {
     case List() => List()
-    case t :: ts1 => t :: removeDuplicates(ts1 filter (_.typeSymbol != t.typeSymbol))
+    case t :: ts1 => t :: distinct(ts1 filter (_.typeSymbol != t.typeSymbol))
   }
 
   /** The concrete class symbol VC$fix in the factory symbol (@see mkFactory)
@@ -333,7 +333,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
         }
         atPhase(ownPhase.next) {
           val parents2 =
-            removeDuplicates(parents1.flatMap(addOverriddenVirtuals))
+            distinct(parents1.flatMap(addOverriddenVirtuals))
             .map(_.substSym(clazz.typeParams, factory.typeParams))
           sym setInfo ClassInfoType(parents2, new Scope, cclazz)
         }

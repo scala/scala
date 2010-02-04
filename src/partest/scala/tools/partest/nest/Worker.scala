@@ -457,7 +457,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             val outURL = outDir.getCanonicalFile.toURI.toURL
             val classpath: List[URL] =
               List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL,
-                   latestActFile.toURI.toURL, latestPartestFile.toURI.toURL).unique
+                   latestActFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct
 
             val logWriter = new PrintStream(new FileOutputStream(logFile))
 

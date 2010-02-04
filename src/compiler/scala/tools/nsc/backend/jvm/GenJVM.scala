@@ -183,7 +183,7 @@ abstract class GenJVM extends SubComponent {
         case _ => ()
       }
 
-      parents = parents.unique
+      parents = parents.distinct
 
       if (parents.length > 1) {
         ifaces = new Array[String](parents.length - 1)
@@ -332,7 +332,7 @@ abstract class GenJVM extends SubComponent {
       // put some radom value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
-      for (AnnotationInfo(tp, List(exc), _) <- excs.unique if tp.typeSymbol == definitions.ThrowsClass) {
+      for (AnnotationInfo(tp, List(exc), _) <- excs.distinct if tp.typeSymbol == definitions.ThrowsClass) {
         val Literal(const) = exc
         buf.putShort(
           cpool.addClass(

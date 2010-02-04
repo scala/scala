@@ -158,7 +158,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
                     atPhase(currentRun.erasurePhase.prev) {
                         changeSet(info, sym)
                     }
-                changesOf(oldSym) = (changes ++ changesErasure).unique
+                changesOf(oldSym) = (changes ++ changesErasure).distinct
               case _ =>
                 // a new top level definition
                 changesOf(sym) =

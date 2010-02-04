@@ -44,7 +44,7 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
   def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That
   def prefixLength(p: A => Boolean): Int
-  def unique: This
+  def distinct: This
   def reverse: This
   def reverseIterator: Iterator[A]
   def segmentLength(p: A => Boolean, from: Int): Int

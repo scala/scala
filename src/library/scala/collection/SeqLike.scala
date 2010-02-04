@@ -610,7 +610,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  @return  A new $coll which contains the first occurrence of every element of this $coll.
    */
-  def unique: Repr = {
+  def distinct: Repr = {
     val b = newBuilder
     var seen = Set[A]() //TR: should use mutable.HashSet?
     for (x <- this) {

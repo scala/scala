@@ -1708,7 +1708,7 @@ abstract class GenMSIL extends SubComponent {
       def isInterface(s: Symbol) = s.isTrait && !s.isImplClass
       val parents: List[Type] =
         if (sym.info.parents.isEmpty) List(definitions.ObjectClass.tpe)
-        else sym.info.parents.unique
+        else sym.info.parents.distinct
 
       val superType = if (isInterface(sym)) null else msilTypeFromSym(parents.head.typeSymbol)
       if (settings.debug.value)

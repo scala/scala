@@ -82,7 +82,7 @@ abstract class DeadCodeElimination extends SubComponent {
         collectRDef(m)
         mark
         sweep(m)
-        accessedLocals = accessedLocals.unique
+        accessedLocals = accessedLocals.distinct
         if (m.locals diff accessedLocals nonEmpty) {
           log("Removed dead locals: " + (m.locals diff accessedLocals))
           m.locals = accessedLocals.reverse

@@ -45,7 +45,7 @@ trait ReflectionCompletion extends CompletionAware {
   val excludeMethods = List("hashCode", "equals", "wait", "notify", "notifyAll")
 
   private def allInterfacesFor(cl: Class[_], acc: List[Class[_]]): List[Class[_]] = {
-    if (cl == null) acc.unique
+    if (cl == null) acc.distinct
     else allInterfacesFor(cl.getSuperclass, acc ::: cl.getInterfaces.toList)
   }
 }
