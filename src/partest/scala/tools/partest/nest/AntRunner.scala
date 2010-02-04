@@ -24,9 +24,6 @@ class AntRunner extends DirectRunner {
     val TESTROOT: String = ""
   }
 
-  def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String): Int = {
-    val (succs, fails) = runTestsForFiles(kindFiles.toList, kind)
-    succs << 16 | fails
-  }
-
+  def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String) =
+    runTestsForFiles(kindFiles.toList, kind)
 }

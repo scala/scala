@@ -104,6 +104,10 @@ class PartestTask extends Task {
     debug = input
   }
 
+  def setJUnitReportDir(input: File) {
+    jUnitReportDir = Some(input)
+  }
+
   private var classpath: Option[Path] = None
   private var javacmd: Option[File] = None
   private var javaccmd: Option[File] = None
@@ -122,6 +126,7 @@ class PartestTask extends Task {
   private var errorOnFailed: Boolean = false
   private var scalacOpts: Option[String] = None
   private var timeout: Option[String] = None
+  private var jUnitReportDir: Option[File] = None
   private var debug = false
 
   private def getFiles(fileSet: Option[FileSet]): Array[File] =
@@ -188,10 +193,8 @@ class PartestTask extends Task {
     val runMethod =
       antRunner.getClass.getMethod("reflectiveRunTestsForFiles", Array(classOf[Array[File]], classOf[String]): _*)
 
-    def runTestsForFiles(kindFiles: Array[File], kind: String): (Int, Int) = {
-      val result = runMethod.invoke(antRunner, Array(kindFiles, kind): _*).asInstanceOf[Int]
-      (result >> 16, result & 0x00FF)
-    }
+    def runTestsForFiles(kindFiles: Array[File], kind: String) =
+      runMethod.invoke(antRunner, kindFiles, kind).asInstanceOf[scala.collection.Map[String, Int]]
 
     def setFileManagerBooleanProperty(name: String, value: Boolean) {
       val setMethod =
@@ -232,26 +235,65 @@ class PartestTask extends Task {
       (getScalapFiles, "scalap", "Running scalap tests")
     )
 
-    def runSet(set: TFSet): (Int, Int) = {
+    def runSet(set: TFSet): (Int, Int, Iterable[String]) = {
       val (files, name, msg) = set
-      if (files.isEmpty) (0, 0)
+      if (files.isEmpty) (0, 0, List())
       else {
         log(msg)
-        runTestsForFiles(files, name)
+        val results: Iterable[(String, Int)] = runTestsForFiles(files, name)
+
+        val (succs, fails) =
+	  results
+	  .map { case (file, resultCode) => if (resultCode == 0) (1, 0) else (0, 1) }
+	  .reduceLeft((res1, res2) => (res1._1 + res2._1, res1._2 + res2._2))
+
+        val failed: Iterable[String] = results flatMap { case (path, state) =>
+          if (state == 0) List()
+          else List(path+" ["+(if (state == 1) "FAILED" else "TIMOUT")+"]")
+        }
+
+        // create JUnit Report xml files if directory was specified
+        jUnitReportDir foreach { d =>
+          d.mkdir
+
+          val report = testReport(name, results, succs, fails)
+          scala.xml.XML.save(d.getAbsolutePath+"/"+name+".xml", report)
+        }
+
+        (succs, fails, failed)
       }
     }
 
     val _results = testFileSets map runSet
     val allSuccesses = _results map (_._1) sum
     val allFailures = _results map (_._2) sum
+    val allFailedPaths = _results flatMap (_._3)
 
     def f = if (errorOnFailed && allFailures > 0) error(_) else log(_: String)
     def s = if (allFailures > 1) "s" else ""
     val msg =
-      if (allFailures > 0) "Test suite finished with %d case%s failing.".format(allFailures, s)
+      if (allFailures > 0)
+        "Test suite finished with %d case%s failing:\n".format(allFailures, s)+
+        allFailedPaths.mkString("\n")
       else if (allSuccesses == 0) "There were no tests to run."
       else "Test suite finished with no failures."
 
     f(msg)
   }
+  def oneResult(res: (String, Int)) =
+    <testcase name={res._1}>{
+  	  res._2 match {
+  	    case 0 => scala.xml.NodeSeq.Empty
+        case 1 => <failure message="Test failed"/>
+        case 2 => <failure message="Test timed out"/>
+  	  }
+  	}</testcase>
+
+  def testReport(kind: String, results: Iterable[(String, Int)], succs: Int, fails: Int) =
+    <testsuite name={kind} tests={(succs + fails).toString} failures={fails.toString}>
+  	  <properties/>
+  	  {
+  	    results.map(oneResult(_))
+  	  }
+    </testsuite>
 }

@@ -37,7 +37,7 @@ trait DirectRunner {
     System.setProperty("actors.corePoolSize", "16")
   }
 
-  def runTestsForFiles(kindFiles: List[File], kind: String): (Int, Int) = {
+  def runTestsForFiles(kindFiles: List[File], kind: String): scala.collection.immutable.Map[String, Int] = {
     val len = kindFiles.length
     val (testsEach, lastFrag) = (len/numActors, len%numActors)
     val last = numActors-1
@@ -51,20 +51,20 @@ trait DirectRunner {
         worker ! RunTests(kind, toTest)
       worker
     }
-    var succs = 0; var fails = 0
+
     var logsToDelete: List[File] = List()
     var outdirsToDelete: List[File] = List()
+    var results = new scala.collection.immutable.HashMap[String, Int]
     workers foreach { w =>
       receiveWithin(3600 * 1000) {
-        case Results(s, f, logs, outdirs) =>
+        case Results(res, logs, outdirs) =>
           logsToDelete = logsToDelete ::: logs.filter(_.toDelete)
           outdirsToDelete = outdirsToDelete ::: outdirs
-          succs += s
-          fails += f
+          results = results ++ res
         case TIMEOUT =>
           // add at least one failure
           NestUI.verbose("worker timed out; adding failed test")
-          fails += 1
+          results = results + ("worker timed out; adding failed test" -> 2)
       }
     }
     for (x <- logsToDelete ::: outdirsToDelete) {
@@ -72,7 +72,7 @@ trait DirectRunner {
       Directory(x).deleteRecursively()
     }
 
-    (succs, fails)
+    results
   }
 
 }

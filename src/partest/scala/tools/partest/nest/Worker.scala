@@ -20,12 +20,15 @@ import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
 import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
-import scala.collection.mutable.HashMap
+import scala.collection.immutable.{Map => ImmMap}
+import scala.collection.Map
+import scala.collection.immutable.HashMap
 
 import scala.tools.nsc.interactive.{BuildManager, RefinedBuildManager}
 
 case class RunTests(kind: String, files: List[File])
-case class Results(succ: Int, fail: Int, logs: List[LogFile], outdirs: List[File])
+case class Results(results: ImmMap[String, Int], logs: List[LogFile], outdirs: List[File])
+
 case class LogContext(file: LogFile, writers: Option[(StringWriter, PrintWriter)])
 
 abstract class TestResult {
@@ -57,9 +60,9 @@ class Worker(val fileManager: FileManager) extends Actor {
       case RunTests(kind, files) =>
         NestUI.verbose("received "+files.length+" to test")
         val master = sender
-        runTests(kind, files, (succ: Int, fail: Int) => {
-          master ! Results(succ, fail, createdLogFiles, createdOutputDirs)
-        })
+        runTests(kind, files){ results =>
+          master ! Results(results, createdLogFiles, createdOutputDirs)
+        }
     }
   }
 
@@ -306,7 +309,7 @@ class Worker(val fileManager: FileManager) extends Actor {
    * @param kind  The test kind (pos, neg, run, etc.)
    * @param files The list of test files
    */
-  def runTests(kind: String, files: List[File], topcont: (Int, Int) => Unit) {
+  def runTests(kind: String, files: List[File])(topcont: ImmMap[String, Int] => Unit) {
     val compileMgr = new CompileManager(fileManager)
     var errors = 0
     var succeeded = true
@@ -751,8 +754,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             }
 
             def replaceSlashes(s: String): String = {
-                val path = dir.getAbsolutePath/*.replace(File.separatorChar,'/')*/+
-                             File.separator
+                val path = dir.getAbsolutePath+File.separator
                 // find `path` in `line`
                 val index = s.indexOf(path)
                 val line =
@@ -970,37 +972,40 @@ class Worker(val fileManager: FileManager) extends Actor {
       }
     }
 
-    def reportAll(cont: (Int, Int) => Unit) {
+    def reportAll(results: ImmMap[String, Int], cont: ImmMap[String, Int] => Unit) {
       NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
       NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
       timer.cancel()
-      cont(files.length-errors, errors)
+      cont(results)
     }
 
-    def reportResult(logs: Option[LogContext]) {
-      if (!succeeded) {
+    def reportResult(state: Int, logFile: Option[LogFile], writers: Option[(StringWriter, PrintWriter)]) {
+      val good = (state == 0)
+      if (!good) {
         errors += 1
         NestUI.verbose("incremented errors: "+errors)
       }
 
       try {
         // delete log file only if test was successful
-        if (succeeded && !logs.isEmpty)
-          logs.get.file.toDelete = true
+        if (good && !logFile.isEmpty)
+          logFile.get.toDelete = true
 
-        if (!logs.isEmpty)
-          logs.get.writers match {
-            case Some((swr, wr)) =>
-              printInfoEnd(succeeded, wr)
-              wr.flush()
-              swr.flush()
-              NestUI.normal(swr.toString)
-              if (!succeeded && fileManager.showDiff && diff != "")
-                NestUI.normal(diff)
-              if (!succeeded && fileManager.showLog)
-                showLog(logs.get.file)
-            case None =>
-          }
+        writers match {
+          case Some((swr, wr)) =>
+            if (state == 2)
+              printInfoTimeout(wr)
+            else
+              printInfoEnd(good, wr)
+            wr.flush()
+            swr.flush()
+            NestUI.normal(swr.toString)
+            if (state == 1 && fileManager.showDiff && diff != "")
+              NestUI.normal(diff)
+            if (state == 1 && fileManager.showLog)
+              showLog(logFile.get)
+          case None =>
+        }
       } catch {
         case npe: NullPointerException =>
       }
@@ -1008,10 +1013,10 @@ class Worker(val fileManager: FileManager) extends Actor {
 
     val numFiles = files.size
     if (numFiles == 0)
-      reportAll(topcont)
+      reportAll(ImmMap(), topcont)
 
     // maps canonical file names to the test result (0: OK, 1: FAILED, 2: TIMOUT)
-    val status = new HashMap[String, Int]
+    var status = new HashMap[String, Int]
 
     var fileCnt = 1
     Actor.loopWhile(fileCnt <= numFiles) {
@@ -1044,28 +1049,25 @@ class Worker(val fileManager: FileManager) extends Actor {
           val path = res.file.getCanonicalPath
           status.get(path) match {
             case Some(stat) => // ignore message
-            case None => res match {
-              case Timeout(_) =>
-                status += (path -> 2)
-                val swr = new StringWriter
-                val wr = new PrintWriter(swr)
-                printInfoStart(files(fileCnt-1), wr)
-                printInfoTimeout(wr)
-                wr.flush()
-                swr.flush()
-                NestUI.normal(swr.toString)
-                succeeded = false
-                reportResult(None)
-                if (fileCnt == numFiles)
-                  reportAll(topcont)
-                fileCnt += 1
-              case Result(_, logs) =>
-                status += (path -> (if (succeeded) 0 else 1))
-                reportResult(if (logs != null) Some(logs) else None)
-                if (fileCnt == numFiles)
-                  reportAll(topcont)
-                fileCnt += 1
-            }
+            case None =>
+              res match {
+                case Timeout(_) =>
+                  status = status + (path -> 2)
+                  val swr = new StringWriter
+                  val wr = new PrintWriter(swr)
+                  printInfoStart(res.file, wr)
+                  succeeded = false
+                  reportResult(2, None, Some((swr, wr)))
+                case Result(_, logs) =>
+                  status = status + (path -> (if (succeeded) 0 else 1))
+                  reportResult(
+                    if (succeeded) 0 else 1,
+                    if (logs != null) Some(logs.file) else None,
+                    if (logs != null) logs.writers else None)
+              }
+              if (fileCnt == numFiles)
+                reportAll(status, topcont)
+              fileCnt += 1
           }
       }
     }
