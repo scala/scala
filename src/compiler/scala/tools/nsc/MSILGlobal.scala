@@ -26,7 +26,7 @@ class MSILGlobal(settings: Settings, reporter: Reporter) extends Global(settings
 
   override lazy val classPath: MsilClassPath = new MsilClassPath(
     settings.assemextdirs.value, settings.assemrefs.value,
-    settings.sourcepath.value, settings.XO.value
+    settings.sourcepath.value, validClassPathName
   )
 
   override def rootLoader: LazyType = new loaders.NamespaceLoader(classPath)

@@ -209,11 +209,17 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
     }
 
-  lazy val classPath: ClassPath[_] = new JavaClassPath(
-    settings.bootclasspath.value, settings.extdirs.value,
-    settings.classpath.value, settings.sourcepath.value,
-    settings.Xcodebase.value, settings.XO.value
-  )
+  // Unless inlining is on, we can exclude $class.class files from the classpath.
+  protected def validClassPathName: String => Boolean =
+    if (settings.inline.value) _ => true
+    else ClassPath.noTraitImplFilter
+
+  lazy val classPath: ClassPath[_] =
+    new JavaClassPath(
+      settings.bootclasspath.value, settings.extdirs.value,
+      settings.classpath.value, settings.sourcepath.value,
+      settings.Xcodebase.value, validClassPathName
+    )
 
   if (settings.verbose.value)
     inform("[Classpath = " + classPath + "]")

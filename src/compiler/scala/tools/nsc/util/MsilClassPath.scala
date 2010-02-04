@@ -38,15 +38,15 @@ object MsilClassPath {
 /**
  * A assembly file (dll / exe) containing classes and namespaces
  */
-class AssemblyClassPath(types: Array[MSILType], namespace: String, val isOptimized: Boolean) extends ClassPath[MSILType] {
+class AssemblyClassPath(types: Array[MSILType], namespace: String, val validName: String => Boolean) extends ClassPath[MSILType] {
   def name = {
     val i = namespace.lastIndexOf('.')
     if (i < 0) namespace
     else namespace drop (i + 1)
   }
 
-  def this(assemFile: AbstractFile, isOptimized: Boolean) {
-    this(MsilClassPath.collectTypes(assemFile), "", isOptimized)
+  def this(assemFile: AbstractFile, validName: String => Boolean) {
+    this(MsilClassPath.collectTypes(assemFile), "", validName)
   }
 
   private lazy val first: Int = {
@@ -88,7 +88,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val isOptimiz
       i += 1
     }
     for (ns <- nsSet.toList)
-      yield new AssemblyClassPath(types, ns, isOptimized)
+      yield new AssemblyClassPath(types, ns, validName)
   }
 
   val sourcepaths: List[AbstractFile] = Nil
@@ -100,7 +100,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val isOptimiz
  * The classpath when compiling with target:msil. Binary files are represented as
  * MSILType values.
  */
-class MsilClassPath(ext: String, user: String, source: String, val isOptimized: Boolean) extends MergedClassPath[MSILType] {
+class MsilClassPath(ext: String, user: String, source: String, val validName: String => Boolean) extends MergedClassPath[MSILType] {
   protected val entries: List[ClassPath[MSILType]] = assembleEntries()
   override protected def nameOfBinaryRepresentation(binary: MSILType) = binary.Name
 
@@ -117,7 +117,7 @@ class MsilClassPath(ext: String, user: String, source: String, val isOptimized: 
           val name = file.name.toLowerCase
           if (name.endsWith(".dll") || name.endsWith(".exe")) {
             names += name
-            etr += new AssemblyClassPath(file, isOptimized)
+            etr += new AssemblyClassPath(file, validName)
           }
         }
       }
@@ -130,7 +130,7 @@ class MsilClassPath(ext: String, user: String, source: String, val isOptimized: 
         val name = file.name.toLowerCase
         if (name.endsWith(".dll") || name.endsWith(".exe")) {
           names += name
-          etr += new AssemblyClassPath(file, isOptimized)
+          etr += new AssemblyClassPath(file, validName)
         }
       }
     }
@@ -146,7 +146,7 @@ class MsilClassPath(ext: String, user: String, source: String, val isOptimized: 
     // 3. Source path
     for (dirName <- expandPath(source, expandStar = false)) {
       val file = AbstractFile.getDirectory(dirName)
-      if (file ne null) etr += new SourcePath[MSILType](file, isOptimized)
+      if (file ne null) etr += new SourcePath[MSILType](file, validName)
     }
 
     etr.toList
