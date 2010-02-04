@@ -35,6 +35,7 @@ object Option
  *  @version 1.1, 16/01/2007
  */
 sealed abstract class Option[+A] extends Product {
+  self =>
 
   /** True if the option is the <code>None</code> value, false otherwise.
    */
@@ -88,6 +89,22 @@ sealed abstract class Option[+A] extends Product {
    */
   def filter(p: A => Boolean): Option[A] =
     if (isEmpty || p(this.get)) this else None
+
+  /** Necessary to keep Option from being implicitly converted to
+   *  Iterable in for comprehensions.
+   */
+  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
+
+  /** We need a whole WithFilter class to honor the "doesn't create a new
+   *  collection" contract even though it seems unlikely to matter much in a
+   *  collection with max size 1.
+   */
+  class WithFilter(p: A => Boolean) {
+    def map[B](f: A => B): Option[B] = self filter p map f
+    def flatMap[B](f: A => Option[B]): Option[B] = self filter p flatMap f
+    def foreach[U](f: A => U): Unit = self filter p foreach f
+    def withFilter(q: A => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
+  }
 
   /** If the option is nonempty, p(value), otherwise false.
    *
