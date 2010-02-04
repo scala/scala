@@ -2188,11 +2188,11 @@ trait Typers { self: Analyzer =>
       args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))
 
     def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
-      var newmodes = originalFormals map (if (_.typeSymbol != ByNameParamClass) BYVALmode else 0)
+      var newmodes = originalFormals map ((tp: Type) => if (tp.typeSymbol != ByNameParamClass) BYVALmode else 0)
       if (isVarArgTpes(originalFormals)) // TR check really necessary?
-        newmodes :::= List.fill(args.length - originalFormals)(STARmode | BYVALmode)
-      for (((arg, formal), i) <- (args zip adaptedFormals).zipWithIndex) yield
-        typedArg(arg, mode, newmode(i), formal)
+        newmodes = newmodes.take(newmodes.length-1) ::: List.fill(args.length - originalFormals.length + 1)(STARmode | BYVALmode)
+      for (((arg, formal), m) <- ((args zip adaptedFormals) zip newmodes)) yield
+        typedArg(arg, mode, m, formal)
     }
 
     /** Does function need to be instantiated, because a missing parameter
