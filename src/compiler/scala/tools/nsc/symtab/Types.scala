@@ -4700,12 +4700,16 @@ A type's typeSymbol should never be inspected directly.
   }
 
   def weakLub(ts: List[Type]) =
-    if (ts.nonEmpty && (ts forall isNumericValueType)) numericLub(ts)
-    else lub(ts)
+    if (ts.nonEmpty && (ts forall isNumericValueType)) (numericLub(ts), true)
+    else if (ts.nonEmpty && (ts exists (_.annotations.nonEmpty)))
+      (annotationsLub(lub(ts map (_.withoutAnnotations)), ts), true)
+    else (lub(ts), false)
 
   def weakGlb(ts: List[Type]) =
-    if (ts.nonEmpty && (ts forall isNumericValueType)) numericGlb(ts)
-    else glb(ts)
+    if (ts.nonEmpty && (ts forall isNumericValueType)) (numericGlb(ts), true)
+    else if (ts.nonEmpty && (ts exists (_.annotations.nonEmpty)))
+      (annotationsGlb(glb(ts map (_.withoutAnnotations)), ts), true)
+    else (glb(ts), false)
 
   def numericLub(ts: List[Type]) =
     (ByteClass.tpe /: ts) ((t1, t2) => if (isNumericSubType(t1, t2)) t2 else t1)
