@@ -14,5 +14,5 @@ object Properties extends scala.util.PropertiesTrait
 {
   protected def propCategory    = "decoder"
   protected def pickJarBasedOn  = classOf[Classfile]
-  val cmdName                   = scala.tools.nsc.Properties.cmdName
+  def cmdName                   = scala.tools.nsc.Properties.cmdName
 }
