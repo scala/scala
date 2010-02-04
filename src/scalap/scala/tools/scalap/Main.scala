@@ -279,12 +279,11 @@ object Main {
   }
 
   object EmptyClasspath extends ClassPath[AbstractFile] {
-    import tools.nsc.util.ClassRep
     /**
      * The short name of the package (without prefix)
      */
     def name: String = ""
-    val classes: List[ClassRep[AbstractFile]] = Nil
+    val classes: List[ClassRep] = Nil
     val packages: List[ClassPath[AbstractFile]] = Nil
     val sourcepaths: List[AbstractFile] = Nil
     def isOptimized = false

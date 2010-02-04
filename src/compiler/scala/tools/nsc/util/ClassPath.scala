@@ -16,9 +16,6 @@ import scala.util.Sorting
 import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
 import scala.tools.nsc.io.AbstractFile
 
-import ch.epfl.lamp.compiler.msil.{Type => MSILType, Assembly}
-
-
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
  *    java, see [http://java.sun.com/javase/6/docs/technotes/tools/windows/classpath.html]
@@ -61,59 +58,46 @@ object ClassPath {
   def expandPath(path: String, expandStar: Boolean = true): List[String] =
     if (expandStar) splitPath(path).flatMap(expandS(_))
     else splitPath(path)
-
-  var XO = false
-
-  def collectTypes(assemFile: AbstractFile) = {
-    var res: Array[MSILType] = MSILType.EmptyTypes
-    val assem = Assembly.LoadFrom(assemFile.path)
-    if (assem != null) {
-      // DeclaringType == null: true for non-inner classes
-      res = assem.GetTypes() filter (_.DeclaringType == null)
-      Sorting.stableSort(res, (t1: MSILType, t2: MSILType) => (t1.FullName compareTo t2.FullName) < 0)
-    }
-    res
-  }
-}
-
-/**
- * Represents classes which can be loaded with a ClassfileLoader/MSILTypeLoader
- * and / or a SourcefileLoader.
- */
-case class ClassRep[T](binary: Option[T], source: Option[AbstractFile]) {
-  def name = {
-    if (binary.isDefined) binary.get match {
-      case f: AbstractFile =>
-        assert(f.name.endsWith(".class"), f.name)
-        f.name dropRight 6
-      case t: MSILType =>
-        t.Name
-      case c =>
-        throw new FatalError("Unexpected binary class representation: "+ c)
-    } else {
-      assert(source.isDefined)
-      val nme = source.get.name
-      if (nme.endsWith(".scala"))
-        nme dropRight 6
-      else if (nme.endsWith(".java"))
-        nme dropRight 5
-      else
-        throw new FatalError("Unexpected source file ending: " + nme)
-    }
-  }
 }
 
 /**
  * Represents a package which contains classes and other packages
  */
 abstract class ClassPath[T] {
+  type AnyClassRep = ClassPath[T]#ClassRep
   /**
    * The short name of the package (without prefix)
    */
   def name: String
-  val classes: List[ClassRep[T]]
+  val classes: List[AnyClassRep]
   val packages: List[ClassPath[T]]
   val sourcepaths: List[AbstractFile]
+  protected def nameOfBinaryRepresentation(binary: T): String = binary match {
+    case f: AbstractFile  =>
+      assert(f.name endsWith ".class", f.name)
+      f.name dropRight 6
+    case _                =>
+      throw new FatalError("Unexpected binary class representation: " + binary)
+  }
+
+  /**
+   * Represents classes which can be loaded with a ClassfileLoader/MSILTypeLoader
+   * and / or a SourcefileLoader.
+   */
+  case class ClassRep(binary: Option[T], source: Option[AbstractFile]) {
+    def name: String = binary match {
+      case Some(x)  => nameOfBinaryRepresentation(x)
+      case _        =>
+        assert(source.isDefined)
+        val nme = source.get.name
+        if (nme.endsWith(".scala"))
+          nme dropRight 6
+        else if (nme.endsWith(".java"))
+          nme dropRight 5
+        else
+          throw new FatalError("Unexpected source file ending: " + nme)
+    }
+  }
 
   /** Whether this classpath is being used for an optimized build.
    *  Why this is necessary is something which should really be documented,
@@ -136,14 +120,23 @@ abstract class ClassPath[T] {
    * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
    * Does not support nested classes on .NET
    */
-  def findClass(name: String): Option[ClassRep[T]] = {
+  def findClass(name: String): Option[AnyClassRep] = {
     val i = name.indexOf('.')
     if (i < 0) {
-      classes.find(c => c.name == name)
+      classes.find(_.name == name)
     } else {
       val pkg = name take i
       val rest = name drop (i + 1)
-      packages.find(p => p.name == pkg).flatMap(_.findClass(rest))
+      (packages find (_.name == pkg) flatMap (_ findClass rest)) map {
+        case x: ClassRep  => x
+        case x            => throw new FatalError("Unexpected ClassRep '%s' found searching for name '%s'".format(x, name))
+      }
+    }
+  }
+  def findAbstractFile(name: String): Option[AbstractFile] = {
+    findClass(name) match {
+      case Some(ClassRep(Some(x: AbstractFile), _)) => Some(x)
+      case _                                        => None
     }
   }
 }
@@ -155,10 +148,10 @@ class SourcePath[T](dir: AbstractFile, val isOptimized: Boolean) extends ClassPa
   def name = dir.name
 
   lazy val classes = {
-    val cls = new ListBuffer[ClassRep[T]]
+    val cls = new ListBuffer[ClassRep]
     for (f <- dir.iterator) {
       if (!f.isDirectory && validSourceFile(f.name))
-        cls += ClassRep[T](None, Some(f))
+        cls += ClassRep(None, Some(f))
     }
     cls.toList
   }
@@ -184,7 +177,7 @@ class DirectoryClassPath(dir: AbstractFile, val isOptimized: Boolean) extends Cl
   def name = dir.name
 
   lazy val classes = {
-    val cls = new ListBuffer[ClassRep[AbstractFile]]
+    val cls = new ListBuffer[ClassRep]
     for (f <- dir.iterator) {
       if (!f.isDirectory && validClassFile(f.name))
         cls += ClassRep(Some(f), None)
@@ -206,69 +199,6 @@ class DirectoryClassPath(dir: AbstractFile, val isOptimized: Boolean) extends Cl
   override def toString() = "directory classpath: "+ dir.toString()
 }
 
-
-
-/**
- * A assembly file (dll / exe) containing classes and namespaces
- */
-class AssemblyClassPath(types: Array[MSILType], namespace: String, val isOptimized: Boolean) extends ClassPath[MSILType] {
-  def name = {
-    val i = namespace.lastIndexOf('.')
-    if (i < 0) namespace
-    else namespace drop (i + 1)
-  }
-
-  def this(assemFile: AbstractFile, isOptimized: Boolean) {
-    this(ClassPath.collectTypes(assemFile), "", isOptimized)
-  }
-
-  private lazy val first: Int = {
-    var m = 0
-    var n = types.length - 1
-    while (m < n) {
-      val l = (m + n) / 2
-      val res = types(l).FullName.compareTo(namespace)
-      if (res < 0) m = l + 1
-      else n = l
-    }
-    if (types(m).FullName.startsWith(namespace)) m else types.length
-  }
-
-  lazy val classes = {
-    val cls = new ListBuffer[ClassRep[MSILType]]
-    var i = first
-    while (i < types.length && types(i).Namespace.startsWith(namespace)) {
-      // CLRTypes used to exclude java.lang.Object and java.lang.String (no idea why..)
-      if (types(i).Namespace == namespace)
-        cls += ClassRep(Some(types(i)), None)
-      i += 1
-    }
-    cls.toList
-  }
-
-  lazy val packages = {
-    val nsSet = new MutHashSet[String]
-    var i = first
-    while (i < types.length && types(i).Namespace.startsWith(namespace)) {
-      val subns = types(i).Namespace
-      if (subns.length > namespace.length) {
-        // example: namespace = "System", subns = "System.Reflection.Emit"
-        //   => find second "." and "System.Reflection" to nsSet.
-        val end = subns.indexOf('.', namespace.length + 1)
-        nsSet += (if (end < 0) subns
-                  else subns.substring(0, end))
-      }
-      i += 1
-    }
-    for (ns <- nsSet.toList)
-      yield new AssemblyClassPath(types, ns, isOptimized)
-  }
-
-  val sourcepaths: List[AbstractFile] = Nil
-
-  override def toString() = "assembly classpath "+ namespace
-}
-
 /**
  * A classpath unifying multiple class- and sourcepath entries.
  */
@@ -279,8 +209,8 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
 
   def name = entries.head.name
 
-  lazy val classes: List[ClassRep[T]] = {
-    val cls = new ListBuffer[ClassRep[T]]
+  lazy val classes: List[AnyClassRep] = {
+    val cls = new ListBuffer[AnyClassRep]
     for (e <- entries; c <- e.classes) {
       val name = c.name
       val idx = cls.indexWhere(cl => cl.name == name)
@@ -337,6 +267,7 @@ class JavaClassPath(boot: String, ext: String, user: String, source: String, Xco
 extends MergedClassPath[AbstractFile] {
 
   protected val entries: List[ClassPath[AbstractFile]] = assembleEntries()
+
   private def assembleEntries(): List[ClassPath[AbstractFile]] = {
     import ClassPath._
     val etr = new ListBuffer[ClassPath[AbstractFile]]
@@ -388,62 +319,6 @@ extends MergedClassPath[AbstractFile] {
     // 5. Source path
     if (source != "")
       addFilesInPath(source, false, x => new SourcePath[AbstractFile](x, isOptimized))
-
-    etr.toList
-  }
-}
-
-/**
- * The classpath when compiling with target:msil. Binary files are represented as
- * MSILType values.
- */
-class MsilClassPath(ext: String, user: String, source: String, val isOptimized: Boolean) extends MergedClassPath[MSILType] {
-  protected val entries: List[ClassPath[MSILType]] = assembleEntries()
-
-  private def assembleEntries(): List[ClassPath[MSILType]] = {
-    import ClassPath._
-    val etr = new ListBuffer[ClassPath[MSILType]]
-    val names = new MutHashSet[String]
-
-    // 1. Assemblies from -Xassem-extdirs
-    for (dirName <- expandPath(ext, expandStar = false)) {
-      val dir = AbstractFile.getDirectory(dirName)
-      if (dir ne null) {
-        for (file <- dir) {
-          val name = file.name.toLowerCase
-          if (name.endsWith(".dll") || name.endsWith(".exe")) {
-            names += name
-            etr += new AssemblyClassPath(file, isOptimized)
-          }
-        }
-      }
-    }
-
-    // 2. Assemblies from -Xassem-path
-    for (fileName <- expandPath(user, expandStar = false)) {
-      val file = AbstractFile.getFile(fileName)
-      if (file ne null) {
-        val name = file.name.toLowerCase
-        if (name.endsWith(".dll") || name.endsWith(".exe")) {
-          names += name
-          etr += new AssemblyClassPath(file, isOptimized)
-        }
-      }
-    }
-
-    def check(n: String) {
-      if (!names.contains(n))
-      throw new AssertionError("Cannot find assembly "+ n +
-         ". Use -Xassem-extdirs or -Xassem-path to specify its location")
-    }
-    check("mscorlib.dll")
-    check("scalaruntime.dll")
-
-    // 3. Source path
-    for (dirName <- expandPath(source, expandStar = false)) {
-      val file = AbstractFile.getDirectory(dirName)
-      if (file ne null) etr += new SourcePath[MSILType](file, isOptimized)
-    }
 
     etr.toList
   }

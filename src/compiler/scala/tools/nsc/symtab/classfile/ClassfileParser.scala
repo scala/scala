@@ -14,7 +14,6 @@ import java.lang.Integer.toHexString
 import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.ClassRep
 import scala.annotation.switch
 
 /** This abstract class implements a class file parser.
@@ -953,9 +952,8 @@ abstract class ClassfileParser {
     for (entry <- innerClasses.valuesIterator) {
       // create a new class member for immediate inner classes
       if (entry.outerName == externalName) {
-        val file = global.classPath.findClass(entry.externalName.toString) match {
-          case Some(ClassRep(Some(binary: AbstractFile), _)) => binary
-          case _ => throw new AssertionError(entry.externalName)
+        val file = global.classPath.findAbstractFile(entry.externalName.toString) getOrElse {
+          throw new AssertionError(entry.externalName)
         }
         enterClassAndModule(entry, new global.loaders.ClassfileLoader(file), entry.jflags)
       }

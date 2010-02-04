@@ -14,7 +14,6 @@ import scala.collection.mutable._
 import scala.tools.nsc._
 import scala.tools.nsc.backend.icode._
 import scala.tools.nsc.io._
-import scala.tools.nsc.util.ClassRep
 
 import ClassfileConstants._
 import Flags._
@@ -50,18 +49,10 @@ abstract class ICodeReader extends ClassfileParser {
     isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
     val name = cls.fullName('.') + (if (sym.hasFlag(MODULE)) "$" else "")
-    classPath.findClass(name) match {
-      case Some(ClassRep(bin, _)) =>
-        assert(bin.isDefined, "No classfile for " + cls)
-        classFile = bin.get.asInstanceOf[AbstractFile]
-//      if (isScalaModule)
-//        sym = cls.linkedClassOfModule
 
-//      for (s <- cls.info.members)
-//        Console.println("" + s + ": " + s.tpe)
-        parse(classFile, sym)
-      case _ =>
-        log("Could not find: " + cls)
+    classPath.findAbstractFile(name) match {
+      case Some(classFile)  => parse(classFile, sym)
+      case _                => log("Could not find: " + cls)
     }
 
     (staticCode, instanceCode)

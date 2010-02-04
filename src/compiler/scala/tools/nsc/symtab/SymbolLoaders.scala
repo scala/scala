@@ -14,7 +14,7 @@ import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
 import scala.collection.mutable.{HashMap, HashSet}
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{ClassPath, ClassRep, JavaClassPath, MsilClassPath}
+import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
 import classfile.ClassfileParser
 import Flags._
 
@@ -136,7 +136,7 @@ abstract class SymbolLoaders {
      * (anonymous classes, implementation classes, module classes), their
      * symtab is encoded in the pickle of another class.
      */
-    protected def doLoad(cls: ClassRep[T]): Boolean
+    protected def doLoad(cls: classpath.AnyClassRep): Boolean
 
     protected def newClassLoader(bin: T): SymbolLoader
 
@@ -197,12 +197,11 @@ abstract class SymbolLoaders {
     }
   }
 
-
   class JavaPackageLoader(classpath: ClassPath[AbstractFile]) extends PackageLoader(classpath) {
     protected def needCompile(bin: AbstractFile, src: AbstractFile) =
       (src.lastModified >= bin.lastModified)
 
-    protected def doLoad(cls: ClassRep[AbstractFile]) = true
+    protected def doLoad(cls: classpath.AnyClassRep) = true
 
     protected def newClassLoader(bin: AbstractFile) =
       new ClassfileLoader(bin)
@@ -215,7 +214,7 @@ abstract class SymbolLoaders {
     protected def needCompile(bin: MSILType, src: AbstractFile) =
       false // always use compiled file on .net
 
-    protected def doLoad(cls: ClassRep[MSILType]) = {
+    protected def doLoad(cls: classpath.AnyClassRep) = {
       if (cls.binary.isDefined) {
         val typ = cls.binary.get
         if (typ.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {
