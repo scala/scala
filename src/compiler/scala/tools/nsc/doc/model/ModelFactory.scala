@@ -156,7 +156,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
     def inSource = if (sym.sourceFile != null) Some(sym.sourceFile, sym.pos.line) else None
     def sourceUrl = {
-      def fixPath(s: String) = s.replaceAll(java.io.File.separator, "/")
+      def fixPath(s: String) = s.replaceAll("\\" + java.io.File.separator, "/")
       val assumedSourceRoot: String = {
         val fixed = fixPath(settings.sourcepath.value)
         if (fixed endsWith "/") fixed.dropRight(1) else fixed
