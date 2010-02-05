@@ -30,12 +30,12 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			if(java.lang.Boolean.getBoolean("sbt.api.enable"))
 			{
 				val start = System.currentTimeMillis
-				currentRun.units.foreach(processUnit)
+				//currentRun.units.foreach(processUnit)
 				val stop = System.currentTimeMillis
 				println("API phase took : " + ((stop - start)/1000.0) + " s")
 			}
 		}
-		def processUnit(unit: CompilationUnit)
+		/*def processUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
 			val traverser = new TopLevelHandler(sourceFile)
@@ -43,9 +43,9 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
 			val source = new xsbti.api.Source(packages, traverser.definitions.toArray[xsbti.api.Definition])
 			callback.api(sourceFile, source)
-		}
+		}*/
 	}
-	private def thisPath(sym: Symbol) = path(pathComponents(sym, Constants.thisPath :: Nil))
+	/*private def thisPath(sym: Symbol) = path(pathComponents(sym, Constants.thisPath :: Nil))
 	private def path(components: List[PathComponent]) = new xsbti.api.Path(components.toArray[PathComponent])
 	private def pathComponents(sym: Symbol, postfix: List[PathComponent]): List[PathComponent] =
 	{
@@ -317,5 +317,5 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(annots.isEmpty) processType(at.underlying) else annotated(annots, at.underlying)
 	}
 	private def fullName(s: Symbol): String = s.fullNameString
-	private def simpleName(s: Symbol): String = s.simpleName.toString.trim
+	private def simpleName(s: Symbol): String = s.simpleName.toString.trim*/
 }

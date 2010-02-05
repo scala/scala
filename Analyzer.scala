@@ -20,6 +20,15 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 {
 	import global._
 
+	/** After 2.8.0.Beta1, fullNameString was renamed fullName.*/
+	private implicit def symName(sym: Symbol): WithString = new WithString(sym)
+	private final class WithString(s: Symbol)
+	{
+		def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
+		def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
+		private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
+	}
+
 	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
 	{
