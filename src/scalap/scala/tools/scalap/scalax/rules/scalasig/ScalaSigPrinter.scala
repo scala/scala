@@ -16,6 +16,7 @@ import java.io.{PrintStream, ByteArrayOutputStream}
 import java.util.regex.Pattern
 
 import scala.tools.scalap.scalax.util.StringUtil
+import reflect.NameTransformer
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   import stream._
@@ -98,25 +99,29 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   private def refinementClass(c: ClassSymbol) = c.name == "<refinement>"
 
   def printClass(level: Int, c: ClassSymbol) {
-    printModifiers(c)
-    val defaultConstructor = if (c.isCase) getPrinterByConstructor(c) else ""
-    if (c.isTrait) print("trait ") else print("class ")
-    print(processName(c.name))
-    val it = c.infoType
-    val classType = it match {
-      case PolyType(typeRef, symbols) => PolyTypeWithCons(typeRef, symbols, defaultConstructor)
-      case _ => it
+    if (c.name != "<local child>"/*scala.tools.nsc.symtab.StdNames.LOCALCHILD.toString()*/) {
+      print("\n")
+    } else {
+      printModifiers(c)
+      val defaultConstructor = if (c.isCase) getPrinterByConstructor(c) else ""
+      if (c.isTrait) print("trait ") else print("class ")
+      print(processName(c.name))
+      val it = c.infoType
+      val classType = it match {
+        case PolyType(typeRef, symbols) => PolyTypeWithCons(typeRef, symbols, defaultConstructor)
+        case _ => it
+      }
+      printType(classType)
+      print(" {")
+      //Print class selftype
+      c.selfType match {
+        case Some(t: Type) => print("\n"); print(" this : " + toString(t) + " =>")
+        case None =>
+      }
+      print("\n")
+      printChildren(level, c)
+      printWithIndent(level, "}\n")
     }
-    printType(classType)
-    print(" {")
-    //Print class selftype
-    c.selfType match {
-      case Some(t: Type) => print("\n"); print(" this : " + toString(t) + " =>")
-      case None =>
-    }
-    print("\n")
-    printChildren(level, c)
-    printWithIndent(level, "}\n")
   }
 
   def getPrinterByConstructor(c: ClassSymbol) = {
@@ -347,9 +352,11 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (typeArgs.isEmpty) ""
     else typeArgs.map(toString).map(StringUtil.trimStart(_, "=> ")).mkString("[", ", ", "]")
 
-  def typeParamString(params: Seq[Symbol]): String =
-    if (params.isEmpty) ""
+  def typeParamString(params: Seq[Symbol]): String = {
+    val res = if (params.isEmpty) ""
     else params.map(toString).mkString("[", ", ", "]")
+    res.replace(" >: scala.Nothing", "").replace(" <: scala.Any", "")
+  }
 
   val _syms = Map("\\$bar" -> "|", "\\$tilde" -> "~",
     "\\$bang" -> "!", "\\$up" -> "^", "\\$plus" -> "+",
@@ -368,7 +375,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       val re = "\\" + key
       temp = temp.replaceAll(re, _syms(re))
     }
-    temp.replaceAll(placeholderPattern, "_")
+    val result = temp.replaceAll(placeholderPattern, "_")
+    NameTransformer.decode(result)
   }
 
 }
