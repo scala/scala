@@ -99,7 +99,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   private def refinementClass(c: ClassSymbol) = c.name == "<refinement>"
 
   def printClass(level: Int, c: ClassSymbol) {
-    if (c.name != "<local child>"/*scala.tools.nsc.symtab.StdNames.LOCALCHILD.toString()*/) {
+    if (c.name == "<local child>"/*scala.tools.nsc.symtab.StdNames.LOCALCHILD.toString()*/) {
       print("\n")
     } else {
       printModifiers(c)
