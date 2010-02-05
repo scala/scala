@@ -40,33 +40,34 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 			})
 		}
 
+		// the help keep source compatibility with the changes in 2.8 : Position.{source,line,column} are no longer Option[X]s, just plain Xs
+		// so, we normalize to Option[X]
+	private def o[T](t: Option[T]): Option[T] = t
+	private def o[T](t: T): Option[T] = Some(t)
 	private def print(logger: F0[String] => Unit, posIn: Position, msg: String)
 	{
 		def log(s: => String) = logger(Message(s))
-		// the implicits keep source compatibility with the changes in 2.8 : Position.{source,line,column} are no longer Options
-		implicit def anyToOption[T <: AnyRef](t: T): Option[T] = Some(t)
-		implicit def intToOption(t: Int): Option[Int] = Some(t)
 		val pos =
 			posIn match
 			{
 				case null | NoPosition => NoPosition
 				case x: FakePos => x
 				case x =>
-					posIn.inUltimateSource(posIn.source.get)
+					posIn.inUltimateSource(o(posIn.source).get)
 			}
 		pos match
 		{
 			case NoPosition => log(msg)
 			case FakePos(fmsg) => log(fmsg+" "+msg)
 			case _ =>
-				val sourcePrefix = pos.source.map(_.file.path).getOrElse("")
-				val lineNumberString = pos.line.map(line => ":" + line + ":").getOrElse(":") + " "
+				val sourcePrefix = o(pos.source).map(_.file.path).getOrElse("")
+				val lineNumberString = o(pos.line).map(line => ":" + line + ":").getOrElse(":") + " "
 				log(sourcePrefix + lineNumberString + msg)
-				if (!pos.line.isEmpty)
+				if (!o(pos.line).isEmpty)
 				{
 					val lineContent = pos.lineContent.stripLineEnd
 					log(lineContent) // source line with error/warning
-					for(offset <- pos.offset; src <- pos.source)
+					for(offset <- o(pos.offset); src <- o(pos.source))
 					{
 						val pointer = offset - src.lineToOffset(src.offsetToLine(offset))
 						val pointerSpace = (lineContent: Seq[Char]).take(pointer).map { case '\t' => '\t'; case x => ' ' }

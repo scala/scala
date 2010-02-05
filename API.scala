@@ -9,7 +9,7 @@ import io.{AbstractFile, PlainFile, ZipArchive}
 import plugins.{Plugin, PluginComponent}
 import symtab.Flags
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
-import xsbti.api.{ClassLike, DefinitionType, PathComponent, SimpleType}
+//import xsbti.api.{ClassLike, DefinitionType, PathComponent, SimpleType}
 
 object API
 {

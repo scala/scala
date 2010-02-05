@@ -20,15 +20,6 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 {
 	import global._
 
-	/** After 2.8.0.Beta1, fullNameString was renamed fullName.*/
-	private implicit def symName(sym: Symbol): WithString = new WithString(sym)
-	private final class WithString(s: Symbol)
-	{
-		def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
-		def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
-		private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
-	}
-
 	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
 	{
@@ -76,9 +67,9 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 					{
 						val isModule = sym.isModuleClass
 						for(superclass <- superclasses.filter(sym.isSubClass))
-							callback.foundSubclass(sourceFile, sym.fullNameString, superclass.fullNameString, isModule)
+							callback.foundSubclass(sourceFile, NameString(sym), NameString(superclass), isModule)
 						if(isModule && hasMainMethod(sym))
-							callback.foundApplication(sourceFile, sym.fullNameString)
+							callback.foundApplication(sourceFile, NameString(sym))
 					}
 				}
 
@@ -142,7 +133,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	private def moduleSuffix(sym: Symbol) =
 		if (sym.hasFlag(Flags.MODULE) && !sym.isMethod && !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$" else "";
 	private def flatname(s: Symbol, separator: Char) =
-		atPhase(currentRun.flattenPhase.next) { s.fullNameString(separator) }
+		atPhase(currentRun.flattenPhase.next) { NameString(s, separator) }
 
 	private def isTopLevelModule(sym: Symbol): Boolean =
 		atPhase (currentRun.picklerPhase.next) {
@@ -193,8 +184,8 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	}
 	private class NewFinder extends ClassFinder
 	{
-		class Compat27 { def findClass(name: String) = this; def flatMap(f: Compat27 => AnyRef) = Predef.error("Should never be called"); def binary = None }
-		implicit def compat27(any: AnyRef): Compat27 = new Compat27
+		private class Compat27 { def findClass(name: String) = this; def flatMap(f: Compat27 => AnyRef) = Predef.error("Should never be called"); def binary = None }
+		private implicit def compat27(any: AnyRef): Compat27 = new Compat27
 
 		def classSeparator = '.' // 2.8 uses . when searching for classes
 		def findClass(name: String): Option[AbstractFile] =
@@ -202,8 +193,8 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	}
 	private class LegacyFinder extends ClassFinder
 	{
-		class Compat28 { def root: Compat28 = invalid; def find(n: String, b: Boolean) = this; def classFile = invalid; def invalid = Predef.error("Should never be called") }
-		implicit def compat28(any: AnyRef): Compat28 = new Compat28
+		private class Compat28 { def root: Compat28 = invalid; def find(n: String, b: Boolean) = this; def classFile = invalid; def invalid = Predef.error("Should never be called") }
+		private implicit def compat28(any: AnyRef): Compat28 = new Compat28
 
 		def classSeparator = File.separatorChar // 2.7 uses / or \ when searching for classes
 		private val root = classPath.root
@@ -213,4 +204,19 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 			if(entry eq null) None else Some(entry.classFile)
 		}
 	}
+}
+private object NameString
+{
+	def apply(s: Global#Symbol): String = s.fullNameString
+	def apply(s: Global#Symbol, sep: Char): String = s.fullNameString(sep)
+
+	/** After 2.8.0.Beta1, fullNameString was renamed fullName.*/
+	private implicit def symName(sym: Symbol): WithString = new WithString(sym)
+	private final class WithString(s: Symbol)
+	{
+		def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
+		def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
+		private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
+	}
+
 }
