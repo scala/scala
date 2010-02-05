@@ -211,8 +211,8 @@ private object NameString
 	def apply(s: Global#Symbol, sep: Char): String = s.fullNameString(sep)
 
 	/** After 2.8.0.Beta1, fullNameString was renamed fullName.*/
-	private implicit def symName(sym: Symbol): WithString = new WithString(sym)
-	private final class WithString(s: Symbol)
+	private implicit def symName(sym: Global#Symbol): WithString = new WithString(sym)
+	private final class WithString(s: Global#Symbol)
 	{
 		def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
 		def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
