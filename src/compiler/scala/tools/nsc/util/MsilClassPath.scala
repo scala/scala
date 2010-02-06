@@ -13,10 +13,11 @@ import java.net.URL
 import java.util.StringTokenizer
 import scala.util.Sorting
 
-import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
+import scala.collection.mutable.{ ListBuffer, HashSet => MutHashSet }
 import scala.tools.nsc.io.AbstractFile
 
-import ch.epfl.lamp.compiler.msil.{Type => MSILType, Assembly}
+import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Assembly }
+import ClassPath.ClassPathContext
 
 /** Keeping the MSIL classpath code in its own file is important to make sure
  *  we don't accidentally introduce a dependency on msil.jar in the jvm.
@@ -33,20 +34,21 @@ object MsilClassPath {
     }
     res
   }
+
+  class MsilContext extends ClassPathContext[MSILType] {
+    def toBinaryName(rep: MSILType) = rep.Name
+  }
 }
+import MsilClassPath.MsilContext
 
 /**
  * A assembly file (dll / exe) containing classes and namespaces
  */
-class AssemblyClassPath(types: Array[MSILType], namespace: String, val validName: String => Boolean) extends ClassPath[MSILType] {
+class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: MsilContext) extends ClassPath[MSILType] {
   def name = {
     val i = namespace.lastIndexOf('.')
     if (i < 0) namespace
     else namespace drop (i + 1)
-  }
-
-  def this(assemFile: AbstractFile, validName: String => Boolean) {
-    this(MsilClassPath.collectTypes(assemFile), "", validName)
   }
 
   private lazy val first: Int = {
@@ -88,7 +90,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val validName
       i += 1
     }
     for (ns <- nsSet.toList)
-      yield new AssemblyClassPath(types, ns, validName)
+      yield new AssemblyClassPath(types, ns, context)
   }
 
   val sourcepaths: List[AbstractFile] = Nil
@@ -100,9 +102,11 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val validName
  * The classpath when compiling with target:msil. Binary files are represented as
  * MSILType values.
  */
-class MsilClassPath(ext: String, user: String, source: String, val validName: String => Boolean) extends MergedClassPath[MSILType] {
+class MsilClassPath(ext: String, user: String, source: String, val context: MsilContext) extends MergedClassPath[MSILType] {
   protected val entries: List[ClassPath[MSILType]] = assembleEntries()
-  override protected def nameOfBinaryRepresentation(binary: MSILType) = binary.Name
+
+  def createAssemblyPath(assemFile: AbstractFile) =
+    new AssemblyClassPath(MsilClassPath collectTypes assemFile, "", context)
 
   private def assembleEntries(): List[ClassPath[MSILType]] = {
     import ClassPath._
@@ -117,7 +121,7 @@ class MsilClassPath(ext: String, user: String, source: String, val validName: St
           val name = file.name.toLowerCase
           if (name.endsWith(".dll") || name.endsWith(".exe")) {
             names += name
-            etr += new AssemblyClassPath(file, validName)
+            etr += createAssemblyPath(file)
           }
         }
       }
@@ -130,7 +134,7 @@ class MsilClassPath(ext: String, user: String, source: String, val validName: St
         val name = file.name.toLowerCase
         if (name.endsWith(".dll") || name.endsWith(".exe")) {
           names += name
-          etr += new AssemblyClassPath(file, validName)
+          etr += createAssemblyPath(file)
         }
       }
     }
@@ -146,7 +150,7 @@ class MsilClassPath(ext: String, user: String, source: String, val validName: St
     // 3. Source path
     for (dirName <- expandPath(source, expandStar = false)) {
       val file = AbstractFile.getDirectory(dirName)
-      if (file ne null) etr += new SourcePath[MSILType](file, validName)
+      if (file ne null) etr += new SourcePath[MSILType](file, context)
     }
 
     etr.toList

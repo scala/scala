@@ -12,7 +12,8 @@ package scala.tools.scalap
 import java.io.{File, PrintStream, OutputStreamWriter, ByteArrayOutputStream}
 import scalax.rules.scalasig._
 import tools.nsc.io.AbstractFile
-import tools.nsc.util.{ClassPath, JavaClassPath}
+import tools.nsc.util.{ ClassPath, JavaClassPath }
+import ClassPath.DefaultJavaContext
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -266,9 +267,9 @@ object Main {
       val path = arguments.getArgument("-classpath") match {
         case None => arguments.getArgument("-cp") match {
           case None => EmptyClasspath
-          case Some(path) => new JavaClassPath("", "", path, "", "")
+          case Some(path) => new JavaClassPath("", "", path, "", "", DefaultJavaContext)
         }
-        case Some(path) => new JavaClassPath("", "", path, "", "")
+        case Some(path) => new JavaClassPath("", "", path, "", "", DefaultJavaContext)
       }
       // print the classpath if output is verbose
       if (verbose) {
@@ -284,9 +285,9 @@ object Main {
      * The short name of the package (without prefix)
      */
     def name: String = ""
+    val context = DefaultJavaContext
     val classes: List[ClassRep] = Nil
     val packages: List[ClassPath[AbstractFile]] = Nil
     val sourcepaths: List[AbstractFile] = Nil
-    val validName: String => Boolean = ClassPath.noTraitImplFilter
   }
 }

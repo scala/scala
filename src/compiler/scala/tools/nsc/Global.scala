@@ -6,29 +6,28 @@
 
 package scala.tools.nsc
 
-import java.io.{File, FileOutputStream, PrintWriter}
-import java.io.{IOException, FileNotFoundException}
-import java.nio.charset._
+import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
+import java.nio.charset.{ Charset, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
-import scala.tools.nsc.io.{SourceReader, AbstractFile, Path}
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.util.{ClassPath, JavaClassPath, SourceFile, BatchSourceFile, OffsetPosition, RangePosition}
 
-import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
+import io.{ SourceReader, AbstractFile, Path }
+import reporters.{ Reporter, ConsoleReporter }
+import util.{ ClassPath, SourceFile, Statistics, BatchSourceFile }
+import collection.mutable.{ HashSet, HashMap, ListBuffer }
 
-import symtab._
+import symtab.{ Flags, SymbolTable, SymbolLoaders }
 import symtab.classfile.{PickleBuffer, Pickler}
-import dependencies.{DependencyAnalysis}
-import util.Statistics
+import dependencies.DependencyAnalysis
 import plugins.Plugins
 import ast._
 import ast.parser._
 import typechecker._
 import transform._
-import backend.icode.{ICodes, GenICode, Checkers}
-import backend.ScalaPrimitives
+
+import backend.icode.{ ICodes, GenICode, Checkers }
+import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.GenJVM
-import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
+import backend.opt.{ Inliners, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 
 class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
@@ -45,7 +44,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def this(settings: Settings) =
     this(settings, new ConsoleReporter(settings))
 
-  //def this() = this(new Settings, new ConsoleReporter)
+  // platform specific elements
+
+  type ThisPlatform = Platform[_] { val global: Global.this.type }
+
+  lazy val platform: ThisPlatform =
+    if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
+    else new { val global: Global.this.type = Global.this } with JavaPlatform
+
+  def classPath: ClassPath[_] = platform.classPath
+  def rootLoader: LazyType = platform.rootLoader
 
   // sub-components --------------------------------------------------
 
@@ -209,18 +217,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
     }
 
-  // Unless inlining is on, we can exclude $class.class files from the classpath.
-  protected def validClassPathName: String => Boolean =
-    if (settings.inline.value) _ => true
-    else ClassPath.noTraitImplFilter
-
-  lazy val classPath: ClassPath[_] =
-    new JavaClassPath(
-      settings.bootclasspath.value, settings.extdirs.value,
-      settings.classpath.value, settings.sourcepath.value,
-      settings.Xcodebase.value, validClassPathName
-    )
-
   if (settings.verbose.value)
     inform("[Classpath = " + classPath + "]")
 
@@ -237,8 +233,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   lazy val loaders = new SymbolLoaders {
     val global: Global.this.type = Global.this
   }
-
-  def rootLoader: LazyType = new loaders.JavaPackageLoader(classPath.asInstanceOf[JavaClassPath])
 
 // ------------ Phases -------------------------------------------}
 
@@ -535,20 +529,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     phasesSet += closureElimination         // optimization: get rid of uncalled closures
     phasesSet += deadCode                   // optimization: get rid of dead cpde
     phasesSet += terminal                   // The last phase in the compiler chain
-
-    if (forJVM) {
-      phasesSet += flatten                  // get rid of inner classes
-      phasesSet += liftcode                 // generate reified trees
-      phasesSet += genJVM                   // generate .class files
-      if (settings.make.value != "all")
-        phasesSet += dependencyAnalysis
-    }
   }
+
+  protected def computePlatformPhases() = platform.platformPhases foreach (phasesSet += _)
 
   /* Helper method for sequncing the phase assembly
    */
   private def computePhaseDescriptors: List[SubComponent] = {
     computeInternalPhases()       // Global.scala
+    computePlatformPhases()       // backend/Platform.scala
     computePluginPhases()         // plugins/Plugins.scala
     buildCompilerFromPhasesSet()  // PhaseAssembly.scala
   }

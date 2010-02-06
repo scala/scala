@@ -50,7 +50,7 @@ abstract class ICodeReader extends ClassfileParser {
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
     val name = cls.fullName('.') + (if (sym.hasFlag(MODULE)) "$" else "")
 
-    classPath.findAbstractFile(name) match {
+    classPath.findSourceFile(name) match {
       case Some(classFile)  => parse(classFile, sym)
       case _                => log("Could not find: " + cls)
     }
