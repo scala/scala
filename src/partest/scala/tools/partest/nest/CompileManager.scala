@@ -113,8 +113,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     out match {
       case Some(outDir) =>
         command.settings.outdir.value = outDir.getAbsolutePath
-        command.settings.classpath.value = command.settings.classpath.value+
-          File.pathSeparator+outDir.getAbsolutePath
+        command.settings appendToClasspath outDir.getAbsolutePath
       case None =>
         // do nothing
     }

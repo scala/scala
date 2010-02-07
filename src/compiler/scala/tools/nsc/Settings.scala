@@ -7,6 +7,7 @@
 package scala.tools.nsc
 
 import java.io.File
+import File.pathSeparator
 import io.AbstractFile
 import util.SourceFile
 import Settings._
@@ -22,7 +23,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   // given any number of possible path segments, flattens down to a
   // :-separated style path
   private def concatPath(segments: Option[String]*): String =
-    segments.toList.flatMap(x => x) mkString File.pathSeparator
+    segments.toList.flatMap(x => x) mkString pathSeparator
 
   protected def classpathDefault =
     sysenvopt("CLASSPATH") getOrElse "."
@@ -817,6 +818,7 @@ trait ScalacSettings {
    *  Temporary Settings
    */
   val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
+  def appendToClasspath(entry: String) = classpath.value += (pathSeparator + entry)
 
   /**
    *  Standard settings

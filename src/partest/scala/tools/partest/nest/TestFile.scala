@@ -10,23 +10,24 @@ package nest
 
 import java.io.{File, BufferedReader, FileReader}
 import scala.tools.nsc.Settings
+import scala.tools.nsc.io.{ Path, Directory }
 
-class TestFile(kind: String, val file: File, val fileManager: FileManager, createOutDir: Boolean) {
+abstract class TestFile(kind: String) {
+  def file: File
+  def fileManager: FileManager
+  def createOutDir: Boolean
+
   val dir = file.getParentFile
   val dirpath = dir.getAbsolutePath
   val fileBase: String = basename(file.getName)
+  def objDir = fileBase + "-" + kind + ".obj"
 
   // @mutates settings
   protected def baseSettings(settings: Settings) {
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+dirpath
+    settings appendToClasspath dirpath
+
     if (createOutDir)
-      settings.outdir.value = {
-        val outDir = new File(dir, fileBase + "-" + kind + ".obj")
-        if (!outDir.exists)
-          outDir.mkdir()
-        outDir.toString
-      }
+      settings.outdir.value = (Path(dir) / objDir).createDirectory(true).path
 
     // add additional flags found in 'testname.flags'
     val flagsFile = new File(dir, fileBase + ".flags")
@@ -40,6 +41,7 @@ class TestFile(kind: String, val file: File, val fileManager: FileManager, creat
 
   def defineSettings(settings: Settings) {
     baseSettings(settings)
+    settings appendToClasspath fileManager.CLASSPATH
   }
 
   private def basename(name: String): String = {
@@ -50,68 +52,21 @@ class TestFile(kind: String, val file: File, val fileManager: FileManager, creat
   override def toString(): String = kind+" "+file
 }
 
-case class PosTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("pos", file, fileManager, createOutDir) {
+case class PosTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("pos")
+case class NegTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("neg")
+case class RunTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("run")
+case class BuildManagerTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("bm")
+case class ScalaCheckTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("scalacheck")
+case class JvmTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("jvm")
+case class ShootoutTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("shootout") {
   override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
-  }
-}
-
-case class NegTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("neg", file, fileManager, createOutDir) {
-  override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
-  }
-}
-
-case class RunTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("run", file, fileManager, createOutDir) {
-  override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
-  }
-}
-
-case class BuildManagerTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("bm", file, fileManager, createOutDir) {
-  override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
-  }
-}
-
-case class ScalaCheckTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("scalacheck", file, fileManager, createOutDir) {
-  override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
-  }
-}
-
-case class JvmTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("jvm", file, fileManager, createOutDir) {
-  override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
-  }
-}
-
-case class ShootoutTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("shootout", file, fileManager, createOutDir) {
-  override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
+    super.defineSettings(settings)
     settings.outdir.value = file.getParent
   }
 }
-
-case class ScalapTestFile(override val file: File, override val fileManager: FileManager, createOutDir: Boolean) extends TestFile("scalap", file, fileManager, createOutDir) {
+case class ScalapTestFile(file: File, fileManager: FileManager, createOutDir: Boolean) extends TestFile("scalap") {
   override def defineSettings(settings: Settings) {
-    baseSettings(settings)
-    settings.classpath.value = settings.classpath.value+
-      File.pathSeparator+fileManager.CLASSPATH
+    super.defineSettings(settings)
     settings.outdir.value = file.getParent
   }
 }
