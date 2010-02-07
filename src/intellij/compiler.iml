@@ -4,18 +4,17 @@
     <facet type="Scala" name="Scala">
       <configuration>
         <option name="takeFromSettings" value="true" />
-        <option name="isRelativeToProjectPath" value="true" />
         <option name="myScalaCompilerJarPath" value="build/locker/classes/compiler lib/fjbg.jar lib/msil.jar" />
         <option name="myScalaSdkJarPath" value="build/locker/classes/library" />
       </configuration>
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/build/quick/classes/compiler" />
-    <output-test url="file://$MODULE_DIR$/out/test/compiler" />
+    <output url="file://$MODULE_DIR$/../../build/quick/classes/compiler" />
+    <output-test url="file://$MODULE_DIR$/../../out/test/compiler" />
     <exclude-output />
-    <content url="file://$MODULE_DIR$/src/compiler">
-      <sourceFolder url="file://$MODULE_DIR$/src/compiler" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../compiler">
+      <sourceFolder url="file://$MODULE_DIR$/../compiler" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

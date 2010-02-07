@@ -7,10 +7,10 @@
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/src/partest">
-      <sourceFolder url="file://$MODULE_DIR$/src/partest" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../partest">
+      <sourceFolder url="file://$MODULE_DIR$/../partest" isTestSource="false" />
     </content>
-    <content url="file://$MODULE_DIR$/test" />
+    <content url="file://$MODULE_DIR$/../../test" />
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="actors" />

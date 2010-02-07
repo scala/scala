@@ -7,11 +7,11 @@
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/META-INF" />
-    <content url="file://$MODULE_DIR$/bin" />
-    <content url="file://$MODULE_DIR$/lib" />
-    <content url="file://$MODULE_DIR$/src/library">
-      <sourceFolder url="file://$MODULE_DIR$/src/library" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../../META-INF" />
+    <content url="file://$MODULE_DIR$/../../bin" />
+    <content url="file://$MODULE_DIR$/../../lib" />
+    <content url="file://$MODULE_DIR$/../library">
+      <sourceFolder url="file://$MODULE_DIR$/../library" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

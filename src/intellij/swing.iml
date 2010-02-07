@@ -7,8 +7,8 @@
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
-    <content url="file://$MODULE_DIR$/src/swing">
-      <sourceFolder url="file://$MODULE_DIR$/src/swing" isTestSource="false" />
+    <content url="file://$MODULE_DIR$/../swing">
+      <sourceFolder url="file://$MODULE_DIR$/../swing" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
