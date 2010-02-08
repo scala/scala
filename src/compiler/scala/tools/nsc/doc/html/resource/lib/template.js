@@ -1,3 +1,6 @@
+// © 2009–2010 EPFL/LAMP
+// code by Gilles Dubochet with contributions by Pedro Furlanetto
+
 $(document).ready(function(){
 	var prefilters = $("#ancestors > ol > li").filter(function(){
 		var name = $(this).attr("name");
@@ -17,20 +20,26 @@ $(document).ready(function(){
 		};
 		filterInherit();
 	});
-	$(".signature .symbol .extype").hover(
-		function(){
-			var full = $(this).attr("name");
-			var short = $(this).text();
-			$(this).attr("name", short);
-			$(this).text(full);
-		},
-		function(){
-			var short = $(this).attr("name");
-			var full = $(this).text();
-			$(this).attr("name", full);
-			$(this).text(short);
-		}
-	);
+	$("#ancestors > ol > li.hideall").click(function() {
+		$("#ancestors > ol > li.in").removeClass("in").addClass("out");		
+		filterInherit();
+	})
+	$("#ancestors > ol > li.showall").click(function() {
+		var filtered=$("#ancestors > ol > li.out").filter(function() {
+			var name = $(this).attr("name");
+			return !(name == "scala.Any" || name == "scala.AnyRef");
+		})
+		filtered.removeClass("out").addClass("in");
+		filterInherit();
+	});
+	//http://flowplayer.org/tools/tooltip.html
+	$(".signature .symbol .extype").tooltip({
+		tip: "#tooltip",
+		position:"top center",		
+		onBeforeShow: function(ev) {
+            $(this.getTip()).text($(ev.srcElement).attr("name"));
+		}		
+	});
 	$("#template div.fullcomment").hide();
 	var docAllSigs = $("#template .signature");
 	function commentShowFct(fullComment){

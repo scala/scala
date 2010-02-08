@@ -100,6 +100,15 @@ div.members > ol > li {
 
 /* Member signatures */
 
+#tooltip {
+	background: #142556;
+	border: 2px solid white;
+	color: white;
+	display: none;
+	padding: 5px;
+	position: absolute;
+}
+
 .signature {
 	padding: 1px;
 	font-family: monospace;
@@ -253,11 +262,10 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 }
 
 #mbrsel > div > ol {
-	margin-left: 80px;
+	display: inline-block;
 }
 
 #mbrsel > div > ol > li {
-	display: block;
 	padding: 4px 8px 4px 8px;
 	font-weight: bold;
 	background-color: white;
