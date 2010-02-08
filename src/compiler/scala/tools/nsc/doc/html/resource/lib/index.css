@@ -20,6 +20,10 @@ h1 {
 	display: none;
 }
 
+#library {
+    display: none;
+}
+
 #browser {
 	top: 0px;
 	left: 0px;
@@ -29,34 +33,86 @@ h1 {
 	position: fixed;
 }
 
-#quickflt {
-	display: block;
+#filter {
 	position: fixed;
-	height: 22px;
-	right: 0px;
-	left: 0px;
-	top: 0px;
-	position: absolute;
 	display: block;
+	padding: 5px;
+	width: 290px;
+	right: 0;
+	left: 0;
+	top: 0;
+	background-color: grey;
+}
+
+#textfilter {
+	position: relative;
+	display: block;
+}
+
+#textfilter:before {
+    display: block;
+    content: url("filter_box_left.png");
+}
+
+#textfilter:after {
+    display: block;
+	position: absolute;
+	top: 0;
+	right: 0;
+    content: url("filter_box_right.png");
+}
+
+#textfilter input {
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 32px;
+	right: 16px;
+	height: 22px;
+	width: 232px;
+	padding: 5px;
 	font-weight: bold;
 	color: #993300;
-	padding: 5px;
 	background-color: white;
+}
+
+#focusfilter {
+	position: relative;
+	display: block;
+	padding: 5px;
+	background-color: pink;
+}
+
+#focusfilter .focuscoll {
+	font-weight: bold;
+}
+
+#focusfilter img {
+	bottom: -2px;
+	position: relative;
 }
 
 #tpl {
 	display: block;
 	position: fixed;
 	overflow: auto;
-	right: 0px;
-	left: 0px;
-	bottom: 0px;
-	top: 30px;
+	right: 0;
+	left: 0;
+	bottom: 0;
+	top: 0;
 	position: absolute;
 	display: block;
 }
 
 #tpl .packhide {
+	display: block;
+	float: right;
+	font-weight: normal;
+	color: white;
+	padding: 1px 4px 1px 4px;
+}
+
+#tpl .packfocus {
 	display: block;
 	float: right;
 	font-weight: normal;

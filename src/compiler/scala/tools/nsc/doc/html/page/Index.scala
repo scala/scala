@@ -25,20 +25,33 @@ class Index(modelRoot: Package) extends HtmlPage {
 		    @import url({ relativeLinkTo(List("index.css", "lib")) }) screen;
 		  </style>
 		  <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
+		  <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
     </xml:group>
 
   def body =
     <body>
+      <div id="library">
+        <img class='class icon' src='lib/class.png'/>
+        <img class='trait icon' src='lib/trait.png'/>
+        <img class='object icon' src='lib/object.png'/>
+        <img class='package icon' src='lib/package.png'/>
+      </div>
       <div id="browser">
-        <input id="quickflt" type="text" accesskey="/"/>
-        <div id="tpl">{
-          def isExcluded(t : DocTemplateEntity) = {
-            val qname=t.qualifiedName
-            (qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") ||
-            qname.startsWith("scala.Function")) &&
-            !(qname=="scala.Function1" || qname=="scala.Function2" || qname=="scala.Function"
-             || qname=="scala.Product1" || qname=="scala.Product2" || qname=="scala.Product"
-             || qname=="scala.Tuple1" || qname=="scala.Tuple2")
+        <div id="filter">
+          <div id="textfilter">
+            <input type="text" accesskey="/"/>
+          </div>
+          <div id="focusfilter">
+            focus on <span class="focuscoll"></span> <a class="focusremove">(remove)</a>
+          </div>
+        </div>
+        <div class="wu" id="tpl">{
+          def isExcluded(dtpl: DocTemplateEntity) = {
+            val qname = dtpl.qualifiedName
+            (qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") || qname.startsWith("scala.Function")) &&
+              !(qname=="scala.Function1" || qname=="scala.Function2" || qname=="scala.Function" ||
+                      qname=="scala.Product1" || qname=="scala.Product2" || qname=="scala.Product" ||
+                      qname=="scala.Tuple1" || qname=="scala.Tuple2")
           }
           def packageElem(pack: model.Package): NodeSeq = {
             <xml:group>
@@ -66,7 +79,7 @@ class Index(modelRoot: Package) extends HtmlPage {
               }</ol>
               <ol class="packages"> {
                 for (sp <- pack.packages sortBy (_.name.toLowerCase)) yield
-                  <li>{ packageElem(sp) }</li>
+                  <li class="wu" title={ sp.qualifiedName }>{ packageElem(sp) }</li>
               }</ol>
             </xml:group>
           }
@@ -74,7 +87,7 @@ class Index(modelRoot: Package) extends HtmlPage {
         }</div>
       </div>
 		  <div id="content">
-		  	<iframe src={ relativeLinkTo{List("package.html")} }/>
+		  	<iframe name="template" src={ relativeLinkTo{List("package.html")} }/>
 		  </div>
     </body>
 

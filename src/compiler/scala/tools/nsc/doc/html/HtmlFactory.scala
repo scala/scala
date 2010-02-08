@@ -49,6 +49,8 @@ class HtmlFactory(val reporter: Reporter, val settings: Settings) {
     }
 
     copyResource("lib/jquery.js")
+    copyResource("lib/tools.tooltip.js")
+    copyResource("lib/scheduler.js")
     copyResource("lib/index.css")
     copyResource("lib/index.js")
     copyResource("lib/template.css")
@@ -61,6 +63,9 @@ class HtmlFactory(val reporter: Reporter, val settings: Settings) {
     copyResource("lib/trait_big.png")
     copyResource("lib/package.png")
     copyResource("lib/package_big.png")
+    copyResource("lib/filter_box_left.png")
+    copyResource("lib/filter_box_right.png")
+    copyResource("lib/remove.png")
 
     new page.Index(modelRoot) writeFor this
 
