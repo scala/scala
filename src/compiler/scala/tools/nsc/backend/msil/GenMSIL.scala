@@ -1530,9 +1530,10 @@ abstract class GenMSIL extends SubComponent {
       else if (sym == definitions.NullClass)
         return "scala.runtime.Null$"
 
-      (if (sym.isClass || (sym.isModule && !sym.isMethod))
-        sym.fullName
-       else
+      (if (sym.isClass || (sym.isModule && !sym.isMethod)) {
+        if (sym.isNestedClass) sym.simpleName
+        else sym.fullName
+       } else
          sym.simpleName.toString().trim()) + suffix
     }
 
@@ -1662,7 +1663,14 @@ abstract class GenMSIL extends SubComponent {
       case FLOAT          => MFLOAT
       case DOUBLE         => MDOUBLE
       case REFERENCE(cls) => getType(cls)
-      case ARRAY(elem)    => clrTypes.mkArrayType(msilType(elem))
+      case ARRAY(elem)    =>
+        msilType(elem) match {
+          // For type builders, cannot call "clrTypes.mkArrayType" because this looks up
+          // the type "tp" in the assembly (not in the HashMap "types" of the backend).
+          // This can fail for nested types because the biulders are not complete yet.
+          case tb: TypeBuilder => tb.MakeArrayType()
+          case tp: MsilType => clrTypes.mkArrayType(tp)
+        }
     }
 
     private def msilType(tpe: Type): MsilType = msilType(toTypeKind(tpe))
