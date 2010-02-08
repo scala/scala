@@ -9,6 +9,8 @@ package interpreter
 import java.net.URL
 import java.lang.reflect
 import java.util.concurrent.ConcurrentHashMap
+import io.{ Path, Directory, File, Streamable }
+import scala.tools.util.PathResolver.Defaults.scalaHomeDir
 import scala.concurrent.DelayedLazyVal
 import scala.reflect.NameTransformer.{ decode, encode }
 import PackageCompletion._
@@ -51,7 +53,7 @@ class PackageCompletion(classpath: List[URL]) extends CompletionAware {
 
     override def follow(segment: String): Option[CompletionAware] = {
       PackageCompletion.this.follow(root + "." + segment) orElse {
-        for (CompletionInfo(`segment`, className, _) <- infos) {
+        for (CompletionInfo(`segment`, className) <- infos) {
           return Some(new StaticCompletion(className))
         }
 
@@ -63,9 +65,7 @@ class PackageCompletion(classpath: List[URL]) extends CompletionAware {
 }
 
 object PackageCompletion {
-  import java.io.File
   import java.util.jar.{ JarEntry, JarFile }
-  import scala.tools.nsc.io.Streamable
 
   val EXPAND_SEPARATOR_STRING = "$$"
   val ANON_CLASS_NAME = "$anon"
@@ -83,24 +83,44 @@ object PackageCompletion {
   private def enumToListInternal[T](e: java.util.Enumeration[T], xs: List[T]): List[T] =
     if (e == null || !e.hasMoreElements) xs else enumToListInternal(e, e.nextElement :: xs)
 
-  def getClassFiles(path: String): List[String] = {
-    def exists(path: String) = { new File(path) exists }
-    if (!exists(path)) Nil else {
-      (enumToList(new JarFile(path).entries) map (_.getName))
-      . partialMap { case x: String if x endsWith ".class" => x dropRight 6 }
-      . filterNot { ignoreClassName }
+  private def isClass(s: String) = s endsWith ".class"
+  private def processNames(xs: List[String]) = xs map (_ dropRight 6) filterNot ignoreClassName distinct
+
+  def getDirClassFiles(dir: Directory): List[String] =
+    processNames(dir.deepList() map (dir relativize _ path) filter isClass toList)
+
+  def getJarClassFiles(jar: File): List[String] =
+    if (!jar.exists) Nil
+    else processNames(enumToList(new JarFile(jar.path).entries) map (_.getName) filter isClass)
+
+  object CompletionInfo {
+    def unapply(that: Any) = that match {
+      case x: CompletionInfo    => Some((x.visibleName, x.className))
+      case _                    => None
     }
   }
 
-  case class CompletionInfo(visibleName: String, className: String, jar: String) {
-    lazy val jarfile = new JarFile(jar)
-    lazy val entry = jarfile getEntry className
+  abstract class CompletionInfo {
+    def visibleName: String
+    def className: String
+    def getBytes(): Array[Byte]
 
     override def hashCode = visibleName.hashCode
     override def equals(other: Any) = other match {
       case x: CompletionInfo  => visibleName == x.visibleName
       case _                  => false
     }
+  }
+
+  case class DirCompletionInfo(visibleName: String, className: String, dir: Directory) extends CompletionInfo {
+    lazy val file = dir / File(className)
+
+    def getBytes(): Array[Byte] = try file.toByteArray() catch { case _: Exception => Array() }
+  }
+
+  case class JarCompletionInfo(visibleName: String, className: String, jar: File) extends CompletionInfo {
+    lazy val jarfile = new JarFile(jar.path)
+    lazy val entry = jarfile getEntry className
 
     def getBytes(): Array[Byte] = {
       if (entry == null) Array() else {
@@ -112,8 +132,16 @@ object PackageCompletion {
 
   // all the dotted path to classfiles we can find by poking through the jars
   def getDottedPaths(map: ConcurrentHashMap[String, List[CompletionInfo]], classpath: List[URL]): Unit = {
-    val cp = classpath map (_.getPath)
-    val jars = cp.distinct filter (_ endsWith ".jar")
+    val cp = classpath.distinct map (x => Path(x.getPath))
+    val jars = cp filter (_ hasExtension "jar") map (_.toFile)
+
+    /** If we process all dirs uncritically, someone who has '.' in their classpath and
+     *  runs scala from the filesystem root directory will induce a traversal of their
+     *  entire filesystem.  We could apply some heuristics to avoid this, but for now we
+     *  will look only in the scalaHome directories, which is most of what we want.
+     */
+    def isUnderScalaHome(d: Directory) = d.parents exists (_ == scalaHomeDir)
+    val dirs = cp partialMap { case x: Directory => x } filter isUnderScalaHome
 
     // for e.g. foo.bar.baz.C, returns (foo -> bar), (foo.bar -> baz), (foo.bar.baz -> C)
     // and scala.Range$BigInt needs to go scala -> Range -> BigInt
@@ -134,21 +162,26 @@ object PackageCompletion {
       }
     }
 
-    def oneJar(jar: String): Unit = {
-      val classfiles = getClassFiles(jar)
-
-      for (cl <- classfiles.distinct ; (k, _v) <- subpaths(cl)) {
-        val v = CompletionInfo(_v, cl, jar)
-
-        if (map containsKey k) {
-          val vs = map.get(k)
-          if (vs contains v) ()
-          else map.put(k, v :: vs)
-        }
-        else map.put(k, List(v))
+    def addToMap(key: String, info: CompletionInfo) = {
+      if (map containsKey key) {
+        val vs = map.get(key)
+        if (vs contains info) ()
+        else map.put(key, info :: vs)
       }
+      else map.put(key, List(info))
+    }
+
+    def oneDir(dir: Directory) {
+      for (cl <- getDirClassFiles(dir) ; (k, v) <- subpaths(cl))
+        addToMap(k, DirCompletionInfo(v, cl, dir))
+    }
+
+    def oneJar(jar: File) {
+      for (cl <- getJarClassFiles(jar) ; (k, v) <- subpaths(cl))
+        addToMap(k, JarCompletionInfo(v, cl, jar))
     }
 
     jars foreach oneJar
+    dirs foreach oneDir
   }
 }
