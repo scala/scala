@@ -28,6 +28,9 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
   private[actors] def fvalueTyped = fvalue.get.asInstanceOf[T]
 
   @deprecated("this member is going to be removed in a future release")
+  val ch: InputChannel[Any] = inputChannel
+
+  @deprecated("this member is going to be removed in a future release")
   protected def value: Option[Any] = fvalue
   @deprecated("this member is going to be removed in a future release")
   protected def value_=(x: Option[Any]) { fvalue = x }
