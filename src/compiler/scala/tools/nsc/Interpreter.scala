@@ -503,8 +503,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private[nsc] val powerMkImports = List(
-    "mkContext", "mkTree", "mkTrees", "mkAlias", "mkSourceFile", "mkUnit", "mkType", "mkTypedTree", "mkTypedTrees",
-    "treeWrapper"
+    "mkContext", "mkTree", "mkTrees", "mkAlias", "mkSourceFile", "mkUnit", "mkType", "mkTypedTree", "mkTypedTrees"
+    // , "treeWrapper"
   )
 
   /** Compile an nsc SourceFile.  Returns true if there are

@@ -30,6 +30,8 @@ import scala.util.Random.nextASCIIString
 
 object Path
 {
+  def isJarOrZip(f: Path) = (f hasExtension "zip") || (f hasExtension "jar")
+
   // not certain these won't be problematic, but looks good so far
   implicit def string2path(s: String): Path = apply(s)
   implicit def jfile2path(jfile: JFile): Path = apply(jfile)
@@ -137,6 +139,12 @@ class Path private[io] (val jfile: JFile)
     case -1   => ""
     case idx  => name drop (idx + 1)
   }
+  // compares against extension in a CASE INSENSITIVE way.
+  def hasExtension(other: String) = extension.toLowerCase == other.toLowerCase
+
+  // conditionally execute
+  def ifFile[T](f: File => T): Option[T] = if (isFile) Some(f(toFile)) else None
+  def ifDirectory[T](f: Directory => T): Option[T] = if (isDirectory) Some(f(toDirectory)) else None
 
   // Boolean tests
   def canRead = jfile.canRead()

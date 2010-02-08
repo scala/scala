@@ -8,13 +8,12 @@
 package scala.tools.nsc
 package util
 
-import java.io.File
+import java.io.{ File => JFile }
 import java.net.URL
-import java.util.StringTokenizer
-import scala.util.Sorting
 
 import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
-import scala.tools.nsc.io.AbstractFile
+import io.{ File, Directory, Path, AbstractFile }
+import scala.tools.util.StringOps.splitWhere
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -26,26 +25,21 @@ import scala.tools.nsc.io.AbstractFile
 object ClassPath {
   /** Expand single path entry */
   private def expandS(pattern: String): List[String] = {
-    def isJar(name: String) = name.toLowerCase endsWith ".jar"
+    val wildSuffix = File.separator + "*"
 
     /** Get all jars in directory */
-    def lsJars(f: File, filt: String => Boolean = _ => true) = {
-      val list = f.listFiles()
-      if (list eq null) Nil
-      else list.filter(f => f.isFile() && filt(f.getName) && isJar(f.getName())).map(_.getPath()).toList
-    }
-
-    val suffix = File.separator + "*"
+    def lsJars(dir: Directory, filt: String => Boolean = _ => true) =
+      dir.files partialMap { case f if filt(f.name) && (f hasExtension "jar") => f.path } toList
 
     def basedir(s: String) =
       if (s contains File.separator) s.substring(0, s.lastIndexOf(File.separator))
       else "."
 
-    if (pattern == "*") lsJars(new File("."))
-    else if (pattern endsWith suffix) lsJars(new File(pattern dropRight 2))
+    if (pattern == "*") lsJars(Directory("."))
+    else if (pattern endsWith wildSuffix) lsJars(Directory(pattern dropRight 2))
     else if (pattern contains '*') {
       val regexp = ("^%s$" format pattern.replaceAll("""\*""", """.*""")).r
-      lsJars(new File(basedir(pattern)), regexp findFirstIn _ isDefined)
+      lsJars(Directory(pattern).parent, regexp findFirstIn _ isDefined)
     }
     else List(pattern)
   }
@@ -56,8 +50,20 @@ object ClassPath {
 
   /** Expand path and possibly expanding stars */
   def expandPath(path: String, expandStar: Boolean = true): List[String] =
-    if (expandStar) splitPath(path).flatMap(expandS(_))
+    if (expandStar) splitPath(path) flatMap expandS
     else splitPath(path)
+
+  /** Expand dir out to contents */
+  def expandDir(extdir: String): List[String] = {
+    for {
+      dir <- Option(AbstractFile getDirectory extdir).toList
+      file <- dir
+      if file.isDirectory || (file hasExtension "jar") || (file hasExtension "zip")
+    }
+    yield {
+      (dir.sfile / file.name).path
+    }
+  }
 
   /** A useful name filter. */
   def isTraitImplementation(name: String) = name endsWith "$class.class"
@@ -151,32 +157,27 @@ abstract class ClassPath[T] {
   def validSourceFile(name: String) = validSourceExtensions exists (name endsWith _)
   def validSourceExtensions         = List(".scala", ".java")
 
-  /** Utility */
-  protected final def dropExtension(name: String) = name take (name.lastIndexOf('.') - 1)
-
   /**
    * Find a ClassRep given a class name of the form "package.subpackage.ClassName".
    * Does not support nested classes on .NET
    */
-  def findClass(name: String): Option[AnyClassRep] = {
-    val i = name.indexOf('.')
-    if (i < 0) {
-      classes.find(_.name == name)
-    } else {
-      val pkg = name take i
-      val rest = name drop (i + 1)
-      (packages find (_.name == pkg) flatMap (_ findClass rest)) map {
-        case x: ClassRep  => x
-        case x            => throw new FatalError("Unexpected ClassRep '%s' found searching for name '%s'".format(x, name))
-      }
+  def findClass(name: String): Option[AnyClassRep] =
+    splitWhere(name, _ == '.', true) match {
+      case Some((pkg, rest)) =>
+        val rep = packages find (_.name == pkg) flatMap (_ findClass rest)
+        rep map {
+          case x: ClassRep  => x
+          case x            => throw new FatalError("Unexpected ClassRep '%s' found searching for name '%s'".format(x, name))
+        }
+      case _ =>
+        classes find (_.name == name)
     }
-  }
-  def findSourceFile(name: String): Option[AbstractFile] = {
+
+  def findSourceFile(name: String): Option[AbstractFile] =
     findClass(name) match {
       case Some(ClassRep(Some(x: AbstractFile), _)) => Some(x)
       case _                                        => None
     }
-  }
 }
 
 trait AbstractFileClassPath extends ClassPath[AbstractFile] {
@@ -235,7 +236,7 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
     val cls = new ListBuffer[AnyClassRep]
     for (e <- entries; c <- e.classes) {
       val name = c.name
-      val idx = cls.indexWhere(cl => cl.name == name)
+      val idx = cls.indexWhere(_.name == name)
       if (idx >= 0) {
         val existing = cls(idx)
         if (existing.binary.isEmpty && c.binary.isDefined)
@@ -253,7 +254,7 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
     val pkg = new ListBuffer[ClassPath[T]]
     for (e <- entries; p <- e.packages) {
       val name = p.name
-      val idx = pkg.indexWhere(pk => pk.name == name)
+      val idx = pkg.indexWhere(_.name == name)
       if (idx >= 0) {
         pkg(idx) = addPackage(pkg(idx), p)
       } else {
@@ -263,17 +264,14 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
     pkg.toList
   }
 
-  lazy val sourcepaths: List[AbstractFile] = entries.flatMap(_.sourcepaths)
+  lazy val sourcepaths: List[AbstractFile] = entries flatMap (_.sourcepaths)
 
-  private def addPackage(to: ClassPath[T], pkg: ClassPath[T]) = {
-    def expand = to match {
-      case cp: MergedClassPath[_] => cp.entries
-      case _                      => List(to)
-    }
-    newMergedClassPath(expand :+ pkg)
-  }
+  private def addPackage(to: ClassPath[T], pkg: ClassPath[T]) = newMergedClassPath(to match {
+    case cp: MergedClassPath[_] => cp.entries :+ pkg
+    case _                      => List(to, pkg)
+  })
 
-  private def newMergedClassPath(entrs: List[ClassPath[T]]) =
+  private def newMergedClassPath(entrs: List[ClassPath[T]]): MergedClassPath[T] =
     new MergedClassPath[T] {
       protected val entries = entrs
       val context = outer.context
@@ -301,47 +299,32 @@ class JavaClassPath(
     import ClassPath._
     val etr = new ListBuffer[ClassPath[AbstractFile]]
 
-    def addFilesInPath(path: String, expand: Boolean, ctr: AbstractFile => ClassPath[AbstractFile] = x => createDirectoryPath(x)) {
-      for (fileName <- expandPath(path, expandStar = expand)) {
-        val file = AbstractFile.getDirectory(fileName)
-        if (file ne null) etr += ctr(file)
-      }
-    }
+    def addFilesInPath(path: String, expand: Boolean, ctr: AbstractFile => ClassPath[AbstractFile]): Unit =
+      for (fileName <- expandPath(path, expand) ; file <- Option(AbstractFile getDirectory fileName)) yield
+        etr += ctr(file)
+
+    def addContentsOfDir(path: String): Unit =
+      for (name <- expandDir(path) ; archive <- Option(AbstractFile getDirectory name))
+        etr += createDirectoryPath(archive)
+
+    def addContentsOfURL(spec: String): Unit =
+      for (url <- specToURL(spec) ; archive <- Option(AbstractFile getURL url))
+        etr += createDirectoryPath(archive)
 
     // 1. Boot classpath
-    addFilesInPath(boot, false)
+    addFilesInPath(boot, false, createDirectoryPath)
 
     // 2. Ext classpath
-    for (fileName <- expandPath(ext, expandStar = false)) {
-      val dir = AbstractFile.getDirectory(fileName)
-      if (dir ne null) {
-        for (file <- dir) {
-          val name = file.name.toLowerCase
-          if (name.endsWith(".jar") || name.endsWith(".zip") || file.isDirectory) {
-            val archive = AbstractFile.getDirectory(new File(dir.file, name))
-            if (archive ne null) etr += createDirectoryPath(archive)
-          }
-        }
-      }
-    }
+    addContentsOfDir(ext)
 
     // 3. User classpath
-    addFilesInPath(user, true)
+    addFilesInPath(user, true, createDirectoryPath)
 
     // 4. Codebase entries (URLs)
-    {
-      for {
-        spec <- Xcodebase.trim split " "
-        url <- specToURL(spec)
-        archive <- Option(AbstractFile getURL url)
-      } {
-        etr += createDirectoryPath(archive)
-      }
-    }
+    Xcodebase.trim split " " foreach addContentsOfURL
 
     // 5. Source path
-    if (source != "")
-      addFilesInPath(source, false, x => createSourcePath(x))
+    addFilesInPath(source, false, createSourcePath)
 
     etr.toList
   }

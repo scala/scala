@@ -8,6 +8,8 @@ package scala.tools.nsc
 
 import Settings.Setting
 import java.io.IOException
+import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.util.ArgumentsExpander
 
 /** A class representing command line info for scalac */
 class CompilerCommand(
@@ -23,31 +25,22 @@ class CompilerCommand(
   /** file extensions of files that the compiler can process */
   lazy val fileEndings = Properties.fileEndings
 
-  /** Private buffer for accumulating files to compile */
-  private var fs: List[String] = List()
-
-  /** Public list of files to compile */
-  def files: List[String] = fs.reverse
-
   /** The name of the command */
   val cmdName = "scalac"
 
   private val helpSyntaxColumnWidth: Int =
     (settings.settingSet map (_.helpSyntax.length)) max
 
-  private def format(s: String): String = {
-    val buf = new StringBuilder(s)
-    var i = s.length
-    while (i < helpSyntaxColumnWidth) { buf.append(' '); i += 1 }
-    buf.toString()
-  }
+  private def format(s: String): String =
+    if (s.length >= helpSyntaxColumnWidth) s
+    else s + (" " * (helpSyntaxColumnWidth - s.length))
 
   /** Creates a help message for a subset of options based on cond */
   def createUsageMsg(label: String, cond: (Setting) => Boolean): String =
     settings.settingSet .
       filter(cond) .
       map(s => format(s.helpSyntax) + "  " + s.helpDescription) .
-      mkString("Usage: %s <options> <source files>\n%s options include:\n  " .
+      toList.sorted.mkString("Usage: %s <options> <source files>\n%s options include:\n  " .
         format(cmdName, label), "\n  ", "\n")
 
   /** Messages explaining usage and options */
@@ -76,52 +69,19 @@ class CompilerCommand(
       case None => ""
     }
 
-  /** Whether the command was processed okay */
-  var ok = true
-
-  /** Process the arguments and update the settings accordingly.
-      This method is called only once, during initialization.  */
-  protected def processArguments() {
-    // initialization
-    var args = arguments
-    def errorAndNotOk(msg: String) = { error(msg) ; ok = false }
-
-    // given a @ argument expands it out
-    def doExpand(x: String) =
-      try   { args = util.ArgumentsExpander.expandArg(x) ::: args.tail }
-      catch { case ex: IOException  => errorAndNotOk(ex.getMessage) }
-
-    // true if it's a legit looking source file
-    def isSourceFile(x: String) =
-      (settings.script.value != "") ||
-      (fileEndings exists (x endsWith _))
-
-    // given an option for scalac finds out what it is
-    def doOption(x: String): Unit = {
-      if (interactive)
-        return errorAndNotOk("no options can be given in interactive mode")
-
-      val argsLeft = settings.parseParams(args)
-      if (args != argsLeft) args = argsLeft
-      else errorAndNotOk("bad option: '" + x + "'")
-    }
-
-    // cycle through args until empty or error
-    while (!args.isEmpty && ok) args.head match {
-      case x if x startsWith "@"  => doExpand(x)
-      case x if x startsWith "-"  => doOption(x)
-      case x if isSourceFile(x)   => fs = x :: fs ; args = args.tail
-      case ""                     => args = args.tail // quick fix [martin: for what?]
-      case x                      => errorAndNotOk("don't know what to do with " + x)
-    }
-
-    ok &&= settings.checkDependencies
-  }
-
   // CompilerCommand needs processArguments called at the end of its constructor,
   // as does its subclass GenericRunnerCommand, but it cannot be called twice as it
   // accumulates arguments.  The fact that it's called from within the constructors
   // makes initialization order an obstacle to simplicity.
-  if (shouldProcessArguments)
-    processArguments()
+  val (ok: Boolean, files: List[String]) =
+    if (shouldProcessArguments) {
+      // expand out @filename to the contents of that filename
+      val expandedArguments = arguments flatMap {
+        case x if x startsWith "@"  => ArgumentsExpander expandArg x
+        case x                      => List(x)
+      }
+
+      settings processArguments expandedArguments
+    }
+    else (true, Nil)
 }

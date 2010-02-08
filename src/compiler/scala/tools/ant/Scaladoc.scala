@@ -520,18 +520,8 @@ class Scaladoc extends MatchingTask {
     docSettings.deprecation.value = deprecation
     docSettings.unchecked.value = unchecked
     log("Scaladoc params = '" + addParams + "'", Project.MSG_DEBUG)
-    var args = docSettings.splitParams(addParams)
 
-    while (!args.isEmpty) {
-      if (args.head startsWith "-") {
-        val args0 = args
-        args = docSettings.parseParams(args)
-        if (args0 eq args) error("Parameter '" + args.head + "' is not recognised by Scaladoc.")
-      }
-      else if (args.head == "") args = args.tail
-      else error("Parameter '" + args.head + "' does not start with '-'.")
-    }
-
+    docSettings processArgumentString addParams
     Pair(docSettings, sourceFiles)
   }
 

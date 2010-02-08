@@ -9,6 +9,7 @@ package backend
 import io.AbstractFile
 import util.JavaClassPath
 import util.ClassPath.{ JavaContext, DefaultJavaContext }
+import scala.tools.util.PathResolver
 
 trait JavaPlatform extends Platform[AbstractFile] {
   import global._

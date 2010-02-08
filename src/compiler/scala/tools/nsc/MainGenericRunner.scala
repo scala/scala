@@ -11,6 +11,7 @@ import java.io.{ File, IOException }
 import java.lang.{ClassNotFoundException, NoSuchMethodException}
 import java.lang.reflect.InvocationTargetException
 import java.net.{ URL, MalformedURLException }
+import scala.tools.util.PathResolver
 
 import util.{ ClassPath, ScalaClassLoader }
 import File.pathSeparator
@@ -21,37 +22,6 @@ import Properties.{ versionString, copyrightString }
   * or interactive entry.
   */
 object MainGenericRunner {
-  /** Append jars found in ${scala.home}/lib to
-   *  a specified classpath.  Also append "." if the
-   *  input classpath is empty; otherwise do not.
-   *
-   *  @param  classpath
-   *  @return the new classpath
-   */
-  private def addClasspathExtras(classpath: String): String = {
-    val scalaHome = Properties.scalaHome
-
-    def listDir(name: String): List[File] = {
-      val libdir = new File(new File(scalaHome), name)
-      if (!libdir.exists || libdir.isFile) Nil else libdir.listFiles.toList
-    }
-    lazy val jarsInLib = listDir("lib") filter (_.getName endsWith ".jar")
-    lazy val dirsInClasses = listDir("classes") filter (_.isDirectory)
-    val cpScala =
-      if (scalaHome == null) {
-        // this is to make the interpreter work when running without the scala script
-        // (e.g. from eclipse). Before, "java.class.path" was added to the user classpath
-        // in Settings; this was changed to match the behavior of Sun's javac.
-        val javacp = System.getProperty("java.class.path")
-        if (javacp == null) Nil
-        else ClassPath.expandPath(javacp)
-      }
-      else (jarsInLib ::: dirsInClasses) map (_.toString)
-
-    // either prepend existing classpath or append "."
-    (if (classpath == "") cpScala ::: List(".") else classpath :: cpScala) mkString pathSeparator
-  }
-
   def main(args: Array[String]) {
     def errorFn(str: String) = Console println str
 
@@ -62,7 +32,8 @@ object MainGenericRunner {
     if (!command.ok)
       return errorFn("%s\n%s".format(command.usageMsg, sampleCompiler.pluginOptionsHelp))
 
-    settings.classpath.value = addClasspathExtras(settings.classpath.value)
+    // append the jars in ${scala.home}/lib to the classpath, as well as "." if none was given.
+    settings appendToClasspath PathResolver.basicScalaClassPath(settings.classpath.value == "")
     settings.defines.applyToCurrentJVM
 
     if (settings.version.value)
@@ -107,11 +78,12 @@ object MainGenericRunner {
         val url = specToURL(spec); if !url.isEmpty
       ) yield url.get
 
-    val classpath: List[URL] =
+    val classpath: List[URL] = (
       paths(settings.bootclasspath.value) :::
       paths(settings.classpath.value) :::
       jars(settings.extdirs.value) :::
       urls(settings.Xcodebase.value)
+    ).distinct
 
     def createLoop(): InterpreterLoop = {
       val loop = new InterpreterLoop

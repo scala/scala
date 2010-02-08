@@ -1643,9 +1643,11 @@ abstract class GenICode extends SubComponent  {
 
     abstract class Cleanup;
     case class MonitorRelease(m: Local) extends Cleanup {
+      override def hashCode = m.hashCode
       override def equals(other: Any) = m == other;
     }
     case class Finalizer(f: Tree) extends Cleanup {
+      override def hashCode = f.hashCode
       override def equals(other: Any) = f == other;
     }
 

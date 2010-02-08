@@ -8,7 +8,8 @@
 
 // $Id$
 
-package scala.tools.util
+package scala.tools
+package util
 
 /** This objects provides methods to extract elements from
  *  a string according to some defined character separator.
@@ -31,4 +32,11 @@ object StringOps {
   }
 
   def words(str: String): List[String] = decompose(str, ' ')
+
+  def splitWhere(str: String, f: Char => Boolean, doDropIndex: Boolean = false): Option[(String, String)] =
+    splitAt(str, str indexWhere f, doDropIndex)
+
+  def splitAt(str: String, idx: Int, doDropIndex: Boolean = false): Option[(String, String)] =
+    if (idx == -1) None
+    else Some(str take idx, str drop (if (doDropIndex) idx + 1 else idx))
 }

@@ -11,6 +11,7 @@ import collection.mutable.Map
 import xml.{ EntityRef, Text }
 import xml.XML.{ xmlns }
 import symtab.Flags.MUTABLE
+import scala.tools.util.StringOps.splitWhere
 
 /** This class builds instance of <code>Tree</code> that represent XML.
  *
@@ -160,9 +161,9 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
   }
 
   /** Returns (Some(prefix) | None, rest) based on position of ':' */
-  def splitPrefix(name: String): (Option[String], String) = (name indexOf ':') match {
-    case -1   => (None, name)
-    case i    => (Some(name take i), name drop (i + 1))
+  def splitPrefix(name: String): (Option[String], String) = splitWhere(name, _ == ':', true) match {
+    case Some((pre, rest))  => (Some(pre), rest)
+    case _                  => (None, name)
   }
 
   /** Various node constructions. */

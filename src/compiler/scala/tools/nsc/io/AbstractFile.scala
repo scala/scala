@@ -20,8 +20,6 @@ import scala.collection.mutable.ArrayBuffer
  */
 object AbstractFile
 {
-  def isJarOrZip(f: Path) = cond(f.extension) { case "zip" | "jar" => true }
-
   /** Returns "getFile(new File(path))". */
   def getFile(path: String): AbstractFile = getFile(Path(path))
   def getFile(path: Path): AbstractFile = getFile(path.toFile)
@@ -46,7 +44,7 @@ object AbstractFile
    */
   def getDirectory(file: File): AbstractFile =
     if (file.isDirectory) new PlainFile(file)
-    else if (file.isFile && isJarOrZip(file)) ZipArchive fromFile file
+    else if (file.isFile && Path.isJarOrZip(file)) ZipArchive fromFile file
     else null
 
   /**
@@ -58,7 +56,7 @@ object AbstractFile
    * @return     ...
    */
   def getURL(url: URL): AbstractFile =
-    Option(url) partialMap { case url: URL if isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
+    Option(url) partialMap { case url: URL if Path.isJarOrZip(url.getPath) => ZipArchive fromURL url } orNull
 }
 
 /**
@@ -92,6 +90,9 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
   /** Returns the path of this abstract file. */
   def path: String
+
+  /** Checks extension case insensitively. */
+  def hasExtension(other: String) = Path(path) hasExtension other
 
   /** The absolute file, if this is a relative file. */
   def absolute: AbstractFile

@@ -12,9 +12,37 @@ import io.AbstractFile
 import util.SourceFile
 import Settings._
 import annotation.elidable
+import scala.tools.util.PathResolver
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
+
+  /** Iterates over the arguments applying them to settings where applicable.
+   *  Then verifies setting dependencies are met.
+   *
+   *  Returns (success, List of unprocessed arguments)
+   */
+  def processArguments(arguments: List[String]): (Boolean, List[String]) = {
+    var args = arguments
+
+    while (args.nonEmpty) {
+      if (args.head startsWith "-") {
+        val args0 = args
+        args = this parseParams args
+        if (args eq args0) {
+          errorFn("bad option: '" + args.head + "'")
+          return (false, args)
+        }
+      }
+      else if (args.head == "") {   // discard empties, sometimes they appear because of ant or etc.
+        args = args.tail
+      }
+      else return (checkDependencies, args)
+    }
+
+    (checkDependencies, args)
+  }
+  def processArgumentString(params: String) = processArguments(splitParams(params))
 
   // optionizes a system property
   private def syspropopt(name: String): Option[String] = Option(System.getProperty(name))
@@ -84,7 +112,6 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     true
   }
 
-
   /** A list pairing source directories with their output directory.
    *  This option is not available on the command line, but can be set by
    *  other tools (IDEs especially). The command line specifies a single
@@ -93,69 +120,12 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
    */
   lazy val outputDirs = new OutputDirs
 
-  /**
-   * Split command line parameters by space, properly process quoted parameter
+  /** Split the given line into parameters.
    */
-  def splitParams(line: String): List[String] = {
-    def parse(from: Int, i: Int, args: List[String]): List[String] = {
-      if (i < line.length) {
-        line.charAt(i) match {
-          case ' ' =>
-            val args1 = fetchArg(from, i) :: args
-            val j = skipS(i + 1)
-            if (j >= 0) {
-              parse(j, j, args1)
-            } else args1
-          case '"' =>
-            val j = skipTillQuote(i + 1)
-            if (j > 0) {
-              parse(from, j + 1, args)
-            } else {
-              errorFn("Parameters '" + line + "' with unmatched quote at " + i + ".")
-              Nil
-            }
-          case _ => parse(from, i + 1, args)
-        }
-      } else { // done
-        if (i > from) {
-          fetchArg(from, i) :: args
-        } else args
-      }
-    }
+  def splitParams(line: String) = PathResolver.splitParams(line, errorFn)
 
-    def fetchArg(from: Int, until: Int) = {
-      if (line.charAt(from) == '"') {
-        line.substring(from + 1, until - 1)
-      } else {
-        line.substring(from, until)
-      }
-    }
-
-    def skipTillQuote(i: Int): Int = {
-      if (i < line.length) {
-        line.charAt(i) match {
-          case '"' => i
-          case _ => skipTillQuote(i + 1)
-        }
-      } else -1
-    }
-
-    def skipS(i: Int): Int = {
-      if (i < line.length) {
-        line.charAt(i) match {
-          case ' ' => skipS(i + 1)
-          case _ => i
-        }
-      } else -1
-    }
-
-    // begin split
-    val j = skipS(0)
-    if (j >= 0) {
-      parse(j, j, Nil).reverse
-    } else Nil
-  }
-
+  /** Returns any unprocessed arguments.
+   */
   def parseParams(args: List[String]): List[String] = {
     // verify command exists and call setter
     def tryToSetIfExists(
@@ -233,6 +203,8 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
     doArgs(args)
   }
+
+  def parseParamString(params: String) = parseParams(splitParams(params))
 
   // checks both name and any available abbreviations
   def lookupSetting(cmd: String): Option[Setting] =
@@ -456,9 +428,9 @@ object Settings {
 
     /** Will be called after this Setting is set, for any cases where the
      *  Setting wants to perform extra work. */
-    private var _postSetHook: () => Unit = () => ()
-    def postSetHook(): Unit = _postSetHook()
-    def withPostSetHook(f: () => Unit): this.type = { _postSetHook = f ; this }
+    private var _postSetHook: this.type => Unit = (x: this.type) => ()
+    def postSetHook(): Unit = _postSetHook(this)
+    def withPostSetHook(f: this.type => Unit): this.type = { _postSetHook = f ; this }
 
     /** After correct Setting has been selected, tryToSet is called with the
      *  remainder of the command line.  It consumes any applicable arguments and
@@ -805,6 +777,8 @@ object Settings {
 trait ScalacSettings {
   self: Settings =>
 
+  import scala.tools.util.PathResolver
+  import PathResolver.{ Defaults, Environment }
   import collection.immutable.TreeSet
 
   /** A list of all settings */
@@ -818,7 +792,15 @@ trait ScalacSettings {
    *  Temporary Settings
    */
   val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
-  def appendToClasspath(entry: String) = classpath.value += (pathSeparator + entry)
+  def appendToClasspath(entry: String) = {
+    val oldClasspath = classpath.value
+    classpath.value =
+      if (classpath.value == "") entry
+      else classpath.value + pathSeparator + entry
+
+    if (Ylogcp.value)
+      Console.println("Updated classpath from '%s' to '%s'".format(oldClasspath, classpath.value))
+  }
 
   /**
    *  Standard settings
@@ -826,7 +808,9 @@ trait ScalacSettings {
   // argfiles is only for the help message
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
   val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
-  val classpath     = StringSetting     ("-classpath", "path", "Specify where to find user class files", classpathDefault).withAbbreviation("-cp")
+  val classpath     = StringSetting     ("-classpath", "path", "Specify where to find user class files", classpathDefault) .
+                            withAbbreviation("-cp") .
+                            withPostSetHook(self => if (Ylogcp.value) Console.println("Updated classpath to '%s'".format(self.value)))
   val outdir        = OutputSetting     (outputDirs, ".")
   val dependenciesFile  = StringSetting ("-dependencyfile", "file", "Specify the file in which dependencies are tracked", ".scala_dependencies")
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
@@ -839,7 +823,7 @@ trait ScalacSettings {
                                           withHelpSyntax("-make:<strategy>")
   val nowarnings    = BooleanSetting    ("-nowarn", "Generate no warnings")
   val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program").withAbbreviation("-optimize") .
-                            withPostSetHook(() => List(inline, Xcloselim, Xdce) foreach (_.value = true))
+                            withPostSetHook(_ => List(inline, Xcloselim, Xdce) foreach (_.value = true))
   val printLate     = BooleanSetting    ("-print", "Print program with all Scala-specific features removed")
   val sourcepath    = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
   val target        = ChoiceSetting     ("-target", "Specify for which target object files should be built", List("jvm-1.5", "msil"), "jvm-1.5")
@@ -847,6 +831,10 @@ trait ScalacSettings {
   val uniqid        = BooleanSetting    ("-uniqid", "Print identifiers with unique names for debugging")
   val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing")
   val version       = BooleanSetting    ("-version", "Print product version and exit")
+
+  /** New to classpaths */
+  val javabootclasspath = StringSetting ("-javabootclasspath", "path", "Override java boot classpath.", Environment.javaBootClassPath)
+  val javaextdirs       = StringSetting ("-javaextdirs", "path", "Override java extdirs classpath.", Environment.javaExtDirs)
 
   /**
    * -X "Advanced" settings
@@ -929,6 +917,7 @@ trait ScalacSettings {
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible..")
   val Ytailrec      = BooleanSetting    ("-Ytailrecommend", "Alert methods which would be tail-recursive if private or final.")
   val Yjenkins      = BooleanSetting    ("-Yjenkins-hashCodes", "Use jenkins hash algorithm for case class generated hashCodes.")
+  val Ylogcp        = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
 
   // Warnings
   val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics")
@@ -937,7 +926,7 @@ trait ScalacSettings {
   val YwarnShadow   = BooleanSetting    ("-Ywarn-shadowing", "Emit warnings about possible variable shadowing.")
   val YwarnCatches  = BooleanSetting    ("-Ywarn-catches", "Emit warnings about catch blocks which catch everything.")
   val Xwarnings     = BooleanSetting    ("-Xstrict-warnings", "Emit warnings about lots of things.") .
-                          withPostSetHook(() =>
+                          withPostSetHook(_ =>
                             List(YwarnShadow, YwarnCatches, Xwarndeadcode, Xwarninit) foreach (_.value = true)
                           )
   /**

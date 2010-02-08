@@ -8,7 +8,7 @@
 package scala.tools.partest
 package nest
 
-import java.io.{File, BufferedReader, FileReader}
+import java.io.File
 import scala.tools.nsc.Settings
 import scala.tools.nsc.io.{ Path, Directory }
 
@@ -30,13 +30,8 @@ abstract class TestFile(kind: String) {
       settings.outdir.value = (Path(dir) / objDir).createDirectory(true).path
 
     // add additional flags found in 'testname.flags'
-    val flagsFile = new File(dir, fileBase + ".flags")
-    if (flagsFile.exists) {
-      val reader = new BufferedReader(new java.io.FileReader(flagsFile))
-      val flags = reader.readLine
-      if (flags ne null)
-        settings.parseParams(settings.splitParams(flags))
-    }
+    def flagsPath = Path(dir) / (fileBase + ".flags")
+    flagsPath ifFile { _.slurp().trim } foreach (settings processArgumentString _)
   }
 
   def defineSettings(settings: Settings) {

@@ -14,13 +14,14 @@ package io
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, IOException, File => JFile }
-import java.nio.channels.FileChannel
+import java.nio.channels.{ Channel, FileChannel }
 import collection.Traversable
 import scala.io.Codec
 
 object File
 {
   def pathSeparator = JFile.pathSeparator
+  def separator = JFile.separator
 
   def apply(path: Path)(implicit codec: Codec = null) =
     if (codec != null) new File(path.jfile)(codec)
@@ -30,7 +31,6 @@ object File
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
     apply(JFile.createTempFile(prefix, suffix, dir))
 
-  import java.nio.channels.Channel
   type Closeable = { def close(): Unit }
   def closeQuietly(target: Closeable) {
     try target.close() catch { case e: IOException => }

@@ -14,6 +14,7 @@ import java.security.SecureRandom
 
 import io.{ File, Path, Process, Socket }
 import scala.util.control.Exception.catching
+import scala.tools.util.StringOps.splitWhere
 
 /** This class manages sockets for the fsc offline compiler.  */
 class CompileSocket {
@@ -176,18 +177,10 @@ class CompileSocket {
     try   { Some(x.toInt) }
     catch { case _: NumberFormatException => None }
 
-  def getSocket(serverAdr: String): Socket = {
-    def fail = fatal("Malformed server address: %s; exiting" format serverAdr)
-    (serverAdr indexOf ':') match {
-      case -1   => fail
-      case cpos =>
-        val hostName: String = serverAdr take cpos
-        parseInt(serverAdr drop (cpos + 1)) match {
-          case Some(port) => getSocket(hostName, port)
-          case _          => fail
-        }
-    }
-  }
+  def getSocket(serverAdr: String): Socket = (
+    for ((name, portStr) <- splitWhere(serverAdr, _ == ':', true) ; port <- parseInt(portStr)) yield
+      getSocket(name, port)
+  ) getOrElse fatal("Malformed server address: %s; exiting" format serverAdr)
 
   def getSocket(hostName: String, port: Int): Socket =
     Socket(hostName, port).opt getOrElse fatal("Unable to establish connection to server %s:%d; exiting".format(hostName, port))
