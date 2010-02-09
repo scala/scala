@@ -111,30 +111,24 @@ class Regex(regex: String, groupNames: String*) {
    * Replaces all matches using a replacer function.
    *
    * @param target      The string to match.
-   * @param replacer    The function which maps a matched string to another string.
-   * @return            The target string after replacements.
-   */
-  def replaceAllIn(target: java.lang.CharSequence, replacer: String => String): String = {
-    val it = new Regex.MatchIterator(target, this, groupNames) with Replacement
-    while (it.hasNext) {
-      val matchedString = it.next
-      it.replace(replacer(matchedString))
-    }
-    it.replaced
-  }
-
-  /**
-   * Replaces all matches using a replacer function.
-   *
-   * @param target      The string to match.
    * @param replacer    The function which maps a match to another string.
    * @return            The target string after replacements.
    */
-  def replaceAllMatchesIn(target: java.lang.CharSequence, replacer: Match => String): String = {
+  def replaceAllIn(target: java.lang.CharSequence, replacer: Match => String): String = {
     val it = new Regex.MatchIterator(target, this, groupNames).replacementData
     while (it.hasNext) {
       val matchdata = it.next
       it.replace(replacer(matchdata))
+    }
+    it.replaced
+  }
+
+  def replaceSomeIn(target: java.lang.CharSequence, replacer: Match => Option[String]): String = {
+    val it = new Regex.MatchIterator(target, this, groupNames).replacementData
+    while (it.hasNext) {
+      val matchdata = it.next
+      val replaceopt = replacer(matchdata)
+      if (replaceopt != None) it.replace(replaceopt.get)
     }
     it.replaced
   }
