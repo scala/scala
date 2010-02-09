@@ -989,7 +989,7 @@ trait Typers { self: Analyzer =>
                   else if (isNumericValueClass(sym) && isNumericSubType(tree.tpe, pt))
                     return typed(atPos(tree.pos)(Select(tree, "to"+sym.name)), mode, pt)
                 case AnnotatedType(_, _, _) if canAdaptAnnotations(tree, mode, pt) => // (13)
-                    return adaptAnnotations(tree, mode, pt)
+                    return typed(adaptAnnotations(tree, mode, pt), mode, pt)
                 case _ =>
               }
               if (!context.undetparams.isEmpty) {
@@ -1558,7 +1558,7 @@ trait Typers { self: Analyzer =>
           vdef.rhs
         } else {
           val tpt2 = if (sym hasFlag DEFAULTPARAM) {
-            // When typechecking default parameter, replace all type parameters in the expected type by Wildcarad.
+            // When typechecking default parameter, replace all type parameters in the expected type by Wildcard.
             // This allows defining "def foo[T](a: T = 1)"
             val tparams =
               if (sym.owner.isConstructor) sym.owner.owner.info.typeParams
@@ -1571,7 +1571,7 @@ trait Typers { self: Analyzer =>
             }
             // allow defaults on by-name parameters
             if (sym hasFlag BYNAMEPARAM)
-              if (tpt1.tpe.typeArgs.isEmpty) WildcardType // during erasure tpt1 is Funciton0
+              if (tpt1.tpe.typeArgs.isEmpty) WildcardType // during erasure tpt1 is Function0
               else subst(tpt1.tpe.typeArgs(0))
             else subst(tpt1.tpe)
           } else tpt1.tpe
@@ -2438,10 +2438,13 @@ trait Typers { self: Analyzer =>
               val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
               val strictTargs = (lenientTargs, tparams).zipped map ((targ, tparam) =>
                 if (targ == WildcardType) tparam.tpe else targ) //@M TODO: should probably be .tpeHK
-              def typedArgToPoly(arg: Tree, formal: Type): Tree = {
+              def typedArgToPoly(arg: Tree, formal: Type, i: Int): Tree = { //TR TODO: cleanup
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
                 // println("typedArgToPoly(arg, formal): "+(arg, formal))
-                val arg1 = typedArg(arg, argMode(fun, mode), POLYmode | BYVALmode, lenientPt)
+                val arg1 = if (i < paramTypes.length && paramTypes(i).typeSymbol == ByNameParamClass)
+                  typedArg(arg, argMode(fun, mode), POLYmode, lenientPt)
+                else
+                  typedArg(arg, argMode(fun, mode), POLYmode | BYVALmode, lenientPt)
                 val argtparams = context.extractUndetparams()
                 // println("typedArgToPoly(arg1, argtparams): "+(arg1, argtparams))
                 if (!argtparams.isEmpty) {
@@ -2450,7 +2453,7 @@ trait Typers { self: Analyzer =>
                 }
                 arg1
               }
-              val args1 = (args, formals).zipped map typedArgToPoly
+              val args1 = (args zipWithIndex, formals).zipped map { case ((a,i),b) => typedArgToPoly(a,b,i) }
               if (args1 exists (_.tpe.isError)) setError(tree)
               else {
                 if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info));//debug
@@ -3113,7 +3116,7 @@ trait Typers { self: Analyzer =>
 
           }
         if ((varsym ne null) && (varsym.isVariable || varsym.isValue && phase.erasedTypes)) {
-          val rhs1 = typed(rhs, lhs1.tpe)
+          val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
           treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
         } else {
           if (!lhs1.tpe.isError) {
@@ -4178,7 +4181,7 @@ trait Typers { self: Analyzer =>
      *  @return     ...
      */
     def typedQualifier(tree: Tree, mode: Int): Tree =
-      typed(tree, EXPRmode | QUALmode | POLYmode | mode & TYPEPATmode, WildcardType)
+      typed(tree, EXPRmode | QUALmode | POLYmode | mode & TYPEPATmode, WildcardType) // TR: don't set BYVALmode, since qualifier might end up as by-name param to an implicit
 
     def typedQualifier(tree: Tree): Tree = typedQualifier(tree, NOmode)
 
