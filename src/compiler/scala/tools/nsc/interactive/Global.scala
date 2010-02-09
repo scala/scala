@@ -117,7 +117,7 @@ self =>
     scheduler.pollException() match {
       case Some(ex: CancelActionReq) => if (acting) throw ex
       case Some(ex: FreshRunReq) =>
-        currentTyperRun = new TyperRun()
+        currentTyperRun = newTyperRun
         minRunId = currentRunId
         if (outOfDate) throw ex
         else outOfDate = true
@@ -286,7 +286,7 @@ self =>
 
   /** Make sure a set of compilation units is loaded and parsed */
   def reloadSources(sources: List[SourceFile]) {
-    currentTyperRun = new TyperRun()
+    currentTyperRun = newTyperRun
     for (source <- sources) {
       val unit = new RichCompilationUnit(source)
       unitOfFile(source.file) = unit
@@ -531,6 +531,8 @@ self =>
       }
     }
   }
+
+  def newTyperRun = new TyperRun
 
   class TyperResult(val tree: Tree) extends Exception with ControlException
 

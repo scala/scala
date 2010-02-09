@@ -842,6 +842,20 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       refreshProgress
     }
 
+    /**
+     * Attempt to locate a source file providing the given name as a top-level
+     * definition in the given context, and add it to the run via compileLate
+     * if found.
+     */
+    def compileSourceFor(context : analyzer.Context, name : Name) = false
+
+    /**
+     * Attempt to locate a source file providing the given name as a top-level
+     * definition with the given prefix, and add it to the run via compileLate
+     * if found.
+     */
+    def compileSourceFor(qual : Tree, name : Name) = false
+
     /** Reset package class to state at typer (not sure what this
      *  is needed for?)
      */

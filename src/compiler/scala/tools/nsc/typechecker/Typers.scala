@@ -3494,6 +3494,11 @@ trait Typers { self: Analyzer =>
           val qual1 = adaptToName(qual, name)
           if (qual1 ne qual) return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
+
+        if (!reallyExists(sym) && currentRun.compileSourceFor(qual, name)) {
+          return typedSelect(qual, name)
+        }
+
         if (!reallyExists(sym)) {
           if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+"\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
           if (!qual.tpe.widen.isErroneous) {
@@ -3657,7 +3662,9 @@ trait Typers { self: Analyzer =>
               if (!(shortenImports && qual0.symbol.isPackage)) // optimization: don't write out package prefixes
                 qual = atPos(tree.pos.focusStart)(resetPos(qual0.duplicate))
               pre = qual.tpe
-            } else {
+            } else if (currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name))
+              typedIdent(name)
+            else {
               if (settings.debug.value) {
                 log(context.imports)//debug
               }
