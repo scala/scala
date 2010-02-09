@@ -372,16 +372,24 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       typeEnv(cls) = env
       this.specializedClass((clazz, env)) = cls
 
+      // declarations of the newly specialized class 'cls'
       val decls1 = new Scope
+
+      // original unspecialized type parameters
+      var oldClassTParams: List[Symbol] = Nil
+
+      // unspecialized type parameters of 'cls' (cloned)
+      var newClassTParams: List[Symbol] = Nil
 
       val specializedInfoType: Type = {
         val (_, unspecParams) = splitParams(clazz.info.typeParams)
-        val tparams1 = cloneSymbols(unspecParams, cls)
-        var parents = List(subst(env, clazz.tpe).subst(unspecParams, tparams1 map (_.tpe)))
+        oldClassTParams = unspecParams
+        newClassTParams = cloneSymbols(unspecParams, cls)
+        var parents = List(subst(env, clazz.tpe).subst(unspecParams, newClassTParams map (_.tpe)))
         if (parents.head.typeSymbol.isTrait)
           parents = parents.head.parents.head :: parents
         val infoType = ClassInfoType(parents, decls1, cls)
-        if (tparams1.isEmpty) infoType else PolyType(tparams1, infoType)
+        if (newClassTParams.isEmpty) infoType else PolyType(newClassTParams, infoType)
       }
 
       atPhase(phase.next)(cls.setInfo(specializedInfoType))
@@ -395,7 +403,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        */
       def enterMember(sym: Symbol): Symbol = {
         typeEnv(sym) = fullEnv ++ typeEnv(sym) // append the full environment
-        sym.setInfo(sym.info.substThis(clazz, ThisType(cls)))
+        sym.setInfo(sym.info.substThis(clazz, ThisType(cls)).subst(oldClassTParams, newClassTParams map (_.tpe)))
         decls1.enter(subst(fullEnv)(sym))
       }
 
