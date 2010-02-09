@@ -33,6 +33,7 @@ Export-Package:
  scala.tools.nsc.transform,
  scala.tools.nsc.typechecker,
  scala.tools.nsc.util,
+ scala.tools.util,
  ch.epfl.lamp.compiler.msil,
  ch.epfl.lamp.compiler.msil.emit,
  ch.epfl.lamp.compiler.msil.util,
