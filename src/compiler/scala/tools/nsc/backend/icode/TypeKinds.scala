@@ -431,8 +431,12 @@ trait TypeKinds { self: ICodes =>
   ////////////////// Conversions //////////////////////////////
 
 
-  /** Return the TypeKind of the given type */
-  def toTypeKind(t: Type): TypeKind = t match {
+  /** Return the TypeKind of the given type
+   *
+   *  Call to .normalize fixes #3003 (follow type aliases). Otherwise,
+   *  arrayOrClassType below would return AnyRefReference.
+   */
+  def toTypeKind(t: Type): TypeKind = t.normalize match {
     case ThisType(sym) =>
       if (sym == ArrayClass)
         AnyRefReference
