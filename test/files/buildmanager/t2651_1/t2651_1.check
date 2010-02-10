@@ -1,0 +1,19 @@
+builder > A.scala B.scala C.scala D.scala
+compiling Set(A.scala, B.scala, C.scala, D.scala)
+Changes: Map()
+builder > A.scala
+compiling Set(A.scala)
+Changes: Map(trait A -> List(Changed(Class(A))[ tparams: List()]))
+invalidate B.scala because parents have changed [Changed(Class(A))[ tparams: List()]]
+invalidate C.scala because parents have changed [Changed(Class(A))[ tparams: List()]]
+invalidate D.scala because it references changed class [Changed(Class(A))[ tparams: List()]]
+compiling Set(B.scala, C.scala, D.scala)
+B.scala:1: error: A does not take type parameters
+trait B[T] extends A[T]
+                   ^
+C.scala:2: error: A does not take type parameters
+	new A[Int] {}
+            ^
+D.scala:2: error: A does not take type parameters
+	def x[T](a: A[T]) = a
+                    ^
