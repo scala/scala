@@ -133,9 +133,9 @@ class PartestTask extends Task {
     if (fileSet.isEmpty) Array()
     else {
       val files = fileSet.get
-      files.getDirectoryScanner(getProject).getIncludedFiles map {
-       fs => new File(files.getDir(getProject), fs)
-      }
+      files.getDirectoryScanner(getProject).getIncludedFiles.map(
+        fs => new File(files.getDir(getProject), fs)
+      ).filter(file => !file.getCanonicalPath().endsWith(".log"))
     }
 
   private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] =
