@@ -37,9 +37,58 @@ object MsilClassPath {
 
   class MsilContext extends ClassPathContext[MSILType] {
     def toBinaryName(rep: MSILType) = rep.Name
+    def newClassPath(assemFile: AbstractFile) = new AssemblyClassPath(MsilClassPath collectTypes assemFile, "", this)
+  }
+
+  private def assembleEntries(ext: String, user: String, source: String, context: MsilContext): List[ClassPath[MSILType]] = {
+    import ClassPath._
+    val etr = new ListBuffer[ClassPath[MSILType]]
+    val names = new MutHashSet[String]
+
+    // 1. Assemblies from -Xassem-extdirs
+    for (dirName <- expandPath(ext, expandStar = false)) {
+      val dir = AbstractFile.getDirectory(dirName)
+      if (dir ne null) {
+        for (file <- dir) {
+          val name = file.name.toLowerCase
+          if (name.endsWith(".dll") || name.endsWith(".exe")) {
+            names += name
+            etr += context.newClassPath(file)
+          }
+        }
+      }
+    }
+
+    // 2. Assemblies from -Xassem-path
+    for (fileName <- expandPath(user, expandStar = false)) {
+      val file = AbstractFile.getFile(fileName)
+      if (file ne null) {
+        val name = file.name.toLowerCase
+        if (name.endsWith(".dll") || name.endsWith(".exe")) {
+          names += name
+          etr += context.newClassPath(file)
+        }
+      }
+    }
+
+    def check(n: String) {
+      if (!names.contains(n))
+      throw new AssertionError("Cannot find assembly "+ n +
+         ". Use -Xassem-extdirs or -Xassem-path to specify its location")
+    }
+    check("mscorlib.dll")
+    check("scalaruntime.dll")
+
+    // 3. Source path
+    for (dirName <- expandPath(source, expandStar = false)) {
+      val file = AbstractFile.getDirectory(dirName)
+      if (file ne null) etr += new SourcePath[MSILType](file, context)
+    }
+
+    etr.toList
   }
 }
-import MsilClassPath.MsilContext
+import MsilClassPath._
 
 /**
  * A assembly file (dll / exe) containing classes and namespaces
@@ -102,57 +151,8 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
  * The classpath when compiling with target:msil. Binary files are represented as
  * MSILType values.
  */
-class MsilClassPath(ext: String, user: String, source: String, val context: MsilContext) extends MergedClassPath[MSILType] {
-  protected val entries: List[ClassPath[MSILType]] = assembleEntries()
-
-  def createAssemblyPath(assemFile: AbstractFile) =
-    new AssemblyClassPath(MsilClassPath collectTypes assemFile, "", context)
-
-  private def assembleEntries(): List[ClassPath[MSILType]] = {
-    import ClassPath._
-    val etr = new ListBuffer[ClassPath[MSILType]]
-    val names = new MutHashSet[String]
-
-    // 1. Assemblies from -Xassem-extdirs
-    for (dirName <- expandPath(ext, expandStar = false)) {
-      val dir = AbstractFile.getDirectory(dirName)
-      if (dir ne null) {
-        for (file <- dir) {
-          val name = file.name.toLowerCase
-          if (name.endsWith(".dll") || name.endsWith(".exe")) {
-            names += name
-            etr += createAssemblyPath(file)
-          }
-        }
-      }
-    }
-
-    // 2. Assemblies from -Xassem-path
-    for (fileName <- expandPath(user, expandStar = false)) {
-      val file = AbstractFile.getFile(fileName)
-      if (file ne null) {
-        val name = file.name.toLowerCase
-        if (name.endsWith(".dll") || name.endsWith(".exe")) {
-          names += name
-          etr += createAssemblyPath(file)
-        }
-      }
-    }
-
-    def check(n: String) {
-      if (!names.contains(n))
-      throw new AssertionError("Cannot find assembly "+ n +
-         ". Use -Xassem-extdirs or -Xassem-path to specify its location")
-    }
-    check("mscorlib.dll")
-    check("scalaruntime.dll")
-
-    // 3. Source path
-    for (dirName <- expandPath(source, expandStar = false)) {
-      val file = AbstractFile.getDirectory(dirName)
-      if (file ne null) etr += new SourcePath[MSILType](file, context)
-    }
-
-    etr.toList
-  }
-}
+class MsilClassPath(ext: String, user: String, source: String, context: MsilContext)
+  extends MergedClassPath[MSILType](
+    MsilClassPath.assembleEntries(ext, user, source, context),
+    context
+  )

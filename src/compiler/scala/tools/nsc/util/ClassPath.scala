@@ -14,6 +14,7 @@ import java.net.URL
 import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
 import io.{ File, Directory, Path, AbstractFile }
 import scala.tools.util.StringOps.splitWhere
+import Path.isJarOrZip
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -53,16 +54,10 @@ object ClassPath {
     if (expandStar) splitPath(path) flatMap expandS
     else splitPath(path)
 
-  /** Expand dir out to contents */
+  /** Expand dir out to contents, a la extdir */
   def expandDir(extdir: String): List[String] = {
-    for {
-      dir <- Option(AbstractFile getDirectory extdir).toList
-      file <- dir
-      if file.isDirectory || (file hasExtension "jar") || (file hasExtension "zip")
-    }
-    yield {
-      (dir.sfile / file.name).path
-    }
+    val dir = Option(AbstractFile getDirectory extdir) getOrElse (return Nil)
+    dir filter (_.isClassContainer) map (dir.sfile / _.name path) toList
   }
 
   /** A useful name filter. */
@@ -85,6 +80,35 @@ object ClassPath {
     /** From the representation to its identifier.
      */
     def toBinaryName(rep: T): String
+
+    /** Create a new classpath based on the abstract file.
+     */
+    def newClassPath(file: AbstractFile): ClassPath[T]
+
+    /** Creators for sub classpaths which preserve this context.
+     */
+    def sourcesInPath(path: String): List[ClassPath[T]] =
+      for (file <- expandPath(path, false) ; dir <- Option(AbstractFile getDirectory file)) yield
+        new SourcePath[T](dir, this)
+
+    def contentsOfDirsInPath(path: String): List[ClassPath[T]] =
+      for (dir <- expandPath(path, false) ; name <- expandDir(dir) ; entry <- Option(AbstractFile getDirectory name)) yield
+        newClassPath(entry)
+
+    def classesAtAllURLS(path: String): List[ClassPath[T]] =
+      (path split " ").toList flatMap classesAtURL
+
+    def classesAtURL(spec: String) =
+      for (url <- specToURL(spec).toList ; location <- Option(AbstractFile getURL url)) yield
+        newClassPath(location)
+
+    def classesInExpandedPath(path: String) = classesInPathImpl(path, true)
+    def classesInPath(path: String) = classesInPathImpl(path, false)
+
+    // Internal
+    private def classesInPathImpl(path: String, expand: Boolean) =
+      for (file <- expandPath(path, expand) ; dir <- Option(AbstractFile getDirectory file)) yield
+        newClassPath(dir)
   }
 
   class JavaContext extends ClassPathContext[AbstractFile] {
@@ -92,6 +116,7 @@ object ClassPath {
       assert(rep.name endsWith ".class", rep.name)
       rep.name dropRight 6
     }
+    def newClassPath(dir: AbstractFile) = new DirectoryClassPath(dir, this)
   }
 
   object DefaultJavaContext extends JavaContext {
@@ -132,10 +157,6 @@ abstract class ClassPath[T] {
   val classes: List[AnyClassRep]
   val packages: List[ClassPath[T]]
   val sourcepaths: List[AbstractFile]
-
-  /** Creation controlled so context is retained.
-   */
-  def createSourcePath(dir: AbstractFile) = new SourcePath[T](dir, context)
 
   /**
    * Represents classes which can be loaded with a ClassfileLoader/MSILTypeLoader
@@ -180,25 +201,21 @@ abstract class ClassPath[T] {
     }
 }
 
-trait AbstractFileClassPath extends ClassPath[AbstractFile] {
-  def createDirectoryPath(dir: AbstractFile): DirectoryClassPath = new DirectoryClassPath(dir, context)
-}
-
 /**
  * A Classpath containing source files
  */
 class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends ClassPath[T] {
   def name = dir.name
+  val sourcepaths: List[AbstractFile] = List(dir)
 
   lazy val classes: List[ClassRep] = dir partialMap {
     case f if !f.isDirectory && validSourceFile(f.name) => ClassRep(None, Some(f))
   } toList
 
   lazy val packages: List[SourcePath[T]] = dir partialMap {
-    case f if f.isDirectory && validPackage(f.name) => createSourcePath(f)
+    case f if f.isDirectory && validPackage(f.name) => new SourcePath[T](f, context)
   } toList
 
-  val sourcepaths: List[AbstractFile] = List(dir)
 
   override def toString() = "sourcepath: "+ dir.toString()
 }
@@ -206,18 +223,18 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
 /**
  * A directory (or a .jar file) containing classfiles and packages
  */
-class DirectoryClassPath(dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends AbstractFileClassPath {
+class DirectoryClassPath(dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
   def name = dir.name
+  val sourcepaths: List[AbstractFile] = Nil
 
   lazy val classes: List[ClassRep] = dir partialMap {
     case f if !f.isDirectory && validClassFile(f.name) => ClassRep(Some(f), None)
   } toList
 
   lazy val packages: List[DirectoryClassPath] = dir partialMap {
-    case f if f.isDirectory && validPackage(f.name) => createDirectoryPath(f)
+    case f if f.isDirectory && validPackage(f.name) => new DirectoryClassPath(f, context)
   } toList
 
-  val sourcepaths: List[AbstractFile] = Nil
 
   override def toString() = "directory classpath: "+ dir.toString()
 }
@@ -225,12 +242,13 @@ class DirectoryClassPath(dir: AbstractFile, val context: ClassPathContext[Abstra
 /**
  * A classpath unifying multiple class- and sourcepath entries.
  */
-abstract class MergedClassPath[T] extends ClassPath[T] {
-  outer =>
-
-  protected val entries: List[ClassPath[T]]
+class MergedClassPath[T](
+  protected val entries: List[ClassPath[T]],
+  val context: ClassPathContext[T])
+extends ClassPath[T] {
 
   def name = entries.head.name
+  lazy val sourcepaths: List[AbstractFile] = entries flatMap (_.sourcepaths)
 
   lazy val classes: List[AnyClassRep] = {
     val cls = new ListBuffer[AnyClassRep]
@@ -264,18 +282,13 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
     pkg.toList
   }
 
-  lazy val sourcepaths: List[AbstractFile] = entries flatMap (_.sourcepaths)
-
-  private def addPackage(to: ClassPath[T], pkg: ClassPath[T]) = newMergedClassPath(to match {
-    case cp: MergedClassPath[_] => cp.entries :+ pkg
-    case _                      => List(to, pkg)
-  })
-
-  private def newMergedClassPath(entrs: List[ClassPath[T]]): MergedClassPath[T] =
-    new MergedClassPath[T] {
-      protected val entries = entrs
-      val context = outer.context
+  private def addPackage(to: ClassPath[T], pkg: ClassPath[T]) = {
+    val newEntries = to match {
+      case cp: MergedClassPath[_] => cp.entries :+ pkg
+      case _                      => List(to, pkg)
     }
+    new MergedClassPath[T](newEntries, context)
+  }
 
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }
@@ -285,47 +298,6 @@ abstract class MergedClassPath[T] extends ClassPath[T] {
  * as AbstractFile. nsc.io.ZipArchive is used to view zip/jar archives as directories.
  */
 class JavaClassPath(
-  boot: String,
-  ext: String,
-  user: String,
-  source: String,
-  Xcodebase: String,
-  val context: JavaContext
-) extends MergedClassPath[AbstractFile] with AbstractFileClassPath {
-
-  protected val entries: List[ClassPath[AbstractFile]] = assembleEntries()
-
-  private def assembleEntries(): List[ClassPath[AbstractFile]] = {
-    import ClassPath._
-    val etr = new ListBuffer[ClassPath[AbstractFile]]
-
-    def addFilesInPath(path: String, expand: Boolean, ctr: AbstractFile => ClassPath[AbstractFile]): Unit =
-      for (fileName <- expandPath(path, expand) ; file <- Option(AbstractFile getDirectory fileName)) yield
-        etr += ctr(file)
-
-    def addContentsOfDir(path: String): Unit =
-      for (name <- expandDir(path) ; archive <- Option(AbstractFile getDirectory name))
-        etr += createDirectoryPath(archive)
-
-    def addContentsOfURL(spec: String): Unit =
-      for (url <- specToURL(spec) ; archive <- Option(AbstractFile getURL url))
-        etr += createDirectoryPath(archive)
-
-    // 1. Boot classpath
-    addFilesInPath(boot, false, createDirectoryPath)
-
-    // 2. Ext classpath
-    addContentsOfDir(ext)
-
-    // 3. User classpath
-    addFilesInPath(user, true, createDirectoryPath)
-
-    // 4. Codebase entries (URLs)
-    Xcodebase.trim split " " foreach addContentsOfURL
-
-    // 5. Source path
-    addFilesInPath(source, false, createSourcePath)
-
-    etr.toList
-  }
-}
+  containers: List[List[ClassPath[AbstractFile]]],
+  context: JavaContext)
+extends MergedClassPath[AbstractFile](containers.flatten, context) { }

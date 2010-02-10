@@ -76,36 +76,40 @@ class StandardCompileClient {
     val (vmArgs, serverAdr) = normalize(args)
 
     if (version) {
-      Console.println(versionMsg)
+      Console println versionMsg
       return 0
     }
     if (verbose) {
-      Console.println("[Server arguments: " + args.mkString("", " ", "]"))
-      Console.println("[VM arguments: " + vmArgs + "]")
+      Console println args.mkString("[Server arguments: ", " ", "]")
+      Console println "[VM arguments: %s]".format(vmArgs)
     }
-    val socket = if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
-                 else compileSocket.getSocket(serverAdr)
-    var sawerror = false
-    if (socket eq null) {
-      if (shutdown) {
-        Console.println("[No compilation server running.]")
-      } else {
-        Console.println("Compilation failed.")
-        sawerror = true
-      }
-    } else {
-      val out = new PrintWriter(socket.getOutputStream(), true)
-      val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-      out.println(compileSocket.getPassword(socket.getPort()))
-      out.println(args.mkString("", "\0", ""))
-      var fromServer = in.readLine()
-      while (fromServer ne null) {
-        if (compileSocket.errorPattern.matcher(fromServer).matches)
-          sawerror = true
-        Console.println(fromServer)
-        fromServer = in.readLine()
-      }
-      in.close ; out.close ; socket.close
+    val socket =
+      if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
+      else Some(compileSocket.getSocket(serverAdr))
+
+    val sawerror: Boolean = socket match {
+      case None =>
+        val msg = if (shutdown) "[No compilation server running.]" else "Compilation failed."
+        Console println msg
+        !shutdown
+
+      case Some(sock) =>
+        var wasError = false
+
+        sock.applyReaderAndWriter { (in, out) =>
+          out println compileSocket.getPassword(sock.getPort())
+          out println args.mkString("\0")
+          def loop: Unit = in.readLine() match {
+            case null       => ()
+            case fromServer =>
+              if (compileSocket.errorPattern matcher fromServer matches)
+                wasError = true
+
+              Console println fromServer
+              loop
+          }
+        }
+        wasError
     }
     if (sawerror) 1 else 0
   }

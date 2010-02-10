@@ -33,7 +33,11 @@ object MainGenericRunner {
       return errorFn("%s\n%s".format(command.usageMsg, sampleCompiler.pluginOptionsHelp))
 
     // append the jars in ${scala.home}/lib to the classpath, as well as "." if none was given.
-    settings appendToClasspath PathResolver.basicScalaClassPath(settings.classpath.value == "")
+    val needDot = settings.classpath.value == ""
+    settings appendToClasspath PathResolver.genericRunnerClassPath
+    if (needDot)
+      settings appendToClasspath "."
+
     settings.defines.applyToCurrentJVM
 
     if (settings.version.value)

@@ -101,7 +101,7 @@ object Streamable
      */
     def bufferedReader(codec: Codec = getCodec()) = new BufferedReader(reader(codec))
 
-    /** Creates an InputStream and applies the closure, automatically closing it on completion.
+    /** Creates a BufferedReader and applies the closure, automatically closing it on completion.
      */
     def applyReader[T](f: BufferedReader => T): T = {
       val in = bufferedReader()

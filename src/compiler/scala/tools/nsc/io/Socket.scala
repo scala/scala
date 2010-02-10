@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package io
 
-import java.io.{ IOException }
+import java.io.{ IOException, InputStreamReader, BufferedReader, PrintWriter }
 import java.net.{ URL, MalformedURLException }
 import java.net.{ InetAddress, Socket => JSocket }
 import scala.util.control.Exception._
@@ -31,4 +31,16 @@ class Socket(jsocket: JSocket) {
   def getInputStream() = jsocket.getInputStream()
   def getPort() = jsocket.getPort()
   def close() = jsocket.close()
+
+  /** Creates an InputStream and applies the closure, automatically closing it on completion.
+   */
+  def applyReaderAndWriter[T](f: (BufferedReader, PrintWriter) => T): T = {
+    val out = new PrintWriter(getOutputStream(), true)
+    val in = new BufferedReader(new InputStreamReader(getInputStream()))
+    try f(in, out)
+    finally {
+      in.close()
+      out.close()
+    }
+  }
 }

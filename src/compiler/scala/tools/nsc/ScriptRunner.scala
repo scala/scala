@@ -210,15 +210,8 @@ object ScriptRunner
     val compArgs          = coreCompArgs ::: List("-Xscript", scriptMain(settings), scriptFile)
     var compok            = true
 
-    // XXX temporary as I started using ManagedResource not remembering it wasn't checked in.
-    def ManagedResource[T](x: => T) = Some(x)
-
-    for {
-      socket <- ManagedResource(CompileSocket getOrCreateSocket "")
-      val _ = if (socket == null) return false
-      out <- ManagedResource(new PrintWriter(socket.getOutputStream(), true))
-      in <- ManagedResource(new BufferedReader(new InputStreamReader(socket.getInputStream())))
-    } {
+    val socket = CompileSocket getOrCreateSocket "" getOrElse (return false)
+    socket.applyReaderAndWriter { (in, out) =>
       out println (CompileSocket getPassword socket.getPort)
       out println (compArgs mkString "\0")
 
@@ -227,8 +220,7 @@ object ScriptRunner
         if (CompileSocket.errorPattern matcher fromServer matches)
           compok = false
       }
-      // XXX temp until managed resource is available
-      in.close() ; out.close() ; socket.close()
+      socket.close()
     }
 
     compok

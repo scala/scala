@@ -109,6 +109,9 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
     if (file ne null) file.exists
     else true
 
+  /** Does this abstract file represent something which can contain classfiles? */
+  def isClassContainer = isDirectory || Path.isJarOrZip(sfile)
+
   /** Create a file on disk, if one does not exist already. */
   def create: Unit
 

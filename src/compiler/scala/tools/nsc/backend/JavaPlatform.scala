@@ -19,11 +19,7 @@ trait JavaPlatform extends Platform[AbstractFile] {
       if (isInlinerOn) new JavaContext
       else DefaultJavaContext
 
-    new JavaClassPath(
-      settings.bootclasspath.value, settings.extdirs.value,
-      settings.classpath.value, settings.sourcepath.value,
-      settings.Xcodebase.value, context
-    )
+    PathResolver.fromSettings(settings, context)
   }
 
   def rootLoader = new loaders.JavaPackageLoader(classPath)

@@ -13,6 +13,7 @@ import java.io.{File, PrintStream, OutputStreamWriter, ByteArrayOutputStream}
 import scalax.rules.scalasig._
 import tools.nsc.io.AbstractFile
 import tools.nsc.util.{ ClassPath, JavaClassPath }
+import tools.util.PathResolver
 import ClassPath.DefaultJavaContext
 
 /**The main object used to execute scalap on the command-line.
@@ -264,13 +265,8 @@ object Main {
       verbose = arguments contains "-verbose"
       printPrivates = arguments contains "-private"
       // construct a custom class path
-      val path = arguments.getArgument("-classpath") match {
-        case None => arguments.getArgument("-cp") match {
-          case None => EmptyClasspath
-          case Some(path) => new JavaClassPath("", "", path, "", "", DefaultJavaContext)
-        }
-        case Some(path) => new JavaClassPath("", "", path, "", "", DefaultJavaContext)
-      }
+      def cparg = List("-classpath", "-cp") map (arguments getArgument _) reduceLeft (_ orElse _)
+      val path = cparg map (PathResolver fromPathString _) getOrElse EmptyClasspath
       // print the classpath if output is verbose
       if (verbose) {
         Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path)

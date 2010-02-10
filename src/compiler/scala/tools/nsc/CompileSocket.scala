@@ -96,13 +96,13 @@ class CompileSocket {
   def portFile(port: Int) = portsDir / File(port.toString)
 
   /** Poll for a server port number; return -1 if none exists yet */
-  private def pollPort(): Int =
-    portsDir.list.toList match {
-      case Nil      => -1
-      case p :: xs  =>
-        xs forall (_.delete())
-        p.name.toInt
-    }
+  private def pollPort(): Int = portsDir.list match {
+    case it if !it.hasNext  => -1
+    case it                 =>
+      val ret = it.next.name.toInt
+      it foreach (_.delete())
+      ret
+  }
 
   /** Get the port number to which a scala compile server is connected;
    *  If no server is running yet, then create one.
@@ -140,36 +140,36 @@ class CompileSocket {
   def deletePort(port: Int) = portFile(port).delete()
 
   /** Get a socket connected to a daemon.  If create is true, then
-    * create a new daemon if necessary.  Returns null if the connection
+    * create a new daemon if necessary.  Returns None if the connection
     * cannot be established.
     */
-  def getOrCreateSocket(vmArgs: String, create: Boolean = true): Socket = {
-    val nAttempts = 49  // try for about 5 seconds
-    def getsock(attempts: Int): Socket =
-      if (attempts == 0) {
-        error("Unable to establish connection to compilation daemon")
-        null
-      }
-      else {
-        val port = if(create) getPort(vmArgs) else pollPort()
-        if(port < 0) return null
-        val hostAdr = InetAddress.getLocalHost()
-        Socket(hostAdr, port).either match {
-          case Right(res) =>
+  def getOrCreateSocket(vmArgs: String, create: Boolean = true): Option[Socket] = {
+    // try for 5 seconds
+    val retryDelay = 100
+    val maxAttempts = (5 * 1000) / retryDelay
+
+    def getsock(attempts: Int): Option[Socket] = attempts match {
+      case 0    => error("Unable to establish connection to compilation daemon") ; None
+      case num  =>
+        val port = if (create) getPort(vmArgs) else pollPort()
+        if (port < 0) return None
+
+        Socket(InetAddress.getLocalHost(), port).either match {
+          case Right(socket)  =>
             info("[Connected to compilation daemon at port %d]" format port)
-            res
-          case Left(e) =>
-            info(e.toString)
+            Some(socket)
+          case Left(err)      =>
+            info(err.toString)
             info("[Connecting to compilation daemon at port %d failed; re-trying...]" format port)
 
             if (attempts % 2 == 0)
-              portFile(port).delete // 50% chance to stop trying on this port
+              deletePort(port)      // 50% chance to stop trying on this port
 
-            Thread.sleep(100) // delay before retrying
+            Thread sleep retryDelay // delay before retrying
             getsock(attempts - 1)
         }
-      }
-    getsock(nAttempts)
+    }
+    getsock(maxAttempts)
   }
 
   // XXX way past time for this to be central

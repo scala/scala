@@ -13,6 +13,7 @@ import util.SourceFile
 import Settings._
 import annotation.elidable
 import scala.tools.util.PathResolver
+import scala.collection.mutable.ListBuffer
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
@@ -24,6 +25,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
    */
   def processArguments(arguments: List[String]): (Boolean, List[String]) = {
     var args = arguments
+    val residualArgs = new ListBuffer[String]
 
     while (args.nonEmpty) {
       if (args.head startsWith "-") {
@@ -37,10 +39,17 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
       else if (args.head == "") {   // discard empties, sometimes they appear because of ant or etc.
         args = args.tail
       }
-      else return (checkDependencies, args)
+      else {
+        // XXX have to rework MainGenericRunner.  If we return early we break
+        // the ability to have command line options follow source files, but if
+        // we don't the command line is processed too early.
+        // return (checkDependencies, args)
+        residualArgs += args.head
+        args = args.tail
+      }
     }
 
-    (checkDependencies, args)
+    (checkDependencies, residualArgs.toList)
   }
   def processArgumentString(params: String) = processArguments(splitParams(params))
 

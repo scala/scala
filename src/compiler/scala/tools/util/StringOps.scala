@@ -33,6 +33,14 @@ object StringOps {
 
   def words(str: String): List[String] = decompose(str, ' ')
 
+  def stripPrefixOpt(str: String, prefix: String): Option[String] =
+    if (str startsWith prefix) Some(str drop prefix.length)
+    else None
+
+  def stripSuffixOpt(str: String, suffix: String): Option[String] =
+    if (str endsWith suffix) Some(str dropRight suffix.length)
+    else None
+
   def splitWhere(str: String, f: Char => Boolean, doDropIndex: Boolean = false): Option[(String, String)] =
     splitAt(str, str indexWhere f, doDropIndex)
 

@@ -192,7 +192,11 @@ object ScalaRunTime {
     // Node extends NodeSeq extends Seq[Node] strikes again
     case x: Node                  => x toString
     case x: AnyRef if isArray(x)  => WrappedArray make x map stringOf mkString ("Array(", ", ", ")")
-    case x: Traversable[_]        => x map stringOf mkString (x.stringPrefix + "(", ", ", ")")
+    case x: Traversable[_]        =>
+      // Some subclasses of AbstractFile implement Iterable, then throw an
+      // exception if you call iterator.  What a world.
+      if (x.getClass.getName startsWith "scala.tools.nsc.io") x.toString
+      else x map stringOf mkString (x.stringPrefix + "(", ", ", ")")
     case x                        => x toString
   }
 }
