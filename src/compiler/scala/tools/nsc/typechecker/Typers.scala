@@ -1875,16 +1875,31 @@ trait Typers { self: Analyzer =>
         case ldef @ LabelDef(_, _, _) =>
           if (ldef.symbol == NoSymbol)
             ldef.symbol = namer.enterInScope(
-              context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), UnitClass.tpe))
+              context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), NothingClass.tpe))
         case _ =>
       }
     }
 
+    private def isLoopHeaderLabel(name: Name): Boolean =
+      name.startsWith("while$") || name.startsWith("doWhile$")
+
     def typedLabelDef(ldef: LabelDef): LabelDef = {
-      val restpe = ldef.symbol.tpe.resultType
-      val rhs1 = typed(ldef.rhs, restpe)
-      ldef.params foreach (param => param.tpe = param.symbol.tpe)
-      treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
+      if (!isLoopHeaderLabel(ldef.symbol.name) || phase.id > currentRun.typerPhase.id) {
+        val restpe = ldef.symbol.tpe.resultType
+        val rhs1 = typed(ldef.rhs, restpe)
+        ldef.params foreach (param => param.tpe = param.symbol.tpe)
+        treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
+      } else {
+        val rhs1 = typed(duplicateTree(ldef.rhs))
+        val restpe = rhs1.tpe
+        context.scope.unlink(ldef.symbol)
+        val sym2 = namer.enterInScope(
+          context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), restpe))
+        //val subst = new TreeSymSubstituter(List(ldef.symbol), List(sym2))
+        val rhs2 = typed(ldef.rhs/*subst(ldef.rhs)*/, restpe)
+        ldef.params foreach (param => param.tpe = param.symbol.tpe)
+        treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs2) setSymbol sym2 setType restpe
+      }
     }
 
     protected def typedFunctionIDE(fun : Function, txt : Context) = {}
@@ -3040,7 +3055,7 @@ trait Typers { self: Analyzer =>
         } else {
           // An annotated term, created with annotation ascription
           //   term : @annot()
-          def annotTypeTree(ainfo: AnnotationInfo): Tree =
+          def annotTypeTree(ainfo: AnnotationInfo): Tree = //TR: function not used ??
             TypeTree(arg1.tpe.withAnnotation(ainfo)) setOriginal tree
 
           if (ann.tpe == null) {
