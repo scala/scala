@@ -2601,9 +2601,14 @@ trait Typers { self: Analyzer =>
         hasError = true
         annotationError
       }
-      def needConst(tr: Tree): None.type = {
-        error(tr.pos, "annotation argument needs to be a constant; found: "+tr)
-        None
+
+      def tryConst(tr: Tree, pt: Type) = typed(tr, EXPRmode, pt) match {
+        // null cannot be used as constant value for classfile annotations
+        case l @ Literal(c) if !(l.isErroneous || c.value == null) =>
+          Some(LiteralAnnotArg(c))
+        case _ =>
+          error(tr.pos, "annotation argument needs to be a constant; found: "+tr)
+          None
       }
 
       /** Converts an untyped tree to a ClassfileAnnotArg. If the conversion fails,
@@ -2628,17 +2633,12 @@ trait Typers { self: Analyzer =>
               !pt.typeArgs.isEmpty)
             trees2ConstArg(members, pt.typeArgs.head)
           else
-            needConst(tree)
+            tryConst(tree, pt)
 
         case Typed(t, _) => tree2ConstArg(t, pt)
 
-        case tree => typed(tree, EXPRmode, pt) match {
-          // null cannot be used as constant value for classfile annotations
-          case l @ Literal(c) if !(l.isErroneous || c.value == null) =>
-            Some(LiteralAnnotArg(c))
-          case _ =>
-            needConst(tree)
-        }
+        case tree =>
+          tryConst(tree, pt)
       }
       def trees2ConstArg(trees: List[Tree], pt: Type): Option[ArrayAnnotArg] = {
         val args = trees.map(tree2ConstArg(_, pt))

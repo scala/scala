@@ -1,4 +1,5 @@
 class ann(i: Int) extends Annotation
+class cfann(x: String) extends ClassfileAnnotation
 
 // annotations on abstract types
 abstract class C1[@serializable @cloneable +T, U, V[_]]
@@ -35,6 +36,10 @@ object Test {
 
   // annotation on annotation constructor
   @(ann @ann(100))(200) def foo() = 300
+
+  // #2984
+  private final val NAMESPACE = "/info"
+  @cfann(x = NAMESPACE + "/index") def index = "success"
 }
 
 // test forward references to getters / setters
