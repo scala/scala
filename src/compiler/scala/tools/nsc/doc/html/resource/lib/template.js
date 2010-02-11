@@ -37,7 +37,7 @@ $(document).ready(function(){
 		tip: "#tooltip",
 		position:"top center",		
 		onBeforeShow: function(ev) {
-            $(this.getTip()).text($(ev.srcElement).attr("name"));
+            $(this.getTip()).text(this.getTrigger().attr("name"));
 		}		
 	});
 	$("#template div.fullcomment").hide();

@@ -37,15 +37,8 @@ class Index(modelRoot: Package) extends HtmlPage {
         <img class='package icon' src='lib/package.png'/>
       </div>
       <div id="browser">
-        <div id="filter">
-          <div id="textfilter">
-            <input type="text" accesskey="/"/>
-          </div>
-          <div id="focusfilter">
-            focus on <span class="focuscoll"></span> <a class="focusremove">(remove)</a>
-          </div>
-        </div>
-        <div class="wu" id="tpl">{
+        <div id="filter"></div>
+        <div class="pack" id="tpl">{
           def isExcluded(dtpl: DocTemplateEntity) = {
             val qname = dtpl.qualifiedName
             (qname.startsWith("scala.Tuple") || qname.startsWith("scala.Product") || qname.startsWith("scala.Function")) &&
@@ -79,7 +72,7 @@ class Index(modelRoot: Package) extends HtmlPage {
               }</ol>
               <ol class="packages"> {
                 for (sp <- pack.packages sortBy (_.name.toLowerCase)) yield
-                  <li class="wu" title={ sp.qualifiedName }>{ packageElem(sp) }</li>
+                  <li class="pack" title={ sp.qualifiedName }>{ packageElem(sp) }</li>
               }</ol>
             </xml:group>
           }
