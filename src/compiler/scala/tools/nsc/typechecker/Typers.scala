@@ -4206,20 +4206,13 @@ trait Typers { self: Analyzer =>
 
     /** Types a pattern with prototype <code>pt</code> */
     def typedPattern(tree: Tree, pt: Type): Tree = {
-      // The commented out code stems from investigation into whether
-      //   "abc" match { case Seq('a', 'b', 'c') => true }
-      // can be ruled out statically.  At present this is a runtime
-      // error both because there is an implicit from String to Seq
-      // (even though such implicits are not used by the matcher) and
-      // because the typer is fine with concluding that "abc" might
-      // be of type "String with Seq[T]" and thus eligible for a call
-      // to unapplySeq.
-      //
-      // val savedImplicitsEnabled = context.implicitsEnabled
-      // context.implicitsEnabled = false
-      // try
-      typed(tree, PATTERNmode, pt)
-      // finally context.implicitsEnabled = savedImplicitsEnabled
+      // We disable implicits because otherwise some constructs will
+      // type check which should not.  The pattern matcher does not
+      // perform implicit conversions in an attempt to consummate a match.
+      val savedImplicitsEnabled = context.implicitsEnabled
+      context.implicitsEnabled = false
+      try typed(tree, PATTERNmode, pt)
+      finally context.implicitsEnabled = savedImplicitsEnabled
     }
 
     /** Types a (fully parameterized) type tree */
