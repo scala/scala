@@ -1226,6 +1226,8 @@ object Interpreter {
   def break(args: List[DebugParam[_]]): Unit = {
     val intLoop = new InterpreterLoop
     intLoop.settings = new Settings(Console.println)
+    // XXX come back to the dot handling
+    intLoop.settings appendToClasspath "."
     intLoop.createInterpreter
     intLoop.in = InteractiveReader.createDefault(intLoop.interpreter)
 
