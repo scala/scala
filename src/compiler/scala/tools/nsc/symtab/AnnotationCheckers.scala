@@ -29,6 +29,10 @@ trait AnnotationCheckers {
      *  All this should do is add annotations. */
     def annotationsGlb(tp: Type, ts: List[Type]): Type = tp
 
+    /** Refine the bounds on type parameters to the given type arguments. */
+    def adaptBoundsToAnnotations(bounds: List[TypeBounds],
+      tparams: List[Symbol], targs: List[Type]): List[TypeBounds] = bounds
+
     /** Modify the type that has thus far been inferred
      *  for a tree.  All this should do is add annotations. */
     def addAnnotations(tree: Tree, tpe: Type): Type = tpe
@@ -86,6 +90,12 @@ trait AnnotationCheckers {
       checker.annotationsGlb(tpe, ts))
   }
 
+  /** Refine the bounds on type parameters to the given type arguments. */
+  def adaptBoundsToAnnotations(bounds: List[TypeBounds],
+    tparams: List[Symbol], targs: List[Type]): List[TypeBounds] = {
+      annotationCheckers.foldLeft(bounds)((bounds, checker) =>
+        checker.adaptBoundsToAnnotations(bounds, tparams, targs))
+  }
 
   /** Let all annotations checkers add extra annotations
    *  to this tree's type. */

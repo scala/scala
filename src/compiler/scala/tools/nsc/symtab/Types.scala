@@ -4589,7 +4589,9 @@ A type's typeSymbol should never be inspected directly.
    *  @return        ...
    */
   def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): Boolean = {
-    val bounds = instantiatedBounds(pre, owner, tparams, targs)
+    var bounds = instantiatedBounds(pre, owner, tparams, targs)
+    if (targs.exists(_.annotations.nonEmpty))
+      bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
     (bounds corresponds targs)(_ containsType _)  // @PP: corresponds
   }
 
