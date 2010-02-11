@@ -110,7 +110,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
     else true
 
   /** Does this abstract file represent something which can contain classfiles? */
-  def isClassContainer = isDirectory || Path.isJarOrZip(sfile)
+  def isClassContainer = isDirectory || (file != null && Path.isJarOrZip(sfile))
 
   /** Create a file on disk, if one does not exist already. */
   def create: Unit

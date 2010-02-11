@@ -30,7 +30,17 @@ import scala.util.Random.nextASCIIString
 
 object Path
 {
-  def isJarOrZip(f: Path) = (f hasExtension "zip") || (f hasExtension "jar")
+  private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
+
+  /** If examineFile is true, it will look at the first four bytes of the file
+   *  and see if the magic number indicates it may be a jar or zip.
+   */
+  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, false)
+  def isJarOrZip(f: Path, examineFile: Boolean): Boolean = (
+       (f hasExtension "zip")
+    || (f hasExtension "jar")
+    || (examineFile && f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber))
+  )
 
   // not certain these won't be problematic, but looks good so far
   implicit def string2path(s: String): Path = apply(s)

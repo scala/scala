@@ -99,6 +99,7 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
     if (i < 0) namespace
     else namespace drop (i + 1)
   }
+  def asURLs = List(new java.net.URL(name))
 
   private lazy val first: Int = {
     var m = 0
@@ -152,7 +153,4 @@ class AssemblyClassPath(types: Array[MSILType], namespace: String, val context: 
  * MSILType values.
  */
 class MsilClassPath(ext: String, user: String, source: String, context: MsilContext)
-  extends MergedClassPath[MSILType](
-    MsilClassPath.assembleEntries(ext, user, source, context),
-    context
-  )
+extends MergedClassPath[MSILType](MsilClassPath.assembleEntries(ext, user, source, context), context) { }

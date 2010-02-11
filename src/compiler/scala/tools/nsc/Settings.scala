@@ -14,6 +14,7 @@ import Settings._
 import annotation.elidable
 import scala.tools.util.PathResolver
 import scala.collection.mutable.ListBuffer
+import scala.collection.immutable.TreeSet
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
@@ -21,9 +22,21 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   /** Iterates over the arguments applying them to settings where applicable.
    *  Then verifies setting dependencies are met.
    *
+   *  This temporarily takes a boolean indicating whether to keep
+   *  processing if an argument is seen which is not a command line option.
+   *  This is an expedience for the moment so that you can say
+   *
+   *    scalac -d /tmp foo.scala -optimise
+   *
+   *  while also allowing
+   *
+   *    scala Program opt opt
+   *
+   *  to get their arguments.
+   *
    *  Returns (success, List of unprocessed arguments)
    */
-  def processArguments(arguments: List[String]): (Boolean, List[String]) = {
+  def processArguments(arguments: List[String], processAll: Boolean): (Boolean, List[String]) = {
     var args = arguments
     val residualArgs = new ListBuffer[String]
 
@@ -40,10 +53,9 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
         args = args.tail
       }
       else {
-        // XXX have to rework MainGenericRunner.  If we return early we break
-        // the ability to have command line options follow source files, but if
-        // we don't the command line is processed too early.
-        // return (checkDependencies, args)
+        if (!processAll)
+          return (checkDependencies, args)
+
         residualArgs += args.head
         args = args.tail
       }
@@ -51,52 +63,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
     (checkDependencies, residualArgs.toList)
   }
-  def processArgumentString(params: String) = processArguments(splitParams(params))
-
-  // optionizes a system property
-  private def syspropopt(name: String): Option[String] = Option(System.getProperty(name))
-  private def sysenvopt(name: String): Option[String] = Option(System.getenv(name))
-
-  // given any number of possible path segments, flattens down to a
-  // :-separated style path
-  private def concatPath(segments: Option[String]*): String =
-    segments.toList.flatMap(x => x) mkString pathSeparator
-
-  protected def classpathDefault =
-    sysenvopt("CLASSPATH") getOrElse "."
-
-  protected def bootclasspathDefault =
-    concatPath(syspropopt("sun.boot.class.path"), guessedScalaBootClassPath)
-    // syspropopt("sun.boot.class.path") getOrElse ""
-    // XXX scala-library.jar was being added to both boot and regular classpath until 8/18/09
-    // Removing from boot classpath caused build/quick/bin/scala to fail.
-    // Note to self, figure out how/why the bootclasspath is tied up with the locker/quick/pack.
-
-  protected def extdirsDefault =
-    concatPath(syspropopt("java.ext.dirs"), guessedScalaExtDirs)
-
-  protected def assemExtdirsDefault =
-    concatPath(guessedScalaExtDirs)
-
-  protected def pluginsDirDefault =
-    guess(List("misc", "scala-devel", "plugins"), _.isDirectory) getOrElse ""
-
-  def mkPath(base: String, segments: String*) = new File(base, segments.mkString(File.separator))
-  def scalaHome: Option[String] = Option(Properties.scalaHome)
-
-  // examine path relative to scala home and return Some(path) if it meets condition
-  private def guess(xs: List[String], cond: (File) => Boolean): Option[String] = {
-    if (scalaHome.isEmpty) return None
-    val f = mkPath(scalaHome.get, xs: _*)
-    if (cond(f)) Some(f.getAbsolutePath) else None
-  }
-
-  private def guessedScalaBootClassPath: Option[String] =
-    guess(List("lib", "scala-library.jar"), _.isFile) orElse
-    guess(List("classes", "library"), _.isDirectory)
-
-  private def guessedScalaExtDirs: Option[String] =
-    guess(List("lib"), _.isDirectory)
+  def processArgumentString(params: String) = processArguments(splitParams(params), true)
 
   override def hashCode() = settingSet.hashCode
   override def equals(that: Any) = that match {
@@ -786,9 +753,7 @@ object Settings {
 trait ScalacSettings {
   self: Settings =>
 
-  import scala.tools.util.PathResolver
   import PathResolver.{ Defaults, Environment }
-  import collection.immutable.TreeSet
 
   /** A list of all settings */
   protected var allsettings: Set[Setting] = TreeSet[Setting]()
@@ -816,8 +781,8 @@ trait ScalacSettings {
    */
   // argfiles is only for the help message
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", bootclasspathDefault)
-  val classpath     = StringSetting     ("-classpath", "path", "Specify where to find user class files", classpathDefault) .
+  val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", "")
+  val classpath     = StringSetting     ("-classpath", "path", "Specify where to find user class files", "") .
                             withAbbreviation("-cp") .
                             withPostSetHook(self => if (Ylogcp.value) Console.println("Updated classpath to '%s'".format(self.value)))
   val outdir        = OutputSetting     (outputDirs, ".")
@@ -825,7 +790,7 @@ trait ScalacSettings {
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
   val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.sourceEncoding)
   val explaintypes  = BooleanSetting    ("-explaintypes", "Explain type errors in more detail")
-  val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", extdirsDefault)
+  val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", "")
   val debuginfo     = DebugSetting      ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")
   val help          = BooleanSetting    ("-help", "Print a synopsis of standard options")
   val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all") .
@@ -842,8 +807,8 @@ trait ScalacSettings {
   val version       = BooleanSetting    ("-version", "Print product version and exit")
 
   /** New to classpaths */
-  val javabootclasspath = StringSetting ("-javabootclasspath", "path", "Override java boot classpath.", Environment.javaBootClassPath)
-  val javaextdirs       = StringSetting ("-javaextdirs", "path", "Override java extdirs classpath.", Environment.javaExtDirs)
+  val javabootclasspath = StringSetting ("-javabootclasspath", "path", "Override java boot classpath.", "")
+  val javaextdirs       = StringSetting ("-javaextdirs", "path", "Override java extdirs classpath.", "")
 
   /**
    * -X "Advanced" settings
@@ -851,7 +816,7 @@ trait ScalacSettings {
   val Xhelp         = BooleanSetting    ("-X", "Print a synopsis of advanced options")
   val assemname     = StringSetting     ("-Xassem-name", "file", "Name of the output assembly (only relevant with -target:msil)", "").dependsOn(target, "msil")
   val assemrefs     = StringSetting     ("-Xassem-path", "path", "List of assemblies referenced by the program (only relevant with -target:msil)", ".").dependsOn(target, "msil")
-  val assemextdirs  = StringSetting     ("-Xassem-extdirs", "dirs", "List of directories containing assemblies, defaults to `lib'", assemExtdirsDefault).dependsOn(target, "msil")
+  val assemextdirs  = StringSetting     ("-Xassem-extdirs", "dirs", "List of directories containing assemblies, defaults to `lib'", Defaults.scalaLibDir.path).dependsOn(target, "msil")
   val sourcedir     = StringSetting     ("-Xsourcedir", "directory", "When -target:msil, the source folder structure is mirrored in output directory.", ".").dependsOn(target, "msil")
   val checkInit     = BooleanSetting    ("-Xcheckinit", "Add runtime checks on field accessors. Uninitialized accesses result in an exception being thrown.")
   val noassertions  = BooleanSetting    ("-Xdisable-assertions", "Generate no assertions and assumptions")
@@ -868,7 +833,7 @@ trait ScalacSettings {
   val disable       = MultiStringSetting("-Xplugin-disable", "plugin", "Disable a plugin")
   val showPlugins   = BooleanSetting    ("-Xplugin-list", "Print a synopsis of loaded plugins")
   val require       = MultiStringSetting("-Xplugin-require", "plugin", "Abort unless a plugin is available")
-  val pluginsDir    = StringSetting     ("-Xpluginsdir", "path", "Location to find compiler plugins", pluginsDirDefault)
+  val pluginsDir    = StringSetting     ("-Xpluginsdir", "path", "Path to search compiler plugins", Defaults.scalaPluginPath)
   val print         = PhasesSetting     ("-Xprint", "Print out program after")
   val writeICode    = BooleanSetting    ("-Xprint-icode", "Log internal icode to *.icode files")
   val Xprintpos     = BooleanSetting    ("-Xprint-pos", "Print tree positions (as offsets)")

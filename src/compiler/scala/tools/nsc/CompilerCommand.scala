@@ -81,7 +81,7 @@ class CompilerCommand(
         case x                      => List(x)
       }
 
-      settings processArguments expandedArguments
+      settings.processArguments(expandedArguments, true)
     }
     else (true, Nil)
 }

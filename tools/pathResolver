@@ -1,4 +1,11 @@
 #!/bin/sh
 #
 
-scala scala.tools.util.PathResolver $*
+WHICH=`which scala`
+BASE=`dirname $WHICH`
+LIBDIR=$BASE/../lib
+
+echo Using ${WHICH}.
+echo
+
+java -cp "${LIBDIR}/*" scala.tools.util.PathResolver $*

@@ -108,6 +108,7 @@ class StandardCompileClient {
               Console println fromServer
               loop
           }
+          loop
         }
         wasError
     }

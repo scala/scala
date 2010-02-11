@@ -281,6 +281,7 @@ object Main {
      * The short name of the package (without prefix)
      */
     def name: String = ""
+    def asURLs = Nil
     val context = DefaultJavaContext
     val classes: List[ClassRep] = Nil
     val packages: List[ClassPath[AbstractFile]] = Nil

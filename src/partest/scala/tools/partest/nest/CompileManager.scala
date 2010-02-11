@@ -10,8 +10,10 @@ package nest
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand, FatalError}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.util.PathResolver
 
 import java.io.{File, BufferedReader, PrintWriter, FileReader, FileWriter, StringWriter}
+import File.pathSeparator
 
 class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter) extends ConsoleReporter(settings, reader, writer) {
   def this(settings: Settings) = {
@@ -24,13 +26,10 @@ abstract class SimpleCompiler {
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean
 }
 
-class TestSettings(fileMan: FileManager) extends {
-  override val bootclasspathDefault =
-    System.getProperty("sun.boot.class.path", "") + File.pathSeparator +
-    fileMan.LATEST_LIB
-  override val extdirsDefault =
-    System.getProperty("java.ext.dirs", "")
-} with Settings(x => ())
+class TestSettings(fileMan: FileManager) extends Settings(x => ()) {
+  javabootclasspath.value =
+    PathResolver.Environment.javaBootClassPath + (pathSeparator + fileMan.LATEST_LIB)
+}
 
 class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def newGlobal(settings: Settings, reporter: Reporter): Global =
@@ -63,14 +62,14 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       if (opt1.isEmpty) ""
       else {
         def absolutize(path: String): List[String] = {
-          val args = (path substring 9 split File.pathSeparator).toList
+          val args = (path substring 9 split pathSeparator).toList
           val plugins = args map (arg =>
             if (new File(arg).isAbsolute) arg
             else fileManager.TESTROOT+File.separator+arg
           )
           plugins
         }
-        " -Xplugin:"+((opt1 flatMap absolutize) mkString File.pathSeparator)
+        " -Xplugin:"+((opt1 flatMap absolutize) mkString pathSeparator)
       }
     )
   }

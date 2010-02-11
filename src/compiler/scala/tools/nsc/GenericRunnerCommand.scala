@@ -9,7 +9,7 @@ package scala.tools.nsc
 
 /** A command for ScriptRunner */
 class GenericRunnerCommand(
-  allargs: List[String],
+  val allargs: List[String],
   override val settings: GenericRunnerSettings,
   error: String => Unit)
 extends CompilerCommand(allargs, settings, error, false, false)
@@ -29,7 +29,7 @@ extends CompilerCommand(allargs, settings, error, false, false)
    *
    *  we can safely process arguments since we passed the superclass shouldProcessArguments=false
    */
-  val (thingToRun, arguments) = (settings processArguments allargs)._2 match {
+  val (thingToRun, arguments) = (settings.processArguments(allargs, false))._2 match {
     case Nil      => (None, Nil)
     case hd :: tl => (Some(hd), tl)
   }

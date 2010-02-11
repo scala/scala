@@ -148,6 +148,10 @@ abstract class ClassPath[T] {
    */
   def name: String
 
+  /** An URL representing this classpath.
+   */
+  def asURLs: List[URL]
+
   /** Info which should be propagated to any sub-classpaths.
    */
   def context: ClassPathContext[T]
@@ -206,6 +210,7 @@ abstract class ClassPath[T] {
  */
 class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends ClassPath[T] {
   def name = dir.name
+  def asURLs = List(dir.sfile.toURL)
   val sourcepaths: List[AbstractFile] = List(dir)
 
   lazy val classes: List[ClassRep] = dir partialMap {
@@ -225,6 +230,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
  */
 class DirectoryClassPath(dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
   def name = dir.name
+  def asURLs = List(dir.sfile.toURL)
   val sourcepaths: List[AbstractFile] = Nil
 
   lazy val classes: List[ClassRep] = dir partialMap {
@@ -248,6 +254,7 @@ class MergedClassPath[T](
 extends ClassPath[T] {
 
   def name = entries.head.name
+  def asURLs = entries flatMap (_.asURLs)
   lazy val sourcepaths: List[AbstractFile] = entries flatMap (_.sourcepaths)
 
   lazy val classes: List[AnyClassRep] = {
