@@ -9,6 +9,15 @@ var domCache = undefined;
 
 $(document).ready(function() {
 
+    // workaround for IE's iframe sizing lack of smartness
+    if($.browser.msie) {
+        function fixIFrame() {
+            $('iframe').height($(window).height() )
+        }
+        $('iframe').bind("load",fixIFrame)
+        $('iframe').bind("resize",fixIFrame)
+    }
+
     scheduler = new Scheduler();
     scheduler.addLabel("init", 5);
     scheduler.addLabel("focus", 7);

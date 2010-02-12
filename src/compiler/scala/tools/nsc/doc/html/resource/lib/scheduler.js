@@ -11,6 +11,11 @@ function Scheduler() {
         this.name = name;
         this.priority = priority;
     }
+    this.work = function(fn, self, args) {
+        this.fn = fn;
+        this.self = self;
+        this.args = args;
+    }
     this.addLabel = function(name, priority) {
         var idx = 0;
         while (idx < scheduler.queues.length && scheduler.labels[idx].priority <= priority) { idx = idx + 1; }
@@ -39,8 +44,8 @@ function Scheduler() {
             scheduler.timeout = setTimeout(function() {
                 var work = scheduler.nextWork();
                 if (work != undefined) {
-                    //alert(work[0]);
-                    work[0].apply(work[1], work[2]);
+                    if (work.args == undefined) { work.args = new Array(0); }
+                    work.fn.apply(work.self, work.args);
                     doWork();
                 }
                 else {
@@ -51,7 +56,7 @@ function Scheduler() {
         var idx = 0;
         while (idx < scheduler.labels.length && scheduler.labels[idx].name != labelName) { idx = idx + 1; }
         if (idx < scheduler.queues.length && scheduler.labels[idx].name == labelName) {
-            scheduler.queues[idx].push([fn, self, args]);
+            scheduler.queues[idx].push(new scheduler.work(fn, self, args));
             if (scheduler.timeout == undefined) doWork();
         }
         else throw("queue for add is non existant");

@@ -92,6 +92,7 @@ a:hover {
 
 div.members > ol {
 	background-color: white;
+	list-style: none
 }
 
 div.members > ol > li {
@@ -121,12 +122,13 @@ div.members > ol > li {
 .signature .kind {
 	text-align: right;
 	float: left;
-	width: 72px;
+	display: inline;
+	padding-left: 72px;
 }
 
 .signature .symbol {
-	display: block;
-	margin-left: 80px;
+	display: inline;
+	padding-left: 8px;
 }
 
 .signature .name {
@@ -257,19 +259,18 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 #mbrsel > div > h3 {
 	padding: 4px;
-	display: block;
-	float: left;
+	display: inline;
 }
 
 #mbrsel > div > ol {
-	display: inline-block;
+	display: inline;
 }
 
 #mbrsel > div > ol > li {
 	padding: 4px 8px 4px 8px;
 	font-weight: bold;
 	background-color: white;
-	display: inline-block;
+	display: inline;
 	cursor: crosshair;
 }
 

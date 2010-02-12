@@ -21,11 +21,9 @@ class Index(modelRoot: Package) extends HtmlPage {
 
   def headers =
     <xml:group>
-		  <style type="text/css">
-		    @import url({ relativeLinkTo(List("index.css", "lib")) }) screen;
-		  </style>
-		  <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
-		  <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
+      <link href={ relativeLinkTo(List("index.css", "lib")) }  media="screen" type="text/css" rel="stylesheet"/>
+      <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
     </xml:group>
 
   def body =

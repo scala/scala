@@ -22,11 +22,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
   val headers =
     <xml:group>
-		  <style type="text/css">
-		    @import url({ relativeLinkTo(List("template.css", "lib")) }) screen;
-		  </style>
-		  <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
-		  <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
+      <link href={ relativeLinkTo(List("template.css", "lib")) }   media="screen" type="text/css" rel="stylesheet"/>
+      <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
     </xml:group>
 
   val valueMembers =
