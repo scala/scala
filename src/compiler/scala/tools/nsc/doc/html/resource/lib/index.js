@@ -7,6 +7,9 @@ var topLevelPackages = undefined;
 var scheduler = undefined;
 var domCache = undefined;
 
+var kindFilterState = undefined;
+var focusFilterState = undefined;
+
 $(document).ready(function() {
 
     // workaround for IE's iframe sizing lack of smartness
@@ -19,9 +22,10 @@ $(document).ready(function() {
     }
 
     scheduler = new Scheduler();
-    scheduler.addLabel("init", 5);
-    scheduler.addLabel("focus", 7);
-    scheduler.addLabel("filter", 10);
+    scheduler.addLabel("init", 1);
+    scheduler.addLabel("focus", 2);
+    scheduler.addLabel("kind", 3);
+    scheduler.addLabel("filter", 4);
 
     scheduler.addForAll = function(labelName, elems, fn) {
         var idx = 0;
@@ -39,11 +43,13 @@ $(document).ready(function() {
     prepareEntityList();
 
     configureTextFilter();
+    configureKindFilter();
     configureEntityList();
 
 });
 
 function configureEntityList() {
+    kindFilterSync();
     configureHideFilter();
     configureFocusFilter();
     textFilter();
@@ -176,6 +182,7 @@ function configureHideFilter() {
    link to all packages. */
 function configureFocusFilter() {
     scheduler.add("init", function() {
+        focusFilterState = null;
         if ($("#focusfilter").length == 0) {
             $("#filter").append("<div id='focusfilter'>focused on <span class='focuscoll'></span> <a class='focusremove'><img class='icon' src='lib/remove.png'/></a></div>");
             $("#focusfilter > .focusremove").click(function(event) {
@@ -185,7 +192,9 @@ function configureFocusFilter() {
                     $("#tpl > ol.packages").replaceWith(topLevelPackages.clone());
                     domCache.update();
                     $("#focusfilter").hide();
+                    $("#kindfilter").show();
                     resizeFilterBlock();
+                    focusFilterState = null;
                     configureEntityList();
                 });
             });
@@ -217,7 +226,49 @@ function focusFilter(package) {
         $("#tpl > ol.packages").replaceWith(packPackages);
         domCache.update();
         $("#focusfilter").show();
+        $("#kindfilter").hide();
 	    resizeFilterBlock();
+        focusFilterState = package;
+	    kindFilterSync();
+    });
+}
+
+function configureKindFilter() {
+    scheduler.add("init", function() {
+        kindFilterState = "all";
+        $("#filter").append("<div id='kindfilter'><a>display packages only</a></div>");
+        $("#kindfilter > a").click(function(event) { kindFilter("packs"); });
+        resizeFilterBlock();
+    });
+}
+
+function kindFilter(kind) {
+    if (kind == "packs") {
+        kindFilterState = "packs";
+        kindFilterSync();
+        $("#kindfilter > a").replaceWith("<a>display all entities</a>");
+        $("#kindfilter > a").click(function(event) { kindFilter("all"); });
+    }
+    else {
+        kindFilterState = "all";
+        kindFilterSync();
+        $("#kindfilter > a").replaceWith("<a>display packages only</a>");
+        $("#kindfilter > a").click(function(event) { kindFilter("packs"); });
+    }
+}
+
+/* Applies the kind filter. */
+function kindFilterSync() {
+    scheduler.add("kind", function () {
+        if (kindFilterState == "all" || focusFilterState != null)
+            scheduler.addForAll("kind", domCache.packs, function(pack0) {
+                $("> ol.templates", pack0).show();
+            });
+        else
+            scheduler.addForAll("kind", domCache.packs, function(pack0) {
+                $("> ol.templates", pack0).hide();
+            });
+        textFilter();
     });
 }
 

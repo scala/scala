@@ -92,6 +92,13 @@ h1 {
 	position: relative;
 }
 
+#kindfilter {
+	position: relative;
+	display: block;
+	padding: 5px;
+	background-color: #F0F8FF;
+}
+
 #tpl {
 	display: block;
 	position: fixed;
