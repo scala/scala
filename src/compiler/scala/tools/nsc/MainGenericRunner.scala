@@ -15,7 +15,6 @@ import scala.tools.util.PathResolver
 
 import io.{ File }
 import util.{ ClassPath, ScalaClassLoader }
-import File.pathSeparator
 import Properties.{ versionString, copyrightString }
 
 /** An object that runs Scala code.  It has three possible

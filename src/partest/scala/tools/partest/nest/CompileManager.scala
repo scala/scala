@@ -10,6 +10,7 @@ package nest
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand, FatalError}
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
 
 import java.io.{File, BufferedReader, PrintWriter, FileReader, FileWriter, StringWriter}
@@ -27,8 +28,9 @@ abstract class SimpleCompiler {
 }
 
 class TestSettings(fileMan: FileManager) extends Settings(x => ()) {
-  javabootclasspath.value =
-    PathResolver.Environment.javaBootClassPath + (pathSeparator + fileMan.LATEST_LIB)
+  javabootclasspath.value = ClassPath.join(
+    List(PathResolver.Environment.javaBootClassPath, fileMan.LATEST_LIB)
+  )
 }
 
 class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {

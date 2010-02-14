@@ -6,8 +6,9 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
+import java.io.{ BufferedReader, File, InputStreamReader, PrintWriter }
 import Properties.fileEndings
+import util.ClassPath
 
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
@@ -26,11 +27,7 @@ class StandardCompileClient {
   /** Convert a sequence of filenames, separated by <code>File.pathSeparator</code>,
     * into absolute filenames.
     */
-  def absFileNames(paths: String) = {
-    val sep = File.pathSeparator
-    val pathsList = paths.split(sep).toList
-    pathsList map absFileName mkString sep
-  }
+  def absFileNames(paths: String) = ClassPath.map(paths, absFileName)
 
   protected def normalize(args: Array[String]): (String, String) = {
     var i = 0

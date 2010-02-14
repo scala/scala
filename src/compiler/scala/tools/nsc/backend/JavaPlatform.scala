@@ -19,7 +19,11 @@ trait JavaPlatform extends Platform[AbstractFile] {
       if (isInlinerOn) new JavaContext
       else DefaultJavaContext
 
-    PathResolver.fromSettings(settings, context)
+    val cp = PathResolver.fromSettings(settings, context)
+    if (settings.Ylogcp.value)
+      Console.println("Created Global has classpath: " + cp.asClasspathString)
+
+    cp
   }
 
   def rootLoader = new loaders.JavaPackageLoader(classPath)

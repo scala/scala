@@ -8,6 +8,8 @@
 package scala.tools.partest
 package nest
 
+import scala.tools.nsc.util.ClassPath
+
 /* This class is used to load an instance of DirectRunner using
  * a custom class loader.
  * The purpose is to "auto-detect" a good classpath for the
@@ -21,7 +23,6 @@ class ReflectiveRunner extends RunnerUtils {
   // was used to start the runner.
 
   import java.net.URLClassLoader
-  import java.io.File.pathSeparator
   import utils.Properties.{ sysprop, syspropset }
 
   val sepRunnerClassName = "scala.tools.partest.nest.ConsoleRunner"
@@ -54,7 +55,7 @@ class ReflectiveRunner extends RunnerUtils {
       println("Loading classes from:\n" + sepUrls.mkString("\n"))
 
     val paths = (if (classPath.isEmpty) files.slice(0, 4) else files) map { _.getPath }
-    val newClasspath = paths mkString pathSeparator
+    val newClasspath = ClassPath join paths
 
     syspropset("java.class.path", newClasspath)
     syspropset("scala.home", "")

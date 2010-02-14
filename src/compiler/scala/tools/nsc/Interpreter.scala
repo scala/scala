@@ -171,7 +171,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     val classpathPart =
       ClassPath.expandPath(settings.classpath.value) map (s => new File(s).toURI.toURL)
     val codebasePart =
-      (settings.Xcodebase.value split " ").toList flatMap parseURL
+      (settings.Ycodebase.value split " ").toList flatMap parseURL
 
     classpathPart ::: codebasePart
   }

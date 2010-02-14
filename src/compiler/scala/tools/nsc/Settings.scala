@@ -777,20 +777,30 @@ trait ScalacSettings {
   }
 
   /**
+   *  Classpath related settings
+   */
+
+  val bootclasspath     = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", "")
+  val classpath         = StringSetting     ("-classpath", "path", "Specify where to find user class files", "") .
+                                withAbbreviation("-cp") .
+                                withPostSetHook(self => if (Ylogcp.value) Console.println("Updated classpath to '%s'".format(self.value)))
+  val extdirs           = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", "")
+  val javabootclasspath = StringSetting     ("-javabootclasspath", "path", "Override java boot classpath.", "")
+  val javaextdirs       = StringSetting     ("-javaextdirs", "path", "Override java extdirs classpath.", "")
+  val sourcepath        = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
+  val Ycodebase         = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "")
+  val Ylogcp            = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
+
+  /**
    *  Standard settings
    */
   // argfiles is only for the help message
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val bootclasspath = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", "")
-  val classpath     = StringSetting     ("-classpath", "path", "Specify where to find user class files", "") .
-                            withAbbreviation("-cp") .
-                            withPostSetHook(self => if (Ylogcp.value) Console.println("Updated classpath to '%s'".format(self.value)))
   val outdir        = OutputSetting     (outputDirs, ".")
   val dependenciesFile  = StringSetting ("-dependencyfile", "file", "Specify the file in which dependencies are tracked", ".scala_dependencies")
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
   val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.sourceEncoding)
   val explaintypes  = BooleanSetting    ("-explaintypes", "Explain type errors in more detail")
-  val extdirs       = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", "")
   val debuginfo     = DebugSetting      ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")
   val help          = BooleanSetting    ("-help", "Print a synopsis of standard options")
   val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all") .
@@ -799,7 +809,6 @@ trait ScalacSettings {
   val XO            = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program").withAbbreviation("-optimize") .
                             withPostSetHook(_ => List(inline, Xcloselim, Xdce) foreach (_.value = true))
   val printLate     = BooleanSetting    ("-print", "Print program with all Scala-specific features removed")
-  val sourcepath    = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
   val target        = ChoiceSetting     ("-target", "Specify for which target object files should be built", List("jvm-1.5", "msil"), "jvm-1.5")
   val unchecked     = BooleanSetting    ("-unchecked", "Enable detailed unchecked warnings")
   val uniqid        = BooleanSetting    ("-uniqid", "Print identifiers with unique names for debugging")
@@ -807,8 +816,6 @@ trait ScalacSettings {
   val version       = BooleanSetting    ("-version", "Print product version and exit")
 
   /** New to classpaths */
-  val javabootclasspath = StringSetting ("-javabootclasspath", "path", "Override java boot classpath.", "")
-  val javaextdirs       = StringSetting ("-javaextdirs", "path", "Override java extdirs classpath.", "")
 
   /**
    * -X "Advanced" settings
@@ -853,7 +860,6 @@ trait ScalacSettings {
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
-  val Xcodebase     = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "")
   val Ycompacttrees = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees")
   val noCompletion  = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL")
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
@@ -891,7 +897,6 @@ trait ScalacSettings {
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible..")
   val Ytailrec      = BooleanSetting    ("-Ytailrecommend", "Alert methods which would be tail-recursive if private or final.")
   val Yjenkins      = BooleanSetting    ("-Yjenkins-hashCodes", "Use jenkins hash algorithm for case class generated hashCodes.")
-  val Ylogcp        = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
 
   // Warnings
   val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics")

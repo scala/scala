@@ -15,6 +15,7 @@ import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
 import io.{ File, Directory, Path, AbstractFile }
 import scala.tools.util.StringOps.splitWhere
 import Path.isJarOrZip
+import File.pathSeparator
 
 /** <p>
  *    This module provides star expansion of '-classpath' option arguments, behaves the same as
@@ -45,14 +46,19 @@ object ClassPath {
     else List(pattern)
   }
 
-  /** Split path using platform-dependent path separator */
-  private def splitPath(path: String): List[String] =
-    path split File.pathSeparator toList
+  /** Split classpath using platform-dependent path separator */
+  def split(path: String): List[String] = path split pathSeparator filterNot (_ == "") toList
+
+  /** Join classpath using platform-dependent path separator */
+  def join(path: Seq[String]): String = path filterNot (_ == "") mkString pathSeparator
+
+  /** Split the classpath, apply a transformation function, and reassemble it. */
+  def map(cp: String, f: String => String): String = join(split(cp) map f)
 
   /** Expand path and possibly expanding stars */
   def expandPath(path: String, expandStar: Boolean = true): List[String] =
-    if (expandStar) splitPath(path) flatMap expandS
-    else splitPath(path)
+    if (expandStar) split(path) flatMap expandS
+    else split(path)
 
   /** Expand dir out to contents, a la extdir */
   def expandDir(extdir: String): List[String] = {
@@ -228,7 +234,7 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
 /**
  * A directory (or a .jar file) containing classfiles and packages
  */
-class DirectoryClassPath(dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
+class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
   def name = dir.name
   def asURLs = List(dir.sfile.toURL)
   val sourcepaths: List[AbstractFile] = Nil
@@ -297,6 +303,11 @@ extends ClassPath[T] {
     new MergedClassPath[T](newEntries, context)
   }
 
+  def asClasspathString: String = ClassPath.join(entries partialMap {
+    case x: DirectoryClassPath  => x.dir.path
+    case x: MergedClassPath[_]  => x.asClasspathString
+  })
+
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }
 
@@ -305,6 +316,7 @@ extends ClassPath[T] {
  * as AbstractFile. nsc.io.ZipArchive is used to view zip/jar archives as directories.
  */
 class JavaClassPath(
-  containers: List[List[ClassPath[AbstractFile]]],
+  containers: List[ClassPath[AbstractFile]],
   context: JavaContext)
-extends MergedClassPath[AbstractFile](containers.flatten, context) { }
+extends MergedClassPath[AbstractFile](containers, context) {
+}

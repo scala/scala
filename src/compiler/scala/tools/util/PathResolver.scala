@@ -10,8 +10,7 @@ import java.net.{ URL, MalformedURLException }
 import nsc.{ Settings }
 import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
 import nsc.io.{ File, Directory, Path }
-import ClassPath.{ JavaContext, DefaultJavaContext }
-import File.{ pathSeparator }
+import ClassPath.{ JavaContext, DefaultJavaContext, join, split }
 import PartialFunction.condOpt
 
 // Mostly based on the specification at:
@@ -24,13 +23,11 @@ object PathResolver {
 
   private def fileOpt(f: Path): Option[String]      = f ifFile (_.path)
   private def dirOpt(d: Path): Option[String]       = d ifDirectory (_.path)
-  private def expandToPath(p: Path)                 = joincp(ClassPath.expandPath(p.path, true))
-  private def expandToContents(p: Path)             = joincp(ClassPath.expandDir(p.path))
-  private def joincp(xs: Seq[String]): String       = xs filterNot (_ == "") mkString pathSeparator
-  private def splitcp(cp: String): Seq[String]      = cp split pathSeparator filterNot (_ == "") toSeq
+  private def expandToPath(p: Path)                 = join(ClassPath.expandPath(p.path, true))
+  private def expandToContents(p: Path)             = join(ClassPath.expandDir(p.path))
 
   /** pretty print class path */
-  def ppcp(s: String) = splitcp(s) match {
+  def ppcp(s: String) = split(s) match {
     case Nil      => ""
     case Seq(x)   => x
     case xs       => xs map ("\n" + _) mkString
@@ -104,7 +101,7 @@ object PathResolver {
     }
 
     def scalaPluginDirs     = List("misc", "scala-devel", "plugins")
-    def scalaPluginPath     = joincp(scalaPluginDirs map (scalaHomeDir / _ path))
+    def scalaPluginPath     = join(scalaPluginDirs map (scalaHomeDir / _ path))
 
     // The class path that a runner script uses to interpret a program is called the “execution class path”.
     // The execution class path is the concatenation of the following sub-path.
@@ -134,7 +131,7 @@ object PathResolver {
       )
   }
 
-  def executionPath = joincp(Defaults.executionPath)
+  def executionPath = join(Defaults.executionPath)
 
   /** The original logic of MainGenericRunner.
    */
@@ -160,18 +157,18 @@ object PathResolver {
       contentsOfDirsInPath(javaExtDirs),          // -javaextdirs       multiple dirs, each expands to contents
       contentsOfDirsInPath(scalaExtDirs),         // -extdirs           ???
       classesInExpandedPath(classPath),           // -classpath         multiple entries, first expanding *s
-      classesAtAllURLS(codeBase),                 // -Xcodebase         ??? multiple URLs
+      classesAtAllURLS(codeBase),                 // -Ycodebase         ??? multiple URLs
       sourcesInPath(sourcePath)                   // -sourcepath        multiple source entries, no expansion
     )
 
     if (settings.Ylogcp.value)
       Console.println("PathResolver calculated classpath:\n" + pr.Calculated)
 
-    sources
+    sources.flatten
   }
   def urlsFromSettings(settings: Settings): List[URL] = urlsFromSettings(settings, DefaultJavaContext)
   def urlsFromSettings(settings: Settings, context: JavaContext): List[URL] =
-    classPathContainersFromSettings(settings, context).flatten flatMap (_.asURLs)
+    classPathContainersFromSettings(settings, context) flatMap (_.asURLs)
 
   private def contextFromSettings(s: Settings) =
     if (s.inline.value) new JavaContext else DefaultJavaContext
@@ -195,7 +192,7 @@ object PathResolver {
 
   def fromPathString(path: String): JavaClassPath = fromPathString(path, DefaultJavaContext)
   def fromPathString(path: String, context: JavaContext): JavaClassPath =
-    new JavaClassPath(List(context.classesInExpandedPath(path)), context)
+    new JavaClassPath(context.classesInExpandedPath(path), context)
 
   /** With no arguments, show the interesting values in Environment and Defaults.
    *  If there are arguments, show those in Calculated as if those options had been
@@ -279,7 +276,7 @@ object PathResolver {
     } else Nil
   }
 }
-import PathResolver.{ Defaults, Environment, joincp, splitcp, ppcp }
+import PathResolver.{ Defaults, Environment, ppcp }
 
 class PathResolver(settings: Settings) {
   private def cmdLineOrElse(name: String, alt: String) = {
@@ -296,7 +293,7 @@ class PathResolver(settings: Settings) {
     case "extdirs"            => settings.extdirs.value
     case "classpath" | "cp"   => settings.classpath.value
     case "sourcepath"         => settings.sourcepath.value
-    case "Ycodebase"          => settings.Xcodebase.value
+    case "Ycodebase"          => settings.Ycodebase.value
   }
 
   /** Calculated values based on any given command line options, falling back on
@@ -347,5 +344,5 @@ class PathResolver(settings: Settings) {
       )
   }
 
-  def referencePath = joincp(Calculated.referencePath)
+  def referencePath = join(Calculated.referencePath)
 }
