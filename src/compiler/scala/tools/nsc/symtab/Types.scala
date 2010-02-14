@@ -3130,12 +3130,13 @@ A type's typeSymbol should never be inspected directly.
     protected def matches(sym: Symbol, sym1: Symbol): Boolean = sym eq sym1
 
     /** Map target to type, can be tuned by subclasses */
-    protected def toType(fromtp: Type, t: T): Type
+    protected def toType(fromtp: Type, tp: T): Type
 
-      def subst(tp: Type, sym: Symbol, from: List[Symbol], to: List[T]): Type =
-        if (from.isEmpty) tp
-        else if (matches(from.head, sym)) toType(tp, to.head)
-        else subst(tp, sym, from.tail, to.tail)
+    def subst(tp: Type, sym: Symbol, from: List[Symbol], to: List[T]): Type =
+      if (from.isEmpty) tp
+      else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(tp, from))
+      else if (matches(from.head, sym)) toType(tp, to.head)
+      else subst(tp, sym, from.tail, to.tail)
 
     private def renameBoundSyms(tp: Type): Type = tp match {
       case MethodType(ps, restp) =>
@@ -3189,6 +3190,7 @@ A type's typeSymbol should never be inspected directly.
     override def apply(tp: Type): Type = if (from.isEmpty) tp else {
       def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =
         if (from.isEmpty) sym
+        else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(sym, from))
         else if (matches(from.head, sym)) to.head
         else subst(sym, from.tail, to.tail)
       tp match {
@@ -3239,7 +3241,6 @@ A type's typeSymbol should never be inspected directly.
   class SubstTypeMap(from: List[Symbol], to: List[Type])
   extends SubstMap(from, to) {
     protected def toType(fromtp: Type, tp: Type) = tp
-
 
     override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
       object trans extends TypeMapTransformer {
