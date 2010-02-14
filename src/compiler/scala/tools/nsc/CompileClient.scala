@@ -8,6 +8,8 @@ package scala.tools.nsc
 
 import java.io.{ BufferedReader, File, InputStreamReader, PrintWriter }
 import Properties.fileEndings
+import scala.tools.util.PathResolver
+import io.Path
 import util.ClassPath
 
 /** The client part of the fsc offline compiler.  Instead of compiling
@@ -37,7 +39,7 @@ class StandardCompileClient {
     while (i < args.length) {
       val arg = args(i)
       if (fileEndings exists(arg endsWith _)) {
-        args(i) = absFileName(arg)
+        args(i) = Path(arg).toAbsolute.path
       } else if (arg startsWith "-J") {
         //see http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javac.html#J
         vmArgs append " "+arg.substring(2)
@@ -54,7 +56,7 @@ class StandardCompileClient {
       if (i < args.length) {
         arg match {
           case "-classpath" | "-sourcepath" | "-bootclasspath" | "-extdirs" | "-d"  =>
-            args(i) = absFileNames(args(i))
+            args(i) = PathResolver.makeAbsolute(args(i))
             i += 1
           case "-server"  =>
             serverAdr = args(i)

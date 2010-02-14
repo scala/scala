@@ -19,6 +19,7 @@ import java.net.URL
 import java.util.jar.{ JarEntry, JarOutputStream }
 import java.util.regex.Pattern
 
+import scala.tools.util.PathResolver
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, BatchSourceFile, SourceFile, SourceFileFragment}
 
@@ -194,13 +195,13 @@ object ScriptRunner
       settings: GenericRunnerSettings,
       scriptFileIn: String): Boolean =
   {
-    val scriptFile = CompileClient absFileName scriptFileIn
+    val scriptFile = Path(scriptFileIn).toAbsolute.path
 
     {
       import settings._
       for (setting <- List(classpath, sourcepath, bootclasspath, extdirs, outdir)) {
         // DBG("%s = %s".format(setting.name, setting.value))
-        setting.value = CompileClient absFileName setting.value
+        setting.value = PathResolver.makeAbsolute(setting.value)
       }
     }
 
@@ -299,20 +300,8 @@ object ScriptRunner
 		compiledLocation: String,
 		scriptArgs: List[String]): Boolean =
 	{
-    def fileToURL(f: JFile): Option[URL] =
-      try Some(f.toURI.toURL) catch { case _: Exception => None }
-
-    def paths(str: String, expandStar: Boolean): List[URL] =
-      for {
-        file <- ClassPath.expandPath(str, expandStar) map (new JFile(_))
-        if file.exists
-        url <- fileToURL(file)
-      } yield url
-
     val classpath =
-      (paths(settings.bootclasspath.value, true) :::
-       paths(compiledLocation, false) :::
-       paths(settings.classpath.value, true))
+      (PathResolver urlsFromSettings settings) ::: (PathResolver fromPathString compiledLocation asURLs)
 
     try {
       ObjectRunner.run(

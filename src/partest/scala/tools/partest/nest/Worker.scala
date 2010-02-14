@@ -15,7 +15,9 @@ import java.util.{Timer, TimerTask}
 import scala.tools.nsc.{ ObjectRunner, Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile, Path, Directory, File => SFile }
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.tools.nsc.util.FakePos
+import scala.tools.nsc.util.{ ClassPath, FakePos }
+import scala.tools.util.PathResolver
+import ClassPath.{ join, split }
 
 import scala.actors.{Actor, Exit, TIMEOUT}
 import scala.actors.Actor._
@@ -55,7 +57,7 @@ class Worker(val fileManager: FileManager) extends Actor {
   def act() {
     react {
       case RunTests(kind, files) =>
-        NestUI.verbose("received "+files.length+" to test")
+        // NestUI.verbose("received "+files.length+" to test")
         val master = sender
         runTests(kind, files) { results =>
           master ! Results(results, createdLogFiles, createdOutputDirs)
@@ -123,9 +125,9 @@ class Worker(val fileManager: FileManager) extends Actor {
     val consFM = new ConsoleFileManager
 
     val classpath: List[URL] = {
-      import consFM.{ latestCompFile, latestLibFile, latestActFile, latestPartestFile }
+      import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
       val units = (
-        List(outDir, latestCompFile, latestLibFile, latestActFile, latestPartestFile) :::
+        List(outDir, latestCompFile, latestLibFile, latestPartestFile) :::
         ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x)))
       )
       units map (_.toURI.toURL)
@@ -173,7 +175,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
     val cmd = javacCmd+
       " -d "+outDir.getAbsolutePath+
-      " -classpath "+outDir+File.pathSeparator+CLASSPATH+
+      " -classpath "+ join(Seq(outDir.toString, CLASSPATH)) +
       " "+files.mkString(" ")
 
     val (success, msg) = try {
@@ -235,9 +237,6 @@ class Worker(val fileManager: FileManager) extends Actor {
       options
     } else ""
 
-    val cp = System.getProperty("java.class.path", ".")
-    NestUI.verbose("java.class.path: "+cp)
-
     def quote(path: String) = "\""+path+"\""
 
     // Note! As this currently functions, JAVA_OPTS must precede argString
@@ -248,21 +247,23 @@ class Worker(val fileManager: FileManager) extends Actor {
     //
     // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
     // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
-    val cmd =
-      JAVACMD+
-      " "+JAVA_OPTS+
-      " "+argString+
-      " -classpath "+outDir+File.pathSeparator+CLASSPATH+
-      " -Djava.library.path="+logFile.getParentFile.getAbsolutePath+
-      " -Dscalatest.output="+outDir.getAbsolutePath+
-      " -Dscalatest.lib="+LATEST_LIB+
-      " -Dscalatest.cwd="+outDir.getParent+
-      " -Djavacmd="+JAVACMD+
-      " -Duser.language=en -Duser.country=US"+
-      " scala.tools.nsc.MainGenericRunner"+
-      " Test jvm"
-    NestUI.verbose(cmd)
+    val cmd = List(
+      JAVACMD,
+      JAVA_OPTS,
+      argString,
+      "-classpath " + join(Seq(outDir.toString, CLASSPATH)),
+      "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
+      "-Dscalatest.output="+outDir.getAbsolutePath,
+      "-Dscalatest.lib="+LATEST_LIB,
+      "-Dscalatest.cwd="+outDir.getParent,
+      "-Djavacmd="+JAVACMD,
+      "-Duser.language=en -Duser.country=US",
+      "scala.tools.nsc.MainGenericRunner",
+      "Test",
+      "jvm"
+    ) mkString " "
 
+    NestUI.verbose(cmd)
     runCommand(cmd, logFile)
 
     if (fileManager.showLog) {
@@ -410,7 +411,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             execTest(outDir, logFile, fileBase)
           else
             execTestObjectRunner(file, outDir, logFile)
-          NestUI.verbose(this+" finished running "+fileBase)
+          // NestUI.verbose(this+" finished running "+fileBase)
 
           diff = compareOutput(dir, fileBase, kind, logFile)
           if (!diff.equals("")) {
@@ -430,8 +431,7 @@ class Worker(val fileManager: FileManager) extends Actor {
           }
           if (succeeded) {
             val consFM = new ConsoleFileManager
-            import consFM.{latestCompFile, latestLibFile, latestActFile,
-                           latestPartestFile}
+            import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
 
             NestUI.verbose("compilation of "+file+" succeeded\n")
 
@@ -439,8 +439,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             val scalacheckURL = (new File(libs, "ScalaCheck.jar")).toURI.toURL
             val outURL = outDir.getCanonicalFile.toURI.toURL
             val classpath: List[URL] =
-              List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL,
-                   latestActFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct
+              List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct
 
             val logWriter = new PrintStream(new FileOutputStream(logFile))
 
@@ -952,8 +951,8 @@ class Worker(val fileManager: FileManager) extends Actor {
     }
 
     def reportAll(results: ImmMap[String, Int], cont: ImmMap[String, Int] => Unit) {
-      NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
-      NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
+      // NestUI.verbose("finished testing "+kind+" with "+errors+" errors")
+      // NestUI.verbose("created "+compileMgr.numSeparateCompilers+" separate compilers")
       timer.cancel()
       cont(results)
     }

@@ -88,6 +88,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   var interpreter: Interpreter = _    // set by createInterpreter()
 
   // XXX
+  // classpath entries added via :jar
   var addedClasspath: List[String] = Nil
 
   /** A reverse list of commands to replay if the user requests a :replay */
@@ -311,7 +312,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   def addJar(arg: String): Unit = {
     val f = File(arg).normalize
     if (f.exists) {
-      addedClasspath :::= List(f.path)
+      addedClasspath :+= f.path
       println("Added " + f.path + " to your classpath.")
       replay()
     }

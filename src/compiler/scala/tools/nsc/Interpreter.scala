@@ -7,12 +7,14 @@
 package scala.tools.nsc
 
 import java.io.{ File, PrintWriter, StringWriter, Writer }
+import File.pathSeparator
 import java.lang.{ Class, ClassLoader }
 import java.net.{ MalformedURLException, URL }
 import java.lang.reflect
 import reflect.InvocationTargetException
 
 import scala.PartialFunction.{ cond, condOpt }
+import scala.tools.util.PathResolver
 import scala.reflect.Manifest
 import scala.collection.mutable
 import scala.collection.mutable.{ ListBuffer, HashSet, HashMap, ArrayBuffer }
@@ -164,17 +166,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** the compiler's classpath, as URL's */
-  lazy val compilerClasspath: List[URL] = {
-    def parseURL(s: String): Option[URL] =
-      catching(classOf[MalformedURLException]) opt new URL(s)
-
-    val classpathPart =
-      ClassPath.expandPath(settings.classpath.value) map (s => new File(s).toURI.toURL)
-    val codebasePart =
-      (settings.Ycodebase.value split " ").toList flatMap parseURL
-
-    classpathPart ::: codebasePart
-  }
+  /** XXX ignoring codebase for now, but it used to be appended here. */
+  /** (And one would think it ought to be prepended. */
+  lazy val compilerClasspath: List[URL] = new PathResolver(settings) minimalPathAsURLs
 
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command
@@ -1227,7 +1221,7 @@ object Interpreter {
     val intLoop = new InterpreterLoop
     intLoop.settings = new Settings(Console.println)
     // XXX come back to the dot handling
-    intLoop.settings appendToClasspath "."
+    intLoop.settings.classpath.value = "."
     intLoop.createInterpreter
     intLoop.in = InteractiveReader.createDefault(intLoop.interpreter)
 

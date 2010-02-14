@@ -22,6 +22,7 @@ import jline._
 import java.net.URL
 import java.util.{ List => JList }
 import java.lang.reflect
+import scala.tools.util.PathResolver
 import io.{ Path, Directory }
 
 object Completion {
@@ -46,13 +47,7 @@ import Completion._
 class Completion(repl: Interpreter) {
   self =>
 
-  private def asURLs(xs: List[String]) = xs map (x => io.File(x).toURL)
-  private def classPath = (
-    // compiler jars, scala-library.jar etc.
-    (repl.compilerClasspath) :::
-    // boot classpath, java.lang.* etc.
-    (asURLs(repl.settings.bootclasspath.value split ':' toList))
-  )
+  private lazy val classPath = PathResolver.fromSettings(repl.settings).asURLs
 
   // the unqualified vals/defs/etc visible in the repl
   val ids = new IdentCompletion(repl)

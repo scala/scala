@@ -26,8 +26,10 @@ abstract class TestFile(kind: String) {
   protected def baseSettings(settings: Settings) {
     settings appendToClasspath dirpath
 
-    if (createOutDir)
-      settings.outdir.value = (Path(dir) / objDir).createDirectory(true).path
+    if (createOutDir) {
+      val d = (Path(dirpath) / objDir) createDirectory true
+      settings.outdir.value = d.toAbsolute.path
+    }
 
     // add additional flags found in 'testname.flags'
     def flagsPath = Path(dir) / (fileBase + ".flags")

@@ -9,7 +9,7 @@ package scala.tools.nsc
 import java.io.File
 import File.pathSeparator
 import io.AbstractFile
-import util.SourceFile
+import util.{ ClassPath, SourceFile }
 import Settings._
 import annotation.elidable
 import scala.tools.util.PathResolver
@@ -18,6 +18,13 @@ import scala.collection.immutable.TreeSet
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
+
+  /** It's a hacky situation but there's not much to be done in the
+   *  face of settings which mutate and semantic significance to the
+   *  originally given classpath.
+   */
+  private var _userSuppliedClassPath: String = null
+  def userSuppliedClassPath = if (_userSuppliedClassPath == null) "" else _userSuppliedClassPath
 
   /** Iterates over the arguments applying them to settings where applicable.
    *  Then verifies setting dependencies are met.
@@ -40,13 +47,23 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     var args = arguments
     val residualArgs = new ListBuffer[String]
 
+    /** First time through here we take note of the classpath, if any.
+     */
+    def finish[T](x: T): T = {
+      /** "lazy var" */
+      if (_userSuppliedClassPath == null)
+        _userSuppliedClassPath = if (classpath.isDefault) "" else classpath.value
+
+      x
+    }
+
     while (args.nonEmpty) {
       if (args.head startsWith "-") {
         val args0 = args
         args = this parseParams args
         if (args eq args0) {
           errorFn("bad option: '" + args.head + "'")
-          return (false, args)
+          return finish((false, args))
         }
       }
       else if (args.head == "") {   // discard empties, sometimes they appear because of ant or etc.
@@ -54,14 +71,14 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
       }
       else {
         if (!processAll)
-          return (checkDependencies, args)
+          return finish((checkDependencies, args))
 
         residualArgs += args.head
         args = args.tail
       }
     }
 
-    (checkDependencies, residualArgs.toList)
+    finish((checkDependencies, residualArgs.toList))
   }
   def processArgumentString(params: String) = processArguments(splitParams(params), true)
 
@@ -736,18 +753,20 @@ object Settings {
         case Some((a, b)) => value ++= List((a, b)) ; Some(args.tail)
       }
 
-    /** Apply the specified properties to the current JVM */
-    def applyToCurrentJVM =
-      value foreach { case (k, v) => System.getProperties.setProperty(k, v) }
-
     def unparse: List[String] =
       value map { case (k,v) => "-D" + k + (if (v == "") "" else "=" + v) }
+
     override def equals(that: Any) = that match {
       case x: DefinesSetting => this isEq x
       case _            => false
     }
-  }
 
+    /** Apply the specified properties to the current JVM and returns them. */
+    def applyToJVM() = {
+      value foreach { case (k, v) => System.getProperties.setProperty(k, v) }
+      value
+    }
+  }
 }
 
 trait ScalacSettings {
@@ -768,9 +787,7 @@ trait ScalacSettings {
   val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
   def appendToClasspath(entry: String) = {
     val oldClasspath = classpath.value
-    classpath.value =
-      if (classpath.value == "") entry
-      else classpath.value + pathSeparator + entry
+    classpath.value = ClassPath.join(Seq(classpath.value, entry))
 
     if (Ylogcp.value)
       Console.println("Updated classpath from '%s' to '%s'".format(oldClasspath, classpath.value))
@@ -814,8 +831,6 @@ trait ScalacSettings {
   val uniqid        = BooleanSetting    ("-uniqid", "Print identifiers with unique names for debugging")
   val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing")
   val version       = BooleanSetting    ("-version", "Print product version and exit")
-
-  /** New to classpaths */
 
   /**
    * -X "Advanced" settings

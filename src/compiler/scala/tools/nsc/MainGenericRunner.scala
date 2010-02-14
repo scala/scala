@@ -35,33 +35,15 @@ object MainGenericRunner {
     import command.settings
     def sampleCompiler = new Global(settings)   // def so its not created unless needed
 
-    def processSettings() {
-      // append the jars in ${scala.home}/lib to the classpath, as well as "." if none was given.
-      val needDot = settings.classpath.value == ""
-      settings appendToClasspath PathResolver.genericRunnerClassPath
-      if (needDot)
-        settings appendToClasspath "."
-
-      // XXX is this accomplishing anything?
-      settings.defines.applyToCurrentJVM
-    }
-
-    if (!command.ok)
-      return errorFn("%s\n%s".format(command.usageMsg, sampleCompiler.pluginOptionsHelp))
-
-    processSettings()
-
-    if (settings.version.value)
-      return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
-
-    if (command.shouldStopWithInfo)
-      return errorFn(command getInfoMessage sampleCompiler)
-
-    val classpath: List[URL] = PathResolver urlsFromSettings settings distinct
+    if (!command.ok)                      return errorFn("%s\n%s".format(command.usageMsg, sampleCompiler.pluginOptionsHelp))
+    else if (settings.version.value)      return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
+    else if (command.shouldStopWithInfo)  return errorFn(command getInfoMessage sampleCompiler)
 
     def dashe = settings.execute.value
     def dashi = settings.loadfiles.value
     def slurp = dashi map (file => File(file).slurp()) mkString "\n"
+
+    val classpath: List[URL] = PathResolver urlsFromSettings settings
 
     /** Was code given in a -e argument? */
     if (!settings.execute.isDefault) {

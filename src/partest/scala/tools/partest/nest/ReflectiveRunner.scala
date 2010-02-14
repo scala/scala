@@ -44,9 +44,9 @@ class ReflectiveRunner extends RunnerUtils {
         new ConsoleFileManager
 
     import fileManager.
-      { latestCompFile, latestLibFile, latestActFile, latestPartestFile, latestFjbgFile }
+      { latestCompFile, latestLibFile, latestPartestFile, latestFjbgFile }
     val files =
-      Array(latestCompFile, latestLibFile, latestActFile, latestPartestFile, latestFjbgFile)
+      Array(latestCompFile, latestLibFile, latestPartestFile, latestFjbgFile)
 
     val sepUrls   = files map { _.toURI.toURL }
     val sepLoader = new URLClassLoader(sepUrls, null)

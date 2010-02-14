@@ -7,7 +7,7 @@ package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, File => JFile }
+  BufferedInputStream, BufferedOutputStream, RandomAccessFile, File => JFile }
 import java.net.{ URI, URL }
 import collection.{ Seq, Traversable }
 import PartialFunction._
@@ -202,6 +202,13 @@ class Path private[io] (val jfile: JFile)
   // deletions
   def delete() = jfile.delete()
   def deleteIfExists() = if (jfile.exists()) delete() else false
+  def truncate() =
+    isFile && {
+      val raf = new RandomAccessFile(jfile, "rw")
+      raf setLength 0
+      raf.close()
+      length == 0
+    }
 
   // todo
   // def copyTo(target: Path, options ...): Boolean

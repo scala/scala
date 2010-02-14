@@ -10,6 +10,7 @@ package nest
 
 import java.io.{File, FilenameFilter, IOException, StringWriter}
 import java.net.URI
+import scala.tools.util.PathResolver
 
 class ConsoleFileManager extends FileManager {
 
@@ -40,7 +41,8 @@ class ConsoleFileManager extends FileManager {
     SCALAC_OPTS = SCALAC_OPTS+" "+moreOpts
   }
 
-  var CLASSPATH = System.getProperty("java.class.path", ".")
+  var CLASSPATH = PathResolver.Environment.javaUserClassPath match { case "" => "." ; case x => x }
+
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
   var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
@@ -135,7 +137,6 @@ else
       NestUI.verbose("Running with classes in "+testClassesFile)
       latestFile        = prefixFileWith(testClassesFile.getParentFile, "bin")
       latestLibFile     = prefixFileWith(testClassesFile, "library")
-      latestActFile     = prefixFileWith(testClassesFile, "library")
       latestCompFile    = prefixFileWith(testClassesFile, "compiler")
       latestPartestFile = prefixFileWith(testClassesFile, "partest")
       latestFjbgFile    = prefixFile("lib/fjbg.jar")
@@ -145,15 +146,14 @@ else
       NestUI.verbose("Running on "+testBuild)
       latestFile        = prefixFile(testBuild+"/bin")
       latestLibFile     = prefixFile(testBuild+"/lib/scala-library.jar")
-      latestActFile     = prefixFile(testBuild+"/lib/scala-library.jar")
       latestCompFile    = prefixFile(testBuild+"/lib/scala-compiler.jar")
       latestPartestFile = prefixFile(testBuild+"/lib/scala-partest.jar")
-    } else {
+    }
+    else {
       def setupQuick() {
         NestUI.verbose("Running build/quick")
         latestFile        = prefixFile("build/quick/bin")
         latestLibFile     = prefixFile("build/quick/classes/library")
-        latestActFile     = prefixFile("build/quick/classes/library")
         latestCompFile    = prefixFile("build/quick/classes/compiler")
         latestPartestFile = prefixFile("build/quick/classes/partest")
       }
@@ -163,7 +163,6 @@ else
         val p = testParent.getParentFile
         latestFile        = prefixFileWith(p, "bin")
         latestLibFile     = prefixFileWith(p, "lib/scala-library.jar")
-        latestActFile     = prefixFileWith(p, "lib/scala-library.jar")
         latestCompFile    = prefixFileWith(p, "lib/scala-compiler.jar")
         latestPartestFile = prefixFileWith(p, "lib/scala-partest.jar")
       }
@@ -172,7 +171,6 @@ else
         NestUI.verbose("Running dists/latest")
         latestFile        = prefixFile("dists/latest/bin")
         latestLibFile     = prefixFile("dists/latest/lib/scala-library.jar")
-        latestActFile     = prefixFile("dists/latest/lib/scala-library.jar")
         latestCompFile    = prefixFile("dists/latest/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("dists/latest/lib/scala-partest.jar")
       }
@@ -181,59 +179,34 @@ else
         NestUI.verbose("Running build/pack")
         latestFile        = prefixFile("build/pack/bin")
         latestLibFile     = prefixFile("build/pack/lib/scala-library.jar")
-        latestActFile     = prefixFile("build/pack/lib/scala-library.jar")
         latestCompFile    = prefixFile("build/pack/lib/scala-compiler.jar")
         latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
       }
-
-      def max(a: Long, b: Long) = if (a > b) a else b
 
       val dists = new File(testParent, "dists")
       val build = new File(testParent, "build")
       // in case of an installed dist, testRootFile is one level deeper
       val bin = new File(testParent.getParentFile, "bin")
 
-      // detect most recent build
-      val quickTime =
-        max(prefixFile("build/quick/classes/compiler/compiler.properties").lastModified,
-            prefixFile("build/quick/classes/library/library.properties").lastModified)
-      val packTime =
-        max(prefixFile("build/pack/lib/scala-compiler.jar").lastModified,
-            prefixFile("build/pack/lib/scala-library.jar").lastModified)
-      val distTime =
-        max(prefixFile("dists/latest/lib/scala-compiler.jar").lastModified,
-            prefixFile("dists/latest/lib/scala-library.jar").lastModified)
-      val instTime = {
-        val p = testParent.getParentFile
-        max(prefixFileWith(p, "lib/scala-compiler.jar").lastModified,
-            prefixFileWith(p, "lib/scala-library.jar").lastModified)
-      }
+      def mostRecentOf(base: String, names: String*) =
+        names map (x => prefixFile(base + "/" + x).lastModified) reduceLeft (_ max _)
 
-      if (quickTime > packTime) {   // pack ruled out
-        if (quickTime > distTime) { // dist ruled out
-          if (quickTime > instTime) // inst ruled out
-            setupQuick()
-          else
-            setupInst()
-        } else {                    // quick ruled out
-          if (distTime > instTime)  // inst ruled out
-            setupDist()
-          else
-            setupInst()
-        }
-      } else {                      // quick ruled out
-        if (packTime > distTime) {  // dist ruled out
-          if (packTime > instTime)  // inst ruled out
-            setupPack()
-          else
-            setupInst()
-        } else {                    // pack ruled out
-          if (distTime > instTime)  // inst ruled out
-            setupDist()
-          else
-            setupInst()
-        }
-      }
+      // detect most recent build
+      val quickTime = mostRecentOf("build/quick/classes", "compiler/compiler.properties", "library/library.properties")
+      val packTime  = mostRecentOf("build/pack/lib", "scala-compiler.jar", "scala-library.jar")
+      val distTime  = mostRecentOf("dists/latest/lib", "scala-compiler.jar", "scala-library.jar")
+      val instTime  = mostRecentOf("lib", "scala-compiler.jar", "scala-library.jar")
+
+      val pairs = Map(
+        (quickTime, () => setupQuick()),
+        (packTime,  () => setupPack()),
+        (distTime,  () => setupDist()),
+        (instTime,  () => setupInst())
+      )
+
+      // run setup based on most recent time
+      pairs(pairs.keysIterator.toList max)()
+
       latestFjbgFile = prefixFile("lib/fjbg.jar")
     }
 
@@ -242,14 +215,10 @@ else
     LATEST_COMP = latestCompFile.getAbsolutePath
     LATEST_PARTEST = latestPartestFile.getAbsolutePath
 
-    // detect whether we are running on Windows
-    val osName = System.getProperty("os.name")
-    NestUI.verbose("OS: "+osName)
+    import util.Properties.isWin
 
-    val scalaCommand = if (osName startsWith "Windows")
-      "scala.bat" else "scala"
-    val scalacCommand = if (osName startsWith "Windows")
-      "scalac.bat" else "scalac"
+    val scalaCommand  = if (isWin) "scala.bat" else "scala"
+    val scalacCommand = if (isWin) "scalac.bat" else "scalac"
 
     SCALA = (new File(latestFile, scalaCommand)).getAbsolutePath
     SCALAC_CMD = (new File(latestFile, scalacCommand)).getAbsolutePath
@@ -264,7 +233,6 @@ else
 
   var latestFile: File = _
   var latestLibFile: File = _
-  var latestActFile: File = _
   var latestCompFile: File = _
   var latestPartestFile: File = _
   var latestFjbgFile: File = _

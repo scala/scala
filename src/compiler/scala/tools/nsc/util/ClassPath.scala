@@ -15,6 +15,7 @@ import scala.collection.mutable.{ListBuffer, ArrayBuffer, HashSet => MutHashSet}
 import io.{ File, Directory, Path, AbstractFile }
 import scala.tools.util.StringOps.splitWhere
 import Path.isJarOrZip
+import scala.tools.util.PathResolver
 import File.pathSeparator
 
 /** <p>
@@ -47,13 +48,16 @@ object ClassPath {
   }
 
   /** Split classpath using platform-dependent path separator */
-  def split(path: String): List[String] = path split pathSeparator filterNot (_ == "") toList
+  def split(path: String): List[String] = (path split pathSeparator).toList filterNot (_ == "") distinct
 
   /** Join classpath using platform-dependent path separator */
   def join(path: Seq[String]): String = path filterNot (_ == "") mkString pathSeparator
 
   /** Split the classpath, apply a transformation function, and reassemble it. */
   def map(cp: String, f: String => String): String = join(split(cp) map f)
+
+  /** Split the classpath and map them into urls */
+  def toURLs(cp: String): List[URL] = split(cp) map (x => Path(x).toAbsolute.toURL)
 
   /** Expand path and possibly expanding stars */
   def expandPath(path: String, expandStar: Boolean = true): List[String] =
