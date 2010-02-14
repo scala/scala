@@ -429,10 +429,8 @@ abstract class ClassfileParser {
       }
     }
 
-    if (c != clazz && externalName.toString.indexOf("$") < 0) {
-      if ((clazz eq NoSymbol) && (c ne NoSymbol)) clazz = c
-      else throw new IOException("class file '" + in.file + "' contains wrong " + c)
-    }
+    if (c != clazz && externalName.toString.indexOf("$") < 0 && (clazz eq NoSymbol) && (c ne NoSymbol))
+      clazz = c
 
     addEnclosingTParams(clazz)
     parseInnerClasses() // also sets the isScala / isScalaRaw / hasMeta flags, see r15956
