@@ -115,10 +115,14 @@ object PathResolver {
       else if (scalaLibAsDir.isDirectory) scalaLibAsDir.path
       else ""
 
-    def scalaBootClassPath = scalaLibDirFound match {
-      case Some(dir)    => join(ClassPath expandDir dir.path)
-      case _            => ""
-    }
+    // This attempt to duplicate the original logic of MainGenericRunner
+    // was causing the issue described in r20878.  Obviously it's past time
+    // to establish with certainty what each of these paths should contain.
+    def scalaBootClassPath = ""
+    // scalaLibDirFound match {
+    //   case Some(dir)    => join(ClassPath expandDir dir.path)
+    //   case _            => ""
+    // }
 
     def scalaExtDirs        = Environment.scalaExtDirs
     def scalaPluginDirs     = List("misc", "scala-devel", "plugins")
