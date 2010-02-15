@@ -136,8 +136,6 @@ trait TreePrinters { trees: SymbolTable =>
         else tree.asInstanceOf[MemberDef].mods.annotations
 
       annots foreach (annot => print("@"+annot+" "))
-      if (annots.nonEmpty)
-        println()
     }
 
     def print(str: String) { out.print(str) }

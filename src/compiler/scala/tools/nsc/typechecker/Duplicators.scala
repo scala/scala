@@ -157,7 +157,7 @@ abstract class Duplicators extends Analyzer {
       typed(ddef)
     }
 
-    /** Special typer method allowing for re-type checking trees. It expects a typed tree.
+    /** Special typer method for re-type checking trees. It expects a typed tree.
      *  Returns a typed tree that has fresh symbols for all definitions in the original tree.
      *
      *  Each definition tree is visited and its symbol added to the invalidSyms map (except LabelDefs),
