@@ -141,7 +141,7 @@ object ShowPickled extends Names {
           printSymbolRef(); buf.until(end, printTypeRef)
         case CLASSINFOtpe =>
           printSymbolRef(); buf.until(end, printTypeRef)
-        case METHODtpe =>
+        case METHODtpe | IMPLICITMETHODtpe =>
           printTypeRef(); buf.until(end, printTypeRef)
         case POLYtpe =>
           printTypeRef(); buf.until(end, printSymbolRef)
