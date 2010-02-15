@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# Shows the pickled scala data in a classfile.
+
+if [ $# == 0 ] ; then
+  echo "Usage: $0 [-cp classpath] class class [...]"
+  exit 1
+fi
+
+TOOLSDIR=`dirname $0`
+CPOF="$TOOLSDIR/cpof"
+
+PACK="$TOOLSDIR/../build/pack/lib"
+QUICK="$TOOLSDIR/../build/quick/classes"
+STARR="$TOOLSDIR/../lib"
+CP=""
+
+if [ -f "${PACK}/scala-library.jar" ] ; then
+  CP=`${TOOLSDIR}/packcp`
+elif [ -d "${QUICK}/library" ] ; then
+  CP=`${TOOLSDIR}/quickcp`
+else
+  CP=`${TOOLSDIR}/starrcp`
+fi
+
+if [ "$1" == "-cp" ] ; then
+  shift
+  CP="${1}:${CP}"
+  shift
+fi
+
+java -cp "$CP" scala.tools.nsc.util.ShowPickled $*

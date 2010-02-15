@@ -29,6 +29,16 @@ object ByteCode {
       method.invoke(module, _: String).asInstanceOf[Option[Map[String, String]]]
   }
 
+  /** Scala sig bytes.
+   */
+  def scalaSigBytesForPath(path: String) =
+    for {
+      module <- DECODER
+      method <- decoderMethod("scalaSigBytes", classOf[String])
+      names <- method.invoke(module, path).asInstanceOf[Option[Array[Byte]]]
+    }
+    yield names
+
   /** Attempts to retrieve case parameter names for given class name.
    */
   def caseParamNamesForPath(path: String) =

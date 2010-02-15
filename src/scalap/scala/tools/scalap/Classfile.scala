@@ -26,6 +26,7 @@ class Classfile(in: ByteArrayReader) {
   val fields = readMembers(true)
   val methods = readMembers(false)
   val attribs = readAttribs
+  def scalaSigAttribute = attribs find (_.toString == Main.SCALA_SIG)
 
   def readAttribs = {
     val n = in.nextChar

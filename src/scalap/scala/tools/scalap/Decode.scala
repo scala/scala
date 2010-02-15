@@ -10,7 +10,8 @@
 package scala.tools.scalap
 
 import scala.tools.scalap.scalax.rules.scalasig._
-import scala.tools.nsc.util.ScalaClassLoader.getSystemLoader
+import scala.tools.nsc.util.ScalaClassLoader.{ getSystemLoader, findBytesForClassName }
+import Main.SCALA_SIG
 
 /** Temporary decoder.  This would be better off in the scala.tools.nsc
  *  but right now the compiler won't acknowledge scala.tools.scalap
@@ -21,6 +22,15 @@ object Decode {
     case TypeRefType(_, s, _)   => s
     case PolyType(typeRef, _)   => getAliasSymbol(typeRef)
     case _                      => NoSymbol
+  }
+
+  /** Return the classfile bytes representing the scala sig attribute.
+   */
+  def scalaSigBytes(name: String): Option[Array[Byte]] = {
+    val bytes = findBytesForClassName(name)
+    val reader = new ByteArrayReader(bytes)
+    val cf = new Classfile(reader)
+    cf.scalaSigAttribute map (_.data)
   }
 
   /** private[scala] so nobody gets the idea this is a supported interface.
