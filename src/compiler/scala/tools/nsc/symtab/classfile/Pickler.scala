@@ -145,7 +145,7 @@ abstract class Pickler extends SubComponent {
                 localChildDummy.setInfo(ClassInfoType(List(sym.tpe), EmptyScope, localChildDummy))
                 localChildDummy :: globals
               }
-            putChildren(sym, children sortWith (_ isLess _))
+            putChildren(sym, children sortBy (_.sealedSortName))
           }
           for (annot <- staticAnnotations(sym.annotations.reverse))
             putAnnotation(sym, annot)

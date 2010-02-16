@@ -982,15 +982,12 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       def baseTypeSeqLength(sym: Symbol) =
         if (sym.isAbstractType) 1 + sym.info.bounds.hi.baseTypeSeq.length
         else sym.info.baseTypeSeq.length
-
-      def lastCmp = this.sortName < that.sortName
-
       if (this.isType)
         (that.isType &&
          { val diff = baseTypeSeqLength(this) - baseTypeSeqLength(that)
-           diff > 0 || diff == 0 && lastCmp })
+           diff > 0 || diff == 0 && this.id < that.id })
       else
-        that.isType || lastCmp
+        that.isType || this.id < that.id
     }
 
     /** A partial ordering between symbols.
@@ -1438,12 +1435,12 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** The simple name of this Symbol */
     final def simpleName: Name = name
 
-    /** The String used to order otherwise identical symbols in isLess.
+    /** The String used to order otherwise identical sealed symbols.
      *  This uses data which is stable across runs and variable classpaths
      *  (the initial Name) before falling back on id, which varies depending
      *  on exactly when a symbol is loaded.
      */
-    final private def sortName: String = initName.toString + "#" + id
+    final def sealedSortName: String = initName.toString + "#" + id
 
     /** String representation of symbol's definition key word */
     final def keyString: String =
