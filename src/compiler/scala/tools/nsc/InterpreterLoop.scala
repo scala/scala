@@ -12,6 +12,7 @@ import java.io.IOException
 import scala.tools.nsc.{ InterpreterResults => IR }
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.concurrent.ops
 import interpreter._
 import io.{ File, Process }
 
@@ -241,6 +242,13 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         case Result(_, Some(finalLine)) => addReplay(finalLine) ; true
         case _                          => true
       }
+
+    // this is about the illusion of snappiness.  We call initialize()
+    // which spins off a separate thread, then print the prompt and try
+    // our best to look ready.  Ideally the user will spend a
+    // couple seconds saying "wow, it starts so fast!" and by the time
+    // they type a command the compiler is ready to roll.
+    interpreter.initialize()
 
     while (processLine(readOneLine)) { }
   }

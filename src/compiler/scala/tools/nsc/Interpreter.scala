@@ -96,14 +96,37 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  on the future.
    */
   private val _compiler: Global = newCompiler(settings, reporter)
-  private var _isInitialized: () => Boolean = scala.concurrent.ops.future {
-    new _compiler.Run()
+  private def _initialize(): Boolean = {
+    val source = """
+      | // this is assembled to force the loading of approximately the
+      | // classes which will be loaded on the first expression anyway.
+      | class $repl_$init {
+      |   val x = "abc".reverse.length + (5 max 5)
+      |   val nl = if (x.toString contains '\n') "\n" else ""
+      |   scala.runtime.ScalaRunTime.stringOf(nl)
+      | }
+      |""".stripMargin
+
+    val run = new _compiler.Run()
+    run compileSources List(new BatchSourceFile("<init>", source))
+    if (settings.debug.value) {
+      out println "Repl compiler initialized."
+      out.flush()
+    }
     true
+  }
+
+  // set up initialization future
+  private var _isInitialized: () => Unit = () => false
+  def initialize() {
+    if (!_isInitialized())
+      _isInitialized = scala.concurrent.ops future _initialize()
   }
 
   /** the public, go through the future compiler */
   lazy val compiler: Global = {
-     _isInitialized() // blocks until it is
+    _isInitialized() // blocks until it is
+
     _compiler
   }
 
@@ -516,6 +539,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def compileString(code: String): Boolean =
     compileSources(new BatchSourceFile("<script>", code))
 
+  def compileAndSaveRun(label: String, code: String) = {
+    val run = new compiler.Run()
+    run.compileSources(List(new BatchSourceFile(label, code)))
+    run
+  }
+
   /** Build a request from the user. <code>trees</code> is <code>line</code>
    *  after being parsed.
    */
@@ -870,19 +899,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       code println postamble
     }
 
-    lazy val objRun = {
-      val x = new compiler.Run()
-      // compile the object containing the user's code
-      x.compileSources(List(new BatchSourceFile("<console>", objectSourceCode)))
-      x
-    }
+    // compile the object containing the user's code
+    lazy val objRun = compileAndSaveRun("<console>", objectSourceCode)
 
-    lazy val extractionObjectRun = {
-      val x = new compiler.Run()
-      // compile the result-extraction object
-      x.compileSources(List(new BatchSourceFile("<console>", resultObjectSourceCode)))
-      x
-    }
+    // compile the result-extraction object
+    lazy val extractionObjectRun = compileAndSaveRun("<console>", resultObjectSourceCode)
+
     lazy val loadedResultObject = loadByName(resultObjectName)
 
     def extractionValue(): Option[AnyRef] = {
