@@ -8,9 +8,11 @@
 package scala.tools.partest
 package nest
 
-import java.io.{File, FilenameFilter, IOException, StringWriter}
+import java.io.{ File, FilenameFilter, IOException, StringWriter }
 import java.net.URI
 import scala.tools.util.PathResolver
+import scala.tools.nsc.io.{ Path }
+import File.pathSeparator
 
 class ConsoleFileManager extends FileManager {
 
@@ -112,14 +114,13 @@ else
     }
   }
 
-  LIB_DIR = (new File(testRootFile.getParentFile, "lib")).getCanonicalFile.getAbsolutePath
+  LIB_DIR = (Path(testRootFile.getParentFile) / "lib").normalize.toAbsolute.path
 
-  CLASSPATH = CLASSPATH + File.pathSeparator + {
-    val libs = new File(srcDir, "lib")
+  CLASSPATH = {
+    val libs = (Path(srcDir) / "lib").toDirectory.files filter (_ hasExtension "jar") map (_.normalize.toAbsolute.path)
+
     // add all jars in libs
-    (libs.listFiles(new FilenameFilter {
-      def accept(dir: File, name: String) = name endsWith ".jar"
-    }) map {file => file.getCanonicalFile.getAbsolutePath}).mkString(""+File.pathSeparator)
+    (CLASSPATH :: libs.toList) mkString pathSeparator
   }
 
   def findLatest() {
