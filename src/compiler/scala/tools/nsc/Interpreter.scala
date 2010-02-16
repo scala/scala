@@ -117,7 +117,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   // set up initialization future
-  private var _isInitialized: () => Unit = () => false
+  private var _isInitialized: () => Boolean = () => false
   def initialize() {
     if (!_isInitialized())
       _isInitialized = scala.concurrent.ops future _initialize()
