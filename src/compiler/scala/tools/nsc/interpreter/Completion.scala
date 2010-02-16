@@ -26,6 +26,12 @@ import scala.tools.util.PathResolver
 import io.{ Path, Directory }
 
 object Completion {
+  // methods to leave out of completion
+  val excludeMethods = List("hashCode", "equals", "wait", "notify", "notifyAll")
+
+  // strings to look for an exclude by default
+  val excludeStrings = List("$$super", "MODULE$")
+
   def looksLikeInvocation(code: String) = (
         (code != null)
     &&  (code startsWith ".")
@@ -54,7 +60,7 @@ class Completion(repl: Interpreter) {
   // the top level packages we know about
   val pkgs = new PackageCompletion(classPath)
   // members of Predef
-  val predef = new StaticCompletion("scala.Predef") {
+  val predef = new StaticCompletion(classOf[scala.Predef$]) {
     override def filterNotFunction(s: String) = (
       (s contains "2") ||
       (s startsWith "wrap") ||

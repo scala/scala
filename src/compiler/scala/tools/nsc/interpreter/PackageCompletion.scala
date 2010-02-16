@@ -42,8 +42,8 @@ class PackageCompletion(classpath: List[URL]) extends CompletionAware {
       for (name <- ByteCode aliasForType path ; clazz <- classForName(name + "$")) yield
         new StaticCompletion(clazz)
 
-    lazy val pkgObject = classForName(root + ".package$") map (x => new InstanceCompletion(x))
-    def pkgObjectMembers = pkgObject map (_.completions) getOrElse Nil
+    lazy val pkgObject = classForName(root + ".package$") map (x => new PackageObjectCompletion(x))
+    def pkgObjectMembers = pkgObject map (_ completionsFor Parsed("")) getOrElse Nil
 
     private def infos = Option(dottedPaths get root) getOrElse Nil
     def completions() = {
@@ -53,8 +53,8 @@ class PackageCompletion(classpath: List[URL]) extends CompletionAware {
 
     override def follow(segment: String): Option[CompletionAware] = {
       PackageCompletion.this.follow(root + "." + segment) orElse {
-        for (CompletionInfo(`segment`, className) <- infos) {
-          return Some(new StaticCompletion(className))
+        for (CompletionInfo(`segment`, className) <- infos ; clazz <- classForName(className)) {
+          return Some(new StaticCompletion(clazz))
         }
 
         aliasCompletor(root + "." + segment)
