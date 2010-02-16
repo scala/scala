@@ -118,14 +118,15 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   // set up initialization future
   private var _isInitialized: () => Boolean = () => false
-  def initialize() {
+  def initialize() = synchronized {
     if (!_isInitialized())
       _isInitialized = scala.concurrent.ops future _initialize()
   }
 
   /** the public, go through the future compiler */
   lazy val compiler: Global = {
-    _isInitialized() // blocks until it is
+    initialize()
+    _isInitialized()   // blocks until it is
 
     _compiler
   }
