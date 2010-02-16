@@ -1,5 +1,5 @@
 #!/bin/sh
-
+#
 ##############################################################################
 # Copyright 2002-2010, LAMP/EPFL
 #
@@ -62,6 +62,19 @@ fi
 
 # Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="@javaflags@"
+
+# break out -D options and add them to JAVA_OPTS as well so they reach the
+# underlying JVM in time to do some good.
+for i
+do
+  case "$i" in
+    -D*)
+      JAVA_OPTS="$JAVA_OPTS $i" ;;
+    *)
+      ;;
+  esac
+done 
+
 
 if [ -z "$JAVACMD" -a -n "$JAVA_HOME" -a -x "$JAVA_HOME/bin/java" ]; then
     JAVACMD="$JAVA_HOME/bin/java"

@@ -746,6 +746,9 @@ object Settings {
       }
     }
 
+    private[Settings] override def tryToSetProperty(args: List[String]): Option[List[String]] =
+      tryToSet(args)
+
     def tryToSet(args: List[String]) =
       if (args.isEmpty) None
       else parseArg(args.head) match {
@@ -757,8 +760,8 @@ object Settings {
       value map { case (k,v) => "-D" + k + (if (v == "") "" else "=" + v) }
 
     override def equals(that: Any) = that match {
-      case x: DefinesSetting => this isEq x
-      case _            => false
+      case x: DefinesSetting  => this isEq x
+      case _                  => false
     }
 
     /** Apply the specified properties to the current JVM and returns them. */
