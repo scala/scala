@@ -88,6 +88,15 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     case _            => false
   }
 
+  /** Create a new Settings object, copying all user-set values.
+   */
+  def copy(): Settings = {
+    val s = new Settings()
+    val xs = userSetSettings flatMap (_.unparse)
+    s.processArguments(xs.toList, true)
+    s
+  }
+
   def checkDependencies: Boolean = {
     def hasValue(s: Setting, value: String): Boolean = s match {
       case bs: BooleanSetting => bs.value
@@ -253,7 +262,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   lazy val OutputSetting       = untupled((output _).tupled andThen add[OutputSetting])
 
   override def toString() =
-    "Settings(\n%s)" format (settingSet filter (s => !s.isDefault) map ("  " + _ + "\n") mkString)
+    "Settings(\n%s)" format (userSetSettings map ("  " + _ + "\n") mkString)
 }
 
 object Settings {
@@ -777,9 +786,14 @@ trait ScalacSettings {
 
   import PathResolver.{ Defaults, Environment }
 
-  /** A list of all settings */
+  /** Sorted set of settings */
   protected var allsettings: Set[Setting] = TreeSet[Setting]()
+
+  /** All settings */
   def settingSet: Set[Setting] = allsettings
+
+  /** Set settings */
+  def userSetSettings: Set[Setting] = settingSet filterNot (_.isDefault)
 
   /** Disable a setting */
   def disable(s: Setting) = allsettings -= s
