@@ -41,10 +41,10 @@ abstract class Changes {
   }
   case class ParentChanged(e: Entity) extends Change
 
-  private val changedTypeParams = new mutable.ListBuffer[String]
+  private val changedTypeParams = new mutable.HashSet[String]
 
-  private def sameSymbol(sym1: Symbol, sym2: Symbol): Boolean =
-    sym1.fullName == sym2.fullName
+  private def sameSymbol(sym1: Symbol, sym2: Symbol, simple: Boolean = false): Boolean =
+    if (simple) sym1.encodedName == sym2.encodedName else sym1.fullName == sym2.fullName
   private def sameFlags(sym1: Symbol, sym2: Symbol): Boolean =
     sym1.flags == sym2.flags
   private def sameAnnotations(sym1: Symbol, sym2: Symbol): Boolean =
@@ -108,7 +108,7 @@ abstract class Changes {
     case (mt1 @ MethodType(params1, res1), mt2 @ MethodType(params2, res2)) =>
       // new dependent types: probably fix this, use substSym as done for PolyType
       sameTypes(tp1.paramTypes, tp2.paramTypes) &&
-      (tp1.params corresponds tp2.params)((t1, t2) => sameSymbol(t1, t2) && sameFlags(t1, t2)) &&
+      (tp1.params corresponds tp2.params)((t1, t2) => sameSymbol(t1, t2, true) && sameFlags(t1, t2)) &&
       sameType(res1, res2) &&
       mt1.isImplicit == mt2.isImplicit
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
