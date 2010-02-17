@@ -3681,7 +3681,7 @@ trait Typers { self: Analyzer =>
                 qual = atPos(tree.pos.focusStart)(resetPos(qual0.duplicate))
               pre = qual.tpe
             } else if (currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name))
-              typedIdent(name)
+              return typedIdent(name)
             else {
               if (settings.debug.value) {
                 log(context.imports)//debug
