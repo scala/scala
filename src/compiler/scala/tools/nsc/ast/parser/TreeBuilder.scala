@@ -362,7 +362,13 @@ abstract class TreeBuilder {
 
     /** The position of the closure that starts with generator at position `genpos`.
      */
-    def closurePos(genpos: Position) = r2p(genpos.startOrPoint, genpos.point, body.pos.endOrPoint)
+    def closurePos(genpos: Position) = {
+      val end = body.pos match {
+        case NoPosition => genpos.point
+        case bodypos => bodypos.endOrPoint
+      }
+      r2p(genpos.startOrPoint, genpos.point, end)
+    }
 
 //    val result =
     enums match {
