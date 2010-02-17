@@ -165,7 +165,7 @@ class PartestTask extends Task {
   private def getScalapFiles       = getFiles(scalapFiles)
 
   override def execute() {
-    if (debug)
+    if (isPartestDebug)
       System.setProperty("partest.debug", "true")
 
     if (classpath.isEmpty)

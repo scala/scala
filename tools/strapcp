@@ -2,4 +2,7 @@
 #
 
 THISDIR=`dirname $0`
-${THISDIR}/cpof ${THISDIR}/../build/strap/classes
+cp=`${THISDIR}/cpof ${THISDIR}/../build/strap/classes`
+fjbg=`${THISDIR}/abspath ${THISDIR}/../lib/fjbg.jar`
+
+echo ${cp}:${fjbg}

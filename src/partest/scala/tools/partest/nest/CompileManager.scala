@@ -45,9 +45,9 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     settings.deprecation.value = true
     settings.nowarnings.value = false
     settings.encoding.value = "iso-8859-1"
+    settings.classpath.value += fileManager.LATEST_LIB
     // XXX
-    settings.javabootclasspath.value =
-      ClassPath.join(Seq(PathResolver.Environment.javaBootClassPath, fileManager.LATEST_LIB))
+    // settings.javabootAppend.value = fileManager.LATEST_LIB
 
     settings
   }

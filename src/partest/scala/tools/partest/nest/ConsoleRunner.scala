@@ -127,7 +127,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
 
       val dir =
         if (!fileManager.testClasses.isEmpty)
-          fileManager.testClassesFile
+          fileManager.testClassesDir
         else if (fileManager.testBuild != null)
           fileManager.testBuildFile
         else
@@ -144,7 +144,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       NestUI.outline("Java binaries in:          "+vmBin+"\n")
       NestUI.outline("Java runtime is:           "+vmName+"\n")
       NestUI.outline("Java options are:          "+vmOpts+"\n")
-      NestUI.outline("Source directory is:       "+fileManager.srcDir.getAbsolutePath+"\n")
+      NestUI.outline("Source directory is:       "+fileManager.srcDir.path+"\n")
 
       val start = System.currentTimeMillis
 

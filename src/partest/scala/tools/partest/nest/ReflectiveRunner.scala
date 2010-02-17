@@ -9,6 +9,8 @@ package scala.tools.partest
 package nest
 
 import scala.tools.nsc.util.ClassPath
+import scala.tools.nsc.io
+import io.Path
 
 /* This class is used to load an instance of DirectRunner using
  * a custom class loader.
@@ -30,6 +32,9 @@ class ReflectiveRunner extends RunnerUtils {
   def main(args: String) {
     val argList = (args.split("\\s")).toList
 
+    if (isPartestDebug)
+      showAllJVMInfo
+
     // find out which build to test
     val buildPath = searchPath("--buildpath", argList)
     val classPath = searchPath("--classpath", argList)
@@ -46,21 +51,24 @@ class ReflectiveRunner extends RunnerUtils {
     import fileManager.
       { latestCompFile, latestLibFile, latestPartestFile, latestFjbgFile }
     val files =
-      Array(latestCompFile, latestLibFile, latestPartestFile, latestFjbgFile)
+      Array(latestCompFile, latestLibFile, latestPartestFile, latestFjbgFile) map (x => io.File(x))
 
-    val sepUrls   = files map { _.toURI.toURL }
+    val sepUrls   = files map (_.toURL)
     val sepLoader = new URLClassLoader(sepUrls, null)
 
-    if (fileManager.debug)
+    if (isPartestDebug)
       println("Loading classes from:\n" + sepUrls.mkString("\n"))
 
-    val paths = (if (classPath.isEmpty) files.slice(0, 4) else files) map { _.getPath }
+    val paths = classPath match {
+      case Some(cp) => Nil
+      case _        => files.toList map (_.path)
+    }
     val newClasspath = ClassPath join paths
 
     syspropset("java.class.path", newClasspath)
     syspropset("scala.home", "")
 
-    if (fileManager.debug)
+    if (isPartestDebug)
       for (prop <- List("java.class.path", "sun.boot.class.path", "java.ext.dirs"))
         println(prop + ": " + sysprop(prop))
 

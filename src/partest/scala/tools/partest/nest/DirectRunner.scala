@@ -22,8 +22,7 @@ trait DirectRunner {
 
   private val numActors = Integer.parseInt(System.getProperty("scalatest.actors", "8"))
 
-  if ((System.getProperty("partest.debug", "false") equals "true") ||
-      (System.getProperty("scalatest.debug", "false") equals "true"))
+  if (isPartestDebug)
     scala.actors.Debug.level = 3
 
   private val coreProp = try {
@@ -67,9 +66,11 @@ trait DirectRunner {
           results = results + ("worker timed out; adding failed test" -> 2)
       }
     }
-    for (x <- logsToDelete ::: outdirsToDelete) {
-      NestUI.verbose("deleting "+x)
-      Directory(x).deleteRecursively()
+    if (!isPartestDebug) {
+      for (x <- logsToDelete ::: outdirsToDelete) {
+        NestUI.verbose("deleting "+x)
+        Directory(x).deleteRecursively()
+      }
     }
 
     results

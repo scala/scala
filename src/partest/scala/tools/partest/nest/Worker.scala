@@ -247,23 +247,30 @@ class Worker(val fileManager: FileManager) extends Actor {
     //
     // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
     // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
-    val cmd = List(
-      JAVACMD,
-      JAVA_OPTS,
-      argString,
-      "-classpath " + join(Seq(outDir.toString, CLASSPATH)),
+    val propertyOptions = List(
       "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
       "-Dscalatest.output="+outDir.getAbsolutePath,
       "-Dscalatest.lib="+LATEST_LIB,
       "-Dscalatest.cwd="+outDir.getParent,
       "-Djavacmd="+JAVACMD,
-      "-Duser.language=en -Duser.country=US",
-      "scala.tools.nsc.MainGenericRunner",
-      "Test",
-      "jvm"
+      "-Duser.language=en -Duser.country=US"
+    ) ::: (
+      if (isPartestDebug) List("-Dpartest.debug=true") else Nil
+    )
+
+    val cmd = (
+      List(
+        JAVACMD,
+        JAVA_OPTS,
+        argString,
+        "-classpath " + join(Seq(outDir.toString, CLASSPATH))
+      ) ::: propertyOptions ::: List(
+        "scala.tools.nsc.MainGenericRunner",
+        "Test",
+        "jvm"
+      )
     ) mkString " "
 
-    NestUI.verbose(cmd)
     runCommand(cmd, logFile)
 
     if (fileManager.showLog) {

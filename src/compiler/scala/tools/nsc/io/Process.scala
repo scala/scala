@@ -34,7 +34,11 @@ import java.util.concurrent.LinkedBlockingQueue
 
 object Process
 {
-  lazy val javaVmArguments = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments()
+  def javaVmArguments: List[String] = {
+    import collection.JavaConversions._
+
+    java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
+  }
   lazy val runtime = Runtime.getRuntime()
 
   class Pipe[T](xs: Seq[T], stringify: T => String) {

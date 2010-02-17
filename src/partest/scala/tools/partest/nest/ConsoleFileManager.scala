@@ -11,24 +11,24 @@ package nest
 import java.io.{ File, FilenameFilter, IOException, StringWriter }
 import java.net.URI
 import scala.tools.util.PathResolver
-import scala.tools.nsc.io.{ Path }
+import scala.tools.nsc.io
+import io.{ Path, Directory }
 import File.pathSeparator
 
 class ConsoleFileManager extends FileManager {
+  implicit private def tempPathConversion(x: Path): File = x.jfile
 
-  var testBuild = System.getProperty("scalatest.build")
+  var testBuild: Option[String] = Option(System.getProperty("scalatest.build"))
+  def testBuildFile = testBuild map (testParent / _)
+
   var testClasses: Option[String] = None
-
-  val debug: Boolean =
-    (System.getProperty("partest.debug", "false") equals "true") ||
-    (System.getProperty("scalatest.debug", "false") equals "true")
 
   def this(buildPath: String, rawClasses: Boolean) = {
     this()
     if (rawClasses)
       testClasses = Some(buildPath)
     else
-      testBuild = buildPath
+      testBuild = Some(buildPath)
     // re-run because initialization of default
     // constructor must be updated
     findLatest()
@@ -43,7 +43,7 @@ class ConsoleFileManager extends FileManager {
     SCALAC_OPTS = SCALAC_OPTS+" "+moreOpts
   }
 
-  var CLASSPATH = PathResolver.Environment.javaUserClassPath match { case "" => "." ; case x => x }
+  var CLASSPATH = PathResolver.Environment.javaUserClassPath
 
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
@@ -93,23 +93,17 @@ else
   }
   val TESTROOT = testRootFile.getAbsolutePath
 
+  def testParent = Path(testRootFile).parent
+
   var srcDirName: String = ""
 
-  val srcDir: File = {
-    val srcDirProp = System.getProperty("partest.srcdir")
-    val src =
-      if (srcDirProp != null) {
-        srcDirName = srcDirProp
-        new File(testRootFile, srcDirName)
-      } else {
-        srcDirName = "files"
-        new File(testRootFile, srcDirName)
-      }
-    if (src.isDirectory)
-      src.getCanonicalFile
+  val srcDir: io.Directory = {
+    srcDirName = Option(System.getProperty("partest.srcdir")) getOrElse "files"
+    val src = Path(testRootFile) / srcDirName
+
+    if (src.isDirectory) src.toDirectory
     else {
-      val path = TESTROOT + File.separator + "files"
-      NestUI.failure("Source directory \"" + path + "\" not found")
+      NestUI.failure("Source directory \"" + src.path + "\" not found")
       exit(1)
     }
   }
@@ -117,38 +111,35 @@ else
   LIB_DIR = (Path(testRootFile.getParentFile) / "lib").normalize.toAbsolute.path
 
   CLASSPATH = {
-    val libs = (Path(srcDir) / "lib").toDirectory.files filter (_ hasExtension "jar") map (_.normalize.toAbsolute.path)
+    val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.normalize.toAbsolute.path)
 
     // add all jars in libs
     (CLASSPATH :: libs.toList) mkString pathSeparator
   }
 
   def findLatest() {
-    val testParent = testRootFile.getParentFile
     NestUI.verbose("test parent: "+testParent)
 
-    def prefixFileWith(parent: File, relPath: String): File =
-      (new File(parent, relPath)).getCanonicalFile
-
-    def prefixFile(relPath: String): File =
-      prefixFileWith(testParent, relPath)
+    def prefixFileWith(parent: File, relPath: String) = (io.File(parent) / relPath).normalize
+    def prefixFile(relPath: String) = (testParent / relPath).normalize
 
     if (!testClasses.isEmpty) {
-      testClassesFile = (new File(testClasses.get)).getCanonicalFile
-      NestUI.verbose("Running with classes in "+testClassesFile)
-      latestFile        = prefixFileWith(testClassesFile.getParentFile, "bin")
-      latestLibFile     = prefixFileWith(testClassesFile, "library")
-      latestCompFile    = prefixFileWith(testClassesFile, "compiler")
-      latestPartestFile = prefixFileWith(testClassesFile, "partest")
-      latestFjbgFile    = prefixFile("lib/fjbg.jar")
+      testClassesDir = Path(testClasses.get).normalize.toDirectory
+      NestUI.verbose("Running with classes in "+testClassesDir)
+
+      latestFile        = testClassesDir.parent / "bin"
+      latestLibFile     = testClassesDir / "library"
+      latestCompFile    = testClassesDir / "compiler"
+      latestPartestFile = testClassesDir / "partest"
+      latestFjbgFile    = testParent / "lib" / "fjbg.jar"
     }
-    else if (testBuild != null) {
-      testBuildFile = prefixFile(testBuild)
-      NestUI.verbose("Running on "+testBuild)
-      latestFile        = prefixFile(testBuild+"/bin")
-      latestLibFile     = prefixFile(testBuild+"/lib/scala-library.jar")
-      latestCompFile    = prefixFile(testBuild+"/lib/scala-compiler.jar")
-      latestPartestFile = prefixFile(testBuild+"/lib/scala-partest.jar")
+    else if (testBuild.isDefined) {
+      val dir = Path(testBuild.get)
+      NestUI.verbose("Running on "+dir)
+      latestFile        = dir / "bin"
+      latestLibFile     = dir / "lib/scala-library.jar"
+      latestCompFile    = dir / "lib/scala-compiler.jar"
+      latestPartestFile = dir / "lib/scala-partest.jar"
     }
     else {
       def setupQuick() {
@@ -184,10 +175,10 @@ else
         latestPartestFile = prefixFile("build/pack/lib/scala-partest.jar")
       }
 
-      val dists = new File(testParent, "dists")
-      val build = new File(testParent, "build")
+      val dists = testParent / "dists"
+      val build = testParent / "build"
       // in case of an installed dist, testRootFile is one level deeper
-      val bin = new File(testParent.getParentFile, "bin")
+      val bin = testParent.parent / "bin"
 
       def mostRecentOf(base: String, names: String*) =
         names map (x => prefixFile(base + "/" + x).lastModified) reduceLeft (_ max _)
@@ -237,14 +228,14 @@ else
   var latestCompFile: File = _
   var latestPartestFile: File = _
   var latestFjbgFile: File = _
-  var testBuildFile: File = _
-  var testClassesFile: File = _
+  var testClassesDir: Directory = _
   // initialize above fields
   findLatest()
 
   var testFiles: List[File] = List()
 
   def getFiles(kind: String, doCheck: Boolean, filter: Option[(String, Boolean)]): List[File] = {
+
     val dir = new File(srcDir, kind)
     NestUI.verbose("look in "+dir+" for tests")
     val files = if (dir.isDirectory) {
