@@ -55,10 +55,13 @@ object Array extends FallbackArrayBuilding {
                        dest : AnyRef,
                        destPos : Int,
                        length : Int) {
-    var i = 0
-    while (i < length) {
-      array_update(dest, i, array_apply(src, i))
+    var i = srcPos
+    var j = destPos
+    val srcUntil = srcPos + length
+    while (i < srcUntil) {
+      array_update(dest, j, array_apply(src, i))
       i += 1
+      j += 1
     }
   }
 
