@@ -78,4 +78,9 @@ fi
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx512M -Xms16M"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
 
-${JAVACMD:=java} $JAVA_OPTS -cp "$EXT_CLASSPATH" -Dpartest.debug="${PARTEST_DEBUG}" -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_opts="${JAVA_OPTS}" -Dscalatest.scalac_opts="${SCALAC_OPTS}" -Dscalatest.javac_cmd="${JAVA_HOME}/bin/javac" scala.tools.partest.nest.NestRunner  "$@"
+partestDebugStr=""
+if [ ! -z "${PARTEST_DEBUG}" ] ; then
+  partestDebugStr="-Dpartest.debug=${PARTEST_DEBUG}"
+fi
+
+${JAVACMD:=java} $JAVA_OPTS -cp "$EXT_CLASSPATH" ${partestDebugStr} -Dscala.home="${SCALA_HOME}" -Dscalatest.javacmd="${JAVACMD}" -Dscalatest.java_opts="${JAVA_OPTS}" -Dscalatest.scalac_opts="${SCALAC_OPTS}" -Dscalatest.javac_cmd="${JAVA_HOME}/bin/javac" scala.tools.partest.nest.NestRunner  "$@"
