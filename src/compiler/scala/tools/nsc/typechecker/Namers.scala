@@ -232,6 +232,9 @@ trait Namers { self: Analyzer =>
           (currentRun.canRedefine(m) || (m hasFlag SYNTHETIC))) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
+        if (m.moduleClass != NoSymbol)
+          setPrivateWithin(tree, m.moduleClass, tree.mods)
+
         context.unit.synthetics -= m
       } else {
         m = context.owner.newModule(tree.pos, tree.name)
