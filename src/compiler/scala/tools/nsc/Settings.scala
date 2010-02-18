@@ -12,19 +12,12 @@ import io.AbstractFile
 import util.{ ClassPath, SourceFile }
 import Settings._
 import annotation.elidable
-import scala.tools.util.PathResolver
+import scala.tools.util.{ PathResolver, StringOps }
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.TreeSet
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
-
-  /** It's a hacky situation but there's not much to be done in the
-   *  face of settings which mutate and semantic significance to the
-   *  originally given classpath.
-   */
-  private var _userSuppliedClassPath: String = null
-  def userSuppliedClassPath = if (_userSuppliedClassPath == null) "" else _userSuppliedClassPath
 
   /** Iterates over the arguments applying them to settings where applicable.
    *  Then verifies setting dependencies are met.
@@ -47,23 +40,13 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
     var args = arguments
     val residualArgs = new ListBuffer[String]
 
-    /** First time through here we take note of the classpath, if any.
-     */
-    def finish[T](x: T): T = {
-      /** "lazy var" */
-      if (_userSuppliedClassPath == null)
-        _userSuppliedClassPath = if (classpath.isDefault) "" else classpath.value
-
-      x
-    }
-
     while (args.nonEmpty) {
       if (args.head startsWith "-") {
         val args0 = args
         args = this parseParams args
         if (args eq args0) {
           errorFn("bad option: '" + args.head + "'")
-          return finish((false, args))
+          return ((false, args))
         }
       }
       else if (args.head == "") {   // discard empties, sometimes they appear because of ant or etc.
@@ -71,14 +54,14 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
       }
       else {
         if (!processAll)
-          return finish((checkDependencies, args))
+          return ((checkDependencies, args))
 
         residualArgs += args.head
         args = args.tail
       }
     }
 
-    finish((checkDependencies, residualArgs.toList))
+    ((checkDependencies, residualArgs.toList))
   }
   def processArgumentString(params: String) = processArguments(splitParams(params), true)
 
@@ -124,7 +107,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
   /** Split the given line into parameters.
    */
-  def splitParams(line: String) = PathResolver.splitParams(line, errorFn)
+  def splitParams(line: String) = StringOps.splitParams(line, errorFn)
 
   /** Returns any unprocessed arguments.
    */
@@ -145,19 +128,18 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
     // if arg is of form -Xfoo:bar,baz,quux
     def parseColonArg(s: String): Option[List[String]] = {
-      val idx = s indexWhere (_ == ':')
-      val (p, args) = (s.substring(0, idx), s.substring(idx+1).split(",").toList)
+      val (p, args) = StringOps.splitWhere(s, _ == ':', true) getOrElse (return None)
 
       // any non-Nil return value means failure and we return s unmodified
-      tryToSetIfExists(p, args, (s: Setting) => s.tryToSetColon _)
+      tryToSetIfExists(p, args split "," toList, (s: Setting) => s.tryToSetColon _)
     }
     // if arg is of form -Dfoo=bar or -Dfoo (name = "-D")
-    def isPropertyArg(s: String) = lookupSetting(s.substring(0, 2)) match {
+    def isPropertyArg(s: String) = lookupSetting(s take 2) match {
       case Some(x: DefinesSetting)  => true
       case _                        => false
     }
     def parsePropertyArg(s: String): Option[List[String]] = {
-      val (p, args) = (s.substring(0, 2), s.substring(2))
+      val (p, args) = (s take 2, s drop 2)
 
       tryToSetIfExists(p, List(args), (s: Setting) => s.tryToSetProperty _)
     }
@@ -258,8 +240,8 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   lazy val ChoiceSetting       = untupled((choice _).tupled andThen add[ChoiceSetting])
   lazy val DebugSetting        = untupled((sdebug _).tupled andThen add[DebugSetting])
   lazy val PhasesSetting       = untupled((phase _).tupled andThen add[PhasesSetting])
-  lazy val DefinesSetting      = add(defines())
   lazy val OutputSetting       = untupled((output _).tupled andThen add[OutputSetting])
+  lazy val DefinesSetting      = () => add(new DefinesSetting())
 
   override def toString() =
     "Settings(\n%s)" format (userSetSettings map ("  " + _ + "\n") mkString)
@@ -407,8 +389,6 @@ object Settings {
 
     def phase(name: String, descr: String) =
       new PhasesSetting(name, descr)
-
-    def defines() = new DefinesSetting()
 
     def output(outputDirs: OutputDirs, default: String) =
       new OutputSetting(outputDirs, default)
@@ -653,7 +633,7 @@ object Settings {
   extends Setting(descr + choices.mkString(" (", ",", ")")) {
     type T = String
     protected var v: String = default
-    protected def argument: String = name.substring(1)
+    protected def argument: String = name drop 1
 
     def tryToSet(args: List[String]) = { value = default ; Some(args) }
     override def tryToSetColon(args: List[String]) = args match {
@@ -747,12 +727,10 @@ object Settings {
     // given foo=bar returns Some(foo, bar), or None if parse fails
     def parseArg(s: String): Option[(String, String)] = {
       if (s == "") return None
-      val regexp = """^(.*)?=(.*)$""".r
+      val idx = s indexOf '='
 
-      regexp.findAllIn(s).matchData.toList match {
-        case Nil      => Some(s, "")
-        case List(md) => md.subgroups match { case List(a,b) => Some(a,b) }
-      }
+      if (idx < 0) Some(s, "")
+      else Some(s take idx, s drop (idx + 1))
     }
 
     private[Settings] override def tryToSetProperty(args: List[String]): Option[List[String]] =
@@ -815,12 +793,14 @@ trait ScalacSettings {
    */
 
   val bootclasspath     = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", "")
-  val classpath         = StringSetting     ("-classpath", "path", "Specify where to find user class files", "") .
-                                withAbbreviation("-cp") .
-                                withPostSetHook(self => if (Ylogcp.value) Console.println("Updated classpath to '%s'".format(self.value)))
+  val classpath         = StringSetting     ("-classpath", "path", "Specify where to find user class files", "") withAbbreviation ("-cp")
   val extdirs           = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", "")
   val javabootclasspath = StringSetting     ("-javabootclasspath", "path", "Override java boot classpath.", "")
+  val javabootAppend    = StringSetting     ("-javabootclasspath/a", "path", "Append to java boot classpath", "")
+  val javabootPrepend   = StringSetting     ("-javabootclasspath/p", "path", "Prepend to java boot classpath", "")
   val javaextdirs       = StringSetting     ("-javaextdirs", "path", "Override java extdirs classpath.", "")
+
+  val outdir            = OutputSetting     (outputDirs, ".")
   val sourcepath        = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
   val Ycodebase         = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "")
   val Ylogcp            = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
@@ -830,7 +810,7 @@ trait ScalacSettings {
    */
   // argfiles is only for the help message
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val outdir        = OutputSetting     (outputDirs, ".")
+  val defines       = DefinesSetting()
   val dependenciesFile  = StringSetting ("-dependencyfile", "file", "Specify the file in which dependencies are tracked", ".scala_dependencies")
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
   val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.sourceEncoding)

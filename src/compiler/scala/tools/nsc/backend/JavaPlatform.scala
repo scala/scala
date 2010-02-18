@@ -14,17 +14,7 @@ import scala.tools.util.PathResolver
 trait JavaPlatform extends Platform[AbstractFile] {
   import global._
 
-  lazy val classPath: JavaClassPath = {
-    val context =
-      if (isInlinerOn) new JavaContext
-      else DefaultJavaContext
-
-    val cp = PathResolver.fromSettings(settings, context)
-    if (settings.Ylogcp.value)
-      Console.println("Created Global has classpath: " + cp.asClasspathString)
-
-    cp
-  }
+  lazy val classPath = new PathResolver(settings).result
 
   def rootLoader = new loaders.JavaPackageLoader(classPath)
 

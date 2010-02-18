@@ -192,7 +192,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** the compiler's classpath, as URL's */
   /** XXX ignoring codebase for now, but it used to be appended here. */
   /** (And one would think it ought to be prepended. */
-  lazy val compilerClasspath: List[URL] = new PathResolver(settings) minimalPathAsURLs
+  lazy val compilerClasspath: List[URL] = new PathResolver(settings) asURLs
 
   /* A single class loader is used for all commands interpreted by this Interpreter.
      It would also be possible to create a new class loader for each command

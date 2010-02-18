@@ -53,7 +53,7 @@ import Completion._
 class Completion(repl: Interpreter) {
   self =>
 
-  private lazy val classPath = PathResolver.fromSettings(repl.settings).asURLs
+  private lazy val classPath = repl.compilerClasspath
 
   // the unqualified vals/defs/etc visible in the repl
   val ids = new IdentCompletion(repl)

@@ -128,8 +128,8 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       val dir =
         if (!fileManager.testClasses.isEmpty)
           fileManager.testClassesDir
-        else if (fileManager.testBuild != null)
-          fileManager.testBuildFile
+        else if (fileManager.testBuildFile.isDefined)
+          fileManager.testBuildFile.get
         else
           fileManager.latestCompFile.getParentFile.getParentFile.getCanonicalFile
       NestUI.outline("Scala compiler classes in: "+dir+"\n")

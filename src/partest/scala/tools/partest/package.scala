@@ -7,23 +7,21 @@ package scala.tools
 package object partest {
   import nest.NestUI
 
-  def showVMArgs {
+  def vmArgString = {
     import scala.tools.nsc.io.Process
 
     val str = Process.javaVmArguments mkString " "
-    NestUI.verbose("Java VM started with arguments: '%s'" format str)
+    "Java VM started with arguments: '%s'" format str
   }
 
-  def showAllProperties {
+  def allPropertiesString = {
     import collection.JavaConversions._
-    for ((k, v) <- System.getProperties.toList.sorted) {
-      NestUI.verbose("%s -> %s".format(k, v))
-    }
+    System.getProperties.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString
   }
 
   def showAllJVMInfo {
-    showVMArgs
-    showAllProperties
+    NestUI.verbose(vmArgString)
+    NestUI.verbose(allPropertiesString)
   }
 
   def isPartestDebug = {

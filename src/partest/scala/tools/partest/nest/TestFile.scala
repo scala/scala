@@ -22,8 +22,7 @@ abstract class TestFile(kind: String) {
   val fileBase: String = basename(file.getName)
   def objDir = fileBase + "-" + kind + ".obj"
 
-  // @mutates settings
-  protected def baseSettings(settings: Settings) {
+  def defineSettings(settings: Settings) {
     settings appendToClasspath dirpath
 
     if (createOutDir) {
@@ -34,10 +33,7 @@ abstract class TestFile(kind: String) {
     // add additional flags found in 'testname.flags'
     def flagsPath = Path(dir) / (fileBase + ".flags")
     flagsPath ifFile { _.slurp().trim } foreach (settings processArgumentString _)
-  }
 
-  def defineSettings(settings: Settings) {
-    baseSettings(settings)
     settings appendToClasspath fileManager.CLASSPATH
   }
 

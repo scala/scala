@@ -213,6 +213,13 @@ abstract class ClassPath[T] {
       case Some(ClassRep(Some(x: AbstractFile), _)) => Some(x)
       case _                                        => None
     }
+
+  def sortString = asURLs map (_.toString) sorted
+  override def equals(that: Any) = that match {
+    case x: ClassPath[_]  => this.sortString == x.sortString
+    case _                => false
+  }
+  override def hashCode = sortString.hashCode
 }
 
 /**
@@ -311,6 +318,10 @@ extends ClassPath[T] {
     case x: DirectoryClassPath  => x.dir.path
     case x: MergedClassPath[_]  => x.asClasspathString
   })
+  def show {
+    println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
+    asClasspathString split ':' foreach (x => println("  " + x))
+  }
 
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }

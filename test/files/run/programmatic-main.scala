@@ -3,8 +3,9 @@ import io.Path
 
 object Test
 {
-  val basedir = (Path(System.getProperty("scalatest.cwd")).parent / "lib").path
-  val baseargs = Array("-bootclasspath", basedir + "scala-library.jar", "-cp", basedir + "scala-compiler.jar")
+  val cwd = Option(System.getProperty("scalatest.cwd")) getOrElse "."
+  val basedir = (Path(cwd).parent / "lib").path
+  val baseargs = Array("-bootclasspath", basedir + "/scala-library.jar", "-cp", basedir + "/scala-compiler.jar")
 
   def main(args: Array[String]): Unit = {
     Main process (baseargs ++ Array("-Xshow-phases"))

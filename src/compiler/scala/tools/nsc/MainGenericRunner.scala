@@ -13,7 +13,7 @@ import java.lang.reflect.InvocationTargetException
 import java.net.{ URL, MalformedURLException }
 import scala.tools.util.PathResolver
 
-import io.{ File }
+import io.{ File, Process }
 import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }
 
@@ -43,7 +43,7 @@ object MainGenericRunner {
     def dashi = settings.loadfiles.value
     def slurp = dashi map (file => File(file).slurp()) mkString "\n"
 
-    val classpath: List[URL] = PathResolver urlsFromSettings settings
+    val classpath: List[URL] = new PathResolver(settings) asURLs
 
     /** Was code given in a -e argument? */
     if (!settings.execute.isDefault) {

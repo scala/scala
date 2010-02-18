@@ -14,6 +14,7 @@ import scala.tools.util.PathResolver
 import scala.tools.nsc.io
 import io.{ Path, Directory }
 import File.pathSeparator
+import PathResolver.{ propOrElse }
 
 class ConsoleFileManager extends FileManager {
   implicit private def tempPathConversion(x: Path): File = x.jfile
@@ -47,17 +48,11 @@ class ConsoleFileManager extends FileManager {
 
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
-  var JAVACMD   = System.getProperty("scalatest.javacmd", "java")
-  var JAVAC_CMD = System.getProperty("scalatest.javac_cmd", "javac")
+  var JAVACMD   = propOrElse("scalatest.javacmd", "java")
+  var JAVAC_CMD = propOrElse("scalatest.javac_cmd", "javac")
 
-  val prefixFile = {
-    val cwd = System.getProperty("user.dir")
-    if (cwd != null)
-      (new File(cwd)).getCanonicalFile
-    else
-      error("user.dir property not set")
-  }
-  val PREFIX = prefixFile.getAbsolutePath
+  val prefixDir = Directory.Current map (_.normalize.toDirectory) getOrElse error("user.dir property not set")
+  val PREFIX    = prefixDir.toAbsolute.path
 
 /*
 if [ -d "$PREFIX/test" ]; then
@@ -68,38 +63,31 @@ else
     abort "Test directory not found";
 */
 
-  val testRootFile = {
-    val testRootProp = System.getProperty("scalatest.root")
-    val testroot =
-      if (testRootProp != null)
-        new File(testRootProp)
-      else {
-        // case 1: cwd is `test`
-        if (prefixFile.getName == "test" && (new File(prefixFile, "files")).exists)
-          prefixFile
-        else {
-        // case 2: cwd is `test/..`
-          val test = new File(prefixFile, "test")
-          val scalaTest = new File(new File(prefixFile, "misc"), "scala-test")
-          if (test.isDirectory)
-            test
-          else if (scalaTest.isDirectory)
-            scalaTest
-          else
-            error("Test directory not found")
-        }
-      }
-    testroot.getCanonicalFile
-  }
-  val TESTROOT = testRootFile.getAbsolutePath
+  val testRootDir = {
+    val testRootProp = Option(propOrElse("scalatest.root", null)) map (x => Directory(x))
+    def isTestDir(d: Directory) = d.name == "test" && (d / "files" isDirectory)
 
-  def testParent = Path(testRootFile).parent
+    (
+      testRootProp orElse (
+        if (isTestDir(prefixDir)) Some(prefixDir) else None   // cwd is `test`
+      ) orElse (
+        (prefixDir / "test") ifDirectory (x => x)             // cwd is `test/..`
+      ) orElse (
+        (prefixDir / "misc" / "scala-test") ifDirectory (x => x)
+      ) getOrElse (
+        error("Test directory not found")
+      )
+    ).normalize
+  }
+  val TESTROOT = testRootDir.toAbsolute.path
+
+  def testParent = testRootDir.parent
 
   var srcDirName: String = ""
 
   val srcDir: io.Directory = {
     srcDirName = Option(System.getProperty("partest.srcdir")) getOrElse "files"
-    val src = Path(testRootFile) / srcDirName
+    val src = testRootDir / srcDirName
 
     if (src.isDirectory) src.toDirectory
     else {
@@ -108,7 +96,7 @@ else
     }
   }
 
-  LIB_DIR = (Path(testRootFile.getParentFile) / "lib").normalize.toAbsolute.path
+  LIB_DIR = (testParent / "lib").normalize.toAbsolute.path
 
   CLASSPATH = {
     val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.normalize.toAbsolute.path)
@@ -177,7 +165,7 @@ else
 
       val dists = testParent / "dists"
       val build = testParent / "build"
-      // in case of an installed dist, testRootFile is one level deeper
+      // in case of an installed dist, testRootDir is one level deeper
       val bin = testParent.parent / "bin"
 
       def mostRecentOf(base: String, names: String*) =

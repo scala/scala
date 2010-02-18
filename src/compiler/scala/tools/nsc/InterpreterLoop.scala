@@ -112,8 +112,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** Create a new interpreter. */
   def createInterpreter() {
-    if (!addedClasspath.isEmpty)
-      addedClasspath foreach (settings appendToClasspath _)
+    // if (!addedClasspath.isEmpty)
+    //   addedClasspath foreach (settings appendToClasspath _)
 
     interpreter = new Interpreter(settings, out) {
       override protected def parentClassLoader = classOf[InterpreterLoop].getClassLoader

@@ -300,8 +300,8 @@ object ScriptRunner
 		compiledLocation: String,
 		scriptArgs: List[String]): Boolean =
 	{
-    val classpath =
-      (PathResolver urlsFromSettings settings) ::: (PathResolver fromPathString compiledLocation asURLs)
+	  val pr = new PathResolver(settings)
+	  val classpath = pr.asURLs :+ new URL(compiledLocation)
 
     try {
       ObjectRunner.run(

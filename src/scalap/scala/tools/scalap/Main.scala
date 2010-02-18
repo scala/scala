@@ -12,7 +12,7 @@ package scala.tools.scalap
 import java.io.{File, PrintStream, OutputStreamWriter, ByteArrayOutputStream}
 import scalax.rules.scalasig._
 import tools.nsc.io.AbstractFile
-import tools.nsc.util.{ ClassPath, JavaClassPath }
+import tools.nsc.util.{ ClassPath }
 import tools.util.PathResolver
 import ClassPath.DefaultJavaContext
 

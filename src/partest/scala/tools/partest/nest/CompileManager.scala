@@ -45,7 +45,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     settings.deprecation.value = true
     settings.nowarnings.value = false
     settings.encoding.value = "iso-8859-1"
-    settings.classpath.value += fileManager.LATEST_LIB
+    settings.classpath.value += (pathSeparator + fileManager.LATEST_LIB)
     // XXX
     // settings.javabootAppend.value = fileManager.LATEST_LIB
 
@@ -113,7 +113,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 
     out map { outDir =>
       command.settings.outdir.value = outDir.getAbsolutePath
-      command.settings appendToClasspath outDir.getAbsolutePath
+      command.settings.classpath.value += (pathSeparator + outDir.getAbsolutePath)
     }
 
     val toCompile = files map (_.getPath)
