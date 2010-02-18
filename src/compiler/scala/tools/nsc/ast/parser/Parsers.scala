@@ -1896,14 +1896,14 @@ self =>
     /** Import  ::= import ImportExpr {`,' ImportExpr}
      */
     def importClause(): List[Tree] = {
-      accept(IMPORT)
-      commaSeparated(importExpr())
+      val offset = accept(IMPORT)
+      commaSeparated(importExpr(offset))
     }
 
     /**  ImportExpr ::= StableId `.' (Id | `_' | ImportSelectors)
      * XXX: Hook for IDE
      */
-    def importExpr(): Tree = {
+    def importExpr(importOffset: Int): Tree = {
       val start = in.offset
       var t: Tree = null
       if (in.token == THIS) {
@@ -1930,7 +1930,7 @@ self =>
         if (in.token == USCORE) {
           val uscoreOffset = in.offset
           in.nextToken()
-          Import(t, List(ImportSelector(nme.WILDCARD, uscoreOffset, null, -1)))
+          Import(t, List(ImportSelector(nme.WILDCARD, uscoreOffset, nme.WILDCARD, -1)))
         } else if (in.token == LBRACE) {
           Import(t, importSelectors())
         } else {
@@ -1947,7 +1947,7 @@ self =>
             Import(t, List(ImportSelector(name, nameOffset, name, nameOffset)))
           }
         }
-      atPos(start) { loop() }
+      atPos(importOffset, start) { loop() }
     }
 
     /** ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'
