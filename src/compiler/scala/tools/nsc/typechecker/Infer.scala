@@ -394,8 +394,6 @@ trait Infer {
         }
       }
 
-    def isPlausiblyPopulated(tp1: Type, tp2: Type): Boolean = true
-
     def isPlausiblyCompatible(tp: Type, pt: Type): Boolean = tp match {
       case PolyType(_, restpe) =>
         isPlausiblyCompatible(restpe, pt)
@@ -1496,6 +1494,11 @@ trait Infer {
 
     def inferTypedPattern(pos: Position, pattp: Type, pt0: Type): Type = {
       val pt = widen(pt0)
+
+      /** If we can absolutely rule out a match we can fail fast. */
+      if (pt.isFinalType && !(pt matchesPattern pattp))
+        error(pos, "scrutinee is incompatible with pattern type"+foundReqMsg(pattp, pt))
+
       checkCheckable(pos, pattp, "pattern ")
       if (!(pattp <:< pt)) {
         val tpparams = freeTypeParamsOfTerms.collect(pattp)
@@ -1509,24 +1512,11 @@ trait Infer {
           if (settings.debug.value) log("free type params (2) = " + ptparams)
           val ptvars = ptparams map freshVar
           val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
-          if (!(isPopulated(tp, pt1) && isInstantiatable(tvars ::: ptvars))) {
-            // In ticket #2486 we have this example of code which would fail
-            // here without a change:
-            //
-            // class A[T]
-            // class B extends A[Int]
-            // class C[T] extends A[T] { def f(t: A[T]) = t match { case x: B => () } }
-            //
-            // This reports error: pattern type is incompatible with expected type;
-            // found   : B
-            // required: A[T]
-            //
-            // I am not sure what is the ideal fix, but for the moment I am intercepting
-            // it at the last minute and applying a looser check before failing.
-            if (!isPlausiblyCompatible(pattp, pt)) {
-              error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
-              return pattp
-            }
+          // See ticket #2486 we have this example of code which would incorrectly
+          // fail without verifying that !(pattp matchesPattern pt)
+          if (!(isPopulated(tp, pt1) && isInstantiatable(tvars ::: ptvars)) && !(pattp matchesPattern pt)) {
+            error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
+            return pattp
           }
           ptvars foreach instantiateTypeVar
         }

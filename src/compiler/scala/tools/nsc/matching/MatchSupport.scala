@@ -28,24 +28,10 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
     import definitions._
     implicit def enrichType(x: Type): RichType = new RichType(x)
 
-    // see bug1434.scala for an illustration of why "x <:< y" is insufficient.
-    // this code is inadequate but slowly improving...  Inherited comment:
-    //
-    //   an approximation of _tp1 <:< tp2 that ignores _ types. this code is wrong,
-    //   ideally there is a better way to do it, and ideally defined in Types.scala
-    private[matching] def matches(arg1: Type, arg2: Type) = {
-      val List(t1, t2) = List(arg1, arg2) map decodedEqualsType
-
-      def matchesIgnoringBounds(tp1: Type, tp2: Type) = tp2 match {
-        case TypeRef(pre, sym, args)  => tp1 <:< TypeRef(pre, sym, args map (_ => AnyClass.tpe))
-        case _                        => false
-      }
-      def okPrefix  = t1.prefix =:= t2.prefix
-      def okSubtype = t1.baseTypeSeq exists (_.typeSymbol eq t2.typeSymbol)
-      def okBounds  = matchesIgnoringBounds(t1, t2)
-
-      (t1 <:< t2) || (okPrefix && okSubtype && okBounds)
-    }
+    // A subtype test which creates fresh existentials for type
+    // parameters on the right hand side.
+    private[matching] def matches(arg1: Type, arg2: Type) =
+      decodedEqualsType(arg1) matchesPattern decodedEqualsType(arg2)
 
     class RichType(undecodedTpe: Type) {
       def tpe = decodedEqualsType(undecodedTpe)

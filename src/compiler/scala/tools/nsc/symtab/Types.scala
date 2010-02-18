@@ -587,6 +587,34 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       }
     }
 
+    /** Can this type only be subtyped by bottom types?
+     *  This is assessed to be the case if the class is final,
+     *  and all type parameters (if any) are invariant.
+     */
+    def isFinalType = (
+      typeSymbol.isFinal &&
+      (typeSymbol.typeParams forall (_.variance == 0))
+    )
+
+    /** Is this type a subtype of that type in a pattern context?
+     *  Any type arguments on the right hand side are replaced with
+     *  fresh existentials, except for Arrays.
+     *
+     *  See bug1434.scala for an example of code which would fail
+     *  if only a <:< test were applied.
+     */
+    def matchesPattern(that: Type): Boolean = {
+      (this <:< that) || ((this, that) match {
+        case (TypeRef(_, ArrayClass, List(arg1)), TypeRef(_, ArrayClass, List(arg2))) if arg2.typeSymbol.typeParams.nonEmpty =>
+          arg1 matchesPattern arg2
+        case (_, TypeRef(_, _, args)) =>
+          val newtp = existentialAbstraction(args map (_.typeSymbol), that)
+          !(that =:= newtp) && (this <:< newtp)
+        case _ =>
+          false
+      })
+    }
+
     def stat_<:<(that: Type): Boolean = {
       incCounter(subtypeCount)
       val start = startTimer(subtypeNanos)
