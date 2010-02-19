@@ -195,16 +195,7 @@ object ScriptRunner
       settings: GenericRunnerSettings,
       scriptFileIn: String): Boolean =
   {
-    val scriptFile = Path(scriptFileIn).toAbsolute.path
-
-    {
-      import settings._
-      for (setting <- List(classpath, sourcepath, bootclasspath, extdirs, outdir)) {
-        // DBG("%s = %s".format(setting.name, setting.value))
-        setting.value = PathResolver.makeAbsolute(setting.value)
-      }
-    }
-
+    val scriptFile        = Path(scriptFileIn).toAbsolute.path
     val compSettingNames  = new Settings(error).settingSet.toList map (_.name)
     val compSettings      = settings.settingSet.toList filter (compSettingNames contains _.name)
     val coreCompArgs      = compSettings flatMap (_.unparse)
@@ -301,7 +292,7 @@ object ScriptRunner
 		scriptArgs: List[String]): Boolean =
 	{
 	  val pr = new PathResolver(settings)
-	  val classpath = pr.asURLs :+ new URL(compiledLocation)
+	  val classpath = pr.asURLs :+ File(compiledLocation).toURL
 
     try {
       ObjectRunner.run(

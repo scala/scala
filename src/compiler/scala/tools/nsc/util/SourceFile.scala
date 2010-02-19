@@ -154,17 +154,11 @@ extends BatchSourceFile(name, contents)
   /** The usual constructor.  Specify a name for the compound file and
    *  a list of component sources.
    */
-  def this(name: String, components: BatchSourceFile*) = {
-    this(
-      name,
-      components.toList,
-      Array.concat(components.map(comp =>
-        CompoundSourceFile.stripSU(comp.content).toArray):_*))
-  }
+  def this(name: String, components: BatchSourceFile*) =
+    this(name, components.toList, components flatMap (CompoundSourceFile stripSU _.content) toArray)
 
   /** Create an instance with the specified components and a generic name. */
-  def this(components: BatchSourceFile*) =
-    this("(virtual file)", components.toList:_*)
+  def this(components: BatchSourceFile*) = this("(virtual file)", components: _*)
 
   override def positionInUltimateSource(position: Position) = {
     if (!position.isDefined) super.positionInUltimateSource(position)
@@ -193,7 +187,7 @@ extends BatchSourceFile(name, contents)
 object CompoundSourceFile {
   private[util] def stripSU(chars: Array[Char]) =
     if (chars.length > 0 && chars.last == SU)
-      chars.slice(0, chars.length-1)
+      chars dropRight 1
     else
       chars
 }
