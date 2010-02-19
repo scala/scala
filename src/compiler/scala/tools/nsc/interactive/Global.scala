@@ -494,7 +494,7 @@ self =>
       println("starting typedTreeAt")
       val tree = locateTree(pos)
       println("at pos "+pos+" was found: "+tree+tree.pos.show)
-      if (tree.tpe ne null) {
+      if (stabilizedType(tree) ne null) {
         println("already attributed")
         tree
       } else {
