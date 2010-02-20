@@ -84,4 +84,6 @@ trait TaskArgs { this: Task =>
   protected var sourcePath: Option[Path] = None
   protected var compilerPath: Option[Path] = None
   protected var destinationDir: Option[File] = None
+
+  def isMSIL = compTarget exists (_ == "msil")
 }
