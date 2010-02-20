@@ -711,14 +711,19 @@ trait Typers { self: Analyzer =>
         else qual.tpe.nonLocalMember(name)
     }
 
-    def silent[T](op: Typer => T): Any /* in fact, TypeError or T */ = {
+    def silent[T](op: Typer => T) : Any = silent(false, op)
+    def noisy[T](op: Typer => T) = silent(true, op)
+
+    def silent[T](report : Boolean, op: Typer => T): Any /* in fact, TypeError or T */ = {
       val rawTypeStart = startCounter(rawTypeFailed)
       val findMemberStart = startCounter(findMemberFailed)
       val subtypeStart = startCounter(subtypeFailed)
       val failedSilentStart = startTimer(failedSilentNanos)
       try {
-        if (context.reportGeneralErrors) {
-          val context1 = context.makeSilent(context.reportAmbiguousErrors)
+        if (context.reportGeneralErrors != report) {
+          val context1 = context.make(context.tree)
+          context1.reportGeneralErrors = report
+          context1.reportAmbiguousErrors = context.reportAmbiguousErrors
           context1.undetparams = context.undetparams
           context1.savedTypeBounds = context.savedTypeBounds
           context1.namedApplyBlockInfo = context.namedApplyBlockInfo
@@ -3303,12 +3308,21 @@ trait Typers { self: Analyzer =>
               if (printTypings) println("second try for: "+fun+" and "+args)
               val Select(qual, name) = fun
               val args1 = tryTypedArgs(args, argMode(fun, mode), ex)
-              val qual1 =
-                if ((args1 ne null) && !pt.isError) adaptToArguments(qual, name, args1, pt)
-                else qual
-              if (qual1 ne qual) {
-                val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
-                return typed1(tree1, mode | SNDTRYmode, pt)
+              if ((args1 eq null) && onlyPresentation) {
+                return noisy(_.doTypedApply(tree, fun, args, mode, pt)) match {
+                  case t: Tree => t
+                  case ex: TypeError =>
+                    reportTypeError(tree.pos, ex)
+                    setError(tree)
+                }
+              } else {
+                val qual1 =
+                  if ((args1 ne null) && !pt.isError) adaptToArguments(qual, name, args1, pt)
+                  else qual
+                if (qual1 ne qual) {
+                  val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
+                  return typed1(tree1, mode | SNDTRYmode, pt)
+                }
               }
             } else if (printTypings) {
               println("no second try for "+fun+" and "+args+" because error not in result:"+ex.pos+"!="+tree.pos)
