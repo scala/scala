@@ -59,6 +59,7 @@ object PathResolver {
     def scalaHome           = propOrElse("scala.home", "")
     def scalaExtDirs        = propOrElse("scala.ext.dirs", "")
     def scalaHomeGuessed    = searchForScalaHome
+    def scalaHomeIsSet      = System.getProperty("scala.home") != null
 
     override def toString = """
       |object Environment {
@@ -179,7 +180,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def scalaHome           = Defaults.scalaHome
     def javaBootClassPath   = cmdLineOrElse("javabootclasspath", Defaults.javaBootClassPath)
     def javaExtDirs         = cmdLineOrElse("javaextdirs", Defaults.javaExtDirs)
-    def javaUserClassPath   = Defaults.javaUserClassPath
+    def javaUserClassPath   = if (Environment.scalaHomeIsSet) "" else Defaults.javaUserClassPath
     def scalaBootClassPath  = cmdLineOrElse("bootclasspath", Defaults.scalaBootClassPath)
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
     def userClassPath       = cmdLineOrElse("classpath", ".")
