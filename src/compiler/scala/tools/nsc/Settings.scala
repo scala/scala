@@ -243,8 +243,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   lazy val OutputSetting       = untupled((output _).tupled andThen add[OutputSetting])
   lazy val DefinesSetting      = () => add(new DefinesSetting())
 
-  override def toString() =
-    "Settings(\n%s)" format (userSetSettings map ("  " + _ + "\n") mkString)
+  override def toString() = "Settings {\n%s}\n" format (userSetSettings map ("  " + _ + "\n") mkString)
 }
 
 object Settings {

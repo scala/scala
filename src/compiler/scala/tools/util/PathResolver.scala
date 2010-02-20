@@ -56,22 +56,25 @@ object PathResolver {
     def javaUserClassPath   = propOrElse("java.class.path", "")
     def javaExtDirs         = propOrElse("java.ext.dirs", "")
     def userHome            = propOrElse("user.home", "")
-    def scalaHome           = propOrElse("scala.home", "")
+    def scalaHome           = System.getProperty("scala.home")    // keep null so we know when it's unset
     def scalaExtDirs        = propOrElse("scala.ext.dirs", "")
     def scalaHomeGuessed    = searchForScalaHome
-    def scalaHomeIsSet      = System.getProperty("scala.home") != null
+    def scalaHomeIsSet      = scalaHome != null
 
     override def toString = """
       |object Environment {
-      |  javaBootClassPath  = %s
+      |  javaBootClassPath  = <%d chars>
       |  javaUserClassPath  = %s
       |  javaExtDirs        = %s
       |  userHome           = %s
       |  scalaHome          = %s
       |  scalaExtDirs       = %s
       |}""".trim.stripMargin.format(
-        ppcp(javaBootClassPath), ppcp(javaUserClassPath), ppcp(javaExtDirs),
-        userHome, scalaHome, ppcp(scalaExtDirs)
+        javaBootClassPath.length,
+        ppcp(javaUserClassPath),
+        ppcp(javaExtDirs),
+        userHome, scalaHome,
+        ppcp(scalaExtDirs)
       )
   }
 
@@ -83,7 +86,7 @@ object PathResolver {
     def javaUserClassPath = firstNonEmpty(Environment.javaUserClassPath, Environment.classPathEnv)
     def javaExtDirs       = Environment.javaExtDirs
 
-    def scalaHome         = Environment.scalaHome
+    def scalaHome         = Option(Environment.scalaHome) getOrElse ""
     def scalaHomeDir      = Directory(scalaHome)
     def scalaHomeExists   = scalaHomeDir.isDirectory
     def scalaLibDir       = Directory(scalaHomeDir / "lib")
@@ -225,9 +228,12 @@ class PathResolver(settings: Settings, context: JavaContext) {
   lazy val result = {
     val cp = new JavaClassPath(containers, context)
     if (settings.Ylogcp.value) {
-      Console.println("Classpath built from settings: " + settings)
+      Console.println("Classpath built from " + settings)
       Console.println("And Environment: " + PathResolver.Environment)
-      cp.show
+
+      val xs = (Calculated.basis drop 2).flatten.distinct
+      println("After java boot/extdirs classpath has %d entries:" format xs.size)
+      xs foreach (x => println("  " + x))
     }
     cp
   }
