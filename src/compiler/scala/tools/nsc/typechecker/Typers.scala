@@ -3519,7 +3519,7 @@ trait Typers { self: Analyzer =>
 
         if (!reallyExists(sym)) {
           if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+"\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
-          if (!qual.tpe.widen.isErroneous && !onlyPresentation) {
+          if (!qual.tpe.widen.isErroneous) {
             error(tree.pos,
               if (name == nme.CONSTRUCTOR)
                 qual.tpe.widen+" does not have a constructor"
