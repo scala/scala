@@ -65,7 +65,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
       case p:PlainFile =>
         read(p.file)                                                     // bq: (!!!)
       case z:ZipArchive#FileEntry =>
-        val c = Channels.newChannel(z.getArchive.getInputStream(z.entry))
+        val c = Channels.newChannel(z.archive.getInputStream(z.entry))
         read(c)
       case _ =>
         val b = ByteBuffer.wrap(file.toByteArray)

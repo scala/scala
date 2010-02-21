@@ -62,7 +62,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile
     }
   }
 
-  def container : AbstractFile = throw new Error("not supported")
+  def container: AbstractFile = throw new Error("not supported")
 
   /** Is this abstract file a directory? */
   def isDirectory: Boolean = false

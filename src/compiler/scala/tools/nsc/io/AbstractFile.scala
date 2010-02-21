@@ -102,7 +102,10 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
 
   /** Returns the underlying File if any and null otherwise. */
   def file: JFile
-  def sfile = File(file) // XXX
+  def sfile = Option(file) map (x => File(x)) // XXX
+
+  /** An underlying source, if known.  Mostly, a zip/jar file. */
+  def underlyingSource: Option[AbstractFile] = None
 
   /** Does this abstract file denote an existing file? */
   def exists: Boolean =
@@ -110,7 +113,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
     else true
 
   /** Does this abstract file represent something which can contain classfiles? */
-  def isClassContainer = isDirectory || (file != null && Path.isJarOrZip(sfile))
+  def isClassContainer = isDirectory || (sfile exists (Path isJarOrZip _))
 
   /** Create a file on disk, if one does not exist already. */
   def create: Unit
@@ -229,7 +232,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def fileNamed(name: String): AbstractFile = {
     assert(isDirectory)
-    Option(lookupName(name, false)) getOrElse new PlainFile((sfile / name).createFile())
+    Option(lookupName(name, false)) getOrElse new PlainFile((sfile.get / name).createFile())
   }
 
   /**
@@ -238,7 +241,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    */
   def subdirectoryNamed(name: String): AbstractFile = {
     assert (isDirectory)
-    Option(lookupName(name, true)) getOrElse new PlainFile((sfile / name).createDirectory())
+    Option(lookupName(name, true)) getOrElse new PlainFile((sfile.get / name).createDirectory())
   }
 
   /** Returns the path of this abstract file. */

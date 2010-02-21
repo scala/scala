@@ -14,12 +14,15 @@ package sabbus
 import java.io.File
 import java.io.FileWriter
 import org.apache.tools.ant.Project
-import org.apache.tools.ant.taskdefs.{MatchingTask, Java}
-import org.apache.tools.ant.util.{GlobPatternMapper, SourceFileScanner}
+import org.apache.tools.ant.taskdefs.{ MatchingTask, Java }
+import org.apache.tools.ant.util.{ GlobPatternMapper, SourceFileScanner }
 import scala.tools.nsc.io
+import scala.tools.nsc.util.ScalaClassLoader
 
 class ScalacFork extends MatchingTask with TaskArgs {
   val MainClass = "scala.tools.nsc.Main"
+  private def originOfThis: String =
+    ScalaClassLoader.originOfClass(classOf[ScalacFork]) map (_.toString) getOrElse "<unknown>"
 
   def setSrcdir(input: File) {
     sourceDir = Some(input)
@@ -58,6 +61,8 @@ class ScalacFork extends MatchingTask with TaskArgs {
 
   override def execute() {
     def plural(x: Int) = if (x > 1) "s" else ""
+
+    log("Executing ant task scalacfork, origin: %s".format(originOfThis), Project.MSG_VERBOSE)
 
     val compilerPath = this.compilerPath getOrElse error("Mandatory attribute 'compilerpath' is not set.")
     val sourceDir = this.sourceDir getOrElse error("Mandatory attribute 'srcdir' is not set.")

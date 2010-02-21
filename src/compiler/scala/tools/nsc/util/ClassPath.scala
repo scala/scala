@@ -47,6 +47,26 @@ object ClassPath {
     else List(pattern)
   }
 
+  /** Return duplicated classpath entries as
+   *    (name, list of origins)
+   *  in the order they occur on the path.
+   */
+  def findDuplicates(cp: ClassPath[_]) = {
+    def toFullName(x: (String, _, cp.AnyClassRep)) = x._1 + "." + x._3.name
+    def toOriginString(x: ClassPath[_]) = x.origin getOrElse x.name
+
+    /** Flatten everything into tuples, recombine grouped by name, filter down to 2+ entries. */
+    val flattened = (
+      for ((pkgName, pkg) <- cp.allPackagesWithNames ; clazz <- pkg.classes) yield
+        (pkgName, pkg, clazz)
+    )
+    val multipleAppearingEntries = flattened groupBy toFullName filter (_._2.size > 1)
+
+    /** Extract results. */
+    for (name <- flattened map toFullName distinct ; dups <- multipleAppearingEntries get name) yield
+      (name, dups map { case (_, cp, _) => toOriginString(cp) })
+  }
+
   /** Split classpath using platform-dependent path separator */
   def split(path: String): List[String] = (path split pathSeparator).toList filterNot (_ == "") distinct
 
@@ -67,7 +87,7 @@ object ClassPath {
   /** Expand dir out to contents, a la extdir */
   def expandDir(extdir: String): List[String] = {
     val dir = Option(AbstractFile getDirectory extdir) getOrElse (return Nil)
-    dir filter (_.isClassContainer) map (dir.sfile / _.name path) toList
+    dir filter (_.isClassContainer) map (dir.sfile.get / _.name path) toList
   }
 
   /** A useful name filter. */
@@ -158,7 +178,13 @@ abstract class ClassPath[T] {
    */
   def name: String
 
-  /** An URL representing this classpath.
+  /**
+   * A String representing the origin of this classpath element, if known.
+   * For example, the path of the directory or jar.
+   */
+  def origin: Option[String] = None
+
+  /** A list of URLs representing this classpath.
    */
   def asURLs: List[URL]
 
@@ -168,9 +194,29 @@ abstract class ClassPath[T] {
 
   /** Lists of entities.
    */
-  val classes: List[AnyClassRep]
-  val packages: List[ClassPath[T]]
-  val sourcepaths: List[AbstractFile]
+  def classes: List[AnyClassRep]
+  def packages: List[ClassPath[T]]
+  def sourcepaths: List[AbstractFile]
+
+  /** Information which entails walking the tree.  This is probably only
+   *  necessary for tracking down problems - it's normally not used.
+   */
+  def allPackages: List[ClassPath[T]] = packages ::: (packages flatMap (_.allPackages))
+  def allPackageNames: List[String] = {
+    def subpackages(prefix: String, cp: ClassPath[T]): List[String] = (
+      (cp.packages map (prefix + _.name)) :::
+      (cp.packages flatMap (x => subpackages(prefix + x.name + ".", x)))
+    )
+    subpackages("", this)
+  }
+  def allPackagesWithNames: List[(String, ClassPath[T])] = {
+    val root = packages map (p => p.name -> p)
+    val subs =
+      for ((prefix, p) <- root ; (k, v) <- p.allPackagesWithNames) yield
+        (prefix + "." + k, v)
+
+    root ::: subs
+  }
 
   /**
    * Represents classes which can be loaded with a ClassfileLoader/MSILTypeLoader
@@ -227,7 +273,8 @@ abstract class ClassPath[T] {
  */
 class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends ClassPath[T] {
   def name = dir.name
-  def asURLs = List(dir.sfile.toURL)
+  override def origin = dir.underlyingSource map (_.path)
+  def asURLs = dir.sfile.toList map (_.toURL)
   val sourcepaths: List[AbstractFile] = List(dir)
 
   lazy val classes: List[ClassRep] = dir partialMap {
@@ -247,7 +294,8 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
  */
 class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[AbstractFile]) extends ClassPath[AbstractFile] {
   def name = dir.name
-  def asURLs = List(dir.sfile.toURL)
+  override def origin = dir.underlyingSource map (_.path)
+  def asURLs = dir.sfile.toList map (_.toURL)
   val sourcepaths: List[AbstractFile] = Nil
 
   lazy val classes: List[ClassRep] = dir partialMap {
@@ -266,11 +314,11 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
  * A classpath unifying multiple class- and sourcepath entries.
  */
 class MergedClassPath[T](
-  protected val entries: List[ClassPath[T]],
+  val entries: List[ClassPath[T]],
   val context: ClassPathContext[T])
 extends ClassPath[T] {
-
   def name = entries.head.name
+  override def origin = Some(entries map (x => x.origin getOrElse x.name) mkString ("Merged(", ", ", ")"))
   def asURLs = entries flatMap (_.asURLs)
   lazy val sourcepaths: List[AbstractFile] = entries flatMap (_.sourcepaths)
 
@@ -314,6 +362,31 @@ extends ClassPath[T] {
     new MergedClassPath[T](newEntries, context)
   }
 
+  override def allPackages: List[ClassPath[T]] = entries flatMap (_.allPackages)
+  override def allPackageNames = entries flatMap (_.allPackageNames)
+  override def allPackagesWithNames = entries flatMap (_.allPackagesWithNames)
+
+  def duplicatedClasses = {
+    def toFullName(x: (String, _, AnyClassRep)) = x._1 + "." + x._3.name
+
+    /** Flatten everything into tuples, recombine grouped by name, filter down to 2+ entries. */
+    val flattened = (
+      for ((pkgName, pkg) <- allPackagesWithNames ; clazz <- pkg.classes) yield
+        (pkgName, pkg, clazz)
+    )
+    val multipleAppearingEntries = flattened groupBy toFullName filter (_._2.size > 1)
+
+    /** Using original name list as reference point, return duplicated entries as
+     *    (name, list of origins)
+     *  in the order they occur on the path.
+     */
+    for (name <- flattened map toFullName distinct ; dups <- multipleAppearingEntries get name) yield
+      (name, dups map {
+        case (_, cp, _) if cp.origin.isDefined  => cp.origin.get
+        case (_, cp, _)                         => cp.asURLs.mkString
+      })
+  }
+
   def asClasspathString: String = ClassPath.join(entries partialMap {
     case x: DirectoryClassPath  => x.dir.path
     case x: MergedClassPath[_]  => x.asClasspathString
@@ -322,6 +395,10 @@ extends ClassPath[T] {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
     asClasspathString split ':' foreach (x => println("  " + x))
   }
+  def showDuplicates =
+    ClassPath findDuplicates this foreach {
+      case (name, xs) => println(xs.mkString(name + ":\n  ", "\n  ", "\n"))
+    }
 
   override def toString() = "merged classpath "+ entries.mkString("(", "\n", ")")
 }

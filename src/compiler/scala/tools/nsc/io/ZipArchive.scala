@@ -207,9 +207,9 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     path: String
   ) extends VirtualFile(name, path)
   {
-    final override def path = "%s(%s)".format(self, pathInArchive)
-    final def getArchive = self.archive
-    def pathInArchive = super.path
+    override def underlyingSource = Some(self)
+    final override def path = "%s(%s)".format(self, super.path)
+    final def archive = self.archive
 
     override def hashCode = super.hashCode + container.hashCode
     override def equals(that : Any) =
@@ -234,7 +234,6 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     val entry: ZipEntry
   ) extends Entry(container, name, path) with FileEntryInterface
   {
-    def archive = self.archive
     override def input = archive getInputStream entry
   }
 
@@ -282,6 +281,7 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer
 
   abstract class Entry(name: String, path: String) extends VirtualFile(name, path) {
     final override def path = "%s(%s)".format(URLZipArchive.this, super.path)
+    override def container = URLZipArchive.this
   }
   final class DirEntry(name: String, path: String) extends Entry(name, path) with DirEntryInterface {
     def source = input

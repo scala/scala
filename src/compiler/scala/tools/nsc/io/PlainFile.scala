@@ -27,6 +27,8 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   assert(path ne null)
 
   val file = givenPath.jfile
+  override def underlyingSource = Some(this)
+
   private val fpath = try givenPath.normalize catch { case _: IOException => givenPath.toAbsolute }
 
   /** Returns the name of this abstract file. */
