@@ -19,7 +19,7 @@ scala> defined type alias anotherint
 
 scala> four: anotherint = 4
 
-scala> <console>:5: error: type mismatch;
+scala> <console>:6: error: type mismatch;
  found   : java.lang.String("hello")
  required: anotherint
        val bogus: anotherint = "hello"
@@ -217,7 +217,7 @@ scala> defined class Exp
 defined class Fact
 defined class Term
 
-scala>      |      | <console>:15: warning: match is not exhaustive!
+scala>      |      | <console>:16: warning: match is not exhaustive!
 missing combination           Term
 missing combination            Exp
 
@@ -230,6 +230,6 @@ scala>
 plusOne: (x: Int)Int
 res0: Int = 6
 res1: java.lang.String = after reset
-<console>:5: error: not found: value plusOne
+<console>:6: error: not found: value plusOne
        plusOne(5) // should be undefined now
        ^

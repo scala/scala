@@ -98,13 +98,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private val _compiler: Global = newCompiler(settings, reporter)
   private def _initialize(): Boolean = {
     val source = """
-      | // this is assembled to force the loading of approximately the
-      | // classes which will be loaded on the first expression anyway.
-      | class $repl_$init {
-      |   val x = "abc".reverse.length + (5 max 5)
-      |   val nl = if (x.toString contains '\n') "\n" else ""
-      |   scala.runtime.ScalaRunTime.stringOf(nl)
-      | }
+      |// this is assembled to force the loading of approximately the
+      |// classes which will be loaded on the first expression anyway.
+      |class $repl_$init {
+      |  val x = "abc".reverse.length + (5 max 5)
+      |  scala.runtime.ScalaRunTime.stringOf(x)
+      |}
       |""".stripMargin
 
     val run = new _compiler.Run()
@@ -458,7 +457,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           for (imv <- x.boundNames) {
             if (currentImps contains imv) addWrapper()
 
-            code append ("import " + (req fullPath imv))
+            code append ("import %s\n" format (req fullPath imv))
             currentImps += imv
           }
       }
@@ -491,7 +490,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** For :power - create trees and type aliases from code snippets. */
   def mkContext(code: String = "") = compiler.analyzer.rootContext(mkUnit(code))
-  def mkAlias(name: String, what: String) = interpret("type " + name + " = " + what)
+  def mkAlias(name: String, what: String) = interpret("type %s = %s".format(name, what))
   def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
   def mkUnit(code: String) = new CompilationUnit(mkSourceFile(code))
 
@@ -541,6 +540,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     compileSources(new BatchSourceFile("<script>", code))
 
   def compileAndSaveRun(label: String, code: String) = {
+    if (settings.Yrepldebug.value) {
+      parse(code) match {
+        case Some(trees)  => trees foreach (t => println(compiler.asCompactString(t)))
+        case _            => println("Parse error:\n\n" + code)
+      }
+    }
     val run = new compiler.Run()
     run.compileSources(List(new BatchSourceFile(label, code)))
     run
@@ -640,10 +645,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     val binderName = newBinder()
 
     compileString("""
-      | object %s {
-      |   var value: %s = _
-      |   def set(x: Any) = value = x.asInstanceOf[%s]
-      | }
+      |object %s {
+      |  var value: %s = _
+      |  def set(x: Any) = value = x.asInstanceOf[%s]
+      |}
     """.stripMargin.format(binderName, boundType, boundType))
 
     val binderObject = loadByName(binderName)
@@ -723,19 +728,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       val isInternal = isGeneratedVarName(vname) && req.typeOfEnc(vname) == "Unit"
       if (!mods.isPublic || isInternal) return
 
-      lazy val extractor = """
-        | {
-        |    val s = scala.runtime.ScalaRunTime.stringOf(%s)
-        |    val nl = if (s.contains('\n')) "\n" else ""
-        |    nl + s + "\n"
-        | }
-      """.stripMargin.format(req fullPath vname)
+      lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s)".format(req fullPath vname)
 
       // if this is a lazy val we avoid evaluating it here
       val resultString = if (isLazy) codegenln(false, "<lazy>") else extractor
       val codeToPrint =
-        """ + "%s: %s = " + %s""" .
-        format(prettyName, string2code(req.typeOf(vname)), resultString)
+        """ + "%s: %s = " + %s""".format(prettyName, string2code(req typeOf vname), resultString)
 
       code print codeToPrint
     }
@@ -845,7 +843,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       importsCode(Set.empty ++ usedNames)
 
     /** Code to access a variable with the specified name */
-    def fullPath(vname: String): String = "%s.`%s`\n".format(objectName + accessPath, vname)
+    def fullPath(vname: String): String = "%s.`%s`".format(objectName + accessPath, vname)
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: Name): String = fullPath(vname.toString)
@@ -855,10 +853,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** generate the source code for the object that computes this request */
     def objectSourceCode: String = stringFrom { code =>
-      val preamble = """object %s {
-        |   %s%s
+      val preamble = """
+        |object %s {
+        |  %s%s
       """.stripMargin.format(objectName, importsPreamble, indentCode(toCompute))
-      val postamble = importsTrailer + "; }"
+      val postamble = importsTrailer + "\n}"
 
       code println preamble
       handlers foreach { _.extraCodeToEvaluate(this, code) }
@@ -874,25 +873,27 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       val valueExtractor = handlers.last.generatesValue match {
         case Some(vname) if typeOf contains vname =>
           """
-          | lazy val scala_repl_value = {
-          |   scala_repl_result // make sure that's run
-          |   %s
-          | }""".stripMargin.format(fullPath(vname))
+          |lazy val scala_repl_value = {
+          |  scala_repl_result
+          |  %s
+          |}""".stripMargin.format(fullPath(vname))
         case _  => ""
       }
 
+      // first line evaluates object to make sure constructor is run
+      // initial "" so later code can uniformly be: + etc
       val preamble = """
-      | object %s {
-      |   %s
-      |   val scala_repl_result: String = {
-      |     %s    // evaluate object to make sure constructor is run
-      |     (""   // an initial "" so later code can uniformly be: + etc
+      |object %s {
+      |  %s
+      |  val scala_repl_result: String = {
+      |    %s
+      |    (""
       """.stripMargin.format(resultObjectName, valueExtractor, objectName + accessPath)
 
       val postamble = """
-      |     )
-      |   }
-      | }
+      |    )
+      |  }
+      |}
       """.stripMargin
 
       code println preamble
@@ -1262,11 +1263,14 @@ object Interpreter {
 
   def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
   def codegenln(xs: String*): String = codegenln(true, xs: _*)
+
   def codegen(xs: String*): String = codegen(true, xs: _*)
   def codegen(leadingPlus: Boolean, xs: String*): String = {
     val front = if (leadingPlus) "+ " else ""
-    xs.map("\"" + string2code(_) + "\"").mkString(front, " + ", "")
+    front + (xs map string2codeQuoted mkString " + ")
   }
+
+  def string2codeQuoted(str: String) = "\"" + string2code(str) + "\""
 
   /** Convert a string into code that can recreate the string.
    *  This requires replacing all special characters by escape

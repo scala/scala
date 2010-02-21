@@ -187,16 +187,21 @@ object ScalaRunTime {
    * @return a string representation of <code>arg</code>
    *
    */
-  def stringOf(arg: Any): String = arg match {
-    case null                     => "null"
-    // Node extends NodeSeq extends Seq[Node] strikes again
-    case x: Node                  => x toString
-    case x: AnyRef if isArray(x)  => WrappedArray make x map stringOf mkString ("Array(", ", ", ")")
-    case x: Traversable[_]        =>
-      // Some subclasses of AbstractFile implement Iterable, then throw an
-      // exception if you call iterator.  What a world.
-      if (x.getClass.getName startsWith "scala.tools.nsc.io") x.toString
-      else x map stringOf mkString (x.stringPrefix + "(", ", ", ")")
-    case x                        => x toString
+  def stringOf(arg: Any): String = {
+    def inner(arg: Any): String = arg match {
+      case null                     => "null"
+      // Node extends NodeSeq extends Seq[Node] strikes again
+      case x: Node                  => x toString
+      case x: AnyRef if isArray(x)  => WrappedArray make x map inner mkString ("Array(", ", ", ")")
+      case x: Traversable[_]        =>
+        // Some subclasses of AbstractFile implement Iterable, then throw an
+        // exception if you call iterator.  What a world.
+        if (x.getClass.getName startsWith "scala.tools.nsc.io") x.toString
+        else x map inner mkString (x.stringPrefix + "(", ", ", ")")
+      case x                        => x toString
+    }
+    val s = inner(arg)
+    val nl = if (s contains "\n") "\n" else ""
+    nl + s + "\n"
   }
 }
