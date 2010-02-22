@@ -173,7 +173,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     override def apply(tp: Type): Type = tp match {
       case TypeRef(pre, sym, args) if !args.isEmpty =>
         val pre1 = this(pre)
-        val args1 = args map this
+        val args1 = args// map this
         val unspecArgs = unspecializedArgs(sym, args)
         specializedClass.get((sym, TypeEnv.fromSpecialization(sym, args1))) match {
           case Some(sym1) =>
@@ -182,7 +182,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           case None =>
             typeRef(pre1, sym, args1)
         }
-      case _ => mapOver(tp)
+      case _ => tp // mapOver(tp)
     }
   }
 
