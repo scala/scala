@@ -15,6 +15,7 @@ import annotation.elidable
 import scala.tools.util.{ PathResolver, StringOps }
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable.TreeSet
+import interpreter.{ returning }
 
 class Settings(errorFn: String => Unit) extends ScalacSettings {
   def this() = this(Console.println)
@@ -65,9 +66,9 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   }
   def processArgumentString(params: String) = processArguments(splitParams(params), true)
 
-  override def hashCode() = settingSet.hashCode
+  override def hashCode() = visibleSettings.hashCode
   override def equals(that: Any) = that match {
-    case s: Settings  => this.settingSet == s.settingSet
+    case s: Settings  => this.visibleSettings == s.visibleSettings
     case _            => false
   }
 
@@ -88,7 +89,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
       case _ => "" == value
     }
 
-    for (setting <- settingSet ; (dep, value) <- setting.dependency)
+    for (setting <- visibleSettings ; (dep, value) <- setting.dependency)
       if (!setting.isDefault && !hasValue(dep, value)) {
         errorFn("incomplete option " + setting.name + " (requires " + dep.name + ")")
         return false
@@ -192,7 +193,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
   // checks both name and any available abbreviations
   def lookupSetting(cmd: String): Option[Setting] =
-    settingSet.find(x => x.name == cmd || (x.abbreviations contains cmd))
+    allSettings.find(x => x.name == cmd || (x.abbreviations contains cmd))
 
   // The *Setting classes used to be case classes defined inside of Settings.
   // The choice of location was poor because it tied the type of each setting
@@ -205,11 +206,11 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   //
   //   For some reason, "object defines extends Setting(...)"
   //   does not work here.  The object is present but the setting
-  //   is not added to allsettings.
+  //   is not added to allSettings.
   //
   // To capture similar semantics, I created instance methods on setting
   // which call a factory method for the right kind of object and then add
-  // the newly constructed instance to allsettings.  The constructors are
+  // the newly constructed instance to allSettings.  The constructors are
   // private to force all creation to go through these methods.
   //
   // The usage of case classes was becoming problematic (due to custom
@@ -221,7 +222,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   // and tell them how to announce errors
   private def add[T <: Setting](s: T): T = {
     s setErrorHandler errorFn
-    allsettings += s
+    allSettings += s
     s
   }
 
@@ -242,6 +243,17 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   lazy val PhasesSetting       = untupled((phase _).tupled andThen add[PhasesSetting])
   lazy val OutputSetting       = untupled((output _).tupled andThen add[OutputSetting])
   lazy val DefinesSetting      = () => add(new DefinesSetting())
+
+  def PathSetting(name: String, arg: String, descr: String, default: String): PathSetting = {
+    val prepend = new Settings.StringSetting(name + "/p", "", "", "") { override val isInternalOnly = true }
+    val append = new Settings.StringSetting(name + "/a", "", "", "") { override val isInternalOnly = true }
+
+    /** Not flipping this part on just yet.
+    add[StringSetting](prepend)
+    add[StringSetting](append)
+     */
+    returning(new PathSetting(name, arg, descr, default, prepend, append))(x => add[PathSetting](x))
+  }
 
   override def toString() = "Settings {\n%s}\n" format (userSetSettings map ("  " + _ + "\n") mkString)
 }
@@ -400,6 +412,9 @@ object Settings {
   abstract class Setting(descr: String) extends Ordered[Setting] with SettingValue {
     /** The name of the option as written on the command line, '-' included. */
     def name: String
+
+    /** If the setting should not appear in help output, etc. */
+    def isInternalOnly = false
 
     /** Error handling function, set after creation by enclosing Settings instance */
     private var _errorFn: String => Unit = _
@@ -578,8 +593,27 @@ object Settings {
 
     override def equals(that: Any) = that match {
       case x: StringSetting => this isEq x
-      case _            => false
+      case _                => false
     }
+  }
+
+  class PathSetting private[Settings](
+    name: String,
+    arg: String,
+    descr: String,
+    default: String,
+    prependPath: StringSetting,
+    appendPath: StringSetting)
+  extends StringSetting(name, arg, descr, default) {
+    import ClassPath.join
+    def prepend(s: String) = prependPath.value = join(s, prependPath.value)
+    def append(s: String) = appendPath.value = join(appendPath.value, s)
+
+    override def value = join(
+      prependPath.value,
+      super.value,
+      appendPath.value
+    )
   }
 
   /** Set the output directory. */
@@ -764,16 +798,16 @@ trait ScalacSettings {
   import PathResolver.{ Defaults, Environment }
 
   /** Sorted set of settings */
-  protected var allsettings: Set[Setting] = TreeSet[Setting]()
+  protected var allSettings: Set[Setting] = TreeSet[Setting]()
 
   /** All settings */
-  def settingSet: Set[Setting] = allsettings
+  def visibleSettings: Set[Setting] = allSettings filterNot (_.isInternalOnly)
 
   /** Set settings */
-  def userSetSettings: Set[Setting] = settingSet filterNot (_.isDefault)
+  def userSetSettings: Set[Setting] = visibleSettings filterNot (_.isDefault)
 
   /** Disable a setting */
-  def disable(s: Setting) = allsettings -= s
+  def disable(s: Setting) = allSettings -= s
 
   /**
    *  Temporary Settings
@@ -781,7 +815,7 @@ trait ScalacSettings {
   val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
   def appendToClasspath(entry: String) = {
     val oldClasspath = classpath.value
-    classpath.value = ClassPath.join(Seq(classpath.value, entry))
+    classpath.value = ClassPath.join(classpath.value, entry)
 
     if (Ylogcp.value)
       Console.println("Updated classpath from '%s' to '%s'".format(oldClasspath, classpath.value))
@@ -791,18 +825,15 @@ trait ScalacSettings {
    *  Classpath related settings
    */
 
-  val bootclasspath     = StringSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", "")
-  val classpath         = StringSetting     ("-classpath", "path", "Specify where to find user class files", "") withAbbreviation ("-cp")
-  val extdirs           = StringSetting     ("-extdirs", "dirs", "Override location of installed extensions", "")
-  val javabootclasspath = StringSetting     ("-javabootclasspath", "path", "Override java boot classpath.", "")
-  val javabootAppend    = StringSetting     ("-javabootclasspath/a", "path", "Append to java boot classpath", "")
-  val javabootPrepend   = StringSetting     ("-javabootclasspath/p", "path", "Prepend to java boot classpath", "")
-  val javaextdirs       = StringSetting     ("-javaextdirs", "path", "Override java extdirs classpath.", "")
+  val classpath         = PathSetting     ("-classpath", "path", "Specify where to find user class files", ".") withAbbreviation ("-cp")
+  val bootclasspath     = PathSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", Defaults.scalaBootClassPath)
+  val extdirs           = PathSetting     ("-extdirs", "dirs", "Override location of installed extensions", Defaults.scalaExtDirs)
+  val javabootclasspath = PathSetting     ("-javabootclasspath", "path", "Override java boot classpath.", Defaults.javaBootClassPath)
+  val javaextdirs       = PathSetting     ("-javaextdirs", "path", "Override java extdirs classpath.", Defaults.javaExtDirs)
 
-  val outdir            = OutputSetting     (outputDirs, ".")
-  val sourcepath        = StringSetting     ("-sourcepath", "path", "Specify where to find input source files", "")
-  val Ycodebase         = StringSetting     ("-Ycodebase", "codebase", "Specify the URL containing the Scala libraries", "")
-  val Ylogcp            = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
+  val outdir            = OutputSetting   (outputDirs, ".")
+  val sourcepath        = StringSetting   ("-sourcepath", "path", "Specify where to find input source files", "")
+  val Ylogcp            = BooleanSetting  ("-Ylog-classpath", "Output information about what classpath is being applied.")
 
   /**
    *  Standard settings

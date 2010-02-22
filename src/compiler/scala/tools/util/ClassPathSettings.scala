@@ -16,8 +16,6 @@ trait ClassPathSettings {
   def extdirs: String             // -extdirs
   def classpath: String           // -classpath
   def sourcepath: String          // -sourcepath
-
-  def codebase: String            // -Ycodebase
 }
 
 // val debugLogger = {

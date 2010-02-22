@@ -63,7 +63,7 @@ class ReflectiveRunner extends RunnerUtils {
       case Some(cp) => Nil
       case _        => files.toList map (_.path)
     }
-    val newClasspath = ClassPath join paths
+    val newClasspath = ClassPath.join(paths: _*)
 
     syspropset("java.class.path", newClasspath)
     syspropset("scala.home", "")

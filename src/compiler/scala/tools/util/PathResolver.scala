@@ -23,8 +23,8 @@ object PathResolver {
 
   private def fileOpt(f: Path): Option[String]      = f ifFile (_.path)
   private def dirOpt(d: Path): Option[String]       = d ifDirectory (_.path)
-  private def expandToPath(p: Path)                 = join(ClassPath.expandPath(p.path, true))
-  private def expandToContents(p: Path)             = join(ClassPath.expandDir(p.path))
+  private def expandToPath(p: Path)                 = join(ClassPath.expandPath(p.path, true): _*)
+  private def expandToContents(p: Path)             = join(ClassPath.expandDir(p.path): _*)
 
   /** Map all classpath elements to absolute paths and reconstruct the classpath.
     */
@@ -106,13 +106,13 @@ object PathResolver {
       else ""
 
     def scalaBootClassPath  = scalaLibDirFound match {
-      case Some(dir) if scalaHomeExists => join(ClassPath expandDir dir.path)
+      case Some(dir) if scalaHomeExists => join(ClassPath expandDir dir.path: _*)
       case _                            => ""
     }
 
     def scalaExtDirs        = Environment.scalaExtDirs
     def scalaPluginDirs     = List("misc", "scala-devel", "plugins")
-    def scalaPluginPath     = join(scalaPluginDirs map (scalaHomeDir / _ path))
+    def scalaPluginPath     = join(scalaPluginDirs map (scalaHomeDir / _ path): _*)
 
     override def toString = """
       |object Defaults {
@@ -173,7 +173,6 @@ class PathResolver(settings: Settings, context: JavaContext) {
     case "extdirs"            => settings.extdirs.value
     case "classpath" | "cp"   => settings.classpath.value
     case "sourcepath"         => settings.sourcepath.value
-    case "Ycodebase"          => settings.Ycodebase.value
   }
 
   /** Calculated values based on any given command line options, falling back on
@@ -188,7 +187,6 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
     def userClassPath       = cmdLineOrElse("classpath", ".")
     def sourcePath          = cmdLineOrElse("sourcepath", "")
-    def codeBase            = cmdLineOrElse("Ycodebase", "")
 
     import context._
 

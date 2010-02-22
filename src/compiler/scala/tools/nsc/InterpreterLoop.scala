@@ -13,6 +13,7 @@ import scala.tools.nsc.{ InterpreterResults => IR }
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
+import util.{ ClassPath }
 import interpreter._
 import io.{ File, Process }
 
@@ -88,9 +89,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   var settings: Settings = _          // set by main()
   var interpreter: Interpreter = _    // set by createInterpreter()
 
-  // XXX
-  // classpath entries added via :jar
-  var addedClasspath: List[String] = Nil
+  // classpath entries added via :cp
+  var addedClasspath: String = ""
 
   /** A reverse list of commands to replay if the user requests a :replay */
   var replayCommandStack: List[String] = Nil
@@ -112,8 +112,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
 
   /** Create a new interpreter. */
   def createInterpreter() {
-    // if (!addedClasspath.isEmpty)
-    //   addedClasspath foreach (settings appendToClasspath _)
+    if (addedClasspath != "")
+      settings.classpath append addedClasspath
 
     interpreter = new Interpreter(settings, out) {
       override protected def parentClassLoader = classOf[InterpreterLoop].getClassLoader
@@ -191,10 +191,10 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
   val standardCommands: List[Command] = {
     import CommandImplicits._
     List(
+       OneArg("cp", "add an entry (jar or directory) to the classpath", addClasspath),
        NoArgs("help", "print this help message", printHelp),
        VarArgs("history", "show the history (optional arg: lines to show)", printHistory),
        LineArg("h?", "search the history", searchHistory),
-       OneArg("jar", "add a jar to the classpath", addJar),
        OneArg("load", "load and interpret a Scala file", load),
        NoArgs("power", "enable power user mode", power),
        NoArgs("quit", "exit the interpreter", () => Result(false, None)),
@@ -316,15 +316,15 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     Result(true, shouldReplay)
   }
 
-
-  def addJar(arg: String): Unit = {
+  def addClasspath(arg: String): Unit = {
     val f = File(arg).normalize
     if (f.exists) {
-      addedClasspath :+= f.path
-      println("Added " + f.path + " to your classpath.")
+      addedClasspath = ClassPath.join(addedClasspath, f.path)
+      val totalClasspath = ClassPath.join(settings.classpath.value, addedClasspath)
+      println("Added '%s'.  Your new classpath is:\n%s".format(f.path, totalClasspath))
       replay()
     }
-    else out.println("The file '" + f + "' doesn't seem to exist.")
+    else out.println("The path '" + f + "' doesn't seem to exist.")
   }
 
   /** This isn't going to win any efficiency awards, but it's only

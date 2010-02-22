@@ -19,8 +19,7 @@ import org.apache.tools.ant.util.{ GlobPatternMapper, SourceFileScanner }
 import scala.tools.nsc.io
 import scala.tools.nsc.util.ScalaClassLoader
 
-class ScalacFork extends MatchingTask with TaskArgs {
-  val MainClass = "scala.tools.nsc.Main"
+class ScalacFork extends MatchingTask with ScalacShared with TaskArgs {
   private def originOfThis: String =
     ScalaClassLoader.originOfClass(classOf[ScalacFork]) map (_.toString) getOrElse "<unknown>"
 
@@ -111,18 +110,14 @@ class ScalacFork extends MatchingTask with TaskArgs {
     // used by scala
     compilationPath foreach (_ => java.createJvmarg() setValue "-Dscala.home=")
 
-    // dump the arguments to a file and do  "java @file"
+    // dump the arguments to a file and do "java @file"
     val tempArgFile = io.File.makeTemp("scalacfork")
     val tokens = settings.toArgs ++ (includedFiles map (_.getPath))
     tempArgFile writeAll List(tokens mkString " ")
 
     val paths = List(Some(tempArgFile.toAbsolute.path), argfile).flatten map (_.toString)
-    paths foreach (p => java.createArg() setValue ("@"+ p))
+    val res = execWithArgFiles(java, paths)
 
-    val debugString = paths map (x => " (@ = '%s')".format(io.File(x).slurp())) mkString ""
-    log(java.getCommandLine.getCommandline.mkString("", " ", debugString), Project.MSG_VERBOSE)
-
-    val res = java.executeJava()
     if (failOnError && res != 0)
       error("Compilation failed because of an internal compiler error;"+
             " see the error output for details.")

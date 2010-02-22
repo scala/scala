@@ -175,7 +175,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
     val cmd = javacCmd+
       " -d "+outDir.getAbsolutePath+
-      " -classpath "+ join(Seq(outDir.toString, CLASSPATH)) +
+      " -classpath "+ join(outDir.toString, CLASSPATH) +
       " "+files.mkString(" ")
 
     val (success, msg) = try {
@@ -263,7 +263,7 @@ class Worker(val fileManager: FileManager) extends Actor {
         JAVACMD,
         JAVA_OPTS,
         argString,
-        "-classpath " + join(Seq(outDir.toString, CLASSPATH))
+        "-classpath " + join(outDir.toString, CLASSPATH)
       ) ::: propertyOptions ::: List(
         "scala.tools.nsc.MainGenericRunner",
         "Test",

@@ -71,10 +71,13 @@ object ClassPath {
   def split(path: String): List[String] = (path split pathSeparator).toList filterNot (_ == "") distinct
 
   /** Join classpath using platform-dependent path separator */
-  def join(path: Seq[String]): String = path filterNot (_ == "") mkString pathSeparator
+  def join(path: String*): String = path filterNot (_ == "") mkString pathSeparator
 
   /** Split the classpath, apply a transformation function, and reassemble it. */
-  def map(cp: String, f: String => String): String = join(split(cp) map f)
+  def map(cp: String, f: String => String): String = join(split(cp) map f: _*)
+
+  /** Split the classpath, filter according to predicate, and reassemble. */
+  def filter(cp: String, p: String => Boolean): String = join(split(cp) filter p: _*)
 
   /** Split the classpath and map them into urls */
   def toURLs(cp: String): List[URL] = split(cp) map (x => Path(x).toAbsolute.toURL)
@@ -387,10 +390,11 @@ extends ClassPath[T] {
       })
   }
 
-  def asClasspathString: String = ClassPath.join(entries partialMap {
+  def asClasspathString: String = join(entries partialMap {
     case x: DirectoryClassPath  => x.dir.path
     case x: MergedClassPath[_]  => x.asClasspathString
-  })
+  }: _*)
+
   def show {
     println("ClassPath %s has %d entries and results in:\n".format(name, entries.size))
     asClasspathString split ':' foreach (x => println("  " + x))

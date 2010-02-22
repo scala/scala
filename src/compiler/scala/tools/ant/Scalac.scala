@@ -69,7 +69,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *
  * @author Gilles Dubochet, Stephane Micheloud
  */
-class Scalac extends MatchingTask {
+class Scalac extends MatchingTask with ScalacShared {
 
   /** The unique Ant file utilities instance to use in this task. */
   private val fileUtils = FileUtils.getFileUtils()
@@ -606,7 +606,7 @@ class Scalac extends MatchingTask {
       }
 
       java setClasspath scalacPath
-      java setClassname "scala.tools.nsc.Main"
+      java setClassname MainClass
 
       // Write all settings to a temporary file
       def writeSettings() : File = {
@@ -616,7 +616,7 @@ class Scalac extends MatchingTask {
         val out = new PrintWriter(new BufferedWriter(new FileWriter(file)))
 
         try {
-          for (setting <- settings.settingSet ; arg <- setting.unparse)
+          for (setting <- settings.visibleSettings ; arg <- setting.unparse)
             out println escapeArgument(arg)
           for (file <- sourceFiles)
             out println file.getAbsolutePath
@@ -625,11 +625,7 @@ class Scalac extends MatchingTask {
 
         file
       }
-
-      java.createArg() setValue ("@" + writeSettings.getCanonicalPath)
-      log(java.getCommandLine.getCommandline.mkString(" "), Project.MSG_VERBOSE)
-
-      val res = java.executeJava()
+      val res = execWithArgFiles(java, List(writeSettings.getCanonicalPath))
       if (failonerror && res != 0)
         error("Compilation failed because of an internal compiler error;"+
               " see the error output for details.")
