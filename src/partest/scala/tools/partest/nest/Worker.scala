@@ -973,7 +973,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
       try {
         // delete log file only if test was successful
-        if (good && !logFile.isEmpty)
+        if (good && !logFile.isEmpty && !isPartestDebug)
           logFile.get.toDelete = true
 
         writers match {

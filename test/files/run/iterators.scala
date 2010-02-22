@@ -93,8 +93,8 @@ object Test {
   }
 
   def check_findIndexOf: String = {
-    val i = List(1, 2, 3, 4, 5).findIndexOf { x: Int => x >= 4 }
-    val j = List(1, 2, 3, 4, 5).findIndexOf { x: Int => x >= 16 }
+    val i = List(1, 2, 3, 4, 5).indexWhere { x: Int => x >= 4 }
+    val j = List(1, 2, 3, 4, 5).indexWhere { x: Int => x >= 16 }
     "" + i + "x" + j
   }
 

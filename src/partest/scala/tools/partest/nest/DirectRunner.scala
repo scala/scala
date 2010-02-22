@@ -57,13 +57,13 @@ trait DirectRunner {
     workers foreach { w =>
       receiveWithin(3600 * 1000) {
         case Results(res, logs, outdirs) =>
-          logsToDelete = logsToDelete ::: logs.filter(_.toDelete)
-          outdirsToDelete = outdirsToDelete ::: outdirs
-          results = results ++ res
+          logsToDelete :::= logs filter (_.toDelete)
+          outdirsToDelete :::= outdirs
+          results ++= res
         case TIMEOUT =>
           // add at least one failure
           NestUI.verbose("worker timed out; adding failed test")
-          results = results + ("worker timed out; adding failed test" -> 2)
+          results += ("worker timed out; adding failed test" -> 2)
       }
     }
     if (!isPartestDebug) {

@@ -12,16 +12,11 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileInputStream, FileOutputStream, BufferedReader,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
-import scala.tools.nsc.io.Directory
+import scala.tools.nsc.io.{ Path, Directory }
 
 trait FileManager {
 
-  def basename(name: String): String = {
-    val inx = name.lastIndexOf(".")
-    if (inx < 0) name else name.substring(0, inx)
-  }
-
-  def deleteRecursive(dir: File) { Directory(dir).deleteRecursively() }
+  def basename(name: String): String = Path(name).stripExtension
 
   /**
    * Compares two files using a Java implementation of the GNU diff

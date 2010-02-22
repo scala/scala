@@ -111,9 +111,9 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
       (from.hasFlag(Flags.MODULE) == to.hasFlag(Flags.MODULE))
 
     // For testing purposes only, order irrelevant for compilation
-    def toStringSet(set: Set[AbstractFile]): String =  {
-        val s = (set.toList).sort(_.name < _.name)
-        s.mkString("Set(", ", ", ")")
+    def toStringSet(set: Set[AbstractFile]): String = {
+      val s = set.toList sortBy (_.name)
+      s.mkString("Set(", ", ", ")")
     }
 
     def update0(files: Set[AbstractFile]): Unit = if (!files.isEmpty) {

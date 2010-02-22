@@ -126,8 +126,8 @@ object Test1 extends TestCase("ctor") with Assert {
     assertEquals("check_forall", true, b1 & b2)
   }
   {
-    val ys1 = xs1 remove { e => e % 2 != 0 }
-    val ys2 = xs4 remove { e => e < 5 }
+    val ys1 = xs1 filterNot { e => e % 2 != 0 }
+    val ys2 = xs4 filterNot { e => e < 5 }
     assertEquals("check_remove", 3, ys1.length + ys2.length)
   }
   {
