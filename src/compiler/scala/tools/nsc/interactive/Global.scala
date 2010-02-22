@@ -333,7 +333,7 @@ self =>
 
   def stabilizedType(tree: Tree): Type = tree match {
     case Ident(_) if tree.symbol.isStable => singleType(NoPrefix, tree.symbol)
-    case Select(qual, _) if tree.symbol.isStable => singleType(qual.tpe, tree.symbol)
+    case Select(qual, _) if  qual.tpe != null && tree.symbol.isStable => singleType(qual.tpe, tree.symbol)
     case Import(expr, selectors) =>
       tree.symbol.info match {
         case analyzer.ImportType(expr) => expr match {

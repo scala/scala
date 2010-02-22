@@ -711,19 +711,14 @@ trait Typers { self: Analyzer =>
         else qual.tpe.nonLocalMember(name)
     }
 
-    def silent[T](op: Typer => T) : Any = silent(false, op)
-    def noisy[T](op: Typer => T) = silent(true, op)
-
-    def silent[T](report : Boolean, op: Typer => T): Any /* in fact, TypeError or T */ = {
+    def silent[T](op: Typer => T): Any /* in fact, TypeError or T */ = {
       val rawTypeStart = startCounter(rawTypeFailed)
       val findMemberStart = startCounter(findMemberFailed)
       val subtypeStart = startCounter(subtypeFailed)
       val failedSilentStart = startTimer(failedSilentNanos)
       try {
-        if (context.reportGeneralErrors != report) {
-          val context1 = context.make(context.tree)
-          context1.reportGeneralErrors = report
-          context1.reportAmbiguousErrors = context.reportAmbiguousErrors
+        if (context.reportGeneralErrors) {
+          val context1 = context.makeSilent(context.reportAmbiguousErrors)
           context1.undetparams = context.undetparams
           context1.savedTypeBounds = context.savedTypeBounds
           context1.namedApplyBlockInfo = context.namedApplyBlockInfo
@@ -3308,21 +3303,12 @@ trait Typers { self: Analyzer =>
               if (printTypings) println("second try for: "+fun+" and "+args)
               val Select(qual, name) = fun
               val args1 = tryTypedArgs(args, argMode(fun, mode), ex)
-              if ((args1 eq null) && onlyPresentation) {
-                return noisy(_.doTypedApply(tree, fun, args, mode, pt)) match {
-                  case t: Tree => t
-                  case ex: TypeError =>
-                    reportTypeError(tree.pos, ex)
-                    setError(tree)
-                }
-              } else {
-                val qual1 =
-                  if ((args1 ne null) && !pt.isError) adaptToArguments(qual, name, args1, pt)
-                  else qual
-                if (qual1 ne qual) {
-                  val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
-                  return typed1(tree1, mode | SNDTRYmode, pt)
-                }
+              val qual1 =
+                if ((args1 ne null) && !pt.isError) adaptToArguments(qual, name, args1, pt)
+                else qual
+              if (qual1 ne qual) {
+                val tree1 = Apply(Select(qual1, name) setPos fun.pos, args1) setPos tree.pos
+                return typed1(tree1, mode | SNDTRYmode, pt)
               }
             } else if (printTypings) {
               println("no second try for "+fun+" and "+args+" because error not in result:"+ex.pos+"!="+tree.pos)
@@ -3533,6 +3519,18 @@ trait Typers { self: Analyzer =>
 
         if (!reallyExists(sym)) {
           if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+"\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
+
+          def makeErrorTree = {
+            val tree1 = tree match {
+              case Select(_, _) => treeCopy.Select(tree, qual, name)
+              case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
+            }
+            setError(tree1)
+          }
+
+          if (name == nme.ERROR && onlyPresentation)
+            return makeErrorTree
+
           if (!qual.tpe.widen.isErroneous) {
             error(tree.pos,
               if (name == nme.CONSTRUCTOR)
@@ -3546,21 +3544,7 @@ trait Typers { self: Analyzer =>
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
                  else ""))
           }
-
-          // Temporary workaround to retain type information for qual so that askTypeCompletion has something to
-          // work with. This appears to work in the context of the IDE, but is incorrect and needs to be
-          // revisited.
-          if (onlyPresentation) {
-            // Nb. this appears to throw away the effects of setError, but some appear to be
-            // retained across the copy.
-            setError(tree)
-            val tree1 = tree match {
-              case Select(_, _) => treeCopy.Select(tree, qual, name)
-              case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
-            }
-            tree1
-          } else
-            setError(tree)
+          if (onlyPresentation) makeErrorTree else setError(tree)
         } else {
           val tree1 = tree match {
             case Select(_, _) => treeCopy.Select(tree, qual, name)
