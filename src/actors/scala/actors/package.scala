@@ -1,6 +1,7 @@
 package scala
 
 package object actors {
+
   @deprecated("use scala.actors.scheduler.ForkJoinScheduler instead")
   type FJTaskScheduler2 = scala.actors.scheduler.ForkJoinScheduler
 
@@ -15,4 +16,5 @@ package object actors {
 
   @deprecated("this value is going to be removed in a future release")
   val ActorGC = scala.actors.Scheduler.impl.asInstanceOf[scala.actors.scheduler.ThreadPoolScheduler]
+
 }

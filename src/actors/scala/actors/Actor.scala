@@ -820,7 +820,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
         // (because shouldExit == true)
         if (isSuspended)
           resumeActor()
-        else if (waitingFor ne waitingForNone) {
+        else if (waitingFor ne Reactor.waitingForNone) {
           scheduleActor(waitingFor, null)
           /* Here we should not throw a SuspendActorException,
              since the current method is called from an actor that

@@ -13,6 +13,7 @@ package scheduler
 
 /**
  * @author Erik Engbrecht
+ * @author Philipp Haller
  */
 object ThreadPoolConfig {
   private val rt = Runtime.getRuntime()
@@ -23,7 +24,7 @@ object ThreadPoolConfig {
       val prop = System.getProperty(propName)
       Some(Integer.parseInt(prop))
     } catch {
-      case ace: java.security.AccessControlException => None
+      case se: SecurityException => None
       case nfe: NumberFormatException => None
     }
   }

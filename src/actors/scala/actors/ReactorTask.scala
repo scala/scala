@@ -14,6 +14,8 @@ package scala.actors
 import java.lang.Runnable
 import java.util.concurrent.Callable
 
+import scala.concurrent.forkjoin.RecursiveAction
+
 /** <p>
  *    The class <code>ReactorTask</code>.
  *  </p>
@@ -21,7 +23,7 @@ import java.util.concurrent.Callable
  *  @author Philipp Haller
  */
 private[actors] class ReactorTask[T >: Null <: Reactor](var reactor: T, var fun: () => Any)
-  extends Callable[Unit] with Runnable {
+  extends RecursiveAction with Callable[Unit] with Runnable {
 
   def run() {
     val saved = Actor.tl.get
@@ -57,6 +59,8 @@ private[actors] class ReactorTask[T >: Null <: Reactor](var reactor: T, var fun:
   }
 
   def call() = run()
+
+  def compute() = run()
 
   protected def beforeExecuting() {}
 

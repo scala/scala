@@ -9,11 +9,11 @@
 // $Id$
 
 package scala.actors
+package scheduler
 
 import java.lang.ref.{Reference, WeakReference, ReferenceQueue}
 
 import scala.collection.mutable.HashSet
-import scala.actors.scheduler.TerminationMonitor
 
 /**
  * ActorGC keeps track of the number of live actors being managed by a

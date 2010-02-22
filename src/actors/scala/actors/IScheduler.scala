@@ -11,12 +11,12 @@
 package scala.actors
 
 /**
- * The <code>IScheduler</code> trait provides a common interface
+ * The <code>AbstractScheduler</code> trait provides a common interface
  * for all schedulers used to execute actor tasks.
  *
  * Subclasses of <code>Actor</code> that override its
  * <code>scheduler</code> member must provide
- * an <code>IScheduler</code> implementation.
+ * an <code>AbstractScheduler</code> implementation.
  *
  * @author Philipp Haller
  */

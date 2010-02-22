@@ -3,13 +3,15 @@ package scheduler
 
 import java.util.{Collection, ArrayList}
 import scala.concurrent.forkjoin._
+import scala.util.Random
 
 /** The <code>ForkJoinScheduler</code> is backed by a lightweight
  *  fork-join task execution framework.
  *
  * @author Philipp Haller
  */
-class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean) extends Runnable with IScheduler with TerminationMonitor {
+class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean, fair: Boolean)
+      extends Runnable with IScheduler with TerminationMonitor {
 
   private var pool = makeNewPool() // guarded by this
   private var terminating = false  // guarded by this
@@ -22,7 +24,7 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
   protected val CHECK_FREQ = 10
 
   def this(d: Boolean) {
-    this(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, d)
+    this(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, d, true)
   }
 
   def this() {
@@ -106,11 +108,11 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
   }
 
   override def executeFromActor(task: Runnable) {
-    // TODO: only pass RecursiveAction (with Runnable), and cast to it
-    val recAction = new RecursiveAction {
-      def compute() = task.run()
-    }
-    recAction.fork()
+    // in fair mode: 2% chance of submitting to global task queue
+    if (fair && Random.nextInt(50) == 1)
+      pool.execute(task)
+    else
+      task.asInstanceOf[RecursiveAction].fork()
   }
 
   /** Submits a closure for execution.

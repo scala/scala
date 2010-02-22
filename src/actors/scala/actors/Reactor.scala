@@ -10,18 +10,34 @@
 
 package scala.actors
 
-import scala.actors.scheduler.{DelegatingScheduler, DefaultThreadPoolScheduler}
-import scala.collection.mutable.Queue
+import scala.actors.scheduler.{DelegatingScheduler, DefaultThreadPoolScheduler,
+                               ForkJoinScheduler, ThreadPoolConfig}
 
-private object Reactor {
+private[actors] object Reactor {
+
   val scheduler = new DelegatingScheduler {
     def makeNewScheduler: IScheduler = {
-      val s = new DefaultThreadPoolScheduler(false)
-      Debug.info(this+": starting new "+s+" ["+s.getClass+"]")
-      s.start()
-      s
+      val sched = if (!ThreadPoolConfig.useForkJoin) {
+        // default is non-daemon
+        val s = new DefaultThreadPoolScheduler(false)
+        s.start()
+        s
+      } else {
+        // default is non-daemon, non-fair
+        val s = new ForkJoinScheduler(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, false, false)
+        s.start()
+        s
+      }
+      Debug.info(this+": starting new "+sched+" ["+sched.getClass+"]")
+      sched
     }
   }
+
+  val waitingForNone = new PartialFunction[Any, Unit] {
+    def isDefinedAt(x: Any) = false
+    def apply(x: Any) {}
+  }
+
 }
 
 /**
@@ -37,22 +53,20 @@ trait Reactor extends OutputChannel[Any] {
   // guarded by this
   private[actors] val sendBuffer = new MQueue("SendBuffer")
 
-  /* Whenever this actor executes on some thread, waitingFor is
-   * guaranteed to be equal to waitingForNone.
+  /* Whenever this actor executes on some thread, `waitingFor` is
+   * guaranteed to be equal to `Reactor.waitingForNone`.
    *
-   * In other words, whenever waitingFor is not equal to
-   * waitingForNone, this actor is guaranteed not to execute on some
-   * thread.
+   * In other words, whenever `waitingFor` is not equal to
+   * `Reactor.waitingForNone`, this actor is guaranteed not to execute
+   * on some thread.
+   *
+   * If the actor waits in a `react`, `waitingFor` holds the
+   * message handler that `react` was called with.
+   *
+   * guarded by this
    */
-  private[actors] val waitingForNone = new PartialFunction[Any, Unit] {
-    def isDefinedAt(x: Any) = false
-    def apply(x: Any) {}
-  }
-
-  /* If the actor waits in a react, waitingFor holds the
-   * message handler that react was called with.
-   */
-  private[actors] var waitingFor: PartialFunction[Any, Any] = waitingForNone // guarded by lock of this
+  private[actors] var waitingFor: PartialFunction[Any, Any] =
+    Reactor.waitingForNone
 
   /**
    * The behavior of an actor is specified by implementing this
@@ -78,9 +92,9 @@ trait Reactor extends OutputChannel[Any] {
    */
   def send(msg: Any, replyTo: OutputChannel[Any]) {
     val todo = synchronized {
-      if (waitingFor ne waitingForNone) {
+      if (waitingFor ne Reactor.waitingForNone) {
         val savedWaitingFor = waitingFor
-        waitingFor = waitingForNone
+        waitingFor = Reactor.waitingForNone
         startSearch(msg, replyTo, savedWaitingFor)
       } else {
         sendBuffer.append(msg, replyTo)
@@ -195,7 +209,7 @@ trait Reactor extends OutputChannel[Any] {
 
   /* This closure is used to implement control-flow operations
    * built on top of `seq`. Note that the only invocation of
-   * `kill` is supposed to be inside `Reaction.run`.
+   * `kill` is supposed to be inside `ReactorTask.run`.
    */
   @volatile
   private[actors] var kill: () => Unit =
