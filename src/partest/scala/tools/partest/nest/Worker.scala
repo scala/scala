@@ -9,18 +9,17 @@ package scala.tools.partest
 package nest
 
 import java.io._
-import java.net.{URLClassLoader, URL}
-import java.util.{Timer, TimerTask}
+import java.net.{ URLClassLoader, URL }
+import java.util.{ Timer, TimerTask }
 
-import scala.util.Properties.osName
+import scala.util.Properties.{ isWin }
 import scala.tools.nsc.{ ObjectRunner, Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile, Path, Directory, File => SFile }
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.nsc.util.{ ClassPath, FakePos }
-import scala.tools.util.PathResolver
 import ClassPath.{ join, split }
 
-import scala.actors.{Actor, Exit, TIMEOUT}
+import scala.actors.{ Actor, Exit, TIMEOUT }
 import scala.actors.Actor._
 import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
@@ -64,11 +63,6 @@ class Worker(val fileManager: FileManager) extends Actor {
           master ! Results(results, createdLogFiles, createdOutputDirs)
         }
     }
-  }
-
-  private def basename(name: String): String = {
-    val inx = name.lastIndexOf(".")
-    if (inx < 0) name else name.substring(0, inx)
   }
 
   def printInfoStart(file: File, printer: PrintWriter) {
@@ -209,20 +203,16 @@ class Worker(val fileManager: FileManager) extends Actor {
     val in = proc.getInputStream
     val err = proc.getErrorStream
     val writer = new PrintWriter(new FileWriter(output), true)
-    val inApp = new StreamAppender(new BufferedReader(new InputStreamReader(in)),
-                                   writer)
-    val errApp = new StreamAppender(new BufferedReader(new InputStreamReader(err)),
-                                    writer)
+    val inApp = StreamAppender(in, writer)
+    val errApp = StreamAppender(err, writer)
     val async = new Thread(errApp)
     async.start()
     inApp.run()
     async.join()
     writer.close()
-    try {
-      proc.exitValue()
-    } catch {
-      case e: IllegalThreadStateException => 0
-    }
+
+    try proc.exitValue()
+    catch { case _: IllegalThreadStateException => 0 }
   }
 
   def execTest(outDir: File, logFile: File, fileBase: String) {
@@ -289,7 +279,7 @@ class Worker(val fileManager: FileManager) extends Actor {
     def chkFile(s: String) = Directory(dir) / "%s%s.check".format(fileBase, s)
     val checkFile = if (chkFile("").isFile) chkFile("") else chkFile("-" + kind)
 
-    if (checkFile.exists && checkFile.canRead) Some(checkFile) else None
+    if (checkFile.canRead) Some(checkFile) else None
   }
 
   def existsCheckFile(dir: File, fileBase: String, kind: String) =
@@ -323,6 +313,13 @@ class Worker(val fileManager: FileManager) extends Actor {
       NestUI.verbose("scalac: compilation of "+what+" failed\n")
       succeeded = false
     }
+    def diffCheck(latestDiff: String) = {
+      diff = latestDiff
+      if (latestDiff != "") {
+        NestUI.verbose("output differs from log file\n")
+        succeeded = false
+      }
+    }
 
     /** 1. Creates log file and output directory.
      *  2. Runs <code>script</code> function, providing log file and
@@ -333,7 +330,7 @@ class Worker(val fileManager: FileManager) extends Actor {
       // execute test only if log file is present
       // (which means it failed before)
       val logFile = createLogFile(file, kind)
-      if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
+      if (!fileManager.failed || logFile.canRead) {
         val swr = new StringWriter
         val wr = new PrintWriter(swr)
         succeeded = true
@@ -422,11 +419,7 @@ class Worker(val fileManager: FileManager) extends Actor {
           // // NestUI.verbose(this+" finished running "+fileBase)
           execTest(outDir, logFile, fileBase)
 
-          diff = compareOutput(dir, fileBase, kind, logFile)
-          if (!diff.equals("")) {
-            NestUI.verbose("output differs from log file\n")
-            succeeded = false
-          }
+          diffCheck(compareOutput(dir, fileBase, kind, logFile))
         }
       })
 
@@ -481,16 +474,12 @@ class Worker(val fileManager: FileManager) extends Actor {
           if (succeeded) { // compare log file to check file
             val fileBase = basename(file.getName)
             val dir      = file.getParentFile
-            if (!existsCheckFile(dir, fileBase, kind)) {
-              // diff is contents of logFile
-              diff = file2String(logFile)
-            } else
-              diff = compareOutput(dir, fileBase, kind, logFile)
 
-            if (!diff.equals("")) {
-              NestUI.verbose("output differs from log file\n")
-              succeeded = false
-            }
+            diffCheck(
+              // diff is contents of logFile
+              if (!existsCheckFile(dir, fileBase, kind)) file2String(logFile)
+              else compareOutput(dir, fileBase, kind, logFile)
+            )
           }
         })
 
@@ -499,7 +488,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
       case "buildmanager" =>
         val logFile = createLogFile(file, kind)
-        if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
+        if (!fileManager.failed || logFile.canRead) {
           val swr = new StringWriter
           val wr = new PrintWriter(swr)
           succeeded = true; diff = ""
@@ -516,7 +505,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             if (!outDir.exists) outDir.mkdir()
             val testFile = new File(file, fileBase + ".test")
             val changesDir = new File(file, fileBase + ".changes")
-            if ((changesDir.exists && !changesDir.isDirectory) || !testFile.exists || !testFile.isFile) {
+            if (changesDir.isFile || !testFile.isFile) {
               // if changes exists then it has to be a dir
               succeeded = false
               (null, null, null, null)
@@ -570,7 +559,7 @@ class Worker(val fileManager: FileManager) extends Actor {
                     (u split "=>").toList match {
                         case origFileName::(newFileName::Nil) =>
                           val newFile = new File(changesDir, newFileName)
-                          if (newFile.exists && newFile.isFile) {
+                          if (newFile.isFile) {
                             val v = overwriteFileWith(new File(outDir, origFileName), newFile)
                             if (!v)
                               NestUI.verbose("'update' operation on " + u + " failed")
@@ -619,14 +608,9 @@ class Worker(val fileManager: FileManager) extends Actor {
                 testReader.close()
               }
 
-              fileManager.mapFile(logFile, "tmp", file, {s => s.replace(sourcepath, "")})
+              fileManager.mapFile(logFile, "tmp", file, _.replace(sourcepath, ""))
 
-              diff = compareOutput(file, fileBase, kind, logFile)
-              if (!diff.equals("")) {
-                NestUI.verbose("output differs from log file\n")
-                succeeded = false
-              }
-
+              diffCheck(compareOutput(file, fileBase, kind, logFile))
             }
             LogContext(logFile, Some((swr, wr)))
           } else
@@ -641,7 +625,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
           //val (logFileOut, logFileErr) = createLogFiles(file, kind)
           val logFile = createLogFile(file, kind)
-          if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
+          if (!fileManager.failed || logFile.canRead) {
             val swr = new StringWriter
             val wr = new PrintWriter(swr)
             succeeded = true; diff = ""; log = ""
@@ -749,12 +733,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             }
 
             fileManager.mapFile(logFile, "tmp", dir, replaceSlashes)
-
-            diff = compareOutput(dir, fileBase, kind, logFile)
-            if (!diff.equals("")) {
-              NestUI.verbose("output differs from log file\n")
-              succeeded = false
-            }
+            diffCheck(compareOutput(dir, fileBase, kind, logFile))
 
             } catch {
               case e: Exception =>
@@ -772,7 +751,7 @@ class Worker(val fileManager: FileManager) extends Actor {
           // execute test only if log file is present
           // (which means it failed before)
           val logFile = createLogFile(file, kind)
-          if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
+          if (!fileManager.failed || logFile.canRead) {
             val swr = new StringWriter
             val wr = new PrintWriter(swr)
             succeeded = true; diff = ""; log = ""
@@ -825,11 +804,7 @@ class Worker(val fileManager: FileManager) extends Actor {
                 succeeded = false
             }
 
-            diff = compareOutput(dir, fileBase, kind, logFile)
-            if (!diff.equals("")) {
-              NestUI.verbose("output differs from log file\n")
-              succeeded = false
-            }
+            diffCheck(compareOutput(dir, fileBase, kind, logFile))
 
             LogContext(logFile, Some((swr, wr)))
           } else
@@ -883,11 +858,7 @@ class Worker(val fileManager: FileManager) extends Actor {
                 case e: IOException => NestUI.verbose(e.getMessage()); succeeded = false
               }
 
-              val diff = fileManager.compareFiles(logFile, resFile)
-              if (!diff.equals("")) {
-                NestUI.verbose("output differs from log file\n")
-                succeeded = false
-              }
+              diffCheck(fileManager.compareFiles(logFile, resFile))
             }
           }
         })
@@ -898,7 +869,7 @@ class Worker(val fileManager: FileManager) extends Actor {
           // execute test only if log file is present
           // (which means it failed before)
           val logFile = createLogFile(file, kind)
-          if (!fileManager.failed || (logFile.exists && logFile.canRead)) {
+          if (!fileManager.failed || logFile.canRead) {
             val swr = new StringWriter
             val wr = new PrintWriter(swr)
             succeeded = true; diff = ""; log = ""
@@ -920,7 +891,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
             try {
               val cmdString =
-                if (osName startsWith "Windows") {
+                if (isWin) {
                   val batchFile = new File(file.getParentFile, fileBase+".bat")
                   NestUI.verbose("batchFile: "+batchFile)
                   batchFile.getAbsolutePath
@@ -941,11 +912,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
               writer.close()
 
-              diff = compareOutput(file.getParentFile, fileBase, kind, logFile)
-              if (!diff.equals("")) {
-                NestUI.verbose("output differs from log file\n")
-                succeeded = false
-              }
+              diffCheck(compareOutput(file.getParentFile, fileBase, kind, logFile))
             } catch { // *catch-all*
               case e: Exception =>
                 NestUI.verbose("caught "+e)

@@ -157,10 +157,10 @@ class ConsoleRunner extends DirectRunner {
     System exit ( if (failures == errors) 0 else 1 )
   }
 
-  def toStatistics[A](results: Iterable[(A, Int)]): (Int, Int) =
-    results
-      .map { case (file, resultCode) => if (resultCode == 0) (1, 0) else (0, 1) }
-      .reduceLeft((res1, res2) => (res1._1 + res2._1, res1._2 + res2._2))
+  def toStatistics[A](results: Iterable[(A, Int)]): (Int, Int) = {
+    val (files, failures) = results map (_._2 == 0) partition (_ == true)
+    (files.size, failures.size)
+  }
 
   def runTests(testSet: TestSet): (Int, Int) = {
     val TestSet(loc, filter, kind, msg) = testSet

@@ -4,12 +4,14 @@
 
 package scala.tools
 
-import nsc.io.{ Directory }
+import nsc.io.{ Path, Process, Directory }
 import util.{ PathResolver }
 import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 
 package object partest {
   import nest.NestUI
+
+  def basename(name: String): String = Path(name).stripExtension
 
   object PartestDefaults {
     import nsc.Properties._
@@ -34,8 +36,6 @@ package object partest {
   }
 
   def vmArgString = {
-    import scala.tools.nsc.io.Process
-
     val str = Process.javaVmArguments mkString " "
     "Java VM started with arguments: '%s'" format str
   }

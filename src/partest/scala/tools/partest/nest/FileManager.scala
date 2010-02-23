@@ -15,9 +15,6 @@ import java.net.URI
 import scala.tools.nsc.io.{ Path, Directory }
 
 trait FileManager {
-
-  def basename(name: String): String = Path(name).stripExtension
-
   /**
    * Compares two files using a Java implementation of the GNU diff
    * available at http://www.bmsi.com/java/#diff.
@@ -27,19 +24,12 @@ trait FileManager {
    * @return the text difference between the compared files
    */
   def compareFiles(f1: File, f2: File): String = {
-    var res = ""
-    try {
-      val diffWriter = new StringWriter
-      val args = Array(f1.getCanonicalPath(), f2.getCanonicalPath())
-      DiffPrint.doDiff(args, diffWriter)
-      res = diffWriter.toString
-      if (res startsWith "No")
-        res = ""
-    } catch {
-      case e: IOException =>
-        e.printStackTrace()
-    }
-    res
+    val diffWriter = new StringWriter
+    val args = Array(f1.getCanonicalPath(), f2.getCanonicalPath())
+
+    DiffPrint.doDiff(args, diffWriter)
+    val res = diffWriter.toString
+    if (res startsWith "No") "" else res
   }
 
   var JAVACMD: String
@@ -68,47 +58,34 @@ trait FileManager {
     getLogFile(dir, fileBase, kind)
   }
 
-  def logFileExists(file: File, kind: String): Boolean = {
-    val logFile = getLogFile(file, kind)
-    logFile.exists && logFile.canRead
-  }
+  def logFileExists(file: File, kind: String) =
+    getLogFile(file, kind).canRead
 
-  def overwriteFileWith(dest: File, file: File): Boolean =
-    if (dest.exists && dest.isFile)
-        copyFile(file, dest)
-    else
-      false
+  def overwriteFileWith(dest: File, file: File) =
+    dest.isFile && copyFile(file, dest)
 
   def copyFile(from: File, to: File): Boolean =
     try {
-      val fromReader = new BufferedReader(new FileReader(from))
-      val toWriter = new PrintWriter(new FileWriter(to))
-
-      new StreamAppender(fromReader, toWriter).run()
-
-      fromReader.close()
-      toWriter.close()
+      val appender = StreamAppender(from, to)
+      appender.run()
+      appender.closeAll()
       true
-    } catch {
-      case _:IOException => false
+    }
+    catch {
+      case _: IOException => false
     }
 
   def mapFile(file: File, suffix: String, dir: File, replace: String => String) {
     val tmpFile = File.createTempFile("tmp", suffix, dir) // prefix required by API
-    val fileReader = new BufferedReader(new FileReader(file))
-    val tmpFilePrinter = new PrintWriter(new FileWriter(tmpFile))
-    val appender = new StreamAppender(fileReader, tmpFilePrinter)
 
+    val appender = StreamAppender(file, tmpFile)
     appender.runAndMap(replace)
+    appender.closeAll()
 
-    fileReader.close()
-    tmpFilePrinter.close()
+    val appender2 = StreamAppender(tmpFile, file)
+    appender2.run()
+    appender2.closeAll()
 
-    val tmpFileReader = new BufferedReader(new FileReader(tmpFile))
-    val filePrinter= new PrintWriter(new FileWriter(file), true)
-    (new StreamAppender(tmpFileReader, filePrinter)).run
-    tmpFileReader.close()
-    filePrinter.close()
     tmpFile.delete()
   }
 }

@@ -37,11 +37,6 @@ abstract class TestFile(kind: String) {
     settings appendToClasspath fileManager.CLASSPATH
   }
 
-  private def basename(name: String): String = {
-    val inx = name.lastIndexOf(".")
-    if (inx < 0) name else name.substring(0, inx)
-  }
-
   override def toString(): String = kind+" "+file
 }
 

@@ -80,7 +80,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 
     // check whether there is a ".flags" file
     val testBase = {
-      val logBase = fileManager.basename(log.getName)
+      val logBase = basename(log.getName)
       logBase.substring(0, logBase.length-4)
     }
     val argsFile = new File(log.getParentFile, testBase+".flags")
