@@ -1,1 +1,1 @@
-jquery=1.4.1
+jquery=1.4.2
