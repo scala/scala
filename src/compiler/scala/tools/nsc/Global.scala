@@ -14,9 +14,10 @@ import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
 import util.{ ClassPath, SourceFile, Statistics, BatchSourceFile }
 import collection.mutable.{ HashSet, HashMap, ListBuffer }
+import reflect.generic.{ PickleBuffer }
 
 import symtab.{ Flags, SymbolTable, SymbolLoaders }
-import symtab.classfile.{PickleBuffer, Pickler}
+import symtab.classfile.Pickler
 import dependencies.DependencyAnalysis
 import plugins.Plugins
 import ast._

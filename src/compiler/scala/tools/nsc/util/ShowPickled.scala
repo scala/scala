@@ -12,8 +12,8 @@ import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
 
-import symtab.{Flags, Names}
-import symtab.classfile.{PickleBuffer, PickleFormat}
+import symtab.{ Flags, Names }
+import scala.reflect.generic.{ PickleBuffer, PickleFormat }
 import interpreter.ByteCode.scalaSigBytesForPath
 
 object ShowPickled extends Names {

@@ -12,7 +12,7 @@ import java.io.IOException
 import java.lang.{Float, Double}
 
 import Flags._
-import PickleFormat._
+import scala.reflect.generic.PickleFormat._
 import collection.mutable.{HashMap, ListBuffer}
 import annotation.switch
 
