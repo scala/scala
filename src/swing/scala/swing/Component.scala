@@ -198,7 +198,7 @@ abstract class Component extends UIElement {
   def requestFocusInWindow() = peer.requestFocusInWindow()
   def hasFocus: Boolean = peer.isFocusOwner
 
-  override def onFirstSubscribe {
+  protected override def onFirstSubscribe {
     super.onFirstSubscribe
     // TODO: deprecated, remove after 2.8
     peer.addComponentListener(new java.awt.event.ComponentListener {

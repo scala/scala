@@ -48,7 +48,7 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
     publish(EditDone(TextField.this))
   }
 
-  override def onFirstSubscribe {
+  protected override def onFirstSubscribe {
     super.onFirstSubscribe
     peer.addActionListener(actionListener)
     peer.addFocusListener(new FocusAdapter {
@@ -56,7 +56,7 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
     })
   }
 
-  override def onLastUnsubscribe {
+  protected override def onLastUnsubscribe {
     super.onLastUnsubscribe
     peer.removeActionListener(actionListener)
   }

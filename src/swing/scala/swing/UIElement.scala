@@ -119,7 +119,7 @@ trait UIElement extends Proxy with LazyPublisher {
   def ignoreRepaint: Boolean = peer.getIgnoreRepaint
   def ignoreRepaint_=(b: Boolean) { peer.setIgnoreRepaint(b) }
 
-  def onFirstSubscribe {
+  protected def onFirstSubscribe {
     peer.addComponentListener(new java.awt.event.ComponentListener {
       def componentHidden(e: java.awt.event.ComponentEvent) {
         publish(UIElementHidden(UIElement.this))
@@ -135,5 +135,5 @@ trait UIElement extends Proxy with LazyPublisher {
       }
     })
   }
-  def onLastUnsubscribe {}
+  protected def onLastUnsubscribe {}
 }
