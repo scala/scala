@@ -234,8 +234,8 @@ abstract class Component extends UIElement {
       def propertyChange(e: java.beans.PropertyChangeEvent) {
         e.getPropertyName match {
           case "font" => publish(FontChanged(Component.this))
-          case "background" => publish(ForegroundChanged(Component.this))
-          case "foreground" => publish(BackgroundChanged(Component.this))
+          case "background" => publish(BackgroundChanged(Component.this))
+          case "foreground" => publish(ForegroundChanged(Component.this))
           case _ =>
           /*case "focusable" =>
           case "focusTraversalKeysEnabled" =>
