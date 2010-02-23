@@ -210,6 +210,12 @@ class Path private[io] (val jfile: JFile)
       length == 0
     }
 
+  def touch(modTime: Long = System.currentTimeMillis) = {
+    createFile()
+    if (isFile)
+      lastModified = modTime
+  }
+
   // todo
   // def copyTo(target: Path, options ...): Boolean
   // def moveTo(target: Path, options ...): Boolean

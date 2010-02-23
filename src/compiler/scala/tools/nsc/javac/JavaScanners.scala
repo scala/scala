@@ -7,7 +7,7 @@ package scala.tools.nsc
 package javac
 
 import scala.tools.nsc.util._
-import Chars.{LF, FF, CR, SU}
+import Chars._
 import JavaTokens._
 import scala.annotation.switch
 
@@ -754,13 +754,13 @@ trait JavaScanners {
         in.next
         if ('0' <= in.ch && in.ch <= '7') {
           val leadch: Char = in.ch
-          var oct: Int = in.digit2int(in.ch, 8)
+          var oct: Int = digit2int(in.ch, 8)
           in.next
           if ('0' <= in.ch && in.ch <= '7') {
-            oct = oct * 8 + in.digit2int(in.ch, 8)
+            oct = oct * 8 + digit2int(in.ch, 8)
             in.next
             if (leadch <= '3' && '0' <= in.ch && in.ch <= '7') {
-              oct = oct * 8 + in.digit2int(in.ch, 8)
+              oct = oct * 8 + digit2int(in.ch, 8)
               in.next
             }
           }
@@ -840,7 +840,7 @@ trait JavaScanners {
         var i = 0
         val len = name.length
         while (i < len) {
-          val d = in.digit2int(name(i), base)
+          val d = digit2int(name(i), base)
           if (d < 0) {
             syntaxError("malformed integer number")
             return 0
@@ -879,7 +879,7 @@ trait JavaScanners {
     /** read a number into name and set base
     */
     protected def getNumber {
-      while (in.digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
+      while (digit2int(in.ch, if (base < 10) 10 else base) >= 0) {
         putChar(in.ch)
         in.next
       }

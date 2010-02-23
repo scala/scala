@@ -7,7 +7,7 @@
 package scala.tools.nsc
 package util
 
-import Chars.{LF, FF, CR, SU}
+import Chars._
 
 abstract class CharArrayReader { self =>
 
@@ -82,19 +82,6 @@ abstract class CharArrayReader { self =>
       lastLineStartOffset = lineStartOffset
       lineStartOffset = charOffset
     }
-  }
-
-  /** Convert a character digit to an Int according to given base,
-   *  -1 if no success */
-  def digit2int(ch: Char, base: Int): Int = {
-    if ('0' <= ch && ch <= '9' && ch < '0' + base)
-      ch - '0'
-    else if ('A' <= ch && ch < 'A' + base - 10)
-      ch - 'A' + 10
-    else if ('a' <= ch && ch < 'a' + base - 10)
-      ch - 'a' + 10
-    else
-      -1
   }
 
   /** A new reader that takes off at the current character position */

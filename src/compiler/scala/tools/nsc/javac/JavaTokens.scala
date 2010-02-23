@@ -7,21 +7,8 @@
 package scala.tools.nsc
 package javac
 
-object JavaTokens {
+object JavaTokens extends ast.parser.Tokens {
 
-  /** special tokens */
-  final val EMPTY = -3
-  final val UNDEF = -2
-  final val ERROR = -1
-  final val EOF = 0
-
-  /** literals */
-  final val CHARLIT = 1
-  final val INTLIT = 2
-  final val LONGLIT = 3
-  final val FLOATLIT = 4
-  final val DOUBLELIT = 5
-  final val STRINGLIT = 6
   def isLiteral(code : Int) =
     code >= CHARLIT && code <= STRINGLIT
 
@@ -139,20 +126,4 @@ object JavaTokens {
   final val RBRACKET = 118
   final val LBRACE = 119
   final val RBRACE = 120
-
-  def isBrace(code : Int) =
-    code >= LPAREN && code <= RBRACE
-  def isOpenBrace(code : Int) = isBrace(code) && (code % 2 == 0)
-  def isCloseBrace(code : Int) = isBrace(code) && (code % 2 == 1)
-
-  def isSpace(at : Char) = at match {
-    case ' ' | '\t' => true
-    case _ => false
-  }
-  import util.Chars._
-
-  def isNewLine(at : Char) = at match {
-    case CR | LF | FF => true
-    case _ => false
-  }
 }

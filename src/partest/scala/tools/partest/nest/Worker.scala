@@ -398,89 +398,83 @@ class Worker(val fileManager: FileManager) extends Actor {
       }
     }
 
-    def runJvmTest(file: File, kind: String): LogContext =
+    def runTestCommon(file: File, kind: String, expectFailure: Boolean)(onSuccess: (File, File) => Unit): LogContext =
       runInContext(file, kind, (logFile: File, outDir: File) => {
+
         if (file.isDirectory) {
-          compileFilesIn(file, kind, logFile, outDir)
-        } else if (!compileMgr.shouldCompile(List(file), kind, logFile)) {
-          fail(file)
+          val f = if (expectFailure) failCompileFilesIn _ else compileFilesIn _
+          f(file, kind, logFile, outDir)
         }
-        if (succeeded) { // run test
-          val fileBase = basename(file.getName)
-          val dir      = file.getParentFile
+        else {
+          val f: (List[File], String, File) => Boolean =
+            if (expectFailure) compileMgr.shouldFailCompile _
+            else compileMgr.shouldCompile _
 
-          //TODO: detect whether we have to use Runtime.exec
-          // val useRuntime = true
-          //
-          // if (useRuntime)
-          //   execTest(outDir, logFile, fileBase)
-          // else
-          //   execTestObjectRunner(file, outDir, logFile)
-          // // NestUI.verbose(this+" finished running "+fileBase)
-          execTest(outDir, logFile, fileBase)
-
-          diffCheck(compareOutput(dir, fileBase, kind, logFile))
+          if (!f(List(file), kind, logFile))
+            fail(file)
         }
+
+        if (succeeded)  // run test
+          onSuccess(logFile, outDir)
+      })
+
+    def runJvmTest(file: File, kind: String): LogContext =
+      runTestCommon(file, kind, expectFailure = false)((logFile, outDir) => {
+        val fileBase = basename(file.getName)
+        val dir      = file.getParentFile
+
+        //TODO: detect whether we have to use Runtime.exec
+        // val useRuntime = true
+        //
+        // if (useRuntime)
+        //   execTest(outDir, logFile, fileBase)
+        // else
+        //   execTestObjectRunner(file, outDir, logFile)
+        // // NestUI.verbose(this+" finished running "+fileBase)
+        execTest(outDir, logFile, fileBase)
+
+        diffCheck(compareOutput(dir, fileBase, kind, logFile))
       })
 
     def processSingleFile(file: File): LogContext = kind match {
       case "scalacheck" =>
-        runInContext(file, kind, (logFile: File, outDir: File) => {
-          if (file.isDirectory) {
-            compileFilesIn(file, kind, logFile, outDir)
-          } else if (!compileMgr.shouldCompile(List(file), kind, logFile)) {
-            fail(file)
+        runTestCommon(file, kind, expectFailure = false)((logFile, outDir) => {
+          val consFM = new ConsoleFileManager
+          import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
+
+          NestUI.verbose("compilation of "+file+" succeeded\n")
+
+          val libs = new File(fileManager.LIB_DIR)
+          val scalacheckURL = (new File(libs, "ScalaCheck.jar")).toURI.toURL
+          val outURL = outDir.getCanonicalFile.toURI.toURL
+          val classpath: List[URL] =
+            List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct
+
+          val logWriter = new PrintStream(new FileOutputStream(logFile))
+
+          withOutputRedirected(logWriter) {
+            ObjectRunner.run(classpath, "Test", Nil)
           }
-          if (succeeded) {
-            val consFM = new ConsoleFileManager
-            import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
 
-            NestUI.verbose("compilation of "+file+" succeeded\n")
-
-            val libs = new File(fileManager.LIB_DIR)
-            val scalacheckURL = (new File(libs, "ScalaCheck.jar")).toURI.toURL
-            val outURL = outDir.getCanonicalFile.toURI.toURL
-            val classpath: List[URL] =
-              List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct
-
-            val logWriter = new PrintStream(new FileOutputStream(logFile))
-
-            withOutputRedirected(logWriter) {
-              ObjectRunner.run(classpath, "Test", Nil)
-            }
-
-            NestUI.verbose(SFile(logFile).slurp())
-            // obviously this must be improved upon
-            succeeded = SFile(logFile).lines() forall (_ contains " OK")
-          }
-        })
+          NestUI.verbose(SFile(logFile).slurp())
+          // obviously this must be improved upon
+          succeeded = SFile(logFile).lines() forall (_ contains " OK")
+      })
 
       case "pos" =>
-        runInContext(file, kind, (logFile: File, outDir: File) => {
-          if (file.isDirectory) {
-            compileFilesIn(file, kind, logFile, outDir)
-          } else if (!compileMgr.shouldCompile(List(file), kind, logFile)) {
-            fail(file)
-          }
-        })
+        runTestCommon(file, kind, expectFailure = false)((_, _) => ())
 
       case "neg" =>
-        runInContext(file, kind, (logFile: File, outDir: File) => {
-          if (file.isDirectory) {
-            failCompileFilesIn(file, kind, logFile, outDir)
-          } else if (!compileMgr.shouldFailCompile(List(file), kind, logFile)) {
-            succeeded = false
-          }
-          if (succeeded) { // compare log file to check file
-            val fileBase = basename(file.getName)
-            val dir      = file.getParentFile
+        runTestCommon(file, kind, expectFailure = true)((logFile, outDir) => {
+          // compare log file to check file
+          val fileBase = basename(file.getName)
+          val dir      = file.getParentFile
 
-            diffCheck(
-              // diff is contents of logFile
-              if (!existsCheckFile(dir, fileBase, kind)) file2String(logFile)
-              else compareOutput(dir, fileBase, kind, logFile)
-            )
-          }
+          diffCheck(
+            // diff is contents of logFile
+            if (!existsCheckFile(dir, fileBase, kind)) file2String(logFile)
+            else compareOutput(dir, fileBase, kind, logFile)
+          )
         })
 
       case "run" | "jvm" =>

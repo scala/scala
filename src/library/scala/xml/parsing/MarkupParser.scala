@@ -108,57 +108,18 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
     md
   }
 
-  /** &lt;? prolog ::= xml S?
-   *  // this is a bit more lenient than necessary...
+  /** Factored out common code.
    */
-  def prolog(): Tuple3[Option[String], Option[String], Option[Boolean]] = {
-    var n = 0
+  private def prologOrTextDecl(isProlog: Boolean): (Option[String], Option[String], Option[Boolean]) = {
     var info_ver: Option[String] = None
     var info_enc: Option[String] = None
     var info_stdl: Option[Boolean] = None
 
     var m = xmlProcInstr()
-
-    xSpaceOpt
-
-    m("version") match {
-      case null  => ;
-      case Text("1.0") => info_ver = Some("1.0"); n += 1
-      case _     => reportSyntaxError("cannot deal with versions != 1.0")
-    }
-
-    m("encoding") match {
-      case null => ;
-      case Text(enc) =>
-        if (!isValidIANAEncoding(enc))
-          reportSyntaxError("\"" + enc + "\" is not a valid encoding")
-        else {
-          info_enc = Some(enc)
-          n += 1
-        }
-    }
-    m("standalone") match {
-      case null => ;
-      case Text("yes") => info_stdl = Some(true);  n += 1
-      case Text("no")  => info_stdl = Some(false); n += 1
-      case _     => reportSyntaxError("either 'yes' or 'no' expected")
-    }
-
-    if (m.length - n != 0) {
-      reportSyntaxError("VersionInfo EncodingDecl? SDDecl? or '?>' expected!");
-    }
-    //Console.println("[MarkupParser::prolog] finished parsing prolog!");
-    Tuple3(info_ver,info_enc,info_stdl)
-  }
-
-  /** prolog, but without standalone */
-  def textDecl(): Tuple2[Option[String],Option[String]] = {
-
-    var info_ver: Option[String] = None
-    var info_enc: Option[String] = None
-
-    var m = xmlProcInstr()
     var n = 0
+
+    if (isProlog)
+      xSpaceOpt
 
     m("version") match {
       case null => ;
@@ -177,11 +138,32 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
         }
     }
 
-    if (m.length - n != 0) {
-      reportSyntaxError("VersionInfo EncodingDecl? or '?>' expected!");
+    if (isProlog) {
+      m("standalone") match {
+        case null => ;
+        case Text("yes") => info_stdl = Some(true);  n += 1
+        case Text("no")  => info_stdl = Some(false); n += 1
+        case _     => reportSyntaxError("either 'yes' or 'no' expected")
+      }
     }
-    Tuple2(info_ver, info_enc);
+
+    if (m.length - n != 0) {
+      val s = if (isProlog) "SDDecl? " else ""
+      reportSyntaxError("VersionInfo EncodingDecl? %sor '?>' expected!" format s)
+    }
+
+    (info_ver, info_enc, info_stdl)
   }
+
+  /** &lt;? prolog ::= xml S?
+   *  // this is a bit more lenient than necessary...
+   */
+  def prolog(): (Option[String], Option[String], Option[Boolean]) =
+    prologOrTextDecl(true)
+
+  /** prolog, but without standalone */
+  def textDecl(): (Option[String], Option[String]) =
+    prologOrTextDecl(false) match { case (x1, x2, _)  => (x1, x2) }
 
   /**
    *[22]        prolog     ::=          XMLDecl? Misc* (doctypedecl Misc*)?

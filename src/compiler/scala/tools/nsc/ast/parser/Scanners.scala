@@ -7,12 +7,11 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.tools.nsc.util._
-import Chars.{LF, FF, CR, SU}
+import Chars._
 import Tokens._
 import scala.annotation.switch
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.xml.Utility.{ isNameStart }
-import util.Chars._
 
 trait Scanners {
   val global : Global

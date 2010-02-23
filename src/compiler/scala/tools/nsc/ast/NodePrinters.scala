@@ -158,46 +158,27 @@ abstract class NodePrinters {
           }
         def nodeinfo2(tree: Tree): String =
           (if (comma) "," else "") + nodeinfo(tree)
+
+        def applyCommon(name: String, tree: Tree, fun: Tree, args: List[Tree]) {
+          println(name + "(" + nodeinfo(tree))
+          traverse(fun, level + 1, true)
+          if (args.isEmpty)
+            println("  Nil // no argument")
+          else {
+            val n = args.length
+            println("  List( // " + n + " arguments(s)")
+            for (i <- 0 until n)
+              traverse(args(i), level + 2, i < n-1)
+            println("  )")
+          }
+          printcln(")")
+        }
+
         tree match {
-          case AppliedTypeTree(tpt, args) =>
-            println("AppliedTypeTree(" + nodeinfo(tree))
-            traverse(tpt, level + 1, true)
-            if (args.isEmpty)
-              println("  List() // no argument")
-            else {
-              val n = args.length
-              println("  List( // " + n + " arguments(s)")
-              for (i <- 0 until n)
-                traverse(args(i), level + 2, i < n-1)
-              println("  )")
-            }
-            printcln(")")
-          case Apply(fun, args) =>
-            println("Apply(" + nodeinfo(tree))
-            traverse(fun, level + 1, true)
-            if (args.isEmpty)
-              println("  List() // no argument")
-            else {
-              val n = args.length
-              println("  List( // " + n + " argument(s)")
-              for (i <- 0 until n)
-                traverse(args(i), level + 2, i < n-1)
-              println("  )")
-            }
-            printcln(")")
-          case ApplyDynamic(fun, args) =>
-            println("ApplyDynamic(" + nodeinfo(tree))
-            traverse(fun, level + 1, true)
-            if (args.isEmpty)
-              println("  List() // no argument")
-            else {
-              val n = args.length
-              println("  List( // " + n + " argument(s)")
-              for (i <- 0 until n)
-                traverse(args(i), level + 2, i < n-1)
-              println("  )")
-            }
-            printcln(")")
+          case AppliedTypeTree(tpt, args) => applyCommon("AppliedTypeTree", tree, tpt, args)
+          case Apply(fun, args)           => applyCommon("Apply", tree, fun, args)
+          case ApplyDynamic(fun, args)    => applyCommon("ApplyDynamic", tree, fun, args)
+
           case Block(stats, expr) =>
             println("Block(" + nodeinfo(tree))
             if (stats.isEmpty)
@@ -355,16 +336,11 @@ abstract class NodePrinters {
 
   def printUnit(unit: CompilationUnit) {
     print("// Scala source: " + unit.source + "\n")
-    if (unit.body ne null) {
-      print(nodeToString(unit.body)); println()
-    } else {
-      print("<null>")
-    }
-    println()
+    println(Option(unit.body) map (x => nodeToString(x) + "\n") getOrElse "<null>")
   }
 
   def printAll() {
     print("[[syntax trees at end of " + phase + "]]")
-    for (unit <- global.currentRun.units) printUnit(unit)
+    global.currentRun.units foreach printUnit
   }
 }
