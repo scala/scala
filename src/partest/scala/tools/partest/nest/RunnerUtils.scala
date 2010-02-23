@@ -8,35 +8,22 @@
 package scala.tools.partest
 package nest
 
-trait RunnerUtils {
+object RunnerUtils {
+  def splitArgs(str: String) = str split "\\s" filterNot (_ == "") toList
 
-  def searchPath(option: String, as: List[String]): Option[String] = {
-    val Option = option
-    as match {
-      case Option :: r :: rs => Some(r)
-      case other :: rest => searchPath(option, rest)
-      case List() => None
-    }
+  def searchPath(option: String, as: List[String]): Option[String] = as match {
+    case `option` :: r :: _ => Some(r)
+    case _ :: rest          => searchPath(option, rest)
+    case Nil                => None
   }
 
-  def searchAndRemovePath(option: String, as: List[String]): (Option[String], List[String]) = {
-    val Option = option
-    def search(before: List[String], after: List[String]): (Option[String], List[String]) = after match {
-      case Option :: r :: rs => (Some(r), before ::: rs)
-      case other :: rest => search(before ::: List(other), rest)
-      case List() => (None, before)
-    }
-    search(List(), as)
+  def searchAndRemovePath(option: String, as: List[String]) = (as indexOf option) match {
+    case -1   => (None, as)
+    case idx  => (Some(as(idx + 1)), (as take idx) ::: (as drop (idx + 2)))
   }
 
-  def searchAndRemoveOption(option: String, as: List[String]): (Boolean, List[String]) = {
-    val Option = option
-    def search(before: List[String], after: List[String]): (Boolean, List[String]) = after match {
-      case Option :: rest => (true, before ::: rest)
-      case other :: rest => search(before ::: List(other), rest)
-      case List() => (false, before)
-    }
-    search(List(), as)
+  def searchAndRemoveOption(option: String, as: List[String]) = (as indexOf option) match {
+    case -1   => (false, as)
+    case idx  => (true, (as take idx) ::: (as drop (idx + 1)))
   }
-
 }

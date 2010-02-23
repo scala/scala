@@ -8,9 +8,12 @@
 package scala.tools.partest
 package nest
 
+import scala.tools.nsc.Properties.{ setProp, propOrEmpty }
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io
 import io.Path
+import RunnerUtils._
+import java.net.URLClassLoader
 
 /* This class is used to load an instance of DirectRunner using
  * a custom class loader.
@@ -19,14 +22,10 @@ import io.Path
  * the main NestRunner can be started merely by putting its
  * class on the classpath (ideally).
  */
-class ReflectiveRunner extends RunnerUtils {
+class ReflectiveRunner {
   // TODO: we might also use fileManager.CLASSPATH
   // to use the same classes as used by `scala` that
   // was used to start the runner.
-
-  import java.net.URLClassLoader
-  import utils.Properties.{ sysprop, syspropset }
-
   val sepRunnerClassName = "scala.tools.partest.nest.ConsoleRunner"
 
   def main(args: String) {
@@ -65,12 +64,12 @@ class ReflectiveRunner extends RunnerUtils {
     }
     val newClasspath = ClassPath.join(paths: _*)
 
-    syspropset("java.class.path", newClasspath)
-    syspropset("scala.home", "")
+    setProp("java.class.path", newClasspath)
+    setProp("scala.home", "")
 
     if (isPartestDebug)
       for (prop <- List("java.class.path", "sun.boot.class.path", "java.ext.dirs"))
-        println(prop + ": " + sysprop(prop))
+        println(prop + ": " + propOrEmpty(prop))
 
     try {
       val sepRunnerClass  = sepLoader loadClass sepRunnerClassName

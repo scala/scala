@@ -555,10 +555,8 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     in = in0 match {
       case Some(in0)  => new SimpleReader(in0, out, true)
       case None       =>
-        val emacsShell = System.getProperty("env.emacs", "") != ""
-
         // the interpreter is passed as an argument to expose tab completion info
-        if (settings.Xnojline.value || emacsShell) new SimpleReader
+        if (settings.Xnojline.value || Properties.isEmacsShell) new SimpleReader
         else if (settings.noCompletion.value) InteractiveReader.createDefault()
         else InteractiveReader.createDefault(interpreter)
     }

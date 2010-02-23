@@ -14,11 +14,11 @@ import collection.Traversable
 
 object Directory
 {
-  import scala.util.Properties.{ tmpDir, homeDir, currentDir }
+  import scala.util.Properties.{ tmpDir, userHome, userDir }
 
   private def normalizePath(s: String) = Some(apply(Path(s).normalize))
-  def Current: Option[Directory]  = if (currentDir == "") None else normalizePath(currentDir)
-  def Home: Option[Directory]     = if (homeDir == "") None else normalizePath(homeDir)
+  def Current: Option[Directory]  = if (userDir == "") None else normalizePath(userDir)
+  def Home: Option[Directory]     = if (userHome == "") None else normalizePath(userHome)
   def TmpDir: Option[Directory]   = if (tmpDir == "") None else normalizePath(tmpDir)
 
   def apply(path: Path)       = path.toDirectory

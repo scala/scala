@@ -11,6 +11,7 @@ package nest
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
 import java.util.StringTokenizer
+import scala.util.Properties.{ setProp }
 import scala.tools.nsc.io.Directory
 
 import scala.actors.Actor._
@@ -20,20 +21,14 @@ trait DirectRunner {
 
   def fileManager: FileManager
 
-  private val numActors = Integer.parseInt(System.getProperty("scalatest.actors", "8"))
+  import PartestDefaults.numActors
 
   if (isPartestDebug)
     scala.actors.Debug.level = 3
 
-  private val coreProp = try {
-    System.getProperty("actors.corePoolSize")
-  } catch {
-    case ace: java.security.AccessControlException =>
-      null
-  }
-  if (coreProp == null) {
+  if (PartestDefaults.poolSize.isEmpty) {
     scala.actors.Debug.info("actors.corePoolSize not defined")
-    System.setProperty("actors.corePoolSize", "16")
+    setProp("actors.corePoolSize", "16")
   }
 
   def runTestsForFiles(kindFiles: List[File], kind: String): scala.collection.immutable.Map[String, Int] = {

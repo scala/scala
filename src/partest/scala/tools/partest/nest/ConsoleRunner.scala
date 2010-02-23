@@ -11,13 +11,14 @@ package nest
 import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
                 InputStreamReader, StringWriter, PrintWriter}
 import utils.Properties._
-import scala.tools.nsc.Properties.versionMsg
+import RunnerUtils._
+import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.io
 import scala.tools.nsc.interpreter.returning
 import io.{ Path }
 
-class ConsoleRunner extends DirectRunner with RunnerUtils {
+class ConsoleRunner extends DirectRunner {
 
   case class TestSet(loc: String,
                      filter: Option[(String, Boolean)],
@@ -45,8 +46,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
   var fileManager: ConsoleFileManager = _
 
   private var testFiles: List[File] = List()
-  private val errors =
-    Integer.parseInt(System.getProperty("scalatest.errors", "0"))
+  private val errors = PartestDefaults.errorCount
 
   private val testSetArgMap = testSets map (x => ("--" + x.loc) -> x) toMap
   private val testSetArgs = testSets map ("--" + _.loc)
@@ -75,7 +75,7 @@ class ConsoleRunner extends DirectRunner with RunnerUtils {
       return NestUI.usage()
     }
 
-    parsed get "--srcpath" foreach (x => System.setProperty("partest.srcdir", x))
+    parsed get "--srcpath" foreach (x => setProp("partest.srcdir", x))
 
     fileManager =
       if (parsed isSet "--buildpath") new ConsoleFileManager(parsed("--buildpath"))

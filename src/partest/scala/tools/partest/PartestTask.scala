@@ -11,6 +11,7 @@
 package scala.tools.partest
 
 import scala.actors.Actor._
+import util.Properties.setProp
 
 import java.io.File
 import java.net.URLClassLoader
@@ -166,7 +167,7 @@ class PartestTask extends Task {
 
   override def execute() {
     if (isPartestDebug)
-      System.setProperty("partest.debug", "true")
+      setProp("partest.debug", "true")
 
     if (classpath.isEmpty)
       error("Mandatory attribute 'classpath' is not set.")

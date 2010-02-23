@@ -11,7 +11,8 @@ import java.io.File
 
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.FakePos //{Position}
-
+import Properties.msilLibPath
+import File.pathSeparator
 
 /** The main class for scaladoc, a front-end for the Scala compiler
  *  that generates documentation from source files.
@@ -56,11 +57,8 @@ object ScalaDoc {
         reporter.warning(null, "Phases are restricted when using Scaladoc")
       else try {
 
-        if (docSettings.target.value == "msil") {
-          val libpath = System.getProperty("msil.libpath")
-          if (libpath != null)
-            docSettings.assemrefs.value = docSettings.assemrefs.value + File.pathSeparator + libpath
-        }
+        if (docSettings.target.value == "msil")
+          msilLibPath foreach (x => docSettings.assemrefs.value += (pathSeparator + x))
 
         val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)
         docProcessor.document(command.files)

@@ -141,36 +141,36 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   }
 }
 
-class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleCompiler {
-  import fileManager.{latestCompFile, latestPartestFile}
-
-  val sepUrls = Array(latestCompFile.toURI.toURL, latestPartestFile.toURI.toURL)
-  //NestUI.verbose("constructing URLClassLoader from URLs "+latestCompFile+" and "+latestPartestFile)
-
-  val sepLoader = new java.net.URLClassLoader(sepUrls, null)
-
-  val sepCompilerClass =
-    sepLoader.loadClass("scala.tools.partest.nest.DirectCompiler")
-  val sepCompiler = sepCompilerClass.newInstance()
-
-  // needed for reflective invocation
-  val fileClass = Class.forName("java.io.File")
-  val stringClass = Class.forName("java.lang.String")
-  val sepCompileMethod =
-    sepCompilerClass.getMethod("compile", fileClass, stringClass)
-  val sepCompileMethod2 =
-    sepCompilerClass.getMethod("compile", fileClass, stringClass, fileClass)
-
-  /* This method throws java.lang.reflect.InvocationTargetException
-   * if the compiler crashes.
-   * This exception is handled in the shouldCompile and shouldFailCompile
-   * methods of class CompileManager.
-   */
-  def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
-    val res = sepCompileMethod2.invoke(sepCompiler, out, files, kind, log).asInstanceOf[java.lang.Boolean]
-    res.booleanValue()
-  }
-}
+// class ReflectiveCompiler(val fileManager: ConsoleFileManager) extends SimpleCompiler {
+//   import fileManager.{latestCompFile, latestPartestFile}
+//
+//   val sepUrls = Array(latestCompFile.toURI.toURL, latestPartestFile.toURI.toURL)
+//   //NestUI.verbose("constructing URLClassLoader from URLs "+latestCompFile+" and "+latestPartestFile)
+//
+//   val sepLoader = new java.net.URLClassLoader(sepUrls, null)
+//
+//   val sepCompilerClass =
+//     sepLoader.loadClass("scala.tools.partest.nest.DirectCompiler")
+//   val sepCompiler = sepCompilerClass.newInstance()
+//
+//   // needed for reflective invocation
+//   val fileClass = Class.forName("java.io.File")
+//   val stringClass = Class.forName("java.lang.String")
+//   val sepCompileMethod =
+//     sepCompilerClass.getMethod("compile", fileClass, stringClass)
+//   val sepCompileMethod2 =
+//     sepCompilerClass.getMethod("compile", fileClass, stringClass, fileClass)
+//
+//   /* This method throws java.lang.reflect.InvocationTargetException
+//    * if the compiler crashes.
+//    * This exception is handled in the shouldCompile and shouldFailCompile
+//    * methods of class CompileManager.
+//    */
+//   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
+//     val res = sepCompileMethod2.invoke(sepCompiler, out, files, kind, log).asInstanceOf[java.lang.Boolean]
+//     res.booleanValue()
+//   }
+// }
 
 class CompileManager(val fileManager: FileManager) {
   var compiler: SimpleCompiler = new /*ReflectiveCompiler*/ DirectCompiler(fileManager)

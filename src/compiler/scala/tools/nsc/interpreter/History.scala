@@ -9,6 +9,7 @@ package interpreter
 import java.io.File
 import jline.{ ConsoleReader, History => JHistory }
 import scala.collection.JavaConversions.asBuffer
+import Properties.userHome
 
 /** Primarily, a wrapper for JLine's History.
  */
@@ -22,14 +23,13 @@ class History(val jhistory: JHistory) {
 
 object History {
   val ScalaHistoryFile = ".scala_history"
-  def homeDir = System.getProperty("user.home")
 
   def apply(reader: ConsoleReader): History =
     if (reader == null) apply()
     else new History(reader.getHistory)
 
   def apply(): History = new History(
-    try new JHistory(new File(homeDir, ScalaHistoryFile))
+    try new JHistory(new File(userHome, ScalaHistoryFile))
     // do not store history if error
     catch { case _: Exception => new JHistory() }
   )

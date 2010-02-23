@@ -23,13 +23,12 @@ class CompileSocket {
   /** The prefix of the port identification file, which is followed
    *  by the port number.
    */
-  protected def dirName = "scalac-compile-server-port" //todo: lazy val
-
-  protected def cmdName = Properties.cmdName //todo: lazy val
+  protected lazy val dirName = "scalac-compile-server-port"
+  protected lazy val cmdName = Properties.scalaCmd
 
   /** The vm part of the command to start a new scala compile server */
   protected val vmCommand = Properties.scalaHome match {
-    case null     => cmdName
+    case ""       => cmdName
     case dirname  =>
       val trial = File(dirname) / "bin" / cmdName
       if (trial.canRead) trial.path

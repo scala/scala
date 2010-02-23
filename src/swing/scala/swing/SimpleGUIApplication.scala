@@ -44,5 +44,5 @@ import javax.swing._
     this.getClass.getResource(path)
 
   def resourceFromUserDirectory(path: String): java.io.File =
-    new java.io.File(System.getProperty("user.dir"), path)
+    new java.io.File(util.Properties.userDir, path)
 }

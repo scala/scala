@@ -55,10 +55,9 @@ trait FileManager {
   var showLog = false
   var failed = false
 
-  var SCALAC_OPTS = System.getProperty("scalatest.scalac_opts", "-deprecation")
-  var JAVA_OPTS   = System.getProperty("scalatest.java_opts", "")
-
-  var timeout = "1200000"
+  var SCALAC_OPTS = PartestDefaults.scalacOpts
+  var JAVA_OPTS   = PartestDefaults.javaOpts
+  var timeout     = PartestDefaults.timeout
 
   def getLogFile(dir: File, fileBase: String, kind: String): LogFile =
     new LogFile(dir, fileBase + "-" + kind + ".log")

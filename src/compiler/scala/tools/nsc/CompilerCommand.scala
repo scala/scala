@@ -26,7 +26,8 @@ class CompilerCommand(
   lazy val fileEndings = Properties.fileEndings
 
   /** The name of the command */
-  val cmdName = "scalac"
+  def cmdName = "scalac"
+  private def isFsc = cmdName == "fsc"
 
   private val helpSyntaxColumnWidth: Int =
     (settings.visibleSettings map (_.helpSyntax.length)) max
@@ -53,8 +54,7 @@ class CompilerCommand(
   // an informative message of some sort should be printed instead.
   // (note: do not add "files.isEmpty" do this list)
   val stopSettings = List[(() => Boolean, (Global) => String)](
-    ((() => (settings.help.value _)() && (cmdName == "fsc")),
-                                    fscUsageMsg + _.pluginOptionsHelp),
+    ((() => (settings.help.value _)() && isFsc), fscUsageMsg + _.pluginOptionsHelp),
     (settings.help.value _,         usageMsg + _.pluginOptionsHelp),
     (settings.Xhelp.value _,        _ => xusageMsg),
     (settings.Yhelp.value _,        _ => yusageMsg),

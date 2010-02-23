@@ -7,6 +7,7 @@ package scala.tools
 package util
 
 import java.net.{ URL, MalformedURLException }
+import scala.util.Properties._
 import nsc.{ Settings, GenericRunnerSettings }
 import nsc.util.{ ClassPath, JavaClassPath, ScalaClassLoader }
 import nsc.io.{ File, Directory, Path }
@@ -17,8 +18,6 @@ import PartialFunction.condOpt
 // https://lampsvn.epfl.ch/trac/scala/wiki/Classpath
 
 object PathResolver {
-  def propOrElse(name: String, alt: String) = System.getProperty(name, alt)
-  def envOrElse(name: String, alt: String)  = Option(System getenv name) getOrElse alt
   def firstNonEmpty(xs: String*)            = xs find (_ != "") getOrElse ""
 
   private def fileOpt(f: Path): Option[String]      = f ifFile (_.path)
@@ -53,27 +52,26 @@ object PathResolver {
     def sourcePathEnv       =  envOrElse("SOURCEPATH", "")        // not used
     def scalaHomeEnv        =  envOrElse("SCALA_HOME", "")        // not used
     def javaBootClassPath   = propOrElse("sun.boot.class.path", searchForBootClasspath)
-    def javaUserClassPath   = propOrElse("java.class.path", "")
     def javaExtDirs         = propOrElse("java.ext.dirs", "")
-    def userHome            = propOrElse("user.home", "")
-    def scalaHome           = System.getProperty("scala.home")    // keep null so we know when it's unset
+    def javaUserClassPath   = propOrElse("java.class.path", classPathEnv)
     def scalaExtDirs        = propOrElse("scala.ext.dirs", "")
-    def scalaHomeGuessed    = searchForScalaHome
+
+    def scalaHome           = propOrElse("scala.home", null)
     def scalaHomeIsSet      = scalaHome != null
+    def scalaAutodetect     = propIsSet("scala.auto") && !propIsSet("scala.noauto")
 
     override def toString = """
       |object Environment {
+      |  scalaHome          = %s (autodetect = %s)
       |  javaBootClassPath  = <%d chars>
-      |  javaUserClassPath  = %s
       |  javaExtDirs        = %s
-      |  userHome           = %s
-      |  scalaHome          = %s
+      |  javaUserClassPath  = %s
       |  scalaExtDirs       = %s
       |}""".trim.stripMargin.format(
+        scalaHome, scalaAutodetect,
         javaBootClassPath.length,
-        ppcp(javaUserClassPath),
         ppcp(javaExtDirs),
-        userHome, scalaHome,
+        ppcp(javaUserClassPath),
         ppcp(scalaExtDirs)
       )
   }
@@ -116,15 +114,16 @@ object PathResolver {
 
     override def toString = """
       |object Defaults {
-      |  javaBootClassPath    = %s
       |  scalaHome            = %s
+      |  javaBootClassPath    = %s
       |  scalaLibDirFound     = %s
       |  scalaLibFound        = %s
       |  scalaBootClassPath   = %s
       |  scalaPluginPath      = %s
       |}""".trim.stripMargin.format(
+        scalaHome,
         ppcp(javaBootClassPath),
-        scalaHome, scalaLibDirFound, scalaLibFound,
+        scalaLibDirFound, scalaLibFound,
         ppcp(scalaBootClassPath), ppcp(scalaPluginPath)
       )
   }
@@ -207,17 +206,17 @@ class PathResolver(settings: Settings, context: JavaContext) {
       |object Calculated {
       |  scalaHome            = %s
       |  javaBootClassPath    = %s
+      |  javaExtDirs          = %s
       |  javaUserClassPath    = %s
       |  scalaBootClassPath   = %s
-      |  javaExtDirs          = %s
       |  scalaExtDirs         = %s
       |  userClassPath        = %s
       |  sourcePath           = %s
       |}""".trim.stripMargin.format(
         scalaHome,
-        ppcp(javaBootClassPath), ppcp(javaUserClassPath), ppcp(scalaBootClassPath),
-        ppcp(javaExtDirs), ppcp(scalaExtDirs),
-        ppcp(userClassPath), ppcp(sourcePath)
+        ppcp(javaBootClassPath), ppcp(javaExtDirs), ppcp(javaUserClassPath),
+        ppcp(scalaBootClassPath), ppcp(scalaExtDirs), ppcp(userClassPath),
+        ppcp(sourcePath)
       )
   }
 

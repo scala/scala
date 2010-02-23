@@ -10,16 +10,27 @@ package nest
 
 import java.io.{ File, FilenameFilter, IOException, StringWriter }
 import java.net.URI
+import scala.util.Properties.{ propOrElse, scalaCmd, scalacCmd }
 import scala.tools.util.PathResolver
-import scala.tools.nsc.io
+import scala.tools.nsc.{ Settings }
+import scala.tools.nsc.{ io, util }
+import util.{ ClassPath }
 import io.{ Path, Directory }
 import File.pathSeparator
-import PathResolver.{ propOrElse }
+import ClassPath.{ join }
+import PathResolver.{ Environment, Defaults }
+import RunnerUtils._
+
+object ConsoleFileManager {
+  def testRootPropDir = Option(propOrElse("scalatest.root", null)) map (x => Directory(x))
+}
+import ConsoleFileManager._
 
 class ConsoleFileManager extends FileManager {
-  implicit private def tempPathConversion(x: Path): File = x.jfile
+  implicit private def temporaryPath2File(x: Path): File = x.jfile
+  implicit private def temporaryFile2Path(x: File): Path = Path(x)
 
-  var testBuild: Option[String] = Option(System.getProperty("scalatest.build"))
+  var testBuild: Option[String] = PartestDefaults.testBuild
   def testBuildFile = testBuild map (testParent / _)
 
   var testClasses: Option[String] = None
@@ -44,15 +55,15 @@ class ConsoleFileManager extends FileManager {
     SCALAC_OPTS = SCALAC_OPTS+" "+moreOpts
   }
 
-  var CLASSPATH = PathResolver.Environment.javaUserClassPath
+  var CLASSPATH = PartestDefaults.classPath
+  var JAVACMD   = PartestDefaults.javaCmd
+  var JAVAC_CMD = PartestDefaults.javacCmd
 
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
-  var JAVACMD   = propOrElse("scalatest.javacmd", "java")
-  var JAVAC_CMD = propOrElse("scalatest.javac_cmd", "javac")
-
-  val prefixDir = Directory.Current map (_.normalize.toDirectory) getOrElse error("user.dir property not set")
-  val PREFIX    = prefixDir.toAbsolute.path
+  val prefixDir   = PartestDefaults.prefixDir getOrElse error("user.dir property not set")
+  val srcDirName  = PartestDefaults.srcDirName
+  val PREFIX      = prefixDir.toAbsolute.path
 
 /*
 if [ -d "$PREFIX/test" ]; then
@@ -64,11 +75,10 @@ else
 */
 
   val testRootDir = {
-    val testRootProp = Option(propOrElse("scalatest.root", null)) map (x => Directory(x))
     def isTestDir(d: Directory) = d.name == "test" && (d / "files" isDirectory)
 
     (
-      testRootProp orElse (
+      testRootPropDir orElse (
         if (isTestDir(prefixDir)) Some(prefixDir) else None   // cwd is `test`
       ) orElse (
         (prefixDir / "test") ifDirectory (x => x)             // cwd is `test/..`
@@ -83,18 +93,13 @@ else
 
   def testParent = testRootDir.parent
 
-  var srcDirName: String = ""
+  val srcDir = (testRootDir / srcDirName).toDirectory
 
-  val srcDir: io.Directory = {
-    srcDirName = Option(System.getProperty("partest.srcdir")) getOrElse "files"
-    val src = testRootDir / srcDirName
-
-    if (src.isDirectory) src.toDirectory
-    else {
-      NestUI.failure("Source directory \"" + src.path + "\" not found")
-      exit(1)
-    }
+  if (!srcDir.isDirectory) {
+    NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
+    exit(1)
   }
+
 
   LIB_DIR = (testParent / "lib").normalize.toAbsolute.path
 
@@ -195,13 +200,8 @@ else
     LATEST_COMP = latestCompFile.getAbsolutePath
     LATEST_PARTEST = latestPartestFile.getAbsolutePath
 
-    import util.Properties.isWin
-
-    val scalaCommand  = if (isWin) "scala.bat" else "scala"
-    val scalacCommand = if (isWin) "scalac.bat" else "scalac"
-
-    SCALA = (new File(latestFile, scalaCommand)).getAbsolutePath
-    SCALAC_CMD = (new File(latestFile, scalacCommand)).getAbsolutePath
+    SCALA = (latestFile / scalaCmd).toAbsolute.path
+    SCALAC_CMD = (latestFile / scalacCmd).toAbsolute.path
   }
 
   var BIN_DIR: String = ""

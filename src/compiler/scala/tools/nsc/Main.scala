@@ -7,6 +7,7 @@
 package scala.tools.nsc
 
 import java.io.File
+import File.pathSeparator
 
 import scala.concurrent.SyncVar
 
@@ -14,6 +15,7 @@ import scala.tools.nsc.interactive.{ RefinedBuildManager, SimpleBuildManager }
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
 import scala.tools.nsc.util.{ BatchSourceFile, FakePos } //{Position}
+import Properties.{ versionString, copyrightString, residentPromptString, msilLibPath }
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
@@ -21,10 +23,10 @@ import scala.tools.nsc.util.{ BatchSourceFile, FakePos } //{Position}
 object Main extends AnyRef with EvalLoop {
 
   val versionMsg = "Scala compiler " +
-    Properties.versionString + " -- " +
-    Properties.copyrightString
+    versionString + " -- " +
+    copyrightString
 
-  val prompt = Properties.residentPromptString
+  val prompt = residentPromptString
 
   var reporter: ConsoleReporter = _
 
@@ -82,12 +84,9 @@ object Main extends AnyRef with EvalLoop {
         buildManager.update(fileSet(command.files), Set.empty)
       }
     } else {
-      if (command.settings.target.value == "msil") {
-        val libpath = System.getProperty("msil.libpath")
-        if (libpath != null)
-          command.settings.assemrefs.value =
-            command.settings.assemrefs.value + File.pathSeparator + libpath
-      }
+      if (command.settings.target.value == "msil")
+        msilLibPath foreach (x => command.settings.assemrefs.value += (pathSeparator + x))
+
       try {
         val compiler = if (command.settings.Yrangepos.value) new interactive.Global(command.settings, reporter)
         else new Global(command.settings, reporter)

@@ -12,6 +12,7 @@ import java.io._
 import java.net.{URLClassLoader, URL}
 import java.util.{Timer, TimerTask}
 
+import scala.util.Properties.osName
 import scala.tools.nsc.{ ObjectRunner, Settings, CompilerCommand, Global }
 import scala.tools.nsc.io.{ AbstractFile, PlainFile, Path, Directory, File => SFile }
 import scala.tools.nsc.reporters.ConsoleReporter
@@ -121,48 +122,48 @@ class Worker(val fileManager: FileManager) extends Actor {
   }
 
   /* Note: not yet used/tested. */
-  def execTestObjectRunner(file: File, outDir: File, logFile: File) {
-    val consFM = new ConsoleFileManager
-
-    val classpath: List[URL] = {
-      import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
-      val units = (
-        List(outDir, latestCompFile, latestLibFile, latestPartestFile) :::
-        ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x)))
-      )
-      units map (_.toURI.toURL)
-    }
-
-    NestUI.verbose("ObjectRunner classpath: "+classpath)
-
-    try {
-      // configure input/output files
-      val logOut    = new FileOutputStream(logFile)
-      val logWriter = new PrintStream(logOut)
-
-      // grab global lock
-      fileManager.synchronized {
-        withOutputRedirected(logWriter) {
-          System.setProperty("java.library.path", logFile.getParentFile.getCanonicalFile.getAbsolutePath)
-          System.setProperty("scalatest.output", outDir.getCanonicalFile.getAbsolutePath)
-          System.setProperty("scalatest.lib", LATEST_LIB)
-          System.setProperty("scalatest.cwd", outDir.getParent)
-          ObjectRunner.run(classpath, "Test", List("jvm"))
-        }
-      }
-
-      /*val out = new FileOutputStream(logFile, true)
-      Console.withOut(new PrintStream(out)) {
-        ObjectRunner.run(classpath, "Test", List("jvm"))
-      }
-      out.flush
-      out.close*/
-    } catch {
-      case e: Exception =>
-        NestUI.verbose(e+" ("+file.getPath+")")
-        e.printStackTrace()
-    }
-  }
+  // def execTestObjectRunner(file: File, outDir: File, logFile: File) {
+  //   val consFM = new ConsoleFileManager
+  //
+  //   val classpath: List[URL] = {
+  //     import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
+  //     val units = (
+  //       List(outDir, latestCompFile, latestLibFile, latestPartestFile) :::
+  //       ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x)))
+  //     )
+  //     units map (_.toURI.toURL)
+  //   }
+  //
+  //   NestUI.verbose("ObjectRunner classpath: "+classpath)
+  //
+  //   try {
+  //     // configure input/output files
+  //     val logOut    = new FileOutputStream(logFile)
+  //     val logWriter = new PrintStream(logOut)
+  //
+  //     // grab global lock
+  //     fileManager.synchronized {
+  //       withOutputRedirected(logWriter) {
+  //         System.setProperty("java.library.path", logFile.getParentFile.getCanonicalFile.getAbsolutePath)
+  //         System.setProperty("scalatest.output", outDir.getCanonicalFile.getAbsolutePath)
+  //         System.setProperty("scalatest.lib", LATEST_LIB)
+  //         System.setProperty("scalatest.cwd", outDir.getParent)
+  //         ObjectRunner.run(classpath, "Test", List("jvm"))
+  //       }
+  //     }
+  //
+  //     /*val out = new FileOutputStream(logFile, true)
+  //     Console.withOut(new PrintStream(out)) {
+  //       ObjectRunner.run(classpath, "Test", List("jvm"))
+  //     }
+  //     out.flush
+  //     out.close*/
+  //   } catch {
+  //     case e: Exception =>
+  //       NestUI.verbose(e+" ("+file.getPath+")")
+  //       e.printStackTrace()
+  //   }
+  // }
 
   def javac(outDir: File, files: List[File], output: File): Boolean = {
     // compile using command-line javac compiler
@@ -412,13 +413,14 @@ class Worker(val fileManager: FileManager) extends Actor {
           val dir      = file.getParentFile
 
           //TODO: detect whether we have to use Runtime.exec
-          val useRuntime = true
-
-          if (useRuntime)
-            execTest(outDir, logFile, fileBase)
-          else
-            execTestObjectRunner(file, outDir, logFile)
-          // NestUI.verbose(this+" finished running "+fileBase)
+          // val useRuntime = true
+          //
+          // if (useRuntime)
+          //   execTest(outDir, logFile, fileBase)
+          // else
+          //   execTestObjectRunner(file, outDir, logFile)
+          // // NestUI.verbose(this+" finished running "+fileBase)
+          execTest(outDir, logFile, fileBase)
 
           diff = compareOutput(dir, fileBase, kind, logFile)
           if (!diff.equals("")) {
@@ -492,10 +494,7 @@ class Worker(val fileManager: FileManager) extends Actor {
           }
         })
 
-      case "run" =>
-        runJvmTest(file, kind)
-
-      case "jvm" =>
+      case "run" | "jvm" =>
         runJvmTest(file, kind)
 
       case "buildmanager" =>
@@ -809,12 +808,15 @@ class Worker(val fileManager: FileManager) extends Actor {
                 // -------- run test --------
 
                 //TODO: detect whether we have to use Runtime.exec
-                val useRuntime = true
+                // val useRuntime = true
+                //
+                // if (useRuntime)
+                //   execTest(outDir, logFile, fileBase)
+                // else
+                //   execTestObjectRunner(file, outDir, logFile)
 
-                if (useRuntime)
-                  execTest(outDir, logFile, fileBase)
-                else
-                  execTestObjectRunner(file, outDir, logFile)
+                execTest(outDir, logFile, fileBase)
+
                 NestUI.verbose(this+" finished running "+fileBase)
               } // successful compile
             } catch { // *catch-all*
@@ -892,7 +894,6 @@ class Worker(val fileManager: FileManager) extends Actor {
       }
 
       case "script" => {
-        val osName = System.getProperty("os.name", "")
           // when option "--failed" is provided
           // execute test only if log file is present
           // (which means it failed before)

@@ -13,11 +13,14 @@ object Properties extends scala.util.PropertiesTrait {
   protected def pickJarBasedOn  = classOf[Global]
 
   // settings based on jar properties
-  def fileEndingString      = prop("file.ending", ".scala|.java")
-  def residentPromptString  = prop("resident.prompt", "\nnsc> ")
-  def shellPromptString     = prop("shell.prompt", "\nscala> ")
+  def fileEndingString      = scalaPropOrElse("file.ending", ".scala|.java")
+  def residentPromptString  = scalaPropOrElse("resident.prompt", "\nnsc> ")
+  def shellPromptString     = scalaPropOrElse("shell.prompt", "\nscala> ")
+
+  // settings based on system properties
+  def msilLibPath           = propOrNone("msil.libpath")
 
   // derived values
-  def cmdName               = if (isWin) "scala.bat" else "scala"
+  def isEmacsShell          = propIsSet("env.emacs")
   def fileEndings           = fileEndingString.split("""\|""").toList
 }
