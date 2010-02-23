@@ -6,19 +6,26 @@
 package scala.tools.nsc
 package backend
 
-import util.{ ClassPath }
+import util.ClassPath
 
 /** The platform dependent pieces of Global.
  */
-
 trait Platform[T] {
   val global: Global
   import global._
 
-  // Unless inlining is on, we can exclude $class.class files from the classpath.
-  protected def isInlinerOn = settings.inline.value
-
+  /** The compiler classpath. */
   def classPath: ClassPath[T]
-  def rootLoader: global.LazyType
+
+  /** The root symbol loader. */
+  def rootLoader: LazyType
+
+  /** Any platform-specific phases. */
   def platformPhases: List[SubComponent]
+
+  /** Symbol for a method which compares two objects. */
+  def externalEquals: Symbol
+
+  /** The various ways a boxed primitive might materialize at runtime. */
+  def isMaybeBoxed(sym: Symbol): Boolean
 }

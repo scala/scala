@@ -27,13 +27,13 @@ abstract class GenICode extends SubComponent  {
   import icodes.opcodes._
   import definitions.{
     ArrayClass, ObjectClass, ThrowableClass,
-    Object_equals, Object_isInstanceOf, Object_asInstanceOf,
-    isMaybeBoxed
+    Object_equals, Object_isInstanceOf, Object_asInstanceOf
   }
   import scalaPrimitives.{
     isArrayOp, isComparisonOp, isLogicalOp,
     isUniversalEqualityOp, isReferenceEqualityOp
   }
+  import platform.isMaybeBoxed
 
   val phaseName = "icode"
 
@@ -57,13 +57,6 @@ abstract class GenICode extends SubComponent  {
     val SCALA_ALL    = REFERENCE(definitions.NothingClass)
     val SCALA_ALLREF = REFERENCE(definitions.NullClass)
     val THROWABLE    = REFERENCE(ThrowableClass)
-
-    lazy val BoxesRunTime_equals =
-      if (!forMSIL)
-        definitions.getMember(definitions.BoxesRunTimeClass, nme.equals_)
-      else
-        definitions.getMember(definitions.getClass("scala.runtime.Comparator").linkedModuleOfClass, nme.equals_)
-
 
     override def run {
       scalaPrimitives.init
@@ -1360,7 +1353,7 @@ abstract class GenICode extends SubComponent  {
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
         val equalsMethod =
-          if (!settings.XO.value) BoxesRunTime_equals
+          if (!settings.XO.value) platform.externalEquals
           else {
             ctx.bb.emit(LOAD_MODULE(definitions.ScalaRunTimeModule))
             definitions.getMember(definitions.ScalaRunTimeModule, nme.inlinedEquals)

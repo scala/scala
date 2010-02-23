@@ -357,7 +357,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           }
 
           def useValueOperator =
-            isMaybeBoxed(qualSym) && // may be a boxed value class
+            platform.isMaybeBoxed(qualSym) && // may be a boxed value class
             (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name) &&
             ((resType :: paramTypes) forall (x => isJavaValueClass(x.typeSymbol))) // issue #1110
 

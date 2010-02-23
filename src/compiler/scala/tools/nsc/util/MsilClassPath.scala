@@ -17,7 +17,7 @@ import scala.collection.mutable.{ ListBuffer, HashSet => MutHashSet }
 import scala.tools.nsc.io.AbstractFile
 
 import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Assembly }
-import ClassPath.ClassPathContext
+import ClassPath.{ ClassPathContext, isTraitImplementation }
 
 /** Keeping the MSIL classpath code in its own file is important to make sure
  *  we don't accidentally introduce a dependency on msil.jar in the jvm.
@@ -33,6 +33,18 @@ object MsilClassPath {
       Sorting.stableSort(res, (t1: MSILType, t2: MSILType) => (t1.FullName compareTo t2.FullName) < 0)
     }
     res
+  }
+
+  /** On the java side this logic is in PathResolver, but as I'm not really
+   *  up to folding MSIL into that, I am encapsulating it here.
+   */
+  def fromSettings(settings: Settings): MsilClassPath = {
+    val context =
+      if (settings.inline.value) new MsilContext
+      else new MsilContext { override def isValidName(name: String) = !isTraitImplementation(name) }
+
+    import settings._
+    new MsilClassPath(assemextdirs.value, assemrefs.value, sourcepath.value, context)
   }
 
   class MsilContext extends ClassPathContext[MSILType] {
