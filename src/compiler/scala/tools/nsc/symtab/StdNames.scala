@@ -314,6 +314,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     val print = newTermName("print")
     val productArity = newTermName("productArity")
     val productElement = newTermName("productElement")
+    val productElementName = newTermName("productElementName")
     val productPrefix = newTermName("productPrefix")
     val readResolve = newTermName("readResolve")
     val sameElements = newTermName("sameElements")

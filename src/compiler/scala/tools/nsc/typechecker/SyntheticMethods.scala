@@ -88,14 +88,16 @@ trait SyntheticMethods extends ast.TreeDSL {
       typer typed { DEF(method) === LIT(nargs) }
     }
 
-    def productElementMethod(accs: List[Symbol]): Tree = {
-      val symToTpe  = makeTypeConstructor(List(IntClass.tpe), AnyClass.tpe)
-      val method    = syntheticMethod(nme.productElement, 0, symToTpe)
+    /** Common code for productElement and productElementName
+     */
+    def perElementMethod(accs: List[Symbol], methodName: Name, resType: Type, caseFn: Symbol => Tree): Tree = {
+      val symToTpe  = makeTypeConstructor(List(IntClass.tpe), resType)
+      val method    = syntheticMethod(methodName, 0, symToTpe)
       val arg       = method ARG 0
-      val default   = List( DEFAULT ==> THROW(IndexOutOfBoundsExceptionClass, arg) )
+      val default   = List(DEFAULT ==> THROW(IndexOutOfBoundsExceptionClass, arg))
       val cases     =
         for ((sym, i) <- accs.zipWithIndex) yield
-          CASE(LIT(i)) ==> Ident(sym)
+          CASE(LIT(i)) ==> caseFn(sym)
 
       typer typed {
         DEF(method) === {
@@ -103,6 +105,11 @@ trait SyntheticMethods extends ast.TreeDSL {
         }
       }
     }
+    def productElementMethod(accs: List[Symbol]): Tree =
+      perElementMethod(accs, nme.productElement, AnyClass.tpe, x => Ident(x))
+
+    def productElementNameMethod(accs: List[Symbol]): Tree =
+      perElementMethod(accs, nme.productElementName, StringClass.tpe, x => Literal(x.name.toString))
 
     def moduleToStringMethod: Tree = {
       val method = syntheticMethod(nme.toString_, FINAL, makeNoArgConstructor(StringClass.tpe))
@@ -273,6 +280,7 @@ trait SyntheticMethods extends ast.TreeDSL {
             Product_productPrefix   -> (() => productPrefixMethod),
             Product_productArity    -> (() => productArityMethod(accessors.length)),
             Product_productElement  -> (() => productElementMethod(accessors)),
+            Product_productElementName  -> (() => productElementNameMethod(accessors)),
             Product_canEqual        -> (() => canEqualMethod)
           )
         }

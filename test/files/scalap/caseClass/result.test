@@ -11,5 +11,6 @@ case class CaseClass[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) 
   override def productPrefix : java.lang.String = { /* compiled code */ }
   override def productArity : scala.Int = { /* compiled code */ }
   override def productElement(x$1 : scala.Int) : scala.Any = { /* compiled code */ }
+  override def productElementName(x$1 : scala.Int) : java.lang.String = { /* compiled code */ }
   override def canEqual(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }
 }
