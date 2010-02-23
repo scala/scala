@@ -1,4 +1,4 @@
-import scala.actors.{Reactor, ReplyReactor}
+import scala.actors.ReplyReactor
 
 object Test {
   def main(args: Array[String]) {
@@ -12,10 +12,10 @@ object Test {
     }
     a.start()
 
-    val b = new Reactor {
+    val b = new ReplyReactor {
       def act() {
         react {
-          case r: Reactor =>
+          case r: ReplyReactor =>
             r ! 'hello
             react {
               case any =>

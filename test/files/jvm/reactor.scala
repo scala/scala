@@ -1,6 +1,5 @@
 
 import scala.actors.Reactor
-import scala.actors.Actor._
 
 case class Ping(from: Reactor)
 case object Pong
