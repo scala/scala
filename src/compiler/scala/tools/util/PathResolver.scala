@@ -52,23 +52,35 @@ object PathResolver {
     def sourcePathEnv       =  envOrElse("SOURCEPATH", "")        // not used
     def scalaHomeEnv        =  envOrElse("SCALA_HOME", "")        // not used
     def javaBootClassPath   = propOrElse("sun.boot.class.path", searchForBootClasspath)
-    def javaExtDirs         = propOrElse("java.ext.dirs", "")
+    def javaExtDirs         = propOrEmpty("java.ext.dirs")
     def javaUserClassPath   = propOrElse("java.class.path", classPathEnv)
-    def scalaExtDirs        = propOrElse("scala.ext.dirs", "")
+    def scalaExtDirs        = propOrEmpty("scala.ext.dirs")
 
-    def scalaHome           = propOrElse("scala.home", null)
-    def scalaHomeIsSet      = scalaHome != null
-    def scalaAutodetect     = propIsSet("scala.auto") && !propIsSet("scala.noauto")
+    def scalaHome           = propOrEmpty("scala.home")
+
+    /** I have distilled everyone's classpath hopes and dreams into the
+     *  question of how to resolve this boolean.  Right at this moment if I
+     *  do anything but default to true right here, partest chokes.  I'm
+     *  steadily reworking all the places partest gets its hands on the
+     *  classpath so eventually I'll be able to remedy that, at which point
+     *  my current plan is to have this default to false unless some
+     *  property or command line option is supplied.  This is negotiable,
+     *  but at this point I can say with confidence that less magic and
+     *  less autodetection is more better.
+     */
+    def useJavaClassPath    = true
+    // hypothetically:
+    // def useJavaClassPath = propIsSet("scala.auto.class.path")
 
     override def toString = """
       |object Environment {
-      |  scalaHome          = %s (autodetect = %s)
+      |  scalaHome          = %s (useJavaClassPath = %s)
       |  javaBootClassPath  = <%d chars>
       |  javaExtDirs        = %s
       |  javaUserClassPath  = %s
       |  scalaExtDirs       = %s
       |}""".trim.stripMargin.format(
-        scalaHome, scalaAutodetect,
+        scalaHome, useJavaClassPath,
         javaBootClassPath.length,
         ppcp(javaExtDirs),
         ppcp(javaUserClassPath),
@@ -81,10 +93,10 @@ object PathResolver {
    */
   object Defaults {
     def javaBootClassPath = Environment.javaBootClassPath
-    def javaUserClassPath = firstNonEmpty(Environment.javaUserClassPath, Environment.classPathEnv)
+    def javaUserClassPath = Environment.javaUserClassPath
     def javaExtDirs       = Environment.javaExtDirs
 
-    def scalaHome         = Option(Environment.scalaHome) getOrElse ""
+    def scalaHome         = Environment.scalaHome
     def scalaHomeDir      = Directory(scalaHome)
     def scalaHomeExists   = scalaHomeDir.isDirectory
     def scalaLibDir       = Directory(scalaHomeDir / "lib")
@@ -174,6 +186,8 @@ class PathResolver(settings: Settings, context: JavaContext) {
     case "sourcepath"         => settings.sourcepath.value
   }
 
+  private def useJavaClassPath = !settings.javaignorecp.value && Environment.useJavaClassPath
+
   /** Calculated values based on any given command line options, falling back on
    *  those in Defaults.
    */
@@ -181,7 +195,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def scalaHome           = Defaults.scalaHome
     def javaBootClassPath   = cmdLineOrElse("javabootclasspath", Defaults.javaBootClassPath)
     def javaExtDirs         = cmdLineOrElse("javaextdirs", Defaults.javaExtDirs)
-    def javaUserClassPath   = if (Environment.scalaHomeIsSet) "" else Defaults.javaUserClassPath
+    def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
     def scalaBootClassPath  = cmdLineOrElse("bootclasspath", Defaults.scalaBootClassPath)
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
     def userClassPath       = cmdLineOrElse("classpath", ".")
@@ -208,6 +222,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
       |  javaBootClassPath    = %s
       |  javaExtDirs          = %s
       |  javaUserClassPath    = %s
+      |    useJavaClassPath   = %s
       |  scalaBootClassPath   = %s
       |  scalaExtDirs         = %s
       |  userClassPath        = %s
@@ -215,6 +230,7 @@ class PathResolver(settings: Settings, context: JavaContext) {
       |}""".trim.stripMargin.format(
         scalaHome,
         ppcp(javaBootClassPath), ppcp(javaExtDirs), ppcp(javaUserClassPath),
+        useJavaClassPath,
         ppcp(scalaBootClassPath), ppcp(scalaExtDirs), ppcp(userClassPath),
         ppcp(sourcePath)
       )
@@ -225,8 +241,8 @@ class PathResolver(settings: Settings, context: JavaContext) {
   lazy val result = {
     val cp = new JavaClassPath(containers, context)
     if (settings.Ylogcp.value) {
-      Console.println("Classpath built from " + settings)
-      Console.println("And Environment: " + PathResolver.Environment)
+      Console.println("Classpath built from " + settings.toConciseString)
+      Console.println("Defaults: " + PathResolver.Defaults)
 
       val xs = (Calculated.basis drop 2).flatten.distinct
       println("After java boot/extdirs classpath has %d entries:" format xs.size)

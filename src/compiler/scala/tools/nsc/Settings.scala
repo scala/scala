@@ -256,6 +256,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
   }
 
   override def toString() = "Settings {\n%s}\n" format (userSetSettings map ("  " + _ + "\n") mkString)
+  def toConciseString = userSetSettings.mkString("(", " ", ")")
 }
 
 object Settings {
@@ -830,6 +831,8 @@ trait ScalacSettings {
   val extdirs           = PathSetting     ("-extdirs", "dirs", "Override location of installed extensions", Defaults.scalaExtDirs)
   val javabootclasspath = PathSetting     ("-javabootclasspath", "path", "Override java boot classpath.", Defaults.javaBootClassPath)
   val javaextdirs       = PathSetting     ("-javaextdirs", "path", "Override java extdirs classpath.", Defaults.javaExtDirs)
+  /** This one is most likely temporary, but so helpful while I try to get an iron grip on the classpath. */
+  val javaignorecp      = BooleanSetting  ("-javaignorecp", "scala will not use java's -classpath no matter what.")
 
   val outdir            = OutputSetting   (outputDirs, ".")
   val sourcepath        = StringSetting   ("-sourcepath", "path", "Specify where to find input source files", "")
