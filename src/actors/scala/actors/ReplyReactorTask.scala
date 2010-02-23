@@ -8,28 +8,25 @@
 
 // $Id$
 
-
 package scala.actors
 
 /** <p>
- *    The class <code>ActorTask</code>.
+ *    The class <code>ReplyReactorTask</code>.
  *  </p>
  *
  *  @author Philipp Haller
  */
-private[actors] class ActorTask(actor: Actor, fun: () => Unit) extends ReplyReactorTask[Actor](actor, fun) {
+private[actors] class ReplyReactorTask[T >: Null <: ReplyReactor](reactor: T, fun: () => Unit) extends ReactorTask[ReplyReactor](reactor, fun) {
+
+  var saved: Reactor = _
 
   protected override def beginExecution() {
-    super.beginExecution()
-    if (actor.shouldExit)
-      actor.exit()
+    saved = Actor.tl.get
+    Actor.tl set reactor
   }
 
-  protected override def terminateExecution(e: Exception) {
-    actor.synchronized {
-      if (!actor.links.isEmpty)
-        actor.exitLinked(e)
-    }
+  protected override def suspendExecution() {
+    Actor.tl set saved
   }
 
 }

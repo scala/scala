@@ -45,7 +45,7 @@ private[actors] object Reactor {
  *
  * @author Philipp Haller
  */
-trait Reactor extends OutputChannel[Any] {
+trait Reactor extends OutputChannel[Any] with Combinators {
 
   /* The actor's mailbox. */
   private[actors] val mailbox = new MQueue("Reactor")
@@ -181,7 +181,6 @@ trait Reactor extends OutputChannel[Any] {
   }
 
   protected[actors] def react(f: PartialFunction[Any, Unit]): Nothing = {
-    assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")
     synchronized { drainSendBuffer(mailbox) }
     searchMailbox(mailbox, f, false)
     throw Actor.suspendException
@@ -195,16 +194,18 @@ trait Reactor extends OutputChannel[Any] {
    * never throws SuspendActorException
    */
   private[actors] def scheduleActor(handler: PartialFunction[Any, Any], msg: Any) = {
-    val fun = () => handler(msg)
-    val task = new ReactorTask(this, fun)
-    scheduler executeFromActor task
+    val fun = () => handler(msg): Unit
+    scheduler executeFromActor makeReaction(fun)
   }
 
   def start(): Reactor = {
-    scheduler.newActor(this)
-    val task = new ReactorTask(this, () => act())
-    scheduler execute task
+    scheduler newActor this
+    scheduler execute makeReaction(() => act())
     this
+  }
+
+  implicit def mkBody[A](body: => A) = new Actor.Body[A] {
+    def andThen[B](other: => B): Unit = Reactor.this.seq(body, other)
   }
 
   /* This closure is used to implement control-flow operations
@@ -216,10 +217,9 @@ trait Reactor extends OutputChannel[Any] {
     () => { exit() }
 
   private[actors] def seq[a, b](first: => a, next: => b): Unit = {
-    val s = Actor.rawSelf(scheduler)
-    val killNext = s.kill
-    s.kill = () => {
-      s.kill = killNext
+    val killNext = this.kill
+    this.kill = () => {
+      this.kill = killNext
 
       // to avoid stack overflow:
       // instead of directly executing `next`,

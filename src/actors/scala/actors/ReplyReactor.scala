@@ -95,4 +95,7 @@ trait ReplyReactor extends Reactor with ReplyableReactor {
     }
   }
 
+  private[actors] override def makeReaction(fun: () => Unit): Runnable =
+    new ReplyReactorTask(this, fun)
+
 }
