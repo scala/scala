@@ -9,7 +9,7 @@ package scala.tools.nsc
 import java.io.File
 import File.pathSeparator
 import io.AbstractFile
-import util.{ ClassPath, SourceFile }
+import util.{ ClassPath, SourceFile, CommandLineParser }
 import Settings._
 import annotation.elidable
 import scala.tools.util.{ PathResolver, StringOps }
@@ -108,7 +108,7 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
   /** Split the given line into parameters.
    */
-  def splitParams(line: String) = StringOps.splitParams(line, errorFn)
+  def splitParams(line: String) = CommandLineParser.tokenize(line, errorFn)
 
   /** Returns any unprocessed arguments.
    */
@@ -188,8 +188,6 @@ class Settings(errorFn: String => Unit) extends ScalacSettings {
 
     doArgs(args)
   }
-
-  def parseParamString(params: String) = parseParams(splitParams(params))
 
   // checks both name and any available abbreviations
   def lookupSetting(cmd: String): Option[Setting] =
