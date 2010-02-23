@@ -21,6 +21,6 @@ object Properties extends scala.util.PropertiesTrait {
   def msilLibPath           = propOrNone("msil.libpath")
 
   // derived values
-  def isEmacsShell          = propIsSet("env.emacs")
+  def isEmacsShell          = propOrEmpty("env.emacs") != ""
   def fileEndings           = fileEndingString.split("""\|""").toList
 }
