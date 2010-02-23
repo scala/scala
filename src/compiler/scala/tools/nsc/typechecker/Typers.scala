@@ -3599,8 +3599,7 @@ trait Typers { self: Analyzer =>
           }
 
           while (defSym == NoSymbol && cx != NoContext) {
-            if (currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name))
-              assert(true)
+            currentRun.compileSourceFor(context.asInstanceOf[analyzer.Context], name)
             pre = cx.enclClass.prefix
             defEntry = cx.scope.lookupEntry(name)
             if ((defEntry ne null) && qualifies(defEntry.sym)) {
