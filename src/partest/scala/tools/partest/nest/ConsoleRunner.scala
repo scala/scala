@@ -87,7 +87,7 @@ class ConsoleRunner extends DirectRunner {
     val enabledTestSets = {
       val enabledArgs = testSetArgs filter parsed.isSet
 
-      if (enabledArgs.isEmpty || (parsed isSet "--all")) testSets
+      if (args.isEmpty && (enabledArgs.isEmpty || (parsed isSet "--all"))) testSets
       else enabledArgs map testSetArgMap
     }
 
