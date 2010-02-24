@@ -674,11 +674,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
     shouldExit = false
 
     scheduler newActor this
-    val task = new Reaction(this)
-    if (Actor.rawSelf(scheduler).isInstanceOf[ActorProxy])
-      scheduler execute task
-    else
-      scheduler executeFromActor task
+    scheduler execute (new Reaction(this))
 
     this
   }
