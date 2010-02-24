@@ -873,8 +873,14 @@ PACKED QUICK BUILD (PACK)
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalap"/>
     <touch file="${build-pack.dir}/bin.complete" verbose="no"/>
   </target>
+
+  <target name="pack.etc" depends="pack.bin" unless="pack.bin.available" >
+	<exec executable="${build-pack.dir}/bin/scala" output="${build-pack.dir}/etc/scala_completion.sh" failifexecutionfails="false" >
+	  <arg line="scala.tools.util.BashCompletion" />
+    </exec>
+  </target>
   
-  <target name="pack.done" depends="pack.bin">
+  <target name="pack.done" depends="pack.etc">
     <path id="pack.classpath">
       <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
       <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
