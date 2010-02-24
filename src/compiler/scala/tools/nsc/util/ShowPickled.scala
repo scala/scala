@@ -180,6 +180,8 @@ object ShowPickled extends Names {
           printTypeRef(); buf.until(end, printAnnotArgRef)
         case ANNOTARGARRAY  =>
           buf.until(end, printConstAnnotArgRef)
+        case EXISTENTIALtpe =>
+          printTypeRef(); buf.until(end, printSymbolRef)
 
         case _ =>
       }
