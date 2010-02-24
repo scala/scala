@@ -189,7 +189,7 @@ self =>
     b.result
   }
 
-  /** Selects all elements except first ''n'' ones.
+  /** Selects all elements except last ''n'' ones.
    *  $orderDependent
    *
    *  @param  n    The number of elements to take
