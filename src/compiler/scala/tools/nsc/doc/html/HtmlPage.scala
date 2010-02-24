@@ -132,13 +132,25 @@ abstract class HtmlPage { thisPage =>
     case Paragraph(in) => <p>{ inlineToHtml(in) }</p>
     case Code(data) => <pre>{ Unparsed(data) }</pre>
     case UnorderedList(items) =>
-      <ul>{items map { i => <li>{ blockToHtml(i) }</li>}}</ul>
+      <ul>{ listItemsToHtml(items) }</ul>
     case OrderedList(items) =>
-      <ol>{items map { i => <li>{ blockToHtml(i) }</li>}}</ol>
+      <ol>{ listItemsToHtml(items) }</ol>
     case DefinitionList(items) =>
       <dl>{items map { case (t, d) => <dt>{ inlineToHtml(t) }</dt><dd>{ blockToHtml(d) }</dd> } }</dl>
     case HorizontalRule() =>
       <hr/>
+  }
+
+  def listItemsToHtml(items: Seq[Block]) =
+    items.foldLeft(xml.NodeSeq.Empty){ (xmlList, item) =>
+      item match {
+        case OrderedList(_) | UnorderedList(_) =>  // html requires sub ULs to be put into the last LI
+          xmlList.init ++ <li>{ xmlList.last.child ++ blockToHtml(item) }</li>
+        case Paragraph(inline) =>
+          xmlList :+ <li>{ inlineToHtml(inline) }</li>  // LIs are blocks, no need to use Ps
+        case block =>
+          xmlList :+ <li>{ blockToHtml(block) }</li>
+      }
   }
 
   def inlineToHtml(inl: Inline): NodeSeq = inl match {
@@ -149,7 +161,7 @@ abstract class HtmlPage { thisPage =>
     case Underline(in) => <u>{ inlineToHtml(in) }</u>
     case Superscript(in) => <sup>{ inlineToHtml(in) }</sup>
     case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
-    case Link(raw) => Unparsed(raw)//error("link not supported") // TODO
+    case Link(raw,title) => <a href={ raw }>{ title.getOrElse(raw) }</a> // TODO link to target
     case Monospace(text) => <code>{ Unparsed(text) }</code>
     case Text(text) => Unparsed(text)
   }

@@ -21,8 +21,8 @@ import scala.annotation.switch
   * @author Gilles Dubochet */
 final class CommentFactory(val reporter: Reporter) { parser =>
 
-  final val endOfText      = '\u0003'
-  final val endOfLine      = '\u000A'
+  val endOfText      = '\u0003'
+  val endOfLine      = '\u000A'
 
   /** Something that should not have happened, happened, and Scaladoc should exit. */
   protected def oops(msg: String): Nothing =
@@ -248,10 +248,44 @@ final class CommentFactory(val reporter: Reporter) { parser =>
         title()
       else if (check("----"))
         hrule()
-      // TODO: Lists
+      else if (check(" - "))
+        listBlock(countWhitespace, '-', UnorderedList)
+      else if (check(" 1 "))
+        listBlock(countWhitespace, '1', OrderedList)
       else {
         para()
       }
+    }
+
+    /**
+     * {{{
+     *   nListBlock ::= nLine { mListBlock }
+     *   nLine ::= nSpc '*' para '\n'
+     * }}}
+     * Where n and m stand for the number of spaces. When m > n, a new list is nested.  */
+	def listBlock(indentation: Int, marker: Char, constructor: (Seq[Block] => Block)): Block = {
+      var count  = indentation
+      val start  = " " * count + marker + " "
+      var chk    = check(start)
+      var line   = listLine(indentation, marker)
+      val blocks = mutable.ListBuffer.empty[Block]
+      while (chk) {
+        blocks += line
+        count = countWhitespace
+        if (count > indentation) { // nesting-in
+          blocks += listBlock(count, marker, constructor) // TODO is tailrec really needed here?
+        }
+        chk = check(start)
+        if (chk) { line = listLine(indentation, marker) }
+      }
+      constructor(blocks)
+    }
+
+    def listLine(indentation: Int, marker: Char): Block = {
+      jump(" " * indentation + marker + " ")
+      val p = Paragraph(inline(check(Array(endOfLine))))
+      blockEnded("end of list line ")
+      p
     }
 
     /** {{{ code ::= "{{{" { char } '}' "}}" '\n' }}} */
@@ -288,8 +322,9 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     def para(): Block = {
       def checkParaEnd(): Boolean = {
         check(Array(endOfLine, endOfLine)) ||
-        check(Array(endOfLine, '='))
-        check(Array(endOfLine, '{', '{', '{'))
+        check(Array(endOfLine, '=')) ||
+        check(Array(endOfLine, '{', '{', '{')) ||
+        check(Array(endOfLine, ' ', '-', ' '))
       }
       val p = Paragraph(inline(checkParaEnd()))
       while (char == endOfLine && char != endOfText)
@@ -390,7 +425,16 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       jump("[[")
       readUntil { check("]]") }
       jump("]]")
-      Link(getRead())
+      val read = getRead()
+      val (target, title) = {
+    	  val index = read.indexOf(' ');
+    	  val split = read.splitAt( if (index > -1) index else 0 )
+    	  if (split._1 == "")
+          (split._2, None)
+    	  else
+          (split._1, Some(split._2.trim))
+      }
+      Link(target, title)
     }
 
     /* UTILITY */
@@ -446,6 +490,30 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       ok
     }
 
+    def checkSkipWhitespace(chars: Array[Char]): Boolean = {
+      assert(chars.head!=' ') // or it makes no sense
+      val poff = offset
+      val pc = char
+      jumpWhitespace
+      val ok = jump(chars)
+      offset = poff
+      char = pc
+      ok
+    }
+
+    def countWhitespace:Int = {
+      var count = 0
+      val poff = offset
+      val pc = char
+      while (isWhitespace(char) && char!=endOfText) {
+        nextChar()
+        count += 1
+      }
+      offset = poff
+      char = pc
+      count
+    }
+
     /* JUMPERS */
 
     final def jump(chars: Array[Char]): Boolean = {
@@ -474,7 +542,8 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       while (more && count < max) {
         if (!checkedJump(chars))
           more = false
-        count += 1
+        else
+          count += 1
       }
       count
     }
@@ -485,15 +554,18 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       while (more) {
         if (!checkedJump(chars))
           more = false
-        count += 1
+        else
+          count += 1
       }
       count
     }
 
     final def jumpUntil(ch: Char): Int = {
       var count = 0
-      while(char != ch && char != endOfText)
+      while(char != ch && char != endOfText) {
         nextChar()
+        count=count+1
+      }
       count
     }
 
@@ -503,16 +575,20 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       val c = chars(0)
       while(!check(chars) && char != endOfText) {
         nextChar()
-        while (char != c && char != endOfText)
+        while (char != c && char != endOfText) {
           nextChar()
+          count += 1
+        }
       }
       count
     }
 
     final def jumpUntil(pred: => Boolean): Int = {
       var count = 0
-      while (!pred && char != endOfText)
+      while (!pred && char != endOfText) {
         nextChar()
+        count += 1
+      }
       count
     }
 

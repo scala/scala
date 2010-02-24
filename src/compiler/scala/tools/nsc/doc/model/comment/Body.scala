@@ -32,6 +32,6 @@ final case class Bold(text: Inline) extends Inline
 final case class Underline(text: Inline) extends Inline
 final case class Superscript(text: Inline) extends Inline
 final case class Subscript(text: Inline) extends Inline
-final case class Link(raw: String) extends Inline // TODO
+final case class Link(target: String, title: Option[String]) extends Inline
 final case class Monospace(text: String) extends Inline
 final case class Text(text: String) extends Inline

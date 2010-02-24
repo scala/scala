@@ -122,8 +122,8 @@ div.members > ol > li {
 .signature .kind {
 	text-align: right;
 	float: left;
-	display: inline;
-	padding-left: 72px;
+	display: inline-block;
+	width: 72px;
 }
 
 .signature .symbol {
@@ -149,11 +149,11 @@ div.members > ol > li {
 }
 
 #values .signature .name {
-	color: #142556;
+	color: blue;
 }
 
 #types .signature .name {
-	color: #561414;
+	color: red;
 }
 
 /* Comments text formating */
@@ -174,6 +174,20 @@ div.members > ol > li {
 	font-family: monospace;
 	font-size: small;
 	margin: 2px 0 2px 0;
+}
+
+.cmt ul, .cmt ol {
+	display: block;
+	list-style: circle;
+	padding-left:20px;
+}
+
+.cmt li {
+	display:list-item;
+}
+
+.cmt a {
+	text-decoration: underline;
 }
 
 /* Comments structured layout */
@@ -263,6 +277,11 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 }
 
 #mbrsel > div > ol {
+	display: inline-block;
+	background-color: white;
+}
+
+#mbrsel > div > ol#linearization {
 	display: inline;
 }
 
@@ -270,7 +289,7 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 	padding: 4px 8px 4px 8px;
 	font-weight: bold;
 	background-color: white;
-	display: inline;
+	display: inline-block;
 	cursor: crosshair;
 }
 
