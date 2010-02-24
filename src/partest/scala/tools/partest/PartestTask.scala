@@ -8,13 +8,18 @@
 
 // $Id$
 
-package scala.tools.partest
+package scala.tools
+package partest
 
 import scala.actors.Actor._
-import util.Properties.setProp
+import scala.util.Properties.setProp
+import nsc.Settings
+import nsc.util.ClassPath
+import util.PathResolver
 
 import java.io.File
 import java.net.URLClassLoader
+import java.lang.reflect.Method
 
 import org.apache.tools.ant.Task
 import org.apache.tools.ant.types.{Path, Reference, FileSet}
@@ -43,6 +48,10 @@ class PartestTask extends Task {
 
   def addConfiguredBuildManagerTests(input: FileSet) {
     buildManagerFiles = Some(input)
+  }
+
+  def addConfiguredScalacheckTests(input: FileSet) {
+    scalacheckFiles = Some(input)
   }
 
   def addConfiguredScriptTests(input: FileSet) {
@@ -121,6 +130,7 @@ class PartestTask extends Task {
   private var jvmFiles: Option[FileSet] = None
   private var residentFiles: Option[FileSet] = None
   private var buildManagerFiles: Option[FileSet] = None
+  private var scalacheckFiles: Option[FileSet] = None
   private var scriptFiles: Option[FileSet] = None
   private var shootoutFiles: Option[FileSet] = None
   private var scalapFiles: Option[FileSet] = None
@@ -161,67 +171,69 @@ class PartestTask extends Task {
   private def getJvmFiles          = getFilesAndDirs(jvmFiles)
   private def getResidentFiles     = getFiles(residentFiles)
   private def getBuildManagerFiles = getFilesAndDirs(buildManagerFiles)
+  private def getScalacheckFiles   = getFiles(scalacheckFiles)
   private def getScriptFiles       = getFiles(scriptFiles)
   private def getShootoutFiles     = getFiles(shootoutFiles)
   private def getScalapFiles       = getFiles(scalapFiles)
+
+  private def findMethod(target: AnyRef, name: String, types: Class[_]*): Method =
+    target.getClass.getMethod(name, Array(types: _*): _*)
+
+  private def invokeMethod[T](target: AnyRef, m: Method, args: AnyRef*): T =
+    m.invoke(target, args: _*).asInstanceOf[T]
+
+  private def invoke[T](target: AnyRef, name: String, args: Any*): T = {
+    val boxed = args map (_.asInstanceOf[AnyRef])
+    val m = findMethod(target, name, boxed map (_.getClass): _*)
+    invokeMethod[T](target, m, boxed: _*)
+  }
 
   override def execute() {
     if (isPartestDebug)
       setProp("partest.debug", "true")
 
-    if (classpath.isEmpty)
-      error("Mandatory attribute 'classpath' is not set.")
+    val classpath = this.classpath getOrElse error("Mandatory attribute 'classpath' is not set.")
 
-    val scalaLibrary =
-      (classpath.get.list map { fs => new File(fs) }) find { f =>
+    val scalaLibrary = {
+      (classpath.list map { fs => new File(fs) }) find { f =>
         f.getName match {
           case "scala-library.jar" => true
           case "library" if (f.getParentFile.getName == "classes") => true
           case _ => false
         }
       }
-
-    if (scalaLibrary.isEmpty)
-      error("Provided classpath does not contain a Scala library.")
+    } getOrElse error("Provided classpath does not contain a Scala library.")
 
     val classloader = this.getClass.getClassLoader
+    def load(name: String) = classloader.loadClass(name).newInstance().asInstanceOf[AnyRef]
 
-    val antRunner: AnyRef =
-      classloader.loadClass("scala.tools.partest.nest.AntRunner").newInstance().asInstanceOf[AnyRef]
-    val antFileManager: AnyRef =
-      antRunner.getClass.getMethod("fileManager", Array[Class[_]](): _*).invoke(antRunner, Array[Object](): _*)
-
-    val runMethod =
-      antRunner.getClass.getMethod("reflectiveRunTestsForFiles", Array(classOf[Array[File]], classOf[String]): _*)
+    val antRunner       = load("scala.tools.partest.nest.AntRunner")
+    val antFileManager  = invoke[AnyRef](antRunner, "fileManager")
+    val runMethod       = findMethod(antRunner, "reflectiveRunTestsForFiles", classOf[Array[File]], classOf[String])
 
     def runTestsForFiles(kindFiles: Array[File], kind: String) =
-      runMethod.invoke(antRunner, kindFiles, kind).asInstanceOf[scala.collection.Map[String, Int]]
+      invokeMethod[Map[String, Int]](antRunner, runMethod, kindFiles, kind)
 
     def setFileManagerBooleanProperty(name: String, value: Boolean) {
-      val setMethod =
-        antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[Boolean]): _*)
-      setMethod.invoke(antFileManager, Array(java.lang.Boolean.valueOf(value)).asInstanceOf[Array[Object]]: _*)
+      val setMethod = findMethod(antFileManager, name + "_$eq", classOf[Boolean])
+      invokeMethod[Unit](antFileManager, setMethod, Boolean.box(value))
     }
 
     def setFileManagerStringProperty(name: String, value: String) {
-      val setMethod =
-        antFileManager.getClass.getMethod(name+"_$eq", Array(classOf[String]): _*)
-      setMethod.invoke(antFileManager, Array(value).asInstanceOf[Array[Object]]: _*)
+      val setMethod = findMethod(antFileManager, name + "_$eq", classOf[String])
+      invokeMethod[Unit](antFileManager, setMethod, value)
     }
 
     setFileManagerBooleanProperty("showDiff", showDiff)
     setFileManagerBooleanProperty("showLog", showLog)
     setFileManagerBooleanProperty("failed", runFailed)
-    if (!javacmd.isEmpty)
-      setFileManagerStringProperty("JAVACMD", javacmd.get.getAbsolutePath)
-    if (!javaccmd.isEmpty)
-      setFileManagerStringProperty("JAVAC_CMD", javaccmd.get.getAbsolutePath)
-    setFileManagerStringProperty("CLASSPATH", classpath.get.list.mkString(File.pathSeparator))
-    setFileManagerStringProperty("LATEST_LIB", scalaLibrary.get.getAbsolutePath)
-    if (!scalacOpts.isEmpty)
-      setFileManagerStringProperty("SCALAC_OPTS", scalacOpts.get)
-    if (!timeout.isEmpty)
-      setFileManagerStringProperty("timeout", timeout.get)
+    setFileManagerStringProperty("CLASSPATH", ClassPath.join(classpath.list: _*))
+    setFileManagerStringProperty("LATEST_LIB", scalaLibrary.getAbsolutePath)
+
+    javacmd foreach (x => setFileManagerStringProperty("JAVACMD", x.getAbsolutePath))
+    javaccmd foreach (x => setFileManagerStringProperty("JAVAC_CMD", x.getAbsolutePath))
+    scalacOpts foreach (x => setFileManagerStringProperty("SCALAC_OPTS", x))
+    timeout foreach (x => setFileManagerStringProperty("timeout", x))
 
     type TFSet = (Array[File], String, String)
     val testFileSets = List(
@@ -231,6 +243,7 @@ class PartestTask extends Task {
       (getJvmFiles, "jvm", "Compiling and running files"),
       (getResidentFiles, "res", "Running resident compiler scenarii"),
       (getBuildManagerFiles, "buildmanager", "Running Build Manager scenarii"),
+      (getScalacheckFiles, "scalacheck", "Running scalacheck tests"),
       (getScriptFiles, "script", "Running script files"),
       (getShootoutFiles, "shootout", "Running shootout tests"),
       (getScalapFiles, "scalap", "Running scalap tests")
@@ -242,15 +255,11 @@ class PartestTask extends Task {
       else {
         log(msg)
         val results: Iterable[(String, Int)] = runTestsForFiles(files, name)
+        val (succs, fails) = resultsToStatistics(results)
 
-        val (succs, fails) =
-	  results
-	  .map { case (file, resultCode) => if (resultCode == 0) (1, 0) else (0, 1) }
-	  .reduceLeft((res1, res2) => (res1._1 + res2._1, res1._2 + res2._2))
-
-        val failed: Iterable[String] = results flatMap { case (path, state) =>
-          if (state == 0) List()
-          else List(path+" ["+(if (state == 1) "FAILED" else "TIMOUT")+"]")
+        val failed: Iterable[String] = results partialMap {
+          case (path, 1)    => path + " [FAILED]"
+          case (path, 2)    => path + " [TIMOUT]"
         }
 
         // create JUnit Report xml files if directory was specified

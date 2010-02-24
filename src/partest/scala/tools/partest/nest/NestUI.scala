@@ -77,6 +77,7 @@ object NestUI {
     println("    --jvm           run JVM backend tests")
     println("    --res           run resident compiler tests")
     println("    --buildmanager  run Build Manager tests")
+    println("    --scalacheck    run ScalaCheck tests")
     println("    --script        run script runner tests")
     println("    --shootout      run shootout tests")
     println
@@ -91,6 +92,7 @@ object NestUI {
     println("    --classpath  set (absolute) path to build classes")
     println("    --srcpath    set (relative) path to test source files")
     println("                 ex.: --srcpath pending")
+    println("    --debug      enable debugging output")
     println
     println(utils.Properties.versionString)
     println("maintained by Philipp Haller (EPFL)")
@@ -98,6 +100,7 @@ object NestUI {
   }
 
   var _verbose = false
+  var _debug = false
 
   def verbose(msg: String) {
     if (_verbose) {
@@ -105,5 +108,10 @@ object NestUI {
       println(msg)
     }
   }
-
+  def debug(msg: String) {
+    if (isPartestDebug) {
+      outline("debug: ")
+      println(msg)
+    }
+  }
 }

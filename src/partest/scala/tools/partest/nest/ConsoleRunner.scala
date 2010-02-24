@@ -59,7 +59,7 @@ class ConsoleRunner extends DirectRunner {
 
   private val unaryArgs = List(
     "--pack", "--all", "--verbose", "--show-diff", "--show-log",
-    "--failed", "--version", "--ansi"
+    "--failed", "--version", "--ansi", "--debug"
   ) ::: testSetArgs
 
   def main(argstr: String) {
@@ -98,6 +98,7 @@ class ConsoleRunner extends DirectRunner {
 
     if (parsed isSet "--ansi") NestUI initialize NestUI.MANY
     if (parsed isSet "--timeout") fileManager.timeout = parsed("--timeout")
+    if (parsed isSet "--debug") setProp("partest.debug", "true")
 
     testFiles :::= args map { arg =>
       val file = new File(arg)
@@ -157,11 +158,6 @@ class ConsoleRunner extends DirectRunner {
     System exit ( if (failures == errors) 0 else 1 )
   }
 
-  def toStatistics[A](results: Iterable[(A, Int)]): (Int, Int) = {
-    val (files, failures) = results map (_._2 == 0) partition (_ == true)
-    (files.size, failures.size)
-  }
-
   def runTests(testSet: TestSet): (Int, Int) = {
     val TestSet(loc, filter, kind, msg) = testSet
 
@@ -170,7 +166,7 @@ class ConsoleRunner extends DirectRunner {
       case files  =>
         NestUI.verbose("test files: "+files)
         NestUI.outline("\n"+msg+"\n")
-        toStatistics(runTestsForFiles(files, kind))
+        resultsToStatistics(runTestsForFiles(files, kind))
     }
   }
 
@@ -208,7 +204,7 @@ class ConsoleRunner extends DirectRunner {
         Predef.exit(1)
       } else {
         NestUI.outline("\nTesting individual files\n")
-        toStatistics(runTestsForFiles(testFiles, fstKind))
+        resultsToStatistics(runTestsForFiles(testFiles, fstKind))
       }
     } else (0, 0)
 

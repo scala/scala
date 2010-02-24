@@ -12,6 +12,10 @@ package object partest {
   import nest.NestUI
 
   def basename(name: String): String = Path(name).stripExtension
+  def resultsToStatistics(results: Iterable[(_, Int)]): (Int, Int) = {
+    val (files, failures) = results map (_._2 == 0) partition (_ == true)
+    (files.size, failures.size)
+  }
 
   object PartestDefaults {
     import nsc.Properties._
