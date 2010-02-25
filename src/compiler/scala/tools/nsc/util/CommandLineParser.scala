@@ -25,6 +25,8 @@ trait ParserUtil extends Parsers {
 
 class CommandLine(val args: List[String], val unaryArguments: List[String]) {
   def this(args: List[String]) = this(args, Nil)
+  def this(args: Array[String]) = this(args.toList)
+  def this(args: Array[String], unaryArguments: List[String]) = this(args.toList, unaryArguments)
   def this(line: String) = this(CommandLineParser tokenize line)
 
   def withUnaryArguments(xs: List[String]) = new CommandLine(args, xs)

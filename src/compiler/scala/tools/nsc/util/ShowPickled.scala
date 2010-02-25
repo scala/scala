@@ -70,9 +70,14 @@ object ShowPickled extends Names {
     case _ => "***BAD TAG***(" + tag + ")"
   }
 
-  def printFile(buf: PickleBuffer, out: PrintStream) {
+  def printFile(buf: PickleBuffer, out: PrintStream): Unit = printFile(buf, out, false)
+  def printFile(buf: PickleBuffer, out: PrintStream, bare: Boolean) {
     out.println("Version " + buf.readNat() + "." + buf.readNat())
     val index = buf.createIndex
+
+    /** A print wrapper which discards everything if bare is true.
+     */
+    def p(s: String) = if (!bare) out print s
 
     def printNameRef() {
       val x = buf.readNat()
@@ -80,11 +85,16 @@ object ShowPickled extends Names {
       buf.readIndex = index(x)
       val tag = buf.readByte()
       val len = buf.readNat()
-      out.print(" " + x + "(" + newTermName(buf.bytes, buf.readIndex, len) + ")")
+      val name = newTermName(buf.bytes, buf.readIndex, len)
+
+      val toPrint = if (bare) " " + name else " %s(%s)".format(x, name)
+      out print toPrint
+
       buf.readIndex = savedIndex
     }
 
-    def printNat() = out.print(" " + buf.readNat())
+    def printNat() = p(" " + buf.readNat())
+
     def printSymbolRef() = printNat()
     def printTypeRef() = printNat()
     def printConstantRef() = printNat()
@@ -107,12 +117,12 @@ object ShowPickled extends Names {
      */
     def printEntry(i: Int) {
       buf.readIndex = index(i)
-      out.print(i + "," + buf.readIndex + ": ")
+      p(i + "," + buf.readIndex + ": ")
       val tag = buf.readByte()
       out.print(tag2string(tag))
       val len = buf.readNat()
       val end = len + buf.readIndex
-      out.print(" " + len + ":")
+      p(" " + len + ":")
       tag match {
         case TERMname =>
           out.print(" ")
@@ -196,26 +206,28 @@ object ShowPickled extends Names {
     for (i <- 0 until index.length) printEntry(i)
   }
 
-  def fromBytes(what: String, data: => Array[Byte]): Boolean = {
-    try {
-      val pickle = new PickleBuffer(data, 0, data.length)
-      Console.println(what + ": ")
-      printFile(pickle, Console.out)
-      true
-    }
-    catch {
-      case _: Exception => false
-    }
+  def fromFile(path: String) = fromBytes(io.File(path).toByteArray)
+  def fromName(name: String) = fromBytes(scalaSigBytesForPath(name) getOrElse Array())
+  def fromBytes(data: => Array[Byte]): Option[PickleBuffer] =
+    try Some(new PickleBuffer(data, 0, data.length))
+    catch { case _: Exception => None }
+
+  def show(what: String, pickle: PickleBuffer, bare: Boolean) = {
+    Console.println(what + ": ")
+    printFile(pickle, Console.out, bare)
   }
 
-  def fromFile(path: String) = fromBytes(path, io.File(path).toByteArray)
-  def fromName(name: String) = fromBytes(name, scalaSigBytesForPath(name) getOrElse Array())
-
+  /** Option --bare suppresses numbers so the output can be diffed.
+   */
   def main(args: Array[String]) {
-    args foreach { arg =>
-      val res = fromFile(arg) || fromName(arg)
-      if (!res)
-        Console.println("Cannot read " + arg)
+    val parsed = new CommandLine(args, List("--bare"))
+    def isBare = parsed isSet "--bare"
+
+    parsed.residualArgs foreach { arg =>
+      (fromFile(arg) orElse fromName(arg)) match {
+        case Some(pb) => show(arg, pb, isBare)
+        case _        => Console.println("Cannot read " + arg)
+      }
     }
   }
 }

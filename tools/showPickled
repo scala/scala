@@ -3,7 +3,7 @@
 # Shows the pickled scala data in a classfile.
 
 if [ $# == 0 ] ; then
-  echo "Usage: $0 [-cp classpath] class class [...]"
+  echo "Usage: $0 [--bare] [-cp classpath] <class*>"
   exit 1
 fi
 
