@@ -24,7 +24,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   def symbolCount = ids // statistics
 
   val emptySymbolArray = new Array[Symbol](0)
-  val emptySymbolSet = Set.empty[Symbol]
 
   /** Used for deciding in the IDE whether we can interrupt the compiler */
   protected var activeLocks = 0
@@ -1425,7 +1424,15 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       (if (isModule) moduleClass else toplevelClass).isFromClassFile
 
     /** If this is a sealed class, its known direct subclasses. Otherwise Set.empty */
-    def children: Set[Symbol] = emptySymbolSet
+    def children: List[Symbol] = Nil
+
+    /** Recursively finds all sealed descendants and returns a sorted list. */
+    def sealedDescendants: List[Symbol] = {
+      val kids = children flatMap (_.sealedDescendants)
+      val all = if (this hasFlag ABSTRACT) kids else this :: kids
+
+      all.distinct sortBy (_.sealedSortName)
+    }
 
 // ToString -------------------------------------------------------------------
 
@@ -1951,8 +1958,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     override def sourceModule =
       if (isModuleClass) linkedModuleOfClass else NoSymbol
 
-    private var childSet: Set[Symbol] = emptySymbolSet
-    override def children: Set[Symbol] = childSet
+    private var childSet: Set[Symbol] = Set()
+    override def children: List[Symbol] = childSet.toList sortBy (_.sealedSortName)
     override def addChild(sym: Symbol) { childSet = childSet + sym }
 
     incCounter(classSymbolCount)

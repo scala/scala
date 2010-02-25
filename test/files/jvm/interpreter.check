@@ -218,8 +218,8 @@ defined class Fact
 defined class Term
 
 scala>      |      | <console>:16: warning: match is not exhaustive!
-missing combination           Term
 missing combination            Exp
+missing combination           Term
 
        def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
