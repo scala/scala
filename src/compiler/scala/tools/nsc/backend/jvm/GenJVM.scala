@@ -33,7 +33,7 @@ abstract class GenJVM extends SubComponent {
   val phaseName = "jvm"
 
   /** Create a new phase */
-  override def newPhase(p: Phase) = new JvmPhase(p)
+  override def newPhase(p: Phase): Phase = new JvmPhase(p)
 
   /** JVM code generation phase
    */
