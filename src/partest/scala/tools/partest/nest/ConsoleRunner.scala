@@ -178,7 +178,7 @@ class ConsoleRunner extends DirectRunner {
     def runTestsFiles = if (!testFiles.isEmpty) {
       def kindOf(f: File) = {
         val srcDirSegments = PathSettings.srcDir.segments
-        val segments = Path(f).normalize.toAbsolute.segments
+        val segments = Path(f).normalize.segments
         lazy val kind = (segments drop srcDirSegments.size).head
 
         if ((segments startsWith srcDirSegments) && (testSetKinds contains kind)) kind

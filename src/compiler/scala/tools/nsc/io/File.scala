@@ -55,7 +55,7 @@ with Streamable.Chars
   def withCodec(codec: Codec): File = new File(jfile)(codec)
   override def toDirectory: Directory = new Directory(jfile)
   override def toFile: File = this
-
+  override def normalize: File = super.normalize.toFile
   override def isValid = jfile.isFile() || !jfile.exists()
   override def length = super[Path].length
 

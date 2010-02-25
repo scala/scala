@@ -22,8 +22,10 @@ package object partest {
     private def wrapAccessControl[T](body: => Option[T]): Option[T] =
       try body catch { case _: java.security.AccessControlException => None }
 
-    def prefixDir   = Directory.Current map (_.normalize.toDirectory)
-    def srcDirName  = propOrElse("partest.srcdir", "files")
+    def testRootName  = propOrNone("scalatest.root")
+    def srcDirName    = propOrElse("partest.srcdir", "files")
+    def testRootDir   = testRootName map (x => Directory(x))
+
     def classPath   = PathResolver.Environment.javaUserClassPath    // XXX
 
     def javaCmd     = propOrElse("scalatest.javacmd", "java")

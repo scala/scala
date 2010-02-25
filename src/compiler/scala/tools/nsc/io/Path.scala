@@ -140,7 +140,7 @@ class Path private[io] (val jfile: JFile)
           Directory(x)
       }
   }
-  def parents: List[Path] = {
+  def parents: List[Directory] = {
     val p = parent
     if (p isSame this) Nil else p :: p.parents
   }

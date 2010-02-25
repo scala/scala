@@ -570,7 +570,7 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-        <!-- <pathelement location="${build-quick.dir}/classes/compiler"/> -->
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${forkjoin.jar}"/>
@@ -1013,7 +1013,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
-        <!-- <pathelement location="${build-strap.dir}/classes/compiler"/> -->
+        <pathelement location="${build-strap.dir}/classes/compiler"/>
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
         <pathelement location="${forkjoin.jar}"/>
