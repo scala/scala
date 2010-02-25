@@ -943,6 +943,7 @@ trait ScalacSettings {
   val Yjenkins      = BooleanSetting    ("-Yjenkins-hashCodes", "Use jenkins hash algorithm for case class generated hashCodes.")
 
   // Warnings
+  val Ywarnfatal    = BooleanSetting    ("-Yfatal-warnings", "Fail the compilation if there are any warnings.")
   val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics")
   val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")
   val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
