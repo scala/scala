@@ -48,6 +48,7 @@ class ConsoleRunner extends DirectRunner {
   private var testFiles: List[File] = List()
   private val errors = PartestDefaults.errorCount
 
+  private val testSetKinds = testSets map (_.kind)
   private val testSetArgMap = testSets map (x => ("--" + x.loc) -> x) toMap
   private val testSetArgs = testSets map ("--" + _.loc)
   def denotesTestSet(arg: String) = testSetArgs contains arg
@@ -175,25 +176,15 @@ class ConsoleRunner extends DirectRunner {
    */
   def testCheckAll(enabledSets: List[TestSet]): (Int, Int) = {
     def runTestsFiles = if (!testFiles.isEmpty) {
-      def absName(f: File): String = f.getAbsoluteFile.getCanonicalPath
+      def kindOf(f: File) = {
+        val srcDirSegments = PathSettings.srcDir.segments
+        val segments = Path(f).normalize.toAbsolute.segments
+        lazy val kind = (segments drop srcDirSegments.size).head
 
-      def kindOf(f: File): String = {
-        val firstName = absName(f)
-        val len = fileManager.srcDirName.length
-        val filesPos = firstName.indexOf(fileManager.srcDirName)
-        if (filesPos == -1) {
-          NestUI.failure("invalid test file: "+firstName+"\n")
+        if ((segments startsWith srcDirSegments) && (testSetKinds contains kind)) kind
+        else {
+          NestUI.failure("invalid test file: "+f.getPath+"\n")
           Predef.exit(1)
-        } else {
-          val short = firstName drop (filesPos + len + 1) take 3
-          val shortKinds = List("pos", "neg", "run", "jvm", "res")
-          if (shortKinds contains short) short
-          else short match {
-            case "sho" => "shootout"
-            case "scr" => "script"
-            case "sca" => "scalacheck"
-            case "bui" => "buildmanager"
-          }
         }
       }
 

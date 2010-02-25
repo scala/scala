@@ -21,10 +21,6 @@ import ClassPath.{ join }
 import PathResolver.{ Environment, Defaults }
 import RunnerUtils._
 
-object ConsoleFileManager {
-  def testRootPropDir = Option(propOrElse("scalatest.root", null)) map (x => Directory(x))
-}
-import ConsoleFileManager._
 
 class ConsoleFileManager extends FileManager {
   implicit private def temporaryPath2File(x: Path): File = x.jfile
@@ -61,45 +57,17 @@ class ConsoleFileManager extends FileManager {
 
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
 
-  val prefixDir   = PartestDefaults.prefixDir getOrElse error("user.dir property not set")
-  val srcDirName  = PartestDefaults.srcDirName
+  val prefixDir   = PathSettings.prefixDir
   val PREFIX      = prefixDir.toAbsolute.path
-
-/*
-if [ -d "$PREFIX/test" ]; then
-    TESTROOT="$PREFIX/test";
-elif [ -d "$PREFIX/misc/scala-test" ]; then
-    TESTROOT="$PREFIX/misc/scala-test";
-else
-    abort "Test directory not found";
-*/
-
-  val testRootDir = {
-    def isTestDir(d: Directory) = d.name == "test" && (d / "files" isDirectory)
-
-    (
-      testRootPropDir orElse (
-        if (isTestDir(prefixDir)) Some(prefixDir) else None   // cwd is `test`
-      ) orElse (
-        (prefixDir / "test") ifDirectory (x => x)             // cwd is `test/..`
-      ) orElse (
-        (prefixDir / "misc" / "scala-test") ifDirectory (x => x)
-      ) getOrElse (
-        error("Test directory not found")
-      )
-    ).normalize
-  }
-  val TESTROOT = testRootDir.toAbsolute.path
-
-  def testParent = testRootDir.parent
-
-  val srcDir = (testRootDir / srcDirName).toDirectory
+  val testRootDir = PathSettings.testRoot
+  val TESTROOT    = testRootDir.toAbsolute.path
+  def testParent  = testRootDir.parent
+  val srcDir      = PathSettings.srcDir
 
   if (!srcDir.isDirectory) {
     NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
     exit(1)
   }
-
 
   LIB_DIR = (testParent / "lib").normalize.toAbsolute.path
 
@@ -195,21 +163,10 @@ else
       latestFjbgFile = prefixFile("lib/fjbg.jar")
     }
 
-    BIN_DIR = latestFile.getAbsolutePath
     LATEST_LIB = latestLibFile.getAbsolutePath
-    LATEST_COMP = latestCompFile.getAbsolutePath
-    LATEST_PARTEST = latestPartestFile.getAbsolutePath
-
-    SCALA = (latestFile / scalaCmd).toAbsolute.path
-    SCALAC_CMD = (latestFile / scalacCmd).toAbsolute.path
   }
 
-  var BIN_DIR: String = ""
   var LATEST_LIB: String = ""
-  var LATEST_COMP: String = ""
-  var LATEST_PARTEST: String = ""
-  var SCALA: String = ""
-  var SCALAC_CMD: String = ""
 
   var latestFile: File = _
   var latestLibFile: File = _

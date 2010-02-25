@@ -257,10 +257,10 @@ INITIALISATION
   <!-- Define tasks that can be run with Starr -->
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
       <pathelement location="${comp.starr.jar}"/>
       <pathelement location="${lib.dir}/fjbg.jar"/>
       <pathelement location="${lib.dir}/msil.jar"/>
+      <pathelement location="${lib.dir}/forkjoin.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>
@@ -342,12 +342,12 @@ LOCAL REFERENCE BUILD (LOCKER)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
         <pathelement location="${build-locker.dir}/classes/compiler"/>
         <pathelement location="${lib.dir}/fjbg.jar"/>
         <pathelement location="${lib.dir}/msil.jar"/>
-        <pathelement location="${jline.jar}"/>
+        <pathelement location="${lib.dir}/forkjoin.jar"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
     <propertyfile file="${build-locker.dir}/classes/compiler/compiler.properties">
@@ -374,10 +374,10 @@ LOCAL REFERENCE BUILD (LOCKER)
     <touch file="${build-locker.dir}/all.complete" verbose="no"/>
     <path id="locker.classpath">
       <pathelement location="${build-locker.dir}/classes/library"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
       <pathelement location="${build-locker.dir}/classes/compiler"/>
       <pathelement location="${lib.dir}/fjbg.jar"/>
       <pathelement location="${lib.dir}/msil.jar"/>
+      <pathelement location="${lib.dir}/forkjoin.jar"/>
       <pathelement location="${ant.jar}"/>
     </path>
   </target>
@@ -570,12 +570,12 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
-        <pathelement location="${forkjoin.jar}"/>
-        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <!-- <pathelement location="${build-quick.dir}/classes/compiler"/> -->
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
-        <pathelement location="${jline.jar}"/>
+        <pathelement location="${forkjoin.jar}"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
     <propertyfile file="${build-quick.dir}/classes/compiler/compiler.properties">
@@ -616,8 +616,8 @@ QUICK BUILD (QUICK)
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
-        <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${build-quick.dir}/classes/scalap"/>
+        <pathelement location="${build-quick.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -684,11 +684,11 @@ QUICK BUILD (QUICK)
   <target name="quick.bin" depends="quick.pre-bin" unless="quick.bin.available">
     <path id="quick.bin.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
-      <pathelement location="${forkjoin.jar}"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${msil.jar}"/>
+      <pathelement location="${forkjoin.jar}"/>
       <pathelement location="${jline.jar}"/>
     </path>
     <taskdef name="quick-bin" classname="scala.tools.ant.ScalaTool" classpathref="quick.bin.classpath"/>
@@ -729,10 +729,10 @@ QUICK BUILD (QUICK)
   <target name="quick.done" depends="quick.bin">
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
-      <pathelement location="${forkjoin.jar}"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${fjbg.jar}"/>
       <pathelement location="${msil.jar}"/>
+      <pathelement location="${forkjoin.jar}"/>
       <pathelement location="${ant.jar}"/>
     </path>
   </target>
@@ -1013,12 +1013,12 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.scala"/>
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
-        <pathelement location="${forkjoin.jar}"/>
-        <pathelement location="${build-strap.dir}/classes/compiler"/>
+        <!-- <pathelement location="${build-strap.dir}/classes/compiler"/> -->
         <pathelement location="${fjbg.jar}"/>
         <pathelement location="${msil.jar}"/>
-        <pathelement location="${jline.jar}"/>
+        <pathelement location="${forkjoin.jar}"/>
         <pathelement location="${ant.jar}"/>
+        <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
     <propertyfile file="${build-strap.dir}/classes/compiler/compiler.properties">
@@ -1059,8 +1059,8 @@ BOOTSTRAPPING BUILD (STRAP)
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
-        <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${build-strap.dir}/classes/scalap"/>
+        <pathelement location="${build-strap.dir}/classes/partest"/>
         <pathelement location="${ant.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -1586,9 +1586,9 @@ STABLE REFERENCE (STARR)
   <target name="starr.libs" depends="starr.src" if="libs.outdated">
     <copy toDir="${lib.dir}" overwrite="yes">
       <fileset dir="${build-libs.dir}">
-        <include name="forkjoin.jar"/>
         <include name="fjbg.jar"/>
         <include name="msil.jar"/>
+        <include name="forkjoin.jar"/>
       </fileset>
     </copy>
   </target>
