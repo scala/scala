@@ -44,7 +44,7 @@ trait DefaultMemoisable extends Memoisable {
     map.getOrElseUpdate(key, compute(key, a)).asInstanceOf[A]
   }
 
-  protected def compute[A](key : AnyRef, a : => A) = a match {
+  protected def compute[A](key : AnyRef, a : => A): Any = a match {
     case success : Success[_, _] => onSuccess(key, success); success
     case other =>
       if(DefaultMemoisable.debug) println(key + " -> " + other)
