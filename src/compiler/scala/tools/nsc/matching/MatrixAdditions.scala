@@ -30,9 +30,16 @@ trait MatrixAdditions extends ast.TreeDSL
     def squeezedBlockPVs(pvs: List[PatternVar], exp: Tree): Tree =
       squeezedBlock(pvs map (_.valDef), exp)
 
+    def mkBlock(stats: List[Tree], expr: Tree): Tree =
+      if (stats.isEmpty) expr match {
+        case Block(stats1, expr1) => mkBlock(stats1, expr1)
+        case _ => Block(stats, expr)
+      } else
+        Block(stats, expr)
+
     def squeezedBlock(vds: List[Tree], exp: Tree): Tree =
-      if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
-      else                  Block(vds, exp)
+      if (settings_squeeze) mkBlock(Nil, squeezedBlock1(vds, exp))
+      else                  mkBlock(vds, exp)
 
     private def squeezedBlock1(vds: List[Tree], exp: Tree): Tree = {
       class RefTraverser(sym: Symbol) extends Traverser {
