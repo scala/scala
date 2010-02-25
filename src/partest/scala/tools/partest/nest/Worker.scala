@@ -346,7 +346,15 @@ class Worker(val fileManager: FileManager) extends Actor {
 
         // run test-specific code
         try {
-          script(logFile, outDir)
+          if (isPartestDebug) {
+            val t1 = System.currentTimeMillis
+            script(logFile, outDir)
+            val t2 = System.currentTimeMillis
+            fileManager.recordTestTiming(file.getPath, t2 - t1)
+          }
+          else {
+            script(logFile, outDir)
+          }
         } catch {
           case e: Exception =>
             val writer = new PrintWriter(new FileWriter(logFile), true)

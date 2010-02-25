@@ -61,6 +61,10 @@ trait DirectRunner {
           results += ("worker timed out; adding failed test" -> 2)
       }
     }
+
+    if (isPartestDebug)
+      fileManager.showTestTimings()
+
     if (!isPartestDebug) {
       for (x <- logsToDelete ::: outdirsToDelete) {
         NestUI.verbose("deleting "+x)

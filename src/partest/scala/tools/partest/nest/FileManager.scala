@@ -13,6 +13,7 @@ import java.io.{File, FilenameFilter, IOException, StringWriter,
                 FileReader, PrintWriter, FileWriter}
 import java.net.URI
 import scala.tools.nsc.io.{ Path, Directory }
+import scala.collection.mutable.HashMap
 
 trait FileManager {
   /**
@@ -48,6 +49,14 @@ trait FileManager {
   var SCALAC_OPTS = PartestDefaults.scalacOpts
   var JAVA_OPTS   = PartestDefaults.javaOpts
   var timeout     = PartestDefaults.timeout
+
+  /** Only when --debug is given. */
+  lazy val testTimings = new HashMap[String, Long]
+  def recordTestTiming(name: String, milliseconds: Long) =
+    synchronized { testTimings(name) = milliseconds }
+  def showTestTimings() {
+    testTimings.toList sortBy (-_._2) foreach { case (k, v) => println("%s: %s".format(k, v)) }
+  }
 
   def getLogFile(dir: File, fileBase: String, kind: String): LogFile =
     new LogFile(dir, fileBase + "-" + kind + ".log")

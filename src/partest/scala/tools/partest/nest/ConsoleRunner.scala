@@ -185,7 +185,7 @@ class ConsoleRunner extends DirectRunner {
           NestUI.failure("invalid test file: "+firstName+"\n")
           Predef.exit(1)
         } else {
-          val short = firstName.substring(filesPos+len+1, filesPos+len+1+3)
+          val short = firstName drop (filesPos + len + 1) take 3
           val shortKinds = List("pos", "neg", "run", "jvm", "res")
           if (shortKinds contains short) short
           else short match {
