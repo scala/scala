@@ -80,39 +80,26 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     /** Is there part of this tree which satisfies predicate `p'? */
     def exists(p: Tree => Boolean): Boolean = !find(p).isEmpty
 
-    def equalsStructure(that : Tree) = equalsStructure0(that){case (t0,t1) => false}
-    def equalsStructure0(that: Tree)(f : (Tree,Tree) => Boolean): Boolean = {
-      if (tree == that) return true
-      if (tree.getClass != that.getClass) return false
-      val tree0 = tree.asInstanceOf[Product]
-      val that0 = that.asInstanceOf[Product]
-      assert(tree0.productArity == that0.productArity)
-      def equals0(thiz: Any, that: Any): Boolean = thiz match {
-        case thiz: Tree =>
-          f(thiz,that.asInstanceOf[Tree]) || thiz.equalsStructure0(that.asInstanceOf[Tree])(f)
-        case thiz: List[_] =>
-          val that0 = that.asInstanceOf[List[Any]]
-          if (thiz.length != that0.length) false
-          else {
-            val results0 = for (i <- 0.until(thiz.length).toList)
-              yield equals0(thiz(i), that0(i))
-            results0.foldLeft(true)((x,y) => x && y)
-          }
-        case thiz =>
-          thiz == that
-      }
-      val results = for (i <- 0.until(tree0.productArity).toList) yield
-        equals0(tree0.productElement(i), that0.productElement(i))
-      val b = results.foldLeft(true)((x,y) => x && y)
-      if (b) (tree,that) match {
-      case (tree0 : TypeTree, that0 : TypeTree) if tree0.original != null && that0.original != null =>
-        tree0.original.equalsStructure0(that0.original)(f)
-      case _ => true
-      } else false
-    }
+    def equalsStructure(that : Tree) = equalsStructure0(that)(_ eq _)
+    def equalsStructure0(that: Tree)(f: (Tree,Tree) => Boolean): Boolean =
+      (tree == that) || ((tree.getClass == that.getClass) && {    // XXX defining any kind of equality in terms of getClass is a mistake
+        assert(tree.productArity == that.productArity)
+        def equals0(this0: Any, that0: Any): Boolean = (this0, that0) match {
+          case (x: Tree, y: Tree)         => f(x, y) || (x equalsStructure0 y)(f)
+          case (xs: List[_], ys: List[_]) => (xs corresponds ys)(equals0)
+          case _                          => this0 == that0
+        }
+        def compareOriginals() = (this, that) match {
+          case (x: TypeTree, y: TypeTree) if x.original != null && y.original != null =>
+            (x.original equalsStructure0 y.original)(f)
+          case _                          =>
+            true
+        }
 
-    def shallowDuplicate: Tree =
-      (new ShallowDuplicator(tree)) transform tree
+        (tree.productIterator.toList corresponds that.productIterator.toList)(equals0) && compareOriginals()
+      })
+
+    def shallowDuplicate: Tree = new ShallowDuplicator(tree) transform tree
   }
 
   private[scala] override def duplicateTree(tree: Tree): Tree = duplicator transform tree
