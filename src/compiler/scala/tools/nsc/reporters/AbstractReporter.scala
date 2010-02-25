@@ -28,7 +28,9 @@ abstract class AbstractReporter extends Reporter {
   def displayPrompt: Unit
 
   protected def info0(pos: Position, msg: String, _severity: Severity, force: Boolean) {
-    val severity = if (settings.Ywarnfatal.value) ERROR else WARNING
+    val severity =
+      if (settings.Ywarnfatal.value && _severity == WARNING) ERROR
+      else _severity
 
     severity match {
       case INFO =>
