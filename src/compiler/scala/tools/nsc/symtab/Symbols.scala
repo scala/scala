@@ -758,6 +758,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Set initial info. */
     def setInfo(info: Type): this.type = { info_=(info); this }
 
+    def setInfoOwnerAdjusted(info: Type): this.type = setInfo(info.atOwner(this))
+
     /** Set new info valid from start of this phase. */
     final def updateInfo(info: Type): Symbol = {
       assert(phaseId(infos.validFrom) <= phase.id)

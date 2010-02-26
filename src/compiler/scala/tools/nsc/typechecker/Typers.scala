@@ -1896,7 +1896,7 @@ trait Typers { self: Analyzer =>
         val sym2 = namer.enterInScope(
           context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), restpe))
         //val subst = new TreeSymSubstituter(List(ldef.symbol), List(sym2))
-        val rhs2 = typed(ldef.rhs/*subst(ldef.rhs)*/, restpe)
+        val rhs2 = typed(ldef.rhs, restpe)
         ldef.params foreach (param => param.tpe = param.symbol.tpe)
         treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs2) setSymbol sym2 setType restpe
       }

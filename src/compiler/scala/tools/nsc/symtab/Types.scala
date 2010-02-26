@@ -225,6 +225,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def normalize = maybeRewrap(underlying.normalize)
     override def dealias = maybeRewrap(underlying.dealias)
     override def cloneInfo(owner: Symbol) = maybeRewrap(underlying.cloneInfo(owner))
+    override def atOwner(owner: Symbol) = maybeRewrap(underlying.atOwner(owner))
     override def prefixString = underlying.prefixString
     override def isComplete = underlying.isComplete
     override def complete(sym: Symbol) = underlying.complete(sym)
@@ -717,6 +718,10 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *  owned by `owner'. Identity for all other types.
      */
     def cloneInfo(owner: Symbol) = this
+
+    /** Make sure this type is correct as the info of given owner; clone it if not.
+     */
+    def atOwner(owner: Symbol) = this
 
     protected def objectPrefix = "object "
     protected def packagePrefix = "package "
@@ -1886,6 +1891,12 @@ A type's typeSymbol should never be inspected directly.
       copyMethodType(this, vparams, resultType.substSym(params, vparams).cloneInfo(owner))
     }
 
+    override def atOwner(owner: Symbol) =
+      if ((params exists (_.owner != owner)) || (resultType.atOwner(owner) ne resultType))
+        cloneInfo(owner)
+      else
+        this
+
     override def kind = "MethodType"
   }
 
@@ -1943,6 +1954,12 @@ A type's typeSymbol should never be inspected directly.
       val tparams = cloneSymbols(typeParams, owner)
       PolyType(tparams, resultType.substSym(typeParams, tparams).cloneInfo(owner))
     }
+
+    override def atOwner(owner: Symbol) =
+      if ((typeParams exists (_.owner != owner)) || (resultType.atOwner(owner) ne resultType))
+        cloneInfo(owner)
+      else
+        this
 
     override def kind = "PolyType"
   }
@@ -2027,6 +2044,9 @@ A type's typeSymbol should never be inspected directly.
       val tparams = cloneSymbols(quantified, owner)
       ExistentialType(tparams, underlying.substSym(quantified, tparams))
     }
+
+    override def atOwner(owner: Symbol) =
+      if (quantified exists (_.owner != owner)) cloneInfo(owner) else this
 
     override def kind = "ExistentialType"
 
@@ -4781,10 +4801,9 @@ A type's typeSymbol should never be inspected directly.
       case List() => NothingClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
-        PolyType(
-          (tparams, matchingBounds(ts, tparams).transpose).zipped map
-            ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds, depth))),
-          lub0(matchingInstTypes(ts, tparams)))
+        val tparams1 = (tparams, matchingBounds(ts, tparams).transpose).zipped map
+          ((tparam, bounds) => tparam.cloneSymbol.setInfo(glb(bounds, depth)))
+        PolyType(tparams1, lub0(matchingInstTypes(ts, tparams1)))
       case ts @ MethodType(params, _) :: rest =>
         MethodType(params, lub0(matchingRestypes(ts, params map (_.tpe))))
       case ts @ TypeBounds(_, _) :: rest =>
@@ -4812,14 +4831,14 @@ A type's typeSymbol should never be inspected directly.
                 val symtypes =
                   (narrowts, syms).zipped map ((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
                 if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
-                  proto.cloneSymbol(lubRefined.typeSymbol).setInfo(lub(symtypes, decr(depth)))
+                  proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(lub(symtypes, decr(depth)))
                 else if (symtypes.tail forall (symtypes.head =:=))
-                  proto.cloneSymbol(lubRefined.typeSymbol).setInfo(symtypes.head)
+                  proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
                 else {
                   def lubBounds(bnds: List[TypeBounds]): TypeBounds =
                     TypeBounds(glb(bnds map (_.lo), decr(depth)), lub(bnds map (_.hi), decr(depth)))
                   lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name)
-                    .setInfo(lubBounds(symtypes map (_.bounds)))
+                    .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
                 }
               }
             }
@@ -4918,7 +4937,7 @@ A type's typeSymbol should never be inspected directly.
                 ) yield alt
                 val symtypes = syms map glbThisType.memberInfo
                 assert(!symtypes.isEmpty)
-                proto.cloneSymbol(glbRefined.typeSymbol).setInfo(
+                proto.cloneSymbol(glbRefined.typeSymbol).setInfoOwnerAdjusted(
                   if (proto.isTerm) glb(symtypes, decr(depth))
                   else {
                     def isTypeBound(tp: Type) = tp match {

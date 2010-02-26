@@ -630,7 +630,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @tparam B        the element type of the returned $coll.
    *  @tparam That     $thatinfo
    *  @param bf        $bfinfo
-   *  @return          a new collection of type `That` consisting of all elements of this $coll
+   *  @return          a new $coll consisting of all elements of this $coll
    *                   except that `replaced` elements starting from `from` are replaced
    *                   by `patch`.
    *  @usecase def patch(from: Int, that: Seq[A], replaced: Int): $Coll[A]
@@ -653,7 +653,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @tparam B        the element type of the returned $coll.
    *  @tparam That     $thatinfo
    *  @param bf        $bfinfo
-   *  @return a new collection of type `That` which is a copy of this $coll with the element at position `index` replaced by `elem`.
+   *  @return a new $coll` which is a copy of this $coll with the element at position `index` replaced by `elem`.
    *  @usecase def updated(index: Int, elem: A): $Coll[A]
    *  @return a copy of this $coll with the element at position `index` replaced by `elem`.
    */
