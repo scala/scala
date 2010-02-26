@@ -42,6 +42,11 @@ case class Tuple2[+T1, +T2](_1:T1,_2:T2)
     b1.result
   }
 
+  /** Wraps a tuple in a `Zipped`, which supports 2-ary generalisations of map, flatMap, filter,...
+   *
+   * @see Zipped
+   * $willNotTerminateInf
+   */
   def zipped[Repr1, El1, Repr2, El2](implicit w1: T1 => TraversableLike[El1, Repr1], w2: T2 => IterableLike[El2, Repr2]): Zipped[Repr1, El1, Repr2, El2]
     = new Zipped[Repr1, El1, Repr2, El2](_1, _2)
 

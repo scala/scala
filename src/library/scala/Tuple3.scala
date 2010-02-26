@@ -41,6 +41,11 @@ case class Tuple3[+T1, +T2, +T3](_1:T1,_2:T2,_3:T3)
     b1.result
   }
 
+  /** Wraps a tuple in a `Zipped`, which supports 3-ary generalisations of map, flatMap, filter,...
+   *
+   * @see Zipped
+   * $willNotTerminateInf
+   */
   def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 => TraversableLike[El1, Repr1],
                                                           w2: T2 => IterableLike[El2, Repr2],
                                                           w3: T3 => IterableLike[El3, Repr3]): Zipped[Repr1, El1, Repr2, El2, Repr3, El3]
