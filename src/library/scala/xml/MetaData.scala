@@ -8,14 +8,10 @@
 
 // $Id$
 
-
 package scala.xml
 
 import Utility.sbToString
 import annotation.tailrec
-import collection.immutable.List
-import collection.{Seq, Iterator, Iterable}
-import collection.mutable.StringBuilder
 
 
 /**
@@ -77,7 +73,7 @@ object MetaData {
  * @author Burak Emir <bqe@google.com>
  */
 @serializable
-abstract class MetaData extends Iterable[MetaData]
+abstract class MetaData extends Iterable[MetaData] with Equality
 {
   /** Updates this MetaData with the MetaData given as argument. All attributes that occur in updates
    *  are part of the resulting MetaData. If an attribute occurs in both this instance and
@@ -118,13 +114,6 @@ abstract class MetaData extends Iterable[MetaData]
    */
   def apply(namespace_uri:String, scp:NamespaceBinding, k:String): Seq[Node]
 
-  /**
-   *  @param m ...
-   *  @return  <code>true</code> iff ...
-   */
-  def containedIn1(m: MetaData): Boolean =
-    m != null && (m.equals1(this) || containedIn1(m.next))
-
   /** returns a copy of this MetaData item with next field set to argument.
    *
    *  @param next ...
@@ -143,21 +132,19 @@ abstract class MetaData extends Iterable[MetaData]
 
   def isPrefixed: Boolean
 
-  /** deep equals method - XXX */
-  override def equals(that: Any) = that match {
-    case m: MetaData  =>
-      (this.length == m.length) &&
-      (this.hashCode == m.hashCode) &&
-      (this forall (_ containedIn1 m))
+  override def canEqual(other: Any) = other match {
+    case _: MetaData  => true
     case _            => false
   }
+  override def strict_==(other: Equality) = other match {
+    case m: MetaData  => this.toSet == m.toSet
+    case _            => false
+  }
+  def basisForHashCode: Seq[Any] = List(this.toSet)
 
   /** Returns an iterator on attributes */
-  def iterator: Iterator[MetaData] = Iterator.iterate(this)(_.next) takeWhile (_ != Null)
+  def iterator: Iterator[MetaData] = Iterator.single(this) ++ next.iterator
   override def size: Int = 1 + iterator.length
-
-  /** shallow equals method */
-  def equals1(that: MetaData): Boolean
 
   /** filters this sequence of meta data */
   override def filter(f: MetaData => Boolean): MetaData =
@@ -170,8 +157,18 @@ abstract class MetaData extends Iterable[MetaData]
   /** returns value of this MetaData item */
   def value: Seq[Node]
 
-  /** maps this sequence of meta data */
-  def map(f: MetaData => Text): List[Text] = (iterator map f).toList
+  /** Returns a String containing "prefix:key" if the first key is
+   *  prefixed, and "key" otherwise.
+   */
+  def prefixedKey = this match {
+    case x: Attribute if x.isPrefixed => x.pre + ":" + key
+    case _                            => key
+  }
+
+  /** Returns a Map containing the attributes stored as key/value pairs.
+   */
+  def asAttrMap: Map[String, String] =
+    iterator map (x => (x.prefixedKey, x.value.text)) toMap
 
   /** returns Null or the next MetaData item */
   def next: MetaData
@@ -197,8 +194,6 @@ abstract class MetaData extends Iterable[MetaData]
    */
   final def get(uri: String, scope: NamespaceBinding, key: String): Option[Seq[Node]] =
     Option(apply(uri, scope, key))
-
-  override def hashCode(): Int
 
   def toString1(): String = sbToString(toString1)
 

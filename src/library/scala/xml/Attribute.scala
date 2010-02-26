@@ -10,9 +10,6 @@
 
 package scala.xml
 
-import collection.Seq
-import collection.mutable.StringBuilder
-
 /** Attribute defines the interface shared by both
  *  PrefixedAttribute and UnprefixedAttribute
  */
@@ -45,6 +42,7 @@ object Attribute {
 
 abstract trait Attribute extends MetaData
 {
+  def pre: String        // will be null if unprefixed
   val key: String
   val value: Seq[Node]
   val next: MetaData
@@ -52,13 +50,43 @@ abstract trait Attribute extends MetaData
   def apply(key: String): Seq[Node]
   def apply(namespace: String, scope: NamespaceBinding, key: String): Seq[Node]
   def copy(next: MetaData): Attribute
-  def remove(key: String): MetaData
-  def remove(namespace: String, scope: NamespaceBinding, key: String): MetaData
 
-  def isPrefixed: Boolean
+  def remove(key: String) =
+    if (!isPrefixed && this.key == key) next
+    else copy(next remove key)
+
+  def remove(namespace: String, scope: NamespaceBinding, key: String) =
+    if (isPrefixed && this.key == key && (scope getURI pre) == namespace) next
+    else next.remove(namespace, scope, key)
+
+  def isPrefixed: Boolean = pre != null
   def getNamespace(owner: Node): String
-  def wellformed(scope: NamespaceBinding): Boolean
+  def wellformed(scope: NamespaceBinding): Boolean = {
+    val arg = if (isPrefixed) scope getURI pre else null
+    (next(arg, scope, key) == null) && (next wellformed scope)
+  }
 
-  def equals1(m: MetaData): Boolean
-  def toString1(sb: StringBuilder): Unit
+  override def canEqual(other: Any) = other match {
+    case _: Attribute   => true
+    case _              => false
+  }
+  override def strict_==(other: Equality) = other match {
+    case x: Attribute   => (pre == x.pre) && (key == x.key) && (value sameElements x.value)
+    case _              => false
+  }
+  override def basisForHashCode = List(pre, key, value)
+
+  /** Appends string representation of only this attribute to stringbuffer.
+   */
+  def toString1(sb: StringBuilder) {
+    if (value == null)
+      return
+    if (isPrefixed)
+      sb append pre append ':'
+
+    sb append key append '='
+    val sb2 = new StringBuilder()
+    Utility.sequenceToXML(value, TopScope, sb2, true)
+    Utility.appendQuoted(sb2.toString(), sb)
+  }
 }

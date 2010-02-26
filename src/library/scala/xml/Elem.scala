@@ -8,10 +8,7 @@
 
 // $Id$
 
-
 package scala.xml
-
-import collection.Seq
 
 /** This singleton object contains the apply and unapplySeq methods for convenient construction and
  *  deconstruction. It is possible to deconstruct any Node instance (that is not a SpecialNode or
@@ -26,8 +23,10 @@ object Elem
   def apply(prefix: String,label: String, attributes: MetaData, scope: NamespaceBinding, child: Node*) =
     new Elem(prefix,label,attributes,scope,child:_*)
 
-  def unapplySeq(n:Node) = if (n.isInstanceOf[SpecialNode] || n.isInstanceOf[Group]) None else
-    Some((n.prefix, n.label, n.attributes, n.scope, n.child))
+  def unapplySeq(n: Node) = n match {
+    case _: SpecialNode | _: Group  => None
+    case _                          => Some((n.prefix, n.label, n.attributes, n.scope, n.child))
+  }
 }
 
 /** The case class <code>Elem</code> extends the <code>Node</code> class,
@@ -54,18 +53,17 @@ extends Node
   final override def doCollectNamespaces = true
   final override def doTransform         = true
 
-  if ((null != prefix) && 0 == prefix.length())
+  if (prefix == "")
     throw new IllegalArgumentException("prefix of zero length, use null instead")
 
-  if (null == scope)
-    throw new IllegalArgumentException("scope is null, try xml.TopScope for empty scope")
+  if (scope == null)
+    throw new IllegalArgumentException("scope is null, use xml.TopScope for empty scope")
 
   //@todo: copy the children,
   //  setting namespace scope if necessary
   //  cleaning adjacent text nodes if necessary
 
-  override def hashCode(): Int =
-    Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child)
+  override def basisForHashCode: Seq[Any] = prefix :: label :: attributes :: child.toList
 
   /** Returns a new element with updated attributes, resolving namespace uris from this element's scope.
    *  See MetaData.update for details.

@@ -12,11 +12,7 @@ package scala.xml
 package factory
 
 import parsing.{ FactoryAdapter, NoBindingFactoryAdapter }
-import collection.Seq
-import collection.immutable.{List, Nil}
-import org.xml.sax.InputSource
 import java.io.{ InputStream, Reader, StringReader, File, FileDescriptor, FileInputStream }
-import javax.xml.parsers.{ SAXParser, SAXParserFactory }
 
 trait NodeFactory[A <: Node]
 {

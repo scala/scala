@@ -8,10 +8,7 @@
 
 // $Id$
 
-
 package scala.xml
-
-import collection.{Iterator, Seq, Iterable}
 
 /**
  * <p>

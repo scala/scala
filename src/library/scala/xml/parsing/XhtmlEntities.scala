@@ -8,11 +8,10 @@
 
 // $Id$
 
-
 package scala.xml
 package parsing
 
-import scala.xml.dtd.{IntDef, ParsedEntityDecl}
+import scala.xml.dtd.{ IntDef, ParsedEntityDecl }
 
 /** <p>
  *    (c) David Pollak 2007 WorldWide Conferencing, LLC.

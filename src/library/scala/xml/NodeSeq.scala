@@ -11,11 +11,9 @@
 
 package scala.xml
 
-import collection.immutable
-import collection.immutable.{List, Nil, ::}
-import collection.{Seq, SeqLike}
-import collection.mutable.{Builder, ListBuffer}
-import collection.generic.CanBuildFrom
+import collection.{ mutable, immutable, generic, SeqLike }
+import mutable.{ Builder, ListBuffer }
+import generic.{ CanBuildFrom }
 
 /** This object ...
  *
@@ -43,7 +41,7 @@ object NodeSeq {
  *  @author  Burak Emir
  *  @version 1.0
  */
-abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] {
+abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] with Equality {
   import NodeSeq.seqToNodeSeq // import view magic for NodeSeq wrappers
 
   /** Creates a list buffer as builder for this class */
@@ -56,12 +54,23 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] {
   def apply(i: Int): Node = theSeq(i)
   def apply(f: Node => Boolean): NodeSeq = filter(f)
 
-  /** structural equality (XXX - this shatters any hope of hashCode equality) */
-  override def equals(x: Any): Boolean = x match {
-    case z:Node      => (length == 1) && z == apply(0)
-    case z:Seq[_]    => sameElements(z)
-    case z:String    => text == z
-    case _           => false
+  def xml_sameElements[A](that: Iterable[A]): Boolean = {
+    val these = this.iterator
+    val those = that.iterator
+    while (these.hasNext && those.hasNext)
+      if (these.next xml_!= those.next)
+        return false
+
+    !these.hasNext && !those.hasNext
+  }
+  def basisForHashCode: Seq[Any] = theSeq
+  override def canEqual(other: Any) = other match {
+    case _: NodeSeq   => true
+    case _            => false
+  }
+  override def strict_==(other: Equality) = other match {
+    case x: NodeSeq => (length == x.length) && (theSeq sameElements x.theSeq)
+    case _          => false
   }
 
   /** Projection function. Similar to XPath, use <code>this \ "foo"</code>
@@ -92,7 +101,7 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] {
           if (uri == "" || key == "") fail
           else y.attribute(uri, key)
         }
-        else y.attribute(that.substring(1))
+        else y.attribute(that drop 1)
 
       attr match {
         case Some(x)  => Group(x)

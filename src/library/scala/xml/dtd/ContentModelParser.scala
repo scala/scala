@@ -8,11 +8,8 @@
 
 // $Id$
 
-
 package scala.xml
 package dtd
-
-import collection.immutable.List
 
 /** Parser for regexps (content models in DTD element declarations) */
 

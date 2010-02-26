@@ -13,11 +13,10 @@ package include.sax
 
 import scala.xml.include._
 import scala.util.control.Exception.{ catching, ignoring }
-import org.xml.sax.{ SAXException, SAXParseException, EntityResolver, XMLReader }
+import org.xml.sax.XMLReader
 import org.xml.sax.helpers.XMLReaderFactory
 
 object Main {
-  private val xercesClass = "org.apache.xerces.parsers.SAXParser"
   private val namespacePrefixes = "http://xml.org/sax/features/namespace-prefixes"
   private val lexicalHandler = "http://xml.org/sax/properties/lexical-handler"
 
@@ -35,7 +34,7 @@ object Main {
 
     val parser: XMLReader =
       saxe[XMLReader](XMLReaderFactory.createXMLReader()) getOrElse (
-        saxe[XMLReader](XMLReaderFactory.createXMLReader(xercesClass)) getOrElse (
+        saxe[XMLReader](XMLReaderFactory.createXMLReader(XercesClassName)) getOrElse (
           return error("Could not find an XML parser")
         )
       )

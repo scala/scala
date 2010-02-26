@@ -8,14 +8,10 @@
 
 // $Id$
 
-
 package scala.xml
 package dtd
 
 import Utility.sbToString
-import collection.immutable.List
-import collection.mutable.StringBuilder
-
 
 abstract class Decl
 

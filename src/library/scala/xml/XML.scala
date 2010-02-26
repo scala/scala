@@ -11,12 +11,10 @@
 
 package scala.xml
 
-import scala.xml.parsing.NoBindingFactoryAdapter
-import scala.xml.factory.XMLLoader
-import org.xml.sax.InputSource
-import javax.xml.parsers.{ SAXParser, SAXParserFactory }
-import java.io.{File, FileDescriptor, FileInputStream, FileOutputStream}
-import java.io.{InputStream, Reader, StringReader, Writer}
+import parsing.NoBindingFactoryAdapter
+import factory.XMLLoader
+import java.io.{ File, FileDescriptor, FileInputStream, FileOutputStream }
+import java.io.{ InputStream, Reader, StringReader, Writer }
 import java.nio.channels.Channels
 import scala.util.control.Exception.ultimately
 

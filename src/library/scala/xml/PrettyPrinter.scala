@@ -8,10 +8,8 @@
 
 // $Id$
 
-
 package scala.xml
 
-import scala.collection.Map
 import Utility.sbToString
 
 /** Class for pretty printing. After instantiating, you can use the
@@ -39,7 +37,6 @@ class PrettyPrinter(width: Int, step: Int) {
   protected var items: List[Item] = Nil
 
   protected var cur = 0
-  //protected var pmap:Map[String,String] = _
 
   protected def reset() = {
     cur = 0

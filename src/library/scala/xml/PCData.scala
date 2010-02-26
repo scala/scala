@@ -7,15 +7,8 @@ package scala.xml
  *  and is to be preserved as CDATA section in the output.
  */
 case class PCData(_data: String) extends Atom[String](_data) {
-  /* The following code is a derivative work of scala.xml.Text */
   if (null == data)
     throw new IllegalArgumentException("tried to construct PCData with null")
-
-  final override def equals(x: Any) = x match {
-    case s: String  => s.equals(data)
-    case s: Atom[_] => data == s.data
-    case _ => false
-  }
 
   /** Returns text, with some characters escaped according to the XML
    *  specification.

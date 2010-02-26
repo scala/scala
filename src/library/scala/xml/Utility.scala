@@ -11,8 +11,8 @@
 
 package scala.xml
 
-import collection.mutable.{Set, HashSet, StringBuilder}
-import collection.Seq
+import collection.mutable
+import mutable.{ Set, HashSet }
 import parsing.XhtmlEntities
 
 /**
@@ -149,7 +149,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param nodes ...
    * @return      ...
    */
-  def collectNamespaces(nodes: Seq[Node]): Set[String] =
+  def collectNamespaces(nodes: Seq[Node]): mutable.Set[String] =
     nodes.foldLeft(new HashSet[String]) { (set, x) => collectNamespaces(x, set) ; set }
 
   /**
@@ -158,7 +158,7 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param n   ...
    * @param set ...
    */
-  def collectNamespaces(n: Node, set: Set[String]) {
+  def collectNamespaces(n: Node, set: mutable.Set[String]) {
     if (n.doCollectNamespaces) {
       set += n.namespace
       for (a <- n.attributes) a match {

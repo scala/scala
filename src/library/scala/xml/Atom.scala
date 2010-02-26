@@ -8,9 +8,7 @@
 
 // $Id$
 
-
 package scala.xml
-import collection.mutable.StringBuilder
 
 /** The class <code>Atom</code> provides an XML node for text (PCDATA).
  *  It is used in both non-bound and bound XML representations.
@@ -24,16 +22,20 @@ class Atom[+A](val data: A) extends SpecialNode
   if (data == null)
     throw new IllegalArgumentException("cannot construct Atom(null)")
 
+  override def basisForHashCode: Seq[Any] = Seq(data)
+  override def strict_==(other: Equality) = other match {
+    case x: Atom[_] => data == x.data
+    case _          => false
+  }
+  override def canEqual(other: Any) = other match {
+    case _: Atom[_] => true
+    case _          => false
+  }
+
   final override def doCollectNamespaces = false
   final override def doTransform         = false
 
   def label = "#PCDATA"
-
-  override def equals(x: Any) = x match {
-    case s:Atom[_] => data == s.data
-    case _         => false
-  }
-  override def hashCode() = data.hashCode()
 
   /** Returns text, with some characters escaped according to the XML
    *  specification.

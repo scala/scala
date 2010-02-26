@@ -12,7 +12,7 @@
 package scala.xml
 
 import Utility.sbToString
-import collection.mutable.StringBuilder
+
 
 /** The class <code>NamespaceBinding</code> represents namespace bindings
  *  and scopes. The binding for the default namespace is treated as a null
@@ -23,7 +23,7 @@ import collection.mutable.StringBuilder
  *  @version 1.0
  */
 @SerialVersionUID(0 - 2518644165573446725L)
-case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBinding) extends AnyRef
+case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBinding) extends AnyRef with Equality
 {
   if (prefix == "")
     throw new IllegalArgumentException("zero length prefix not allowed")
@@ -41,6 +41,15 @@ case class NamespaceBinding(prefix: String, uri: String, parent: NamespaceBindin
     if (_uri == uri) prefix else parent getPrefix _uri
 
   override def toString(): String = sbToString(buildString(_, TopScope))
+  override def canEqual(other: Any) = other match {
+    case _: NamespaceBinding  => true
+    case _                    => false
+  }
+  override def strict_==(other: Equality) = other match {
+    case x: NamespaceBinding  => (prefix == x.prefix) && (uri == x.uri) && (parent == x.parent)
+    case _                    => false
+  }
+  def basisForHashCode: Seq[Any] = List(prefix, uri, parent)
 
   def buildString(stop: NamespaceBinding): String = sbToString(buildString(_, stop))
   def buildString(sb: StringBuilder, stop: NamespaceBinding): Unit = {
