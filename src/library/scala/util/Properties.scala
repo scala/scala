@@ -105,10 +105,18 @@ private[scala] trait PropertiesTrait
   def scalacCmd             = if (isWin) "scalac.bat" else "scalac"
 
   /** Can the java version be determined to be at least as high as the argument?
+   *  Hard to properly future proof this but at the rate 1.7 is going we can leave
+   *  the issue for our cyborg grandchildren to solve.
    */
-  def isJavaAtLeast(version: Double) =
-    try javaVersion.toDouble >= version
-    catch { case _: NumberFormatException => false }
+  def isJavaAtLeast(version: String) = {
+    val okVersions = version match {
+      case "1.5"    => List("1.5", "1.6", "1.7")
+      case "1.6"    => List("1.6", "1.7")
+      case "1.7"    => List("1.7")
+      case _        => Nil
+    }
+    okVersions exists (javaVersion startsWith _)
+  }
 
   // provide a main method so version info can be obtained by running this
   def main(args: Array[String]) {

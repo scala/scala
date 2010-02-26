@@ -44,7 +44,8 @@ object ThreadPoolConfig {
       Debug.info(this+": java.vm.vendor = "+javaVmVendor)
 
       // on IBM J9 1.6 do not use ForkJoinPool
-      isJavaAtLeast(1.6) && (javaVmVendor contains "Sun")
+      // XXX this all needs to go into Properties.
+      isJavaAtLeast("1.6") && ((javaVmVendor contains "Sun") || (javaVmVendor contains "Apple"))
     }
     catch {
       case _: SecurityException => false
