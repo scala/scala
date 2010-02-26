@@ -477,12 +477,10 @@ self: Analyzer =>
               // #2421b: since type inference (which may have been performed during implicit search)
               // does not check whether inferred arguments meet the bounds of the corresponding parameter (see note in solvedTypes),
               // must check again here:
-              itree2 match { // roughly equivalent to typed1(itree2, EXPRmode, wildPt),
-                // since typed1 only forces checking of the outer tree and calls typed on the subtrees
-                // (they have already been type checked, by the typed1(itree...) above, so the subtrees are skipped by typed)
-                // inlining the essential bit here for clarity
-                //TODO: verify that these subtrees don't need re-checking
+              // TODO: I would prefer to just call typed instead of duplicating the code here, but this is probably a hotspot (and you can't just call typed, need to force re-typecheck)
+              itree2 match {
                 case TypeApply(fun, args) => typedTypeApply(itree2, EXPRmode, fun, args)
+                case Apply(TypeApply(fun, args), _) => typedTypeApply(itree2, EXPRmode, fun, args) // t2421c
                 case _ =>
               }
 
