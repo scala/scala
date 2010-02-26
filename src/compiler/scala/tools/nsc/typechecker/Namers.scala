@@ -310,18 +310,21 @@ trait Namers { self: Analyzer =>
         ltype = new PolyTypeCompleter(tparams, ltype, tree, sym, context) //@M
         if (sym.isTerm) skolemize(tparams)
       }
-      def copyIsSynthetic() = sym.owner.info.member(nme.copy).hasFlag(SYNTHETIC)
-      if (sym.name == nme.copy && sym.hasFlag(SYNTHETIC) ||
-          sym.name.startsWith(nme.copy + "$default$") && copyIsSynthetic()){
-        // the 'copy' method of case classes needs a special type completer to make bug0054.scala (and others)
-        // work. the copy method has to take exactly the same parameter types as the primary constructor.
+
+      if (sym.name == nme.copy || sym.name.startsWith(nme.copy + "$default$")) {
+        // it could be a compiler-generated copy method or one of its default getters
         setInfo(sym)(mkTypeCompleter(tree)(copySym => {
-          val constrType = copySym.owner.primaryConstructor.tpe
-          val subst = new SubstSymMap(copySym.owner.typeParams, tparams map (_.symbol))
-          for ((params, cparams) <- tree.asInstanceOf[DefDef].vparamss.zip(constrType.paramss);
-               (param, cparam) <- params.zip(cparams)) {
-            // need to clone the type cparam.tpe??? problem is: we don't have the new owner yet (the new param symbol)
-            param.tpt.setType(subst(cparam.tpe))
+          def copyIsSynthetic() = sym.owner.info.member(nme.copy).hasFlag(SYNTHETIC)
+          if (sym.hasFlag(SYNTHETIC) && (!sym.hasFlag(DEFAULTPARAM) || copyIsSynthetic())) {
+            // the 'copy' method of case classes needs a special type completer to make bug0054.scala (and others)
+            // work. the copy method has to take exactly the same parameter types as the primary constructor.
+            val constrType = copySym.owner.primaryConstructor.tpe
+            val subst = new SubstSymMap(copySym.owner.typeParams, tparams map (_.symbol))
+            for ((params, cparams) <- tree.asInstanceOf[DefDef].vparamss.zip(constrType.paramss);
+                 (param, cparam) <- params.zip(cparams)) {
+              // need to clone the type cparam.tpe??? problem is: we don't have the new owner yet (the new param symbol)
+              param.tpt.setType(subst(cparam.tpe))
+            }
           }
           ltype.complete(sym)
         }))
