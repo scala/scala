@@ -1,10 +1,8 @@
 unit2anyref.scala:2: error: type mismatch;
  found   : Unit
  required: AnyRef
-Note that implicit conversions are not applicable because they are ambiguous:
- both method any2stringadd in object Predef of type (x: Any)scala.runtime.StringAdd
- and method any2ArrowAssoc in object Predef of type [A](x: A)ArrowAssoc[A]
- are possible conversion functions from Unit to AnyRef
+Note: primitive types are not implicitly converted to AnyRef.
+You can safely force boxing by casting x.asInstanceOf[AnyRef].
   val x: AnyRef = ()  // this should not succeed.
                   ^
 one error found

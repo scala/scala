@@ -302,10 +302,25 @@ self: Analyzer =>
           if (isView) {
             val found = pt.typeArgs(0)
             val req = pt.typeArgs(1)
-            typeErrorMsg(found, req)+
-            "\nNote that implicit conversions are not applicable because they are ambiguous:\n "+
-            coreMsg+"are possible conversion functions from "+ found+" to "+req
-          } else {
+
+            /** A nice spot to explain some common situations a little
+             *  less confusingly.
+             */
+            def explanation = {
+              if ((found =:= AnyClass.tpe) && (AnyRefClass.tpe <:< req))
+                "Note: Any is not implicitly converted to AnyRef.  You can safely\n" +
+                "pattern match x: AnyRef or cast x.asInstanceOf[AnyRef] to do so."
+              else if ((found <:< AnyValClass.tpe) && (AnyRefClass.tpe <:< req))
+                "Note: primitive types are not implicitly converted to AnyRef.\n" +
+                "You can safely force boxing by casting x.asInstanceOf[AnyRef]."
+              else
+                "Note that implicit conversions are not applicable because they are ambiguous:\n "+
+                coreMsg+"are possible conversion functions from "+ found+" to "+req
+            }
+
+            typeErrorMsg(found, req) + "\n" + explanation
+          }
+          else {
             "ambiguous implicit values:\n "+coreMsg + "match expected type "+pt
           })
         }
