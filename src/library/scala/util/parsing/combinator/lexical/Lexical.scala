@@ -9,11 +9,12 @@
 // $Id$
 
 
-package scala.util.parsing.combinator.lexical
-import scala.util.parsing.combinator._
+package scala.util.parsing
+package combinator
+package lexical
 
-import scala.util.parsing.syntax._
-import scala.util.parsing.input.CharArrayReader.EofCh
+import token._
+import input.CharArrayReader.EofCh
 
 /** <p>
  *    This component complements the <code>Scanners</code> component with

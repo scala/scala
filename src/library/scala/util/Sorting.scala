@@ -530,51 +530,6 @@ object Sorting {
       }
     }
   }
-
-  // for testing
-  def main(args: Array[String]) {
-    val tuples = Array(
-      (1, "one"), (1, "un"), (3, "three"), (2, "deux"),
-      (2, "two"), (0, "zero"), (3, "trois")
-    )
-    val integers = Array(
-      3, 4, 0, 4, 5, 0, 3, 3, 0
-    )
-    val doubles = Array(
-      3.4054752250314283E9,
-      4.9663151227666664E10,
-// 0.0/0.0 is interpreted as Nan
-//      0.0/0.0,
-      4.9663171987125E10,
-      5.785996973446602E9,
-//      0.0/0.0,
-      3.973064849653333E10,
-      3.724737288678125E10
-//      0.0/0.0
-    )
-    val floats = Array(
-      3.4054752250314283E9f,
-      4.9663151227666664E10f,
-//      0.0f/0.0f,
-      4.9663171987125E10f,
-      5.785996973446602E9f,
-//      0.0f/0.0f,
-      3.973064849653333E10f,
-      3.724737288678125E10f
-//      0.0f/0.0f
-    )
-    Sorting.quickSort(tuples)
-    println(tuples.toList)
-
-    Sorting quickSort integers
-    println(integers.toList)
-
-    Sorting quickSort doubles
-    println(doubles.toList)
-
-    Sorting quickSort floats
-    println(floats.toList)
-  }
 }
 
 /** <p>

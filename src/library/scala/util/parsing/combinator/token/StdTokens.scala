@@ -6,7 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-package scala.util.parsing.syntax
+package scala.util.parsing
+package combinator
+package token
 
 /** This component provides the standard `Token's for a simple, Scala-like language.
  *

@@ -9,11 +9,12 @@
 // $Id$
 
 
-package scala.util.parsing.combinator.syntactical
-import scala.util.parsing.combinator._
+package scala.util.parsing
+package combinator
+package syntactical
 
-import scala.util.parsing.syntax._
-import scala.collection.mutable.HashMap
+import token._
+import collection.mutable.HashMap
 
 /** This component provides primitive parsers for the standard tokens defined in `StdTokens'.
 *

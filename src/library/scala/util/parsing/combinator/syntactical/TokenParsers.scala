@@ -8,9 +8,9 @@
 
 // $Id$
 
-
-package scala.util.parsing.combinator.syntactical
-import scala.util.parsing.combinator._
+package scala.util.parsing
+package combinator
+package syntactical
 
 /** This is the core component for token-based parsers.
  *
@@ -18,7 +18,7 @@ import scala.util.parsing.combinator._
  */
 trait TokenParsers extends Parsers {
   /** Tokens is the abstract type of the `Token's consumed by the parsers in this component*/
-  type Tokens <: scala.util.parsing.syntax.Tokens
+  type Tokens <: token.Tokens
 
   /** lexical is the component responsible for consuming some basic kind of
    *  input (usually character-based) and turning it into the tokens
