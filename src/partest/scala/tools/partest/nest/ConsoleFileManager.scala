@@ -177,43 +177,20 @@ class ConsoleFileManager extends FileManager {
   // initialize above fields
   findLatest()
 
-  var testFiles: List[File] = List()
+  var testFiles: List[io.Path] = Nil
 
-  def getFiles(kind: String, doCheck: Boolean, filter: Option[(String, Boolean)]): List[File] = {
+  def getFiles(kind: String, cond: Path => Boolean): List[File] = {
+    def ignoreDir(p: Path) = List("svn", "obj") exists (p hasExtension _)
 
-    val dir = new File(srcDir, kind)
-    NestUI.verbose("look in "+dir+" for tests")
-    val files = if (dir.isDirectory) {
-      if (!testFiles.isEmpty) {
-        val dirpath = dir.getAbsolutePath
-        testFiles filter { _.getParentFile.getAbsolutePath == dirpath }
-      } else if (doCheck) filter match {
-        case Some((ending, enableDirs)) =>
-          val filter = new FilenameFilter {
-            def accept(dir: File, name: String) =
-              name.endsWith(ending) ||
-              (enableDirs && (name != ".svn") && (!name.endsWith(".obj")) &&
-              (new File(dir, name)).isDirectory)
-          }
-          dir.listFiles(filter).toList
-        case None =>
-          val filter = new FilenameFilter {
-            def accept(dir: File, name: String) = name != ".svn"
-          }
-          dir.listFiles(filter).toList
-      } else // skip
-        Nil
-    } else {
-      NestUI.failure("Directory \"" + dir.getPath + "\" not found")
-      Nil
-    }
-    if (failed)
-      files filter { logFileExists(_, kind) }
-    else
-      files
+    val dir = Directory(srcDir / kind)
+
+    if (dir.isDirectory) NestUI.verbose("look in %s for tests" format dir)
+    else NestUI.failure("Directory '%s' not found" format dir)
+
+    val files =
+      if (testFiles.nonEmpty) testFiles filter (_.parent isSame dir)
+      else dir.list filterNot ignoreDir filter cond toList
+
+    ( if (failed) files filter (x => logFileExists(x, kind)) else files ) map (_.jfile)
   }
-
-  def getFiles(kind: String, doCheck: Boolean): List[File] =
-    getFiles(kind, doCheck, Some((".scala", true)))
-
 }

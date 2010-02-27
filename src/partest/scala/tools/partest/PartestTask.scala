@@ -13,6 +13,8 @@ package partest
 
 import scala.actors.Actor._
 import scala.util.Properties.setProp
+import scala.tools.nsc.io
+import io.{ Directory }
 import nsc.Settings
 import nsc.util.ClassPath
 import util.PathResolver
@@ -140,30 +142,26 @@ class PartestTask extends Task {
   private var jUnitReportDir: Option[File] = None
   private var debug = false
 
-  private def getFiles(fileSet: Option[FileSet]): Array[File] =
-    if (fileSet.isEmpty) Array()
-    else {
-      val files = fileSet.get
-      files.getDirectoryScanner(getProject).getIncludedFiles.map(
-        fs => new File(files.getDir(getProject), fs)
-      ).filter(file => !file.getCanonicalPath().endsWith(".log"))
-    }
+  def fileSetToDir(fs: FileSet) = Directory(fs getDir getProject)
+  def fileSetToArray(fs: FileSet): Array[io.Path] = {
+    val root = fileSetToDir(fs)
+    (fs getDirectoryScanner getProject).getIncludedFiles map (root / _)
+  }
 
-  private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] =
-    if (!fileSet.isEmpty) {
-      val files = fileSet.get
-      val fileTests = getFiles(fileSet)
-      val dir = files.getDir(getProject)
-      val dirTests = dir.listFiles(new java.io.FileFilter {
-        def accept(file: File) =
-          file.isDirectory &&
-          (!file.getName().equals(".svn")) &&
-          (!file.getName().endsWith(".obj"))
-      })
-      (dirTests ++ fileTests).toArray
-    }
-    else
-      Array()
+  private def getFiles(fileSet: Option[FileSet]): Array[File] = fileSet match {
+    case None     => Array()
+    case Some(fs) => fileSetToArray(fs) filterNot (_ hasExtension "log") map (_.jfile)
+  }
+
+  private def getFilesAndDirs(fileSet: Option[FileSet]): Array[File] = fileSet match {
+    case None     => Array()
+    case Some(fs) =>
+      val fileTests = getFiles(Some(fs))
+      val dirTests: Iterator[io.Path] = fileSetToDir(fs).dirs filterNot (x => (x hasExtension "svn") || (x hasExtension "obj"))
+      val dirResult = dirTests.toList.toArray map (_.jfile)
+
+      dirResult ++ fileTests
+  }
 
   private def getPosFiles          = getFilesAndDirs(posFiles)
   private def getNegFiles          = getFilesAndDirs(negFiles)
