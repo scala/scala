@@ -386,6 +386,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
 
+    // See bugs #1392 and #3123 - this exists specifically to exclude the faux
+    // companion objects of scala.Int and etc. from appearing to be stable identifiers
+    // and then crashing the backend.  This is surely better handled a different
+    // way (personally I would vote for making those companion objects real objects
+    // unless that is impossible.)
+    def isNotAValue = !isValue || (isModule && isValueClass(linkedClassOfModule))
+
     // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
     final def isCapturedVariable  = isVariable && hasFlag(CAPTURED)
 
