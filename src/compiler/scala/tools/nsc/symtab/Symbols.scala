@@ -381,17 +381,12 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Is this symbol a type but not a class? */
     def isNonClassType = false
 
-    /** Term symbols with the exception of static parts of Java classes and packages */
-    final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA))
+    /** Term symbols with the exception of static parts of Java classes and packages
+     *  and the faux companion objects of primitives.  (See tickets #1392 and #3123.)
+     */
+    final def isValue = isTerm && !(isModule && (hasFlag(PACKAGE | JAVA) || isValueClass(linkedClassOfModule)))
 
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
-
-    // See bugs #1392 and #3123 - this exists specifically to exclude the faux
-    // companion objects of scala.Int and etc. from appearing to be stable identifiers
-    // and then crashing the backend.  This is surely better handled a different
-    // way (personally I would vote for making those companion objects real objects
-    // unless that is impossible.)
-    def isNotAValue = !isValue || (isModule && isValueClass(linkedClassOfModule))
 
     // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
     final def isCapturedVariable  = isVariable && hasFlag(CAPTURED)
