@@ -23,7 +23,7 @@ import annotation.tailrec
  *  @author  Martin Odersky and others
  *  @version 2.8
  */
-sealed abstract class List[@specialized +A] extends LinearSeq[A]
+sealed trait List[@specialized +A] extends LinearSeq[A]
                                   with Product
                                   with GenericTraversableTemplate[A, List]
                                   with LinearSeqLike[A, List[A]] {
