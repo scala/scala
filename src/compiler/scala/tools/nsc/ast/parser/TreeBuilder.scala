@@ -64,46 +64,54 @@ abstract class TreeBuilder {
    *  The variables keep their positions; whereas the pattern is converted to be synthetic
    *  for all nodes that contain a variable position.
    */
-  private object getvarTraverser extends Traverser {
+  class GetVarTraverser extends Traverser {
     val buf = new ListBuffer[(Name, Tree, Position)]
-    def init: Traverser = { buf.clear; this }
+
     def namePos(tree: Tree, name: Name): Position =
-      if (!tree.pos.isRange || name.toString.contains('$')) tree.pos.focus
+      if (!tree.pos.isRange || name.containsName(nme.DOLLARraw)) tree.pos.focus
       else {
         val start = tree.pos.start
         val end = start + name.decode.length
         r2p(start, start, end)
       }
+
     override def traverse(tree: Tree): Unit = {
+      def seenName(name: Name)     = buf exists (_._1 == name)
+      def add(name: Name, t: Tree) = if (!seenName(name)) buf += ((name, t, namePos(tree, name)))
       val bl = buf.length
+
       tree match {
-        case Bind(name, Typed(tree1, tpt)) =>
-          if ((name != nme.WILDCARD) && (buf.iterator forall (name !=))) {
-            buf += ((name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt.duplicate, namePos(tree, name)))
-          }
+        case Bind(nme.WILDCARD, _)          =>
+          super.traverse(tree)
+
+        case Bind(name, Typed(tree1, tpt))  =>
+          val newTree = if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt.duplicate
+          add(name, newTree)
           traverse(tree1)
-        case Bind(name, tree1) =>
-          if ((name != nme.WILDCARD) && (buf.iterator forall (name !=))) {
-            // can assume only name range as position, as otherwise might overlap
-            // with binds embedded in pattern tree1
-            buf += ((name, TypeTree(), namePos(tree, name)))
-            //println("found var "+name+" at "+namePos.show) //DEBUG
-          }
+
+        case Bind(name, tree1)              =>
+          // can assume only name range as position, as otherwise might overlap
+          // with binds embedded in pattern tree1
+          add(name, TypeTree())
           traverse(tree1)
+
         case _ =>
           super.traverse(tree)
       }
-      if (buf.length > bl) tree setPos tree.pos.makeTransparent
+      if (buf.length > bl)
+        tree setPos tree.pos.makeTransparent
+    }
+    def apply(tree: Tree) = {
+      traverse(tree)
+      buf.toList
     }
   }
 
   /** Returns list of all pattern variables, possibly with their types,
    *  without duplicates
    */
-  private def getVariables(tree: Tree): List[(Name, Tree, Position)] = {
-    getvarTraverser.init.traverse(tree)
-    getvarTraverser.buf.toList
-  }
+  private def getVariables(tree: Tree): List[(Name, Tree, Position)] =
+    new GetVarTraverser apply tree
 
   private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
     val tupString = "Tuple" + trees.length

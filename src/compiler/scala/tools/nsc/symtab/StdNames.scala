@@ -371,6 +371,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     val NEraw = newTermName("!=")
     val LEraw = newTermName("<=")
     val GEraw = newTermName(">=")
+    val DOLLARraw = newTermName("$")
 
     // value-conversion methods
     val toByte = newTermName("toByte")
