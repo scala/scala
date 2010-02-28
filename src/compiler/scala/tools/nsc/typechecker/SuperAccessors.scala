@@ -26,6 +26,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._
+  import definitions.{ IntClass, UnitClass, ByNameParamClass, Any_asInstanceOf, Object_## }
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "superaccessors"
@@ -44,7 +45,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
     private def transformArgs(args: List[Tree], params: List[Symbol]) =
       ((args, params).zipped map { (arg, param) =>
-        if (param.tpe.typeSymbol == definitions.ByNameParamClass)
+        if (param.tpe.typeSymbol == ByNameParamClass)
           withInvalidOwner { checkPackedConforms(transform(arg), param.tpe.typeArgs.head) }
         else transform(arg)
       }) :::
@@ -75,10 +76,16 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         }
       }
 
-    private def transformSuperSelect(tree: Tree) = tree match {
-      case Select(sup @ Super(_, mix), name) =>
+    private def transformSuperSelect(tree: Tree): Tree = tree match {
+      // Intercept super.## and translate it to this.##
+      // which is fine since it's final.
+      case Select(sup @ Super(_, _), nme.HASHHASH)  =>
+        Select(gen.mkAttributedThis(sup.symbol), Object_##) setType IntClass.tpe
+
+      case Select(sup @ Super(_, mix), name)  =>
         val sym = tree.symbol
         val clazz = sup.symbol
+
         if (sym.isDeferred) {
           val member = sym.overridingSymbol(clazz);
           if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
@@ -338,7 +345,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
       if (isDependentType) {
         val preciseTpe = expectedTpe.asSeenFrom(singleType(NoPrefix, obj), ownerClass) //typeRef(singleType(NoPrefix, obj), v.tpe.symbol, List())
-        TypeApply(Select(res, definitions.Any_asInstanceOf),
+        TypeApply(Select(res, Any_asInstanceOf),
                   List(TypeTree(preciseTpe)))
       } else res
     }
@@ -364,7 +371,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       if (protAcc == NoSymbol) {
         protAcc = clazz.newMethod(field.pos, nme.protSetterName(field.originalName))
         protAcc.setInfo(MethodType(protAcc.newSyntheticValueParams(List(clazz.typeOfThis, field.tpe)),
-                                   definitions.UnitClass.tpe))
+                                   UnitClass.tpe))
         clazz.info.decls.enter(protAcc)
         val code = DefDef(protAcc, {
           val obj :: value :: Nil = protAcc.paramss.head;

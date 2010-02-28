@@ -94,6 +94,7 @@ abstract class ScalaPrimitives {
   final val AS = 81                            // x.as[y]
   final val ISERASED = 85                      // x.is$erased[y]
   final val ASERASED = 86                      // x.as$erased[y]
+  final val HASH = 87                          // x.##
 
   // AnyRef operations
   final val SYNCHRONIZED = 90                  // x.synchronized(y)
@@ -215,6 +216,7 @@ abstract class ScalaPrimitives {
     addPrimitive(Any_!=, NE)
     addPrimitive(Any_isInstanceOf, IS)
     addPrimitive(Any_asInstanceOf, AS)
+    addPrimitive(Any_##, HASH)
 
     // java.lang.Object
     addPrimitive(Object_eq, ID)

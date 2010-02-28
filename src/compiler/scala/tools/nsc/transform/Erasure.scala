@@ -943,6 +943,10 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
                 tree,
                 SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
                 args)
+
+          case Apply(fn @ Select(qual, _), Nil) if (fn.symbol == Any_## || fn.symbol == Object_##) =>
+            Apply(gen.mkAttributedRef(scalaRuntimeHash), List(qual))
+
           case Apply(fn, args) =>
             if (fn.symbol == Any_asInstanceOf)
               fn match {

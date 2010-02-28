@@ -174,6 +174,11 @@ object ScalaRunTime {
     case _                                              => false
   }
 
+  /** Just a stub for now, but I think this is where the Predef.hash
+   *  methods should be.
+   */
+  @inline def hash(x: Any): Int = Predef.hash(x)
+
   /** Given any Scala value, convert it to a String.
    *
    * The primary motivation for this method is to provide a means for

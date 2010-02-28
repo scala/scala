@@ -151,6 +151,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def arrayUpdateMethod = getMember(ScalaRunTimeModule, "array_update")
       def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
+      def scalaRuntimeHash = getMember(ScalaRunTimeModule, "hash")
 
     // classes with special meanings
     lazy val NotNullClass         = getClass("scala.NotNull")
@@ -388,12 +389,14 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     var Any_toString    : Symbol = _
     var Any_isInstanceOf: Symbol = _
     var Any_asInstanceOf: Symbol = _
+    var Any_##          : Symbol = _
 
     // members of class java.lang.{Object, String}
     var Object_eq          : Symbol = _
     var Object_ne          : Symbol = _
     var Object_==          : Symbol = _
     var Object_!=          : Symbol = _
+    var Object_##          : Symbol = _
     var Object_synchronized: Symbol = _
     lazy val Object_isInstanceOf = newPolyMethod(
       ObjectClass, "$isInstanceOf",
@@ -769,13 +772,15 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       Any_equals = newMethod(AnyClass, nme.equals_, anyparam, booltype)
       Any_hashCode = newMethod(AnyClass, nme.hashCode_, Nil, inttype)
       Any_toString = newMethod(AnyClass, nme.toString_, Nil, stringtype)
+      Any_## = newMethod(AnyClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
 
       Any_isInstanceOf = newPolyMethod(
         AnyClass, nme.isInstanceOf_, tparam => booltype) setFlag FINAL
       Any_asInstanceOf = newPolyMethod(
         AnyClass, nme.asInstanceOf_, tparam => tparam.typeConstructor) setFlag FINAL
 
-      // members of class java.lang.{Object, String}
+      // members of class java.lang.{ Object, String }
+      Object_## = newMethod(ObjectClass, nme.HASHHASH, Nil, inttype) setFlag FINAL
       Object_== = newMethod(ObjectClass, nme.EQ, anyrefparam, booltype) setFlag FINAL
       Object_!= = newMethod(ObjectClass, nme.NE, anyrefparam, booltype) setFlag FINAL
       Object_eq = newMethod(ObjectClass, nme.eq, anyrefparam, booltype) setFlag FINAL

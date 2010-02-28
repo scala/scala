@@ -423,6 +423,8 @@ abstract class GenICode extends SubComponent  {
         genArithmeticOp(tree, ctx, code)
       else if (code == scalaPrimitives.CONCAT)
         (genStringConcat(tree, ctx), STRING)
+      else if (code == scalaPrimitives.HASH)
+        (genScalaHash(receiver, ctx), INT)
       else if (isArrayOp(code))
         genArrayOp(tree, ctx, code, expectedType)
       else if (isLogicalOp(code) || isComparisonOp(code)) {
@@ -1164,6 +1166,19 @@ abstract class GenICode extends SubComponent  {
       }
       ctx1.bb.emit(CALL_PRIMITIVE(EndConcat), tree.pos)
 
+      ctx1
+    }
+
+    /** Generate the scala ## method.
+     */
+    def genScalaHash(tree: Tree, ctx: Context): Context = {
+      val hashMethod = {
+        ctx.bb.emit(LOAD_MODULE(definitions.ScalaRunTimeModule))
+        definitions.getMember(definitions.ScalaRunTimeModule, "hash")
+      }
+
+      val ctx1 = genLoad(tree, ctx, ANY_REF_CLASS)
+      ctx1.bb.emit(CALL_METHOD(hashMethod, Static(false)))
       ctx1
     }
 

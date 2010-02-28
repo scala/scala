@@ -214,6 +214,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     val PERCENT = encode("%")
     val EQL = encode("=")
     val USCOREEQL = encode("_=")
+    val HASHHASH = encode("##")
 
     val Nothing = newTermName("Nothing")
     val Null = newTermName("Null")
@@ -289,6 +290,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     val getCause = newTermName("getCause")
     val getClass_ = newTermName("getClass")
     val getMethod_ = newTermName("getMethod")
+    val hash_ = newTermName("hash")
     val hashCode_ = newTermName("hashCode")
     val hasNext = newTermName("hasNext")
     val head = newTermName("head")
