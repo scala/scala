@@ -232,6 +232,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
     val n = m.name
     if (underCaseClass(m) && n == CONSTRUCTOR_NAME) return
+    if (n.matches(".+\\$default\\$\\d+")) return // skip default function parameters
     if (n.startsWith("super$")) return // do not print auxiliary qualified super accessors
     if (m.isAccessor && n.endsWith("_$eq")) return
     indent()
