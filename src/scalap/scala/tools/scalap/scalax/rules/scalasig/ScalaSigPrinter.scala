@@ -292,7 +292,6 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       buffer.append(valueToString(attrib.value))
       buffer.append(" }")
     }
-    buffer.append(" ")
     buffer.toString
   }
 
@@ -373,8 +372,11 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   def getVariance(t: TypeSymbol) = if (t.isCovariant) "+" else if (t.isContravariant) "-" else ""
 
   def toString(symbol: Symbol): String = symbol match {
-    case symbol: TypeSymbol => (for (a <- symbol.attributes) yield toString(a)).mkString("") +
-            getVariance(symbol) + processName(symbol.name) + toString(symbol.infoType)
+    case symbol: TypeSymbol => {
+      val attrs = (for (a <- symbol.attributes) yield toString(a)).mkString(" ")
+      val atrs = if (attrs.length > 0) attrs.trim + " " else ""
+      atrs + getVariance(symbol) + processName(symbol.name) + toString(symbol.infoType)
+    }
     case s => symbol.toString
   }
 
