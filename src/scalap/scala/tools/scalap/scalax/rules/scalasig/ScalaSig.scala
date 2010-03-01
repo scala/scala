@@ -164,21 +164,21 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
    *                  | 5 ALIASsym len_Nat SymbolInfo
    *                  | 6 CLASSsym len_Nat SymbolInfo [thistype_Ref]
    *                  | 7 MODULEsym len_Nat SymbolInfo
-   *                  | 8 VALsym len_Nat [defaultGetter_Ref] SymbolInfo [alias_Ref]
+   *                  | 8 VALsym len_Nat [defaultGetter_Ref /* no longer needed*/] SymbolInfo [alias_Ref]
    *                  | 9 EXTref len_Nat name_Ref [owner_Ref]
    *                  | 10 EXTMODCLASSref len_Nat name_Ref [owner_Ref]
    *                  | 11 NOtpe len_Nat
    *                  | 12 NOPREFIXtpe len_Nat
    *                  | 13 THIStpe len_Nat sym_Ref
    *                  | 14 SINGLEtpe len_Nat type_Ref sym_Ref
-   *                  | 15 CONSTANTtpe len_Nat type_Ref constant_Ref
+   *                  | 15 CONSTANTtpe len_Nat constant_Ref
    *                  | 16 TYPEREFtpe len_Nat type_Ref sym_Ref {targ_Ref}
    *                  | 17 TYPEBOUNDStpe len_Nat tpe_Ref tpe_Ref
    *                  | 18 REFINEDtpe len_Nat classsym_Ref {tpe_Ref}
    *                  | 19 CLASSINFOtpe len_Nat classsym_Ref {tpe_Ref}
    *                  | 20 METHODtpe len_Nat tpe_Ref {sym_Ref}
    *                  | 21 POLYTtpe len_Nat tpe_Ref {sym_Ref}
-   *                  | 22 IMPLICITMETHODtpe len_Nat tpe_Ref {tpe_Ref}
+   *                  | 22 IMPLICITMETHODtpe len_Nat tpe_Ref {sym_Ref} /* no longer needed */
    *                  | 52 SUPERtpe len_Nat tpe_Ref tpe_Ref
    *                  | 24 LITERALunit len_Nat
    *                  | 25 LITERALboolean len_Nat value_Long
@@ -195,13 +195,12 @@ object ScalaSigEntryParsers extends RulesWithState with MemoisableRules {
    *                  | 36 LITERALenum len_Nat sym_Ref
    *                  | 40 SYMANNOT len_Nat sym_Ref AnnotInfoBody
    *                  | 41 CHILDREN len_Nat sym_Ref {sym_Ref}
-   *                  | 42 ANNOTATEDtpe len_Nat [sym_Ref] tpe_Ref {annotinfo_Ref}
+   *                  | 42 ANNOTATEDtpe len_Nat [sym_Ref /* no longer needed */] tpe_Ref {annotinfo_Ref}
    *                  | 43 ANNOTINFO len_Nat AnnotInfoBody
    *                  | 44 ANNOTARGARRAY len_Nat {constAnnotArg_Ref}
    *                  | 47 DEBRUIJNINDEXtpe len_Nat level_Nat index_Nat
    *                  | 48 EXISTENTIALtpe len_Nat type_Ref {symbol_Ref}
    */
-
   val noSymbol = 3 -^ NoSymbol
   val typeSymbol = symbolEntry(4) ^^ TypeSymbol as "typeSymbol"
   val aliasSymbol = symbolEntry(5) ^^ AliasSymbol as "alias"
