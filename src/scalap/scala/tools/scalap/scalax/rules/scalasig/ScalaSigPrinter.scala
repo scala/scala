@@ -295,8 +295,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   def toString(t: Type)(implicit flags: TypeFlags): String = toString(t, "")(flags)
 
   def toString(t: Type, sep: String)(implicit flags: TypeFlags): String = t match {
-    case ThisType(symbol) => sep + symbol.path + ".type"
-    case SingleType(typeRef, symbol) => sep + symbol.path + ".type"
+    case ThisType(symbol) => sep + processName(symbol.path) + ".type"
+    case SingleType(typeRef, symbol) => sep + processName(symbol.path) + ".type"
     case ConstantType(constant) => sep + (constant match {
       case null => "scala.Null"
       case _: Unit => "scala.Unit"
@@ -330,7 +330,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     case MethodType(resultType, _) => toString(resultType, sep)
 
     case PolyType(typeRef, symbols) => typeParamString(symbols) + toString(typeRef, sep)
-    case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + cons + toString(typeRef, sep)
+    case PolyTypeWithCons(typeRef, symbols, cons) => typeParamString(symbols) + processName(cons) + toString(typeRef, sep)
     case AnnotatedType(typeRef, attribTreeRefs) => toString(typeRef, sep)
     case AnnotatedWithSelfType(typeRef, symbol, attribTreeRefs) => toString(typeRef, sep)
     //case DeBruijnIndexType(typeLevel, typeIndex) =>
@@ -363,7 +363,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     "\\$minus" -> "-", "\\$eq" -> "=", "\\$less" -> "<",
     "\\$times" -> "*", "\\$div" -> "/", "\\$bslash" -> "\\\\",
     "\\$greater" -> ">", "\\$qmark" -> "?", "\\$percent" -> "%",
-    "\\$amp" -> "&", "\\$colon" -> ":", "\\$u2192" -> "→")
+    "\\$amp" -> "&", "\\$colon" -> ":", "\\$u2192" -> "→",
+    "\\$hash" -> "#")
   val pattern = Pattern.compile(_syms.keysIterator.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
   val placeholderPattern = "_\\$(\\d)+"
 
