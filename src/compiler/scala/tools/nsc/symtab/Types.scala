@@ -4900,10 +4900,9 @@ A type's typeSymbol should never be inspected directly.
       case List() => AnyClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>
-        PolyType(
-          (tparams, matchingBounds(ts, tparams).transpose).zipped map
-          ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth))),
-          glb0(matchingInstTypes(ts, tparams)))
+        val tparams1 = (tparams, matchingBounds(ts, tparams).transpose).zipped map
+          ((tparam, bounds) => tparam.cloneSymbol.setInfo(lub(bounds, depth)))
+        PolyType(tparams1, glb0(matchingInstTypes(ts, tparams1)))
       case ts @ MethodType(params, _) :: rest =>
         MethodType(params, glb0(matchingRestypes(ts, params map (_.tpe))))
       case ts @ TypeBounds(_, _) :: rest =>
