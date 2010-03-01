@@ -85,33 +85,32 @@ self =>
   override def ++[B1 >: B] (iter: Iterator[(A, B1)]): immutable.Map[A, B1] =
     ((repr: immutable.Map[A, B1]) /: iter) (_ + _)
 
-  /** This function transforms all the values of mappings contained
-   *  in this map with function <code>f</code>.
-   *
-   *  @param f A function over keys and values
-   *  @return  the updated map
+  /** Filters this map by retaining only keys satisfying a predicate.
+   *  @param  p   the predicate used to test keys
+   *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
+   *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
-  def transform[C, That](f: (A, B) => C)(implicit bf: CanBuildFrom[This, (A, C), That]): That = {
-    val b = bf(repr)
-    for ((key, value) <- this) b += ((key, f(key, value)))
-    b.result
+  override def filterKeys(p: A => Boolean): Map[A, B] = new DefaultMap[A, B] {
+    override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
+    def iterator = self.iterator.filter(kv => p(kv._1))
+    override def contains(key: A) = self.contains(key) && p(key)
+    def get(key: A) = if (!p(key)) None else self.get(key)
   }
 
-  /** Returns a new map with all key/value pairs for which the predicate
-   *  <code>p</code> returns <code>true</code>.
-   *
-   *  @param p A predicate over key-value pairs
-   *  @note    This method works by successively removing elements fro which the
-   *           predicate is false from this set.
-   *           If removal is slow, or you expect that most elements of the set$
-   *           will be removed, you might consider using <code>filter</code>
-   *           with a negated predicate instead.
+  /** Transforms this map by applying a function to every retrieved value.
+   *  @param  d   the function used to transform values of this map.
+   *  @return an immutable map which maps every key of this map
+   *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
    */
-  override def filterNot(p: ((A, B)) => Boolean): This = {
-    var res: This = repr
-    for (kv <- this)
-      if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
-    res
+  /** A map view resulting from applying a given function `f` to each value
+   *  associated with a key in this map.
+   */
+  override def mapValues[C](f: B => C): Map[A, C] = new DefaultMap[A, C] {
+    override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
+    def iterator = for ((k, v) <- self.iterator) yield (k, f(v))
+    override def size = self.size
+    override def contains(key: A) = self.contains(key)
+    def get(key: A) = self.get(key).map(f)
   }
 
   @deprecated("use `updated' instead")

@@ -230,7 +230,7 @@ self =>
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
-  def filterKeys(p: A => Boolean) = new DefaultMap[A, B] {
+  def filterKeys(p: A => Boolean): Map[A, B] = new DefaultMap[A, B] {
     override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def iterator = self.iterator.filter(kv => p(kv._1))
     override def contains(key: A) = self.contains(key) && p(key)
@@ -245,7 +245,7 @@ self =>
   /** A map view resulting from applying a given function `f` to each value
    *  associated with a key in this map.
    */
-  def mapValues[C](f: B => C) = new DefaultMap[A, C] {
+  def mapValues[C](f: B => C): Map[A, C] = new DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
     def iterator = for ((k, v) <- self.iterator) yield (k, f(v))
     override def size = self.size
@@ -254,6 +254,35 @@ self =>
   }
 
   @deprecated("use `mapValues' instead") def mapElements[C](f: B => C) = mapValues(f)
+
+  /** This function transforms all the values of mappings contained
+   *  in this map with function <code>f</code>.
+   *
+   *  @param f A function over keys and values
+   *  @return  the updated map
+   */
+  def transform[C, That](f: (A, B) => C)(implicit bf: CanBuildFrom[This, (A, C), That]): That = {
+    val b = bf(repr)
+    for ((key, value) <- this) b += ((key, f(key, value)))
+    b.result
+  }
+
+  /** Returns a new map with all key/value pairs for which the predicate
+   *  <code>p</code> returns <code>true</code>.
+   *
+   *  @param p A predicate over key-value pairs
+   *  @note    This method works by successively removing elements fro which the
+   *           predicate is false from this set.
+   *           If removal is slow, or you expect that most elements of the set$
+   *           will be removed, you might consider using <code>filter</code>
+   *           with a negated predicate instead.
+   */
+  override def filterNot(p: ((A, B)) => Boolean): This = {
+    var res: This = repr
+    for (kv <- this)
+      if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
+    res
+  }
 
   // The following 5 operations (updated, two times +, two times ++) should really be
   // generic, returning This[B]. We need better covariance support to express that though.

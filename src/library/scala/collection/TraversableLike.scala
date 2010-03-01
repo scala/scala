@@ -676,7 +676,7 @@ self =>
    *  @tparam   B     The type over which the ordering is defined.
    *  @return   the largest element of this $coll with respect to the ordering `cmp`.
    *
-   *  @usecase def min: A
+   *  @usecase def max: A
    *  @return   the largest element of this $coll.
    */
   def max[B >: A](implicit cmp: Ordering[B]): A = {
