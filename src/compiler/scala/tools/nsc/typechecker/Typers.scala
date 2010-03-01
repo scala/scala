@@ -449,13 +449,13 @@ trait Typers { self: Analyzer =>
           check(owner, scope, pt, tree setType tp1.typeSymbol.classBound)
         else if (owner == NoSymbol)
           tree setType packSymbols(hiddenSymbols.reverse, tp1)
-        else { // privates
+        else if (!phase.erasedTypes) { // privates
           val badSymbol = hiddenSymbols.head
           error(tree.pos,
                 (if (badSymbol hasFlag PRIVATE) "private " else "") + badSymbol +
                 " escapes its defining scope as part of type "+tree.tpe)
           setError(tree)
-        }
+        } else tree
       }
 
       def addHidden(sym: Symbol) =
