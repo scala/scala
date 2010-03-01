@@ -317,7 +317,7 @@ trait Scanners {
           if (ch == '\"') {
             nextChar()
             if (ch == '\"') {
-              nextChar()
+              nextRawChar()
               val saved = lineStartOffset
               getMultiLineStringLit()
               if (lineStartOffset != saved) // ignore linestarts within a multi-line string
@@ -560,9 +560,9 @@ trait Scanners {
 
     private def getMultiLineStringLit() {
       if (ch == '\"') {
-        nextChar()
+        nextRawChar()
         if (ch == '\"') {
-          nextChar()
+          nextRawChar()
           if (ch == '\"') {
             nextChar()
             while (ch == '\"') {
@@ -584,7 +584,7 @@ trait Scanners {
         incompleteInputError("unclosed multi-line string literal")
       } else {
         putChar(ch)
-        nextChar()
+        nextRawChar()
         getMultiLineStringLit()
       }
     }
