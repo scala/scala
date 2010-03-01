@@ -1,10 +1,9 @@
+@scala.serializable
 case class CaseClass[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) extends java.lang.Object with scala.ScalaObject with scala.Product {
   val i : A = { /* compiled code */ }
   val s : scala.Predef.String = { /* compiled code */ }
   def foo : scala.Int = { /* compiled code */ }
   def copy[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) : CaseClass[A] = { /* compiled code */ }
-  def copy$default$1[A <: scala.Seq[scala.Int]] : A = { /* compiled code */ }
-  def copy$default$2[A <: scala.Seq[scala.Int]] : scala.Predef.String = { /* compiled code */ }
   override def hashCode() : scala.Int = { /* compiled code */ }
   override def toString() : scala.Predef.String = { /* compiled code */ }
   override def equals(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }

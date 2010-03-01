@@ -1,4 +1,4 @@
-abstract class AbsFun[@specialized R] {
+abstract class TypeAnnotations[@specialized R] {
   @specialized val x = 10
   @specialized type T
 

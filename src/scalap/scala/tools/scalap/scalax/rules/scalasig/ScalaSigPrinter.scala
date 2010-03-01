@@ -62,7 +62,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case a: AliasSymbol =>
           indent
           printAlias(level, a)
-        case t: TypeSymbol if !t.isParam =>
+        case t: TypeSymbol if !t.isParam && !t.name.matches("_\\$\\d+")=>
           indent
           printTypeSymbol(level, t)
         case s =>
@@ -363,7 +363,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       case AnnotatedWithSelfType(typeRef, symbol, attribTreeRefs) => toString(typeRef, sep)
       //case DeBruijnIndexType(typeLevel, typeIndex) =>
       case ExistentialType(typeRef, symbols) => {
-        val refs = symbols.map(toString _).filter(!_.startsWith("_ ")).map("type " + _)
+        val refs = symbols.map(toString _).filter(!_.startsWith("_")).map("type " + _)
         toString(typeRef, sep) + (if (refs.size > 0) refs.mkString(" forSome {", "; ", "}") else "")
       }
       case _ => sep + t.toString
