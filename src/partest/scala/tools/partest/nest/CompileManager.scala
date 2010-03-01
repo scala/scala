@@ -65,7 +65,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
           val args = (path substring 9 split pathSeparator).toList
           val plugins = args map (arg =>
             if (new File(arg).isAbsolute) arg
-            else fileManager.TESTROOT+File.separator+arg
+            else fileManager.testRootPath+File.separator+arg
           )
           plugins
         }

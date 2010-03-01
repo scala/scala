@@ -1,11 +1,11 @@
 How partest choses the compiler / library:
 
-  * ''-Dscalatest.build=build/four-pack'' -> will search for libraries in
+  * ''-Dpartest.build=build/four-pack'' -> will search for libraries in
     ''lib'' directory of given path
-  * ''--pack'' -> will set ''scalatest.build=build/pack'', and run all tests.
+  * ''--pack'' -> will set ''partest.build=build/pack'', and run all tests.
     add ''--[kind]'' to run a selected set of tests.
   * auto detection:
-    - scalatest.build property -> ''bin'' / ''lib'' directories
+    - partest.build property -> ''bin'' / ''lib'' directories
     - distribution (''dists/latest'')
     - supersabbus pack (''build/pack'')
     - sabbus quick (''build/quick'')
@@ -27,6 +27,6 @@ Other arguments:
   * --buildmanager next files test the build manager
   * --shootout     next files are shootout tests
   * --script       next files test the script runner
-  * ''-Dscalatest.scalac_opts=...'' -> add compiler options
+  * ''-Dpartest.scalac_opts=...'' -> add compiler options
   * ''--verbose'' -> print verbose messages
   * ''-Dpartest.debug=true'' -> print debug messages

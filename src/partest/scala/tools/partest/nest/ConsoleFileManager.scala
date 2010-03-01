@@ -51,25 +51,22 @@ class ConsoleFileManager extends FileManager {
     SCALAC_OPTS = SCALAC_OPTS+" "+moreOpts
   }
 
-  val testRootDir = PathSettings.testRoot
-  val srcDir      = PathSettings.srcDir
+  val srcDir        = PathSettings.srcDir
+  val testRootDir   = PathSettings.testRoot
+  val testRootPath  = testRootDir.toAbsolute.path
+  def testParent    = testRootDir.parent
 
   var CLASSPATH   = PartestDefaults.classPath
   var JAVACMD     = PartestDefaults.javaCmd
   var JAVAC_CMD   = PartestDefaults.javacCmd
-  val TESTROOT    = testRootDir.toAbsolute.path
 
-  def testParent  = testRootDir.parent
 
   NestUI.verbose("CLASSPATH: "+CLASSPATH)
-
 
   if (!srcDir.isDirectory) {
     NestUI.failure("Source directory \"" + srcDir.path + "\" not found")
     exit(1)
   }
-
-  LIB_DIR = (testParent / "lib").normalize.path
 
   CLASSPATH = {
     val libs = (srcDir / Directory("lib")).files filter (_ hasExtension "jar") map (_.normalize.path)

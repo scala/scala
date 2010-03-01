@@ -147,7 +147,7 @@ PROPERTIES
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="lib-ant.dir" value="${lib.dir}/ant"/>
   <property name="src.dir" value="${basedir}/src"/>
-  <property name="test.dir" value="${basedir}/test"/>
+  <property name="partest.dir" value="${basedir}/test"/>
 
   <!-- Loads custom properties definitions -->
   <property file="${basedir}/build.properties"/>
@@ -161,6 +161,7 @@ PROPERTIES
   <property name="comp.starr.jar" value="${lib.dir}/scala-compiler.jar"/>
   <property name="jline.jar" value="${lib.dir}/jline.jar"/>
   <property name="ant.jar" value="${ant.home}/lib/ant.jar"/>
+  <property name="scalacheck.jar" value="${lib.dir}/ScalaCheck.jar"/>
 
   <!-- Sets location of build folders -->
   <property name="build.dir" value="${basedir}/build"/>
@@ -1398,9 +1399,9 @@ BOOTRAPING TEST AND TEST SUITE
              scalacopts="${scalac.args.optimise}">
       <classpath>
         <path refid="pack.classpath"/>
-        <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar"/>
       </classpath>
-      <runtests  dir="${test.dir}/files">
+      <runtests  dir="${partest.dir}/files">
         <include name="run/**/*.scala"/>
         <include name="jvm/**/*.scala"/>
       </runtests>
@@ -1413,19 +1414,19 @@ BOOTRAPING TEST AND TEST SUITE
              scalacopts="${scalac.args.optimise}">
       <classpath>
         <path refid="pack.classpath"/>
-        <fileset dir="${test.dir}/files/lib" includes="*.jar"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar"/>
       </classpath>
-      <postests  dir="${test.dir}/files/pos" includes="*.scala"/>
-      <negtests  dir="${test.dir}/files/neg" includes="*.scala"/>
-      <runtests  dir="${test.dir}/files">
+      <postests  dir="${partest.dir}/files/pos" includes="*.scala"/>
+      <negtests  dir="${partest.dir}/files/neg" includes="*.scala"/>
+      <runtests  dir="${partest.dir}/files">
         <include name="run/**/*.scala"/>
       </runtests>
-      <jvmtests dir="${test.dir}/files/jvm" includes="*.scala"/>
-      <residenttests dir="${test.dir}/files/res" includes="*.res"/>
-      <buildmanagertests dir="${test.dir}/files/buildmanager" includes="*"/>
-      <scalaptests dir="${test.dir}/files/scalap" includes="**/*.scala"/>
-	  <!-- <scalachecktests dir="${test.dir}/files/scalacheck" includes="**/*.scala"/> -->
-      <!-- <scripttests dir="${test.dir}/files/script" includes="*.scala"/> -->
+      <jvmtests dir="${partest.dir}/files/jvm" includes="*.scala"/>
+	  <scalachecktests dir="${partest.dir}/files/scalacheck" includes="**/*.scala"/>
+      <residenttests dir="${partest.dir}/files/res" includes="*.res"/>
+      <buildmanagertests dir="${partest.dir}/files/buildmanager" includes="*"/>
+      <scalaptests dir="${partest.dir}/files/scalap" includes="**/*.scala"/>
+      <!-- <scripttests dir="${partest.dir}/files/script" includes="*.scala"/> -->
     </partest>
   </target>
 
@@ -1634,7 +1635,7 @@ POSITIONS
 
   <target name="test.positions" depends="quick.comp">
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${test.dir}/files/positions"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/positions"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/compiler"/>
@@ -1658,13 +1659,13 @@ POSITIONS
       <param name="test.srcs" value="${src.dir}/scalap"/>
     </antcall>
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${test.dir}/files/pos"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/pos"/>
     </antcall>
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${test.dir}/files/run"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/run"/>
     </antcall>
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${test.dir}/files/neg"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/neg"/>
     </antcall>
   </target>
   

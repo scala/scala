@@ -139,9 +139,9 @@ class Worker(val fileManager: FileManager) extends Actor {
   //     fileManager.synchronized {
   //       withOutputRedirected(logWriter) {
   //         System.setProperty("java.library.path", logFile.getParentFile.getCanonicalFile.getAbsolutePath)
-  //         System.setProperty("scalatest.output", outDir.getCanonicalFile.getAbsolutePath)
-  //         System.setProperty("scalatest.lib", LATEST_LIB)
-  //         System.setProperty("scalatest.cwd", outDir.getParent)
+  //         System.setProperty("partest.output", outDir.getCanonicalFile.getAbsolutePath)
+  //         System.setProperty("partest.lib", LATEST_LIB)
+  //         System.setProperty("partest.cwd", outDir.getParent)
   //         ObjectRunner.run(classpath, "Test", List("jvm"))
   //       }
   //     }
@@ -234,15 +234,15 @@ class Worker(val fileManager: FileManager) extends Actor {
     // because when an option is repeated to java only the last one wins.
     // That means until now all the .javaopts files were being ignored because
     // they all attempt to change options which are also defined in
-    // scalatest.java_opts, leading to debug output like:
+    // partest.java_opts, leading to debug output like:
     //
     // debug: Found javaopts file 'files/shootout/message.scala-2.javaopts', using options: '-Xss32k'
     // debug: java -Xss32k -Xss2m -Xms256M -Xmx1024M -classpath [...]
     val propertyOptions = List(
       "-Djava.library.path="+logFile.getParentFile.getAbsolutePath,
-      "-Dscalatest.output="+outDir.getAbsolutePath,
-      "-Dscalatest.lib="+LATEST_LIB,
-      "-Dscalatest.cwd="+outDir.getParent,
+      "-Dpartest.output="+outDir.getAbsolutePath,
+      "-Dpartest.lib="+LATEST_LIB,
+      "-Dpartest.cwd="+outDir.getParent,
       "-Djavacmd="+JAVACMD,
       "-Duser.language=en -Duser.country=US"
     ) ::: (
@@ -452,8 +452,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
           NestUI.verbose("compilation of "+file+" succeeded\n")
 
-          val libs = new File(fileManager.LIB_DIR)
-          val scalacheckURL = (new File(libs, "ScalaCheck.jar")).toURI.toURL
+          val scalacheckURL = (fileManager.testRootDir.parent / "lib" / "ScalaCheck.jar").toURL
           val outURL = outDir.getCanonicalFile.toURI.toURL
           val classpath: List[URL] =
             List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct

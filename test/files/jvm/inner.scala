@@ -53,8 +53,8 @@ class A {
 }
 
 object Scalatest {
-  private val outputdir = System.getProperty("scalatest.output", "inner-jvm.obj")
-  private val scalalib  = System.getProperty("scalatest.lib", "")
+  private val outputdir = System.getProperty("partest.output", "inner-jvm.obj")
+  private val scalalib  = System.getProperty("partest.lib", "")
   private val classpath = outputdir + File.pathSeparator + scalalib
   private val javabin  = {
     val jhome = new File(System.getProperty("java.home"))

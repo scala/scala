@@ -53,7 +53,7 @@ if "%_EXTENSION_CLASSPATH%"=="" (
   )
 )
 
-set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dscalatest.javacmd="%_JAVACMD%" -Dscalatest.java_options="%_JAVA_OPTS%" -Dscalatest.scalac_options="%_SCALAC_OPTS%" -Dscalatest.javac_cmd="%JAVA_HOME%\bin\javac"
+set _PROPS=-Dscala.home="%_SCALA_HOME%" -Dpartest.javacmd="%_JAVACMD%" -Dpartest.java_options="%_JAVA_OPTS%" -Dpartest.scalac_options="%_SCALAC_OPTS%" -Dpartest.javac_cmd="%JAVA_HOME%\bin\javac"
 
 rem echo %_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" scala.tools.partest.nest.NestRunner %_ARGS%
 %_JAVACMD% %_JAVA_OPTS% %_PROPS% -cp "%_EXTENSION_CLASSPATH%" scala.tools.partest.nest.NestRunner %_ARGS%

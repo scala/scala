@@ -22,20 +22,20 @@ package object partest {
     private def wrapAccessControl[T](body: => Option[T]): Option[T] =
       try body catch { case _: java.security.AccessControlException => None }
 
-    def testRootName  = propOrNone("scalatest.root")
+    def testRootName  = propOrNone("partest.root")
     def srcDirName    = propOrElse("partest.srcdir", "files")
     def testRootDir   = testRootName map (x => Directory(x))
 
     def classPath   = PathResolver.Environment.javaUserClassPath    // XXX
 
-    def javaCmd     = propOrElse("scalatest.javacmd", "java")
-    def javacCmd    = propOrElse("scalatest.javac_cmd", "javac")
-    def javaOpts    = propOrElse("scalatest.java_opts", "")
-    def scalacOpts  = propOrElse("scalatest.scalac_opts", "-deprecation")
+    def javaCmd     = propOrElse("partest.javacmd", "java")
+    def javacCmd    = propOrElse("partest.javac_cmd", "javac")
+    def javaOpts    = propOrElse("partest.java_opts", "")
+    def scalacOpts  = propOrElse("partest.scalac_opts", "-deprecation")
 
-    def testBuild   = propOrNone("scalatest.build")
-    def errorCount  = propOrElse("scalatest.errors", "0").toInt
-    def numActors   = propOrElse("scalatest.actors", "8").toInt
+    def testBuild   = propOrNone("partest.build")
+    def errorCount  = propOrElse("partest.errors", "0").toInt
+    def numActors   = propOrElse("partest.actors", "8").toInt
     def poolSize    = wrapAccessControl(propOrNone("actors.corePoolSize"))
 
     def timeout     = "1200000"
@@ -56,5 +56,5 @@ package object partest {
     NestUI.verbose(allPropertiesString)
   }
 
-  def isPartestDebug = List("partest.debug", "scalatest.debug") map propOrEmpty contains "true"
+  def isPartestDebug = propOrEmpty("partest.debug") == "true"
 }

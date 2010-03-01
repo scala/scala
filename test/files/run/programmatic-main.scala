@@ -3,7 +3,7 @@ import io.Path
 
 object Test
 {
-  val cwd = Option(System.getProperty("scalatest.cwd")) getOrElse "."
+  val cwd = Option(System.getProperty("partest.cwd")) getOrElse "."
   val basedir = (Path(cwd).parent / "lib").path
   val baseargs = Array("-bootclasspath", basedir + "/scala-library.jar", "-cp", basedir + "/scala-compiler.jar")
 
