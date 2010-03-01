@@ -128,6 +128,29 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     x << leading >> leading
   }
 
+  /** Returns the buffer as a sequence of (Int, Array[Byte]) representing
+   *  (tag, data) of the individual entries.  Saves and restores buffer state.
+   */
+
+  def toIndexedSeq: IndexedSeq[(Int, Array[Byte])] = {
+    val saved = readIndex
+    readIndex = 0
+    readNat() ; readNat()     // discarding version
+    val result = new Array[(Int, Array[Byte])](readNat())
+
+    result.indices foreach { index =>
+      val tag = readNat()
+      val len = readNat()
+      val bytes = data.slice(readIndex, len + readIndex)
+      readIndex += len
+
+      result(index) = tag -> bytes
+    }
+
+    readIndex = saved
+    result.toIndexedSeq
+  }
+
   /** Perform operation <code>op</code> until the condition
    *  <code>readIndex == end</code> is satisfied.
    *  Concatenate results into a list.
