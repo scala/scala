@@ -27,7 +27,7 @@ import scala.collection.mutable.{WrappedArray, ArrayBuilder}
   * </p>
   */
 @serializable
-trait ClassManifest[T] extends OptManifest[T] {
+trait ClassManifest[T] extends OptManifest[T] with Equals {
 
   /** A class representing the type U to which T would be erased. Note
     * that there is no subtyping relationship between T and U. */
@@ -73,13 +73,17 @@ trait ClassManifest[T] extends OptManifest[T] {
   def >:>(that: ClassManifest[_]): Boolean =
     that <:< this
 
+  def canEqual(other: Any) = other match {
+    case _: ClassManifest[_]  => true
+    case _                    => false
+  }
+
   /** Tests whether the type represented by this manifest is equal to the
     * type represented by `that' manifest. BE AWARE: the current
     * implementation is an approximation, as the test is done on the
     * erasure of the type. */
   override def equals(that: Any): Boolean = that match {
-    case _: AnyValManifest[_] => false
-    case m: ClassManifest[_]  => this.erasure == m.erasure
+    case m: ClassManifest[_] if m canEqual this => this.erasure == m.erasure
     case _ => false
   }
   override def hashCode = this.erasure.hashCode
