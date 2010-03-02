@@ -452,7 +452,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
           NestUI.verbose("compilation of "+file+" succeeded\n")
 
-          val scalacheckURL = (fileManager.testRootDir.parent / "lib" / "ScalaCheck.jar").toURL
+          val scalacheckURL = PathSettings.scalaCheck.toURL
           val outURL = outDir.getCanonicalFile.toURI.toURL
           val classpath: List[URL] =
             List(outURL, scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL).distinct

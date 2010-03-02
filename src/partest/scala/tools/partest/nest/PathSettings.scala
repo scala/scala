@@ -25,6 +25,11 @@ object PathSettings {
   }
 
   lazy val srcDir = Directory(testRoot / srcDirName normalize)
+
+  lazy val scalaCheck = {
+    val libdir = Directory(testRoot / "files" / "lib")
+    libdir.files find (_.name startsWith "scalacheck") getOrElse error("No scalacheck jar found in '%s'" format libdir)
+  }
 }
 
 class PathSettings() {
