@@ -95,11 +95,20 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def printModifiers(symbol: Symbol) {
+    // print private access modifier
+    if (symbol.isPrivate) print("private ")
+    else if (symbol.isProtected) print("protected ")
+    else symbol match {
+      case sym: SymbolInfoSymbol => sym.symbolInfo.privateWithin match {
+        case Some(t: Symbol) => print("private[" + t.name +"] ")
+        case _ =>
+      }
+      case _ =>
+    }
+
     if (symbol.isSealed) print("sealed ")
     if (symbol.isImplicit) print("implicit ")
     if (symbol.isFinal && !symbol.isInstanceOf[ObjectSymbol]) print("final ")
-    if (symbol.isPrivate) print("private ")
-    else if (symbol.isProtected) print("protected ")
     if (symbol.isOverride) print("override ")
     if (symbol.isAbstract) symbol match {
       case c@(_: ClassSymbol | _: ObjectSymbol) if !c.isTrait => print("abstract ")
@@ -398,9 +407,15 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   val pattern = Pattern.compile(_syms.keysIterator.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
   val placeholderPattern = "_\\$(\\d)+"
 
+  private def stripPrivatePrefix(name: String) = {
+    val i = name.lastIndexOf("$$")
+    if (i > 0) name.substring(i + 2) else name
+  }
+
   def processName(name: String) = {
-    val m = pattern.matcher(name)
-    var temp = name
+    val stripped = stripPrivatePrefix(name)
+    val m = pattern.matcher(stripped)
+    var temp = stripped
     while (m.find) {
       val key = m.group
       val re = "\\" + key
