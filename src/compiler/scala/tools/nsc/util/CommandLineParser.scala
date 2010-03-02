@@ -23,14 +23,24 @@ trait ParserUtil extends Parsers {
   protected implicit def parser2parserPlus[T](p: Parser[T]): ParserPlus[T] = new ParserPlus(p)
 }
 
-class CommandLine(val args: List[String], val unaryArguments: List[String]) {
-  def this(args: List[String]) = this(args, Nil)
-  def this(args: Array[String]) = this(args.toList)
-  def this(args: Array[String], unaryArguments: List[String]) = this(args.toList, unaryArguments)
+case class CommandLine(
+  args: List[String],
+  unaryArguments: List[String],
+  binaryArguments: List[String]
+) {
+  def this(args: List[String]) = this(args, Nil, Nil)
+  def this(args: Array[String]) = this(args.toList, Nil, Nil)
+  def this(args: Array[String], unaryArguments: List[String]) = this(args.toList, unaryArguments, Nil)
   def this(line: String) = this(CommandLineParser tokenize line)
 
-  def withUnaryArguments(xs: List[String]) = new CommandLine(args, xs)
+  def withUnaryArgs(xs: List[String]) = copy(unaryArguments = xs)
+  def withBinaryArgs(xs: List[String]) = copy(binaryArguments = xs)
+
   def enforceArity = true
+  def assumeBinary = true
+
+  val Terminator = "--"
+
   def errorFn(msg: String) = println(msg)
 
   /** argMap is option -> argument (or "" if it is a unary argument)
@@ -40,18 +50,18 @@ class CommandLine(val args: List[String], val unaryArguments: List[String]) {
     val residual = new ListBuffer[String]
     def isOption(s: String) = s startsWith "-"
     def isUnary(s: String) = isOption(s) && (unaryArguments contains s)
-    def isBinary(s: String) = isOption(s) && !(unaryArguments contains s)
+    def isBinary(s: String) = isOption(s) && !isUnary(s) && (assumeBinary || (binaryArguments contains s))
     def missingArg(opt: String, what: String) =
       errorFn("Option '%s' requires argument, found %s instead.".format(opt, what))
 
     def loop(args: List[String]): Map[String, String] = args match {
-      case Nil                      => Map()
-      case x :: xs if !isOption(x)  => residual += x ; loop(xs)
-      case x :: xs if isUnary(x)    => Map(x -> "") ++ loop(xs)
-      case x :: Nil                 => if (enforceArity) missingArg(x, "EOF") ; Map(x -> "")
-      case "--" :: xs               => residual ++= xs ; Map()
-      case x :: "--" :: xs          => residual ++= xs ; Map(x -> "")
-      case x1 :: x2 :: xs           =>
+      case Nil                            => Map()
+      case x :: xs if !isOption(x)        => residual += x ; loop(xs)
+      case x :: xs if isUnary(x)          => Map(x -> "") ++ loop(xs)
+      case x :: Nil                       => if (enforceArity) missingArg(x, "EOF") ; Map(x -> "")
+      case Terminator :: xs               => residual ++= xs ; Map()
+      case x :: Terminator :: xs          => residual ++= xs ; Map(x -> "")
+      case x1 :: x2 :: xs                 =>
         if (enforceArity && isOption(x2))
           missingArg(x1, x2)
 

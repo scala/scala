@@ -18,17 +18,21 @@ object PathSettings {
   private def cwd = Directory.Current getOrElse error("user.dir property not set")
   private def isPartestDir(d: Directory) = (d.name == "test") && (d / srcDirName isDirectory)
 
+  // Directory <root>/test
   lazy val testRoot: Directory = testRootDir getOrElse {
     val candidates: List[Directory] = (cwd :: cwd.parents) flatMap (d => List(d, Directory(d / "test")))
 
     candidates find isPartestDir getOrElse error("Directory 'test' not found.")
   }
 
+  // Directory <root>/test/files
   lazy val srcDir = Directory(testRoot / srcDirName normalize)
 
-  lazy val scalaCheck = {
-    val libdir = Directory(testRoot / "files" / "lib")
-    libdir.files find (_.name startsWith "scalacheck") getOrElse error("No scalacheck jar found in '%s'" format libdir)
+  // Directory <root>/test/files/lib
+  lazy val srcLibDir = Directory(srcDir / "lib")
+
+  lazy val scalaCheck = srcLibDir.files find (_.name startsWith "scalacheck") getOrElse {
+    error("No scalacheck jar found in '%s'" format srcLibDir)
   }
 }
 

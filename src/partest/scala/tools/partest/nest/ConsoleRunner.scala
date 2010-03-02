@@ -16,10 +16,10 @@ import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.io
 import scala.tools.nsc.interpreter.returning
-import io.{ Path }
+import io.{ Path, Process }
 
 class ConsoleRunner extends DirectRunner {
-  import PathSettings.srcDir
+  import PathSettings.{ srcDir, testRoot }
 
   case class TestSet(kind: String, filter: Path => Boolean, msg: String)
 
@@ -60,8 +60,12 @@ class ConsoleRunner extends DirectRunner {
     "--failed", "--version", "--ansi", "--debug"
   ) ::: testSetArgs
 
+  private val binaryArgs = List(
+    "--grep", "--srcpath", "--buildpath", "--classpath"
+  )
+
   def main(argstr: String) {
-    val parsed = CommandLineParser(argstr) withUnaryArguments unaryArgs
+    val parsed = CommandLineParser(argstr) withUnaryArgs unaryArgs withBinaryArgs binaryArgs
     val args = parsed.residualArgs
 
     /** Early return on no args, version, or invalid args */
@@ -82,12 +86,6 @@ class ConsoleRunner extends DirectRunner {
       else new ConsoleFileManager  // auto detection, see ConsoleFileManager.findLatest
 
     def argNarrowsTests(x: String) = denotesTestSet(x) || denotesTestFile(x) || denotesTestDir(x)
-    val enabledTestSets: List[TestSet] = {
-      val enabledArgs = testSetArgs filter parsed.isSet
-
-      if (args.isEmpty && (enabledArgs.isEmpty || (parsed isSet "--all"))) testSets
-      else enabledArgs map testSetArgMap
-    }
 
     NestUI._verbose       = parsed isSet "--verbose"
     fileManager.showDiff  = parsed isSet "--show-diff"
@@ -98,14 +96,33 @@ class ConsoleRunner extends DirectRunner {
     if (parsed isSet "--timeout") fileManager.timeout = parsed("--timeout")
     if (parsed isSet "--debug") setProp("partest.debug", "true")
 
-    testFiles :::= args map { arg =>
-      val file = new File(arg)
-      if (!file.exists) {
-        NestUI.failure("File \"%s\" not found\n" format arg)
-        System.exit(1)
+    def addTestFile(file: File) = {
+      if (!file.exists)
+        NestUI.failure("Test file '%s' not found, skipping.\n" format file)
+      else {
+        NestUI.verbose("adding test file " + file)
+        testFiles +:= file
       }
+    }
 
-      returning[File](file)(x => NestUI.verbose("adding test file " + x))
+    // If --grep is given we suck in every file it matches.
+    parsed get "--grep" foreach { expr =>
+      val allFiles = srcDir.deepList() filter (_ hasExtension "scala") map (_.toFile) toList
+      val files = allFiles filter (_.slurp() contains expr)
+
+      if (files.isEmpty) NestUI.failure("--grep string '%s' matched no files." format expr)
+      else NestUI.verbose("--grep string '%s' matched %d file(s)".format(expr, files.size))
+
+      files foreach (x => addTestFile(x.jfile))
+    }
+    args foreach (x => addTestFile(new File(x)))
+
+    // If no file arguments were given, we assume --all
+    val enabledTestSets: List[TestSet] = {
+      val enabledArgs = testSetArgs filter parsed.isSet
+
+      if (args.isEmpty && !(parsed isSet "--grep") && (enabledArgs.isEmpty || (parsed isSet "--all"))) testSets
+      else enabledArgs map testSetArgMap
     }
 
     val dir =
