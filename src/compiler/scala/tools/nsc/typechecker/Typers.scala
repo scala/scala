@@ -1874,7 +1874,7 @@ trait Typers { self: Analyzer =>
         case ldef @ LabelDef(_, _, _) =>
           if (ldef.symbol == NoSymbol)
             ldef.symbol = namer.enterInScope(
-              context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), NothingClass.tpe))
+              context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), UnitClass.tpe))
         case _ =>
       }
     }
@@ -1882,23 +1882,29 @@ trait Typers { self: Analyzer =>
     private def isLoopHeaderLabel(name: Name): Boolean =
       name.startsWith("while$") || name.startsWith("doWhile$")
 
+    /** @Tiark This should be moved somewhere else. It should return
+      * true if the `sym` argument is a cps annotation.
+      */
+    private def redoLoop(sym: Symbol) = false
+
     def typedLabelDef(ldef: LabelDef): LabelDef = {
+      var rhs1: Tree = null
+      var restpe = ldef.symbol.tpe.resultType
       if (!isLoopHeaderLabel(ldef.symbol.name) || phase.id > currentRun.typerPhase.id) {
-        val restpe = ldef.symbol.tpe.resultType
-        val rhs1 = typed(ldef.rhs, restpe)
-        ldef.params foreach (param => param.tpe = param.symbol.tpe)
-        treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
+        rhs1 = typed(ldef.rhs, restpe)
       } else {
-        val rhs1 = typed(duplicateTree(ldef.rhs))
-        val restpe = rhs1.tpe
-        context.scope.unlink(ldef.symbol)
-        val sym2 = namer.enterInScope(
-          context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), restpe))
-        //val subst = new TreeSymSubstituter(List(ldef.symbol), List(sym2))
-        val rhs2 = typed(ldef.rhs, restpe)
-        ldef.params foreach (param => param.tpe = param.symbol.tpe)
-        treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs2) setSymbol sym2 setType restpe
+        rhs1 = typed(ldef.rhs)
+        if (rhs1.tpe.annotations exists (ai => redoLoop(ai.atp.typeSymbol))) {
+          restpe = rhs1.tpe
+          resetAllAttrs(ldef.rhs)
+          ldef.symbol setInfo MethodType(List(), restpe)
+          rhs1 = typed(ldef.rhs, restpe)
+        } else {
+          rhs1 = adapt(rhs1, EXPRmode, restpe)
+        }
       }
+      ldef.params foreach (param => param.tpe = param.symbol.tpe)
+      treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
     }
 
     protected def typedFunctionIDE(fun : Function, txt : Context) = {}
@@ -2452,13 +2458,15 @@ trait Typers { self: Analyzer =>
               val lenientTargs = protoTypeArgs(tparams, formals, mt.resultApprox, pt)
               val strictTargs = (lenientTargs, tparams).zipped map ((targ, tparam) =>
                 if (targ == WildcardType) tparam.tpe else targ) //@M TODO: should probably be .tpeHK
-              def typedArgToPoly(arg: Tree, formal: Type, i: Int): Tree = { //TR TODO: cleanup
+              var remainingParams = paramTypes
+              def typedArgToPoly(arg: Tree, formal: Type): Tree = { //TR TODO: cleanup
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
+                val newmode =
+                  if (remainingParams.head.typeSymbol == ByNameParamClass) POLYmode
+                  else POLYmode | BYVALmode
+                if (remainingParams.tail.nonEmpty) remainingParams = remainingParams.tail
                 // println("typedArgToPoly(arg, formal): "+(arg, formal))
-                val arg1 = if (i < paramTypes.length && paramTypes(i).typeSymbol == ByNameParamClass)
-                  typedArg(arg, argMode(fun, mode), POLYmode, lenientPt)
-                else
-                  typedArg(arg, argMode(fun, mode), POLYmode | BYVALmode, lenientPt)
+                val arg1 = typedArg(arg, argMode(fun, mode), newmode, lenientPt)
                 val argtparams = context.extractUndetparams()
                 // println("typedArgToPoly(arg1, argtparams): "+(arg1, argtparams))
                 if (!argtparams.isEmpty) {
@@ -2467,7 +2475,7 @@ trait Typers { self: Analyzer =>
                 }
                 arg1
               }
-              val args1 = (args zipWithIndex, formals).zipped map { case ((a,i),b) => typedArgToPoly(a,b,i) }
+              val args1 = (args, formals).zipped map typedArgToPoly
               if (args1 exists (_.tpe.isError)) setError(tree)
               else {
                 if (settings.debug.value) log("infer method inst "+fun+", tparams = "+tparams+", args = "+args1.map(_.tpe)+", pt = "+pt+", lobounds = "+tparams.map(_.tpe.bounds.lo)+", parambounds = "+tparams.map(_.info));//debug
