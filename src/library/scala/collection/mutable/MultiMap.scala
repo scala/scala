@@ -25,6 +25,9 @@ package mutable
 trait MultiMap[A, B] extends Map[A, Set[B]] {
   protected def makeSet: Set[B] = new HashSet[B]
 
+  @deprecated("use addBinding instead")
+  def add(key: A, value: B): this.type = addBinding(key, value)
+
   def addBinding(key: A, value: B): this.type = {
     get(key) match {
       case None =>
