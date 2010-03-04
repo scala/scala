@@ -13,7 +13,8 @@ package scheduler
 
 import scala.collection.mutable.HashMap
 
-trait TerminationMonitor {
+private[scheduler] trait TerminationMonitor {
+  _: IScheduler =>
 
   protected var activeActors = 0
   protected val terminationHandlers = new HashMap[Reactor, () => Unit]

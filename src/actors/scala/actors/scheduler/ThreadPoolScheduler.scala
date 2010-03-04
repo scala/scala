@@ -29,14 +29,14 @@ import scala.concurrent.ManagedBlocker
  * @author Philipp Haller
  */
 class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
-                          protected val terminate: Boolean,
+                          protected override val terminate: Boolean,
                           protected val daemon: Boolean)
   extends Thread with ExecutorScheduler with TerminationMonitor {
 
   setDaemon(daemon)
 
   private var terminating = false // guarded by this
-  protected val CHECK_FREQ = 10
+  protected override val CHECK_FREQ = 10
 
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers
@@ -74,7 +74,7 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
 
   /** Shuts down the scheduler.
    */
-  def shutdown(): Unit = synchronized {
+  override def shutdown(): Unit = synchronized {
     terminating = true
   }
 

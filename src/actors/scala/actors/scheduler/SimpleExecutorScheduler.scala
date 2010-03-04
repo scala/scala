@@ -28,9 +28,9 @@ import java.util.concurrent.ExecutorService
  *
  * @author Philipp Haller
  */
-class SimpleExecutorScheduler(protected var executor: ExecutorService,
-                              protected var terminate: Boolean)
-  extends TerminationService(terminate) with ExecutorScheduler {
+class SimpleExecutorScheduler(protected override val executor: ExecutorService,
+                              protected override val terminate: Boolean)
+  extends ExecutorScheduler {
 
   /* This constructor (and the var above) is currently only used to work
    * around a bug in scaladoc, which cannot deal with early initializers

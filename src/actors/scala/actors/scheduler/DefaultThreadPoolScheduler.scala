@@ -24,9 +24,12 @@ import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue,
  *
  * @author Philipp Haller
  */
-private[actors] class DefaultThreadPoolScheduler(daemon: Boolean) extends ThreadPoolScheduler(daemon) {
+private[actors] class DefaultThreadPoolScheduler(daemon: Boolean)
+                extends ExecutorScheduler {
 
-  executor = {
+  setDaemon(daemon)
+
+  def executor = {
     val workQueue = new LinkedBlockingQueue[Runnable]
 
     val threadFactory = new ThreadFactory {

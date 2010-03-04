@@ -11,7 +11,6 @@
 package scala.actors
 package scheduler
 
-import scala.util.control.ControlThrowable
 import java.lang.{Runnable, Thread, InterruptedException}
 
 /**
@@ -70,11 +69,3 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
   }
 }
 
-/**
- * The <code>QuitControl</code> class is used to manage control flow
- * of certain schedulers and worker threads.
- *
- * @version 0.9.8
- * @author Philipp Haller
- */
-private[actors] class QuitControl extends ControlThrowable

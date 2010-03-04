@@ -14,7 +14,10 @@ package object actors {
   @deprecated("this class is going to be removed in a future release")
   type WorkerThread = java.lang.Thread
 
+  @deprecated("use scala.actors.scheduler.SingleThreadedScheduler instead")
+  type SingleThreadedScheduler = scala.actors.scheduler.SingleThreadedScheduler
+
   @deprecated("this value is going to be removed in a future release")
-  val ActorGC = scala.actors.Scheduler.impl.asInstanceOf[scala.actors.scheduler.ThreadPoolScheduler]
+  val ActorGC = scala.actors.Scheduler.impl.asInstanceOf[scala.actors.scheduler.ActorGC]
 
 }

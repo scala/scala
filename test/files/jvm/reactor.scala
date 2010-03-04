@@ -6,7 +6,7 @@ case object Pong
 case object Stop
 
 /**
- * Ping pong example for OutputChannelActor.
+ * Ping pong example for Reactor.
  *
  * @author  Philipp Haller
  */
