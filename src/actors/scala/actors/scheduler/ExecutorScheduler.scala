@@ -35,7 +35,7 @@ object ExecutorScheduler {
    */
   def apply(exec: ExecutorService): ExecutorScheduler =
     start(new ExecutorScheduler {
-      def executor: ExecutorService = exec
+      val executor: ExecutorService = exec
     })
 
   /** Creates an <code>ExecutorScheduler</code> using the provided
@@ -47,7 +47,7 @@ object ExecutorScheduler {
    */
   def apply(exec: ExecutorService, term: Boolean): ExecutorScheduler =
     start(new ExecutorScheduler {
-      def executor: ExecutorService = exec
+      val executor: ExecutorService = exec
       override val terminate = term
     })
 

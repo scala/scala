@@ -17,7 +17,7 @@ import util.Properties.{ javaVersion, javaVmVendor, isJavaAtLeast, propIsSetTo, 
  * @author Erik Engbrecht
  * @author Philipp Haller
  */
-object ThreadPoolConfig {
+private[actors] object ThreadPoolConfig {
   private val rt = Runtime.getRuntime()
   private val minNumThreads = 4
 

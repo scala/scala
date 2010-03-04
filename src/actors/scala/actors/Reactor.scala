@@ -10,8 +10,9 @@
 
 package scala.actors
 
-import scala.actors.scheduler.{DelegatingScheduler, DefaultThreadPoolScheduler,
+import scala.actors.scheduler.{DelegatingScheduler, ExecutorScheduler,
                                ForkJoinScheduler, ThreadPoolConfig}
+import java.util.concurrent.{ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
 
 private[actors] object Reactor {
 
@@ -19,9 +20,14 @@ private[actors] object Reactor {
     def makeNewScheduler: IScheduler = {
       val sched = if (!ThreadPoolConfig.useForkJoin) {
         // default is non-daemon
-        val s = new DefaultThreadPoolScheduler(false)
-        s.start()
-        s
+        val workQueue = new LinkedBlockingQueue[Runnable]
+        ExecutorScheduler(
+          new ThreadPoolExecutor(ThreadPoolConfig.corePoolSize,
+                                 ThreadPoolConfig.maxPoolSize,
+                                 60000L,
+                                 TimeUnit.MILLISECONDS,
+                                 workQueue,
+                                 new ThreadPoolExecutor.CallerRunsPolicy))
       } else {
         // default is non-daemon, non-fair
         val s = new ForkJoinScheduler(ThreadPoolConfig.corePoolSize, ThreadPoolConfig.maxPoolSize, false, false)
