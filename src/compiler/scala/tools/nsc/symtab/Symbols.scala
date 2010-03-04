@@ -1207,6 +1207,37 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         res
       }
 
+    /** @PP: Added diagram because every time I come through here I end up
+     *       losing my train of thought.  Any errors are mine.
+     *
+     * class Foo  <
+     *  ^  ^ (2)   \
+     *  |  |  |     \
+     *  | (5) |     (3)
+     *  |  |  |       \
+     * (1) v  v        \
+     * object Foo (4)-> > class Foo$
+     *
+     * (1) linkedClassOfModule
+     * (2) linkedModuleOfClass
+     * (3) linkedClassOfClass
+     * (4) moduleClass
+     * (5) linkedSym
+     */
+
+    /** I propose to rename these, as I at least would find it
+     *  a lot less confusing to call them:
+     *
+     *  def companionModule
+     *  def companionClass
+     *  def companionModuleClass
+     *  def companionSymbol (bidirectional between companionModule + companionClass)
+     *  def linkedClassOfClass (bidirectional between companionClass + companionModuleClass)
+     *
+     *  linkedClassOfClass ceases to be confusing after in the context of
+     *  the first four names.
+     */
+
     /** The class with the same name in the same package as this module or
      *  case class factory. A better name would be companionClassOfModule.
      */
@@ -1247,7 +1278,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *    class Foo
      *
      *  Then object Foo has a `moduleClass' (invisible to the user, the backend calls it Foo$
-     *  linkedClassOFClass goes from class Foo$ to class Foo, and back.
+     *  linkedClassOfClass goes from class Foo$ to class Foo, and back.
      */
     final def linkedClassOfClass: Symbol =
       if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
