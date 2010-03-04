@@ -1502,7 +1502,7 @@ trait Typers { self: Analyzer =>
 //          val tpt1 = checkNoEscaping.privates(clazz.thisSym, typedType(tpt))
 //          treeCopy.ValDef(vd, mods, name, tpt1, EmptyTree) setType NoType
 // but this leads to cycles for existential self types ==> #2545
-	  if (self1.name != nme.WILDCARD) context.scope enter self1.symbol
+    if (self1.name != nme.WILDCARD) context.scope enter self1.symbol
       val selfType =
         if (clazz.isAnonymousClass && !phase.erasedTypes)
           intersectionType(clazz.info.parents, clazz.owner)
@@ -1882,29 +1882,28 @@ trait Typers { self: Analyzer =>
     private def isLoopHeaderLabel(name: Name): Boolean =
       name.startsWith("while$") || name.startsWith("doWhile$")
 
-    /** @Tiark This should be moved somewhere else. It should return
-      * true if the `sym` argument is a cps annotation.
-      */
-    private def redoLoop(sym: Symbol) = false
-
     def typedLabelDef(ldef: LabelDef): LabelDef = {
-      var rhs1: Tree = null
-      var restpe = ldef.symbol.tpe.resultType
       if (!isLoopHeaderLabel(ldef.symbol.name) || phase.id > currentRun.typerPhase.id) {
-        rhs1 = typed(ldef.rhs, restpe)
+        val restpe = ldef.symbol.tpe.resultType
+        val rhs1 = typed(ldef.rhs, restpe)
+        ldef.params foreach (param => param.tpe = param.symbol.tpe)
+        treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
       } else {
-        rhs1 = typed(ldef.rhs)
-        if (rhs1.tpe.annotations exists (ai => redoLoop(ai.atp.typeSymbol))) {
-          restpe = rhs1.tpe
-          resetAllAttrs(ldef.rhs)
-          ldef.symbol setInfo MethodType(List(), restpe)
-          rhs1 = typed(ldef.rhs, restpe)
+        val initpe = ldef.symbol.tpe.resultType
+        val rhs1 = typed(ldef.rhs)
+        val restpe = rhs1.tpe
+        if (restpe == initpe) { // stable result, no need to check again
+          ldef.params foreach (param => param.tpe = param.symbol.tpe)
+          treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
         } else {
-          rhs1 = adapt(rhs1, EXPRmode, restpe)
+          context.scope.unlink(ldef.symbol)
+          val sym2 = namer.enterInScope(
+            context.owner.newLabel(ldef.pos, ldef.name) setInfo MethodType(List(), restpe))
+          val rhs2 = typed(resetAllAttrs(ldef.rhs), restpe)
+          ldef.params foreach (param => param.tpe = param.symbol.tpe)
+          treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs2) setSymbol sym2 setType restpe
         }
       }
-      ldef.params foreach (param => param.tpe = param.symbol.tpe)
-      treeCopy.LabelDef(ldef, ldef.name, ldef.params, rhs1) setType restpe
     }
 
     protected def typedFunctionIDE(fun : Function, txt : Context) = {}
@@ -3362,7 +3361,7 @@ trait Typers { self: Analyzer =>
                 // this check is needed to avoid infinite recursion in Duplicators
                 // (calling typed1 more than once for the same tree)
                 if (checked ne res) typed { atPos(tree.pos)(checked) }
-       	        else res
+                else res
               } else res
               /* Would like to do the following instead, but curiously this fails; todo: investigate
               if (fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass)
@@ -3540,8 +3539,8 @@ trait Typers { self: Analyzer =>
                 qual.tpe.widen+" does not have a constructor"
               else
                 decode(name)+" is not a member of "+
-								(if (qual.tpe.typeSymbol.isTypeParameterOrSkolem) "type parameter " else "") +
-								qual.tpe.widen +
+                (if (qual.tpe.typeSymbol.isTypeParameterOrSkolem) "type parameter " else "") +
+                qual.tpe.widen +
                 (if ((context.unit ne null) && // Martin: why is this condition needed?
                      qual.pos.isDefined && tree.pos.isDefined && qual.pos.line < tree.pos.line)
                   "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
