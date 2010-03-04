@@ -12,7 +12,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.util.{Set, SourceFile, BatchSourceFile}
 import symtab.Flags._
@@ -4082,7 +4082,7 @@ trait Typers { self: Analyzer =>
           assert(onlyPresentation) // should not happen in normal circumstances.
           tree setType tree.symbol.tpe
         case _ =>
-          throw new Error("unexpected tree: " + tree.getClass + "\n" + tree)//debug
+          abort("unexpected tree: " + tree.getClass + "\n" + tree)//debug
       }
     }
 
@@ -4133,7 +4133,6 @@ trait Typers { self: Analyzer =>
         if (phase.id <= currentRun.typerPhase.id) signalDone(context.asInstanceOf[analyzer.Context], tree, result)
         result
       } catch {
-        case ex: ControlException => throw ex
         case ex: TypeError =>
           tree.tpe = null
           if (printTypings) println("caught "+ex+" in typed: "+tree);//DEBUG
@@ -4145,13 +4144,9 @@ trait Typers { self: Analyzer =>
           if ((context ne null) && (context.unit ne null) &&
               (context.unit.source ne null) && (tree ne null))
             logError("AT: " + (tree.pos).dbgString, ex);
-          throw(ex)
-/*
-        case ex: java.lang.Error =>
-          Console.println("exception when typing "+tree+", pt = "+pt)
           throw ex
-*/ //debug
-      } finally {
+      }
+      finally {
         if (Statistics.enabled) {
           val t = currentTime()
           microsByType(pendingTreeTypes.head) += ((t - typerTime) / 1000).toInt

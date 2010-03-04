@@ -100,9 +100,9 @@ object CommandLineParser extends RegexParsers with ParserUtil {
   lazy val argument: Parser[String] = squoted | dquoted | token
   lazy val commandLine: Parser[List[String]] = phrase(repsep(argument, whiteSpace))
 
-  class ParseError(msg: String) extends RuntimeException(msg)
+  class ParseException(msg: String) extends RuntimeException(msg)
 
-  def tokenize(line: String): List[String] = tokenize(line, x => throw new ParseError(x))
+  def tokenize(line: String): List[String] = tokenize(line, x => throw new ParseException(x))
   def tokenize(line: String, errorFn: String => Unit): List[String] = {
     parse(commandLine, line.trim) match {
       case Success(args, _)     => args

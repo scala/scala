@@ -1015,7 +1015,7 @@ abstract class GenJVM extends SubComponent {
       varsInBlock.clear
 
       for (instr <- b) {
-        class CompilationError(msg: String) extends Error {
+        class CompilationException(msg: String) extends Exception(msg) {
           override def toString: String = {
             msg +
             "\nCurrent method: " + method +
@@ -1025,7 +1025,7 @@ abstract class GenJVM extends SubComponent {
             method.dump
           }
         }
-        def assert(cond: Boolean, msg: String) = if (!cond) throw new CompilationError(msg);
+        def assert(cond: Boolean, msg: String) = if (!cond) throw new CompilationException(msg)
 
         instr match {
           case THIS(clasz) =>
@@ -1840,7 +1840,7 @@ abstract class GenJVM extends SubComponent {
 
     def assert(cond: Boolean, msg: => String) = if (!cond) {
       method.dump
-      throw new Error(msg + "\nMethod: " + method)
+      abort(msg + "\nMethod: " + method)
     }
 
     def assert(cond: Boolean) { assert(cond, "Assertion failed.") }

@@ -199,7 +199,7 @@ self: scala.tools.nsc.Global =>
       inform(tree.toString)
       inform("")
       inform("=======")
-      throw new ValidateError(msg)
+      throw new ValidateException(msg)
     }
 
     def validate(tree: Tree, encltree: Tree): Unit = {
@@ -238,7 +238,7 @@ self: scala.tools.nsc.Global =>
     validate(tree, tree)
   }
 
-  class ValidateError(msg : String) extends Exception(msg)
+  class ValidateException(msg : String) extends Exception(msg)
 
   // ---------------- Locating trees ----------------------------------
 

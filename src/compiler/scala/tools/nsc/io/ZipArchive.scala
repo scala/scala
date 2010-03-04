@@ -157,8 +157,7 @@ private[io] trait ZipContainer extends AbstractFile
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
    */
-  override def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
-    throw new UnsupportedOperationException()
+  override def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
 
   /** Returns all abstract subfiles of this abstract directory. */
   override def iterator: Iterator[AbstractFile] = root.iterator
@@ -274,10 +273,10 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer
 
   /** Methods we don't support but have to implement because of the design */
   def file: JFile = null
-  def create: Unit = throw new UnsupportedOperationException
-  def delete: Unit = throw new UnsupportedOperationException
-  def output = throw new Error("unsupported")
-  def container = throw new Error("unsupported")
+  def create: Unit = unsupported
+  def delete: Unit = unsupported
+  def output = unsupported
+  def container = unsupported
 
   abstract class Entry(name: String, path: String) extends VirtualFile(name, path) {
     final override def path = "%s(%s)".format(URLZipArchive.this, super.path)

@@ -103,7 +103,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     // exceptions and other throwables
     lazy val ThrowableClass                 = getClass(sn.Throwable)
     lazy val NullPointerExceptionClass      = getClass(sn.NPException)
-    lazy val NonLocalReturnExceptionClass   = getClass(sn.NLRException)
+    lazy val NonLocalReturnControlClass   = getClass(sn.NLRControl)
     lazy val IndexOutOfBoundsExceptionClass = getClass(sn.IOOBException)
     lazy val UninitializedErrorClass        = getClass("scala.UninitializedFieldError")
     lazy val MatchErrorClass                = getClass("scala.MatchError")

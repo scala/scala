@@ -11,10 +11,10 @@
 
 package scala.actors
 
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import java.lang.{InterruptedException, Runnable}
 
-private[actors] class KillActorException extends Throwable with ControlException
+private[actors] class KillActorControl extends ControlThrowable
 
 /** <p>
  *    The abstract class <code>Reaction</code> associates

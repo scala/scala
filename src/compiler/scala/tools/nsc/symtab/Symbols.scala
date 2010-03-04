@@ -740,7 +740,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         cnt += 1
         // allow for two completions:
         //   one: sourceCompleter to LazyType, two: LazyType to completed type
-        if (cnt == 3) throw new Error("no progress in completing " + this + ":" + tp)
+        if (cnt == 3) abort("no progress in completing " + this + ":" + tp)
       }
       val result = rawInfo
       result
@@ -882,7 +882,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  Not applicable for term symbols.
      */
     def typeConstructor: Type =
-      throw new Error("typeConstructor inapplicable for " + this)
+      abort("typeConstructor inapplicable for " + this)
 
     /** @M -- tpe vs tpeHK:
      * Symbol::tpe creates a TypeRef that has dummy type arguments to get a type of kind *
@@ -963,7 +963,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else if (this.isTerm)
          TypeBounds(NothingClass.tpe, intersectionType(List(this.tpe, SingletonClass.tpe)))
       else
-        throw new Error("unexpected alias type: "+this)
+        abort("unexpected alias type: "+this)
 
     /** Reset symbol to initial state
      */
@@ -1421,7 +1421,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       (if (isModule) moduleClass else toplevelClass).sourceFile
 
     def sourceFile_=(f: AbstractFile) {
-      throw new Error("sourceFile_= inapplicable for " + this)
+      abort("sourceFile_= inapplicable for " + this)
     }
 
     def isFromClassFile: Boolean =
@@ -2000,7 +2000,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     override def enclClass: Symbol = this
     override def toplevelClass: Symbol = this
     override def enclMethod: Symbol = this
-    override def owner: Symbol = throw new Error("no-symbol does not have owner")
+    override def owner: Symbol = abort("no-symbol does not have owner")
     override def sourceFile: AbstractFile = null
     override def ownerChain: List[Symbol] = List()
     override def ownersIterator: Iterator[Symbol] = Iterator.empty
@@ -2010,7 +2010,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     override def rawInfo: Type = NoType
     protected def doCookJavaRawInfo() {}
     override def accessBoundary(base: Symbol): Symbol = RootClass
-    def cloneSymbolImpl(owner: Symbol): Symbol = throw new Error()
+    def cloneSymbolImpl(owner: Symbol): Symbol = abort()
   }
 
 

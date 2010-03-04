@@ -262,7 +262,6 @@ class SemanticTokens(val compiler: Global) {
                   build(arg.tpt);
                 }
               }
-              try {
           //TPT=scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] 260 class scala.tools.nsc.ast.Trees$TypeTree scala.Iterator[DocGenerator.this.compiler0.CompilationUnit] class scala.tools.nsc.symtab.Types$$anon$5
           if ((tree.tpt eq null) || (tree.tpt.tpe eq null)) {
             //Console.err.println("BAD: " + tree.tpt + " in " + tree);
@@ -270,11 +269,6 @@ class SemanticTokens(val compiler: Global) {
             //Console.err.println("TPT=" + tree.tpt + " " + tree.tpt.pos + " " + tree.tpt.getClass() + " " + tree.tpt.tpe + " " + tree.tpt.tpe.getClass() + " " + tree.tpt.tpe.getClass().getSuperclass());
                   build(tree.tpt);
           }
-              } catch {
-                case e: Error =>
-                  Console.err.println("VALDEF: " + tree + " " + tree.tpt + " " + tree.pos + " " + tree.tpt.pos);
-                  throw e;
-              }
         //Console.err.println("RHS: " + tree.rhs + " " + tree.rhs.getClass() + " " + tree.rhs.getClass().getSuperclass());
               build(tree.rhs);
             }
@@ -554,7 +548,7 @@ class SemanticTokens(val compiler: Global) {
         Console.err.println("" + tree + "@" + tree.pos + " not in " +
                            unit.source.file.name + "[" + buf.length + "]");
         Thread.dumpStack()
-        throw new Error()
+        abort()
       }
       return 0
     }
@@ -621,7 +615,7 @@ class SemanticTokens(val compiler: Global) {
           Console.err.println("OFFSET=" + offset + " " + tok + " " + tok.length);
           Console.err.println("       " + cursor.offset + " " + gap.length);
           gap.length0 = offset - cursor.offset + tok.length
-          //throw new Error();
+          //abort();
         }
         if (offset == cursor.offset) {
           // replace or prepend

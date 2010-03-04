@@ -196,7 +196,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
     /** The type of a non-local return expression with given argument type */
     private def nonLocalReturnExceptionType(argtype: Type) =
-      appliedType(NonLocalReturnExceptionClass.typeConstructor, List(argtype))
+      appliedType(NonLocalReturnControlClass.typeConstructor, List(argtype))
 
     /** A hashmap from method symbols to non-local return keys */
     private val nonLocalReturnKeys = new HashMap[Symbol, Symbol]
@@ -214,7 +214,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     /** Generate a non-local return throw with given return expression from given method.
      *  I.e. for the method's non-local return key, generate:
      *
-     *    throw new NonLocalReturnException(key, expr)
+     *    throw new NonLocalReturnControl(key, expr)
      *  todo: maybe clone a pre-existing exception instead?
      *  (but what to do about excaptions that miss their targets?)
      */
@@ -233,7 +233,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *    try {
      *      body
      *    } catch {
-     *      case ex: NonLocalReturnException[_] =>
+     *      case ex: NonLocalReturnControl[_] =>
      *        if (ex.key().eq(key)) ex.value()
      *        else throw ex
      *    }
@@ -245,7 +245,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         val ex = meth.newValue(body.pos, nme.ex) setInfo extpe
         val pat = Bind(ex,
                        Typed(Ident(nme.WILDCARD),
-                             AppliedTypeTree(Ident(NonLocalReturnExceptionClass),
+                             AppliedTypeTree(Ident(NonLocalReturnControlClass),
                                              List(Bind(nme.WILDCARD.toTypeName,
                                                        EmptyTree)))))
         val rhs =

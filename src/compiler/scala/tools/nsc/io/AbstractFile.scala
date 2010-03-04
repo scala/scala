@@ -244,6 +244,9 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
     Option(lookupName(name, true)) getOrElse new PlainFile((sfile.get / name).createDirectory())
   }
 
+  protected def unsupported(): Nothing = unsupported(null)
+  protected def unsupported(msg: String): Nothing = throw new UnsupportedOperationException(msg)
+
   /** Returns the path of this abstract file. */
   override def toString() = path
 

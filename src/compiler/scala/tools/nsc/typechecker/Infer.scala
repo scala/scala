@@ -8,7 +8,7 @@ package scala.tools.nsc
 package typechecker
 
 import scala.collection.mutable.ListBuffer
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import symtab.Flags._
 
 /** This trait ...
@@ -79,7 +79,7 @@ trait Infer {
   // error when built with scalac
 
   /*private*/
-  class NoInstance(msg: String) extends RuntimeException(msg) with ControlException
+  class NoInstance(msg: String) extends Throwable(msg) with ControlThrowable
 
   /*private*/
   class DeferredNoInstance(getmsg: () => String) extends NoInstance("") {

@@ -151,7 +151,7 @@ abstract class Checkers {
         else if (s2 eq emptyStack) s1
         else {
           if (s1.length != s2.length)
-            throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2 + " in " + method + " at entry to block: " + bl);
+            throw new CheckerException("Incompatible stacks: " + s1 + " and " + s2 + " in " + method + " at entry to block: " + bl);
           new TypeStack((s1.types, s2.types).zipped map lub)
         }
       }

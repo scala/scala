@@ -10,7 +10,6 @@ package backend.opt
 
 import scala.collection._
 import scala.collection.immutable.{Map, HashMap, Set, HashSet}
-import scala.tools.nsc.backend.icode.analysis.LubError
 import scala.tools.nsc.symtab._
 
 /**

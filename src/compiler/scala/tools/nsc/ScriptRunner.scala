@@ -112,7 +112,7 @@ object ScriptRunner
       jar.close
     }
     catch {
-      case _: Error => jarFile.delete() // XXX what errors to catch?
+      case _: Exception => jarFile.delete()
     }
   }
 

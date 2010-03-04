@@ -9,7 +9,7 @@ package ast.parser
 
 import scala.collection.mutable
 import mutable.{ Buffer, ArrayBuffer, ListBuffer, HashMap }
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import scala.tools.nsc.util.{SourceFile,CharArrayReader}
 import scala.xml.{ Text, TextBuffer }
 import scala.xml.Utility.{ isNameStart, isNameChar, isSpace }
@@ -35,15 +35,15 @@ trait MarkupParsers
 {
   self: Parsers =>
 
-  case object MissingEndTagException extends RuntimeException with ControlException {
+  case object MissingEndTagControl extends ControlThrowable {
     override def getMessage = "start tag was here: "
   }
 
-  case object ConfusedAboutBracesException extends RuntimeException with ControlException {
+  case object ConfusedAboutBracesControl extends ControlThrowable {
     override def getMessage = " I encountered a '}' where I didn't expect one, maybe this tag isn't closed <"
   }
 
-  case object TruncatedXML extends RuntimeException with ControlException {
+  case object TruncatedXMLControl extends ControlThrowable {
     override def getMessage = "input ended while parsing XML"
   }
 
@@ -63,9 +63,9 @@ trait MarkupParsers
 
     val eof = false
 
-    def truncatedError(msg: String): Nothing = throw TruncatedXML
+    def truncatedError(msg: String): Nothing = throw TruncatedXMLControl
     def xHandleError(that: Char, msg: String) =
-      if (ch == SU) throw TruncatedXML
+      if (ch == SU) throw TruncatedXMLControl
       else reportSyntaxError(msg)
 
     var input : CharArrayReader = _
@@ -92,11 +92,11 @@ trait MarkupParsers
 
     private def errorBraces() = {
       reportSyntaxError("in XML content, please use '}}' to express '}'")
-      throw ConfusedAboutBracesException
+      throw ConfusedAboutBracesControl
     }
     def errorNoEnd(tag: String) = {
       reportSyntaxError("expected closing tag of " + tag)
-      throw MissingEndTagException
+      throw MissingEndTagControl
     }
 
     /** checks whether next character starts a Scala block, if yes, skip it.
@@ -137,7 +137,7 @@ trait MarkupParsers
             nextch
             xEmbeddedExpr
           case SU =>
-            throw TruncatedXML
+            throw TruncatedXMLControl
           case _ =>
             errorAndResult("' or \" delimited attribute value or '{' scala-expr '}' expected", Literal(Constant("<syntax-error>")))
         }
@@ -307,22 +307,20 @@ trait MarkupParsers
     }
 
     /** Some try/catch/finally logic used by xLiteral and xLiteralPattern.  */
-    private def xLiteralCommon(f: () => Tree, ifTruncated: Exception => Unit): Tree =
-      try f()
+    private def xLiteralCommon(f: () => Tree, ifTruncated: String => Unit): Tree = {
+      try return f()
       catch {
-        case ex: RuntimeException =>
-          ex match {
-            case c @ TruncatedXML =>
-              ifTruncated(c)
-            case c @ (MissingEndTagException | ConfusedAboutBracesException) =>
-              parser.syntaxError(debugLastPos, c.getMessage + debugLastElem + ">")
-            case _: ArrayIndexOutOfBoundsException =>
-              parser.syntaxError(debugLastPos, "missing end tag in XML literal for <%s>" format debugLastElem)
-            case _ => throw ex
-          }
-          EmptyTree
+        case c @ TruncatedXMLControl  =>
+          ifTruncated(c.getMessage)
+        case c @ (MissingEndTagControl | ConfusedAboutBracesControl) =>
+          parser.syntaxError(debugLastPos, c.getMessage + debugLastElem + ">")
+        case _: ArrayIndexOutOfBoundsException =>
+          parser.syntaxError(debugLastPos, "missing end tag in XML literal for <%s>" format debugLastElem)
       }
       finally parser.in resume Tokens.XMLSTART
+
+      EmptyTree
+    }
 
     /** Use a lookahead parser to run speculative body, and return the first char afterward. */
     private def charComingAfter(body: => Unit): Char = {
@@ -361,7 +359,7 @@ trait MarkupParsers
           ts(0)
         }
       },
-      ex => parser.incompleteInputError(ex.getMessage)
+      msg => parser.incompleteInputError(msg)
     )
 
     /** @see xmlPattern. resynchronizes after successful parse
@@ -377,7 +375,7 @@ trait MarkupParsers
           tree
         }
       },
-      ex => parser.syntaxError(curOffset, ex.getMessage)
+      msg => parser.syntaxError(curOffset, msg)
     )
 
     def escapeToScala[A](op: => A, kind: String) = {
@@ -436,7 +434,7 @@ trait MarkupParsers
               assert(!xEmbeddedBlock, "problem with embedded block")
 
             case SU   =>
-              throw TruncatedXML
+              throw TruncatedXMLControl
 
             case _    => // text
               appendText(r2p(start1, start1, curOffset), ts, xText)

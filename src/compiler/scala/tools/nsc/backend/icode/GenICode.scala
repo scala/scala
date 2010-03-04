@@ -836,8 +836,7 @@ abstract class GenICode extends SubComponent  {
                 generatedType = l.kind
               } catch {
                 case ex: MatchError =>
-                  throw new Error("symbol " + tree.symbol +
-                                  " does not exist in " + ctx.method)
+                  abort("symbol " + tree.symbol + " does not exist in " + ctx.method)
               }
             }
           }

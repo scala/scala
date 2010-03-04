@@ -31,20 +31,15 @@ extends AbstractFile {
   override def output = error("directories cannot be written")
 
   /** Does this abstract file denote an existing file? */
-  def create {
-    throw new UnsupportedOperationException
-  }
+  def create { unsupported }
 
   /** Delete the underlying file or directory (recursively). */
-  def delete {
-    throw new UnsupportedOperationException
-  }
+  def delete { unsupported }
 
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
    */
-  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
-    throw new UnsupportedOperationException()
+  def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = unsupported
 
   private val files = mutable.Map.empty[String, AbstractFile]
 

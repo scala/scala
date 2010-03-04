@@ -58,13 +58,13 @@ class ThreadPoolScheduler(protected var executor: ThreadPoolExecutor,
           }
 
           if (terminating || (terminate && allActorsTerminated))
-            throw new QuitException
+            throw new QuitControl
 
           gc()
         }
       }
     } catch {
-      case _: QuitException =>
+      case _: QuitControl =>
         Debug.info(this+": initiating shutdown...")
         // invoke shutdown hook
         onShutdown()

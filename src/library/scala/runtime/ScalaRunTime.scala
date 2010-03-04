@@ -16,7 +16,7 @@ import scala.collection.{ Seq, IndexedSeq }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ List, Stream, Nil, :: }
 import scala.xml.{ Node, MetaData }
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
@@ -124,7 +124,7 @@ object ScalaRunTime {
     private var exception: Throwable =
       try   { run() ; null }
       catch {
-        case e: ControlException  => throw e  // don't catch non-local returns etc
+        case e: ControlThrowable  => throw e  // don't catch non-local returns etc
         case e: Throwable         => e
       }
 

@@ -67,12 +67,12 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
           }
 
           if (terminating)
-            throw new QuitException
+            throw new QuitControl
 
           if (allActorsTerminated) {
             Debug.info(this+": all actors terminated")
             terminating = true
-            throw new QuitException
+            throw new QuitControl
           }
 
           if (!snapshoting) {
@@ -83,12 +83,12 @@ class ForkJoinScheduler(val initCoreSize: Int, val maxSize: Int, daemon: Boolean
             Debug.info(this+": drained "+num+" tasks")
             drainedTasks = list
             terminating = true
-            throw new QuitException
+            throw new QuitControl
           }
         }
       }
     } catch {
-      case _: QuitException =>
+      case _: QuitControl =>
         Debug.info(this+": initiating shutdown...")
         while (!pool.isQuiescent()) {
           try {

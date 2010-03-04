@@ -8,7 +8,7 @@ class WorkScheduler {
   type Action = () => Unit
 
   private var todo = new Queue[Action]
-  private var except = new Queue[Exception]
+  private var throwables = new Queue[Throwable]
 
   /** Called from server: block until todo list is nonempty */
   def waitForMoreWork() = synchronized {
@@ -30,12 +30,12 @@ class WorkScheduler {
   /** Called from server: return optional exception posted by client
    *  Reset to no exception.
    */
-  def pollException(): Option[Exception] = synchronized {
-    if (except.isEmpty)
+  def pollThrowable(): Option[Throwable] = synchronized {
+    if (throwables.isEmpty)
       None
     else {
-      val result = Some(except.dequeue())
-      if (!except.isEmpty)
+      val result = Some(throwables.dequeue())
+      if (!throwables.isEmpty)
         postWorkItem { () => }
       result
     }
@@ -55,8 +55,8 @@ class WorkScheduler {
   /** Called from client:
    *  Require an exception to be thrown on next poll.
    */
-  def raise(exc: Exception) = synchronized {
-    except enqueue exc
+  def raise(exc: Throwable) = synchronized {
+    throwables enqueue exc
     postWorkItem { () => }
   }
 }

@@ -10,7 +10,7 @@
 
 package scala.actors
 
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import java.util.{Timer, TimerTask}
 import java.util.concurrent.{ExecutionException, Callable}
 
@@ -29,7 +29,7 @@ object Actor extends Combinators {
   // timer thread runs as daemon
   private[actors] val timer = new Timer(true)
 
-  private[actors] val suspendException = new SuspendActorException
+  private[actors] val suspendException = new SuspendActorControl
 
   /**
    * Returns the currently executing actor. Should be used instead
@@ -623,7 +623,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
   }
 
   // guarded by lock of this
-  // never throws SuspendActorException
+  // never throws SuspendActorControl
   private[actors] override def scheduleActor(f: PartialFunction[Any, Any], msg: Any) =
     if (f eq null) {
       // do nothing (timeout is handled instead)
@@ -800,12 +800,12 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
           resumeActor()
         else if (waitingFor ne Reactor.waitingForNone) {
           scheduleActor(waitingFor, null)
-          /* Here we should not throw a SuspendActorException,
+          /* Here we should not throw a SuspendActorControl,
              since the current method is called from an actor that
              is in the process of exiting.
 
              Therefore, the contract for scheduleActor is that
-             it never throws a SuspendActorException.
+             it never throws a SuspendActorControl.
            */
         }
       }
@@ -851,4 +851,4 @@ case class Exit(from: AbstractActor, reason: AnyRef)
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class SuspendActorException extends Throwable with ControlException
+private[actors] class SuspendActorControl extends ControlThrowable

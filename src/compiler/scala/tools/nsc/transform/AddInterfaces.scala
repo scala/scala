@@ -243,7 +243,7 @@ abstract class AddInterfaces extends InfoTransform {
         tree.symbol = implMethod
         new ChangeOwnerAndReturnTraverser(ifaceMethod, implMethod)(tree)
       case None =>
-        throw new Error("implMethod missing for " + ifaceMethod)
+        abort("implMethod missing for " + ifaceMethod)
     }
 
   private def implMemberDef(tree: Tree): Tree =

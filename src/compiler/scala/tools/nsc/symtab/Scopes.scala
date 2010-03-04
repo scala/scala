@@ -326,7 +326,7 @@ trait Scopes {
    */
   object EmptyScope extends Scope {
     override def enter(e: ScopeEntry) {
-      throw new Error("EmptyScope.enter")
+      abort("EmptyScope.enter")
     }
   }
 

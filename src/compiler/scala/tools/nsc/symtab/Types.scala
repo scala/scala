@@ -13,6 +13,7 @@ import ast.TreeGen
 import util.{HashSet, Position, NoPosition}
 import util.Statistics._
 import Flags._
+import scala.util.control.ControlThrowable
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -709,7 +710,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
         if (sym == btssym) return mid
         else if (sym isLess btssym) hi = mid - 1
         else if (btssym isLess sym) lo = mid + 1
-        else throw new Error()
+        else abort()
       }
       -1
     }
@@ -2531,7 +2532,7 @@ A type's typeSymbol should never be inspected directly.
       case tv@TypeVar(_, constr) => tv.applyArgs(args)
       case ErrorType => tycon
       case WildcardType => tycon // needed for neg/t0226
-      case _ => throw new Error(debugString(tycon))
+      case _ => abort(debugString(tycon))
     }
 
   /** A creator for type parameterizations
@@ -3128,9 +3129,7 @@ A type's typeSymbol should never be inspected directly.
             if ((pre eq NoType) || (pre eq NoPrefix) || !clazz.isClass) mapOver(tp)
             //@M! see test pos/tcpoly_return_overriding.scala why mapOver is necessary
             else {
-              def throwError : Nothing = throw new Error(
-                "" + tp + sym.locationString + " cannot be instantiated from " + pre.widen
-              )
+              def throwError = abort("" + tp + sym.locationString + " cannot be instantiated from " + pre.widen)
 
               def instParam(ps: List[Symbol], as: List[Type]): Type =
                 if (ps.isEmpty) throwError
@@ -3547,9 +3546,9 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  class MissingAliasException extends Exception
-  val missingAliasException = new MissingAliasException
-  class MissingTypeException extends Exception
+  class MissingAliasControl extends ControlThrowable
+  val missingAliasException = new MissingAliasControl
+  class MissingTypeControl extends ControlThrowable
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
@@ -3561,7 +3560,7 @@ A type's typeSymbol should never be inspected directly.
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
         if (rebind0 == NoSymbol) {
           if (sym.isAliasType) throw missingAliasException
-          throw new MissingTypeException // For build manager purposes
+          throw new MissingTypeControl // For build manager purposes
           //assert(false, pre+"."+sym+" does no longer exist, phase = "+phase)
         }
         /** The two symbols have the same fully qualified name */
@@ -3606,9 +3605,9 @@ A type's typeSymbol should never be inspected directly.
             if ((pre1 eq pre) && (sym1 eq sym) && (args1 eq args)/* && sym.isExternal*/) tp
             else typeRef(pre1, sym1, args1)
           } catch {
-            case ex: MissingAliasException =>
+            case ex: MissingAliasControl =>
               apply(tp.dealias)
-            case _: MissingTypeException =>
+            case _: MissingTypeControl =>
               NoType
           }
         }
@@ -4742,7 +4741,7 @@ A type's typeSymbol should never be inspected directly.
         res
       case TypeVar(_, constr) =>
         if (constr.instValid) constr.inst
-        else throw new Error("trying to do lub/glb of typevar "+tp)
+        else abort("trying to do lub/glb of typevar "+tp)
       case t => t
     }
     val strippedTypes = ts mapConserve (stripType)
@@ -5119,15 +5118,15 @@ A type's typeSymbol should never be inspected directly.
 
 // Errors and Diagnostics -----------------------------------------------------
 
-  /** An exception signalling a type error */
-  class TypeError(var pos: Position, val msg: String) extends java.lang.Error(msg) {
+  /** A throwable signalling a type error */
+  class TypeError(var pos: Position, val msg: String) extends Throwable(msg) with ControlThrowable {
     def this(msg: String) = this(NoPosition, msg)
   }
 
-  class NoCommonType(tps: List[Type]) extends java.lang.Error(
-    "lub/glb of incompatible types: " + tps.mkString("", " and ", ""))
+  class NoCommonType(tps: List[Type]) extends Throwable(
+    "lub/glb of incompatible types: " + tps.mkString("", " and ", "")) with ControlThrowable
 
-  /** An exception signalling a malformed type */
+  /** A throwable signalling a malformed type */
   class MalformedType(msg: String) extends TypeError(msg) {
     def this(pre: Type, tp: String) = this("malformed type: " + pre + "#" + tp)
   }

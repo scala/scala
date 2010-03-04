@@ -9,5 +9,5 @@ package scala.tools.nsc
 package backend
 package icode
 
-class CheckerError(s: String) extends Exception(s)
+class CheckerException(s: String) extends Exception(s)
 

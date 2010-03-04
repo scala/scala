@@ -416,7 +416,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     val String       : Name
     val Throwable    : Name
     val NPException  : Name // NullPointerException
-    val NLRException : Name = newTermName("scala.runtime.NonLocalReturnException")
+    val NLRControl   : Name = newTermName("scala.runtime.NonLocalReturnControl")
     val ValueType    : Name
     val Serializable : Name
     val BeanProperty : Name

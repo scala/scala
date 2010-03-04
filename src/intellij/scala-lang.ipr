@@ -999,7 +999,7 @@
               <file url="file://$PROJECT_DIR$/../dotnet-library/scala/reflect/Manifest.scala" />
               <file url="file://$PROJECT_DIR$/../dotnet-library/scala/reflect/ScalaBeanInfo.scala" />
               <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/MethodCache.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/NonLocalReturnException.scala" />
+              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/NonLocalReturnControl.scala" />
               <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichChar.scala" />
               <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichClass.scala" />
               <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichDouble.scala" />

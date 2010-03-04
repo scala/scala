@@ -21,19 +21,19 @@ package scala.util.control
  *
  * <p>Instances of <code>Throwable</code> subclasses marked in
  * this way should not normally be caught. Where catch-all behaviour is
- * required <code>ControlException</code>s should be propagated, for
+ * required <code>ControlThrowable</code>s should be propagated, for
  * example,</p>
  *
  * <pre>
- *  import scala.util.control.ControlException
+ *  import scala.util.control.ControlThrowable
  *
  *  try {
  *    // Body might throw arbitrarily
  * } catch {
- *   case ce : ControlException => throw ce // propagate
+ *   case ce : ControlThrowable => throw ce // propagate
  *   case t : Exception => log(t)           // log and suppress
  * </pre>
  *
  * @author Miles Sabin
  */
-trait ControlException extends Throwable with NoStackTrace
+trait ControlThrowable extends Throwable with NoStackTrace

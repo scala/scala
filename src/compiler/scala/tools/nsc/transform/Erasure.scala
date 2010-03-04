@@ -10,6 +10,7 @@ package transform
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 import scala.collection.mutable.{HashMap,ListBuffer}
 import scala.collection.immutable.Set
+import scala.util.control.ControlThrowable
 import symtab._
 import Flags._
 
@@ -633,7 +634,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           Console.println("exception when typing " + tree)
           Console.println(er.msg + " in file " + context.owner.sourceFile)
           er.printStackTrace
-          throw new Error
+          abort()
       }
       def adaptCase(cdef: CaseDef): CaseDef = {
         val body1 = adaptToType(cdef.body, tree1.tpe)
@@ -1036,18 +1037,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             tpt.tpe = erasure(tree.symbol.tpe).resultType
             result
           case _ =>
-            case class MyError(count : Int, ex : AssertionError) extends Error(ex.getMessage)
-            try {
-              super.transform(tree1) setType null
-            } catch {
-              case e @ MyError(n, ex) if n > 5 =>  throw e
-              case MyError(n,ex) =>
+            case class LoopControl(count: Int, ex : AssertionError) extends Throwable(ex.getMessage) with ControlThrowable
+
+            try super.transform(tree1) setType null
+            catch {
+              case LoopControl(n, ex) if n <= 5 =>
                 Console.println(tree1)
-                throw MyError(n + 1, ex)
-//              case ex : AssertionError =>
-//                Console.println(tree1)
-//                throw MyError(0, ex)
-//              case ex => throw ex
+                throw LoopControl(n + 1, ex)
             }
         }
       }

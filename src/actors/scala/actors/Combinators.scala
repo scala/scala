@@ -34,6 +34,6 @@ private[actors] trait Combinators {
     if (cond) { body andThen loopWhile(cond)(body) }
     else continue
 
-  def continue: Unit = throw new KillActorException
+  def continue: Unit = throw new KillActorControl
 
 }

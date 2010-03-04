@@ -98,7 +98,7 @@ abstract class TreeGen
       mkAttributedQualifier(firstStable.get)
 
     case _ =>
-      throw new Error("bad qualifier: " + tpe)
+      abort("bad qualifier: " + tpe)
   }
 
   /** Builds a reference to given symbol with given stable prefix. */

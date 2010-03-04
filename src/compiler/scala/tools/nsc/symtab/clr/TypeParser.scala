@@ -42,7 +42,7 @@ abstract class TypeParser {
 
   def parse(typ: MSILType, root: Symbol) {
 
-    def handleError(e: Exception) = {
+    def handleError(e: Throwable) = {
       if (settings.debug.value) e.printStackTrace()  //debug
       throw new IOException("type '" + typ.FullName + "' is broken\n(" + e.getMessage() + ")")
     }

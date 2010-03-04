@@ -429,7 +429,7 @@ trait JavaParsers extends JavaScanners {
             return Modifiers(flags, privateWithin)
         }
       }
-      throw new Error("should not be here")
+      abort("should not be here")
     }
 
     def typeParams(): List[TypeDef] =

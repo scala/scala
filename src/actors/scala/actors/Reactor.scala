@@ -119,11 +119,11 @@ trait Reactor extends OutputChannel[Any] with Combinators {
       handler(item._1)
     else {
       scheduleActor(handler, item._1)
-      /* Here, we throw a SuspendActorException to avoid
+      /* Here, we throw a SuspendActorControl to avoid
          terminating this actor when the current ReactorTask
          is finished.
 
-         The SuspendActorException skips the termination code
+         The SuspendActorControl skips the termination code
          in ReactorTask.
        */
       throw Actor.suspendException
@@ -163,11 +163,11 @@ trait Reactor extends OutputChannel[Any] with Combinators {
             // keep going
           } else {
             waitingFor = handler
-            /* Here, we throw a SuspendActorException to avoid
+            /* Here, we throw a SuspendActorControl to avoid
                terminating this actor when the current ReactorTask
                is finished.
 
-               The SuspendActorException skips the termination code
+               The SuspendActorControl skips the termination code
                in ReactorTask.
              */
             throw Actor.suspendException
@@ -191,7 +191,7 @@ trait Reactor extends OutputChannel[Any] with Combinators {
    *
    * assume handler != null
    *
-   * never throws SuspendActorException
+   * never throws SuspendActorControl
    */
   private[actors] def scheduleActor(handler: PartialFunction[Any, Any], msg: Any) = {
     val fun = () => handler(msg): Unit
@@ -228,7 +228,7 @@ trait Reactor extends OutputChannel[Any] with Combinators {
       throw Actor.suspendException
     }
     first
-    throw new KillActorException
+    throw new KillActorControl
   }
 
   protected[this] def exit(): Nothing = {

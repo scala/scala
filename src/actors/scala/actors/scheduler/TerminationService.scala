@@ -40,14 +40,14 @@ abstract class TerminationService(terminate: Boolean)
             case _: InterruptedException =>
           }
           if (terminating)
-            throw new QuitException
+            throw new QuitControl
 
           if (terminate && allActorsTerminated)
-            throw new QuitException
+            throw new QuitControl
         }
       }
     } catch {
-      case _: QuitException =>
+      case _: QuitControl =>
         Debug.info(this+": initiating shutdown...")
         // invoke shutdown hook
         onShutdown()

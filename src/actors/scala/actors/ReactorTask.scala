@@ -35,12 +35,12 @@ private[actors] class ReactorTask[T >: Null <: Reactor](var reactor: T, var fun:
             reactor.exceptionHandler(e)
         }
       } catch {
-        case _: KillActorException =>
+        case _: KillActorControl =>
       }
       reactor.kill()
     }
     catch {
-      case _: SuspendActorException =>
+      case _: SuspendActorControl =>
         // do nothing (continuation is already saved)
 
       case e: Exception =>

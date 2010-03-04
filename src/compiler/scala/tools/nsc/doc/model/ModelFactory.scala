@@ -21,7 +21,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
 
   /**  */
   def makeModel: Package =
-    makePackage(RootPackage, null) getOrElse { throw new Error("no documentable class found in compilation units") }
+    makePackage(RootPackage, null) getOrElse abort("no documentable class found in compilation units")
 
   object commentator {
 
@@ -278,7 +278,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     val bSym = normalizeTemplate(aSym)
     if (bSym.isPackage) inTpl match {
       case inPkg: PackageImpl => makePackage(bSym, inPkg) getOrElse (new NoDocTemplateImpl(bSym, inPkg))
-      case _ => throw new Error("'" + bSym + "' must be in a package")
+      case _ => abort("'" + bSym + "' must be in a package")
     }
     else if ((bSym.sourceFile != null) && bSym.isPublic && !bSym.isLocal) inTpl match {
       case inDTpl: DocTemplateImpl => makeDocTemplate(bSym, inDTpl)
@@ -317,7 +317,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
         def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
       }
     else
-      throw new Error("'" + bSym + "' that isn't a class, trait or object cannot be built as a documentable template")
+      abort("'" + bSym + "' that isn't a class, trait or object cannot be built as a documentable template")
   }
 
   /** */

@@ -263,7 +263,7 @@ trait Contexts { self: Analyzer =>
       if (diagnostic.isEmpty) ""
       else diagnostic.mkString("\n","\n", "")
 
-    def error(pos: Position, err: Error) {
+    def error(pos: Position, err: Throwable) {
       val msg = err.getMessage() + diagString
       if (reportGeneralErrors)
         unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)

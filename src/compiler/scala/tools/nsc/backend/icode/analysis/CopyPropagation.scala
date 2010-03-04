@@ -184,14 +184,14 @@ abstract class CopyPropagation {
           if (exceptional) exceptionHandlerStack
           else {
 //            if (a.stack.length != b.stack.length)
-//              throw new LubError(a, b, "Invalid stacks in states: ");
+//              throw new LubException(a, b, "Invalid stacks in states: ");
             (a.stack, b.stack).zipped map { (v1, v2) =>
               if (v1 == v2) v1 else Unknown
             }
           }
 
 /*        if (a.stack.length != b.stack.length)
-          throw new LubError(a, b, "Invalid stacks in states: ");
+          throw new LubException(a, b, "Invalid stacks in states: ");
         val resStack = List.map2(a.stack, b.stack) { (v1, v2) =>
           if (v1 == v2) v1 else Unknown
         }

@@ -8,6 +8,6 @@
 package scala.tools.nsc
 package backend.icode.analysis
 
-class LubError(a: Any, b: Any, msg: String) extends Exception {
+class LubException(a: Any, b: Any, msg: String) extends Exception {
   override def toString() = "Lub error: " + msg + a + b
 }

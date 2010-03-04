@@ -297,7 +297,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
       private def copyType(tpe: Type): Type = tpe match {
         case MethodType(formals, restpe) => MethodType(formals, copyType(restpe))
         case PolyType(List(), restpe) => PolyType(List(), copyType(restpe))
-        case PolyType(_, _) => throw new Error("bad case: "+tpe)
+        case PolyType(_, _) => abort("bad case: "+tpe)
         case _ => owner.thisType.memberType(abstractType(clazz))
       }
       def getInfo = copyType(clazz.primaryConstructor.tpe)

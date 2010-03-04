@@ -5,7 +5,7 @@ import java.io.{ PrintWriter, StringWriter }
 
 import scala.collection.mutable.{LinkedHashMap, SynchronizedMap}
 import scala.concurrent.SyncVar
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.tools.nsc.reporters._
@@ -91,10 +91,10 @@ self =>
           // it will still be null now?
           if (context.unit != null)
             integrateNew()
-          throw new FreshRunReq
-        } catch {
-          case ex : ValidateError => // Ignore, this will have been reported elsewhere
-          case t : Throwable => throw t
+          throw FreshRunReq
+        }
+        catch {
+          case ex : ValidateException => // Ignore, this will have been reported elsewhere
         }
     }
   }
@@ -114,9 +114,9 @@ self =>
    *  Poll for work reload/typedTreeAt/doFirst commands during background checking.
    */
   def pollForWork() {
-    scheduler.pollException() match {
-      case Some(ex: CancelActionReq) => if (acting) throw ex
-      case Some(ex: FreshRunReq) =>
+    scheduler.pollThrowable() match {
+      case Some(ex @ CancelActionReq) => if (acting) throw ex
+      case Some(ex @ FreshRunReq) =>
         currentTyperRun = newTyperRun
         minRunId = currentRunId
         if (outOfDate) throw ex
@@ -132,7 +132,7 @@ self =>
           action()
           if (debugIDE) println("done with work item: "+action)
         } catch {
-          case ex: CancelActionReq =>
+          case CancelActionReq =>
             if (debugIDE) println("cancelled work item: "+action)
         } finally {
           if (debugIDE) println("quitting work item: "+action)
@@ -195,19 +195,19 @@ self =>
               backgroundCompile()
               outOfDate = false
             } catch {
-              case ex: FreshRunReq =>
+              case FreshRunReq =>
             }
           }
         }
       } catch {
-        case ex: ShutdownReq =>
+        case ShutdownReq =>
           ;
         case ex =>
           outOfDate = false
           compileRunner = newRunnerThread
           ex match {
-            case _ : FreshRunReq =>   // This shouldn't be reported
-            case _ : ValidateError => // This will have been reported elsewhere
+            case FreshRunReq =>   // This shouldn't be reported
+            case _ : ValidateException => // This will have been reported elsewhere
             case _ => ex.printStackTrace(); inform("Fatal Error: "+ex)
           }
       }
@@ -276,7 +276,7 @@ self =>
       result set Left(op)
       return
     } catch {
-      case ex : FreshRunReq =>
+      case ex @ FreshRunReq =>
         scheduler.postWorkItem(() => respond(result)(op))
         throw ex
       case ex =>
@@ -298,7 +298,7 @@ self =>
   /** Make sure a set of compilation units is loaded and parsed */
   def reload(sources: List[SourceFile], result: Response[Unit]) {
     respond(result)(reloadSources(sources))
-    if (outOfDate) throw new FreshRunReq
+    if (outOfDate) throw FreshRunReq
     else outOfDate = true
   }
 
@@ -534,7 +534,7 @@ self =>
 
   def newTyperRun = new TyperRun
 
-  class TyperResult(val tree: Tree) extends Exception with ControlException
+  class TyperResult(val tree: Tree) extends ControlThrowable
 
   assert(globalPhase.id == 0)
 }

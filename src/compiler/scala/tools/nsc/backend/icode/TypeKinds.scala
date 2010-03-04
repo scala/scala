@@ -138,7 +138,7 @@ trait TypeKinds { self: ICodes =>
             (b.isReferenceType || b.isArrayType))
           toTypeKind(lub0(a.toType, b.toType))
         else
-          throw new CheckerError("Incompatible types: " + a + " with " + b)
+          throw new CheckerException("Incompatible types: " + a + " with " + b)
     }
   }
 

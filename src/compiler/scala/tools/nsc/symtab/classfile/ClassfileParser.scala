@@ -95,7 +95,8 @@ abstract class ClassfileParser {
       parseHeader
       this.pool = new ConstantPool
       parseClass()
-    } catch {
+    }
+    catch {
       case e: MissingRequirementError => handleMissing(e)
       case e: RuntimeException        => handleError(e)
     }

@@ -11,7 +11,7 @@
 package scala.actors
 package scheduler
 
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import java.lang.{Runnable, Thread, InterruptedException}
 
 /**
@@ -46,16 +46,16 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
             case _: InterruptedException =>
           }
           if (terminating)
-            throw new QuitException
+            throw new QuitControl
 
           gc()
 
           if (allActorsTerminated)
-            throw new QuitException
+            throw new QuitControl
         }
       }
     } catch {
-      case _: QuitException =>
+      case _: QuitControl =>
         Debug.info(this+": initiating shutdown...")
         // invoke shutdown hook
         onShutdown()
@@ -71,10 +71,10 @@ abstract class SchedulerService(daemon: Boolean) extends Thread with IScheduler 
 }
 
 /**
- * The <code>QuitException</code> class is used to manage control flow
+ * The <code>QuitControl</code> class is used to manage control flow
  * of certain schedulers and worker threads.
  *
  * @version 0.9.8
  * @author Philipp Haller
  */
-private[actors] class QuitException extends Throwable with ControlException
+private[actors] class QuitControl extends ControlThrowable

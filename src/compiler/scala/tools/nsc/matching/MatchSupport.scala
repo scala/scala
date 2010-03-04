@@ -22,7 +22,6 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
   private final def trace = settings.Ypmatdebug.value
 
   def impossible:           Nothing = abort("this never happens")
-  def abort(msg: String):   Nothing = Predef.error(msg)
 
   object Types {
     import definitions._

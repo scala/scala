@@ -154,28 +154,25 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg)
   }
 
-  class ErrorWithPosition(val pos: Int, val error: Throwable) extends Error
+  class ThrowableWithPosition(val pos: Int, val error: Throwable) extends Throwable
 
-  def tryWith[T](pos: Int, body: => T): T = try {
-    body
-  } catch {
-    case e : ErrorWithPosition => throw e
-    case te: TypeError => throw te
-    case e : Error            => throw new ErrorWithPosition(pos, e)
-    case e : RuntimeException => throw new ErrorWithPosition(pos, e)
-  }
+  def tryWith[T](pos: Int, body: => T): T =
+    try body
+    catch {
+      case e : ThrowableWithPosition  => throw e
+      case te: TypeError              => throw te
+      case e : RuntimeException       => throw new ThrowableWithPosition(pos, e)
+    }
 
-  def catchWith[T](source : SourceFile, body : => T) : T = try {
-    body
-  } catch {
-    case e : ErrorWithPosition =>
-      logError("POS: " + source.dbg(e.pos), e)
-      throw e.error
-  }
+  def catchWith[T](source : SourceFile, body : => T) : T =
+    try body
+    catch {
+      case e : ThrowableWithPosition =>
+        logError("POS: " + source.dbg(e.pos), e)
+        throw e.error
+    }
 
   def logError(msg: String, t: Throwable): Unit = ()
-
-  def abort(msg: String) = throw new Error(msg)
 
 // ------------ File interface -----------------------------------------
 
