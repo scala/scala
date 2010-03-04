@@ -1326,7 +1326,7 @@ trait Typers { self: Analyzer =>
 //      attributes(mdef)
       // initialize all constructors of the linked class: the type completer (Namer.methodSig)
       // might add default getters to this object. example: "object T; class T(x: Int = 1)"
-      val linkedClass = mdef.symbol.linkedClassOfModule
+      val linkedClass = mdef.symbol.companionClass
       if (linkedClass != NoSymbol)
         for (c <- linkedClass.info.decl(nme.CONSTRUCTOR).alternatives)
           c.initialize

@@ -728,7 +728,7 @@ self: Analyzer =>
       val buf = new ListBuffer[List[ImplicitInfo]]
       for ((clazz, pre) <- partMap) {
         if (pre != NoType) {
-          val companion = clazz.linkedModuleOfClass
+          val companion = clazz.companionModule
           companion.moduleClass match {
             case mc: ModuleClassSymbol =>
               buf += (mc.implicitMembers map (im =>

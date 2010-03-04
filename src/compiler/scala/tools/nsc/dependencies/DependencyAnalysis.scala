@@ -134,7 +134,7 @@ trait DependencyAnalysis extends SubComponent with Files {
                   atPhase (currentRun.picklerPhase.next) {
                     !s.isImplClass && !s.isNestedClass
                   }
-              if (isTopLevelModule && (s.linkedModuleOfClass != NoSymbol)) {
+              if (isTopLevelModule && (s.companionModule != NoSymbol)) {
                 dependencies.emits(source, nameToFile(unit.source.file, name))
               }
               dependencies.emits(source, nameToFile(unit.source.file, name + "$"))

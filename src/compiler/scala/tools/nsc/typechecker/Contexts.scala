@@ -332,7 +332,7 @@ trait Contexts { self: Analyzer =>
       var c = this.enclClass
       while (c != NoContext &&
              !clazz.isNonBottomSubClass(c.owner) &&
-             !(c.owner.isModuleClass && clazz.isNonBottomSubClass(c.owner.linkedClassOfModule)))
+             !(c.owner.isModuleClass && clazz.isNonBottomSubClass(c.owner.companionClass)))
         c = c.outer.enclClass
       c
     }

@@ -292,7 +292,7 @@ abstract class GenMSIL extends SubComponent {
             tBuilder.SetCustomAttribute(SYMTAB_ATTRIBUTE_CONSTRUCTOR, symtab)
 
             currentRun.symData -= sym
-            currentRun.symData -= sym.linkedSym
+            currentRun.symData -= sym.companionSymbol
 
           case _ =>
             addMarker()
@@ -513,7 +513,7 @@ abstract class GenMSIL extends SubComponent {
       tBuilder.setPosition(line, iclass.cunit.source.file.name)
 
       if (isTopLevelModule(sym)) {
-        if (sym.linkedClassOfModule == NoSymbol)
+        if (sym.companionClass == NoSymbol)
           dumpMirrorClass(sym)
         else
           log("No mirror class for module with linked class: " +

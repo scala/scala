@@ -160,7 +160,7 @@ trait MatrixAdditions extends ast.TreeDSL
           def cmpSymbols(t1: Type, t2: Type)  = t1.typeSymbol eq t2.typeSymbol
           def coversSym = {
             val tpe = decodedEqualsType(p.tpe)
-            lazy val lmoc = sym.linkedModuleOfClass
+            lazy val lmoc = sym.companionModule
             val symtpe =
               if ((sym hasFlag Flags.MODULE) && (lmoc ne NoSymbol))
                 singleType(sym.tpe.prefix, lmoc)   // e.g. None, Nil

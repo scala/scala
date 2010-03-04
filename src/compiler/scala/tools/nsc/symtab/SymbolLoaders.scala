@@ -64,7 +64,7 @@ abstract class SymbolLoaders {
         informTime("loaded " + description, start)
         ok = true
         setSource(root)
-        setSource(root.linkedSym) // module -> class, class -> module
+        setSource(root.companionSymbol) // module -> class, class -> module
       } catch {
         case ex: IOException =>
           ok = false
@@ -75,7 +75,7 @@ abstract class SymbolLoaders {
             else "error while loading " + root.name + ", " + msg);
       }
       initRoot(root)
-      if (!root.isPackageClass) initRoot(root.linkedSym)
+      if (!root.isPackageClass) initRoot(root.companionSymbol)
     }
 
     override def load(root: Symbol) { complete(root) }
@@ -118,8 +118,8 @@ abstract class SymbolLoaders {
       module.moduleClass setInfo moduleClassLoader
       owner.info.decls enter clazz
       owner.info.decls enter module
-      assert(clazz.linkedModuleOfClass == module, module)
-      assert(module.linkedClassOfModule == clazz, clazz)
+      assert(clazz.companionModule == module, module)
+      assert(module.companionClass == clazz, clazz)
     }
 
     /**

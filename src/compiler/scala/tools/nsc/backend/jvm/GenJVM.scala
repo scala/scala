@@ -133,7 +133,7 @@ abstract class GenJVM extends SubComponent {
           pickledBytes = pickledBytes + pickle.writeIndex
           jclass.addAttribute(scalaAttr)
           currentRun.symData -= sym
-          currentRun.symData -= sym.linkedSym
+          currentRun.symData -= sym.companionSymbol
           //System.out.println("Generated ScalaSig Attr for " + sym)//debug
         case _ =>
           val markerAttr = getMarkerAttr(jclass)
@@ -205,7 +205,7 @@ abstract class GenJVM extends SubComponent {
         addStaticInit(jclass, c.lookupStaticCtor)
 
         if (isTopLevelModule(c.symbol)) {
-          if (c.symbol.linkedClassOfModule == NoSymbol)
+          if (c.symbol.companionClass == NoSymbol)
             dumpMirrorClass(c.symbol, c.cunit.source.toString);
           else
             log("No mirror class for module with linked class: " +
@@ -221,7 +221,7 @@ abstract class GenJVM extends SubComponent {
             !(sym.name.toString contains '$') && (sym hasFlag Flags.MODULE) && !sym.isImplClass && !sym.isNestedClass
           }
 
-        val lmoc = c.symbol.linkedModuleOfClass
+        val lmoc = c.symbol.companionModule
         // add static forwarders if there are no name conflicts; see bugs #363 and #1735
         if (lmoc != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
           if (isCandidateForForwarders(lmoc) && !settings.noForwarders.value) {
@@ -830,7 +830,7 @@ abstract class GenJVM extends SubComponent {
        *  for methods defined there - bug #1804 */
       lazy val commonParents = {
         val cps = module.info.baseClasses
-        val mps = module.linkedClassOfModule.info.baseClasses
+        val mps = module.companionClass.info.baseClasses
         cps.filter(mps contains)
       }
       /* The setter doesn't show up in members so we inspect the name
@@ -851,10 +851,10 @@ abstract class GenJVM extends SubComponent {
           && !m.isConstructor
           && !m.isStaticMember
           && !(m.owner == definitions.AnyClass)
-          && !module.isSubClass(module.linkedClassOfModule)
+          && !module.isSubClass(module.companionClass)
           && !conflictsIn(definitions.ObjectClass, m.name)
           && !conflictsInCommonParent(m.name)
-          && !conflictsIn(module.linkedClassOfModule, m.name)
+          && !conflictsIn(module.companionClass, m.name)
         )
 
       assert(module.isModuleClass)

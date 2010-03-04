@@ -90,10 +90,10 @@ trait Namers { self: Analyzer =>
       if (sym.isModule && sym.moduleClass != NoSymbol)
         updatePosFlags(sym.moduleClass, pos, moduleClassFlags(flags))
       if (sym.owner.isPackageClass &&
-          (sym.linkedSym.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
-           sym.linkedSym.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
+          (sym.companionSymbol.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
+           sym.companionSymbol.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
         // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
-        sym.linkedSym.setInfo(NoType)
+        sym.companionSymbol.setInfo(NoType)
       sym
     }
 
@@ -726,7 +726,7 @@ trait Namers { self: Analyzer =>
 
       // add the copy method to case classes; this needs to be done here, not in SyntheticMethods, because
       // the namer phase must traverse this copy method to create default getters for its parameters.
-      Namers.this.caseClassOfModuleClass get clazz.linkedModuleOfClass.moduleClass match {
+      Namers.this.caseClassOfModuleClass get clazz.companionModule.moduleClass match {
         case Some(cdef) =>
           def hasCopy(decls: Scope) = {
             decls.iterator exists (_.name == nme.copy)
@@ -983,7 +983,7 @@ trait Namers { self: Analyzer =>
 
             val parentNamer = if (isConstr) {
               val (cdef, nmr) = moduleNamer.getOrElse {
-                val module = meth.owner.linkedModuleOfClass
+                val module = meth.owner.companionModule
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
                 val (cdef, nmr) = classAndNamerOfModule(module)

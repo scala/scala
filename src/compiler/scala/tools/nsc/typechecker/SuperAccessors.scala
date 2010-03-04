@@ -71,7 +71,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             other = linked.info.decl(sym.name.toTermName).filter(_.isModule)
           if (other != NoSymbol)
             unit.error(sym.pos, "name clash: "+sym.owner+" defines "+sym+
-                       "\nand its companion "+sym.owner.linkedModuleOfClass+" also defines "+
+                       "\nand its companion "+sym.owner.companionModule+" also defines "+
                        other)
         }
       }

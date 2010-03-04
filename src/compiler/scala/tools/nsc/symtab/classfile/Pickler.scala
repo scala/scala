@@ -51,7 +51,7 @@ abstract class Pickler extends SubComponent {
             val sym = tree.symbol
             val pickle = new Pickle(sym, sym.name.toTermName, sym.owner)
             add(sym, pickle)
-            add(sym.linkedSym, pickle)
+            add(sym.companionSymbol, pickle)
             pickle.finish
           case _ =>
         }

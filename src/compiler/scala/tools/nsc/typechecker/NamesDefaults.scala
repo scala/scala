@@ -179,7 +179,7 @@ trait NamesDefaults { self: Analyzer =>
       }
 
       def moduleQual(pos: Position, tree: Symbol => Tree) = {
-        val module = baseFun.symbol.owner.linkedModuleOfClass
+        val module = baseFun.symbol.owner.companionModule
         if (module == NoSymbol) None
         else Some(atPos(pos.focus)(tree(module)))
       }
@@ -373,7 +373,7 @@ trait NamesDefaults { self: Analyzer =>
     if (i > 0) {
       if (param.owner.isConstructor) {
         val defGetterName = "init$default$"+ i
-        param.owner.owner.linkedModuleOfClass.info.member(defGetterName)
+        param.owner.owner.companionModule.info.member(defGetterName)
       } else {
         val defGetterName = param.owner.name +"$default$"+ i
         if (param.owner.owner.isClass) {

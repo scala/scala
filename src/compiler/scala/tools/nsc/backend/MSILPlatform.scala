@@ -31,6 +31,6 @@ trait MSILPlatform extends Platform[MSILType] {
     genMSIL   // generate .msil files
   )
 
-  lazy val externalEquals = getMember(ComparatorClass.linkedModuleOfClass, nme.equals_)
+  lazy val externalEquals = getMember(ComparatorClass.companionModule, nme.equals_)
   def isMaybeBoxed(sym: Symbol) = sym isNonBottomSubClass BoxedNumberClass
 }

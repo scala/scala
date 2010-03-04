@@ -384,7 +384,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Term symbols with the exception of static parts of Java classes and packages
      *  and the faux companion objects of primitives.  (See tickets #1392 and #3123.)
      */
-    final def isValue = isTerm && !(isModule && (hasFlag(PACKAGE | JAVA) || isValueClass(linkedClassOfModule)))
+    final def isValue = isTerm && !(isModule && (hasFlag(PACKAGE | JAVA) || isValueClass(companionClass)))
 
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
 
@@ -1175,7 +1175,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
                && !packSym.isPackageClass)
           packSym = packSym.owner
         if (packSym != NoSymbol)
-          packSym = packSym.linkedModuleOfClass
+          packSym = packSym.companionModule
         packSym
       }
 
@@ -1208,7 +1208,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       }
 
     /** @PP: Added diagram because every time I come through here I end up
-     *       losing my train of thought.  Any errors are mine.
+     *       losing my train of thought.  [Renaming occurs.] This diagram is a
+     *       bit less necessary since the renaming, but leaving in place
+     *       due to high artistic merit.
      *
      * class Foo  <
      *  ^  ^ (2)   \
@@ -1218,30 +1220,17 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      * (1) v  v        \
      * object Foo (4)-> > class Foo$
      *
-     * (1) linkedClassOfModule
-     * (2) linkedModuleOfClass
+     * (1) companionClass
+     * (2) companionModule
      * (3) linkedClassOfClass
      * (4) moduleClass
-     * (5) linkedSym
-     */
-
-    /** I propose to rename these, as I at least would find it
-     *  a lot less confusing to call them:
-     *
-     *  def companionModule
-     *  def companionClass
-     *  def companionModuleClass
-     *  def companionSymbol (bidirectional between companionModule + companionClass)
-     *  def linkedClassOfClass (bidirectional between companionClass + companionModuleClass)
-     *
-     *  linkedClassOfClass ceases to be confusing after in the context of
-     *  the first four names.
+     * (5) companionSymbol
      */
 
     /** The class with the same name in the same package as this module or
-     *  case class factory. A better name would be companionClassOfModule.
+     *  case class factory.
      */
-    final def linkedClassOfModule: Symbol = {
+    final def companionClass: Symbol = {
       if (this != NoSymbol)
         flatOwnerInfo.decl(name.toTypeName).suchThat(_ isCoDefinedWith this)
       else NoSymbol
@@ -1250,38 +1239,35 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** A helper method that factors the common code used the discover a companion module of a class. If a companion
       * module exists, its symbol is returned, otherwise, `NoSymbol` is returned. The method assumes that `this`
       * symbol has already been checked to be a class (using `isClass`). */
-    private final def linkedModuleOfClass0: Symbol =
+    private final def companionModule0: Symbol =
       flatOwnerInfo.decl(name.toTermName).suchThat(
           sym => (sym hasFlag MODULE) && (sym isCoDefinedWith this))
 
     /** The module or case class factory with the same name in the same
-     *  package as this class. A better name would be companionModuleOfClass.
+     *  package as this class.
      */
-    final def linkedModuleOfClass: Symbol =
+    final def companionModule: Symbol =
       if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass)
-        linkedModuleOfClass0
+        companionModule0
       else NoSymbol
 
     /** For a module its linked class, for a class its linked module or case
      *  factory otherwise.
      */
-    final def linkedSym: Symbol =
-      if (isTerm) linkedClassOfModule
+    final def companionSymbol: Symbol =
+      if (isTerm) companionClass
       else if (isClass)
-        linkedModuleOfClass0
+        companionModule0
       else NoSymbol
 
-    /** For a module class its linked class, for a plain class
-     *  the module class of its linked module.
-     *  For instance:
-     *    object Foo
-     *    class Foo
+    /** For a module class: its linked class
+     *   For a plain class: the module class of its linked module.
      *
      *  Then object Foo has a `moduleClass' (invisible to the user, the backend calls it Foo$
      *  linkedClassOfClass goes from class Foo$ to class Foo, and back.
      */
     final def linkedClassOfClass: Symbol =
-      if (isModuleClass) linkedClassOfModule else linkedModuleOfClass.moduleClass
+      if (isModuleClass) companionClass else companionModule.moduleClass
 
     /**
      * Returns the rawInfo of the owner. If the current phase has flat classes, it first
@@ -1991,7 +1977,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     }
 
     override def sourceModule =
-      if (isModuleClass) linkedModuleOfClass else NoSymbol
+      if (isModuleClass) companionModule else NoSymbol
 
     private var childSet: Set[Symbol] = Set()
     override def children: List[Symbol] = childSet.toList sortBy (_.sealedSortName)

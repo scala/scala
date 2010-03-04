@@ -50,11 +50,11 @@ abstract class TypeParser {
     busy = true
 
     if (root.isModule) {
-      this.clazz = root.linkedClassOfModule
+      this.clazz = root.companionClass
       this.staticModule = root
     } else {
       this.clazz = root
-      this.staticModule = root.linkedModuleOfClass
+      this.staticModule = root.companionModule
     }
     try {
       parseClass(typ)
@@ -119,8 +119,8 @@ abstract class TypeParser {
 	staticDefs.enter(nclazz)
 	staticDefs.enter(nmodule)
 
-	assert(nclazz.linkedModuleOfClass == nmodule, nmodule)
-	assert(nmodule.linkedClassOfModule == nclazz, nclazz)
+	assert(nclazz.companionModule == nmodule, nmodule)
+	assert(nmodule.companionClass == nclazz, nclazz)
       }
 
     val fields = typ.getFields()

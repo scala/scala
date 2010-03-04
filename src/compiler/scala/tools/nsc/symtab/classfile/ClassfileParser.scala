@@ -83,11 +83,11 @@ abstract class ClassfileParser {
 */
     this.in = new AbstractFileReader(file)
     if (root.isModule) {
-      this.clazz = root.linkedClassOfModule
+      this.clazz = root.companionClass
       this.staticModule = root
     } else {
       this.clazz = root
-      this.staticModule = root.linkedModuleOfClass
+      this.staticModule = root.companionModule
     }
     this.isScala = false
     this.hasMeta = false
@@ -842,7 +842,7 @@ abstract class ClassfileParser {
         case ENUM_TAG   =>
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
-          val s = t.typeSymbol.linkedModuleOfClass.info.decls.lookup(n)
+          val s = t.typeSymbol.companionModule.info.decls.lookup(n)
           assert(s != NoSymbol, t)
           Some(LiteralAnnotArg(Constant(s)))
         case ARRAY_TAG  =>
@@ -1041,7 +1041,7 @@ abstract class ClassfileParser {
         def getMember(sym: Symbol, name: Name): Symbol =
           if (static)
             if (sym == clazz) staticDefs.lookup(name)
-            else sym.linkedModuleOfClass.info.member(name)
+            else sym.companionModule.info.member(name)
           else
             if (sym == clazz) instanceDefs.lookup(name)
             else sym.info.member(name)
@@ -1059,13 +1059,13 @@ abstract class ClassfileParser {
                 atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
               else
                 getMember(sym, innerName.toTypeName)
-            assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
+            assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members)
             s
 
           case None =>
             val cls = classNameToSymbol(externalName)
             cls
-            //if (static) cls.linkedClassOfModule else cls
+            //if (static) cls.companionClass else cls
         }
       }
 

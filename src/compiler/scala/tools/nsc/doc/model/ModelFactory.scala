@@ -197,7 +197,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     val aliasTypes    = members partialMap { case t: AliasType => t }
     override def isTemplate = true
     def isDocTemplate = true
-    def companion = sym.linkedSym match {
+    def companion = sym.companionSymbol match {
       case NoSymbol => None
       case comSym => Some(makeDocTemplate(comSym, inTpl))
     }
