@@ -6,6 +6,7 @@
 
 package scala.tools.nsc
 
+import Predef.{ println => _, _ }
 import java.io.{ File, PrintWriter, StringWriter, Writer }
 import File.pathSeparator
 import java.lang.{ Class, ClassLoader }
@@ -538,10 +539,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     compileSources(new BatchSourceFile("<script>", code))
 
   def compileAndSaveRun(label: String, code: String) = {
-    if (settings.Yrepldebug.value) {
+    if (isReplDebug) {
       parse(code) match {
-        case Some(trees)  => trees foreach (t => println(compiler.asCompactString(t)))
-        case _            => println("Parse error:\n\n" + code)
+        case Some(trees)  => trees foreach (t => DBG(compiler.asCompactString(t)))
+        case _            => DBG("Parse error:\n\n" + code)
       }
     }
     val run = new compiler.Run()
@@ -1115,7 +1116,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    */
   def eval[T: Manifest](line: String): Option[T] =
     try Some(evalExpr[T](line))
-    catch { case InterpreterEvalException(msg) => println(indentString(msg)) ; None }
+    catch { case InterpreterEvalException(msg) => out println indentString(msg) ; None }
 
   def evalExpr[T: Manifest](line: String): T = {
     // Nothing means the type could not be inferred.
@@ -1145,7 +1146,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     interpret(code) match {
       case IR.Success =>
         try prevRequests.last.extractionValue map (_.asInstanceOf[T])
-        catch { case e: Exception => println(e) ; None }
+        catch { case e: Exception => out println e ; None }
       case _ => None
     }
   }
@@ -1189,8 +1190,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   // }
 
   // debugging
-  private var debuggingOutput = false
-  def DBG(s: String) = if (debuggingOutput) out println s else ()
+  def isReplDebug = settings.Yrepldebug.value
+  def DBG(s: String) = if (isReplDebug) out println s else ()
 }
 
 /** Utility methods for the Interpreter. */
@@ -1252,7 +1253,7 @@ object Interpreter {
       intLoop.interpreter.interpret("""def exit = println("Type :quit to resume program execution.")""")
       for (p <- args) {
         intLoop.interpreter.bind(p.name, p.typeStr, p.param)
-        println("%s: %s".format(p.name, p.typeStr))
+        Console println "%s: %s".format(p.name, p.typeStr)
       }
     }
     intLoop.repl()

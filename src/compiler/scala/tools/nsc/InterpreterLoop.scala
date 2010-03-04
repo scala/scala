@@ -6,6 +6,7 @@
 
 package scala.tools.nsc
 
+import Predef.{ println => _, _ }
 import java.io.{ BufferedReader, FileReader, PrintWriter }
 import java.io.IOException
 
@@ -20,7 +21,9 @@ import io.{ File, Process }
 // Classes to wrap up interpreter commands and their results
 // You can add new commands by adding entries to val commands
 // inside InterpreterLoop.
-object InterpreterControl {
+trait InterpreterControl {
+  self: InterpreterLoop =>
+
   // the default result means "keep running, and don't record that line"
   val defaultResult = Result(true, None)
 
@@ -29,7 +32,7 @@ object InterpreterControl {
     def name: String
     def help: String
     def error(msg: String) = {
-      println(":" + name + " " + msg + ".")
+      out.println(":" + name + " " + msg + ".")
       Result(true, None)
     }
     def usage(): String
@@ -60,7 +63,6 @@ object InterpreterControl {
   // the result of a single command
   case class Result(keepRunning: Boolean, lineToRecord: Option[String])
 }
-import InterpreterControl._
 
 /** The
  *  <a href="http://scala-lang.org/" target="_top">Scala</a>
@@ -76,7 +78,7 @@ import InterpreterControl._
  *  @author  Lex Spoon
  *  @version 1.2
  */
-class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
+class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWriter) extends InterpreterControl {
   def this(in0: BufferedReader, out: PrintWriter) = this(Some(in0), out)
   def this() = this(None, new PrintWriter(Console.out))
 
@@ -140,8 +142,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
         |Type :help for more information.""" .
     stripMargin.format(versionString, javaVmName, javaVersion)
 
-    out println welcomeMsg
-    out.flush
+    plushln(welcomeMsg)
   }
 
   /** Show the history */
@@ -159,6 +160,11 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     for ((line, index) <- lines.zipWithIndex)
       println("%d %s".format(index + offset, line))
   }
+
+  /** Some print conveniences */
+  def println(x: Any) = out println x
+  def plush(x: Any) = { out print x ; out.flush() }
+  def plushln(x: Any) = { out println x ; out.flush() }
 
   /** Search the history */
   def searchHistory(_cmdline: String) {
@@ -265,8 +271,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     try {
       fileIn applyReader { reader =>
         in = new SimpleReader(reader, out, false)
-        out.println("Loading " + filename + "...")
-        out.flush
+        plushln("Loading " + filename + "...")
         repl
       }
     }
@@ -281,8 +286,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     closeInterpreter()
     createInterpreter()
     for (cmd <- replayCommands) {
-      out.println("Replaying: " + cmd)
-      out.flush()  // because maybe cmd will have its own output
+      plushln("Replaying: " + cmd)  // flush because maybe cmd will have its own output
       command(cmd)
       out.println
     }
@@ -618,7 +622,7 @@ class InterpreterLoop(in0: Option[BufferedReader], out: PrintWriter) {
     // if they asked for no help and command is valid, we call the real main
     neededHelp() match {
       case ""     => if (command.ok) main(command.settings) // else nothing
-      case help   => out print help ; out flush
+      case help   => plush(help)
     }
   }
 }
