@@ -29,7 +29,7 @@ private[actors] class DefaultThreadPoolScheduler(daemon: Boolean)
 
   setDaemon(daemon)
 
-  def executor = {
+  var executor = {
     val workQueue = new LinkedBlockingQueue[Runnable]
 
     val threadFactory = new ThreadFactory {
