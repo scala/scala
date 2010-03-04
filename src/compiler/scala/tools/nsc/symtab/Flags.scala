@@ -53,7 +53,7 @@ object Flags extends reflect.generic.Flags {
   final val FieldFlags: Long =
     MUTABLE | CASEACCESSOR | PARAMACCESSOR | STATIC | FINAL | PRESUPER | LAZY
 
-  final val AccessFlags: Long   = PRIVATE | PROTECTED
+  final val AccessFlags: Long   = PRIVATE | PROTECTED | LOCAL
   final val VARIANCES     = COVARIANT | CONTRAVARIANT
   final val ConstrFlags: Long   = JAVA
 
