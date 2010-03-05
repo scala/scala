@@ -627,7 +627,12 @@ abstract class ICodeReader extends ClassfileParser {
     if (code.containsNEW) code.resolveNEWs
   }
 
-  /** TODO: move in Definitions and remove obsolete isBox/isUnbox found there. */
+  /** Note: these methods are different from the methods of the same name found
+   *  in Definitions.  These test whether a symbol represents one of the boxTo/unboxTo
+   *  methods found in BoxesRunTime.  The others test whether a symbol represents a
+   *  synthetic method from one of the fake companion classes of the primitive types,
+   *  such as Int.box(5).
+   */
   def isBox(m: Symbol): Boolean =
     (m.owner == definitions.BoxesRunTimeClass.moduleClass
         && m.name.startsWith("boxTo"))

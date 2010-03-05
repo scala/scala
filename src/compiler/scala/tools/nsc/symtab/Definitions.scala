@@ -576,20 +576,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
 
-    def isUnbox(m: Symbol) = (m.name == nme.unbox) && cond(m.tpe) {
-      case MethodType(_, restpe) => cond(unboxMethod get restpe.typeSymbol) {
-        case Some(`m`)  => true
-      }
-    }
-
-    /** Test whether a method symbol is that of a boxing method
-     *   Martin @Paul: why the condition? Is not (boxMethod.valuesIterator contains m) enough?
-     */
-    def isBox(m: Symbol) = (boxMethod.valuesIterator contains m) && cond(m.tpe) {
-      case MethodType(List(arg), _) => cond(boxMethod get arg.tpe.typeSymbol) {
-        case Some(`m`) => true
-      }
-    }
+    def isUnbox(m: Symbol) = unboxMethod.valuesIterator contains m
+    def isBox(m: Symbol) = boxMethod.valuesIterator contains m
 
     val refClass = new HashMap[Symbol, Symbol]
     val abbrvTag = new HashMap[Symbol, Char]
