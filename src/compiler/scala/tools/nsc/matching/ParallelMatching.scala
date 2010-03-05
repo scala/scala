@@ -537,7 +537,10 @@ trait ParallelMatching extends ast.TreeDSL
             case Pattern(LIT(null), _) if !(p =:= s)        => (None, passr)      // (1)
             case x if isObjectTest                          => (passl(), None)    // (2)
             case Pattern(Typed(pp, _), _)     if sMatchesP  => (typed(pp), None)  // (4)
-            case Pattern(_: UnApply, _)                     => (passl(), passr)
+            // The next line used to be this which "fixed" 1697 but introduced
+            // numerous regressions including #3136.
+            // case Pattern(_: UnApply, _)                     => (passl(), passr)
+            case Pattern(_: UnApply, _)                     => (None, passr)
             case x if !x.isDefault && sMatchesP             => (subs(), None)
             case x if  x.isDefault || pMatchesS             => (passl(), passr)
             case _                                          => (None, passr)
@@ -692,8 +695,8 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       def createLabelBody(index: Int, pvgroup: PatternVarGroup) = {
-        def args = pvgroup.syms
-        def vdefs = pvgroup.valDefs
+        val args = pvgroup.syms
+        val vdefs = pvgroup.valDefs
 
         val name = "body%" + index
         require(_labelSym == null)
@@ -712,8 +715,8 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       def getLabelBody(pvgroup: PatternVarGroup): Tree = {
-        def idents = pvgroup map (_.rhs)
-        def vdefs = pvgroup.valDefs
+        val idents = pvgroup map (_.rhs)
+        val vdefs = pvgroup.valDefs
         referenceCount += 1
         // if (idents.size != labelParamTypes.size)
         //   consistencyFailure(idents, vdefs)
