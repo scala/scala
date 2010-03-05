@@ -93,8 +93,9 @@ object CommandLineParser extends RegexParsers with ParserUtil {
     | failure("Unmatched %s in input." format ch)
   )
 
-  lazy val squoted: Parser[String] = mkQuoted('\'') ^^ (x => "'%s'" format x)
-  lazy val dquoted: Parser[String] = mkQuoted('"') ^^ (x => "\"" + x + "\"")
+  /** Apparently windows can't deal with the quotes sticking around. */
+  lazy val squoted: Parser[String] = mkQuoted('\'') // ^^ (x => "'%s'" format x)
+  lazy val dquoted: Parser[String] = mkQuoted('"')  // ^^ (x => "\"" + x + "\"")
   lazy val token: Parser[String]   = """\S+""".r
 
   lazy val argument: Parser[String] = squoted | dquoted | token
