@@ -179,6 +179,13 @@ object ScalaRunTime {
    */
   @inline def hash(x: Any): Int = Predef.hash(x)
 
+  /** A helper method for constructing case class equality methods,
+   *  because existential types get in the way of a clean outcome and
+   *  it's performing a series of Any/Any equals comparisons anyway.
+   *  See ticket #2867 for specifics.
+   */
+  def sameElements(xs1: Seq[Any], xs2: Seq[Any]) = xs1 sameElements xs2
+
   /** Given any Scala value, convert it to a String.
    *
    * The primary motivation for this method is to provide a means for

@@ -152,6 +152,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def arrayLengthMethod = getMember(ScalaRunTimeModule, "array_length")
       def arrayCloneMethod = getMember(ScalaRunTimeModule, "array_clone")
       def scalaRuntimeHash = getMember(ScalaRunTimeModule, "hash")
+      def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
 
     // classes with special meanings
     lazy val NotNullClass         = getClass("scala.NotNull")
