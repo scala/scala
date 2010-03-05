@@ -432,6 +432,24 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 
   override def newTyper(context: Context) = new Eraser(context)
 
+  /** An extractor object for boxed expressions
+  object Boxed {
+    def unapply(tree: Tree): Option[Tree] = tree match {
+      case LabelDef(name, params, Boxed(rhs)) =>
+        Some(treeCopy.LabelDef(tree, name, params, rhs) setType rhs.tpe)
+      case Select(_, _) if tree.symbol == BoxedUnit_UNIT =>
+        Some(Literal(()) setPos tree.pos setType UnitClass.tpe)
+      case Block(List(unboxed), ret @ Select(_, _)) if ret.symbol == BoxedUnit_UNIT =>
+        Some(if (unboxed.tpe.typeSymbol == UnitClass) tree
+             else Block(List(unboxed), Literal(()) setPos tree.pos setType UnitClass.tpe))
+      case Apply(fn, List(unboxed)) if isBox(fn.symbol) =>
+        Some(unboxed)
+      case _ =>
+        None
+    }
+  }
+   */
+
   /** The modifier typer which retypes with erased types. */
   class Eraser(context: Context) extends Typer(context) {
 
@@ -458,6 +476,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
      *  @return     the unboxed tree
      */
     private def unbox(tree: Tree, pt: Type): Tree = tree match {
+/*
+      case Boxed(unboxed) =>
+        println("unbox shorten: "+tree) // this never seems to kick in during build and test; therefore disabled.
+        adaptToType(unboxed, pt)
+ */
       case LabelDef(name, params, rhs) =>
         val rhs1 = unbox(rhs, pt)
         treeCopy.LabelDef(tree, name, params, rhs1) setType rhs1.tpe
@@ -564,7 +587,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       //Console.println("adaptMember: " + tree);
       tree match {
         case Apply(TypeApply(sel @ Select(qual, name), List(targ)), List()) if tree.symbol == Any_asInstanceOf =>
-          val qual1 = typedQualifier(qual)
+          val qual1 = typedQualifier(qual, NOmode, ObjectClass.tpe) // need to have an expected type, see #3037
           val qualClass = qual1.tpe.typeSymbol
           val targClass = targ.tpe.typeSymbol
 /*
@@ -585,7 +608,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           else if (tree.symbol.owner == AnyClass)
             adaptMember(atPos(tree.pos)(Select(qual, getMember(ObjectClass, name))))
           else {
-            var qual1 = typedQualifier(qual);
+            var qual1 = typedQualifier(qual)
             if ((isValueClass(qual1.tpe.typeSymbol) && !isUnboxedValueMember(tree.symbol)))
               qual1 = box(qual1)
             else if (!isValueClass(qual1.tpe.typeSymbol) && isUnboxedValueMember(tree.symbol))

@@ -582,7 +582,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       }
     }
 
-    /** Test whether a method symbol is that of a boxing method. */
+    /** Test whether a method symbol is that of a boxing method
+     *   Martin @Paul: why the condition? Is not (boxMethod.valuesIterator contains m) enough?
+     */
     def isBox(m: Symbol) = (boxMethod.valuesIterator contains m) && cond(m.tpe) {
       case MethodType(List(arg), _) => cond(boxMethod get arg.tpe.typeSymbol) {
         case Some(`m`) => true
