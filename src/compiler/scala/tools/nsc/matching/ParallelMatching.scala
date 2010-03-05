@@ -95,7 +95,7 @@ trait ParallelMatching extends ast.TreeDSL
       def sym   = pv.sym
       def tpe   = sym.tpe
       def pos   = sym.pos
-      def id    = ID(sym)   // attributed ident
+      def id    = ID(sym) setPos pos  // attributed ident
 
       def accessors     = if (isCaseClass) sym.caseFieldAccessors else Nil
       def accessorTypes = accessors map (x => (tpe memberType x).resultType)
@@ -830,7 +830,12 @@ trait ParallelMatching extends ast.TreeDSL
           // type, but if the value doesn't appear on the right hand side of the
           // match that's unimportant; so we add an instance check only if there
           // is a binding.
-          if (isBound) eqTest AND (scrutTree IS tpe.widen)
+          if (isBound) {
+            if (settings.Xmigration28.value) {
+              cunit.warning(scrutTree.pos, "A bound pattern such as 'x @ Pattern' now matches fewer cases than the same pattern with no binding.")
+            }
+            eqTest AND (scrutTree IS tpe.widen)
+          }
           else eqTest
 
         case _ if scrutTree.tpe <:< tpe && tpe.isAnyRef         => scrutTree OBJ_!= NULL

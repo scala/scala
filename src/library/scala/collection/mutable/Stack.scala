@@ -15,6 +15,7 @@ package mutable
 import generic._
 import collection.immutable.{List, Nil}
 import collection.Iterator
+import annotation.migration
 
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
@@ -74,8 +75,13 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    */
   def pushAll(elems: scala.collection.Traversable[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
 
-  @deprecated("use pushAll") def ++=(it: Iterator[A]): this.type = pushAll(it)
-  @deprecated("use pushAll") def ++=(it: scala.collection.Iterable[A]): this.type = pushAll(it)
+  @deprecated("use pushAll")
+  @migration(2, 8, "Stack ++= now pushes arguments on the stack from left to right.")
+  def ++=(it: Iterator[A]): this.type = pushAll(it)
+
+  @deprecated("use pushAll")
+  @migration(2, 8, "Stack ++= now pushes arguments on the stack from left to right.")
+  def ++=(it: scala.collection.Iterable[A]): this.type = pushAll(it)
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no
@@ -112,13 +118,18 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    *
    *  @return an iterator over all stack elements.
    */
+  @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
   override def iterator: Iterator[A] = elems.iterator
 
   /** Creates a list of all stack elements in LIFO order.
    *
    *  @return the created list.
    */
+  @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
   override def toList: List[A] = elems
+
+  @migration(2, 8, "Stack iterator and foreach now traverse in FIFO order.")
+  override def foreach[U](f: A => U): Unit = super.foreach(f)
 
   /** This method clones the stack.
    *

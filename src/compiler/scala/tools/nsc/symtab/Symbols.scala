@@ -133,6 +133,14 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     def getAnnotation(cls: Symbol): Option[AnnotationInfo] =
       annotations find (_.atp.typeSymbol == cls)
 
+    /** Finds the requested annotation and returns Some(Tree) containing
+     *  the argument at position 'index', or None if either the annotation
+     *  or the index does not exist.
+     */
+    private def getAnnotationArg(cls: Symbol, index: Int) =
+      for (AnnotationInfo(_, args, _) <- getAnnotation(cls) ; if args.size > index) yield
+        args(index)
+
     /** Remove all annotations matching the given class. */
     def removeAnnotation(cls: Symbol): Unit =
       setAnnotations(annotations filterNot (_.atp.typeSymbol == cls))
@@ -446,26 +454,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         }
       }
 
-    def isDeprecated = hasAnnotation(DeprecatedAttr)
-    def deprecationMessage: Option[String] =
-      annotations find (_.atp.typeSymbol == DeprecatedAttr) flatMap { annot =>
-        annot.args match {
-          case Literal(const) :: Nil =>
-            Some(const.stringValue)
-          case _ =>
-            None
-        }
-      }
-    def elisionLevel: Option[Int] = {
-      if (!hasAnnotation(ElidableMethodClass)) None
-      else annotations find (_.atp.typeSymbol == ElidableMethodClass) flatMap { annot =>
-        // since we default to enabled by default, only look hard for falsity
-        annot.args match {
-          case Literal(Constant(x: Int)) :: Nil => Some(x)
-          case _                                => None
-        }
-      }
-    }
+    def isDeprecated        = hasAnnotation(DeprecatedAttr)
+    def deprecationMessage  = getAnnotationArg(DeprecatedAttr, 0) partialMap { case Literal(const) => const.stringValue }
+    def migrationMessage    = getAnnotationArg(MigrationAnnotationClass, 2) partialMap { case Literal(const) => const.stringValue }
+    def elisionLevel        = getAnnotationArg(ElidableMethodClass, 0) partialMap { case Literal(Constant(x: Int)) => x }
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =

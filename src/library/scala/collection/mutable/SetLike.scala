@@ -14,6 +14,7 @@ package mutable
 
 import generic._
 import script._
+import scala.annotation.migration
 
 /** A template trait for mutable sets of type `mutable.Set[A]`.
  *  @tparam A    the type of the elements of the set
@@ -62,6 +63,9 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    *  for better efficiency.
    */
   override protected[this] def newBuilder: Builder[A, This] = empty
+
+  @migration(2, 8, "Set.map now returns a Set, so it will discard duplicate values.")
+  override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = super.map(f)(bf)
 
   /** Adds an element to this $coll.
    *

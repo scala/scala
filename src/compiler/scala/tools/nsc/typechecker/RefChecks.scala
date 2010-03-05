@@ -927,6 +927,13 @@ abstract class RefChecks extends InfoTransform {
         unit.deprecationWarning(pos, msg)
       }
     }
+    /** Similar to deprecation: check if the symbol is marked with @migration
+     *  indicating it has changed semantics between versions.
+     */
+    private def checkMigration(sym: Symbol, pos: Position) =
+      for (msg <- sym.migrationMessage)
+        unit.warning(pos, "%s%s has changed semantics:\n %s".format(sym, sym.locationString, msg))
+
     /** Check that a deprecated val or def does not override a
       * concrete, non-deprecated method.  If it does, then
       * deprecation is meaningless.
@@ -1027,7 +1034,16 @@ abstract class RefChecks extends InfoTransform {
     private def transformSelect(tree: Select): Tree = {
       val Select(qual, name) = tree
       val sym = tree.symbol
+
+      /** Note: if a symbol has both @deprecated and @migration annotations and both
+       *  warnings are enabled, only the first one checked here will be emitted.
+       *  I assume that's a consequence of some code trying to avoid noise by suppressing
+       *  warnings after the first, but I think it'd be better if we didn't have to
+       *  arbitrarily choose one as more important than the other.
+       */
       checkDeprecated(sym, tree.pos)
+      if (settings.Xmigration28.value)
+        checkMigration(sym, tree.pos)
 
       if (currentClass != sym.owner && (sym hasFlag LOCAL)) {
         var o = currentClass
