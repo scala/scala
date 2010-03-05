@@ -230,11 +230,4 @@ object ClassManifest {
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
     }
-
-  /** ClassManifest for the intersection type `parents_0 with ... with parents_n'. */
-  def intersectionType[T](parents: ClassManifest[_]*): ClassManifest[T] =
-    new (ClassManifest[T] @serializable) {
-      def erasure = parents.head.erasure
-      override def toString = parents.mkString(" with ")
-    }
 }
