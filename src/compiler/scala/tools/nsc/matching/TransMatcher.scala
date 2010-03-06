@@ -44,7 +44,7 @@ trait TransMatcher extends ast.TreeDSL {
   {
     import context._
 
-    def matchError(obj: Tree) = atPos(selector.pos)(THROW(MatchErrorClass, obj))
+    def matchError(obj: Tree) = atPos(selector.pos)(MATCHERROR(obj))
     def caseIsOk(c: CaseDef)  = cond(c.pat) { case _: Apply | Ident(nme.WILDCARD) => true }
     def rootTypes             = selector.tpe.typeArgs
 

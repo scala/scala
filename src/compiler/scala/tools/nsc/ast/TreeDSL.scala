@@ -88,6 +88,8 @@ trait TreeDSL {
       def ANY_>=  (other: Tree)     = fn(target, nme.GE, other)
       def ANY_<=  (other: Tree)     = fn(target, nme.LE, other)
       def OBJ_!=  (other: Tree)     = fn(target, Object_ne, other)
+      def OBJ_EQ  (other: Tree)     = fn(target, nme.eq, other)
+      def OBJ_NE  (other: Tree)     = fn(target, nme.ne, other)
 
       def INT_|   (other: Tree)     = fn(target, getMember(IntClass, nme.OR), other)
       def INT_&   (other: Tree)     = fn(target, getMember(IntClass, nme.AND), other)
@@ -187,10 +189,11 @@ trait TreeDSL {
     }
 
     /** Top level accessible. */
-    def THROW(sym: Symbol, msg: Tree = null) = {
-      val arg: List[Tree] = if (msg == null) Nil else List(msg.TOSTRING())
-      Throw(New(TypeTree(sym.tpe), List(arg)))
-    }
+    def MATCHERROR(arg: Tree) = Throw(New(TypeTree(MatchErrorClass.tpe), List(List(arg))))
+    /** !!! should generalize null guard from match error here. */
+    def THROW(sym: Symbol): Throw = Throw(New(TypeTree(sym.tpe), List(Nil)))
+    def THROW(sym: Symbol, msg: Tree): Throw = Throw(New(TypeTree(sym.tpe), List(List(msg.TOSTRING()))))
+
     def NEW(tpe: Tree, args: Tree*)   = New(tpe, List(args.toList))
     def NEW(sym: Symbol, args: Tree*) =
       if (args.isEmpty) New(TypeTree(sym.tpe))
