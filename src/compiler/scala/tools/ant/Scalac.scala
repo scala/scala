@@ -619,7 +619,7 @@ class Scalac extends MatchingTask with ScalacShared {
           for (setting <- settings.visibleSettings ; arg <- setting.unparse)
             out println escapeArgument(arg)
           for (file <- sourceFiles)
-            out println file.getAbsolutePath
+            out println escapeArgument(file.getAbsolutePath)
         }
         finally out.close()
 
