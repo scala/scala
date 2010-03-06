@@ -247,11 +247,11 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     // Option classes
     lazy val OptionClass: Symbol  = getClass("scala.Option")
     lazy val SomeClass: Symbol    = getClass("scala.Some")
-    lazy val NoneClass: Symbol    = getModule("scala.None")
+    lazy val NoneModule: Symbol    = getModule("scala.None")
 
     def isOptionType(tp: Type)  = cond(tp.normalize) { case TypeRef(_, OptionClass, List(_)) => true }
     def isSomeType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   SomeClass, List(_)) => true }
-    def isNoneType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   NoneClass, List(_)) => true }
+    def isNoneType(tp: Type)    = cond(tp.normalize) { case TypeRef(_,   NoneModule, List(_)) => true }
 
     def optionType(tp: Type)    = typeRef(OptionClass.typeConstructor.prefix, OptionClass, List(tp))
     def someType(tp: Type)      = typeRef(SomeClass.typeConstructor.prefix, SomeClass, List(tp))
