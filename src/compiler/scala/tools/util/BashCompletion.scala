@@ -7,7 +7,6 @@ package scala.tools
 package util
 
 import nsc.{ Global, Settings }
-import Settings._
 
 /** Examines Settings and generates a bash completion file
  *  containing both bells and whistles.
@@ -83,6 +82,7 @@ _scala_commands
   """.trim
 
   private lazy val settings = new Settings()
+  import settings._
 
   val phaseNames = "all" :: (new Global(settings) phaseNames)
   val phaseSettings = settings.visibleSettings partialMap { case x: PhasesSetting => "\"" + x.name + "\"" }

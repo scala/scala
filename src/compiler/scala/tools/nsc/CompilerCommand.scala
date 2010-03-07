@@ -6,7 +6,6 @@
 
 package scala.tools.nsc
 
-import Settings.Setting
 import java.io.IOException
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.util.ArgumentsExpander
@@ -21,6 +20,8 @@ class CompilerCommand(
 {
   def this(arguments: List[String], settings: Settings, error: String => Unit, interactive: Boolean) =
     this(arguments, settings, error, interactive, true)
+
+  type Setting = Settings#Setting
 
   /** file extensions of files that the compiler can process */
   lazy val fileEndings = Properties.fileEndings
@@ -46,7 +47,7 @@ class CompilerCommand(
 
   /** Messages explaining usage and options */
   def usageMsg    = createUsageMsg("where possible standard", _.isStandard)
-  def fscUsageMsg = createUsageMsg("where possible standard", ( st => st.isStandard || st.isFscSpecific ))
+  def fscUsageMsg = createUsageMsg("where possible standard", ( st => st.isStandard || st.name == "-shutdown"))
   def xusageMsg   = createUsageMsg("Possible advanced", _.isAdvanced)
   def yusageMsg   = createUsageMsg("Possible private", _.isPrivate)
 
