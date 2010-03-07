@@ -77,7 +77,7 @@ x = BitSet(2, 3)
 y = BitSet(2, 3)
 x equals y: true, y equals x: true
 
-x = Map(2 -> B, 1 -> A, 3 -> C)
+x = Map(1 -> A, 2 -> B, 3 -> C)
 y = Map(1 -> A, 2 -> B, 3 -> C)
 x equals y: true, y equals x: true
 

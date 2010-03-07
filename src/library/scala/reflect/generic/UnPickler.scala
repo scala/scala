@@ -701,7 +701,7 @@ abstract class UnPickler {
       val pflags = (pflagsHi.toLong << 32) + pflagsLo
       val flags = pickledToRawFlags(pflags)
       val privateWithin = readNameRef()
-      Modifiers(flags, privateWithin, Nil, new Map.EmptyMap)
+      Modifiers(flags, privateWithin, Nil, Map.empty)
     }
 
     /* Read a reference to a pickled item */

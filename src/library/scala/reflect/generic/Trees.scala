@@ -63,7 +63,7 @@ trait Trees { self: Universe =>
       copy(positions = positions + (flag -> position))
   }
 
-  def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List(), new Map.EmptyMap)
+  def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List(), Map.empty)
   def Modifiers(flags: Long): Modifiers = Modifiers(flags, mkTypeName(nme.EMPTY))
 
   lazy val NoMods = Modifiers(0)

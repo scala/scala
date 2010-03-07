@@ -44,7 +44,7 @@ trait Map[A, +B] extends Iterable[(A, B)]
 object Map extends ImmutableMapFactory[Map] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
 
-  def empty[A, B]: Map[A, B] = new EmptyMap[A, B]
+  def empty[A, B]: Map[A, B] = EmptyMap.asInstanceOf[Map[A, B]]
 
   class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends Map[A, B] {
     override def size = underlying.size
@@ -58,12 +58,22 @@ object Map extends ImmutableMapFactory[Map] {
   }
 
   @serializable
-  class EmptyMap[A, +B] extends Map[A, B] {
+  private object EmptyMap extends Map[Any, Nothing] {
+    override def size: Int = 0
+    def get(key: Any): Option[Nothing] = None
+    def iterator: Iterator[(Any, Nothing)] = Iterator.empty
+    override def updated [B1] (key: Any, value: B1): Map[Any, B1] = new Map1(key, value)
+    def + [B1](kv: (Any, B1)): Map[Any, B1] = updated(kv._1, kv._2)
+    def - (key: Any): Map[Any, Nothing] = this
+  }
+
+  @serializable @deprecated("use `Map.empty' instead")
+  class EmptyMap[A,B] extends Map[A,B] {
     override def size: Int = 0
     def get(key: A): Option[B] = None
     def iterator: Iterator[(A, B)] = Iterator.empty
-    override def updated [B1 >: B] (key: A, value: B1): Map[A, B1] = new Map1(key, value)
-    def + [B1 >: B](kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
+    override def updated [B1] (key: A, value: B1): Map[A, B1] = new Map1(key, value)
+    def + [B1](kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
     def - (key: A): Map[A, B] = this
   }
 
@@ -78,7 +88,7 @@ object Map extends ImmutableMapFactory[Map] {
       else new Map2(key1, value1, key, value)
     def + [B1 >: B](kv: (A, B1)): Map[A, B1] = updated(kv._1, kv._2)
     def - (key: A): Map[A, B] =
-      if (key == key1) empty else this
+      if (key == key1) Map.empty else this
     override def foreach[U](f: ((A, B)) =>  U): Unit = {
       f((key1, value1))
     }
