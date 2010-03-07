@@ -19,7 +19,7 @@ trait StandardScalaSettings {
   val classpath: PathSetting
   val d: OutputSetting
   val extdirs: PathSetting
-  val g: DebugSetting
+  val g: ChoiceSetting
   val javabootclasspath: PathSetting
   val javaextdirs: PathSetting
   val javaignorecp: BooleanSetting

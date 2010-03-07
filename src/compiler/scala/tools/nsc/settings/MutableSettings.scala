@@ -174,8 +174,8 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   }
 
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
-  def ChoiceSetting(name: String, descr: String, choices: List[String], default: String) = add(new ChoiceSetting(name, descr, choices, default))
-  def DebugSetting(name: String, descr: String, choices: List[String], default: String, defaultEmpty: String) = add(new DebugSetting(name, descr, choices, default, defaultEmpty))
+  def ChoiceSetting(name: String, descr: String, choices: List[String], default: String) =
+    add(new ChoiceSetting(name, descr, choices, default))
   def DefinesSetting() = add(new DefinesSetting())
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
@@ -494,8 +494,10 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     type T = String
     protected var v: String = default
     protected def argument: String = name drop 1
+    def indexOfChoice: Int = choices indexOf value
 
     def tryToSet(args: List[String]) = { value = default ; Some(args) }
+
     override def tryToSetColon(args: List[String]) = args match {
       case Nil                            => errorAndValue("missing " + argument, None)
       case List(x) if choices contains x  => value = x ; Some(Nil)
@@ -506,33 +508,6 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       if (value == default) Nil else List(name + ":" + value)
 
     withHelpSyntax(name + ":<" + argument + ">")
-  }
-
-  /** Same as ChoiceSetting but have a <code>level</code> int which tells the
-   *  index of the selected choice. The <code>defaultEmpty</code> is used when
-   *  this setting is used without specifying any of the available choices.
-   */
-  class DebugSetting private[nsc](
-    name: String,
-    descr: String,
-    choices: List[String],
-    default: String,
-    val defaultEmpty: String)
-  extends ChoiceSetting(name, descr, choices, default) {
-    def indexOf[T](xs: List[T], e: T): Option[Int] = xs.indexOf(e) match {
-      case -1 => None
-      case x  => Some(x)
-    }
-    var level: Int = indexOf(choices, default).get
-
-    override def value_=(choice: String) = {
-      super.value_=(choice)
-      level = indexOf(choices, choice).get
-    }
-
-    override def tryToSet(args: List[String]) =
-      if (args.isEmpty) { value = defaultEmpty ; Some(Nil) }
-      else super.tryToSet(args)
   }
 
   /** A setting represented by a list of strings which should be prefixes of

@@ -64,7 +64,7 @@ trait ScalacSettings extends AbsScalacSettings with StandardScalaSettings {
   val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
   val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.sourceEncoding)
   val explaintypes  = BooleanSetting    ("-explaintypes", "Explain type errors in more detail")
-  val g             = DebugSetting      ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars", "vars")
+  val g             = ChoiceSetting     ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help          = BooleanSetting    ("-help", "Print a synopsis of standard options")
   val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all") .
                                           withHelpSyntax("-make:<strategy>")

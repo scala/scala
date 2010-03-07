@@ -11,7 +11,6 @@ trait AbsScalacSettings {
 
   type BooleanSetting <: AbsSetting
   type ChoiceSetting <: AbsSetting
-  type DebugSetting <: AbsSetting
   type DefinesSetting <: AbsSetting
   type IntSetting <: AbsSetting
   type MultiStringSetting <: AbsSetting
@@ -24,7 +23,6 @@ trait AbsScalacSettings {
 
   def BooleanSetting(name: String, descr: String): BooleanSetting
   def ChoiceSetting(name: String, descr: String, choices: List[String], default: String): ChoiceSetting
-  def DebugSetting(name: String, descr: String, choices: List[String], default: String, defaultEmpty: String): DebugSetting
   def DefinesSetting(): DefinesSetting
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]): IntSetting
   def MultiStringSetting(name: String, arg: String, descr: String): MultiStringSetting
