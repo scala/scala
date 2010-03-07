@@ -4,12 +4,16 @@
 
 package scala.tools
 
+import java.io.{ File => JFile }
 import nsc.io.{ Path, Process, Directory }
 import util.{ PathResolver }
 import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 
 package object partest {
   import nest.NestUI
+
+  implicit private[partest] def temporaryPath2File(x: Path): JFile = x.jfile
+  implicit private[partest] def temporaryFile2Path(x: JFile): Path = Path(x)
 
   def basename(name: String): String = Path(name).stripExtension
   def resultsToStatistics(results: Iterable[(_, Int)]): (Int, Int) = {

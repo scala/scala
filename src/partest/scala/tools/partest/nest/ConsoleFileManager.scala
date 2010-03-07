@@ -23,9 +23,6 @@ import RunnerUtils._
 
 
 class ConsoleFileManager extends FileManager {
-  implicit private def temporaryPath2File(x: Path): File = x.jfile
-  implicit private def temporaryFile2Path(x: File): Path = Path(x)
-
   var testBuild: Option[String] = PartestDefaults.testBuild
   def testBuildFile = testBuild map (testParent / _)
 

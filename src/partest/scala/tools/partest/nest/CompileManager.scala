@@ -8,10 +8,11 @@
 package scala.tools.partest
 package nest
 
-import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError }
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.{ Global, Settings, CompilerCommand, FatalError, io }
+import scala.tools.nsc.reporters.{ Reporter, ConsoleReporter }
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
+import io.Path
 
 import java.io.{ File, BufferedReader, PrintWriter, FileReader, Writer, FileWriter, StringWriter }
 import File.pathSeparator
@@ -40,14 +41,15 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     newGlobal(settings, rep)
   }
 
-  def newSettings = {
+  def newSettings(out: Option[String]) = {
     val settings = new TestSettings(fileManager)
     settings.deprecation.value = true
     settings.nowarnings.value = false
-    settings.encoding.value = "iso-8859-1"
-    settings.classpath.value += (pathSeparator + fileManager.LATEST_LIB)
-    // XXX
-    // settings.javabootAppend.value = fileManager.LATEST_LIB
+    settings.encoding.value = "ISO-8859-1"    // XXX why?
+
+    val classpathElements = settings.classpath.value :: fileManager.LATEST_LIB :: out.toList
+    settings.classpath.value = ClassPath.join(classpathElements: _*)
+    out foreach (settings.outdir.value = _)
 
     settings
   }
@@ -56,50 +58,36 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
     new ExtConsoleReporter(sett, Console.in, new PrintWriter(writer))
 
   private def updatePluginPath(options: String): String = {
-    val (opt1, opt2) =
-      (options split "\\s").toList partition (_ startsWith "-Xplugin:")
-    (opt2 mkString " ")+(
-      if (opt1.isEmpty) ""
-      else {
-        def absolutize(path: String): List[String] = {
-          val args = (path substring 9 split pathSeparator).toList
-          val plugins = args map (arg =>
-            if (new File(arg).isAbsolute) arg
-            else fileManager.testRootPath+File.separator+arg
-          )
-          plugins
-        }
-        " -Xplugin:"+((opt1 flatMap absolutize) mkString pathSeparator)
-      }
-    )
+    val dir = fileManager.testRootDir
+    def absolutize(path: String) = Path(path) match {
+      case x if x.isAbsolute  => x.path
+      case x                  => (fileManager.testRootDir / x).toAbsolute.path
+    }
+
+    val (opt1, opt2) = (options split "\\s").toList partition (_ startsWith "-Xplugin:")
+    val plugins = opt1 map (_ stripPrefix "-Xplugin:") flatMap (_ split pathSeparator) map absolutize
+    val pluginOption = if (opt1.isEmpty) Nil else List("-Xplugin:" + (plugins mkString pathSeparator))
+
+    (opt2 ::: pluginOption) mkString " "
   }
 
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean = {
-    val testSettings = newSettings
+    val testSettings = newSettings(out map (_.getAbsolutePath))
     val logWriter = new FileWriter(log)
 
     // check whether there is a ".flags" file
-    val testBase = {
-      val logBase = basename(log.getName)
-      logBase.substring(0, logBase.length-4)
-    }
-    val argsFile = new File(log.getParentFile, testBase+".flags")
-    val argString = if (argsFile.exists) {
-      val fileReader = new FileReader(argsFile)
-      val reader = new BufferedReader(fileReader)
-      val options = updatePluginPath(reader.readLine())
-      reader.close()
-      options
-    } else ""
+    val flagsFileName = "%s.flags" format (basename(log.getName) dropRight 4) // 4 is "-run" or similar
+    val argString = (io.File(log).parent / flagsFileName) ifFile (x => updatePluginPath(x.slurp())) getOrElse ""
     val allOpts = fileManager.SCALAC_OPTS+" "+argString
+    val args = (allOpts split "\\s").toList
+
     NestUI.verbose("scalac options: "+allOpts)
 
-    val args = (allOpts split "\\s").toList
     val command = new CompilerCommand(args, testSettings, _ => (), false)
     val global = newGlobal(command.settings, logWriter)
     val testRep: ExtConsoleReporter = global.reporter.asInstanceOf[ExtConsoleReporter]
 
-    val testFileFn: (File, FileManager, Boolean) => TestFile = kind match {
+    val testFileFn: (File, FileManager) => TestFile = kind match {
       case "pos"        => PosTestFile.apply
       case "neg"        => NegTestFile.apply
       case "run"        => RunTestFile.apply
@@ -108,14 +96,8 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
       case "scalap"     => ScalapTestFile.apply
       case "scalacheck" => ScalaCheckTestFile.apply
     }
-    val test: TestFile = testFileFn(files.head, fileManager, out.isEmpty)
-    test defineSettings command.settings
-
-    out map { outDir =>
-      command.settings.outdir.value = outDir.getAbsolutePath
-      command.settings.classpath.value += (pathSeparator + outDir.getAbsolutePath)
-    }
-
+    val test: TestFile = testFileFn(files.head, fileManager)
+    test.defineSettings(command.settings, out.isEmpty)
     val toCompile = files map (_.getPath)
 
     try {
