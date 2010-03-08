@@ -1689,14 +1689,14 @@ A type's typeSymbol should never be inspected directly.
           val xform = transform(sym.info.resultType)
           assert(xform ne this, this)
           xform.normalize // cycles have been checked in typeRef
-        } else {
-          PolyType(typeParams, transform(sym.info.resultType).normalize)  // eta-expand
+        } else { // should rarely happen, if at all
+          PolyType(sym.info.typeParams, transform(sym.info.resultType).normalize)  // eta-expand -- for regularity, go through sym.info for typeParams
           // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
         }
       } else if (isHigherKinded) {
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
-        // @M: initialize needed (see test/files/pos/ticket0137.scala)
-        PolyType(typeParams, typeRef(pre, sym.initialize, dummyArgs))
+        // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
+        PolyType(sym.info.typeParams, typeRef(pre, sym, dummyArgs)) // must go through sym.info for typeParams
       } else if (sym.isRefinementClass) {
         sym.info.normalize // @MO to AM: OK?
         //@M I think this is okay, but changeset 12414 (which fixed #1241) re-introduced another bug (#2208)
@@ -1918,6 +1918,7 @@ A type's typeSymbol should never be inspected directly.
    */
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type {
+    // assert(!(typeParams contains NoSymbol), this)
 
     override def paramSectionCount: Int = resultType.paramSectionCount
     override def paramss: List[List[Symbol]] = resultType.paramss

@@ -1840,7 +1840,7 @@ self =>
         }
         val nameOffset = in.offset
         val pname =
-          (if (in.token == USCORE) { // @M! also allow underscore
+          (if (in.token == USCORE) { // TODO AM: freshName(o2p(in.skipToken()), "_$$"), will need to update test suite
             in.nextToken()
             nme.WILDCARD
           } else ident()).toTypeName
