@@ -1,0 +1,10 @@
+t3115.scala:6: warning: object Math in object sc is deprecated: 
+  println(sc.Math)
+             ^
+t3115.scala:7: warning: object Math in package scala is deprecated: use scala.math package instead
+  println(scala.Math)
+                ^
+t3115.scala:8: warning: object Math in package scala is deprecated: use scala.math package instead
+  scala.Math.Pi
+        ^
+three warnings found
