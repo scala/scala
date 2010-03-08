@@ -105,12 +105,9 @@ abstract class ExplicitOuter extends InfoTransform
   def transformInfo(sym: Symbol, tp: Type): Type = tp match {
     case MethodType(params, restpe1) =>
       val restpe = transformInfo(sym, restpe1)
-      if (sym.owner.isTrait && ((sym hasFlag SUPERACCESSOR) || sym.isModule)) { // 5
+      if (sym.owner.isTrait && ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
       }
-      // moved form the term transformer
-      if (sym.owner.isTrait && (sym hasFlag (ACCESSOR | SUPERACCESSOR)))
-        sym.makeNotPrivate(sym.owner); //(2)
       if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) { // 1
         val p = sym.newValueParameter(sym.pos, "arg" + nme.OUTER)
@@ -154,7 +151,14 @@ abstract class ExplicitOuter extends InfoTransform
       if (restp eq restp1) tp else PolyType(tparams, restp1)
 
     case _ =>
-        tp
+      // Local fields of traits need to be unconditionally unprivatized.
+      // Reason: Those fields might need to be unprivatized if referenced by an inner class.
+      // On the other hand, mixing in the trait into a separately compiled
+      // class needs to have a common naming scheme, independently of whether
+      // the field was accessed from an inner class or not. See #2946
+      if (sym.owner.isTrait && (sym hasFlag LOCAL))
+        sym.makeNotPrivate(sym.owner)
+      tp
   }
 
   /** A base class for transformers that maintain <code>outerParam</code>
