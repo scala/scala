@@ -1392,6 +1392,13 @@ BOOTRAPING TEST AND TEST SUITE
       <exclude name="*.complete"/>
     </same>
   </target>
+  
+  <!-- this target will run only those tests found in test/debug -->
+  <target name="test.debug">
+    <antcall target="test.suite">
+      <param name="partest.srcdir" value="debug" />
+    </antcall>
+  </target>
 
   <target name="test.run" depends="pack.done">
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
@@ -1409,24 +1416,26 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
 
   <target name="test.suite" depends="pack.done">
+    <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
-             timeout="2400000" javaccmd="${javac.cmd}"
+             timeout="2400000" javaccmd="${javac.cmd}" 
+             srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
       <compilationpath>
         <path refid="pack.classpath"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
-      <postests  dir="${partest.dir}/files/pos" includes="*.scala"/>
-      <negtests  dir="${partest.dir}/files/neg" includes="*.scala"/>
-      <runtests  dir="${partest.dir}/files">
+      <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
+      <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
+      <runtests  dir="${partest.dir}/${partest.srcdir}">
         <include name="run/**/*.scala"/>
       </runtests>
-      <jvmtests dir="${partest.dir}/files/jvm" includes="*.scala"/>
-	  <scalachecktests dir="${partest.dir}/files/scalacheck" includes="**/*.scala"/>
-      <residenttests dir="${partest.dir}/files/res" includes="*.res"/>
-      <buildmanagertests dir="${partest.dir}/files/buildmanager" includes="*"/>
-      <scalaptests dir="${partest.dir}/files/scalap" includes="**/*.scala"/>
-      <!-- <scripttests dir="${partest.dir}/files/script" includes="*.scala"/> -->
+      <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
+	  <scalachecktests dir="${partest.dir}/${partest.srcdir}/scalacheck" includes="**/*.scala"/>
+      <residenttests dir="${partest.dir}/${partest.srcdir}/res" includes="*.res"/>
+      <buildmanagertests dir="${partest.dir}/${partest.srcdir}/buildmanager" includes="*"/>
+      <scalaptests dir="${partest.dir}/${partest.srcdir}/scalap" includes="**/*.scala"/>
+      <!-- <scripttests dir="${partest.dir}/${partest.srcdir}/script" includes="*.scala"/> -->
     </partest>
   </target>
 

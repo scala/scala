@@ -48,9 +48,9 @@ class ConsoleFileManager extends FileManager {
     SCALAC_OPTS = SCALAC_OPTS+" "+moreOpts
   }
 
-  val srcDir        = PathSettings.srcDir
-  val testRootDir   = PathSettings.testRoot
-  val testRootPath  = testRootDir.toAbsolute.path
+  lazy val srcDir        = PathSettings.srcDir
+  lazy val testRootDir   = PathSettings.testRoot
+  lazy val testRootPath  = testRootDir.toAbsolute.path
   def testParent    = testRootDir.parent
 
   var CLASSPATH   = PartestDefaults.classPath
