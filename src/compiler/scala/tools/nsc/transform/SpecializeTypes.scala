@@ -930,7 +930,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 Apply(
                   Select(New(TypeTree(findSpec(tpt.tpe))), nme.CONSTRUCTOR),
                   transformTrees(args))))
-          } else tree
+          } else super.transform(tree)
 
         case TypeApply(Select(qual, name), targs) if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) =>
           log("checking typeapp for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe)
