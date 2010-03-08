@@ -43,8 +43,8 @@ trait Constants { self: Universe =>
       else if (value.isInstanceOf[Float]) FloatTag
       else if (value.isInstanceOf[Double]) DoubleTag
       else if (value.isInstanceOf[String]) StringTag
-      else if (value.isInstanceOf[Type]) ClassTag
-      else if (value.isInstanceOf[Symbol]) EnumTag
+      else if (value.isInstanceOf[AbsType]) ClassTag
+      else if (value.isInstanceOf[AbsSymbol]) EnumTag
       else if (value == null) NullTag
       else throw new Error("bad constant value: " + value)
 
