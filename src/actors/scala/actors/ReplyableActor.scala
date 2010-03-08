@@ -84,19 +84,25 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
   override def !!(msg: Any): Future[Any] = {
     val ftch = new Channel[Any](Actor.self(thiz.scheduler))
     val linkedChannel = new AbstractActor {
-      type Future[+R] = scala.actors.Future[R]
-      def !(msg: Any) =
+      def !(msg: Any) = {
         ftch ! msg
-      def send(msg: Any, replyTo: OutputChannel[Any]) =
+        thiz unlinkFrom this
+      }
+      def send(msg: Any, replyTo: OutputChannel[Any]) = {
         ftch.send(msg, replyTo)
-      def forward(msg: Any) =
+        thiz unlinkFrom this
+      }
+      def forward(msg: Any) = {
         ftch.forward(msg)
+        thiz unlinkFrom this
+      }
       def receiver =
         ftch.receiver
       def linkTo(to: AbstractActor) { /* do nothing */ }
       def unlinkFrom(from: AbstractActor) { /* do nothing */ }
       def exit(from: AbstractActor, reason: AnyRef) {
         ftch.send(Exit(from, reason), thiz)
+        thiz unlinkFrom this
       }
       // should never be invoked; return dummy value
       def !?(msg: Any) = msg
@@ -113,7 +119,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
         Futures.fromInputChannel(someChan)
       }
     }
-    thiz.linkTo(linkedChannel)
+    thiz linkTo linkedChannel
     thiz.send(msg, linkedChannel)
     new Future[Any](ftch) {
       var exitReason: Option[Any] = None
@@ -135,13 +141,13 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
             else
               throw new ExecutionException(new Exception(reason.toString()))
           }
-        } else inputChannel.receive(handleReply andThen {(x: Unit) => apply()})
+        } else inputChannel.receive(handleReply andThen { _ => apply() })
 
       def respond(k: Any => Unit): Unit =
  	if (isSet)
           apply()
  	else
-          inputChannel.react(handleReply andThen {(x: Unit) => k(apply())})
+          inputChannel.react(handleReply andThen { _ => k(apply()) })
 
       def isSet = (fvalue match {
         case None =>
@@ -150,7 +156,7 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
               false
           }
           val whatToDo =
-            handleTimeout orElse (handleReply andThen {(x: Unit) => true})
+            handleTimeout orElse (handleReply andThen { _ => true })
           inputChannel.receiveWithin(0)(whatToDo)
         case Some(_) => true
       }) || !exitReason.isEmpty
