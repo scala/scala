@@ -1107,30 +1107,42 @@ trait Namers { self: Analyzer =>
       caseClassCopyMeth(cdef) foreach (namer.enterSyntheticSym(_))
     }
 
-    def typeSig(tree: Tree): Type = {
-      val sym: Symbol = tree.symbol
-      // For definitions, transform Annotation trees to AnnotationInfos, assign
-      // them to the sym's annotations. Type annotations: see Typer.typedAnnotated
 
-      // We have to parse definition annotatinos here (not in the typer when traversing
-      // the MemberDef tree): the typer looks at annotations of certain symbols; if
-      // they were added only in typer, depending on the compilation order, they would
-      // be visible or not
-      val annotated = if (sym.isModule) sym.moduleClass else sym
-      // typeSig might be called multiple times, e.g. on a ValDef: val, getter, setter
-      // parse the annotations only once.
-      if (!annotated.isInitialized) tree match {
-        case defn: MemberDef =>
-          val ainfos = defn.mods.annotations filter { _ != null } map { ann =>
-            // need to be lazy, #1782
-            LazyAnnotationInfo(() => typer.typedAnnotation(ann))
-          }
-          if (!ainfos.isEmpty)
-            annotated.setAnnotations(ainfos)
-          if (annotated.isTypeSkolem)
-            annotated.deSkolemize.setAnnotations(ainfos)
-        case _ =>
+    def typeSig(tree: Tree): Type = {
+
+      /** For definitions, transform Annotation trees to AnnotationInfos, assign
+       *  them to the sym's annotations. Type annotations: see Typer.typedAnnotated
+       *  We have to parse definition annotatinos here (not in the typer when traversing
+       *  the MemberDef tree): the typer looks at annotations of certain symbols; if
+       *  they were added only in typer, depending on the compilation order, they would
+       *  be visible or not
+       */
+      def annotate(annotated: Symbol) = {
+        // typeSig might be called multiple times, e.g. on a ValDef: val, getter, setter
+        // parse the annotations only once.
+        if (!annotated.isInitialized) tree match {
+          case defn: MemberDef =>
+            val ainfos = defn.mods.annotations filter { _ != null } map { ann =>
+              // need to be lazy, #1782
+              LazyAnnotationInfo(() => typer.typedAnnotation(ann))
+            }
+            if (!ainfos.isEmpty)
+              annotated.setAnnotations(ainfos)
+            if (annotated.isTypeSkolem)
+              annotated.deSkolemize.setAnnotations(ainfos)
+          case _ =>
+        }
       }
+
+      val sym: Symbol = tree.symbol
+
+      // @Lukas: I am not sure this is the right way to do things.
+      // We used to only decorate the module class with annotations, which is
+      // clearly wrong. Now we decorate both the class and the object.
+      // But maybe some annotations are only meant for one of these but not for the other?
+      annotate(sym)
+      if (sym.isModule) annotate(sym.moduleClass)
+
       val result =
         try {
           tree match {

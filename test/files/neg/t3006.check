@@ -1,0 +1,6 @@
+t3006.scala:8: error: type mismatch;
+ found   : java.lang.String("H")
+ required: Int
+  println(A(3) + "H")
+                 ^
+one error found
