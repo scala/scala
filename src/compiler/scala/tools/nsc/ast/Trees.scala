@@ -332,6 +332,12 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   case class Parens(args: List[Tree]) extends Tree // only used during parsing
 
+// ----- subconstructors --------------------------------------------
+
+  class ApplyToImplicitArgs(fun: Tree, args: List[Tree]) extends Apply(fun, args)
+
+  class ApplyImplicitView(fun: Tree, args: List[Tree]) extends Apply(fun, args)
+
 // ----- auxiliary objects and methods ------------------------------
 
   abstract class TreeCopier {
@@ -439,7 +445,11 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     def TypeApply(tree: Tree, fun: Tree, args: List[Tree]) =
       new TypeApply(fun, args).copyAttrs(tree)
     def Apply(tree: Tree, fun: Tree, args: List[Tree]) =
-      new Apply(fun, args).copyAttrs(tree)
+      (tree match {
+        case _: ApplyToImplicitArgs => new ApplyToImplicitArgs(fun, args)
+        case _: ApplyImplicitView => new ApplyImplicitView(fun, args)
+        case _ => new Apply(fun, args)
+      }).copyAttrs(tree)
     def ApplyDynamic(tree: Tree, qual: Tree, args: List[Tree]) =
       new ApplyDynamic(qual, args).copyAttrs(tree)
     def Super(tree: Tree, qual: Name, mix: Name) =

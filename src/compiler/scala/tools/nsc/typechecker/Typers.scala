@@ -208,7 +208,7 @@ trait Typers { self: Analyzer =>
           s traverse fun
           for (arg <- args) s traverse arg
         }
-        Apply(fun, args) setPos fun.pos
+        new ApplyToImplicitArgs(fun, args) setPos fun.pos
       case ErrorType =>
         fun
     }
@@ -1009,7 +1009,7 @@ trait Typers { self: Analyzer =>
                 if (coercion != EmptyTree) {
                   if (settings.debug.value) log("inferred view from "+tree.tpe+" to "+pt+" = "+coercion+":"+coercion.tpe)
                   return newTyper(context.makeImplicit(context.reportAmbiguousErrors)).typed(
-                    Apply(coercion, List(tree)) setPos tree.pos, mode, pt)
+                    new ApplyImplicitView(coercion, List(tree)) setPos tree.pos, mode, pt)
                 }
               }
             }
@@ -1039,6 +1039,7 @@ trait Typers { self: Analyzer =>
           ((qual.symbol eq null) || !qual.symbol.isTerm || qual.symbol.isValue) &&
           phase.id <= currentRun.typerPhase.id && !qtpe.isError &&
           qtpe.typeSymbol != NullClass && qtpe.typeSymbol != NothingClass && qtpe != WildcardType &&
+          !qual.isInstanceOf[ApplyImplicitView] && // don't chain views
           context.implicitsEnabled) { // don't try to adapt a top-level type that's the subject of an implicit search
                                       // this happens because, if isView, typedImplicit tries to apply the "current" implicit value to
                                       // a value that needs to be coerced, so we check whether the implicit value has an `apply` method
@@ -1050,7 +1051,7 @@ trait Typers { self: Analyzer =>
         }
         val coercion = inferView(qual, qtpe, searchTemplate, true)
         if (coercion != EmptyTree)
-          typedQualifier(atPos(qual.pos)(Apply(coercion, List(qual))))
+          typedQualifier(atPos(qual.pos)(new ApplyImplicitView(coercion, List(qual))))
         else
           qual
       } else {
@@ -3979,7 +3980,7 @@ trait Typers { self: Analyzer =>
                 error(tree.pos, "cannot create a generic multi-dimensional array of more than "+MaxArrayDims+" dimensions")
               val newArrayApp = atPos(tree.pos) {
                 val manif = getManifestTree(tree.pos, manifType, false)
-                Apply(Select(manif, if (level == 1) "newArray" else "newArray"+level), args)
+                new ApplyToImplicitArgs(Select(manif, if (level == 1) "newArray" else "newArray"+level), args)
               }
               typed(newArrayApp, mode, pt)
             case tree1 =>

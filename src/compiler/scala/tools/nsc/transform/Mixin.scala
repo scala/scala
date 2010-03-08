@@ -147,8 +147,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  only once per class. The mixedin flag is used to remember whether late
    *  members have been added to an interface.
    *    - lazy fields don't get a setter.
-   *
-   *  @param clazz ...
    */
   def addLateInterfaceMembers(clazz: Symbol) {
     if ((treatedClassInfos get clazz) != Some(clazz.info)) {
