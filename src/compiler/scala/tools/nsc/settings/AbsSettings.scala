@@ -59,6 +59,9 @@ trait AbsSettings {
     def helpDescription: String
     def unparse: List[String]     // A list of Strings which can recreate this setting.
 
+    /* For tools which need to populate lists of available choices */
+    def choices : List[String] = Nil
+
     /** In mutable Settings, these return the same object with a var set.
      *  In immutable, of course they will return a new object, which means
      *  we can't use "this.type", at least not in a non-casty manner, which

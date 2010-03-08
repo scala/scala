@@ -480,7 +480,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   class ChoiceSetting private[nsc](
     name: String,
     descr: String,
-    val choices: List[String],
+    override val choices: List[String],
     val default: String)
   extends Setting(name, descr + choices.mkString(" (", ",", ")")) {
     type T = String

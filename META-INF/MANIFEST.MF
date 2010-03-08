@@ -28,6 +28,7 @@ Export-Package:
  scala.tools.nsc.matching,
  scala.tools.nsc.plugins,
  scala.tools.nsc.reporters,
+ scala.tools.nsc.settings,
  scala.tools.nsc.symtab,
  scala.tools.nsc.symtab.classfile,
  scala.tools.nsc.transform,
