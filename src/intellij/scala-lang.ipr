@@ -1361,7 +1361,7 @@
     <option name="GENERATE_IIOP_STUBS" value="false" />
     <option name="ADDITIONAL_OPTIONS_STRING" value="" />
   </component>
-  <component name="ScalacSettings">
+  <component name="ScalaSettings">
     <option name="MAXIMUM_HEAP_SIZE" value="1024" />
     <option name="DEPRECATION" value="false" />
     <option name="UNCHECKED" value="false" />

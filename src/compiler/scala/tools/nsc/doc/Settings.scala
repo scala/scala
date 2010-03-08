@@ -32,5 +32,4 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   // working around issue described in r18708.
   suppressVTWarn.value = true
-
 }

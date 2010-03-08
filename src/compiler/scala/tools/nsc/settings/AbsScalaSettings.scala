@@ -6,17 +6,17 @@
 package scala.tools.nsc
 package settings
 
-trait AbsScalacSettings {
+trait AbsScalaSettings {
   self: AbsSettings =>
 
-  type BooleanSetting <: AbsSetting
-  type ChoiceSetting <: AbsSetting
-  type DefinesSetting <: AbsSetting
-  type IntSetting <: AbsSetting
-  type MultiStringSetting <: AbsSetting
-  type PathSetting <: AbsSetting
-  type PhasesSetting <: AbsSetting
-  type StringSetting <: AbsSetting
+  type BooleanSetting     <: AbsSetting { type T = Boolean }
+  type ChoiceSetting      <: AbsSetting { type T = String }
+  type DefinesSetting     <: AbsSetting { type T = List[(String, String)] }
+  type IntSetting         <: AbsSetting { type T = Int }
+  type MultiStringSetting <: AbsSetting { type T = List[String] }
+  type PathSetting        <: AbsSetting { type T = String }
+  type PhasesSetting      <: AbsSetting { type T = List[String] }
+  type StringSetting      <: AbsSetting { type T = String }
 
   type OutputDirs
   type OutputSetting <: AbsSetting
@@ -30,4 +30,11 @@ trait AbsScalacSettings {
   def PathSetting(name: String, arg: String, descr: String, default: String): PathSetting
   def PhasesSetting(name: String, descr: String): PhasesSetting
   def StringSetting(name: String, arg: String, descr: String, default: String): StringSetting
+
+  /** **/
+  abstract class SettingGroup(val prefix: String) extends AbsSetting {
+    def name = prefix
+    def helpDescription: String = error("todo")
+    def unparse: List[String] = List(name)
+  }
 }

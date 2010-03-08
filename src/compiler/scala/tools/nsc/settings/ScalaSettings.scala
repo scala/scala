@@ -11,17 +11,17 @@ import io.AbstractFile
 import util.{ ClassPath, SourceFile, CommandLineParser }
 import annotation.elidable
 import scala.tools.util.{ PathResolver, StringOps }
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ HashSet, ListBuffer }
 import scala.collection.immutable.TreeSet
 import interpreter.{ returning }
 
-trait ScalacSettings extends AbsScalacSettings with StandardScalaSettings {
+trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   self: MutableSettings =>
 
   import PathResolver.{ Defaults, Environment }
 
   /** Set of settings */
-  protected var allSettings = Set[Setting]()
+  protected lazy val allSettings = HashSet[Setting]()
 
   /** Disable a setting */
   def disable(s: Setting) = allSettings -= s
@@ -30,53 +30,19 @@ trait ScalacSettings extends AbsScalacSettings with StandardScalaSettings {
    *  Temporary Settings
    */
   val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
-  def appendToClasspath(entry: String) = {
-    val oldClasspath = classpath.value
-    classpath.value = ClassPath.join(classpath.value, entry)
-
-    if (Ylogcp.value)
-      Console.println("Updated classpath from '%s' to '%s'".format(oldClasspath, classpath.value))
-  }
-
-  /**
-   *  Classpath related settings
-   */
-
-  val classpath         = PathSetting     ("-classpath", "path", "Specify where to find user class files", ".") withAbbreviation ("-cp")
-  val bootclasspath     = PathSetting     ("-bootclasspath", "path", "Override location of bootstrap class files", Defaults.scalaBootClassPath)
-  val extdirs           = PathSetting     ("-extdirs", "dirs", "Override location of installed extensions", Defaults.scalaExtDirs)
-  val javabootclasspath = PathSetting     ("-javabootclasspath", "path", "Override java boot classpath.", Defaults.javaBootClassPath)
-  val javaextdirs       = PathSetting     ("-javaextdirs", "path", "Override java extdirs classpath.", Defaults.javaExtDirs)
-  /** This one is most likely temporary, but so helpful while I try to get an iron grip on the classpath. */
-  val javaignorecp      = BooleanSetting  ("-javaignorecp", "scala will not use java's -classpath no matter what.")
-
-  val d                 = OutputSetting   (outputDirs, ".")
-  val sourcepath        = StringSetting   ("-sourcepath", "path", "Specify where to find input source files", "")
-  val Ylogcp            = BooleanSetting  ("-Ylog-classpath", "Output information about what classpath is being applied.")
 
   /**
    *  Standard settings
    */
   // argfiles is only for the help message
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
+  val classpath     = PathSetting       ("-classpath", "path", "Specify where to find user class files", ".") .
+                                            withAbbreviation ("-cp")
+  val d             = OutputSetting     (outputDirs, ".")
   val defines       = DefinesSetting()
-  val dependencyfile  = StringSetting   ("-dependencyfile", "file", "Specify the file in which dependencies are tracked", ".scala_dependencies")
-  val deprecation   = BooleanSetting    ("-deprecation", "Output source locations where deprecated APIs are used")
-  val encoding      = StringSetting     ("-encoding", "encoding", "Specify character encoding used by source files", Properties.sourceEncoding)
-  val explaintypes  = BooleanSetting    ("-explaintypes", "Explain type errors in more detail")
-  val g             = ChoiceSetting     ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars")
-  val help          = BooleanSetting    ("-help", "Print a synopsis of standard options")
-  val make          = ChoiceSetting     ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all") .
-                                          withHelpSyntax("-make:<strategy>")
-  val nowarn        = BooleanSetting    ("-nowarn", "Generate no warnings")
-  val optimise      = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program").withAbbreviation("-optimize") .
-                            withPostSetHook(_ => List(inline, Xcloselim, Xdce) foreach (_.value = true))
-  val print         = BooleanSetting    ("-print", "Print program with all Scala-specific features removed")
-  val target        = ChoiceSetting     ("-target", "Specify for which target object files should be built", List("jvm-1.5", "msil"), "jvm-1.5")
-  val unchecked     = BooleanSetting    ("-unchecked", "Enable detailed unchecked warnings")
-  val uniqid        = BooleanSetting    ("-uniqid", "Print identifiers with unique names for debugging")
-  val verbose       = BooleanSetting    ("-verbose", "Output messages about what the compiler is doing")
-  val version       = BooleanSetting    ("-version", "Print product version and exit")
+  val optimise      = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program") .
+                                            withAbbreviation("-optimize") .
+                                            withPostSetHook(_ => List(inline, Xcloselim, Xdce) foreach (_.value = true))
 
   /**
    * -X "Advanced" settings
@@ -115,6 +81,16 @@ trait ScalacSettings extends AbsScalacSettings with StandardScalaSettings {
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases")
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader")
 
+  /** Compatibility stubs for options whose value name did
+   *  not previously match the option name.
+   */
+  def XO = optimise
+  def debuginfo = g
+  def dependenciesFile = dependencyfile
+  def nowarnings = nowarn
+  def outdir = d
+  def printLate = print
+
   /**
    * -Y "Private" settings
    */
@@ -132,6 +108,7 @@ trait ScalacSettings extends AbsScalacSettings with StandardScalaSettings {
   val Xlinearizer   = ChoiceSetting     ("-Ylinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo") .
                                           withHelpSyntax("-Ylinearizer:<which>")
   val log           = PhasesSetting     ("-Ylog", "Log operations in")
+  val Ylogcp        = BooleanSetting    ("-Ylog-classpath", "Output information about what classpath is being applied.")
   val Ynogenericsig = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java")
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")

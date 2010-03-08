@@ -17,7 +17,7 @@ trait AbsSettings {
   type Setting <: AbsSetting      // Fix to the concrete Setting type
   type ResultOfTryToSet           // List[String] in mutable, (Settings, List[String]) in immutable
   def errorFn: String => Unit
-  protected def allSettings: Set[Setting]
+  protected def allSettings: collection.Set[Setting]
 
   // settings minus internal usage settings
   def visibleSettings = allSettings filterNot (_.isInternalOnly)
@@ -58,6 +58,14 @@ trait AbsSettings {
     def name: String
     def helpDescription: String
     def unparse: List[String]     // A list of Strings which can recreate this setting.
+
+    /** In mutable Settings, these return the same object with a var set.
+     *  In immutable, of course they will return a new object, which means
+     *  we can't use "this.type", at least not in a non-casty manner, which
+     *  is unfortunate because we lose type information without it.
+     */
+    def withAbbreviation(name: String): Setting
+    def withHelpSyntax(help: String): Setting
 
     def helpSyntax: String = name
     def abbreviations: List[String] = Nil

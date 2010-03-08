@@ -16,7 +16,7 @@ import interpreter.{ returning }
 
 /** A mutable Settings object.
  */
-class MutableSettings(val errorFn: String => Unit) extends AbsSettings with ScalacSettings with Mutable {
+class MutableSettings(val errorFn: String => Unit) extends AbsSettings with ScalaSettings with Mutable {
   type ResultOfTryToSet = List[String]
 
   /** Iterates over the arguments applying them to settings where applicable.
@@ -166,9 +166,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   }
 
   // a wrapper for all Setting creators to keep our list up to date
-  // and tell them how to announce errors
   private def add[T <: Setting](s: T): T = {
-    s setErrorHandler errorFn
     allSettings += s
     s
   }
@@ -309,11 +307,6 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
    *  Subclasses each define a `value' field of the appropriate type.
    */
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue with Mutable {
-    /** Error handling function, set after creation by enclosing Settings instance */
-    private var _errorFn: String => Unit = _
-    private[nsc] def setErrorHandler(e: String => Unit) = _errorFn = e
-    def errorFn(msg: String) = _errorFn(msg)
-
     /** Will be called after this Setting is set for any extra work. */
     private var _postSetHook: this.type => Unit = (x: this.type) => ()
     def postSetHook() = { _postSetHook(this) ; this }
@@ -467,8 +460,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   extends Setting(name, descr) {
     type T = List[String]
     protected var v: List[String] = Nil
-    // def appendToValue(str: String) { value ++= List(str) }
-    def appendToValue(str: String) { value = value ++ List(str) } // ++= List(str) }
+    def appendToValue(str: String) { value ++= List(str) }
 
     def tryToSet(args: List[String]) = {
       val (strings, rest) = args span (x => !x.startsWith("-"))

@@ -6,55 +6,50 @@
 package scala.tools.nsc
 package settings
 
+import scala.tools.util.PathResolver.Defaults
+
 /** Settings which aren't behind a -X, -Y, or -P option.
- *  Wherever possible, the val and the option have identical.
- *  names.
+ *  When possible, the val and the option have identical names.
+ *  The abstract settings are commented as to why they are as yet
+ *  implemented in MutableSettings rather than mutation-generically.
  */
 trait StandardScalaSettings {
-  self: AbsScalacSettings =>
+  self: AbsScalaSettings =>
 
   /** Path related settings.
+   *  !!! javaignorecp is temporary while I try to get an iron grip on the classpath.
    */
-  val bootclasspath: PathSetting
-  val classpath: PathSetting
-  val d: OutputSetting
-  val extdirs: PathSetting
-  val g: ChoiceSetting
-  val javabootclasspath: PathSetting
-  val javaextdirs: PathSetting
-  val javaignorecp: BooleanSetting
-  val sourcepath: StringSetting
+  val bootclasspath =     PathSetting ("-bootclasspath", "path", "Override location of bootstrap class files", Defaults.scalaBootClassPath)
+  val classpath:          PathSetting // is mutated directly in various places (thus inspiring this very effort)
+  val d:                OutputSetting // depends on mutable OutputDirs class
+  val extdirs =           PathSetting ("-extdirs", "dirs", "Override location of installed extensions", Defaults.scalaExtDirs)
+  val javabootclasspath = PathSetting ("-javabootclasspath", "path", "Override java boot classpath.", Defaults.javaBootClassPath)
+  val javaextdirs =       PathSetting ("-javaextdirs", "path", "Override java extdirs classpath.", Defaults.javaExtDirs)
+  val javaignorecp =   BooleanSetting ("-javaignorecp", "scala will not use java's -classpath no matter what.")
+  val sourcepath =      StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
 
   /** Other settings.
    */
-  val dependencyfile: StringSetting
-  val deprecation: BooleanSetting
-  val encoding: StringSetting
-  val explaintypes: BooleanSetting
-  val help: BooleanSetting
-  val make: ChoiceSetting
-  val nowarn: BooleanSetting
-  val optimise: BooleanSetting
-  val print: BooleanSetting
-  val target: ChoiceSetting
-  val unchecked: BooleanSetting
-  val uniqid: BooleanSetting
-  val verbose: BooleanSetting
-  val version: BooleanSetting
+  val dependencyfile =  StringSetting ("-dependencyfile", "file", "Specify the file in which dependencies are tracked", ".scala_dependencies")
+  val deprecation =    BooleanSetting ("-deprecation", "Output source locations where deprecated APIs are used")
+  val encoding =        StringSetting ("-encoding", "encoding", "Specify character encoding used by source files", Properties.sourceEncoding)
+  val explaintypes =   BooleanSetting ("-explaintypes", "Explain type errors in more detail")
+  val g =               ChoiceSetting ("-g", "Specify level of generated debugging info", List("none", "source", "line", "vars", "notailcalls"), "vars")
+  val help =           BooleanSetting ("-help", "Print a synopsis of standard options")
+  val make =            ChoiceSetting ("-make", "Specify recompilation detection strategy", List("all", "changed", "immediate", "transitive", "transitivenocp"), "all") .
+                                          withHelpSyntax("-make:<strategy>")
+  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings")
+  val optimise:        BooleanSetting // depends on post hook which mutates other settings
+  val print =          BooleanSetting ("-print", "Print program with all Scala-specific features removed")
+  val target =          ChoiceSetting ("-target", "Specify for which target object files should be built", List("jvm-1.5", "msil"), "jvm-1.5")
+  val unchecked =      BooleanSetting ("-unchecked", "Enable detailed unchecked warnings")
+  val uniqid =         BooleanSetting ("-uniqid", "Print identifiers with unique names for debugging")
+  val verbose =        BooleanSetting ("-verbose", "Output messages about what the compiler is doing")
+  val version =        BooleanSetting ("-version", "Print product version and exit")
 
   /** These are @<file> and -Dkey=val style settings, which don't
    *  nicely map to identifiers.
    */
-  val argfiles: BooleanSetting
-  val defines: DefinesSetting
-
-  /** Compatibility stubs for options whose value name did
-   *  not previously match the option name.
-   */
-  def XO = optimise
-  def debuginfo = g
-  def dependenciesFile = dependencyfile
-  def nowarnings = nowarn
-  def outdir = d
-  def printLate = print
+  val argfiles: BooleanSetting  // exists only to echo help message, should be done differently
+  val defines: DefinesSetting   // not entirely clear that DefinesSetting makes sense as a Setting
 }

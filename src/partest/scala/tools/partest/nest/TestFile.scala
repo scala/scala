@@ -24,12 +24,12 @@ abstract class TestFile(kind: String) {
   def setOutDirTo = objectDir
 
   def defineSettings(settings: Settings, setOutDir: Boolean) = {
-    settings appendToClasspath dir.path
+    settings.classpath append dir.path
     if (setOutDir)
       settings.outdir.value = setOutDirTo.path
 
     flags foreach (settings processArgumentString _)
-    settings appendToClasspath fileManager.CLASSPATH
+    settings.classpath append fileManager.CLASSPATH
   }
 
   override def toString(): String = "%s %s".format(kind, file)
