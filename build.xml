@@ -1397,10 +1397,10 @@ BOOTRAPING TEST AND TEST SUITE
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="1200000" javaccmd="${javac.cmd}"
              scalacopts="${scalac.args.optimise}">
-      <classpath>
+      <compilationpath>
         <path refid="pack.classpath"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar"/>
-      </classpath>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
       <runtests  dir="${partest.dir}/files">
         <include name="run/**/*.scala"/>
         <include name="jvm/**/*.scala"/>
@@ -1412,10 +1412,10 @@ BOOTRAPING TEST AND TEST SUITE
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000" javaccmd="${javac.cmd}"
              scalacopts="${scalac.args.optimise}">
-      <classpath>
+      <compilationpath>
         <path refid="pack.classpath"/>
-        <fileset dir="${partest.dir}/files/lib" includes="*.jar"/>
-      </classpath>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
       <postests  dir="${partest.dir}/files/pos" includes="*.scala"/>
       <negtests  dir="${partest.dir}/files/neg" includes="*.scala"/>
       <runtests  dir="${partest.dir}/files">

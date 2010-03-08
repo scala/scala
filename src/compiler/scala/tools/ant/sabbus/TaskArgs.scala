@@ -14,7 +14,28 @@ import java.io.File
 import org.apache.tools.ant.Task
 import org.apache.tools.ant.types.{Path, Reference}
 
-trait TaskArgs { this: Task =>
+trait CompilationPathProperty {
+  this: Task =>
+
+  protected var compilationPath: Option[Path] = None
+
+  def setCompilationPath(input: Path) {
+    if (compilationPath.isEmpty) compilationPath = Some(input)
+    else compilationPath.get.append(input)
+  }
+
+  def createCompilationPath: Path = {
+    if (compilationPath.isEmpty) compilationPath = Some(new Path(getProject()))
+    compilationPath.get.createPath()
+  }
+
+  def setCompilationPathRef(input: Reference) {
+    createCompilationPath.setRefid(input)
+  }
+}
+
+trait TaskArgs extends CompilationPathProperty {
+  this: Task =>
 
   def setId(input: String) {
     id = Some(input)
@@ -29,20 +50,6 @@ trait TaskArgs { this: Task =>
 
   def setTarget(input: String) {
     compTarget = Some(input)
-  }
-
-  def setCompilationPath(input: Path) {
-    if (compilationPath.isEmpty) compilationPath = Some(input)
-    else compilationPath.get.append(input)
-  }
-
-  def createCompilationPath: Path = {
-    if (compilationPath.isEmpty) compilationPath = Some(new Path(getProject()))
-    compilationPath.get.createPath()
-  }
-
-  def setCompilationPathRef(input: Reference) {
-    createCompilationPath.setRefid(input)
   }
 
   def setSrcPath(input: Path) {
@@ -80,7 +87,6 @@ trait TaskArgs { this: Task =>
   protected var id: Option[String] = None
   protected var params: Option[String] = None
   protected var compTarget: Option[String] = None
-  protected var compilationPath: Option[Path] = None
   protected var sourcePath: Option[Path] = None
   protected var compilerPath: Option[Path] = None
   protected var destinationDir: Option[File] = None
