@@ -18,7 +18,7 @@ package scala.actors
  */
 private[actors] class ReplyReactorTask[T >: Null <: ReplyReactor](reactor: T, fun: () => Unit) extends ReactorTask[ReplyReactor](reactor, fun) {
 
-  var saved: Reactor = _
+  var saved: ReplyReactor = _
 
   protected override def beginExecution() {
     saved = Actor.tl.get

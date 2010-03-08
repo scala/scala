@@ -11,16 +11,15 @@
 package scala.actors
 
 /**
- * The Replyable trait defines result-bearing message send operations
- * on replyable actors.
+ * The <code>CanReply</code> trait defines result-bearing message send operations.
  *
  * @author Philipp Haller
  */
-trait Replyable[-T, +R] {
+trait CanReply[-T, +R] {
 
   /**
-   * Sends <code>msg</code> to this Replyable and awaits reply
-   * (synchronous).
+   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * awaits reply (synchronous).
    *
    * @param  msg the message to be sent
    * @return     the reply
@@ -28,8 +27,9 @@ trait Replyable[-T, +R] {
   def !?(msg: T): R
 
   /**
-   * Sends <code>msg</code> to this Replyable and awaits reply
-   * (synchronous) within <code>msec</code> milliseconds.
+   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * awaits reply (synchronous) within <code>msec</code>
+   * milliseconds.
    *
    * @param  msec the time span before timeout
    * @param  msg  the message to be sent
@@ -39,8 +39,8 @@ trait Replyable[-T, +R] {
   def !?(msec: Long, msg: T): Option[R]
 
   /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
+   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * immediately returns a future representing the reply value.
    *
    * @param  msg the message to be sent
    * @return     the future
@@ -49,17 +49,17 @@ trait Replyable[-T, +R] {
     () => this !? msg
 
   /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
+   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * immediately returns a future representing the reply value.
    * The reply is post-processed using the partial function
-   * <code>f</code>. This also allows to recover a more
+   * <code>handler</code>. This also allows to recover a more
    * precise type for the reply value.
    *
-   * @param  msg the message to be sent
-   * @param    f the function to be applied to the response
-   * @return     the future
+   * @param      msg the message to be sent
+   * @param  handler the function to be applied to the response
+   * @return         the future
    */
-  def !![P](msg: T, f: PartialFunction[R, P]): () => P =
-    () => f(this !? msg)
+  def !![P](msg: T, handler: PartialFunction[R, P]): () => P =
+    () => handler(this !? msg)
 
 }

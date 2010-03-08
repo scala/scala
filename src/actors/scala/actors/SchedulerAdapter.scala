@@ -42,7 +42,7 @@ trait SchedulerAdapter extends IScheduler {
    *
    *  @param  a  the actor to be registered
    */
-  def newActor(a: Reactor) =
+  def newActor(a: TrackedReactor) =
     Scheduler.newActor(a)
 
   /** Unregisters an actor from this scheduler, because it
@@ -50,7 +50,7 @@ trait SchedulerAdapter extends IScheduler {
    *
    *  @param  a  the actor to be unregistered
    */
-  def terminated(a: Reactor) =
+  def terminated(a: TrackedReactor) =
     Scheduler.terminated(a)
 
   /** Registers a closure to be executed when the specified
@@ -59,7 +59,7 @@ trait SchedulerAdapter extends IScheduler {
    *  @param  a  the actor
    *  @param  f  the closure to be registered
    */
-  def onTerminate(a: Reactor)(f: => Unit) =
+  def onTerminate(a: TrackedReactor)(f: => Unit) =
     Scheduler.onTerminate(a)(f)
 
   def managedBlock(blocker: scala.concurrent.ManagedBlocker) {

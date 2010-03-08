@@ -19,7 +19,7 @@ object Test {
     val a = new MyActor
     a.start()
 
-    val b = new Reactor {
+    val b = new Reactor[Any] {
       def act() {
         react {
           case r: MyActor =>

@@ -59,18 +59,18 @@ private[actors] trait ReplyableActor extends ReplyableReactor {
    * Sends <code>msg</code> to this actor and immediately
    * returns a future representing the reply value.
    * The reply is post-processed using the partial function
-   * <code>f</code>. This also allows to recover a more
+   * <code>handler</code>. This also allows to recover a more
    * precise type for the reply value.
    */
-  override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
+  override def !![A](msg: Any, handler: PartialFunction[Any, A]): Future[A] = {
     val ftch = new Channel[A](Actor.self(thiz.scheduler))
     thiz.send(msg, new OutputChannel[Any] {
       def !(msg: Any) =
-        ftch ! f(msg)
+        ftch ! handler(msg)
       def send(msg: Any, replyTo: OutputChannel[Any]) =
-        ftch.send(f(msg), replyTo)
+        ftch.send(handler(msg), replyTo)
       def forward(msg: Any) =
-        ftch.forward(f(msg))
+        ftch.forward(handler(msg))
       def receiver =
         ftch.receiver
     })

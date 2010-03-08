@@ -21,7 +21,7 @@ import scala.concurrent.forkjoin.RecursiveAction
  *
  *  @author Philipp Haller
  */
-private[actors] class ReactorTask[T >: Null <: Reactor](var reactor: T, var fun: () => Any)
+private[actors] class ReactorTask[T >: Null <: TrackedReactor](var reactor: T, var fun: () => Any)
   extends RecursiveAction with Callable[Unit] with Runnable {
 
   def run() {

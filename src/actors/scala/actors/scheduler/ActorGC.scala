@@ -29,19 +29,19 @@ trait ActorGC extends TerminationMonitor {
   self: IScheduler =>
 
   /** Actors are added to refQ in newActor. */
-  private val refQ = new ReferenceQueue[Reactor]
+  private val refQ = new ReferenceQueue[TrackedReactor]
 
   /**
    * This is a set of references to all the actors registered with
    * this ActorGC. It is maintained so that the WeakReferences will not be GC'd
    * before the actors to which they point.
    */
-  private val refSet = new HashSet[Reference[t] forSome { type t <: Reactor }]
+  private val refSet = new HashSet[Reference[t] forSome { type t <: TrackedReactor }]
 
   /** newActor is invoked whenever a new actor is started. */
-  override def newActor(a: Reactor) = synchronized {
+  override def newActor(a: TrackedReactor) = synchronized {
     // registers a reference to the actor with the ReferenceQueue
-    val wr = new WeakReference[Reactor](a, refQ)
+    val wr = new WeakReference[TrackedReactor](a, refQ)
     refSet += wr
     activeActors += 1
   }
@@ -71,20 +71,20 @@ trait ActorGC extends TerminationMonitor {
     activeActors <= 0
   }
 
-  override def onTerminate(a: Reactor)(f: => Unit): Unit = synchronized {
+  override def onTerminate(a: TrackedReactor)(f: => Unit): Unit = synchronized {
     terminationHandlers += (a -> (() => f))
   }
 
-  override def terminated(a: Reactor) = {
+  override def terminated(a: TrackedReactor) = {
     super.terminated(a)
 
     synchronized {
       // find the weak reference that points to the terminated actor, if any
-      refSet.find((ref: Reference[t] forSome { type t <: Reactor }) => ref.get() == a) match {
+      refSet.find((ref: Reference[t] forSome { type t <: TrackedReactor }) => ref.get() == a) match {
         case Some(r) =>
           // invoking clear will not cause r to be enqueued
           r.clear()
-          refSet -= r.asInstanceOf[Reference[t] forSome { type t <: Reactor }]
+          refSet -= r.asInstanceOf[Reference[t] forSome { type t <: TrackedReactor }]
         case None =>
           // do nothing
       }

@@ -17,7 +17,7 @@ package scala.actors
  *
  * @author Philipp Haller
  */
-private[actors] trait ReplyableReactor extends Replyable[Any, Any] {
+private[actors] trait ReplyableReactor extends CanReply[Any, Any] {
   _: ReplyReactor =>
 
   /**
@@ -67,27 +67,27 @@ private[actors] trait ReplyableReactor extends Replyable[Any, Any] {
    * Sends <code>msg</code> to this actor and immediately
    * returns a future representing the reply value.
    * The reply is post-processed using the partial function
-   * <code>f</code>. This also allows to recover a more
+   * <code>handler</code>. This also allows to recover a more
    * precise type for the reply value.
    */
-  override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
+  override def !![A](msg: Any, handler: PartialFunction[Any, A]): Future[A] = {
     val myself = Actor.rawSelf(this.scheduler)
     val ftch = new ReactChannel[A](myself)
     val res = new scala.concurrent.SyncVar[A]
 
     val out = new OutputChannel[Any] {
       def !(msg: Any) = {
-        val msg1 = f(msg)
+        val msg1 = handler(msg)
         ftch ! msg1
         res set msg1
       }
       def send(msg: Any, replyTo: OutputChannel[Any]) = {
-        val msg1 = f(msg)
+        val msg1 = handler(msg)
         ftch.send(msg1, replyTo)
         res set msg1
       }
       def forward(msg: Any) = {
-        val msg1 = f(msg)
+        val msg1 = handler(msg)
         ftch forward msg1
         res set msg1
       }

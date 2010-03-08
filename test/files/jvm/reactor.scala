@@ -1,7 +1,7 @@
 
 import scala.actors.Reactor
 
-case class Ping(from: Reactor)
+case class Ping(from: Reactor[Any])
 case object Pong
 case object Stop
 
@@ -19,7 +19,7 @@ object Test {
   }
 }
 
-class PingActor(count: Int, pong: Reactor) extends Reactor {
+class PingActor(count: Int, pong: Reactor[Any]) extends Reactor[Any] {
   def act() {
     var pingsLeft = count - 1
     pong ! Ping(this)
@@ -41,7 +41,7 @@ class PingActor(count: Int, pong: Reactor) extends Reactor {
   }
 }
 
-class PongActor extends Reactor {
+class PongActor extends Reactor[Any] {
   def act() {
     var pongCount = 0
     loop {
