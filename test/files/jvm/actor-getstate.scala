@@ -1,4 +1,5 @@
 import scala.actors.{Reactor, Actor, TIMEOUT}
+import Actor._
 
 object Test {
 
@@ -7,67 +8,78 @@ object Test {
       println("FAIL ["+hint+"]")
   }
 
+  def expectActorState(a: Reactor[T] forSome { type T }, s: Actor.State.Value) {
+    var done = false
+    var i = 0
+    while (!done) {
+      i = i + 1
+      if (i == 10) { // only wait for 2 seconds total
+        println("FAIL ["+a+": expected "+s+"]")
+        done = true
+      }
+
+      Thread.sleep(200)
+      if (a.getState == s) // success
+        done = true
+    }
+  }
+
   def main(args: Array[String]) {
-    val a = new Reactor[Any] {
-      def act() {
-        assert(getState == Actor.State.Runnable, "runnable1")
-        react {
-          case 'go =>
-            println("OK")
+    actor {
+      val a = new Reactor[Any] {
+        def act() {
+          assert(getState == Actor.State.Runnable, "runnable1")
+          react {
+            case 'go =>
+              println("OK")
+          }
         }
       }
-    }
-    assert(a.getState == Actor.State.New, "new1")
+      expectActorState(a, Actor.State.New)
 
-    a.start()
-    Thread.sleep(200)
-    assert(a.getState == Actor.State.Suspended, "suspend1")
+      a.start()
+      expectActorState(a, Actor.State.Suspended)
 
-    a ! 'go
-    Thread.sleep(200)
-    assert(a.getState == Actor.State.Terminated, "terminated1")
+      a ! 'go
+      expectActorState(a, Actor.State.Terminated)
 
-    val b = new Actor {
-      def act() {
-        assert(getState == Actor.State.Runnable, "runnable2")
-        react {
-          case 'go =>
-            reactWithin(100000) {
-              case TIMEOUT =>
-              case 'go =>
-                receive {
-                  case 'go =>
-                }
-                receiveWithin(100000) {
-                  case TIMEOUT =>
-                  case 'go =>
-                    println("OK")
-                }
-            }
+      val b = new Actor {
+        def act() {
+          assert(getState == Actor.State.Runnable, "runnable2: "+getState)
+          react {
+            case 'go =>
+              reactWithin(100000) {
+                case TIMEOUT =>
+                case 'go =>
+                  receive {
+                    case 'go =>
+                  }
+                  receiveWithin(100000) {
+                    case TIMEOUT =>
+                    case 'go =>
+                      println("OK")
+                  }
+              }
+          }
         }
       }
+      expectActorState(b, Actor.State.New)
+
+      b.start()
+      expectActorState(b, Actor.State.Suspended)
+
+      b ! 'go
+      expectActorState(b, Actor.State.TimedSuspended)
+
+      b ! 'go
+      expectActorState(b, Actor.State.Blocked)
+
+      b ! 'go
+      expectActorState(b, Actor.State.TimedBlocked)
+
+      b ! 'go
+      expectActorState(b, Actor.State.Terminated)
     }
-    assert(b.getState == Actor.State.New, "new2")
-
-    b.start()
-    Thread.sleep(200)
-    assert(b.getState == Actor.State.Suspended, "suspend2")
-
-    b ! 'go
-    Thread.sleep(200)
-    assert(b.getState == Actor.State.TimedSuspended, "timedsuspend2")
-
-    b ! 'go
-    Thread.sleep(200)
-    assert(b.getState == Actor.State.Blocked, "blocked2")
-
-    b ! 'go
-    Thread.sleep(200)
-    assert(b.getState == Actor.State.TimedBlocked, "timedblocked2")
-
-    b ! 'go
-    Thread.sleep(200)
-    assert(b.getState == Actor.State.Terminated, "terminated2")
   }
 
 }
