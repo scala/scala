@@ -649,13 +649,14 @@ trait Infer {
         if (targ.typeSymbol == NothingClass &&
             (isWildcard(restpe) || notCovariantIn(tparam, restpe))) {
           leftUndet += tparam
-          // tparam.tpeHK  -- AM: don't know why we returned a type arg that should surely be discarded afterwards since the type param was considered undetermined...
-        } else if (targ.typeSymbol == RepeatedParamClass) {
-          okParams += tparam; okArgs += targ.baseType(SeqClass)
-        } else if (targ.typeSymbol == JavaRepeatedParamClass) {
-          okParams += tparam; okArgs += targ.baseType(ArrayClass)
+          // don't add anything to okArgs, it'll be filtered out later anyway
+          // used `tparam.tpeHK` as dummy before
         } else {
-          okParams += tparam; okArgs += targ.widen
+          okParams += tparam
+          okArgs +=
+            if      (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
+            else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
+            else targ.widen
         }
       }
 
