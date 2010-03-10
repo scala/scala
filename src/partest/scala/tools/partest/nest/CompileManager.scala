@@ -19,10 +19,7 @@ import File.pathSeparator
 
 class ExtConsoleReporter(override val settings: Settings, reader: BufferedReader, var writer: PrintWriter)
 extends ConsoleReporter(settings, reader, writer) {
-
   def this(settings: Settings) = this(settings, Console.in, new PrintWriter(new FileWriter("/dev/null")))
-
-  def hasWarnings: Boolean = WARNING.count != 0
 }
 
 abstract class SimpleCompiler {
