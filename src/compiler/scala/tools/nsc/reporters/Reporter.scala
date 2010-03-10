@@ -31,7 +31,8 @@ abstract class Reporter {
   }
 
   var cancelled: Boolean = false
-  def hasErrors: Boolean = ERROR.count != 0 || cancelled
+  def hasErrors: Boolean = ERROR.count > 0 || cancelled
+  def hasWarnings: Boolean = WARNING.count > 0
 
   /** Flush all output */
   def flush() { }

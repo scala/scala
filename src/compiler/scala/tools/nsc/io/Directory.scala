@@ -12,8 +12,7 @@ package io
 import java.io.{ File => JFile }
 import collection.Traversable
 
-object Directory
-{
+object Directory {
   import scala.util.Properties.{ tmpDir, userHome, userDir }
 
   private def normalizePath(s: String) = Some(apply(Path(s).normalize))
@@ -21,7 +20,7 @@ object Directory
   def Home: Option[Directory]     = if (userHome == "") None else normalizePath(userHome)
   def TmpDir: Option[Directory]   = if (tmpDir == "") None else normalizePath(tmpDir)
 
-  def apply(path: Path)       = path.toDirectory
+  def apply(path: Path): Directory = path.toDirectory
 
   // Like File.makeTemp but creates a directory instead
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null): Directory = {

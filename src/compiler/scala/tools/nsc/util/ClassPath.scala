@@ -79,8 +79,11 @@ object ClassPath {
   /** Split the classpath, filter according to predicate, and reassemble. */
   def filter(cp: String, p: String => Boolean): String = join(split(cp) filter p: _*)
 
-  /** Split the classpath and map them into urls */
-  def toURLs(cp: String): List[URL] = split(cp) map (x => Path(x).toAbsolute.toURL)
+  /** Split the classpath and map them into Paths */
+  def toPaths(cp: String): List[Path] = split(cp) map (x => Path(x).toAbsolute)
+
+  /** Split the classpath and map them into URLs */
+  def toURLs(cp: String): List[URL] = toPaths(cp) map (_.toURL)
 
   /** Expand path and possibly expanding stars */
   def expandPath(path: String, expandStar: Boolean = true): List[String] =

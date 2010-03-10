@@ -77,6 +77,7 @@ case class CommandLine(
 
   def isSet(arg: String) = args contains arg
   def get(arg: String) = argMap get arg
+  def getOrElse(arg: String, orElse: => String) = if (isSet(arg)) apply(arg) else orElse
   def apply(arg: String) = argMap(arg)
 
   override def toString() = "CommandLine(\n%s)\n" format (args map ("  " + _ + "\n") mkString)
