@@ -653,10 +653,11 @@ trait Infer {
           // used `tparam.tpeHK` as dummy before
         } else {
           okParams += tparam
-          okArgs +=
+          okArgs += (
             if      (targ.typeSymbol == RepeatedParamClass)     targ.baseType(SeqClass)
             else if (targ.typeSymbol == JavaRepeatedParamClass) targ.baseType(ArrayClass)
             else targ.widen
+          )
         }
       }
 
