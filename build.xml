@@ -234,7 +234,7 @@ INITIALISATION
 	  <equals arg1="${svn.number.svn}" arg2="0" />
 	  <then>
         <!-- Finding SVN revision, git style -->
-	    <exec executable="tools/git-get-rev" outputproperty="svn.number.git" failifexecutionfails="false" />
+	    <exec osfamily="unix" executable="tools/git-get-rev" outputproperty="svn.number.git" failifexecutionfails="false" />
 	    <propertyregex
 	      property="svn.number" input="${svn.number.git}" select="\1"
 	      regexp="\D*?(\d+)"
@@ -874,7 +874,7 @@ PACKED QUICK BUILD (PACK)
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalap"/>
 
 	<mkdir dir="${build-pack.dir}/etc"/>
-	<exec executable="${build-pack.dir}/bin/scala" output="${build-pack.dir}/etc/scala_completion.sh" failifexecutionfails="false" >
+	<exec osfamily="unix" executable="${build-pack.dir}/bin/scala" output="${build-pack.dir}/etc/scala_completion.sh" failifexecutionfails="false" >
 	  <arg line="scala.tools.util.BashCompletion" />
     </exec>
 
