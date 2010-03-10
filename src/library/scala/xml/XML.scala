@@ -54,11 +54,11 @@ object XML extends XMLLoader[Elem]
 
   @deprecated("Use save() instead")
   final def saveFull(filename: String, node: Node, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
-    saveFull(filename, node, encoding, xmlDecl, doctype)
+    save(filename, node, encoding, xmlDecl, doctype)
 
   @deprecated("Use save() instead")
   final def saveFull(filename: String, node: Node, enc: String, xmlDecl: Boolean, doctype: dtd.DocType): Unit =
-    saveFull(filename, node, enc, xmlDecl, doctype)
+    save(filename, node, enc, xmlDecl, doctype)
 
   /** Saves a node to a file with given filename using given encoding
    *  optionally with xmldecl and doctype declaration.
@@ -80,7 +80,7 @@ object XML extends XMLLoader[Elem]
     val fos = new FileOutputStream(filename)
     val w = Channels.newWriter(fos.getChannel(), enc)
 
-    ultimately({ w.close() ; fos.close() })(
+    ultimately(w.close())(
       write(w, node, enc, xmlDecl, doctype)
     )
   }
