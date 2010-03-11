@@ -349,7 +349,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     def arrayType(arg: Type) = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))
 
     def ClassType(arg: Type) =
-      if (ClassClass.unsafeTypeParams.isEmpty || phase.erasedTypes) ClassClass.tpe
+      if (phase.erasedTypes) ClassClass.tpe
       else appliedType(ClassClass.tpe, List(arg))
 
     //

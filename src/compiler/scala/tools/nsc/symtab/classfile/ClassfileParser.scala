@@ -589,6 +589,8 @@ abstract class ClassfileParser {
       while (!isDelimiter(sig(index))) { index += 1 }
       sig.subName(start, index)
     }
+    def existentialType(tparams: List[Symbol], tp: Type): Type =
+      if (tparams.isEmpty) tp else ExistentialType(tparams, tp)
     def sig2type(tparams: Map[Name,Symbol], skiptvs: Boolean): Type = {
       val tag = sig(index); index += 1
       tag match {
@@ -637,14 +639,14 @@ abstract class ClassfileParser {
                 }
                 accept('>')
                 assert(xs.length > 0)
-                existentialAbstraction(existentials.toList, TypeRef(pre, classSym, xs.toList))
+                existentialType(existentials.toList, TypeRef(pre, classSym, xs.toList))
               } else if (classSym.isMonomorphicType) {
                 tp
               } else {
                 // raw type - existentially quantify all type parameters
                 val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
                 val t = TypeRef(pre, classSym, eparams.map(_.tpe))
-                val res = existentialAbstraction(eparams, t)
+                val res = existentialType(eparams, t)
                 if (settings.debug.value && settings.verbose.value) println("raw type " + classSym + " -> " + res)
                 res
               }

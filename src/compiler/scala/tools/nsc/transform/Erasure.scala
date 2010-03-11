@@ -117,15 +117,15 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
    */
   val erasure = new TypeMap {
 
-    // Compute the erasure of the intersection type with given `parents` according to new spec.
-    private def intersectionErasure(parents: List[Type]): Type =
-      if (parents.isEmpty) erasedTypeRef(ObjectClass)
-      else apply {
+    // Compute the dominant part of the intersection type with given `parents` according to new spec.
+    def intersectionDominator(parents: List[Type]): Type =
+      if (parents.isEmpty) ObjectClass.tpe
+      else {
         val psyms = parents map (_.typeSymbol)
         if (psyms contains ArrayClass) {
           // treat arrays specially
           arrayType(
-            intersectionErasure(
+            intersectionDominator(
               parents filter (_.typeSymbol == ArrayClass) map (_.typeArgs.head)))
         } else {
           // implement new spec for erasure of refined types.
@@ -152,7 +152,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             else typeRef(apply(pre), sym, args map this)
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
-          else if (sym.isRefinementClass) intersectionErasure(tp.parents)
+          else if (sym.isRefinementClass) apply(intersectionDominator(tp.parents))
           else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585
           else apply(sym.info) // alias type or abstract type
         case PolyType(tparams, restpe) =>
@@ -169,7 +169,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             else
               apply(restpe))
         case RefinedType(parents, decls) =>
-          intersectionErasure(parents)
+          apply(intersectionDominator(parents))
         case AnnotatedType(_, atp, _) =>
           apply(atp)
         case ClassInfoType(parents, decls, clazz) =>
