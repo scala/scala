@@ -54,6 +54,9 @@ class Directory(jfile: JFile) extends Path(jfile)
   def dirs: Iterator[Directory] = list partialMap { case x: Directory => x }
   def files: Iterator[File] = list partialMap { case x: File => x }
 
+  def deepDirs: Iterator[Directory] = Path.onlyDirs(deepList())
+  def deepFiles: Iterator[File] = Path.onlyFiles(deepList())
+
   /** If optional depth argument is not given, will recurse
    *  until it runs out of contents.
    */

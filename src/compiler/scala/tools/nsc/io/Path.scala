@@ -59,6 +59,11 @@ object Path
   //   true
   // }
 
+  def onlyDirs(xs: Iterator[Path]): Iterator[Directory] = xs filter (_.isDirectory) map (_.toDirectory)
+  def onlyDirs(xs: List[Path]): List[Directory] = xs filter (_.isDirectory) map (_.toDirectory)
+  def onlyFiles(xs: Iterator[Path]): Iterator[File] = xs filter (_.isFile) map (_.toFile)
+  def onlyFiles(xs: List[Path]): List[File] = xs filter (_.isFile) map (_.toFile)
+
   def roots: List[Path] = JFile.listRoots().toList map Path.apply
 
   def apply(segments: Seq[String]): Path = apply(segments mkString JFile.separator)
