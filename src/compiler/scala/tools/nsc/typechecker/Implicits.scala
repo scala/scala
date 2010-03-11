@@ -797,6 +797,8 @@ self: Analyzer =>
               findSingletonManifest(sym.name.toString)
             } else if (sym == ObjectClass || sym == AnyRefClass) {
               findSingletonManifest("Object")
+            } else if (sym == RepeatedParamClass || sym == ByNameParamClass) {
+              EmptyTree
             } else if (sym == ArrayClass && args.length == 1) {
               manifestFactoryCall("arrayType", args.head, findSubManifest(args.head))
             } else if (sym.isClass) {
