@@ -1,0 +1,6 @@
+function3.scala:10: error: type mismatch;
+ found   : Int @scala.util.continuations.cpsParam[Int,Int]
+ required: Int
+    val g: () => Int = () => shift { k: (Int=>Int) => k(7) }
+                                   ^
+one error found

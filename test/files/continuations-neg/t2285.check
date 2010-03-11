@@ -1,0 +1,6 @@
+t2285.scala:9: error: type mismatch;
+ found   : Int @scala.util.continuations.cpsParam[String,String] @scala.util.continuations.cpsSynth
+ required: Int @scala.util.continuations.cpsParam[Int,String]
+  def foo() = reset { bar(); 7 }
+                    ^
+one error found

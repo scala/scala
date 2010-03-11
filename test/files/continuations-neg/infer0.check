@@ -1,0 +1,4 @@
+infer0.scala:11: error: cannot cps-transform expression 8: type arguments [Int(8),String,Int] do not conform to method shiftUnit's type parameter bounds [A,B,C >: B]
+    test(8)
+         ^
+one error found

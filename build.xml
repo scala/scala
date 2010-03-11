@@ -370,7 +370,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     <touch file="${build-locker.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="locker.comp.timer" action="total"/>
   </target>
-  
+
   <target name="locker.done" depends="locker.comp">
     <touch file="${build-locker.dir}/all.complete" verbose="no"/>
     <path id="locker.classpath">
@@ -447,6 +447,7 @@ QUICK BUILD (QUICK)
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
+        <include name="continuations/**"/>
         <include name="swing/**"/>
       </srcfiles>
     </uptodate>
@@ -598,7 +599,62 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.comp.timer" action="total"/>
   </target>
 
-  <target name="quick.pre-scalap" depends="quick.comp">
+  
+  <target name="quick.pre-plugins" depends="quick.comp" unless="quick.available">
+    <condition property="quick.plugins.needed">
+      <not><available file="${build-quick.dir}/plugins.complete"/></not>
+    </condition>
+  </target>
+
+  <target name="quick.plugins" depends="quick.pre-plugins" if="quick.plugins.needed">
+    <stopwatch name="quick.plugins.timer"/>
+    <mkdir dir="${build-quick.dir}/classes/continuations-plugin"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/continuations-plugin"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/continuations/plugin"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+      </compilationpath>
+    </scalacfork>
+    <copy todir="${build-quick.dir}/classes/continuations-plugin">
+      <fileset dir="${src.dir}/continuations/plugin">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+      </fileset>
+    </copy>
+    <!-- not very nice to create jar here but needed to load plugin -->
+    <mkdir dir="${build-quick.dir}/plugins"/>
+    <jar destfile="${build-quick.dir}/plugins/continuations.jar">
+      <fileset dir="${build-quick.dir}/classes/continuations-plugin"/>
+    </jar>
+    <!-- might split off library part into its own ant target -->
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.quick} -Xplugin:${build-quick.dir}/plugins/continuations.jar -Xplugin-require:continuations -P:continuations:enable"
+      srcdir="${src.dir}/continuations/library"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${lib.dir}/forkjoin.jar"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/plugins.complete" verbose="no"/>
+    <stopwatch name="quick.plugins.timer" action="total"/>
+  </target>
+
+  <target name="quick.pre-scalap" depends="quick.plugins">
     <uptodate property="quick.scalap.available" targetfile="${build-quick.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
     </uptodate>
@@ -802,7 +858,21 @@ PACKED QUICK BUILD (PACK)
     <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
   </target>
   
-  <target name="pack.pre-partest" depends="pack.comp">
+  <target name="pack.pre-plugins" depends="pack.comp">
+    <uptodate
+      property="pack.plugins.available"
+      targetfile="${build-pack.dir}/plugins/continuations.jar"
+      srcfile="${build-quick.dir}/plugins.complete"/>
+  </target>
+
+  <target name="pack.plugins" depends="pack.pre-plugins" unless="pack.plugins.available">
+    <mkdir dir="${build-pack.dir}/plugins"/>
+    <jar destfile="${build-pack.dir}/plugins/continuations.jar">
+      <fileset dir="${build-quick.dir}/classes/continuations-plugin"/>
+    </jar>
+  </target>
+  
+  <target name="pack.pre-partest" depends="pack.plugins">
     <uptodate
       property="pack.partest.available"
       targetfile="${build-pack.dir}/lib/scala-partest.jar"
@@ -1041,7 +1111,61 @@ BOOTSTRAPPING BUILD (STRAP)
     <stopwatch name="strap.comp.timer" action="total"/>
   </target>
   
-  <target name="strap.pre-scalap" depends="strap.comp">
+  <target name="strap.pre-plugins" depends="strap.comp" unless="strap.available">
+    <condition property="strap.plugins.needed">
+      <not><available file="${build-strap.dir}/plugins.complete"/></not>
+    </condition>
+  </target>
+
+  <target name="strap.plugins" depends="strap.pre-plugins" if="strap.plugins.needed">
+    <stopwatch name="strap.plugins.timer"/>
+    <mkdir dir="${build-strap.dir}/classes/continuations-plugin"/>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/continuations-plugin"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/continuations/plugin"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${build-strap.dir}/classes/compiler"/>
+      </compilationpath>
+    </scalacfork>
+    <copy todir="${build-strap.dir}/classes/continuations-plugin">
+      <fileset dir="${src.dir}/continuations/plugin">
+        <include name="**/*.tmpl"/>
+        <include name="**/*.xml"/>
+        <include name="**/*.js"/>
+        <include name="**/*.css"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.swf"/>
+        <include name="**/*.png"/>
+      </fileset>
+    </copy>
+    <!-- not very nice to create jar here but needed to load plugin -->
+    <mkdir dir="${build-strap.dir}/plugins"/>
+    <jar destfile="${build-strap.dir}/plugins/continuations.jar">
+      <fileset dir="${build-strap.dir}/classes/continuations-plugin"/>
+    </jar>
+    <!-- might split off library part into its own ant target -->
+    <scalacfork
+      destdir="${build-strap.dir}/classes/library"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.quick} -Xplugin:${build-strap.dir}/plugins/continuations.jar -Xplugin-require:continuations -P:continuations:enable"
+      srcdir="${src.dir}/continuations/library"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${lib.dir}/forkjoin.jar"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-strap.dir}/plugins.complete" verbose="no"/>
+    <stopwatch name="strap.plugins.timer" action="total"/>
+  </target>
+
+  <target name="strap.pre-scalap" depends="strap.plugins">
     <uptodate property="strap.scalap.available" targetfile="${build-strap.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
     </uptodate>
@@ -1283,6 +1407,7 @@ DOCUMENTATION
       classpathref="pack.classpath">
       <src>
         <files includes="${src.dir}/actors"/>
+        <files includes="${src.dir}/actors"/> <!-- why twice ?? -->
         <files includes="${src.dir}/library/scala"/>
         <files includes="${src.dir}/swing"/>
       </src>
@@ -1390,6 +1515,7 @@ BOOTRAPING TEST AND TEST SUITE
       <exclude name="**/*.properties"/>
       <exclude name="bin/**"/>
       <exclude name="*.complete"/>
+      <exclude name="plugins/*.jar"/>
     </same>
   </target>
   
@@ -1439,7 +1565,24 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.stability"/>
+  <target name="test.continuations.suite" depends="pack.done">
+    <property name="partest.srcdir" value="files" />
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             timeout="2400000" javaccmd="${javac.cmd}" 
+             srcdir="${partest.srcdir}"
+             scalacopts="${scalac.args.optimise} -Xplugin:${build-pack.dir}/plugins/continuations.jar -Xplugin-require:continuations -P:continuations:enable">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
+      <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
+      <runtests  dir="${partest.dir}/${partest.srcdir}">
+        <include name="continuations-run/**/*.scala"/>
+      </runtests>
+    </partest>
+  </target>
+
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.stability"/>
 
 <!-- ===========================================================================
 DISTRIBUTION
@@ -1466,6 +1609,10 @@ DISTRIBUTION
     <mkdir dir="${dist.dir}/etc"/>
     <copy toDir="${dist.dir}/etc">
       <fileset dir="${build-pack.dir}/etc"/>
+    </copy>
+    <mkdir dir="${dist.dir}/plugins"/>
+    <copy toDir="${dist.dir}/plugins">
+      <fileset dir="${build-pack.dir}/plugins"/>
     </copy>
   </target>
 
