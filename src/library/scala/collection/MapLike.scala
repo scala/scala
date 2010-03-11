@@ -255,35 +255,6 @@ self =>
 
   @deprecated("use `mapValues' instead") def mapElements[C](f: B => C) = mapValues(f)
 
-  /** This function transforms all the values of mappings contained
-   *  in this map with function <code>f</code>.
-   *
-   *  @param f A function over keys and values
-   *  @return  the updated map
-   */
-  def transform[C, That](f: (A, B) => C)(implicit bf: CanBuildFrom[This, (A, C), That]): That = {
-    val b = bf(repr)
-    for ((key, value) <- this) b += ((key, f(key, value)))
-    b.result
-  }
-
-  /** Returns a new map with all key/value pairs for which the predicate
-   *  <code>p</code> returns <code>false</code>.
-   *
-   *  @param p A predicate over key-value pairs
-   *  @note    This method works by successively removing elements fro which the
-   *           predicate is true from this set.
-   *           If removal is slow, or you expect that most elements of the set$
-   *           will be removed, you might consider using <code>filter</code>
-   *           with a negated predicate instead.
-   */
-  override def filterNot(p: ((A, B)) => Boolean): This = {
-    var res: This = repr
-    for (kv <- this)
-      if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
-    res
-  }
-
   // The following 5 operations (updated, two times +, two times ++) should really be
   // generic, returning This[B]. We need better covariance support to express that though.
   // So right now we do the brute force approach of code duplication.
@@ -332,6 +303,23 @@ self =>
    */
   def ++[B1 >: B] (iter: Iterator[(A, B1)]): Map[A, B1] =
     ((repr: Map[A, B1]) /: iter) (_ + _)
+
+  /** Returns a new map with all key/value pairs for which the predicate
+   *  <code>p</code> returns <code>true</code>.
+   *
+   *  @param p A predicate over key-value pairs
+   *  @note    This method works by successively removing elements fro which the
+   *           predicate is false from this set.
+   *           If removal is slow, or you expect that most elements of the set$
+   *           will be removed, you might consider using <code>filter</code>
+   *           with a negated predicate instead.
+   */
+  override def filterNot(p: ((A, B)) => Boolean): This = {
+    var res: This = repr
+    for (kv <- this)
+      if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
+    res
+  }
 
   /** Appends all bindings of this map to a string builder using start, end, and separator strings.
    *  The written text begins with the string `start` and ends with the string

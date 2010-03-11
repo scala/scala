@@ -113,6 +113,18 @@ self =>
     def get(key: A) = self.get(key).map(f)
   }
 
+  /** This function transforms all the values of mappings contained
+   *  in this map with function <code>f</code>.
+   *
+   *  @param f A function over keys and values
+   *  @return  the updated map
+   */
+  def transform[C, That](f: (A, B) => C)(implicit bf: CanBuildFrom[This, (A, C), That]): That = {
+    val b = bf(repr)
+    for ((key, value) <- this) b += ((key, f(key, value)))
+    b.result
+  }
+
   @deprecated("use `updated' instead")
   def update[B1 >: B](key: A, value: B1): immutable.Map[A, B1] = updated(key, value).asInstanceOf[immutable.Map[A, B1]]
 }
