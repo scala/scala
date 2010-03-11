@@ -99,11 +99,17 @@ object HashMap extends ImmutableMapFactory[HashMap] {
     override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1)): HashMap[A, B1] =
       if (hash == this.hash && key == this.key) new HashMap1(key, hash, value, kv)
       else {
-        // TODO: handle 32-bit hash collisions (rare, but not impossible)
-        assert(hash != this.hash, "32-bit hash collisions not handled yet");
-        //new HashTrieMap[A,B1](level+5, this, new HashMap1(key, hash, value, kv))
-        val m = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0) // TODO: could save array alloc
-        m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv)
+        if (hash != this.hash) {
+          //new HashTrieMap[A,B1](level+5, this, new HashMap1(key, hash, value, kv))
+          val m = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0) // TODO: could save array alloc
+          m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv)
+        } else {
+          // 32-bit hash collision (rare, but not impossible)
+          // always wrap this in a HashTrieMap! otherwise serialization won't work
+          val elems = new Array[HashMap[A,B1]](1)
+          elems(0) = new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
+          new HashTrieMap[A,B1](1 << ((hash >>> level) & 0x1f), elems, 2)
+        }
       }
 
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
@@ -125,6 +131,52 @@ object HashMap extends ImmutableMapFactory[HashMap] {
     }
 
   }
+
+  private class HashMapCollision1[A,+B](private[HashMap] var hash: Int, var kvs: ListMap[A,B @uncheckedVariance]) extends HashMap[A,B] {
+    override def size = kvs.size
+
+    override def get0(key: A, hash: Int, level: Int): Option[B] =
+      if (hash == this.hash) kvs.get(key) else None
+
+    override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1)): HashMap[A, B1] =
+      if (hash == this.hash) new HashMapCollision1(hash, kvs.updated(key, value))
+      else {
+        var m: HashMap[A,B1] = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0)
+        // might be able to save some ops here, but it doesn't seem to be worth it
+        for ((k,v) <- kvs)
+          m = m.updated0(k, this.hash, level, v, null)
+        m.updated0(key, hash, level, value, kv)
+      }
+
+    override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
+      if (hash == this.hash) {
+        val kvs1 = kvs - key
+        if (!kvs1.isEmpty)
+          new HashMapCollision1(hash, kvs1)
+        else
+          HashMap.empty[A,B]
+      } else this
+
+    override def iterator: Iterator[(A,B)] = kvs.iterator
+    override def foreach[U](f: ((A, B)) => U): Unit = kvs.foreach(f)
+
+    private def writeObject(out: java.io.ObjectOutputStream) {
+      // this cannot work - reading things in might produce different
+      // hash codes and remove the collision. however this is never called
+      // because no references to this class are ever handed out to client code
+      // and HashTrieMap serialization takes care of the situation
+      error("cannot serialize an immutable.HashMap where all items have the same 32-bit hash code")
+      //out.writeObject(kvs)
+    }
+
+    private def readObject(in: java.io.ObjectInputStream) {
+      error("cannot deserialize an immutable.HashMap where all items have the same 32-bit hash code")
+      //kvs = in.readObject().asInstanceOf[ListMap[A,B]]
+      //hash = computeHash(kvs.)
+    }
+
+  }
+
 
   class HashTrieMap[A,+B](private var bitmap: Int, private var elems: Array[HashMap[A,B @uncheckedVariance]],
       private var size0: Int) extends HashMap[A,B] {
@@ -155,6 +207,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
         elems(index & 0x1f).get0(key, hash, level + 5)
       } else if ((bitmap & mask) != 0) {
         val offset = Integer.bitCount(bitmap & (mask-1))
+        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         elems(offset).get0(key, hash, level + 5)
       } else
         None
@@ -168,11 +221,11 @@ object HashMap extends ImmutableMapFactory[HashMap] {
         val elemsNew = new Array[HashMap[A,B1]](elems.length)
         Array.copy(elems, 0, elemsNew, 0, elems.length)
         val sub = elems(offset)
+        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.updated0(key, hash, level + 5, value, kv)
         elemsNew(offset) = subNew
         new HashTrieMap(bitmap, elemsNew, size + (subNew.size - sub.size))
       } else {
-        assert(offset <= elems.length, offset +">"+elems.length)
         val elemsNew = new Array[HashMap[A,B1]](elems.length + 1)
         Array.copy(elems, 0, elemsNew, 0, offset)
         elemsNew(offset) = new HashMap1(key, hash, value, kv)
@@ -190,6 +243,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
         val elemsNew = new Array[HashMap[A,B]](elems.length)
         Array.copy(elems, 0, elemsNew, 0, elems.length)
         val sub = elems(offset)
+        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.removed0(key, hash, level + 5)
         elemsNew(offset) = subNew
         // TODO: handle shrinking
