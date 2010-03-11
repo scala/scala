@@ -268,11 +268,11 @@ self =>
   }
 
   /** Returns a new map with all key/value pairs for which the predicate
-   *  <code>p</code> returns <code>true</code>.
+   *  <code>p</code> returns <code>false</code>.
    *
    *  @param p A predicate over key-value pairs
    *  @note    This method works by successively removing elements fro which the
-   *           predicate is false from this set.
+   *           predicate is true from this set.
    *           If removal is slow, or you expect that most elements of the set$
    *           will be removed, you might consider using <code>filter</code>
    *           with a negated predicate instead.
