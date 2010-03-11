@@ -133,7 +133,7 @@ sealed abstract class List[+A] extends LinearSeq[A]
     loop(this)
   }
 
-  // Overridden methods from IterableLike or overloaded variants of such methods
+  // Overridden methods from IterableLike and SeqLike or overloaded variants of such methods
 
   override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     val b = bf(this)
@@ -143,6 +143,11 @@ sealed abstract class List[+A] extends LinearSeq[A]
 
   override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[List[A], B, That]): That =
     this ++ that.toList
+
+  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[List[A], B, That]): That = bf match {
+    case _: List.GenericCanBuildFrom[_] => (elem :: this).asInstanceOf[That]
+    case _ => super.+:(elem)(bf)
+  }
 
   override def toList: List[A] = this
 
