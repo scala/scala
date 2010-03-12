@@ -45,6 +45,21 @@
         <artifact:pom id="@{name}.pom" file="@{name}/@{name}-pom-fixed.xml" />
       </sequential>
     </macrodef>
+
+    <macrodef name="make-pom-plugin">
+      <attribute name="name" />
+      <attribute name="version" />
+      <sequential>
+        <copy file="plugins/@{name}/@{name}-plugin-pom.xml" tofile="plugins/@{name}/@{name}-pom-fixed.xml" overwrite="true">
+          <filterset>
+            <filter token="VERSION" value="@{version}" />
+            <filter token="RELEASE_REPOSITORY" value="${remote.release.repository}" />
+            <filter token="SNAPSHOT_REPOSITORY" value="${remote.snapshot.repository}" />
+          </filterset>
+        </copy>
+        <artifact:pom id="plugin-@{name}.pom" file="plugins/@{name}/@{name}-pom-fixed.xml" />
+      </sequential>
+    </macrodef>
     <!-- Simply attaching documentation -->
     <macrodef name="attach-doc">
       <attribute name="name" />
@@ -72,6 +87,23 @@
       </sequential>
     </macrodef>
 
+    <!-- Deploy compiler plugins -->
+    <macrodef name="deploy-local-plugin">
+        <attribute name="name" />
+        <attribute name="version" />
+        <attribute name="repository" />
+        <element name="extra-attachments" optional="yes" />
+        <sequential>
+          <make-pom-plugin name="@{name}" version="@{version}" />
+          <artifact:install file="plugins/@{name}/@{name}.jar">
+            <artifact:pom refid="plugin-@{name}.pom" />
+            <artifact:localRepository path="@{repository}" id="${repository.credentials.id}" />
+            <extra-attachments />
+          </artifact:install>
+        </sequential>
+      </macrodef>
+
+
     <!-- Deploy all artifacts locally -->
     <macrodef name="deploy-local-all">
       <attribute name="repository" />
@@ -87,6 +119,7 @@
         <deploy-local name="scala-swing" version="@{version}" repository="@{repository}"/>
       	<deploy-local name="scalap" version="@{version}" repository="@{repository}"/>
       	<deploy-local name="scala-partest" version="@{version}" repository="@{repository}"/>
+        <deploy-local-plugin name="continuations" version="@{version}" repository="@{repository}"/>
         <!-- scala swing api is included in main library api
           <extra-attachments>
             <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
@@ -116,6 +149,23 @@
       </sequential>
     </macrodef>
 
+
+        <!-- Deploy compiler plugins -->
+    <macrodef name="deploy-remote-plugin">
+        <attribute name="name" />
+        <attribute name="version" />
+        <attribute name="repository" />
+        <element name="extra-attachments" optional="yes" />
+        <sequential>
+          <make-pom-plugin name="@{name}" version="@{version}" />
+          <artifact:deploy file="plugins/@{name}/@{name}.jar" settingsFile="${settings.file}">
+            <artifact:pom refid="plugin-@{name}.pom" />
+            <artifact:remoteRepository url="@{repository}" id="${repository.credentials.id}" />
+            <extra-attachments />
+          </artifact:deploy>
+        </sequential>
+      </macrodef>
+
     <!-- Deploy all artifacts locally -->
     <macrodef name="deploy-remote-all">
       <attribute name="repository" />
@@ -131,6 +181,7 @@
         <deploy-remote name="scala-swing" version="@{version}" repository="@{repository}"/>
       	<deploy-remote name="scalap" version="@{version}" repository="@{repository}"/>
       	<deploy-remote name="scala-partest" version="@{version}" repository="@{repository}"/>
+        <deploy-remote-plugin name="continuations" version="@{version}" repository="@{repository}"/> 
         <!-- scala swing api is included in main library api
           <extra-attachments>
             <artifact:attach type="jar" file="scala-swing/scala-swing-docs.jar" classifier="javadoc" />
