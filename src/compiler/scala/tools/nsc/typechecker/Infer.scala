@@ -430,12 +430,7 @@ trait Infer {
         else tp2 match {
           case TypeRef(_, sym2, _) =>
             if (sym2.isAliasType) isPlausiblySubType(tp1, tp2.dealias)
-            else if (!sym2.isClass) true
-            else if (sym1 isSubClass sym2) true
-            else
-              isNumericValueClass(sym1) &&
-              isNumericValueClass(sym2) &&
-              (sym1 == sym2 || numericWidth(sym1) < numericWidth(sym2))
+            else !sym2.isClass || (sym1 isSubClass sym2) || isNumericSubClass(sym1, sym2)
           case _ =>
             true
         }

@@ -2685,7 +2685,6 @@ A type's typeSymbol should never be inspected directly.
    * as well as their instantiations.
    */
   class TypeConstraint(lo0: List[Type], hi0: List[Type], numlo0: Type, numhi0: Type) {
-    //var self: Type = _ //DEBUG
     def this(lo0: List[Type], hi0: List[Type]) = this(lo0, hi0, NoType, NoType)
     def this() = this(List(), List())
 
@@ -2706,7 +2705,8 @@ A type's typeSymbol should never be inspected directly.
 
     def addLoBound(tp: Type, numBound: Boolean = false) {
       if (numBound && isNumericValueType(tp)) {
-        if (!isNumericSubType(tp, numlo)) numlo = tp
+        if (numlo == NoType || isNumericSubType(numlo, tp)) numlo = tp
+        else if (!isNumericSubType(tp, numlo)) numlo = IntClass.tpe
       } else {
         lobounds = tp :: lobounds
       }
@@ -2714,7 +2714,8 @@ A type's typeSymbol should never be inspected directly.
 
     def addHiBound(tp: Type, numBound: Boolean = false) {
       if (numBound && isNumericValueType(tp)) {
-        if (!isNumericSubType(numhi, tp)) numhi = tp
+        if (numhi == NoType || isNumericSubType(tp, numhi)) numhi = tp
+        else if (!isNumericSubType(numhi, tp)) numhi = intersectionType(List(ByteClass.tpe, CharClass.tpe), ScalaPackageClass)
       } else {
         hibounds = tp :: hibounds
       }
@@ -4755,24 +4756,34 @@ A type's typeSymbol should never be inspected directly.
       (annotationsLub(lub(ts map (_.withoutAnnotations)), ts), true)
     else (lub(ts), false)
 
-  def weakGlb(ts: List[Type]) =
-    if (ts.nonEmpty && (ts forall isNumericValueType)) (numericGlb(ts), true)
-    else if (ts.nonEmpty && (ts exists (_.annotations.nonEmpty)))
+  def weakGlb(ts: List[Type]) = {
+    if (ts.nonEmpty && (ts forall isNumericValueType)) {
+      val nglb = numericGlb(ts)
+      if (nglb != NoType) (nglb, true)
+      else (glb(ts), false)
+    } else if (ts.nonEmpty && (ts exists (_.annotations.nonEmpty))) {
       (annotationsGlb(glb(ts map (_.withoutAnnotations)), ts), true)
-    else (glb(ts), false)
+    } else (glb(ts), false)
+  }
 
   def numericLub(ts: List[Type]) =
-    (ByteClass.tpe /: ts) ((t1, t2) => if (isNumericSubType(t1, t2)) t2 else t1)
+    ts reduceLeft ((t1, t2) =>
+      if (isNumericSubType(t1, t2)) t2
+      else if (isNumericSubType(t2, t1)) t1
+      else IntClass.tpe)
 
   def numericGlb(ts: List[Type]) =
-    (DoubleClass.tpe /: ts) ((t1, t2) => if (isNumericSubType(t1, t2)) t1 else t2)
+    ts reduceLeft ((t1, t2) =>
+      if (isNumericSubType(t1, t2)) t1
+      else if (isNumericSubType(t2, t1)) t2
+      else NoType)
 
   def isWeakSubType(tp1: Type, tp2: Type) =
     tp1.deconst.normalize match {
       case TypeRef(_, sym1, _) if isNumericValueClass(sym1) =>
         tp2.deconst.normalize match {
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
-            sym1 == sym2 || numericWidth(sym1) < numericWidth(sym2)
+            isNumericSubClass(sym1, sym2)
           case tv2 @ TypeVar(_, _) =>
             tv2.registerBound(tp1, isLowerBound = true, numBound = true)
           case _ =>
@@ -4790,8 +4801,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
   def isNumericSubType(tp1: Type, tp2: Type) =
-    isNumericValueType(tp1) && isNumericValueType(tp2) &&
-    (tp1.typeSymbol == tp2.typeSymbol || numericWidth(tp1.typeSymbol) < numericWidth(tp2.typeSymbol))
+    isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
 
   def lub(ts: List[Type]): Type = lub(ts, lubDepth(ts))
 

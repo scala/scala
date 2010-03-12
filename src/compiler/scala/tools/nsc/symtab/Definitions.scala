@@ -84,14 +84,14 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     // the scala value classes
     lazy val UnitClass    = newClass(ScalaPackageClass, nme.Unit, anyvalparam).setFlag(ABSTRACT | FINAL)
-    lazy val ByteClass    = newValueClass(nme.Byte, 'B', 1)
-    lazy val ShortClass   = newValueClass(nme.Short, 'S', 2)
-    lazy val CharClass    = newValueClass(nme.Char, 'C', 2)
-    lazy val IntClass     = newValueClass(nme.Int, 'I', 3)
-    lazy val LongClass    = newValueClass(nme.Long, 'L', 4)
-    lazy val FloatClass   = newValueClass(nme.Float, 'F', 5)
-    lazy val DoubleClass  = newValueClass(nme.Double, 'D', 6)
-    lazy val BooleanClass = newValueClass(nme.Boolean, 'Z', -1)
+    lazy val ByteClass    = newValueClass(nme.Byte, 'B', 2)
+    lazy val ShortClass   = newValueClass(nme.Short, 'S', 4)
+    lazy val CharClass    = newValueClass(nme.Char, 'C', 3)
+    lazy val IntClass     = newValueClass(nme.Int, 'I', 12)
+    lazy val LongClass    = newValueClass(nme.Long, 'L', 24)
+    lazy val FloatClass   = newValueClass(nme.Float, 'F', 48)
+    lazy val DoubleClass  = newValueClass(nme.Double, 'D', 96)
+    lazy val BooleanClass = newValueClass(nme.Boolean, 'Z', 0)
       def Boolean_and = getMember(BooleanClass, nme.ZAND)
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
 
@@ -582,9 +582,19 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     val refClass = new HashMap[Symbol, Symbol]
     val abbrvTag = new HashMap[Symbol, Char]
-    val numericWidth = new HashMap[Symbol, Int]
+    private val numericWeight = new HashMap[Symbol, Int]
 
-    private[symtab] def newValueClass(name: Name, tag: Char, width: Int): Symbol = {
+    def isNumericSubClass(sub: Symbol, sup: Symbol) =
+      numericWeight get sub match {
+        case Some(w1) =>
+          numericWeight get sup match {
+            case Some(w2) => w2 % w1 == 0
+            case None => false
+          }
+        case None => false
+      }
+
+    private[symtab] def newValueClass(name: Name, tag: Char, weight: Int): Symbol = {
       val boxedName = sn.Boxed(name)
 
       val clazz = newClass(ScalaPackageClass, name, anyvalparam) setFlag (ABSTRACT | FINAL)
@@ -592,7 +602,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       boxedModule(clazz) = getModule(boxedName)
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
       abbrvTag(clazz) = tag
-      if (width > 0) numericWidth(clazz) = width
+      if (weight > 0) numericWeight(clazz) = weight
 
       val module = ScalaPackageClass.newModule(NoPosition, name)
       ScalaPackageClass.info.decls.enter(module)
@@ -715,7 +725,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     /** Is symbol a numeric value class? */
     def isNumericValueClass(sym: Symbol): Boolean =
-      numericWidth contains sym
+      numericWeight contains sym
 
     /** Is symbol a numeric value class? */
     def isNumericValueType(tp: Type): Boolean = tp match {
