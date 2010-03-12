@@ -141,7 +141,7 @@ abstract class AddInterfaces extends InfoTransform {
       for (sym <- ifaceDecls.iterator) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
-            val impl = sym.cloneSymbol(implClass).setInfo(sym.info).resetFlag(lateDEFERRED)
+            val impl = sym.cloneSymbol(implClass).resetFlag(lateDEFERRED)
             if (currentRun.compiles(implClass)) implMethodMap(sym) = impl
             decls enter impl
             sym setFlag lateDEFERRED
