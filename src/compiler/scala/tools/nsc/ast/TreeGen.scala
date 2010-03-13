@@ -331,6 +331,17 @@ abstract class TreeGen
     Apply(meth, List(tree))
   }
 
+  /** Try to convert Select(qual, name) to a SelectFromTypeTree.
+   */
+  def convertToSelectFromType(qual: Tree, name: Name): Tree = {
+    def selFromType(qual1: Tree) = SelectFromTypeTree(qual1 setPos qual.pos, name)
+    qual match {
+      case Select(qual1, name) => selFromType(Select(qual1, name.toTypeName))
+      case Ident(name) => selFromType(Ident(name.toTypeName))
+      case _ => EmptyTree
+    }
+  }
+
   /** Used in situations where you need to access value of an expression several times
    */
   def evalOnce(expr: Tree, owner: Symbol, unit: CompilationUnit)(within: (() => Tree) => Tree): Tree = {

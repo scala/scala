@@ -3521,6 +3521,11 @@ trait Typers { self: Analyzer =>
         }
 
         if (!reallyExists(sym)) {
+          if (context.owner.toplevelClass.hasFlag(JAVA) && name.isTypeName) {
+            val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name)  }
+            if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
+          }
+
           if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+"\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
 
           def makeErrorTree = {
