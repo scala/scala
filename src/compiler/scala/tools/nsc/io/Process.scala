@@ -6,7 +6,7 @@ package scala.tools.nsc
 package io
 
 import concurrent.ThreadRunner
-import scala.util.Properties.{ isWin, isMac }
+import scala.util.Properties.{ isWin, isMac, lineSeparator }
 import scala.util.control.Exception.catching
 import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder }
 import java.io.{ IOException, InputStream, OutputStream, BufferedReader, InputStreamReader, PrintWriter, File => JFile }
@@ -68,8 +68,7 @@ object Process
     }
   }
 
-  private[Process] class ProcessBuilder(val pb: JProcessBuilder)
-  {
+  private[Process] class ProcessBuilder(val pb: JProcessBuilder) {
     def this(cmd: String*) = this(new JProcessBuilder(cmd: _*))
     def start() = new Process(() => pb.start())
 
@@ -116,7 +115,7 @@ object Process
     cwd: Path = null,
     redirect: Boolean = false
   ): Process =
-      exec(shell(command), env, cwd)
+      exec(shell(command), env, cwd, redirect)
 
   /** Executes the given command line.
    *
@@ -129,12 +128,11 @@ object Process
     cwd: Path = null,
     redirect: Boolean = false
   ): Process =
-      new ProcessBuilder(command: _*) withEnv env withCwd cwd start
+      new ProcessBuilder(command: _*) withEnv env withCwd cwd withRedirectedErrorStream redirect start
 }
 import Process._
 
-class Process(processCreator: () => JProcess) extends Iterable[String]
-{
+class Process(processCreator: () => JProcess) extends Iterable[String] {
   lazy val process = processCreator()
 
   def exitValue(): Option[Int] =
@@ -144,6 +142,7 @@ class Process(processCreator: () => JProcess) extends Iterable[String]
   def destroy() = process.destroy()
   def rerun() = new Process(processCreator)
 
+  def slurp()   = _out.slurp()
   def stdout    = iterator
   def iterator  = _out.iterator
   def stderr    = _err.iterator
@@ -152,6 +151,11 @@ class Process(processCreator: () => JProcess) extends Iterable[String]
   class StreamedConsumer(in: InputStream) extends Thread with Iterable[String] {
     private val queue = new LinkedBlockingQueue[String]
     private val reader = new BufferedReader(new InputStreamReader(in))
+
+    def slurp(): String = {
+      join()
+      queue.toArray map (_ + lineSeparator) mkString
+    }
 
     def iterator = {
       join()  // make sure this thread is complete

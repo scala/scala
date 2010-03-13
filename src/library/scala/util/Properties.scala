@@ -49,6 +49,7 @@ private[scala] trait PropertiesTrait
   def propOrEmpty(name: String)                 = propOrElse(name, "")
   def propOrNull(name: String)                  = propOrElse(name, null)
   def propOrNone(name: String)                  = Option(propOrNull(name))
+  def propOrFalse(name: String)                 = propOrNone(name) exists (x => List("yes", "on", "true") contains x.toLowerCase)
   def setProp(name: String, value: String)      = System.setProperty(name, value)
   def clearProp(name: String)                   = System.clearProperty(name)
 

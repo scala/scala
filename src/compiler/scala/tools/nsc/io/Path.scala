@@ -97,6 +97,10 @@ class Path private[io] (val jfile: JFile) {
   def toAbsolute: Path = if (isAbsolute) this else Path(jfile.getAbsolutePath())
   def toURI: URI = jfile.toURI()
   def toURL: URL = toURI.toURL()
+  /** If this path is absolute, returns it: otherwise, returns an absolute
+   *  path made up of root / this.
+   */
+  def toAbsoluteWithRoot(root: Path) = if (isAbsolute) this else root.toAbsolute / this
 
   /** Creates a new Path with the specified path appended.  Assumes
    *  the type of the new component implies the type of the result.
@@ -225,7 +229,7 @@ class Path private[io] (val jfile: JFile) {
   // def copyTo(target: Path, options ...): Boolean
   // def moveTo(target: Path, options ...): Boolean
 
-  override def toString() = "Path(%s)".format(path)
+  override def toString() = path
   override def equals(other: Any) = other match {
     case x: Path  => path == x.path
     case _        => false

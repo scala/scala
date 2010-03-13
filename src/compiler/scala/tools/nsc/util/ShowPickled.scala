@@ -290,7 +290,7 @@ object ShowPickled extends Names {
   /** Option --bare suppresses numbers so the output can be diffed.
    */
   def main(args: Array[String]) {
-    val parsed = new CommandLine(args, List("--bare"))
+    val parsed = CommandLine(args.toList, List("--bare"), Nil)
     def isBare = parsed isSet "--bare"
 
     parsed.residualArgs foreach { arg =>

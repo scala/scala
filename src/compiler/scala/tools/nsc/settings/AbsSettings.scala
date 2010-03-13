@@ -25,6 +25,9 @@ trait AbsSettings {
   // only settings which differ from default
   def userSetSettings = visibleSettings filterNot (_.isDefault)
 
+  // an argument list which (should) be usable to recreate the Settings
+  def recreateArgs = userSetSettings.toList flatMap (_.unparse)
+
   // checks both name and any available abbreviations
   def lookupSetting(cmd: String): Option[Setting] = allSettings find (_ respondsTo cmd)
 

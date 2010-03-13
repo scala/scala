@@ -117,6 +117,4 @@ with Streamable.Chars
 
     ()
   }
-
-  override def toString() = "File(%s)".format(path)
 }

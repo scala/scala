@@ -36,8 +36,7 @@ import Path._
  *  @author  Paul Phillips
  *  @since   2.8
  */
-class Directory(jfile: JFile) extends Path(jfile)
-{
+class Directory(jfile: JFile) extends Path(jfile) {
   override def toDirectory: Directory = this
   override def toFile: File = new File(jfile)
   override def isValid = jfile.isDirectory() || !jfile.exists()
@@ -82,6 +81,4 @@ class Directory(jfile: JFile) extends Path(jfile)
     }
     f.delete()
   }
-
-  override def toString() = "Directory(%s)".format(path)
 }
