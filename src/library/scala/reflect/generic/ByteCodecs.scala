@@ -9,21 +9,12 @@ package scala.reflect.generic
 
 object ByteCodecs {
 
-  def bump(src: Array[Byte], len: Int, delta: Int) {
-    var i = 0
-    while (i < len) {
-      val in: Int = src(i) & 0xff
-      src(i) = (in + delta).toByte
-      i += 1
-    }
-  }
-
-  def encodeZeroes(src: Array[Byte]): Array[Byte] = {
+  def avoidZero(src: Array[Byte]): Array[Byte] = {
     var i = 0
     val srclen = src.length
     var count = 0
     while (i < srclen) {
-      if (src(i) == 0) count += 1
+      if (src(i) == 0x7f) count += 1
       i += 1
     }
     val dst = new Array[Byte](srclen + count)
@@ -31,12 +22,12 @@ object ByteCodecs {
     var j = 0
     while (i < srclen) {
       val in = src(i)
-      if (in == 0) {
+      if (in == 0x7f) {
         dst(j) = (0xc0).toByte
         dst(j + 1) = (0x80).toByte
         j += 2
       } else {
-        dst(j) = in
+        dst(j) = (in + 1).toByte
         j += 1
       }
       i += 1
@@ -44,17 +35,17 @@ object ByteCodecs {
     dst
   }
 
-  def decodeZeroes(src: Array[Byte]): Int = {
+  def regenerateZero(src: Array[Byte]): Int = {
     var i = 0
     val srclen = src.length
     var j = 0
     while (i < srclen) {
       val in: Int = src(i) & 0xff
       if (in == 0xc0 && (src(i + 1) & 0xff) == 0x80) {
-        src(j) = 0
+        src(j) = 0x7f
         i += 2
       } else {
-        src(j) = in.toByte
+        src(j) = (in - 1).toByte
         i += 1
       }
       j += 1
@@ -192,34 +183,15 @@ object ByteCodecs {
     }
   }
 
-  def encode(xs: Array[Byte]): Array[Byte] = {
-    val ys = xs.clone()
-    bump(ys, ys.length, 1)
-    encodeZeroes(encode8to7(ys))
-  }
+  def encode(xs: Array[Byte]): Array[Byte] = avoidZero(encode8to7(xs))
 
   /** Destructively decode array xs */
   def decode(xs: Array[Byte], dstlen: Int) {
-    val len = decodeZeroes(xs)
+    val len = regenerateZero(xs)
     decode7to8(xs, len, dstlen)
-    bump(xs, dstlen, -1)
   }
 
 // test & debug, preliminary ----------------------------------
-
-  def testBump(xs: Array[Byte]) {
-    val xs0 = xs.clone()
-    bump(xs, xs.length, 1)
-    bump(xs, xs.length, -1)
-    assert(xs.deep == xs0.deep, xs0.deep)
-  }
-
-  def testZeroes(xs: Array[Byte]) {
-    val ys = encodeZeroes(xs)
-    val len = decodeZeroes(ys)
-    assert(len == xs.length && ys.take(len).deep == xs.deep,
-           "testZeroes("+xs.deep+") failed; len = "+len+", result = "+ys.take(len).deep)
-  }
 
   def test8to7(xs: Array[Byte]) {
     val ys = encode8to7(xs)
@@ -237,7 +209,6 @@ object ByteCodecs {
 
   def test(inputs: Array[Byte]*) {
     for (input <- inputs) {
-      testBump(input)
       test8to7(input)
       testAll(input)
     }
