@@ -73,6 +73,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
   private final val LogPendingSubTypesThreshold = 50
   private final val LogPendingBaseTypesThreshold = 50
+  private final val LogVolatileThreshold = 50
 
   /** A don't care value for the depth parameter in lubs/glbs and related operations */
   private final val AnyDepth = -3
@@ -1532,6 +1533,9 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     }
   }
 
+  private var volatileRecursions: Int = 0
+  private var pendingVolatiles = new collection.mutable.HashSet[Symbol]
+
   /** A class for named types of the form
    *  `&lt;prefix&gt;.&lt;sym.name&gt;[args]'
    *  Cannot be created directly; one should always use `typeRef'
@@ -1560,9 +1564,32 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       sym.isAbstractType && (bounds.hi.typeSymbol isSubClass SingletonClass)
     }
 
-    override def isVolatile: Boolean =
+    override def isVolatile: Boolean = {
       sym.isAliasType && normalize.isVolatile ||
-      sym.isAbstractType && bounds.hi.isVolatile
+      sym.isAbstractType && {
+        // need to be careful not to fall into an infinite recursion here
+        // because volatile checking is done before all cycles are detected.
+        // the case to avoid is an abstract type directly or
+        // indirectly upper-bounded by itself. See #2918
+        try {
+          volatileRecursions += 1
+          if (volatileRecursions < LogVolatileThreshold)
+            bounds.hi.isVolatile
+          else if (pendingVolatiles contains sym)
+            true // we can return true here, because a cycle will be detected
+                 // here afterwards and an error will result anyway.
+          else
+            try {
+              pendingVolatiles += sym
+              bounds.hi.isVolatile
+            } finally {
+              pendingVolatiles -= sym
+            }
+        } finally {
+          volatileRecursions -= 1
+        }
+      }
+    }
 
     override val isTrivial: Boolean =
       !sym.isTypeParameter && pre.isTrivial && args.forall(_.isTrivial)

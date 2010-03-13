@@ -3641,7 +3641,7 @@ trait Typers { self: Analyzer =>
 
           if (defSym.exists && impSym.exists) {
             // imported symbols take precedence over package-owned symbols in different
-            // compilation units. Defined symbols take precedence over errenous imports.
+            // compilation units. Defined symbols take precedence over erroneous imports.
             if (defSym.definedInPackage &&
                 (!currentRun.compiles(defSym) ||
                  (context.unit ne null) && defSym.sourceFile != context.unit.source.file))
