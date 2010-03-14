@@ -363,7 +363,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
           def isArrayMethodSignature =
             (methSym.name == nme.length && params.isEmpty) ||
-            (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass)) ||
+            (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass) && params.size == 2) ||
             (methSym.name == nme.apply  && params.size == 1) ||
             (methSym.name == nme.clone_ && params.isEmpty)
 
