@@ -24,6 +24,7 @@ import annotation.unchecked.uncheckedVariance
  *
  *  @author  Martin Odersky
  *  @author  Tiark Rompf
+ *  @version 2.8
  *  @since   2.3
  */
 @serializable @SerialVersionUID(2L)
@@ -69,6 +70,8 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] {
   protected def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1)): HashMap[A, B1] =
     new HashMap.HashMap1(key, hash, value, kv)
 
+
+
   protected def removed0(key: A, hash: Int, level: Int): HashMap[A, B] = this
 
 }
@@ -105,10 +108,14 @@ object HashMap extends ImmutableMapFactory[HashMap] {
           m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv)
         } else {
           // 32-bit hash collision (rare, but not impossible)
-          // always wrap this in a HashTrieMap! otherwise serialization won't work
-          val elems = new Array[HashMap[A,B1]](1)
-          elems(0) = new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
-          new HashTrieMap[A,B1](1 << ((hash >>> level) & 0x1f), elems, 2)
+          // wrap this in a HashTrieMap if called with level == 0 (otherwise serialization won't work)
+          if (level == 0) {
+            val elems = new Array[HashMap[A,B1]](1)
+            elems(0) = new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
+            new HashTrieMap[A,B1](1 << ((hash >>> level) & 0x1f), elems, 2)
+          } else {
+            new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
+          }
         }
       }
 
@@ -117,7 +124,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
 
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
-    private def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
+    private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
 
     private def writeObject(out: java.io.ObjectOutputStream) {
       out.writeObject(key)
@@ -257,37 +264,100 @@ object HashMap extends ImmutableMapFactory[HashMap] {
       }
     }
 
-
+/*
     override def iterator = {   // TODO: optimize (use a stack to keep track of pos)
-      var it: Iterator[(A,B)] = Iterator.empty
-      if (bitmap != 0)
-        elems foreach ((m: Map[_,_]) => it = it ++ m.asInstanceOf[Map[A,B]].iterator)
-      it
+
+      def iter(m: HashTrieMap[A,B], k: => Stream[(A,B)]): Stream[(A,B)] = {
+        def horiz(elems: Array[HashMap[A,B]], i: Int, k: => Stream[(A,B)]): Stream[(A,B)] = {
+          if (i < elems.length) {
+            elems(i) match {
+              case m: HashTrieMap[A,B] => iter(m, horiz(elems, i+1, k))
+              case m: HashMap1[A,B] => new Stream.Cons(m.ensurePair, horiz(elems, i+1, k))
+            }
+          } else k
+        }
+        horiz(m.elems, 0, k)
+      }
+      iter(this, Stream.empty).iterator
+    }
+*/
+
+
+    override def iterator = new Iterator[(A,B)] {
+      private[this] var depth = 0
+      private[this] var arrayStack = new Array[Array[HashMap[A,B]]](6)
+      private[this] var posStack = new Array[Int](6)
+
+      private[this] var arrayD = elems
+      private[this] var posD = 0
+
+      private[this] var subIter: Iterator[(A,B)] = null // to traverse collision nodes
+
+      def hasNext = (subIter ne null) || depth >= 0
+
+      def next: (A,B) = {
+        if (subIter ne null) {
+          val el = subIter.next
+          if (!subIter.hasNext)
+            subIter = null
+          el
+        } else
+          next0(arrayD, posD)
+      }
+
+      @scala.annotation.tailrec private[this] def next0(elems: Array[HashMap[A,B]], i: Int): (A,B) = {
+        if (i == elems.length-1) { // reached end of level, pop stack
+          depth -= 1
+          if (depth >= 0) {
+            arrayD = arrayStack(depth)
+            posD = posStack(depth)
+            arrayStack(depth) = null
+          } else {
+            arrayD = null
+            posD = 0
+          }
+        } else
+          posD += 1
+
+        elems(i) match {
+          case m: HashTrieMap[A,B] => // push current pos onto stack and descend
+            if (depth >= 0) {
+              arrayStack(depth) = arrayD
+              posStack(depth) = posD
+            }
+            depth += 1
+            arrayD = m.elems
+            posD = 0
+            next0(m.elems, 0)
+          case m: HashMap1[A,B] => m.ensurePair
+          case m =>
+            subIter = m.iterator
+            subIter.next
+        }
+      }
     }
 
 /*
-    override def iterator = new Iterator[A,B] {
-      var depth = 0
-      var nodeStack = new Array[HashTrieMap[A,B]](6)
-      var indexStack = new Array[Int](6)
 
-      var curNode = this[HashTrieMap]
-      var curIndex = 0
-      var maxIndex = curNode.elems.length
+import collection.immutable._
+def time(block: =>Unit) = { val t0 = System.nanoTime; block; println("elapsed: " + (System.nanoTime - t0)/1000000.0) }
+var mOld = OldHashMap.empty[Int,Int]
+var mNew = HashMap.empty[Int,Int]
+time { for (i <- 0 until 100000) mOld = mOld.updated(i,i) }
+time { for (i <- 0 until 100000) mOld = mOld.updated(i,i) }
+time { for (i <- 0 until 100000) mOld = mOld.updated(i,i) }
+time { for (i <- 0 until 100000) mNew = mNew.updated(i,i) }
+time { for (i <- 0 until 100000) mNew = mNew.updated(i,i) }
+time { for (i <- 0 until 100000) mNew = mNew.updated(i,i) }
+time { mOld.iterator.foreach( p => ()) }
+time { mOld.iterator.foreach( p => ()) }
+time { mOld.iterator.foreach( p => ()) }
+time { mNew.iterator.foreach( p => ()) }
+time { mNew.iterator.foreach( p => ()) }
+time { mNew.iterator.foreach( p => ()) }
 
-      def hasNext = curIndex < maxIndex
-
-      def next(): (A,B) = {
-        val sub = curNode.elems(curIndex)
-        sub match {
-          case sub: HashTrieMap =>
-            // go down
-          case sub: HashMap1 =>
-            // produce value
-        }
-
-      }
 */
+
 
     override def foreach[U](f: ((A, B)) =>  U): Unit = {
       var i = 0;
@@ -312,7 +382,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
       var index = 0
       var m = HashMap.empty[A,B]
       while (index < size) {
-        // TODO: optimize (use mutable update)
+        // TODO: optimize (use unsafe mutable update)
         m = m + ((in.readObject.asInstanceOf[A], in.readObject.asInstanceOf[B]))
         index += 1
       }
