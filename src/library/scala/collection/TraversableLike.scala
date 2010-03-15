@@ -612,6 +612,46 @@ self =>
   def reduceRightOption[B >: A](op: (A, B) => B): Option[B] =
     if (isEmpty) None else Some(reduceRight(op))
 
+  /**
+   * Produces a collection containing cummulative results of applying the operator going left to right.
+   * $willNotTerminateInf
+   * $orderDependent
+   *
+   * @tparam B      the type of the elements in the resulting collection
+   * @tparam That   the actual type of the resulting collection
+   * @param z       the initial value
+   * @param op      the binary operator applied to the intermediate result and the element
+   * @param bf      $bfinfo
+   * @return        collection with intermediate results
+   */
+  def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    val (_, b) = foldLeft(z, bf(repr) += z) { (acc, x) =>
+      val next = op(acc._1, x)
+      (next, acc._2 += next)
+    }
+    b.result
+  }
+
+  /**
+   * Produces a collection containing cummulative results of applying the operator going right to left.
+   * $willNotTerminateInf
+   * $orderDependent
+   *
+   * @tparam B      the type of the elements in the resulting collection
+   * @tparam That   the actual type of the resulting collection
+   * @param z       the initial value
+   * @param op      the binary operator applied to the intermediate result and the element
+   * @param bf      $bfinfo
+   * @return        collection with intermediate results
+   */
+  def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    val (_, b) = foldRight(z, bf(repr) += z) { (x, acc) =>
+      val next = op(x, acc._1)
+      (next, acc._2 += next)
+    }
+    b.result
+  }
+
   /** Sums up the elements of this collection.
    *
    *   @param   num  an implicit parameter defining a set of numeric operations
