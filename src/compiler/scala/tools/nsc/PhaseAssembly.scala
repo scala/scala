@@ -97,7 +97,7 @@ trait PhaseAssembly { self: Global =>
      * names are sorted alphabetical at each level, into the compiler phase list
      */
     def compilerPhaseList(): List[SubComponent] =
-      nodes.values.toList sortBy (x => (x.level, x.phasename)) flatMap (_.phaseobj) flatten
+      nodes.values.toList filter (_.level > 0) sortBy (x => (x.level, x.phasename)) flatMap (_.phaseobj) flatten
 
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes
