@@ -82,7 +82,7 @@ y = Map(1 -> A, 2 -> B, 3 -> C)
 x equals y: true, y equals x: true
 
 x = Set(1, 2)
-y = Set(2, 1)
+y = Set(1, 2)
 x equals y: true, y equals x: true
 
 x = List((buffers,20), (layers,2), (title,3))
