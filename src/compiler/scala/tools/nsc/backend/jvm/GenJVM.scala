@@ -49,7 +49,7 @@ abstract class GenJVM extends SubComponent {
         for ((sym, cls) <- icodes.classes ; if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
           icodes.classes -= sym
 
-      classes.valuesIterator foreach apply
+      classes.values foreach apply
     }
 
     override def apply(cls: IClass) {

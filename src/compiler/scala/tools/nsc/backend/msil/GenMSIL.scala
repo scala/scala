@@ -42,15 +42,15 @@ abstract class GenMSIL extends SubComponent {
       val codeGenerator = new BytecodeGenerator
 
       //classes is ICodes.classes, a HashMap[Symbol, IClass]
-      classes.valuesIterator foreach codeGenerator.findEntryPoint
+      classes.values foreach codeGenerator.findEntryPoint
 
       codeGenerator.initAssembly
 
-      classes.valuesIterator foreach codeGenerator.createTypeBuilder
-      classes.valuesIterator foreach codeGenerator.createClassMembers
+      classes.values foreach codeGenerator.createTypeBuilder
+      classes.values foreach codeGenerator.createClassMembers
 
       try {
-        classes.valuesIterator foreach codeGenerator.genClass
+        classes.values foreach codeGenerator.genClass
       } finally {
         codeGenerator.writeAssembly
       }
@@ -469,7 +469,7 @@ abstract class GenMSIL extends SubComponent {
     }
 
     private def createTypes() {
-      for (sym <- classes.keysIterator) {
+      for (sym <- classes.keys) {
         val iclass   = classes(sym)
         val tBuilder = types(sym).asInstanceOf[TypeBuilder]
 
@@ -755,7 +755,7 @@ abstract class GenMSIL extends SubComponent {
         val newHandlersBySize = newHandlers.groupBy(_.covered.size)
         // big handlers first, smaller ones are nested inside the try of the big one
         // (checked by the assertions below)
-        val sizes = newHandlersBySize.keysIterator.toList.sortWith(_ > _)
+        val sizes = newHandlersBySize.keys.toList.sortWith(_ > _)
 
         val beginHandlers = new ListBuffer[ExceptionHandler]
         for (s <- sizes) {

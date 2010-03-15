@@ -90,7 +90,7 @@ abstract class Enumeration(initial: Int, names: String*) {
    */
   def values: ValueSet = {
     if (!vsetDefined) {
-      vset = new ValueSet(BitSet.empty ++ (vmap.valuesIterator map (_.id)))
+      vset = new ValueSet(BitSet.empty ++ (vmap.values map (_.id)))
       vsetDefined = true
     }
     vset

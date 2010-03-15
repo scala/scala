@@ -404,7 +404,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     "\\$greater" -> ">", "\\$qmark" -> "?", "\\$percent" -> "%",
     "\\$amp" -> "&", "\\$colon" -> ":", "\\$u2192" -> "→",
     "\\$hash" -> "#")
-  val pattern = Pattern.compile(_syms.keysIterator.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
+  val pattern = Pattern.compile(_syms.keys.foldLeft("")((x, y) => if (x == "") y else x + "|" + y))
   val placeholderPattern = "_\\$(\\d)+"
 
   private def stripPrivatePrefix(name: String) = {

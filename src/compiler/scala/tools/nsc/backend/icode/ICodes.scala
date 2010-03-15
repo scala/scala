@@ -59,7 +59,7 @@ abstract class ICodes extends AnyRef
     val printer = new TextPrinter(new PrintWriter(Console.out, true),
                                   new DumpLinearizer)
 
-    classes.valuesIterator foreach printer.printClass
+    classes.values foreach printer.printClass
   }
 
   object liveness extends Liveness {

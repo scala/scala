@@ -96,21 +96,8 @@ trait PhaseAssembly { self: Global =>
     /* Given the entire graph, collect the phase objects at each level, where the phase
      * names are sorted alphabetical at each level, into the compiler phase list
      */
-    def compilerPhaseList(): List[SubComponent] = {
-      var chain: List[SubComponent] = Nil
-
-      var lvl = 1
-      var nds = nodes.valuesIterator.filter(_.level == lvl).toList
-      while(nds.size > 0) {
-        nds = nds sortBy (_.phasename)
-        for (n <- nds) {
-          chain = chain ::: n.phaseobj.get
-        }
-        lvl += 1
-        nds = nodes.valuesIterator.filter(_.level == lvl).toList
-      }
-      chain
-    }
+    def compilerPhaseList(): List[SubComponent] =
+      nodes.values.toList sortBy (x => (x.level, x.phasename)) flatMap (_.phaseobj) flatten
 
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes

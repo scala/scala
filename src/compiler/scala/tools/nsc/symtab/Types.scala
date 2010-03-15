@@ -3366,7 +3366,7 @@ A type's typeSymbol should never be inspected directly.
     override val dropNonConstraintAnnotations = true
 
     private var existSyms = immutable.Map.empty[Int, Symbol]
-    def existentialsNeeded: List[Symbol] = existSyms.valuesIterator.toList
+    def existentialsNeeded: List[Symbol] = existSyms.values.toList
 
     /* Return the type symbol for referencing a parameter index
      * inside the existential quantifier.  */

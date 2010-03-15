@@ -913,7 +913,7 @@ self: Analyzer =>
     def allImplicits: List[SearchResult] = {
       val invalidImplicits = new ListBuffer[Symbol]
       def search(iss: List[List[ImplicitInfo]], isLocal: Boolean) =
-        applicableInfos(iss, isLocal, invalidImplicits).valuesIterator.toList
+        applicableInfos(iss, isLocal, invalidImplicits).values.toList
       search(context.implicitss, true) ::: search(implicitsOfExpectedType, false)
     }
   }

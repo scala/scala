@@ -268,10 +268,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     // ))
   }
 
-  private def keyList[T](x: collection.Map[T, _]): List[T] = x.keysIterator.toList sortBy (_.toString)
+  private def keyList[T](x: collection.Map[T, _]): List[T] = x.keys.toList sortBy (_.toString)
   def allUsedNames = keyList(usedNameMap)
   def allBoundNames = keyList(boundNameMap)
-  def allSeenTypes = prevRequests.toList flatMap (_.typeOf.valuesIterator.toList) distinct
+  def allSeenTypes = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
   def allValueGeneratingNames = allHandlers flatMap (_.generatesValue)
   def allImplicits = partialFlatMap(allHandlers) {
     case x: MemberHandler if x.definesImplicit => x.boundNames

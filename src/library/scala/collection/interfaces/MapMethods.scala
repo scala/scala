@@ -30,9 +30,10 @@ with SubtractableMethods[A, This]
   def apply(key: A): B
   def contains(key: A): Boolean
   def isDefinedAt(key: A): Boolean
-  def keySet: Set[A]
+  def keys: Iterable[A]
   def keysIterator: Iterator[A]
-  def valuesIterable: Iterable[B]
+  def keySet: Set[A]
+  def values: Iterable[B]
   def valuesIterator: Iterator[B]
   def default(key: A): B
   def filterKeys(p: A => Boolean): DefaultMap[A, B]

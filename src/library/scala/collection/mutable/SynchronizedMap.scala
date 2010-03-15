@@ -12,6 +12,7 @@
 package scala.collection
 package mutable
 
+import annotation.migration
 
 /** This class should be used as a mixin. It synchronizes the <code>Map</code>
  *  functions of the class into which it is mixed in.
@@ -35,14 +36,15 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
   override def getOrElseUpdate(key: A, default: => B): B = synchronized { super.getOrElseUpdate(key, default) }
   override def transform(f: (A, B) => B): this.type = synchronized[this.type] { super.transform(f) }
   override def retain(p: (A, B) => Boolean): this.type = synchronized[this.type] { super.retain(p) }
-  override def valuesIterable: scala.collection.Iterable[B] = synchronized { super.valuesIterable }
-  @deprecated("Use `valuesIterator' instead") override def values: Iterator[B] = synchronized { super.valuesIterator }
+  @migration(2, 8, "As of 2.8, values returns Iterable[B] rather than Iterator[B].")
+  override def values: collection.Iterable[B] = synchronized { super.values }
   override def valuesIterator: Iterator[B] = synchronized { super.valuesIterator }
   override def clone(): Self = synchronized { super.clone() }
   override def foreach[U](f: ((A, B)) => U) = synchronized { super.foreach(f) }
   override def apply(key: A): B = synchronized { super.apply(key) }
-  override def keySet: scala.collection.Set[A] = synchronized { super.keySet }
-  @deprecated("Use `keysIterator' instead") override def keys: Iterator[A] = synchronized { super.keysIterator }
+  override def keySet: collection.Set[A] = synchronized { super.keySet }
+  @migration(2, 8, "As of 2.8, keys returns Iterable[A] rather than Iterator[A].")
+  override def keys: collection.Iterable[A] = synchronized { super.keys }
   override def keysIterator: Iterator[A] = synchronized { super.keysIterator }
   override def isEmpty: Boolean = synchronized { super.isEmpty }
   override def contains(key: A): Boolean = synchronized {super.contains(key) }

@@ -143,7 +143,7 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       case Nil =>
 
         val bodyTags: mutable.Map[TagKey, List[Body]] =
-          mutable.Map((tags map { case (key, values) => key -> (values map (parseWiki(_, pos))) }).toSeq:_*)
+          mutable.Map(tags mapValues (_ map (parseWiki(_, pos))) toSeq: _*)
 
         def oneTag(key: SimpleTagKey): Option[Body] =
           ((bodyTags remove key): @unchecked) match {
@@ -158,7 +158,7 @@ final class CommentFactory(val reporter: Reporter) { parser =>
 
         def allSymsOneTag(key: TagKey): Map[String, Body] = {
           val keys: Seq[SymbolTagKey] =
-            bodyTags.keysIterator.toSeq flatMap {
+            bodyTags.keys.toSeq flatMap {
               case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
               case stk: SimpleTagKey if (stk.name == key.name) =>
                 reporter.warning(pos, "Tag '@" + stk.name + "' must be followed by a symbol name")

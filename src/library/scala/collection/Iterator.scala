@@ -279,6 +279,11 @@ trait Iterator[+A] { self =>
    */
   def next(): A
 
+  /** Tests whether this iterator is empty.
+   *  @return   `true` if hasNext is false, `false` otherwise.
+   */
+  def isEmpty: Boolean = !hasNext
+
   /** Selects first ''n'' values of this iterator.
    *  @param  n    the number of values to take
    *  @return an iterator producing only of the first `n` values of this iterator, or else the

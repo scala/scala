@@ -74,7 +74,7 @@ abstract class Checkers {
     def checkICodes: Unit = {
       if (settings.verbose.value)
       println("[[consistency check at the beginning of phase " + globalPhase.name + "]]")
-      classes.valuesIterator foreach check
+      classes.values foreach check
     }
 
     def check(cls: IClass) {

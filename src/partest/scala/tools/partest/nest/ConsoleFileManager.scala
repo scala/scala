@@ -152,7 +152,7 @@ class ConsoleFileManager extends FileManager {
       )
 
       // run setup based on most recent time
-      pairs(pairs.keysIterator.toList max)()
+      pairs(pairs.keys max)()
 
       latestFjbgFile = prefixFile("lib/fjbg.jar")
     }

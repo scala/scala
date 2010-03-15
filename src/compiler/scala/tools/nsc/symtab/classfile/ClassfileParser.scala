@@ -952,7 +952,7 @@ abstract class ClassfileParser {
       }
     }
 
-    for (entry <- innerClasses.valuesIterator) {
+    for (entry <- innerClasses.values) {
       // create a new class member for immediate inner classes
       if (entry.outerName == externalName) {
         val file = global.classPath.findSourceFile(entry.externalName.toString) getOrElse {

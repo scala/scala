@@ -14,6 +14,7 @@ package mutable
 
 import generic._
 import script._
+import annotation.migration
 
 /** A template trait for buffers of type `Buffer[A]`.
  *
@@ -278,8 +279,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter     the iterable object.
    */
-  @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=` if you intend to create a new collection.")
+  @migration(2, 8,
+    "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
+    "Use ++= instead if you intend to add by side effect to an existing collection.\n"
+  )
   override def ++(iter: Traversable[A]): This = {
     for (elem <- iter) +=(elem)
     repr
@@ -290,8 +293,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter   the iterator
    */
-  @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=` if you intend to create a new collection.")
+  @migration(2, 8,
+    "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
+    "Use ++= instead if you intend to add by side effect to an existing collection.\n"
+  )
   override def ++ (iter: Iterator[A]): This = {
     for (elem <- iter) +=(elem)
     repr
@@ -325,8 +330,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter     the Traversable object.
    */
-  @deprecated("Use --= instead if you intend to remove by side effect from an existing collection.\n"+
-              "Use `clone() --=` if you intend to create a new collection.")
+  @migration(2, 8,
+    "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
+    "Use --= instead if you intend to add by side effect to an existing collection.\n"
+  )
   override def --(iter: Traversable[A]): This = {
     for (elem <- iter) -=(elem)
     repr
@@ -340,13 +347,12 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *
    *  @param iter   the iterator
    */
-  @deprecated("Use --= instead if you intend to remove by side effect from an existing collection.\n"+
-              "Use `clone() --=` if you intend to create a new collection.")
+  @migration(2, 8,
+    "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
+    "Use --= instead if you intend to add by side effect to an existing collection.\n"
+  )
   override def --(iter: Iterator[A]): This = {
     for (elem <- iter) -=(elem)
     repr
   }
 }
-
-
-

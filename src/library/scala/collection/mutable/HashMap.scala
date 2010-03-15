@@ -67,7 +67,7 @@ class HashMap[A, B] extends Map[A, B]
   }
 
   /* Override to avoid tuple allocation in foreach */
-  override def valuesIterable: collection.Iterable[B] = new DefaultValuesIterable {
+  override def values: collection.Iterable[B] = new DefaultValuesIterable {
     override def foreach[C](f: B => C) = foreachEntry(e => f(e.value))
   }
 

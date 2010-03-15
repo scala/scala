@@ -108,6 +108,6 @@ object CompletionAware {
    */
   def apply(terms: () => List[String]): CompletionAware = apply(terms, _ => None)
   def apply(map: collection.Map[String, CompletionAware]): CompletionAware =
-    apply(() => map.keysIterator.toList, map.get _)
+    apply(() => map.keys.toList, map.get _)
 }
 

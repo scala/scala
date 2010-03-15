@@ -929,9 +929,10 @@ abstract class RefChecks extends InfoTransform {
     /** Similar to deprecation: check if the symbol is marked with @migration
      *  indicating it has changed semantics between versions.
      */
-    private def checkMigration(sym: Symbol, pos: Position) =
+    private def checkMigration(sym: Symbol, pos: Position) = {
       for (msg <- sym.migrationMessage)
-        unit.warning(pos, "%s%s has changed semantics:\n %s".format(sym, sym.locationString, msg))
+        unit.warning(pos, "%s%s has changed semantics:\n%s".format(sym, sym.locationString, msg))
+    }
 
     /** Check that a deprecated val or def does not override a
       * concrete, non-deprecated method.  If it does, then

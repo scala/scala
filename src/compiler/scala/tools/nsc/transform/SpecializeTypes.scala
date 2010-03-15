@@ -278,7 +278,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             tpes
           case _ =>
             log(sym + " specialized on everything")
-            primitiveTypes.valuesIterator.toList
+            primitiveTypes.values.toList
         }
       case _ =>
         Nil
@@ -581,8 +581,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     if (sym.isMethod && !sym.info.typeParams.isEmpty) {
       val (stps, tps) = splitParams(sym.info.typeParams)
       val res = sym :: (for (env <- specializations(stps) if needsSpecialization(env, sym)) yield {
-        val keys = env.keysIterator.toList;
-        val vals = env.valuesIterator.toList
+        val keys = env.keys.toList;
+        val vals = env.values.toList
         val specMember =  sym.cloneSymbol(owner).setFlag(SPECIALIZED).resetFlag(DEFERRED)
         specMember.name = specializedName(sym, env)
 
@@ -778,8 +778,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
     // disabled because of bugs in std. collections
     //val (keys, values) = env.iterator.toList.unzip
-    val keys = env.keysIterator.toList
-    val values = env.valuesIterator.toList
+    val keys = env.keys.toList
+    val values = env.values.toList
     (new FullTypeMap(keys, values))(tpe)
 //    tpe.subst(keys, values)
   }

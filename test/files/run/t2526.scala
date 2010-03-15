@@ -20,9 +20,8 @@ object Test {
     assertForeach(keys, m.keysIterator)
     assertForeach(keys, m.keySet)
 
-    assertForeach(values, m.valuesIterable.iterator)
+    assertForeach(values, m.values.iterator)
     assertForeach(values, m.valuesIterator)
-    assertForeach(values, m.valuesIterable)
 
     assertForeach(entries, m)
   }

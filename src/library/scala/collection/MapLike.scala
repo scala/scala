@@ -12,6 +12,7 @@ package scala.collection
 
 import generic._
 import mutable.{Builder, StringBuilder, MapBuilder}
+import annotation.migration
 import PartialFunction._
 
 /** A template trait for maps of type `Map[A, B]` which associate keys of type `A`
@@ -181,15 +182,16 @@ self =>
    *
    *  @return an iterator over all keys.
    */
-  @deprecated("use `keysIterator' instead")
-  def keys: Iterator[A] = keysIterator
+  @migration(2, 8, "As of 2.8, keys returns Iterable[A] rather than Iterator[A].")
+  def keys: Iterable[A] = keySet
 
   /** Collects all values of this map in an iterable collection.
    * @return the values of this map as an iterable.
    */
-  def valuesIterable: Iterable[B] = new DefaultValuesIterable
+  @migration(2, 8, "As of 2.8, values returns Iterable[B] rather than Iterator[B].")
+  def values: Iterable[B] = new DefaultValuesIterable
 
-  /** The implementation class of the iterable returned by `valuesIterable`.
+  /** The implementation class of the iterable returned by `values`.
    */
   protected class DefaultValuesIterable extends Iterable[B] {
     def iterator = valuesIterator
@@ -206,13 +208,6 @@ self =>
     def hasNext = iter.hasNext
     def next = iter.next._2
   }
-
-  /** Creates an iterator for all contained values.
-   *
-   *  @return an iterator over all values.
-   */
-  @deprecated("use `valuesIterator' instead")
-  def values: Iterator[B] = valuesIterator
 
   /** Defines the default value computation for the map,
    *  returned when a key is not found
