@@ -4828,6 +4828,7 @@ A type's typeSymbol should never be inspected directly.
     }
 
   def isNumericSubType(tp1: Type, tp2: Type) =
+    isNumericValueType(tp1) && isNumericValueType(tp2) &&
     isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
 
   def lub(ts: List[Type]): Type = lub(ts, lubDepth(ts))
