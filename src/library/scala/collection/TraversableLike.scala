@@ -849,7 +849,7 @@ self =>
     b.result
   }
 
-  /** Spits this $coll into a prefix/suffix pair according to a predicate.
+  /** Splits this $coll into a prefix/suffix pair according to a predicate.
    *
    *  Note: `c span p`  is equivalent to (but possibly more efficient than)
    *  `(c takeWhile p, c dropWhile p)`, provided the evaluation of the predicate `p`
