@@ -599,14 +599,13 @@ QUICK BUILD (QUICK)
     <stopwatch name="quick.comp.timer" action="total"/>
   </target>
 
-  
-  <target name="quick.pre-plugins" depends="quick.comp" unless="quick.available">
-    <condition property="quick.plugins.needed">
-      <not><available file="${build-quick.dir}/plugins.complete"/></not>
-    </condition>
+  <target name="quick.pre-plugins" depends="quick.comp">
+    <uptodate property="quick.plugins.available" targetfile="${build-quick.dir}/plugins.complete">
+      <srcfiles dir="${src.dir}/continuations"/>
+    </uptodate>
   </target>
 
-  <target name="quick.plugins" depends="quick.pre-plugins" if="quick.plugins.needed">
+  <target name="quick.plugins" depends="quick.pre-plugins" unless="quick.plugins.available">
     <stopwatch name="quick.plugins.timer"/>
     <mkdir dir="${build-quick.dir}/classes/continuations-plugin"/>
     <scalacfork
@@ -621,17 +620,9 @@ QUICK BUILD (QUICK)
         <pathelement location="${build-quick.dir}/classes/compiler"/>
       </compilationpath>
     </scalacfork>
-    <copy todir="${build-quick.dir}/classes/continuations-plugin">
-      <fileset dir="${src.dir}/continuations/plugin">
-        <include name="**/*.tmpl"/>
-        <include name="**/*.xml"/>
-        <include name="**/*.js"/>
-        <include name="**/*.css"/>
-        <include name="**/*.properties"/>
-        <include name="**/*.swf"/>
-        <include name="**/*.png"/>
-      </fileset>
-    </copy>
+    <copy
+       file="${src.dir}/continuations/plugin/scalac-plugin.xml"
+       todir="${build-quick.dir}/classes/continuations-plugin"/>
     <!-- not very nice to create jar here but needed to load plugin -->
     <mkdir dir="${build-quick.dir}/plugins"/>
     <jar destfile="${build-quick.dir}/plugins/continuations.jar">
@@ -1110,14 +1101,14 @@ BOOTSTRAPPING BUILD (STRAP)
     <touch file="${build-strap.dir}/compiler.complete" verbose="no"/>
     <stopwatch name="strap.comp.timer" action="total"/>
   </target>
-  
-  <target name="strap.pre-plugins" depends="strap.comp" unless="strap.available">
-    <condition property="strap.plugins.needed">
-      <not><available file="${build-strap.dir}/plugins.complete"/></not>
-    </condition>
+
+  <target name="strap.pre-plugins" depends="strap.comp">
+    <uptodate property="strap.plugins.available" targetfile="${build-strap.dir}/plugins.complete">
+      <srcfiles dir="${src.dir}/continuations"/>
+    </uptodate>
   </target>
 
-  <target name="strap.plugins" depends="strap.pre-plugins" if="strap.plugins.needed">
+  <target name="strap.plugins" depends="strap.pre-plugins" unless="strap.plugins.available">
     <stopwatch name="strap.plugins.timer"/>
     <mkdir dir="${build-strap.dir}/classes/continuations-plugin"/>
     <scalacfork
@@ -1132,17 +1123,9 @@ BOOTSTRAPPING BUILD (STRAP)
         <pathelement location="${build-strap.dir}/classes/compiler"/>
       </compilationpath>
     </scalacfork>
-    <copy todir="${build-strap.dir}/classes/continuations-plugin">
-      <fileset dir="${src.dir}/continuations/plugin">
-        <include name="**/*.tmpl"/>
-        <include name="**/*.xml"/>
-        <include name="**/*.js"/>
-        <include name="**/*.css"/>
-        <include name="**/*.properties"/>
-        <include name="**/*.swf"/>
-        <include name="**/*.png"/>
-      </fileset>
-    </copy>
+    <copy
+       file="${src.dir}/continuations/plugin/scalac-plugin.xml"
+       todir="${build-strap.dir}/classes/continuations-plugin"/>
     <!-- not very nice to create jar here but needed to load plugin -->
     <mkdir dir="${build-strap.dir}/plugins"/>
     <jar destfile="${build-strap.dir}/plugins/continuations.jar">
@@ -1407,9 +1390,9 @@ DOCUMENTATION
       classpathref="pack.classpath">
       <src>
         <files includes="${src.dir}/actors"/>
-        <files includes="${src.dir}/actors"/> <!-- why twice ?? -->
         <files includes="${src.dir}/library/scala"/>
         <files includes="${src.dir}/swing"/>
+        <files includes="${src.dir}/continuations/library"/>
       </src>
       <include name="**/*.scala"/>
       <exclude name="reflect/Code.scala"/>
