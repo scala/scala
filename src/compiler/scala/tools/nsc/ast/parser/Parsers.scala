@@ -350,8 +350,11 @@ self =>
 
     /** Check that type parameter is not by name T* */
     def checkNotByName(t: Tree) = t match {
-      case AppliedTypeTree(Select(_, n), _) if (n == nme.BYNAME_PARAM_CLASS_NAME.toTypeName) =>
-        syntaxError(t.pos, "no by-name parameter type allowed here", false)
+      case AppliedTypeTree(Select(_, n), _) =>
+        if (n == nme.BYNAME_PARAM_CLASS_NAME.toTypeName)
+          syntaxError(t.pos, "no by-name parameter type allowed here", false)
+        else if (n == nme.REPEATED_PARAM_CLASS_NAME.toTypeName)
+          syntaxError(t.pos, "no * parameter type allowed here", false)
       case _ =>
     }
 
