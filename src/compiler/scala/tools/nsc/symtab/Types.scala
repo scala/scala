@@ -1534,7 +1534,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   }
 
   private var volatileRecursions: Int = 0
-  private var pendingVolatiles = new collection.mutable.HashSet[Symbol]
+  private val pendingVolatiles = new collection.mutable.HashSet[Symbol]
 
   /** A class for named types of the form
    *  `&lt;prefix&gt;.&lt;sym.name&gt;[args]'
@@ -4119,9 +4119,9 @@ A type's typeSymbol should never be inspected directly.
    */
   def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
 
-  private var pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
+  private val pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
   private var basetypeRecursions: Int = 0
-  private var pendingBaseTypes = new collection.mutable.HashSet[Type]
+  private val pendingBaseTypes = new collection.mutable.HashSet[Type]
 
   def isSubType(tp1: Type, tp2: Type): Boolean = isSubType(tp1, tp2, AnyDepth)
 
