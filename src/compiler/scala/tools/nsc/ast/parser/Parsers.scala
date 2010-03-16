@@ -1746,6 +1746,10 @@ self =>
                   in.offset,
                   (if (mods.hasFlag(Flags.MUTABLE)) "`var'" else "`val'") +
                   " parameters may not be call-by-name", false)
+              else if (implicitmod != 0)
+                syntaxError(
+                  in.offset,
+                  "implicit parameters may not be call-by-name", false)
               else bynamemod = Flags.BYNAMEPARAM
             }
             paramType()
