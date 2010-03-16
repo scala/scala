@@ -645,10 +645,14 @@ self =>
    * @return        collection with intermediate results
    */
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val (_, b) = foldRight(z, bf(repr) += z) { (x, acc) =>
-      val next = op(x, acc._1)
-      (next, acc._2 += next)
+    var lst = List(z)
+    foldRight(z) { (x, acc) =>
+      val next = op(x, acc)
+      lst ::= next
+      next
     }
+    val b = bf(repr)
+    for (elem <- lst) b += elem
     b.result
   }
 
