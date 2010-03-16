@@ -3306,7 +3306,7 @@ trait Typers { self: Analyzer =>
                 case _ => false
               }
             }
-            if (errorInResult(fun) || (args exists errorInResult)) {
+            if (errorInResult(fun) || (args exists errorInResult) || errorInResult(tree)) {
               if (printTypings) println("second try for: "+fun+" and "+args)
               val Select(qual, name) = fun
               val args1 = tryTypedArgs(args, argMode(fun, mode), ex)
