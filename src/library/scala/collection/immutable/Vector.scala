@@ -108,34 +108,38 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
   override def take(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (startIndex + n < endIndex) {
+    if (n <= 0)
+      Vector.empty
+    else if (startIndex + n < endIndex)
       dropBack0(startIndex + n)
-    } else
+    else
       this
   }
 
   override def drop(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (startIndex + n < endIndex) {
+    if (n <= 0)
+      this
+    else if (startIndex + n < endIndex)
       dropFront0(startIndex + n)
-    } else
+    else
       Vector.empty
   }
 
   override def takeRight(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (endIndex - n > startIndex) {
+    if (n <= 0)
+      Vector.empty
+    else if (endIndex - n > startIndex)
       dropFront0(endIndex - n)
-    } else
+    else
       this
   }
 
   override def dropRight(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (endIndex - n > startIndex) {
+    if (n <= 0)
+      this
+    else if (endIndex - n > startIndex)
       dropBack0(endIndex - n)
-    } else
+    else
       Vector.empty
   }
 
@@ -843,6 +847,7 @@ private[immutable] trait VectorPointer[T] {
 
      final def copyOf(a: Array[AnyRef]) = {
       //println("copy")
+      if (a eq null) println ("NULL")
       val b = new Array[AnyRef](a.length)
       Platform.arraycopy(a, 0, b, 0, a.length)
       b
