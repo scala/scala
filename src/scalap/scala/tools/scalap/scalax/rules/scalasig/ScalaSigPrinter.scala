@@ -196,7 +196,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     if (res.length > 1) StringUtil.decapitalize(res.substring(0, 1)) else res.toLowerCase
   })
 
-  def printMethodType(t: Type, printResult: Boolean)(implicit cont: => Unit): Unit = {
+  def printMethodType(t: Type, printResult: Boolean)(cont: => Unit): Unit = {
 
     def _pmt(mt: Type {def resultType: Type; def paramSymbols: Seq[Symbol]}) = {
 
