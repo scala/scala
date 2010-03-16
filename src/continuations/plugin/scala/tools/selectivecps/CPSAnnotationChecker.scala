@@ -422,7 +422,20 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
 
         case Match(select, cases) =>
-          transChildrenInOrder(tree, tpe, List(select), cases:::cases map { case CaseDef(_, _, body) => body })
+          // TODO: can there be cases that are not CaseDefs?? check partialMap vs map!
+          transChildrenInOrder(tree, tpe, List(select), cases:::(cases partialMap { case CaseDef(_, _, body) => body }))
+
+        case Try(block, catches, finalizer) =>
+          val tpe1 = transChildrenInOrder(tree, tpe, Nil, block::catches:::(catches partialMap { case CaseDef(_, _, body) => body }))
+
+          val annots = filterAttribs(tpe1, MarkerCPSTypes)
+          if (annots.nonEmpty) {
+            val ann = single(annots)
+            val atp0::atp1::Nil = ann.atp.normalize.typeArgs
+            if (!(atp0 =:= atp1))
+              throw new TypeError("only simple cps types allowed in try/catch blocks (found: " + tpe1 + ")")
+          }
+          tpe1
 
         case Block(stms, expr) =>
           // if any stm has annotation, so does block

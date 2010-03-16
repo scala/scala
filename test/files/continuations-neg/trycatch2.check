@@ -1,0 +1,7 @@
+trycatch2.scala:11: error: only simple cps types allowed in try/catch blocks (found: Int @scala.util.continuations.cpsParam[String,Int])
+  def foo1 = try {
+             ^
+trycatch2.scala:19: error: only simple cps types allowed in try/catch blocks (found: Int @scala.util.continuations.cpsParam[String,Int])
+  def foo2 = try {
+             ^
+two errors found

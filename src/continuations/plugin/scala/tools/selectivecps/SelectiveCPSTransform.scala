@@ -116,7 +116,42 @@ abstract class SelectiveCPSTransform extends PluginComponent with
             ).setType(transformCPSType(tree.tpe))
           }
 
-        case Block(stms, expr) =>
+      case Try(block, catches, finalizer) =>
+        // currently duplicates the catch block into a partial function
+        // this is kinda risky, but we don't expect there will be lots
+        // of try/catches inside catch blocks (exp. blowup)
+
+        val block1 = transform(block)
+        val catches1 = transformCaseDefs(catches)
+        val finalizer1 = transform(finalizer)
+
+        if (block1.tpe.typeSymbol.tpe <:< Context.tpe) {
+          //println("CPS Transform: " + tree)
+
+          val pos = catches.head.pos
+
+          val (stms, expr) = block1 match {
+            case Block(stms, expr) => (stms, expr)
+            case expr => (Nil, expr)
+          }
+
+          val arg = currentOwner.newValueParameter(pos, "$ex").setInfo(ThrowableClass.tpe)
+          val catches2 = catches1 map (duplicateTree(_).asInstanceOf[CaseDef])
+          val rhs = Match(Ident(arg), catches2)
+          val fun = Function(List(ValDef(arg)), rhs)
+          val expr2 = localTyper.typed(atPos(pos) { Apply(Select(expr, expr.tpe.member("flatCat")), List(fun)) })
+          val block2 = treeCopy.Block(block1, stms, expr2)
+
+          arg.owner = fun.symbol
+          val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
+          chown.traverse(rhs)
+
+          treeCopy.Try(tree, block2, catches1, finalizer1)
+        } else {
+          treeCopy.Try(tree, block1, catches1, finalizer1)
+        }
+
+      case Block(stms, expr) =>
 
           val (stms1, expr1) = transBlock(stms, expr)
           treeCopy.Block(tree, stms1, expr1)

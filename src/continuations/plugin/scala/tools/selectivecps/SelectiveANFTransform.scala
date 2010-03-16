@@ -206,17 +206,16 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
 
         case Try(block, catches, finalizer) =>
-          // no cps code allowed in try/catch/finally!
-          val blockVal = transExpr(block, None, None)
+          val blockVal = transExpr(block, cpsA, cpsR)
 
           val catchVals = for {
             cd @ CaseDef(pat, guard, body) <- catches
-            val bodyVal = transExpr(body, None, None)
+            val bodyVal = transExpr(body, cpsA, cpsR)
           } yield {
             treeCopy.CaseDef(cd, transform(pat), transform(guard), bodyVal)
           }
 
-          val finallyVal = transExpr(finalizer, None, None)
+          val finallyVal = transExpr(finalizer, None, None) // for now, no cps in finally
 
           (Nil, updateSynthFlag(treeCopy.Try(tree, blockVal, catchVals, finallyVal)), cpsA)
 
@@ -297,7 +296,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
       } else if (!cpsR.isDefined && bot.isDefined) {
         // error!
         log("cps type error: " + expr)
-        println("cps type error: " + expr + "/" + expr.tpe + "/" + getAnswerTypeAnn(expr.tpe))
+        //println("cps type error: " + expr + "/" + expr.tpe + "/" + getAnswerTypeAnn(expr.tpe))
 
         println(cpsR + "/" + spc + "/" + bot)
 
@@ -306,7 +305,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
         // all is well
 
         if (expr.tpe.hasAnnotation(MarkerCPSAdaptPlus)) {
-          unit.warning(tree.pos, "expression " + expr + "/" + expr.tpe + " should not have cps-plus annotation")
+          unit.warning(tree.pos, "expression " + expr + " of type " + expr.tpe + " is not expected to have a cps type")
           expr.setType(removeAllCPSAnnotations(expr.tpe))
         }
 

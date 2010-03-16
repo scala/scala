@@ -55,7 +55,7 @@ package object continuations {
   }
 
   def shiftR[A,B,C](fun: (A => B) => C): ControlContext[A,B,C] = {
-    new ControlContext(fun, null.asInstanceOf[A])
+    new ControlContext((f:A=>B,g:Throwable=>B) => fun(f), null.asInstanceOf[A])
   }
 
   def reifyR[A,B,C](ctx: => ControlContext[A,B,C]): ControlContext[A,B,C] = {
