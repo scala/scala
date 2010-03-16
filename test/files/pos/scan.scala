@@ -13,6 +13,11 @@ object Test {
     val emp = List[Int]()
     assert(emp.scanLeft(0)(_ + _) == List(0))
     assert(emp.scanRight(0)(_ + _) == List(0))
+
+    val stream = Stream(1, 2, 3, 4, 5)
+    assert(stream.scanLeft(0)(_ + _) == Stream(0, 1, 3, 6, 10, 15))
+
+    assert(Stream.from(1).scanLeft(0)(_ + _).take(5) == Stream(0, 1, 3, 6, 10))
   }
 
 }

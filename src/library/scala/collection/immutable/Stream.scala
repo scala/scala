@@ -119,6 +119,16 @@ self =>
      else new Stream.Cons(head, (tail ++ that).asInstanceOf[Stream[A]])).asInstanceOf[That]
   }
 
+  /**
+   * Create a new stream which contains all intermediate results of applying the operator
+   * to subsequent elements left to right.
+   * @note This works because the target type of the Builder That is a Stream.
+   */
+  override final def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+    (if (this.isEmpty) Stream(z)
+    else new Stream.Cons(z, tail.scanLeft(op(z, head))(op).asInstanceOf[Stream[B]])).asInstanceOf[That]
+  }
+
   /** Create a new stream which contains all elements of this stream
    *  followed by all elements of Iterator `that'
    */
