@@ -271,6 +271,8 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
   private[actors] def terminated() {
     synchronized {
       _state = Actor.State.Terminated
+      // reset waitingFor, otherwise getState returns Suspended
+      waitingFor = Reactor.waitingForNone
     }
     scheduler.terminated(this)
   }
