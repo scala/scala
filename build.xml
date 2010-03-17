@@ -1631,6 +1631,7 @@ DISTRIBUTION
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/actors"/>
+      <fileset dir="${src.dir}/continuations/library"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
       <fileset dir="${src.dir}/dbc"/>
