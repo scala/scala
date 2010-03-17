@@ -1159,7 +1159,7 @@ trait Namers { self: Analyzer =>
               newNamer(context.makeNewScope(tree, sym)).methodSig(mods, tparams, vparamss, tpt, rhs)
 
             case vdef @ ValDef(mods, name, tpt, rhs) =>
-              val typer1 = typer.constrTyperIf(sym.hasFlag(PARAM | PRESUPER) && sym.owner.isConstructor)
+              val typer1 = typer.constrTyperIf(sym.hasFlag(PARAM | PRESUPER) && !mods.hasFlag(JAVA) && sym.owner.isConstructor)
               if (tpt.isEmpty) {
                 if (rhs.isEmpty) {
                   context.error(tpt.pos, "missing parameter type");

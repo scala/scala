@@ -252,13 +252,6 @@ trait Contexts { self: Analyzer =>
       argContext
     }
 
-    //todo: remove
-    def makeConstructorSuffixContext = {
-      val c = make(tree)
-      c.inConstructorSuffix = true
-      c
-    }
-
     private def diagString =
       if (diagnostic.isEmpty) ""
       else diagnostic.mkString("\n","\n", "")
