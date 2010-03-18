@@ -103,7 +103,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   final override def dropRight(n: Int): Range = take(length - n)
 
-  final override def reverse: Range = new Range.Inclusive(last, start, -step)
+  final override def reverse: Range = if (length > 0) new Range.Inclusive(last, start, -step) else new Range(end, start, -step)
 
   /** Make range inclusive.
    * @note if (step > 0) end != MaxInt else end != MinInt
