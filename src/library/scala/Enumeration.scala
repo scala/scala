@@ -164,22 +164,29 @@ abstract class Enumeration(initial: Int, names: String*) {
   /* Obtains the name for the value with id `i`. If no name is cached
    * in `nmap`, it populates `nmap` using reflection.
    */
-  private def nameOf(i: Int): String = nmap.get(i) match {
-    case Some(name) => name
-    case None =>
-      val methods = getClass.getMethods
-      for (m <- methods
-                if classOf[Value].isAssignableFrom(m.getReturnType) &&
-                   !java.lang.reflect.Modifier.isFinal(m.getModifiers)) {
-        val name = m.getName
-        // invoke method to obtain actual `Value` instance
-        val value = m.invoke(this)
-        // invoke `id` method
-        val idMeth = classOf[Val].getMethod("id")
-        val id: Int = idMeth.invoke(value).asInstanceOf[java.lang.Integer].intValue()
-        nmap += (id -> name)
-      }
-      nmap(i)
+  private def nameOf(i: Int): String = synchronized {
+    def isValDef(m: java.lang.reflect.Method) =
+      getClass.getDeclaredFields.exists(fd => fd.getName == m.getName &&
+                                              fd.getType == m.getReturnType)
+    nmap.get(i) match {
+      case Some(name) => name
+      case None =>
+        val methods = getClass.getMethods
+        for (m <- methods
+                  if (classOf[Value].isAssignableFrom(m.getReturnType) &&
+                      !java.lang.reflect.Modifier.isFinal(m.getModifiers) &&
+                      m.getParameterTypes.isEmpty &&
+                      isValDef(m))) {
+          val name = m.getName
+          // invoke method to obtain actual `Value` instance
+          val value = m.invoke(this)
+          // invoke `id` method
+          val idMeth = classOf[Val].getMethod("id")
+          val id: Int = idMeth.invoke(value).asInstanceOf[java.lang.Integer].intValue()
+          nmap += (id -> name)
+        }
+        nmap(i)
+    }
   }
 
   /** The type of the enumerated values. */
