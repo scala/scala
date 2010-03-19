@@ -518,10 +518,12 @@ self =>
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
-  def foldRight[B](z: B)(op: (A, B) => B): B = {
+  def foldRight[B](z: B)(op: (A, B) => B): B = reversed.foldLeft(z)((x, y) => op(y, x))
+
+  private def reversed: List[A] = {
     var elems: List[A] = Nil
     for (x <- this) elems = x :: elems
-    elems.foldLeft(z)((x, y) => op(y, x))
+    elems
   }
 
   /** Applies a binary operator to all elements of this $coll and a start value, going right to left.
@@ -625,10 +627,10 @@ self =>
    * @return        collection with intermediate results
    */
   def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val (_, b) = foldLeft(z, bf(repr) += z) { (acc, x) =>
-      val next = op(acc._1, x)
-      (next, acc._2 += next)
-    }
+    val b = bf(repr)
+    var acc = z
+    b += acc
+    for (x <- this) { acc = op(acc, x); b += acc }
     b.result
   }
 
@@ -645,14 +647,10 @@ self =>
    * @return        collection with intermediate results
    */
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    var lst = List(z)
-    foldRight(z) { (x, acc) =>
-      val next = op(x, acc)
-      lst ::= next
-      next
-    }
     val b = bf(repr)
-    for (elem <- lst) b += elem
+    var acc = z
+    b += acc
+    for (x <- reversed) { acc = op(x, acc); b += acc }
     b.result
   }
 
@@ -1175,7 +1173,7 @@ self =>
    */
   def view = new TraversableView[A, Repr] {
     protected lazy val underlying = self.repr
-    override def foreach[B](f: A => B) = self foreach f
+    override def foreach[U](f: A => U) = self foreach f
   }
 
   /** Creates a non-strict view of a slice of this $coll.

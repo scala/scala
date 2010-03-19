@@ -560,7 +560,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
    */
-  def diff[B >: A, That](that: Seq[B]): Repr = {
+  def diff[B >: A](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
     for (x <- this)
@@ -588,7 +588,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
    */
-  def intersect[B >: A, That](that: Seq[B]): Repr = {
+  def intersect[B >: A](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
     for (x <- this)
@@ -851,6 +851,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Returns index of the last element satisying a predicate, or -1.
    */
+  @deprecated("use `lastIndexWhere` instead")
   def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
 
   /** Tests whether every element of this $coll relates to the

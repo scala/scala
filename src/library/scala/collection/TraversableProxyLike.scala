@@ -24,23 +24,23 @@ import mutable.{Buffer, StringBuilder}
  *  @version 2.8
  *  @since   2.8
  */
-trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversable[A]] extends TraversableLike[A, This] with Proxy {
-  def self: This
+trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversable[A]] extends TraversableLike[A, Repr] with Proxy {
+  def self: Repr
 
   override def foreach[B](f: A => B): Unit = self.foreach(f)
   override def isEmpty: Boolean = self.isEmpty
   override def nonEmpty: Boolean = self.nonEmpty
   override def size: Int = self.size
   override def hasDefiniteSize = self.hasDefiniteSize
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.++(that)(bf)
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.++(that)(bf)
-  override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = self.map(f)(bf)
-  override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.flatMap(f)(bf)
-  override def partialMap[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That  = self.partialMap(pf)(bf)
-  override def filter(p: A => Boolean): This = self.filter(p)
-  override def filterNot(p: A => Boolean): This = self.filterNot(p)
-  override def partition(p: A => Boolean): (This, This) = self.partition(p)
-  override def groupBy[K](f: A => K): Map[K, This] = self.groupBy(f)
+  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.++(that)(bf)
+  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.++(that)(bf)
+  override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.map(f)(bf)
+  override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.flatMap(f)(bf)
+  override def filter(p: A => Boolean): Repr = self.filter(p)
+  override def filterNot(p: A => Boolean): Repr = self.filterNot(p)
+  override def partialMap[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.partialMap(pf)(bf)
+  override def partition(p: A => Boolean): (Repr, Repr) = self.partition(p)
+  override def groupBy[K](f: A => K): Map[K, Repr] = self.groupBy(f)
   override def forall(p: A => Boolean): Boolean = self.forall(p)
   override def exists(p: A => Boolean): Boolean = self.exists(p)
   override def count(p: A => Boolean): Int = self.count(p)
@@ -53,28 +53,37 @@ trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversabl
   override def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = self.reduceLeftOption(op)
   override def reduceRight[B >: A](op: (A, B) => B): B = self.reduceRight(op)
   override def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = self.reduceRightOption(op)
+  override def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.scanLeft(z)(op)(bf)
+  override def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.scanRight(z)(op)(bf)
+  override def sum[B >: A](implicit num: Numeric[B]): B = self.sum(num)
+  override def product[B >: A](implicit num: Numeric[B]): B = self.product(num)
+  override def min[B >: A](implicit cmp: Ordering[B]): A = self.min(cmp)
+  override def max[B >: A](implicit cmp: Ordering[B]): A = self.max(cmp)
   override def head: A = self.head
   override def headOption: Option[A] = self.headOption
-  override def tail: This = self.tail
+  override def tail: Repr = self.tail
   override def last: A = self.last
   override def lastOption: Option[A] = self.lastOption
-  override def init: This = self.init
-  override def take(n: Int): This = self.take(n)
-  override def drop(n: Int): This = self.drop(n)
-  override def slice(from: Int, until: Int): This = self.slice(from, until)
-  override def takeWhile(p: A => Boolean): This = self.takeWhile(p)
-  override def dropWhile(p: A => Boolean): This = self.dropWhile(p)
-  override def span(p: A => Boolean): (This, This) = self.span(p)
-  override def splitAt(n: Int): (This, This) = self.splitAt(n)
+  override def init: Repr = self.init
+  override def take(n: Int): Repr = self.take(n)
+  override def drop(n: Int): Repr = self.drop(n)
+  override def slice(from: Int, until: Int): Repr = self.slice(from, until)
+  override def takeWhile(p: A => Boolean): Repr = self.takeWhile(p)
+  override def dropWhile(p: A => Boolean): Repr = self.dropWhile(p)
+  override def span(p: A => Boolean): (Repr, Repr) = self.span(p)
+  override def splitAt(n: Int): (Repr, Repr) = self.splitAt(n)
   override def copyToBuffer[B >: A](dest: Buffer[B]) = self.copyToBuffer(dest)
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int) = self.copyToArray(xs, start, len)
   override def copyToArray[B >: A](xs: Array[B], start: Int) = self.copyToArray(xs, start)
+  override def copyToArray[B >: A](xs: Array[B]) = self.copyToArray(xs)
   override def toArray[B >: A: ClassManifest]: Array[B] = self.toArray
   override def toList: List[A] = self.toList
   override def toIterable: Iterable[A] = self.toIterable
   override def toSeq: Seq[A] = self.toSeq
+  override def toIndexedSeq[B >: A]: mutable.IndexedSeq[B] = self.toIndexedSeq
   override def toStream: Stream[A] = self.toStream
   override def toSet[B >: A]: immutable.Set[B] = self.toSet
+  override def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = self.toMap(ev)
   override def mkString(start: String, sep: String, end: String): String = self.mkString(start, sep, end)
   override def mkString(sep: String): String = self.mkString(sep)
   override def mkString: String = self.mkString
@@ -83,14 +92,18 @@ trait TraversableProxyLike[+A, +This <: TraversableLike[A, This] with Traversabl
   override def addString(b: StringBuilder): StringBuilder = self.addString(b)
   override def stringPrefix : String = self.stringPrefix
   override def view = self.view
-  override def view(from: Int, until: Int): TraversableView[A, This] = self.view(from, until)
+  override def view(from: Int, until: Int): TraversableView[A, Repr] = self.view(from, until)
 }
 
-private class TraversableProxyLikeConfirmation[+A, +This <: TraversableLike[A, This] with Traversable[A]]
+/** Martin to Paul: I'm not sure what the purpose of this class is? I assume it was to make
+ *  sure that TraversableProxyLike has all Traversable methods, but it fails at that
+ *
+private class TraversableProxyLikeConfirmation[+A, +Repr <: TraversableLike[A, Repr] with Traversable[A]]
   extends TraversableProxyLike[A, Traversable[A]]
   with interfaces.TraversableMethods[A, Traversable[A]]
 {
-  def self: This = repr.asInstanceOf[This]
+  def self: Repr = repr.asInstanceOf[Repr]
   protected[this] def newBuilder = scala.collection.Traversable.newBuilder[A]
-  // : Builder[A, This]
+  // : Builder[A, Repr]
 }
+*/

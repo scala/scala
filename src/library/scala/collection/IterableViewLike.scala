@@ -29,6 +29,10 @@ extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] wit
 
   trait Transformed[+B] extends IterableView[B, Coll] with super.Transformed[B]
 
+  trait Forced[B] extends Transformed[B] with super.Forced[B] {
+    override def iterator = forced.iterator
+  }
+
   trait Sliced extends Transformed[A] with super.Sliced {
     override def iterator = self.iterator slice (from, until)
   }
@@ -96,6 +100,7 @@ extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] wit
   /** Boilerplate method, to override in each subclass
    *  This method could be eliminated if Scala had virtual classes
    */
+  protected override def newForced[B](xs: => Seq[B]): Transformed[B] = new Forced[B] { val forced = xs }
   protected override def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
   protected override def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
   protected override def newFlatMapped[B](f: A => Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
@@ -103,6 +108,12 @@ extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] wit
   protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
   protected override def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
+
+  override def grouped(size: Int): Iterator[This] =
+    self.iterator.grouped(size).map(xs => newForced(xs).asInstanceOf[This])
+
+  override def sliding[B >: A](size: Int, step: Int): Iterator[This] =
+    self.iterator.sliding(size).map(xs => newForced(xs).asInstanceOf[This])
 
   override def stringPrefix = "IterableView"
 }
