@@ -1201,26 +1201,38 @@ trait Namers { self: Analyzer =>
                 }
                 true
               }
+
+              def isValidSelector(from: Name)(fun : => Unit) {
+                  if (base.nonLocalMember(from) == NoSymbol &&
+                      base.nonLocalMember(from.toTypeName) == NoSymbol) fun
+              }
+
               def checkSelectors(selectors: List[ImportSelector]): Unit = selectors match {
                 case ImportSelector(from, _, to, _) :: rest =>
                   if (from != nme.WILDCARD && base != ErrorType) {
-                    if (base.nonLocalMember(from) == NoSymbol &&
-                        base.nonLocalMember(from.toTypeName) == NoSymbol) {
+                    isValidSelector(from) {
                       if (currentRun.compileSourceFor(expr, from))
                         return typeSig(tree)
-                      context.error(tree.pos, from.decode + " is not a member of " + expr)
+                      // for Java code importing Scala objects
+                      if (from.endsWith(nme.DOLLARraw))
+                        isValidSelector(from.subName(0, from.length -1)) {
+                          context.error(tree.pos, from.decode + " is not a member of " + expr)
+                        }
+                      else
+                        context.error(tree.pos, from.decode + " is not a member of " + expr)
                     }
 
                     if (checkNotRedundant(tree.pos, from, to))
                       checkNotRedundant(tree.pos, from.toTypeName, to.toTypeName)
                   }
                   if (from != nme.WILDCARD && (rest.exists (sel => sel.name == from)))
-                    context.error(tree.pos, from.decode + " is renamed twice");
+                    context.error(tree.pos, from.decode + " is renamed twice")
                   if ((to ne null) && to != nme.WILDCARD && (rest exists (sel => sel.rename == to)))
-                    context.error(tree.pos, to.decode + " appears twice as a target of a renaming");
+                    context.error(tree.pos, to.decode + " appears twice as a target of a renaming")
                   checkSelectors(rest)
                 case Nil =>
               }
+
               checkSelectors(selectors)
               ImportType(expr1)
           }

@@ -73,16 +73,26 @@ trait FileManager {
   def overwriteFileWith(dest: File, file: File) =
     dest.isFile && copyFile(file, dest)
 
-  def copyFile(from: File, to: File): Boolean =
-    try {
-      val appender = StreamAppender(from, to)
-      appender.run()
-      appender.closeAll()
-      true
-    }
-    catch {
-      case _: IOException => false
-    }
+
+  def copyFile(from: File, dest: File): Boolean = {
+    def copyFile0(from: File, to: File): Boolean =
+      try {
+        val appender = StreamAppender(from, to)
+        appender.run()
+        appender.closeAll()
+        true
+      } catch {
+        case _: IOException => false
+      }
+
+    if (from.isDirectory) {
+      assert(dest.isDirectory, "cannot copy directory to file")
+      val subDir:Directory = Path(dest) / Directory(from.getName)
+      subDir.createDirectory()
+      from.listFiles.toList.forall(copyFile(_, subDir))
+    } else
+      copyFile0(from, if (dest.isDirectory) new File(dest, from.getName) else dest)
+  }
 
   def mapFile(file: File, suffix: String, dir: File, replace: String => String) {
     val tmpFile = File.createTempFile("tmp", suffix, dir) // prefix required by API

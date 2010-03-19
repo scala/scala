@@ -511,6 +511,8 @@ class Worker(val fileManager: FileManager) extends Actor {
             val changesDir = new File(file, fileBase + ".changes")
             if (changesDir.isFile || !testFile.isFile) {
               // if changes exists then it has to be a dir
+              if (!testFile.isFile) NestUI.verbose("invalid build manager test file")
+              if (changesDir.isFile) NestUI.verbose("invalid build manager changes directory")
               succeeded = false
               (null, null, null, null)
             } else {
@@ -1050,9 +1052,11 @@ class Worker(val fileManager: FileManager) extends Actor {
     fs flatMap (s => Option(AbstractFile getFile (pre + s))) toSet
 
   private def copyTestFiles(testDir: File, destDir: File) {
-    testDir.listFiles.toList filter (f => isJavaOrScala(f) && f.isFile) foreach { f =>
-      fileManager.copyFile(f, new File(destDir, f.getName))
-    }
+    val invalidExts = List("changes", "svn", "obj")
+    testDir.listFiles.toList filter (
+            f => (isJavaOrScala(f) && f.isFile) ||
+                 (f.isDirectory && !(invalidExts.contains(SFile(f).extension)))) foreach
+      { f => fileManager.copyFile(f, destDir) }
   }
 
   def showLog(logFile: File) {

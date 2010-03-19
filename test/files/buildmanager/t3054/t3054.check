@@ -1,0 +1,3 @@
+builder > bar/Bar.java foo/Foo.scala
+compiling Set(bar/Bar.java, foo/Foo.scala)
+Changes: Map()
