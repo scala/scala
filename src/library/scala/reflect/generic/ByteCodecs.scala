@@ -119,9 +119,13 @@ object ByteCodecs {
     dst
   }
 
-  def decode7to8(src: Array[Byte], srclen: Int, dstlen: Int) {
+  @deprecated("use 2-argument version instead")
+  def decode7to8(src: Array[Byte], srclen: Int, dstlen: Int) { decode7to8(src, srclen) }
+
+  def decode7to8(src: Array[Byte], srclen: Int) {
     var i = 0
     var j = 0
+    val dstlen = (srclen * 7 + 7) / 8
     while (i + 7 < srclen) {
       var out: Int = src(i)
       var in: Byte = src(i + 1)
@@ -185,49 +189,13 @@ object ByteCodecs {
 
   def encode(xs: Array[Byte]): Array[Byte] = avoidZero(encode8to7(xs))
 
+  @deprecated("use 1-argument version instead")
+  def decode(xs: Array[Byte], dstlen: Int) { decode(xs) }
+
   /** Destructively decode array xs */
-  def decode(xs: Array[Byte], dstlen: Int) {
+  def decode(xs: Array[Byte]) {
     val len = regenerateZero(xs)
-    decode7to8(xs, len, dstlen)
-  }
-
-// test & debug, preliminary ----------------------------------
-
-  def test8to7(xs: Array[Byte]) {
-    val ys = encode8to7(xs)
-    decode7to8(ys, ys.length, xs.length)
-    assert(ys.take(xs.length).deep == xs.deep,
-           "test8to7("+xs.deep+") failed, result = "+ys.take(xs.length).deep)
-  }
-
-  def testAll(xs: Array[Byte]) {
-    val ys = encode(xs)
-    decode(ys, xs.length)
-    assert(ys.take(xs.length).deep == xs.deep,
-           "testAll("+xs.deep+") failed, result = "+ys.take(xs.length).deep)
-  }
-
-  def test(inputs: Array[Byte]*) {
-    for (input <- inputs) {
-      test8to7(input)
-      testAll(input)
-    }
-  }
-
-  def main(args: Array[String]) {
-    test(
-      Array(1, 2, 3),
-      Array(1, 2, 3, 4, 5, 6, 7),
-      Array(1, -2, 0, -3, -5, -6, -7),
-      Array(1, 3, -1, -128, 0, 0, -128, 1, 2, 3))
-    val rand = new scala.util.Random()
-    for (i <- 1 until 50000) {
-      if (i % 100 == 0) println("tested "+i)
-      var xs = new Array[Byte](i)
-      rand.nextBytes(xs)
-      test(xs)
-    }
-    println("tested OK")
+    decode7to8(xs, len)
   }
 }
 
