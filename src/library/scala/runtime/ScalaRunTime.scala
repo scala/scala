@@ -166,7 +166,8 @@ object ScalaRunTime {
   @inline def inlinedEquals(x: Object, y: Object): Boolean =
     if (x eq y) true
     else if (x eq null) false
-    else if (x.isInstanceOf[java.lang.Number] || x.isInstanceOf[java.lang.Character]) BoxesRunTime.equals2(x, y)
+    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.equalsNumObject(x.asInstanceOf[java.lang.Number], y)
+    else if (x.isInstanceOf[java.lang.Character]) BoxesRunTime.equalsCharObject(x.asInstanceOf[java.lang.Character], y)
     else x.equals(y)
 
   def _equals(x: Product, y: Any): Boolean = y match {
@@ -174,10 +175,42 @@ object ScalaRunTime {
     case _                                              => false
   }
 
-  /** Just a stub for now, but I think this is where the Predef.hash
-   *  methods should be.
-   */
-  @inline def hash(x: Any): Int = Predef.hash(x)
+  // hashcode -----------------------------------------------------------
+
+  @inline def hash(x: Any): Int =
+    if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
+    else x.hashCode
+
+  @inline def hash(dv: Double): Int = {
+    val iv = dv.toInt
+    if (iv == dv) return iv
+
+    val lv = dv.toLong
+    if (lv == dv) return lv.hashCode
+    else dv.hashCode
+  }
+  @inline def hash(fv: Float): Int = {
+    val iv = fv.toInt
+    if (iv == fv) return iv
+
+    val lv = fv.toLong
+    if (lv == fv) return lv.hashCode
+    else fv.hashCode
+  }
+  @inline def hash(lv: Long): Int = {
+    val iv = lv.toInt
+    if (iv == lv) iv else lv.hashCode
+  }
+  @inline def hash(x: Int): Int = x
+  @inline def hash(x: Short): Int = x.toInt
+  @inline def hash(x: Byte): Int = x.toInt
+  @inline def hash(x: Char): Int = x.toInt
+
+  @inline def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
+  @inline def hash(x: java.lang.Long): Int = {
+    val iv = x.intValue
+    if (iv == x.longValue) iv else x.hashCode
+  }
 
   /** A helper method for constructing case class equality methods,
    *  because existential types get in the way of a clean outcome and

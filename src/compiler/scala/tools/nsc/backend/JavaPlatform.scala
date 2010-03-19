@@ -26,6 +26,9 @@ trait JavaPlatform extends Platform[AbstractFile] {
   ) ::: depAnalysisPhase
 
   lazy val externalEquals = getMember(BoxesRunTimeClass, nme.equals_)
+  def externalEqualsNumNum = getMember(BoxesRunTimeClass, "equalsNumNum")
+  def externalEqualsNumChar = getMember(BoxesRunTimeClass, "equalsNumChar")
+  def externalEqualsNumObject = getMember(BoxesRunTimeClass, "equalsNumObject")
 
   def isMaybeBoxed(sym: Symbol): Boolean = {
     import definitions._

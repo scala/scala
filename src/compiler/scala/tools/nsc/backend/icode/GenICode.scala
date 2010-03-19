@@ -9,7 +9,8 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.collection.mutable.{Map, HashMap, ListBuffer, Buffer, HashSet}
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.{ HashMap, ListBuffer, Buffer, HashSet }
 import scala.tools.nsc.symtab._
 import scala.annotation.switch
 import PartialFunction._
@@ -28,6 +29,7 @@ abstract class GenICode extends SubComponent  {
   import definitions.{
     ArrayClass, ObjectClass, ThrowableClass, StringClass, NothingClass, NullClass,
     Object_equals, Object_isInstanceOf, Object_asInstanceOf, ScalaRunTimeModule,
+    BoxedNumberClass, BoxedCharacterClass,
     getMember
   }
   import scalaPrimitives.{
@@ -1362,13 +1364,29 @@ abstract class GenICode extends SubComponent  {
         * comparison might have a run-time type subtype of java.lang.Number or java.lang.Character.
         * When it is statically known that both sides are equal and subtypes of Number of Character,
         * not using the rich equality is possible (their own equals method will do ok.)*/
-      def mustUseAnyComparator: Boolean =
-        isMaybeBoxed(l.tpe.typeSymbol) && isMaybeBoxed(r.tpe.typeSymbol)
+      def mustUseAnyComparator: Boolean = {
+        def areSameFinals = l.tpe.isFinalType && r.tpe.isFinalType && (l.tpe =:= r.tpe)
+        !areSameFinals && isMaybeBoxed(l.tpe.typeSymbol) && isMaybeBoxed(r.tpe.typeSymbol)
+      }
 
       if (mustUseAnyComparator) {
         // when -optimise is on we call the @inline-version of equals, found in ScalaRunTime
         val equalsMethod =
-          if (!settings.XO.value) platform.externalEquals
+          if (!settings.XO.value) {
+            def default = platform.externalEquals
+            platform match {
+              case x: JavaPlatform =>
+                import x._
+                  if (l.tpe <:< BoxedNumberClass.tpe) {
+                    if (r.tpe <:< BoxedNumberClass.tpe) externalEqualsNumNum
+                    else if (r.tpe <:< BoxedCharacterClass.tpe) externalEqualsNumChar
+                    else externalEqualsNumObject
+                  }
+                  else default
+
+              case _ => default
+            }
+          }
           else {
             ctx.bb.emit(LOAD_MODULE(ScalaRunTimeModule))
             getMember(ScalaRunTimeModule, nme.inlinedEquals)
@@ -1603,7 +1621,7 @@ abstract class GenICode extends SubComponent  {
      *  to delay it any more: they will be used at some point.
      */
     class DuplicateLabels(boundLabels: collection.Set[Symbol]) extends Transformer {
-      val labels: Map[Symbol, Symbol] = new HashMap
+      val labels: mutable.Map[Symbol, Symbol] = new HashMap
       var method: Symbol = _
       var ctx: Context = _
 
@@ -2073,7 +2091,7 @@ abstract class GenICode extends SubComponent  {
        * jumps to the given basic block.
        */
       def patch(code: Code) {
-        def substMap: Map[Instruction, Instruction] = {
+        def substMap: mutable.Map[Instruction, Instruction] = {
           val map = new HashMap[Instruction, Instruction]()
 
           toPatch foreach (i => map += (i -> patch(i)))
