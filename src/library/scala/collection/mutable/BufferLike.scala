@@ -227,7 +227,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   override def stringPrefix: String = "Buffer"
 
-  /** Provide a read-only view of this byffer as a sequence
+  /** Provide a read-only view of this buffer as a sequence
    *  @return  A sequence which refers to this buffer for all its operations.
    */
   def readOnly: scala.collection.Seq[A] = toSeq
@@ -251,13 +251,31 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   @deprecated("use ++=: instead")
   final def ++:(iter: Traversable[A]): This = ++=:(iter)
 
+  @deprecated("use `+=:' instead")
+  final def +:(elem: A): This = +=:(elem)
+
+  // !!! Note that the two + methods below presently still modify in place.  Arguably they
+  // should be changed to create new collections, and then have BOTH @migration and
+  // @deprecation annotations, because Seq-derived classes don't implement + since
+  // most of them are covariant and + interacts badly with +'s autostringification.
+  // However the compiler right now will not warn about both annotations (see the
+  // implementation comment) so I don't think that's an option without fixing that first.
+  //
+  // In addition, I don't think BufferLike should implement Addable since it
+  // deprecates all of it, and Addable has never shipped.
+  //
+  // Alternate implementations:
+  //
+  // clone() += elem
+  // clone() += elem1 += elem2 ++= elems
+
   /** Adds a single element to this collection and returns
    *  the collection itself.
    *
    *  @param elem  the element to add.
    */
   @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
-              "Use `clone() ++=' if you intend to create a new collection.")
+              "Use `clone() +=' if you intend to create a new collection.")
   override def + (elem: A): This = { +=(elem); repr }
 
   /** Adds two or more elements to this collection and returns
@@ -267,7 +285,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
    */
-  @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
+  @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
               "Use `clone() ++=' if you intend to create a new collection.")
   override def + (elem1: A, elem2: A, elems: A*): This = {
     this += elem1 += elem2 ++= elems
@@ -283,10 +301,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"
   )
-  override def ++(iter: Traversable[A]): This = {
-    for (elem <- iter) +=(elem)
-    repr
-  }
+  override def ++(iter: Traversable[A]): This = clone() ++= iter
 
   /** Adds a number of elements provided by an iterator and returns
    *  the collection itself.
@@ -297,19 +312,18 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"
   )
-  override def ++ (iter: Iterator[A]): This = {
-    for (elem <- iter) +=(elem)
-    repr
-  }
+  override def ++ (iter: Iterator[A]): This = clone() ++= iter
 
   /** Removes a single element from this collection and returns
    *  the collection itself.
    *
    *  @param elem  the element to remove.
    */
-  @deprecated("Use -= instead if you intend to remove by side effect from an existing collection.\n"+
-              "Use `clone() -=` if you intend to create a new collection.")
-  override def -(elem: A): This = { -=(elem); repr }
+  @migration(2, 8,
+    "As of 2.8, - always creates a new collection, even on Buffers.\n"+
+    "Use -= instead if you intend to remove by side effect from an existing collection.\n"
+  )
+  override def -(elem: A): This = clone() -= elem
 
   /** Removes two or more elements from this collection and returns
    *  the collection itself.
@@ -318,12 +332,11 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
    */
-  @deprecated("Use -= instead if you intend to remove by side effect from an existing collection.\n"+
-              "Use `clone() -=` if you intend to create a new collection.")
-  override def -(elem1: A, elem2: A, elems: A*): This = {
-    this -= elem1 -= elem2 --= elems
-    repr
-  }
+  @migration(2, 8,
+    "As of 2.8, - always creates a new collection, even on Buffers.\n"+
+    "Use -= instead if you intend to remove by side effect from an existing collection.\n"
+  )
+  override def -(elem1: A, elem2: A, elems: A*): This = clone() -= elem1 -= elem2 --= elems
 
   /** Removes a number of elements provided by a Traversable object and returns
    *  the collection itself.
@@ -332,15 +345,9 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   @migration(2, 8,
     "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
-    "Use --= instead if you intend to add by side effect to an existing collection.\n"
+    "Use --= instead if you intend to remove by side effect from an existing collection.\n"
   )
-  override def --(iter: Traversable[A]): This = {
-    for (elem <- iter) -=(elem)
-    repr
-  }
-
-  @deprecated("use `+=:' instead")
-  final def +:(elem: A): This = +=:(elem)
+  override def --(iter: Traversable[A]): This = clone() --= iter
 
   /** Removes a number of elements provided by an iterator and returns
    *  the collection itself.
@@ -349,10 +356,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   @migration(2, 8,
     "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
-    "Use --= instead if you intend to add by side effect to an existing collection.\n"
+    "Use --= instead if you intend to remove by side effect from an existing collection.\n"
   )
-  override def --(iter: Iterator[A]): This = {
-    for (elem <- iter) -=(elem)
-    repr
-  }
+  override def --(iter: Iterator[A]): This = clone() --= iter
 }

@@ -865,15 +865,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                  and `y` of `that`, otherwise `false`.
    */
   @deprecated("use `corresponds` instead")
-  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
-    val i = this.iterator
-    val j = that.iterator
-    while (i.hasNext && j.hasNext)
-      if (!f(i.next, j.next))
-        return false
-
-    !i.hasNext && !j.hasNext
-  }
+  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = corresponds(that)(f)
 
  /**
    * returns a projection that can be used to call non-strict <code>filter</code>,

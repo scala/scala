@@ -363,7 +363,7 @@ self =>
         }
       } catch {
         case ex: ClassCastException =>
-          println("calss cast "); false
+          println("class cast "); false
       }}
     case _ =>
       false

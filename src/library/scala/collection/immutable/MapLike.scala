@@ -41,8 +41,9 @@ import generic._
  *  @version 2.8
  *  @since   2.8
  */
-trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]] extends scala.collection.MapLike[A, B, This] {
-self =>
+trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
+  extends scala.collection.MapLike[A, B, This]
+{ self =>
 
   import scala.collection.Traversable
 

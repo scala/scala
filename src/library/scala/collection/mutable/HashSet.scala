@@ -50,7 +50,7 @@ class HashSet[A] extends Set[A]
     }
   }
 
-  override def clone(): Set[A] = new HashSet[A] ++= this
+  override def clone() = new HashSet[A] ++= this
 
   private def writeObject(s: java.io.ObjectOutputStream) {
     serializeTo(s)

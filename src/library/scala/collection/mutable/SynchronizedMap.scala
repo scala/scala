@@ -50,7 +50,7 @@ trait SynchronizedMap[A, B] extends Map[A, B] {
   override def contains(key: A): Boolean = synchronized {super.contains(key) }
   override def isDefinedAt(key: A) = synchronized { super.isDefinedAt(key) }
 
-  @deprecated("See Map.+ for explanation") override def +(kv: (A, B)): this.type = synchronized[this.type] { super.+(kv) }
+  // @deprecated("See Map.+ for explanation") override def +(kv: (A, B)): this.type = synchronized[this.type] { super.+(kv) }
   // can't override -, -- same type!
   // @deprecated override def -(key: A): Self = synchronized { super.-(key) }
 

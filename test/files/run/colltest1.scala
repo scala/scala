@@ -170,7 +170,7 @@ object Test extends Application {
     m += (("D" -> "D"), ("E" -> "E"), ("F" -> "F"))
     m ++= List(("G" -> "G"), ("H" -> "H"), ("I" -> "I"))
     m ++= ('J' to 'Z') map (x => (x.toString -> x.toString))
-    println(m)
+    println(m.toList.sorted)
     assert(!m.isEmpty)
     assert(m.keySet forall (k => (m get k) == Some(k)))
     assert(m.keySet forall (k => (m apply k) == k))
@@ -185,7 +185,7 @@ object Test extends Application {
     assert(mm.isEmpty, mm)
     def m3 = empty ++ m1
     assert(m1 == m3)
-    println(m3)
+    println(m3.toList.sorted)
     val m4 = m3 filterNot { case (k, v) => k != "A" }
     assert(m4.size == 1, m4)
   }

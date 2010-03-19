@@ -103,7 +103,7 @@ trait SynchronizedSet[A] extends Set[A] {
     super.<<(cmd)
   }
 
-  override def clone(): Set[A] = synchronized {
+  override def clone(): Self = synchronized {
     super.clone()
   }
 }
