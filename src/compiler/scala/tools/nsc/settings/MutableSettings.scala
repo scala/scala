@@ -469,6 +469,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       Some(rest)
     }
     override def tryToSetColon(args: List[String]) = tryToSet(args)
+    override def tryToSetFromPropertyValue(s: String) = tryToSet(s.trim.split(" +").toList)
     def unparse: List[String] = value map { name + ":" + _ }
 
     withHelpSyntax(name + ":<" + arg + ">")
