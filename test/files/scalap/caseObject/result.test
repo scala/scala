@@ -4,7 +4,6 @@ case object CaseObject extends java.lang.Object with scala.ScalaObject with scal
   override def productPrefix : java.lang.String = { /* compiled code */ }
   override def productArity : scala.Int = { /* compiled code */ }
   override def productElement(x$1 : scala.Int) : scala.Any = { /* compiled code */ }
-  override def productElementName(x$1 : scala.Int) : java.lang.String = { /* compiled code */ }
   override def canEqual(x$1 : scala.Any) : scala.Boolean = { /* compiled code */ }
   protected def readResolve() : java.lang.Object = { /* compiled code */ }
 }

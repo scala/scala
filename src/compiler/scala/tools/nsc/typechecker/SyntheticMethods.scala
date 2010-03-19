@@ -271,7 +271,9 @@ trait SyntheticMethods extends ast.TreeDSL {
             Product_productPrefix   -> (() => productPrefixMethod),
             Product_productArity    -> (() => productArityMethod(accessors.length)),
             Product_productElement  -> (() => productElementMethod(accessors)),
-            Product_productElementName  -> (() => productElementNameMethod(accessors)),
+            // This is disabled pending a reimplementation which doesn't add any
+            // weight to case classes (i.e. inspects the bytecode.)
+            // Product_productElementName  -> (() => productElementNameMethod(accessors)),
             Product_canEqual        -> (() => canEqualMethod)
           )
         }

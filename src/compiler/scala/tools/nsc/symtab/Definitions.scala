@@ -289,7 +289,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ProductRootClass: Symbol = getClass("scala.Product")
       def Product_productArity = getMember(ProductRootClass, nme.productArity)
       def Product_productElement = getMember(ProductRootClass, nme.productElement)
-      def Product_productElementName = getMember(ProductRootClass, nme.productElementName)
+      // def Product_productElementName = getMember(ProductRootClass, nme.productElementName)
       def Product_productPrefix = getMember(ProductRootClass, nme.productPrefix)
       def Product_canEqual = getMember(ProductRootClass, nme.canEqual_)
 
