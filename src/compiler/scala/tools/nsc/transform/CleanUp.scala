@@ -338,6 +338,22 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           val methSym = ad.symbol
           def args = qual :: params
 
+          def isArrayMethodSignature = {
+            def typesMatchApply = paramTypes match {
+              case List(tp) => tp <:< IntClass.tpe
+              case _        => false
+            }
+            def typesMatchUpdate = paramTypes match {
+              case List(tp1, tp2) => (tp1 <:< IntClass.tpe) && (UnitClass.tpe <:< structResType)
+              case _              => false
+            }
+
+            (methSym.name == nme.length && params.isEmpty) ||
+            (methSym.name == nme.clone_ && params.isEmpty) ||
+            (methSym.name == nme.apply  && typesMatchApply) ||
+            (methSym.name == nme.update && typesMatchUpdate)
+          }
+
           /** Normal non-Array call */
           def defaultCall = {
             // reflective method call machinery
@@ -361,33 +377,25 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name) &&
             ((resType :: paramTypes) forall (x => isJavaValueClass(x.typeSymbol))) // issue #1110
 
-          def isArrayMethodSignature =
-            (methSym.name == nme.length && params.isEmpty) ||
-            (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass) && params.size == 2) ||
-            (methSym.name == nme.apply  && params.size == 1) ||
-            (methSym.name == nme.clone_ && params.isEmpty)
-
-          def isDefinitelyArray = isArrayMethodSignature && (qualSym == ArrayClass)
-          def isMaybeArray = isArrayMethodSignature && (qualSym == ObjectClass) // precondition: !isDefinitelyArray
-
           def genArrayCall = methSym.name match {
             case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
             case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
             case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
             case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
           }
-          def genArrayTest = {
-            def oneTest(s: Symbol) = qual IS_OBJ arrayType(s.tpe)
-            OR((ObjectClass :: ScalaValueClasses filterNot (_ eq UnitClass)) map oneTest: _*)
-          }
+          def genConditionalArrayCall =
+            IF ((qual GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE defaultCall
 
           val callCode =
             if (useValueOperator) {
               val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
               IF (test) THEN fixResult(REF(operator) APPLY args) ELSE defaultCall
             }
-            else if (isDefinitelyArray) genArrayCall
-            else if (isMaybeArray) IF (genArrayTest) THEN genArrayCall ELSE defaultCall
+            else if (isArrayMethodSignature) {
+              if (qualSym == ArrayClass) genArrayCall
+              else if (qualSym == ObjectClass) genConditionalArrayCall
+              else defaultCall
+            }
             else defaultCall
 
           localTyper typed callCode
