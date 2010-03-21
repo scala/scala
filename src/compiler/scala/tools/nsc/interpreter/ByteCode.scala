@@ -34,8 +34,8 @@ object ByteCode {
   def scalaSigBytesForPath(path: String) =
     for {
       module <- DECODER
-      method <- decoderMethod("scalaSigBytes", classOf[String])
-      names <- method.invoke(module, path).asInstanceOf[Option[Array[Byte]]]
+      method <- decoderMethod("scalaSigBytes", classOf[String], classOf[ClassLoader])
+      names <- method.invoke(module, path, this.getClass.getClassLoader).asInstanceOf[Option[Array[Byte]]]
     }
     yield names
 

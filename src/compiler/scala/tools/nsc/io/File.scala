@@ -13,7 +13,7 @@ package io
 
 import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
-  BufferedInputStream, BufferedOutputStream, IOException, File => JFile }
+  BufferedInputStream, BufferedOutputStream, IOException, PrintStream, File => JFile }
 import java.nio.channels.{ Channel, FileChannel }
 import collection.Traversable
 import scala.io.Codec
@@ -50,8 +50,7 @@ import Path._
  */
 class File(jfile: JFile)(implicit val creationCodec: Codec = null)
 extends Path(jfile)
-with Streamable.Chars
-{
+with Streamable.Chars {
   def withCodec(codec: Codec): File = new File(jfile)(codec)
   override def toDirectory: Directory = new Directory(jfile)
   override def toFile: File = this
@@ -65,6 +64,7 @@ with Streamable.Chars
   /** Obtains a OutputStream. */
   def outputStream(append: Boolean = false) = new FileOutputStream(jfile, append)
   def bufferedOutput(append: Boolean = false) = new BufferedOutputStream(outputStream(append))
+  def printStream(append: Boolean = false) = new PrintStream(bufferedOutput(append))
 
   /** Obtains an OutputStreamWriter wrapped around a FileOutputStream.
    *  This should behave like a less broken version of java.io.FileWriter,

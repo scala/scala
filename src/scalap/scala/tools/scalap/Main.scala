@@ -97,16 +97,16 @@ object Main {
     baos.toString
   }
 
-
-  def decompileScala(bytes: Array[Byte], isPackageObject: Boolean) = {
+  def getDecompiledScala(bytes: Array[Byte], isPackageObject: Boolean) = {
     val byteCode = ByteCode(bytes)
     val classFile = ClassFileParser.parse(byteCode)
-    classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse) match {
-      case Some(scalaSig) => Console.println(parseScalaSignature(scalaSig, isPackageObject))
-      case None => //Do nothing
-    }
+    val sig = classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse)
+
+    sig map (x => parseScalaSignature(x, isPackageObject))
   }
 
+  def decompileScala(bytes: Array[Byte], isPackageObject: Boolean) =
+    getDecompiledScala(bytes, isPackageObject) foreach (Console println _)
 
   /**Executes scalap with the given arguments and classpath for the
    *  class denoted by <code>classname</code>.

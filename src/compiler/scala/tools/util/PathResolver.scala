@@ -70,7 +70,7 @@ object PathResolver {
      */
     def useJavaClassPath    = true
     // hypothetically:
-    // def useJavaClassPath = propIsSet("scala.auto.class.path")
+    // def useJavaClassPath = propIsSet("scala.classpath.guess")
 
     override def toString = """
       |object Environment {
