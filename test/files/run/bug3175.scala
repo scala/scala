@@ -17,6 +17,11 @@ object Test {
   def f9(x: { def apply(x: Int): Int }) = x(0)
   def f10(x: { def apply(x: Int): Long }) = x(0)
 
+  // update has some interesting special cases
+  def f11(x:{ def update(x: Int, y: Long): Any }, y: Long) = x(0) = y
+  def f12(x:{ def update(x: Int, y: String): AnyVal }, y: String) = x(0) = y
+  def f13(x:{ def update(x: Int, y: String): AnyRef }, y: String) = x(0) = y
+
   // doesn't work yet, see #3197
   // def fclone(x:{ def clone(): AnyRef }) = x.clone()
 
@@ -40,5 +45,11 @@ object Test {
     println(f8(Array(5)))
     println(f9(Array(5)))
     println(f10(Array(5)))
+
+    f11(longs, 100L)
+    f12(strs, "jabooboo")
+    println(longs(0))
+    println(strs(0))
+    f13(new { def update(x: Int, y: String): List[Int] = { println("hi mom") ; Nil } }, "irrelevant")
   }
 }
