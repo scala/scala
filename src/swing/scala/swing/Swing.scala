@@ -20,9 +20,6 @@ import javax.swing.{JComponent, Icon, BorderFactory, SwingUtilities}
  * Helpers for this package.
  */
 object Swing {
-  protected[swing] def ifNull[A](o: Object, a: A): A = if(o eq null) a else o.asInstanceOf[A]
-  protected[swing] def toOption[A](o: Object): Option[A] = if(o eq null) None else Some(o.asInstanceOf[A])
-  protected[swing] def toNull[A>:Null<:AnyRef](a: Option[A]): A = if(a == None) null else a.get
   protected[swing] def toNoIcon(i: Icon): Icon = if(i == null) EmptyIcon else i
   protected[swing] def toNullIcon(i: Icon): Icon = if(i == EmptyIcon) null else i
   protected[swing] def nullPeer(c: Component) = if (c != null) c.peer else null

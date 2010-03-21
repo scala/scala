@@ -64,7 +64,7 @@ trait LayoutContainer extends Container.Wrapper {
       add(c, l)
       this
     }
-    def get(c: Component) = Swing.toOption(constraintsFor(c))
+    def get(c: Component) = Option(constraintsFor(c))
     override def size = peer.getComponentCount
     def iterator: Iterator[(Component, Constraints)] =
       peer.getComponents.iterator.map { c =>

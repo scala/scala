@@ -128,7 +128,7 @@ abstract class Action(title0: String) {
   def accelerator: Option[KeyStroke] =
     toOption(peer.getValue(javax.swing.Action.ACCELERATOR_KEY))
   def accelerator_=(k: Option[KeyStroke]) {
-    peer.putValue(javax.swing.Action.ACCELERATOR_KEY, toNull(k))
+    peer.putValue(javax.swing.Action.ACCELERATOR_KEY, k orNull)
   }
 
   /**
@@ -140,7 +140,7 @@ abstract class Action(title0: String) {
   /*/**
    * Only honored if not <code>None</code>. For various buttons.
    */
-   1.6: def selected: Option[Boolean] = toOption(peer.getValue(javax.swing.Action.SELECTED_KEY))
+   1.6: def selected: Option[Boolean] = Option(peer.getValue(javax.swing.Action.SELECTED_KEY))
    def selected_=(b: Option[Boolean]) {
    peer.putValue(javax.swing.Action.SELECTED_KEY,
                  if (b == None) null else new java.lang.Boolean(b.get))

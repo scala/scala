@@ -39,12 +39,12 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
     peer.pack() // pack also validates, which is generally required after an add
   }
   def defaultButton: Option[Button] =
-    Swing.toOption(peer.getRootPane.getDefaultButton).map(UIElement.cachedWrapper(_))
+    toOption(peer.getRootPane.getDefaultButton) map UIElement.cachedWrapper
   def defaultButton_=(b: Button) {
     peer.getRootPane.setDefaultButton(b.peer)
   }
   def defaultButton_=(b: Option[Button]) {
-    peer.getRootPane.setDefaultButton(Swing.toNull(b.map(_.peer)))
+    peer.getRootPane.setDefaultButton(b map (_.peer) orNull)
   }
 
   def dispose() { peer.dispose() }

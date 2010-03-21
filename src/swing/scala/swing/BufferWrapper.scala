@@ -12,7 +12,6 @@
 package scala.swing
 
 import scala.collection.mutable.Buffer
-import scala.collection.IndexedSeq
 
 /**
  * Default partial implementation for buffer adapters.

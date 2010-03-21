@@ -23,7 +23,7 @@ trait RootPanel extends Container {
    * At most one component.
    */
   def contents: Seq[Component] = {
-    Swing.toOption[Any](peer.getContentPane.getComponent(0)).map { c =>
+    Option[Any](peer.getContentPane.getComponent(0)).map { c =>
       UIElement.cachedWrapper[Component](c.asInstanceOf[javax.swing.JComponent])
     }.toList
   }
