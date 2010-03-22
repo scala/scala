@@ -61,7 +61,3 @@ trait Addable[A, +Repr <: Addable[A, Repr]] { self =>
    */
   def ++ (iter: Iterator[A]): Repr = (repr /: iter) (_ + _)
 }
-
-
-
-

@@ -6,28 +6,25 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
 package scala.collection
 package mutable
 
 import generic._
 
-/** The canonical builder for collections that are addable, i.e. that support an efficient `+` method
- *  which adds an element to the collection.
- *  Collections are built from their empty element using this `+` method.
- *  @param empty  the empty element of the collection.
- *  @tparam Elem  the type of elements that get added to the builder.
- *  @tparam To    the type of the built collection.
+/** The canonical builder for collections that are growable, i.e. that support an
+ *  efficient `+=` method which adds an element to the collection.  It is
+ *  almost identical to AddingBuilder, but necessitated by the existence of
+ *  classes which are Growable but not Addable, which is a result of covariance
+ *  interacting surprisingly with any2stringadd thus driving '+' out of the Seq
+ *  hierachy.  The tendrils of original sin should never be underestimated.
  *
- *  @author Martin Odersky
+ *  @author Paul Phillips
  *  @version 2.8
  *  @since 2.8
  */
-class AddingBuilder[Elem, To <: Addable[Elem, To] with collection.Iterable[Elem] with collection.IterableLike[Elem, To]](empty: To)
-extends Builder[Elem, To] {
+class GrowingBuilder[Elem, To <: Growable[Elem]](empty: To) extends Builder[Elem, To] {
   protected var elems: To = empty
-  def +=(x: Elem): this.type = { elems = elems + x; this }
+  def +=(x: Elem): this.type = { elems += x; this }
   def clear() { elems = empty }
   def result: To = elems
 }

@@ -60,11 +60,13 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
                 extends Growable[A]
                    with Shrinkable[A]
                    with Scriptable[A]
-                   with Addable[A, This]
                    with Subtractable[A, This]
                    with Cloneable[This]
                    with SeqLike[A, This]
 { self : This =>
+
+  // Note this does not extend Addable because `+` is being phased out of
+  // all Seq-derived classes.
 
   import scala.collection.{Iterable, Traversable}
 
@@ -254,32 +256,24 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   @deprecated("use `+=:' instead")
   final def +:(elem: A): This = +=:(elem)
 
-  // !!! Note that the two + methods below presently still modify in place.  Arguably they
-  // should be changed to create new collections, and then have BOTH @migration and
-  // @deprecation annotations, because Seq-derived classes don't implement + since
-  // most of them are covariant and + interacts badly with +'s autostringification.
-  // However the compiler right now will not warn about both annotations (see the
-  // implementation comment) so I don't think that's an option without fixing that first.
-  //
-  // In addition, I don't think BufferLike should implement Addable since it
-  // deprecates all of it, and Addable has never shipped.
-  //
-  // Alternate implementations:
-  //
-  // clone() += elem
-  // clone() += elem1 += elem2 ++= elems
-
   /** Adds a single element to this collection and returns
-   *  the collection itself.
+   *  the collection itself.  Note that for backward compatibility
+   *  reasons, this method mutates the collection in place, unlike
+   *  similar but undeprecated methods throughout the collections
+   *  hierarchy.  You are strongly recommended to use '+=' instead.
    *
    *  @param elem  the element to add.
    */
   @deprecated("Use += instead if you intend to add by side effect to an existing collection.\n"+
               "Use `clone() +=' if you intend to create a new collection.")
-  override def + (elem: A): This = { +=(elem); repr }
+  def + (elem: A): This = { +=(elem); repr }
 
   /** Adds two or more elements to this collection and returns
-   *  the collection itself.
+   *  the collection itself.  Note that for backward compatibility
+   *  reasons, this method mutates the collection in place, unlike
+   *  all similar methods throughout the collections hierarchy.
+   *  similar but undeprecated methods throughout the collections
+   *  hierarchy.  You are strongly recommended to use '++=' instead.
    *
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
@@ -287,7 +281,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
               "Use `clone() ++=' if you intend to create a new collection.")
-  override def + (elem1: A, elem2: A, elems: A*): This = {
+  def + (elem1: A, elem2: A, elems: A*): This = {
     this += elem1 += elem2 ++= elems
     repr
   }
@@ -301,7 +295,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"
   )
-  override def ++(iter: Traversable[A]): This = clone() ++= iter
+  def ++(iter: Traversable[A]): This = clone() ++= iter
 
   /** Adds a number of elements provided by an iterator and returns
    *  the collection itself.
@@ -312,7 +306,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"
   )
-  override def ++ (iter: Iterator[A]): This = clone() ++= iter
+  def ++ (iter: Iterator[A]): This = clone() ++= iter
 
   /** Removes a single element from this collection and returns
    *  the collection itself.

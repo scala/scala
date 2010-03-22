@@ -24,7 +24,6 @@ import generic._
  */
 @serializable @cloneable
 class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
-
   /** Adds all elements to the queue.
    *
    *  @param  elems       the elements to add.
@@ -144,3 +143,9 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
    */
   def front: A = first0.elem
 }
+
+// !!! TODO
+// object Queue extends SeqFactory[Queue] {
+//   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = new GenericCanBuildFrom[A]
+//   def newBuilder[A]: Builder[A, Queue[A]] = new GrowingBuilder(new Queue[A])
+// }

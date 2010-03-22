@@ -60,7 +60,3 @@ trait Growable[-A] {
    */
   def clear()
 }
-
-
-
-
