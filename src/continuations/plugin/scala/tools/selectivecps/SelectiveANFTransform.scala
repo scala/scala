@@ -234,8 +234,11 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
         case Typed(expr0, tpt) =>
           // TODO: should x: A @cps[B,C] have a special meaning?
+          // type casts used in different ways (see match2.scala, #3199)
           val (stms, expr, spc) = transInlineValue(expr0, cpsA)
-          val tpt1 = treeCopy.TypeTree(tpt).setType(removeAllCPSAnnotations(tpt.tpe))
+          val tpt1 = if (treeInfo.isWildcardStarArg(tree)) tpt else
+            treeCopy.TypeTree(tpt).setType(removeAllCPSAnnotations(tpt.tpe))
+//        (stms, updateSynthFlag(treeCopy.Typed(tree, expr, tpt1)), spc)
           (stms, treeCopy.Typed(tree, expr, tpt1).setType(removeAllCPSAnnotations(tree.tpe)), spc)
 
         case TypeApply(fun, args) =>
