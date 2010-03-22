@@ -569,9 +569,9 @@ object List extends SeqFactory[List] {
    *  @param xs the iterable of Eithers to separate
    *  @return a pair of lists.
    */
-  @deprecated("use `Either.separate' instead")
+  @deprecated("use `(for (Left(x) <- es) yield x, for (Right(x) <- es) yield x)` instead")
   def separate[A,B](es: Iterable[Either[A, B]]): (List[A], List[B]) =
-      es.foldRight[(List[A], List[B])]((Nil, Nil)) {
+    es.foldRight[(List[A], List[B])]((Nil, Nil)) {
       case (Left(a), (lefts, rights)) => (a :: lefts, rights)
       case (Right(b), (lefts, rights)) => (lefts, b :: rights)
     }

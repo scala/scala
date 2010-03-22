@@ -12,12 +12,8 @@
 package scala.collection
 package immutable
 
-import scala.annotation.tailrec
-
-object Queue {
-  val Empty: Queue[Nothing] = new Queue(Nil, Nil)
-  def apply[A](elems: A*) = new Queue(Nil, elems.toList)
-}
+import generic._
+import mutable.{ Builder, ListBuffer }
 
 /** <code>Queue</code> objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -28,10 +24,13 @@ object Queue {
  */
 @serializable
 @SerialVersionUID(-7622936493364270175L)
-class Queue[+A] protected(
-  protected val  in: List[A],
-  protected val out: List[A]) extends Seq[A]
-{
+class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
+            extends Seq[A]
+            with GenericTraversableTemplate[A, Queue]
+            with SeqLike[A, Queue[A]] {
+
+  override def companion: GenericCompanion[Queue] = Queue
+
   /** Returns the <code>n</code>-th element of this queue.
    *  The first element is at position 0.
    *
@@ -126,4 +125,14 @@ class Queue[+A] protected(
   /** Returns a string representation of this queue.
    */
   override def toString() = mkString("Queue(", ", ", ")")
+}
+
+object Queue extends SeqFactory[Queue] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = new GenericCanBuildFrom[A]
+  def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
+  override def empty[A]: Queue[A] = new Queue[A](Nil, Nil)
+  override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
+
+  @deprecated("Use Queue.empty instead")
+  val Empty: Queue[Nothing] = Queue()
 }

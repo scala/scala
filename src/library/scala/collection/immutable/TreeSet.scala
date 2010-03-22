@@ -19,8 +19,7 @@ import mutable.{Builder, AddingBuilder}
  *
  *  @since 1
  */
-object TreeSet extends SortedSetFactory[TreeSet]{
-
+object TreeSet extends SortedSetFactory[TreeSet] {
   implicit def implicitBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = newBuilder[A](ordering)
   override def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
     new AddingBuilder(empty[A](ordering))
@@ -28,7 +27,6 @@ object TreeSet extends SortedSetFactory[TreeSet]{
   /** The empty set of this type
    */
   def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]
-
 }
 
 /** This class implements immutable sets using a tree.

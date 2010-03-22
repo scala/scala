@@ -137,3 +137,8 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    */
   override def clone(): Stack[A] = new Stack[A](elems)
 }
+
+// !!! TODO - integrate
+object Stack {
+  def apply[A](xs: A*): Stack[A] = new Stack[A] ++= xs
+}
