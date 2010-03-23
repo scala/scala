@@ -50,16 +50,11 @@ object Chars {
 
   /** Can character start an alphanumeric Scala identifier? */
   def isIdentifierStart(c: Char): Boolean =
-    ('A' <= c && c <= 'Z') ||
-    ('a' <= c && c <= 'a') ||
-    (c == '_') || (c == '$') ||
-    Character.isUnicodeIdentifierStart(c)
+    (c == '_') || (c == '$') || Character.isUnicodeIdentifierStart(c)
 
   /** Can character form part of an alphanumeric Scala identifier? */
   def isIdentifierPart(c: Char) =
-    isIdentifierStart(c) ||
-    ('0' <= c && c <= '9') ||
-    Character.isUnicodeIdentifierPart(c)
+    (c == '$') || Character.isUnicodeIdentifierPart(c)
 
   /** Is character a math or other symbol in Unicode?  */
   def isSpecial(c: Char) = {

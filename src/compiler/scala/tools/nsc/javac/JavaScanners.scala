@@ -685,24 +685,6 @@ trait JavaScanners {
 
 // Identifiers ---------------------------------------------------------------
 
-    def isIdentStart(c: Char): Boolean = (
-      ('A' <= c && c <= 'Z') ||
-      ('a' <= c && c <= 'a') ||
-      (c == '_') || (c == '$') ||
-      Character.isUnicodeIdentifierStart(c)
-    )
-
-    def isIdentPart(c: Char) = (
-      isIdentStart(c) ||
-      ('0' <= c && c <= '9') ||
-      Character.isUnicodeIdentifierPart(c)
-    )
-
-    def isSpecial(c: Char) = {
-      val chtp = Character.getType(c)
-      chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
-    }
-
     private def getIdentRest {
       while (true) {
         (in.ch: @switch) match {
@@ -894,7 +876,7 @@ trait JavaScanners {
             in.next
             return getFraction
           case _ =>
-            if (!isIdentStart(lookahead.ch)) {
+            if (!isIdentifierStart(lookahead.ch)) {
               putChar(in.ch)
               in.next
               return getFraction

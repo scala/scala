@@ -8,6 +8,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.reflect.NameTransformer
+import util.Chars.isOperatorPart
 
 trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
 
@@ -101,18 +102,8 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     def isTraitSetterName(name: Name) = isSetterName(name) && name.pos(TRAIT_SETTER_SEPARATOR_STRING) < name.length
     def isOpAssignmentName(name: Name) =
       name(name.length - 1) == '=' &&
-      isOperatorCharacter(name(0)) &&
+      isOperatorPart(name(0)) &&
       name(0) != '=' && name != NEraw && name != LEraw && name != GEraw
-
-    def isOperatorCharacter(c: Char) = c match {
-      case '~' | '!' | '@' | '#' | '%' |
-           '^' | '*' | '+' | '-' | '<' |
-           '>' | '?' | ':' | '=' | '&' |
-           '|' | '\\'| '/' => true
-      case _ =>
-        val chtp = Character.getType(c)
-        chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
-      }
 
     /** The expanded setter name of `name' relative to this class `base`
      */
