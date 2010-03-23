@@ -110,7 +110,7 @@ trait AbsSettings {
     def isCategory:    Boolean = List("-X", "-Y", "-P") contains name
     def isAdvanced:    Boolean = (name startsWith "-X") && name != "-X"
     def isPrivate:     Boolean = (name startsWith "-Y") && name != "-Y"
-    def isStandard:    Boolean = !isAdvanced && !isPrivate && !isCategory
+    def isStandard:    Boolean = !isAdvanced && !isPrivate
 
     def compare(that: Setting): Int = name compare that.name
 
