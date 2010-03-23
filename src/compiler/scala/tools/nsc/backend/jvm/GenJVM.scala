@@ -136,6 +136,28 @@ abstract class GenJVM extends SubComponent {
      * @param sym    The corresponding symbol, used for looking up pickled information
      */
     def emitClass(jclass: JClass, sym: Symbol) {
+      // DISABLED NEW-STYLE SIGNATURES
+      // TO REMOVE
+      def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
+        case Some(pickle) =>
+          val scalaAttr = fjbgContext.JOtherAttribute(jclass,
+                                                  jclass,
+                                                  nme.ScalaSignatureATTR.toString,
+                                                  pickle.bytes,
+                                                  pickle.writeIndex)
+          pickledBytes = pickledBytes + pickle.writeIndex
+          jclass.addAttribute(scalaAttr)
+          currentRun.symData -= sym
+          currentRun.symData -= sym.companionSymbol
+          //System.out.println("Generated ScalaSig Attr for " + sym)//debug
+        case _ =>
+          val markerAttr = getMarkerAttr(jclass)
+          jclass.addAttribute(markerAttr)
+          log("Could not find pickle information for " + sym)
+      }
+      if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
+        addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
+      // END REMOVE
       addInnerClasses(jclass)
 
       val outfile = getFile(sym, jclass, ".class")
@@ -266,9 +288,11 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField
       clasz.methods foreach genMethod
 
-      val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
+      // DISABLED NEW-STYLE SIGNATURES
+      // val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
       addGenericSignature(jclass, c.symbol, c.symbol.owner)
-      addAnnotations(jclass, c.symbol.annotations ++ ssa)
+      addAnnotations(jclass, c.symbol.annotations)
+      // addAnnotations(jclass, c.symbol.annotations ++ ssa)
       emitClass(jclass, c.symbol)
 
       if (c.symbol hasAnnotation BeanInfoAttr)
@@ -917,8 +941,9 @@ abstract class GenJVM extends SubComponent {
                                            JClass.NO_INTERFACES,
                                            sourceFile)
       addForwarders(mirrorClass, clasz)
-      val ssa = scalaSignatureAddingMarker(mirrorClass, clasz.companionSymbol)
-      addAnnotations(mirrorClass, clasz.annotations ++ ssa)
+      // DISABLED NEW-STYLE SIGNATURES
+      // val ssa = scalaSignatureAddingMarker(mirrorClass, clasz.companionSymbol)
+      // addAnnotations(mirrorClass, clasz.annotations ++ ssa)
       emitClass(mirrorClass, clasz)
     }
 
