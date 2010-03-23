@@ -42,6 +42,15 @@ trait AnnotationInfos extends reflect.generic.AnnotationInfos { self: SymbolTabl
 
   object ArrayAnnotArg extends ArrayAnnotArgExtractor
 
+  /** A specific annotation argument that encodes an array of bytes as an array of `Long`. The type of the argument
+    * declared in the annotation must be `String`. This specialised class is used to encode scala signatures for
+    * reasons of efficiency, both in term of class-file size and in term of compiler performance. */
+  case class ScalaSigBytes(bytes: Array[Byte])
+  extends ClassfileAnnotArg {
+    override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
+  }
+  object ScalaSigBytes extends ScalaSigBytesExtractor
+
   /** Represents a nested classfile annotation */
   case class NestedAnnotArg(annInfo: AnnotationInfo)
   extends ClassfileAnnotArg {

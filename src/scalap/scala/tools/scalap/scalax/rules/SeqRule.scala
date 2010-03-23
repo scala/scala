@@ -24,7 +24,7 @@ class InRule[In, +Out, +A, +X](rule : Rule[In, Out, A, X]) {
     in : In => f(rule(in))(in)
   }
 
-  /** Creates a rule that suceeds only if the original rule would fail on the given context. */
+  /** Creates a rule that succeeds only if the original rule would fail on the given context. */
   def unary_! : Rule[In, In, Unit, Nothing] = mapRule {
     case Success(_, _) => in : In => Failure
     case _ => in : In => Success(in, ())

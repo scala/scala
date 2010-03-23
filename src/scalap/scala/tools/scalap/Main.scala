@@ -9,12 +9,14 @@
 
 package scala.tools.scalap
 
-import java.io.{File, PrintStream, OutputStreamWriter, ByteArrayOutputStream}
+import java.io.{PrintStream, OutputStreamWriter, ByteArrayOutputStream}
 import scalax.rules.scalasig._
-import tools.nsc.io.AbstractFile
+import scalax.rules.scalasig.ClassFileParser.{ConstValueIndex, Annotation}
 import tools.nsc.util.{ ClassPath }
 import tools.util.PathResolver
 import ClassPath.DefaultJavaContext
+import tools.nsc.io.{PlainFile, AbstractFile}
+import scala.reflect.generic.ByteCodecs
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -22,6 +24,9 @@ import ClassPath.DefaultJavaContext
  */
 object Main {
   val SCALA_SIG = "ScalaSig"
+  val SCALA_SIG_ANNOTATION = "Lscala/reflect/ScalaSignature;"
+  val BYTES_VALUE = "bytes"
+
   val versionMsg = "Scala classfile decoder " +
           Properties.versionString + " -- " +
           Properties.copyrightString + "\n"
@@ -97,16 +102,33 @@ object Main {
     baos.toString
   }
 
-  def getDecompiledScala(bytes: Array[Byte], isPackageObject: Boolean) = {
+  def decompileScala(bytes: Array[Byte], isPackageObject: Boolean): String = {
     val byteCode = ByteCode(bytes)
     val classFile = ClassFileParser.parse(byteCode)
-    val sig = classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse)
-
-    sig map (x => parseScalaSignature(x, isPackageObject))
+    classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse) match {
+      // No entries in ScalaSig attribute implies that the signature is stored in the annotation
+      case Some(ScalaSig(_, _, entries)) if entries.length == 0 => unpickleFromAnnotation(classFile, isPackageObject)
+      case Some(scalaSig) => parseScalaSignature(scalaSig, isPackageObject)
+      case None => ""
+    }
   }
 
-  def decompileScala(bytes: Array[Byte], isPackageObject: Boolean) =
-    getDecompiledScala(bytes, isPackageObject) foreach (Console println _)
+  def unpickleFromAnnotation(classFile: ClassFile, isPackageObject: Boolean): String = {
+    import classFile._
+    classFile.annotation(SCALA_SIG_ANNOTATION) match {
+      case None => ""
+      case Some(Annotation(_, elements)) =>
+        val bytesElem = elements.find(elem => constant(elem.elementNameIndex) == BYTES_VALUE).get
+        val sigString = (bytesElem.elementValue match {case ConstValueIndex(index) => constant(index)}).asInstanceOf[String]
+        val bytes = sigString.getBytes("UTF-8")
+        val length = ByteCodecs.decode(bytes)
+        val scalaSig = ScalaSigAttributeParsers.parse(ByteCode(bytes.take(length)))
+        parseScalaSignature(scalaSig, isPackageObject)
+    }
+  }
+
+
+
 
   /**Executes scalap with the given arguments and classpath for the
    *  class denoted by <code>classname</code>.
@@ -128,7 +150,7 @@ object Main {
       }
       val bytes = cfile.toByteArray
       if (isScalaFile(bytes)) {
-        decompileScala(bytes, isPackageObjectFile(encName))
+        Console.println(decompileScala(bytes, isPackageObjectFile(encName)))
       } else {
         // construct a reader for the classfile content
         val reader = new ByteArrayReader(cfile.toByteArray)

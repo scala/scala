@@ -187,6 +187,10 @@ public class JConstantPool {
         return addEntry(new Utf8Entry(value));
     }
 
+    public int addUtf8(byte[] value) {
+        return addEntry(new Utf8Entry(value));
+    }
+
     public String lookupUtf8(int index) {
         Utf8Entry entry = (Utf8Entry)lookupEntry(index);
         return entry.getValue();
@@ -344,22 +348,46 @@ public class JConstantPool {
 
     public class Utf8Entry extends ChildlessEntry implements Entry {
         private final String value;
-        public Utf8Entry(String value) { this.value = value.intern(); }
+        private final byte[] bytes;
+        public Utf8Entry(String value) {
+            this.value = value.intern();
+            this.bytes = null;
+        }
         public Utf8Entry(DataInputStream stream) throws IOException {
             this(stream.readUTF());
         }
+        public Utf8Entry(byte[] bytes) {
+            this.bytes = bytes;
+            this.value = null;
+        }
 
-        public int hashCode() { return value.hashCode(); }
+        public int hashCode() {
+            if (bytes != null) return bytes.hashCode();
+            return value.hashCode();
+        }
         public boolean equals(Object o) {
-            return o instanceof Utf8Entry && ((Utf8Entry)o).value == value;
+            boolean isEqual = o instanceof Utf8Entry;
+            if (bytes != null) {
+                isEqual = isEqual && ((Utf8Entry)o).bytes == bytes;
+            }
+            else {
+                isEqual = isEqual && ((Utf8Entry)o).value == value;
+            }
+            return isEqual;
         }
 
         public int getTag() { return CONSTANT_Utf8; }
         public String getValue() { return value; }
+        public byte[] getBytes() { return bytes; }
 
         public int getSize() { return 1; }
         public void writeContentsTo(DataOutputStream stream) throws IOException {
-            stream.writeUTF(value);
+            if (bytes != null) {
+                stream.writeShort(bytes.length);
+                stream.write(bytes);
+            }
+            else
+                stream.writeUTF(value);
         }
     }
 

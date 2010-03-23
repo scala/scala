@@ -122,7 +122,7 @@ object ByteCodecs {
   @deprecated("use 2-argument version instead")
   def decode7to8(src: Array[Byte], srclen: Int, dstlen: Int) { decode7to8(src, srclen) }
 
-  def decode7to8(src: Array[Byte], srclen: Int) {
+  def decode7to8(src: Array[Byte], srclen: Int): Int = {
     var i = 0
     var j = 0
     val dstlen = (srclen * 7 + 7) / 8
@@ -185,6 +185,7 @@ object ByteCodecs {
       }
       if (j < dstlen) src(j) = out.toByte
     }
+    dstlen
   }
 
   def encode(xs: Array[Byte]): Array[Byte] = avoidZero(encode8to7(xs))
@@ -192,8 +193,8 @@ object ByteCodecs {
   @deprecated("use 1-argument version instead")
   def decode(xs: Array[Byte], dstlen: Int) { decode(xs) }
 
-  /** Destructively decode array xs */
-  def decode(xs: Array[Byte]) {
+  /** Destructively decode array xs and returns the length of the decoded array */
+  def decode(xs: Array[Byte]): Int = {
     val len = regenerateZero(xs)
     decode7to8(xs, len)
   }

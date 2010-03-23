@@ -820,14 +820,6 @@ class Worker(val fileManager: FileManager) extends Actor {
 
       case "scalap" => {
 
-        def decompileFile(clazz: Class[_], packObj: Boolean) = {
-          val byteCode = ByteCode.forClass(clazz)
-          val classFile = ClassFileParser.parse(byteCode)
-          val Some(sig) = classFile.attribute("ScalaSig").map(_.byteCode).map(ScalaSigAttributeParsers.parse)
-          import scala.tools.scalap.Main._
-          parseScalaSignature(sig, packObj)
-        }
-
         runInContext(file, kind, (logFile: File, outDir: File) => {
           val sourceDir = file.getParentFile
           val sourceDirName = sourceDir.getName
@@ -854,7 +846,8 @@ class Worker(val fileManager: FileManager) extends Actor {
               val loader = new URLClassLoader(Array(url), getClass.getClassLoader)
               val clazz = loader.loadClass(className)
 
-              val result = decompileFile(clazz, isPackageObject)
+              val byteCode = ByteCode.forClass(clazz)
+              val result = scala.tools.scalap.Main.decompileScala(byteCode.bytes, isPackageObject)
 
               try {
                 val fstream = new FileWriter(logFile);

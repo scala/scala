@@ -20,6 +20,9 @@ trait AnnotationInfos { self: Universe =>
   type ArrayAnnotArg <: ClassfileAnnotArg
   val ArrayAnnotArg: ArrayAnnotArgExtractor
 
+  type ScalaSigBytes <: ClassfileAnnotArg
+  val ScalaSigBytes: ScalaSigBytesExtractor
+
   type NestedAnnotArg <: ClassfileAnnotArg
   val NestedAnnotArg: NestedAnnotArgExtractor
 
@@ -31,6 +34,11 @@ trait AnnotationInfos { self: Universe =>
   abstract class ArrayAnnotArgExtractor {
     def apply(const: Array[ClassfileAnnotArg]): ArrayAnnotArg
     def unapply(arg: ArrayAnnotArg): Option[Array[ClassfileAnnotArg]]
+  }
+
+  abstract class ScalaSigBytesExtractor {
+    def apply(bytes: Array[Byte]): ScalaSigBytes
+    def unapply(arg: ScalaSigBytes): Option[Array[Byte]]
   }
 
   abstract class NestedAnnotArgExtractor {

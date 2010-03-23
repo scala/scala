@@ -263,6 +263,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     val assume_ = newTermName("assume")
     val asInstanceOf_ = newTermName("asInstanceOf")
     val box = newTermName("box")
+    val bytes = newTermName("bytes")
     val canEqual_ = newTermName("canEqual")
     val checkInitialized = newTermName("checkInitialized")
     val classOf = newTermName("classOf")

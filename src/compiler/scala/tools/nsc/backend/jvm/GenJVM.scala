@@ -8,7 +8,6 @@
 package scala.tools.nsc
 package backend.jvm
 
-import java.io.{ DataOutputStream, File, OutputStream }
 import java.nio.ByteBuffer
 
 import scala.collection.immutable.{Set, ListSet}
@@ -18,6 +17,8 @@ import scala.tools.nsc.symtab._
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 
 import ch.epfl.lamp.fjbg._
+import java.io.{ByteArrayOutputStream, DataOutputStream, File, OutputStream}
+import reflect.generic.{PickleFormat, PickleBuffer}
 
 /** This class ...
  *
@@ -104,6 +105,16 @@ abstract class GenJVM extends SubComponent {
     lazy val RemoteInterface = definitions.getClass("java.rmi.Remote")
     lazy val RemoteException = definitions.getClass("java.rmi.RemoteException").tpe
 
+
+    val versionPickle = {
+      val vp = new PickleBuffer(new Array[Byte](16), -1, 0)
+      assert(vp.writeIndex == 0)
+      vp.writeNat(PickleFormat.MajorVersion)
+      vp.writeNat(PickleFormat.MinorVersion)
+      vp.writeNat(0)
+      vp
+    }
+
     var clasz: IClass = _
     var method: IMethod = _
     var jclass: JClass = _
@@ -125,25 +136,6 @@ abstract class GenJVM extends SubComponent {
      * @param sym    The corresponding symbol, used for looking up pickled information
      */
     def emitClass(jclass: JClass, sym: Symbol) {
-      def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
-        case Some(pickle) =>
-          val scalaAttr = fjbgContext.JOtherAttribute(jclass,
-                                                  jclass,
-                                                  nme.ScalaSignatureATTR.toString,
-                                                  pickle.bytes,
-                                                  pickle.writeIndex)
-          pickledBytes = pickledBytes + pickle.writeIndex
-          jclass.addAttribute(scalaAttr)
-          currentRun.symData -= sym
-          currentRun.symData -= sym.companionSymbol
-          //System.out.println("Generated ScalaSig Attr for " + sym)//debug
-        case _ =>
-          val markerAttr = getMarkerAttr(jclass)
-          jclass.addAttribute(markerAttr)
-          log("Could not find pickle information for " + sym)
-      }
-      if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
-        addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
       addInnerClasses(jclass)
 
       val outfile = getFile(sym, jclass, ".class")
@@ -152,6 +144,43 @@ abstract class GenJVM extends SubComponent {
       outstream.close()
       informProgress("wrote " + outfile)
     }
+
+    /** Returns the ScalaSignature annotation if it must be added to this class, none otherwise; furthermore, it adds to
+      * jclass the Scala marker attribute (marking that a scala signature annotation is present). The annotation that is
+      * returned by this method must be added to the class' annotations list when generating them.
+      * @param jclass The class file that is being readied.
+      * @param sym    The symbol for which the signature has been entered in the symData map. This is different than the
+      *               symbol that is being generated in the case of a mirror class.
+      * @return       An option that is:
+      *                - defined and contains an annotation info of the ScalaSignature type, instantiated with the
+      *                  pickle signature for sym;
+      *                - undefined if the jclass/sym couple must not contain a signature or if there was an error (see
+      *                  log output in debug mode). */
+    def scalaSignatureAddingMarker(jclass: JClass, sym: Symbol): Option[AnnotationInfo] =
+      if (jclass.getName().endsWith("$") && sym.isModuleClass) {
+        None
+      }
+      else {
+        val sd = currentRun.symData
+        currentRun.symData.get(sym) match {
+          case Some(pickle) =>
+            val scalaAttr =
+              fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaSignatureATTR.toString,
+                                          versionPickle.bytes, versionPickle.writeIndex)
+            jclass.addAttribute(scalaAttr)
+            val scalaAnnot =
+              AnnotationInfo(definitions.ScalaSignatureAnnotation.tpe, Nil, List(
+                (nme.bytes, ScalaSigBytes(pickle.bytes.take(pickle.writeIndex)))
+              ))
+            pickledBytes = pickledBytes + pickle.writeIndex
+            currentRun.symData -= sym
+            currentRun.symData -= sym.companionSymbol
+            Some(scalaAnnot)
+          case _ =>
+            log("Could not find annotation pickle information for " + sym)
+            None
+        }
+      }
 
     private def getMarkerAttr(jclass: JClass): JOtherAttribute =
       fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaATTR.toString, new Array[Byte](0), 0)
@@ -237,8 +266,9 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField
       clasz.methods foreach genMethod
 
+      val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
       addGenericSignature(jclass, c.symbol, c.symbol.owner)
-      addAnnotations(jclass, c.symbol.annotations)
+      addAnnotations(jclass, c.symbol.annotations ++ ssa)
       emitClass(jclass, c.symbol)
 
       if (c.symbol hasAnnotation BeanInfoAttr)
@@ -394,6 +424,10 @@ abstract class GenJVM extends SubComponent {
               buf.putShort(cpool.addUtf8(javaType(const.tpe).getSignature()).toShort)
               buf.putShort(cpool.addUtf8(const.symbolValue.name.toString).toShort)
           }
+
+        case ScalaSigBytes(bytes) =>
+          buf.put('s'.toByte)
+          buf.putShort(cpool.addUtf8(reflect.generic.ByteCodecs.encode(bytes)).toShort)
 
         case ArrayAnnotArg(args) =>
           buf.put('['.toByte)
@@ -883,6 +917,8 @@ abstract class GenJVM extends SubComponent {
                                            JClass.NO_INTERFACES,
                                            sourceFile)
       addForwarders(mirrorClass, clasz)
+      val ssa = scalaSignatureAddingMarker(mirrorClass, clasz.companionSymbol)
+      addAnnotations(mirrorClass, clasz.annotations ++ ssa)
       emitClass(mirrorClass, clasz)
     }
 

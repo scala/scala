@@ -15,6 +15,7 @@ import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.io.AbstractFile
 import scala.annotation.switch
+import reflect.generic.PickleBuffer
 
 /** This abstract class implements a class file parser.
  *
@@ -35,6 +36,7 @@ abstract class ClassfileParser {
   protected var staticDefs: Scope = _       // the scope of all static definitions
   protected var pool: ConstantPool = _      // the classfile's constant pool
   protected var isScala: Boolean = _        // does class file describe a scala class?
+  protected var isScalaAnnot: Boolean = _   // does class file describe a scala class with its pickled info in an annotation?
   protected var isScalaRaw: Boolean = _     // this class file is a scala class with no pickled info
   protected var hasMeta: Boolean = _        // does class file contain jaco meta attribute?s
   protected var busy: Option[Symbol] = None // lock to detect recursive reads
@@ -351,6 +353,22 @@ abstract class ClassfileParser {
         case cls: Symbol   => Constant(cls.tpe)
         case arr: Type     => Constant(arr)
       }
+    }
+
+    def getBytes(index: Int): Array[Byte] = {
+      if (index <= 0 || len <= index) errorBadIndex(index)
+      var value = values(index).asInstanceOf[Array[Byte]]
+      if (value eq null) {
+        val start = starts(index)
+        if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
+        val len = in.getChar(start + 1)
+        val bytes = new Array[Byte](len)
+        Array.copy(in.buf, start + 3, bytes, 0, len)
+        val decodedLength = reflect.generic.ByteCodecs.decode(bytes)
+        value = bytes.take(decodedLength)
+        values(index) = value
+      }
+      value
     }
 
     /** Throws an exception signaling a bad constant index. */
@@ -786,9 +804,12 @@ abstract class ClassfileParser {
           if (c1 ne null) sym.setInfo(ConstantType(c1))
           else println("failure to convert " + c + " to " + symtype); //debug
         case nme.ScalaSignatureATTR =>
-          unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
+          if (!isScalaAnnot) {
+            if (settings.debug.value)
+              global.inform("warning: symbol " + sym.fullName + " has pickled signature in attribute")
+            unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
+          }
           in.skip(attrLen)
-          this.isScala = true
         case nme.ScalaATTR =>
           isScalaRaw = true
         case nme.JacoMetaATTR =>
@@ -801,9 +822,19 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         // Java annotatinos on classes / methods / fields with RetentionPolicy.RUNTIME
         case nme.RuntimeAnnotationATTR =>
-          if (!isScala) {
-            // no need to read annotations if isScala, ClassfileAnnotations are pickled
+          if (isScalaAnnot || !isScala) {
             parseAnnotations(attrLen)
+            if (isScalaAnnot)
+              (sym.rawAnnotations find { annot =>
+                annot.asInstanceOf[AnnotationInfo].atp == definitions.ScalaSignatureAnnotation.tpe
+              }) match {
+                case Some(san: AnnotationInfo) =>
+                  val bytes =
+                    san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
+                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.toString())
+                case None =>
+                  throw new RuntimeException("Scala class file does not contain Scala annotation")
+              }
             if (settings.debug.value)
               global.inform("" + sym + "; annotations = " + sym.annotations)
           } else
@@ -862,6 +893,12 @@ abstract class ClassfileParser {
       }
     }
 
+    def parseScalaSigBytes: Option[ScalaSigBytes] = {
+      val tag = in.nextByte.toChar
+      assert(tag == STRING_TAG)
+      Some(ScalaSigBytes(pool.getBytes(in.nextChar)))
+    }
+
     /** Parse and return a single annotation.  If it is malformed,
      *  return None.
      */
@@ -872,10 +909,19 @@ abstract class ClassfileParser {
       var hasError = false
       for (i <- 0 until nargs) {
         val name = pool.getName(in.nextChar)
-        parseAnnotArg match {
-          case Some(c) => nvpairs += ((name, c))
-          case None => hasError = true
-        }
+        // The "bytes: String" argument of the ScalaSignature attribute is parsed specially so that it is
+        // available as an array of bytes (the pickled Scala signature) instead of as a string. The pickled signature
+        // is encoded as a string because of limitations in the Java class file format.
+        if ((attrType == definitions.ScalaSignatureAnnotation.tpe) && (name == nme.bytes))
+          parseScalaSigBytes match {
+            case Some(c) => nvpairs += ((name, c))
+            case None => hasError = true
+          }
+        else
+          parseAnnotArg match {
+            case Some(c) => nvpairs += ((name, c))
+            case None => hasError = true
+          }
       }
       if (hasError) None
       else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
@@ -985,6 +1031,10 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case nme.ScalaSignatureATTR =>
           isScala = true
+          val pbuf = new PickleBuffer(in.buf, in.bp, in.bp + attrLen)
+          pbuf.readNat; pbuf.readNat;
+          if (pbuf.readNat == 0) // a scala signature attribute with no entries means that the actual scala signature
+            isScalaAnnot = true    // is in a ScalaSignature annotation.
           in.skip(attrLen)
         case nme.ScalaATTR =>
           isScalaRaw = true
