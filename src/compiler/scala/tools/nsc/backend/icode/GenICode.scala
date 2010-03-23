@@ -1402,48 +1402,35 @@ abstract class GenICode extends SubComponent  {
         if (isNull(l))
           // null == expr -> expr eq null
           genLoad(r, ctx, ANY_REF_CLASS).bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS)
-        else {
+        else if (isNull(r)) {
+          // expr == null -> expr eq null
+          genLoad(l, ctx, ANY_REF_CLASS).bb emitOnly CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS)
+        } else {
           val eqEqTempLocal = getTempLocal
           var ctx1 = genLoad(l, ctx, ANY_REF_CLASS)
 
           // dicey refactor section
           lazy val nonNullCtx = ctx1.newBlock
 
-          if (isNull(r)) {
-            // expr == null -> if (l eq null) true else l.equals(null)
-            ctx1.bb.emitOnly(
-              DUP(ANY_REF_CLASS),
-              STORE_LOCAL(eqEqTempLocal) setPos l.pos,
-              CZJUMP(thenCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS)
-            )
-            nonNullCtx.bb.emitOnly(
-              LOAD_LOCAL(eqEqTempLocal) setPos l.pos,
-              CONSTANT(Constant(null)) setPos r.pos,
-              CALL_METHOD(Object_equals, Dynamic),
-              CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
-            )
-          }
-          else {
-            // l == r -> if (l eq null) r eq null else l.equals(r)
-            ctx1 = genLoad(r, ctx1, ANY_REF_CLASS)
-            val nullCtx = ctx1.newBlock
+          // l == r -> if (l eq null) r eq null else l.equals(r)
+          ctx1 = genLoad(r, ctx1, ANY_REF_CLASS)
+          val nullCtx = ctx1.newBlock
 
-            ctx1.bb.emitOnly(
-              STORE_LOCAL(eqEqTempLocal) setPos l.pos,
-              DUP(ANY_REF_CLASS),
-              CZJUMP(nullCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS)
-            )
-            nullCtx.bb.emitOnly(
-              DROP(ANY_REF_CLASS) setPos l.pos, // type of AnyRef
-              LOAD_LOCAL(eqEqTempLocal),
-              CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS)
-            )
-            nonNullCtx.bb.emitOnly(
-              LOAD_LOCAL(eqEqTempLocal) setPos l.pos,
-              CALL_METHOD(Object_equals, Dynamic),
-              CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
-            )
-          }
+          ctx1.bb.emitOnly(
+            STORE_LOCAL(eqEqTempLocal) setPos l.pos,
+            DUP(ANY_REF_CLASS),
+            CZJUMP(nullCtx.bb, nonNullCtx.bb, EQ, ANY_REF_CLASS)
+          )
+          nullCtx.bb.emitOnly(
+            DROP(ANY_REF_CLASS) setPos l.pos, // type of AnyRef
+            LOAD_LOCAL(eqEqTempLocal),
+            CZJUMP(thenCtx.bb, elseCtx.bb, EQ, ANY_REF_CLASS)
+          )
+          nonNullCtx.bb.emitOnly(
+            LOAD_LOCAL(eqEqTempLocal) setPos l.pos,
+            CALL_METHOD(Object_equals, Dynamic),
+            CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL)
+          )
         }
       }
     }
