@@ -71,10 +71,7 @@ class ScalacFork extends MatchingTask with ScalacShared with TaskArgs {
     settings.d = destinationDir
 
     compTarget foreach (settings.target = _)
-    compilationPath foreach { x =>
-      settings.classpath = x
-      settings.javaignorecp = true    // ensures java classpath will not be used
-    }
+    compilationPath foreach (settings.classpath = _)
     sourcePath foreach (settings.sourcepath = _)
     params foreach (settings.more = _)
 

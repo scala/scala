@@ -8,10 +8,7 @@ package util
 
 trait ClassPathSettings {
   def javabootclasspath: String   // -javabootclasspath
-  def javabootPrepend: String     // -javabootclasspath/p
-  def javabootAppend: String      // -javabootclasspath/a
   def javaextdirs: String         // -javaextdirs
-
   def bootclasspath: String       // -bootclasspath
   def extdirs: String             // -extdirs
   def classpath: String           // -classpath

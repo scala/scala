@@ -30,6 +30,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
    *  Temporary Settings
    */
   val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
+  val javaignorecp   = BooleanSetting    ("-javaignorecp", "Does nothing - is being removed.")  // !!! marked for death, but need new starr.
 
   /**
    *  Standard settings

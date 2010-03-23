@@ -257,6 +257,7 @@ class Worker(val fileManager: FileManager) extends Actor {
         "-classpath " + join(outDir.toString, CLASSPATH)
       ) ::: propertyOptions ::: List(
         "scala.tools.nsc.MainGenericRunner",
+        "-usejavacp",
         "Test",
         "jvm"
       )

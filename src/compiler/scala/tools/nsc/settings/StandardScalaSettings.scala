@@ -17,7 +17,6 @@ trait StandardScalaSettings {
   self: AbsScalaSettings =>
 
   /** Path related settings.
-   *  !!! javaignorecp is temporary while I try to get an iron grip on the classpath.
    */
   val bootclasspath =     PathSetting ("-bootclasspath", "path", "Override location of bootstrap class files", Defaults.scalaBootClassPath)
   val classpath:          PathSetting // is mutated directly in various places (thus inspiring this very effort)
@@ -25,7 +24,6 @@ trait StandardScalaSettings {
   val extdirs =           PathSetting ("-extdirs", "dirs", "Override location of installed extensions", Defaults.scalaExtDirs)
   val javabootclasspath = PathSetting ("-javabootclasspath", "path", "Override java boot classpath.", Defaults.javaBootClassPath)
   val javaextdirs =       PathSetting ("-javaextdirs", "path", "Override java extdirs classpath.", Defaults.javaExtDirs)
-  val javaignorecp =   BooleanSetting ("-javaignorecp", "scala will not use java's -classpath no matter what.")
   val sourcepath =      StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
 
   /** Other settings.
@@ -44,6 +42,7 @@ trait StandardScalaSettings {
   val target =          ChoiceSetting ("-target", "Specify for which target object files should be built", List("jvm-1.5", "msil"), "jvm-1.5")
   val unchecked =      BooleanSetting ("-unchecked", "Enable detailed unchecked warnings")
   val uniqid =         BooleanSetting ("-uniqid", "Print identifiers with unique names for debugging")
+  val usejavacp =      BooleanSetting ("-usejavacp", "Utilize the java.class.path in classpath resolution.")
   val verbose =        BooleanSetting ("-verbose", "Output messages about what the compiler is doing")
   val version =        BooleanSetting ("-version", "Print product version and exit")
 

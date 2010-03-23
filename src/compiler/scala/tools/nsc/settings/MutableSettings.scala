@@ -184,10 +184,8 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     val prepend = new StringSetting(name + "/p", "", "", "") with InternalSetting
     val append = new StringSetting(name + "/a", "", "", "") with InternalSetting
 
-    /** Not flipping this part on just yet.
     add[StringSetting](prepend)
     add[StringSetting](append)
-     */
     add(new PathSetting(name, arg, descr, default, prepend, append))
   }
 
