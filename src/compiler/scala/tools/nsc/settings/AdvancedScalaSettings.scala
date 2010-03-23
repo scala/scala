@@ -15,7 +15,7 @@ trait AdvancedScalaSettings {
     val assempath: StringSetting
     val checkinit: BooleanSetting
     val disableassertions: BooleanSetting
-    val elidelevel: IntSetting
+    val elidebelow: IntSetting
     val experimental: BooleanSetting
     val future: BooleanSetting
     val generatephasegraph: StringSetting

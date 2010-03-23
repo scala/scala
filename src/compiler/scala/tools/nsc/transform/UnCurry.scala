@@ -582,7 +582,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           // XXX settings.noassertions.value temporarily retained to avoid
           // breakage until a reasonable interface is settled upon.
           def elideFunctionCall(sym: Symbol) =
-            sym != null && sym.elisionLevel.exists(x => x < settings.elideLevel.value || settings.noassertions.value)
+            sym != null && sym.elisionLevel.exists(x => x < settings.elidebelow.value || settings.noassertions.value)
 
           if (elideFunctionCall(fn.symbol)) {
             Literal(()).setPos(tree.pos).setType(UnitClass.tpe)
