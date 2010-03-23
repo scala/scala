@@ -8,7 +8,7 @@ package scala.tools.nsc
 
 import java.io.IOException
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.ArgumentsExpander
+import io.File
 
 /** A class representing command line info for scalac */
 class CompilerCommand(
@@ -70,6 +70,19 @@ class CompilerCommand(
       case None => ""
     }
 
+  /**
+   * Expands all arguments starting with @ to the contents of the
+   * file named like each argument.
+   */
+  def expandArg(arg: String): List[String] = {
+    def stripComment(s: String) = s takeWhile (_ != '#')
+    val file = File(arg stripPrefix "@")
+    if (!file.exists)
+      throw new java.io.FileNotFoundException("argument file %s could not be found" format file.name)
+
+    settings splitParams (file.lines() map stripComment mkString " ")
+  }
+
   // CompilerCommand needs processArguments called at the end of its constructor,
   // as does its subclass GenericRunnerCommand, but it cannot be called twice as it
   // accumulates arguments.  The fact that it's called from within the constructors
@@ -78,7 +91,7 @@ class CompilerCommand(
     if (shouldProcessArguments) {
       // expand out @filename to the contents of that filename
       val expandedArguments = arguments flatMap {
-        case x if x startsWith "@"  => ArgumentsExpander expandArg x
+        case x if x startsWith "@"  => expandArg(x)
         case x                      => List(x)
       }
 
