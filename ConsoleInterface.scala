@@ -11,7 +11,8 @@ class ConsoleInterface
 	def run(bootClasspathString: String, classpathString: String, initialCommands: String, log: Logger)
 	{
 		val settings = Settings(log)
-		settings.bootclasspath.value = bootClasspathString
+		if(!bootClasspathString.isEmpty)
+			settings.bootclasspath.value = bootClasspathString
 		settings.classpath.value = classpathString
 		log.info(Message("Starting scala interpreter..."))
 		log.debug(Message("  Classpath: " + settings.classpath.value))

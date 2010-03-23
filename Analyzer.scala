@@ -19,6 +19,7 @@ object Analyzer
 final class Analyzer(val global: Global, val callback: AnalysisCallback) extends NotNull
 {
 	import global._
+	import Compat.{linkedClass, nameString}
 
 	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
@@ -67,9 +68,9 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 					{
 						val isModule = sym.isModuleClass
 						for(superclass <- superclasses.filter(sym.isSubClass))
-							callback.foundSubclass(sourceFile, NameString(sym), NameString(superclass), isModule)
+							callback.foundSubclass(sourceFile, nameString(sym), nameString(superclass), isModule)
 						if(isModule && hasMainMethod(sym))
-							callback.foundApplication(sourceFile, NameString(sym))
+							callback.foundApplication(sourceFile, nameString(sym))
 					}
 				}
 
@@ -85,7 +86,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 					}
 					if(sym.isModuleClass && !sym.isImplClass)
 					{
-						if(isTopLevelModule(sym) && sym.linkedClassOfModule == NoSymbol)
+						if(isTopLevelModule(sym) && linkedClass(sym) == NoSymbol)
 							addGenerated(false)
 						addGenerated(true)
 					}
@@ -118,7 +119,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		finder.findClass(name) orElse {
 			if(isTopLevelModule(sym))
 			{
-				val linked = sym.linkedClassOfModule
+				val linked = linkedClass(sym)
 				if(linked == NoSymbol)
 					None
 				else
@@ -133,7 +134,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	private def moduleSuffix(sym: Symbol) =
 		if (sym.hasFlag(Flags.MODULE) && !sym.isMethod && !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$" else "";
 	private def flatname(s: Symbol, separator: Char) =
-		atPhase(currentRun.flattenPhase.next) { NameString(s, separator) }
+		atPhase(currentRun.flattenPhase.next) { nameString(s, separator) }
 
 	private def isTopLevelModule(sym: Symbol): Boolean =
 		atPhase (currentRun.picklerPhase.next) {
@@ -204,19 +205,24 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 			if(entry eq null) None else Some(entry.classFile)
 		}
 	}
-}
-private object NameString
-{
-	def apply(s: Global#Symbol): String = s.fullNameString
-	def apply(s: Global#Symbol, sep: Char): String = s.fullNameString(sep)
-
-	/** After 2.8.0.Beta1, fullNameString was renamed fullName.*/
-	private implicit def symName(sym: Global#Symbol): WithString = new WithString(sym)
-	private final class WithString(s: Global#Symbol)
+	private object Compat
 	{
-		def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
-		def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
-		private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
-	}
+		def nameString(s: Symbol): String = s.fullNameString
+		def nameString(s: Symbol, sep: Char): String = s.fullNameString(sep)
 
+		def linkedClass(s: Symbol): Symbol = s.linkedClassOfModule
+
+		/** After 2.8.0.Beta1, fullNameString was renamed fullName.
+		* linkedClassOfModule was renamed companionClass. */
+		private implicit def symName(sym: Symbol): WithString = new WithString(sym)
+		private final class WithString(s: Symbol)
+		{
+			def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
+			def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
+			private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
+			
+			def linkedClassOfModule = s.companionClass; def companionClass = sourceCompatibilityOnly
+		}
+
+	}
 }
