@@ -10,6 +10,7 @@ import symtab.Flags
 import scala.collection.mutable.{HashMap, HashSet, Map, Set}
 
 import java.io.File
+import java.util.zip.ZipFile
 import xsbti.AnalysisCallback
 
 object Analyzer
@@ -19,7 +20,7 @@ object Analyzer
 final class Analyzer(val global: Global, val callback: AnalysisCallback) extends NotNull
 {
 	import global._
-	import Compat.{linkedClass, nameString}
+	import Compat.{archive, linkedClass, nameString}
 
 	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
@@ -47,7 +48,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 							{
 								f match
 								{
-									case ze: ZipArchive#Entry => callback.jarDependency(new File(ze.getArchive.getName), sourceFile)
+									case ze: ZipArchive#Entry => callback.jarDependency(new File(archive(ze).getName), sourceFile)
 									case pf: PlainFile => callback.classDependency(pf.file, sourceFile)
 									case _ => ()
 								}
@@ -207,6 +208,7 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	}
 	private object Compat
 	{
+		def archive(s: ZipArchive#Entry): ZipFile = s.getArchive
 		def nameString(s: Symbol): String = s.fullNameString
 		def nameString(s: Symbol, sep: Char): String = s.fullNameString(sep)
 
@@ -214,15 +216,20 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 
 		/** After 2.8.0.Beta1, fullNameString was renamed fullName.
 		* linkedClassOfModule was renamed companionClass. */
-		private implicit def symName(sym: Symbol): WithString = new WithString(sym)
-		private final class WithString(s: Symbol)
+		private implicit def symCompat(sym: Symbol): SymCompat = new SymCompat(sym)
+		private final class SymCompat(s: Symbol)
 		{
 			def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
 			def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
-			private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
 			
 			def linkedClassOfModule = s.companionClass; def companionClass = sourceCompatibilityOnly
 		}
-
+		/** After 2.8.0.Beta1, getArchive was renamed archive.*/
+		private implicit def zipCompat(z: ZipArchive#Entry): ZipCompat = new ZipCompat(z)
+		private final class ZipCompat(z: ZipArchive#Entry)
+		{
+			def getArchive = z.archive; def archive = sourceCompatibilityOnly
+		}
+		private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
 	}
 }
