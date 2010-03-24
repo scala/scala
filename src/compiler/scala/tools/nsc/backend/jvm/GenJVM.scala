@@ -136,30 +136,7 @@ abstract class GenJVM extends SubComponent {
      * @param sym    The corresponding symbol, used for looking up pickled information
      */
     def emitClass(jclass: JClass, sym: Symbol) {
-      // DISABLED NEW-STYLE SIGNATURES
-      // TO REMOVE
-      def addScalaAttr(sym: Symbol): Unit = currentRun.symData.get(sym) match {
-        case Some(pickle) =>
-          val scalaAttr = fjbgContext.JOtherAttribute(jclass,
-                                                  jclass,
-                                                  nme.ScalaSignatureATTR.toString,
-                                                  pickle.bytes,
-                                                  pickle.writeIndex)
-          pickledBytes = pickledBytes + pickle.writeIndex
-          jclass.addAttribute(scalaAttr)
-          currentRun.symData -= sym
-          currentRun.symData -= sym.companionSymbol
-          //System.out.println("Generated ScalaSig Attr for " + sym)//debug
-        case _ =>
-          val markerAttr = getMarkerAttr(jclass)
-          jclass.addAttribute(markerAttr)
-          log("Could not find pickle information for " + sym)
-      }
-      if (!(jclass.getName().endsWith("$") && sym.isModuleClass))
-        addScalaAttr(if (isTopLevelModule(sym)) sym.sourceModule else sym);
-      // END REMOVE
       addInnerClasses(jclass)
-
       val outfile = getFile(sym, jclass, ".class")
       val outstream = new DataOutputStream(outfile.bufferedOutput)
       jclass.writeTo(outstream)
@@ -168,44 +145,38 @@ abstract class GenJVM extends SubComponent {
     }
 
     /** Returns the ScalaSignature annotation if it must be added to this class, none otherwise; furthermore, it adds to
-      * jclass the Scala marker attribute (marking that a scala signature annotation is present). The annotation that is
-      * returned by this method must be added to the class' annotations list when generating them.
+      * jclass the ScalaSig marker attribute (marking that a scala signature annotation is present) or the Scala marker
+      * attribute (marking that the signature for this class is in another file). The annotation that is returned by
+      * this method must be added to the class' annotations list when generating them.
       * @param jclass The class file that is being readied.
       * @param sym    The symbol for which the signature has been entered in the symData map. This is different than the
       *               symbol that is being generated in the case of a mirror class.
       * @return       An option that is:
       *                - defined and contains an annotation info of the ScalaSignature type, instantiated with the
-      *                  pickle signature for sym;
-      *                - undefined if the jclass/sym couple must not contain a signature or if there was an error (see
-      *                  log output in debug mode). */
+      *                  pickle signature for sym (a ScalaSig marker attribute has been written);
+      *                - undefined if the jclass/sym couple must not contain a signature (a Scala marker attribute has
+      *                  been written). */
     def scalaSignatureAddingMarker(jclass: JClass, sym: Symbol): Option[AnnotationInfo] =
-      if (jclass.getName().endsWith("$") && sym.isModuleClass) {
-        None
+      currentRun.symData.get(sym) match {
+        case Some(pickle) if !jclass.getName().endsWith("$") =>
+          val scalaAttr =
+            fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaSignatureATTR.toString,
+                                        versionPickle.bytes, versionPickle.writeIndex)
+          jclass.addAttribute(scalaAttr)
+          val scalaAnnot =
+            AnnotationInfo(definitions.ScalaSignatureAnnotation.tpe, Nil, List(
+              (nme.bytes, ScalaSigBytes(pickle.bytes.take(pickle.writeIndex)))
+            ))
+          pickledBytes = pickledBytes + pickle.writeIndex
+          currentRun.symData -= sym
+          currentRun.symData -= sym.companionSymbol
+          Some(scalaAnnot)
+        case _ =>
+          val markerAttr =
+            fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaATTR.toString, new Array[Byte](0), 0)
+          jclass.addAttribute(markerAttr)
+          None
       }
-      else {
-        val sd = currentRun.symData
-        currentRun.symData.get(sym) match {
-          case Some(pickle) =>
-            val scalaAttr =
-              fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaSignatureATTR.toString,
-                                          versionPickle.bytes, versionPickle.writeIndex)
-            jclass.addAttribute(scalaAttr)
-            val scalaAnnot =
-              AnnotationInfo(definitions.ScalaSignatureAnnotation.tpe, Nil, List(
-                (nme.bytes, ScalaSigBytes(pickle.bytes.take(pickle.writeIndex)))
-              ))
-            pickledBytes = pickledBytes + pickle.writeIndex
-            currentRun.symData -= sym
-            currentRun.symData -= sym.companionSymbol
-            Some(scalaAnnot)
-          case _ =>
-            log("Could not find annotation pickle information for " + sym)
-            None
-        }
-      }
-
-    private def getMarkerAttr(jclass: JClass): JOtherAttribute =
-      fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaATTR.toString, new Array[Byte](0), 0)
 
     var serialVUID: Option[Long] = None
     var remoteClass: Boolean = false
@@ -249,8 +220,6 @@ abstract class GenJVM extends SubComponent {
                                   javaName(parents(0).typeSymbol),
                                   ifaces,
                                   c.cunit.source.toString)
-      if (jclass.getName.endsWith("$"))
-        jclass.addAttribute(getMarkerAttr(jclass))
 
       if (isStaticModule(c.symbol) || serialVUID != None || clasz.bootstrapClass.isDefined) {
         if (isStaticModule(c.symbol))
@@ -288,11 +257,9 @@ abstract class GenJVM extends SubComponent {
       clasz.fields foreach genField
       clasz.methods foreach genMethod
 
-      // DISABLED NEW-STYLE SIGNATURES
-      // val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
+      val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
       addGenericSignature(jclass, c.symbol, c.symbol.owner)
-      addAnnotations(jclass, c.symbol.annotations)
-      // addAnnotations(jclass, c.symbol.annotations ++ ssa)
+      addAnnotations(jclass, c.symbol.annotations ++ ssa)
       emitClass(jclass, c.symbol)
 
       if (c.symbol hasAnnotation BeanInfoAttr)
@@ -941,9 +908,8 @@ abstract class GenJVM extends SubComponent {
                                            JClass.NO_INTERFACES,
                                            sourceFile)
       addForwarders(mirrorClass, clasz)
-      // DISABLED NEW-STYLE SIGNATURES
-      // val ssa = scalaSignatureAddingMarker(mirrorClass, clasz.companionSymbol)
-      // addAnnotations(mirrorClass, clasz.annotations ++ ssa)
+      val ssa = scalaSignatureAddingMarker(mirrorClass, clasz.companionSymbol)
+      addAnnotations(mirrorClass, clasz.annotations ++ ssa)
       emitClass(mirrorClass, clasz)
     }
 
