@@ -83,8 +83,8 @@ object Test {
     xs0.length + xs1.length + xs2.length + xs3.length + xs4.length
   }
 
-  def check_collect: String =
-    List(1, 2, 3, 4, 5).iterator.collect.mkString("x")
+  def check_toSeq: String =
+    List(1, 2, 3, 4, 5).iterator.toSeq.mkString("x")
 
   def check_indexOf: String = {
     val i = List(1, 2, 3, 4, 5).indexOf(4)
@@ -124,7 +124,7 @@ object Test {
     check_success("check_foreach",  check_foreach,  190)
     check_success("check_forall",   check_forall,     0)
     check_success("check_fromArray",check_fromArray, 14)
-    check_success("check_collect",  check_collect, "1x2x3x4x5")
+    check_success("check_toSeq",  check_toSeq, "1x2x3x4x5")
     check_success("check_indexOf",     check_indexOf,     "3x-1")
     check_success("check_findIndexOf", check_findIndexOf, "3x-1")
     println()
