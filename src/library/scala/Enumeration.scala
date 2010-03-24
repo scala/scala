@@ -70,19 +70,25 @@ abstract class Enumeration(initial: Int, names: String*) {
   def this() = this(0, null)
   def this(names: String*) = this(0, names: _*)
 
-  Enumeration.emap.get(getClass) match {
-    case None =>
-      Enumeration.emap += (getClass -> this)
-    case Some(_) =>
-      /* do nothing */
+  Enumeration.synchronized {
+    Enumeration.emap.get(getClass) match {
+      case None =>
+        Enumeration.emap += (getClass -> this)
+      case Some(_) =>
+        /* do nothing */
+    }
   }
 
-  private def readResolve(): AnyRef = Enumeration.emap.get(getClass) match {
-    case None =>
-      Enumeration.emap += (getClass -> this)
-      this
-    case Some(existing) =>
-      existing
+  /* Note that `readResolve` cannot be private, since otherwise
+     the JVM does not invoke it when deserializing subclasses. */
+  protected def readResolve(): AnyRef = Enumeration.synchronized {
+    Enumeration.emap.get(getClass) match {
+      case None =>
+        Enumeration.emap += (getClass -> this)
+        this
+      case Some(existing) =>
+        existing
+    }
   }
 
   /** The name of this enumeration.
@@ -267,10 +273,12 @@ abstract class Enumeration(initial: Int, names: String*) {
     override def toString() =
       if (name eq null) Enumeration.this.nameOf(i)
       else name
-    private def readResolve(): AnyRef = {
-      val enum = Enumeration.emap.get(Enumeration.this.getClass) match {
-        case None => Enumeration.this
-        case Some(existing) => existing
+    protected def readResolve(): AnyRef = {
+      val enum = Enumeration.synchronized {
+        Enumeration.emap.get(Enumeration.this.getClass) match {
+          case None => Enumeration.this
+          case Some(existing) => existing
+        }
       }
       if (enum.vmap ne null) enum.vmap(i)
       else this
