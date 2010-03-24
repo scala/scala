@@ -1204,7 +1204,7 @@ object Interpreter {
     (implicit bf: CanBuildFrom[CC[A], B, CC[B]]) =
   {
     val b = bf(coll)
-    for (x <- coll partialMap pf)
+    for (x <- coll collect pf)
       b ++= x
 
     b.result

@@ -13,7 +13,7 @@ package scala.collection
 
 import mutable.{Buffer, ArrayBuffer, ListBuffer, StringBuilder}
 import immutable.{List, Stream}
-import annotation.{ tailrec }
+import annotation.{ tailrec, migration }
 
 /** The `Iterator` object provides various functions for
  *  creating specialized iterators.
@@ -416,7 +416,11 @@ trait Iterator[+A] { self =>
   *  @return a new iterator which yields each value `x` produced by this iterator for
   *          which `pf` is defined the image `pf(x)`.
   */
-  def partialMap[B](pf: PartialFunction[A, B]): Iterator[B] = {
+  @migration(2, 8,
+    "This collect implementation bears no relationship to the one before 2.8.\n"+
+    "The previous behavior can be reproduced with toSeq."
+  )
+  def collect[B](pf: PartialFunction[A, B]): Iterator[B] = {
     val self = buffered
     new Iterator[B] {
       private def skip() = while (self.hasNext && !pf.isDefinedAt(self.head)) self.next()
@@ -1270,13 +1274,6 @@ trait Iterator[+A] { self =>
   /** Returns index of the first element satisfying a predicate, or -1. */
   @deprecated("use `indexWhere` instead")
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
-
-  /** Collect elements into a seq.
-   *
-   * @return  a sequence which enumerates all elements of this iterator.
-   */
-  @deprecated("use toSeq instead")
-  def collect: Seq[A] = toSeq
 
   /** Returns a counted iterator from this iterator.
    */

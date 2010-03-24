@@ -547,7 +547,7 @@ object List extends SeqFactory[List] {
    * Returns the `Left` values in the given `Iterable`
    * of `Either`s.
    */
-  @deprecated("use `xs partialMap { case Left(x: A) => x }' instead of `List.lefts(xs)'")
+  @deprecated("use `xs collect { case Left(x: A) => x }' instead of `List.lefts(xs)'")
   def lefts[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[A]](Nil)((e, as) => e match {
       case Left(a) => a :: as
@@ -557,7 +557,7 @@ object List extends SeqFactory[List] {
   /**
    * Returns the `Right` values in the given`Iterable` of  `Either`s.
    */
-  @deprecated("use `xs partialMap { case Right(x: B) => x }' instead of `List.rights(xs)'")
+  @deprecated("use `xs collect { case Right(x: B) => x }' instead of `List.rights(xs)'")
   def rights[A, B](es: Iterable[Either[A, B]]) =
     es.foldRight[List[B]](Nil)((e, bs) => e match {
       case Left(_) => bs

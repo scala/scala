@@ -236,7 +236,7 @@ class PartestTask extends Task with CompilationPathProperty {
         val results: Iterable[(String, Int)] = antRunner.reflectiveRunTestsForFiles(files, name)
         val (succs, fails) = resultsToStatistics(results)
 
-        val failed: Iterable[String] = results partialMap {
+        val failed: Iterable[String] = results collect {
           case (path, 1)    => path + " [FAILED]"
           case (path, 2)    => path + " [TIMOUT]"
         }

@@ -292,13 +292,13 @@ self =>
    *                `pf` to each element on which it is defined and collecting the results.
    *                The order of the elements is preserved.
    *
-   *  @usecase def partialMap[B](pf: PartialFunction[A, B]): $Coll[B]
+   *  @usecase def collect[B](pf: PartialFunction[A, B]): $Coll[B]
    *
    *  @return       a new $coll resulting from applying the given partial function
    *                `pf` to each element on which it is defined and collecting the results.
    *                The order of the elements is preserved.
    */
-  def partialMap[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     for (x <- this) if (pf.isDefinedAt(x)) b += pf(x)
     b.result

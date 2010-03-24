@@ -141,7 +141,7 @@ object PackageCompletion {
      *  will look only in the scalaHome directories, which is most of what we want.
      */
     def isUnderScalaHome(d: Directory) = d.parents exists (_ == scalaHomeDir)
-    val dirs = cp partialMap { case x: Directory => x } filter isUnderScalaHome
+    val dirs = cp collect { case x: Directory => x } filter isUnderScalaHome
 
     // for e.g. foo.bar.baz.C, returns (foo -> bar), (foo.bar -> baz), (foo.bar.baz -> C)
     // and scala.Range$BigInt needs to go scala -> Range -> BigInt

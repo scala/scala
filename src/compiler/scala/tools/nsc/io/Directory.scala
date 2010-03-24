@@ -50,8 +50,8 @@ class Directory(jfile: JFile) extends Path(jfile) {
       case xs     => xs.iterator map Path.apply
     }
 
-  def dirs: Iterator[Directory] = list partialMap { case x: Directory => x }
-  def files: Iterator[File] = list partialMap { case x: File => x }
+  def dirs: Iterator[Directory] = list collect { case x: Directory => x }
+  def files: Iterator[File] = list collect { case x: File => x }
 
   def deepDirs: Iterator[Directory] = Path.onlyDirs(deepList())
   def deepFiles: Iterator[File] = Path.onlyFiles(deepList())
@@ -68,7 +68,7 @@ class Directory(jfile: JFile) extends Path(jfile) {
    *  to the (optionally) given depth.
    */
   def subdirs(depth: Int = 1): Iterator[Directory] =
-    deepList(depth) partialMap { case x: Directory => x }
+    deepList(depth) collect { case x: Directory => x }
 
   /** Deletes the directory recursively. Returns false on failure.
    *  Use with caution!

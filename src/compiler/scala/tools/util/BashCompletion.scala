@@ -85,7 +85,7 @@ _scala_commands
   import settings._
 
   val phaseNames = "all" :: (new Global(settings) phaseNames)
-  val phaseSettings = settings.visibleSettings partialMap { case x: PhasesSetting => "\"" + x.name + "\"" }
+  val phaseSettings = settings.visibleSettings collect { case x: PhasesSetting => "\"" + x.name + "\"" }
 
   def settingStrings(s: Setting, expanded: Boolean) = s match {
     case x: ChoiceSetting       => if (expanded) x.choices map (x.name + ":" + _) else List(x.name + ":")

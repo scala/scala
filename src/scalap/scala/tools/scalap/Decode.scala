@@ -58,7 +58,7 @@ object Decode {
             xs.toList map (_.name dropRight 1)
         }
 
-      (ssig.symbols partialMap f).flatten toList
+      (ssig.symbols collect f).flatten toList
     }
   }
 
@@ -70,7 +70,7 @@ object Decode {
       ssig <- ScalaSigParser.parse(clazz)
     }
     yield {
-      val typeAliases = ssig.symbols partialMap { case x: AliasSymbol => x }
+      val typeAliases = ssig.symbols collect { case x: AliasSymbol => x }
       Map(typeAliases map (x => (x.name, getAliasSymbol(x.infoType).path)): _*)
     }
   }

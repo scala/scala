@@ -177,11 +177,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
        // Only this class's constructors are part of its members, inherited constructors are not.
       sym.info.nonPrivateMembers.filter(x => (!x.isConstructor || x.owner==sym))
     val members       = memberSyms flatMap (makeMember(_, this))
-    val templates     = members partialMap { case c: DocTemplateEntity => c }
-    val methods       = members partialMap { case d: Def => d }
-    val values        = members partialMap { case v: Val => v }
-    val abstractTypes = members partialMap { case t: AbstractType => t }
-    val aliasTypes    = members partialMap { case t: AliasType => t }
+    val templates     = members collect { case c: DocTemplateEntity => c }
+    val methods       = members collect { case d: Def => d }
+    val values        = members collect { case v: Val => v }
+    val abstractTypes = members collect { case t: AbstractType => t }
+    val aliasTypes    = members collect { case t: AliasType => t }
     override def isTemplate = true
     def isDocTemplate = true
     def companion = sym.companionSymbol match {
@@ -193,7 +193,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
   abstract class PackageImpl(sym: Symbol, inTpl: => PackageImpl) extends DocTemplateImpl(sym, inTpl) with Package {
     override def inTemplate = inTpl
     override def toRoot: List[PackageImpl] = this :: inTpl.toRoot
-    val packages = members partialMap { case p: Package => p }
+    val packages = members collect { case p: Package => p }
   }
 
   abstract class RootPackageImpl(sym: Symbol) extends PackageImpl(sym, null) with RootPackageEntity
@@ -304,7 +304,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
         def valueParams =
           List(sym.constrParamAccessors map (makeValueParam(_, this)))
         val constructors =
-          members partialMap { case d: Constructor => d }
+          members collect { case d: Constructor => d }
         def primaryConstructor = (constructors find (_.isPrimary))
         def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
       }

@@ -127,7 +127,7 @@ sealed abstract class Option[+A] extends Product {
    *
    *  @param  pf   the partial function.
    */
-  def partialMap[B](pf: PartialFunction[A, B]): Option[B] =
+  def collect[B](pf: PartialFunction[A, B]): Option[B] =
     if (!isEmpty && pf.isDefinedAt(this.get)) Some(pf(this.get)) else None
 
   /** If the option is nonempty return it,

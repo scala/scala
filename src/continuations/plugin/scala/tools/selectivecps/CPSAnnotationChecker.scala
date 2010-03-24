@@ -422,11 +422,11 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
 
         case Match(select, cases) =>
-          // TODO: can there be cases that are not CaseDefs?? check partialMap vs map!
-          transChildrenInOrder(tree, tpe, List(select), cases:::(cases partialMap { case CaseDef(_, _, body) => body }))
+          // TODO: can there be cases that are not CaseDefs?? check collect vs map!
+          transChildrenInOrder(tree, tpe, List(select), cases:::(cases collect { case CaseDef(_, _, body) => body }))
 
         case Try(block, catches, finalizer) =>
-          val tpe1 = transChildrenInOrder(tree, tpe, Nil, block::catches:::(catches partialMap { case CaseDef(_, _, body) => body }))
+          val tpe1 = transChildrenInOrder(tree, tpe, Nil, block::catches:::(catches collect { case CaseDef(_, _, body) => body }))
 
           val annots = filterAttribs(tpe1, MarkerCPSTypes)
           if (annots.nonEmpty) {

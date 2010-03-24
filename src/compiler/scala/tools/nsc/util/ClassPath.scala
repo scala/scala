@@ -32,7 +32,7 @@ object ClassPath {
 
     /** Get all jars in directory */
     def lsJars(dir: Directory, filt: String => Boolean = _ => true) =
-      dir.files partialMap { case f if filt(f.name) && (f hasExtension "jar") => f.path } toList
+      dir.files collect { case f if filt(f.name) && (f hasExtension "jar") => f.path } toList
 
     def basedir(s: String) =
       if (s contains File.separator) s.substring(0, s.lastIndexOf(File.separator))
@@ -283,11 +283,11 @@ class SourcePath[T](dir: AbstractFile, val context: ClassPathContext[T]) extends
   def asURLs = dir.sfile.toList map (_.toURL)
   val sourcepaths: List[AbstractFile] = List(dir)
 
-  lazy val classes: List[ClassRep] = dir partialMap {
+  lazy val classes: List[ClassRep] = dir collect {
     case f if !f.isDirectory && validSourceFile(f.name) => ClassRep(None, Some(f))
   } toList
 
-  lazy val packages: List[SourcePath[T]] = dir partialMap {
+  lazy val packages: List[SourcePath[T]] = dir collect {
     case f if f.isDirectory && validPackage(f.name) => new SourcePath[T](f, context)
   } toList
 
@@ -304,11 +304,11 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
   def asURLs = dir.sfile.toList map (_.toURL)
   val sourcepaths: List[AbstractFile] = Nil
 
-  lazy val classes: List[ClassRep] = dir partialMap {
+  lazy val classes: List[ClassRep] = dir collect {
     case f if !f.isDirectory && validClassFile(f.name) => ClassRep(Some(f), None)
   } toList
 
-  lazy val packages: List[DirectoryClassPath] = dir partialMap {
+  lazy val packages: List[DirectoryClassPath] = dir collect {
     case f if f.isDirectory && validPackage(f.name) => new DirectoryClassPath(f, context)
   } toList
 
@@ -393,7 +393,7 @@ extends ClassPath[T] {
       })
   }
 
-  def asClasspathString: String = join(entries partialMap {
+  def asClasspathString: String = join(entries collect {
     case x: DirectoryClassPath  => x.dir.path
     case x: MergedClassPath[_]  => x.asClasspathString
   }: _*)

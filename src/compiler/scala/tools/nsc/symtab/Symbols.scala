@@ -455,18 +455,18 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       }
 
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
-    def deprecationMessage  = getAnnotationArg(DeprecatedAttr, 0) partialMap { case Literal(const) => const.stringValue }
+    def deprecationMessage  = getAnnotationArg(DeprecatedAttr, 0) collect { case Literal(const) => const.stringValue }
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.  However nothing in the compiler
     // prevents someone from writing a @migration annotation with a calculated
     // string.  So this needs attention.  For now the fact that migration is
     // private[scala] ought to provide enough protection.
-    def migrationMessage    = getAnnotationArg(MigrationAnnotationClass, 2) partialMap {
+    def migrationMessage    = getAnnotationArg(MigrationAnnotationClass, 2) collect {
       case Literal(const) => const.stringValue
       case x              => x.toString           // should not be necessary, but better than silently ignoring an issue
     }
-    def elisionLevel        = getAnnotationArg(ElidableMethodClass, 0) partialMap { case Literal(Constant(x: Int)) => x }
+    def elisionLevel        = getAnnotationArg(ElidableMethodClass, 0) collect { case Literal(Constant(x: Int)) => x }
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =
