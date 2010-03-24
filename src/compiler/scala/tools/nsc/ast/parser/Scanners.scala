@@ -59,7 +59,7 @@ trait Scanners {
 
     def resume(lastCode: Int) = {
       token = lastCode
-      assert(next.token == EMPTY)
+      assert(next.token == EMPTY || reporter.hasErrors)
       nextToken()
     }
 
