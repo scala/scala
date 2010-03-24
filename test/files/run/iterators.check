@@ -7,7 +7,7 @@ test check_drop was successful
 test check_foreach was successful
 test check_forall was successful
 test check_fromArray was successful
-test check_collect was successful
+test check_toSeq was successful
 test check_indexOf was successful
 test check_findIndexOf was successful
 
