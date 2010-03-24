@@ -475,6 +475,16 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
       }
     }
 
+    /** For removing calls to specially designated methods.
+     */
+    def elideIntoUnit(tree: Tree): Tree = Literal(()) setPos tree.pos setType UnitClass.tpe
+    def isElidable(tree: Tree) = {
+      val sym = tree.symbol
+      // XXX settings.noassertions.value temporarily retained to avoid
+      // breakage until a reasonable interface is settled upon.
+      sym != null && sym.elisionLevel.exists(x => x < settings.elidebelow.value || settings.noassertions.value)
+    }
+
 // ------ The tree transformers --------------------------------------------------------
 
     def mainTransform(tree: Tree): Tree = {
@@ -579,21 +589,15 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           treeCopy.UnApply(tree, fn1, args1)
 
         case Apply(fn, args) =>
-          // XXX settings.noassertions.value temporarily retained to avoid
-          // breakage until a reasonable interface is settled upon.
-          def elideFunctionCall(sym: Symbol) =
-            sym != null && sym.elisionLevel.exists(x => x < settings.elidebelow.value || settings.noassertions.value)
-
-          if (elideFunctionCall(fn.symbol)) {
-            Literal(()).setPos(tree.pos).setType(UnitClass.tpe)
-          } else if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head)) {
+          if (isElidable(fn))
+            elideIntoUnit(tree)
+          else if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head))
             transform(treeCopy.Apply(tree, fn, List(liftTree(args.head))))
-          } else {
+          else
             withNeedLift(true) {
               val formals = fn.tpe.paramTypes
               treeCopy.Apply(tree, transform(fn), transformTrees(transformArgs(tree.pos, fn.symbol, args, formals)))
             }
-          }
 
         case Assign(Select(_, _), _) =>
           withNeedLift(true) { super.transform(tree) }
@@ -632,16 +636,21 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     } setType uncurryTreeType(tree.tpe)
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
-      def applyUnary(): Tree =
-        if (tree.symbol.isMethod &&
-            (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)) {
-          if (!tree.tpe.isInstanceOf[MethodType]) tree.tpe = MethodType(List(), tree.tpe);
-          atPos(tree.pos)(Apply(tree, List()) setType tree.tpe.resultType)
-        } else if (tree.isType) {
-          TypeTree(tree.tpe) setPos tree.pos
-        } else {
-          tree
+      def applyUnary(): Tree = {
+        def needsParens = tree.symbol.isMethod && (!tree.tpe.isInstanceOf[PolyType] || tree.tpe.typeParams.isEmpty)
+        def repair = {
+          if (!tree.tpe.isInstanceOf[MethodType])
+            tree.tpe = MethodType(Nil, tree.tpe)
+
+          atPos(tree.pos)(Apply(tree, Nil) setType tree.tpe.resultType)
         }
+
+        if (isElidable(tree)) elideIntoUnit(tree) // was not seen in mainTransform
+        else if (needsParens) repair
+        else if (tree.isType) TypeTree(tree.tpe) setPos tree.pos
+        else tree
+      }
+
       tree match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           val rhs1 = nonLocalReturnKeys.get(tree.symbol) match {
