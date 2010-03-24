@@ -65,7 +65,7 @@ private object Enumeration {
  */
 @serializable
 @SerialVersionUID(8476000850333817230L)
-abstract class Enumeration(initial: Int, names: String*) {
+abstract class Enumeration(initial: Int, names: String*) { thisenum =>
 
   def this() = this(0, null)
   def this(names: String*) = this(0, names: _*)
@@ -228,7 +228,7 @@ abstract class Enumeration(initial: Int, names: String*) {
     override def compare(that: Value): Int = this.id - that.id
     override def equals(other: Any): Boolean =
       other match {
-        case that: Value => compare(that) == 0
+        case that: thisenum.Value => compare(that) == 0
         case _ => false
       }
     override def hashCode: Int = id.hashCode
