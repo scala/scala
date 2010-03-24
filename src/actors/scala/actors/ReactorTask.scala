@@ -21,7 +21,10 @@ import scala.concurrent.forkjoin.RecursiveAction
  *
  *  @author Philipp Haller
  */
-private[actors] class ReactorTask[T >: Null <: TrackedReactor](var reactor: T, var fun: () => Any)
+private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
+                                               var fun: () => Any,
+                                               var handler: PartialFunction[Msg, Any],
+                                               var msg: Msg)
   extends RecursiveAction with Callable[Unit] with Runnable {
 
   def run() {
@@ -29,7 +32,10 @@ private[actors] class ReactorTask[T >: Null <: TrackedReactor](var reactor: T, v
       beginExecution()
       try {
         try {
-          fun()
+          if (fun eq null)
+            handler(msg)
+          else
+            fun()
         } catch {
           case e: Exception if (reactor.exceptionHandler.isDefinedAt(e)) =>
             reactor.exceptionHandler(e)
@@ -44,14 +50,21 @@ private[actors] class ReactorTask[T >: Null <: TrackedReactor](var reactor: T, v
         // do nothing (continuation is already saved)
 
       case e: Exception =>
-        Debug.info(reactor+": caught "+e)
-        Debug.doInfo { e.printStackTrace() }
+        // print message on default error stream
+        val msgException = "Uncaught exception in "+reactor+"\n"
+        val msgMessage   = if (msg != null) "Message: "+msg+"\n" else ""
+        Console.err.print(msgException + msgMessage)
+        e.printStackTrace()
+
+        val uncaught = new UncaughtException(reactor, if (msg != null) Some(msg) else None, currentThread, e)
         reactor.terminated()
-        terminateExecution(e)
+        terminateExecution(uncaught)
     } finally {
       suspendExecution()
       this.reactor = null
       this.fun = null
+      this.handler = null
+      this.msg = null
     }
   }
 

@@ -47,9 +47,15 @@ object Test {
   val scheduler =
     new SchedulerAdapter {
       def execute(block: => Unit) {
-        executor.execute(new Runnable {
+        val task = new Runnable {
           def run() { block }
-        })
+        }
+        try {
+          executor.execute(task)
+        } catch {
+          case ree: java.util.concurrent.RejectedExecutionException =>
+            task.run()
+        }
       }
     }
 

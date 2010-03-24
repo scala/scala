@@ -17,7 +17,11 @@ package scala.actors
  *
  *  @author Philipp Haller
  */
-private[actors] class ActorTask(actor: Actor, fun: () => Unit) extends ReplyReactorTask[Actor](actor, fun) {
+private[actors] class ActorTask(actor: Actor,
+                                fun: () => Unit,
+                                handler: PartialFunction[Any, Any],
+                                msg: Any)
+  extends ReplyReactorTask(actor, fun, handler, msg) {
 
   protected override def beginExecution() {
     super.beginExecution()

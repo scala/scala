@@ -410,8 +410,8 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
       }
     } else super.startSearch(msg, replyTo, handler)
 
-  private[actors] override def makeReaction(fun: () => Unit): Runnable =
-    new ActorTask(this, fun)
+  private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
+    new ActorTask(this, fun, handler, msg)
 
   /**
    * Receives a message from this actor's mailbox.
@@ -570,7 +570,7 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
       // do nothing (timeout is handled instead)
     }
     else {
-      val task = new Reaction(this, f, msg)
+      val task = new ActorTask(this, null, f, msg)
       scheduler executeFromActor task
     }
 
@@ -804,6 +804,13 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
 case object TIMEOUT
 
 
+/** An `Exit` message (an instance of this class) is sent to an actor
+ *  with `trapExit` set to `true` whenever one of its linked actors
+ *  terminates.
+ *
+ *  @param from   the actor that terminated
+ *  @param reason the reason that caused the actor to terminate
+ */
 case class Exit(from: AbstractActor, reason: AnyRef)
 
 /** <p>

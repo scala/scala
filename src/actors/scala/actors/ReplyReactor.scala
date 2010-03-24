@@ -106,8 +106,8 @@ trait ReplyReactor extends Reactor[Any] with ReplyableReactor {
     }
   }
 
-  private[actors] override def makeReaction(fun: () => Unit): Runnable =
-    new ReplyReactorTask(this, fun)
+  private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
+    new ReplyReactorTask(this, fun, handler, msg)
 
   protected[actors] override def react(handler: PartialFunction[Any, Unit]): Nothing = {
     assert(Actor.rawSelf(scheduler) == this, "react on channel belonging to other actor")

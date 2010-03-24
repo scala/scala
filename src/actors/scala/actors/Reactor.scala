@@ -114,29 +114,33 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
   }
 
   private[actors] def startSearch(msg: Msg, replyTo: OutputChannel[Any], handler: PartialFunction[Msg, Any]) =
-    () => scheduler execute (makeReaction(() => {
+    () => scheduler execute makeReaction(() => {
       val startMbox = new MQueue[Msg]("Start")
       synchronized { startMbox.append(msg, replyTo) }
       searchMailbox(startMbox, handler, true)
-    }))
+    })
 
-  private[actors] def makeReaction(fun: () => Unit): Runnable =
-    new ReactorTask(this, fun)
+  private[actors] final def makeReaction(fun: () => Unit): Runnable =
+    makeReaction(fun, null, null)
+
+  /* This method is supposed to be overridden. */
+  private[actors] def makeReaction(fun: () => Unit, handler: PartialFunction[Msg, Any], msg: Msg): Runnable =
+    new ReactorTask(this, fun, handler, msg)
 
   private[actors] def resumeReceiver(item: (Msg, OutputChannel[Any]), handler: PartialFunction[Msg, Any], onSameThread: Boolean) {
     if (onSameThread)
-      handler(item._1)
-    else {
+      makeReaction(null, handler, item._1).run()
+    else
       scheduleActor(handler, item._1)
-      /* Here, we throw a SuspendActorControl to avoid
-         terminating this actor when the current ReactorTask
-         is finished.
 
-         The SuspendActorControl skips the termination code
-         in ReactorTask.
-       */
-      throw Actor.suspendException
-    }
+    /* Here, we throw a SuspendActorControl to avoid
+       terminating this actor when the current ReactorTask
+       is finished.
+
+       The SuspendActorControl skips the termination code
+       in ReactorTask.
+     */
+    throw Actor.suspendException
   }
 
   def !(msg: Msg) {
@@ -210,9 +214,8 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
    *
    * never throws SuspendActorControl
    */
-  private[actors] def scheduleActor(handler: PartialFunction[Msg, Any], msg: Msg) = {
-    val fun = () => handler(msg): Unit
-    scheduler executeFromActor makeReaction(fun)
+  private[actors] def scheduleActor(handler: PartialFunction[Msg, Any], msg: Msg) {
+    scheduler executeFromActor makeReaction(null, handler, msg)
   }
 
   def start(): Reactor[Msg] = synchronized {

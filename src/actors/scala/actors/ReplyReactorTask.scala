@@ -16,7 +16,11 @@ package scala.actors
  *
  *  @author Philipp Haller
  */
-private[actors] class ReplyReactorTask[T >: Null <: ReplyReactor](reactor: T, fun: () => Unit) extends ReactorTask[ReplyReactor](reactor, fun) {
+private[actors] class ReplyReactorTask(reactor: ReplyReactor,
+                                       fun: () => Unit,
+                                       handler: PartialFunction[Any, Any],
+                                       msg: Any)
+  extends ReactorTask(reactor, fun, handler, msg) {
 
   var saved: ReplyReactor = _
 
