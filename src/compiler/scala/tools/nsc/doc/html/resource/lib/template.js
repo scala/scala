@@ -33,7 +33,7 @@ $(document).ready(function(){
 		filterInherit();
 	});
 	//http://flowplayer.org/tools/tooltip.html
-	$(".signature .symbol .extype").tooltip({
+	$(".extype").tooltip({
 		tip: "#tooltip",
 		position:"top center",		
 		onBeforeShow: function(ev) {

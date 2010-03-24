@@ -176,10 +176,35 @@ div.members > ol > li {
 	margin: 2px 0 2px 0;
 }
 
-.cmt ul, .cmt ol {
+.cmt ul {
 	display: block;
 	list-style: circle;
 	padding-left:20px;
+}
+
+.cmt ol {
+	display: block;
+	padding-left:20px;
+}
+
+.cmt ol.decimal {
+	list-style: decimal;
+}
+
+.cmt ol.lowerAlpha {
+	list-style: lower-alpha;
+}
+
+.cmt ol.upperAlpha {
+	list-style: upper-alpha;
+}
+
+.cmt ol.lowerRoman {
+	list-style: lower-roman;
+}
+
+.cmt ol.upperRoman {
+	list-style: upper-roman;
 }
 
 .cmt li {

@@ -111,6 +111,9 @@ trait Package extends Object {
   def packages: List[Package]
 }
 
+/** A package represent the root of Entities hierarchy */
+trait RootPackage extends Package
+
 trait NonTemplateMemberEntity extends MemberEntity {
   def isUseCase: Boolean
 }

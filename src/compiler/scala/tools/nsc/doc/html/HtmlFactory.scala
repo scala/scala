@@ -16,19 +16,19 @@ import scala.collection._
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
-class HtmlFactory(val reporter: Reporter, val settings: Settings) {
+class HtmlFactory(val universe: Universe) {
 
   /** The character encoding to be used for generated Scaladoc sites. This value is currently always UTF-8. */
   def encoding: String = "UTF-8"
 
   /** The character encoding to be used for generated Scaladoc sites. This value is defined by the generator's
     * settings. */
-  def siteRoot: File = new File(settings.outdir.value)
+  def siteRoot: File = new File(universe.settings.outdir.value)
 
   /** Generates the Scaladoc site for a model into the site toot. A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     * @param model The model to generate in the form of a sequence of packages. */
-  def generate(modelRoot: Package): Unit = {
+  def generate(universe: Universe): Unit = {
 
     def copyResource(subPath: String) {
       val buf = new Array[Byte](1024)
@@ -67,7 +67,7 @@ class HtmlFactory(val reporter: Reporter, val settings: Settings) {
     copyResource("lib/filter_box_right.png")
     copyResource("lib/remove.png")
 
-    new page.Index(modelRoot) writeFor this
+    new page.Index(universe) writeFor this
 
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
@@ -77,7 +77,7 @@ class HtmlFactory(val reporter: Reporter, val settings: Settings) {
       tpl.templates filter { t => !(written contains t) } map (writeTemplate(_))
     }
 
-    writeTemplate(modelRoot)
+    writeTemplate(universe.rootPackage)
 
   }
 

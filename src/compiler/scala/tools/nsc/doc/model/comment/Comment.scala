@@ -65,7 +65,8 @@ abstract class Comment {
   override def toString =
     body.toString + "\n" +
     (authors map ("@author " + _.toString)).mkString("\n") +
-    (result map ("@return " + _.toString)).mkString
+    (result map ("@return " + _.toString)).mkString("\n") +
+    (version map ("@version " + _.toString)).mkString
 
 }
 

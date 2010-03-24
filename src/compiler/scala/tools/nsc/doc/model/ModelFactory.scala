@@ -10,8 +10,10 @@ import scala.collection._
 
 import symtab.Flags
 
+import model.{ RootPackage => RootPackageEntity }
+
 /** This trait extracts all required information for documentation from compilation units */
-class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =>
+class ModelFactory(val global: Global, val settings: doc.Settings) extends CommentFactory { thisFactory =>
 
   import global._
   import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage }
@@ -19,40 +21,25 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
   private var droppedPackages = 0
   def templatesCount = templatesCache.size - droppedPackages
 
+  private var modelFinished = false
+
   /**  */
-  def makeModel: Package =
-    makePackage(RootPackage, null) getOrElse abort("no documentable class found in compilation units")
-
-  object commentator {
-
-    val factory = new CommentFactory(reporter)
-
-    private val commentCache = mutable.HashMap.empty[(Symbol, TemplateImpl), Comment]
-
-    def registeredUseCase(sym: Symbol, inTpl: => TemplateImpl, docStr: String, docPos: Position): Symbol = {
-      commentCache += (sym, inTpl) -> factory.parse(docStr, docPos)
-      sym
-    }
-
-    def comment(sym: Symbol, inTpl: => DocTemplateImpl): Option[Comment] = {
-      val key = (sym, inTpl)
-      if (commentCache isDefinedAt key)
-        Some(commentCache(key))
-      else { // not reached for use-case comments
-        val rawComment = expandedDocComment(sym, inTpl.sym)
-        if (rawComment == "") None else {
-          val c = factory.parse(rawComment, docCommentPos(sym))
-          commentCache += (sym, inTpl) -> c
-          Some(c)
-        }
-      }
-    }
-
+  def makeModel: Universe = {
+    val rootPackage =
+      makeRootPackage getOrElse { throw new Error("no documentable class found in compilation units") }
+    val universe = new Universe(settings, rootPackage)
+    modelFinished = true
+    universe
   }
 
   /** */
   protected val templatesCache =
     new mutable.LinkedHashMap[(Symbol, TemplateImpl), DocTemplateImpl]
+
+  def findTemplate(query: String): Option[DocTemplateImpl] = {
+    if (!modelFinished) throw new Error("cannot find template in unfinished universe")
+    templatesCache.values find { tpl => tpl.qualifiedName == query && !tpl.isObject }
+  }
 
   def optimize(str: String): String =
     if (str.length < 16) str.intern else str
@@ -87,13 +74,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
   /** Provides a default implementation for instances of the `MemberEntity` type. It must be instantiated as a
     * `SymbolicEntity` to access the compiler symbol that underlies the entity. */
   abstract class MemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with MemberEntity {
-    val comment =
-      if (inTpl == null) None else commentator.comment(sym, inTpl)
+    lazy val comment =
+      if (inTpl == null) None else thisFactory.comment(sym, inTpl)
     override def inTemplate = inTpl
     override def toRoot: List[MemberImpl] = this :: inTpl.toRoot
     def inDefinitionTemplates =
       if (inTpl == null)
-        makePackage(RootPackage, null).toList
+        makeRootPackage.toList
       else
         makeTemplate(sym.owner) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
     def visibility = {
@@ -121,7 +108,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     }
     def deprecation =
       if (sym.isDeprecated && sym.deprecationMessage.isDefined)
-        Some(commentator.factory.parseWiki(sym.deprecationMessage.get, NoPosition))
+        Some(parseWiki(sym.deprecationMessage.get, NoPosition))
       else if (sym.isDeprecated)
         Some(Body(Nil))
       else if (comment.isDefined)
@@ -209,6 +196,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     val packages = members partialMap { case p: Package => p }
   }
 
+  abstract class RootPackageImpl(sym: Symbol) extends PackageImpl(sym, null) with RootPackageEntity
+
   abstract class NonTemplateMemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with NonTemplateMemberEntity {
     override def qualifiedName = optimize(inTemplate.qualifiedName + "#" + name)
     override def definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "#" + name)
@@ -232,6 +221,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
       aSym
   }
 
+  def makeRootPackage: Option[PackageImpl] =
+    makePackage(RootPackage, null)
+
   /** Creates a package entity for the given symbol or returns `None` if the symbol does not denote a package that
     * contains at least one ''documentable'' class, trait or object. Creating a package entity */
   def makePackage(aSym: Symbol, inTpl: => PackageImpl): Option[PackageImpl] = {
@@ -241,7 +233,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     else {
       val pack =
         if (bSym == RootPackage)
-          new PackageImpl(bSym, null) {
+          new RootPackageImpl(bSym) {
             override val name = "root"
             override def inTemplate = this
             override def toRoot = this :: Nil
@@ -278,7 +270,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
     val bSym = normalizeTemplate(aSym)
     if (bSym.isPackage) inTpl match {
       case inPkg: PackageImpl => makePackage(bSym, inPkg) getOrElse (new NoDocTemplateImpl(bSym, inPkg))
-      case _ => abort("'" + bSym + "' must be in a package")
+      case _ => throw new Error("'" + bSym + "' must be in a package")
     }
     else if ((bSym.sourceFile != null) && bSym.isPublic && !bSym.isLocal) inTpl match {
       case inDTpl: DocTemplateImpl => makeDocTemplate(bSym, inDTpl)
@@ -317,7 +309,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
         def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
       }
     else
-      abort("'" + bSym + "' that isn't a class, trait or object cannot be built as a documentable template")
+      throw new Error("'" + bSym + "' that isn't a class, trait or object cannot be built as a documentable template")
   }
 
   /** */
@@ -385,7 +377,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { extractor =
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
-        commentator.registeredUseCase(bSym, inTpl, bComment, bPos)
+        addCommentBody(bSym, inTpl, bComment, bPos)
       }
       (allSyms ::: List(aSym)) flatMap (makeMember0(_))
     }

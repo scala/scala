@@ -19,28 +19,42 @@ import scala.annotation.switch
   *
   * @author Manohar Jonnalagedda
   * @author Gilles Dubochet */
-final class CommentFactory(val reporter: Reporter) { parser =>
+trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
-  val endOfText      = '\u0003'
-  val endOfLine      = '\u000A'
+  val global: Global
+  import global.reporter
+
+  private val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
+
+  def addCommentBody(sym: global.Symbol, inTpl: => TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
+    commentCache += (sym, inTpl) -> parse(docStr, docPos)
+    sym
+  }
+
+  def comment(sym: global.Symbol, inTpl: => DocTemplateImpl): Option[Comment] = {
+    val key = (sym, inTpl)
+    if (commentCache isDefinedAt key)
+      Some(commentCache(key))
+    else { // not reached for use-case comments
+      val rawComment = global.expandedDocComment(sym, inTpl.sym).trim
+      if (rawComment == "") None else {
+        val c = parse(rawComment, global.docCommentPos(sym))
+        commentCache += (sym, inTpl) -> c
+        Some(c)
+      }
+    }
+  }
+
+  protected val endOfText      = '\u0003'
+  protected val endOfLine      = '\u000A'
 
   /** Something that should not have happened, happened, and Scaladoc should exit. */
   protected def oops(msg: String): Nothing =
     throw FatalError("program logic: " + msg)
 
-  protected val CleanHtml =
-  new Regex("""</?(p|h\d|pre|dl|dt|dd|ol|ul|li|blockquote|div|hr|br|br).*/?>""")
-
-  protected val ShortLineEnd =
-  new Regex("""\.|</?.*>""")
-
-  /** The body of a comment, dropping start and end markers. */
-  protected val CleanComment =
-    new Regex("""(?s)\s*/\*\*((?:[^\*]\*)*)\*/\s*""")
-
-  /** The body of a line, dropping the start star-marker, one leading whitespace and all trailing whitespace. */
+  /** The body of a line, dropping the (optional) start star-marker, one leading whitespace and all trailing whitespace. */
   protected val CleanCommentLine =
-    new Regex("""\*\s?(.*)""")
+    new Regex("""(?:\s*\*\s?)?(.*)""")
 
   /** A Scaladoc tag not linked to a symbol. Returns the name of the tag, and the rest of the line. */
   protected val SimpleTag =
@@ -71,155 +85,157 @@ final class CommentFactory(val reporter: Reporter) { parser =>
   /** Parses a raw comment string into a `Comment` object.
     * @param comment The raw comment string (including start and end markers) to be parsed.
     * @param pos     The position of the comment in source. */
-  def parse(comment: String, pos: Position): Comment = {
+  protected def parse(comment: String, pos: Position): Comment = {
     /** The cleaned raw comment as a list of lines. Cleaning removes comment start and end markers, line start markers
       * and unnecessary whitespace. */
     val cleaned: List[String] = {
-      def cleanLine(line: String): Option[String] = {
-        line.trim match {
-          case CleanCommentLine(ctl) => Some(ctl)
-          case "" =>
-            None
+      def cleanLine(line: String): String = {
+        //replaceAll removes trailing whitespaces
+        line.replaceAll("""\s+$""", "") match {
+          case "" => ""  // Empty lines are require to keep paragraphs
+          case CleanCommentLine(ctl) => ctl
           case tl =>
-            reporter.warning(pos, "Comment has no start-of-line marker ('*')")
-            Some(tl)
+            reporter.warning(pos, "Please re-check this line of the comment")
+            tl
+        }
+      }
+      comment.trim.stripPrefix("/*").stripSuffix("*/").lines.toList map (cleanLine(_))
+    }
+
+    /** Parses a comment (in the form of a list of lines) to a Comment instance, recursively on lines. To do so, it
+      * splits the whole comment into main body and tag bodies, then runs the `WikiParser` on each body before creating
+      * the comment instance.
+      *
+      * @param body        The body of the comment parsed until now.
+      * @param tags        All tags parsed until now.
+      * @param lastTagKey  The last parsed tag, or `None` if the tag section hasn't started. Lines that are not tagged
+      *                    are part of the previous tag or, if none exists, of the body.
+      * @param remaining   The lines that must still recursively be parsed.
+      * @param inCodeBlock Whether the next line is part of a code block (in which no tags must be read). */
+    def parse0(docBody: String, tags: Map[TagKey, List[String]], lastTagKey: Option[TagKey], remaining: List[String], inCodeBlock: Boolean): Comment = {
+      remaining match {
+
+        case CodeBlockStart(before, after) :: ls if (!inCodeBlock) =>
+          if (before.trim != "")
+            parse0(docBody, tags, lastTagKey, before :: ("{{{" + after) :: ls, false)
+          else if (after.trim != "")
+            parse0(docBody, tags, lastTagKey, after :: ls, true)
+          else
+            parse0(docBody, tags, lastTagKey, ls, true)
+
+        case CodeBlockEnd(before, after) :: ls =>
+          if (before.trim != "")
+            parse0(docBody, tags, lastTagKey, before :: ("}}}" + after) :: ls, true)
+          else if (after.trim != "")
+            parse0(docBody, tags, lastTagKey, after :: ls, false)
+          else
+            parse0(docBody, tags, lastTagKey, ls, false)
+
+        case SymbolTag(name, sym, body) :: ls if (!inCodeBlock) =>
+          val key = SymbolTagKey(name, sym)
+          val value = body :: tags.getOrElse(key, Nil)
+          parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
+
+        case SimpleTag(name, body) :: ls if (!inCodeBlock) =>
+          val key = SimpleTagKey(name)
+          val value = body :: tags.getOrElse(key, Nil)
+          parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
+
+        case line :: ls if (lastTagKey.isDefined) =>
+          val key = lastTagKey.get
+          val value =
+            ((tags get key): @unchecked) match {
+              case Some(b :: bs) => (b + endOfLine + line) :: bs
+              case None => oops("lastTagKey set when no tag exists for key")
+            }
+          parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock)
+
+        case line :: ls =>
+          val newBody = if (docBody == "") line else docBody + endOfLine + line
+          parse0(newBody, tags, lastTagKey, ls, inCodeBlock)
+
+        case Nil =>
+
+          val bodyTags: mutable.Map[TagKey, List[Body]] =
+            mutable.Map(tags mapValues (_ map (parseWiki(_, pos))) toSeq: _*)
+
+          def oneTag(key: SimpleTagKey): Option[Body] =
+            ((bodyTags remove key): @unchecked) match {
+              case Some(r :: rs) =>
+                if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
+                Some(r)
+              case None => None
+            }
+
+          def allTags(key: SimpleTagKey): List[Body] =
+            (bodyTags remove key) getOrElse Nil
+
+          def allSymsOneTag(key: TagKey): Map[String, Body] = {
+            val keys: Seq[SymbolTagKey] =
+              bodyTags.keys.toSeq flatMap {
+                case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
+                case stk: SimpleTagKey if (stk.name == key.name) =>
+                  reporter.warning(pos, "Tag '@" + stk.name + "' must be followed by a symbol name")
+                  None
+                case _ => None
+              }
+            val pairs: Seq[(String, Body)] =
+              for (key <- keys) yield {
+                val bs = (bodyTags remove key).get
+                if (bs.length > 1)
+                  reporter.warning(pos, "Only one '@" + key.name + "' tag for symbol " + key.symbol + " is allowed")
+                (key.symbol, bs.head)
+              }
+            Map.empty[String, Body] ++ pairs
+          }
+
+          val com = new Comment {
+            val body        = parseWiki(docBody, pos)
+            val authors     = allTags(SimpleTagKey("author"))
+            val see         = allTags(SimpleTagKey("see"))
+            val result      = oneTag(SimpleTagKey("return"))
+            val throws      = allSymsOneTag(SimpleTagKey("throws"))
+            val valueParams = allSymsOneTag(SimpleTagKey("param"))
+            val typeParams  = allSymsOneTag(SimpleTagKey("tparam"))
+            val version     = oneTag(SimpleTagKey("version"))
+            val since       = oneTag(SimpleTagKey("since"))
+            val todo        = allTags(SimpleTagKey("todo"))
+            val deprecated  = oneTag(SimpleTagKey("deprecated"))
+            val note        = allTags(SimpleTagKey("note"))
+            val example     = allTags(SimpleTagKey("example"))
+            val short = {
+              def findShort(blocks: Iterable[Block]): Inline =
+                if (blocks.isEmpty) Text("")
+                else blocks.head match {
+                  case Title(text, _) => text
+                  case Paragraph(text) => text
+                  case Code(data) => Monospace(data.lines.next)
+                  case UnorderedList(items) => findShort(items)
+                  case OrderedList(items, _) => findShort(items)
+                  case DefinitionList(items) => findShort(items.values)
+                  case HorizontalRule() => findShort(blocks.tail)
+                }
+              findShort(body.blocks)
+            }
+          }
+
+          for ((key, _) <- bodyTags)
+            reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
+
+          com
+
       }
     }
-    comment.trim.stripPrefix("/*").stripSuffix("*/").lines.toList flatMap (cleanLine(_))
-  }
 
-  /** Parses a comment (in the form of a list of lines) to a Comment instance, recursively on lines. To do so, it
-    * splits the whole comment into main body and tag bodies, then runs the `WikiParser` on each body before creating
-    * the comment instance.
-    *
-    * @param body        The body of the comment parsed until now.
-    * @param tags        All tags parsed until now.
-    * @param lastTagKey  The last parsed tag, or `None` if the tag section hasn't started. Lines that are not tagged
-    *                    are part of the previous tag or, if none exists, of the body.
-    * @param remaining   The lines that must still recursively be parsed.
-    * @param inCodeBlock Whether the next line is part of a code block (in which no tags must be read). */
-  def parse0(docBody: String, tags: Map[TagKey, List[String]], lastTagKey: Option[TagKey], remaining: List[String], inCodeBlock: Boolean): Comment = {
-    remaining match {
-
-      case CodeBlockStart(before, after) :: ls if (!inCodeBlock) =>
-        if (before.trim != "")
-          parse0(docBody, tags, lastTagKey, before :: ("{{{" + after) :: ls, false)
-        else if (after.trim != "")
-          parse0(docBody, tags, lastTagKey, after :: ls, true)
-        else
-          parse0(docBody, tags, lastTagKey, ls, true)
-
-      case CodeBlockEnd(before, after) :: ls =>
-        if (before.trim != "")
-          parse0(docBody, tags, lastTagKey, before :: ("}}}" + after) :: ls, true)
-        else if (after.trim != "")
-          parse0(docBody, tags, lastTagKey, after :: ls, false)
-        else
-          parse0(docBody, tags, lastTagKey, ls, false)
-
-      case SymbolTag(name, sym, body) :: ls if (!inCodeBlock) =>
-        val key = SymbolTagKey(name, sym)
-        val value = body :: tags.getOrElse(key, Nil)
-        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
-
-      case SimpleTag(name, body) :: ls if (!inCodeBlock) =>
-        val key = SimpleTagKey(name)
-        val value = body :: tags.getOrElse(key, Nil)
-        parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
-
-      case line :: ls if (lastTagKey.isDefined) =>
-        val key = lastTagKey.get
-        val value =
-          ((tags get key): @unchecked) match {
-            case Some(b :: bs) => (b + endOfLine + line) :: bs
-            case None => oops("lastTagKey set when no tag exists for key")
-          }
-        parse0(docBody, tags + (key -> value), lastTagKey, ls, inCodeBlock)
-
-      case line :: ls =>
-        val newBody = if (docBody == "") line else docBody + endOfLine + line
-        parse0(newBody, tags, lastTagKey, ls, inCodeBlock)
-
-      case Nil =>
-
-        val bodyTags: mutable.Map[TagKey, List[Body]] =
-          mutable.Map(tags mapValues (_ map (parseWiki(_, pos))) toSeq: _*)
-
-        def oneTag(key: SimpleTagKey): Option[Body] =
-          ((bodyTags remove key): @unchecked) match {
-            case Some(r :: rs) =>
-              if (!rs.isEmpty) reporter.warning(pos, "Only one '@" + key.name + "' tag is allowed")
-              Some(r)
-            case None => None
-          }
-
-        def allTags(key: SimpleTagKey): List[Body] =
-          (bodyTags remove key) getOrElse Nil
-
-        def allSymsOneTag(key: TagKey): Map[String, Body] = {
-          val keys: Seq[SymbolTagKey] =
-            bodyTags.keys.toSeq flatMap {
-              case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
-              case stk: SimpleTagKey if (stk.name == key.name) =>
-                reporter.warning(pos, "Tag '@" + stk.name + "' must be followed by a symbol name")
-                None
-              case _ => None
-            }
-          val pairs: Seq[(String, Body)] =
-            for (key <- keys) yield {
-              val bs = (bodyTags remove key).get
-              if (bs.length > 1)
-                reporter.warning(pos, "Only one '@" + key.name + "' tag for symbol " + key.symbol + " is allowed")
-              (key.symbol, bs.head)
-            }
-          Map.empty[String, Body] ++ pairs
-        }
-
-        val com = new Comment {
-          val body        = parseWiki(docBody, pos)
-          val authors     = allTags(SimpleTagKey("author"))
-          val see         = allTags(SimpleTagKey("see"))
-          val result      = oneTag(SimpleTagKey("return"))
-          val throws      = allSymsOneTag(SimpleTagKey("throws"))
-          val valueParams = allSymsOneTag(SimpleTagKey("param"))
-          val typeParams  = allSymsOneTag(SimpleTagKey("tparam"))
-          val version     = oneTag(SimpleTagKey("version"))
-          val since       = oneTag(SimpleTagKey("since"))
-          val todo        = allTags(SimpleTagKey("todo"))
-          val deprecated  = oneTag(SimpleTagKey("deprecated"))
-          val note        = allTags(SimpleTagKey("note"))
-          val example     = allTags(SimpleTagKey("example"))
-          val short = {
-            val shortText = ShortLineEnd.findFirstMatchIn(docBody) match {
-              case None => docBody
-              case Some(m) => docBody.take(m.start)
-            }
-            val safeText = CleanHtml.replaceAllIn(shortText, "") // get rid of all layout-busting html tags
-            parseWiki(safeText, pos) match {
-              case Body(Paragraph(inl) :: _) => inl
-              case _ =>
-                if (safeText != "")
-                  reporter.warning(pos, "Comment must start with a sentence")
-                Text("")
-            }
-          }
-        }
-
-        for ((key, _) <- bodyTags)
-          reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
-
-        com
-
-      }
-    }
     parse0("", Map.empty, None, cleaned, false)
+
   }
 
   /** Parses a string containing wiki syntax into a `Comment` object. Note that the string is assumed to be clean:
-    *  * Removed Scaladoc start and end markers.
-    *  * Removed start-of-line star and one whitespace afterwards (if present).
-    *  * Removed all end-of-line whitespace.
-    *  * Only `endOfLine` is used to mark line endings. */
+    *  - Removed Scaladoc start and end markers.
+    *  - Removed start-of-line star and one whitespace afterwards (if present).
+    *  - Removed all end-of-line whitespace.
+    *  - Only `endOfLine` is used to mark line endings. */
   def parseWiki(string: String, pos: Position): Body =
     new WikiParser(string.toArray, pos).document()
 
@@ -229,6 +245,17 @@ final class CommentFactory(val reporter: Reporter) { parser =>
     * @author Manohar Jonnalagedda
     * @author Gilles Dubochet */
   protected final class WikiParser(val buffer: Array[Char], pos: Position) extends CharReader(buffer) { wiki =>
+
+    /** listStyle ::= '-' spc | '1.' spc | 'I.' spc | 'i.' spc | 'A.' spc | 'a.' spc
+      * Characters used to build lists and their contructors */
+    protected val listStyles = Map[String, (Seq[Block] => Block)]( // TODO Should this be defined at some list companion?
+      "- "  -> ( UnorderedList(_) ),
+      "1. " -> ( OrderedList(_,"decimal") ),
+      "I. " -> ( OrderedList(_,"upperRoman") ),
+      "i. " -> ( OrderedList(_,"lowerRoman") ),
+      "A. " -> ( OrderedList(_,"upperAlpha") ),
+      "a. " -> ( OrderedList(_,"lowerAlpha") )
+    )
 
     def document(): Body = {
       nextChar()
@@ -248,47 +275,59 @@ final class CommentFactory(val reporter: Reporter) { parser =>
         title()
       else if (check("----"))
         hrule()
-      else if (check(" - "))
-        listBlock(countWhitespace, '-', UnorderedList)
-      else if (check(" 1 "))
-        listBlock(countWhitespace, '1', OrderedList)
+      else if (checkList)
+        listBlock
       else {
         para()
       }
     }
 
-    /**
-     * {{{
-     *   nListBlock ::= nLine { mListBlock }
-     *   nLine ::= nSpc '*' para '\n'
-     * }}}
-     * Where n and m stand for the number of spaces. When m > n, a new list is nested.  */
-	def listBlock(indentation: Int, marker: Char, constructor: (Seq[Block] => Block)): Block = {
-      var count  = indentation
-      val start  = " " * count + marker + " "
-      var chk    = check(start)
-      var line   = listLine(indentation, marker)
-      val blocks = mutable.ListBuffer.empty[Block]
-      while (chk) {
-        blocks += line
-        count = countWhitespace
-        if (count > indentation) { // nesting-in
-          blocks += listBlock(count, marker, constructor) // TODO is tailrec really needed here?
+    /** Checks if the current line is formed with more than one space and one the listStyles */
+    def checkList =
+      countWhitespace > 0 && listStyles.keysIterator.indexWhere(checkSkipWhitespace(_)) >= 0
+
+    /** {{{
+      * nListBlock ::= nLine { mListBlock }
+      *      nLine ::= nSpc listStyle para '\n'
+      * }}}
+      * Where n and m stand for the number of spaces. When m > n, a new list is nested. */
+    def listBlock: Block = {
+      /** consumes one line of a list block */
+      def listLine(indentedListStyle: String): Block = {
+        // deals with mixed lists in the same nesting level by skipping it
+        if(!jump(indentedListStyle)) { // TODO show warning when jump is false
+          nextChar();
+          nextChar()
         }
-        chk = check(start)
-        if (chk) { line = listLine(indentation, marker) }
+        val p = Paragraph(inline(check(Array(endOfLine))))
+        blockEnded("end of list line ")
+        p
       }
-      constructor(blocks)
-    }
+      def listLevel(leftSide: String, listStyle: String, constructor: (Seq[Block] => Block)): Block = {
+        val blocks = mutable.ListBuffer.empty[Block]
+        val length = leftSide.length
+        val indentedListStyle = leftSide + listStyle
 
-    def listLine(indentation: Int, marker: Char): Block = {
-      jump(" " * indentation + marker + " ")
-      val p = Paragraph(inline(check(Array(endOfLine))))
-      blockEnded("end of list line ")
-      p
-    }
+        var index  = 1
+        var line   = listLine(indentedListStyle)
 
-    /** {{{ code ::= "{{{" { char } '}' "}}" '\n' }}} */
+        while (index > -1) {
+          blocks += line
+          if (countWhitespace > length) { // nesting-in
+            blocks += listBlock // TODO is tailrec really needed here?
+          }
+          index = listStyles.keysIterator.indexWhere(x => check(leftSide))
+          if (index > -1) { line = listLine(indentedListStyle) }
+        }
+
+        constructor(blocks)
+      }
+      val indentation = countWhitespace
+      val indentStr = " " * indentation
+      val style = listStyles.keysIterator.find( x => check(indentStr + x) )
+      val constructor = listStyles(style.get)
+      listLevel(indentStr, style.get, constructor)
+    }
     def code(): Block = {
       jump("{{{")
       readUntil("}}}")
@@ -421,20 +460,39 @@ final class CommentFactory(val reporter: Reporter) { parser =>
       Subscript(i)
     }
 
+    protected val SchemeUri =
+      new Regex("""([^:]+:.*)""")
+
+    def entityLink(query: String): Inline = findTemplate(query) match {
+      case Some(tpl) =>
+        EntityLink(tpl)
+      case None =>
+        Text(query)
+    }
+
     def link(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
       jump("[[")
-      readUntil { check("]]") }
+      readUntil { check("]]") || check(" ") }
+      val target = getRead()
+      val title =
+        if (!check("]]")) Some({
+          jump(" ")
+          inline(check("]]"), isBlockEnd)
+        })
+        else None
       jump("]]")
-      val read = getRead()
-      val (target, title) = {
-    	  val index = read.indexOf(' ');
-    	  val split = read.splitAt( if (index > -1) index else 0 )
-    	  if (split._1 == "")
-          (split._2, None)
-    	  else
-          (split._1, Some(split._2.trim))
+      (target, title) match {
+        case (SchemeUri(uri), Some(title)) =>
+          Link(uri, title)
+        case (SchemeUri(uri), None) =>
+          Link(uri, Text(uri))
+        case (qualName, None) =>
+          entityLink(qualName)
+        case (qualName, Some(text)) =>
+          reportError(pos, "entity link to " + qualName + " cannot have a custom title'" + text + "'")
+          entityLink(qualName)
       }
-      Link(target, title)
+
     }
 
     /* UTILITY */
@@ -516,6 +574,10 @@ final class CommentFactory(val reporter: Reporter) { parser =>
 
     /* JUMPERS */
 
+    /** jumps all the characters in chars
+     * @return true only if the correct characters have been jumped
+     * consumes any matching characters
+     */
     final def jump(chars: Array[Char]): Boolean = {
       var index = 0
       while (index < chars.length && char == chars(index) && char != endOfText) {

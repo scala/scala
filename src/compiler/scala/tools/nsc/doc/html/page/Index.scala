@@ -13,11 +13,15 @@ import model._
 import scala.collection._
 import scala.xml._
 
-class Index(modelRoot: Package) extends HtmlPage {
+class Index(universe: Universe) extends HtmlPage {
 
   def path = List("index.html")
 
-  def title = "Scaladoc: all classes and objects"
+  def title = {
+    val s = universe.settings
+    ( if (!s.doctitle.isDefault) s.doctitle.value else "" ) +
+    ( if (!s.docversion.isDefault) (" " + s.docversion.value) else "" )
+  }
 
   def headers =
     <xml:group>
@@ -74,7 +78,7 @@ class Index(modelRoot: Package) extends HtmlPage {
               }</ol>
             </xml:group>
           }
-          packageElem(modelRoot)
+          packageElem(universe.rootPackage)
         }</div>
       </div>
 		  <div id="content">

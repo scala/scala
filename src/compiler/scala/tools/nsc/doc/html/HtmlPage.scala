@@ -133,8 +133,8 @@ abstract class HtmlPage { thisPage =>
     case Code(data) => <pre>{ Unparsed(data) }</pre>
     case UnorderedList(items) =>
       <ul>{ listItemsToHtml(items) }</ul>
-    case OrderedList(items) =>
-      <ol>{ listItemsToHtml(items) }</ol>
+    case OrderedList(items, listStyle) =>
+      <ol class={ listStyle }>{ listItemsToHtml(items) }</ol>
     case DefinitionList(items) =>
       <dl>{items map { case (t, d) => <dt>{ inlineToHtml(t) }</dt><dd>{ blockToHtml(d) }</dd> } }</dl>
     case HorizontalRule() =>
@@ -144,7 +144,7 @@ abstract class HtmlPage { thisPage =>
   def listItemsToHtml(items: Seq[Block]) =
     items.foldLeft(xml.NodeSeq.Empty){ (xmlList, item) =>
       item match {
-        case OrderedList(_) | UnorderedList(_) =>  // html requires sub ULs to be put into the last LI
+        case OrderedList(_, _) | UnorderedList(_) =>  // html requires sub ULs to be put into the last LI
           xmlList.init ++ <li>{ xmlList.last.child ++ blockToHtml(item) }</li>
         case Paragraph(inline) =>
           xmlList :+ <li>{ inlineToHtml(inline) }</li>  // LIs are blocks, no need to use Ps
@@ -154,14 +154,14 @@ abstract class HtmlPage { thisPage =>
   }
 
   def inlineToHtml(inl: Inline): NodeSeq = inl match {
-    //case URLLink(url, text) => <a href={url}>{if(text.isEmpty)url else inlineSeqsToXml(text)}</a>
     case Chain(items) => items flatMap (inlineToHtml(_))
     case Italic(in) => <i>{ inlineToHtml(in) }</i>
     case Bold(in) => <b>{ inlineToHtml(in) }</b>
     case Underline(in) => <u>{ inlineToHtml(in) }</u>
     case Superscript(in) => <sup>{ inlineToHtml(in) }</sup>
     case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
-    case Link(raw,title) => <a href={ raw }>{ title.getOrElse(raw) }</a> // TODO link to target
+    case Link(raw, title) => <a href={ raw }>{ inlineToHtml(title) }</a>
+    case EntityLink(entity) => templateToHtml(entity)
     case Monospace(text) => <code>{ Unparsed(text) }</code>
     case Text(text) => Unparsed(text)
   }
@@ -183,7 +183,7 @@ abstract class HtmlPage { thisPage =>
       val (tpl, width) = tpe.refEntity(inPos)
       (tpl match {
         case dtpl:DocTemplateEntity if hasLinks =>
-          <a href={ relativeLinkTo(tpl) } class="extype" name={ dtpl.qualifiedName }>{
+          <a href={ relativeLinkTo(dtpl) } class="extype" name={ dtpl.qualifiedName }>{
             string.slice(inPos, inPos + width)
           }</a>
         case tpl =>
@@ -199,7 +199,7 @@ abstract class HtmlPage { thisPage =>
   /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */
   def templateToHtml(tpl: TemplateEntity) = tpl match {
     case dTpl: DocTemplateEntity =>
-      <a href={ relativeLinkTo(dTpl) }>{ dTpl.name }</a>
+      <a href={ relativeLinkTo(dTpl) } class="extype" name={ dTpl.qualifiedName }>{ dTpl.name }</a>
     case ndTpl: NoDocTemplate =>
       xml.Text(ndTpl.name)
   }
