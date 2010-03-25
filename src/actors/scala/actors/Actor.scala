@@ -384,7 +384,7 @@ object Actor extends Combinators {
  * @author Philipp Haller
  */
 @serializable @SerialVersionUID(-781154067877019505L)
-trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
+trait Actor extends AbstractActor with ReplyReactor with ActorCanReply {
 
   /* The following two fields are only used when the actor
    * suspends by blocking its underlying thread, for example,

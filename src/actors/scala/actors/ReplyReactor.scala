@@ -21,7 +21,7 @@ import java.util.{Timer, TimerTask}
  *
  *  @author Philipp Haller
  */
-trait ReplyReactor extends Reactor[Any] with ReplyableReactor {
+trait ReplyReactor extends Reactor[Any] with ReactorCanReply {
 
   /* A list of the current senders. The head of the list is
    * the sender of the message that was received last.

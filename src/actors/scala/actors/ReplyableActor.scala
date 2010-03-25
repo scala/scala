@@ -13,13 +13,12 @@ package scala.actors
 import java.util.concurrent.ExecutionException
 
 /**
- * The ReplyableActor trait provides
- * message send operations that may result in a
- * response from the receiver.
+ * The ActorCanReply trait provides message send operations that
+ * may result in a response from the receiver.
  *
  * @author Philipp Haller
  */
-private[actors] trait ReplyableActor extends ReplyableReactor {
+private[actors] trait ActorCanReply extends ReactorCanReply {
   thiz: AbstractActor with ReplyReactor =>
 
   /**

@@ -11,13 +11,12 @@
 package scala.actors
 
 /**
- * The ReplyableReactor trait provides
- * message send operations that may result in a
- * response from the receiver.
+ * The ReactorCanReply trait provides message send operations that
+ * may result in a response from the receiver.
  *
  * @author Philipp Haller
  */
-private[actors] trait ReplyableReactor extends CanReply[Any, Any] {
+private[actors] trait ReactorCanReply extends CanReply[Any, Any] {
   _: ReplyReactor =>
 
   /**
