@@ -439,12 +439,17 @@ abstract class ClassfileParser {
         in.bp += ifaces * 2     // .. and iface count interfaces
         List(definitions.AnyRefClass.tpe) // dummy superclass, will be replaced by pickled information
       } else {
-        val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
-                        else pool.getSuperClass(in.nextChar).tpe
-        val ifaceCount = in.nextChar
-        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
-        if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
-        superType :: ifaces
+        try {
+          loaders.parentsLevel += 1
+          val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
+                          else pool.getSuperClass(in.nextChar).tpe
+          val ifaceCount = in.nextChar
+          var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
+          if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
+          superType :: ifaces
+        } finally {
+          loaders.parentsLevel -= 1
+        }
       }
     }
 
@@ -458,6 +463,7 @@ abstract class ClassfileParser {
     // get the class file parser to reuse scopes.
     instanceDefs = new Scope
     staticDefs = new Scope
+
     val classInfo = ClassInfoType(parseParents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
@@ -482,22 +488,32 @@ abstract class ClassfileParser {
       // attributes now depend on having infos set already
       parseAttributes(clazz, classInfo)
 
-      in.bp = curbp
-      val fieldCount = in.nextChar
-      for (i <- 0 until fieldCount) parseField()
-      sawPrivateConstructor = false
-      val methodCount = in.nextChar
-      for (i <- 0 until methodCount) parseMethod()
-      if (!sawPrivateConstructor &&
-          (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
-           (sflags & INTERFACE) == 0L))
-        {
-          //Console.println("adding constructor to " + clazz);//DEBUG
-          instanceDefs.enter(
-            clazz.newConstructor(NoPosition)
-            .setFlag(clazz.flags & ConstrFlags)
-            .setInfo(MethodType(List(), clazz.tpe)))
+      loaders.pendingLoadActions = { () =>
+        in.bp = curbp
+        val fieldCount = in.nextChar
+        for (i <- 0 until fieldCount) parseField()
+        sawPrivateConstructor = false
+        val methodCount = in.nextChar
+        for (i <- 0 until methodCount) parseMethod()
+        if (!sawPrivateConstructor &&
+            (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
+             (sflags & INTERFACE) == 0L))
+          {
+            //Console.println("adding constructor to " + clazz);//DEBUG
+            instanceDefs.enter(
+              clazz.newConstructor(NoPosition)
+              .setFlag(clazz.flags & ConstrFlags)
+              .setInfo(MethodType(List(), clazz.tpe)))
+          }
+        ()
+      } :: loaders.pendingLoadActions
+      if (loaders.parentsLevel == 0) {
+        while (!loaders.pendingLoadActions.isEmpty) {
+          val item = loaders.pendingLoadActions.head
+          loaders.pendingLoadActions = loaders.pendingLoadActions.tail
+          item()
         }
+      }
     } else
       parseAttributes(clazz, classInfo)
   }

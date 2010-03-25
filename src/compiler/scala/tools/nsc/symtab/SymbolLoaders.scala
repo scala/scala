@@ -11,7 +11,7 @@ import java.io.{File, IOException}
 
 import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
 
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
@@ -275,4 +275,8 @@ abstract class SymbolLoaders {
     val global: SymbolLoaders.this.global.type = SymbolLoaders.this.global
     if (global.forMSIL) init()
   }
+
+  /** used from classfile parser to avoid cyclies */
+  var parentsLevel = 0
+  var pendingLoadActions: List[() => Unit] = Nil
 }
