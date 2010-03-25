@@ -14,7 +14,6 @@ package scala.actors
  * The <code>OutputChannel</code> trait provides a common interface
  * for all channels to which values can be sent.
  *
- * @version 0.9.17
  * @author Philipp Haller
  */
 trait OutputChannel[-Msg] extends AbstractReactor[Msg] {

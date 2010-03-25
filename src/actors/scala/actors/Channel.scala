@@ -25,7 +25,6 @@ package scala.actors
  *  }
  *  </pre>
  *
- * @version 0.9.8
  * @author Philipp Haller
  */
 case class ! [a](ch: Channel[a], msg: a)
@@ -35,7 +34,6 @@ case class ! [a](ch: Channel[a], msg: a)
  * actors. Only the actor creating an instance of a
  * <code>Channel</code> may receive from it.
  *
- * @version 0.9.17
  * @author Philipp Haller
  */
 class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputChannel[Msg] {

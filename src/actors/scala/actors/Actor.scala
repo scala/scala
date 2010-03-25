@@ -798,7 +798,6 @@ trait Actor extends AbstractActor with ReplyReactor with ReplyableActor {
  *      <b>case</b> TIMEOUT <b>=&gt;</b> ...
  *    }</pre>
  *
- *  @version 0.9.8
  *  @author Philipp Haller
  */
 case object TIMEOUT
@@ -818,7 +817,6 @@ case class Exit(from: AbstractActor, reason: AnyRef)
  *    executions.
  *  </p>
  *
- * @version 0.9.8
  * @author Philipp Haller
  */
 private[actors] class SuspendActorControl extends ControlThrowable
