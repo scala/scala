@@ -30,10 +30,10 @@ trait Plugins
     val dirs = (settings.pluginsDir.value split File.pathSeparator).toList map Path.apply
     val classes = Plugin.loadAllFrom(jars, dirs, settings.disable.value)
 
-    classes foreach (c => Plugin.instantiate(c, this))
-
-    for (plugClass <- Plugin.loadAllFrom(jars, dirs, settings.disable.value))
-    yield Plugin.instantiate(plugClass, this)
+    // Lach plugin must only be instantiated once. A commong pattern
+    // is to register annotation checkers during object construction, so
+    // creating multiple plugin instances will leave behind stale checkers. s
+    classes map (Plugin.instantiate(_, this))
   }
 
   protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList

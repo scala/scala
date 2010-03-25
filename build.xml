@@ -632,7 +632,7 @@ QUICK BUILD (QUICK)
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      params="${scalac.args.quick} -Xplugin:${build-quick.dir}/plugins/continuations.jar -Xplugin-require:continuations -P:continuations:enable"
+      params="${scalac.args.quick} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1135,7 +1135,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.quick} -Xplugin:${build-strap.dir}/plugins/continuations.jar -Xplugin-require:continuations -P:continuations:enable"
+      params="${scalac.args.quick} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1553,7 +1553,7 @@ BOOTRAPING TEST AND TEST SUITE
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="2400000" javaccmd="${javac.cmd}" 
              srcdir="${partest.srcdir}"
-             scalacopts="${scalac.args.optimise} -Xplugin:${build-pack.dir}/plugins/continuations.jar -Xplugin-require:continuations -P:continuations:enable">
+             scalacopts="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable">
       <compilationpath>
         <path refid="pack.classpath"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />

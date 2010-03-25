@@ -33,6 +33,7 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
   }
   global.addAnnotationChecker(checker.checker)
 
+  global.log("instantiated cps plugin: " + this)
 
   def setEnabled(flag: Boolean) = {
     checker.cpsEnabled = flag
@@ -56,6 +57,4 @@ class SelectiveCPSPlugin(val global: Global) extends Plugin {
 
   override val optionsHelp: Option[String] =
     Some("  -P:continuations:enable        Enable continuations")
-//       "  -sourcepath <path>             Specify where to find input source files"
-
 }
