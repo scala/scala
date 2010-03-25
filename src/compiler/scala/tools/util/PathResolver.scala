@@ -48,11 +48,11 @@ object PathResolver {
         File(url.getFile).parent.path
     } getOrElse ""
 
-    // No environment variables are used.  It's for the best.
-    //
-    // def classPathEnv        =  envOrElse("CLASSPATH", "")
-    // def sourcePathEnv       =  envOrElse("SOURCEPATH", "")
-    // def scalaHomeEnv        =  envOrElse("SCALA_HOME", "")
+    /** Environment variables which java pays attention to so it
+     *  seems we do as well.
+     */
+    def classPathEnv        =  envOrElse("CLASSPATH", "")
+    def sourcePathEnv       =  envOrElse("SOURCEPATH", "")
 
     def javaBootClassPath   = propOrElse("sun.boot.class.path", searchForBootClasspath)
     def javaExtDirs         = propOrEmpty("java.ext.dirs")
@@ -83,6 +83,13 @@ object PathResolver {
    *  to the path resolution specification.
    */
   object Defaults {
+    /* Against my better judgment, giving in to martin here and allowing
+     * CLASSPATH as the default if no -cp is given.  Only if there is no
+     * command line option or environment variable is "." used.
+     */
+    def scalaUserClassPath  = firstNonEmpty(Environment.classPathEnv, ".")
+    def scalaSourcePath     = Environment.sourcePathEnv
+
     def javaBootClassPath = Environment.javaBootClassPath
     def javaUserClassPath = Environment.javaUserClassPath
     def javaExtDirs       = Environment.javaExtDirs
@@ -189,8 +196,8 @@ class PathResolver(settings: Settings, context: JavaContext) {
     def javaUserClassPath   = if (useJavaClassPath) Defaults.javaUserClassPath else ""
     def scalaBootClassPath  = cmdLineOrElse("bootclasspath", Defaults.scalaBootClassPath)
     def scalaExtDirs        = cmdLineOrElse("extdirs", Defaults.scalaExtDirs)
-    def userClassPath       = cmdLineOrElse("classpath", ".")
-    def sourcePath          = cmdLineOrElse("sourcepath", "")
+    def userClassPath       = cmdLineOrElse("classpath", Defaults.scalaUserClassPath)
+    def sourcePath          = cmdLineOrElse("sourcepath", Defaults.scalaSourcePath)
 
     import context._
 

@@ -19,6 +19,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   self: MutableSettings =>
 
   import PathResolver.{ Defaults, Environment }
+  import Defaults.{ scalaUserClassPath }
 
   /** Set of settings */
   protected lazy val allSettings = HashSet[Setting]()
@@ -37,7 +38,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
    */
   // argfiles is only for the help message
   val argfiles      = BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val classpath     = PathSetting       ("-classpath", "path", "Specify where to find user class files", ".") .
+  val classpath     = PathSetting       ("-classpath", "path", "Specify where to find user class files", scalaUserClassPath) .
                                             withAbbreviation ("-cp")
   val d             = OutputSetting     (outputDirs, ".")
   val defines       = DefinesSetting()
