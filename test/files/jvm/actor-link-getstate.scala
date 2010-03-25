@@ -10,7 +10,7 @@ object Slave extends Actor {
     loop {
       react {
         case 'doWork =>
-          println("Done")
+          Console.err.println("Done")
           reply('done)
       }
     }
@@ -39,7 +39,7 @@ object Test {
       Master.start()
       react {
         case Exit(from, reason) if (from == Slave) =>
-          println(Slave.getState)
+          Console.err.println(Slave.getState)
       }
     }
   }

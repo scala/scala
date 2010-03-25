@@ -1,7 +1,5 @@
 Uncaught exception in StartError
 MyException: I don't want to run!
-StartError exited for reason UncaughtException(StartError,None,MyException: I don't want to run!)
 Uncaught exception in MessageError
 Message: 'ping
 MyException: No message for me!
-MessageError exited for reason UncaughtException(MessageError,Some('ping),MyException: No message for me!)

@@ -31,7 +31,6 @@ object Test {
       Actor.loop {
         react {
           case Exit(actor, reason) =>
-            println(actor + " exited for reason " + reason)
             if (actor == StartError)
               MessageError ! 'ping
             else
