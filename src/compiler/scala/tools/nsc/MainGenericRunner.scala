@@ -31,7 +31,7 @@ object MainGenericRunner {
     }
     def exitCond(b: Boolean): Nothing = if (b) exitSuccess else exitFailure(null)
 
-    val command = new GenericRunnerCommand(args.toList, errorFn)
+    val command = new GenericRunnerCommand(args.toList, errorFn _)
     import command.settings
     def sampleCompiler = new Global(settings)   // def so its not created unless needed
 

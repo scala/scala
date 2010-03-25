@@ -41,7 +41,7 @@ object Main extends AnyRef with EvalLoop {
   def resident(compiler: Global) {
     loop { line =>
       val args = line.split(' ').toList
-      val command = new CompilerCommand(args, new Settings(error), error, true)
+      val command = new CompilerCommand(args, new Settings(error))
       compiler.reporter.reset
       new compiler.Run() compile command.files
     }
@@ -50,7 +50,7 @@ object Main extends AnyRef with EvalLoop {
   def process(args: Array[String]) {
     val settings = new Settings(error)
     reporter = new ConsoleReporter(settings)
-    val command = new CompilerCommand(args.toList, settings, error, false)
+    val command = new CompilerCommand(args.toList, settings)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else if (command.settings.Yidedebug.value) {
@@ -80,7 +80,7 @@ object Main extends AnyRef with EvalLoop {
       // enter resident mode
       loop { line =>
         val args = line.split(' ').toList
-        val command = new CompilerCommand(args.toList, settings, error, true)
+        val command = new CompilerCommand(args.toList, settings)
         buildManager.update(fileSet(command.files), Set.empty)
       }
     } else {

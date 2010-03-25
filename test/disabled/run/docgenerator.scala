@@ -116,7 +116,7 @@ object Foo2 {
       // when running that compiler, give it a scala-library to the classpath
       docSettings.classpath.value = System.getProperty("java.class.path")
       reporter = new ConsoleReporter(docSettings)
-      val command = new CompilerCommand(args.toList, docSettings, error, false)
+      val command = new CompilerCommand(args.toList, docSettings)
       try {
         object compiler extends Global(command.settings, reporter) {
 	  override protected def computeInternalPhases() : Unit = {

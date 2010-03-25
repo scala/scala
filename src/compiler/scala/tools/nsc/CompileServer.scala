@@ -70,12 +70,8 @@ class StandardCompileServer extends SocketServer
     (totalMemory - freeMemory).toDouble / maxMemory.toDouble > MaxCharge
   }
 
-  protected def newOfflineCompilerCommand(
-    arguments: List[String],
-    settings: Settings,
-    error: String => Unit,
-    interactive: Boolean
-  ) = new OfflineCompilerCommand(arguments, settings, error, interactive)
+  protected def newOfflineCompilerCommand(arguments: List[String], settings: Settings) =
+    new OfflineCompilerCommand(arguments, settings)
 
   def session() {
     printMemoryStats()
@@ -102,7 +98,7 @@ class StandardCompileServer extends SocketServer
       out.println(FakePos("fsc"), msg + "\n  fsc -help  gives more information")
     }
 
-    val command = newOfflineCompilerCommand(args, new Settings(error), error, false)
+    val command = newOfflineCompilerCommand(args, new Settings(error))
 
     reporter = new ConsoleReporter(command.settings, in, out) {
       // disable prompts, so that compile server cannot block

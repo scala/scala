@@ -554,7 +554,7 @@ class Worker(val fileManager: FileManager) extends Actor {
               val testCompile = (line: String) => {
                 NestUI.verbose("compiling " + line)
                 val args = (line split ' ').toList
-                val command = new CompilerCommand(args, settings, error, true)
+                val command = new CompilerCommand(args, settings)
                 bM.update(filesToSet(settings.sourcepath.value, command.files), Set.empty)
                 !reporter.hasErrors
               }
@@ -675,7 +675,7 @@ class Worker(val fileManager: FileManager) extends Actor {
             settings.sourcepath.value = sourcepath
             settings.classpath.value = fileManager.CLASSPATH
             reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
-            val command = new CompilerCommand(argList, settings, error, false)
+            val command = new CompilerCommand(argList, settings)
             object compiler extends Global(command.settings, reporter)
 
             // simulate resident compiler loop
@@ -687,7 +687,7 @@ class Worker(val fileManager: FileManager) extends Actor {
               NestUI.verbose("cmdArgs: "+cmdArgs)
               val sett = new Settings(error)
               sett.sourcepath.value = sourcepath
-              val command = new CompilerCommand(cmdArgs, sett, error, true)
+              val command = new CompilerCommand(cmdArgs, sett)
               (new compiler.Run) compile command.files
             }
 

@@ -11,16 +11,8 @@ import scala.collection.mutable.ListBuffer
 import io.File
 
 /** A class representing command line info for scalac */
-class CompilerCommand(
-  arguments: List[String],
-  val settings: Settings,
-  error: String => Unit,
-  interactive: Boolean,
-  shouldProcessArguments: Boolean)
-{
-  def this(arguments: List[String], settings: Settings, error: String => Unit, interactive: Boolean) =
-    this(arguments, settings, error, interactive, true)
-
+class CompilerCommand(arguments: List[String], val settings: Settings) {
+  def this(arguments: List[String], error: String => Unit) = this(arguments, new Settings(error))
   type Setting = Settings#Setting
 
   /** file extensions of files that the compiler can process */
@@ -83,19 +75,20 @@ class CompilerCommand(
     settings splitParams (file.lines() map stripComment mkString " ")
   }
 
-  // CompilerCommand needs processArguments called at the end of its constructor,
-  // as does its subclass GenericRunnerCommand, but it cannot be called twice as it
-  // accumulates arguments.  The fact that it's called from within the constructors
-  // makes initialization order an obstacle to simplicity.
-  val (ok: Boolean, files: List[String]) =
-    if (shouldProcessArguments) {
-      // expand out @filename to the contents of that filename
-      val expandedArguments = arguments flatMap {
-        case x if x startsWith "@"  => expandArg(x)
-        case x                      => List(x)
-      }
+  // override this if you don't want arguments processed here
+  def shouldProcessArguments: Boolean = true
 
-      settings.processArguments(expandedArguments, true)
+  def processArguments: (Boolean, List[String]) = {
+    // expand out @filename to the contents of that filename
+    val expandedArguments = arguments flatMap {
+      case x if x startsWith "@"  => expandArg(x)
+      case x                      => List(x)
     }
+
+    settings.processArguments(expandedArguments, true)
+  }
+
+  val (ok, files) =
+    if (shouldProcessArguments) processArguments
     else (true, Nil)
 }

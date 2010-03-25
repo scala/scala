@@ -563,7 +563,7 @@ class Scalac extends MatchingTask with ScalacShared {
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
 
     // let CompilerCommand processes all params
-    val command = new CompilerCommand(settings.splitParams(addParams), settings, error, false)
+    val command = new CompilerCommand(settings.splitParams(addParams), settings)
 
     // resolve dependenciesFile path from project's basedir, so <ant antfile ...> call from other project works.
     // the dependenciesFile may be relative path to basedir or absolute path, in either case, the following code
