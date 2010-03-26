@@ -286,9 +286,13 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     val buffer = new StringBuffer
     buffer.append(toString(attrib.typeRef, "@"))
     if (attrib.value.isDefined) {
-      buffer.append("(\"")
-      buffer.append(valueToString(attrib.value.get))
-      buffer.append("\")")
+      buffer.append("(")
+      val value = attrib.value.get
+      val stringVal = value.isInstanceOf[String]
+      if (stringVal) buffer.append("\"")
+      buffer.append(valueToString(value))
+      if (stringVal) buffer.append("\"")
+      buffer.append(")")
     }
     if (!attrib.values.isEmpty) {
       buffer.append(" {")
