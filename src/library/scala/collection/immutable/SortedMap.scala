@@ -31,6 +31,8 @@ trait SortedMap[A, +B] extends Map[A, B]
   override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
     SortedMap.newBuilder[A, B]
 
+  override def empty: SortedMap[A, B] = SortedMap.empty
+
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
 
   /** Add a key/value pair to this map.

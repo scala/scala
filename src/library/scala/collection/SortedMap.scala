@@ -21,7 +21,7 @@ import mutable.Builder
  */
 trait SortedMap[A, +B] extends Map[A, B] with SortedMapLike[A, B, SortedMap[A, B]] {
   /** Needs to be overridden in subclasses. */
-  override def empty = SortedMap.empty[A, B]
+  override def empty: SortedMap[A, B] = SortedMap.empty[A, B]
 
   override protected[this] def newBuilder: Builder[(A, B), SortedMap[A, B]] =
     immutable.SortedMap.newBuilder[A, B]
