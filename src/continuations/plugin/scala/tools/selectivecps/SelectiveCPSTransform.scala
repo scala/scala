@@ -117,36 +117,107 @@ abstract class SelectiveCPSTransform extends PluginComponent with
           }
 
       case Try(block, catches, finalizer) =>
-        // currently duplicates the catch block into a partial function
+        // currently duplicates the catch block into a partial function.
         // this is kinda risky, but we don't expect there will be lots
-        // of try/catches inside catch blocks (exp. blowup)
+        // of try/catches inside catch blocks (exp. blowup unlikely).
+
+        // CAVEAT: finalizers are surprisingly tricky!
+        // the problem is that they cannot easily be removed
+        // from the regular control path and hence will
+        // also be invoked after creating the Context object.
+
+        /*
+        object Test {
+          def foo1 = {
+            throw new Exception("in sub")
+            shift((k:Int=>Int) => k(1))
+            10
+          }
+          def foo2 = {
+            shift((k:Int=>Int) => k(2))
+            20
+          }
+          def foo3 = {
+            shift((k:Int=>Int) => k(3))
+            throw new Exception("in sub")
+            30
+          }
+          def foo4 = {
+            shift((k:Int=>Int) => 4)
+            throw new Exception("in sub")
+            40
+          }
+          def bar(x: Int) = try {
+            if (x == 1)
+              foo1
+            else if (x == 2)
+              foo2
+            else if (x == 3)
+              foo3
+            else //if (x == 4)
+              foo4
+          } catch {
+            case _ =>
+              println("exception")
+              0
+          } finally {
+            println("done")
+          }
+        }
+
+        reset(Test.bar(1)) // should print: exception,done,0
+        reset(Test.bar(2)) // should print: done,20 <-- but prints: done,done,20
+        reset(Test.bar(3)) // should print: exception,done,0 <-- but prints: done,exception,done,0
+        reset(Test.bar(4)) // should print: 4 <-- but prints: done,4
+        */
 
         val block1 = transform(block)
         val catches1 = transformCaseDefs(catches)
         val finalizer1 = transform(finalizer)
 
-        if (block1.tpe.typeSymbol.tpe <:< Context.tpe) {
-          //println("CPS Transform: " + tree)
+        if (hasAnswerTypeAnn(tree.tpe)) {
+          //vprintln("CPS Transform: " + tree + "/" + tree.tpe + "/" + block1.tpe)
 
-          val pos = catches.head.pos
-
-          val (stms, expr) = block1 match {
+          val (stms, expr1) = block1 match {
             case Block(stms, expr) => (stms, expr)
             case expr => (Nil, expr)
           }
 
-          val arg = currentOwner.newValueParameter(pos, "$ex").setInfo(ThrowableClass.tpe)
-          val catches2 = catches1 map (duplicateTree(_).asInstanceOf[CaseDef])
-          val rhs = Match(Ident(arg), catches2)
-          val fun = Function(List(ValDef(arg)), rhs)
-          val expr2 = localTyper.typed(atPos(pos) { Apply(Select(expr, expr.tpe.member("flatCat")), List(fun)) })
-          val block2 = treeCopy.Block(block1, stms, expr2)
+          val expr2 = if (catches.nonEmpty) {
+            val pos = catches.head.pos
+            val arg = currentOwner.newValueParameter(pos, "$ex").setInfo(ThrowableClass.tpe)
+            val catches2 = catches1 map (duplicateTree(_).asInstanceOf[CaseDef])
+            val rhs = Match(Ident(arg), catches2)
+            val fun = Function(List(ValDef(arg)), rhs)
+            val expr2 = localTyper.typed(atPos(pos) { Apply(Select(expr1, expr1.tpe.member("flatMapCatch")), List(fun)) })
 
-          arg.owner = fun.symbol
-          val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
-          chown.traverse(rhs)
+            arg.owner = fun.symbol
+            val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
+            chown.traverse(rhs)
 
-          treeCopy.Try(tree, block2, catches1, finalizer1)
+            expr2
+          } else
+            expr1
+
+/*
+          disabled for now - see notes above
+
+          val expr3 = if (!finalizer.isEmpty) {
+            val pos = finalizer.pos
+            val finalizer2 = duplicateTree(finalizer1)
+            val fun = Function(List(), finalizer2)
+            val expr3 = localTyper.typed(atPos(pos) { Apply(Select(expr2, expr2.tpe.member("mapFinally")), List(fun)) })
+
+            val chown = new ChangeOwnerTraverser(currentOwner, fun.symbol)
+            chown.traverse(finalizer2)
+
+            expr3
+          } else
+            expr2
+*/
+
+
+          treeCopy.Try(tree, treeCopy.Block(block1, stms, expr2), catches1, finalizer1)
         } else {
           treeCopy.Try(tree, block1, catches1, finalizer1)
         }
@@ -204,8 +275,10 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
                 val body2 = localTyper.typed(atPos(vd.symbol.pos) { body })
 
-                if ((body2.tpe == null) || !(body2.tpe.typeSymbol.tpe <:< Context.tpe)) {
-                  println(body2 + "/" + body2.tpe)
+                // in theory it would be nicer to look for an @cps annotation instead
+                // of testing for Context
+                if ((body2.tpe == null) || !(body2.tpe.typeSymbol == Context)) {
+                  //println(body2 + "/" + body2.tpe)
                   unit.error(rhs.pos, "cannot compute type for CPS-transformed function result")
                 }
                 body2
@@ -228,7 +301,7 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 var methodName = "map"
 
                 if (body.tpe != null) {
-                  if (body.tpe.typeSymbol.tpe <:< Context.tpe)
+                  if (body.tpe.typeSymbol == Context)
                     methodName = "flatMap"
                 }
                 else
@@ -244,9 +317,13 @@ abstract class SelectiveCPSTransform extends PluginComponent with
               try {
                 if (specialCaseTrivial) {
                   log("will optimize possible tail call: " + bodyExpr)
+
+                  // FIXME: flatMap impl has become more complicated due to
+                  // exceptions. do we need to put a try/catch in the then part??
+
                   // val ctx = <rhs>
                   // if (ctx.isTrivial)
-                  //   val <lhs> = ctx.getTrivialValue; ...
+                  //   val <lhs> = ctx.getTrivialValue; ...    <--- TODO: try/catch ??? don't bother for the moment...
                   // else
                   //   ctx.flatMap { <lhs> => ... }
                   val ctxSym = currentOwner.newValue(vd.symbol.name + "$shift").setInfo(rhs1.tpe)

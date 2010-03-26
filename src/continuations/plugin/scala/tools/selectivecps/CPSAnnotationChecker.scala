@@ -438,6 +438,8 @@ abstract class CPSAnnotationChecker extends CPSUtils {
             val atp0::atp1::Nil = ann.atp.normalize.typeArgs
             if (!(atp0 =:= atp1))
               throw new TypeError("only simple cps types allowed in try/catch blocks (found: " + tpe1 + ")")
+            if (!finalizer.isEmpty) // no finalizers allowed. see explanation in SelectiveCPSTransform
+              reporter.error(tree.pos, "try/catch blocks that use continuations cannot have finalizers")
           }
           tpe1
 

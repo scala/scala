@@ -14,7 +14,7 @@ private class cpsMinus extends Annotation // implementation detail
 
 
 
-@serializable final class ControlContext[+A,-B,+C](val fun: (A => B, Throwable => B) => C, val x: A) {
+@serializable final class ControlContext[+A,-B,+C](val fun: (A => B, Exception => B) => C, val x: A) {
 
   /*
     final def map[A1](f: A => A1): ControlContext[A1,B,C] = {
@@ -29,9 +29,14 @@ private class cpsMinus extends Annotation // implementation detail
 
   final def map[A1](f: A => A1): ControlContext[A1,B,C] = {
     if (fun eq null)
-      new ControlContext(null, f(x))
+      try {
+        new ControlContext(null, f(x)) // TODO: only alloc if f(x) != x
+      } catch {
+        case ex: Exception =>
+          new ControlContext((k: A1 => B, thr: Exception => B) => thr(ex).asInstanceOf[C], null.asInstanceOf[A1])
+      }
     else
-      new ControlContext({ (k: A1 => B, thr: Throwable => B) =>
+      new ControlContext({ (k: A1 => B, thr: Exception => B) =>
         fun( { (x:A) =>
           var done = false
           try {
@@ -39,7 +44,7 @@ private class cpsMinus extends Annotation // implementation detail
             done = true
             k(res)
           } catch {
-            case ex if !done =>
+            case ex: Exception if !done =>
               thr(ex)
           }
         }, thr)
@@ -52,9 +57,14 @@ private class cpsMinus extends Annotation // implementation detail
 
   /*@inline*/ final def flatMap[A1,B1,C1<:B](f: (A => ControlContext[A1,B1,C1])): ControlContext[A1,B1,C] = {
     if (fun eq null)
-      f(x).asInstanceOf[ControlContext[A1,B1,C]]
+      try {
+        f(x).asInstanceOf[ControlContext[A1,B1,C]]
+      } catch {
+        case ex: Exception =>
+          new ControlContext((k: A1 => B1, thr: Exception => B1) => thr(ex).asInstanceOf[C], null.asInstanceOf[A1])
+      }
     else
-      new ControlContext({ (k: A1 => B1, thr: Throwable => B1) =>
+      new ControlContext({ (k: A1 => B1, thr: Exception => B1) =>
         fun( { (x:A) =>
           var done = false
           try {
@@ -63,16 +73,16 @@ private class cpsMinus extends Annotation // implementation detail
             val res: C1 = ctxR.foreachFull(k, thr) // => B1
             res
           } catch {
-            case ex if !done =>
+            case ex: Exception if !done =>
               thr(ex).asInstanceOf[B] // => B NOTE: in general this is unsafe!
           }                           // However, the plugin will not generate offending code
-        }, thr.asInstanceOf[Throwable=>B]) // => B
+        }, thr.asInstanceOf[Exception=>B]) // => B
       }, null.asInstanceOf[A1])
   }
 
   final def foreach(f: A => B) = foreachFull(f, throw _)
 
-  def foreachFull(f: A => B, g: Throwable => B): C = {
+  def foreachFull(f: A => B, g: Exception => B): C = {
     if (fun eq null)
       f(x).asInstanceOf[C]
     else
@@ -85,12 +95,12 @@ private class cpsMinus extends Annotation // implementation detail
 
   // need filter or other functions?
 
-  final def flatCat[A1>:A,B1<:B,C1>:C<:B1](pf: PartialFunction[Throwable, ControlContext[A1,B1,C1]]): ControlContext[A1,B1,C1] = {
+  final def flatMapCatch[A1>:A,B1<:B,C1>:C<:B1](pf: PartialFunction[Exception, ControlContext[A1,B1,C1]]): ControlContext[A1,B1,C1] = {
     if (fun eq null)
       this
     else {
-      val fun1 = (ret1: A1 => B1, thr1: Throwable => B1) => {
-        val thr: Throwable => B1 = { t: Throwable =>
+      val fun1 = (ret1: A1 => B1, thr1: Exception => B1) => {
+        val thr: Exception => B1 = { t: Exception =>
           var captureExceptions = true
           try {
             if (pf.isDefinedAt(t)) {
@@ -102,14 +112,50 @@ private class cpsMinus extends Annotation // implementation detail
               thr1(t) // Throw => B1
             }
           } catch {
-            case t1 if captureExceptions => thr1(t1) // => E2
+            case t1: Exception if captureExceptions => thr1(t1) // => E2
           }
         }
-        foreachFull(ret1, thr)// fun(ret1, thr)  // => B
+        fun(ret1, thr)// fun(ret1, thr)  // => B
       }
       new ControlContext(fun1, null.asInstanceOf[A1])
     }
   }
 
-  // TODO: finally
+  final def mapFinally(f: () => Unit): ControlContext[A,B,C] = {
+    if (fun eq null) {
+      try {
+        f()
+        this
+      } catch {
+        case ex: Exception =>
+          new ControlContext((k: A => B, thr: Exception => B) => thr(ex).asInstanceOf[C], null.asInstanceOf[A])
+      }
+    } else {
+      val fun1 = (ret1: A => B, thr1: Exception => B) => {
+        val ret: A => B = { x: A =>
+          var captureExceptions = true
+          try {
+            f()
+            captureExceptions = false
+            ret1(x)
+          } catch {
+            case t1: Exception if captureExceptions => thr1(t1)
+          }
+        }
+        val thr: Exception => B = { t: Exception =>
+          var captureExceptions = true
+          try {
+            f()
+            captureExceptions = false
+            thr1(t)
+          } catch {
+            case t1: Exception if captureExceptions => thr1(t1)
+          }
+        }
+        fun(ret, thr1)
+      }
+      new ControlContext(fun1, null.asInstanceOf[A])
+    }
+  }
+
 }
