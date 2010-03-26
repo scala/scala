@@ -10,7 +10,7 @@ class ConsoleInterface
 {
 	def run(bootClasspathString: String, classpathString: String, initialCommands: String, log: Logger)
 	{
-		val settings = Settings(log)
+		val settings = MakeSettings(log)
 		if(!bootClasspathString.isEmpty)
 			settings.bootclasspath.value = bootClasspathString
 		settings.classpath.value = classpathString
@@ -26,7 +26,7 @@ class ConsoleInterface
 		loop.main(settings)
 	}
 }
-object Settings
+object MakeSettings
 {
 	def apply(log: Logger) =
 	{
