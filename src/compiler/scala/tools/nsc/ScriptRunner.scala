@@ -338,7 +338,7 @@ object ScriptRunner
 	{
     val scriptFile = File.makeTemp("scalacmd", ".scala")
     // save the command to the file
-    scriptFile writeAll List(command)
+    scriptFile writeAll command
 
     try withCompiledScript(settings, scriptFile.path) { runCompiled(settings, _, scriptArgs) }
     finally scriptFile.delete()  // in case there was a compilation error

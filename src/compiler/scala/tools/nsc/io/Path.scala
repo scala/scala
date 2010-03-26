@@ -159,9 +159,11 @@ class Path private[io] (val jfile: JFile) {
     case idx  => name drop (idx + 1)
   }
   // compares against extension in a CASE INSENSITIVE way.
-  def hasExtension(other: String) = extension.toLowerCase == other.toLowerCase
+  def hasExtension(ext: String) = extension.toLowerCase == ext.toLowerCase
   // returns the filename without the extension.
   def stripExtension: String = name stripSuffix ("." + extension)
+  // returns the Path with the extension.
+  def addExtension(ext: String): Path = Path(path + "." + ext)
 
   // conditionally execute
   def ifFile[T](f: File => T): Option[T] = if (isFile) Some(f(toFile)) else None

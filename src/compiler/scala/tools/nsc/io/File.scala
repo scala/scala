@@ -52,6 +52,8 @@ class File(jfile: JFile)(implicit val creationCodec: Codec = null)
 extends Path(jfile)
 with Streamable.Chars {
   def withCodec(codec: Codec): File = new File(jfile)(codec)
+  override def addExtension(ext: String): File = super.addExtension(ext).toFile
+  override def toAbsolute: File = if (isAbsolute) this else super.toAbsolute.toFile
   override def toDirectory: Directory = new Directory(jfile)
   override def toFile: File = this
   override def normalize: File = super.normalize.toFile
@@ -78,10 +80,10 @@ with Streamable.Chars {
   def bufferedWriter(append: Boolean = false, codec: Codec = getCodec()) =
     new BufferedWriter(writer(append, codec))
 
-  /** Writes all the Strings in the given iterator to the file. */
-  def writeAll(xs: Traversable[String], append: Boolean = false, codec: Codec = getCodec()): Unit = {
-    val out = bufferedWriter(append, codec)
-    try xs foreach (out write _)
+  /** Creates a new file and writes all the Strings to it. */
+  def writeAll(strings: String*): Unit = {
+    val out = bufferedWriter()
+    try strings foreach (out write _)
     finally out close
   }
 

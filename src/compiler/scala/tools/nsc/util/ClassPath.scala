@@ -71,7 +71,7 @@ object ClassPath {
   def split(path: String): List[String] = (path split pathSeparator).toList filterNot (_ == "") distinct
 
   /** Join classpath using platform-dependent path separator */
-  def join(path: String*): String = path filterNot (_ == "") mkString pathSeparator
+  def join(paths: String*): String  = paths filterNot (_ == "") mkString pathSeparator
 
   /** Split the classpath, apply a transformation function, and reassemble it. */
   def map(cp: String, f: String => String): String = join(split(cp) map f: _*)
@@ -81,6 +81,9 @@ object ClassPath {
 
   /** Split the classpath and map them into Paths */
   def toPaths(cp: String): List[Path] = split(cp) map (x => Path(x).toAbsolute)
+
+  /** Join the paths as a classpath */
+  def fromPaths(paths: Path*): String = join(paths map (_.path): _*)
 
   /** Split the classpath and map them into URLs */
   def toURLs(cp: String): List[URL] = toPaths(cp) map (_.toURL)

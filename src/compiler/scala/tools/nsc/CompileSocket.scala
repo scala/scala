@@ -129,7 +129,7 @@ class CompileSocket {
     val file    = portFile(port)
     val secret  = new SecureRandom().nextInt.toString
 
-    try file writeAll List(secret) catch {
+    try file writeAll secret catch {
       case e @ (_: FileNotFoundException | _: SecurityException) =>
         fatal("Cannot create file: %s".format(file.path))
     }

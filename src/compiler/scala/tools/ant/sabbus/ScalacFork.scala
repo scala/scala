@@ -109,7 +109,7 @@ class ScalacFork extends MatchingTask with ScalacShared with TaskArgs {
     // dump the arguments to a file and do "java @file"
     val tempArgFile = io.File.makeTemp("scalacfork")
     val tokens = settings.toArgs ++ (includedFiles map (_.getPath))
-    tempArgFile writeAll List(tokens mkString " ")
+    tempArgFile writeAll (tokens mkString " ")
 
     val paths = List(Some(tempArgFile.toAbsolute.path), argfile).flatten map (_.toString)
     val res = execWithArgFiles(java, paths)

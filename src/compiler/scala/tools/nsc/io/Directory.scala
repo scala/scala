@@ -37,6 +37,7 @@ import Path._
  *  @since   2.8
  */
 class Directory(jfile: JFile) extends Path(jfile) {
+  override def toAbsolute: Directory = if (isAbsolute) this else super.toAbsolute.toDirectory
   override def toDirectory: Directory = this
   override def toFile: File = new File(jfile)
   override def isValid = jfile.isDirectory() || !jfile.exists()
