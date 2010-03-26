@@ -107,10 +107,12 @@ trait AbsSettings {
      */
     def tryToSetFromPropertyValue(s: String): Unit = tryToSet(s :: Nil)
 
-    def isCategory:    Boolean = List("-X", "-Y", "-P") contains name
-    def isAdvanced:    Boolean = (name startsWith "-X") && name != "-X"
-    def isPrivate:     Boolean = (name startsWith "-Y") && name != "-Y"
-    def isStandard:    Boolean = !isAdvanced && !isPrivate
+    /** These categorizations are so the help output shows -X and -P among
+     *  the standard options and -Y among the advanced options.
+     */
+    def isAdvanced  = name match { case "-Y" => true ; case "-X" => false ; case _  => name startsWith "-X" }
+    def isPrivate   = name match { case "-Y" => false ; case _  => name startsWith "-Y" }
+    def isStandard  = !isAdvanced && !isPrivate
 
     def compare(that: Setting): Int = name compare that.name
 
