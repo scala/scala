@@ -839,11 +839,9 @@ abstract class ClassfileParser {
         // Java annotatinos on classes / methods / fields with RetentionPolicy.RUNTIME
         case nme.RuntimeAnnotationATTR =>
           if (isScalaAnnot || !isScala) {
-            parseAnnotations(attrLen)
+            val scalaSigAnnot = parseAnnotations(attrLen)
             if (isScalaAnnot)
-              (sym.rawAnnotations find { annot =>
-                annot.asInstanceOf[AnnotationInfo].atp == definitions.ScalaSignatureAnnotation.tpe
-              }) match {
+              scalaSigAnnot match {
                 case Some(san: AnnotationInfo) =>
                   val bytes =
                     san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
@@ -964,17 +962,20 @@ abstract class ClassfileParser {
       }
     }
 
-    /** Parse a sequence of annotations and attach them to the
-     *  current symbol sym.
-     */
-    def parseAnnotations(len: Int) {
+    /** Parse a sequence of annotations and attaches them to the
+     *  current symbol sym, except for the ScalaSignature annotation that it returns, if it is available. */
+    def parseAnnotations(len: Int): Option[AnnotationInfo] =  {
       val nAttr = in.nextChar
+      var scalaSigAnnot: Option[AnnotationInfo] = None
       for (n <- 0 until nAttr)
         parseAnnotation(in.nextChar) match {
+          case Some(scalaSig) if (scalaSig.atp == definitions.ScalaSignatureAnnotation.tpe) =>
+            scalaSigAnnot = Some(scalaSig)
           case Some(annot) =>
             sym.addAnnotation(annot)
           case None =>
         }
+      scalaSigAnnot
     }
 
     // begin parseAttributes
