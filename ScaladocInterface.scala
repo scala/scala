@@ -12,10 +12,10 @@ class ScaladocInterface
 }
 private class Runner(args: Array[String], maximumErrors: Int, log: Logger)
 {
-	import scala.tools.nsc.{doc, CompilerCommand, Global}
+	import scala.tools.nsc.{doc, Global}
 	val reporter = new LoggerReporter(maximumErrors, log)
 	val docSettings: doc.Settings = new doc.Settings(reporter.error)
-	val command = new CompilerCommand(args.toList, docSettings, error, false)
+	val command = Command(args.toList, docSettings)
 
 	import forScope._
 	def run()

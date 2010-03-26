@@ -11,13 +11,14 @@ class CompilerInterface
 {
 	def run(args: Array[String], callback: AnalysisCallback, maximumErrors: Int, log: Logger)
 	{
-			import scala.tools.nsc.{CompilerCommand, Global, Settings}
+			import scala.tools.nsc.{Global, Settings}
 
 		debug(log, "Interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
 
 		val reporter = new LoggerReporter(maximumErrors, log)
 		val settings = new Settings(reporter.error)
-		val command = new CompilerCommand(args.toList, settings, error, false)
+		
+		val command = Command(args.toList, settings)
 
 		val phasesSet = new scala.collection.mutable.HashSet[Any] // 2.7 compatibility
 		object compiler extends Global(command.settings, reporter)
