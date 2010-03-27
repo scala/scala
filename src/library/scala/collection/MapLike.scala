@@ -286,18 +286,8 @@ self =>
    *  @return   a new map with the given bindings added to this map
    *  @usecase  def + (kvs: Traversable[(A, B)]): Map[A, B]
    */
-  def ++[B1 >: B](kvs: Traversable[(A, B1)]): Map[A, B1] =
-    ((repr: Map[A, B1]) /: kvs) (_ + _)
-
-  /** Adds all key/value pairs produced by an iterator to this map, returning a new map.
-   *
-   *  @param    iter the iterator producing key/value pairs
-   *  @tparam   B1  the type of the added values
-   *  @return   a new map with the given bindings added to this map
-   *  @usecase  def + (iter: Iterator[(A, B)]): Map[A, B]
-   */
-  def ++[B1 >: B] (iter: Iterator[(A, B1)]): Map[A, B1] =
-    ((repr: Map[A, B1]) /: iter) (_ + _)
+  def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] =
+    ((repr: Map[A, B1]) /: xs) (_ + _)
 
   /** Returns a new map with all key/value pairs for which the predicate
    *  <code>p</code> returns <code>true</code>.

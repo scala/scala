@@ -68,7 +68,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterfable object.
    *  @return      the updated buffer.
    */
-  override def ++=(iter: Traversable[A]): this.type = iter match {
+  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
     case v: IndexedSeq[_] =>
       val n = v.length
       ensureSize(size0 + n)
@@ -76,7 +76,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
       size0 += n
       this
     case _ =>
-      super.++=(iter)
+      super.++=(xs)
   }
 
   /** Prepends a single element to this buffer and return
@@ -101,7 +101,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++=:(iter: Traversable[A]): this.type = { insertAll(0, iter); this }
+  override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a

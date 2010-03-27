@@ -48,21 +48,11 @@ abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends Priority
    */
   override def +=(elem: A): this.type = { self += elem; this }
 
-  /** Adds all elements provided by an <code>Iterable</code> object
-   *  into the priority queue.
-   *
-   *  @param  iter        an iterable object
-   */
-  def ++=(iter: scala.collection.Iterable[A]): this.type = {
-    self ++= iter
-    this
-  }
-
   /** Adds all elements provided by an iterator into the priority queue.
    *
    *  @param  it        an iterator
    */
-  override def ++=(it: Iterator[A]): this.type = {
+  override def ++=(it: TraversableOnce[A]): this.type = {
     self ++= it
     this
   }

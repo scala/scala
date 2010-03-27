@@ -45,24 +45,13 @@ trait QueueProxy[A] extends Queue[A] with Proxy {
    */
   override def +=(elem: A): this.type = { self += elem; this }
 
-  /** Adds all elements provided by an <code>Iterable</code> object
-   *  at the end of the queue. The elements are prepended in the order they
-   *  are given out by the iterator.
-   *
-   *  @param  iter        an iterable object
-   */
-  def ++=(iter: scala.collection.Iterable[A]): this.type = {
-    self ++= iter
-    this
-  }
-
   /** Adds all elements provided by an iterator
    *  at the end of the queue. The elements are prepended in the order they
    *  are given out by the iterator.
    *
    *  @param  iter        an iterator
    */
-  override def ++=(it: Iterator[A]): this.type = {
+  override def ++=(it: TraversableOnce[A]): this.type = {
     self ++= it
     this
   }

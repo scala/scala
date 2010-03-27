@@ -145,6 +145,27 @@ object Iterator {
     def next = elem
   }
 
+  /** With the advent of TraversableOnce, it can be useful to have a builder
+   *  for Iterators so they can be treated uniformly along with the collections.
+   *  See scala.util.Random.shuffle for an example.
+   */
+  class IteratorCanBuildFrom[A] extends generic.CanBuildFrom[Iterator[A], A, Iterator[A]] {
+    def newIterator = new ArrayBuffer[A] mapResult (_.iterator)
+
+    /** Creates a new builder on request of a collection.
+     *  @param from  the collection requesting the builder to be created.
+     *  @return the result of invoking the `genericBuilder` method on `from`.
+     */
+    def apply(from: Iterator[A]) = newIterator
+
+    /** Creates a new builder from scratch
+     *  @return the result of invoking the `newBuilder` method of this factory.
+     */
+    def apply() = newIterator
+  }
+
+  implicit def iteratorCanBuildFrom[T]: IteratorCanBuildFrom[T] = new IteratorCanBuildFrom[T]
+
   /** A wrapper class for the `flatten` method that is added to
    *  class `Iterator` with implicit conversion
    *  @see iteratorIteratorWrapper.
@@ -265,7 +286,8 @@ import Iterator.empty
  *  @define mayNotTerminateInf
  *  Note: may not terminate for infinite iterators.
  */
-trait Iterator[+A] { self =>
+trait Iterator[+A] extends TraversableOnce[A] {
+  self =>
 
   /** Tests whether this iterator can provide another element.
    *  @return  `true` if a subsequent call to `next` will yield an element,
@@ -283,6 +305,17 @@ trait Iterator[+A] { self =>
    *  @return   `true` if hasNext is false, `false` otherwise.
    */
   def isEmpty: Boolean = !hasNext
+
+  /** Tests whether this Iterator can be repeatedly traversed.
+   *  @return   `false`
+   */
+  def isTraversableAgain = false
+
+  /** Tests whether this Iterator has a known size.
+   *
+   *  @return   `true` for empty Iterators, `false` otherwise.
+   */
+  def hasDefiniteSize = isEmpty
 
   /** Selects first ''n'' values of this iterator.
    *  @param  n    the number of values to take
@@ -697,131 +730,6 @@ trait Iterator[+A] { self =>
     if (found) i else -1
   }
 
-  /** Applies a binary operator to a start value and all values produced by this iterator, going left to right.
-   *  $willNotTerminateInf
-   *  @param   z    the start value.
-   *  @param   op   the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive values produced by this iterator
-   *           going left to right with the start value `z` on the left:
-   *           {{{
-   *             op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)
-   *           }}}
-   *           where `x,,1,,, ..., x,,n,,` are the values produced by this iterator.
-   */
-  def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    var acc = z
-    while (hasNext) acc = op(acc, next())
-    acc
-  }
-
-  /** Applies a binary operator to all values produced by this iterator and a start value, going right to left.
-   *  $willNotTerminateInf
-   *  @param   z    the start value.
-   *  @param   op   the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive values produced by this iterator
-   *           going right to left with the start value `z` on the right:
-   *           {{{
-   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
-   *           }}}
-   *           where `x,,1,,, ..., x,,n,,` are the values produced by this iterator.
-   */
-  def foldRight[B](z: B)(op: (A, B) => B): B =
-    if (hasNext) op(next(), foldRight(z)(op)) else z
-
-  /** Applies a binary operator to a start value and all values produced by this iterator, going left to right.
-   *
-   *  Note: `/:` is alternate syntax for `foldLeft`; `z /: it` is the same as `it foldLeft z`.
-   *  $willNotTerminateInf
-   *
-   *  @param   z    the start value.
-   *  @param   op   the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive values produced by this iterator
-   *           going left to right with the start value `z` on the left:
-   *           {{{
-   *             op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)
-   *           }}}
-   *           where `x,,1,,, ..., x,,n,,` are the values produced by this iterator.
-   */
-  def /:[B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
-
-  /** Applies a binary operator to all values produced by this iterator and a start value, going right to left.
-   *  Note: `:\` is alternate syntax for `foldRight`; `it :\ z` is the same as `it foldRight z`.
-   *  $willNotTerminateInf
-   *  @param   z    the start value.
-   *  @param   op   the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive values produced by this iterator
-   *           going right to left with the start value `z` on the right:
-   *           {{{
-   *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
-   *           }}}
-   *           where `x,,1,,, ..., x,,n,,` are the values produced by this iterator.
-   */
-  def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
-
-  /** Applies a binary operator to all values produced by this iterator, going left to right.
-   *  $willNotTerminateInf
-   *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive values produced by this iterator
-   *           going left to right:
-   *           {{{
-   *             op(...(op(x,,1,,, x,,2,,), ... ) , x,,n,,)
-   *           }}}
-   *           where `x,,1,,, ..., x,,n,,` are the values produced by this iterator.
-   *  @throws `UnsupportedOperationException` if this iterator is empty.
-   */
-  def reduceLeft[B >: A](op: (B, A) => B): B = {
-    if (hasNext) foldLeft[B](next())(op)
-    else throw new UnsupportedOperationException("empty.reduceLeft")
-  }
-
-  /** Applies a binary operator to all values produced by this iterator, going right to left.
-   *  $willNotTerminateInf
-   *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive values produced by this iterator
-   *           going right to left:
-   *           {{{
-   *             op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))
-   *           }}}
-   *           where `x,,1,,, ..., x,,n,,` are the values produced by this iterator.
-   *  @throws `UnsupportedOperationException` if this iterator is empty.
-   */
-  def reduceRight[B >: A](op: (A, B) => B): B = {
-    if (hasNext) foldRight[B](next())(op)
-    else throw new UnsupportedOperationException("empty.reduceRight")
-  }
-
-  /** Optionally applies a binary operator to all values produced by this iterator, going left to right.
-   *  $willNotTerminateInf
-   *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  an option value containing the result of `reduceLeft(op)` is this iterator is nonempty,
-   *           `None` otherwise.
-   */
-  def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] = {
-    if (!hasNext) None else Some(reduceLeft(op))
-  }
-
-  /** Optionally applies a binary operator to all values produced by this iterator, going right to left.
-   *  $willNotTerminateInf
-   *
-   *  @param  op    the binary operator.
-   *  @tparam  B    the result type of the binary operator.
-   *  @return  an option value containing the result of `reduceRight(op)` is this iterator is nonempty,
-   *           `None` otherwise.
-   */
-  def reduceRightOption[B >: A](op: (A, B) => B): Option[B] = {
-    if (!hasNext) None else Some(reduceRight(op))
-  }
-
   /** Creates a buffered iterator from this iterator.
    *  @see BufferedIterator
    *  @return  a buffered iterator producing the same values as this iterator.
@@ -996,13 +904,7 @@ trait Iterator[+A] { self =>
    *
    *  Note: The iterator is at its end after this method returns.
    */
-  def length: Int = {
-    var i = 0
-    while (hasNext) {
-      next(); i += 1
-    }
-    i
-  }
+  def length: Int = this.size
 
   /** Creates two new iterators that both iterate over the same elements
    *  as this iterator (in the same order).  The duplicate iterators are
@@ -1083,99 +985,6 @@ trait Iterator[+A] { self =>
     }
   }
 
-  /** Copies values produced by this iterator to an array.
-   *  Fills the given array `xs` with values produced by this iterator, after skipping `start` values.
-   *  Copying will stop once either the end of the current iterator is reached,
-   *  or the end of the array is reached.
-   *
-   *  $willNotTerminateInf
-   *
-   *  @param  xs     the array to fill.
-   *  @param  start  the starting index.
-   *  @tparam B      the type of the elements of the array.
-   *
-   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
-   */
-  def copyToArray[B >: A](xs: Array[B], start: Int): Unit =
-    copyToArray(xs, start, xs.length - start)
-
-  /** Copies values produced by this iterator to an array.
-   *  Fills the given array `xs` with values produced by this iterator.
-   *  Copying will stop once either the end of the current iterator is reached,
-   *  or the end of the array is reached.
-   *
-   *  $willNotTerminateInf
-   *
-   *  @param  xs     the array to fill.
-   *  @tparam B      the type of the elements of the array.
-   *
-   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
-   */
-  def copyToArray[B >: A](xs: Array[B]): Unit = copyToArray(xs, 0, xs.length)
-
-  /** Copies all values produced by this iterator to a buffer.
-   *  $willNotTerminateInf
-   *  @param  dest The buffer to which elements are copied
-   */
-  def copyToBuffer[B >: A](dest: Buffer[B]) {
-    while (hasNext) dest += next()
-  }
-
-  /** Traverses this iterator and returns all produced values in a list.
-   *  $willNotTerminateInf
-   *
-   *  @return  a list which contains all values produced by this iterator.
-   */
-  def toList: List[A] = {
-    val res = new ListBuffer[A]
-    while (hasNext) res += next
-    res.toList
-  }
-
-  /** Traverses this iterator and returns all produced values in a set.
-   *  $willNotTerminateInf
-   *
-   *  @return  a set which contains all values produced by this iterator.
-   */
-  def toSet[B >: A]: immutable.Set[B] = {
-    val res = new ListBuffer[B]
-    while (hasNext) res += next
-    res.toSet
-  }
-
-  /** Lazily wraps a Stream around this iterator so its values are memoized.
-   *
-   *  @return  a Stream which can repeatedly produce all the values
-   *           produced by this iterator.
-   */
-  def toStream: Stream[A] =
-    if (hasNext) Stream.cons(next, toStream) else Stream.empty
-
-  /** Traverses this iterator and returns all produced values in a sequence.
-   *  $willNotTerminateInf
-   *
-   *  @return  a list which contains all values produced by this iterator.
-   */
-  def toSeq: Seq[A] = {
-    val buffer = new ArrayBuffer[A]
-    this copyToBuffer buffer
-    buffer
-  }
-
-  /** Traverses this iterator and returns all produced values in a map.
-   *  $willNotTerminateInf
-   *  @see    TraversableLike.toMap
-   *
-   *  @return  a map containing all elements of this iterator.
-   */
-  def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
-    val b = immutable.Map.newBuilder[T, U]
-    while (hasNext)
-      b += next
-
-    b.result
-  }
-
   /** Tests if another iterator produces the same valeus as this one.
    *  $willNotTerminateInf
    *  @param that  the other iterator
@@ -1189,76 +998,8 @@ trait Iterator[+A] { self =>
     !hasNext && !that.hasNext
   }
 
-  /** Displays all values produced by this iterator in a string using start, end, and separator strings.
-   *
-   *  @param start the starting string.
-   *  @param sep   the separator string.
-   *  @param end   the ending string.
-   *  @return      a string representation of this iterator. The resulting string
-   *               begins with the string `start` and ends with the string
-   *               `end`. Inside, the string representations (w.r.t. the method `toString`)
-   *               of all values produced by this iterator are separated by the string `sep`.
-   */
-  def mkString(start: String, sep: String, end: String): String = {
-    val buf = new StringBuilder
-    addString(buf, start, sep, end).toString
-  }
-
-  /** Displays all values produced by this iterator in a string using a separator string.
-   *
-   *  @param sep   the separator string.
-   *  @return      a string representation of this iterator. In the resulting string
-   *               the string representations (w.r.t. the method `toString`)
-   *               of all values produced by this iterator are separated by the string `sep`.
-   */
-  def mkString(sep: String): String = mkString("", sep, "")
-
-  /** Displays all values produced by this iterator in a string.
-   *  @return a string representation of this iterator. In the resulting string
-   *          the string representations (w.r.t. the method `toString`)
-   *          of all values produced by this iterator follow each other without any separator string.
-   */
-  def mkString: String = mkString("")
-
-  /** Appends all values produced by this iterator to a string builder using start, end, and separator strings.
-   *  The written text begins with the string `start` and ends with the string
-   *  `end`. Inside, the string representations (w.r.t. the method `toString`)
-   *  of all values produced by this iterator are separated by the string `sep`.
-   *
-   *  @param  b    the string builder to which elements are appended.
-   *  @param start the starting string.
-   *  @param sep   the separator string.
-   *  @param end   the ending string.
-   *  @return      the string builder `b` to which elements were appended.
-   */
-  def addString(buf: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
-    buf.append(start)
-    val elems = this
-    if (elems.hasNext) buf.append(elems.next)
-    while (elems.hasNext) {
-      buf.append(sep); buf.append(elems.next)
-    }
-    buf.append(end)
-  }
-
-  /** Appends all values produced by this iterator to a string builder using a separator string.
-   *  The written text consists of the string representations (w.r.t. the method `toString`)
-   *  of all values produced by this iterator, separated by the string `sep`.
-   *
-   *  @param  b    the string builder to which elements are appended.
-   *  @param sep   the separator string.
-   *  @return      the string builder `b` to which elements were appended.
-   */
-  def addString(buf: StringBuilder, sep: String): StringBuilder = addString(buf, "", sep, "")
-
-  /** Appends all values produced by this iterator to a string builder.
-   *  The written text consists of the string representations (w.r.t. the method `toString`)
-   *  of all values produced by this iterator without any separator string.
-   *
-   *  @param  b    the string builder to which elements are appended.
-   *  @return      the string builder `b` to which elements were appended.
-   */
-  def addString(buf: StringBuilder): StringBuilder = addString(buf, "", "", "")
+  def toTraversable: Traversable[A] = toStream
+  def toIterator: Iterator[A] = self
 
   /** Converts this iterator to a string.
    *  @return `"empty iterator"` or `"non-empty iterator"`, depending on whether or not the iterator is empty.

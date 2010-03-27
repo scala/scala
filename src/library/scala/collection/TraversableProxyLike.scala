@@ -32,8 +32,7 @@ trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversabl
   override def nonEmpty: Boolean = self.nonEmpty
   override def size: Int = self.size
   override def hasDefiniteSize = self.hasDefiniteSize
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.++(that)(bf)
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.++(that)(bf)
+  override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.++(xs)(bf)
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.map(f)(bf)
   override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.flatMap(f)(bf)
   override def filter(p: A => Boolean): Repr = self.filter(p)

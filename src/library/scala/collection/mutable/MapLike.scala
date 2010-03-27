@@ -146,21 +146,8 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
     "As of 2.8, this operation creates a new map.  To add the elements as a\n"+
     "side effect to an existing map and return that map itself, use ++=."
   )
-  override def ++[B1 >: B](kvs: Traversable[(A, B1)]): Map[A, B1] =
-    clone().asInstanceOf[Map[A, B1]] ++= kvs
-
-  /** Adds a number of elements provided by an iterator
-   *  via its `iterator` method and returns
-   *  the collection itself.
-   *
-   *  @param iter   the iterator
-   */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To add the elements as a\n"+
-    "side effect to an existing map and return that map itself, use ++=."
-  )
-  override def ++[B1 >: B] (iter: Iterator[(A, B1)]): Map[A, B1] =
-    clone().asInstanceOf[Map[A, B1]] ++= iter
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] =
+    clone().asInstanceOf[Map[A, B1]] ++= xs
 
   /** Removes a key from this map, returning the value associated previously
    *  with that key as an option.
@@ -270,16 +257,5 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
     "As of 2.8, this operation creates a new map.  To remove the elements as a\n"+
     "side effect to an existing map and return that map itself, use --=."
   )
-  override def --(kvs: Traversable[A]): This = clone() --= kvs
-
-  /** Removes a number of elements provided by an iterator and returns
-   *  the collection itself.
-   *
-   *  @param iter   the iterator
-   */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new map.  To remove the elements as a\n"+
-    "side effect to an existing map and return that map itself, use --=."
-  )
-  override def --(iter: Iterator[A]): This = clone() --= iter
+  override def --(xs: TraversableOnce[A]): This = clone() --= xs
 }

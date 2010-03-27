@@ -39,24 +39,16 @@ trait SynchronizedSet[A] extends Set[A] {
     super.+=(elem)
   }
 
-  override def ++=(that: Traversable[A]): this.type = synchronized[this.type] {
-    super.++=(that)
-  }
-
-  override def ++=(it: Iterator[A]): this.type = synchronized[this.type] {
-    super.++=(it)
+  override def ++=(xs: TraversableOnce[A]): this.type = synchronized[this.type] {
+    super.++=(xs)
   }
 
   abstract override def -=(elem: A): this.type = synchronized[this.type] {
     super.-=(elem)
   }
 
-  override def --=(that: Traversable[A]): this.type = synchronized[this.type] {
-    super.--=(that)
-  }
-
-  override def --=(it: Iterator[A]): this.type = synchronized[this.type] {
-    super.--=(it)
+  override def --=(xs: TraversableOnce[A]): this.type = synchronized[this.type] {
+    super.--=(xs)
   }
 
   override def update(elem: A, included: Boolean): Unit = synchronized {

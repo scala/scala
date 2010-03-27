@@ -149,13 +149,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
    *
    *  @param  iter        an iterable object
    */
-  def ++(elems: scala.collection.Traversable[A]) = { this.clone() ++= elems }
-
-  /** Adds all elements provided by an iterator into the priority queue.
-   *
-   *  @param  it        an iterator
-   */
-  def ++(iter: Iterator[A]) = { this.clone() ++= iter }
+  def ++(xs: TraversableOnce[A]) = { this.clone() ++= xs }
 
   /** Adds all elements to the queue.
    *
@@ -230,7 +224,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   }
 
   override def reverseIterator = new Iterator[A] {
-    val arr = new Array[Any](size)
+    val arr = new Array[Any](PriorityQueue.this.size)
     iterator.copyToArray(arr)
     var i = arr.size - 1
     def hasNext: Boolean = i >= 0

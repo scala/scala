@@ -14,7 +14,6 @@ import java.io.{ File => JFile, IOException, InputStream, BufferedInputStream, B
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import PartialFunction._
 
-import scala.collection.Traversable
 import scala.collection.mutable.{ Map, HashMap }
 import scala.collection.JavaConversions.asIterator
 

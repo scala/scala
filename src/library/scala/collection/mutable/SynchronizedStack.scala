@@ -44,21 +44,13 @@ class SynchronizedStack[A] extends Stack[A] {
    */
   override def push(elem1: A, elem2: A, elems: A*): this.type = synchronized[this.type] { super.push(elem1, elem2, elems: _*) }
 
-  /** Pushes all elements provided by an <code>Traversable</code> object
-   *  on top of the stack. The elements are pushed in the order they
-   *  are given out by the iterator.
-   *
-   *  @param  iter        an iterable object
-   */
-  override def pushAll(elems: scala.collection.Traversable[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
-
   /** Pushes all elements provided by an iterator
    *  on top of the stack. The elements are pushed in the order they
    *  are given out by the iterator.
    *
    *  @param  elems        an iterator
    */
-  override def pushAll(elems: Iterator[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
+  override def pushAll(xs: TraversableOnce[A]): this.type = synchronized[this.type] { super.pushAll(elems) }
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no

@@ -10,7 +10,6 @@ package scala.tools.nsc
 package io
 
 import java.io.{ File => JFile }
-import collection.Traversable
 
 object Directory {
   import scala.util.Properties.{ tmpDir, userHome, userDir }

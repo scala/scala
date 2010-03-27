@@ -64,24 +64,11 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    *  @param   elems      the iterator object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll(elems: Iterator[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
-
-  /** Push all elements provided by the given iterable object onto
-   *  the stack. The last element returned by the traversable object
-   *  will be on top of the new stack.
-   *
-   *  @param   elems      the iterable object.
-   *  @return the stack with the new elements on top.
-   */
-  def pushAll(elems: scala.collection.Traversable[A]): this.type = { for (elem <- elems) { push(elem); () }; this }
+  def pushAll(xs: TraversableOnce[A]): this.type = { xs foreach push ; this }
 
   @deprecated("use pushAll")
   @migration(2, 8, "Stack ++= now pushes arguments on the stack from left to right.")
-  def ++=(it: Iterator[A]): this.type = pushAll(it)
-
-  @deprecated("use pushAll")
-  @migration(2, 8, "Stack ++= now pushes arguments on the stack from left to right.")
-  def ++=(it: scala.collection.Iterable[A]): this.type = pushAll(it)
+  def ++=(xs: TraversableOnce[A]): this.type = pushAll(xs)
 
   /** Returns the top element of the stack. This method will not remove
    *  the element from the stack. An error is signaled if there is no

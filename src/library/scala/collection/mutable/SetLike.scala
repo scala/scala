@@ -164,18 +164,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
     "As of 2.8, this operation creates a new set.  To add the elements as a\n"+
     "side effect to an existing set and return that set itself, use ++=."
   )
-  override def ++(iter: scala.collection.Traversable[A]): This = clone() ++= iter
-
-  /** Adds a number of elements provided by an iterator and returns
-   *  the collection itself.
-   *
-   *  @param iter   the iterator
-   */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To add the elements as a\n"+
-    "side effect to an existing set and return that set itself, use ++=."
-  )
-  override def ++ (iter: Iterator[A]): This = clone() ++= iter
+  override def ++(xs: TraversableOnce[A]): This = clone() ++= xs
 
   /** Removes a single element from this collection and returns
    *  the collection itself.
@@ -211,18 +200,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
     "As of 2.8, this operation creates a new set.  To remove the elements as a\n"+
     "side effect to an existing set and return that set itself, use --=."
   )
-  override def --(iter: scala.collection.Traversable[A]): This = clone() --= iter
-
-  /** Removes a number of elements provided by an iterator and returns
-   *  the collection itself.
-   *
-   *  @param iter   the iterator
-   */
-  @migration(2, 8,
-    "As of 2.8, this operation creates a new set.  To remove the elements as a\n"+
-    "side effect to an existing set and return that set itself, use --=."
-  )
-  override def --(iter: Iterator[A]): This = clone() --= iter
+  override def --(xs: TraversableOnce[A]): This = clone() --= xs
 
   /** Send a message to this scriptable object.
    *

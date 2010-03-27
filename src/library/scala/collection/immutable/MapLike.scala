@@ -75,16 +75,8 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
    *
    *  @param elems     the traversable object.
    */
-  override def ++[B1 >: B](elems: Traversable[(A, B1)]): immutable.Map[A, B1] =
-    ((repr: immutable.Map[A, B1]) /: elems) (_ + _)
-
-  /** Adds a number of elements provided by an iterator
-   *  and returns a new collection with the added elements.
-   *
-   *  @param iter   the iterator
-   */
-  override def ++[B1 >: B] (iter: Iterator[(A, B1)]): immutable.Map[A, B1] =
-    ((repr: immutable.Map[A, B1]) /: iter) (_ + _)
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): immutable.Map[A, B1] =
+    ((repr: immutable.Map[A, B1]) /: xs) (_ + _)
 
   /** Filters this map by retaining only keys satisfying a predicate.
    *  @param  p   the predicate used to test keys

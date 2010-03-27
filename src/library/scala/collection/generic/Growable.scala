@@ -41,19 +41,12 @@ trait Growable[-A] {
    */
   def +=(elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= elems
 
-  /** ${Add}s all elements produced by an iterator to this $coll.
+  /** ${Add}s all elements produced by a TraversableOnce to this $coll.
    *
-   *  @param iter  the iterator producing the elements to $add.
+   *  @param iter  the TraversableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
-  def ++=(iter: Iterator[A]): this.type = { iter foreach += ; this }
-
-  /** ${Add}s all elements contained in a traversable collection to this $coll.
-   *
-   *  @param elems  the collection containing the elements to $add.
-   *  @return  the $coll itself.
-   */
-  def ++=(elems: Traversable[A]): this.type = { elems foreach +=; this }
+  def ++=(xs: TraversableOnce[A]): this.type = { xs foreach += ; this }
 
   /** Clears the $coll's contents. After this operation, the
    *  $coll is empty.

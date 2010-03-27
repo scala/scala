@@ -113,7 +113,7 @@ self =>
    *  then StreamBuilder will be chosen for the implicit.
    *  we recognize that fact and optimize to get more laziness.
    */
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+  override def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
     (if (isEmpty) that.toStream
      else new Stream.Cons(head, (tail ++ that).asInstanceOf[Stream[A]])).asInstanceOf[That]
@@ -128,12 +128,6 @@ self =>
     (if (this.isEmpty) Stream(z)
     else new Stream.Cons(z, tail.scanLeft(op(z, head))(op).asInstanceOf[Stream[B]])).asInstanceOf[That]
   }
-
-  /** Create a new stream which contains all elements of this stream
-   *  followed by all elements of Iterator `that'
-   */
-  override def++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
-    this ++ that.toStream
 
   /** Returns the stream resulting from applying the given function
    *  <code>f</code> to each element of this stream.
@@ -435,7 +429,7 @@ object Stream extends SeqFactory[Stream] {
    *        this builder should be bypassed.
    */
   class StreamBuilder[A] extends scala.collection.mutable.LazyBuilder[A, Stream[A]] {
-    def result: Stream[A] = (for (xs <- parts.iterator; x <- xs.toIterable.iterator) yield x).toStream
+    def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 
   object Empty extends Stream[Nothing] {

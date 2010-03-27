@@ -107,19 +107,17 @@ class Random(val self: java.util.Random) {
  *
  *  @since 2.8
  */
-object Random extends Random
-{
-  import collection.Traversable
+object Random extends Random {
   import collection.mutable.ArrayBuffer
   import collection.generic.CanBuildFrom
 
   /** Returns a new collection of the same type in a randomly chosen order.
    *
-   *  @param  coll    the Traversable to shuffle
-   *  @return         the shuffled Traversable
+   *  @param  coll    the TraversableOnce to shuffle
+   *  @return         the shuffled TraversableOnce
    */
-  def shuffle[T, CC[X] <: Traversable[X]](coll: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
-    val buf = new ArrayBuffer[T] ++= coll
+  def shuffle[T, CC[X] <: TraversableOnce[X]](xs: CC[T])(implicit bf: CanBuildFrom[CC[T], T, CC[T]]): CC[T] = {
+    val buf = new ArrayBuffer[T] ++= xs
 
     def swap(i1: Int, i2: Int) {
       val tmp = buf(i1)
@@ -132,6 +130,6 @@ object Random extends Random
       swap(n - 1, k)
     }
 
-    bf(coll) ++= buf result
+    bf(xs) ++= buf result
   }
 }

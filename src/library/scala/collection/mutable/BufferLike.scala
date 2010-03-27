@@ -131,50 +131,33 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     this
   }
 
-  /** Prepends the elements contained in a traversable collection
-   *  to this buffer.
-   *  @param elems  the collection containing the elements to prepend.
+  /** Prepends elements to this buffer.
+   *
+   *  @param xs  the TraversableOnce containing the elements to prepend.
    *  @return the buffer itself.
    */
-  def ++=:(elems: Traversable[A]): this.type = { insertAll(0, elems); this }
-
-  /** Prepends the elements produced by an iterator to this buffer.
-   *
-   *  @param iter   the iterator producing the elements to prepend.
-   *  @return       the buffer itself.
-   */
-  def ++=:(iter: Iterator[A]): this.type = { insertAll(0, iter.toSeq); this }
+  def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
 
   /** Appends the given elements to this buffer.
    *
    *  @param elems  the elements to append.
    */
-  def append(elems: A*) { this ++= elems }
+  def append(elems: A*) { appendAll(elems) }
 
   /** Appends the elements contained in a traversable collection to this buffer.
    *  @param elems  the collection containing the elements to append.
    */
-  def appendAll(elems: Traversable[A]) { this ++= elems }
-
-  /** Appends the elements produced by an iterator to this buffer.
-   *  @param elems  the iterator producing the elements to append.
-   */
-  def appendAll(iter: Iterator[A]) { this ++= iter }
+  def appendAll(xs: TraversableOnce[A]) { this ++= xs }
 
   /** Prepends given elements to this buffer.
    *  @param elems  the elements to prepend.
    */
-  def prepend(elems: A*) { elems ++=: this }
+  def prepend(elems: A*) { prependAll(elems) }
 
   /** Prepends the elements contained in a traversable collection to this buffer.
    *  @param elems  the collection containing the elements to prepend.
    */
-  def prependAll(iter: Traversable[A]) { iter ++=: this }
-
-  /** Prepends a number of elements produced by an iterator to this buffer.
-   *  @param iter  the iterator producing the elements to prepend.
-   */
-  def prependAll(iter: Iterator[A]) { iter ++=: this }
+  def prependAll(xs: TraversableOnce[A]) { xs ++=: this }
 
   /** Inserts new elements at a given index into this buffer.
    *
@@ -295,18 +278,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
     "Use ++= instead if you intend to add by side effect to an existing collection.\n"
   )
-  def ++(iter: Traversable[A]): This = clone() ++= iter
-
-  /** Adds a number of elements provided by an iterator and returns
-   *  the collection itself.
-   *
-   *  @param iter   the iterator
-   */
-  @migration(2, 8,
-    "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
-    "Use ++= instead if you intend to add by side effect to an existing collection.\n"
-  )
-  def ++ (iter: Iterator[A]): This = clone() ++= iter
+  def ++(xs: TraversableOnce[A]): This = clone() ++= xs
 
   /** Removes a single element from this collection and returns
    *  the collection itself.
@@ -341,16 +313,5 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
     "Use --= instead if you intend to remove by side effect from an existing collection.\n"
   )
-  override def --(iter: Traversable[A]): This = clone() --= iter
-
-  /** Removes a number of elements provided by an iterator and returns
-   *  the collection itself.
-   *
-   *  @param iter   the iterator
-   */
-  @migration(2, 8,
-    "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
-    "Use --= instead if you intend to remove by side effect from an existing collection.\n"
-  )
-  override def --(iter: Iterator[A]): This = clone() --= iter
+  override def --(xs: TraversableOnce[A]): This = clone() --= xs
 }

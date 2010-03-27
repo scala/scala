@@ -15,7 +15,6 @@ import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, IOException, PrintStream, File => JFile }
 import java.nio.channels.{ Channel, FileChannel }
-import collection.Traversable
 import scala.io.Codec
 
 object File

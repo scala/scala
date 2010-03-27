@@ -58,16 +58,8 @@ trait SortedMap[A, +B] extends Map[A, B]
    *
    *  @param elems     the traversable object.
    */
-  override def ++[B1 >: B](elems: scala.collection.Traversable[(A, B1)]): SortedMap[A, B1] =
-    ((repr: SortedMap[A, B1]) /: elems) (_ + _)
-
-  /** Adds a number of elements provided by an iterator
-   *  and returns a new collection with the added elements.
-   *
-   *  @param iter   the iterator
-   */
-  override def ++[B1 >: B] (iter: Iterator[(A, B1)]): SortedMap[A, B1] =
-    ((repr: SortedMap[A, B1]) /: iter) (_ + _)
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): SortedMap[A, B1] =
+    ((repr: SortedMap[A, B1]) /: xs) (_ + _)
 }
 
 /**

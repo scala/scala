@@ -157,13 +157,11 @@ self =>
   protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
   protected def newTakenWhile(p: A => Boolean): Transformed[A] = new TakenWhile { val pred = p }
 
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
-    newAppended(that).asInstanceOf[That]
+  override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
+    newAppended(xs.toTraversable).asInstanceOf[That]
 // was:    if (bf.isInstanceOf[ByPassCanBuildFrom]) newAppended(that).asInstanceOf[That]
 //         else super.++[B, That](that)(bf)
   }
-
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[This, B, That]): That = ++[B, That](that.toStream)
 
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = {
     newMapped(f).asInstanceOf[That]

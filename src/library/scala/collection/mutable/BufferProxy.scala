@@ -61,14 +61,14 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
               "Use `clone() ++=` if you intend to create a new collection.")
-  def ++(iter: scala.collection.Iterable[A]): Buffer[A] = self.++(iter)
+  override def ++(xs: TraversableOnce[A]): Buffer[A] = self.++(xs)
 
   /** Appends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method.
    *
    *  @param iter  the iterable object.
    */
-  def ++=(iter: scala.collection.Iterable[A]): this.type = { self.++=(iter); this }
+  override def ++=(xs: TraversableOnce[A]): this.type = { self.++=(xs); this }
 
   /** Appends a sequence of elements to this buffer.
    *
@@ -81,7 +81,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  def appendAll(iter: scala.collection.Iterable[A]) { self.appendAll(iter) }
+  override def appendAll(xs: TraversableOnce[A]) { self.appendAll(xs) }
 
   /** Prepend a single element to this buffer and return
    *  the identity of the buffer.
@@ -90,8 +90,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   def +=:(elem: A): this.type = { self.+=:(elem); this }
 
-  override def ++=:(iter: scala.collection.Traversable[A]): this.type = { self.++=:(iter); this }
-  override def ++=:(iter: scala.collection.Iterator[A]): this.type = { self.++=:(iter); this }
+  override def ++=:(xs: TraversableOnce[A]): this.type = { self.++=:(xs); this }
 
   /** Prepend an element to this list.
    *
@@ -105,7 +104,7 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *
    *  @param iter  the iterable object.
    */
-  def prependAll(elems: scala.collection.Iterable[A]) { self.prependAll(elems) }
+  override def prependAll(xs: TraversableOnce[A]) { self.prependAll(xs) }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a

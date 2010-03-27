@@ -144,17 +144,11 @@ sealed trait List[@specialized +A] extends LinearSeq[A]
   /** Create a new list which contains all elements of this list
    *  followed by all elements of Traversable `that'
    */
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
+  override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     val b = bf(this)
-    if (b.isInstanceOf[ListBuffer[_]]) (this ::: that.toList).asInstanceOf[That]
-    else super.++(that)
+    if (b.isInstanceOf[ListBuffer[_]]) (this ::: xs.toList).asInstanceOf[That]
+    else super.++(xs)
   }
-
-  /** Create a new list which contains all elements of this list
-   *  followed by all elements of Iterator `that'
-   */
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[List[A], B, That]): That =
-    this ++ that.toList
 
   /** Overrides the method in Iterable for efficiency.
    *
