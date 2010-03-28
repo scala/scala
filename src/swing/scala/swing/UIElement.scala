@@ -31,6 +31,10 @@ object UIElement {
    * Java Swing peer. If this method finds one of the given type `C`,
    * it will return that wrapper. Otherwise it returns `null`. This
    * method never throws an exception.
+   *
+   * Clients should be extremely careful with type parameter `C` and
+   * its interaction with type inference. Better err on the side of caution
+   * and explicitly specify `C`.
    */
   private[swing] def cachedWrapper[C>:Null<:UIElement](c: java.awt.Component): C = {
     val w = c match {

@@ -39,7 +39,7 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
     peer.pack() // pack also validates, which is generally required after an add
   }
   def defaultButton: Option[Button] =
-    toOption(peer.getRootPane.getDefaultButton) map UIElement.cachedWrapper
+    toOption(peer.getRootPane.getDefaultButton) map UIElement.cachedWrapper[Button]
   def defaultButton_=(b: Button) {
     peer.getRootPane.setDefaultButton(b.peer)
   }
@@ -55,7 +55,7 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
   def centerOnScreen() { peer.setLocationRelativeTo(null) }
   def location_=(p: Point) { peer.setLocation(p) }
 
-  def owner: Window = UIElement.cachedWrapper(peer.getOwner)
+  def owner: Window = UIElement.cachedWrapper[Window](peer.getOwner)
 
   def open() { peer setVisible true }
   def close() { peer setVisible false }

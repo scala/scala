@@ -79,6 +79,9 @@ abstract class Component extends UIElement {
     }
   }
 
+  def name: String = peer.getName
+  def name_=(s: String) = peer.setName(s)
+
   /**
    * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
    * align components relative to each other.
