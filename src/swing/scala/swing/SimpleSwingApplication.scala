@@ -5,7 +5,7 @@ abstract class SimpleSwingApplication extends SwingApplication {
 
   override def startup(args: Array[String]) {
     val t = top
-    t.pack()
+    if (t.size == new Dimension(0,0)) t.pack()
     t.visible = true
   }
 
