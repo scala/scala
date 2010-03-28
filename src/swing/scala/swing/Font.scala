@@ -1,6 +1,6 @@
 package scala.swing
 
-object Font {
+/*object Font {
   def apply(fontFormat: Int, fontFile: java.io.File) = java.awt.Font.createFont(fontFormat, fontFile)
   def apply(fontFormat: Int, fontStream: java.io.InputStream) = java.awt.Font.createFont(fontFormat, fontStream)
   def decode(str: String) = java.awt.Font.decode(str)
@@ -67,4 +67,4 @@ object Font {
   def Rectangle(x: Int, y: Int, width: Int, height: Int) = new Insets(x, y, width, height)
   def Point(x: Int, y: Int) = new Point(x, y)
   def Dimension(x: Int, y: Int) = new Dimension(x, y)
-}
+}*/
