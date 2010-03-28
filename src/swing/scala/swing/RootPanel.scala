@@ -22,11 +22,13 @@ trait RootPanel extends Container {
   /**
    * At most one component.
    */
-  def contents: Seq[Component] = {
-    Option[Any](peer.getContentPane.getComponent(0)).map { c =>
-      UIElement.cachedWrapper[Component](c.asInstanceOf[javax.swing.JComponent])
-    }.toList
-  }
+  def contents: Seq[Component] =
+    if (peer.getContentPane.getComponentCount == 0) Nil
+    else {
+      val c = peer.getContentPane.getComponent(0).asInstanceOf[javax.swing.JComponent]
+      List(UIElement.cachedWrapper[Component](c))
+    }
+
   def contents_=(c: Component) {
     if (peer.getContentPane.getComponentCount > 0) {
       val old = peer.getContentPane.getComponent(0)
