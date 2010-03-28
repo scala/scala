@@ -20,7 +20,7 @@ object Analyzer
 final class Analyzer(val global: Global, val callback: AnalysisCallback) extends NotNull
 {
 	import global._
-	import Compat.{archive, linkedClass, nameString}
+	import Compat.{archive, hasAnnotation, linkedClass, nameString}
 
 	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
@@ -31,6 +31,8 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		{
 			val outputDirectory = new File(global.settings.outdir.value)
 			val superclasses = callback.superclassNames flatMap(classForName)
+			val annotations = callback.annotationNames flatMap (classForName) map { sym => (nameString(sym), sym) }
+			def annotated(sym: Symbol): Iterable[String] = annotatedClass(sym, annotations)
 
 			for(unit <- currentRun.units)
 			{
@@ -63,15 +65,19 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 				// find subclasses and modules with main methods
 				for(clazz @ ClassDef(mods, n, _, _) <- unit.body)
 				{
+					// for each annotation on the class, if its name is in annotationNames, callback.foundAnnotated(sourceFile, nameString(sym), annotationName, isModule)
 					val sym = clazz.symbol
 					if(sym != NoSymbol && mods.isPublic && !mods.isAbstract && !mods.isTrait &&
 						 !sym.isImplClass && sym.isStatic && !sym.isNestedClass)
 					{
+						val name = nameString(sym)
 						val isModule = sym.isModuleClass
 						for(superclass <- superclasses.filter(sym.isSubClass))
-							callback.foundSubclass(sourceFile, nameString(sym), nameString(superclass), isModule)
+							callback.foundSubclass(sourceFile, name, nameString(superclass), isModule)
 						if(isModule && hasMainMethod(sym))
-							callback.foundApplication(sourceFile, nameString(sym))
+							callback.foundApplication(sourceFile, name)
+						for(annotation <- annotated(sym))
+							callback.foundAnnotated(sourceFile, name, annotation, isModule)
 					}
 				}
 
@@ -130,6 +136,10 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 				None
 		}
 	}
+	private def annotated(annotations: Iterable[(String, Symbol)])(sym: Symbol): Iterable[String] =
+		annotations flatMap { case (name, ann) => if(hasAnnotation(sym)(ann)) name :: Nil else  Nil }
+	private def annotatedClass(sym: Symbol, annotations: Iterable[(String, Symbol)]): Iterable[String] =
+		if(annotations.isEmpty) Nil else annotated(annotations)(sym) ++ sym.info.nonPrivateMembers.flatMap { annotated(annotations) }
 
 	// doesn't seem to be in 2.7.7, so copied from GenJVM to here
 	private def moduleSuffix(sym: Symbol) =
@@ -223,7 +233,12 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 			def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
 			
 			def linkedClassOfModule = s.companionClass; def companionClass = sourceCompatibilityOnly
+		// In 2.8, hasAttribute is renamed to hasAnnotation
+			def hasAnnotation(a: Symbol) = s.hasAttribute(a); def hasAttribute(a: Symbol) = sourceCompatibilityOnly
 		}
+
+		def hasAnnotation(s: Symbol)(ann: Symbol) = atPhase(currentRun.typerPhase) { s.hasAnnotation(ann) }
+
 		/** After 2.8.0.Beta1, getArchive was renamed archive.*/
 		private implicit def zipCompat(z: ZipArchive#Entry): ZipCompat = new ZipCompat(z)
 		private final class ZipCompat(z: ZipArchive#Entry)
