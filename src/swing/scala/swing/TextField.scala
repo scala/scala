@@ -30,7 +30,7 @@ import java.awt.event._
  *
  * @see javax.swing.JTextField
  */
-class TextField(text0: String, columns0: Int) extends TextComponent with TextComponent.HasColumns {
+class TextField(text0: String, columns0: Int) extends TextComponent with TextComponent.HasColumns with Action.Trigger.Wrapper {
   override lazy val peer: JTextField = new JTextField(text0, columns0) with SuperMixin
   def this(text: String) = this(text, 0)
   def this(columns: Int) = this("", columns)

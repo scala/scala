@@ -29,9 +29,17 @@ object Action {
       def peer: javax.swing.JComponent {
         def addActionListener(a: ActionListener)
         def removeActionListener(a: ActionListener)
-        def setAction(a: Action): javax.swing.Action
-        def getAction: javax.swing.Action
+        def setAction(a: javax.swing.Action)
+        def getAction(): javax.swing.Action
       }
+
+      // TODO: we need an action cache
+      private var _action: Action = Action.NoAction
+      def action: Action = _action
+      def action_=(a: Action) { _action = a; peer.setAction(a.peer) }
+
+      //1.6: def hideActionText: Boolean = peer.getHideActionText
+      //def hideActionText_=(b: Boolean) = peer.setHideActionText(b)
     }
   }
 
