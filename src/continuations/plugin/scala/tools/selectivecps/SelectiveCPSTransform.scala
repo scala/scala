@@ -28,6 +28,8 @@ abstract class SelectiveCPSTransform extends PluginComponent with
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new CPSTransformer(unit)
 
+  /** This class does not change linearization */
+  override def changesBaseClasses = false
 
   /** - return symbol's transformed type,
    */
