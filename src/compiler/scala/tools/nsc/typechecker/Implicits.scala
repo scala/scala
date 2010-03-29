@@ -784,6 +784,7 @@ self: Analyzer =>
         inferImplicit(tree, appliedType(manifestClass.typeConstructor, List(tp)), true, false, context).tree
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
+      def findElemManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else PartialManifestClass)
 
       def mot(tp0: Type): Tree = {
         val tp1 = tp0.normalize
@@ -800,7 +801,7 @@ self: Analyzer =>
             } else if (sym == RepeatedParamClass || sym == ByNameParamClass) {
               EmptyTree
             } else if (sym == ArrayClass && args.length == 1) {
-              manifestFactoryCall("arrayType", args.head, findSubManifest(args.head))
+              manifestFactoryCall("arrayType", args.head, findElemManifest(args.head))
             } else if (sym.isClass) {
               val suffix = gen.mkClassOf(tp1) :: (args map findSubManifest)
               manifestFactoryCall(
