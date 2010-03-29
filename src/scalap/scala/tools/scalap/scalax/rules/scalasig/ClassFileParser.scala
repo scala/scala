@@ -9,8 +9,6 @@ import java.io.IOException
 import scala._
 import scala.Predef._
 
-import scalax.rules.Error
-
 object ByteCode {
   def apply(bytes : Array[Byte]) = new ByteCode(bytes, 0, bytes.length)
 
@@ -62,10 +60,22 @@ class ByteCode(val bytes : Array[Byte], val pos : Int, val length : Int) {
   def toInt = fold(0) { (x, b) => (x << 8) + (b & 0xFF)}
   def toLong = fold(0L) { (x, b) => (x << 8) + (b & 0xFF)}
 
-  def toUTF8String = io.Codec toUTF8 (bytes drop pos take length) mkString
+  /**
+   * Transforms array subsequence of the current buffer into the UTF8 String and
+   * stores and array of bytes for the decompiler
+   */
+  def toUTF8StringAndBytes = {
+    val chunk: Array[Byte] = bytes drop pos take length
+    StringBytesPair(io.Codec.toUTF8(chunk).mkString, chunk)
+  }
 
   def byte(i : Int) = bytes(pos) & 0xFF
 }
+
+/**
+ * The wrapper for decode UTF-8 string
+ */
+case class StringBytesPair(string: String, bytes: Array[Byte])
 
 /** Provides rules for parsing byte-code.
 */
@@ -92,7 +102,7 @@ object ClassFileParser extends ByteCodeReader {
 
   // NOTE currently most constants just evaluate to a string description
   // TODO evaluate to useful values
-  val utf8String = (u2 >> bytes) ^^ add1 { raw => pool => raw.toUTF8String }
+  val utf8String = (u2 >> bytes) ^^ add1 { raw => pool => raw.toUTF8StringAndBytes }
   val intConstant = u4 ^^ add1 { x => pool => x }
   val floatConstant = bytes(4) ^^ add1 { raw => pool => "Float: TODO" }
   val longConstant = bytes(8) ^^ add2 { raw => pool => raw.toLong }
@@ -177,7 +187,12 @@ case class ClassFile(
   def superClass = constant(header.superClassIndex)
   def interfaces = header.interfaces.map(constant)
 
-  def constant(index : Int) = header.constants(index)
+  def constant(index : Int) = header.constants(index) match {
+    case StringBytesPair(str, _) => str
+    case z => z
+  }
+
+  def constantWrapped(index: Int) = header.constants(index)
 
   def attribute(name : String) = attributes.find {attrib => constant(attrib.nameIndex) == name }
 

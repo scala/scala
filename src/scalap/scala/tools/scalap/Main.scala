@@ -119,8 +119,8 @@ object Main {
       case None => ""
       case Some(Annotation(_, elements)) =>
         val bytesElem = elements.find(elem => constant(elem.elementNameIndex) == BYTES_VALUE).get
-        val sigString = (bytesElem.elementValue match {case ConstValueIndex(index) => constant(index)}).asInstanceOf[String]
-        val bytes = sigString.getBytes("UTF-8")
+        val bytes = ((bytesElem.elementValue match {case ConstValueIndex(index) => constantWrapped(index)})
+                .asInstanceOf[StringBytesPair].bytes)
         val length = ByteCodecs.decode(bytes)
         val scalaSig = ScalaSigAttributeParsers.parse(ByteCode(bytes.take(length)))
         parseScalaSignature(scalaSig, isPackageObject)

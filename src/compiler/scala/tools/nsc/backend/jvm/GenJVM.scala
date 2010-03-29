@@ -18,7 +18,7 @@ import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 
 import ch.epfl.lamp.fjbg._
 import java.io.{ByteArrayOutputStream, DataOutputStream, File, OutputStream}
-import reflect.generic.{PickleFormat, PickleBuffer}
+import scala.reflect.generic.{PickleFormat, PickleBuffer}
 
 /** This class ...
  *
@@ -908,7 +908,7 @@ abstract class GenJVM extends SubComponent {
                                            JClass.NO_INTERFACES,
                                            sourceFile)
       addForwarders(mirrorClass, clasz)
-      val ssa = scalaSignatureAddingMarker(mirrorClass, clasz.companionSymbol)
+      val ssa = scalaSignatureAddingMarker(mirrorClass, clasz)
       addAnnotations(mirrorClass, clasz.annotations ++ ssa)
       emitClass(mirrorClass, clasz)
     }
