@@ -401,6 +401,11 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
           transChildrenInOrder(tree, tpe, qual::(transArgList(fun, args).flatten), Nil)
 
+        case TypeApply(fun @ Select(qual, name), args) if (fun.tpe ne null) && !fun.tpe.isErroneous =>
+          vprintln("[checker] checking select apply " + tree + "/" + tpe)
+
+          transChildrenInOrder(tree, tpe, List(qual, fun), Nil)
+
         case Apply(fun, args) if (fun.tpe ne null) && !fun.tpe.isErroneous =>
 
           vprintln("[checker] checking unknown apply " + tree + "/" + tpe)
@@ -418,8 +423,28 @@ abstract class CPSAnnotationChecker extends CPSUtils {
           vprintln("[checker] checking select " + tree + "/" + tpe)
 
           // FIXME: put it back in?? (problem with test cases select.scala and Test2.scala)
-          // transChildrenInOrder(tree, tpe, List(qual))
-          tpe
+          // transChildrenInOrder(tree, tpe, List(qual), Nil)
+
+          //TODO: cleanup
+
+          // seem to be only a problem if qual is of type OverloadedType
+
+          if (!tpe.isInstanceOf[OverloadedType] && !tpe.isInstanceOf[MethodType] && !tpe.isInstanceOf[PolyType]) {
+            transChildrenInOrder(tree, tpe, List(qual), Nil)
+          } else {
+            if (qual.tpe.hasAnnotation(MarkerCPSTypes)) {
+              // If it's a method without parameters, just apply it. normally done in adapt, but
+              // we have to do it here so we don't lose the cps information
+              tpe match {
+                case PolyType(List(), restpe) =>
+                  //println("yep: " + restpe + "," + restpe.getClass)
+                  transChildrenInOrder(tree, restpe, List(qual), Nil)
+                case _ =>
+                  tpe
+              }
+            } else
+              tpe
+          }
 
         case If(cond, thenp, elsep) =>
           transChildrenInOrder(tree, tpe, List(cond), List(thenp, elsep))

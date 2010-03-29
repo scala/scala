@@ -192,8 +192,8 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
                         .setInfo(ldef.symbol.info)
                         .setFlag(Flags.SYNTHETIC)
 
-            val subst = new TreeSymSubstituter(List(ldef.symbol), List(sym))
-            val rhsVal = transExpr(subst(rhs), None, getAnswerTypeAnn(tree.tpe))
+            new TreeSymSubstituter(List(ldef.symbol), List(sym)).traverse(rhs)
+            val rhsVal = transExpr(rhs, None, getAnswerTypeAnn(tree.tpe))
 
             val stm1 = localTyper.typed(DefDef(sym, rhsVal))
             val expr = localTyper.typed(Apply(Ident(sym), List()))
