@@ -1721,8 +1721,10 @@ self =>
           mods = modifiers() | Flags.PARAMACCESSOR
           if (mods.hasFlag(Flags.LAZY)) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", false)
           if (in.token == VAL) {
+            mods = mods withPosition (in.token, tokenRange(in))
             in.nextToken()
           } else if (in.token == VAR) {
+            mods = mods withPosition (in.token, tokenRange(in))
             mods |= Flags.MUTABLE
             in.nextToken()
           } else if (!caseParam) {
