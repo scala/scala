@@ -324,9 +324,9 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       }
       val indentation = countWhitespace
       val indentStr = " " * indentation
-      val style = listStyles.keysIterator.find( x => check(indentStr + x) )
-      val constructor = listStyles(style.get)
-      listLevel(indentStr, style.get, constructor)
+      val style = listStyles.keysIterator.find( x => check(indentStr + x) ).getOrElse(listStyles.keysIterator.next)
+      val constructor = listStyles(style)
+      listLevel(indentStr, style, constructor)
     }
     def code(): Block = {
       jump("{{{")
