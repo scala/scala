@@ -378,9 +378,12 @@ trait TraversableOnce[+A] {
    *           A `ClassManifest` must be available for the element type of this $coll.
    */
   def toArray[B >: A : ClassManifest]: Array[B] = {
-    val result = new Array[B](size)
-    copyToArray(result, 0)
-    result
+    if (isTraversableAgain) {
+      val result = new Array[B](size)
+      copyToArray(result, 0)
+      result
+    }
+    else toStream.toArray
   }
 
   /** Converts this $coll to a list.
