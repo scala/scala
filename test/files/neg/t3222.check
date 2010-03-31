@@ -1,0 +1,13 @@
+t3222.scala:1: error: not found: type B
+@throws(classOf[B])
+                ^
+t3222.scala:4: error: not found: type D
+  def foo(@throws(classOf[D]) x: Int) {}
+                          ^
+t3222.scala:3: error: not found: type C
+  @throws(classOf[C])
+                  ^
+t3222.scala:6: error: not found: type E
+  @throws(classOf[E])
+                  ^
+four errors found

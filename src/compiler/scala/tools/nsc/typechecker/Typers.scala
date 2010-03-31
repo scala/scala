@@ -1489,6 +1489,8 @@ trait Typers { self: Analyzer =>
      */
     def typedTemplate(templ: Template, parents1: List[Tree]): Template = {
       val clazz = context.owner
+      // complete lazy annotations
+      val annots = clazz.annotations
       if (templ.symbol == NoSymbol)
         templ setSymbol clazz.newLocalDummy(templ.pos)
       val self1 = templ.self match {
@@ -1542,6 +1544,9 @@ trait Typers { self: Analyzer =>
       val sym = vdef.symbol
       val typer1 = constrTyperIf(sym.hasFlag(PARAM) && sym.owner.isConstructor)
       val typedMods = removeAnnotations(vdef.mods)
+
+      // complete lazy annotations
+      val annots = sym.annotations
 
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
@@ -1813,6 +1818,9 @@ trait Typers { self: Analyzer =>
       val tparams1 = ddef.tparams mapConserve typedTypeDef
       val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
 
+      // complete lazy annotations
+      val annots = meth.annotations
+
       for (vparams1 <- vparamss1; vparam1 <- vparams1 dropRight 1)
         if (isRepeatedParamType(vparam1.symbol.tpe))
           error(vparam1.pos, "*-parameter must come last")
@@ -1858,6 +1866,8 @@ trait Typers { self: Analyzer =>
       reenterTypeParams(tdef.tparams) // @M!
       val tparams1 = tdef.tparams mapConserve (typedTypeDef) // @M!
       val typedMods = removeAnnotations(tdef.mods)
+      // complete lazy annotations
+      val annots = tdef.symbol.annotations
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
       if (tdef.symbol.owner.isType)
@@ -3776,6 +3786,8 @@ trait Typers { self: Analyzer =>
         case PackageDef(pid, stats) =>
           val pid1 = typedQualifier(pid).asInstanceOf[RefTree]
           assert(sym.moduleClass ne NoSymbol, sym)
+          // complete lazy annotations
+          val annots = sym.annotations
           val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
             .typedStats(stats, NoSymbol)
           treeCopy.PackageDef(tree, pid1, stats1) setType NoType

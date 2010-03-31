@@ -107,7 +107,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  the annotations attached to member a definition (class, method, type, field).
      */
     def annotations: List[AnnotationInfo] = {
-      // .initialize: the type completer o f the symbol parses the annotations,
+      // .initialize: the type completer of the symbol parses the annotations,
       // see "def typeSig" in Namers
       val annots1 = initialize.rawannots map {
         case LazyAnnotationInfo(annot) => annot()
