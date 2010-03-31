@@ -2640,15 +2640,23 @@ trait Typers { self: Analyzer =>
             None
           } else Some(NestedAnnotArg(annInfo))
 
-        // use of: object Array.apply[A <: AnyRef](args: A*): Array[A] = ...
-        // and object Array.apply(args: Int*): Array[Int] = ... (and similar)
-        case Apply(fun, members) =>
+        // use of Array.apply[T: ClassManifest](xs: T*): Array[T]
+        // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
+        case Apply(fun, args) =>
           val typedFun = typed(fun, funMode(mode), WildcardType)
           if (typedFun.symbol.owner == ArrayModule.moduleClass &&
-              typedFun.symbol.name == nme.apply &&
-              pt.typeSymbol == ArrayClass &&
-              !pt.typeArgs.isEmpty)
-            trees2ConstArg(members, pt.typeArgs.head)
+              typedFun.symbol.name == nme.apply)
+            pt match {
+              case TypeRef(_, sym, argts) if (sym == ArrayClass && !argts.isEmpty) =>
+                trees2ConstArg(args, argts.head)
+              case _ =>
+                // For classfile annotations, pt can only be T:
+                //   BT = Int, .., String, Class[_], JavaAnnotClass
+                //   T = BT | Array[BT]
+                // So an array literal as argument can only be valid if pt is Array[_]
+                error(tree.pos, "found array constant, expected argument of type "+ pt)
+                None
+            }
           else
             tryConst(tree, pt)
 

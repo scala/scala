@@ -89,3 +89,22 @@ trait BeanF {
   def isG(): Boolean
   def setG(nb: Boolean): Unit
 }
+
+
+class Ann3(arr: Array[String]) extends ClassfileAnnotation
+class Ann4(i: Int) extends ClassfileAnnotation
+class Ann5(value: Class[_]) extends ClassfileAnnotation
+
+object Test3 {
+  final val i = 1083
+  final val cls = classOf[String]
+}
+
+class Test4 {
+  @Ann3(arr = Array("dlkfj", "DSF"))
+  @Ann4(i = 2908)
+  @Ann4(i = Test3.i)
+  @Ann5(value = classOf[Int])
+  @Ann5(Test3.cls)
+  def foo {}
+}
