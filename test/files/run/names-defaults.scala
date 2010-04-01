@@ -296,6 +296,14 @@ object Test extends Application {
     class C extends A
   }
 
+  object t3178 {
+    def foo(x: String) = x
+    def foo(x: Int) = x
+    def bar(foo: Int) = foo
+    bar(foo = 1)
+  }
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))

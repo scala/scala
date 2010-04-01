@@ -440,6 +440,8 @@ trait NamesDefaults { self: Analyzer =>
               case _ => super.apply(tp)
             }
           }
+          val reportAmbiguousErrors = typer.context.reportAmbiguousErrors
+          typer.context.reportAmbiguousErrors = false
           val res = typer.silent(_.typed(arg, subst(paramtpe))) match {
             case _: TypeError =>
               // if the named argument is on the original parameter
@@ -457,6 +459,7 @@ trait NamesDefaults { self: Analyzer =>
                 errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
                              "name of the method and the name of a variable currently in scope.")
           }
+          typer.context.reportAmbiguousErrors = reportAmbiguousErrors
           //@M note that we don't get here when an ambiguity was detected (during the computation of res),
           // as errorTree throws an exception
           typer.context.undetparams = udp
