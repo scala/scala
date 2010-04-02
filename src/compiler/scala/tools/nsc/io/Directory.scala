@@ -53,6 +53,9 @@ class Directory(jfile: JFile) extends Path(jfile) {
   def dirs: Iterator[Directory] = list collect { case x: Directory => x }
   def files: Iterator[File] = list collect { case x: File => x }
 
+  override def walkFilter(cond: Path => Boolean): Iterator[Path] =
+    list filter cond flatMap (_ walkFilter cond)
+
   def deepDirs: Iterator[Directory] = Path.onlyDirs(deepList())
   def deepFiles: Iterator[File] = Path.onlyFiles(deepList())
 

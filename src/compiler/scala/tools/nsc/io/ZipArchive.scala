@@ -236,10 +236,9 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   }
 
   private def zipTraversableFromZipFile(z: ZipFile): ZipTrav =
-    new Traversable[ZipEntry] {
-      def zis: ZipInputStream = null  // not valid for this type
-      val itStream = asIterator(z.entries()).toStream
-      def foreach[U](f: ZipEntry => U) = itStream foreach f
+    new Iterable[ZipEntry] {
+      def zis: ZipInputStream = null    // not valid for this type
+      def iterator = asIterator(z.entries())
     }
 }
 

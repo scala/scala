@@ -42,8 +42,8 @@ case class CommandLine(
 
   val Terminator = "--"
   val ValueForUnaryOption = "true"  // so if --opt is given, x(--opt) = true
-  def mapForUnary(opt: String) = Map(opt -> ValueForUnaryOption)
 
+  def mapForUnary(opt: String) = Map(opt -> ValueForUnaryOption)
   def errorFn(msg: String) = println(msg)
 
   /** argMap is option -> argument (or "" if it is a unary argument)
@@ -51,10 +51,17 @@ case class CommandLine(
    */
   lazy val (argMap, residualArgs) = {
     val residualBuffer = new ListBuffer[String]
+
+    def stripQuotes(s: String) = {
+      def isQuotedBy(c: Char) = s.length > 0 && s.head == c && s.last == c
+      if (List('"', '\'') exists isQuotedBy) s.tail.init else s
+    }
+
     def isValidOption(s: String) = !onlyKnownOptions || (unaryArguments contains s) || (binaryArguments contains s)
     def isOption(s: String) = (s startsWith "-") && (isValidOption(s) || { unknownOption(s) ; false })
     def isUnary(s: String) = isOption(s) && (unaryArguments contains s)
     def isBinary(s: String) = isOption(s) && !isUnary(s) && (assumeBinary || (binaryArguments contains s))
+
     def unknownOption(opt: String) =
       errorFn("Option '%s' not recognized.".format(opt))
     def missingArg(opt: String, what: String) =
@@ -78,8 +85,12 @@ case class CommandLine(
         if (hd2 == Terminator) mapForUnary(hd1) ++ residual(rest)
         else if (isUnary(hd1)) mapForUnary(hd1) ++ loop(hd2 :: rest)
         else if (isBinary(hd1)) {
-          if (isOption(hd2) && enforceArity)
-            missingArg(hd1, hd2)
+          // Disabling this check so
+          //  --scalacopts "-verbose" works.  We can't tell if it's quoted,
+          // the shell does us in.
+          //
+          // if (isOption(hd2) && enforceArity)
+          //   missingArg(hd1, hd2)
 
           Map(hd1 -> hd2) ++ loop(rest)
         }
@@ -87,7 +98,7 @@ case class CommandLine(
       }
     }
 
-    (loop(args), residualBuffer.toList)
+    (loop(args), residualBuffer map stripQuotes toList)
   }
 
   def isSet(arg: String) = args contains arg
@@ -110,8 +121,8 @@ object CommandLineParser extends RegexParsers with ParserUtil {
   )
 
   /** Apparently windows can't deal with the quotes sticking around. */
-  lazy val squoted: Parser[String] = mkQuoted('\'') // ^^ (x => "'%s'" format x)
-  lazy val dquoted: Parser[String] = mkQuoted('"')  // ^^ (x => "\"" + x + "\"")
+  lazy val squoted: Parser[String] = mkQuoted('\'')   // ^^ (x => "'%s'" format x)
+  lazy val dquoted: Parser[String] = mkQuoted('"')    // ^^ (x => "\"" + x + "\"")
   lazy val token: Parser[String]   = """\S+""".r
 
   lazy val argument: Parser[String] = squoted | dquoted | token

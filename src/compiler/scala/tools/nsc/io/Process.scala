@@ -46,7 +46,6 @@ object Process
       val p = Process(cmd)
       xs foreach (x => p.stdin println stringify(x))
       p.stdin.close()
-      p.stdin.flush()
       p.stdout.toList
     }
   }
@@ -168,6 +167,7 @@ class Process(processCreator: () => JProcess) extends Iterable[String] {
     override def run() {
       reader.readLine match {
         case null =>
+          in.close()
         case x    =>
           queue put x
           run()

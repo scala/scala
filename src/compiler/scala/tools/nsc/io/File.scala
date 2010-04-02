@@ -17,8 +17,7 @@ import java.io.{
 import java.nio.channels.{ Channel, FileChannel }
 import scala.io.Codec
 
-object File
-{
+object File {
   def pathSeparator = JFile.pathSeparator
   def separator = JFile.separator
 
@@ -33,6 +32,17 @@ object File
   type Closeable = { def close(): Unit }
   def closeQuietly(target: Closeable) {
     try target.close() catch { case e: IOException => }
+  }
+
+  // this is a workaround for http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6503430
+  // we are using a static initializer to statically initialize a java class so we don't
+  // trigger java.lang.InternalErrors later when using it concurrently.
+  {
+    val tmp = JFile.createTempFile("bug6503430", null, null)
+    val in = new FileInputStream(tmp).getChannel()
+    val out = new FileOutputStream(tmp, true).getChannel()
+    out.transferFrom(in, 0, 0)
+    ()
   }
 }
 import File._
@@ -58,6 +68,8 @@ with Streamable.Chars {
   override def normalize: File = super.normalize.toFile
   override def isValid = jfile.isFile() || !jfile.exists()
   override def length = super[Path].length
+  override def walkFilter(cond: Path => Boolean): Iterator[Path] =
+    if (cond(this)) Iterator.single(this) else Iterator.empty
 
   /** Obtains an InputStream. */
   def inputStream() = new FileInputStream(jfile)
@@ -86,8 +98,14 @@ with Streamable.Chars {
     finally out close
   }
 
-  def copyFile(destPath: Path, preserveFileDate: Boolean = false) = {
-    val FIFTY_MB = 1024 * 1024 * 50
+  def appendAll(strings: String*): Unit = {
+    val out = bufferedWriter(append = true)
+    try strings foreach (out write _)
+    finally out close
+  }
+
+  def copyTo(destPath: Path, preserveFileDate: Boolean = false): Boolean = {
+    val CHUNK = 1024 * 1024 * 16  // 16 MB
     val dest = destPath.toFile
     if (!isValid) fail("Source %s is not a valid file." format name)
     if (this.normalize == dest.normalize) fail("Source and destination are the same.")
@@ -104,7 +122,7 @@ with Streamable.Chars {
       val size = in.size()
       var pos, count = 0L
       while (pos < size) {
-        count = (size - pos) min FIFTY_MB
+        count = (size - pos) min CHUNK
         pos += out.transferFrom(in, pos, count)
       }
     }
@@ -116,6 +134,6 @@ with Streamable.Chars {
     if (preserveFileDate)
       dest.lastModified = this.lastModified
 
-    ()
+    true
   }
 }
