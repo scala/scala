@@ -668,11 +668,12 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
   }
 
   def result: Vector[A] = {
-    if (blockIndex + lo == 0)
+    val size = blockIndex + lo
+    if (size == 0)
       return Vector.empty
-    val s = new Vector[A](0, blockIndex + lo, 0) // should focus front or back?
+    val s = new Vector[A](0, size, 0) // should focus front or back?
     s.initFrom(this)
-    if (depth > 1) s.gotoPos(0, blockIndex + lo)
+    if (depth > 1) s.gotoPos(0, size - 1) // we're currently focused to size - 1, not size!
     s
   }
 
