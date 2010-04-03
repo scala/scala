@@ -41,7 +41,7 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
   protected def nwords: Int
 
   /** The words at index `idx', or 0L if outside the range of the set
-   *  @pre idx >= 0
+   *  @note Requires `idx >= 0`
    */
   protected def word(idx: Int): Long
 

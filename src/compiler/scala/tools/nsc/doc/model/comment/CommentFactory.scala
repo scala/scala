@@ -359,13 +359,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /** {{{ para ::= inline '\n' }}} */
     def para(): Block = {
-      def checkParaEnd(): Boolean = {
-        check(Array(endOfLine, endOfLine)) ||
-        check(Array(endOfLine, '=')) ||
-        check(Array(endOfLine, '{', '{', '{')) ||
-        check(Array(endOfLine, ' ', '-', ' '))
-      }
-      val p = Paragraph(inline(checkParaEnd()))
+      val p = Paragraph(inline(checkParaEnded()))
       while (char == endOfLine && char != endOfText)
         nextChar()
       p
@@ -508,7 +502,14 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     }
 
     def checkParaEnded(): Boolean = {
-      char == endOfText || check(Array(endOfLine, endOfLine)) || check(Array(endOfLine, '{', '{', '{')) || check(Array(endOfLine, '\u003D'))
+      (char == endOfText) ||
+      ((char == endOfLine) && {
+        check(Array(endOfLine, endOfLine)) ||
+        check(Array(endOfLine, '=')) ||
+        check(Array(endOfLine, '{', '{', '{')) ||
+        check(Array(endOfLine, ' ', '-', ' ')) ||
+        check(Array(endOfLine, '\u003D'))
+      })
     }
 
     def reportError(pos: Position, message: String): Unit =

@@ -40,9 +40,6 @@ abstract class HtmlPage { thisPage =>
     * also defined by the generator.
     * @param generator The generator that is writing this page. */
   def writeFor(site: HtmlFactory): Unit = {
-    val pageFile = new File(site.siteRoot, absoluteLinkTo(thisPage.path))
-    val pageFolder = pageFile.getParentFile
-    if (!pageFolder.exists) pageFolder.mkdirs()
     val doctype =
       DocType("html", PublicID("-//W3C//DTD XHTML 1.1//EN", "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"), Nil)
     val html =
@@ -55,6 +52,9 @@ abstract class HtmlPage { thisPage =>
         </head>
         { body }
       </html>
+    val pageFile = new File(site.siteRoot, absoluteLinkTo(thisPage.path))
+    val pageFolder = pageFile.getParentFile
+    if (!pageFolder.exists) pageFolder.mkdirs()
     val fos = new FileOutputStream(pageFile.getPath)
     val w = Channels.newWriter(fos.getChannel, site.encoding)
     try {
@@ -62,7 +62,10 @@ abstract class HtmlPage { thisPage =>
       w.write( doctype.toString + "\n")
       w.write(xml.Xhtml.toXhtml(html))
     }
-    finally { w.close() ; fos.close() }
+    finally {
+      w.close()
+      fos.close()
+    }
     //XML.save(pageFile.getPath, html, site.encoding, xmlDecl = false, doctype = doctype)
   }
 

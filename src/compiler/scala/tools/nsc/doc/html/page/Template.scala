@@ -57,15 +57,19 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
       <div id="template">
 
-        { if (tpl.linearization.isEmpty) NodeSeq.Empty else
-            <div id="mbrsel">
+        <div id="mbrsel">
+          { if (tpl.linearization.isEmpty) NodeSeq.Empty else
               <div id="ancestors">
-                <h3>Inherits</h3>
-                <ol id="linearizationtoggle"><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
+                <h3>Inherited</h3>
+                <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
                 <ol id="linearization">{ tpl.linearization map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
               </div>
-            </div>
-        }
+          }
+          <div id="visbl">
+            <h3>Visibility</h3>
+            <ol><li class="public in">Public</li><li class="all out">All</li></ol>
+          </div>
+        </div>
 
         { if (typeMembers.isEmpty) NodeSeq.Empty else
             <div id="types" class="members">
@@ -96,7 +100,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
   def memberToHtml(mbr: MemberEntity): NodeSeq = {
     val attributes: List[comment.Body] = Nil
-    <li name={ mbr.definitionName }>
+    <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }>
       { signature(mbr, false) }
       { memberToCommentHtml(mbr, false) }
     </li>
@@ -166,7 +170,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }</dl>
         }
       }
-      { val fvs: List[comment.Paragraph] = mbr.visibility.toList ::: mbr.flags
+      { val fvs: List[comment.Paragraph] = visibility(mbr).toList ::: mbr.flags
         if (fvs.isEmpty) NodeSeq.Empty else
           <div class="block">
             attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
@@ -258,6 +262,27 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case Some(tpe) => xml.Text(pre) ++ typeToHtml(tpe, hasLinks)
     }
     bound0(hi, " <: ") ++ bound0(lo, " >: ")
+  }
+
+  def visibility(mbr: MemberEntity): Option[comment.Paragraph] = {
+    import comment._
+    import comment.{ Text => CText }
+    mbr.visibility match {
+      case PrivateInInstance() =>
+        Some(Paragraph(CText("private[this]")))
+      case PrivateInTemplate(owner) if (owner == mbr.inTemplate) =>
+        Some(Paragraph(CText("private")))
+      case PrivateInTemplate(owner) =>
+        Some(Paragraph(Chain(List(CText("private["), EntityLink(owner), CText("]")))))
+      case ProtectedInInstance() =>
+        Some(Paragraph(CText("protected[this]")))
+      case ProtectedInTemplate(owner) if (owner == mbr.inTemplate) =>
+        Some(Paragraph(CText("protected")))
+      case ProtectedInTemplate(owner) =>
+        Some(Paragraph(Chain(List(CText("protected["), EntityLink(owner), CText("]")))))
+      case Public() =>
+        None
+    }
   }
 
   /** name, tparams, params, result */

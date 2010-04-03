@@ -34,7 +34,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
 
   /** */
   protected val templatesCache =
-    new mutable.LinkedHashMap[(Symbol, TemplateImpl), DocTemplateImpl]
+    new mutable.LinkedHashMap[Symbol, DocTemplateImpl]
 
   def findTemplate(query: String): Option[DocTemplateImpl] = {
     if (!modelFinished) throw new Error("cannot find template in unfinished universe")
@@ -84,18 +84,20 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       else
         makeTemplate(sym.owner) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
     def visibility = {
-      def qual = {
-        val qq =
-          if (sym hasFlag Flags.LOCAL)
-            Some("this")
-          else if (sym.privateWithin != null && sym.privateWithin != NoSymbol)
-            Some(sym.privateWithin.nameString) // TODO: create an inline link to the qualifier entity
-          else None
-        qq match { case Some(q) => "[" + q + "]" case None => "" }
+      if (sym hasFlag Flags.LOCAL) {
+        if (sym hasFlag Flags.PRIVATE) PrivateInInstance()
+        else ProtectedInInstance()
       }
-      if (sym hasFlag Flags.PRIVATE) Some(Paragraph(Text(optimize("private" + qual))))
-      else if (sym hasFlag Flags.PROTECTED) Some(Paragraph(Text(optimize("protected" + qual))))
-      else None
+      else {
+        val qual =
+          if (sym.privateWithin != null && sym.privateWithin != NoSymbol)
+            Some(makeTemplate(sym.privateWithin))
+          else None
+        if (sym hasFlag Flags.PRIVATE) PrivateInTemplate(inTpl)
+        else if (sym hasFlag Flags.PROTECTED) ProtectedInTemplate(qual getOrElse inTpl)
+        else if (qual.isDefined) PrivateInTemplate(qual.get)
+        else Public()
+      }
     }
     def flags = {
       val fgs = mutable.ListBuffer.empty[Paragraph]
@@ -138,8 +140,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     * * All non-package members (including other templates, as full templates). */
   abstract class DocTemplateImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with TemplateImpl with DocTemplateEntity {
     //if (inTpl != null) println("mbr " + sym + " in " + (inTpl.toRoot map (_.sym)).mkString(" > "))
-    templatesCache += ((sym, inTpl) -> this)
-    override def definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
+    templatesCache += (sym -> this)
+    lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
     def inSource = if (sym.sourceFile != null) Some(sym.sourceFile, sym.pos.line) else None
     def sourceUrl = {
@@ -175,7 +177,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     def subClasses = subClassesCache.toList
     protected lazy val memberSyms =
        // Only this class's constructors are part of its members, inherited constructors are not.
-      sym.info.nonPrivateMembers.filter(x => (!x.isConstructor || x.owner==sym))
+      sym.info.members.filter(s => localShouldDocument(s) && (!s.isConstructor || s.owner == sym))
     val members       = memberSyms flatMap (makeMember(_, this))
     val templates     = members collect { case c: DocTemplateEntity => c }
     val methods       = members collect { case d: Def => d }
@@ -200,7 +202,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
 
   abstract class NonTemplateMemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with NonTemplateMemberEntity {
     override def qualifiedName = optimize(inTemplate.qualifiedName + "#" + name)
-    override def definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "#" + name)
+    lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "#" + name)
   }
 
   abstract class ParameterImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with ParameterEntity {
@@ -228,8 +230,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     * contains at least one ''documentable'' class, trait or object. Creating a package entity */
   def makePackage(aSym: Symbol, inTpl: => PackageImpl): Option[PackageImpl] = {
     val bSym = normalizeTemplate(aSym)
-    if (templatesCache isDefinedAt (bSym, inTpl))
-      Some(templatesCache(bSym, inTpl) match {case p: PackageImpl => p})
+    if (templatesCache isDefinedAt (bSym))
+      Some(templatesCache(bSym) match {case p: PackageImpl => p})
     else {
       val pack =
         if (bSym == RootPackage)
@@ -260,47 +262,43 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
   def makeTemplate(aSym: Symbol): TemplateImpl = {
     val bSym = normalizeTemplate(aSym)
     if (bSym == RootPackage)
-      makePackage(bSym, null).get
+      makeRootPackage.get
+    else if (bSym.isPackage)
+      makeTemplate(bSym.owner) match {
+        case inPkg: PackageImpl => makePackage(bSym, inPkg) getOrElse (new NoDocTemplateImpl(bSym, inPkg))
+        case _ => throw new Error("'" + bSym + "' must be in a package")
+      }
+    else if (templateShouldDocument(bSym))
+      makeTemplate(bSym.owner) match {
+        case inDTpl: DocTemplateImpl => makeDocTemplate(bSym, inDTpl)
+        case _ => throw new Error("'" + bSym + "' must be in documentable template")
+      }
     else
-      makeTemplate(bSym, makeTemplate(bSym.owner))
-  }
-
-  /** */
-  def makeTemplate(aSym: Symbol, inTpl: => TemplateImpl): TemplateImpl = {
-    val bSym = normalizeTemplate(aSym)
-    if (bSym.isPackage) inTpl match {
-      case inPkg: PackageImpl => makePackage(bSym, inPkg) getOrElse (new NoDocTemplateImpl(bSym, inPkg))
-      case _ => throw new Error("'" + bSym + "' must be in a package")
-    }
-    else if ((bSym.sourceFile != null) && bSym.isPublic && !bSym.isLocal) inTpl match {
-      case inDTpl: DocTemplateImpl => makeDocTemplate(bSym, inDTpl)
-      case _ => new NoDocTemplateImpl(bSym, inTpl) // The owner is private
-    }
-    else
-      new NoDocTemplateImpl(bSym, inTpl)
+      new NoDocTemplateImpl(bSym, makeTemplate(bSym.owner))
   }
 
   /** */
   def makeDocTemplate(aSym: Symbol, inTpl: => DocTemplateImpl): DocTemplateImpl = {
     val bSym = normalizeTemplate(aSym)
-    val firstInTpl = { // to prevent a complexity explosion in some cases.
-      def sInTpl0(inTpl: DocTemplateImpl): DocTemplateImpl =
-        if ((aSym.owner != inTpl.inTemplate.sym) && (inTpl.inTemplate.sym.info.members contains aSym))
-          sInTpl0(inTpl.inTemplate)
-        else inTpl
-      sInTpl0(inTpl)
-    }
-    if (templatesCache isDefinedAt (bSym, firstInTpl))
-      templatesCache((bSym, firstInTpl))
+    val minimumInTpl =
+      if (bSym.owner != inTpl.sym)
+        makeTemplate(aSym.owner) match {
+          case inDTpl: DocTemplateImpl => inDTpl
+          case inNDTpl => throw new Error("'" + bSym + "' is owned by '" + inNDTpl + "' which is not documented")
+        }
+      else
+        inTpl
+    if (templatesCache isDefinedAt (bSym))
+      templatesCache(bSym)
     else if (bSym.isModule || (bSym.isAliasType && bSym.tpe.typeSymbol.isModule))
-      new DocTemplateImpl(bSym, firstInTpl) with Object
+      new DocTemplateImpl(bSym, minimumInTpl) with Object
     else if (bSym.isTrait || (bSym.isAliasType && bSym.tpe.typeSymbol.isTrait))
-      new DocTemplateImpl(bSym, firstInTpl) with Trait {
+      new DocTemplateImpl(bSym, minimumInTpl) with Trait {
         def valueParams =
           List(sym.constrParamAccessors map (makeValueParam(_, this)))
       }
     else if (bSym.isClass || (bSym.isAliasType && bSym.tpe.typeSymbol.isClass))
-      new DocTemplateImpl(bSym, firstInTpl) with Class {
+      new DocTemplateImpl(bSym, minimumInTpl) with Class {
         def valueParams =
           List(sym.constrParamAccessors map (makeValueParam(_, this)))
         val constructors =
@@ -367,13 +365,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
         })
       else if (bSym.isPackage)
         inTpl match { case inPkg: PackageImpl =>  makePackage(bSym, inPkg) }
-      else if ((bSym.isClass || bSym.isModule) && bSym.isPublic && !bSym.isLocal) {
-        (inTpl.toRoot find (_.sym == bSym )) orElse Some(makeDocTemplate(bSym, inTpl))
-      }
+      else if ((bSym.isClass || bSym.isModule) && templateShouldDocument(bSym))
+        Some(makeDocTemplate(bSym, inTpl))
       else
         None
     }
-    if ((!aSym.isPackage && aSym.sourceFile == null) || !aSym.isPublic || (aSym hasFlag Flags.SYNTHETIC) || aSym.isLocal || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
+    if ((!aSym.isPackage && aSym.sourceFile == null) || !localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
@@ -510,5 +507,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       val refEntity = refBuffer
       val name = optimize(nameBuffer.toString)
     }
+
+  def templateShouldDocument(aSym: Symbol): Boolean = {
+    (aSym.isPackageClass || (aSym.sourceFile != null)) && localShouldDocument(aSym) && ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) )
+  }
+
+  def localShouldDocument(aSym: Symbol): Boolean = {
+    !(aSym hasFlag Flags.PRIVATE) && ((aSym hasFlag Flags.PROTECTED) || aSym.privateWithin == NoSymbol) && !(aSym hasFlag Flags.SYNTHETIC)
+  }
 
 }
