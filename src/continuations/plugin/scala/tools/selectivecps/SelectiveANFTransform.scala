@@ -37,7 +37,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
       tree match {
 
-        // TODO: Maybe we should further generalize the transform and move it over
+        // Maybe we should further generalize the transform and move it over
         // to the regular Transformer facility. But then, actual and required cps
         // state would need more complicated (stateful!) tracking.
 
@@ -63,7 +63,30 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
           log("transforming anon function " + ff.symbol)
 
           atOwner(ff.symbol) {
-            val body1 = transExpr(body, None, getExternalAnswerTypeAnn(body.tpe))
+
+            //val body1 = transExpr(body, None, getExternalAnswerTypeAnn(body.tpe))
+
+            // need to special case partial functions: if expected type is @cps
+            // but all cases are pure, then we would transform
+            // { x => x match { case A => ... }} to
+            // { x => shiftUnit(x match { case A => ... })}
+            // which Uncurry cannot handle (see function6.scala)
+
+            val ext = getExternalAnswerTypeAnn(body.tpe)
+
+            val body1 = body match {
+              case Match(selector, cases) if (ext.isDefined && getAnswerTypeAnn(body.tpe).isEmpty) =>
+                val cases1 = for {
+                  cd @ CaseDef(pat, guard, caseBody) <- cases
+                  val caseBody1 = transExpr(body, None, ext)
+                } yield {
+                  treeCopy.CaseDef(cd, transform(pat), transform(guard), caseBody1)
+                }
+                treeCopy.Match(tree, transform(selector), cases1)
+
+              case _ =>
+                transExpr(body, None, ext)
+            }
 
             log("result "+body1)
             log("result is of type "+body1.tpe)

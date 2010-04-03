@@ -7,9 +7,10 @@ object Test {
 
   def main(args: Array[String]): Any = {
 
-    val g: PartialFunction[Int, Int @cps[Int,Int]] = { case x => 7 }
+    val g: PartialFunction[Int, Int @cps[Int]] = { case x => 7 }
 
     println(reset(g(2)))
+
   }
 
 }
