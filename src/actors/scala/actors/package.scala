@@ -20,7 +20,13 @@ package object actors {
   @deprecated("use scala.actors.scheduler.SingleThreadedScheduler instead")
   type SingleThreadedScheduler = scala.actors.scheduler.SingleThreadedScheduler
 
+  // This used to do a blind cast and throw a CCE after the package
+  // object was loaded.  I have replaced with a variation that should work
+  // in whatever cases that was working but fail less exceptionally for
+  // those not intentionally using it.
   @deprecated("this value is going to be removed in a future release")
-  val ActorGC = scala.actors.Scheduler.impl.asInstanceOf[scala.actors.scheduler.ActorGC]
-
+  val ActorGC = scala.actors.Scheduler.impl match {
+    case x: scala.actors.scheduler.ActorGC  => x
+    case _                                  => null
+  }
 }
