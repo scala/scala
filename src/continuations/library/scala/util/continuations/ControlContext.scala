@@ -27,7 +27,7 @@ private class cpsMinus extends Annotation // implementation detail
   */
 
 
-  final def map[A1](f: A => A1): ControlContext[A1,B,C] = {
+  @noinline final def map[A1](f: A => A1): ControlContext[A1,B,C] = {
     if (fun eq null)
       try {
         new ControlContext(null, f(x)) // TODO: only alloc if f(x) != x
@@ -55,7 +55,7 @@ private class cpsMinus extends Annotation // implementation detail
   // it would be nice if @inline would turn the trivial path into a tail call.
   // unfortunately it doesn't, so we do it ourselves in SelectiveCPSTransform
 
-  /*@inline*/ final def flatMap[A1,B1,C1<:B](f: (A => ControlContext[A1,B1,C1])): ControlContext[A1,B1,C] = {
+  @noinline final def flatMap[A1,B1,C1<:B](f: (A => ControlContext[A1,B1,C1])): ControlContext[A1,B1,C] = {
     if (fun eq null)
       try {
         f(x).asInstanceOf[ControlContext[A1,B1,C]]
