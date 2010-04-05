@@ -1385,7 +1385,7 @@ DOCUMENTATION
     <mkdir dir="${build-docs.dir}/library"/>
     <scaladoc
       destdir="${build-docs.dir}/library"
-      doctitle="Scala Standard Libray"
+      doctitle="Scala Standard Library"
       docversion="${version.number}"
       docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/"
       sourcepath="${src.dir}"
