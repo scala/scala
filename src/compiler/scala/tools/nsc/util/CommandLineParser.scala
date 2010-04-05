@@ -25,19 +25,20 @@ trait ParserUtil extends Parsers {
 
 case class CommandLine(
   args: List[String],
-  unaryArguments: List[String],
-  binaryArguments: List[String]
+  unaryOptions: List[String],
+  binaryOptions: List[String]
 ) {
   def this(args: List[String]) = this(args, Nil, Nil)
   def this(args: Array[String]) = this(args.toList, Nil, Nil)
   def this(line: String) = this(CommandLineParser tokenize line, Nil, Nil)
 
-  def withUnaryArgs(xs: List[String]) = copy(unaryArguments = xs)
-  def withBinaryArgs(xs: List[String]) = copy(binaryArguments = xs)
+  def withUnary(xs: List[String])   = copy(unaryOptions = xs)
+  def withBinary(xs: List[String])  = copy(binaryOptions = xs)
 
-  def originalArgs = args
-  def assumeBinary = true
-  def enforceArity = true
+  def allOptions    = unaryOptions ++ binaryOptions
+  def originalArgs  = args
+  def assumeBinary  = true
+  def enforceArity  = true
   def onlyKnownOptions = false
 
   val Terminator = "--"
@@ -57,10 +58,10 @@ case class CommandLine(
       if (List('"', '\'') exists isQuotedBy) s.tail.init else s
     }
 
-    def isValidOption(s: String) = !onlyKnownOptions || (unaryArguments contains s) || (binaryArguments contains s)
+    def isValidOption(s: String) = !onlyKnownOptions || (unaryOptions contains s) || (binaryOptions contains s)
     def isOption(s: String) = (s startsWith "-") && (isValidOption(s) || { unknownOption(s) ; false })
-    def isUnary(s: String) = isOption(s) && (unaryArguments contains s)
-    def isBinary(s: String) = isOption(s) && !isUnary(s) && (assumeBinary || (binaryArguments contains s))
+    def isUnary(s: String) = isOption(s) && (unaryOptions contains s)
+    def isBinary(s: String) = isOption(s) && !isUnary(s) && (assumeBinary || (binaryOptions contains s))
 
     def unknownOption(opt: String) =
       errorFn("Option '%s' not recognized.".format(opt))

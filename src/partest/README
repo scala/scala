@@ -1,32 +1,50 @@
-How partest choses the compiler / library:
+If you're looking for something to read, I suggest running ../test/partest
+with no arguments, which at this moment prints this:
 
-  * ''-Dpartest.build=build/four-pack'' -> will search for libraries in
-    ''lib'' directory of given path
-  * ''--pack'' -> will set ''partest.build=build/pack'', and run all tests.
-    add ''--[kind]'' to run a selected set of tests.
-  * auto detection:
-    - partest.build property -> ''bin'' / ''lib'' directories
-    - distribution (''dists/latest'')
-    - supersabbus pack (''build/pack'')
-    - sabbus quick (''build/quick'')
-    - installed dist (test files in ''misc/scala-test/files'')
+Usage: partest [<options>] [<test> <test> ...]
+  <test>: a path to a test designator, typically a .scala file or a directory.
+          Examples: files/pos/test1.scala, files/res/bug785
 
-How partest choses test files: the test files must be accessible from
-the directory on which partest is run. So the test files must be either
-at:
-  * ./test/files
-  * ./files (cwd is "test")
-  * ./misc/scala-test/files (installed scala distribution)
+  Test categories:
+    --all          run all tests (default, unless no options given)
+    --pos          Compile files that are expected to build
+    --neg          Compile files that are expected to fail
+    --run          Test JVM backend
+    --jvm          Test JVM backend
+    --res          Run resident compiler scenarii
+    --buildmanager Run Build Manager scenarii
+    --scalacheck   Run Scalacheck tests
+    --script       Run script files
+    --shootout     Run shootout tests
+    --scalap       Run scalap tests
 
-Other arguments:
-  * --pos          next files test a compilation success
-  * --neg          next files test a compilation failure
-  * --run          next files test the interpreter and all backends
-  * --jvm          next files test the JVM backend
-  * --res          next files test the resident compiler
-  * --buildmanager next files test the build manager
-  * --shootout     next files are shootout tests
-  * --script       next files test the script runner
-  * ''-Dpartest.scalac_opts=...'' -> add compiler options
-  * ''--verbose'' -> print verbose messages
-  * ''-Dpartest.debug=true'' -> print debug messages
+  Test "smart" categories:
+    --grep         run all tests with a source file containing <expr>
+    --failed       run all tests which failed on the last run
+
+  Specifying paths and additional flags, ~ means repository root:
+    --rootdir      path from ~ to partest (default: test)
+    --builddir     path from ~ to test build (default: build/pack)
+    --srcdir       path from --rootdir to sources (default: files)
+    --javaopts     flags to java on all runs (overrides JAVA_OPTS)
+    --scalacopts   flags to scalac on all tests (overrides SCALAC_OPTS)
+    --pack         alias for --builddir build/pack
+    --quick        alias for --builddir build/quick
+
+  Options influencing output:
+    --trace        show the individual steps taken by each test
+    --show-diff    show diff between log and check file
+    --show-log     show log on failures
+    --dry-run      do not run tests, only show their traces.
+    --terse        be less verbose (almost silent except for failures)
+    --verbose      be more verbose (additive with --trace)
+    --debug        maximum debugging output
+    --ansi         print output in color
+
+  Other options:
+    --timeout      Timeout in seconds
+    --cleanup      delete all stale files and dirs before run
+    --nocleanup    do not delete any logfiles or object dirs
+    --stats        collect and print statistics about the tests
+    --validate     examine test filesystem for inconsistencies
+    --version      print version

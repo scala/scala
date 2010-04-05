@@ -1,6 +1,6 @@
 // $Id$
 
-package scala.tools.partest.nest;
+package scala.tools.partest.io;
 
 import java.util.Hashtable;
 
