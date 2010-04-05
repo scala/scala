@@ -1,6 +1,6 @@
 #!/bin/sh
-# fact - A simple Scala script that prints out the factorial of
-#        the argument specified on the command line.
+#
+# Checks if UTF-8 output makes it through unmangled.
 
 cygwin=false;
 case "`uname`" in
@@ -18,8 +18,7 @@ then
     SOURCE=`cygpath --$format "$SOURCE"`;
 fi
 
-export LC_CTYPE=en_US.UTF-8
-exec scala -nocompdaemon "$SOURCE" "$@"
+exec scala -Dfile.encoding="UTF-8" -nocompdaemon "$SOURCE" "$@"
 !#
 
 /*Comment Комментарий*/

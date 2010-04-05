@@ -96,7 +96,7 @@ object Test {
     )
     val tr = new TestResult()
     ts.run(tr)
-    for(val failure <- tr.failures) {
+    for (failure <- tr.failures) {
       Console.println(failure)
     }
   }

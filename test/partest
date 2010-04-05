@@ -75,12 +75,23 @@ if $cygwin; then
 fi
 
 # Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xmx512M -Xms16M"
-[ -n "$SCALAC_OPTS" ] || SCALAC_OPTS="-deprecation"
+[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xms512M -Xmx1536M -Xss1M -XX:MaxPermSize=128M"
+[ -n "$SCALAC_OPTS" ] || SCALAC_OPTS=""
 
-partestDebugStr=""
-if [ ! -z "${PARTEST_DEBUG}" ] ; then
-  partestDebugStr="-Dpartest.debug=${PARTEST_DEBUG}"
-fi
+export SCALAC_OPTS
+export JAVA_OPTS
+export JAVACMD
 
-${JAVACMD:=java} $JAVA_OPTS -cp "$EXT_CLASSPATH" ${partestDebugStr} -Dscala.home="${SCALA_HOME}" -Dpartest.javacmd="${JAVACMD}" -Dpartest.java_opts="${JAVA_OPTS}" -Dpartest.scalac_opts="${SCALAC_OPTS}" -Dpartest.javac_cmd="${JAVA_HOME}/bin/javac" scala.tools.partest.nest.NestRunner  "$@"
+${JAVACMD:=java} $JAVA_OPTS \
+  -cp "$EXT_CLASSPATH" \
+  -Dscala.home="${SCALA_HOME}" \
+  scala.tools.partest.Runner "$@"
+
+# ${JAVACMD:=java} $JAVA_OPTS \
+#   -cp "$EXT_CLASSPATH" \
+#   -Dscala.home="${SCALA_HOME}" \
+#   -Dpartest.scalac_opts="${SCALAC_OPTS}" \
+#   -Dpartest.javacmd="${JAVACMD}" \
+#   -Dpartest.java_opts="${JAVA_OPTS}" \
+#   -Dpartest.javac_cmd="${JAVA_HOME}/bin/javac" \
+#   scala.tools.partest.Runner "$@"

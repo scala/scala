@@ -5,7 +5,9 @@ typer
 superaccessors
 pickler
 refchecks
+selectiveanf
 liftcode
+selectivecps
 uncurry
 tailcalls
 explicitouter

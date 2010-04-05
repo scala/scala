@@ -3,6 +3,8 @@ import scala.collection.immutable.IndexedSeq
 import scala.collection.IndexedSeqView
 
 object Test {
+  val funWithCCE = List.range(1,11).view.patch(5, List(100,101), 2)
+
   val v = new IndexedSeqView[Int, IndexedSeq[Int]] {
     def underlying = IndexedSeq(1,2,3)
     def apply(idx: Int) = underlying(idx)

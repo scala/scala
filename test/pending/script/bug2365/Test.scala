@@ -20,11 +20,11 @@ object Test
 
 	def test(withF0: StructF0 => Int): Int = {
 	  // Some large jar
-	  val ivyJar = File("/local/lib/java/ivy.jar").toURL
+	  val jar = File("../../../../lib/scalacheck.jar").toURL
 	  // load a class in a separate loader that will be passed to A
-	  val loader = new java.net.URLClassLoader(Array(File(".").toURL, ivyJar))
+	  val loader = new java.net.URLClassLoader(Array(File(".").toURL, jar))
 	  // load a real class to fill perm gen space
-    Class.forName("org.apache.ivy.Ivy", true, loader).newInstance
+    Class.forName("org.scalacheck.Properties", true, loader).newInstance
     // create a class from another class loader with an apply: Int method
   	val b = Class.forName("B", true, loader).newInstance
 

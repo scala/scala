@@ -1,9 +1,4 @@
-bug961.scala:4: warning: case classes without a parameter list have been deprecated;
-use either case objects or case classes with `()' as parameter list.
-    private case class B_inner extends A
-                               ^
 bug961.scala:11: error: Temp.this.B of type object Temp.B does not take parameters
   B() match {
    ^
-one warning found
 one error found

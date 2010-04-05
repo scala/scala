@@ -1,4 +1,5 @@
-migration28.scala:5: error: method ++= in class Stack is deprecated: use pushAll
+migration28.scala:5: error: method ++= in class Stack has changed semantics:
+Stack ++= now pushes arguments on the stack from left to right.
   s ++= List(1,2,3)
   ^
 migration28.scala:7: error: method foreach in class Stack has changed semantics:

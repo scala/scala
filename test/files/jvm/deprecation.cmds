@@ -1,0 +1,3 @@
+javac Defs.java
+scalac Test_1.scala
+javac Use_2.java

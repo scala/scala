@@ -1,0 +1,3 @@
+javac SuiteClasses.java
+scalac A2_1.scala
+scalac A1_2.scala
