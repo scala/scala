@@ -34,9 +34,9 @@ object Vector extends SeqFactory[Vector] {
 // be carefully chosen to not prevent method inlining
 
 @serializable
-final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends Seq[A]
+final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends IndexedSeq[A]
                  with GenericTraversableTemplate[A, Vector]
-                 with SeqLike[A, Vector[A]]
+                 with IndexedSeqLike[A, Vector[A]]
                  with VectorPointer[A @uncheckedVariance] { self =>
 
 override def companion: GenericCompanion[Vector] = Vector

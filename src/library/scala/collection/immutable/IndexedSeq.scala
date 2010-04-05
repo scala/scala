@@ -37,5 +37,5 @@ object IndexedSeq extends SeqFactory[IndexedSeq] {
     def apply(idx: Int) = buf.apply(idx)
   }
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A] mapResult (buf => new Impl(buf))
+  def newBuilder[A]: Builder[A, IndexedSeq[A]] = Vector.newBuilder[A]
 }
