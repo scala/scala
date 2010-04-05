@@ -11,7 +11,7 @@
 package scala.collection
 package mutable
 
-/**
+/** An implementation class backing a HashSet.
  * @since 2.3
  */
 trait FlatHashTable[A] {

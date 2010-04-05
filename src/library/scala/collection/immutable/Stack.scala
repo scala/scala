@@ -37,7 +37,7 @@ object Stack extends SeqFactory[Stack] {
 @serializable @SerialVersionUID(1976480595012942526L)
 class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]
                     with GenericTraversableTemplate[A, Stack]
-                    with LinearSeqLike[A, Stack[A]] {
+                    with LinearSeqOptimized[A, Stack[A]] {
   override def companion: GenericCompanion[Stack] = Stack
 
   def this() = this(Nil)

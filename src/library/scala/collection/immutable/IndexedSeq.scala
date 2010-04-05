@@ -14,8 +14,9 @@ package immutable
 import generic._
 import mutable.{ArrayBuffer, Builder}
 
-/** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
+/** A subtrait of <code>collection.IndexedSeq</code> which represents indexed sequences
  *  that cannot be mutated.
+ *  $indexedSeqInfo
  *
  *  @since 2.8
  */

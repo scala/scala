@@ -25,7 +25,10 @@ import TraversableView.NoBuilder
  * @version 2.8
  * @since   2.8
  */
-trait IndexedSeqView[A, +Coll] extends scala.collection.IndexedSeqView[A, Coll] {
+trait IndexedSeqView[A, +Coll] extends IndexedSeq[A]
+                                  with IndexedSeqOptimized[A, IndexedSeqView[A, Coll]]
+                                  with scala.collection.SeqView[A, Coll]
+                                  with scala.collection.SeqViewLike[A, Coll, IndexedSeqView[A, Coll]] {
 self =>
 
   def update(idx: Int, elem: A)

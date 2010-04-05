@@ -22,12 +22,12 @@ import generic._
  *  @version 2.8
  *  @since   2.8
  */
-class GenericArray[A](override val length: Int)
+class ArraySeq[A](override val length: Int)
 extends IndexedSeq[A]
-   with GenericTraversableTemplate[A, GenericArray]
-   with IndexedSeqLike[A, GenericArray[A]] {
+   with GenericTraversableTemplate[A, ArraySeq]
+   with IndexedSeqOptimized[A, ArraySeq[A]] {
 
-  override def companion: GenericCompanion[GenericArray] = GenericArray
+  override def companion: GenericCompanion[ArraySeq] = ArraySeq
 
   val array: Array[AnyRef] = new Array[AnyRef](length)
 
@@ -64,11 +64,11 @@ extends IndexedSeq[A]
    }
 }
 
-object GenericArray extends SeqFactory[GenericArray] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, GenericArray[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, GenericArray[A]] =
+object ArraySeq extends SeqFactory[ArraySeq] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArraySeq[A]] = new GenericCanBuildFrom[A]
+  def newBuilder[A]: Builder[A, ArraySeq[A]] =
     new ArrayBuffer[A] mapResult { buf =>
-      val result = new GenericArray[A](buf.length)
+      val result = new ArraySeq[A](buf.length)
       buf.copyToArray(result.array.asInstanceOf[Array[Any]], 0)
       result
     }

@@ -40,7 +40,7 @@ import scala.annotation.tailrec
  */
 abstract class Stream[+A] extends LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
-                             with LinearSeqLike[A, Stream[A]] {
+                             with LinearSeqOptimized[A, Stream[A]] {
 self =>
   override def companion: GenericCompanion[Stream] = Stream
 

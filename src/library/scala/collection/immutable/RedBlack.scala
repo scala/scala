@@ -12,7 +12,8 @@
 package scala.collection
 package immutable
 
-/**
+/** An base class containing the implementations for TreeMaps and TreeSets
+ *
  * @since 2.3
  */
 @serializable @SerialVersionUID(8691885935445612921L)

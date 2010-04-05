@@ -6,28 +6,16 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
+// $Id: IndexedSeqLike.scala 20129 2009-12-14 17:12:17Z odersky $
 
 
 package scala.collection
 package mutable
-
 import generic._
 
-/** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
+/** A subtrait of scala.collection.IndexedSeq which represents sequences
  *  that can be mutated.
- *  $indexedSeqInfo
  *
  *  @since 2.8
  */
-trait IndexedSeq[A] extends Seq[A]
-                   with scala.collection.IndexedSeq[A]
-                   with GenericTraversableTemplate[A, IndexedSeq]
-                   with IndexedSeqLike[A, IndexedSeq[A]] {
-  override def companion: GenericCompanion[IndexedSeq]  = IndexedSeq
-}
-
-object IndexedSeq extends SeqFactory[IndexedSeq] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A]
-}
+trait IndexedSeqOptimized[A, +Repr] extends IndexedSeqLike[A, Repr] with scala.collection.IndexedSeqOptimized[A, Repr]

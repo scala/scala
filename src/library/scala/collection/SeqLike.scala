@@ -11,7 +11,7 @@
 
 package scala.collection
 
-import mutable.{ListBuffer, HashMap, GenericArray}
+import mutable.{ListBuffer, HashMap, ArraySeq}
 import immutable.{List, Range}
 import generic._
 
@@ -801,7 +801,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *              sorted according to the ordering `ord`.
    */
   def sorted[B >: A](implicit ord: Ordering[B]): Repr = {
-    val arr = new GenericArray[A](this.length)
+    val arr = new ArraySeq[A](this.length)
     var i = 0
     for (x <- this) {
       arr(i) = x

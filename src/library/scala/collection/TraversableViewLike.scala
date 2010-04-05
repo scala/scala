@@ -53,6 +53,7 @@ self =>
    */
   trait Transformed[+B] extends TraversableView[B, Coll] {
     lazy val underlying = self.underlying
+    override def toString = stringPrefix+"(...)"
   }
 
   /** A fall back which forces everything into a vector and then applies an operation

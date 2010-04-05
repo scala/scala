@@ -34,7 +34,7 @@ import StringLike._
 /**
  * @since 2.8
  */
-trait StringLike[+Repr] extends IndexedSeqLike[Char, Repr] with Ordered[String] {
+trait StringLike[+Repr] extends IndexedSeqOptimized[Char, Repr] with Ordered[String] {
 self =>
 
   /** Creates a string builder buffer as builder for this class */

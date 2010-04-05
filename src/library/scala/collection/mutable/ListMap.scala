@@ -14,7 +14,7 @@ package mutable
 
 import generic._
 
-/**
+/** A simple map backed by a list.
  * @since 2.8
  */
 @serializable

@@ -29,7 +29,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   extends Buffer[A]
      with GenericTraversableTemplate[A, ArrayBuffer]
      with BufferLike[A, ArrayBuffer[A]]
-     with IndexedSeqLike[A, ArrayBuffer[A]]
+     with IndexedSeqOptimized[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]]
      with ResizableArray[A] {
 
