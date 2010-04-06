@@ -157,12 +157,12 @@ class ListView[A] extends Component {
 
   def listData: Seq[A] = peer.getModel match {
     case model: ModelWrapper => model.items
-    case model @ _ => new Seq[A] {
+    case model @ _ => new Seq[A] { selfSeq =>
      def length = model.getSize
      def iterator = new Iterator[A] {
        var idx = 0
        def next = { idx += 1; apply(idx-1) }
-       def hasNext = idx < length
+       def hasNext = idx < selfSeq.length
      }
      def apply(n: Int) = model.getElementAt(n).asInstanceOf[A]
     }
