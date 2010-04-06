@@ -318,7 +318,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
           override def isVar = true
           def isUseCase = bSym hasFlag Flags.SYNTHETIC
         })
-      else if (bSym.isMethod && !(bSym hasFlag Flags.ACCESSOR) && !bSym.isConstructor && !(bSym hasFlag Flags.FINAL))
+      else if (bSym.isMethod && !(bSym hasFlag Flags.ACCESSOR) && !bSym.isConstructor)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Def {
           override def isDef = true
           def isUseCase = bSym hasFlag Flags.SYNTHETIC
