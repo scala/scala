@@ -217,8 +217,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
     }
 
-  if (settings.verbose.value)
-    inform("[Classpath = " + classPath + "]")
+  if (settings.verbose.value || settings.Ylogcp.value)
+    inform("[Classpath = " + classPath.asClasspathString + "]")
 
   def getSourceFile(f: AbstractFile): BatchSourceFile =
     new BatchSourceFile(f, reader.read(f))

@@ -304,6 +304,7 @@ object Main {
      */
     def name: String = ""
     def asURLs = Nil
+    def asClasspathString = ""
     val context = DefaultJavaContext
     val classes: List[ClassRep] = Nil
     val packages: List[ClassPath[AbstractFile]] = Nil
