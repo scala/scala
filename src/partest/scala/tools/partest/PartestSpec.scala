@@ -73,19 +73,20 @@ trait PartestSpec extends CommandLineSpec {
   val isAnsi        = "ansi"        / "print output in color" ?
 
   heading             ("Other options:")
-  val timeout       = "timeout"     / "Timeout in seconds"                                    >> ;
-  val isCleanup     = "cleanup"     / "delete all stale files and dirs before run" ?
-  val isNoCleanup   = "nocleanup"   / "do not delete any logfiles or object dirs" ?
-  val isStats       = "stats"       / "collect and print statistics about the tests" ?
-  val isValidate    = "validate"    / "examine test filesystem for inconsistencies" ?
-  val isVersion     = "version"     / "print version" ?
+  val timeout_      = "timeout"       / "Overall timeout in seconds"    |> "14400"
+  val testWarning_  = "test-warning"  / "Test warning in seconds"       >>  ;       // defaults to testTimeout / 10
+  val testTimeout_  = "test-timeout"  / "Test timeout in seconds"       >>  ;       // defaults to 900
+  val isCleanup     = "cleanup"       / "delete all stale files and dirs before run" ?
+  val isNoCleanup   = "nocleanup"     / "do not delete any logfiles or object dirs" ?
+  val isStats       = "stats"         / "collect and print statistics about the tests" ?
+  val isValidate    = "validate"      / "examine test filesystem for inconsistencies" ?
+  val isVersion     = "version"       / "print version" ?
 
   // no help for anything below this line - secret options
   // mostly intended for property configuration.
   val runsets       = "runsets" |> ""
   val isNoAlarms    = ("noalarms" ?)
   val isInsideAnt   = ("is-in-ant" ?)
-  val testWarning   = "test-warning" |> "90"
 }
 
 object PartestSpecReference extends PartestSpec {

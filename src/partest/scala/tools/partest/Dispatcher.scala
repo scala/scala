@@ -6,12 +6,11 @@
 package scala.tools
 package partest
 
-import util._
 import scala.tools.nsc.io._
-import scala.actors.{ Actor, Exit, TIMEOUT }
+import scala.actors.{ Actor, TIMEOUT }
 import scala.actors.Actor._
 import scala.collection.immutable
-import scala.util.control.ControlThrowable
+import scala.util.control.Exception.ultimately
 
 /** The machinery for concurrent execution of tests.  Each Worker
  *  is given a bundle of tests, which it runs sequentially and then
@@ -140,52 +139,16 @@ trait Dispatcher {
 
       Actor.loopWhile(testIterator.hasNext) {
         val parent = self
-        // pick a test
-        val test = testIterator.next
-
-        // Sets three alarms: two slowness warnings and a timeout.
-        def setAlarms() =
-          new Alarmer(
-            testWarningSecs -> (() => warning(
-           """|I've been waiting %d seconds for this to complete:
-              |  "%s"
-              |Either it's stuck or it is unreasonably slow and should
-              |be divided into smaller tests.
-              |""".stripMargin.format(testWarning, test))),
-
-            (testWarningSecs * 2) -> (() => warning(
-           """|Now I've been waiting %d seconds for this to complete:
-              |  "%s"
-              |If partest seems hung, let's blame that one.
-              |""".stripMargin.format(testWarning * 2, test))),
-
-            testTimeout -> (() => parent ! new Timeout(test))
-          )
+        // pick a test and set some alarms
+        val test    = testIterator.next
+        val alarmer = test startAlarms (parent ! new Timeout(test))
 
         actor {
-          /** Debugging alarm issues */
-          if (isNoAlarms) {
-            parent ! TestResult(test, test.isSuccess)
-          }
-          else {
-            // Set alarms, kick it off.  Calling isSuccess forces the lazy val
-            // "process" inside the test, running it.
-            val alarmer = setAlarms()
-            def respondWith(res: TestResult) = {
-              // Cancel the alarms and alert the media.
-              alarmer.cancelAll()
-              parent ! res
-            }
-
-            try respondWith(TestResult(test, test.isSuccess))
-            catch {
-              case x: ControlThrowable  =>
-                test.warnAndLogException("Worker caught " + x + ", rethrowing: ", x)
-                throw x
-              case x                    =>
-                test.warnAndLogException("Worker caught " + x + ", failing: ", x)
-                respondWith(TestResult(test, false))
-            }
+          ultimately(alarmer.cancelAll()) {
+            // Calling isSuccess forces the lazy val "process" inside the test, running it.
+            val res = test.isSuccess
+            // Cancel the alarms and alert the media.
+            parent ! TestResult(test, res)
           }
         }
 

@@ -26,6 +26,7 @@ abstract class Universe
       with PartestCompilation
       with PartestSpec
       with Config
+      with Alarms
       with Actions
       with Categories {
 

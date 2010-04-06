@@ -14,6 +14,7 @@ trait Entities {
   abstract class TestEntity extends AbsTestEntity
                                with TestContribution
                                with TestHousekeeping
+                               with TestAlarms
                                with EntityLogging
                                with CompilableTest
                                with ScriptableTest

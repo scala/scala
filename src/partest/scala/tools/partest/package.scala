@@ -18,6 +18,7 @@ package object partest {
 
   private[partest] def safeLines(f: File)     = safeSlurp(f) split """\r\n|\r|\n""" toList
   private[partest] def safeArgs(f: File)      = toArgs(safeSlurp(f))
+  private[partest] def safeToInt(s: String)   = try Some(s.toInt) catch { case _: NumberFormatException => None }
   private[partest] def isJava(f: Path)        = f.isFile && (f hasExtension "java")
   private[partest] def isScala(f: Path)       = f.isFile && (f hasExtension "scala")
   private[partest] def isJavaOrScala(f: Path) = isJava(f) || isScala(f)
