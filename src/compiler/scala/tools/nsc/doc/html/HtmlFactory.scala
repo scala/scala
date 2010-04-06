@@ -7,10 +7,10 @@ package scala.tools.nsc
 package doc
 package html
 
+import java.io.{ File => JFile }
+import io.{ Streamable, Directory }
 import reporters.Reporter
 import model._
-
-import java.io.{FileOutputStream, File}
 import scala.collection._
 
 /** A class that can generate Scaladoc sites to some fixed root folder.
@@ -21,31 +21,24 @@ class HtmlFactory(val universe: Universe) {
   /** The character encoding to be used for generated Scaladoc sites. This value is currently always UTF-8. */
   def encoding: String = "UTF-8"
 
-  /** The character encoding to be used for generated Scaladoc sites. This value is defined by the generator's
-    * settings. */
-  def siteRoot: File = new File(universe.settings.outdir.value)
+  def siteRoot: JFile = new JFile(universe.settings.outdir.value)
 
-  /** Generates the Scaladoc site for a model into the site toot. A scaladoc site is a set of HTML and related files
+  /** Generates the Scaladoc site for a model into the site root. A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     * @param model The model to generate in the form of a sequence of packages. */
   def generate(universe: Universe): Unit = {
-
     def copyResource(subPath: String) {
-      val buf = new Array[Byte](1024)
-      val in = getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + subPath)
-      assert(in != null)
-      val dest = new File(siteRoot, subPath)
-      dest.getParentFile.mkdirs()
-      val out = new FileOutputStream(dest)
-      try {
-        var len = 0
-        while ({len = in.read(buf); len != -1})
-          out.write(buf, 0, len)
-      }
-      finally {
-        in.close()
-        out.close()
-      }
+      val bytes = new Streamable.Bytes {
+        val inputStream = getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + subPath)
+        assert(inputStream != null)
+      } . toByteArray()
+
+      val dest = Directory(siteRoot) / subPath
+      dest.parent.createDirectory()
+      val out = dest.toFile.bufferedOutput()
+
+      try out.write(bytes, 0, bytes.length)
+      finally out.close()
     }
 
     copyResource("lib/jquery.js")

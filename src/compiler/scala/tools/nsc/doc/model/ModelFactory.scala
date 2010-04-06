@@ -16,7 +16,7 @@ import model.{ RootPackage => RootPackageEntity }
 class ModelFactory(val global: Global, val settings: doc.Settings) extends CommentFactory { thisFactory =>
 
   import global._
-  import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage }
+  import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyRefClass }
 
   private var droppedPackages = 0
   def templatesCount = templatesCache.size - droppedPackages
@@ -84,24 +84,22 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       else
         makeTemplate(sym.owner) :: (sym.allOverriddenSymbols map { inhSym => makeTemplate(inhSym.owner) })
     def visibility = {
-      if (sym hasFlag Flags.LOCAL) {
-        if (sym hasFlag Flags.PRIVATE) PrivateInInstance()
-        else ProtectedInInstance()
-      }
+      if (sym.isPrivateLocal) PrivateInInstance()
+      else if (sym.isProtectedLocal) ProtectedInInstance()
       else {
         val qual =
           if (sym.privateWithin != null && sym.privateWithin != NoSymbol)
             Some(makeTemplate(sym.privateWithin))
           else None
-        if (sym hasFlag Flags.PRIVATE) PrivateInTemplate(inTpl)
-        else if (sym hasFlag Flags.PROTECTED) ProtectedInTemplate(qual getOrElse inTpl)
+        if (sym.isPrivate) PrivateInTemplate(inTpl)
+        else if (sym.isProtected) ProtectedInTemplate(qual getOrElse inTpl)
         else if (qual.isDefined) PrivateInTemplate(qual.get)
         else Public()
       }
     }
     def flags = {
       val fgs = mutable.ListBuffer.empty[Paragraph]
-      if (sym hasFlag Flags.IMPLICIT) fgs += Paragraph(Text("implicit"))
+      if (sym.isImplicit) fgs += Paragraph(Text("implicit"))
       if (sym hasFlag Flags.SEALED) fgs += Paragraph(Text("sealed"))
       if (!sym.isTrait && (sym hasFlag Flags.ABSTRACT)) fgs += Paragraph(Text("abstract"))
       if (!sym.isTrait && (sym hasFlag Flags.DEFERRED)) fgs += Paragraph(Text("abstract"))
@@ -109,14 +107,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       fgs.toList
     }
     def deprecation =
-      if (sym.isDeprecated && sym.deprecationMessage.isDefined)
-        Some(parseWiki(sym.deprecationMessage.get, NoPosition))
-      else if (sym.isDeprecated)
-        Some(Body(Nil))
-      else if (comment.isDefined)
-        comment.get.deprecated
+      if (sym.isDeprecated)
+        Some(sym.deprecationMessage map (x => parseWiki(x, NoPosition)) getOrElse Body(Nil))
       else
-        None
+        comment flatMap (_.deprecated)
+
     def inheritedFrom =
       if (inTemplate.sym == this.sym.owner || inTemplate.sym.isPackage) Nil else
         makeTemplate(this.sym.owner) :: (sym.allOverriddenSymbols map { os => makeTemplate(os.owner) })
@@ -167,7 +162,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
           case _ =>
         }
       }
-      sym.ancestors filter (_ != ScalaObjectClass) map (makeTemplate(_))
+      sym.ancestors filter (_ != ScalaObjectClass) map makeTemplate
     }
     private lazy val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
     def registerSubClass(sc: DocTemplateEntity) = {
@@ -209,18 +204,25 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     override def inTemplate = inTpl
   }
 
+  private trait StdTypeBounds extends EntityImpl {
+    def lo = sym.info.normalize match {
+      case TypeBounds(lo, hi) if lo.typeSymbol != NothingClass => Some(makeType(lo, inTemplate, sym))
+      case _ => None
+    }
+    def hi = sym.info.normalize match {
+      case TypeBounds(lo, hi) if hi.typeSymbol != AnyClass => Some(makeType(hi, inTemplate, sym))
+      case _ => None
+    }
+  }
+
   /* ============== MAKER METHODS ============== */
 
   /** */
-  def normalizeTemplate(aSym: Symbol): Symbol = {
-    if (aSym == null || aSym == EmptyPackage || aSym == NoSymbol)
-      normalizeTemplate(RootPackage)
-    else if (aSym == ScalaObjectClass || aSym == ObjectClass)
-      normalizeTemplate(definitions.AnyRefClass)
-    else if (aSym.isModuleClass || aSym.isPackageObject)
-      normalizeTemplate(aSym.sourceModule)
-    else
-      aSym
+  def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
+    case null | EmptyPackage | NoSymbol                   => normalizeTemplate(RootPackage)
+    case ScalaObjectClass | ObjectClass                   => normalizeTemplate(AnyRefClass)
+    case _ if aSym.isModuleClass || aSym.isPackageObject  => normalizeTemplate(aSym.sourceModule)
+    case _                                                => aSym
   }
 
   def makeRootPackage: Option[PackageImpl] =
@@ -303,7 +305,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
           List(sym.constrParamAccessors map (makeValueParam(_, this)))
         val constructors =
           members collect { case d: Constructor => d }
-        def primaryConstructor = (constructors find (_.isPrimary))
+        def primaryConstructor = constructors find (_.isPrimary)
         def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
       }
     else
@@ -312,55 +314,47 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
 
   /** */
   def makeMember(aSym: Symbol, inTpl: => DocTemplateImpl): List[MemberImpl] = {
+
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
-      if (bSym.isGetter && (bSym.accessed hasFlag Flags.MUTABLE))
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
+      abstract class MakeMemberTemplateImpl extends NonTemplateMemberImpl(bSym, inTpl) {
+        def isUseCase = bSym.isSynthetic
+      }
+      trait MethodParams extends MakeMemberTemplateImpl {
+        def valueParams =
+          sym.paramss map { ps =>
+            ps.zipWithIndex map { case (p, i) =>
+              if (p.nameString contains "$") makeValueParam(p, inTemplate, optimize("arg" + i))
+              else makeValueParam(p, inTemplate)
+            }
+          }
+      }
+
+      if (bSym.isGetter && bSym.accessed.isMutable)
+        Some(new MakeMemberTemplateImpl with Val {
           override def isVar = true
-          def isUseCase = bSym hasFlag Flags.SYNTHETIC
         })
-      else if (bSym.isMethod && !(bSym hasFlag Flags.ACCESSOR) && !bSym.isConstructor)
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with Def {
+      else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor)
+        Some(new MakeMemberTemplateImpl with Def with MethodParams {
           override def isDef = true
-          def isUseCase = bSym hasFlag Flags.SYNTHETIC
           def typeParams =
             sym.tpe.typeParams map (makeTypeParam(_, inTpl))
-          def valueParams =
-            sym.paramss map { ps => (ps.zipWithIndex) map { case (p, i) =>
-              if (p.nameString contains "$") makeValueParam(p, inTpl, optimize("arg" + i)) else makeValueParam(p, inTpl)
-            }}
         })
       else if (bSym.isConstructor)
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with Constructor {
+        Some(new MakeMemberTemplateImpl with Constructor with MethodParams {
           override def isConstructor = true
-          def isUseCase = bSym hasFlag Flags.SYNTHETIC
           def isPrimary = sym.isPrimaryConstructor
-          def valueParams =
-            sym.paramss map { ps => (ps.zipWithIndex) map { case (p, i) =>
-              if (p.nameString contains "$") makeValueParam(p, inTpl, optimize("arg" + i)) else makeValueParam(p, inTpl)
-            }}
         })
       else if (bSym.isGetter) // Scala field accessor or Java field
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
+        Some(new MakeMemberTemplateImpl with Val {
           override def isVal = true
-          def isUseCase = bSym hasFlag Flags.SYNTHETIC
         })
       else if (bSym.isAbstractType)
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with AbstractType {
+        Some(new MakeMemberTemplateImpl with AbstractType with StdTypeBounds {
           override def isAbstractType = true
-          def isUseCase = bSym hasFlag Flags.SYNTHETIC
-          def lo = sym.info.normalize match {
-            case TypeBounds(lo, hi) if lo.typeSymbol != definitions.NothingClass => Some(makeType(lo, inTpl, sym))
-            case _ => None
-          }
-          def hi = sym.info.normalize match {
-            case TypeBounds(lo, hi) if hi.typeSymbol != definitions.AnyClass => Some(makeType(hi, inTpl, sym))
-            case _ => None
-          }
         })
       else if (bSym.isAliasType)
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with AliasType {
+        Some(new MakeMemberTemplateImpl with AliasType {
           override def isAliasType = true
-          def isUseCase = bSym hasFlag Flags.SYNTHETIC
           def alias = makeType(sym.tpe, inTpl, sym)
         })
       else if (bSym.isPackage)
@@ -376,29 +370,19 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
         addCommentBody(bSym, inTpl, bComment, bPos)
       }
-      (allSyms ::: List(aSym)) flatMap (makeMember0(_))
+      (allSyms :+ aSym) flatMap makeMember0
     }
   }
 
   /** */
   def makeTypeParam(aSym: Symbol, inTpl: => DocTemplateImpl): TypeParam = {
-    new ParameterImpl(aSym, inTpl) with TypeParam {
+    new ParameterImpl(aSym, inTpl) with TypeParam with StdTypeBounds {
       def isTypeParam = true
       def isValueParam = false
       def variance: String = {
         if (sym hasFlag Flags.COVARIANT) "+"
         else if (sym hasFlag Flags.CONTRAVARIANT) "-"
         else ""
-      }
-      def lo = sym.info.normalize match {
-        case TypeBounds(lo, hi) if lo.typeSymbol != definitions.NothingClass =>
-          Some(makeType(lo, inTpl, sym))
-        case _ => None
-      }
-      def hi = sym.info.normalize match {
-        case TypeBounds(lo, hi) if hi.typeSymbol != definitions.AnyClass =>
-          Some(makeType(hi, inTpl, sym))
-        case _ => None
       }
     }
   }
@@ -415,7 +399,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       def isTypeParam = false
       def isValueParam = true
       def defaultValue =
-        if (aSym.hasFlag(Flags.DEFAULTPARAM))
+        if (aSym.hasDefault)
           // units.filter should return only one element
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
@@ -428,7 +412,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
         else None
       def resultType =
         makeType(sym.tpe, inTpl, sym)
-      def isImplicit = aSym.hasFlag(Flags.IMPLICIT)
+      def isImplicit = aSym.isImplicit
     }
 
   /** */
@@ -512,8 +496,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     (aSym.isPackageClass || (aSym.sourceFile != null)) && localShouldDocument(aSym) && ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) )
   }
 
-  def localShouldDocument(aSym: Symbol): Boolean = {
-    !(aSym hasFlag Flags.PRIVATE) && ((aSym hasFlag Flags.PROTECTED) || aSym.privateWithin == NoSymbol) && !(aSym hasFlag Flags.SYNTHETIC)
-  }
-
+  def localShouldDocument(aSym: Symbol): Boolean =
+    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
 }
