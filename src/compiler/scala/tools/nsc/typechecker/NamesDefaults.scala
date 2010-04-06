@@ -100,7 +100,7 @@ trait NamesDefaults { self: Analyzer =>
     import context.unit
 
     /**
-     * Transform a function into a block, and assing context.namedApplyBlockInfo to
+     * Transform a function into a block, and passing context.namedApplyBlockInfo to
      * the new block as side-effect.
      *
      * `baseFun' is typed, the resulting block must be typed as well.

@@ -388,7 +388,7 @@ case object Nil extends List[Nothing] {
     throw new NoSuchElementException("head of empty list")
   override def tail: List[Nothing] =
     throw new UnsupportedOperationException("tail of empty list")
-  // Removal of equals method here might lead to an infinite recusion similar to IntMap.equals.
+  // Removal of equals method here might lead to an infinite recursion similar to IntMap.equals.
   override def equals(that: Any) = that match {
     case that1: Seq[_] => that1.isEmpty
     case _ => false
@@ -595,7 +595,7 @@ object List extends SeqFactory[List] {
    *
    *  @param arr   the array to convert
    *  @param start the first index to consider
-   *  @param len   the lenght of the range to convert
+   *  @param len   the length of the range to convert
    *  @return      a list that contains the same elements than `arr`
    *               in the same order
    */

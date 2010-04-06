@@ -441,7 +441,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isScalaPackageClass: Boolean = isPackageClass && owner.isRoot && name == nme.scala_.toTypeName ||
                                     isPackageObjectClass && owner.isScalaPackageClass // not printed as a prefix
 
-    /** Is symbol a monomophic type?
+    /** Is symbol a monomorphic type?
      *  assumption: if a type starts out as monomorphic, it will not acquire
      *  type parameters in later phases.
      */
@@ -587,7 +587,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** A a member of class `base' is incomplete if
      *  (1) it is declared deferred or
      *  (2) it is abstract override and its super symbol in `base' is
-     *      nonexistent or inclomplete.
+     *      nonexistent or incomplete.
      *
      *  @param base ...
      *  @return     ...
@@ -1156,7 +1156,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** The directly or indirectly inherited mixins of this class
      *  except for mixin classes inherited by the superclass. Mixin classes appear
-     *  in linearlization order.
+     *  in linearization order.
      */
     def mixinClasses: List[Symbol] = {
       val sc = superClass
@@ -1274,7 +1274,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      * Returns the rawInfo of the owner. If the current phase has flat classes, it first
      * applies all pending type maps to this symbol.
      *
-     * Asssume this is the ModuleSymbol for B in the follwing definition:
+     * assume this is the ModuleSymbol for B in the following definition:
      *   package p { class A { object B { val x = 1 } } }
      *
      * The owner after flatten is "package p" (see "def owner"). The flatten type map enters
@@ -1289,7 +1289,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** If this symbol is an implementation class, its interface, otherwise the symbol itself
      *  The method follows two strategies to determine the interface.
-     *   - during or after erasure, it takes the last parent of the implementatation class
+     *   - during or after erasure, it takes the last parent of the implementation class
      *     (which is always the interface, by convention)
      *   - before erasure, it looks up the interface name in the scope of the owner of the class.
      *     This only works for implementation classes owned by other classes or traits.
@@ -1799,7 +1799,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       tpeCache
     }
 
-    // needed for experimentlal code for early types as type parameters
+    // needed for experimental code for early types as type parameters
     // def refreshType() { tpePeriod = NoPeriod }
 
     override def typeConstructor: Type = {
@@ -2004,7 +2004,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     override def sourceModule_=(module: Symbol) { this.module = module }
   }
 
-  /** An object repreesenting a missing symbol */
+  /** An object representing a missing symbol */
   object NoSymbol extends Symbol(null, NoPosition, nme.NOSYMBOL) {
     setInfo(NoType)
     privateWithin = this

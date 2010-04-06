@@ -20,7 +20,7 @@ import ch.epfl.lamp.compiler.msil._
 import ch.epfl.lamp.compiler.msil.util.Table
 
 /**
- * The MSIL printer Vistor. It prints a complete
+ * The MSIL printer Visitor. It prints a complete
  * assembly in a single or multiple files. Then this file can be compiled by ilasm.
  *
  * @author Nikolay Mihaylov

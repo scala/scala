@@ -116,7 +116,7 @@ abstract class AddInterfaces extends InfoTransform {
    *  </p>
    *  <ul>
    *    <li>
-   *      for every interface member of <code>iface</code> its implemention
+   *      for every interface member of <code>iface</code> its implementation
    *      method, if one is needed.
    *    </li>
    *    <li>

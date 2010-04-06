@@ -74,7 +74,7 @@ trait AnnotationInfos extends reflect.generic.AnnotationInfos { self: SymbolTabl
    *    class).
    *  </p>
    *  <p>
-   *    Annotations are pickled (written to scala symbtab attribute
+   *    Annotations are pickled (written to scala symtab attribute
    *    in the classfile) if <code>atp</code> inherits form
    *    <code>StaticAnnotation</code>.
    *  </p>

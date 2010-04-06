@@ -61,7 +61,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case MethodType(params, MethodType(params1, restpe)) =>
           apply(MethodType(params ::: params1, restpe))
         case MethodType(params, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
-          assert(false, "unexpected curried method types with intervening exitential")
+          assert(false, "unexpected curried method types with intervening existential")
           tp0
         case PolyType(List(), restpe) => // nullary method type
           apply(MethodType(List(), restpe))
@@ -172,7 +172,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         throw ex
     }
 
-    /* Is tree a reference `x' to a call by name parameter that neeeds to be converted to
+    /* Is tree a reference `x' to a call by name parameter that needs to be converted to
      * x.apply()? Note that this is not the case if `x' is used as an argument to another
      * call by name parameter.
      */
@@ -216,7 +216,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *
      *    throw new NonLocalReturnControl(key, expr)
      *  todo: maybe clone a pre-existing exception instead?
-     *  (but what to do about excaptions that miss their targets?)
+     *  (but what to do about exceptions that miss their targets?)
      */
     private def nonLocalReturnThrow(expr: Tree, meth: Symbol) =
       localTyper.typed {

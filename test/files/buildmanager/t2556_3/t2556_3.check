@@ -5,7 +5,7 @@ builder > A.scala
 compiling Set(A.scala)
 Changes: Map(class A -> List(), class B -> List(Changed(Class(B))[List((A,java.lang.Object), (ScalaObject,ScalaObject))]))
 invalidate C.scala because parents have changed [Changed(Class(B))[List((A,java.lang.Object), (ScalaObject,ScalaObject))]]
-invalidate B.scala because it references invalid (no longer inherited) defintion [ParentChanged(Class(C))]
+invalidate B.scala because it references invalid (no longer inherited) definition [ParentChanged(Class(C))]
 compiling Set(B.scala, C.scala)
 B.scala:3: error: type mismatch;
  found   : C

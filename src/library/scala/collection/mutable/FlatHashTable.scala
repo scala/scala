@@ -46,7 +46,7 @@ trait FlatHashTable[A] {
   private def initialCapacity = capacity(initialSize)
 
   /**
-   * Initialises the collection from the input stream. `f` will be called for each element
+   * Initializes the collection from the input stream. `f` will be called for each element
    * read from the input stream in the order determined by the stream. This is useful for
    * structures where iteration order is important (e.g. LinkedHashSet).
    *

@@ -125,7 +125,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   // ------------ Hooks for interactive mode-------------------------
 
-  /** Called every time an AST node is succesfully typedchecked in typerPhase.
+  /** Called every time an AST node is successfully typechecked in typerPhase.
    */
   def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
 
@@ -584,7 +584,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       curRun = this
       //Console.println("starting run: " + id)
 
-      // Can not take the phaseDescriptors.head even though its the syntaxAnalyser, this will implicitly
+      // Can not take the phaseDescriptors.head even though its the syntaxAnalyzer, this will implicitly
       // call definitions.init which uses phase and needs it to be != NoPhase
       val phase1 = syntaxAnalyzer.newPhase(NoPhase)
       phase = phase1

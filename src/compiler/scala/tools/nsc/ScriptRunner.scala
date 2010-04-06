@@ -185,7 +185,7 @@ object ScriptRunner
     new CompoundSourceFile(preamble, middle, end)
   }
 
-  /** Compile a script using the fsc compilation deamon.
+  /** Compile a script using the fsc compilation daemon.
    *
    *  @param settings     ...
    *  @param scriptFileIn ...

@@ -704,7 +704,7 @@ abstract class ClassfileParser {
           while ('0' <= sig(index) && sig(index) <= '9') index += 1
           var elemtp = sig2type(tparams, skiptvs)
           // make unbounded Array[T] where T is a type variable into Array[T with Object]
-          // (this is necessary because such arrays have a representation which is incompatibe
+          // (this is necessary because such arrays have a representation which is incompatible
           // with arrays of primitive types.
           if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe))
             elemtp = intersectionType(List(elemtp, definitions.ObjectClass.tpe))
@@ -836,7 +836,7 @@ abstract class ClassfileParser {
         case nme.AnnotationDefaultATTR =>
           sym.addAnnotation(AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()))
           in.skip(attrLen)
-        // Java annotatinos on classes / methods / fields with RetentionPolicy.RUNTIME
+        // Java annotations on classes / methods / fields with RetentionPolicy.RUNTIME
         case nme.RuntimeAnnotationATTR =>
           if (isScalaAnnot || !isScala) {
             val scalaSigAnnot = parseAnnotations(attrLen)
@@ -1123,7 +1123,7 @@ abstract class ClassfileParser {
             val sym = classSymbol(outerName)
             val s =
               // if loading during initialization of `definitions' typerPhase is not yet set.
-              // in that case we simply load the mmeber at the current phase
+              // in that case we simply load the member at the current phase
               if (currentRun.typerPhase != null)
                 atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
               else

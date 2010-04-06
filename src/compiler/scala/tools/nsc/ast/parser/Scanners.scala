@@ -802,7 +802,7 @@ trait Scanners {
     }
 
     /** Parse character literal if current character is followed by \',
-     *  or follow with given op and return a symol literal token
+     *  or follow with given op and return a symbol literal token
      */
     def charLitOr(op: () => Unit) {
       putChar(ch)

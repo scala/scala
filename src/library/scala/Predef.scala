@@ -321,7 +321,7 @@ object Predef extends LowPriorityImplicits {
     implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}
   }
 
-  /** A type for which there is aways an implicit value.
+  /** A type for which there is always an implicit value.
    *  @see fallbackCanBuildFrom in Array.scala
    */
   class DummyImplicit

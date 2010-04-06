@@ -94,7 +94,7 @@ abstract class Checkers {
       clasz.methods.foreach(check)
     }
 
-    /** Apply the give funtion to each pair of the cartesian product of
+    /** Apply the give function to each pair of the cartesian product of
      * l1 x l2.
      */
     def pairwise[a](l1: List[a], l2: List[a])(f: (a, a) => Unit) =

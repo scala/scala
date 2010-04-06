@@ -253,7 +253,7 @@ abstract class Enumeration(initial: Int, names: String*) { thisenum =>
 
   /** A class implementing the <a href="Enumeration.Value.html"
    *  target="contentFrame"><code>Value</code></a> type. This class can be
-   *  overriden to change the enumeration's naming and integer identification
+   *  overridden to change the enumeration's naming and integer identification
    *  behaviour.
    */
   @serializable

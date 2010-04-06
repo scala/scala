@@ -29,7 +29,7 @@ trait DocComments { self: SymbolTable =>
 
   /** The position of the raw doc comment of symbol `sym`, or NoPosition if missing
    *  If a symbol does not have a doc comment but some overridden version of it does,
-   *  the posititon of the doc comment of the overridden version is returned instead.
+   *  the position of the doc comment of the overridden version is returned instead.
    */
   def docCommentPos(sym: Symbol): Position =
     getDocComment(sym) map (_.pos) getOrElse NoPosition

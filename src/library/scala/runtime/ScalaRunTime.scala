@@ -90,7 +90,7 @@ object ScalaRunTime {
   }
 
   /** Convert a numeric value array to an object array.
-   *  Needed to deal with vararg arguments of primtive types that are passed
+   *  Needed to deal with vararg arguments of primitive types that are passed
    *  to a generic Java vararg parameter T ...
    */
   def toObjectArray(src: AnyRef): Array[Object] = {

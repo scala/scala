@@ -296,13 +296,13 @@ trait Trees { self: Universe =>
        extends TermTree
 
   /** Case clause in a pattern match, eliminated by TransMatch
-   *  (except for occurences in switch statements)
+   *  (except for occurrences in switch statements)
    */
   case class CaseDef(pat: Tree, guard: Tree, body: Tree)
        extends Tree
 
   /** Alternatives of patterns, eliminated by TransMatch, except for
-   *  occurences in encoded Switch stmt (=remaining Match(CaseDef(...))
+   *  occurrences in encoded Switch stmt (=remaining Match(CaseDef(...))
    */
   case class Alternative(trees: List[Tree])
        extends TermTree

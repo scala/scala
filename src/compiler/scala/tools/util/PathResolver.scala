@@ -79,7 +79,7 @@ object PathResolver {
       )
   }
 
-  /** Default values based on those in Environment as interpretered according
+  /** Default values based on those in Environment as interpreted according
    *  to the path resolution specification.
    */
   object Defaults {

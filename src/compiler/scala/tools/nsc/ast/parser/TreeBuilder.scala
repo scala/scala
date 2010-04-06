@@ -205,7 +205,7 @@ abstract class TreeBuilder {
       }
     }
 
-  /** Create a tree represeting an assignment &lt;lhs = rhs&gt; */
+  /** Create a tree representing an assignment &lt;lhs = rhs&gt; */
   def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
     case Apply(fn, args) =>
       Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))

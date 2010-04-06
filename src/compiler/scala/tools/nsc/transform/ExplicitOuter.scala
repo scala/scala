@@ -84,7 +84,7 @@ abstract class ExplicitOuter extends InfoTransform
    *      <p>
    *        Add an outer accessor <code>$outer$$C</code> to every inner class
    *        with fully qualified name <code>C</code> that is not an interface.
-   *        The outer accesssor is abstract for traits, concrete for other
+   *        The outer accessor is abstract for traits, concrete for other
    *        classes.
    *      </p>
    *      <p>

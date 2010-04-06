@@ -135,7 +135,7 @@ abstract class ICodeReader extends ClassfileParser {
     res
   }
 
-  /** Checks if tp1 is the same type as tp2, modulo implict methods.
+  /** Checks if tp1 is the same type as tp2, modulo implicit methods.
    *  We don't care about the distinction between implicit and explicit
    *  methods as this point, and we can't get back the information from
    *  bytecode anyway.

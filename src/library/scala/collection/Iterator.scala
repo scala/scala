@@ -135,7 +135,7 @@ object Iterator {
   }
 
   /** Creates an infinite-length iterator returning the results of evaluating
-   *  an expression. The epxression is recomputed for every element.
+   *  an expression. The expression is recomputed for every element.
    *
    *  @param elem the element computation.
    *  @return the iterator containing an infinite number of results of evaluating `elem`.
@@ -254,7 +254,7 @@ object Iterator {
     def next(): Int = { val j = i; i = step(i); j }
   }
 
-  /** Create an iterator that is the concantenation of all iterators
+  /** Create an iterator that is the concatenation of all iterators
    *  returned by a given iterator of iterators.
    *   @param its   The iterator which returns on each call to next
    *                a new iterator whose elements are to be concatenated to the result.
@@ -357,8 +357,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
   /** Creates a new iterator that maps all produced values of this iterator
    *  to new values using a transformation function.
    *  @param f  the transformation function
-   *  @return a new iterator which transformes every value produced by this
-   *          iterator by applying the functon `f` to it.
+   *  @return a new iterator which transforms every value produced by this
+   *          iterator by applying the function `f` to it.
    */
   def map[B](f: A => B): Iterator[B] = new Iterator[B] {
     def hasNext = self.hasNext
@@ -709,12 +709,12 @@ trait Iterator[+A] extends TraversableOnce[A] {
     if (found) i else -1
   }
 
-  /** Returns the index of the first occurence of the specified
+  /** Returns the index of the first occurrence of the specified
    *  object in this iterable object.
    *  $mayNotTerminateInf
    *
    *  @param  elem  element to search for.
-   *  @return the index of the first occurence of `elem` in the values produced by this iterator,
+   *  @return the index of the first occurrence of `elem` in the values produced by this iterator,
    *          or -1 if such an element does not exist until the end of the iterator is reached.
    */
   def indexOf[B >: A](elem: B): Int = {
@@ -985,7 +985,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
   }
 
-  /** Tests if another iterator produces the same valeus as this one.
+  /** Tests if another iterator produces the same values as this one.
    *  $willNotTerminateInf
    *  @param that  the other iterator
    *  @return `true`, if both iterators produce the same elements in the same order, `false` otherwise.

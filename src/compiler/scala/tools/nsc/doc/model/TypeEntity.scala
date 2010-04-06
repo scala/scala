@@ -11,7 +11,7 @@ import scala.collection._
 
 abstract class TypeEntity {
 
-  /** A string reprsentation of this type. */
+  /** A string representation of this type. */
   def name: String
 
   /** Maps which parts of this type's name reference other entities. The map is indexed by the position of the first

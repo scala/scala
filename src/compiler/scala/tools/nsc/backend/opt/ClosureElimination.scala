@@ -37,7 +37,7 @@ abstract class ClosureElimination extends SubComponent {
   }
 
   /**
-   * Remove references to the environemnt through fields of a closure object.
+   * Remove references to the environment through fields of a closure object.
    * This has to be run after an 'apply' method has been inlined, but it still
    * references the closure object.
    *

@@ -93,7 +93,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        * - The type-checker has prevented dynamic applies on methods which
        *   parameter's erased types are not statically known at the call site.
        *   This is necessary to allow dispatching the call to the correct
-       *   method (dispatching on paramters is static in Scala). In practice,
+       *   method (dispatching on parameters is static in Scala). In practice,
        *   this limitation only arises when the called method is defined as a
        *   refinement, where the refinement defines a parameter based on a
        *   type variable. */
@@ -457,7 +457,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
           /* This creates the tree that does the reflective call (see general comment
            * on the apply-dynamic tree for its format). This tree is simply composed
-           * of three succesive calls, first to getClass on the callee, then to
+           * of three successive calls, first to getClass on the callee, then to
            * getMethod on the class, then to invoke on the method.
            * - getMethod needs an array of classes for choosing one amongst many
            *   overloaded versions of the method. This is provided by paramTypeClasses
@@ -641,7 +641,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
     /* Returns the symbol and the tree for the symbol field interning a reference to a symbol 'synmname'.
      * If it doesn't exist, i.e. the symbol is encountered the first time,
-     * it creates a new static field definition and initalization and returns it.
+     * it creates a new static field definition and initialization and returns it.
      */
     private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): (Symbol, Tree, Tree) =
       symbolStaticFields.getOrElseUpdate(symname, {

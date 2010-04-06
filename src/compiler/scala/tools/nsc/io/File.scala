@@ -51,7 +51,7 @@ import Path._
 /** An abstraction for files.  For character data, a Codec
  *  can be supplied at either creation time or when a method
  *  involving character data is called (with the latter taking
- *  precdence if supplied.) If neither is available, the value
+ *  precedence if supplied.) If neither is available, the value
  *  of scala.io.Codec.default is used.
  *
  *  @author  Paul Phillips

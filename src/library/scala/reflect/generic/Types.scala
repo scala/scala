@@ -29,7 +29,7 @@ trait Types { self: Universe =>
           tostringRecursions -= 1
         }
 
-    /** Metod to be implemented in subclasses.
+    /** Method to be implemented in subclasses.
      *  Converts this type to a string in calling toString for its parts.
      */
     def safeToString: String = super.toString

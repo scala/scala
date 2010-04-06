@@ -65,7 +65,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
-   *  @param iter  the iterfable object.
+   *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
   override def ++=(xs: TraversableOnce[A]): this.type = xs match {
@@ -125,7 +125,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  the buffer size.
    *
    *  @param n  the index which refers to the first element to delete.
-   *  @param count   the number of elemenets to delete
+   *  @param count   the number of elements to delete
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   override def remove(n: Int, count: Int) {

@@ -26,7 +26,7 @@ object Main {
   * </p>
   *
   * @param args  contains the URLs and/or filenames
-  *              of the documents to be procesed.
+  *              of the documents to be processed.
   */
   def main(args: Array[String]) {
     def saxe[T](body: => T) = catching[T](classOf[SAXException]) opt body

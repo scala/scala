@@ -15,12 +15,12 @@ import javax.swing._
 
 /**
  * Extend this class for most simple UI applications. Clients need to implement the
- * <code>top</code> method. Framework intialization is done by this class.
+ * <code>top</code> method. Framework initialization is done by this class.
  *
  * In order to conform to Swing's threading policy, never implement top or any additional
  * member that created Swing components as a value unless component creation happens on
  * the EDT (see Swing.onEDT and Swing.onEDTWait). Lazy values are okay for the same reason
- * if they are intialized on the EDT always.
+ * if they are initialized on the EDT always.
  */
 @deprecated("Use SimpleSwingApplication instead") abstract class SimpleGUIApplication extends GUIApplication {
 

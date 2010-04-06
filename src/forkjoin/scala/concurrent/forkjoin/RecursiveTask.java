@@ -37,7 +37,7 @@ package scala.concurrent.forkjoin;
 public abstract class RecursiveTask<V> extends ForkJoinTask<V> {
 
     /**
-     * Empty contructor for use by subclasses.
+     * Empty constructor for use by subclasses.
      */
     protected RecursiveTask() {
     }

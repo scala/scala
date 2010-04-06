@@ -851,7 +851,7 @@ abstract class RefChecks extends InfoTransform {
           val ownerTransformer = new ChangeOwnerTraverser(vsym, lazyDefSym)
           val lazyDef = atPos(tree.pos)(
               DefDef(lazyDefSym, ownerTransformer(
-                if (tree.symbol.owner.isTrait // for traits, this is further tranformed in mixins
+                if (tree.symbol.owner.isTrait // for traits, this is further transformed in mixins
                     || hasUnitType) rhs
                 else Block(List(
                        Assign(gen.mkAttributedRef(vsym), rhs)),

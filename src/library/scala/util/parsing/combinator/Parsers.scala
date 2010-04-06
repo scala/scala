@@ -288,7 +288,7 @@ trait Parsers {
      *          characters accepts.</p>
      *
      * @param q a parser that accepts if p consumes less characters.
-     * @return a `Parser' that returns the result of the parser consuming the most characteres (out of `p' and `q').
+     * @return a `Parser' that returns the result of the parser consuming the most characters (out of `p' and `q').
      */
     def ||| [U >: T](q: => Parser[U]): Parser[U] = new Parser[U] {
       def apply(in: Input) = {
@@ -348,7 +348,7 @@ trait Parsers {
     def ^? [U](f: PartialFunction[T, U]): Parser[U] = ^?(f, r => "Constructor function not defined at "+r)
 
 
-    /** A parser combinator that parameterises a subsequent parser with the result of this one
+    /** A parser combinator that parameterizes a subsequent parser with the result of this one
      *
      *<p>
      * Use this combinator when a parser depends on the result of a previous parser. `p' should be
@@ -662,7 +662,7 @@ trait Parsers {
 
   /** A parser generator that generalises the rep1sep generator so that `q', which parses the separator,
    * produces a right-associative function that combines the elements it separates. Additionally,
-   * The right-most (last) element and the left-most combinating function have to be supplied.
+   * The right-most (last) element and the left-most combining function have to be supplied.
    *
    * rep1sep(p: Parser[T], q) corresponds to chainr1(p, q ^^ cons, cons, Nil) (where val cons = (x: T, y: List[T]) => x :: y)
    *

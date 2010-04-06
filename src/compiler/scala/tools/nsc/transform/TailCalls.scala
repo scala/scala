@@ -72,7 +72,7 @@ abstract class TailCalls extends Transform
    *   are optimized. Since 'this' is not a local variable, a dummy local val
    *   is added and used as a label parameter. The backend knows to load
    *   the corresponding argument in the 'this' (local at index 0). This dummy local
-   *   is never used and should be cleand up by dead code elmination (when enabled).
+   *   is never used and should be cleand up by dead code elimination (when enabled).
    * </p>
    * <p>
    *   This phase has been moved before pattern matching to catch more

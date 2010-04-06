@@ -73,7 +73,7 @@ object DocStrings {
    *  pairs of start/end positions of all tagged sections in the string.
    *  Every section starts with a `@' and extends to the next `@', or
    *  to the end of the comment string, but excluding the final two
-   *  charcters which terminate the comment.
+   *  characters which terminate the comment.
    */
   def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] =
     findAll(str, 0) (idx => str(idx) == '@' && p(idx)) match {

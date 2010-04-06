@@ -1139,7 +1139,7 @@ object OpCode {
 	opcode(Rem_Un, CEE_REM_UN, "rem.un" , 0xFFFFFF5E, POP_1_1, PUSH_1 , INLINE_NONE, FLOW_NEXT)
 
     /**
-     * Computes the bitwise AND of two values and pushes the result onto the evalution stack.
+     * Computes the bitwise AND of two values and pushes the result onto the evaluation stack.
      */
     final val And = new OpCode()
 	opcode(And, CEE_AND, "and"    , 0xFFFFFF5F, POP_1_1, PUSH_1 , INLINE_NONE, FLOW_NEXT)
@@ -1585,7 +1585,7 @@ object OpCode {
 	opcode(Conv_Ovf_I2, CEE_CONV_OVF_I2, "conv.ovf.i2", 0xFFFFFFB5, POP_1, PUSH_I , INLINE_NONE , FLOW_NEXT)
 
     /**
-     * Converts the signed value on top of the sevaluation tack to signed int32,
+     * Converts the signed value on top of the evaluation stack to signed int32,
      * throwing OverflowException on overflow.
      */
     final val Conv_Ovf_I4 = new OpCode()

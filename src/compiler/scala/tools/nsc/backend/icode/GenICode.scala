@@ -51,7 +51,7 @@ abstract class GenICode extends SubComponent  {
 
     var unit: CompilationUnit = _
 
-    // We assume definitions are alread initialized
+    // We assume definitions are already initialized
     val STRING = REFERENCE(StringClass)
 
     // this depends on the backend! should be changed.
@@ -1445,7 +1445,7 @@ abstract class GenICode extends SubComponent  {
         assert(ctx.clazz.symbol eq cls,
                "Classes are not the same: " + ctx.clazz.symbol + ", " + cls)
 
-      /** Non-method term members are fields, except for moudle members. Module
+      /** Non-method term members are fields, except for module members. Module
        *  members can only happen on .NET (no flatten) for inner traits. There,
        *  a module symbol is generated (transformInfo in mixin) which is used
        *  as owner for the members of the implementation class (so that the
@@ -1909,7 +1909,7 @@ abstract class GenICode extends SubComponent  {
         val kind = toTypeKind(tree.tpe)
         val guardResult = kind != UNIT && mayCleanStack(finalizer)
         // we need to save bound labels before any code generation is performed on
-        // the current context (otherwise, any new lables in the finalizer that need to
+        // the current context (otherwise, any new labels in the finalizer that need to
         // be duplicated would be incorrectly considered bound -- see #2850).
         val boundLabels: collection.Set[Symbol] = Set.empty ++ labels.keySet
 
@@ -2129,7 +2129,7 @@ abstract class GenICode extends SubComponent  {
     ///////////////// Fake instructions //////////////////////////
 
     /**
-     * Pseudo jump: it takes a Label instead of a basick block.
+     * Pseudo jump: it takes a Label instead of a basic block.
      * It is used temporarily during code generation. It is replaced
      * by a real JUMP instruction when all labels are resolved.
      */

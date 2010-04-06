@@ -169,7 +169,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  @param  idx  The index to select.
    *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
-   *  @throws `IndexOutOfBoundsEsxception` if `idx` does not satisfy `0 <= idx < length`.
+   *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(idx: Int): A
 
@@ -212,7 +212,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < length)
 
-  /** Computes length of longest segment whose elements all satisfy some preficate.
+  /** Computes length of longest segment whose elements all satisfy some predicate.
    *
    *  $mayNotTerminateInf
    *
@@ -229,7 +229,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     i
   }
 
-  /** Returns the length of the longest prefix whose elements all satisfy some preficate.
+  /** Returns the length of the longest prefix whose elements all satisfy some predicate.
    *
    *  $mayNotTerminateInf
    *
@@ -269,7 +269,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     -1
   }
 
-  /** Returns index of the first element satisying a predicate, or `-1`.
+  /** Returns index of the first element satisfying a predicate, or `-1`.
    */
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
@@ -494,7 +494,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test
-   *  @param  end     the end idnex
+   *  @param  end     the end index
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
@@ -849,7 +849,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   override def toString = super[IterableLike].toString
 
-  /** Returns index of the last element satisying a predicate, or -1.
+  /** Returns index of the last element satisfying a predicate, or -1.
    */
   @deprecated("use `lastIndexWhere` instead")
   def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)

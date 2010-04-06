@@ -42,7 +42,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       env
     }
 
-    /** Is this typeenv included in `other'? All type variables in this environement
+    /** Is this typeenv included in `other'? All type variables in this environment
      *  are defined in `other' and bound to the same type.
      */
     def includes(t1: TypeEnv, t2: TypeEnv) = {
@@ -54,7 +54,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     }
 
-    /** Reduce the given environment to contain mappins only for type variables in tps. */
+    /** Reduce the given environment to contain mappings only for type variables in tps. */
     def reduce(env: TypeEnv, tps: immutable.Set[Symbol]): TypeEnv = {
       env filter { kv => tps.contains(kv._1)}
     }
@@ -91,7 +91,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   case class Overload(sym: Symbol, env: TypeEnv) {
     override def toString: String =
-      "specalized overload " + sym + " in " + env
+      "specialized overload " + sym + " in " + env
   }
 
   /** The annotation used to mark specialized type parameters. */
@@ -158,7 +158,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   def hasSpecializedParams(clazz: Symbol): Boolean =
     !specializedParams(clazz).isEmpty
 
-  /** Return specialized type paramters. */
+  /** Return specialized type parameters. */
   def specializedParams(sym: Symbol): List[Symbol] =
     splitParams(sym.info.typeParams)._1
 
@@ -284,7 +284,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         Nil
     }
 
-  /** Return a list of all type environements for all specializations
+  /** Return a list of all type environments for all specializations
    *  of @specialized types in `tps'.
    */
   private def specializations(tps: List[Symbol]): List[TypeEnv] = {
@@ -407,7 +407,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         decls1.enter(subst(fullEnv)(sym))
       }
 
-      /** Create and enter in scope an overriden symbol m1 for `m' that forwards
+      /** Create and enter in scope an overridden symbol m1 for `m' that forwards
        *  to `om'. `om' is a fresh, special overload of m1 that is an implementation
        *  of `m'. For example, for a
        *
@@ -658,7 +658,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val oms = new mutable.ListBuffer[Symbol]
     while (opc.hasNext) {
        log("\toverriding pairs: " + opc.overridden.fullName + ": " + opc.overridden.info
-               + " overriden by " + opc.overriding.fullName + ": " + opc.overriding.info)
+               + " overridden by " + opc.overriding.fullName + ": " + opc.overriding.info)
       if (opc.overriding.owner == clazz && !specializedTypeVars(opc.overridden.info).isEmpty) {
         log("\t\tspecializedTVars: " + specializedTypeVars(opc.overridden.info))
         val env = unify(opc.overridden.info, opc.overriding.info, emptyEnv)
@@ -742,7 +742,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     override def default(key: Symbol) = emptyEnv
   }
 
-  /** Apply type bindings in the given environement `env' to all declarations.  */
+  /** Apply type bindings in the given environment `env' to all declarations.  */
   private def subst(env: TypeEnv, decls: List[Symbol]): List[Symbol] =
     decls map subst(env)
 
@@ -831,7 +831,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       } else false
   }
 
-  /** The type environemnt is sound w.r.t. to all type bounds or only soft
+  /** The type environment is sound w.r.t. to all type bounds or only soft
    *  conflicts appear. An environment is sound if all bindings are within
    *  the bounds of the given type variable. A soft conflict is a binding
    *  that does not fall within the bounds, but whose bounds contain
@@ -974,7 +974,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             super.transform(tree)
 
         case PackageDef(pid, stats) =>
-          tree.symbol.info // make sure specializations have been peformed
+          tree.symbol.info // make sure specializations have been performed
           log("PackageDef owner: " + symbol)
           atOwner(tree, symbol) {
             val specMembers = implSpecClasses(stats) map localTyper.typed
@@ -1108,7 +1108,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         ValDef(param.cloneSymbol(symbol).setInfo(param.info.substSym(oldtparams, newtparams)))
       })
 
-      // replace value and type paremeters of the old method with the new ones
+      // replace value and type parameters of the old method with the new ones
       val symSubstituter = new ImplementationAdapter(
         parameters(target).flatten ::: origtparams,
         vparamss1.flatten.map(_.symbol) ::: newtparams)

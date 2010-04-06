@@ -65,7 +65,7 @@ trait HashTable[A] {
   private def initialCapacity = capacity(initialSize)
 
   /**
-   * Initialises the collection from the input stream. `f` will be called for each key/value pair
+   * Initializes the collection from the input stream. `f` will be called for each key/value pair
    * read from the input stream in the order determined by the stream. This is useful for
    * structures where iteration order is important (e.g. LinkedHashMap).
    */

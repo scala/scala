@@ -187,7 +187,7 @@ self =>
    *  @note This operation contains an unchecked cast: if `that`
    *        is a set, it will assume with an unchecked cast
    *        that it has the same element type as this set.
-   *        Any subsequuent ClassCastException is treated as a `false` result.
+   *        Any subsequent ClassCastException is treated as a `false` result.
    */
   override def equals(that: Any): Boolean = that match {
     case that: Set[_] =>

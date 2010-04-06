@@ -24,7 +24,7 @@ class Source(sourceFile: File) extends HtmlPage {
 
   val body =
     <body>
-      <h1>Page source is not implmented yet</h1>
+      <h1>Page source is not implemented yet</h1>
     </body>
 
     /*

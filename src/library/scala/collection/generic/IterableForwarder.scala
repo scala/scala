@@ -22,7 +22,7 @@ import collection.mutable.Buffer
  *    <li><code>toString</code>, <code>hashCode</code>, <code>equals</code>,
  *      <code>stringPrefix</code></li>
  *    <li><code>newBuilder</code>, <code>view</code></li>
- *    <li>all calls creating a new iterable objetc of the same kind</li>
+ *    <li>all calls creating a new iterable object of the same kind</li>
  *  </ul>
  *  <p>
  *    The above methods are forwarded by subclass <a href="../IterableProxy.html"

@@ -27,8 +27,8 @@ abstract class UnPickler {
    *  from an array of bytes.
    *  @param bytes      bytearray from which we unpickle
    *  @param offset     offset from which unpickling starts
-   *  @param classroot  the top-level class which is unpickled, or NoSymbol if unapplicable
-   *  @param moduleroot the top-level module which is unpickled, or NoSymbol if unapplicable
+   *  @param classroot  the top-level class which is unpickled, or NoSymbol if inapplicable
+   *  @param moduleroot the top-level module which is unpickled, or NoSymbol if inapplicable
    *  @param filename   filename associated with bytearray, only used for error messages
    */
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: Symbol, moduleRoot: Symbol, filename: String) {

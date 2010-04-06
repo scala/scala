@@ -102,7 +102,7 @@ trait Symbols { self: Universe =>
      */
     def sourceModule: Symbol = NoSymbol
 
-    /** If symbol is an object defition, it's implied associated class,
+    /** If symbol is an object definition, it's implied associated class,
      *  otherwise NoSymbol
      */
     def moduleClass: Symbol

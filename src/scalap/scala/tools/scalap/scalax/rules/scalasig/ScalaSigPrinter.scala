@@ -205,7 +205,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case _ => "^___^"
       })
 
-      // Printe parameter clauses
+      // Print parameter clauses
       print(paramEntries.mkString(
         "(" + (mt match {case _: ImplicitMethodType => "implicit "; case _ => ""})
         , ", ", ")"))
@@ -261,7 +261,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         val nn = processName(name)
         print(nn)
         printMethodType(m.infoType, true)(
-          {if (!m.isDeferred) print(" = { /* compiled code */ }" /* Print body only for non-abstract metods */ )}
+          {if (!m.isDeferred) print(" = { /* compiled code */ }" /* Print body only for non-abstract methods */ )}
           )
     }
     print("\n")

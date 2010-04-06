@@ -30,7 +30,7 @@ object ListMap extends ImmutableMapFactory[ListMap] {
  *  directly, or by applying the function <code>ListMap.empty</code>.
  *
  *  @author  Matthias Zenger
- *  @author  Martin Oderskty
+ *  @author  Martin Odersky
  *  @version 2.0, 01/01/2007
  *  @since   1
  */

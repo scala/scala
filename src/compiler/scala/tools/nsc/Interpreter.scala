@@ -524,7 +524,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   )
 
   /** Compile an nsc SourceFile.  Returns true if there are
-   *  no compilation errors, or false othrewise.
+   *  no compilation errors, or false otherwise.
    */
   def compileSources(sources: SourceFile*): Boolean = {
     reporter.reset

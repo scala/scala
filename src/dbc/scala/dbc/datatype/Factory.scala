@@ -22,7 +22,7 @@ object Factory {
   final val java_lang_Integer_SIZE = 32;
   final val java_lang_Long_SIZE    = 64;
 
-  /** Returns a mullable property formated as a boolean option */
+  /** Returns a nullable property formatted as a boolean option */
   def isNullable (metadata:java.sql.ResultSetMetaData, index:Int): Option[scala.Boolean] =
     metadata.isNullable(index) match {
       case java.sql.ResultSetMetaData.columnNoNulls => Some(false);

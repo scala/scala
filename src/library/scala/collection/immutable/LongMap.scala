@@ -346,7 +346,7 @@ sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, Lon
   }
 
   /**
-   * Forms the intersection of these two maps with a combinining function. The resulting map is
+   * Forms the intersection of these two maps with a combining function. The resulting map is
    * a map that has only keys present in both maps and has values produced from the original mappings
    * by combining them with f.
    *

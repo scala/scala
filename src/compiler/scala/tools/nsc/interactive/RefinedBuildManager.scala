@@ -104,7 +104,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
         mutable.HashMap[AbstractFile, immutable.Set[AbstractFile]]()
     compiler.reporter.reset
 
-    // See if we really have coresponding symbols, not just those
+    // See if we really have corresponding symbols, not just those
     // which share the name
     def isCorrespondingSym(from: Symbol, to: Symbol): Boolean =
       (from.hasFlag(Flags.TRAIT) == to.hasFlag(Flags.TRAIT)) &&
@@ -301,7 +301,7 @@ class RefinedBuildManager(val settings: Settings) extends Changes with BuildMana
                    defs <- definitions.get(classFile);
                    s <- defs.find(p => p.sym.fullName == q)
                      if ((s.sym).tpe.nonPrivateMember(member) == compiler.NoSymbol))
-                invalidate(file, "it references invalid (no longer inherited) defintion", change)
+                invalidate(file, "it references invalid (no longer inherited) definition", change)
               ()
             case _ => ()
         }

@@ -249,7 +249,7 @@ self: Analyzer =>
      *     by replacing variables by their upper bounds,
      *   - all remaining free type parameters in the type are replaced by WildcardType.
      *  The _complexity_ of a stripped core type corresponds roughly to the number of
-     *  nodes in its ast, except that singleton types are widened befoe taking the complexity.
+     *  nodes in its ast, except that singleton types are widened before taking the complexity.
      *  Two types overlap if they have the same type symbol, or
      *  if one or both are intersection types with a pair of overlapiing parent types.
      */
@@ -386,7 +386,7 @@ self: Analyzer =>
        *  or method type whose result type has a method whose name and type
        *  correspond to the HasMethodMatching type,
        *  or otherwise if `tp' is compatible with `pt'.
-       *  This methid is performance critical: 5-8% of typechecking time.
+       *  This method is performance critical: 5-8% of typechecking time.
        */
       def matchesPt(tp: Type, pt: Type, undet: List[Symbol]) = {
         val start = startTimer(matchesPtNanos)
@@ -523,7 +523,7 @@ self: Analyzer =>
      *   - the symbol's definition comes before, and does not contain the closest enclosing definition,
      *   - the symbol's definition is a val, var, or def with an explicit result type
      *  The aim of this method is to prevent premature cyclic reference errors
-     *  by computing the types of only those implicitis for which one of these
+     *  by computing the types of only those implicits for which one of these
      *  conditions is true.
      */
     def isValid(sym: Symbol) = {

@@ -30,7 +30,7 @@ trait TypingTransformers {
 
     def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A = {
       val savedLocalTyper = localTyper
-//      println("ttransformer atOwner: " + owner + " isPackage? " + owner.isPackage)
+//      println("transformer atOwner: " + owner + " isPackage? " + owner.isPackage)
       localTyper = localTyper.atOwner(tree, if (owner.isModule) owner.moduleClass else owner)
       typers += Pair(owner, localTyper)
       val result = super.atOwner(owner)(trans)

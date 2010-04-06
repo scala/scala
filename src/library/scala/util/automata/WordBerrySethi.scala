@@ -81,7 +81,7 @@ abstract class WordBerrySethi extends BaseBerrySethi {
     this.labels += label
   }
 
-  // overriden in BindingBerrySethi
+  // overridden in BindingBerrySethi
   protected def seenLabel(r: RegExp, label: lang._labelT): Int = {
     pos += 1
     seenLabel(r, pos, label)

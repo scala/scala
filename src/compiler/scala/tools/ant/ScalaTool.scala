@@ -72,7 +72,7 @@ class ScalaTool extends MatchingTask {
   private var classpathPath: Path = emptyPath
 
   /** Comma-separated Java system properties to pass to the JRE. Properties
-    * are formated as name=value. Properties scala.home, scala.tool.name and
+    * are formatted as name=value. Properties scala.home, scala.tool.name and
     * scala.tool.version are always set. */
   private var properties: List[(String, String)] = Nil
 

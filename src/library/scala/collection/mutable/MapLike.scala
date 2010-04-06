@@ -42,7 +42,7 @@ import annotation.migration
  *  {{{
  *    def> empty: This
  *  }}}
- *    If you wish to avoid the unncessary construction of an `Option`
+ *    If you wish to avoid the unnecessary construction of an `Option`
  *    object, you could also override `apply`, `update`,
  *    and `delete`.
 
@@ -102,7 +102,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   def += (kv: (A, B)): this.type
 
   /** Creates a new map consisting of all key/value pairs of the current map
-   *  plus a new pair of a guven key and value.
+   *  plus a new pair of a given key and value.
    *
    *  @param key    The key to add
    *  @param value  The new value
@@ -192,7 +192,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  in map and returns that value.
    *  @param  key the key to test
    *  @param  op  the computation yielding the value to associate with `key`, if
-   *              `key` is previosuly unbound.
+   *              `key` is previously unbound.
    *  @return     the value associated with key (either previously or as a result
    *              of executing the method).
    */
@@ -204,7 +204,7 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
 
   /** Applies a transformation function to all values contained in this map.
    *  The transformation function produces new values from existing keys
-   *  asssociated values.
+   *  associated values.
    *
    * @param f  the transformation to apply
    * @return   the map itself.

@@ -352,7 +352,7 @@ abstract class GenJVM extends SubComponent {
       val buf: ByteBuffer = ByteBuffer.allocate(512)
       var nattr = 0
 
-      // put some radom value; the actual number is determined at the end
+      // put some random value; the actual number is determined at the end
       buf.putShort(0xbaba.toShort)
 
       for (AnnotationInfo(tp, List(exc), _) <- excs.distinct if tp.typeSymbol == definitions.ThrowsClass) {
@@ -369,7 +369,7 @@ abstract class GenJVM extends SubComponent {
     }
 
     /** Whether an annotation should be emitted as a Java annotation
-     *   .initialize: if 'annnot' is read from pickle, atp might be un-initialized
+     *   .initialize: if 'annot' is read from pickle, atp might be un-initialized
      */
     private def shouldEmitAnnotation(annot: AnnotationInfo) =
       (annot.atp.typeSymbol.initialize.hasFlag(Flags.JAVA) &&
@@ -1087,7 +1087,7 @@ abstract class GenJVM extends SubComponent {
           case LOAD_MODULE(module) =>
 //            assert(module.isModule, "Expected module: " + module)
             if (settings.debug.value)
-              log("genearting LOAD_MODULE for: " + module + " flags: " +
+              log("generating LOAD_MODULE for: " + module + " flags: " +
                   Flags.flagsToString(module.flags));
             if (clasz.symbol == module.moduleClass && jmethod.getName() != nme.readResolve.toString)
               jcode.emitALOAD_0()

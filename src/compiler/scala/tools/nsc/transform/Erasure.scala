@@ -18,7 +18,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
-  // @S: XXX: why is this here? earsure is a typer, if you comment this
+  // @S: XXX: why is this here? erasure is a typer, if you comment this
   //          out erasure still works, uses its own typed methods.
   lazy val typerXXX = this.typer
   import typerXXX.{typed}             // methods to type trees
@@ -749,7 +749,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       val opc = new overridingPairs.Cursor(root) {
         override def exclude(sym: Symbol): Boolean =
           (!sym.isTerm || sym.hasFlag(PRIVATE) || super.exclude(sym)
-           // specialized members have no type history before 'specialize', causing duble def errors for curried defs
+           // specialized members have no type history before 'specialize', causing double def errors for curried defs
            || !sym.hasTypeAt(currentRun.refchecksPhase.id))
 
         override def matches(sym1: Symbol, sym2: Symbol): Boolean =

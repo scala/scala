@@ -24,10 +24,10 @@ class FallbackArrayBuilding {
 
   /** A builder factory that generates a generic array.
    *  Called instead of Array.newBuilder if the element type of an array
-   *  does not have a class manifest. Note that fallbackBuilder fcatory
+   *  does not have a class manifest. Note that fallbackBuilder factory
    *  needs an implicit parameter (otherwise it would not be dominated in implicit search
    *  by Array.canBuildFrom). We make sure that that implicit search is always
-   *  succesfull.
+   *  successfull.
    */
   implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, ArraySeq[T]] =
     new CanBuildFrom[Array[_], T, ArraySeq[T]] {

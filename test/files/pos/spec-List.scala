@@ -648,7 +648,7 @@ object List extends SeqFactory[List] {
    *
    *  @param arr   the array to convert
    *  @param start the first index to consider
-   *  @param len   the lenght of the range to convert
+   *  @param len   the length of the range to convert
    *  @return      a list that contains the same elements than <code>arr</code>
    *               in the same order
    */

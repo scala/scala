@@ -125,7 +125,7 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
      *  }
      *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
      *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)). If the value has type
-     *  unit, no field is used to chache the value, so the resulting code is:
+     *  unit, no field is used to cache the value, so the resulting code is:
      *  {
      *    if ((bitmap$n & MASK) == 0) {
      *       <rhs>;

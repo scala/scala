@@ -19,7 +19,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** The name of the phase: */
   val phaseName: String = "mixin"
 
-  /** The phase might set the fiollowing new flags: */
+  /** The phase might set the following new flags: */
   override def phaseNewFlags: Long = lateMODULE | notABSTRACT
 
   /** This map contains a binding (class -> info) if
@@ -210,7 +210,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *      - if a member M of T is forwarded to the implementation class, add
    *        a forwarder for M unless one exists already.
    *        The alias of the forwarder is the static member it forwards to.
-   *      - for every abstract accessor in T, add a field and an implementation for that acessor
+   *      - for every abstract accessor in T, add a field and an implementation for that accessor
    *      - for every super accessor in T, add an implementation of that accessor
    *      - for every module in T, add a module
    */
@@ -733,7 +733,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         stats1
       }
 
-      /** Does this field require an intialized bit? */
+      /** Does this field require an initialized bit? */
       def needsInitFlag(sym: Symbol) = {
         val res = (settings.checkInit.value
            && sym.isGetter
@@ -991,7 +991,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             case Super(_, mix) =>
               // change super calls to methods in implementation classes to static calls.
               // Transform references super.m(args) as follows:
-              //  - if `m' refers to a trait, insert a static call to the correspondign static
+              //  - if `m' refers to a trait, insert a static call to the corresponding static
               //    implementation
               //  - otherwise return tree unchanged
               if (mix == nme.EMPTY.toTypeName && currentOwner.enclClass.isImplClass)

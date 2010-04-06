@@ -40,7 +40,7 @@ package scala.collection
  *  <p>
  *    Note that no conversion is provided from <code>scala.collection.immutable.List</code>
  *    to <code>java.util.List</code>. Instead it is convertible to an immutable
- *    <code>java.util.Collection</code> which provides size and interation
+ *    <code>java.util.Collection</code> which provides size and interaction
  *    capabilities, but not access by index as would be provided by
  *    <code>java.util.List</code>.<br/>
  *    This is intentional: in combination the implementation of

@@ -12,7 +12,7 @@ import java.io.{BufferedWriter, FileWriter}
 
 /**
  * PhaseAssembly
- * Trait made to seperate the constraint solving of the phase order from
+ * Trait made to separate the constraint solving of the phase order from
  * the rest of the compiler. See SIP 00002
  *
  */

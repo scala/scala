@@ -1576,7 +1576,7 @@ self =>
 
 /* -------- MODIFIERS and ANNOTATIONS ------------------------------------------- */
 
-    /** Drop `private' modifier when follwed by a qualifier.
+    /** Drop `private' modifier when followed by a qualifier.
      *  Conract `abstract' and `override' to ABSOVERRIDE
      */
     private def normalize(mods: Modifiers): Modifiers =

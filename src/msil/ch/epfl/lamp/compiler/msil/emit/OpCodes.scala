@@ -521,7 +521,7 @@ object OpCodes {
      final val Rem_Un = OpCode.Rem_Un
 
     /**
-     * Computes the bitwise AND of two values and pushes the result onto the evalution stack.
+     * Computes the bitwise AND of two values and pushes the result onto the evaluation stack.
      */
      final val And = OpCode.And
 
@@ -899,7 +899,7 @@ object OpCodes {
      final val Conv_Ovf_I2 = OpCode.Conv_Ovf_I2
 
     /**
-     * Converts the signed value on top of the sevaluation tack to signed int32,
+     * Converts the signed value on top of the evaluation stack to signed int32,
      * throwing OverflowException on overflow.
      */
      final val Conv_Ovf_I4 = OpCode.Conv_Ovf_I4

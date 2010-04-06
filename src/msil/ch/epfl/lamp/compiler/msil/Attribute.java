@@ -55,7 +55,7 @@ public class Attribute {
 	return value;
     }
 
-    /**@return an array with the arguments to the attribute's contructor. */
+    /**@return an array with the arguments to the attribute's constructor. */
     public Object[] getConstructorArguments() {
         parseBlob();
         Object[] cas = new Object[constrArgs.length];

@@ -30,9 +30,9 @@ trait Plugins
     val dirs = (settings.pluginsDir.value split File.pathSeparator).toList map Path.apply
     val classes = Plugin.loadAllFrom(jars, dirs, settings.disable.value)
 
-    // Lach plugin must only be instantiated once. A commong pattern
+    // Lach plugin must only be instantiated once. A common pattern
     // is to register annotation checkers during object construction, so
-    // creating multiple plugin instances will leave behind stale checkers. s
+    // creating multiple plugin instances will leave behind stale checkers.
     classes map (Plugin.instantiate(_, this))
   }
 

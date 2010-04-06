@@ -16,7 +16,7 @@ import generic._
  *  almost identical to AddingBuilder, but necessitated by the existence of
  *  classes which are Growable but not Addable, which is a result of covariance
  *  interacting surprisingly with any2stringadd thus driving '+' out of the Seq
- *  hierachy.  The tendrils of original sin should never be underestimated.
+ *  hierarchy.  The tendrils of original sin should never be underestimated.
  *
  *  @author Paul Phillips
  *  @version 2.8

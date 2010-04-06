@@ -217,7 +217,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // Could symbol's definition be omitted, provided it is not accessed?
       // This is the case if the symbol is defined in the current class, and
       // ( the symbol is an object private parameter accessor field, or
-      //   the symbol is an outer accessor of a final class which does not override another outer accesser. )
+      //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
       def maybeOmittable(sym: Symbol) =
         (sym.owner == clazz &&
          ((sym hasFlag PARAMACCESSOR) && sym.isPrivateLocal ||

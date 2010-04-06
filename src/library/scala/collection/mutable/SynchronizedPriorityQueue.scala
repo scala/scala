@@ -75,7 +75,7 @@ class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQu
    */
   override def clear(): Unit = synchronized { super.clear }
 
-  /** Returns an iterator which yiels all the elements of the priority
+  /** Returns an iterator which yield all the elements of the priority
    *  queue in descending priority order.
    *
    *  @return  an iterator over all elements sorted in descending order.

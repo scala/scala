@@ -325,7 +325,7 @@ abstract class GenMSIL extends SubComponent {
         annType.CreateType() // else, GetConstructors can't be used
         val constr: ConstructorInfo = annType.GetConstructors()(0)
         // prevent a second call of CreateType, only needed because there's no
-        // otehr way than GetConstructors()(0) to get the constructor, if there's
+        // other way than GetConstructors()(0) to get the constructor, if there's
         // no constructor symbol available.
 
         val args: Array[Byte] =
@@ -601,7 +601,7 @@ abstract class GenMSIL extends SubComponent {
       genBlocks(linearization)
 
       // RETURN inside exception blocks are replaced by Leave. The target of the
-      // levae is a `Ret` outside any exception block (generated here).
+      // leave is a `Ret` outside any exception block (generated here).
       if (handlerReturnMethod == m) {
         mcode.MarkLabel(handlerReturnLabel)
         if (handlerReturnKind != UNIT)
@@ -1467,7 +1467,7 @@ abstract class GenMSIL extends SubComponent {
     def emitBrBool(cond: TestOp, dest: Label) {
       cond match {
         // EQ -> Brfalse, NE -> Brtrue; this is because we come from
-        // a CZJUMP. If the value on the stack is 0 (e.g. a boolen
+        // a CZJUMP. If the value on the stack is 0 (e.g. a boolean
         // method returned false), and we are in the case EQ, then
         // we need to emit Brfalse (EQ Zero means false). vice versa
         case EQ => mcode.Emit(OpCodes.Brfalse, dest)
@@ -1599,7 +1599,7 @@ abstract class GenMSIL extends SubComponent {
       if (sym.isStaticMember)
         mf = mf | FieldAttributes.Static
 
-      // TRANSIENT: "not nerialized", VOLATILE: doesn't exist on .net
+      // TRANSIENT: "not serialized", VOLATILE: doesn't exist on .net
       // TODO: add this annotation also if the class has the custom attribute
       // System.NotSerializedAttribute
       sym.annotations.foreach( a => a match {
@@ -1874,7 +1874,7 @@ abstract class GenMSIL extends SubComponent {
 
     /** Adds a static initializer which creates an instance of the module
      *  class (calls the primary constructor). A special primary constructor
-     *  will be generated (notInitializedModules) which stores the new intance
+     *  will be generated (notInitializedModules) which stores the new instance
      *  in the MODULE$ field right after the super call.
      */
     private def addStaticInit(sym: Symbol) {
@@ -2131,7 +2131,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
     /*
-     * add maping for member with name and paramTypes to member
+     * add mapping for member with name and paramTypes to member
      * newName of newClass (same parameters)
      */
     private def mapMethod(

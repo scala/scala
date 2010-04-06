@@ -48,7 +48,7 @@ trait Scopes {
 
     var elems: ScopeEntry = initElems
 
-    /** The number of times this scope is neted in another
+    /** The number of times this scope is nested in another
      */
     private var nestinglevel = 0
 
@@ -279,7 +279,7 @@ trait Scopes {
      *  was nested in another */
     def nestingLevel = nestinglevel
 
-    /** Return all symbols as an interator in the order they were entered in this scope.
+    /** Return all symbols as an iterator in the order they were entered in this scope.
      */
     def iterator: Iterator[Symbol] = toList.iterator
 

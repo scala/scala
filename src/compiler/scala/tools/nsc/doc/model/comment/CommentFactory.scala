@@ -247,7 +247,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
   protected final class WikiParser(val buffer: Array[Char], pos: Position) extends CharReader(buffer) { wiki =>
 
     /** listStyle ::= '-' spc | '1.' spc | 'I.' spc | 'i.' spc | 'A.' spc | 'a.' spc
-      * Characters used to build lists and their contructors */
+      * Characters used to build lists and their constructors */
     protected val listStyles = Map[String, (Seq[Block] => Block)]( // TODO Should this be defined at some list companion?
       "- "  -> ( UnorderedList(_) ),
       "1. " -> ( OrderedList(_,"decimal") ),

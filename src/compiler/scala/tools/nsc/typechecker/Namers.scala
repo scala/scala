@@ -693,7 +693,7 @@ trait Namers { self: Analyzer =>
           sym => TypeRef(clazz.owner.thisType, sym, clazz.typeParams map (_.tpe))))
       println("Parents of "+clazz+":"+parents)
 
-      // check that virtual classses are only defined as members of templates
+      // check that virtual classes are only defined as members of templates
       if (clazz.isVirtualClass && !clazz.owner.isClass)
         context.error(
           clazz.pos,
@@ -858,7 +858,7 @@ trait Namers { self: Analyzer =>
       val site = meth.owner.thisType
 
       def overriddenSymbol = intersectionType(meth.owner.info.parents).member(meth.name).filter(sym => {
-        // luc: added .syubstSym from skolemized to deSkolemized
+        // luc: added .substSym from skolemized to deSkolemized
         // site.memberType(sym): PolyType(tparams, MethodType(..., ...)) ==> all references to tparams are deSkolemized
         // thisMethodType: tparams in PolyType are deSkolemized, the references in the MethodTypes are skolemized. ==> the two didn't match
         // for instance, B.foo would not override A.foo, and the default on parameter b would not be inherited
@@ -1112,7 +1112,7 @@ trait Namers { self: Analyzer =>
 
       /** For definitions, transform Annotation trees to AnnotationInfos, assign
        *  them to the sym's annotations. Type annotations: see Typer.typedAnnotated
-       *  We have to parse definition annotatinos here (not in the typer when traversing
+       *  We have to parse definition annotations here (not in the typer when traversing
        *  the MemberDef tree): the typer looks at annotations of certain symbols; if
        *  they were added only in typer, depending on the compilation order, they would
        *  be visible or not
@@ -1245,11 +1245,11 @@ trait Namers { self: Analyzer =>
       result match {
         case PolyType(tparams, restpe)
         if (!tparams.isEmpty && tparams.head.owner.isTerm ||
-            // Adriaan: The added conditon below is quite a hack. It seems that HK type parameters is relying
+            // Adriaan: The added condition below is quite a hack. It seems that HK type parameters is relying
             // on a pass that forces all infos in the type to get everything right.
             // The problem is that the same pass causes cyclic reference errors in
             // test pos/cyclics.scala. It turned out that deSkolemize is run way more often than necessary,
-            // ruinning it only when needed fixes the cuclic reference errors.
+            // running it only when needed fixes the cyclic reference errors.
             // But correcting deSkolemize broke HK types, because we don't do the traversal anymore.
             // For the moment I made a special hack to do the traversal if we have HK type parameters.
             // Maybe it's not a hack, then we need to document it better. But ideally, we should find

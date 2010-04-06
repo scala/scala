@@ -98,7 +98,7 @@ trait StateRules {
   def nil = unit(Nil)
   def none = unit(None)
 
-  /** Create a rule that suceeds if f(in) is true. */
+  /** Create a rule that identities if f(in) is true. */
   def cond(f : S => Boolean) = get filter f
 
   /** Create a rule that succeeds if all of the given rules succeed.

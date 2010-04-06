@@ -110,7 +110,7 @@ case class IntDef(value:String) extends EntityDef {
         val n = tmp.substring(ix, iz);
 
         if( !Utility.isName( n ))
-          throw new IllegalArgumentException("interal entity def: \""+n+"\" must be an XML Name");
+          throw new IllegalArgumentException("internal entity def: \""+n+"\" must be an XML Name");
 
         tmp = tmp.substring(iz+1, tmp.length());
         ix  = tmp.indexOf('%');

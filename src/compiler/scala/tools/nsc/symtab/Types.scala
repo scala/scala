@@ -202,7 +202,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
   /** A proxy for a type (identified by field `underlying') that forwards most
    *  operations to it. Every operation that is overridden for some kind of types is
-   *  forwarded here. Some opererations are rewrapped again.
+   *  forwarded here. Some operations are rewrapped again.
    */
   trait RewrappingTypeProxy extends SimpleTypeProxy {
     protected def maybeRewrap(newtp: Type) = if (newtp eq underlying) this else rewrap(newtp)
@@ -303,7 +303,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     def typeOfThis: Type = typeSymbol.typeOfThis
 
     /** Map to a singleton type which is a subtype of this type.
-     *  todo: change to singleton type of an existentgially defined variable
+     *  todo: change to singleton type of an existentially defined variable
      *  of the right type instead of making this a `this` of a refined type.
      */
     def narrow: Type =
@@ -881,7 +881,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       }
     }
 
-    /** The existential skolems and existentially quantifed variables which are free in this type */
+    /** The existential skolems and existentially quantified variables which are free in this type */
     def existentialSkolems: List[Symbol] = {
       var boundSyms: List[Symbol] = List()
       var skolems: List[Symbol] = List()
@@ -2140,7 +2140,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** A class representing a type variable
    * Not used after phase `typer'.
-   * A higher-kinded type variable has type arguments (a list of Type's) and type paramers (list of Symbols)
+   * A higher-kinded type variable has type arguments (a list of Type's) and type parameters (list of Symbols)
    * A TypeVar whose list of args is non-empty can only be instantiated by a higher-kinded type that can be applied to these args
    * a typevar is much like a typeref, except it has special logic for type equality/subtyping
    */
@@ -2583,7 +2583,7 @@ A type's typeSymbol should never be inspected directly.
    *  (minus any SingletonClass markers),
    *  type variables in `tparams' occurring in contravariant positions are replaced by upper bounds,
    *  provided the resulting type is legal wrt to stability, and does not contain any
-   *  type varianble in `tparams'.
+   *  type variable in `tparams'.
    *  The abstraction drops all type parameters that are not directly or indirectly
    *  referenced by type `tpe1'.
    *  If there are no remaining type parameters, simply returns result type `tpe'.
@@ -3723,7 +3723,7 @@ A type's typeSymbol should never be inspected directly.
    *      let bt1, bt2 be the base types of tp1, tp2 relative to class bc
    *      Then:
    *        bt1 and bt2 have the same prefix, and
-   *        any correspondiong non-variant type arguments of bt1 and bt2 are the same
+   *        any corresponding non-variant type arguments of bt1 and bt2 are the same
    */
   def isPopulated(tp1: Type, tp2: Type): Boolean = {
     def isConsistent(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
@@ -4922,7 +4922,7 @@ A type's typeSymbol should never be inspected directly.
   val GlbFailure = new Throwable
 
   /** A global counter for glb calls in the `specializes' query connected to the `addMembers'
-   *  call in `glb'. There's a possible inifinite recursion when `specializes' calls
+   *  call in `glb'. There's a possible infinite recursion when `specializes' calls
    *  memberType, which calls baseTypeSeq, which calls mergePrefixAndArgs, which calls glb.
    *  The counter breaks this recursion after two calls.
    *  If the recursion is broken, no member is added to the glb.
@@ -5051,7 +5051,7 @@ A type's typeSymbol should never be inspected directly.
    *  of types `tps'. All types in `tps' are typerefs or singletypes
    *  with the same symbol.
    *  Return `Some(x)' if the computation succeeds with result `x'.
-   *  Return `None' if the computuation fails.
+   *  Return `None' if the computation fails.
    */
   def mergePrefixAndArgs(tps: List[Type], variance: Int, depth: Int): Option[Type] = tps match {
     case List(tp) =>

@@ -110,7 +110,7 @@ self =>
    *   @param   default  a computation that yields a default value in case no binding for `key` is
    *                     found in the map.
    *   @tparam  B1       the result type of the default computation.
-   *   @return  the value assocuated with `key` if it exists,
+   *   @return  the value associated with `key` if it exists,
    *            otherwise the result of the `default` computation.
    *   @usecase def getOrElse(key: A, default: => B): B
    */
@@ -322,7 +322,7 @@ self =>
 
   /** Defines the prefix of this object's `toString` representation.
    *  @return  a string representation which starts the result of `toString` applied to this $coll.
-   *           Unless overridden in subclasse, the string prefix of every map is `"Map"`.
+   *           Unless overridden in subclasses, the string prefix of every map is `"Map"`.
    */
   override def stringPrefix: String = "Map"
 

@@ -68,7 +68,7 @@ trait Infer {
     if (nformals == 1 && actuals.length != 1 && actuals.length <= definitions.MaxTupleArity && !phase.erasedTypes)
       List(atPos(pos)(gen.mkTuple(actuals))) else actuals
 
-  /** A fresh type varable with given type parameter as origin.
+  /** A fresh type variable with given type parameter as origin.
    *
    *  @param tparam ...
    *  @return       ...
@@ -162,7 +162,7 @@ trait Infer {
     for (tvar <- tvars)
       if (tvar.constr.inst == tvar)
         if (tvar.origin.typeSymbol.info eq ErrorType) {
-          // this can happen if during solving a cyclic type paramater
+          // this can happen if during solving a cyclic type parameter
           // such as T <: T gets completed. See #360
           tvar.constr.inst = ErrorType
         } else assert(false, tvar.origin+" at "+tvar.origin.typeSymbol.owner)
@@ -547,7 +547,7 @@ trait Infer {
       if (checkCompat(restpe.instantiateTypeParams(tparams, tvars), pt)) {
         try {
           // If the restpe is an implicit method, and the expected type is fully defined
-          // optimze type varianbles wrt to the implicit formals only; ignore the result type.
+          // optimze type variables wrt to the implicit formals only; ignore the result type.
           // See test pos/jesper.scala
           val varianceType = restpe match {
             case mt: MethodType if mt.isImplicit && isFullyDefined(pt) =>
@@ -849,7 +849,7 @@ trait Infer {
             } else {
               try {
                 val (okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
-                // #2665: must use weak conformance, not regular one (follow the monorphic case above)
+                // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
                 (exprTypeArgs(leftUndet, restpe.instantiateTypeParams(okparams, okargs), pt, isWeaklyCompatible) ne null) &&
                 isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
               } catch {
@@ -989,7 +989,7 @@ trait Infer {
       ftpe1.isError || {
         val specificCount = (if (isAsSpecific(ftpe1, ftpe2)) 1 else 0) -
                             (if (isAsSpecific(ftpe2, ftpe1) &&
-                                 // todo: move to isAsSepecific test
+                                 // todo: move to isAsSpecific test
 //                                 (!ftpe2.isInstanceOf[OverloadedType] || ftpe1.isInstanceOf[OverloadedType]) &&
                                  (!phase.erasedTypes || covariantReturnOverride(ftpe1, ftpe2))) 1 else 0)
         val subClassCount = (if (isInProperSubClassOrObject(sym1, sym2)) 1 else 0) -

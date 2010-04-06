@@ -253,7 +253,7 @@ object Regex {
 
   }
 
-  /** A case class for a succesful match.
+  /** A case class for a successful match.
    */
   class Match(val source: java.lang.CharSequence,
               matcher: Matcher,

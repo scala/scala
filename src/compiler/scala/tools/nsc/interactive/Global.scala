@@ -110,7 +110,7 @@ self =>
   // ----------------- Polling ---------------------------------------
 
   /** Called from runner thread and signalDone:
-   *  Poll for exeptions.
+   *  Poll for exceptions.
    *  Poll for work reload/typedTreeAt/doFirst commands during background checking.
    */
   def pollForWork() {
@@ -269,7 +269,7 @@ self =>
     firsts = fs ::: (firsts diff fs)
   }
 
-  // ----------------- Implementations of client commmands -----------------------
+  // ----------------- Implementations of client commands -----------------------
 
   def respond[T](result: Response[T])(op: => T): Unit =
     try {

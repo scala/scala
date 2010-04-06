@@ -18,7 +18,7 @@ trait StdNames { self: Universe =>
     val ROOTPKG            = newTermName("_root_")
     val EMPTY              = newTermName("")
 
-    /** The expanded name of `name' relative to this class `base` with given `seperator`
+    /** The expanded name of `name' relative to this class `base` with given `separator`
      */
     def expandedName(name: Name, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): Name =
       newTermName(base.fullName('$') + separator + name)

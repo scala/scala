@@ -777,7 +777,7 @@ trait Typers { self: Analyzer =>
      *  (5) Convert constructors in a pattern as follows:
      *  (5.1) If constructor refers to a case class factory, set tree's type to the unique
      *        instance of its primary constructor that is a subtype of the expected type.
-     *  (5.2) If constructor refers to an exractor, convert to application of
+     *  (5.2) If constructor refers to an extractor, convert to application of
      *        unapply or unapplySeq method.
      *
      *  (6) Convert all other types to TypeTree nodes.
@@ -898,7 +898,7 @@ trait Typers { self: Analyzer =>
                      !(tree.symbol.hasFlag(JAVA) && context.unit.isJava)) { // (7)
             // @M When not typing a higher-kinded type ((mode & HKmode) == 0)
             // or raw type (tree.symbol.hasFlag(JAVA) && context.unit.isJava), types must be of kind *,
-            // and thus parameterised types must be applied to their type arguments
+            // and thus parameterized types must be applied to their type arguments
             // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
             errorTree(tree, tree.symbol+" takes type parameters")
             tree setType tree.tpe
@@ -2034,7 +2034,7 @@ trait Typers { self: Analyzer =>
              ||
              pt.typeSymbol == PartialFunctionClass &&
              fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
-             && // see bug901 for a reason why next conditions are neeed
+             && // see bug901 for a reason why next conditions are needed
             (pt.normalize.typeArgs.length - 1 == fun.vparams.length
              ||
              fun.vparams.exists(_.tpt.isEmpty)))
@@ -2629,7 +2629,7 @@ trait Typers { self: Analyzer =>
       }
 
       /** Converts an untyped tree to a ClassfileAnnotArg. If the conversion fails,
-       *  an error message is reporded and None is returned.
+       *  an error message is reported and None is returned.
        */
       def tree2ConstArg(tree: Tree, pt: Type): Option[ClassfileAnnotArg] = tree match {
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
@@ -2680,7 +2680,7 @@ trait Typers { self: Analyzer =>
             case Select(New(tpt), nme.CONSTRUCTOR) =>
               (fun, outerArgss)
             case _ =>
-              error(fun.pos, "unexpected tree in annotationn: "+ fun)
+              error(fun.pos, "unexpected tree in annotation: "+ fun)
               (setError(fun), outerArgss)
           }
         extract(ann, List())
@@ -2717,7 +2717,7 @@ trait Typers { self: Analyzer =>
                   error(arg.pos, "unknown annotation argument name: " + name)
                   (nme.ERROR, None)
                 } else if (!names.contains(sym)) {
-                  error(arg.pos, "duplicate value for anontation argument " + name)
+                  error(arg.pos, "duplicate value for annotation argument " + name)
                   (nme.ERROR, None)
                 } else {
                   names -= sym
@@ -3127,7 +3127,7 @@ trait Typers { self: Analyzer =>
           trackSetInfo(vble)(
             if (treeInfo.isSequenceValued(body)) seqType(body1.tpe)
             else body1.tpe)
-          treeCopy.Bind(tree, name, body1) setSymbol vble setType body1.tpe   // buraq, was: pt
+          treeCopy.Bind(tree, name, body1) setSymbol vble setType body1.tpe   // burak, was: pt
         }
       }
 
@@ -3171,7 +3171,7 @@ trait Typers { self: Analyzer =>
 
       def typedIf(cond: Tree, thenp: Tree, elsep: Tree) = {
         val cond1 = checkDead(typed(cond, EXPRmode | BYVALmode, BooleanClass.tpe))
-        if (elsep.isEmpty) { // in the future, should be unecessary
+        if (elsep.isEmpty) { // in the future, should be unnecessary
           val thenp1 = typed(thenp, UnitClass.tpe)
           treeCopy.If(tree, cond1, thenp1, elsep) setType thenp1.tpe
         } else {
@@ -3606,7 +3606,7 @@ trait Typers { self: Analyzer =>
 
         var defSym: Symbol = tree.symbol // the directly found symbol
         var pre: Type = NoPrefix         // the prefix type of defSym, if a class member
-        var qual: Tree = EmptyTree       // the qualififier tree if transformed tree is a select
+        var qual: Tree = EmptyTree       // the qualifier tree if transformed tree is a select
 
         // A symbol qualifies if it exists and is not stale. Stale symbols
         // are made to disappear here. In addition,

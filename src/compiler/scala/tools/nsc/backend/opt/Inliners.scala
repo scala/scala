@@ -104,7 +104,7 @@ abstract class Inliners extends SubComponent {
        }
        val instrAfter  = block.toList.drop(instrBefore.length + 1);
 
-       assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instrcution in block!");
+       assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instruction in block!");
 
        // store the '$this' into the special local
        val inlinedThis = new Local(caller.symbol.newVariable(instr.pos, freshName("$inlThis")), REFERENCE(definitions.ObjectClass), false);

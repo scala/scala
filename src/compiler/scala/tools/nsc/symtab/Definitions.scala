@@ -823,7 +823,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
       // #2264
       var tmp = AnnotationDefaultAttr
-      tmp = RepeatedParamClass // force initalization
+      tmp = RepeatedParamClass // force initialization
       if (forMSIL) {
         val intType = IntClass.typeConstructor
         val intParam = List(intType)
@@ -871,7 +871,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     var nbScalaCallers: Int = 0
     def newScalaCaller(delegateType: Type): Symbol = {
       assert(forMSIL, "scalaCallers can only be created if target is .NET")
-      // object: reference to object on which to call (scala-)metod
+      // object: reference to object on which to call (scala-)method
       val paramTypes: List[Type] = List(ObjectClass.tpe)
       val name: String =  "$scalaCaller$$" + nbScalaCallers
       // tparam => resultType, which is the resultType of PolyType, i.e. the result type after applying the
