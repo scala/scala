@@ -133,25 +133,18 @@ trait Housekeeping {
       // recreate object dir
       outDir createDirectory true
     }
-    def deleteOutDir() =
-      if (isNoCleanup && outDir.isDirectory) debug("Not deleting " + outDir)
-      else outDir.deleteRecursively()
-
-    def cleanup() {
-      // otherwise, delete obj dir and logs on success
-      deleteOutDir()
-      if (isSuccess)
-        deleteLog()
-    }
+    def deleteOutDir() = outDir.deleteRecursively()
 
     protected def runWrappers[T](body: => T): Option[T] = {
       prepareForTestRun()
 
       withShutdownHook({ debug("Shutdown hook deleting " + outDir) ; deleteOutDir }) {
         loggingOutAndErr {
-          possiblyTimed {
-            body
-          }
+          val result = possiblyTimed { body }
+          if (!isNoCleanup)
+            deleteOutDir()
+
+          result
         }
       }
     }
