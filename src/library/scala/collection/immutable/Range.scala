@@ -39,25 +39,34 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   def isInclusive = false
 
-  protected def limit = end
-
   override def foreach[U](f: Int => U) {
-    var i = start
-    while (if (step > 0) i < limit else i > limit) {
+    if (fullLength > 0) {
+      val last = this.last
+      var i = start
+      while (i != last) {
+        f(i)
+        i += step
+      }
       f(i)
-      i += step
     }
   }
 
-  lazy val length: Int = {
-    def plen(start: Int, limit: Int, step: Int) =
-      if (limit <= start) 0 else (limit - start - 1) / step + 1
-    if (step > 0) plen(start, limit, step)
-    else plen(limit, start, -step)
+  override def last: Int = if (step == 1 || step == -1) {
+    end - step
+  } else {
+    val size = end.toLong - start.toLong
+    val inclusiveLast = (size / step.toLong * step.toLong + start.toLong).toInt
+    if (size % step == 0) inclusiveLast - step else inclusiveLast
   }
 
-  final override def isEmpty =
-    if (step > 0) start >= limit else start <= limit
+  def length: Int = fullLength.toInt
+
+  protected def fullLength: Long = if (end > start == step > 0 && start != end)
+    ((last.toLong - start.toLong) / step.toLong + 1)
+  else
+    0
+
+  final override def isEmpty = length == 0
 
   @inline
   final def apply(idx: Int): Int = {
@@ -66,12 +75,19 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
   }
 
   // take and drop have to be tolerant of large values without overflowing
-  private def locationAfterN(n: Int) = start + step * (0 max n min length)
+  private def locationAfterN(n: Int) = if (n > 0) {
+    if (step > 0)
+      ((start.toLong + step.toLong * n.toLong) min last.toLong).toInt
+    else
+      ((start.toLong + step.toLong * n.toLong) max last.toLong).toInt
+  } else {
+    start
+  }
 
-  final override def take(n: Int): Range = {
-    val limit1 = locationAfterN(n)
-    if (step > 0) Range(start, limit1 min limit, step)
-    else Range(start, limit1 max limit, step)
+  final override def take(n: Int): Range = if (n > 0 && length > 0) {
+    Range(start, locationAfterN(n - 1), step).inclusive
+  } else {
+    Range(start, start, step)
   }
 
   final override def drop(n: Int): Range =
@@ -85,7 +101,11 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   private def skip(p: Int => Boolean): Int = {
     var s = start
-    while ((if (step > 0) s < limit else s > limit) && p(s)) s += step
+    if (length > 0) {
+      val last = this.last
+      while ((if (step > 0) s <= last else s >= last) && p(s))
+        s += step
+    }
     s
   }
 
@@ -103,16 +123,18 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   final override def dropRight(n: Int): Range = take(length - n)
 
-  final override def reverse: Range = if (length > 0) new Range.Inclusive(last, start, -step) else new Range(end, start, -step)
+  final override def reverse: Range = if (length > 0) new Range.Inclusive(last, start, -step) else this
 
   /** Make range inclusive.
-   * @note if (step > 0) end != MaxInt else end != MinInt
    */
   def inclusive = new Range.Inclusive(start, end, step)
 
-  def contains(x: Int): Boolean =
-    if (step > 0) start <= x && x < limit && (x - start) % step == 0
-    else start >= x && x > limit && (start - x) % step == 0
+  final def contains(x: Int): Boolean = if (length > 0) {
+    if (step > 0) start <= x && x <= last && (x - start) % step == 0
+    else start >= x && x >= last && (start - x) % step == 0
+  } else {
+    false
+  }
 
   override def equals(other: Any) = other match {
     case x: Range =>
@@ -139,37 +161,45 @@ object Range {
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     override def isInclusive = true
-    override protected val limit = end + math.signum(step)
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
+    override def last: Int = if (step == 1 || step == -1)
+      end
+    else
+      ((end.toLong - start.toLong) / step.toLong * step.toLong + start.toLong).toInt
+    protected override def fullLength: Long = if (end > start == step > 0 || start == end)
+      ((last.toLong - start.toLong) / step.toLong + 1)
+    else
+      0
   }
 
-  /** Make a range from `start` until `end` (exclusive) with step value 1.
+  /** Make a range from `start` until `end` (exclusive) with given step value.
+   * @note step != 0
    */
   def apply(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Make an range from `start` to `end` inclusive with step value 1.
-   * @note end != MaxInt
    */
   def apply(start: Int, end: Int): Range with ByOne = new Range(start, end, 1) with ByOne
 
   /** Make an inclusive range from start to end with given step value.
    * @note step != 0
-   * @note if (step > 0) end != MaxInt else end != MinInt
    */
   def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
 
   /** Make an inclusive range from start to end with step value 1.
-   * @note end != MaxInt
    */
   def inclusive(start: Int, end: Int): Range.Inclusive with ByOne = new Inclusive(start, end, 1) with ByOne
 
   trait ByOne extends Range {
     override final def foreach[U](f: Int => U) {
-      var i = start
-      val l = limit
-      while (i < l) {
+      if (length > 0) {
+        val last = this.last
+        var i = start
+        while (i != last) {
+          f(i)
+          i += 1
+        }
         f(i)
-        i += 1
       }
     }
   }
