@@ -4,10 +4,8 @@
 
 package scala.tools
 
-import scala.util.control.Exception.catching
 import nsc.io.{ File, Path, Process, Directory }
 import nsc.util.CommandLineSpec
-import Process.runtime
 import java.nio.charset.CharacterCodingException
 
 package object partest {
@@ -42,22 +40,6 @@ package object partest {
     println(msg)
     exit(1)
   }
-
-  /** Execute some code with a shutdown hook in place.  This is
-   *  motivated by the desire not to leave the filesystem full of
-   *  junk when someone ctrl-Cs a test run.
-   */
-  def withShutdownHook[T](hook: => Unit)(body: => T): Option[T] =
-    /** Java doesn't like it if you keep adding and removing shutdown
-     *  hooks after shutdown has begun, so we trap the failure.
-     */
-    catching(classOf[IllegalStateException]) opt {
-      val t = new Thread() { override def run() = hook }
-      runtime addShutdownHook t
-
-      try body
-      finally runtime removeShutdownHook t
-    }
 
   /** Apply a function and return the passed value */
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }

@@ -66,10 +66,8 @@ trait Entities {
       def allSteps  = testSequence.actions forall (f => f(this))
       val outcome   = runWrappers(preCheck && allSteps)
 
-      // if outcome is empty, the JVM is trying to shut down, so we clam up
-      // to avoid echoing lots of spurious failure messages.
-      if (outcome.isEmpty && !isShuttingDown) setShuttingDown()
-      else outcome getOrElse false
+      // an empty outcome means we've been interrupted and are shutting down.
+      outcome getOrElse false
     }
   }
 

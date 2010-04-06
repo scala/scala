@@ -5,8 +5,10 @@
 package scala.tools
 package partest
 
+import scala.util.control.Exception.catching
 import util._
 import nsc.io._
+import Process.runtime
 import Properties._
 
 /** An agglomeration of code which is low on thrills.  Hopefully
@@ -17,13 +19,36 @@ trait Housekeeping {
   self: Universe =>
 
   /** Orderly shutdown on ctrl-C. */
-  private var _shuttingDown = false
+  @volatile private var _shuttingDown = false
   protected def setShuttingDown() = {
-    warning("Received shutdown signal, partest is cleaning up...\n")
-    _shuttingDown = true
-    false
+    /** Whatever we want to do as shutdown begins goes here. */
+    if (!_shuttingDown) {
+      warning("Received shutdown signal, partest is cleaning up...\n")
+      _shuttingDown = true
+    }
   }
   def isShuttingDown = _shuttingDown
+
+  /** Execute some code with a shutdown hook in place.  This is
+   *  motivated by the desire not to leave the filesystem full of
+   *  junk when someone ctrl-Cs a test run.
+   */
+  def withShutdownHook[T](hook: => Unit)(body: => T): Option[T] =
+    /** Java doesn't like it if you keep adding and removing shutdown
+     *  hooks after shutdown has begun, so we trap the failure.
+     */
+    catching(classOf[IllegalStateException]) opt {
+      val t = new Thread() {
+        override def run() = {
+          setShuttingDown()
+          hook
+        }
+      }
+      runtime addShutdownHook t
+
+      try body
+      finally runtime removeShutdownHook t
+    }
 
   /** Search for a directory, possibly given only a name, by starting
    *  at the current dir and walking upward looking for it at each level.
@@ -134,11 +159,12 @@ trait Housekeeping {
       outDir createDirectory true
     }
     def deleteOutDir() = outDir.deleteRecursively()
+    def deleteShutdownHook() = { debug("Shutdown hook deleting " + outDir) ; deleteOutDir() }
 
     protected def runWrappers[T](body: => T): Option[T] = {
       prepareForTestRun()
 
-      withShutdownHook({ debug("Shutdown hook deleting " + outDir) ; deleteOutDir }) {
+      withShutdownHook(deleteShutdownHook()) {
         loggingOutAndErr {
           val result = possiblyTimed { body }
           if (!isNoCleanup)
