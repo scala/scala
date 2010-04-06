@@ -1,17 +1,11 @@
-SeqViewZ((x,0))
+SeqViewZ(...)
 ys defined
 mapping 1
 2
-mapping 1
-mapping 2
-mapping 3
-SeqViewMS(3, 4)
+SeqViewMS(...)
 mapping 3
 4
-mapping 1
-mapping 2
-mapping 3
-SeqViewM(2, 3, 4)
+SeqViewM(...)
 mapping 1
 mapping 2
 mapping 3

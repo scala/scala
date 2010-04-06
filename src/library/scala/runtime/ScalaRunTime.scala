@@ -12,7 +12,7 @@
 package scala.runtime
 
 import scala.reflect.ClassManifest
-import scala.collection.{ Seq, IndexedSeq }
+import scala.collection.{ Seq, IndexedSeq, TraversableView }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ List, Stream, Nil, :: }
 import scala.xml.{ Node, MetaData }
@@ -240,6 +240,7 @@ object ScalaRunTime {
       // Not to mention MetaData extends Iterable[MetaData]
       case x: MetaData              => x toString
       case x: AnyRef if isArray(x)  => WrappedArray make x map inner mkString ("Array(", ", ", ")")
+      case x: TraversableView[_, _] => x.toString
       case x: Traversable[_] if !x.hasDefiniteSize => x.toString
       case x: Traversable[_]        =>
         // Some subclasses of AbstractFile implement Iterable, then throw an

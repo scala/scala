@@ -13,7 +13,7 @@ object Test extends Application {
   println(ys.force)
 
   val zs = Array(1, 2, 3).view
-  val as: IndexedSeqView[Int, Array[Int]] = zs map (_ + 1)
+  val as: SeqView[Int, Array[Int]] = zs map (_ + 1)
   val bs: Array[Int] = as.force
   val cs = zs.reverse
   cs(0) += 1
