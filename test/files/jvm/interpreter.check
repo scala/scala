@@ -169,7 +169,7 @@ scala> res4: Array[_] = Array(2)
 
 scala> res5: Array[java.lang.String] = Array(abc, abc)
 
-scala> res6: scala.collection.mutable.GenericArray[_] = GenericArray(1, 2)
+scala> res6: scala.collection.mutable.ArraySeq[_] = ArraySeq(1, 2)
 
 scala> res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
 

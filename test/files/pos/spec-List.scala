@@ -26,7 +26,7 @@ import annotation.tailrec
 sealed trait List[@specialized +A] extends LinearSeq[A]
                                   with Product
                                   with GenericTraversableTemplate[A, List]
-                                  with LinearSeqLike[A, List[A]] {
+                                  with LinearSeqOptimized[A, List[A]] {
   override def companion: GenericCompanion[List] = List
 
   import scala.collection.{Iterable, Traversable, Seq}

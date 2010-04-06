@@ -36,17 +36,20 @@ class JavaTask extends Java {
 
   def setDefaults() {
     setFork(true)
+    setFailonerror(true)
     getProject.setSystemProperties()
     setClassname(scalaRunnerClass)
-    // setDir(Path(rootDir).jfile)
-    // addSyspropertyset(partestPropSet)
     addSysproperty(newKeyValue("partest.is-in-ant", "true"))
     jvmline(partestJVMArgs)
     runnerArgs foreach addArg
+
+    // do we want basedir or rootDir to be the cwd?
+    // setDir(Path(rootDir).jfile)
   }
 
-  override def execute() {
+  override def init() = {
+    super.init()
     setDefaults()
-    super.execute()
   }
 }
+

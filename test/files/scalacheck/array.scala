@@ -4,7 +4,7 @@ import Gen._
 import Arbitrary._
 import util._
 import Buildable._
-import scala.collection.mutable.GenericArray
+import scala.collection.mutable.ArraySeq
 
 object Test extends Properties("Array") {
   /** At this moment the authentic scalacheck Array Builder/Arb bits are commented out.
