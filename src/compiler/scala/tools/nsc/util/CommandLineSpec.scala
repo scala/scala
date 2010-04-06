@@ -22,6 +22,8 @@ trait CommandLineSpec {
   def isPassthroughProperty(name: String): Boolean = false
   def isSysPropOption(key: String): Option[String] = None
 
+  protected var _expandingOptions: Map[String, List[String]] = Map()
+
   private var _helpMessage: String          = ""
   private var _unaryOptions: List[String]   = Nil
   private var _binaryOptions: List[String]  = Nil
@@ -40,11 +42,14 @@ trait CommandLineSpec {
   /** The various operators:
    *    val isCond1 = "cond1" ?     // --cond1 is unary, cond1 is boolean
    *    "cond2" ?> body             // --cond2 is unary, body is executed if it is given
+   *    "cond3" ?+> List(x1, x2...) // --cond3 is unary, arguments on rhs will be substituted in as if given
    *    val val1 = "val1" |> "alt"  // --val1 is binary, val1 is String, alt used if none given
    *    val val2 = "val2" >>        // --val2 is binary, val2 is Option[String], None if none given
    */
   protected class OptionStringAdditions(name: String) {
     val s = toOpt(name)
+    def ?+>(args: List[String]): Unit  = { _unaryOptions +:= s ; if (isReferenceSpec) _expandingOptions += (name -> args) }
+
     def ? : Boolean               = {  _unaryOptions +:= s ; if (isReferenceSpec) false else parsed isSet s }
     def ?>(body: => Unit): Unit   = {  _unaryOptions +:= s ; if (isReferenceSpec) () else if (parsed isSet s) body }
     def |>(alt: String): String   = { _binaryOptions +:= s ; if (isReferenceSpec) "" else parsed.getOrElse(s, alt) }
@@ -59,12 +64,14 @@ trait CommandLineSpec {
   }
   protected implicit def stringAdditions(s: String) = new OptionStringAdditions(s)
 
-  lazy val unaryOptions   = _unaryOptions.distinct
-  lazy val binaryOptions  = _binaryOptions.distinct
-  lazy val helpMsg        = _helpMessage
+  lazy val unaryOptions     = _unaryOptions.distinct
+  lazy val binaryOptions    = _binaryOptions.distinct
+  lazy val expandingOptions = _expandingOptions.keys.toList
+  lazy val helpMsg          = _helpMessage
 
-  def isUnaryOption(s: String)   = unaryOptions contains toOpt(s)
-  def isBinaryOption(s: String)  = binaryOptions contains toOpt(s)
+  def isUnaryOption(s: String)      = unaryOptions contains toOpt(s)
+  def isBinaryOption(s: String)     = binaryOptions contains toOpt(s)
+  def isExpandingOption(s: String)  = expandingOptions contains toOpt(s)
 
   private def sysPropToOptions(k: String, v: String): List[String] = {
     if (isPassthroughProperty(k)) toArgs(v)
@@ -97,6 +104,18 @@ trait CommandLineSpec {
   def bashCompletion(programName: String) = {
     val opts = unaryOptions ++ binaryOptions
     bashCompletionTemplate.replaceAll("@@PROGRAM@@", programName).replaceAll("@@OPTIONS@@", opts mkString " ")
+  }
+}
+
+trait CommandLineReferenceSpec extends CommandLineSpec {
+  final override def isReferenceSpec: Boolean = true
+  final def apply(args: String*) = creator(args.toList flatMap expandArg)
+
+  protected lazy val expansionMap           = _expandingOptions
+  protected def creator(args: List[String]) = new ThisCommandLine(args)
+  protected def expandArg(arg: String)      = expansionMap.getOrElse(fromOpt(arg), List(arg))
+
+  class ThisCommandLine(args: List[String]) extends CommandLine(args, unaryOptions, binaryOptions) {
   }
 }
 

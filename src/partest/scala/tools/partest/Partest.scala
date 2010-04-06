@@ -15,10 +15,7 @@ import category.AllCategories
  *  for the complete list.
  */
 class Partest(args: List[String]) extends {
-  val parsed = new CommandLine(args, PartestSpecReference.unary, PartestSpecReference.binary) {
-      override def onlyKnownOptions     = true
-      override def errorFn(msg: String) = printAndExit("Error: " + msg)
-    }
+  val parsed = PartestSpecReference(args: _*)
 } with Universe with PartestSpec with AllCategories {
 
   debug("Partest object created with args: " + (args mkString " "))

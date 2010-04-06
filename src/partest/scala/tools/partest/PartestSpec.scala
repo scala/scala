@@ -8,7 +8,7 @@ package partest
 
 import Properties._
 import nsc.io._
-import nsc.util.{ CommandLine, CommandLineSpec }
+import nsc.util.{ CommandLine, CommandLineSpec, CommandLineReferenceSpec }
 
 /** This takes advantage of bits of scala goodness to fully define a command
  *  line program with a minimum of duplicated code.  When the specification object
@@ -59,8 +59,8 @@ trait PartestSpec extends CommandLineSpec {
   val javaOpts      = "javaopts"    / "flags to java on all runs (overrides JAVA_OPTS)"       |> envOrElse("JAVA_OPTS", "")
   val scalacOpts    = "scalacopts"  / "flags to scalac on all tests (overrides SCALAC_OPTS)"  |> envOrElse("SCALAC_OPTS", "")
 
-                      ("pack"       / "alias for --builddir build/pack")                      ?> setProp("partest.build", "build/pack")
-                      ("quick"      / "alias for --builddir build/quick")                     ?> setProp("partest.build", "build/quick")
+                      ("pack"       / "alias for --builddir build/pack")                      ?+> List("--builddir", "build/pack")
+                      ("quick"      / "alias for --builddir build/quick")                     ?+> List("--builddir", "build/quick")
 
   heading             ("Options influencing output:")
   val isTrace       = "trace"       / "show the individual steps taken by each test" ?
@@ -89,18 +89,15 @@ trait PartestSpec extends CommandLineSpec {
   val isInsideAnt   = ("is-in-ant" ?)
 }
 
-object PartestSpecReference extends PartestSpec {
+object PartestSpecReference extends PartestSpec with CommandLineReferenceSpec {
   import CommandLineSpec._
 
   def parsed: CommandLine = null
-  override def isReferenceSpec = true
-
-  def unary   = unaryOptions
-  def binary  = binaryOptions
-  def allArgs = unary ++ binary
-
-  def isunaryOption(s: String)   = unary contains toOpt(s)
-  def isbinaryOption(s: String)  = binary contains toOpt(s)
+  override def creator(args: List[String]) =
+    new ThisCommandLine(args) {
+      override def onlyKnownOptions     = true
+      override def errorFn(msg: String) = printAndExit("Error: " + msg)
+    }
 
   def main(args: Array[String]): Unit = println(bashCompletion("partest"))
 

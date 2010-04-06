@@ -65,6 +65,10 @@ trait Logging {
     def trace(msg: String)    = if (isTrace || isDryRun) System.err.println(">> [%s] %s".format(label, msg))
     def tracePath(path: Path) = if (isVerbose) path.path else path.name
 
+    /** v == verbose.
+     */
+    def vtrace(msg: String)   = if (isVerbose) trace(msg)
+
     /** Run body, writes result to logFile.  Any throwable is
      *  caught, stringified, and written to the log.
      */

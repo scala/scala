@@ -48,7 +48,7 @@ trait BuildContributors {
      *  !!! TODO - this should adjust itself depending on the build
      *  being tested, because pack and quick at least need different jars.
      */
-    def classpathPaths    = List[Path](library, compiler, partest, fjbg)
+    def classpathPaths    = List[Path](library, compiler, partest, fjbg) ++ forkJoinPath
     def buildProperties   = List(
       "scala.home"          -> testBuildDir,
       "partest.lib"         -> library,   // used in jvm/inner

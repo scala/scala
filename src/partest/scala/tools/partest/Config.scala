@@ -57,6 +57,20 @@ trait Config {
      */
     val scalaBin      = testBuildDir / "bin"
 
+    /** A hack for now to get quick running.
+     */
+    def needsForkJoin = {
+      val loader    = nsc.util.ScalaClassLoader.fromURLs(List(library.toURL))
+      val fjMarker  = "scala.concurrent.forkjoin.ForkJoinTask"
+      val clazz     = loader.tryToLoadClass(fjMarker)
+
+      if (clazz.isDefined) debug("Loaded ForkJoinTask OK, don't need jar.")
+      else debug("Could not load ForkJoinTask, putting jar on classpath.")
+
+      clazz.isEmpty
+    }
+    lazy val forkJoinPath: List[Path] = if (needsForkJoin) List(forkjoin) else Nil
+
     /** Internal **/
     private def repo  = partestDir.parent.normalize
     // XXX - is this needed? Where?
