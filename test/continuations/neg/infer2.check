@@ -1,0 +1,4 @@
+infer2.scala:14: error: illegal answer type modification: scala.util.continuations.cpsParam[String,Int] andThen scala.util.continuations.cpsParam[String,Int]
+    test { sym(); sym() }    
+         ^
+one error found

@@ -8,12 +8,7 @@
 
 // $Id$
 
-
 package scala.xml
-
-import collection.Seq
-import collection.mutable.StringBuilder
-
 
 /** prefixed attributes always have a non-null namespace.
  *
@@ -36,23 +31,11 @@ extends Attribute
   def this(pre: String, key: String, value: String, next: MetaData) =
     this(pre, key, Text(value), next)
 
-  /*
-   // the problem here is the fact that we cannot remove the proper attribute from
-   // next, and thus cannot guarantee that hashcodes are computed properly
-  def this(pre: String, key: String, value: scala.AllRef, next: MetaData) =
-    throw new UnsupportedOperationException("can't construct prefixed nil attributes")
- */
-
   /** Returns a copy of this unprefixed attribute with the given
    *  next field.
    */
   def copy(next: MetaData) =
     new PrefixedAttribute(pre, key, value, next)
-
-  def equals1(m: MetaData) =
-     (m.isPrefixed &&
-      (m.asInstanceOf[PrefixedAttribute].pre == pre) &&
-      (m.key == key) && (m.value sameElements value))
 
   def getNamespace(owner: Node) =
     owner.getNamespace(pre)
@@ -68,41 +51,8 @@ extends Attribute
     else
       next(namespace, scope, key)
   }
-
-  /** returns true */
-  final def isPrefixed = true
-
-  /** returns the hashcode.
-   */
-  override def hashCode() =
-    pre.hashCode() * 41 + key.hashCode() * 7 + next.hashCode()
-
-
-  /** appends string representation of only this attribute to stringbuffer */
-  def toString1(sb:StringBuilder): Unit = if(value ne null) {
-    sb.append(pre)
-    sb.append(':')
-    sb.append(key)
-    sb.append('=')
-    val sb2 = new StringBuilder()
-    Utility.sequenceToXML(value, TopScope, sb2, true)
-    Utility.appendQuoted(sb2.toString(), sb)
-  }
-
-  def wellformed(scope: NamespaceBinding): Boolean =
-    (null == next(scope.getURI(pre), scope, key) &&
-     next.wellformed(scope))
-
-  def remove(key: String) =
-    copy(next.remove(key))
-
-  def remove(namespace: String, scope: NamespaceBinding, key: String): MetaData =
-    if (key == this.key && scope.getURI(pre) == namespace)
-      next
-    else
-      next.remove(namespace, scope, key)
-
 }
+
 object PrefixedAttribute {
   def unapply(x: PrefixedAttribute) = Some(x.pre, x.key, x.value, x.next)
 }

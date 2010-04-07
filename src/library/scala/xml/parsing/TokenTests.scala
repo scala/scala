@@ -12,8 +12,6 @@
 package scala.xml
 package parsing
 
-import collection.Seq
-import collection.immutable.List
 /**
  * Helper functions for parsing XML fragments
  */

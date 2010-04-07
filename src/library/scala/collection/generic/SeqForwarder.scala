@@ -30,24 +30,31 @@ trait SeqForwarder[+A] extends Seq[A] with IterableForwarder[A] {
 
   protected override def underlying: Seq[A]
 
-  // PartialFunction delegates
-
-  override def apply(i: Int): A = underlying.apply(i)
-  override def isDefinedAt(x: Int): Boolean = underlying.isDefinedAt(x)
-
-  // Seq delegates
-  // Seq methods could be printed by  cat SeqLike.scala | sed -n '/trait Seq/,$ p' | egrep '^  (override )?def'
-
   override def length: Int = underlying.length
-  override def lengthCompare(l: Int) = underlying lengthCompare l
+  override def apply(idx: Int): A = underlying.apply(idx)
+  override def lengthCompare(len: Int): Int = underlying.lengthCompare(len)
+  override def isDefinedAt(x: Int): Boolean = underlying.isDefinedAt(x)
   override def segmentLength(p: A => Boolean, from: Int): Int = underlying.segmentLength(p, from)
   override def prefixLength(p: A => Boolean) = underlying.prefixLength(p)
+  override def indexWhere(p: A => Boolean): Int = underlying.indexWhere(p)
   override def indexWhere(p: A => Boolean, from: Int): Int = underlying.indexWhere(p, from)
+  override def findIndexOf(p: A => Boolean): Int = underlying.indexWhere(p)
+  override def indexOf[B >: A](elem: B): Int = underlying.indexOf(elem)
   override def indexOf[B >: A](elem: B, from: Int): Int = underlying.indexOf(elem, from)
+  override def lastIndexOf[B >: A](elem: B): Int = underlying.lastIndexOf(elem)
+  override def lastIndexOf[B >: A](elem: B, end: Int): Int = underlying.lastIndexOf(elem, end)
+  override def lastIndexWhere(p: A => Boolean): Int = underlying.lastIndexWhere(p)
+  override def lastIndexWhere(p: A => Boolean, end: Int): Int = underlying.lastIndexWhere(p, end)
   override def reverseIterator: Iterator[A] = underlying.reverseIterator
   override def startsWith[B](that: Seq[B], offset: Int): Boolean = underlying.startsWith(that, offset)
+  override def startsWith[B](that: Seq[B]): Boolean = underlying.startsWith(that)
   override def endsWith[B](that: Seq[B]): Boolean = underlying.endsWith(that)
   override def indexOfSlice[B >: A](that: Seq[B]): Int = underlying.indexOfSlice(that)
+  override def indexOfSlice[B >: A](that: Seq[B], from: Int): Int = underlying.indexOfSlice(that, from)
+  override def lastIndexOfSlice[B >: A](that: Seq[B]): Int = underlying.lastIndexOfSlice(that)
+  override def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int = underlying.lastIndexOfSlice(that, end)
+  override def containsSlice[B](that: Seq[B]): Boolean = underlying.containsSlice(that)
   override def contains(elem: Any): Boolean = underlying.contains(elem)
+  override def corresponds[B](that: Seq[B])(p: (A,B) => Boolean): Boolean = underlying.corresponds(that)(p)
   override def indices: Range = underlying.indices
 }

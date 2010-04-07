@@ -39,23 +39,11 @@ class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQu
     this
   }
 
-  /** Adds all elements provided by an <code>Iterable</code> object
-   *  into the priority queue.
-   *
-   *  @param  iter        an iterable object
-   */
-  def ++=(iter: scala.collection.Iterable[A]): this.type = {
-    synchronized {
-      super.++=(iter)
-    }
-    this
-  }
-
   /** Adds all elements provided by an iterator into the priority queue.
    *
    *  @param  it        an iterator
    */
-  override def ++=(it: Iterator[A]): this.type = {
+  override def ++=(it: TraversableOnce[A]): this.type = {
     synchronized {
       super.++=(it)
     }
@@ -87,7 +75,7 @@ class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQu
    */
   override def clear(): Unit = synchronized { super.clear }
 
-  /** Returns an iterator which yiels all the elements of the priority
+  /** Returns an iterator which yield all the elements of the priority
    *  queue in descending priority order.
    *
    *  @return  an iterator over all elements sorted in descending order.

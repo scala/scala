@@ -9,7 +9,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.tools.nsc.util.{Position,NoPosition}
 import collection.mutable.{ListBuffer, HashMap}
 
 abstract class Mixin extends InfoTransform with ast.TreeDSL {
@@ -20,7 +19,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   /** The name of the phase: */
   val phaseName: String = "mixin"
 
-  /** The phase might set the fiollowing new flags: */
+  /** The phase might set the following new flags: */
   override def phaseNewFlags: Long = lateMODULE | notABSTRACT
 
   /** This map contains a binding (class -> info) if
@@ -148,8 +147,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  only once per class. The mixedin flag is used to remember whether late
    *  members have been added to an interface.
    *    - lazy fields don't get a setter.
-   *
-   *  @param clazz ...
    */
   def addLateInterfaceMembers(clazz: Symbol) {
     if ((treatedClassInfos get clazz) != Some(clazz.info)) {
@@ -176,7 +173,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         setter.setInfo(MethodType(setter.newSyntheticValueParams(List(field.info)), UnitClass.tpe))
         if (needsExpandedSetterName(field)) {
           //println("creating expanded setter from "+field)
-          setter.name = clazz.expandedSetterName(setter.name)
+          setter.name = nme.expandedSetterName(setter.name, clazz)
         }
         setter
       }
@@ -213,7 +210,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *      - if a member M of T is forwarded to the implementation class, add
    *        a forwarder for M unless one exists already.
    *        The alias of the forwarder is the static member it forwards to.
-   *      - for every abstract accessor in T, add a field and an implementation for that acessor
+   *      - for every abstract accessor in T, add a field and an implementation for that accessor
    *      - for every super accessor in T, add an implementation of that accessor
    *      - for every module in T, add a module
    */
@@ -736,7 +733,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         stats1
       }
 
-      /** Does this field require an intialized bit? */
+      /** Does this field require an initialized bit? */
       def needsInitFlag(sym: Symbol) = {
         val res = (settings.checkInit.value
            && sym.isGetter
@@ -746,7 +743,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
            && !sym.isOuterAccessor)
 
         if (settings.debug.value) {
-          log("needsInitFlag(" + sym.fullNameString + "): " + res)
+          log("needsInitFlag(" + sym.fullName + "): " + res)
           log("\tsym.isGetter: " + sym.isGetter)
           log("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasFlag(ACCESSOR) + sym.isTerm)
           log("\t!sym.hasFlag(PARAMACCESSOR): " + !sym.hasFlag(PARAMACCESSOR))
@@ -820,7 +817,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def buildFieldPositions(clazz: Symbol) {
         var fields = usedBits(clazz)
         for (f <- clazz.info.decls.iterator if needsInitFlag(f) || f.hasFlag(LAZY)) {
-          if (settings.debug.value) log(f.fullNameString + " -> " + fields)
+          if (settings.debug.value) log(f.fullName + " -> " + fields)
           fieldOffset(f) = fields
           fields += 1
         }
@@ -994,7 +991,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             case Super(_, mix) =>
               // change super calls to methods in implementation classes to static calls.
               // Transform references super.m(args) as follows:
-              //  - if `m' refers to a trait, insert a static call to the correspondign static
+              //  - if `m' refers to a trait, insert a static call to the corresponding static
               //    implementation
               //  - otherwise return tree unchanged
               if (mix == nme.EMPTY.toTypeName && currentOwner.enclClass.isImplClass)

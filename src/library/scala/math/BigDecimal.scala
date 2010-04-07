@@ -29,6 +29,8 @@ object BigDecimal
 
   private val minCached = -512
   private val maxCached = 512
+
+  /** Cache ony for defaultMathContext using BigDecimals in a small range. */
   private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
 
   val defaultMathContext = MathContext.UNLIMITED
@@ -50,12 +52,13 @@ object BigDecimal
    */
   def apply(i: Int): BigDecimal = apply(i, defaultMathContext)
   def apply(i: Int, mc: MathContext): BigDecimal =
-    if (minCached <= i && i <= maxCached) {
+    if (mc == defaultMathContext && minCached <= i && i <= maxCached) {
       val offset = i - minCached
       var n = cache(offset)
       if (n eq null) { n = new BigDecimal(BigDec.valueOf(i), mc); cache(offset) = n }
       n
-    } else new BigDecimal(BigDec.valueOf(i), mc)
+    }
+    else new BigDecimal(BigDec.valueOf(i), mc)
 
   /** Constructs a <code>BigDecimal</code> whose value is equal to that of the
    *  specified long value.

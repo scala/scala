@@ -16,15 +16,14 @@ package generic
  *  @author Sean McDirmid
  *  @since  2.8
  */
-trait Sorted[K, +This <: Sorted[K, This]]{
-  def ordering : Ordering[K];
+trait Sorted[K, +This <: Sorted[K, This]] {
+  def ordering : Ordering[K]
 
   /** The current collection */
   protected def repr: This
 
   /** return as a projection the set of keys in this collection */
   def keySet: SortedSet[K]
-
 
   /** Returns the first key of the collection. */
   def firstKey: K
@@ -68,24 +67,25 @@ trait Sorted[K, +This <: Sorted[K, This]]{
    */
   def range(from: K, until: K): This = rangeImpl(Some(from), Some(until))
 
-
   /** Create a range projection of this collection with no lower-bound.
    *  @param to The upper-bound (inclusive) of the ranged projection.
    */
   def to(to: K): This = {
     // tough!
-    val i = keySet.from(to).iterator;
-    if (!i.hasNext) return repr
-    val next = i.next;
-    if (next == to) {
-      if (!i.hasNext) return repr
-      else return until(i.next)
-    } else return until(next)
+    val i = keySet.from(to).iterator
+    if (i.isEmpty) return repr
+    val next = i.next
+    if (next == to)
+      if (i.isEmpty) repr
+      else until(i.next)
+    else
+      until(next)
   }
 
   protected def hasAll(j: Iterator[K]): Boolean = {
-    val i = keySet.iterator;
-    if (!i.hasNext) return !j.hasNext;
+    val i = keySet.iterator
+    if (i.isEmpty) return j.isEmpty
+
     var in = i.next;
     while (j.hasNext) {
       val jn = j.next;
@@ -99,5 +99,4 @@ trait Sorted[K, +This <: Sorted[K, This]]{
     }
     true
   }
-
 }

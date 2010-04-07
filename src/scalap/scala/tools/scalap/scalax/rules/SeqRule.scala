@@ -24,7 +24,7 @@ class InRule[In, +Out, +A, +X](rule : Rule[In, Out, A, X]) {
     in : In => f(rule(in))(in)
   }
 
-  /** Creates a rule that suceeds only if the original rule would fail on the given context. */
+  /** Creates a rule that succeeds only if the original rule would fail on the given context. */
   def unary_! : Rule[In, In, Unit, Nothing] = mapRule {
     case Success(_, _) => in : In => Failure
     case _ => in : In => Success(in, ())
@@ -82,7 +82,7 @@ class SeqRule[S, +A, +X](rule : Rule[S, S, A, X]) {
 
   /** Repeats this rule num times */
   def times(num : Int) : Rule[S, S, Seq[A], X] = from[S] {
-    val result = new collection.mutable.GenericArray[A](num)
+    val result = new collection.mutable.ArraySeq[A](num)
     // more compact using HoF but written this way so it's tail-recursive
     def rep(i : Int, in : S) : Result[S, Seq[A], X] = {
       if (i == num) Success(in, result)

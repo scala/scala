@@ -1,2 +1,2 @@
-case class Tata
+case class Tata()
 object Tata

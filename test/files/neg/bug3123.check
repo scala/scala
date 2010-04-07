@@ -1,0 +1,4 @@
+bug3123.scala:3: error: object Int is not a value
+    t match { case Int => true }
+                   ^
+one error found

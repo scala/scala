@@ -33,9 +33,9 @@ x10 eq y10: true, y10 eq x10: true
 x10 equals y10: true, y10 equals x10: true
 
 x9 eq x10: false, x10 eq x9: false
-x9 equals x10: true, x10 equals x9: true
+x9 equals x10: false, x10 equals x9: false
 x9 eq y10: false, y10 eq x9: false
-x9 equals y10: true, y10 equals x9: true
+x9 equals y10: false, y10 equals x9: false
 
 f1 = <na>
 _f1 = <na>
@@ -77,12 +77,12 @@ x = BitSet(2, 3)
 y = BitSet(2, 3)
 x equals y: true, y equals x: true
 
-x = Map(2 -> B, 1 -> A, 3 -> C)
+x = Map(1 -> A, 2 -> B, 3 -> C)
 y = Map(1 -> A, 2 -> B, 3 -> C)
 x equals y: true, y equals x: true
 
 x = Set(1, 2)
-y = Set(2, 1)
+y = Set(1, 2)
 x equals y: true, y equals x: true
 
 x = List((buffers,20), (layers,2), (title,3))

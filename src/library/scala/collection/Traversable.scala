@@ -29,8 +29,7 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   override def isEmpty: Boolean
   override def size: Int
   override def hasDefiniteSize
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
+  override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
   override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
   override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Traversable[A], B, That]): That
   override def filter(p: A => Boolean): Traversable[A]

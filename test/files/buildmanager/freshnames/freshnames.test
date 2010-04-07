@@ -1,0 +1,2 @@
+>>compile B.scala A.scala
+>>compile A.scala

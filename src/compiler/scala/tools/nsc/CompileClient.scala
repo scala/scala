@@ -6,8 +6,11 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedReader, File, InputStreamReader, PrintWriter}
+import java.io.{ BufferedReader, File, InputStreamReader, PrintWriter }
 import Properties.fileEndings
+import scala.tools.util.PathResolver
+import io.Path
+import util.ClassPath
 
 /** The client part of the fsc offline compiler.  Instead of compiling
  *  things itself, it send requests to a CompileServer.
@@ -26,11 +29,7 @@ class StandardCompileClient {
   /** Convert a sequence of filenames, separated by <code>File.pathSeparator</code>,
     * into absolute filenames.
     */
-  def absFileNames(paths: String) = {
-    val sep = File.pathSeparator
-    val pathsList = paths.split(sep).toList
-    pathsList map absFileName mkString sep
-  }
+  def absFileNames(paths: String) = ClassPath.map(paths, absFileName)
 
   protected def normalize(args: Array[String]): (String, String) = {
     var i = 0
@@ -40,7 +39,7 @@ class StandardCompileClient {
     while (i < args.length) {
       val arg = args(i)
       if (fileEndings exists(arg endsWith _)) {
-        args(i) = absFileName(arg)
+        args(i) = Path(arg).toAbsolute.path
       } else if (arg startsWith "-J") {
         //see http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/javac.html#J
         vmArgs append " "+arg.substring(2)
@@ -57,7 +56,7 @@ class StandardCompileClient {
       if (i < args.length) {
         arg match {
           case "-classpath" | "-sourcepath" | "-bootclasspath" | "-extdirs" | "-d"  =>
-            args(i) = absFileNames(args(i))
+            args(i) = PathResolver.makeAbsolute(args(i))
             i += 1
           case "-server"  =>
             serverAdr = args(i)
@@ -76,36 +75,41 @@ class StandardCompileClient {
     val (vmArgs, serverAdr) = normalize(args)
 
     if (version) {
-      Console.println(versionMsg)
+      Console println versionMsg
       return 0
     }
     if (verbose) {
-      Console.println("[Server arguments: " + args.mkString("", " ", "]"))
-      Console.println("[VM arguments: " + vmArgs + "]")
+      Console println args.mkString("[Server arguments: ", " ", "]")
+      Console println "[VM arguments: %s]".format(vmArgs)
     }
-    val socket = if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
-                 else compileSocket.getSocket(serverAdr)
-    var sawerror = false
-    if (socket eq null) {
-      if (shutdown) {
-        Console.println("[No compilation server running.]")
-      } else {
-        Console.println("Compilation failed.")
-        sawerror = true
-      }
-    } else {
-      val out = new PrintWriter(socket.getOutputStream(), true)
-      val in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
-      out.println(compileSocket.getPassword(socket.getPort()))
-      out.println(args.mkString("", "\0", ""))
-      var fromServer = in.readLine()
-      while (fromServer ne null) {
-        if (compileSocket.errorPattern.matcher(fromServer).matches)
-          sawerror = true
-        Console.println(fromServer)
-        fromServer = in.readLine()
-      }
-      in.close ; out.close ; socket.close
+    val socket =
+      if (serverAdr == "") compileSocket.getOrCreateSocket(vmArgs, !shutdown)
+      else Some(compileSocket.getSocket(serverAdr))
+
+    val sawerror: Boolean = socket match {
+      case None =>
+        val msg = if (shutdown) "[No compilation server running.]" else "Compilation failed."
+        Console println msg
+        !shutdown
+
+      case Some(sock) =>
+        var wasError = false
+
+        sock.applyReaderAndWriter { (in, out) =>
+          out println compileSocket.getPassword(sock.getPort())
+          out println args.mkString("\0")
+          def loop: Unit = in.readLine() match {
+            case null       => ()
+            case fromServer =>
+              if (compileSocket.errorPattern matcher fromServer matches)
+                wasError = true
+
+              Console println fromServer
+              loop
+          }
+          loop
+        }
+        wasError
     }
     if (sawerror) 1 else 0
   }

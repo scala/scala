@@ -76,8 +76,7 @@ trait TypeStacks { self: ICodes =>
      * types agree if one is a subtype of the other.
      */
     def agreesWith(other: TypeStack): Boolean =
-      (types.length == other.types.length) &&
-      ((types, other.types).zipped forall ((t1, t2) => t1 <:< t2 || t2 <:< t1))
+      (types corresponds other.types)((t1, t2) => t1 <:< t2 || t2 <:< t1)
 
     /* This method returns a String representation of the stack */
     override def toString() = types.mkString("\n", "\n", "\n")

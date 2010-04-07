@@ -10,7 +10,7 @@ object xfor {
     </bks>;
 
   new NodeSeq { val theSeq = books.child }  match {
-    case t @ <title>Blabla</title> => t
+    case t @ Seq(<title>Blabla</title>) => t
   }
 
   //val n: NodeSeq = new NodeSeq { val theSeq = books.child }

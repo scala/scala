@@ -168,6 +168,7 @@ object Statistics {
   val ctr1 = new Counter
   val ctr2 = new Counter
   val ctr3 = new Counter
+  val ctr4 = new Counter
   val counter1: SubCounter = new SubCounter(subtypeCount)
   val counter2: SubCounter = new SubCounter(subtypeCount)
   val timer1: Timer = new Timer
@@ -205,7 +206,7 @@ abstract class Statistics {
     if (phase.name != "parser") {
       val counts = new ClassCounts
       for (u <- currentRun.units; t <- u.body) counts(t.getClass) += 1
-      inform("#retained nodes          : " + counts.valuesIterable.sum)
+      inform("#retained nodes          : " + counts.values.sum)
       inform("#retained nodes by type  : " + showCounts(counts))
       inform("#typechecked identifiers : " + typedIdentCount)
       inform("#typechecked selections  : " + typedSelectCount)
@@ -268,6 +269,7 @@ abstract class Statistics {
       if (ctr1 != null)     inform("#ctr1                    : " + ctr1)
       if (ctr2 != null)     inform("#ctr2                    : " + ctr2)
       if (ctr3 != null)     inform("#ctr3                    : " + ctr3)
+      if (ctr4 != null)     inform("#ctr4                    : " + ctr4)
       if (counter1 != null) inform("#counter1                : " + counter1)
       if (counter2 != null) inform("#counter2                : " + counter2)
       if (timer1   != null) inform("#timer1                  : " + timer1)

@@ -27,6 +27,8 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
   assert(path ne null)
 
   val file = givenPath.jfile
+  override def underlyingSource = Some(this)
+
   private val fpath = try givenPath.normalize catch { case _: IOException => givenPath.toAbsolute }
 
   /** Returns the name of this abstract file. */
@@ -55,8 +57,8 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
 
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {
-    assert(isDirectory, "not a directory '%s'" format this)
-    givenPath.toDirectory.list filter (_.exists) map (new PlainFile(_))
+    if (!isDirectory) Iterator.empty
+    else givenPath.toDirectory.list filter (_.exists) map (new PlainFile(_))
   }
 
   /**

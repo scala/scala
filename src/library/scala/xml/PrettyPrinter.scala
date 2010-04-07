@@ -8,10 +8,8 @@
 
 // $Id$
 
-
 package scala.xml
 
-import scala.collection.Map
 import Utility.sbToString
 
 /** Class for pretty printing. After instantiating, you can use the
@@ -23,7 +21,7 @@ import Utility.sbToString
  *  @version 1.0
  *
  *  @param width the width to fit the output into
- *  @step  indentation
+ *  @param step  indentation
  */
 class PrettyPrinter(width: Int, step: Int) {
 
@@ -39,7 +37,6 @@ class PrettyPrinter(width: Int, step: Int) {
   protected var items: List[Item] = Nil
 
   protected var cur = 0
-  //protected var pmap:Map[String,String] = _
 
   protected def reset() = {
     cur = 0

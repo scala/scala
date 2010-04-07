@@ -9,71 +9,54 @@ package scala.tools.nsc
 
 /** A command for ScriptRunner */
 class GenericRunnerCommand(
-  allargs: List[String],
-  override val settings: GenericRunnerSettings,
-  error: String => Unit)
-extends CompilerCommand(allargs, settings, error, false, false)
-{
-  def this(allargs: List[String], error: String=>Unit) =
-    this(allargs, new GenericRunnerSettings(error), error)
+  args: List[String],
+  override val settings: GenericRunnerSettings)
+extends CompilerCommand(args, settings) {
 
-  def this(allargs: List[String]) =
-    this(allargs, str => Console.println("Error: " + str))
+  def this(args: List[String], error: String => Unit) =
+    this(args, new GenericRunnerSettings(error))
+
+  def this(args: List[String]) =
+    this(args, str => Console.println("Error: " + str))
 
   /** name of the associated compiler command */
   override val cmdName = "scala"
   val compCmdName = "scalac"
 
-  /** What to run.  If it is None, then the interpreter should be started */
-  var thingToRun: Option[String] = None
+  // change CompilerCommand behavior
+  override def shouldProcessArguments: Boolean = false
 
-  /** Arguments to pass to the object or script to run */
-  var arguments: List[String] = Nil
-
-  override protected def processArguments() {
-    var args = allargs
-
-    while (!args.isEmpty && ok && args.head.startsWith("-")) {
-      val args0 = args
-      args = settings parseParams args
-      if (args eq args0) {
-        error("bad option: '" + args.head + "'")
-        ok = false
-      }
-    }
-
-    if (!args.isEmpty) {
-      thingToRun = Some(args.head)
-      arguments = args.tail
-    }
+  /** thingToRun: What to run.  If it is None, then the interpreter should be started
+   *  arguments: Arguments to pass to the object or script to run
+   */
+  val (thingToRun, arguments) = settings.processArguments(args, false)._2 match {
+    case Nil      => (None, Nil)
+    case hd :: tl => (Some(hd), tl)
   }
 
-  // we can safely call processArguments since we passed the superclass shouldProcessArguments=false
-  processArguments()
+  override def usageMsg = """
+%s [ <option> ]... [<torun> <arguments>]
 
-  override def usageMsg = {
-    cmdName + " [ <option> ]... [<torun> <arguments>]\n" +
-    "\n" +
-    "All options to "+compCmdName+" are allowed.  See "+compCmdName+" -help.\n" +
-    "\n" +
-    "<torun>, if present, is an object or script file to run.\n" +
-    "If no <torun> is present, run an interactive shell.\n" +
-    "\n" +
-    "Option -howtorun allows explicitly specifying how to run <torun>:\n" +
-    "    script: it is a script file\n" +
-    "    object: it is an object name\n" +
-    "    guess: (the default) try to guess\n" +
-    "\n" +
-    "Option -i requests that a file be pre-loaded.  It is only\n" +
-    "meaningful for interactive shells.\n" +
-    "\n" +
-    "Option -e requests that its argument be executed as Scala code.\n" +
-    "\n" +
-    "Option -savecompiled requests that the compiled script be saved\n" +
-    "for future use.\n" +
-    "\n" +
-    "Option -nocompdaemon requests that the fsc offline compiler not be used.\n" +
-    "\n" +
-    "Option -Dproperty=value sets a Java system property.\n"
-  }
+All options to %s are allowed.  See %s -help.
+
+<torun>, if present, is an object or script file to run.
+If no <torun> is present, run an interactive shell.
+
+Option -howtorun allows explicitly specifying how to run <torun>:
+    script: it is a script file
+    object: it is an object name
+    guess: (the default) try to guess
+
+Option -i requests that a file be pre-loaded.  It is only
+meaningful for interactive shells.
+
+Option -e requests that its argument be executed as Scala code.
+
+Option -savecompiled requests that the compiled script be saved
+for future use.
+
+Option -nocompdaemon requests that the fsc offline compiler not be used.
+
+Option -Dproperty=value sets a Java system property.
+""".format(cmdName, compCmdName, compCmdName)
 }

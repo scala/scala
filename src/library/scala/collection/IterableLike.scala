@@ -69,9 +69,6 @@ self =>
    */
   def iterator: Iterator[A]
 
-  @deprecated("use `iterator' instead")
-  def elements = iterator
-
   /** Applies a function `f` to all elements of this $coll.
    *
    *    Note: this method underlies the implementation of most other bulk operations.
@@ -189,7 +186,7 @@ self =>
     b.result
   }
 
-  /** Selects all elements except first ''n'' ones.
+  /** Selects all elements except last ''n'' ones.
    *  $orderDependent
    *
    *  @param  n    The number of elements to take
@@ -366,6 +363,9 @@ self =>
   }
 
   override /*TraversableLike*/ def view(from: Int, until: Int) = view.slice(from, until)
+
+  @deprecated("use `iterator' instead")
+  def elements = iterator
 
   @deprecated("use `head' instead") def first: A = head
 

@@ -40,7 +40,7 @@ class DoubleLinkedList[A]() extends LinearSeq[A]
 }
 
 object DoubleLinkedList extends SeqFactory[DoubleLinkedList] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, DoubleLinkedList[A]] = new GenericCanBuildFrom[A] //new CanBuildFrom[Coll, A, DoubleLinkedList[A]] { : Coll) = from.traversableBuilder[A] }
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, DoubleLinkedList[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, DoubleLinkedList[A]] =
     new Builder[A, DoubleLinkedList[A]] {
       var current: DoubleLinkedList[A] = _

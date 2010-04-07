@@ -151,7 +151,10 @@ import IntMap._
  * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Integer Maps</a>
  * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  *
+ * Note: This class is as of 2.8 largely superseded by HashMap.
+ *
  * @since 2.7
+ *
  */
 sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap[T]] {
   override def empty: IntMap[T] = IntMap.Nil;
@@ -357,7 +360,7 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
   }
 
   /**
-   * Forms the intersection of these two maps with a combinining function. The resulting map is
+   * Forms the intersection of these two maps with a combining function. The resulting map is
    * a map that has only keys present in both maps and has values produced from the original mappings
    * by combining them with f.
    *

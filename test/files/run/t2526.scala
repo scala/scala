@@ -20,9 +20,8 @@ object Test {
     assertForeach(keys, m.keysIterator)
     assertForeach(keys, m.keySet)
 
-    assertForeach(values, m.valuesIterable.iterator)
+    assertForeach(values, m.values.iterator)
     assertForeach(values, m.valuesIterator)
-    assertForeach(values, m.valuesIterable)
 
     assertForeach(entries, m)
   }
@@ -39,7 +38,7 @@ object Test {
 
   /*
    * Checks foreach of `actual` goes over all the elements in `expected`
-   * We duplicate the method above because there is no common inteface between Traverable and
+   * We duplicate the method above because there is no common inteface between Traversable and
    * Iterator and we want to avoid converting between collections to ensure that we test what
    * we mean to test.
    */

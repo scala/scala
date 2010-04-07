@@ -13,10 +13,7 @@ package scala.xml
 package dtd
 
 import util.regexp.WordExp
-import util.automata.{DetWordAutom, SubsetConstruction, WordBerrySethi}
-import collection.mutable.{HashSet, StringBuilder}
-import collection.immutable.{List, Nil}
-import collection.Seq
+import util.automata._
 import Utility.sbToString
 import PartialFunction._
 

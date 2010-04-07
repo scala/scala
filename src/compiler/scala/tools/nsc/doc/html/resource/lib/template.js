@@ -1,3 +1,6 @@
+// © 2009–2010 EPFL/LAMP
+// code by Gilles Dubochet with contributions by Pedro Furlanetto
+
 $(document).ready(function(){
 	var prefilters = $("#ancestors > ol > li").filter(function(){
 		var name = $(this).attr("name");
@@ -5,7 +8,7 @@ $(document).ready(function(){
 	});
 	prefilters.removeClass("in");
 	prefilters.addClass("out");
-	filterInherit();
+	filter();
 	$("#ancestors > ol > li").click(function(){
 		if ($(this).hasClass("in")) {
 			$(this).removeClass("in");
@@ -15,22 +18,43 @@ $(document).ready(function(){
 			$(this).removeClass("out");
 			$(this).addClass("in");
 		};
-		filterInherit();
+	    filter();
 	});
-	$(".signature .symbol .extype").hover(
-		function(){
-			var full = $(this).attr("name");
-			var short = $(this).text();
-			$(this).attr("name", short);
-			$(this).text(full);
-		},
-		function(){
-			var short = $(this).attr("name");
-			var full = $(this).text();
-			$(this).attr("name", full);
-			$(this).text(short);
-		}
-	);
+	$("#ancestors > ol > li.hideall").click(function() {
+		$("#ancestors > ol > li.in").removeClass("in").addClass("out");
+	    filter();
+	})
+	$("#ancestors > ol > li.showall").click(function() {
+		var filtered =
+		    $("#ancestors > ol > li.out").filter(function() {
+			    var name = $(this).attr("name");
+			    return !(name == "scala.Any" || name == "scala.AnyRef");
+		    });
+		filtered.removeClass("out").addClass("in");
+	    filter();
+	});
+	$("#visbl > ol > li.public").click(function() {
+	    if ($(this).hasClass("out")) {
+            $(this).removeClass("out").addClass("in");
+            $("#visbl > ol > li.all").removeClass("in").addClass("out");
+	        filter();
+        };
+	})
+	$("#visbl > ol > li.all").click(function() {
+	    if ($(this).hasClass("out")) {
+            $(this).removeClass("out").addClass("in");
+            $("#visbl > ol > li.public").removeClass("in").addClass("out");
+	        filter();
+        };
+	});
+	//http://flowplayer.org/tools/tooltip.html
+	$(".extype").tooltip({
+		tip: "#tooltip",
+		position:"top center",		
+		onBeforeShow: function(ev) {
+            $(this.getTip()).text(this.getTrigger().attr("name"));
+		}		
+	});
 	$("#template div.fullcomment").hide();
 	var docAllSigs = $("#template .signature");
 	function commentShowFct(fullComment){
@@ -73,28 +97,33 @@ $(document).ready(function(){
 	});
 });
 
-function filterInherit() {
-	$("#mbrsel > div > ol > li.in").each(function(){
-		findMembersByOwner($(this).attr("name")).show();
-	});
-	$("#mbrsel > div > ol > li.out").each(function(){
-		findMembersByOwner($(this).attr("name")).hide();
-	});
-	return false;
-};
-
-function findMembersByOwner(owner0) {
-	return $(".members > ol > li").filter(function(){
+function filter() {
+    var outOwners =
+        $("#mbrsel > div > ol > li.out").map(function(){
+            $(this).attr("name")
+        }).get();
+    var prtVisbl = $("#visbl > ol > li.all").hasClass("in");
+	$(".members > ol > li").each(function(){
+		var vis1 = $(this).attr("visbl");
 		var qualName1 = $(this).attr("name");
-		if (qualName1 == undefined) return false;
-		return owner0 == qualName1.slice(0, qualName1.indexOf("#"));
+		var owner1 = qualName1.slice(0, qualName1.indexOf("#"));
+		//var name1 = qualName1.slice(qualName1.indexOf("#") + 1);
+		var showByOwned = true;
+        for (out in outOwners) {
+            if (out == owner1) {
+                showByOwned = false;
+            };
+        };
+        var showByVis = true
+        if (vis1 == "prt") {
+            showByVis = prtVisbl;
+        };
+		if (showByOwned && showByVis) {
+		    $(this).show();
+		}
+		else {
+		    $(this).hide();
+		};
 	});
-};
-
-function findMemberByName(name0) {
-	return $(".members > ol > li").filter(function(){
-		var qualName1 = $(this).attr("name");
-		if (qualName1 == undefined) return false;
-		return name0 == qualName1.slice(qualName1.indexOf("#") + 1);
-	}).eq(0);
+	return false
 };

@@ -23,11 +23,10 @@ import generic._
  *  @version 2.8
  *  @since   2.8
  */
-trait SeqProxyLike[+A, +This <: SeqLike[A, This] with Seq[A]] extends SeqLike[A, This] with IterableProxyLike[A, This] {
+trait SeqProxyLike[+A, +Repr <: SeqLike[A, Repr] with Seq[A]] extends SeqLike[A, Repr] with IterableProxyLike[A, Repr] {
   override def length: Int = self.length
   override def apply(idx: Int): A = self.apply(idx)
   override def lengthCompare(len: Int): Int = self.lengthCompare(len)
-  override def size = self.size
   override def isDefinedAt(x: Int): Boolean = self.isDefinedAt(x)
   override def segmentLength(p: A => Boolean, from: Int): Int = self.segmentLength(p, from)
   override def prefixLength(p: A => Boolean) = self.prefixLength(p)
@@ -40,22 +39,34 @@ trait SeqProxyLike[+A, +This <: SeqLike[A, This] with Seq[A]] extends SeqLike[A,
   override def lastIndexOf[B >: A](elem: B, end: Int): Int = self.lastIndexWhere(elem ==, end)
   override def lastIndexWhere(p: A => Boolean): Int = self.lastIndexWhere(p, length - 1)
   override def lastIndexWhere(p: A => Boolean, end: Int): Int = self.lastIndexWhere(p)
-  override def reverse: This = self.reverse
+  override def reverse: Repr = self.reverse
+  override def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.reverseMap(f)(bf)
   override def reverseIterator: Iterator[A] = self.reverseIterator
   override def startsWith[B](that: Seq[B], offset: Int): Boolean = self.startsWith(that, offset)
   override def startsWith[B](that: Seq[B]): Boolean = self.startsWith(that)
   override def endsWith[B](that: Seq[B]): Boolean = self.endsWith(that)
   override def indexOfSlice[B >: A](that: Seq[B]): Int = self.indexOfSlice(that)
+  override def indexOfSlice[B >: A](that: Seq[B], from: Int): Int = self.indexOfSlice(that)
+  override def lastIndexOfSlice[B >: A](that: Seq[B]): Int = self.lastIndexOfSlice(that)
+  override def lastIndexOfSlice[B >: A](that: Seq[B], end: Int): Int = self.lastIndexOfSlice(that, end)
+  override def containsSlice[B](that: Seq[B]): Boolean = self.indexOfSlice(that) != -1
   override def contains(elem: Any): Boolean = self.contains(elem)
-  override def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That = self.union(that)(bf)
-  override def diff[B >: A, That](that: Seq[B]): This = self.diff(that)
-  override def intersect[B >: A, That](that: Seq[B]): This = self.intersect(that)
-  override def removeDuplicates: This = self.removeDuplicates
-  override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That = self.patch(from, patch, replaced)(bf)
-  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That = self.padTo(len, elem)(bf)
+  override def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = self.union(that)(bf)
+  override def diff[B >: A](that: Seq[B]): Repr = self.diff(that)
+  override def intersect[B >: A](that: Seq[B]): Repr = self.intersect(that)
+  override def distinct: Repr = self.distinct
+  override def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.patch(from, patch, replaced)(bf)
+  override def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.updated(index, elem)(bf)
+  override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.+:(elem)(bf)
+  override def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.:+(elem)(bf)
+  override def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[Repr, B, That]): That = self.padTo(len, elem)(bf)
+  override def corresponds[B](that: Seq[B])(p: (A,B) => Boolean): Boolean = self.corresponds(that)(p)
+  override def sortWith(lt: (A, A) => Boolean): Repr = self.sortWith(lt)
+  override def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = self.sortBy(f)(ord)
+  override def sorted[B >: A](implicit ord: Ordering[B]): Repr = self.sorted(ord)
   override def indices: Range = self.indices
   override def view = self.view
   override def view(from: Int, until: Int) = self.view(from, until)
-  override def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = (self zip that) forall { case (x,y) => f(x,y) }
-  override def containsSlice[B](that: Seq[B]): Boolean = self.indexOfSlice(that) != -1
 }
+
+

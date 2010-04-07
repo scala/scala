@@ -31,6 +31,10 @@ object UIElement {
    * Java Swing peer. If this method finds one of the given type `C`,
    * it will return that wrapper. Otherwise it returns `null`. This
    * method never throws an exception.
+   *
+   * Clients should be extremely careful with type parameter `C` and
+   * its interaction with type inference. Better err on the side of caution
+   * and explicitly specify `C`.
    */
   private[swing] def cachedWrapper[C>:Null<:UIElement](c: java.awt.Component): C = {
     val w = c match {
@@ -119,7 +123,7 @@ trait UIElement extends Proxy with LazyPublisher {
   def ignoreRepaint: Boolean = peer.getIgnoreRepaint
   def ignoreRepaint_=(b: Boolean) { peer.setIgnoreRepaint(b) }
 
-  def onFirstSubscribe {
+  protected def onFirstSubscribe {
     peer.addComponentListener(new java.awt.event.ComponentListener {
       def componentHidden(e: java.awt.event.ComponentEvent) {
         publish(UIElementHidden(UIElement.this))
@@ -135,5 +139,5 @@ trait UIElement extends Proxy with LazyPublisher {
       }
     })
   }
-  def onLastUnsubscribe {}
+  protected def onLastUnsubscribe {}
 }

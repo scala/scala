@@ -202,7 +202,7 @@ private class Page[T: ClassManifest](val num: Int) {
   /** The next page in the sequence */
   var next  : Page[T] = null
 
-  /** A later page in the sequence, serves a cachae for pointing to last page */
+  /** A later page in the sequence, serves a cache for pointing to last page */
   var later : Page[T] = this
 
   /** The number of characters read into this page */
@@ -218,11 +218,11 @@ private class Page[T: ClassManifest](val num: Int) {
   /** The index of the first character in this page relative to the whole sequence */
   final def start = num * PageSize
 
-  /** The index of the character following the last charcater in this page relative
+  /** The index of the character following the last character in this page relative
    *  to the whole sequence */
   final def end = start + filled
 
-  /** The currently last page in the sequence; might change as more charcaters are appended */
+  /** The currently last page in the sequence; might change as more characters are appended */
   final def latest: Page[T] = {
     if (later.next != null) later = later.next.latest
     later

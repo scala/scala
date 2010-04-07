@@ -11,7 +11,7 @@
 package scala.actors
 package scheduler
 
-import java.lang.{Runnable, Thread, InterruptedException}
+import java.lang.{Thread, InterruptedException}
 
 /**
  * The <code>TerminationService</code> class starts a new thread
@@ -21,10 +21,15 @@ import java.lang.{Runnable, Thread, InterruptedException}
  *
  * @author Philipp Haller
  */
-abstract class TerminationService(terminate: Boolean)
-  extends Thread with IScheduler with TerminationMonitor {
+private[scheduler] trait TerminationService extends TerminationMonitor {
+  _: Thread with IScheduler =>
 
   private var terminating = false
+
+  /** Indicates whether the scheduler should terminate when all
+   *  actors have terminated.
+   */
+  protected val terminate = true
 
   protected val CHECK_FREQ = 50
 
@@ -39,15 +44,15 @@ abstract class TerminationService(terminate: Boolean)
           } catch {
             case _: InterruptedException =>
           }
-          if (terminating)
-            throw new QuitException
 
-          if (terminate && allActorsTerminated)
-            throw new QuitException
+          if (terminating || (terminate && allActorsTerminated))
+            throw new QuitControl
+
+          gc()
         }
       }
     } catch {
-      case _: QuitException =>
+      case _: QuitControl =>
         Debug.info(this+": initiating shutdown...")
         // invoke shutdown hook
         onShutdown()
@@ -60,4 +65,5 @@ abstract class TerminationService(terminate: Boolean)
   def shutdown(): Unit = synchronized {
     terminating = true
   }
+
 }

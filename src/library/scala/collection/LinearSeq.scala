@@ -14,18 +14,10 @@ package scala.collection
 import generic._
 import mutable.Builder
 
-/** <p>
- *    Class <code>Linear[A]</code> represents linear sequences of elements.
- *    For such sequences <code>isEmpty</code>, <code>head</code> and
- *    <code>tail</code> are guaranteed to be efficient constant time (or near so)
- *    operations.<br/>
- *    It does not add any methods to <code>Seq</code> but overrides several
- *    methods with optimized implementations.
- *  </p>
+/** A base trait for linear sequences.
+ *  $linearSeqInfo
  *
  *  @author  Martin Odersky
- *  @author  Matthias Zenger
- *  @version 1.0, 16/07/2003
  *  @since   2.8
  */
 trait LinearSeq[+A] extends Seq[A]

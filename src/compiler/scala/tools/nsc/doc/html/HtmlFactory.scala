@@ -7,48 +7,43 @@ package scala.tools.nsc
 package doc
 package html
 
+import java.io.{ File => JFile }
+import io.{ Streamable, Directory }
 import reporters.Reporter
 import model._
-
-import java.io.{FileOutputStream, File}
 import scala.collection._
 
 /** A class that can generate Scaladoc sites to some fixed root folder.
   * @author David Bernard
   * @author Gilles Dubochet */
-class HtmlFactory(val reporter: Reporter, val settings: Settings) {
+class HtmlFactory(val universe: Universe) {
 
   /** The character encoding to be used for generated Scaladoc sites. This value is currently always UTF-8. */
   def encoding: String = "UTF-8"
 
-  /** The character encoding to be used for generated Scaladoc sites. This value is defined by the generator's
-    * settings. */
-  def siteRoot: File = new File(settings.outdir.value)
+  def siteRoot: JFile = new JFile(universe.settings.outdir.value)
 
-  /** Generates the Scaladoc site for a model into the site toot. A scaladoc site is a set of HTML and related files
+  /** Generates the Scaladoc site for a model into the site root. A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     * @param model The model to generate in the form of a sequence of packages. */
-  def generate(modelRoot: Package): Unit = {
-
+  def generate(universe: Universe): Unit = {
     def copyResource(subPath: String) {
-      val buf = new Array[Byte](1024)
-      val in = getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + subPath)
-      assert(in != null)
-      val dest = new File(siteRoot, subPath)
-      dest.getParentFile.mkdirs()
-      val out = new FileOutputStream(dest)
-      try {
-        var len = 0
-        while ({len = in.read(buf); len != -1})
-          out.write(buf, 0, len)
-      }
-      finally {
-        in.close()
-        out.close()
-      }
+      val bytes = new Streamable.Bytes {
+        val inputStream = getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + subPath)
+        assert(inputStream != null)
+      } . toByteArray()
+
+      val dest = Directory(siteRoot) / subPath
+      dest.parent.createDirectory()
+      val out = dest.toFile.bufferedOutput()
+
+      try out.write(bytes, 0, bytes.length)
+      finally out.close()
     }
 
     copyResource("lib/jquery.js")
+    copyResource("lib/tools.tooltip.js")
+    copyResource("lib/scheduler.js")
     copyResource("lib/index.css")
     copyResource("lib/index.js")
     copyResource("lib/template.css")
@@ -61,8 +56,11 @@ class HtmlFactory(val reporter: Reporter, val settings: Settings) {
     copyResource("lib/trait_big.png")
     copyResource("lib/package.png")
     copyResource("lib/package_big.png")
+    copyResource("lib/filter_box_left.png")
+    copyResource("lib/filter_box_right.png")
+    copyResource("lib/remove.png")
 
-    new page.Index(modelRoot) writeFor this
+    new page.Index(universe) writeFor this
 
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
@@ -72,7 +70,7 @@ class HtmlFactory(val reporter: Reporter, val settings: Settings) {
       tpl.templates filter { t => !(written contains t) } map (writeTemplate(_))
     }
 
-    writeTemplate(modelRoot)
+    writeTemplate(universe.rootPackage)
 
   }
 

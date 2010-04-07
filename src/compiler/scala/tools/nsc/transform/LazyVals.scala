@@ -95,13 +95,11 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
 
       val bmps = bitmaps(methSym) map (ValDef(_, ZERO))
 
-      // Martin to Iulian: Don't we need to compare lengths here?
-      def isMatch(params: List[Ident]) = (params.tail, methSym.tpe.params).zipped forall (_.tpe == _.tpe)
+      def isMatch(params: List[Ident]) = (params.tail corresponds methSym.tpe.params)(_.tpe == _.tpe) // @PP: corresponds
 
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, rhs1))
           if name.toString == ("_" + methSym.name) && isMatch(params) =>
-            val sym = l.symbol
             Block(assign, treeCopy.LabelDef(l, name, params, typed(prependStats(bmps, rhs1))))
 
         case _ => prependStats(bmps, rhs)
@@ -127,7 +125,7 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
      *  }
      *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
      *  the 'n' is (offset / 32), the MASK is (1 << (offset % 32)). If the value has type
-     *  unit, no field is used to chache the value, so the resulting code is:
+     *  unit, no field is used to cache the value, so the resulting code is:
      *  {
      *    if ((bitmap$n & MASK) == 0) {
      *       <rhs>;

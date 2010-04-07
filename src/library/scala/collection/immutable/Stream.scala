@@ -40,7 +40,7 @@ import scala.annotation.tailrec
  */
 abstract class Stream[+A] extends LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
-                             with LinearSeqLike[A, Stream[A]] {
+                             with LinearSeqOptimized[A, Stream[A]] {
 self =>
   override def companion: GenericCompanion[Stream] = Stream
 
@@ -113,17 +113,21 @@ self =>
    *  then StreamBuilder will be chosen for the implicit.
    *  we recognize that fact and optimize to get more laziness.
    */
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+  override def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
     // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
     (if (isEmpty) that.toStream
      else new Stream.Cons(head, (tail ++ that).asInstanceOf[Stream[A]])).asInstanceOf[That]
   }
 
-  /** Create a new stream which contains all elements of this stream
-   *  followed by all elements of Iterator `that'
+  /**
+   * Create a new stream which contains all intermediate results of applying the operator
+   * to subsequent elements left to right.
+   * @note This works because the target type of the Builder That is a Stream.
    */
-  override def++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
-    this ++ that.toStream
+  override final def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+    (if (this.isEmpty) Stream(z)
+    else new Stream.Cons(z, tail.scanLeft(op(z, head))(op).asInstanceOf[Stream[B]])).asInstanceOf[That]
+  }
 
   /** Returns the stream resulting from applying the given function
    *  <code>f</code> to each element of this stream.
@@ -344,9 +348,9 @@ self =>
   /** Builds a new stream from this stream in which any duplicates (wrt to ==) removed.
    *  Among duplicate elements, only the first one is retained in the result stream
    */
-  override def removeDuplicates: Stream[A] =
+  override def distinct: Stream[A] =
     if (isEmpty) this
-    else new Stream.Cons(head, tail.filter(head !=).removeDuplicates)
+    else new Stream.Cons(head, tail.filter(head !=).distinct)
 
   /** Returns a new sequence of given length containing the elements of this sequence followed by zero
    *  or more occurrences of given elements.
@@ -420,12 +424,12 @@ object Stream extends SeqFactory[Stream] {
   import scala.collection.{Iterable, Seq, IndexedSeq}
 
   /** A builder for streams
-   *  @note: This builder is lazy only in the sense that it does not go downs the spine
-   *         of traversables that are added as a whole. If more laziness can be achieved,
-   *         this builder should be bypassed.
+   *  @note This builder is lazy only in the sense that it does not go downs the spine
+   *        of traversables that are added as a whole. If more laziness can be achieved,
+   *        this builder should be bypassed.
    */
   class StreamBuilder[A] extends scala.collection.mutable.LazyBuilder[A, Stream[A]] {
-    def result: Stream[A] = (for (xs <- parts.iterator; x <- xs.toIterable.iterator) yield x).toStream
+    def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 
   object Empty extends Stream[Nothing] {

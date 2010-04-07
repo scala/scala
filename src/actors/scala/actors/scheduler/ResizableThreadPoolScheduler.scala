@@ -112,7 +112,7 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
           }
 
           if (terminating)
-            throw new QuitException
+            throw new QuitControl
 
           if (!suspending) {
             gc()
@@ -129,19 +129,19 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
                 Debug.info(this+": corePoolSize = "+coreSize+", maxPoolSize = "+maxSize)
 
                 terminating = true
-                throw new QuitException
+                throw new QuitControl
               }
             }
           } else {
             drainedTasks = executor.shutdownNow()
             Debug.info(this+": drained "+drainedTasks.size()+" tasks")
             terminating = true
-            throw new QuitException
+            throw new QuitControl
           }
         } // sync
       }
     } catch {
-      case _: QuitException =>
+      case _: QuitControl =>
         executor.shutdown()
         // allow thread to exit
     }

@@ -1,1 +1,1 @@
-Array(GenericArray(1, 3), GenericArray(2, 4))
+Array(ArraySeq(1, 3), ArraySeq(2, 4))

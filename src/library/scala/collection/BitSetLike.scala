@@ -28,11 +28,10 @@ import mutable.StringBuilder
  *  @since 2.8
  *  @define coll bitset
  *  @define Coll BitSet
- *  define bitsetinfo
+ *  @define bitsetinfo
  *  Bitsets are sets of non-negative integers which are represented as
  *  variable-size arrays of bits packed into 64-bit words. The size of a bitset is
  *  determined by the largest number stored in it.
-
  */
 trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, This] { self =>
 
@@ -42,7 +41,7 @@ trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, T
   protected def nwords: Int
 
   /** The words at index `idx', or 0L if outside the range of the set
-   *  @pre idx >= 0
+   *  @note Requires `idx >= 0`
    */
   protected def word(idx: Int): Long
 

@@ -37,7 +37,7 @@ object Stack extends SeqFactory[Stack] {
 @serializable @SerialVersionUID(1976480595012942526L)
 class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]
                     with GenericTraversableTemplate[A, Stack]
-                    with LinearSeqLike[A, Stack[A]] {
+                    with LinearSeqOptimized[A, Stack[A]] {
   override def companion: GenericCompanion[Stack] = Stack
 
   def this() = this(Nil)
@@ -74,18 +74,8 @@ class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]
    *  @param   elems      the iterator object.
    *  @return the stack with the new elements on top.
    */
-  def pushAll[B >: A](elems: Iterator[B]): Stack[B] =
-    ((this: Stack[B]) /: elems)(_ push _)
-
-  /** Push all elements provided by the given traversable object onto
-   *  the stack. The last element returned by the iterable object
-   *  will be on top of the new stack.
-   *
-   *  @param   elems      the iterable object.
-   *  @return the stack with the new elements on top.
-   */
-  def pushAll[B >: A](elems: scala.collection.Traversable[B]): Stack[B] =
-    ((this: Stack[B]) /: elems)(_ push _)
+  def pushAll[B >: A](xs: TraversableOnce[B]): Stack[B] =
+    ((this: Stack[B]) /: xs.toIterator)(_ push _)
 
   /** Returns the top element of the stack. An error is signaled if
    *  there is no element on the stack.

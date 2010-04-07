@@ -28,7 +28,7 @@ object REPL {
   def process(args: Array[String]) {
     val settings = new Settings(error)
     reporter = new ConsoleReporter(settings)
-    val command = new CompilerCommand(args.toList, settings, error, false)
+    val command = new CompilerCommand(args.toList, settings)
     if (command.settings.version.value)
       reporter.info(null, versionMsg, true)
     else {

@@ -16,6 +16,9 @@ import generic._
 
 /** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
  *  that can be mutated.
+ *  $indexedSeqInfo
+ *
+ *  @since 2.8
  */
 trait IndexedSeq[A] extends Seq[A]
                    with scala.collection.IndexedSeq[A]

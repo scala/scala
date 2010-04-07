@@ -38,6 +38,4 @@ extends Settings(error) {
     BooleanSetting(
         "-nocompdaemon",
         "do not use the fsc compilation daemon")
-
-  val defines = DefinesSetting
 }

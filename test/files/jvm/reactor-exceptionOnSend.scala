@@ -3,7 +3,7 @@ import scala.actors.Actor._
 
 case class MyException(text: String) extends Exception(text)
 
-object A extends Reactor {
+object A extends Reactor[Any] {
   override def exceptionHandler = {
     case MyException(text) =>
       println("receiver handles exception")
@@ -29,7 +29,7 @@ object A extends Reactor {
   }
 }
 
-object B extends Reactor {
+object B extends Reactor[Any] {
   def act() {
     A.start()
     A ! 'hello

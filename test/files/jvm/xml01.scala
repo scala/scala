@@ -25,20 +25,18 @@ object Test extends Application with Assert {
     override def text = ""
   }
 
-  assertSameElements(List(3), List(3))
-
   println("equality")
-  assertEquals(c, parsedxml11)
-  assertEquals(parsedxml1, parsedxml11)
-  assertSameElements(List(parsedxml1), List(parsedxml11))
-  assertSameElements(Array(parsedxml1).toList, List(parsedxml11))
+  assertEqualsXML(c, parsedxml11)
+  assertEqualsXML(parsedxml1, parsedxml11)
+  assertSameElementsXML(List(parsedxml1), List(parsedxml11))
+  assertSameElementsXML(Array(parsedxml1).toList, List(parsedxml11))
 
   val x2 = "<book><author>Peter Buneman</author><author>Dan Suciu</author><title>Data on ze web</title></book>";
 
   val i = new InputSource(new StringReader(x2))
   val x2p = XML.load(i)
 
-  assertEquals(x2p, Elem(null, "book"  , e, sc,
+  assertEqualsXML(x2p, Elem(null, "book"  , e, sc,
                         Elem(null, "author", e, sc,Text("Peter Buneman")),
                         Elem(null, "author", e, sc,Text("Dan Suciu")),
                         Elem(null, "title" , e, sc,Text("Data on ze web"))));
@@ -51,9 +49,9 @@ object Test extends Application with Assert {
   println("xpath \\")
 
 
-  assertSameElements(parsedxml1 \ "_" ,    List(Elem(null,"world", e, sc)))
+  assertSameElementsXML(parsedxml1 \ "_" ,    List(Elem(null,"world", e, sc)))
 
-  assertSameElements(parsedxml1 \ "world", List(Elem(null,"world", e, sc)))
+  assertSameElementsXML(parsedxml1 \ "world", List(Elem(null,"world", e, sc)))
 
 /*
   Console.println( parsedxml2 \ "_" );
@@ -63,7 +61,7 @@ object Test extends Application with Assert {
   };
   */
 
-  assertSameElements(
+  assertSameElementsXML(
       parsedxml2 \ "_" ,
 
       List(
@@ -77,7 +75,7 @@ object Test extends Application with Assert {
   );
   assertEquals( (parsedxml2 \ "author").length, 0 );
 
-  assertSameElements(
+  assertSameElementsXML(
       parsedxml2 \ "book",
 
       List(
@@ -91,7 +89,7 @@ object Test extends Application with Assert {
       )
   );
 
-  assertSameElements(
+  assertSameElementsXML(
 
       parsedxml2 \ "_" \ "_",
 
@@ -104,7 +102,7 @@ object Test extends Application with Assert {
     )
   );
 
-  assertSameElements(
+  assertSameElementsXML(
 
       parsedxml2 \ "_" \ "author",
 
@@ -116,11 +114,11 @@ object Test extends Application with Assert {
 
   );
 
-  assertSameElements( (parsedxml2 \ "_" \ "_" \ "author"), List() );
+  assertSameElementsXML( (parsedxml2 \ "_" \ "_" \ "author"), List() );
 
   Console.println("xpath \\\\ DESCENDANTS");
 
-  assertSameElements(
+  assertSameElementsXML(
 
       parsedxml2 \\ "author",
 
@@ -133,7 +131,7 @@ object Test extends Application with Assert {
  );
 
 
-  assertSameElements(
+  assertSameElementsXML(
 
       parsedxml2 \\ "title",
 
@@ -144,10 +142,10 @@ object Test extends Application with Assert {
 
 
   println(
-    (parsedxml2 \\ "book" ){ n:Node => n \ "title" == "Data on ze web" }
+    (parsedxml2 \\ "book" ){ n:Node => (n \ "title") xml_== "Data on ze web" }
   );
 
-  assertEquals(
+  assertEqualsXML(
 
       (new NodeSeq { val theSeq = List( parsedxml2 ) }) \\ "_",
 
@@ -191,13 +189,13 @@ object Test extends Application with Assert {
 
     val zz1 = <xml:group><a/><b/><c/></xml:group>
 
-    assertTrue(zx1 == zz1)
+    assertTrue(zx1 xml_== zz1)
     assertTrue(zz1.length == 3)
 
     // unparsed
 
-    val uup = <xml:unparsed>&<<>""^%@$!#</xml:unparsed>
-    assertTrue(uup == "&<<>\"\"^%@$!#")
+    // val uup = <xml:unparsed>&<<>""^%@$!#</xml:unparsed>
+    // assertTrue(uup == "&<<>\"\"^%@$!#")
     // test unicode escapes backslash u
 
   println("attribute value normalization")

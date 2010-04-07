@@ -1,0 +1,6 @@
+t2949.scala:13: error: type mismatch;
+ found   : Int
+ required: ? @scala.util.continuations.cpsParam[List[?],Any]
+    x * y
+      ^
+one error found

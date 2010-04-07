@@ -40,7 +40,7 @@ package scala.collection
  *  <p>
  *    Note that no conversion is provided from <code>scala.collection.immutable.List</code>
  *    to <code>java.util.List</code>. Instead it is convertible to an immutable
- *    <code>java.util.Collection</code> which provides size and interation
+ *    <code>java.util.Collection</code> which provides size and interaction
  *    capabilities, but not access by index as would be provided by
  *    <code>java.util.List</code>.<br/>
  *    This is intentional: in combination the implementation of
@@ -497,9 +497,10 @@ object JavaConversions {
   case class MutableMapWrapper[A, B](underlying : mutable.Map[A, B])(m : ClassManifest[A])
   extends MutableMapWrapperLike[A, B](underlying)(m)
 
-  abstract class JMapWrapperLike[A, B, +Repr <: mutable.MapLike[A, B, Repr] with mutable.Map[A, B]]
-    (underlying: ju.Map[A, B])
+  trait JMapWrapperLike[A, B, +Repr <: mutable.MapLike[A, B, Repr] with mutable.Map[A, B]]
   extends mutable.Map[A, B] with mutable.MapLike[A, B, Repr] {
+    def underlying: ju.Map[A, B]
+
     override def size = underlying.size
 
     def get(k : A) = {
@@ -538,8 +539,8 @@ object JavaConversions {
     override def empty: Repr = null.asInstanceOf[Repr]
   }
 
-  case class JMapWrapper[A, B](underlying : ju.Map[A, B])
-  extends JMapWrapperLike[A, B, JMapWrapper[A, B]](underlying) {
+  case class JMapWrapper[A, B](val underlying : ju.Map[A, B])
+  extends JMapWrapperLike[A, B, JMapWrapper[A, B]] {
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
@@ -584,8 +585,8 @@ object JavaConversions {
 
   }
 
-  case class JConcurrentMapWrapper[A, B](underlying: juc.ConcurrentMap[A, B])
-  extends JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]](underlying) with mutable.ConcurrentMap[A, B] {
+  case class JConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B])
+  extends JMapWrapperLike[A, B, JConcurrentMapWrapper[A, B]] with mutable.ConcurrentMap[A, B] {
     override def get(k: A) = {
       val v = underlying.get(k)
       if (v != null) Some(v)

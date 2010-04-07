@@ -24,7 +24,6 @@ import generic._
  */
 @serializable @cloneable
 class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
-
   /** Adds all elements to the queue.
    *
    *  @param  elems       the elements to add.
@@ -143,4 +142,9 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
    *  @return the first element.
    */
   def front: A = first0.elem
+}
+
+// !!! TODO - integrate
+object Queue {
+  def apply[A](xs: A*): Queue[A] = new Queue[A] ++= xs
 }

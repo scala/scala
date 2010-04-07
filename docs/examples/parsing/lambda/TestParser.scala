@@ -20,7 +20,7 @@ trait TestParser extends StdTokenParsers  with ImplicitConversions with TestSynt
 
 	def name : Parser[Name] = ident ^^ Name
 
-  // meaning of the argumens to the closure during subsequent iterations
+  // meaning of the arguments to the closure during subsequent iterations
   // (...(expr2 op1 expr1) ... op1 expr1)
   //      ^a^^^ ^o^ ^b^^^
   //      ^^^^^^^a^^^^^^^      ^o^ ^^b^^

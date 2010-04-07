@@ -7,12 +7,11 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.tools.nsc.util._
-import Chars.{LF, FF, CR, SU}
+import Chars._
 import Tokens._
 import scala.annotation.switch
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.xml.Utility.{ isNameStart }
-import util.Chars._
 
 trait Scanners {
   val global : Global
@@ -60,7 +59,7 @@ trait Scanners {
 
     def resume(lastCode: Int) = {
       token = lastCode
-      assert(next.token == EMPTY)
+      assert(next.token == EMPTY || reporter.hasErrors)
       nextToken()
     }
 
@@ -318,7 +317,7 @@ trait Scanners {
           if (ch == '\"') {
             nextChar()
             if (ch == '\"') {
-              nextChar()
+              nextRawChar()
               val saved = lineStartOffset
               getMultiLineStringLit()
               if (lineStartOffset != saved) // ignore linestarts within a multi-line string
@@ -561,9 +560,9 @@ trait Scanners {
 
     private def getMultiLineStringLit() {
       if (ch == '\"') {
-        nextChar()
+        nextRawChar()
         if (ch == '\"') {
-          nextChar()
+          nextRawChar()
           if (ch == '\"') {
             nextChar()
             while (ch == '\"') {
@@ -585,7 +584,7 @@ trait Scanners {
         incompleteInputError("unclosed multi-line string literal")
       } else {
         putChar(ch)
-        nextChar()
+        nextRawChar()
         getMultiLineStringLit()
       }
     }
@@ -803,7 +802,7 @@ trait Scanners {
     }
 
     /** Parse character literal if current character is followed by \',
-     *  or follow with given op and return a symol literal token
+     *  or follow with given op and return a symbol literal token
      */
     def charLitOr(op: () => Unit) {
       putChar(ch)
@@ -1015,7 +1014,7 @@ trait Scanners {
   class UnitScanner(unit: CompilationUnit, patches: List[BracePatch]) extends Scanner {
     def this(unit: CompilationUnit) = this(unit, List())
     val buf = unit.source.asInstanceOf[BatchSourceFile].content
-    val decodeUnit = !settings.nouescape.value
+    override val decodeUni: Boolean = !settings.nouescape.value
 
     def warning(off: Offset, msg: String) = unit.warning(unit.position(off), msg)
     def error  (off: Offset, msg: String) = unit.error(unit.position(off), msg)

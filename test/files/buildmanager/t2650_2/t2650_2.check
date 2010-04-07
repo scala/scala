@@ -1,0 +1,13 @@
+builder > A.scala B.scala
+compiling Set(A.scala, B.scala)
+Changes: Map()
+builder > A.scala
+compiling Set(A.scala)
+Changes: Map(trait A -> List(Changed(Definition(A.S))[type S changed from A.this.S to A.this.S flags: ]))
+invalidate B.scala because inherited method changed [Changed(Definition(A.S))[type S changed from A.this.S to A.this.S flags: ]]
+compiling Set(B.scala)
+B.scala:3: error: type mismatch;
+ found   : B.this.S
+ required: Int
+  def y: Int = x
+               ^

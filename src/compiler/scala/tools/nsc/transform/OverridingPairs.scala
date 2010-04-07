@@ -15,7 +15,7 @@ import annotation.tailrec
 /** A class that yields a kind of iterator (`Cursor`),
  *  which yields all pairs of overriding/overridden symbols
  *  that are visible in some baseclass, unless there's a parent class
- *  that aleady contains the same pairs.
+ *  that already contains the same pairs.
  *  @author Martin Odersky
  *  @version 1.0
  */
@@ -42,7 +42,7 @@ abstract class OverridingPairs {
      */
     protected def parents: List[Type] = base.info.parents
 
-    /** Does `sym1` match `sym2` so that it qualifies as overiding.
+    /** Does `sym1` match `sym2` so that it qualifies as overriding.
      *  Types always match. Term symbols match if their membertypes
      *  relative to <base>.this do
      */
@@ -99,8 +99,8 @@ abstract class OverridingPairs {
 
     private val size = base.info.baseClasses.length
 
-    /** A map from baseclasses of <base> to ints, with smaller ints meansing lower in
-     *  lineraizatuon order.
+    /** A map from baseclasses of <base> to ints, with smaller ints meaning lower in
+     *  linearization order.
      */
     private val index = new HashMap[Symbol, Int]
 
@@ -176,13 +176,13 @@ abstract class OverridingPairs {
     /** The current entry candidate for overridden */
     private var nextEntry = curEntry
 
-    /** The current candidate symbol for overridding */
+    /** The current candidate symbol for overriding */
     var overriding: Symbol = _
 
-    /** If not null: The symbol overridden by overridding */
+    /** If not null: The symbol overridden by overriding */
     var overridden: Symbol = _
 
-    //@M: note that next is called once during object initialisation
+    //@M: note that next is called once during object initialization
     def hasNext: Boolean = curEntry ne null
 
     @tailrec

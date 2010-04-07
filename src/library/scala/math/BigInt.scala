@@ -102,7 +102,7 @@ object BigInt {
    */
   implicit def int2bigInt(i: Int): BigInt = apply(i)
 
-  /** Implicit copnversion from long to BigInt
+  /** Implicit conversion from long to BigInt
    */
   implicit def long2bigInt(l: Long): BigInt = apply(l)
 }

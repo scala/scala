@@ -1,0 +1,6 @@
+function0.scala:11: error: type mismatch;
+ found   : () => Int @scala.util.continuations.cpsParam[Int,Int]
+ required: () => Int
+    val g: () => Int = f
+                       ^
+one error found

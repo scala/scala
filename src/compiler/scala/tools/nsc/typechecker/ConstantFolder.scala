@@ -42,7 +42,7 @@ abstract class ConstantFolder {
   private def fold(tree: Tree, compX: => Constant): Tree =
     try {
       val x = compX
-      if ((x ne null) && x.tag != UnitTag) tree setType mkConstantType(x)
+      if ((x ne null) && x.tag != UnitTag) tree setType ConstantType(x)
       else tree
     } catch {
       case _: ArithmeticException => tree   // the code will crash at runtime,
@@ -154,7 +154,7 @@ abstract class ConstantFolder {
   private def foldBinop(op: Name, x: Constant, y: Constant): Constant = {
     val optag =
       if (x.tag == y.tag) x.tag
-      else if (isNumeric(x.tag) && isNumeric(y.tag)) math.max(x.tag, y.tag)
+      else if (x.isNumeric && y.isNumeric) math.max(x.tag, y.tag)
       else NoTag
 
     try optag match {

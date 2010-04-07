@@ -11,22 +11,19 @@
 package scala.actors
 package scheduler
 
+import util.Properties.{ javaVersion, javaVmVendor, isJavaAtLeast, propIsSetTo, propOrNone }
+
 /**
  * @author Erik Engbrecht
+ * @author Philipp Haller
  */
-object ThreadPoolConfig {
+private[actors] object ThreadPoolConfig {
   private val rt = Runtime.getRuntime()
   private val minNumThreads = 4
 
-  private def getIntegerProp(propName: String): Option[Int] = {
-    try {
-      val prop = System.getProperty(propName)
-      Some(Integer.parseInt(prop))
-    } catch {
-      case ace: java.security.AccessControlException => None
-      case nfe: NumberFormatException => None
-    }
-  }
+  private def getIntegerProp(propName: String): Option[Int] =
+    try propOrNone(propName) map (_.toInt)
+    catch { case _: SecurityException | _: NumberFormatException => None }
 
   val corePoolSize = getIntegerProp("actors.corePoolSize") match {
     case Some(i) if i > 0 => i
@@ -37,30 +34,21 @@ object ThreadPoolConfig {
   }
 
   val maxPoolSize = {
-    val preMaxSize = getIntegerProp("actors.maxPoolSize") match {
-      case Some(i) => i
-      case _       => 256
-    }
+    val preMaxSize = getIntegerProp("actors.maxPoolSize") getOrElse 256
     if (preMaxSize >= corePoolSize) preMaxSize else corePoolSize
   }
 
   private[actors] def useForkJoin: Boolean =
-    try {
-      val fjProp = System.getProperty("actors.enableForkJoin")
-      if (fjProp != null)
-        fjProp.equals("true")
-      else {
-        val javaVersion = System.getProperty("java.version")
-        val jvmVendor =   System.getProperty("java.vm.vendor")
+    try !propIsSetTo("actors.enableForkJoin", "false") &&
+      (propIsSetTo("actors.enableForkJoin", "true") || {
         Debug.info(this+": java.version = "+javaVersion)
-        Debug.info(this+": java.vm.vendor = "+jvmVendor)
-        (javaVersion.indexOf("1.6") != -1 ||
-         javaVersion.indexOf("1.7") != -1) &&
-        // on IBM J9 1.6 do not use ForkJoinPool
-        (jvmVendor.indexOf("Sun") != -1)
-      }
-    } catch {
-      case se: SecurityException => false
-    }
+        Debug.info(this+": java.vm.vendor = "+javaVmVendor)
 
+        // on IBM J9 1.6 do not use ForkJoinPool
+        // XXX this all needs to go into Properties.
+        isJavaAtLeast("1.6") && ((javaVmVendor contains "Sun") || (javaVmVendor contains "Apple"))
+      })
+    catch {
+      case _: SecurityException => false
+    }
 }

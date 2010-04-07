@@ -31,7 +31,7 @@ object DocStrings {
 
   /** Returns index of string `str` after `start` skipping longest
    *  sequence of space and tab characters, possibly also containing
-   *  a single `*' character.
+   *  a single `*' character or the `/``**` sequence.
    *  @pre  start == str.length || str(start) == `\n'
    */
   def skipLineLead(str: String, start: Int): Int =
@@ -39,16 +39,19 @@ object DocStrings {
     else {
       val idx = skipWhitespace(str, start + 1)
       if (idx < str.length && (str charAt idx) == '*') skipWhitespace(str, idx + 1)
+      else if (idx + 2 < str.length && (str charAt idx) == '/' && (str charAt (idx + 1)) == '*' && (str charAt (idx + 2)) == '*')
+        skipWhitespace(str, idx + 3)
       else idx
     }
 
-  /** Skips to next occurrence of `\n' following index `start`.
+  /** Skips to next occurrence of `\n' or to the position after the `/``**` sequence following index `start`.
    */
   def skipToEol(str: String, start: Int): Int =
-    if (start < str.length && (str charAt start) != '\n') skipToEol(str, start + 1)
+    if (start + 2 < str.length && (str charAt start) == '/' && (str charAt (start + 1)) == '*' && (str charAt (start + 2)) == '*') start + 3
+    else if (start < str.length && (str charAt start) != '\n') skipToEol(str, start + 1)
     else start
 
-  /** Returns first index following `start` and starting a line (i.e. after skipLineLead)
+  /** Returns first index following `start` and starting a line (i.e. after skipLineLead) or starting the comment
    *  which satisfies predicate `p'.
    */
   def findNext(str: String, start: Int)(p: Int => Boolean): Int = {
@@ -70,7 +73,7 @@ object DocStrings {
    *  pairs of start/end positions of all tagged sections in the string.
    *  Every section starts with a `@' and extends to the next `@', or
    *  to the end of the comment string, but excluding the final two
-   *  charcters which terminate the comment.
+   *  characters which terminate the comment.
    */
   def tagIndex(str: String, p: Int => Boolean = (idx => true)): List[(Int, Int)] =
     findAll(str, 0) (idx => str(idx) == '@' && p(idx)) match {

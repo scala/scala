@@ -189,7 +189,7 @@ trait BasicBlocks {
       var i = 0
       var changed = false
       while (i < instrs.length && !changed) {
-        if (instrs(i) == oldInstr) {
+        if (instrs(i) eq oldInstr) {
           newInstr.setPos(oldInstr.pos)
           instrs(i) = newInstr
           changed = true
@@ -201,7 +201,7 @@ trait BasicBlocks {
     }
 
     /** Replaces <code>iold</code> with <code>is</code>. It does not update
-     *  the position field in the newly inserted instrucitons, so it behaves
+     *  the position field in the newly inserted instructions, so it behaves
      *  differently than the one-instruction versions of this function.
      *
      *  @param iold ..
@@ -335,7 +335,7 @@ trait BasicBlocks {
     }
 
     /** Emitting does not set touched to true. During code generation this is a hotspot and
-     *  setting the flag for each emit is a waste. Caching should happend only after a block
+     *  setting the flag for each emit is a waste. Caching should happen only after a block
      *  is closed, which sets the DIRTYSUCCS flag.
      */
     def emit(instr: Instruction, pos: Position) {
@@ -490,10 +490,10 @@ trait BasicBlocks {
         ss ++ (ss flatMap findSucc)
       }
 
-      succs.flatMap(findSucc).removeDuplicates
+      succs.flatMap(findSucc).distinct
     }
 
-    /** Returns the precessors of this block.     */
+    /** Returns the predecessors of this block.     */
     def predecessors: List[BasicBlock] = {
       if (hasFlag(DIRTYPREDS)) {
         resetFlag(DIRTYPREDS)

@@ -13,9 +13,7 @@ import java.io.{ StringWriter, PrintWriter }
 /** Ancillary bits of ParallelMatching which are better off
  *  out of the way.
  */
-trait MatchSupport extends ast.TreeDSL
-{
-  self: ParallelMatching =>
+trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
 
   import global.{ typer => _, _ }
   import CODE._
@@ -24,28 +22,15 @@ trait MatchSupport extends ast.TreeDSL
   private final def trace = settings.Ypmatdebug.value
 
   def impossible:           Nothing = abort("this never happens")
-  def abort(msg: String):   Nothing = Predef.error(msg)
 
   object Types {
     import definitions._
     implicit def enrichType(x: Type): RichType = new RichType(x)
 
-    // see bug1434.scala for an illustration of why "x <:< y" is insufficient.
-    // this code is definitely inadequate at best.  Inherited comment:
-    //
-    //   an approximation of _tp1 <:< tp2 that ignores _ types. this code is wrong,
-    //   ideally there is a better way to do it, and ideally defined in Types.scala
-    private[matching] def matches(arg1: Type, arg2: Type) = {
-      val List(t1, t2) = List(arg1, arg2) map decodedEqualsType
-      def eqSymbols = t1.typeSymbol eq t2.typeSymbol
-      //  note: writing this as "t1.baseTypeSeq exists (_ =:= t2)" does not lead to 1434 passing.
-      def isSubtype = t1.baseTypeSeq exists (_.typeSymbol eq t2.typeSymbol)
-
-      (t1 <:< t2) || ((t1, t2) match {
-        case (_: TypeRef, _: TypeRef) => !t1.isArray && (t1.prefix =:= t2.prefix) && (eqSymbols || isSubtype)
-        case _ => false
-      })
-    }
+    // A subtype test which creates fresh existentials for type
+    // parameters on the right hand side.
+    private[matching] def matches(arg1: Type, arg2: Type) =
+      decodedEqualsType(arg1) matchesPattern decodedEqualsType(arg2)
 
     class RichType(undecodedTpe: Type) {
       def tpe = decodedEqualsType(undecodedTpe)
@@ -102,24 +87,11 @@ trait MatchSupport extends ast.TreeDSL
 
       pp(x match {
         case s: String      => return clean(s)
-        case x: Tree        => treeToCompactString(x)
+        case x: Tree        => asCompactString(x)
         case xs: List[_]    => pplist(xs map pp)
         case x: Tuple2[_,_] => "%s -> %s".format(pp(x._1), pp(x._2))
         case x              => x.toString
       })
-    }
-
-    object compactTreePrinter extends CompactTreePrinter
-
-    // def treeChildrenString(t: Tree): String =
-    //   nodeToString(t)
-
-    def treeToCompactString(t: Tree): String = {
-      val buffer = new StringWriter()
-      val printer = compactTreePrinter.create(new PrintWriter(buffer))
-      printer.print(t)
-      printer.flush()
-      buffer.toString
     }
 
     def ifDebug(body: => Unit): Unit          = { if (settings.debug.value) body }
@@ -166,121 +138,4 @@ trait MatchSupport extends ast.TreeDSL
    */
   def extractIndex[T](xs: List[T], n: Int): (T, List[T]) =
     (xs(n), dropIndex(xs, n))
-
-  /** A tree printer which is stingier about vertical whitespace and unnecessary
-   *  punctuation than the standard one.
-   */
-  class CompactTreePrinter extends {
-    val trees: global.type = global
-  } with TreePrinters {
-      import trees._
-
-      override def create(writer: PrintWriter): TreePrinter = new TreePrinter(writer) {
-        // drill down through Blocks and pull out the real statements.
-        def allStatements(t: Tree): List[Tree] = t match {
-          case Block(stmts, expr) => (stmts flatMap allStatements) ::: List(expr)
-          case _                  => List(t)
-        }
-
-        def printLogicalOr(t1: (Tree, Boolean), t2: (Tree, Boolean)) =
-          printLogicalOp(t1, t2, "||")
-
-        def printLogicalAnd(t1: (Tree, Boolean), t2: (Tree, Boolean)) =
-          printLogicalOp(t1, t2, "&&")
-
-        def printLogicalOp(t1: (Tree, Boolean), t2: (Tree, Boolean), op: String) = {
-          def maybenot(tvalue: Boolean) = if (tvalue) "" else "!"
-
-          printRow(List(t1._1, t2._1),
-            " %s(" format maybenot(t1._2),
-            ") %s %s(".format(op, maybenot(t2._2)),
-            ")"
-          )
-        }
-
-        override def printRaw(tree: Tree): Unit = {
-          // routing supercalls through this for debugging ease
-          def s() = super.printRaw(tree)
-
-          tree match {
-            // labels used for jumps - does not map to valid scala code
-            case LabelDef(name, params, rhs) =>
-              print("labeldef %s(%s) = ".format(name, params mkString ","))
-              printRaw(rhs)
-
-            // target.method(arg) ==> target method arg
-            case Apply(Select(target, method), List(arg)) =>
-              (target, arg) match {
-                case (_: Ident, _: Literal | _: Ident)  =>
-                  printRaw(target)
-                  print(" %s " format symName(tree, method))
-                  printRaw(arg)
-                case _                        => s()
-              }
-
-            // target.unary_! ==> !target
-            case Select(qualifier, name) =>
-              val n = symName(tree, name)
-              if (n startsWith "unary_") {
-                print(n drop 6)
-                print(qualifier)
-              }
-              else s()
-
-            // target.toString() ==> target.toString
-            case Apply(fn, Nil)   => printRaw(fn)
-
-            // if a Block only continues one actual statement, just print it.
-            case Block(stats, expr) =>
-              allStatements(tree) match {
-                case List(x)            => printRow(List(x), "", ";", "")
-                case _                  => s()
-              }
-
-            // We get a lot of this stuff
-            case If( IsTrue(), x, _)        => printRaw(x)
-            case If(IsFalse(), _, x)        => printRaw(x)
-
-            case If(cond,  IsTrue(), elsep) =>
-              printLogicalOr(cond -> true, elsep -> true)
-
-            case If(cond, IsFalse(), elsep) =>
-              printLogicalAnd(cond -> false, elsep -> true)
-
-            case If(cond,  thenp, IsTrue()) =>
-              printLogicalOr(cond -> false, thenp -> true)
-
-            case If(cond,  thenp, IsFalse()) =>
-              printLogicalAnd(cond -> true, thenp -> true)
-
-            // If thenp or elsep has only one statement, it doesn't need more than one line.
-            case If(cond, thenp, elsep) =>
-              printRow(List(cond), "if (", "", ") ")
-
-              def ifIndented(x: Tree) = {
-                indent ; println ; printRaw(x) ; undent
-              }
-
-              indent ; println ;
-              allStatements(thenp) match {
-                case List(x: If)  => ifIndented(x)
-                case List(x)      => printRaw(x)
-                case _            => printRaw(thenp)
-              }
-              undent ; println ;
-              val elseStmts = allStatements(elsep)
-              if (!elseStmts.isEmpty) {
-                print("else")
-                indent ; println
-                elseStmts match {
-                  case List(x)      => printRaw(x)
-                  case xs           => printRaw(elsep)
-                }
-                undent ; println
-              }
-            case _        => s()
-          }
-        }
-      }
-  }
 }

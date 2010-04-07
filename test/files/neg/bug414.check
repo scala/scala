@@ -1,7 +1,3 @@
-bug414.scala:1: warning: case classes without a parameter list have been deprecated;
-use either case objects or case classes with `()' as parameter list.
-case class Empty[a] extends IntMap[a];
-                    ^
 bug414.scala:5: error: pattern type is incompatible with expected type;
  found   : object Empty
  required: IntMap[a]
@@ -12,5 +8,4 @@ bug414.scala:7: error: type mismatch;
  required: a
                 case _ =>
                        ^
-one warning found
 two errors found

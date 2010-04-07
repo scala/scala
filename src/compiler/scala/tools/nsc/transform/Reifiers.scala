@@ -18,11 +18,14 @@ trait Reifiers {
     if (sym.isClass) reflect.Class(fullname)
     else if (sym.isType) reflect.TypeField(fullname, reify(sym.info))
     else if (sym.isMethod) reflect.Method(fullname, reify(sym.info))
+    else if (sym.isValueParameter) reflect.LocalValue(reflect.NoSymbol, fullname, reify(sym.info))
     else reflect.Field(fullname, reify(sym.info));
 
   def reify(sym: Symbol): reflect.Symbol = {
     if (sym.isRoot || sym.isRootPackage || sym.isEmptyPackageClass || sym.isEmptyPackage)
       reflect.RootSymbol
+    else if (sym.isValueParameter)
+      mkGlobalSymbol(sym.name.toString, sym)
     else if (sym.owner.isTerm)
       reflect.NoSymbol
     else reify(sym.owner) match {
@@ -215,8 +218,6 @@ trait Reifiers {
         val rsym = reify(tree.symbol);
         if (rsym == reflect.NoSymbol) throw new TypeError("cannot reify symbol: " + tree.symbol)
         else reflect.Select(reify(qual), reify(tree.symbol))
-
-      case _ : StubTree => reflect.Literal(0)
 
       case Literal(constant) =>
         reflect.Literal(constant.value)

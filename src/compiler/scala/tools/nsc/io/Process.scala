@@ -6,7 +6,7 @@ package scala.tools.nsc
 package io
 
 import concurrent.ThreadRunner
-import scala.util.Properties.{ isWin, isMac }
+import scala.util.Properties.{ isWin, isMac, lineSeparator }
 import scala.util.control.Exception.catching
 import java.lang.{ Process => JProcess, ProcessBuilder => JProcessBuilder }
 import java.io.{ IOException, InputStream, OutputStream, BufferedReader, InputStreamReader, PrintWriter, File => JFile }
@@ -34,7 +34,11 @@ import java.util.concurrent.LinkedBlockingQueue
 
 object Process
 {
-  lazy val javaVmArguments = java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments()
+  def javaVmArguments: List[String] = {
+    import collection.JavaConversions._
+
+    java.lang.management.ManagementFactory.getRuntimeMXBean().getInputArguments().toList
+  }
   lazy val runtime = Runtime.getRuntime()
 
   class Pipe[T](xs: Seq[T], stringify: T => String) {
@@ -42,7 +46,6 @@ object Process
       val p = Process(cmd)
       xs foreach (x => p.stdin println stringify(x))
       p.stdin.close()
-      p.stdin.flush()
       p.stdout.toList
     }
   }
@@ -64,8 +67,7 @@ object Process
     }
   }
 
-  private[Process] class ProcessBuilder(val pb: JProcessBuilder)
-  {
+  private[Process] class ProcessBuilder(val pb: JProcessBuilder) {
     def this(cmd: String*) = this(new JProcessBuilder(cmd: _*))
     def start() = new Process(() => pb.start())
 
@@ -82,7 +84,7 @@ object Process
       this
     }
 
-    def withCwd(cwd: File): this.type = {
+    def withCwd(cwd: Path): this.type = {
       if (cwd != null)
         pb directory cwd.jfile
 
@@ -109,10 +111,10 @@ object Process
   def apply(
     command: String,
     env: Map[String, String] = null,
-    cwd: File = null,
+    cwd: Path = null,
     redirect: Boolean = false
   ): Process =
-      exec(shell(command), env, cwd)
+      exec(shell(command), env, cwd, redirect)
 
   /** Executes the given command line.
    *
@@ -122,15 +124,14 @@ object Process
   def exec(
     command: Seq[String],
     env: Map[String, String] = null,
-    cwd: File = null,
+    cwd: Path = null,
     redirect: Boolean = false
   ): Process =
-      new ProcessBuilder(command: _*) withEnv env withCwd cwd start
+      new ProcessBuilder(command: _*) withEnv env withCwd cwd withRedirectedErrorStream redirect start
 }
 import Process._
 
-class Process(processCreator: () => JProcess) extends Iterable[String]
-{
+class Process(processCreator: () => JProcess) extends Iterable[String] {
   lazy val process = processCreator()
 
   def exitValue(): Option[Int] =
@@ -140,6 +141,7 @@ class Process(processCreator: () => JProcess) extends Iterable[String]
   def destroy() = process.destroy()
   def rerun() = new Process(processCreator)
 
+  def slurp()   = _out.slurp()
   def stdout    = iterator
   def iterator  = _out.iterator
   def stderr    = _err.iterator
@@ -148,6 +150,11 @@ class Process(processCreator: () => JProcess) extends Iterable[String]
   class StreamedConsumer(in: InputStream) extends Thread with Iterable[String] {
     private val queue = new LinkedBlockingQueue[String]
     private val reader = new BufferedReader(new InputStreamReader(in))
+
+    def slurp(): String = {
+      join()
+      queue.toArray map (_ + lineSeparator) mkString
+    }
 
     def iterator = {
       join()  // make sure this thread is complete
@@ -160,6 +167,7 @@ class Process(processCreator: () => JProcess) extends Iterable[String]
     override def run() {
       reader.readLine match {
         case null =>
+          in.close()
         case x    =>
           queue put x
           run()

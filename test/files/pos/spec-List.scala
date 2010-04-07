@@ -23,10 +23,10 @@ import annotation.tailrec
  *  @author  Martin Odersky and others
  *  @version 2.8
  */
-sealed abstract class List[@specialized +A] extends LinearSeq[A]
+sealed trait List[@specialized +A] extends LinearSeq[A]
                                   with Product
                                   with GenericTraversableTemplate[A, List]
-                                  with LinearSeqLike[A, List[A]] {
+                                  with LinearSeqOptimized[A, List[A]] {
   override def companion: GenericCompanion[List] = List
 
   import scala.collection.{Iterable, Traversable, Seq}
@@ -144,17 +144,11 @@ sealed abstract class List[@specialized +A] extends LinearSeq[A]
   /** Create a new list which contains all elements of this list
    *  followed by all elements of Traversable `that'
    */
-  override def ++[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
+  override def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
     val b = bf(this)
-    if (b.isInstanceOf[ListBuffer[_]]) (this ::: that.toList).asInstanceOf[That]
-    else super.++(that)
+    if (b.isInstanceOf[ListBuffer[_]]) (this ::: xs.toList).asInstanceOf[That]
+    else super.++(xs)
   }
-
-  /** Create a new list which contains all elements of this list
-   *  followed by all elements of Iterator `that'
-   */
-  override def ++[B >: A, That](that: Iterator[B])(implicit bf: CanBuildFrom[List[A], B, That]): That =
-    this ++ that.toList
 
   /** Overrides the method in Iterable for efficiency.
    *
@@ -654,7 +648,7 @@ object List extends SeqFactory[List] {
    *
    *  @param arr   the array to convert
    *  @param start the first index to consider
-   *  @param len   the lenght of the range to convert
+   *  @param len   the length of the range to convert
    *  @return      a list that contains the same elements than <code>arr</code>
    *               in the same order
    */

@@ -11,7 +11,7 @@
 
 package scala.collection
 
-import mutable.{ListBuffer, HashMap, GenericArray}
+import mutable.{ListBuffer, HashMap, ArraySeq}
 import immutable.{List, Range}
 import generic._
 
@@ -169,7 +169,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  @param  idx  The index to select.
    *  @return the element of this $coll at index `idx`, where `0` indicates the first element.
-   *  @throws `IndexOutOfBoundsEsxception` if `idx` does not satisfy `0 <= idx < length`.
+   *  @throws `IndexOutOfBoundsException` if `idx` does not satisfy `0 <= idx < length`.
    */
   def apply(idx: Int): A
 
@@ -212,7 +212,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < length)
 
-  /** Computes length of longest segment whose elements all satisfy some preficate.
+  /** Computes length of longest segment whose elements all satisfy some predicate.
    *
    *  $mayNotTerminateInf
    *
@@ -229,7 +229,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     i
   }
 
-  /** Returns the length of the longest prefix whose elements all satisfy some preficate.
+  /** Returns the length of the longest prefix whose elements all satisfy some predicate.
    *
    *  $mayNotTerminateInf
    *
@@ -261,12 +261,15 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   def indexWhere(p: A => Boolean, from: Int): Int = {
     var i = from
     var it = iterator.drop(from)
-    while (it.hasNext && !p(it.next()))
-      i += 1
-    if (it.hasNext) i else -1
+    while (it.hasNext) {
+      if (p(it.next())) return i
+      else i += 1
+    }
+
+    -1
   }
 
-  /** Returns index of the first element satisying a predicate, or `-1`.
+  /** Returns index of the first element satisfying a predicate, or `-1`.
    */
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
@@ -491,7 +494,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test
-   *  @param  end     the end idnex
+   *  @param  end     the end index
    *  @return  the last index `<= end` such that the elements of this $coll starting at this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
@@ -557,7 +560,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
    */
-  def diff[B >: A, That](that: Seq[B]): Repr = {
+  def diff[B >: A](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
     for (x <- this)
@@ -585,7 +588,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
    */
-  def intersect[B >: A, That](that: Seq[B]): Repr = {
+  def intersect[B >: A](that: Seq[B]): Repr = {
     val occ = occCounts(that)
     val b = newBuilder
     for (x <- this)
@@ -607,7 +610,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  @return  A new $coll which contains the first occurrence of every element of this $coll.
    */
-  def removeDuplicates: Repr = {
+  def distinct: Repr = {
     val b = newBuilder
     var seen = Set[A]() //TR: should use mutable.HashSet?
     for (x <- this) {
@@ -627,7 +630,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @tparam B        the element type of the returned $coll.
    *  @tparam That     $thatinfo
    *  @param bf        $bfinfo
-   *  @return          a new collection of type `That` consisting of all elements of this $coll
+   *  @return          a new $coll consisting of all elements of this $coll
    *                   except that `replaced` elements starting from `from` are replaced
    *                   by `patch`.
    *  @usecase def patch(from: Int, that: Seq[A], replaced: Int): $Coll[A]
@@ -650,7 +653,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @tparam B        the element type of the returned $coll.
    *  @tparam That     $thatinfo
    *  @param bf        $bfinfo
-   *  @return a new collection of type `That` which is a copy of this $coll with the element at position `index` replaced by `elem`.
+   *  @return a new $coll` which is a copy of this $coll with the element at position `index` replaced by `elem`.
    *  @usecase def updated(index: Int, elem: A): $Coll[A]
    *  @return a copy of this $coll with the element at position `index` replaced by `elem`.
    */
@@ -721,7 +724,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     b ++= thisCollection
     while (diff > 0) {
       b += elem
-      diff -=1
+      diff -= 1
     }
     b.result
   }
@@ -757,37 +760,12 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *              the desired ordering.
    *  @return     a $coll consisting of the elements of this $coll
    *              sorted according to the comparison function `lt`.
-   *  @ex {{{
+   *  @example {{{
    *    List("Steve", "Tom", "John", "Bob").sortWith(_.compareTo(_) < 0) =
    *    List("Bob", "John", "Steve", "Tom")
    *  }}}
    */
-  def sortWith(lt: (A, A) => Boolean): Repr = sortWith(Ordering fromLessThan lt)
-
-  /** Sorts this $coll according to an Ordering.
-   *
-   *  The sort is stable. That is, elements that are equal wrt `lt` appear in the
-   *  same order in the sorted sequence as in the original.
-   *
-   *  @see scala.math.Ordering
-   *
-   *  @param  ord the ordering to be used to compare elements.
-   *  @return     a $coll consisting of the elements of this $coll
-   *              sorted according to the ordering `ord`.
-   */
-  def sortWith[B >: A](ord: Ordering[B]): Repr = {
-    val arr = new GenericArray[A](this.length)
-    var i = 0
-    for (x <- this) {
-      arr(i) = x
-      i += 1
-    }
-    java.util.Arrays.sort(
-      arr.array, ord.asInstanceOf[Ordering[Object]])
-    val b = newBuilder
-    for (x <- arr) b += x
-    b.result
-  }
+  def sortWith(lt: (A, A) => Boolean): Repr = sorted(Ordering fromLessThan lt)
 
   /** Sorts this $Coll according to the Ordering which results from transforming
    *  an implicitly given Ordering with a transformation function.
@@ -802,14 +780,38 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *           sorted according to the ordering where `x < y` if
    *           `ord.lt(f(x), f(y))`.
    *
-   *  @ex {{{
+   *  @example {{{
    *    val words = "The quick brown fox jumped over the lazy dog".split(' ')
    *    // this works because scala.Ordering will implicitly provide an Ordering[Tuple2[Int, Char]]
    *    words.sortBy(x => (x.length, x.head))
    *    res0: Array[String] = Array(The, dog, fox, the, lazy, over, brown, quick, jumped)
    *  }}}
    */
-  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sortWith(ord on f)
+  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): Repr = sorted(ord on f)
+
+  /** Sorts this $coll according to an Ordering.
+   *
+   *  The sort is stable. That is, elements that are equal wrt `lt` appear in the
+   *  same order in the sorted sequence as in the original.
+   *
+   *  @see scala.math.Ordering
+   *
+   *  @param  ord the ordering to be used to compare elements.
+   *  @return     a $coll consisting of the elements of this $coll
+   *              sorted according to the ordering `ord`.
+   */
+  def sorted[B >: A](implicit ord: Ordering[B]): Repr = {
+    val arr = new ArraySeq[A](this.length)
+    var i = 0
+    for (x <- this) {
+      arr(i) = x
+      i += 1
+    }
+    java.util.Arrays.sort(arr.array, ord.asInstanceOf[Ordering[Object]])
+    val b = newBuilder
+    for (x <- arr) b += x
+    b.result
+  }
 
   /** Converts this $coll to a sequence.
    *  $willNotTerminateInf
@@ -820,7 +822,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Produces the range of all indices of this sequence.
    *
-   *  @range  a `Range` value from `0` to one less than the length of this $coll.
+   *  @return  a `Range` value from `0` to one less than the length of this $coll.
    */
   def indices: Range = 0 until length
 
@@ -839,16 +841,17 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   override def hashCode() = (Seq.hashSeed /: this)(_ * 41 + _.hashCode)
 
   override def equals(that: Any): Boolean = that match {
-    case that: Seq[_]  => (that canEqual this) && (this sameElements that)
-    case _                  => false
+    case that: Seq[_] => (that canEqual this) && (this sameElements that)
+    case _            => false
   }
 
   /* Need to override string, so that it's not the Function1's string that gets mixed in.
    */
   override def toString = super[IterableLike].toString
 
-  /** Returns index of the last element satisying a predicate, or -1.
+  /** Returns index of the last element satisfying a predicate, or -1.
    */
+  @deprecated("use `lastIndexWhere` instead")
   def findLastIndexOf(p: A => Boolean): Int = lastIndexWhere(p)
 
   /** Tests whether every element of this $coll relates to the
@@ -862,15 +865,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                  and `y` of `that`, otherwise `false`.
    */
   @deprecated("use `corresponds` instead")
-  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = {
-    val i = this.iterator
-    val j = that.iterator
-    while (i.hasNext && j.hasNext)
-      if (!f(i.next, j.next))
-        return false
-
-    !i.hasNext && !j.hasNext
-  }
+  def equalsWith[B](that: Seq[B])(f: (A,B) => Boolean): Boolean = corresponds(that)(f)
 
  /**
    * returns a projection that can be used to call non-strict <code>filter</code>,

@@ -58,18 +58,13 @@ abstract class CopyPropagation {
 
     class State(val bindings: Bindings, var stack: List[Value]) {
       override def equals(that: Any): Boolean =
-        (this eq that.asInstanceOf[AnyRef]) ||
-        that.isInstanceOf[State] && {
-          val other = that.asInstanceOf[State]
-
+        (this eq that.asInstanceOf[AnyRef]) || (that match {
           /* comparison with bottom is reference equality! */
-          if ((other eq bottom) || (this eq bottom))
-            (this eq other)
-          else {
+          case other: State if (this ne bottom) && (other ne bottom) =>
             (this.bindings == other.bindings) &&
-            ((this.stack, other.stack).zipped forall (_ == _))
-          }
-        }
+            (this.stack corresponds other.stack)(_ == _)  // @PP: corresponds
+          case _ => false
+        })
 
       /* Return an alias for the given local. It returns the last
        * local in the chain of aliased locals. Cycles are not allowed
@@ -189,14 +184,14 @@ abstract class CopyPropagation {
           if (exceptional) exceptionHandlerStack
           else {
 //            if (a.stack.length != b.stack.length)
-//              throw new LubError(a, b, "Invalid stacks in states: ");
+//              throw new LubException(a, b, "Invalid stacks in states: ");
             (a.stack, b.stack).zipped map { (v1, v2) =>
               if (v1 == v2) v1 else Unknown
             }
           }
 
 /*        if (a.stack.length != b.stack.length)
-          throw new LubError(a, b, "Invalid stacks in states: ");
+          throw new LubException(a, b, "Invalid stacks in states: ");
         val resStack = List.map2(a.stack, b.stack) { (v1, v2) =>
           if (v1 == v2) v1 else Unknown
         }
@@ -359,7 +354,7 @@ abstract class CopyPropagation {
             if (onInstance) {
               val obj = out.stack.drop(method.info.paramTypes.length).head
 //              if (method.isPrimaryConstructor) {
-              if (method.isPrimaryConstructor/* && isClosureClass(method.owner)*/) {
+              if (method.isPrimaryConstructor) {
                 obj match {
                   case Record(_, bindings) =>
                     for (v <- out.stack.take(method.info.paramTypes.length + 1)
@@ -533,7 +528,7 @@ abstract class CopyPropagation {
     final def invalidateRecords(state: copyLattice.State) {
       def shouldRetain(sym: Symbol): Boolean = {
         if (sym.hasFlag(symtab.Flags.MUTABLE))
-          log("dropping binding for " + sym.fullNameString)
+          log("dropping binding for " + sym.fullName)
         !sym.hasFlag(symtab.Flags.MUTABLE)
       }
       state.stack = state.stack map { v => v match {
@@ -580,7 +575,7 @@ abstract class CopyPropagation {
       // this relies on having the same order in paramAccessors and
       // the arguments on the stack. It should be the same!
       for ((p, i) <- paramAccessors.zipWithIndex) {
-//        assert(p.tpe == paramTypes(i), "In: " + ctor.fullNameString
+//        assert(p.tpe == paramTypes(i), "In: " + ctor.fullName
 //               + " having acc: " + (paramAccessors map (_.tpe))+ " vs. params" + paramTypes
 //               + "\n\t failed at pos " + i + " with " + p.tpe + " == " + paramTypes(i))
         if (p.tpe == paramTypes(i))
@@ -591,18 +586,6 @@ abstract class CopyPropagation {
       if (settings.debug.value) log("\t" + bindings)
       bindings
     }
-
-    /** Is <code>cls</code> a closure class?
-     *
-     *  @param cls ...
-     *  @return    ...
-     */
-    final def isClosureClass(cls: Symbol): Boolean =
-        cls.isFinal &&
-        cls.tpe.parents.exists { t =>
-          val TypeRef(_, sym, _) = t;
-          definitions.FunctionClass exists sym.==
-        }
 
     /** Is symbol <code>m</code> a pure method?
      *

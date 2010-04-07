@@ -11,7 +11,6 @@ package classfile
 import java.util.{StringTokenizer, NoSuchElementException}
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.{Position,NoPosition}
 
 abstract class MetaParser{
 
@@ -78,7 +77,7 @@ abstract class MetaParser{
     val hi =
       if (token == "<") { nextToken(); parseType() }
       else definitions.AnyClass.tpe
-    sym.setInfo(mkTypeBounds(lo, hi))
+    sym.setInfo(TypeBounds(lo, hi))
     locals enter sym;
     sym
   }

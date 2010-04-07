@@ -52,7 +52,7 @@ abstract class TypeFlowAnalysis {
       else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack")
       else {
 //        if (s1.length != s2.length)
-//          throw new CheckerError("Incompatible stacks: " + s1 + " and " + s2);
+//          throw new CheckerException("Incompatible stacks: " + s1 + " and " + s2);
         new TypeStack((s1.types, s2.types).zipped map icodes.lub)
       }
     }
@@ -180,7 +180,7 @@ abstract class TypeFlowAnalysis {
           assert(visited.contains(b),
             "Block " + b + " in " + this.method + " has input equal to bottom -- not visited? .." + visited));
       }
-//      log("" + method.symbol.fullNameString + " ["  + method.code.blocks.size + " blocks] "
+//      log("" + method.symbol.fullName + " ["  + method.code.blocks.size + " blocks] "
 //              + "\n\t" + iterations + " iterations: " + t + " ms."
 //              + "\n\tlubs: " + typeFlowLattice.lubs + " out of which " + icodes.lubs0 + " typer lubs")
     }

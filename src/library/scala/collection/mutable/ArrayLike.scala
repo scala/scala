@@ -18,7 +18,7 @@ import generic._
  *
  *  @since 2.8
  */
-trait ArrayLike[A, +Repr] extends IndexedSeqLike[A, Repr] { self =>
+trait ArrayLike[A, +Repr] extends IndexedSeqOptimized[A, Repr] { self =>
 
   /** Creates a possible nested IndexedSeq which consists of all the elements
    *  of this array. If the elements are arrays themselves, the `deep' transformation

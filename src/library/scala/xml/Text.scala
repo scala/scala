@@ -8,10 +8,7 @@
 
 // $Id$
 
-
 package scala.xml
-
-import collection.mutable.StringBuilder
 
 // XXX This attempt to make Text not a case class revealed a bug in the pattern
 // matcher (see ticket #2883) so I've put the case back.  (It was/is desirable that
@@ -41,13 +38,6 @@ case class Text(_data: String) extends Atom[String](_data)
 {
   if (_data == null)
     throw new IllegalArgumentException("tried to construct Text with null")
-
-  /** XXX More hashCode flailing. */
-  final override def equals(x: Any) = x match {
-    case s:String  => s == data
-    case s:Atom[_] => data == s.data
-    case _ => false
-  }
 
   /** Returns text, with some characters escaped according to the XML
    *  specification.

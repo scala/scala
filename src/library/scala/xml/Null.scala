@@ -12,70 +12,49 @@
 package scala.xml
 
 import Utility.{ isNameStart }
-import collection.Iterator
-import collection.immutable.{Nil, List}
-import collection.mutable.StringBuilder
 
+/** Essentially, every method in here is a dummy, returning Zero[T].
+ *  It provides a backstop for the unusual collection defined by MetaData,
+ *  sort of a linked list of tails.
+ */
 case object Null extends MetaData {
-
-  /** appends given MetaData items to this MetaData list */
-  override def append(m: MetaData, scope: NamespaceBinding = TopScope): MetaData = m
-
-  override def containedIn1(m: MetaData): Boolean = false
-
-  /** returns its argument */
-  def copy(next: MetaData) = next
-
   override def iterator = Iterator.empty
-
+  override def append(m: MetaData, scope: NamespaceBinding = TopScope): MetaData = m
   override def filter(f: MetaData => Boolean): MetaData = this
 
+  def copy(next: MetaData) = next
   def getNamespace(owner: Node) = null
 
-  final override def hasNext = false
+  override def hasNext = false
   def next = null
   def key = null
   def value = null
-
-  final override def length = 0
-  final override def length(i: Int) = i
-
   def isPrefixed = false
 
-  /** deep equals method - XXX */
-  override def equals(that: Any) = that match {
-    case m: MetaData => m.length == 0
-    case _ => false
+  override def length = 0
+  override def length(i: Int) = i
+
+  override def strict_==(other: Equality) = other match {
+    case x: MetaData  => x.length == 0
+    case _            => false
   }
+  override def basisForHashCode: Seq[Any] = Nil
 
-  def equals1(that:MetaData) = that.length == 0
-
-  override def map(f: MetaData => Text): List[Text] = Nil
-
-  /** null */
+  def apply(namespace: String, scope: NamespaceBinding, key: String) = null
   def apply(key: String) = {
-    if(!isNameStart(key charAt 0))
+    if (!isNameStart(key.head))
       throw new IllegalArgumentException("not a valid attribute name '"+key+"', so can never match !")
+
     null
   }
 
-  /** gets value of qualified (prefixed) attribute with given key */
-  def apply(namespace: String, scope: NamespaceBinding, key: String) = null
-
-  override def hashCode(): Int = 0
-
+  def toString1(sb: StringBuilder) = ()
   override def toString1(): String = ""
-
-  //appends string representations of single attribute to StringBuilder
-  def toString1(sb:StringBuilder) = {}
-
   override def toString(): String = ""
 
   override def buildString(sb: StringBuilder): StringBuilder = sb
-
   override def wellformed(scope: NamespaceBinding) = true
 
   def remove(key: String) = this
-
   def remove(namespace: String, scope: NamespaceBinding, key: String) = this
 }

@@ -12,7 +12,7 @@
 package scala
 
 import scala.collection.generic._
-import scala.collection.mutable.{ArrayBuilder, GenericArray}
+import scala.collection.mutable.{ArrayBuilder, ArraySeq}
 import compat.Platform.arraycopy
 import scala.reflect.ClassManifest
 import scala.runtime.ScalaRunTime.{array_apply, array_update}
@@ -24,15 +24,15 @@ class FallbackArrayBuilding {
 
   /** A builder factory that generates a generic array.
    *  Called instead of Array.newBuilder if the element type of an array
-   *  does not have a class manifest. Note that fallbackBuilder fcatory
+   *  does not have a class manifest. Note that fallbackBuilder factory
    *  needs an implicit parameter (otherwise it would not be dominated in implicit search
    *  by Array.canBuildFrom). We make sure that that implicit search is always
-   *  succesfull.
+   *  successfull.
    */
-  implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, GenericArray[T]] =
-    new CanBuildFrom[Array[_], T, GenericArray[T]] {
-      def apply(from: Array[_]) = GenericArray.newBuilder[T]
-      def apply() = GenericArray.newBuilder[T]
+  implicit def fallbackCanBuildFrom[T](implicit m: DummyImplicit): CanBuildFrom[Array[_], T, ArraySeq[T]] =
+    new CanBuildFrom[Array[_], T, ArraySeq[T]] {
+      def apply(from: Array[_]) = ArraySeq.newBuilder[T]
+      def apply() = ArraySeq.newBuilder[T]
     }
 }
 
@@ -55,10 +55,13 @@ object Array extends FallbackArrayBuilding {
                        dest : AnyRef,
                        destPos : Int,
                        length : Int) {
-    var i = 0
-    while (i < length) {
-      array_update(dest, i, array_apply(src, i))
+    var i = srcPos
+    var j = destPos
+    val srcUntil = srcPos + length
+    while (i < srcUntil) {
+      array_update(dest, j, array_apply(src, i))
       i += 1
+      j += 1
     }
   }
 

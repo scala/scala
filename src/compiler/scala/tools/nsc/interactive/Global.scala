@@ -5,7 +5,7 @@ import java.io.{ PrintWriter, StringWriter }
 
 import scala.collection.mutable.{LinkedHashMap, SynchronizedMap}
 import scala.concurrent.SyncVar
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
 import scala.tools.nsc.reporters._
@@ -91,10 +91,10 @@ self =>
           // it will still be null now?
           if (context.unit != null)
             integrateNew()
-          throw new FreshRunReq
-        } catch {
-          case ex : ValidateError => // Ignore, this will have been reported elsewhere
-          case t : Throwable => throw t
+          throw FreshRunReq
+        }
+        catch {
+          case ex : ValidateException => // Ignore, this will have been reported elsewhere
         }
     }
   }
@@ -110,14 +110,14 @@ self =>
   // ----------------- Polling ---------------------------------------
 
   /** Called from runner thread and signalDone:
-   *  Poll for exeptions.
+   *  Poll for exceptions.
    *  Poll for work reload/typedTreeAt/doFirst commands during background checking.
    */
   def pollForWork() {
-    scheduler.pollException() match {
-      case Some(ex: CancelActionReq) => if (acting) throw ex
-      case Some(ex: FreshRunReq) =>
-        currentTyperRun = new TyperRun()
+    scheduler.pollThrowable() match {
+      case Some(ex @ CancelActionReq) => if (acting) throw ex
+      case Some(ex @ FreshRunReq) =>
+        currentTyperRun = newTyperRun
         minRunId = currentRunId
         if (outOfDate) throw ex
         else outOfDate = true
@@ -132,7 +132,7 @@ self =>
           action()
           if (debugIDE) println("done with work item: "+action)
         } catch {
-          case ex: CancelActionReq =>
+          case CancelActionReq =>
             if (debugIDE) println("cancelled work item: "+action)
         } finally {
           if (debugIDE) println("quitting work item: "+action)
@@ -150,7 +150,7 @@ self =>
     val tree = locateTree(pos)
     val sw = new StringWriter
     val pw = new PrintWriter(sw)
-    treePrinters.create(pw).print(tree)
+    newTreePrinter(pw).print(tree)
     pw.flush
 
     val typed = new Response[Tree]
@@ -159,7 +159,7 @@ self =>
       case Some(tree) =>
         val sw = new StringWriter
         val pw = new PrintWriter(sw)
-        treePrinters.create(pw).print(tree)
+        newTreePrinter(pw).print(tree)
         pw.flush
         sw.toString
       case None => "<None>"
@@ -195,19 +195,19 @@ self =>
               backgroundCompile()
               outOfDate = false
             } catch {
-              case ex: FreshRunReq =>
+              case FreshRunReq =>
             }
           }
         }
       } catch {
-        case ex: ShutdownReq =>
+        case ShutdownReq =>
           ;
         case ex =>
           outOfDate = false
           compileRunner = newRunnerThread
           ex match {
-            case _ : FreshRunReq =>   // This shouldn't be reported
-            case _ : ValidateError => // This will have been reported elsewhere
+            case FreshRunReq =>   // This shouldn't be reported
+            case _ : ValidateException => // This will have been reported elsewhere
             case _ => ex.printStackTrace(); inform("Fatal Error: "+ex)
           }
       }
@@ -222,7 +222,7 @@ self =>
     reporter.reset
     firsts = firsts filter (s => unitOfFile contains (s.file))
     val prefix = firsts map unitOf
-    val units = prefix ::: (unitOfFile.valuesIterator.toList diff prefix) filter (!_.isUpToDate)
+    val units = prefix ::: (unitOfFile.values.toList diff prefix) filter (!_.isUpToDate)
     recompile(units)
     if (debugIDE) inform("Everything is now up to date")
   }
@@ -269,14 +269,14 @@ self =>
     firsts = fs ::: (firsts diff fs)
   }
 
-  // ----------------- Implementations of client commmands -----------------------
+  // ----------------- Implementations of client commands -----------------------
 
   def respond[T](result: Response[T])(op: => T): Unit =
     try {
       result set Left(op)
       return
     } catch {
-      case ex : FreshRunReq =>
+      case ex @ FreshRunReq =>
         scheduler.postWorkItem(() => respond(result)(op))
         throw ex
       case ex =>
@@ -286,7 +286,7 @@ self =>
 
   /** Make sure a set of compilation units is loaded and parsed */
   def reloadSources(sources: List[SourceFile]) {
-    currentTyperRun = new TyperRun()
+    currentTyperRun = newTyperRun
     for (source <- sources) {
       val unit = new RichCompilationUnit(source)
       unitOfFile(source.file) = unit
@@ -298,7 +298,7 @@ self =>
   /** Make sure a set of compilation units is loaded and parsed */
   def reload(sources: List[SourceFile], result: Response[Unit]) {
     respond(result)(reloadSources(sources))
-    if (outOfDate) throw new FreshRunReq
+    if (outOfDate) throw FreshRunReq
     else outOfDate = true
   }
 
@@ -333,7 +333,7 @@ self =>
 
   def stabilizedType(tree: Tree): Type = tree match {
     case Ident(_) if tree.symbol.isStable => singleType(NoPrefix, tree.symbol)
-    case Select(qual, _) if tree.symbol.isStable => singleType(qual.tpe, tree.symbol)
+    case Select(qual, _) if  qual.tpe != null && tree.symbol.isStable => singleType(qual.tpe, tree.symbol)
     case Import(expr, selectors) =>
       tree.symbol.info match {
         case analyzer.ImportType(expr) => expr match {
@@ -387,7 +387,7 @@ self =>
         addScopeMember(sym, pre, imp.qual)
       }
     }
-    val result = locals.valuesIterator.toList
+    val result = locals.values.toList
     if (debugIDE) for (m <- result) println(m)
     result
   }
@@ -398,18 +398,24 @@ self =>
   }
 
   def typeMembers(pos: Position): List[TypeMember] = {
-    val tree1 = typedTreeAt(pos)
-    val tree0 = tree1 match {
-      case tt : TypeTree => tt.original
-      case t => t
-    }
-    val tree = tree0 match {
-      case s@Select(qual, name) if s.tpe == ErrorType => qual
-      case t => t
+    var tree = typedTreeAt(pos)
+    tree match {
+      case tt : TypeTree => tree = tt.original
+      case _ =>
     }
 
-    println("typeMembers at "+tree+" "+tree.tpe)
+    tree match {
+      case Select(qual, name) if tree.tpe == ErrorType => tree = qual
+      case _ =>
+    }
+
     val context = doLocateContext(pos)
+
+    if (tree.tpe == null)
+      tree = analyzer.newTyper(context).typedQualifier(tree)
+
+    println("typeMembers at "+tree+" "+tree.tpe)
+
     val superAccess = tree.isInstanceOf[Super]
     val scope = new Scope
     val members = new LinkedHashMap[Symbol, TypeMember]
@@ -449,7 +455,7 @@ self =>
         addTypeMember(sym, vpre, false, view.tree.symbol)
       }
     }
-    members.valuesIterator.toList
+    members.values.toList
   }
 
   // ---------------- Helper classes ---------------------------
@@ -466,12 +472,20 @@ self =>
   /** The typer run */
   class TyperRun extends Run {
     // units is always empty
-    // symSource, symData are ignored
-    override def compiles(sym: Symbol) = false
 
-    def typeCheck(unit: CompilationUnit): Unit = applyPhase(typerPhase, unit)
+    /** canRedefine is used to detect double declarations in multiple source files.
+     *  Since the IDE rechecks units several times in the same run, these tests
+     *  are disabled by always returning true here.
+     */
+    override def canRedefine(sym: Symbol) = true
 
-    def enterNames(unit: CompilationUnit): Unit = applyPhase(namerPhase, unit)
+    def typeCheck(unit: CompilationUnit): Unit = {
+      applyPhase(typerPhase, unit)
+    }
+
+    def enterNames(unit: CompilationUnit): Unit = {
+      applyPhase(namerPhase, unit)
+    }
 
     /** Return fully attributed tree at given position
      *  (i.e. largest tree that's contained by position)
@@ -480,7 +494,7 @@ self =>
       println("starting typedTreeAt")
       val tree = locateTree(pos)
       println("at pos "+pos+" was found: "+tree+tree.pos.show)
-      if (tree.tpe ne null) {
+      if (stabilizedType(tree) ne null) {
         println("already attributed")
         tree
       } else {
@@ -518,7 +532,9 @@ self =>
     }
   }
 
-  class TyperResult(val tree: Tree) extends Exception with ControlException
+  def newTyperRun = new TyperRun
+
+  class TyperResult(val tree: Tree) extends ControlThrowable
 
   assert(globalPhase.id == 0)
 }

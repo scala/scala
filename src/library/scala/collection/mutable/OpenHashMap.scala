@@ -15,7 +15,7 @@ package mutable
 /**
  * @since 2.7
  */
-object OpenHashMap{
+object OpenHashMap {
   def apply[K, V](elems : (K, V)*) = {
     val dict = new OpenHashMap[K, V];
     elems.foreach({case (x, y) => dict(x) = y});

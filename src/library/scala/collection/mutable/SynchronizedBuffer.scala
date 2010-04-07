@@ -60,8 +60,8 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++(iter: Traversable[A]): Self = synchronized {
-    super.++(iter)
+  override def ++(xs: TraversableOnce[A]): Self = synchronized {
+    super.++(xs)
   }
 
   /** Appends a number of elements provided by an iterable object
@@ -69,8 +69,8 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++=(iter: Traversable[A]): this.type = synchronized[this.type] {
-    super.++=(iter)
+  override def ++=(xs: TraversableOnce[A]): this.type = synchronized[this.type] {
+    super.++=(xs)
   }
 
   /** Appends a sequence of elements to this buffer.
@@ -86,8 +86,8 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def appendAll(iter: Traversable[A]): Unit = synchronized {
-    super.appendAll(iter)
+  override def appendAll(xs: TraversableOnce[A]): Unit = synchronized {
+    super.appendAll(xs)
   }
 
   /** Prepend a single element to this buffer and return
@@ -105,17 +105,13 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def ++=:(iter: Traversable[A]): this.type = synchronized[this.type] {
-    super.++=:(iter)
-  }
+  override def ++=:(xs: TraversableOnce[A]): this.type = synchronized[this.type] { super.++=:(xs) }
 
   /** Prepend an element to this list.
    *
    *  @param elem  the element to prepend.
    */
-  override def prepend(elems: A*): Unit = synchronized {
-    super.prependAll(elems)
-  }
+  override def prepend(elems: A*): Unit = prependAll(elems)
 
   /** Prepends a number of elements provided by an iterable object
    *  via its <code>iterator</code> method. The identity of the
@@ -123,8 +119,8 @@ trait SynchronizedBuffer[A] extends Buffer[A] {
    *
    *  @param iter  the iterable object.
    */
-  override def prependAll(elems: Traversable[A]): Unit = synchronized {
-    super.prependAll(elems)
+  override def prependAll(xs: TraversableOnce[A]): Unit = synchronized {
+    super.prependAll(xs)
   }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method

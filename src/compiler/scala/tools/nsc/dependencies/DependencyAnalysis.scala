@@ -57,6 +57,12 @@ trait DependencyAnalysis extends SubComponent with Files {
       override def default(f : AbstractFile) = immutable.Set()
     }
 
+  /** External references for inherited members used in the source file */
+  val inherited: mutable.Map[AbstractFile, immutable.Set[Inherited]] =
+    new mutable.HashMap[AbstractFile, immutable.Set[Inherited]] {
+      override def default(f : AbstractFile) = immutable.Set()
+    }
+
   /** Write dependencies to the current file. */
   def saveDependencies(fromFile: AbstractFile => String) =
     if(dependenciesFile.isDefined)
@@ -106,7 +112,13 @@ trait DependencyAnalysis extends SubComponent with Files {
       filtered
     }
 
+  case class Inherited(qualifier: String, member: Name)
+
   class AnalysisPhase(prev : Phase) extends StdPhase(prev){
+
+    override def cancelled(unit: CompilationUnit) =
+      super.cancelled(unit) && !unit.isJava
+
     def apply(unit : global.CompilationUnit) {
       val f = unit.source.file.file;
       // When we're passed strings by the interpreter
@@ -122,7 +134,7 @@ trait DependencyAnalysis extends SubComponent with Files {
                   atPhase (currentRun.picklerPhase.next) {
                     !s.isImplClass && !s.isNestedClass
                   }
-              if (isTopLevelModule && (s.linkedModuleOfClass != NoSymbol)) {
+              if (isTopLevelModule && (s.companionModule != NoSymbol)) {
                 dependencies.emits(source, nameToFile(unit.source.file, name))
               }
               dependencies.emits(source, nameToFile(unit.source.file, name + "$"))
@@ -139,6 +151,7 @@ trait DependencyAnalysis extends SubComponent with Files {
       // find all external references in this compilation unit
       val file = unit.source.file
       references += file -> immutable.Set.empty[String]
+      inherited += file -> immutable.Set.empty[Inherited]
 
       val buf = new mutable.ListBuffer[Symbol]
 
@@ -151,12 +164,16 @@ trait DependencyAnalysis extends SubComponent with Files {
               && ((tree.symbol.sourceFile eq null)
                   || (tree.symbol.sourceFile.path != file.path))
               && (!tree.symbol.isClassConstructor)) {
-            updateReferences(tree.symbol.fullNameString)
+            updateReferences(tree.symbol.fullName)
+            atPhase(currentRun.uncurryPhase.prev) {
+              checkType(tree.symbol.tpe)
+            }
           }
 
           tree match {
-            case cdef: ClassDef if !cdef.symbol.hasFlag(Flags.PACKAGE) =>
-              buf += cdef.symbol
+            case cdef: ClassDef if !cdef.symbol.hasFlag(Flags.PACKAGE) &&
+                                   !cdef.symbol.isAnonymousFunction =>
+              if (cdef.symbol != NoSymbol) buf += cdef.symbol
               atPhase(currentRun.erasurePhase.prev) {
                 for (s <- cdef.symbol.info.decls)
                   s match {
@@ -172,7 +189,13 @@ trait DependencyAnalysis extends SubComponent with Files {
                 checkType(ddef.symbol.tpe)
               }
               super.traverse(tree)
-
+            case a @ Select(q, n) if ((a.symbol != NoSymbol) && (q.symbol != null)) => // #2556
+              if (!a.symbol.isConstructor &&
+                  !a.symbol.owner.isPackageClass &&
+                  !isSameType(q.tpe, a.symbol.owner.tpe))
+                  inherited += file ->
+                    (inherited(file) + Inherited(q.symbol.tpe.resultType.safeToString, n))
+              super.traverse(tree)
             case _            =>
               super.traverse(tree)
           }
@@ -185,11 +208,19 @@ trait DependencyAnalysis extends SubComponent with Files {
               for (s <- t.params) checkType(s.tpe)
 
             case t: TypeRef    =>
-              updateReferences(t.typeSymbol.fullNameString)
+              if (t.sym.isAliasType) {
+                  updateReferences(t.typeSymbolDirect.fullName)
+                  checkType(t.typeSymbolDirect.info)
+              }
+              updateReferences(t.typeSymbol.fullName)
               for (tp <- t.args) checkType(tp)
 
+            case t: PolyType   =>
+              checkType(t.resultType)
+              updateReferences(t.typeSymbol.fullName)
+
             case t             =>
-              updateReferences(t.typeSymbol.fullNameString)
+              updateReferences(t.typeSymbol.fullName)
           }
 
         def updateReferences(s: String): Unit =

@@ -30,7 +30,7 @@ final class IntArray(arr: Array[Int]) extends AbsArray[Int] {
   def length: Int = arr.length
 }
 
-final class GenericArray[T](arr: Array[T]) extends AbsArray[T] {
+final class ArraySeq[T](arr: Array[T]) extends AbsArray[T] {
   def apply(idx: Int): T = arr(idx)
   def update(idx: Int, elem: T) = arr(idx) = elem
   def length: Int = arr.length
@@ -96,7 +96,7 @@ class ScalaSpec2Test extends Test {
 }
 
 class ScalaWrapTest extends Test {
-  val arr: AbsArray[Int] = new GenericArray(new Array[Int](1000))
+  val arr: AbsArray[Int] = new ArraySeq(new Array[Int](1000))
 
   def sum(): Int = {
     var acc = 0
@@ -116,7 +116,7 @@ class ScalaWrapTest extends Test {
 }
 
 class ScalaGenTest extends Test {
-  val arr: AbsArray[Integer] = new GenericArray(new Array[Integer](1000))
+  val arr: AbsArray[Integer] = new ArraySeq(new Array[Integer](1000))
   for (i <- 0 until arr.length) arr(i) = new Integer(0)
 
   def sum(): Int = {

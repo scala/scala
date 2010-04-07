@@ -12,6 +12,7 @@ package scala.collection
 
 import generic._
 import mutable.{Builder, StringBuilder, MapBuilder}
+import annotation.migration
 import PartialFunction._
 
 /** A template trait for maps of type `Map[A, B]` which associate keys of type `A`
@@ -71,7 +72,7 @@ self =>
 
   /** Optionally returns the value associated with a key.
    *
-   *  @key    the key value
+   *  @param  key    the key value
    *  @return an option value containing the value associated with `key` in this map,
    *          or `None` if none exists.
    */
@@ -109,7 +110,7 @@ self =>
    *   @param   default  a computation that yields a default value in case no binding for `key` is
    *                     found in the map.
    *   @tparam  B1       the result type of the default computation.
-   *   @return  the value assocuated with `key` if it exists,
+   *   @return  the value associated with `key` if it exists,
    *            otherwise the result of the `default` computation.
    *   @usecase def getOrElse(key: A, default: => B): B
    */
@@ -181,15 +182,16 @@ self =>
    *
    *  @return an iterator over all keys.
    */
-  @deprecated("use `keysIterator' instead")
-  def keys: Iterator[A] = keysIterator
+  @migration(2, 8, "As of 2.8, keys returns Iterable[A] rather than Iterator[A].")
+  def keys: Iterable[A] = keySet
 
   /** Collects all values of this map in an iterable collection.
    * @return the values of this map as an iterable.
    */
-  def valuesIterable: Iterable[B] = new DefaultValuesIterable
+  @migration(2, 8, "As of 2.8, values returns Iterable[B] rather than Iterator[B].")
+  def values: Iterable[B] = new DefaultValuesIterable
 
-  /** The implementation class of the iterable returned by `valuesIterable`.
+  /** The implementation class of the iterable returned by `values`.
    */
   protected class DefaultValuesIterable extends Iterable[B] {
     def iterator = valuesIterator
@@ -207,13 +209,6 @@ self =>
     def next = iter.next._2
   }
 
-  /** Creates an iterator for all contained values.
-   *
-   *  @return an iterator over all values.
-   */
-  @deprecated("use `valuesIterator' instead")
-  def values: Iterator[B] = valuesIterator
-
   /** Defines the default value computation for the map,
    *  returned when a key is not found
    *  The method implemented here throws an exception,
@@ -230,7 +225,7 @@ self =>
    *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
    *          the predicate `p`. The resulting map wraps the original map without copying any elements.
    */
-  def filterKeys(p: A => Boolean) = new DefaultMap[A, B] {
+  def filterKeys(p: A => Boolean): Map[A, B] = new DefaultMap[A, B] {
     override def foreach[C](f: ((A, B)) => C): Unit = for (kv <- self) if (p(kv._1)) f(kv)
     def iterator = self.iterator.filter(kv => p(kv._1))
     override def contains(key: A) = self.contains(key) && p(key)
@@ -245,7 +240,7 @@ self =>
   /** A map view resulting from applying a given function `f` to each value
    *  associated with a key in this map.
    */
-  def mapValues[C](f: B => C) = new DefaultMap[A, C] {
+  def mapValues[C](f: B => C): Map[A, C] = new DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))
     def iterator = for ((k, v) <- self.iterator) yield (k, f(v))
     override def size = self.size
@@ -291,18 +286,25 @@ self =>
    *  @return   a new map with the given bindings added to this map
    *  @usecase  def + (kvs: Traversable[(A, B)]): Map[A, B]
    */
-  def ++[B1 >: B](kvs: Traversable[(A, B1)]): Map[A, B1] =
-    ((repr: Map[A, B1]) /: kvs) (_ + _)
+  def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] =
+    ((repr: Map[A, B1]) /: xs) (_ + _)
 
-  /** Adds all key/value pairs produced by an iterator to this map, returning a new map.
+  /** Returns a new map with all key/value pairs for which the predicate
+   *  <code>p</code> returns <code>true</code>.
    *
-   *  @param    iter the iterator producing key/value pairs
-   *  @tparam   B1  the type of the added values
-   *  @return   a new map with the given bindings added to this map
-   *  @usecase  def + (iter: Iterator[(A, B)]): Map[A, B]
+   *  @param p A predicate over key-value pairs
+   *  @note    This method works by successively removing elements fro which the
+   *           predicate is false from this set.
+   *           If removal is slow, or you expect that most elements of the set$
+   *           will be removed, you might consider using <code>filter</code>
+   *           with a negated predicate instead.
    */
-  def ++[B1 >: B] (iter: Iterator[(A, B1)]): Map[A, B1] =
-    ((repr: Map[A, B1]) /: iter) (_ + _)
+  override def filterNot(p: ((A, B)) => Boolean): This = {
+    var res: This = repr
+    for (kv <- this)
+      if (p(kv)) res = (res - kv._1).asInstanceOf[This] // !!! concrete overrides abstract problem
+    res
+  }
 
   /** Appends all bindings of this map to a string builder using start, end, and separator strings.
    *  The written text begins with the string `start` and ends with the string
@@ -320,7 +322,7 @@ self =>
 
   /** Defines the prefix of this object's `toString` representation.
    *  @return  a string representation which starts the result of `toString` applied to this $coll.
-   *           Unless overridden in subclasse, the string prefix of every map is `"Map"`.
+   *           Unless overridden in subclasses, the string prefix of every map is `"Map"`.
    */
   override def stringPrefix: String = "Map"
 
@@ -351,7 +353,7 @@ self =>
         }
       } catch {
         case ex: ClassCastException =>
-          println("calss cast "); false
+          println("class cast "); false
       }}
     case _ =>
       false

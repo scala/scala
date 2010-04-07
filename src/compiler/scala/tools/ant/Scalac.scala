@@ -69,7 +69,7 @@ import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
  *
  * @author Gilles Dubochet, Stephane Micheloud
  */
-class Scalac extends MatchingTask {
+class Scalac extends MatchingTask with ScalacShared {
 
   /** The unique Ant file utilities instance to use in this task. */
   private val fileUtils = FileUtils.getFileUtils()
@@ -563,7 +563,7 @@ class Scalac extends MatchingTask {
     log("Scalac params = '" + addParams + "'", Project.MSG_DEBUG)
 
     // let CompilerCommand processes all params
-    val command = new CompilerCommand(settings.splitParams(addParams), settings, error, false)
+    val command = new CompilerCommand(settings.splitParams(addParams), settings)
 
     // resolve dependenciesFile path from project's basedir, so <ant antfile ...> call from other project works.
     // the dependenciesFile may be relative path to basedir or absolute path, in either case, the following code
@@ -606,7 +606,7 @@ class Scalac extends MatchingTask {
       }
 
       java setClasspath scalacPath
-      java setClassname "scala.tools.nsc.Main"
+      java setClassname MainClass
 
       // Write all settings to a temporary file
       def writeSettings() : File = {
@@ -616,20 +616,16 @@ class Scalac extends MatchingTask {
         val out = new PrintWriter(new BufferedWriter(new FileWriter(file)))
 
         try {
-          for (setting <- settings.allSettings ; arg <- setting.unparse)
+          for (setting <- settings.visibleSettings ; arg <- setting.unparse)
             out println escapeArgument(arg)
           for (file <- sourceFiles)
-            out println file.getAbsolutePath
+            out println escapeArgument(file.getAbsolutePath)
         }
         finally out.close()
 
         file
       }
-
-      java.createArg() setValue ("@" + writeSettings.getCanonicalPath)
-      log(java.getCommandLine.getCommandline.mkString(" "), Project.MSG_VERBOSE)
-
-      val res = java.executeJava()
+      val res = execWithArgFiles(java, List(writeSettings.getCanonicalPath))
       if (failonerror && res != 0)
         error("Compilation failed because of an internal compiler error;"+
               " see the error output for details.")

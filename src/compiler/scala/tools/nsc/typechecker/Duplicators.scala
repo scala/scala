@@ -97,7 +97,7 @@ abstract class Duplicators extends Analyzer {
       val tpe2: Type = (new FixInvalidSyms)(tpe1)
       val tpe3 = tpe2 match {
         case TypeRef(_, sym, _) if (sym.owner == oldClassOwner) =>
-          log("seeing " + sym.fullNameString + " from a different angle")
+          log("seeing " + sym.fullName + " from a different angle")
           tpe2.asSeenFrom(newClassOwner.thisType, oldClassOwner)
         case _ => tpe2
       }
@@ -157,7 +157,7 @@ abstract class Duplicators extends Analyzer {
       typed(ddef)
     }
 
-    /** Special typer method allowing for re-type checking trees. It expects a typed tree.
+    /** Special typer method for re-type checking trees. It expects a typed tree.
      *  Returns a typed tree that has fresh symbols for all definitions in the original tree.
      *
      *  Each definition tree is visited and its symbol added to the invalidSyms map (except LabelDefs),
@@ -240,9 +240,28 @@ abstract class Duplicators extends Analyzer {
           log("changed " + tree + " to " + tree1)
           super.typed(atPos(tree.pos)(tree1))
 
+        case Match(scrut, cases) =>
+          val scrut1 = typed(scrut, EXPRmode | BYVALmode, WildcardType)
+          val scrutTpe = scrut1.tpe.widen
+          val cases1 = if (scrutTpe.isFinalType) cases filter {
+            case CaseDef(Bind(_, pat @ Typed(_, tpt)), EmptyTree, body) =>
+              // the typed pattern is not incompatible with the scrutinee type
+              scrutTpe.matchesPattern(fixType(tpt.tpe))
+            case CaseDef(Typed(_, tpt), EmptyTree, body) =>
+              // the typed pattern is not incompatible with the scrutinee type
+              scrutTpe.matchesPattern(fixType(tpt.tpe))
+            case _ => true
+          } else cases
+
+          super.typed(atPos(tree.pos)(Match(scrut, cases1)), mode, pt)
+
+        case EmptyTree =>
+          // no need to do anything, in particular, don't set the type to null, EmptyTree.tpe_= asserts
+          tree
+
         case _ =>
           if (tree.hasSymbol && tree.symbol != NoSymbol && (tree.symbol.owner == definitions.AnyClass)) {
-            tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any
+            tree.symbol = NoSymbol // maybe we can find a more specific member in a subclass of Any (see AnyVal members, like ==)
           }
           tree.tpe = null
           super.typed(tree, mode, pt)

@@ -8,12 +8,7 @@
 
 // $Id$
 
-
 package scala.xml
-
-import collection.Seq
-import collection.immutable.{List, Nil}
-import collection.mutable.StringBuilder
 
 /**
  * This object provides methods ...
@@ -22,7 +17,6 @@ import collection.mutable.StringBuilder
  * @version 1.0
  */
 object Node {
-
   /** the constant empty attribute sequence */
   final def NoAttributes: MetaData = Null
 
@@ -30,7 +24,6 @@ object Node {
   val EmptyNamespace = ""
 
   def unapplySeq(n: Node) = Some((n.label, n.attributes, n.child))
-
 }
 
 /**
@@ -116,6 +109,10 @@ abstract class Node extends NodeSeq {
    */
   def child: Seq[Node]
 
+  /** Children which do not stringify to "" (needed for equality)
+   */
+  def nonEmptyChildren: Seq[Node] = child filterNot (_.toString == "")
+
   /**
    * Descendant axis (all descendants of this node, not including node itself)
    * includes all text nodes, element nodes, comments and processing instructions.
@@ -129,40 +126,23 @@ abstract class Node extends NodeSeq {
    */
   def descendant_or_self: List[Node] = this :: descendant
 
-  /**
-   * Returns true if x is structurally equal to this node. Compares prefix,
-   * label, attributes and children.
-   *
-   * @param x ...
-   * @return  <code>true</code> if ..
-   */
-  override def equals(x: Any): Boolean = x match {
-    case g: Group   => false
-    case that: Node =>
-      this.prefix == that.prefix &&
-      this.label == that.label &&
-      this.attributes == that.attributes &&
-      this.scope == that.scope &&
-      equalChildren(that)
+  override def canEqual(other: Any) = other match {
+    case x: Group   => false
+    case x: Node    => true
     case _          => false
   }
-
-  // children comparison has to be done carefully - see bug #1773.
-  // It would conceivably be a better idea for a scala block which
-  // generates the empty string not to generate a child rather than
-  // our having to filter it later, but that approach would be more
-  // delicate to implement.
-  private def equalChildren(that: Node) = {
-    def noEmpties(xs: Seq[Node]) = xs filter (_.toString() != "")
-    noEmpties(this.child) sameElements noEmpties(that.child)
+  override def basisForHashCode: Seq[Any] = prefix :: label :: attributes :: nonEmptyChildren.toList
+  override def strict_==(other: Equality) = other match {
+    case _: Group => false
+    case x: Node  =>
+      (prefix == x.prefix) &&
+      (label == x.label) &&
+      (attributes == x.attributes) &&
+      // (scope == x.scope)               // note - original code didn't compare scopes so I left it as is.
+      (nonEmptyChildren sameElements x.nonEmptyChildren)
+    case _        =>
+      false
   }
-
-  /** <p>
-   *    Returns a hashcode.
-   *  </p>
-   */
-  override def hashCode(): Int =
-    Utility.hashCode(prefix, label, attributes.hashCode(), scope.hashCode(), child)
 
   // implementations of NodeSeq methods
 
@@ -213,9 +193,10 @@ abstract class Node extends NodeSeq {
    *  Martin to Burak: to do: if you make this method abstract, the compiler will now
    *  complain if there's no implementation in a subclass. Is this what we want? Note that
    *  this would break doc/DocGenator and doc/ModelToXML, with an error message like:
-doc\DocGenerator.scala:1219: error: object creation impossible, since there is a deferred declaration of method text in class Node of type => String which is not implemented in a subclass
-    new SpecialNode {
-    ^
-   */
+   * {{{
+   * doc\DocGenerator.scala:1219: error: object creation impossible, since there is a deferred declaration of method text in class Node of type => String which is not implemented in a subclass
+   * new SpecialNode {
+   * ^
+   * }}} */
   override def text: String = super.text
 }

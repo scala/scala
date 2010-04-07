@@ -29,7 +29,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   extends Buffer[A]
      with GenericTraversableTemplate[A, ArrayBuffer]
      with BufferLike[A, ArrayBuffer[A]]
-     with IndexedSeqLike[A, ArrayBuffer[A]]
+     with IndexedSeqOptimized[A, ArrayBuffer[A]]
      with Builder[A, ArrayBuffer[A]]
      with ResizableArray[A] {
 
@@ -43,7 +43,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
 
   override def sizeHint(len: Int) {
     if (len > size && len >= 1) {
-      val newarray = new Array[AnyRef](len min 1)
+      val newarray = new Array[AnyRef](len)
       Array.copy(array, 0, newarray, 0, size0)
       array = newarray
     }
@@ -65,10 +65,10 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
-   *  @param iter  the iterfable object.
+   *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++=(iter: Traversable[A]): this.type = iter match {
+  override def ++=(xs: TraversableOnce[A]): this.type = xs match {
     case v: IndexedSeq[_] =>
       val n = v.length
       ensureSize(size0 + n)
@@ -76,7 +76,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
       size0 += n
       this
     case _ =>
-      super.++=(iter)
+      super.++=(xs)
   }
 
   /** Prepends a single element to this buffer and return
@@ -101,7 +101,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  @param iter  the iterable object.
    *  @return      the updated buffer.
    */
-  override def ++=:(iter: Traversable[A]): this.type = { insertAll(0, iter); this }
+  override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
 
   /** Inserts new elements at the index <code>n</code>. Opposed to method
    *  <code>update</code>, this method will not replace an element with a
@@ -125,7 +125,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  the buffer size.
    *
    *  @param n  the index which refers to the first element to delete.
-   *  @param count   the number of elemenets to delete
+   *  @param count   the number of elements to delete
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   override def remove(n: Int, count: Int) {

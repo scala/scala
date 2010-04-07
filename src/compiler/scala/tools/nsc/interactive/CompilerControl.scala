@@ -2,7 +2,7 @@ package scala.tools.nsc
 package interactive
 
 import scala.concurrent.SyncVar
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.util.{SourceFile, Position, WorkScheduler}
 import scala.tools.nsc.symtab._
@@ -124,23 +124,19 @@ trait CompilerControl { self: Global =>
   }
 
   /** Cancel currently pending high-priority jobs */
-  def askCancel() =
-    scheduler.raise(new CancelActionReq)
+  def askCancel() = scheduler raise CancelActionReq
 
   /** Cancel current compiler run and start a fresh one where everything will be re-typechecked
    *  (but not re-loaded).
    */
-  def askReset() =
-    scheduler.raise(new FreshRunReq)
+  def askReset() = scheduler raise FreshRunReq
 
   /** Tell the compile server to shutdown, and do not restart again */
-  def askShutdown() =
-    scheduler.raise(new ShutdownReq)
+  def askShutdown() = scheduler raise ShutdownReq
 
-  // ---------------- Interpreted exeptions -------------------
+  // ---------------- Interpreted exceptions -------------------
 
-  class CancelActionReq extends Exception with ControlException
-  class FreshRunReq extends Exception with ControlException
-  class ShutdownReq extends Exception with ControlException
-
+  object CancelActionReq extends ControlThrowable
+  object FreshRunReq extends ControlThrowable
+  object ShutdownReq extends ControlThrowable
 }

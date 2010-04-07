@@ -18,7 +18,7 @@ import TraversableView.NoBuilder
 /** <p>
  *    A base class for views of <a href="../Traversable.html"
  *    target="ContentFrame"><code>Traversable<code></a>.<br/>
- *    Every subclass has to implenment the <code>foreach</code> method.
+ *    Every subclass has to implement the <code>foreach</code> method.
  *  </p>
  *
  *  @author Martin Odersky

@@ -27,15 +27,19 @@ abstract class AbstractReporter extends Reporter {
   def display(pos: Position, msg: String, severity: Severity): Unit
   def displayPrompt: Unit
 
-  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean) {
+  protected def info0(pos: Position, msg: String, _severity: Severity, force: Boolean) {
+    val severity =
+      if (settings.Ywarnfatal.value && _severity == WARNING) ERROR
+      else _severity
+
     severity match {
       case INFO =>
         if (force || settings.verbose.value) display(pos, msg, severity)
       case WARNING =>
         val hidden = testAndLog(pos, severity)
         if (!settings.nowarnings.value) {
-	  if (!hidden || settings.prompt.value) display(pos, msg, severity)
-	  if (settings.prompt.value) displayPrompt
+          if (!hidden || settings.prompt.value) display(pos, msg, severity)
+          if (settings.prompt.value) displayPrompt
         }
       case ERROR =>
         val hidden = testAndLog(pos, severity)

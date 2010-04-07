@@ -11,6 +11,9 @@
 
 package scala.runtime
 
-import scala.util.control.ControlException
+import scala.util.control.ControlThrowable
 
-class NonLocalReturnException[T](val key: AnyRef, val value: T) extends RuntimeException with ControlException
+/** !!! This class has been replaced by NonLocalReturnControl and should be deleted.
+ *  But, it can't be deleted until starr is updated to use the new name.
+ */
+class NonLocalReturnException[T](val key: AnyRef, val value: T) extends ControlThrowable

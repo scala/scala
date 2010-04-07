@@ -25,10 +25,12 @@ object Scheduler extends DelegatingScheduler {
 
   def makeNewScheduler: IScheduler = {
     val sched = if (!ThreadPoolConfig.useForkJoin) {
+      // default is non-daemon
       val s = new ResizableThreadPoolScheduler(false)
       s.start()
       s
     } else {
+      // default is non-daemon, fair
       val s = new ForkJoinScheduler
       s.start()
       s

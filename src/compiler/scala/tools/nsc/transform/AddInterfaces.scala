@@ -116,7 +116,7 @@ abstract class AddInterfaces extends InfoTransform {
    *  </p>
    *  <ul>
    *    <li>
-   *      for every interface member of <code>iface</code> its implemention
+   *      for every interface member of <code>iface</code> its implementation
    *      method, if one is needed.
    *    </li>
    *    <li>
@@ -141,7 +141,7 @@ abstract class AddInterfaces extends InfoTransform {
       for (sym <- ifaceDecls.iterator) {
         if (isInterfaceMember(sym)) {
           if (needsImplMethod(sym)) {
-            val impl = sym.cloneSymbol(implClass).setInfo(sym.info).resetFlag(lateDEFERRED)
+            val impl = sym.cloneSymbol(implClass).resetFlag(lateDEFERRED)
             if (currentRun.compiles(implClass)) implMethodMap(sym) = impl
             decls enter impl
             sym setFlag lateDEFERRED
@@ -243,7 +243,7 @@ abstract class AddInterfaces extends InfoTransform {
         tree.symbol = implMethod
         new ChangeOwnerAndReturnTraverser(ifaceMethod, implMethod)(tree)
       case None =>
-        throw new Error("implMethod missing for " + ifaceMethod)
+        abort("implMethod missing for " + ifaceMethod)
     }
 
   private def implMemberDef(tree: Tree): Tree =

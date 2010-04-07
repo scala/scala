@@ -22,7 +22,7 @@ object Test {
     def vectorForward(label: String, n: Int): Vector[String] = {
       var a: Vector[String] = Vector.empty
       for (i <- 0 until n)
-        a = a.appendBack(label + i)
+        a = a :+ (label + i)
 
       assertVector(a, label, 0, n)
     }
@@ -30,7 +30,7 @@ object Test {
     def vectorBackward(label: String, n: Int): Vector[String] = {
       var a: Vector[String] = Vector.empty
       for (i <- 0 until n)
-        a = a.appendFront(label + (n-1-i))
+        a = (label + (n-1-i)) +: a
 
       assertVector(a, label, 0, n)
     }
@@ -92,8 +92,8 @@ object Test {
 
     def nextChunkSize = 3 //rand.nextInt(chunkLimit)
 
-    def seqBack() = for (i <- 0 until Math.min(nextChunkSize, N-max)) { a = a.appendBack("a"+max); max += 1 }
-    def seqFront() = for (i <- 0 until Math.min(nextChunkSize, min)) { min -= 1; a = a.appendFront("a"+min) }
+    def seqBack() = for (i <- 0 until Math.min(nextChunkSize, N-max)) { a = a :+ ("a"+max); max += 1 }
+    def seqFront() = for (i <- 0 until Math.min(nextChunkSize, min)) { min -= 1; a = ("a"+min) +: a }
 
     try {
 
@@ -104,7 +104,7 @@ object Test {
   } catch {
     case ex =>
       //println("----------------")
-      a.debug
+      //a.debug
       throw ex
   }
 

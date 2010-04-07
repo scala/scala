@@ -5,7 +5,7 @@ abstract class SimpleSwingApplication extends SwingApplication {
 
   override def startup(args: Array[String]) {
     val t = top
-    t.pack()
+    if (t.size == new Dimension(0,0)) t.pack()
     t.visible = true
   }
 
@@ -13,5 +13,5 @@ abstract class SimpleSwingApplication extends SwingApplication {
     this.getClass.getResource(path)
 
   def resourceFromUserDirectory(path: String): java.io.File =
-    new java.io.File(System.getProperty("user.dir"), path)
+    new java.io.File(util.Properties.userDir, path)
 }

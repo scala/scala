@@ -140,7 +140,7 @@ private[remote] class NetKernel(service: Service) {
 
   def terminate() {
     // tell all proxies to terminate
-    proxies.valuesIterator foreach { p => p.send(Terminate, null) }
+    proxies.values foreach { _.send(Terminate, null) }
 
     // tell service to terminate
     service.terminate()

@@ -30,7 +30,7 @@ import java.awt.event._
  *
  * @see javax.swing.JTextField
  */
-class TextField(text0: String, columns0: Int) extends TextComponent with TextComponent.HasColumns {
+class TextField(text0: String, columns0: Int) extends TextComponent with TextComponent.HasColumns with Action.Trigger.Wrapper {
   override lazy val peer: JTextField = new JTextField(text0, columns0) with SuperMixin
   def this(text: String) = this(text, 0)
   def this(columns: Int) = this("", columns)
@@ -48,7 +48,7 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
     publish(EditDone(TextField.this))
   }
 
-  override def onFirstSubscribe {
+  protected override def onFirstSubscribe {
     super.onFirstSubscribe
     peer.addActionListener(actionListener)
     peer.addFocusListener(new FocusAdapter {
@@ -56,7 +56,7 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
     })
   }
 
-  override def onLastUnsubscribe {
+  protected override def onLastUnsubscribe {
     super.onLastUnsubscribe
     peer.removeActionListener(actionListener)
   }
@@ -64,15 +64,16 @@ class TextField(text0: String, columns0: Int) extends TextComponent with TextCom
   def verifier: String => Boolean = s => peer.getInputVerifier.verify(peer)
   def verifier_=(v: String => Boolean) {
     peer.setInputVerifier(new InputVerifier {
+      private val old = peer.getInputVerifier
       def verify(c: JComponent) = v(text)
-      override def shouldYieldFocus(c: JComponent) =
-        peer.getInputVerifier.shouldYieldFocus(c)
+      override def shouldYieldFocus(c: JComponent) = old.shouldYieldFocus(c)
     })
   }
   def shouldYieldFocus: String=>Boolean = s => peer.getInputVerifier.shouldYieldFocus(peer)
   def shouldYieldFocus_=(y: String=>Boolean) {
     peer.setInputVerifier(new InputVerifier {
-      def verify(c: JComponent) = peer.getInputVerifier.verify(c)
+      private val old = peer.getInputVerifier
+      def verify(c: JComponent) = old.verify(c)
       override def shouldYieldFocus(c: JComponent) = y(text)
     })
   }

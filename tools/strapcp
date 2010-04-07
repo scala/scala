@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+
+THISDIR=`dirname $0`
+cp=`${THISDIR}/cpof ${THISDIR}/../build/strap/classes`
+fjbg=`${THISDIR}/abspath ${THISDIR}/../lib/fjbg.jar`
+
+echo ${cp}:${fjbg}

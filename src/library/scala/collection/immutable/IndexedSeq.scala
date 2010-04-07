@@ -14,8 +14,9 @@ package immutable
 import generic._
 import mutable.{ArrayBuffer, Builder}
 
-/** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
+/** A subtrait of <code>collection.IndexedSeq</code> which represents indexed sequences
  *  that cannot be mutated.
+ *  $indexedSeqInfo
  *
  *  @since 2.8
  */
@@ -36,5 +37,5 @@ object IndexedSeq extends SeqFactory[IndexedSeq] {
     def apply(idx: Int) = buf.apply(idx)
   }
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A] mapResult (buf => new Impl(buf))
+  def newBuilder[A]: Builder[A, IndexedSeq[A]] = Vector.newBuilder[A]
 }

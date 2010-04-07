@@ -10,8 +10,8 @@ package ast.parser
 import collection.mutable.Map
 import xml.{ EntityRef, Text }
 import xml.XML.{ xmlns }
-import util.Position
 import symtab.Flags.MUTABLE
+import scala.tools.util.StringOps.splitWhere
 
 /** This class builds instance of <code>Tree</code> that represent XML.
  *
@@ -161,9 +161,9 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
   }
 
   /** Returns (Some(prefix) | None, rest) based on position of ':' */
-  def splitPrefix(name: String): (Option[String], String) = (name indexOf ':') match {
-    case -1   => (None, name)
-    case i    => (Some(name take i), name drop (i + 1))
+  def splitPrefix(name: String): (Option[String], String) = splitWhere(name, _ == ':', true) match {
+    case Some((pre, rest))  => (Some(pre), rest)
+    case _                  => (None, name)
   }
 
   /** Various node constructions. */
@@ -191,7 +191,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
 
     /** Extract all the namespaces from the attribute map. */
     val namespaces: List[Tree] =
-      for (z <- attrMap.keysIterator.toList ; if z startsWith xmlns) yield {
+      for (z <- attrMap.keys.toList ; if z startsWith xmlns) yield {
         val ns = splitPrefix(z) match {
           case (Some(_), rest)  => rest
           case _                => null

@@ -48,15 +48,7 @@ trait StackProxy[A] extends Stack[A] with Proxy {
     this
   }
 
-  override def pushAll(elems: Iterator[A]): this.type = {
-    self pushAll elems
-    this
-  }
-
-  override def pushAll(elems: scala.collection.Traversable[A]): this.type = {
-    self pushAll elems
-    this
-  }
+  override def pushAll(xs: TraversableOnce[A]): this.type = { self pushAll xs; this }
 
   /** Pushes all elements provided by an <code>Iterable</code> object
    *  on top of the stack. The elements are pushed in the order they
@@ -64,21 +56,8 @@ trait StackProxy[A] extends Stack[A] with Proxy {
    *
    *  @param  iter        an iterable object
    */
-  @deprecated("use pushAll") override def ++=(iter: scala.collection.Iterable[A]): this.type = {
-    self ++= iter
-    this
-  }
+  @deprecated("use pushAll") override def ++=(xs: TraversableOnce[A]): this.type = { self ++= xs ; this }
 
-  /** Pushes all elements provided by an iterator
-   *  on top of the stack. The elements are pushed in the order they
-   *  are given out by the iterator.
-   *
-   *  @param  iter        an iterator
-   */
-  @deprecated("use pushAll") override def ++=(it: Iterator[A]): this.type = {
-    self ++= it
-    this
-  }
 
   override def push(elem1: A, elem2: A, elems: A*): this.type = {
     self.push(elem1).push(elem2).pushAll(elems)

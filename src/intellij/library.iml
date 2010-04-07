@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module relativePaths="true" type="JAVA_MODULE" version="4">
+  <component name="FacetManager">
+    <facet type="Scala" name="Scala">
+      <configuration />
+    </facet>
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../META-INF" />
+    <content url="file://$MODULE_DIR$/../../bin" />
+    <content url="file://$MODULE_DIR$/../../lib" />
+    <content url="file://$MODULE_DIR$/../library">
+      <sourceFolder url="file://$MODULE_DIR$/../library" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Project ant library" level="project" />
+    <orderEntry type="library" name="Project Scala SDK" level="project" />
+    <orderEntry type="library" name="ant" level="application" />
+  </component>
+</module>
+

@@ -20,22 +20,7 @@ trait MatrixAdditions extends ast.TreeDSL
   import symtab.Flags
   import CODE._
   import Debug._
-
-  // Extractors which can spot pure true/false expressions
-  // even through the haze of braces
-  abstract class SeeThroughBlocks[T] {
-    protected def unapplyImpl(x: Tree): T
-    def unapply(x: Tree): T = x match {
-      case Block(Nil, expr)         => unapply(expr)
-      case _                        => unapplyImpl(x)
-    }
-  }
-  object IsTrue extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure TRUE
-  }
-  object IsFalse extends SeeThroughBlocks[Boolean] {
-    protected def unapplyImpl(x: Tree): Boolean = x equalsStructure FALSE
-  }
+  import treeInfo.{ IsTrue, IsFalse }
 
   /** The Squeezer, responsible for all the squeezing.
    */
@@ -45,9 +30,15 @@ trait MatrixAdditions extends ast.TreeDSL
     def squeezedBlockPVs(pvs: List[PatternVar], exp: Tree): Tree =
       squeezedBlock(pvs map (_.valDef), exp)
 
+    /** Compresses multiple Blocks. */
+    def mkBlock(stats: List[Tree], expr: Tree): Tree = expr match {
+      case Block(stats1, expr1) if stats.isEmpty  => mkBlock(stats1, expr1)
+      case _                                      => Block(stats, expr)
+    }
+
     def squeezedBlock(vds: List[Tree], exp: Tree): Tree =
-      if (settings_squeeze) Block(Nil, squeezedBlock1(vds, exp))
-      else                  Block(vds, exp)
+      if (settings_squeeze) mkBlock(Nil, squeezedBlock1(vds, exp))
+      else                  mkBlock(vds, exp)
 
     private def squeezedBlock1(vds: List[Tree], exp: Tree): Tree = {
       class RefTraverser(sym: Symbol) extends Traverser {
@@ -169,16 +160,26 @@ trait MatrixAdditions extends ast.TreeDSL
           def cmpSymbols(t1: Type, t2: Type)  = t1.typeSymbol eq t2.typeSymbol
           def coversSym = {
             val tpe = decodedEqualsType(p.tpe)
-            lazy val lmoc = sym.linkedModuleOfClass
+            lazy val lmoc = sym.companionModule
             val symtpe =
               if ((sym hasFlag Flags.MODULE) && (lmoc ne NoSymbol))
                 singleType(sym.tpe.prefix, lmoc)   // e.g. None, Nil
               else sym.tpe
 
+            /** Note to Martin should you come through this way: this
+             *  logic looks way overcomplicated for the intention, but a little
+             *  experimentation showed that at least most of it is serving
+             *  some necessary purpose.  It doesn't seem like much more than
+             *  "sym.tpe matchesPattern tpe" ought to be necessary though.
+             *
+             *  For the time being I tacked the matchesPattern test onto the
+             *  end to address #3097.
+             */
             (tpe.typeSymbol == sym) ||
             (symtpe <:< tpe) ||
             (symtpe.parents exists (x => cmpSymbols(x, tpe))) || // e.g. Some[Int] <: Option[&b]
-            ((tpe.prefix memberType sym) <:< tpe)  // outer, see combinator.lexical.Scanner
+            ((tpe.prefix memberType sym) <:< tpe) ||  // outer, see combinator.lexical.Scanner
+            (symtpe matchesPattern tpe)
           }
 
           cond(p.tree) {
@@ -195,18 +196,13 @@ trait MatrixAdditions extends ast.TreeDSL
       private def requiresExhaustive(s: Symbol) =
          (s hasFlag MUTABLE) &&                 // indicates that have not yet checked exhaustivity
         !(s hasFlag TRANS_FLAG) &&              // indicates @unchecked
-         (s.tpe.typeSymbol hasFlag SEALED) &&
+         (s.tpe.typeSymbol.isSealed) &&
          { s resetFlag MUTABLE ; true }         // side effects MUTABLE flag
-
-      private def sealedSymsFor(s: Symbol): Set[Symbol] = {
-        val kids = s.children flatMap sealedSymsFor
-        if (s hasFlag ABSTRACT) kids else kids + s
-      }
 
       private lazy val inexhaustives: List[List[Combo]] = {
         val collected =
           for ((pv, i) <- tvars.zipWithIndex ; val sym = pv.lhs ; if requiresExhaustive(sym)) yield
-            i -> sealedSymsFor(sym.tpe.typeSymbol)
+            i -> sym.tpe.typeSymbol.sealedDescendants
 
         val folded =
           collected.foldRight(List[List[Combo]]())((c, xs) => {

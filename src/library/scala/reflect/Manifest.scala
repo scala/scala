@@ -27,18 +27,33 @@ import scala.collection.immutable.{List, Nil}
   * </p>
   */
 @serializable
-trait Manifest[T] extends ClassManifest[T] {
+trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = List()
 
   override def arrayManifest: Manifest[Array[T]] =
     Manifest.classType[Array[T]](arrayClass[T](erasure))
+
+  override def canEqual(that: Any): Boolean = that match {
+    case _: Manifest[_]   => true
+    case _                => false
+  }
+  override def equals(that: Any): Boolean = that match {
+    case m: Manifest[_] if m canEqual this  => (this <:< m) && (m <:< this)
+    case _                                  => false
+  }
+  override def hashCode = this.erasure.hashCode
 }
 
 @serializable
-trait AnyValManifest[T] extends Manifest[T] {
+trait AnyValManifest[T] extends Manifest[T] with Equals {
   import Manifest.{ Any, AnyVal }
   override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any) || (that eq AnyVal)
+  override def canEqual(other: Any) = other match {
+    case _: AnyValManifest[_] => true
+    case _                    => false
+  }
   override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+  override def hashCode = System.identityHashCode(this)
 }
 
 /** <ps>
@@ -137,6 +152,7 @@ object Manifest {
     override def toString = "Any"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Any
   }
 
@@ -144,6 +160,7 @@ object Manifest {
     override def toString = "Object"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Object
   }
 
@@ -151,6 +168,7 @@ object Manifest {
     override def toString = "AnyVal"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.AnyVal
   }
 
@@ -159,6 +177,7 @@ object Manifest {
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Null
   }
 
@@ -166,6 +185,7 @@ object Manifest {
     override def toString = "Nothing"
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def hashCode = System.identityHashCode(this)
     private def readResolve(): Any = Manifest.Nothing
   }
 

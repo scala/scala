@@ -17,14 +17,19 @@ package scala.actors
  *
  *  @author Philipp Haller
  */
-private[actors] class ActorTask(actor: Actor, fun: () => Unit) extends ReactorTask[Actor](actor, fun) {
+private[actors] class ActorTask(actor: Actor,
+                                fun: () => Unit,
+                                handler: PartialFunction[Any, Any],
+                                msg: Any)
+  extends ReplyReactorTask(actor, fun, handler, msg) {
 
-  protected override def beforeExecuting() {
+  protected override def beginExecution() {
+    super.beginExecution()
     if (actor.shouldExit)
       actor.exit()
   }
 
-  protected override def afterExecuting(e: Exception) {
+  protected override def terminateExecution(e: Exception) {
     actor.synchronized {
       if (!actor.links.isEmpty)
         actor.exitLinked(e)

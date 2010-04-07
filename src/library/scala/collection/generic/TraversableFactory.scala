@@ -38,7 +38,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
   extends GenericCompanion[CC] {
 
   /** A generic implementation of the `CanBuildFrom` trait, which forwards
-   *  all calls to `apply(from)` to the `genericBuilder` methof of
+   *  all calls to `apply(from)` to the `genericBuilder` method of
    *  $coll `from`, and which forwards all calls of `apply()` to the
    *  `newBuilder` method of this factory.
    */

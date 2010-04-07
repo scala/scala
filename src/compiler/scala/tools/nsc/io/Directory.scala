@@ -10,11 +10,16 @@ package scala.tools.nsc
 package io
 
 import java.io.{ File => JFile }
-import collection.Traversable
 
-object Directory
-{
-  def apply(path: Path)       = path.toDirectory
+object Directory {
+  import scala.util.Properties.{ tmpDir, userHome, userDir }
+
+  private def normalizePath(s: String) = Some(apply(Path(s).normalize))
+  def Current: Option[Directory]  = if (userDir == "") None else normalizePath(userDir)
+  def Home: Option[Directory]     = if (userHome == "") None else normalizePath(userHome)
+  def TmpDir: Option[Directory]   = if (tmpDir == "") None else normalizePath(tmpDir)
+
+  def apply(path: Path): Directory = path.toDirectory
 
   // Like File.makeTemp but creates a directory instead
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null): Directory = {
@@ -30,11 +35,12 @@ import Path._
  *  @author  Paul Phillips
  *  @since   2.8
  */
-class Directory(jfile: JFile) extends Path(jfile)
-{
+class Directory(jfile: JFile) extends Path(jfile) {
+  override def toAbsolute: Directory = if (isAbsolute) this else super.toAbsolute.toDirectory
   override def toDirectory: Directory = this
   override def toFile: File = new File(jfile)
   override def isValid = jfile.isDirectory() || !jfile.exists()
+  override def normalize: Directory = super.normalize.toDirectory
 
   /** An iterator over the contents of this directory.
    */
@@ -44,8 +50,14 @@ class Directory(jfile: JFile) extends Path(jfile)
       case xs     => xs.iterator map Path.apply
     }
 
-  def dirs: Iterator[Directory] = list partialMap { case x: Directory => x }
-  def files: Iterator[File] = list partialMap { case x: File => x }
+  def dirs: Iterator[Directory] = list collect { case x: Directory => x }
+  def files: Iterator[File] = list collect { case x: File => x }
+
+  override def walkFilter(cond: Path => Boolean): Iterator[Path] =
+    list filter cond flatMap (_ walkFilter cond)
+
+  def deepDirs: Iterator[Directory] = Path.onlyDirs(deepList())
+  def deepFiles: Iterator[File] = Path.onlyFiles(deepList())
 
   /** If optional depth argument is not given, will recurse
    *  until it runs out of contents.
@@ -59,7 +71,7 @@ class Directory(jfile: JFile) extends Path(jfile)
    *  to the (optionally) given depth.
    */
   def subdirs(depth: Int = 1): Iterator[Directory] =
-    deepList(depth) partialMap { case x: Directory => x }
+    deepList(depth) collect { case x: Directory => x }
 
   /** Deletes the directory recursively. Returns false on failure.
    *  Use with caution!
@@ -72,6 +84,4 @@ class Directory(jfile: JFile) extends Path(jfile)
     }
     f.delete()
   }
-
-  override def toString() = "Directory(%s)".format(path)
 }

@@ -1,0 +1,13 @@
+builder > A.scala B.scala
+compiling Set(A.scala, B.scala)
+Changes: Map()
+builder > A.scala
+compiling Set(A.scala)
+Changes: Map(trait A -> List(Changed(Definition(A.T))[type T changed from A.this.T to A.this.T flags: ]))
+invalidate B.scala because it references changed definition [Changed(Definition(A.T))[type T changed from A.this.T to A.this.T flags: ]]
+compiling Set(B.scala)
+B.scala:2: error: type mismatch;
+ found   : a.T
+ required: Int
+  def x(a: A): Int = a.x
+                       ^

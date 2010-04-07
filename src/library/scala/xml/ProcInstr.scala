@@ -9,7 +9,6 @@
 // $Id$
 
 package scala.xml
-import collection.mutable.StringBuilder
 
 /** an XML node for processing instructions (PI)
  *

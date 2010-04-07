@@ -28,14 +28,14 @@ package scala.util.control
  */
 class Breaks {
 
-  private val breakException = new BreakException
+  private val breakException = new BreakControl
 
   /** A block from which one can exit with a `break''. */
   def breakable(op: => Unit) {
     try {
       op
     } catch {
-      case ex: BreakException =>
+      case ex: BreakControl =>
         if (ex ne breakException) throw ex
     }
   }
@@ -61,5 +61,5 @@ class Breaks {
  */
 object Breaks extends Breaks
 
-private class BreakException extends RuntimeException with ControlException
+private class BreakControl extends ControlThrowable
 

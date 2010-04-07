@@ -13,7 +13,7 @@ package scala.collection
 package mutable
 
 import generic._
-
+import annotation.migration
 
 /** This class implements priority queues using a heap.
  *  To prioritize elements of type T there must be an implicit
@@ -28,7 +28,6 @@ import generic._
 class PriorityQueue[A](implicit ord: Ordering[A])
       extends Seq[A]
       with SeqLike[A, PriorityQueue[A]]
-      with Addable[A, PriorityQueue[A]]
       with Growable[A]
       with Cloneable[PriorityQueue[A]]
       with Builder[A, PriorityQueue[A]]
@@ -47,8 +46,8 @@ class PriorityQueue[A](implicit ord: Ordering[A])
 
   private val resarr = new ResizableArrayAccess[A]
 
-  resarr.p_size0 += 1                                    // we do not use array(0)
-  override def length: Int = resarr.length - 1   // adjust length accordingly
+  resarr.p_size0 += 1                           // we do not use array(0)
+  override def length: Int = resarr.length - 1  // adjust length accordingly
   override def size: Int = length
   override def isEmpty: Boolean = resarr.p_size0 < 2
   override def repr = this
@@ -116,6 +115,23 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     }
   }
 
+  @deprecated(
+    "Use += instead if you intend to add by side effect to an existing collection.\n"+
+    "Use `clone() +=' if you intend to create a new collection."
+  )
+  def +(elem: A): PriorityQueue[A] = { this.clone() += elem }
+
+  /** Add two or more elements to this set.
+   *  @param    elem1 the first element.
+   *  @param    kv2 the second element.
+   *  @param    kvs the remaining elements.
+   */
+  @deprecated(
+    "Use ++= instead if you intend to add by side effect to an existing collection.\n"+
+    "Use `clone() ++=' if you intend to create a new collection."
+  )
+  def +(elem1: A, elem2: A, elems: A*) = { this.clone().+=(elem1, elem2, elems : _*) }
+
   /** Inserts a single element into the priority queue.
    *
    *  @param  elem        the element to insert
@@ -128,27 +144,12 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     this
   }
 
-  def +(elem: A): PriorityQueue[A] = { this.clone() += elem }
-
-  /** Add two or more elements to this set.
-   *  @param    elem1 the first element.
-   *  @param    kv2 the second element.
-   *  @param    kvs the remaining elements.
-   */
-  override def +(elem1: A, elem2: A, elems: A*) = { this.clone().+=(elem1, elem2, elems : _*) }
-
   /** Adds all elements provided by an <code>Iterable</code> object
    *  into the priority queue.
    *
    *  @param  iter        an iterable object
    */
-  override def ++(elems: scala.collection.Traversable[A]) = { this.clone() ++= elems }
-
-  /** Adds all elements provided by an iterator into the priority queue.
-   *
-   *  @param  it        an iterator
-   */
-  override def ++(iter: Iterator[A]) = { this.clone() ++= iter } // ...whereas this doesn't?
+  def ++(xs: TraversableOnce[A]) = { this.clone() ++= xs }
 
   /** Adds all elements to the queue.
    *
@@ -223,7 +224,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   }
 
   override def reverseIterator = new Iterator[A] {
-    val arr = new Array[Any](size)
+    val arr = new Array[Any](PriorityQueue.this.size)
     iterator.copyToArray(arr)
     var i = arr.size - 1
     def hasNext: Boolean = i >= 0
@@ -267,9 +268,9 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   // }
 }
 
-
-
-
-
-
-
+// !!! TODO - but no SortedSeqFactory (yet?)
+// object PriorityQueue extends SeqFactory[PriorityQueue] {
+//   def empty[A](implicit ord: Ordering[A]): PriorityQueue[A] = new PriorityQueue[A](ord)
+//   implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, PriorityQueue] =
+// }
+//

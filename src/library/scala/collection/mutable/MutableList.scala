@@ -29,7 +29,7 @@ import immutable.{List, Nil}
  */
 @serializable @SerialVersionUID(5938451523372603072L)
 class MutableList[A] extends LinearSeq[A]
-                        with LinearSeqLike[A, MutableList[A]]
+                        with LinearSeqOptimized[A, MutableList[A]]
                         with Builder[A, MutableList[A]] {
 
   override protected[this] def newBuilder = new MutableList[A]

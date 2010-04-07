@@ -1,5 +1,4 @@
-import scala.actors._
-import scala.actors.Actor._
+import scala.actors.ReplyReactor
 
 class MyActor extends ReplyReactor {
   def act() {
@@ -19,7 +18,7 @@ object Test {
     val a = new MyActor
     a.start()
 
-    val b = new Reactor {
+    val b = new ReplyReactor {
       def act() {
         react {
           case r: MyActor =>

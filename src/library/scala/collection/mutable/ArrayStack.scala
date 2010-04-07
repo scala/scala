@@ -104,15 +104,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *
    * @param x The source of elements to push
    */
-  def ++=(x: scala.collection.Iterable[T]): this.type = { x.foreach(this +=(_)); this }
-
-
-  /**
-   * Pushes all the provided elements onto the stack.
-   *
-   * @param x The source of elements to push
-   */
-  def ++=(x: Iterator[T]): this.type = { x.foreach(this +=(_)); this }
+  def ++=(xs: TraversableOnce[T]): this.type = { xs foreach += ; this }
 
   /**
    *  Alias for push.

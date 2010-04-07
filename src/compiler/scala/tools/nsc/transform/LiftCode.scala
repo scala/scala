@@ -79,7 +79,7 @@ abstract class LiftCode extends Transform with Reifiers {
           gen.mkAttributedRef(definitions.getModule(name))
         else {
           val name = className(c)
-          if (name.length() == 0) throw new Error("don't know how to inject " + value)
+          if (name.length() == 0) abort("don't know how to inject " + value)
           val injectedArgs = new ListBuffer[Tree]
           for (i <- 0 until c.productArity)
             injectedArgs += inject(c.productElement(i))
@@ -103,7 +103,7 @@ abstract class LiftCode extends Transform with Reifiers {
         case null =>
           gen.mkAttributedRef(definitions.getModule("scala.reflect.NoType"))
         case _ =>
-          throw new Error("don't know how to inject " + value)
+          abort("don't know how to inject " + value)
       }
     }
   } // Injector

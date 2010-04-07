@@ -231,7 +231,7 @@ final class ListBuffer[A]
    *
    *  @param  n  the index which refers to the element to delete.
    *  @return n  the element that was formerly at position <code>n</code>.
-   *  @pre       an element exists at position <code>n</code>
+   *  @note      an element must exists at position <code>n</code>
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def remove(n: Int): A = {
@@ -335,5 +335,5 @@ final class ListBuffer[A]
  */
 object ListBuffer extends SeqFactory[ListBuffer] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListBuffer[A]] = new GenericCanBuildFrom[A]
-  def newBuilder[A]: Builder[A, ListBuffer[A]] = new AddingBuilder(new ListBuffer[A])
+  def newBuilder[A]: Builder[A, ListBuffer[A]] = new GrowingBuilder(new ListBuffer[A])
 }

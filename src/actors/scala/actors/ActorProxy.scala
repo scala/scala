@@ -16,7 +16,6 @@ import java.lang.Thread
  * The class <code>ActorProxy</code> provides a dynamic actor proxy for normal
  * Java threads.
  *
- * @version 0.9.8
  * @author Philipp Haller
  */
 private[actors] class ActorProxy(t: Thread, override final val scheduler: IScheduler) extends Actor {

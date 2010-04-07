@@ -9,7 +9,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.tools.nsc.util.Position
 import scala.collection.mutable.{ListBuffer, HashMap}
 
 abstract class CleanUp extends Transform with ast.TreeDSL {
@@ -59,6 +58,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       * not part of it, as opposed to isValueClass in definitions. scala.Int is
       * a value class, java.lang.Integer is not. */
     def isJavaValueClass(sym: Symbol) = boxedClass contains sym
+    def isJavaValueType(tp: Type) = isJavaValueClass(tp.typeSymbol)
+
+    /** The boxed type if it's a primitive; identity otherwise.
+     */
+    def toBoxedType(tp: Type) = if (isJavaValueType(tp)) boxedClass(tp.typeSymbol).tpe else tp
 
     override def transform(tree: Tree): Tree = tree match {
 
@@ -89,7 +93,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        * - The type-checker has prevented dynamic applies on methods which
        *   parameter's erased types are not statically known at the call site.
        *   This is necessary to allow dispatching the call to the correct
-       *   method (dispatching on paramters is static in Scala). In practice,
+       *   method (dispatching on parameters is static in Scala). In practice,
        *   this limitation only arises when the called method is defined as a
        *   refinement, where the refinement defines a parameter based on a
        *   type variable. */
@@ -327,20 +331,62 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
          *   a dynamic call will box them as a side-effect. */
 
         /* ### CALLING THE APPLY ### */
-        def callAsReflective(paramTypes: List[Type], resType: Type, structResType: Type): Tree = localTyper typed {
-          def fixResult(tree: Tree): Tree = localTyper typed {
-            structResType.typeSymbol match {
-              case UnitClass    => BLOCK(tree, REF(BoxedUnit_UNIT))
-              case ObjectClass  => tree
-              case _            => tree AS_ATTR structResType
+        def callAsReflective(paramTypes: List[Type], resType: Type): Tree = {
+          /* Some info about the type of the method being called. */
+          val methSym       = ad.symbol
+          val boxedResType  = toBoxedType(resType)      // Int -> Integer
+          val resultSym     = boxedResType.typeSymbol
+          // If this is a primitive method type (like '+' in 5+5=10) then the
+          // parameter types and the (unboxed) result type should all be primitive types,
+          // and the method name should be in the primitive->structural map.
+          def isJavaValueMethod = (
+            (resType :: paramTypes forall isJavaValueType) && // issue #1110
+            (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name)
+          )
+          // Erasure lets Unit through as Unit, but a method returning Any will have an
+          // erased return type of Object and should also allow Unit.
+          def isDefinitelyUnit  = (resultSym == UnitClass)
+          def isMaybeUnit       = (resultSym == ObjectClass) || isDefinitelyUnit
+          // If there's any chance this signature could be met by an Array.
+          val isArrayMethodSignature = {
+            def typesMatchApply = paramTypes match {
+              case List(tp) => tp <:< IntClass.tpe
+              case _        => false
             }
+            def typesMatchUpdate = paramTypes match {
+              case List(tp1, tp2) => (tp1 <:< IntClass.tpe) && isMaybeUnit
+              case _              => false
+            }
+
+            (methSym.name == nme.length && params.isEmpty) ||
+            (methSym.name == nme.clone_ && params.isEmpty) ||
+            (methSym.name == nme.apply  && typesMatchApply) ||
+            (methSym.name == nme.update && typesMatchUpdate)
           }
-          val qualSym = qual.tpe.typeSymbol
-          val methSym = ad.symbol
-          def args = qual :: params
+
+          /* Some info about the argument at the call site. */
+          val qualSym           = qual.tpe.typeSymbol
+          val args              = qual :: params
+          def isDefinitelyArray = (qualSym == ArrayClass)
+          def isMaybeArray      = (qualSym == ObjectClass) || isDefinitelyArray
+          def isMaybeBoxed      = platform isMaybeBoxed qualSym
+
+          // This is complicated a bit by trying to handle Arrays correctly.
+          // Under normal circumstances if the erased return type is Object then
+          // we're not going to box it to Unit, but that is the situation with
+          // a signature like def f(x: { def update(x: Int, y: Long): Any })
+          //
+          // However we only want to do that boxing if it has been determined
+          // to be an Array and a method returning Unit.  But for this fixResult
+          // could be called in one place: instead it is called separately from the
+          // unconditional outcomes (genValueCall, genArrayCall, genDefaultCall.)
+          def fixResult(tree: Tree, mustBeUnit: Boolean = false) =
+            if (mustBeUnit || resultSym == UnitClass) BLOCK(tree, REF(BoxedUnit_UNIT))  // boxed unit
+            else if (resultSym == ObjectClass) tree                                     // no cast necessary
+            else tree AS_ATTR boxedResType                                              // cast to expected type
 
           /** Normal non-Array call */
-          def defaultCall = {
+          def genDefaultCall = {
             // reflective method call machinery
             val invokeName  = MethodClass.tpe member nme.invoke_                                // reflect.Method.invoke(...)
             def cache       = REF(reflectiveMethodCache(ad.symbol.name.toString, paramTypes))   // cache Symbol
@@ -354,44 +400,40 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             def catchBody   = Throw(Apply(Select(Ident(invokeExc), nme.getCause), Nil))
 
             // try { method.invoke } catch { case e: InvocationTargetExceptionClass => throw e.getCause() }
-            fixResult( TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY )
+            fixResult(TRY (invocation) CATCH { CASE (catchVar) ==> catchBody } ENDTRY)
           }
 
-          def useValueOperator =
-            isMaybeBoxed(qualSym) && // may be a boxed value class
-            (getPrimitiveReplacementForStructuralCall isDefinedAt methSym.name) &&
-            ((resType :: paramTypes) forall (x => isJavaValueClass(x.typeSymbol))) // issue #1110
-
-          def isArrayMethodSignature =
-            (methSym.name == nme.length && params.isEmpty) ||
-            (methSym.name == nme.update && (structResType.typeSymbol eq UnitClass)) ||
-            (methSym.name == nme.apply  && params.size == 1) ||
-            (methSym.name == nme.clone_ && params.isEmpty)
-
-          def isDefinitelyArray = isArrayMethodSignature && (qualSym == ArrayClass)
-          def isMaybeArray = isArrayMethodSignature && (qualSym == ObjectClass) // precondition: !isDefinitelyArray
-
-          def genArrayCall = methSym.name match {
-            case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
-            case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
-            case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
-            case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
-          }
-          def genArrayTest = {
-            def oneTest(s: Symbol) = qual IS_OBJ arrayType(s.tpe)
-            OR((ObjectClass :: ScalaValueClasses filterNot (_ eq UnitClass)) map oneTest: _*)
+          /** A possible primitive method call, represented by methods in BoxesRunTime. */
+          def genValueCall(operator: Symbol) = fixResult(REF(operator) APPLY args)
+          def genValueCallWithTest = {
+            val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
+            IF (test) THEN genValueCall(operator) ELSE genDefaultCall
           }
 
-          val callCode =
-            if (useValueOperator) {
-              val (operator, test)  = getPrimitiveReplacementForStructuralCall(methSym.name)
-              IF (test) THEN fixResult(REF(operator) APPLY args) ELSE defaultCall
-            }
-            else if (isDefinitelyArray) genArrayCall
-            else if (isMaybeArray) IF (genArrayTest) THEN genArrayCall ELSE defaultCall
-            else defaultCall
+          /** A native Array call. */
+          def genArrayCall = fixResult(
+            methSym.name match {
+              case nme.length => REF(boxMethod(IntClass)) APPLY (REF(arrayLengthMethod) APPLY args)
+              case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
+              case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
+              case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
+            },
+            mustBeUnit = methSym.name == nme.update
+          )
 
-          localTyper typed callCode
+          /** A conditional Array call, when we can't determine statically if the argument is
+           *  an Array, but the structural type method signature is consistent with an Array method
+           *  so we have to generate both kinds of code.
+           */
+          def genArrayCallWithTest =
+            IF ((qual GETCLASS()) DOT nme.isArray) THEN genArrayCall ELSE genDefaultCall
+
+          localTyper typed (
+            if (isMaybeBoxed && isJavaValueMethod) genValueCallWithTest
+            else if (isArrayMethodSignature && isDefinitelyArray) genArrayCall
+            else if (isArrayMethodSignature && isMaybeArray) genArrayCallWithTest
+            else genDefaultCall
+          )
         }
 
         if (settings.refinementMethodDispatch.value == "invoke-dynamic") {
@@ -415,8 +457,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
           /* This creates the tree that does the reflective call (see general comment
            * on the apply-dynamic tree for its format). This tree is simply composed
-           * of three succesive calls, first to getClass on the callee, then to
-           * getMethod on the classs, then to invoke on the method.
+           * of three successive calls, first to getClass on the callee, then to
+           * getMethod on the class, then to invoke on the method.
            * - getMethod needs an array of classes for choosing one amongst many
            *   overloaded versions of the method. This is provided by paramTypeClasses
            *   and must be done on the static type as Scala's dispatching is static on
@@ -438,10 +480,9 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                 val sym = currentOwner.newValue(ad.pos, mkTerm("qual")) setInfo qual0.tpe
                 qual = REF(sym)
 
-                def structResType = if (isJavaValueClass(resType.typeSymbol)) boxedClass(resType.typeSymbol).tpe else resType
                 BLOCK(
                   VAL(sym) === qual0,
-                  callAsReflective(mparams map (_.tpe), resType, structResType)
+                  callAsReflective(mparams map (_.tpe), resType)
                 )
               }
           }
@@ -600,7 +641,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
     /* Returns the symbol and the tree for the symbol field interning a reference to a symbol 'synmname'.
      * If it doesn't exist, i.e. the symbol is encountered the first time,
-     * it creates a new static field definition and initalization and returns it.
+     * it creates a new static field definition and initialization and returns it.
      */
     private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): (Symbol, Tree, Tree) =
       symbolStaticFields.getOrElseUpdate(symname, {

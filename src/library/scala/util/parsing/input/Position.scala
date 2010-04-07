@@ -53,7 +53,7 @@ trait Position {
    *<pre>    List(this, is, a, line, from, the, document)
    *                  ^</pre>
    */
-  def longString = lineContents+"\n"+(" " * (column - 1))+"^"
+  def longString = lineContents+"\n"+lineContents.take(column-1).map{x => if (x == '\t') x else ' ' } + "^"
 
   /** Compare this position to another, by first comparing their line numbers,
    * and then -- if necessary -- using the columns to break a tie.

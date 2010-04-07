@@ -7,12 +7,12 @@
 package scala.tools.nsc
 package symtab
 
-import scala.util.NameTransformer
+import scala.reflect.NameTransformer
+import util.Chars.isOperatorPart
 
-trait StdNames {
-  self: SymbolTable =>
+trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
 
-  object nme {
+  object nme extends StandardNames {
 
     // Scala keywords; enter them first to minimize scanner.maxKey
     val ABSTRACTkw = newTermName("abstract")
@@ -73,7 +73,6 @@ trait StdNames {
 
     val LOCALDUMMY_PREFIX_STRING = "<local "
     val SUPER_PREFIX_STRING = "super$"
-    val EXPAND_SEPARATOR_STRING = "$$"
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val TUPLE_FIELD_PREFIX_STRING = "_"
     val CHECK_IF_REFUTABLE_STRING = "check$ifrefutable$"
@@ -88,7 +87,7 @@ trait StdNames {
     def LOCAL(clazz: Symbol) = newTermName(LOCALDUMMY_PREFIX_STRING + clazz.name+">")
     def TUPLE_FIELD(index: Int) = newTermName(TUPLE_FIELD_PREFIX_STRING + index)
 
-    val LOCAL_SUFFIX = newTermName(" ")
+    val LOCAL_SUFFIX = newTermName(LOCAL_SUFFIX_STRING)
     val SETTER_SUFFIX = encode("_=")
     val IMPL_CLASS_SUFFIX = newTermName("$class")
     val MODULE_SUFFIX = newTermName("$module")
@@ -103,22 +102,16 @@ trait StdNames {
     def isTraitSetterName(name: Name) = isSetterName(name) && name.pos(TRAIT_SETTER_SEPARATOR_STRING) < name.length
     def isOpAssignmentName(name: Name) =
       name(name.length - 1) == '=' &&
-      isOperatorCharacter(name(0)) &&
+      isOperatorPart(name(0)) &&
       name(0) != '=' && name != NEraw && name != LEraw && name != GEraw
 
-    def isOperatorCharacter(c: Char) = c match {
-      case '~' | '!' | '@' | '#' | '%' |
-           '^' | '*' | '+' | '-' | '<' |
-           '>' | '?' | ':' | '=' | '&' |
-           '|' | '\\'| '/' => true
-      case _ =>
-        val chtp = Character.getType(c)
-        chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
-      }
+    /** The expanded setter name of `name' relative to this class `base`
+     */
+    def expandedSetterName(name: Name, base: Symbol): Name =
+      expandedName(name, base, separator = TRAIT_SETTER_SEPARATOR_STRING)
 
     /** If `name' is an expandedName name, the original name.
      *  Otherwise `name' itself.
-     *  @see Symbol.expandedName
      */
     def originalName(name: Name): Name = {
       var i = name.length
@@ -183,19 +176,11 @@ trait StdNames {
     val LOCALCHILD = newTypeName("<local child>")
 
     val NOSYMBOL = newTermName("<none>")
-    val EMPTY = newTermName("")
     val ANYNAME = newTermName("<anyname>")
     val WILDCARD = newTermName("_")
     val WILDCARD_STAR = newTermName("_*")
 
-    val ANON_CLASS_NAME = newTermName("$anon")
-    val ANON_FUN_NAME = newTermName("$anonfun")
-    val REFINE_CLASS_NAME = newTermName("<refinement>")
-    val EMPTY_PACKAGE_NAME = newTermName("<empty>")
-    val IMPORT = newTermName("<import>")
     val STAR = newTermName("*")
-    val ROOT = newTermName("<root>")
-    val ROOTPKG = newTermName("_root_")
     val REPEATED_PARAM_CLASS_NAME = newTermName("<repeated>")
     val JAVA_REPEATED_PARAM_CLASS_NAME = newTermName("<repeated...>")
     val BYNAME_PARAM_CLASS_NAME = newTermName("<byname>")
@@ -220,6 +205,7 @@ trait StdNames {
     val PERCENT = encode("%")
     val EQL = encode("=")
     val USCOREEQL = encode("_=")
+    val HASHHASH = encode("##")
 
     val Nothing = newTermName("Nothing")
     val Null = newTermName("Null")
@@ -268,6 +254,7 @@ trait StdNames {
     val assume_ = newTermName("assume")
     val asInstanceOf_ = newTermName("asInstanceOf")
     val box = newTermName("box")
+    val bytes = newTermName("bytes")
     val canEqual_ = newTermName("canEqual")
     val checkInitialized = newTermName("checkInitialized")
     val classOf = newTermName("classOf")
@@ -295,10 +282,12 @@ trait StdNames {
     val getCause = newTermName("getCause")
     val getClass_ = newTermName("getClass")
     val getMethod_ = newTermName("getMethod")
+    val hash_ = newTermName("hash")
     val hashCode_ = newTermName("hashCode")
     val hasNext = newTermName("hasNext")
     val head = newTermName("head")
     val invoke_ = newTermName("invoke")
+    val isArray = newTermName("isArray")
     val isInstanceOf_ = newTermName("isInstanceOf")
     val isDefinedAt = newTermName("isDefinedAt")
     val isEmpty = newTermName("isEmpty")
@@ -320,6 +309,7 @@ trait StdNames {
     val print = newTermName("print")
     val productArity = newTermName("productArity")
     val productElement = newTermName("productElement")
+    val productElementName = newTermName("productElementName")
     val productPrefix = newTermName("productPrefix")
     val readResolve = newTermName("readResolve")
     val sameElements = newTermName("sameElements")
@@ -376,6 +366,7 @@ trait StdNames {
     val NEraw = newTermName("!=")
     val LEraw = newTermName("<=")
     val GEraw = newTermName(">=")
+    val DOLLARraw = newTermName("$")
 
     // value-conversion methods
     val toByte = newTermName("toByte")
@@ -418,7 +409,7 @@ trait StdNames {
     val String       : Name
     val Throwable    : Name
     val NPException  : Name // NullPointerException
-    val NLRException : Name = newTermName("scala.runtime.NonLocalReturnException")
+    val NLRControl   : Name = newTermName("scala.runtime.NonLocalReturnControl")
     val ValueType    : Name
     val Serializable : Name
     val BeanProperty : Name

@@ -1,0 +1,7 @@
+t3118.scala:6: error: value C is not a member of O1
+  println(x.C())   // should not be accessible
+            ^
+t3118.scala:7: error: type C is not a member of O1
+  println(new x.C) // is correctly not accessible
+                ^
+two errors found

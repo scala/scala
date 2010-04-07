@@ -10,7 +10,7 @@
 
 
 package scala.xml
-import collection.mutable.StringBuilder
+
 
 /** The class <code>Comment</code> implements an XML node for comments.
  *

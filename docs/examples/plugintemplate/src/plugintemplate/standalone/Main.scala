@@ -17,7 +17,7 @@ object Main {
 
     val command = new CompilerCommand(args.toList, settings, println, false) {
       /** The command name that will be printed in in the usage message.
-       *  This is autmatically set to the value of 'plugin.commandname' in the
+       *  This is automatically set to the value of 'plugin.commandname' in the
        *  file build.properties.
        */
       override val cmdName = PluginProperties.pluginCommand
@@ -26,7 +26,7 @@ object Main {
     if (!command.ok)
       return()
 
-    /** The version number of this plugin is read from the porperties file
+    /** The version number of this plugin is read from the properties file
      */
     if (settings.version.value) {
       println(command.cmdName +" version "+ PluginProperties.versionString)

@@ -6,30 +6,29 @@
 
 package scala.tools.nsc
 
-import java.io.{File, FileOutputStream, PrintWriter}
-import java.io.{IOException, FileNotFoundException}
-import java.nio.charset._
+import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundException }
+import java.nio.charset.{ Charset, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
-import scala.tools.nsc.io.{SourceReader, AbstractFile, Path}
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.util.{ClassPath, MsilClassPath, JavaClassPath, SourceFile, BatchSourceFile, OffsetPosition, RangePosition}
 
-import scala.collection.mutable.{HashSet, HashMap, ListBuffer}
+import io.{ SourceReader, AbstractFile, Path }
+import reporters.{ Reporter, ConsoleReporter }
+import util.{ ClassPath, SourceFile, Statistics, BatchSourceFile }
+import collection.mutable.{ HashSet, HashMap, ListBuffer }
+import reflect.generic.{ PickleBuffer }
 
-import symtab._
-import symtab.classfile.{PickleBuffer, Pickler}
-import dependencies.{DependencyAnalysis}
-import util.Statistics
+import symtab.{ Flags, SymbolTable, SymbolLoaders }
+import symtab.classfile.Pickler
+import dependencies.DependencyAnalysis
 import plugins.Plugins
 import ast._
 import ast.parser._
 import typechecker._
 import transform._
-import backend.icode.{ICodes, GenICode, Checkers}
-import backend.ScalaPrimitives
+
+import backend.icode.{ ICodes, GenICode, Checkers }
+import backend.{ ScalaPrimitives, Platform, MSILPlatform, JavaPlatform }
 import backend.jvm.GenJVM
-import backend.msil.GenMSIL
-import backend.opt.{Inliners, ClosureElimination, DeadCodeElimination}
+import backend.opt.{ Inliners, ClosureElimination, DeadCodeElimination }
 import backend.icode.analysis._
 
 class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
@@ -46,7 +45,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def this(settings: Settings) =
     this(settings, new ConsoleReporter(settings))
 
-  //def this() = this(new Settings, new ConsoleReporter)
+  // platform specific elements
+
+  type ThisPlatform = Platform[_] { val global: Global.this.type }
+
+  lazy val platform: ThisPlatform =
+    if (forMSIL) new { val global: Global.this.type = Global.this } with MSILPlatform
+    else new { val global: Global.this.type = Global.this } with JavaPlatform
+
+  def classPath: ClassPath[_] = platform.classPath
+  def rootLoader: LazyType = platform.rootLoader
 
   // sub-components --------------------------------------------------
 
@@ -117,7 +125,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   // ------------ Hooks for interactive mode-------------------------
 
-  /** Called every time an AST node is succesfully typedchecked in typerPhase.
+  /** Called every time an AST node is successfully typechecked in typerPhase.
    */
   def signalDone(context: analyzer.Context, old: Tree, result: Tree) {}
 
@@ -127,10 +135,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
 // ------------------ Reporting -------------------------------------
 
-  import util.NoPosition
   def error(msg: String) = reporter.error(NoPosition, msg)
-  def warning(msg: String) = reporter.warning(NoPosition, msg)
-  def inform(msg: String) = Console.err.println(msg)
+  def warning(msg: String) =
+    if (settings.Ywarnfatal.value) reporter.error(NoPosition, msg)
+    else reporter.warning(NoPosition, msg)
+  def inform(msg: String) = reporter.info(NoPosition, msg, true)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
 
   //reporter.info(null, msg, true)
@@ -145,28 +154,25 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg)
   }
 
-  class ErrorWithPosition(val pos: Int, val error: Throwable) extends Error
+  class ThrowableWithPosition(val pos: Int, val error: Throwable) extends Throwable
 
-  def tryWith[T](pos: Int, body: => T): T = try {
-    body
-  } catch {
-    case e : ErrorWithPosition => throw e
-    case te: TypeError => throw te
-    case e : Error            => throw new ErrorWithPosition(pos, e)
-    case e : RuntimeException => throw new ErrorWithPosition(pos, e)
-  }
+  def tryWith[T](pos: Int, body: => T): T =
+    try body
+    catch {
+      case e : ThrowableWithPosition  => throw e
+      case te: TypeError              => throw te
+      case e : RuntimeException       => throw new ThrowableWithPosition(pos, e)
+    }
 
-  def catchWith[T](source : SourceFile, body : => T) : T = try {
-    body
-  } catch {
-    case e : ErrorWithPosition =>
-      logError("POS: " + source.dbg(e.pos), e)
-      throw e.error
-  }
+  def catchWith[T](source : SourceFile, body : => T) : T =
+    try body
+    catch {
+      case e : ThrowableWithPosition =>
+        logError("POS: " + source.dbg(e.pos), e)
+        throw e.error
+    }
 
   def logError(msg: String, t: Throwable): Unit = ()
-
-  def abort(msg: String) = throw new Error(msg)
 
 // ------------ File interface -----------------------------------------
 
@@ -211,21 +217,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
     }
 
-  lazy val classPath = {
-    ClassPath.XO = settings.XO.value
-    if (forMSIL)
-      new MsilClassPath(settings.assemextdirs.value, settings.assemrefs.value,
-                       settings.sourcepath.value)
-    else
-      new JavaClassPath(settings.bootclasspath.value, settings.extdirs.value,
-                        settings.classpath.value, settings.sourcepath.value,
-                        settings.Xcodebase.value)
-  }
-
-  if (settings.verbose.value) {
-    inform("[Classpath = " + classPath + "]")
-    if (forMSIL) inform("[AssemRefs = " + settings.assemrefs.value + "]")
-  }
+  if (settings.verbose.value || settings.Ylogcp.value)
+    inform("[Classpath = " + classPath.asClasspathString + "]")
 
   def getSourceFile(f: AbstractFile): BatchSourceFile =
     new BatchSourceFile(f, reader.read(f))
@@ -240,10 +233,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   lazy val loaders = new SymbolLoaders {
     val global: Global.this.type = Global.this
   }
-
-  def rootLoader: LazyType =
-    if (forMSIL) new loaders.NamespaceLoader(classPath.asInstanceOf[MsilClassPath])
-    else new loaders.JavaPackageLoader(classPath.asInstanceOf[JavaClassPath])
 
 // ------------ Phases -------------------------------------------}
 
@@ -473,13 +462,6 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val runsRightAfter = None
   } with DependencyAnalysis
 
-  // phaseName = "msil"
-  object genMSIL extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List[String]("dce")
-    val runsRightAfter = None
-  } with GenMSIL
-
   // phaseName = "terminal"
   object terminal extends {
     val global: Global.this.type = Global.this
@@ -519,57 +501,45 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /* Add the internal compiler phases to the phases set
    */
   protected def computeInternalPhases() {
-    phasesSet += syntaxAnalyzer                        // The parser
-    phasesSet += analyzer.namerFactory                 // note: types are there because otherwise
-    phasesSet += analyzer.packageObjects               // consistency check after refchecks would fail.
+    phasesSet += syntaxAnalyzer             // The parser
+    phasesSet += analyzer.namerFactory      //   note: types are there because otherwise
+    phasesSet += analyzer.packageObjects    //   consistency check after refchecks would fail.
     phasesSet += analyzer.typerFactory
-    phasesSet += superAccessors			       // add super accessors
-    phasesSet += pickler			       // serialize symbol tables
-    phasesSet += refchecks			       // perform reference and override checking, translate nested objects
+    phasesSet += superAccessors             // add super accessors
+    phasesSet += pickler                    // serialize symbol tables
+    phasesSet += refchecks                  // perform reference and override checking, translate nested objects
+    // phasesSet += devirtualize               // Desugar virtual classes
 
-//    if (false && settings.Xexperimental.value)
-//	phasesSet += devirtualize		       // Desugar virtual classes4
-
-    phasesSet += uncurry			       // uncurry, translate function values to anonymous classes
-    phasesSet += tailCalls			       // replace tail calls by jumps
+    phasesSet += uncurry                    // uncurry, translate function values to anonymous classes
+    phasesSet += tailCalls                  // replace tail calls by jumps
     if (settings.specialize.value)
       phasesSet += specializeTypes
-    phasesSet += explicitOuter			       // replace C.this by explicit outer pointers, eliminate pattern matching
-    phasesSet += erasure			       // erase generic types to Java 1.4 types, add interfaces for traits
-    phasesSet += lazyVals			       //
-    phasesSet += lambdaLift			       // move nested functions to top level
-//    if (forJVM && settings.Xdetach.value)
-//      phasesSet += detach			       // convert detached closures
-    phasesSet += constructors			       // move field definitions into constructors
-    phasesSet += mixer				       // do mixin composition
-    phasesSet += cleanup			       // some platform-specific cleanups
-    phasesSet += genicode			       // generate portable intermediate code
-    phasesSet += inliner			       // optimization: do inlining
-    phasesSet += closureElimination		       // optimization: get rid of uncalled closures
-    phasesSet += deadCode			       // optimization: get rid of dead cpde
-    phasesSet += terminal                              // The last phase in the compiler chain
+    phasesSet += explicitOuter              // replace C.this by explicit outer pointers, eliminate pattern matching
+    phasesSet += erasure                    // erase types, add interfaces for traits
+    phasesSet += lazyVals
+    phasesSet += lambdaLift                 // move nested functions to top level
+    // if (forJVM && settings.Xdetach.value)
+    //   phasesSet += detach                // convert detached closures
 
-    if (! forMSIL) {
-      phasesSet += flatten			       // get rid of inner classes
-    }
-    if (forJVM) {
-      phasesSet += liftcode			       // generate reified trees
-      phasesSet += genJVM			       // generate .class files
-      if (settings.make.value != "all")
-        phasesSet += dependencyAnalysis
-    }
-    if (forMSIL) {
-      phasesSet += genMSIL			       // generate .msil files
-    }
+    phasesSet += constructors               // move field definitions into constructors
+    phasesSet += mixer                      // do mixin composition
+    phasesSet += cleanup                    // some platform-specific cleanups
+    phasesSet += genicode                   // generate portable intermediate code
+    phasesSet += inliner                    // optimization: do inlining
+    phasesSet += closureElimination         // optimization: get rid of uncalled closures
+    phasesSet += deadCode                   // optimization: get rid of dead cpde
+    phasesSet += terminal                   // The last phase in the compiler chain
   }
 
+  protected def computePlatformPhases() = platform.platformPhases foreach (phasesSet += _)
 
   /* Helper method for sequncing the phase assembly
    */
   private def computePhaseDescriptors: List[SubComponent] = {
-    computeInternalPhases()	       // Global.scala
-    computePluginPhases()	       // plugins/Plugins.scala
-    buildCompilerFromPhasesSet()       // PhaseAssembly.scala
+    computeInternalPhases()       // Global.scala
+    computePlatformPhases()       // backend/Platform.scala
+    computePluginPhases()         // plugins/Plugins.scala
+    buildCompilerFromPhasesSet()  // PhaseAssembly.scala
   }
 
   /* The phase descriptor list */
@@ -578,14 +548,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /* The set of phase objects that is the basis for the compiler phase chain */
   protected val phasesSet : HashSet[SubComponent] = new HashSet[SubComponent]
 
-  /** A description of the phases that will run */
-  def phaseDescriptions: String = {
+  /** The names of the phases. */
+  lazy val phaseNames = {
     new Run // force some initialization
-    val messages =
-      for (phase <- phaseDescriptors)
-	yield phase.phaseName //todo: + " - " + phase.description
-    messages.mkString("\n")
+    phaseDescriptors map (_.phaseName)
   }
+
+  /** A description of the phases that will run */
+  def phaseDescriptions: String =
+    phaseNames mkString "\n" // todo: + " - " + phase.description
 
   // ----------- Runs ---------------------------------------
 
@@ -613,7 +584,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       curRun = this
       //Console.println("starting run: " + id)
 
-      // Can not take the phaseDescriptors.head even though its the syntaxAnalyser, this will implicitly
+      // Can not take the phaseDescriptors.head even though its the syntaxAnalyzer, this will implicitly
       // call definitions.init which uses phase and needs it to be != NoPhase
       val phase1 = syntaxAnalyzer.newPhase(NoPhase)
       phase = phase1
@@ -689,6 +660,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val typerPhase = phaseNamed("typer")
     val picklerPhase = phaseNamed("pickler")
     val refchecksPhase = phaseNamed("refchecks")
+    val uncurryPhase = phaseNamed("uncurry")
 
     val explicitOuterPhase = phaseNamed("explicitouter")
     val erasurePhase = phaseNamed("erasure")
@@ -704,12 +676,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     // ----------- Units and top-level classes and objects --------
 
     private var unitbuf = new ListBuffer[CompilationUnit]
-    var compiledFiles = new HashSet[AbstractFile]
+    var compiledFiles = new HashSet[String]
 
     /** add unit to be compiled in this run */
     private def addUnit(unit: CompilationUnit) {
       unitbuf += unit
-      compiledFiles += unit.source.file
+      compiledFiles += unit.source.file.path
     }
 
     /* An iterator returning all the units being compiled in this run */
@@ -729,11 +701,17 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       else if (sym.isModuleClass) compiles(sym.sourceModule)
       else false
 
+    /** Is this run allowed to redefine the given symbol? Usually this is true
+     *  if the run does not already compile `sym`, but for interactive mode
+     *  we have a more liberal interpretation.
+     */
+    def canRedefine(sym: Symbol) = !compiles(sym)
+
     // --------------- Compilation methods ----------------------------
 
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
-      val depSources = dependencyAnalysis.filter(_sources.removeDuplicates) // bug #1268, scalac confused by duplicated filenames
+      val depSources = dependencyAnalysis.filter(_sources.distinct) // bug #1268, scalac confused by duplicated filenames
       val sources = scalaObjectFirst(depSources)
       if (reporter.hasErrors)
         return  // there is a problem already, e.g. a
@@ -747,7 +725,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         val startTime = currentTime
         phase = globalPhase
         globalPhase.run
-        if (settings.print contains globalPhase.name)
+        if (settings.Xprint contains globalPhase.name)
           if (settings.writeICode.value && globalPhase.id >= icodePhase.id) writeICode()
           else if (settings.Xshowtrees.value) nodePrinters.printAll()
           else printAllUnits()
@@ -763,9 +741,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
             phase = globalPhase
             if (globalPhase.id >= icodePhase.id) icodeChecker.checkICodes
             else checker.checkTrees
-      	  }
-      	  else if (!settings.check.doAllPhases) {
-      	    warning("It is not possible to check the result of the "+globalPhase.name+" phase")
+          }
+          else if (!settings.check.doAllPhases) {
+            warning("It is not possible to check the result of the "+globalPhase.name+" phase")
           }
         }
         if (settings.Ystatistics.value) statistics.print(phase)
@@ -825,22 +803,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     /** Compile list of files given by their names */
     def compile(filenames: List[String]) {
-      try {
-        val scriptMain = settings.script.value
-        // Are we compiling a script?
-        if (scriptMain != "") {
-          if(filenames.length != 1)
-            error("can only compile one script at a time")
-          val scriptFile =
-	    ScriptRunner.wrappedScript(scriptMain, filenames.head, getSourceFile)
-          compileSources(List(scriptFile))
-        // No we are compiling regular source files
-	} else {
-          compileSources(filenames map getSourceFile)
-	}
-      } catch {
-        case ex: IOException => error(ex.getMessage())
+      val scriptMain = settings.script.value
+      def sources: List[SourceFile] = scriptMain match {
+        case ""                             => filenames map getSourceFile
+        case main if filenames.length == 1  => List(ScriptRunner.wrappedScript(main, filenames.head, getSourceFile))
+        case _                              => error("can only compile one script at a time") ; Nil
       }
+
+      try compileSources(sources)
+      catch { case ex: IOException => error(ex.getMessage()) }
     }
 
     /** Compile abstract file until `globalPhase`, but at least
@@ -852,7 +823,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
                   " was found\n(This file cannot be loaded as a source file)"
         inform(msg)
         throw new FatalError(msg)
-      } else if (!(compiledFiles contains file)) {
+      } else if (!(compiledFiles contains file.path)) {
         compileLate(new CompilationUnit(getSourceFile(file)))
       }
     }
@@ -873,6 +844,20 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
       refreshProgress
     }
+
+    /**
+     * Attempt to locate a source file providing the given name as a top-level
+     * definition in the given context, and add it to the run via compileLate
+     * if found.
+     */
+    def compileSourceFor(context : analyzer.Context, name : Name) = false
+
+    /**
+     * Attempt to locate a source file providing the given name as a top-level
+     * definition with the given prefix, and add it to the run via compileLate
+     * if found.
+     */
+    def compileSourceFor(qual : Tree, name : Name) = false
 
     /** Reset package class to state at typer (not sure what this
      *  is needed for?)
@@ -924,7 +909,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def getFile(clazz: Symbol, suffix: String): File = {
     val outdirname = settings.outputDirs.outputDirFor(clazz.sourceFile)
     var outdir = new File(if (outdirname.path == "") "." else outdirname.path)
-    val filename = clazz.fullNameString('.')
+    val filename = clazz.fullName
     var start = 0
     var end = filename.indexOf('.', start)
     while (end >= start) {
@@ -938,7 +923,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   private def writeICode() {
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
-    icodes.classes.valuesIterator.foreach((cls) => {
+    icodes.classes.values.foreach((cls) => {
       val suffix = if (cls.symbol hasFlag Flags.MODULE) "$.icode" else ".icode"
       var file = getFile(cls.symbol, suffix)
 //      if (file.exists())

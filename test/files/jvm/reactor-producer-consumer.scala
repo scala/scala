@@ -2,10 +2,10 @@ import scala.actors.Reactor
 
 object Test {
   case class Stop()
-  case class Get(from: Reactor)
+  case class Get(from: Reactor[Any])
   case class Put(x: Int)
 
-  class UnboundedBuffer extends Reactor {
+  class UnboundedBuffer extends Reactor[Any] {
     def act() {
       react {
         case Stop() =>
@@ -20,7 +20,7 @@ object Test {
     }
   }
 
-  class Producer(buf: UnboundedBuffer, n: Int, delay: Long, parent: Reactor) extends Reactor {
+  class Producer(buf: UnboundedBuffer, n: Int, delay: Long, parent: Reactor[Any]) extends Reactor[Any] {
     def act() {
       var i = 0
       while (i < n) {
@@ -32,7 +32,7 @@ object Test {
     }
   }
 
-  class Consumer(buf: UnboundedBuffer, n: Int, delay: Long, parent: Reactor) extends Reactor {
+  class Consumer(buf: UnboundedBuffer, n: Int, delay: Long, parent: Reactor[Any]) extends Reactor[Any] {
     val step = n / 10
     var i = 0
     def act() {
@@ -53,7 +53,7 @@ object Test {
   }
 
   def main(args: Array[String]) {
-    val parent = new Reactor {
+    val parent = new Reactor[Any] {
       def act() {
         val buffer = new UnboundedBuffer
         buffer.start()

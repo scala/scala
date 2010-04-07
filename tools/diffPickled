@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# Shows the difference in pickler output between two variations on a class.
+#
+# If quick and strap are built normally you can run
+#
+#   diffPickled foo.bar.Baz
+#
+# to see any differences between them in that class.
+
+USAGE="Usage: $0 classpath1 classpath2 class"
+TOOLSDIR=`dirname $0`
+BUILDDIR="${TOOLSDIR}/../build"
+QUICKDIR="${BUILDDIR}/quick"
+STRAPDIR="${BUILDDIR}/strap"
+
+CP1=""
+CP2=""
+CLASS=""
+
+if [ $# == 1 ] ; then
+  if [ -e ${QUICKDIR} ] && [ -e ${STRAPDIR} ] ; then
+    CP1=`${TOOLSDIR}/quickcp`
+    CP2=`${TOOLSDIR}/strapcp`
+    CLASS=$1
+  else
+    echo $USAGE
+    echo "(If only one argument is given, $QUICKDIR and $STRAPDIR must exist.)"
+    exit 1
+  fi
+elif [ $# == 3 ] ; then
+  CP1=$1
+  CP2=$2
+  CLASS=$3
+else
+  echo $USAGE
+  exit 1
+fi
+
+TMPDIR="/tmp/scala_pickle_diff${RANDOM}"
+
+if mkdir -m 0700 "$TMPDIR" 2>/dev/null ; then
+  ${TOOLSDIR}/showPickled -cp $CP1 $CLASS > "${TMPDIR}/out1.txt"
+  ${TOOLSDIR}/showPickled -cp $CP2 $CLASS > "${TMPDIR}/out2.txt"
+  diff "${TMPDIR}/out1.txt" "${TMPDIR}/out2.txt"
+  rm -rf ${TMPDIR}
+else
+  echo "Failed to create temporary directory ${TMPDIR}."
+  exit 1
+fi
+

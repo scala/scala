@@ -29,7 +29,7 @@ trait DocComments { self: SymbolTable =>
 
   /** The position of the raw doc comment of symbol `sym`, or NoPosition if missing
    *  If a symbol does not have a doc comment but some overridden version of it does,
-   *  the posititon of the doc comment of the overridden version is returned instead.
+   *  the position of the doc comment of the overridden version is returned instead.
    */
   def docCommentPos(sym: Symbol): Position =
     getDocComment(sym) map (_.pos) getOrElse NoPosition
@@ -154,9 +154,9 @@ trait DocComments { self: SymbolTable =>
     var tocopy = startTag(dst, dstSections dropWhile (!isMovable(dst, _)))
 
     if (copyFirstPara) {
-      val eop = // end of first para, which is delimited by blank line, or tag, or end of comment
-        findNext(src, 0) (src.charAt(_) == '\n') min startTag(src, srcSections)
-      out append src.substring(0, eop)
+      val eop = // end of comment body (first para), which is delimited by blank line, or tag, or end of comment
+        (findNext(src, 0)(src.charAt(_) == '\n')) min startTag(src, srcSections)
+      out append src.substring(0, eop).trim
       copied = 3
       tocopy = 3
     }
@@ -167,15 +167,12 @@ trait DocComments { self: SymbolTable =>
       case None =>
         srcSec match {
           case Some((start1, end1)) =>
-            out append dst.substring(copied, tocopy)
+            out append dst.substring(copied, tocopy).trim
             copied = tocopy
-            out append src.substring(start1, end1)
+            out append src.substring(start1, end1).trim
           case None =>
         }
     }
-
-    def mergeParam(name: String, srcMap: Map[String, (Int, Int)], dstMap: Map[String, (Int, Int)]) =
-      mergeSection(srcMap get name, dstMap get name)
 
     for (params <- sym.paramss; param <- params)
       mergeSection(srcParams get param.name.toString, dstParams get param.name.toString)
@@ -280,7 +277,7 @@ trait DocComments { self: SymbolTable =>
         startsWithTag(raw, idx, "@define") || startsWithTag(raw, idx, "@usecase"))
       val (defines, usecases) = sections partition (startsWithTag(raw, _, "@define"))
       val end = startTag(raw, sections)
-/*
+      /*
       println("processing doc comment:")
       println(raw)
       println("===========>")

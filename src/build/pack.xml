@@ -194,7 +194,25 @@ MAIN DISTRIBUTION SBAZ
     <mvn-copy-lib mvn.artifact.name="scalap"/>
   </target>
 
-  <target name="pack-maven.docs" depends="pack-maven.libs">
+  <target name="pack-maven.plugins" depends="pack-maven.start">
+    <macrodef name="mvn-copy-plugin">
+      <attribute name="mvn.artifact.name"/>
+      <sequential>
+        <mkdir dir="${dists.dir}/maven/${version.number}/plugins/@{mvn.artifact.name}"/>
+        <copy todir="${dists.dir}/maven/${version.number}/plugins/@{mvn.artifact.name}">
+          <fileset dir="${dist.dir}/plugins/">
+            <filename name="@{mvn.artifact.name}.jar"/>
+          </fileset>
+          <fileset dir="${src.dir}/build/maven/">
+            <filename name="@{mvn.artifact.name}-plugin-pom.xml"/>
+          </fileset>
+        </copy>
+      </sequential>
+    </macrodef>
+    <mvn-copy-plugin mvn.artifact.name="continuations"/>
+  </target>
+
+  <target name="pack-maven.docs" depends="pack-maven.libs, pack-maven.plugins">
     <jar destfile="${dists.dir}/maven/${version.number}/scala-library/scala-library-docs.jar"
          basedir="${build-docs.dir}/library">
       <include name="**/*"/>

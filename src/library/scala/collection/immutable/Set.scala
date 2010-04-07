@@ -41,12 +41,22 @@ trait Set[A] extends Iterable[A]
 
 object Set extends SetFactory[Set] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
-  override def empty[A]: Set[A] = new EmptySet[A]
+  override def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]
 
   private val hashSeed = "Set".hashCode
 
   /** An optimized representation for immutable empty sets */
   @serializable
+  private object EmptySet extends Set[Any] {
+    override def size: Int = 0
+    def contains(elem: Any): Boolean = false
+    def + (elem: Any): Set[Any] = new Set1(elem)
+    def - (elem: Any): Set[Any] = this
+    def iterator: Iterator[Any] = Iterator.empty
+    override def foreach[U](f: Any =>  U): Unit = {}
+  }
+
+  @serializable @deprecated("use `Set.empty' instead")
   class EmptySet[A] extends Set[A] {
     override def size: Int = 0
     def contains(elem: A): Boolean = false
@@ -66,7 +76,7 @@ object Set extends SetFactory[Set] {
       if (contains(elem)) this
       else new Set2(elem1, elem)
     def - (elem: A): Set[A] =
-      if (elem == elem1) new EmptySet[A]
+      if (elem == elem1) Set.empty
       else this
     def iterator: Iterator[A] =
       Iterator(elem1)

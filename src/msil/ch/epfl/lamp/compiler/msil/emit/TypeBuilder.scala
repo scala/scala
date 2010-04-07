@@ -141,14 +141,19 @@ class TypeBuilder (module: Module, attributes: Int, fullName: String, baseType: 
 
     /** Searches for the nested type with the specified name. */
     override def GetNestedType(name: String): Type = {
-	testRaw(name)
-	return super.GetNestedType(name)
+      testRaw(name)
+      super.GetNestedType(name)
     }
 
     /** Returns all the types nested within the current Type. */
     override def GetNestedTypes(): Array[Type] = {
-	testRaw("<GetNestedTypes>")
-	return super.GetNestedTypes()
+      testRaw("<GetNestedTypes>")
+      super.GetNestedTypes()
+    }
+
+    /** Returns a Type object that represents a one-dimensional array of the current type */
+    def MakeArrayType(): Type = {
+      Type.mkArray(this, 1)
     }
 
     /** Sets a custom attribute. */
@@ -184,8 +189,7 @@ class TypeBuilder (module: Module, attributes: Int, fullName: String, baseType: 
     // i.e. not finalized by call to CreateType
     protected def testRaw(member: String) {
 	if (raw)
-	    throw new RuntimeException
-		("Not supported for TypeBuilder before CreateType(): " +
+	    throw new RuntimeException("Not supported for TypeBuilder before CreateType(): " +
 		 FullName + "::" + member)
     }
 

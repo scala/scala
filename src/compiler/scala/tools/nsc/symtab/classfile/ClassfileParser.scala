@@ -14,8 +14,8 @@ import java.lang.Integer.toHexString
 import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{Position, NoPosition, ClassRep}
 import scala.annotation.switch
+import reflect.generic.PickleBuffer
 
 /** This abstract class implements a class file parser.
  *
@@ -36,6 +36,7 @@ abstract class ClassfileParser {
   protected var staticDefs: Scope = _       // the scope of all static definitions
   protected var pool: ConstantPool = _      // the classfile's constant pool
   protected var isScala: Boolean = _        // does class file describe a scala class?
+  protected var isScalaAnnot: Boolean = _   // does class file describe a scala class with its pickled info in an annotation?
   protected var isScalaRaw: Boolean = _     // this class file is a scala class with no pickled info
   protected var hasMeta: Boolean = _        // does class file contain jaco meta attribute?s
   protected var busy: Option[Symbol] = None // lock to detect recursive reads
@@ -84,11 +85,11 @@ abstract class ClassfileParser {
 */
     this.in = new AbstractFileReader(file)
     if (root.isModule) {
-      this.clazz = root.linkedClassOfModule
+      this.clazz = root.companionClass
       this.staticModule = root
     } else {
       this.clazz = root
-      this.staticModule = root.linkedModuleOfClass
+      this.staticModule = root.companionModule
     }
     this.isScala = false
     this.hasMeta = false
@@ -96,7 +97,8 @@ abstract class ClassfileParser {
       parseHeader
       this.pool = new ConstantPool
       parseClass()
-    } catch {
+    }
+    catch {
       case e: MissingRequirementError => handleMissing(e)
       case e: RuntimeException        => handleError(e)
     }
@@ -244,7 +246,7 @@ abstract class ClassfileParser {
               log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
               f = if (tpe.isInstanceOf[MethodType]) owner.newMethod(owner.pos, name).setInfo(tpe)
                   else owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE)
-              log("created fake member " + f.fullNameString)
+              log("created fake member " + f.fullName)
             }
 //            println("\townerTpe.decls: " + ownerTpe.decls)
 //            println("Looking for: " + name + ": " + tpe + " inside: " + ownerTpe.typeSymbol + "\n\tand found: " + ownerTpe.members)
@@ -353,6 +355,22 @@ abstract class ClassfileParser {
       }
     }
 
+    def getBytes(index: Int): Array[Byte] = {
+      if (index <= 0 || len <= index) errorBadIndex(index)
+      var value = values(index).asInstanceOf[Array[Byte]]
+      if (value eq null) {
+        val start = starts(index)
+        if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
+        val len = in.getChar(start + 1)
+        val bytes = new Array[Byte](len)
+        Array.copy(in.buf, start + 3, bytes, 0, len)
+        val decodedLength = reflect.generic.ByteCodecs.decode(bytes)
+        value = bytes.take(decodedLength)
+        values(index) = value
+      }
+      value
+    }
+
     /** Throws an exception signaling a bad constant index. */
     private def errorBadIndex(index: Int) =
       throw new RuntimeException("bad constant pool index: " + index + " at pos: " + in.bp)
@@ -421,12 +439,17 @@ abstract class ClassfileParser {
         in.bp += ifaces * 2     // .. and iface count interfaces
         List(definitions.AnyRefClass.tpe) // dummy superclass, will be replaced by pickled information
       } else {
-        val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
-                        else pool.getSuperClass(in.nextChar).tpe
-        val ifaceCount = in.nextChar
-        var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
-        if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
-        superType :: ifaces
+        try {
+          loaders.parentsLevel += 1
+          val superType = if (isAnnotation) { in.nextChar; definitions.AnnotationClass.tpe }
+                          else pool.getSuperClass(in.nextChar).tpe
+          val ifaceCount = in.nextChar
+          var ifaces = for (i <- List.range(0, ifaceCount)) yield pool.getSuperClass(in.nextChar).tpe
+          if (isAnnotation) ifaces = definitions.ClassfileAnnotationClass.tpe :: ifaces
+          superType :: ifaces
+        } finally {
+          loaders.parentsLevel -= 1
+        }
       }
     }
 
@@ -440,6 +463,7 @@ abstract class ClassfileParser {
     // get the class file parser to reuse scopes.
     instanceDefs = new Scope
     staticDefs = new Scope
+
     val classInfo = ClassInfoType(parseParents, instanceDefs, clazz)
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
@@ -464,22 +488,32 @@ abstract class ClassfileParser {
       // attributes now depend on having infos set already
       parseAttributes(clazz, classInfo)
 
-      in.bp = curbp
-      val fieldCount = in.nextChar
-      for (i <- 0 until fieldCount) parseField()
-      sawPrivateConstructor = false
-      val methodCount = in.nextChar
-      for (i <- 0 until methodCount) parseMethod()
-      if (!sawPrivateConstructor &&
-          (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
-           (sflags & INTERFACE) == 0L))
-        {
-          //Console.println("adding constructor to " + clazz);//DEBUG
-          instanceDefs.enter(
-            clazz.newConstructor(NoPosition)
-            .setFlag(clazz.flags & ConstrFlags)
-            .setInfo(MethodType(List(), clazz.tpe)))
+      loaders.pendingLoadActions = { () =>
+        in.bp = curbp
+        val fieldCount = in.nextChar
+        for (i <- 0 until fieldCount) parseField()
+        sawPrivateConstructor = false
+        val methodCount = in.nextChar
+        for (i <- 0 until methodCount) parseMethod()
+        if (!sawPrivateConstructor &&
+            (instanceDefs.lookup(nme.CONSTRUCTOR) == NoSymbol &&
+             (sflags & INTERFACE) == 0L))
+          {
+            //Console.println("adding constructor to " + clazz);//DEBUG
+            instanceDefs.enter(
+              clazz.newConstructor(NoPosition)
+              .setFlag(clazz.flags & ConstrFlags)
+              .setInfo(MethodType(List(), clazz.tpe)))
+          }
+        ()
+      } :: loaders.pendingLoadActions
+      if (loaders.parentsLevel == 0) {
+        while (!loaders.pendingLoadActions.isEmpty) {
+          val item = loaders.pendingLoadActions.head
+          loaders.pendingLoadActions = loaders.pendingLoadActions.tail
+          item()
         }
+      }
     } else
       parseAttributes(clazz, classInfo)
   }
@@ -508,7 +542,7 @@ abstract class ClassfileParser {
       val info = pool.getType(in.nextChar)
       val sym = getOwner(jflags)
         .newValue(NoPosition, name).setFlag(sflags)
-      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else mkConstantType(Constant(sym)))
+      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else ConstantType(Constant(sym)))
       setPrivateWithin(sym, jflags)
       parseAttributes(sym, info)
       getScope(jflags).enter(sym)
@@ -589,6 +623,8 @@ abstract class ClassfileParser {
       while (!isDelimiter(sig(index))) { index += 1 }
       sig.subName(start, index)
     }
+    def existentialType(tparams: List[Symbol], tp: Type): Type =
+      if (tparams.isEmpty) tp else ExistentialType(tparams, tp)
     def sig2type(tparams: Map[Name,Symbol], skiptvs: Boolean): Type = {
       val tag = sig(index); index += 1
       tag match {
@@ -620,12 +656,12 @@ abstract class ClassfileParser {
                     case variance @ ('+' | '-' | '*') =>
                       index += 1
                       val bounds = variance match {
-                        case '+' => mkTypeBounds(definitions.NothingClass.tpe,
-                                                 sig2type(tparams, skiptvs))
-                        case '-' => mkTypeBounds(sig2type(tparams, skiptvs),
-                                                 definitions.AnyClass.tpe)
-                        case '*' => mkTypeBounds(definitions.NothingClass.tpe,
-                                                 definitions.AnyClass.tpe)
+                        case '+' => TypeBounds(definitions.NothingClass.tpe,
+                                               sig2type(tparams, skiptvs))
+                        case '-' => TypeBounds(sig2type(tparams, skiptvs),
+                                               definitions.AnyClass.tpe)
+                        case '*' => TypeBounds(definitions.NothingClass.tpe,
+                                               definitions.AnyClass.tpe)
                       }
                       val newtparam = sym.newExistential(sym.pos, "?"+i) setInfo bounds
                       existentials += newtparam
@@ -637,14 +673,14 @@ abstract class ClassfileParser {
                 }
                 accept('>')
                 assert(xs.length > 0)
-                existentialAbstraction(existentials.toList, TypeRef(pre, classSym, xs.toList))
+                existentialType(existentials.toList, TypeRef(pre, classSym, xs.toList))
               } else if (classSym.isMonomorphicType) {
                 tp
               } else {
                 // raw type - existentially quantify all type parameters
                 val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
                 val t = TypeRef(pre, classSym, eparams.map(_.tpe))
-                val res = existentialAbstraction(eparams, t)
+                val res = existentialType(eparams, t)
                 if (settings.debug.value && settings.verbose.value) println("raw type " + classSym + " -> " + res)
                 res
               }
@@ -668,7 +704,7 @@ abstract class ClassfileParser {
           while ('0' <= sig(index) && sig(index) <= '9') index += 1
           var elemtp = sig2type(tparams, skiptvs)
           // make unbounded Array[T] where T is a type variable into Array[T with Object]
-          // (this is necessary because such arrays have a representation which is incompatibe
+          // (this is necessary because such arrays have a representation which is incompatible
           // with arrays of primitive types.
           if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe))
             elemtp = intersectionType(List(elemtp, definitions.ObjectClass.tpe))
@@ -702,7 +738,7 @@ abstract class ClassfileParser {
         if (sig(index) != ':') // guard against empty class bound
           ts += objToAny(sig2type(tparams, skiptvs))
       }
-      mkTypeBounds(definitions.NothingClass.tpe, intersectionType(ts.toList, sym))
+      TypeBounds(definitions.NothingClass.tpe, intersectionType(ts.toList, sym))
     }
 
     var tparams = classTParams
@@ -781,12 +817,15 @@ abstract class ClassfileParser {
         case nme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
-          if (c1 ne null) sym.setInfo(mkConstantType(c1))
+          if (c1 ne null) sym.setInfo(ConstantType(c1))
           else println("failure to convert " + c + " to " + symtype); //debug
         case nme.ScalaSignatureATTR =>
-          unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
+          if (!isScalaAnnot) {
+            if (settings.debug.value)
+              global.inform("warning: symbol " + sym.fullName + " has pickled signature in attribute")
+            unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
+          }
           in.skip(attrLen)
-          this.isScala = true
         case nme.ScalaATTR =>
           isScalaRaw = true
         case nme.JacoMetaATTR =>
@@ -797,13 +836,21 @@ abstract class ClassfileParser {
         case nme.AnnotationDefaultATTR =>
           sym.addAnnotation(AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()))
           in.skip(attrLen)
-        // Java annotatinos on classes / methods / fields with RetentionPolicy.RUNTIME
+        // Java annotations on classes / methods / fields with RetentionPolicy.RUNTIME
         case nme.RuntimeAnnotationATTR =>
-          if (!isScala) {
-            // no need to read annotations if isScala, ClassfileAnnotations are pickled
-            parseAnnotations(attrLen)
+          if (isScalaAnnot || !isScala) {
+            val scalaSigAnnot = parseAnnotations(attrLen)
+            if (isScalaAnnot)
+              scalaSigAnnot match {
+                case Some(san: AnnotationInfo) =>
+                  val bytes =
+                    san.assocs.find({ _._1 == nme.bytes }).get._2.asInstanceOf[ScalaSigBytes].bytes
+                  unpickler.unpickle(bytes, 0, clazz, staticModule, in.file.toString())
+                case None =>
+                  throw new RuntimeException("Scala class file does not contain Scala annotation")
+              }
             if (settings.debug.value)
-              global.inform("" + sym + "; annotations = " + sym.annotations)
+              global.inform("" + sym + "; annotations = " + sym.rawAnnotations)
           } else
             in.skip(attrLen)
 
@@ -820,7 +867,7 @@ abstract class ClassfileParser {
           val srcfileLeaf = pool.getName(in.nextChar).toString.trim
           val srcpath = sym.enclosingPackage match {
             case NoSymbol => srcfileLeaf
-            case pkg => pkg.fullNameString(File.separatorChar)+File.separator+srcfileLeaf
+            case pkg => pkg.fullName(File.separatorChar)+File.separator+srcfileLeaf
           }
           srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
         case _ =>
@@ -842,7 +889,7 @@ abstract class ClassfileParser {
         case ENUM_TAG   =>
           val t = pool.getType(index)
           val n = pool.getName(in.nextChar)
-          val s = t.typeSymbol.linkedModuleOfClass.info.decls.lookup(n)
+          val s = t.typeSymbol.companionModule.info.decls.lookup(n)
           assert(s != NoSymbol, t)
           Some(LiteralAnnotArg(Constant(s)))
         case ARRAY_TAG  =>
@@ -860,6 +907,12 @@ abstract class ClassfileParser {
       }
     }
 
+    def parseScalaSigBytes: Option[ScalaSigBytes] = {
+      val tag = in.nextByte.toChar
+      assert(tag == STRING_TAG)
+      Some(ScalaSigBytes(pool.getBytes(in.nextChar)))
+    }
+
     /** Parse and return a single annotation.  If it is malformed,
      *  return None.
      */
@@ -870,10 +923,19 @@ abstract class ClassfileParser {
       var hasError = false
       for (i <- 0 until nargs) {
         val name = pool.getName(in.nextChar)
-        parseAnnotArg match {
-          case Some(c) => nvpairs += ((name, c))
-          case None => hasError = true
-        }
+        // The "bytes: String" argument of the ScalaSignature attribute is parsed specially so that it is
+        // available as an array of bytes (the pickled Scala signature) instead of as a string. The pickled signature
+        // is encoded as a string because of limitations in the Java class file format.
+        if ((attrType == definitions.ScalaSignatureAnnotation.tpe) && (name == nme.bytes))
+          parseScalaSigBytes match {
+            case Some(c) => nvpairs += ((name, c))
+            case None => hasError = true
+          }
+        else
+          parseAnnotArg match {
+            case Some(c) => nvpairs += ((name, c))
+            case None => hasError = true
+          }
       }
       if (hasError) None
       else Some(AnnotationInfo(attrType, List(), nvpairs.toList))
@@ -900,17 +962,20 @@ abstract class ClassfileParser {
       }
     }
 
-    /** Parse a sequence of annotations and attach them to the
-     *  current symbol sym.
-     */
-    def parseAnnotations(len: Int) {
+    /** Parse a sequence of annotations and attaches them to the
+     *  current symbol sym, except for the ScalaSignature annotation that it returns, if it is available. */
+    def parseAnnotations(len: Int): Option[AnnotationInfo] =  {
       val nAttr = in.nextChar
+      var scalaSigAnnot: Option[AnnotationInfo] = None
       for (n <- 0 until nAttr)
         parseAnnotation(in.nextChar) match {
+          case Some(scalaSig) if (scalaSig.atp == definitions.ScalaSignatureAnnotation.tpe) =>
+            scalaSigAnnot = Some(scalaSig)
           case Some(annot) =>
             sym.addAnnotation(annot)
           case None =>
         }
+      scalaSigAnnot
     }
 
     // begin parseAttributes
@@ -950,12 +1015,11 @@ abstract class ClassfileParser {
       }
     }
 
-    for (entry <- innerClasses.valuesIterator) {
+    for (entry <- innerClasses.values) {
       // create a new class member for immediate inner classes
       if (entry.outerName == externalName) {
-        val file = global.classPath.findClass(entry.externalName.toString) match {
-          case Some(ClassRep(Some(binary: AbstractFile), _)) => binary
-          case _ => throw new AssertionError(entry.externalName)
+        val file = global.classPath.findSourceFile(entry.externalName.toString) getOrElse {
+          throw new AssertionError(entry.externalName)
         }
         enterClassAndModule(entry, new global.loaders.ClassfileLoader(file), entry.jflags)
       }
@@ -984,6 +1048,10 @@ abstract class ClassfileParser {
           in.skip(attrLen)
         case nme.ScalaSignatureATTR =>
           isScala = true
+          val pbuf = new PickleBuffer(in.buf, in.bp, in.bp + attrLen)
+          pbuf.readNat; pbuf.readNat;
+          if (pbuf.readNat == 0) // a scala signature attribute with no entries means that the actual scala signature
+            isScalaAnnot = true    // is in a ScalaSignature annotation.
           in.skip(attrLen)
         case nme.ScalaATTR =>
           isScalaRaw = true
@@ -1042,7 +1110,7 @@ abstract class ClassfileParser {
         def getMember(sym: Symbol, name: Name): Symbol =
           if (static)
             if (sym == clazz) staticDefs.lookup(name)
-            else sym.linkedModuleOfClass.info.member(name)
+            else sym.companionModule.info.member(name)
           else
             if (sym == clazz) instanceDefs.lookup(name)
             else sym.info.member(name)
@@ -1055,18 +1123,18 @@ abstract class ClassfileParser {
             val sym = classSymbol(outerName)
             val s =
               // if loading during initialization of `definitions' typerPhase is not yet set.
-              // in that case we simply load the mmeber at the current phase
+              // in that case we simply load the member at the current phase
               if (currentRun.typerPhase != null)
                 atPhase(currentRun.typerPhase)(getMember(sym, innerName.toTypeName))
               else
                 getMember(sym, innerName.toTypeName)
-            assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.linkedModuleOfClass + sym.linkedModuleOfClass.info.members)
+            assert(s ne NoSymbol, sym + "." + innerName + " linkedModule: " + sym.companionModule + sym.companionModule.info.members)
             s
 
           case None =>
             val cls = classNameToSymbol(externalName)
             cls
-            //if (static) cls.linkedClassOfModule else cls
+            //if (static) cls.companionClass else cls
         }
       }
 

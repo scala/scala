@@ -53,7 +53,7 @@ sealed trait RichWindow extends Window {
    * The menu bar of this frame or `NoMenuBar` if no menu bar is set.
    */
   def menuBar: MenuBar = {
-      val m = UIElement.cachedWrapper(peer.getJMenuBar)
+      val m = UIElement.cachedWrapper[MenuBar](peer.getJMenuBar)
       if (m != null) m else MenuBar.NoMenuBar
   }
   /**
@@ -156,7 +156,7 @@ object Dialog {
                   initial: Int): Result.Value = {
     val r = JOptionPane.showOptionDialog(nullPeer(parent), message, title,
                                    optionType.id, messageType.id, Swing.wrapIcon(icon),
-                                   entries.map(_.asInstanceOf[AnyRef]).toArray, entries(initial))
+                                   entries map toAnyRef toArray, entries(initial))
     Result(r)
   }
 
@@ -168,11 +168,12 @@ object Dialog {
                    entries: Seq[A] = Nil,
                    initial: A): Option[A] = {
     val e = if (entries.isEmpty) null
-            else entries.map(_.asInstanceOf[AnyRef]).toArray
+            else entries map toAnyRef toArray
     val r = JOptionPane.showInputDialog(nullPeer(parent), message, title,
         messageType.id, Swing.wrapIcon(icon),
         e, initial)
-    Swing.toOption(r)
+
+    toOption[A](r)
   }
   def showMessage(parent: Component = null,
                   message: Any,

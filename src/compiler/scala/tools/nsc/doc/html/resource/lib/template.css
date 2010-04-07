@@ -92,6 +92,7 @@ a:hover {
 
 div.members > ol {
 	background-color: white;
+	list-style: none
 }
 
 div.members > ol > li {
@@ -99,6 +100,15 @@ div.members > ol > li {
 }
 
 /* Member signatures */
+
+#tooltip {
+	background: #142556;
+	border: 2px solid white;
+	color: white;
+	display: none;
+	padding: 5px;
+	position: absolute;
+}
 
 .signature {
 	padding: 1px;
@@ -112,12 +122,13 @@ div.members > ol > li {
 .signature .kind {
 	text-align: right;
 	float: left;
+	display: inline-block;
 	width: 72px;
 }
 
 .signature .symbol {
-	display: block;
-	margin-left: 80px;
+	display: inline;
+	padding-left: 8px;
 }
 
 .signature .name {
@@ -125,12 +136,24 @@ div.members > ol > li {
 	font-weight: bold;
 }
 
+.signature .symbol .params .implicit {
+	font-style: italic;
+}
+
+.signature .symbol .name.deprecated {
+	text-decoration: line-through;
+}
+
+.signature .symbol .params .default {
+	font-style: italic;
+}
+
 #values .signature .name {
-	color: #142556;
+	color: blue;
 }
 
 #types .signature .name {
-	color: #561414;
+	color: red;
 }
 
 /* Comments text formating */
@@ -151,6 +174,45 @@ div.members > ol > li {
 	font-family: monospace;
 	font-size: small;
 	margin: 2px 0 2px 0;
+}
+
+.cmt ul {
+	display: block;
+	list-style: circle;
+	padding-left:20px;
+}
+
+.cmt ol {
+	display: block;
+	padding-left:20px;
+}
+
+.cmt ol.decimal {
+	list-style: decimal;
+}
+
+.cmt ol.lowerAlpha {
+	list-style: lower-alpha;
+}
+
+.cmt ol.upperAlpha {
+	list-style: upper-alpha;
+}
+
+.cmt ol.lowerRoman {
+	list-style: lower-roman;
+}
+
+.cmt ol.upperRoman {
+	list-style: upper-roman;
+}
+
+.cmt li {
+	display:list-item;
+}
+
+.cmt a {
+	text-decoration: underline;
 }
 
 /* Comments structured layout */
@@ -179,6 +241,11 @@ div.fullcomment .block {
 	padding: 2px 0 2px 0;
 	border-top: 1px solid black;
 	border-bottom: 1px solid black;
+}
+
+div.fullcomment div.block ol li p, 
+div.fullcomment div.block ol li {
+	display:inline
 }
 
 div.fullcomment .block + .block {
@@ -231,16 +298,19 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 #mbrsel > div > h3 {
 	padding: 4px;
-	display: block;
-	float: left;
+	display: inline;
 }
 
 #mbrsel > div > ol {
-	margin-left: 80px;
+	display: inline-block;
+	background-color: white;
+}
+
+#mbrsel > div > ol#linearization {
+	display: inline;
 }
 
 #mbrsel > div > ol > li {
-	display: block;
 	padding: 4px 8px 4px 8px;
 	font-weight: bold;
 	background-color: white;

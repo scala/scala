@@ -28,14 +28,16 @@ package mutable
 
 trait MapProxy[A, B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]]
 {
+  private def newProxy[B1 >: B](newSelf: Map[A, B1]): MapProxy[A, B1] =
+    new MapProxy[A, B1] { val self = newSelf }
+
   override def repr = this
   override def empty: MapProxy[A, B] = new MapProxy[A, B] { val self = MapProxy.this.self.empty }
 
-  override def +(kv: (A, B)) = { self.update(kv._1, kv._2) ; this }
-  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) =
-    { self.+(elem1, elem2, elems: _*) ; this }
+  override def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = newProxy(self + kv)
+  override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) = newProxy(self.+(elem1, elem2, elems: _*))
 
-  override def -(key: A) = { self.remove(key); this }
+  override def -(key: A) = newProxy(self - key)
 
   override def += (kv: (A, B)) = { self += kv ; this }
   override def -= (key: A) = { self -= key ; this }

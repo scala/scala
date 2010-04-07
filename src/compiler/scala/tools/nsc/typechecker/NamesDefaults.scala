@@ -7,7 +7,6 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.tools.nsc.util.Position
 import symtab.Flags._
 
 import scala.collection.mutable.ListBuffer
@@ -101,7 +100,7 @@ trait NamesDefaults { self: Analyzer =>
     import context.unit
 
     /**
-     * Transform a function into a block, and assing context.namedApplyBlockInfo to
+     * Transform a function into a block, and passing context.namedApplyBlockInfo to
      * the new block as side-effect.
      *
      * `baseFun' is typed, the resulting block must be typed as well.
@@ -180,7 +179,7 @@ trait NamesDefaults { self: Analyzer =>
       }
 
       def moduleQual(pos: Position, tree: Symbol => Tree) = {
-        val module = baseFun.symbol.owner.linkedModuleOfClass
+        val module = baseFun.symbol.owner.companionModule
         if (module == NoSymbol) None
         else Some(atPos(pos.focus)(tree(module)))
       }
@@ -341,14 +340,15 @@ trait NamesDefaults { self: Analyzer =>
    * the argument list (y = "lt") is transformed to (y = "lt", x = foo$default$1())
    */
   def addDefaults(givenArgs: List[Tree], qual: Option[Tree], targs: List[Tree],
-                  previousArgss: List[List[Tree]], params: List[Symbol], pos: util.Position): (List[Tree], List[Symbol]) = {
+                  previousArgss: List[List[Tree]], params: List[Symbol],
+                  pos: util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params)
       if (missing forall (_.hasFlag(DEFAULTPARAM))) {
         val defaultArgs = missing map (p => {
           var default1 = qual match {
-            case Some(q) => gen.mkAttributedSelect(q.duplicate, p.defaultGetter)
-            case None => gen.mkAttributedRef(p.defaultGetter)
+            case Some(q) => gen.mkAttributedSelect(q.duplicate, defaultGetter(p, context))
+            case None => gen.mkAttributedRef(defaultGetter(p, context))
           }
           default1 = if (targs.isEmpty) default1
                      else TypeApply(default1, targs.map(_.duplicate))
@@ -362,6 +362,38 @@ trait NamesDefaults { self: Analyzer =>
         (givenArgs ::: defaultArgs, Nil)
       } else (givenArgs, missing filter (! _.hasFlag(DEFAULTPARAM)))
     } else (givenArgs, Nil)
+  }
+
+  /**
+   * For a parameter with default argument, find the method symbol of
+   * the default getter.
+   */
+  def defaultGetter(param: Symbol, context: Context) = {
+    val i = param.owner.paramss.flatten.findIndexOf(p => p.name == param.name) + 1
+    if (i > 0) {
+      if (param.owner.isConstructor) {
+        val defGetterName = "init$default$"+ i
+        param.owner.owner.companionModule.info.member(defGetterName)
+      } else {
+        val defGetterName = param.owner.name +"$default$"+ i
+        if (param.owner.owner.isClass) {
+          param.owner.owner.info.member(defGetterName)
+        } else {
+          // the owner of the method is another method. find the default
+          // getter in the context.
+          var res: Symbol = NoSymbol
+          var ctx = context
+          while(res == NoSymbol && ctx.outer != ctx) {
+            val s = ctx.scope.lookup(defGetterName)
+            if (s != NoSymbol && s.owner == param.owner.owner)
+              res = s
+            else
+              ctx = ctx.outer
+          }
+          res
+        }
+      }
+    } else NoSymbol
   }
 
   /**
@@ -392,7 +424,7 @@ trait NamesDefaults { self: Analyzer =>
         } else if (argPos contains pos) {
           errorTree(arg, "parameter specified twice: "+ name)
         } else {
-          // for named arguments, check wether the assignment expression would
+          // for named arguments, check whether the assignment expression would
           // typecheck. if it does, report an ambiguous error.
           val param = params(pos)
           val paramtpe = params(pos).tpe.cloneInfo(param)
@@ -408,6 +440,8 @@ trait NamesDefaults { self: Analyzer =>
               case _ => super.apply(tp)
             }
           }
+          val reportAmbiguousErrors = typer.context.reportAmbiguousErrors
+          typer.context.reportAmbiguousErrors = false
           val res = typer.silent(_.typed(arg, subst(paramtpe))) match {
             case _: TypeError =>
               // if the named argument is on the original parameter
@@ -425,6 +459,7 @@ trait NamesDefaults { self: Analyzer =>
                 errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
                              "name of the method and the name of a variable currently in scope.")
           }
+          typer.context.reportAmbiguousErrors = reportAmbiguousErrors
           //@M note that we don't get here when an ambiguity was detected (during the computation of res),
           // as errorTree throws an exception
           typer.context.undetparams = udp

@@ -55,10 +55,10 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
   def this(file: AbstractFile, cs: Seq[Char])   = this(file, cs.toArray)
 
   override def equals(that : Any) = that match {
-    case that : BatchSourceFile => file == that.file
+    case that : BatchSourceFile => file.path == that.file.path
     case _ => false
   }
-  override def hashCode = file.hashCode
+  override def hashCode = file.path.hashCode
   val length = content.length
 
   // in SourceFileFragments, these are overridden to compensate during offset calculation
@@ -154,17 +154,11 @@ extends BatchSourceFile(name, contents)
   /** The usual constructor.  Specify a name for the compound file and
    *  a list of component sources.
    */
-  def this(name: String, components: BatchSourceFile*) = {
-    this(
-      name,
-      components.toList,
-      Array.concat(components.map(comp =>
-        CompoundSourceFile.stripSU(comp.content).toArray):_*))
-  }
+  def this(name: String, components: BatchSourceFile*) =
+    this(name, components.toList, components flatMap (CompoundSourceFile stripSU _.content) toArray)
 
   /** Create an instance with the specified components and a generic name. */
-  def this(components: BatchSourceFile*) =
-    this("(virtual file)", components.toList:_*)
+  def this(components: BatchSourceFile*) = this("(virtual file)", components: _*)
 
   override def positionInUltimateSource(position: Position) = {
     if (!position.isDefined) super.positionInUltimateSource(position)
@@ -193,7 +187,7 @@ extends BatchSourceFile(name, contents)
 object CompoundSourceFile {
   private[util] def stripSU(chars: Array[Char]) =
     if (chars.length > 0 && chars.last == SU)
-      chars.slice(0, chars.length-1)
+      chars dropRight 1
     else
       chars
 }

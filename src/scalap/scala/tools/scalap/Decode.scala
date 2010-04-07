@@ -10,7 +10,9 @@
 package scala.tools.scalap
 
 import scala.tools.scalap.scalax.rules.scalasig._
+import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.util.ScalaClassLoader.getSystemLoader
+import Main.SCALA_SIG
 
 /** Temporary decoder.  This would be better off in the scala.tools.nsc
  *  but right now the compiler won't acknowledge scala.tools.scalap
@@ -23,15 +25,52 @@ object Decode {
     case _                      => NoSymbol
   }
 
+  /** Return the classfile bytes representing the scala sig attribute.
+   */
+  def scalaSigBytes(name: String): Option[Array[Byte]] = scalaSigBytes(name, getSystemLoader())
+  def scalaSigBytes(name: String, classLoader: ScalaClassLoader): Option[Array[Byte]] = {
+    val bytes = classLoader.findBytesForClassName(name)
+    val reader = new ByteArrayReader(bytes)
+    val cf = new Classfile(reader)
+    cf.scalaSigAttribute map (_.data)
+  }
+
+  /** private[scala] so nobody gets the idea this is a supported interface.
+   */
+  private[scala] def caseParamNames(path: String): Option[List[String]] = {
+    val (outer, inner) = (path indexOf '$') match {
+      case -1   => (path, "")
+      case x    => (path take x, path drop (x + 1))
+    }
+
+    for {
+      clazz <- getSystemLoader.tryToLoadClass[AnyRef](outer)
+      ssig <- ScalaSigParser.parse(clazz)
+    }
+    yield {
+      val f: PartialFunction[Symbol, List[String]] =
+        if (inner.isEmpty) {
+          case x: MethodSymbol if x.isCaseAccessor && (x.name endsWith " ") => List(x.name dropRight 1)
+        }
+        else {
+          case x: ClassSymbol if x.name == inner  =>
+            val xs = x.children filter (child => child.isCaseAccessor && (child.name endsWith " "))
+            xs.toList map (_.name dropRight 1)
+        }
+
+      (ssig.symbols collect f).flatten toList
+    }
+  }
+
   /** Returns a map of Alias -> Type for the given package.
    */
-  def typeAliases(pkg: String) = {
+  private[scala] def typeAliases(pkg: String) = {
     for {
       clazz <- getSystemLoader.tryToLoadClass[AnyRef](pkg + ".package")
       ssig <- ScalaSigParser.parse(clazz)
     }
     yield {
-      val typeAliases = ssig.symbols partialMap { case x: AliasSymbol => x }
+      val typeAliases = ssig.symbols collect { case x: AliasSymbol => x }
       Map(typeAliases map (x => (x.name, getAliasSymbol(x.infoType).path)): _*)
     }
   }

@@ -28,7 +28,7 @@ import scala.math.ScalaNumber;
   * @author  Martin Odersky
   * @contributor Stepan Koltsov
   * @version 2.0 */
-public class BoxesRunTime
+public final class BoxesRunTime
 {
     private static final int CHAR = 0, BYTE = 1, SHORT = 2, INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;
 
@@ -136,36 +136,49 @@ public class BoxesRunTime
      *  in any case, we dispatch to it as soon as we spot one on either side.
      */
     public static boolean equals2(Object x, Object y) {
-        if (x instanceof Number) {
-            Number xn = (Number)x;
+        if (x instanceof Number)
+            return equalsNumObject((Number)x, y);
+        if (x instanceof Character)
+            return equalsCharObject((Character)x, y);
 
-            if (y instanceof Number) {
-                Number yn = (Number)y;
-                int xcode = eqTypeCode(xn);
-                int ycode = eqTypeCode(yn);
-                switch (ycode > xcode ? ycode : xcode) {
-                case INT:
-                    return xn.intValue() == yn.intValue();
-                case LONG:
-                    return xn.longValue() == yn.longValue();
-                case FLOAT:
-                    return xn.floatValue() == yn.floatValue();
-                case DOUBLE:
-                    return xn.doubleValue() == yn.doubleValue();
-                default:
-                    if ((yn instanceof ScalaNumber) && !(xn instanceof ScalaNumber))
-                        return y.equals(x);
-                }
-            } else if (y instanceof Character)
-                return equalsNumChar(xn, (Character)y);
-        } else if (x instanceof Character) {
-            Character xc = (Character)x;
-            if (y instanceof Character)
-                return xc.charValue() == ((Character)y).charValue();
-            if (y instanceof Number)
-                return equalsNumChar((Number)y, xc);
-        }
         return x.equals(y);
+    }
+
+    public static boolean equalsNumObject(Number xn, Object y) {
+        if (y instanceof Number)
+            return equalsNumNum(xn, (Number)y);
+        else if (y instanceof Character)
+            return equalsNumChar(xn, (Character)y);
+
+        return xn.equals(y);
+    }
+
+    public static boolean equalsNumNum(Number xn, Number yn) {
+        int xcode = eqTypeCode(xn);
+        int ycode = eqTypeCode(yn);
+        switch (ycode > xcode ? ycode : xcode) {
+        case INT:
+            return xn.intValue() == yn.intValue();
+        case LONG:
+            return xn.longValue() == yn.longValue();
+        case FLOAT:
+            return xn.floatValue() == yn.floatValue();
+        case DOUBLE:
+            return xn.doubleValue() == yn.doubleValue();
+        default:
+            if ((yn instanceof ScalaNumber) && !(xn instanceof ScalaNumber))
+                return yn.equals(xn);
+        }
+        return xn.equals(yn);
+    }
+
+    public static boolean equalsCharObject(Character xc, Object y) {
+        if (y instanceof Character)
+            return xc.charValue() == ((Character)y).charValue();
+        if (y instanceof Number)
+            return equalsNumChar((Number)y, xc);
+
+        return xc.equals(y);
     }
 
     private static boolean equalsNumChar(Number xn, Character yc) {
@@ -212,27 +225,27 @@ public class BoxesRunTime
      *  verisons are equal.  This still needs reconciliation.
      */
     public static int hashFromLong(Long n) {
-      int iv = n.intValue();
-      if (iv == n.longValue()) return iv;
-      else return n.hashCode();
+        int iv = n.intValue();
+        if (iv == n.longValue()) return iv;
+        else return n.hashCode();
     }
     public static int hashFromDouble(Double n) {
-      int iv = n.intValue();
-      double dv = n.doubleValue();
-      if (iv == dv) return iv;
+        int iv = n.intValue();
+        double dv = n.doubleValue();
+        if (iv == dv) return iv;
 
-      long lv = n.longValue();
-      if (lv == dv) return Long.valueOf(lv).hashCode();
-      else return n.hashCode();
+        long lv = n.longValue();
+        if (lv == dv) return Long.valueOf(lv).hashCode();
+        else return n.hashCode();
     }
     public static int hashFromFloat(Float n) {
-      int iv = n.intValue();
-      float fv = n.floatValue();
-      if (iv == fv) return iv;
+        int iv = n.intValue();
+        float fv = n.floatValue();
+        if (iv == fv) return iv;
 
-      long lv = n.longValue();
-      if (lv == fv) return Long.valueOf(lv).hashCode();
-      else return n.hashCode();
+        long lv = n.longValue();
+        if (lv == fv) return Long.valueOf(lv).hashCode();
+        else return n.hashCode();
     }
     public static int hashFromNumber(Number n) {
       if (n instanceof Long) return hashFromLong((Long)n);

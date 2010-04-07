@@ -9,7 +9,7 @@ package scala.tools.nsc
 package backend.opt;
 
 import scala.collection.mutable.{Map, HashMap};
-import scala.tools.nsc.backend.icode.analysis.LubError;
+import scala.tools.nsc.backend.icode.analysis.LubException;
 import scala.tools.nsc.symtab._;
 
 /**
@@ -37,7 +37,7 @@ abstract class ClosureElimination extends SubComponent {
   }
 
   /**
-   * Remove references to the environemnt through fields of a closure object.
+   * Remove references to the environment through fields of a closure object.
    * This has to be run after an 'apply' method has been inlined, but it still
    * references the closure object.
    *
@@ -181,7 +181,7 @@ abstract class ClosureElimination extends SubComponent {
         }
       }
     }} catch {
-      case e: LubError =>
+      case e: LubException =>
         Console.println("In method: " + m)
         Console.println(e)
         e.printStackTrace

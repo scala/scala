@@ -12,10 +12,6 @@ package scala.xml
 package parsing
 
 import factory.NodeFactory
-import collection.Seq
-import collection.immutable.List
-import org.xml.sax.InputSource
-import javax.xml.parsers.{ SAXParser, SAXParserFactory }
 
 /** nobinding adaptor providing callbacks to parser to create elements.
 *   implements hash-consing

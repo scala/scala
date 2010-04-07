@@ -18,10 +18,10 @@ object Test {
 
   def main(args: Array[String]) = {
 
-    val tool = new Interpreter(new Settings())
+    val settings = new Settings()
+    settings.classpath.value = System.getProperty("java.class.path")
+    val tool = new Interpreter(settings)
     val global = tool.compiler
-    // when running that compiler, give it a scala-library to the classpath
-    global.settings.classpath.value = System.getProperty("java.class.path")
 
     import global._
     import definitions._

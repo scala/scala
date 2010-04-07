@@ -24,7 +24,7 @@ import generic._
  *  @version 2.8
  *  @since 2.8
  */
-class AddingBuilder[Elem, To <: Addable[Elem, To] with scala.collection.Iterable[Elem] with scala.collection.IterableLike[Elem, To]](empty: To)
+class AddingBuilder[Elem, To <: Addable[Elem, To] with collection.Iterable[Elem] with collection.IterableLike[Elem, To]](empty: To)
 extends Builder[Elem, To] {
   protected var elems: To = empty
   def +=(x: Elem): this.type = { elems = elems + x; this }

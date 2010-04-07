@@ -48,7 +48,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
    *  builder implementations are still required to work correctly even if the hint is
    *  wrong, i.e. a different number of elements is added.
    *
-   *  @size  the hint how many elements will be added.
+   *  @param size  the hint how many elements will be added.
    */
   def sizeHint(size: Int) {}
 
@@ -64,8 +64,7 @@ trait Builder[-Elem, +To] extends Growable[Elem] {
       val self = Builder.this
       def +=(x: Elem): this.type = { self += x; this }
       def clear() = self.clear()
-      override def ++=(xs: Iterator[Elem]): this.type = { self ++= xs; this }
-      override def ++=(xs:scala.collection.Traversable[Elem]): this.type = { self ++= xs; this }
+      override def ++=(xs: TraversableOnce[Elem]): this.type = { self ++= xs; this }
       def result: NewTo = f(self.result)
     }
 }

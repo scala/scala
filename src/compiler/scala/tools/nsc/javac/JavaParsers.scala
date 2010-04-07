@@ -9,7 +9,7 @@
 package scala.tools.nsc
 package javac
 
-import scala.tools.nsc.util.{Position, OffsetPosition, NoPosition, BatchSourceFile}
+import scala.tools.nsc.util.{OffsetPosition, BatchSourceFile}
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
@@ -429,7 +429,7 @@ trait JavaParsers extends JavaScanners {
             return Modifiers(flags, privateWithin)
         }
       }
-      throw new Error("should not be here")
+      abort("should not be here")
     }
 
     def typeParams(): List[TypeDef] =

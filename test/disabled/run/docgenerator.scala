@@ -10,7 +10,7 @@ object Test {
   def main(args: Array[String]) {
     // overwrites value of UrlContext.generator in file DocUtil.scala
     System.setProperty("doc.generator", "scaladoc")
-    var dirname = System.getProperty("scalatest.output")
+    var dirname = System.getProperty("partest.output")
     if (dirname eq null) dirname = System.getProperty("java.io.tmpdir")
     val tmpDir = new File(dirname)
     tmpDir.mkdirs()
@@ -116,7 +116,7 @@ object Foo2 {
       // when running that compiler, give it a scala-library to the classpath
       docSettings.classpath.value = System.getProperty("java.class.path")
       reporter = new ConsoleReporter(docSettings)
-      val command = new CompilerCommand(args.toList, docSettings, error, false)
+      val command = new CompilerCommand(args.toList, docSettings)
       try {
         object compiler extends Global(command.settings, reporter) {
 	  override protected def computeInternalPhases() : Unit = {

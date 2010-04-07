@@ -13,7 +13,7 @@ package scala.xml
 package parsing
 
 
-/** default implemenation of markup handler always returns NodeSeq.Empty */
+/** default implementation of markup handler always returns NodeSeq.Empty */
 abstract class DefaultMarkupHandler extends MarkupHandler {
 
   def elem(pos: Int, pre: String, label: String, attrs: MetaData,

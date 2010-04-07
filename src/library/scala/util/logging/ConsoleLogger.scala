@@ -21,8 +21,6 @@ package scala.util.logging
 trait ConsoleLogger extends Logged {
 
   /** logs argument to Console using <code>Console.println</code>
-   *
-   *  @param msg ...
    */
   override def log(msg: String): Unit = Console.println(msg)
 }

@@ -3,7 +3,7 @@ object Test {
     val ary: Array[String] = Array("a", "b", "c")
     val lst: List[String] = List("a", "b", "c")
     val itr: Iterator[String] = lst.iterator
-    val str: Stream[String] = Stream.fromIterator(lst.iterator)
+    val str: Stream[String] = lst.iterator.toStream
 
     Console.println(ary.zipWithIndex.toList)
     Console.println(lst.zipWithIndex.toList)

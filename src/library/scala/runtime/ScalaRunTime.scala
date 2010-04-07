@@ -12,10 +12,11 @@
 package scala.runtime
 
 import scala.reflect.ClassManifest
-import scala.collection.Seq
-import scala.collection.mutable._
+import scala.collection.{ Seq, IndexedSeq, TraversableView }
+import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ List, Stream, Nil, :: }
-import scala.util.control.ControlException
+import scala.xml.{ Node, MetaData }
+import scala.util.control.ControlThrowable
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
@@ -89,7 +90,7 @@ object ScalaRunTime {
   }
 
   /** Convert a numeric value array to an object array.
-   *  Needed to deal with vararg arguments of primtive types that are passed
+   *  Needed to deal with vararg arguments of primitive types that are passed
    *  to a generic Java vararg parameter T ...
    */
   def toObjectArray(src: AnyRef): Array[Object] = {
@@ -123,7 +124,7 @@ object ScalaRunTime {
     private var exception: Throwable =
       try   { run() ; null }
       catch {
-        case e: ControlException  => throw e  // don't catch non-local returns etc
+        case e: ControlThrowable  => throw e  // don't catch non-local returns etc
         case e: Throwable         => e
       }
 
@@ -165,13 +166,58 @@ object ScalaRunTime {
   @inline def inlinedEquals(x: Object, y: Object): Boolean =
     if (x eq y) true
     else if (x eq null) false
-    else if (x.isInstanceOf[java.lang.Number] || x.isInstanceOf[java.lang.Character]) BoxesRunTime.equals2(x, y)
+    else if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.equalsNumObject(x.asInstanceOf[java.lang.Number], y)
+    else if (x.isInstanceOf[java.lang.Character]) BoxesRunTime.equalsCharObject(x.asInstanceOf[java.lang.Character], y)
     else x.equals(y)
 
   def _equals(x: Product, y: Any): Boolean = y match {
     case y: Product if x.productArity == y.productArity => x.productIterator sameElements y.productIterator
     case _                                              => false
   }
+
+  // hashcode -----------------------------------------------------------
+
+  @inline def hash(x: Any): Int =
+    if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])
+    else x.hashCode
+
+  @inline def hash(dv: Double): Int = {
+    val iv = dv.toInt
+    if (iv == dv) return iv
+
+    val lv = dv.toLong
+    if (lv == dv) return lv.hashCode
+    else dv.hashCode
+  }
+  @inline def hash(fv: Float): Int = {
+    val iv = fv.toInt
+    if (iv == fv) return iv
+
+    val lv = fv.toLong
+    if (lv == fv) return lv.hashCode
+    else fv.hashCode
+  }
+  @inline def hash(lv: Long): Int = {
+    val iv = lv.toInt
+    if (iv == lv) iv else lv.hashCode
+  }
+  @inline def hash(x: Int): Int = x
+  @inline def hash(x: Short): Int = x.toInt
+  @inline def hash(x: Byte): Int = x.toInt
+  @inline def hash(x: Char): Int = x.toInt
+
+  @inline def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
+  @inline def hash(x: java.lang.Long): Int = {
+    val iv = x.intValue
+    if (iv == x.longValue) iv else x.hashCode
+  }
+
+  /** A helper method for constructing case class equality methods,
+   *  because existential types get in the way of a clean outcome and
+   *  it's performing a series of Any/Any equals comparisons anyway.
+   *  See ticket #2867 for specifics.
+   */
+  def sameElements(xs1: Seq[Any], xs2: Seq[Any]) = xs1 sameElements xs2
 
   /** Given any Scala value, convert it to a String.
    *
@@ -186,12 +232,26 @@ object ScalaRunTime {
    * @return a string representation of <code>arg</code>
    *
    */
-  def stringOf(arg : Any): String = arg match {
-    case null => "null"
-    case arg: AnyRef if isArray(arg) =>
-      val d: collection.IndexedSeq[Any] = WrappedArray.make(arg).deep
-      d.toString
-    case arg: WrappedArray[_] => arg.deep.toString
-    case arg => arg.toString
+  def stringOf(arg: Any): String = {
+    def inner(arg: Any): String = arg match {
+      case null                     => "null"
+      // Node extends NodeSeq extends Seq[Node] strikes again
+      case x: Node                  => x toString
+      // Not to mention MetaData extends Iterable[MetaData]
+      case x: MetaData              => x toString
+      case x: AnyRef if isArray(x)  => WrappedArray make x map inner mkString ("Array(", ", ", ")")
+      case x: TraversableView[_, _] => x.toString
+      case x: Traversable[_] if !x.hasDefiniteSize => x.toString
+      case x: Traversable[_]        =>
+        // Some subclasses of AbstractFile implement Iterable, then throw an
+        // exception if you call iterator.  What a world.
+        // And they can't be infinite either.
+        if (x.getClass.getName startsWith "scala.tools.nsc.io") x.toString
+        else (x map inner) mkString (x.stringPrefix + "(", ", ", ")")
+      case x                        => x toString
+    }
+    val s = inner(arg)
+    val nl = if (s contains "\n") "\n" else ""
+    nl + s + "\n"
   }
 }

@@ -11,11 +11,9 @@
 package scala.xml
 package factory
 
+import javax.xml.parsers.SAXParserFactory
 import parsing.{ FactoryAdapter, NoBindingFactoryAdapter }
-import org.xml.sax.InputSource
 import java.io.{ InputStream, Reader, StringReader, File, FileDescriptor, FileInputStream }
-import javax.xml.parsers.{ SAXParser, SAXParserFactory }
-import java.net.URL
 
 /** Presents collection of XML loading methods which use the parser
  *  created by "def parser".

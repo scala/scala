@@ -8,11 +8,12 @@
 
 // $Id$
 
-
 package scala.actors
 
 import java.lang.Runnable
 import java.util.concurrent.Callable
+
+import scala.concurrent.forkjoin.RecursiveAction
 
 /** <p>
  *    The class <code>ReactorTask</code>.
@@ -20,46 +21,61 @@ import java.util.concurrent.Callable
  *
  *  @author Philipp Haller
  */
-private[actors] class ReactorTask[T >: Null <: Reactor](var reactor: T, var fun: () => Any)
-  extends Callable[Unit] with Runnable {
+private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
+                                               var fun: () => Any,
+                                               var handler: PartialFunction[Msg, Any],
+                                               var msg: Msg)
+  extends RecursiveAction with Callable[Unit] with Runnable {
 
   def run() {
-    val saved = Actor.tl.get
-    Actor.tl set reactor
     try {
-      beforeExecuting()
+      beginExecution()
       try {
         try {
-          fun()
+          if (fun eq null)
+            handler(msg)
+          else
+            fun()
         } catch {
           case e: Exception if (reactor.exceptionHandler.isDefinedAt(e)) =>
             reactor.exceptionHandler(e)
         }
       } catch {
-        case _: KillActorException =>
+        case _: KillActorControl =>
       }
       reactor.kill()
     }
     catch {
-      case _: SuspendActorException =>
+      case _: SuspendActorControl =>
         // do nothing (continuation is already saved)
 
       case e: Exception =>
-        Debug.info(reactor+": caught "+e)
-        Debug.doInfo { e.printStackTrace() }
+        // print message on default error stream
+        val msgException = "Uncaught exception in "+reactor+"\n"
+        val msgMessage   = if (msg != null) "Message: "+msg+"\n" else ""
+        Console.err.print(msgException + msgMessage)
+        e.printStackTrace()
+
+        val uncaught = new UncaughtException(reactor, if (msg != null) Some(msg) else None, currentThread, e)
         reactor.terminated()
-        afterExecuting(e)
+        terminateExecution(uncaught)
     } finally {
-      Actor.tl set saved
+      suspendExecution()
       this.reactor = null
       this.fun = null
+      this.handler = null
+      this.msg = null
     }
   }
 
   def call() = run()
 
-  protected def beforeExecuting() {}
+  def compute() = run()
 
-  protected def afterExecuting(e: Exception) {}
+  protected def beginExecution() {}
+
+  protected def suspendExecution() {}
+
+  protected def terminateExecution(e: Exception) {}
 
 }

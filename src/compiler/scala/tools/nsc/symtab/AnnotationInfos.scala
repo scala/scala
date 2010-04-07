@@ -11,8 +11,7 @@ import scala.tools.nsc.transform.Reifiers
 import util._
 
 /** AnnotationInfo and its helpers */
-trait AnnotationInfos {
-  self: SymbolTable =>
+trait AnnotationInfos extends reflect.generic.AnnotationInfos { self: SymbolTable =>
 
   /** Arguments to classfile annotations (which are written to
    *  bytecode as java annotations) are either:
@@ -33,11 +32,24 @@ trait AnnotationInfos {
     override def toString = const.escapedStringValue
   }
 
+  object LiteralAnnotArg extends LiteralAnnotArgExtractor
+
   /** Represents an array of classfile annotation arguments */
   case class ArrayAnnotArg(args: Array[ClassfileAnnotArg])
   extends ClassfileAnnotArg {
     override def toString = args.mkString("[", ", ", "]")
   }
+
+  object ArrayAnnotArg extends ArrayAnnotArgExtractor
+
+  /** A specific annotation argument that encodes an array of bytes as an array of `Long`. The type of the argument
+    * declared in the annotation must be `String`. This specialised class is used to encode scala signatures for
+    * reasons of efficiency, both in term of class-file size and in term of compiler performance. */
+  case class ScalaSigBytes(bytes: Array[Byte])
+  extends ClassfileAnnotArg {
+    override def toString = (bytes map { byte => (byte & 0xff).toHexString }).mkString("[ ", " ", " ]")
+  }
+  object ScalaSigBytes extends ScalaSigBytesExtractor
 
   /** Represents a nested classfile annotation */
   case class NestedAnnotArg(annInfo: AnnotationInfo)
@@ -46,6 +58,8 @@ trait AnnotationInfos {
     assert(annInfo.args.isEmpty, annInfo.args)
     override def toString = annInfo.toString
   }
+
+  object NestedAnnotArg extends NestedAnnotArgExtractor
 
   class AnnotationInfoBase
 
@@ -60,7 +74,7 @@ trait AnnotationInfos {
    *    class).
    *  </p>
    *  <p>
-   *    Annotations are pickled (written to scala symbtab attribute
+   *    Annotations are pickled (written to scala symtab attribute
    *    in the classfile) if <code>atp</code> inherits form
    *    <code>StaticAnnotation</code>.
    *  </p>
@@ -105,6 +119,11 @@ trait AnnotationInfos {
       AnnotationInfo(atp, args.map(subs(_)), assocs).setPos(pos)
     }
   }
+
+  object AnnotationInfo extends AnnotationInfoExtractor
+
+  lazy val classfileAnnotArgManifest: ClassManifest[ClassfileAnnotArg] =
+    reflect.ClassManifest.classType(classOf[ClassfileAnnotArg])
 
   /** Symbol annotations parsed in Namer (typeCompleter of
    *  definitions) have to be lazy (#1782)

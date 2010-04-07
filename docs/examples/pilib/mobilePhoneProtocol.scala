@@ -158,7 +158,7 @@ object mobilePhoneProtocol {
     def Consumer(get: Chan[String]): unit = {
       Thread.sleep(1 + random.nextInt(1000));
       val msg = get.read;
-      System.out.println("Consummer took " + msg);
+      System.out.println("Consumer took " + msg);
       Consumer(get)
     }
 

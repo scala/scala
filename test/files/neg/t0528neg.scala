@@ -3,7 +3,7 @@ trait Sequ[+A] {
 }
 
 class RichStr extends Sequ[Char] {
-  // override to a primitve array
+  // override to a primitive array
   def toArray: Array[Char] = new Array[Char](10)
 }
 

@@ -107,6 +107,32 @@ class Regex(regex: String, groupNames: String*) {
     m.replaceAll(replacement)
   }
 
+  /**
+   * Replaces all matches using a replacer function.
+   *
+   * @param target      The string to match.
+   * @param replacer    The function which maps a match to another string.
+   * @return            The target string after replacements.
+   */
+  def replaceAllIn(target: java.lang.CharSequence, replacer: Match => String): String = {
+    val it = new Regex.MatchIterator(target, this, groupNames).replacementData
+    while (it.hasNext) {
+      val matchdata = it.next
+      it.replace(replacer(matchdata))
+    }
+    it.replaced
+  }
+
+  def replaceSomeIn(target: java.lang.CharSequence, replacer: Match => Option[String]): String = {
+    val it = new Regex.MatchIterator(target, this, groupNames).replacementData
+    while (it.hasNext) {
+      val matchdata = it.next
+      val replaceopt = replacer(matchdata)
+      if (replaceopt != None) it.replace(replaceopt.get)
+    }
+    it.replaced
+  }
+
   /** Replaces the first match by a string.
    *
    *  @param target      The string to match
@@ -227,7 +253,7 @@ object Regex {
 
   }
 
-  /** A case class for a succesful match.
+  /** A case class for a successful match.
    */
   class Match(val source: java.lang.CharSequence,
               matcher: Matcher,
@@ -264,12 +290,17 @@ object Regex {
     def unapply(m: Match): Some[String] = Some(m.matched)
   }
 
+  /** An extractor object that yields groups in the match. */
+  object Groups {
+    def unapplySeq(m: Match): Option[Seq[String]] = if (m.groupCount > 0) Some(1 to m.groupCount map m.group) else None
+  }
+
   /** A class to step through a sequence of regex matches
    */
   class MatchIterator(val source: java.lang.CharSequence, val regex: Regex, val groupNames: Seq[String])
   extends Iterator[String] with MatchData { self =>
 
-    private val matcher = regex.pattern.matcher(source)
+    protected val matcher = regex.pattern.matcher(source)
     private var nextSeen = false
 
     /** Is there another match? */
@@ -307,6 +338,31 @@ object Regex {
       def hasNext = self.hasNext
       def next = { self.next; new Match(source, matcher, groupNames).force }
     }
+
+    /** Convert to an iterator that yields MatchData elements instead of Strings and has replacement support */
+    private[matching] def replacementData = new Iterator[Match] with Replacement {
+      def matcher = self.matcher
+      def hasNext = self.hasNext
+      def next = { self.next; new Match(source, matcher, groupNames).force }
+    }
+  }
+
+  /**
+   * A trait able to build a string with replacements assuming it has a matcher.
+   * Meant to be mixed in with iterators.
+   */
+  private[matching] trait Replacement {
+    protected def matcher: Matcher
+
+    private var sb = new java.lang.StringBuffer
+
+    def replaced = {
+      val newsb = new java.lang.StringBuffer(sb)
+      matcher.appendTail(newsb)
+      newsb.toString
+    }
+
+    def replace(rs: String) = matcher.appendReplacement(sb, rs)
   }
 }
 

@@ -12,11 +12,8 @@ package scala.tools.nsc
  */
 class OfflineCompilerCommand(
   arguments: List[String],
-  settings: Settings,
-  error: String => Unit,
-  interactive: Boolean)
-extends CompilerCommand(arguments, new Settings(error), error, false)
-{
+  settings: Settings)
+extends CompilerCommand(arguments, settings) {
   override val cmdName = "fsc"
   import settings._
 

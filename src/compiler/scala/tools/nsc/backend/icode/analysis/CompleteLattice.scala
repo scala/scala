@@ -40,7 +40,7 @@ trait CompleteLattice {
   def lub(xs: List[Elem], exceptional: Boolean): Elem = try {
     if (xs == Nil) bottom else xs reduceLeft lub2(exceptional)
   } catch {
-      case e: LubError =>
+      case e: LubException =>
         Console.println("Lub on blocks: " + xs)
         throw e
   }

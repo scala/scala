@@ -1,9 +1,5 @@
-package scala.collection.mutable
-
-
-
-
-
+package scala.collection
+package mutable
 
 /**
  * A template trait for mutable maps that allow concurrent access.
@@ -66,14 +62,4 @@ trait ConcurrentMap[A, B] extends Map[A, B] {
    * @return    `Some(v)` if the given key was previously mapped to some value `v`, or `None` otherwise
    */
   def replace(k: A, v: B): Option[B]
-
 }
-
-
-
-
-
-
-
-
-

@@ -9,7 +9,6 @@ package ast.parser
 
 import symtab.Flags._
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.Position
 
 /** Methods for building trees, used in the parser.  All the trees
  *  returned by this class must be untyped.
@@ -65,46 +64,54 @@ abstract class TreeBuilder {
    *  The variables keep their positions; whereas the pattern is converted to be synthetic
    *  for all nodes that contain a variable position.
    */
-  private object getvarTraverser extends Traverser {
+  class GetVarTraverser extends Traverser {
     val buf = new ListBuffer[(Name, Tree, Position)]
-    def init: Traverser = { buf.clear; this }
+
     def namePos(tree: Tree, name: Name): Position =
-      if (!tree.pos.isRange || name.toString.contains('$')) tree.pos.focus
+      if (!tree.pos.isRange || name.containsName(nme.DOLLARraw)) tree.pos.focus
       else {
         val start = tree.pos.start
         val end = start + name.decode.length
         r2p(start, start, end)
       }
+
     override def traverse(tree: Tree): Unit = {
+      def seenName(name: Name)     = buf exists (_._1 == name)
+      def add(name: Name, t: Tree) = if (!seenName(name)) buf += ((name, t, namePos(tree, name)))
       val bl = buf.length
+
       tree match {
-        case Bind(name, Typed(tree1, tpt)) =>
-          if ((name != nme.WILDCARD) && (buf.iterator forall (name !=))) {
-            buf += ((name, if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt.duplicate, namePos(tree, name)))
-          }
+        case Bind(nme.WILDCARD, _)          =>
+          super.traverse(tree)
+
+        case Bind(name, Typed(tree1, tpt))  =>
+          val newTree = if (treeInfo.mayBeTypePat(tpt)) TypeTree() else tpt.duplicate
+          add(name, newTree)
           traverse(tree1)
-        case Bind(name, tree1) =>
-          if ((name != nme.WILDCARD) && (buf.iterator forall (name !=))) {
-            // can assume only name range as position, as otherwise might overlap
-            // with binds embedded in pattern tree1
-            buf += ((name, TypeTree(), namePos(tree, name)))
-            //println("found var "+name+" at "+namePos.show) //DEBUG
-          }
+
+        case Bind(name, tree1)              =>
+          // can assume only name range as position, as otherwise might overlap
+          // with binds embedded in pattern tree1
+          add(name, TypeTree())
           traverse(tree1)
+
         case _ =>
           super.traverse(tree)
       }
-      if (buf.length > bl) tree setPos tree.pos.makeTransparent
+      if (buf.length > bl)
+        tree setPos tree.pos.makeTransparent
+    }
+    def apply(tree: Tree) = {
+      traverse(tree)
+      buf.toList
     }
   }
 
   /** Returns list of all pattern variables, possibly with their types,
    *  without duplicates
    */
-  private def getVariables(tree: Tree): List[(Name, Tree, Position)] = {
-    getvarTraverser.init.traverse(tree)
-    getvarTraverser.buf.toList
-  }
+  private def getVariables(tree: Tree): List[(Name, Tree, Position)] =
+    new GetVarTraverser apply tree
 
   private def makeTuple(trees: List[Tree], isType: Boolean): Tree = {
     val tupString = "Tuple" + trees.length
@@ -198,7 +205,7 @@ abstract class TreeBuilder {
       }
     }
 
-  /** Create a tree represeting an assignment &lt;lhs = rhs&gt; */
+  /** Create a tree representing an assignment &lt;lhs = rhs&gt; */
   def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
     case Apply(fn, args) =>
       Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))
@@ -363,7 +370,13 @@ abstract class TreeBuilder {
 
     /** The position of the closure that starts with generator at position `genpos`.
      */
-    def closurePos(genpos: Position) = r2p(genpos.startOrPoint, genpos.point, body.pos.endOrPoint)
+    def closurePos(genpos: Position) = {
+      val end = body.pos match {
+        case NoPosition => genpos.point
+        case bodypos => bodypos.endOrPoint
+      }
+      r2p(genpos.startOrPoint, genpos.point, end)
+    }
 
 //    val result =
     enums match {
@@ -451,6 +464,37 @@ abstract class TreeBuilder {
   /** Create tree for pattern definition &lt;val pat0 = rhs&gt; */
   def makePatDef(pat: Tree, rhs: Tree): List[Tree] =
     makePatDef(Modifiers(0), pat, rhs)
+
+  /** For debugging only.  Desugar a match statement like so:
+   *  val x = scrutinee
+   *  x match {
+   *    case case1 => ...
+   *    case _ => x match {
+   *       case case2 => ...
+   *       case _ => x match ...
+   *    }
+   *  }
+   *
+   *  This way there are never transitions between nontrivial casedefs.
+   *  Of course many things break: exhaustiveness and unreachable checking
+   *  do not work, no switches will be generated, etc.
+   */
+  def makeSequencedMatch(selector: Tree, cases: List[CaseDef]): Tree = {
+    require(cases.nonEmpty)
+
+    val selectorName = freshName()
+    val valdef = atPos(selector.pos)(ValDef(Modifiers(PRIVATE | LOCAL | SYNTHETIC), selectorName, TypeTree(), selector))
+    val nselector = Ident(selectorName)
+
+    def loop(cds: List[CaseDef]): Match = {
+      def mkNext = CaseDef(Ident(nme.WILDCARD), EmptyTree, loop(cds.tail))
+
+      if (cds.size == 1) Match(nselector, cds)
+      else Match(selector, List(cds.head, mkNext))
+    }
+
+    Block(List(valdef), loop(cases))
+  }
 
   /** Create tree for pattern definition <mods val pat0 = rhs> */
   def makePatDef(mods: Modifiers, pat: Tree, rhs: Tree): List[Tree] = matchVarPattern(pat) match {

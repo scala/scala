@@ -101,6 +101,14 @@ object Streamable
      */
     def bufferedReader(codec: Codec = getCodec()) = new BufferedReader(reader(codec))
 
+    /** Creates a BufferedReader and applies the closure, automatically closing it on completion.
+     */
+    def applyReader[T](f: BufferedReader => T): T = {
+      val in = bufferedReader()
+      try f(in)
+      finally in.close()
+    }
+
     /** Convenience function to import entire file into a String.
      */
     def slurp(codec: Codec = getCodec()) = chars(codec).mkString

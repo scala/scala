@@ -1,4 +1,5 @@
 class ann(i: Int) extends Annotation
+class cfann(x: String) extends ClassfileAnnotation
 
 // annotations on abstract types
 abstract class C1[@serializable @cloneable +T, U, V[_]]
@@ -35,6 +36,10 @@ object Test {
 
   // annotation on annotation constructor
   @(ann @ann(100))(200) def foo() = 300
+
+  // #2984
+  private final val NAMESPACE = "/info"
+  @cfann(x = NAMESPACE + "/index") def index = "success"
 }
 
 // test forward references to getters / setters
@@ -83,4 +88,23 @@ trait BeanF {
 
   def isG(): Boolean
   def setG(nb: Boolean): Unit
+}
+
+
+class Ann3(arr: Array[String]) extends ClassfileAnnotation
+class Ann4(i: Int) extends ClassfileAnnotation
+class Ann5(value: Class[_]) extends ClassfileAnnotation
+
+object Test3 {
+  final val i = 1083
+  final val cls = classOf[String]
+}
+
+class Test4 {
+  @Ann3(arr = Array("dlkfj", "DSF"))
+  @Ann4(i = 2908)
+  @Ann4(i = Test3.i)
+  @Ann5(value = classOf[Int])
+  @Ann5(Test3.cls)
+  def foo {}
 }

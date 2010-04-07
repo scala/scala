@@ -22,22 +22,21 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
   val headers =
     <xml:group>
-		  <style type="text/css">
-		    @import url({ relativeLinkTo(List("template.css", "lib")) }) screen;
-		  </style>
-		  <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
+      <link href={ relativeLinkTo(List("template.css", "lib")) }   media="screen" type="text/css" rel="stylesheet"/>
+      <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
     </xml:group>
 
   val valueMembers =
-    (tpl.methods ::: tpl.values ::: (tpl.templates filter { tpl => tpl.isObject || tpl.isPackage })) sortWith (_.name < _.name)
+    (tpl.methods ::: tpl.values ::: (tpl.templates filter { tpl => tpl.isObject || tpl.isPackage })) sortBy (_.name)
 
   val typeMembers =
-    (tpl.abstractTypes ::: tpl.aliasTypes ::: (tpl.templates filter { tpl => tpl.isTrait || tpl.isClass })) sortWith (_.name < _.name)
+    (tpl.abstractTypes ::: tpl.aliasTypes ::: (tpl.templates filter { tpl => tpl.isTrait || tpl.isClass })) sortBy (_.name)
 
   val constructors = (tpl match {
     case cls: Class => cls.constructors
     case _ => Nil
-  }) sortWith (_.name < _.name)
+  }) sortBy (_.name)
 
   val body =
     <body class={ if (tpl.isTrait || tpl.isClass) "type" else "value" }>
@@ -58,14 +57,19 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
       <div id="template">
 
-        { if (tpl.linearization.isEmpty) NodeSeq.Empty else
-            <div id="mbrsel">
+        <div id="mbrsel">
+          { if (tpl.linearization.isEmpty) NodeSeq.Empty else
               <div id="ancestors">
-                <h3>Inherits</h3>
-                <ol>{ tpl.linearization map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
+                <h3>Inherited</h3>
+                <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
+                <ol id="linearization">{ tpl.linearization map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
               </div>
-            </div>
-        }
+          }
+          <div id="visbl">
+            <h3>Visibility</h3>
+            <ol><li class="public in">Public</li><li class="all out">All</li></ol>
+          </div>
+        </div>
 
         { if (typeMembers.isEmpty) NodeSeq.Empty else
             <div id="types" class="members">
@@ -90,11 +94,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
       </div>
 
+      <div id="tooltip" ></div>
+
     </body>
 
   def memberToHtml(mbr: MemberEntity): NodeSeq = {
     val attributes: List[comment.Body] = Nil
-    <li name={ mbr.definitionName }>
+    <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }>
       { signature(mbr, false) }
       { memberToCommentHtml(mbr, false) }
     </li>
@@ -146,12 +152,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }
             paramEntry ++ paramCommentToHtml(rest)
         }
-        if (mbr.comment.isEmpty) NodeSeq.Empty else {
+        if (mbr.comment.isEmpty) NodeSeq.Empty
+        else {
           val cmtedPrs = prs filter {
             case tp: TypeParam => mbrCmt.typeParams isDefinedAt tp.name
             case vp: ValueParam => mbrCmt.valueParams isDefinedAt vp.name
           }
-          if (cmtedPrs.isEmpty) NodeSeq.Empty else
+          if (cmtedPrs.isEmpty && mbrCmt.result.isEmpty) NodeSeq.Empty
+          else
             <dl class="paramcmts block">{
               paramCommentToHtml(cmtedPrs) ++ (
               mbrCmt.result match {
@@ -162,11 +170,20 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             }</dl>
         }
       }
-      { val fvs: List[comment.Paragraph] = mbr.visibility.toList ::: mbr.flags
+      { val fvs: List[comment.Paragraph] = visibility(mbr).toList ::: mbr.flags
         if (fvs.isEmpty) NodeSeq.Empty else
           <div class="block">
             attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
           </div>
+      }
+      { tpl.companion match {
+          case Some(companion) if isSelf =>
+            <div class="block">
+              Go to: <a href={relativeLinkTo(companion)}>companion</a>
+            </div>
+          case _ =>
+            NodeSeq.Empty
+        }
       }
       { val inDefTpls = mbr.inDefinitionTemplates
         if (inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) NodeSeq.Empty else {
@@ -176,24 +193,59 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }
       }
       { mbr match {
-          case dtpl: DocTemplateEntity if isSelf =>
-            val subClss = dtpl.subClasses
-            if (subClss.isEmpty) NodeSeq.Empty else
-              <div class="block">
-                known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
-              </div>
+          case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty) =>
+            <div class="block">
+              known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
+            </div>
           case _ => NodeSeq.Empty
         }
       }
-      { tpl.companion match {
-          case Some(companion) =>
+      { mbr match {
+          case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined) =>
+            val sourceUrl = tpl.sourceUrl.get
             <div class="block">
-              Go to: <a href={relativeLinkTo(companion)}>companion</a>
+              source: { <a href={ sourceUrl.toString }>{ Text(new java.io.File(sourceUrl.getPath).getName) }</a> }
             </div>
-          case None =>
-            NodeSeq.Empty
+          case _ => NodeSeq.Empty
         }
       }
+      { if(mbr.deprecation.isEmpty) NodeSeq.Empty else
+          <div class="block"><ol>deprecated:
+            { <li>{ bodyToHtml(mbr.deprecation.get) }</li> }
+          </ol></div>
+      }
+      { for(comment <- mbr.comment.toList) yield {
+        <xml:group>
+          { if(!comment.version.isEmpty)
+            <div class="block"><ol>version
+              { for(body <- comment.version.toList) yield <li>{bodyToHtml(body)}</li> }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+          { if(!comment.since.isEmpty)
+            <div class="block"><ol>since
+              { for(body <- comment.since.toList) yield <li>{bodyToHtml(body)}</li> }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+          { if(!comment.see.isEmpty)
+            <div class="block"><ol>see also:
+              { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li>{bodyToHtml(see)}</li> )
+                seeXml.reduceLeft(_ ++ Text(", ") ++ _)
+              }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+          { if(!comment.authors.isEmpty)
+            <div class="block"><ol>authors:
+              { val authorsXml:List[scala.xml.NodeSeq]=(for(author <- comment.authors ) yield <li>{bodyToHtml(author)}</li> )
+                authorsXml.reduceLeft(_ ++ Text(", ") ++ _)
+              }
+            </ol></div>
+           else NodeSeq.Empty
+          }
+        </xml:group>
+      }}
     </xml:group>
 
   def kindToString(mbr: MemberEntity): String = mbr match {
@@ -212,13 +264,34 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     bound0(hi, " <: ") ++ bound0(lo, " >: ")
   }
 
+  def visibility(mbr: MemberEntity): Option[comment.Paragraph] = {
+    import comment._
+    import comment.{ Text => CText }
+    mbr.visibility match {
+      case PrivateInInstance() =>
+        Some(Paragraph(CText("private[this]")))
+      case PrivateInTemplate(owner) if (owner == mbr.inTemplate) =>
+        Some(Paragraph(CText("private")))
+      case PrivateInTemplate(owner) =>
+        Some(Paragraph(Chain(List(CText("private["), EntityLink(owner), CText("]")))))
+      case ProtectedInInstance() =>
+        Some(Paragraph(CText("protected[this]")))
+      case ProtectedInTemplate(owner) if (owner == mbr.inTemplate) =>
+        Some(Paragraph(CText("protected")))
+      case ProtectedInTemplate(owner) =>
+        Some(Paragraph(Chain(List(CText("protected["), EntityLink(owner), CText("]")))))
+      case Public() =>
+        None
+    }
+  }
+
   /** name, tparams, params, result */
   def signature(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
     def inside(hasLinks: Boolean): NodeSeq =
       <xml:group>
       <span class="kind">{ kindToString(mbr) }</span>
       <span class="symbol">
-        <span class="name">{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
+        <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
           def tparamsToHtml(tpss: List[TypeParam]): NodeSeq =
             if (tpss.isEmpty) NodeSeq.Empty else {
               def tparam0(tp: TypeParam): NodeSeq =
@@ -237,13 +310,23 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }{
           def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
             def param0(vl: ValueParam): NodeSeq =
-              <span name={ vl.name }>{ vl.name + ": " }{ typeToHtml(vl.resultType, hasLinks) }</span>
+              // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
+              <span name={ vl.name }>{ Text(vl.name + ": ") }{ typeToHtml(vl.resultType, hasLinks) }{
+                if(!vl.defaultValue.isEmpty) {
+                  Text(" = ") ++ <span class="default">{vl.defaultValue.get}</span>
+                }
+                else NodeSeq.Empty
+              }</span>
             def params0(vlss: List[ValueParam]): NodeSeq = vlss match {
               case Nil => NodeSeq.Empty
               case vl :: Nil => param0(vl)
               case vl :: vls => param0(vl) ++ Text(", ") ++ params0(vls)
             }
-            vlsss map { vlss => <span class="params">({ params0(vlss) })</span> }
+            def implicitCheck(vlss: List[ValueParam]): NodeSeq = vlss match {
+              case vl :: vls => if(vl.isImplicit) { <span class="implicit">implicit </span> } else Text("")
+              case _ => Text("")
+            }
+            vlsss map { vlss => <span class="params">({implicitCheck(vlss) ++ params0(vlss) })</span> }
           }
           mbr match {
             case cls: Class if cls.isCaseClass => paramsToHtml(cls.primaryConstructor.get.valueParams)

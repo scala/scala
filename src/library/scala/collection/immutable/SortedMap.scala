@@ -31,6 +31,8 @@ trait SortedMap[A, +B] extends Map[A, B]
   override protected[this] def newBuilder : Builder[(A, B), SortedMap[A, B]] =
     SortedMap.newBuilder[A, B]
 
+  override def empty: SortedMap[A, B] = SortedMap.empty
+
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
 
   /** Add a key/value pair to this map.
@@ -56,16 +58,8 @@ trait SortedMap[A, +B] extends Map[A, B]
    *
    *  @param elems     the traversable object.
    */
-  override def ++[B1 >: B](elems: scala.collection.Traversable[(A, B1)]): SortedMap[A, B1] =
-    ((repr: SortedMap[A, B1]) /: elems) (_ + _)
-
-  /** Adds a number of elements provided by an iterator
-   *  and returns a new collection with the added elements.
-   *
-   *  @param iter   the iterator
-   */
-  override def ++[B1 >: B] (iter: Iterator[(A, B1)]): SortedMap[A, B1] =
-    ((repr: SortedMap[A, B1]) /: iter) (_ + _)
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): SortedMap[A, B1] =
+    ((repr: SortedMap[A, B1]) /: xs) (_ + _)
 }
 
 /**

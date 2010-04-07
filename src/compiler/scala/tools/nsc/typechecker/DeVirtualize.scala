@@ -137,7 +137,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
   protected def factoryName(clazz: Symbol) =
     atPhase(ownPhase) { newTermName("new$"+clazz.name) }
 
-  /** Does `clazz' contaion virtual classes? */
+  /** Does `clazz' contain virtual classes? */
   protected def containsVirtuals(clazz: Symbol) = clazz.info.decls.toList exists (_.isVirtualClass)
 
   /** The inner classes that need factory methods in `clazz'
@@ -177,7 +177,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
 
   /** The name of the field representing a constructor parameter of a virtual class */
   protected def paramFieldName(clazz: Symbol, index: Int) = atPhase(ownPhase) {
-    clazz.expandedName(newTermName("param$"+index))
+    nme.expandedName(newTermName("param$"+index), clazz)
   }
 
   /** The name of the field representing a constructor parameter of a virtual class */
@@ -252,7 +252,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
           val parents2 = addOverriddenVirtuals(clazz) map {
             c => typeRef(clazz.owner.thisType, c, typeParams map (_.tpe))
           }
-          mkTypeBounds(NothingClass.tpe, intersectionType(parents1 ::: parents2))
+          TypeBounds(NothingClass.tpe, intersectionType(parents1 ::: parents2))
         }
       }
     }
@@ -297,7 +297,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
       private def copyType(tpe: Type): Type = tpe match {
         case MethodType(formals, restpe) => MethodType(formals, copyType(restpe))
         case PolyType(List(), restpe) => PolyType(List(), copyType(restpe))
-        case PolyType(_, _) => throw new Error("bad case: "+tpe)
+        case PolyType(_, _) => abort("bad case: "+tpe)
         case _ => owner.thisType.memberType(abstractType(clazz))
       }
       def getInfo = copyType(clazz.primaryConstructor.tpe)
@@ -305,9 +305,9 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
     factory
   }
 
-  def removeDuplicates(ts: List[Type]): List[Type] = ts match {
+  def distinct(ts: List[Type]): List[Type] = ts match {
     case List() => List()
-    case t :: ts1 => t :: removeDuplicates(ts1 filter (_.typeSymbol != t.typeSymbol))
+    case t :: ts1 => t :: distinct(ts1 filter (_.typeSymbol != t.typeSymbol))
   }
 
   /** The concrete class symbol VC$fix in the factory symbol (@see mkFactory)
@@ -333,7 +333,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
         }
         atPhase(ownPhase.next) {
           val parents2 =
-            removeDuplicates(parents1.flatMap(addOverriddenVirtuals))
+            distinct(parents1.flatMap(addOverriddenVirtuals))
             .map(_.substSym(clazz.typeParams, factory.typeParams))
           sym setInfo ClassInfoType(parents2, new Scope, cclazz)
         }

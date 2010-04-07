@@ -18,7 +18,7 @@ abstract class TableChange(override val source: Table) extends TableEvent(source
 
 /**
  * The most general table change. The table might have changed completely,
- * i.e., comlumns might have been reordered, rows added or removed, etc.
+ * i.e., columns might have been reordered, rows added or removed, etc.
  * No other event indicates that the structure might have changed.
  */
 case class TableStructureChanged(override val source: Table) extends TableChange(source)

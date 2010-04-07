@@ -854,10 +854,18 @@ public class PEFile {
 	    while (getByte() == ELEMENT_TYPE_CMOD_OPT
 		   || getByte() == ELEMENT_TYPE_CMOD_REQD)
 		{
-		    Type t = decodeType();
-		    System.err.println("CMOD: " + t);
-		    if (getByte() == ELEMENT_TYPE_CMOD_REQD)
-			throw new RuntimeException("Reqired CMOD: " + t);
+                    // skip the tag 23.2.7
+                    readByte();
+                    // skip the TypeDefOrRefEncoded (23.2.8)
+                    readByte();
+                    readByte();
+
+                    // @FIXME: could be 4 bytes, not always 2...
+
+                    //Type t = decodeType();
+		    //System.err.println("CMOD: " + t);
+		    //if (getByte() == ELEMENT_TYPE_CMOD_REQD)
+                      //throw new RuntimeException("Reqired CMOD: " + t);
 		}
 	}
 

@@ -19,24 +19,25 @@ import scala.collection.mutable.Builder
 
 
 object Vector extends SeqFactory[Vector] {
-  /*private[immutable]*/ val BF = new GenericCanBuildFrom[Nothing] {
+  private[immutable] val BF = new GenericCanBuildFrom[Nothing] {
     override def apply() = newBuilder[Nothing]
   }
   @inline implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Vector[A]] =
     BF.asInstanceOf[CanBuildFrom[Coll, A, Vector[A]]]
   def newBuilder[A]: Builder[A, Vector[A]] = new VectorBuilder[A]
-  /*private[immutable]*/ val NIL = new Vector[Nothing](0, 0, 0)
+  private[immutable] val NIL = new Vector[Nothing](0, 0, 0)
   @inline override def empty[A]: Vector[A] = NIL
 }
 
 
-// TODO: most members are still public -> restrict access (caveat: private prevents inlining)
+// in principle, most members should be private. however, access privileges must
+// be carefully chosen to not prevent method inlining
 
 @serializable
-final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends Seq[A]
+final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends IndexedSeq[A]
                  with GenericTraversableTemplate[A, Vector]
-                 with SeqLike[A, Vector[A]]
-                 with VectorPointer[A @uncheckedVariance] {
+                 with IndexedSeqLike[A, Vector[A]]
+                 with VectorPointer[A @uncheckedVariance] { self =>
 
 override def companion: GenericCompanion[Vector] = Vector
 
@@ -45,7 +46,7 @@ override def companion: GenericCompanion[Vector] = Vector
   //assert(focus >= 0, focus+"<0")
   //assert(focus <= endIndex, focus+">"+endIndex)
 
-  /*private*/ var dirty = false
+  private[immutable] var dirty = false
 
   def length = endIndex - startIndex
 
@@ -60,20 +61,35 @@ override def companion: GenericCompanion[Vector] = Vector
     s
   }
 
+
+  // can still be improved
+  override /*SeqLike*/
+  def reverseIterator: Iterator[A] = new Iterator[A] {
+    private var i = self.length
+    def hasNext: Boolean = 0 < i
+    def next: A =
+      if (0 < i) {
+        i -= 1
+        self(i)
+      } else Iterator.empty.next
+  }
+
+  // TODO: reverse
+
   // TODO: check performance of foreach/map etc. should override or not?
   // Ideally, clients will inline calls to map all the way down, including the iterator/builder methods.
   // In principle, escape analysis could even remove the iterator/builder allocations and do it
   // with local variables exclusively. But we're not quite there yet ...
 
-  @inline def foreach0[U](f: A => U): Unit = iterator.foreach0(f)
-  @inline def map0[B, That](f: A => B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
+  @deprecated("this method is experimental and will be removed in a future release")
+  @inline def foreachFast[U](f: A => U): Unit = iterator.foreachFast(f)
+  @deprecated("this method is experimental and will be removed in a future release")
+  @inline def mapFast[B, That](f: A => B)(implicit bf: CanBuildFrom[Vector[A], B, That]): That = {
     val b = bf(repr)
-    foreach0(x => b += f(x))
+    foreachFast(x => b += f(x))
     b.result
   }
 
-  // TODO: reverse
-  // TODO: reverseIterator
 
   def apply(index: Int): A = {
     val idx = checkRangeConvert(index)
@@ -108,41 +124,71 @@ override def companion: GenericCompanion[Vector] = Vector
   }
 
   override def take(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (startIndex + n < endIndex) {
+    if (n <= 0)
+      Vector.empty
+    else if (startIndex + n < endIndex)
       dropBack0(startIndex + n)
-    } else
+    else
       this
   }
 
   override def drop(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (startIndex + n < endIndex) {
+    if (n <= 0)
+      this
+    else if (startIndex + n < endIndex)
       dropFront0(startIndex + n)
-    } else
+    else
       Vector.empty
   }
 
   override def takeRight(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (endIndex - n > startIndex) {
+    if (n <= 0)
+      Vector.empty
+    else if (endIndex - n > startIndex)
       dropFront0(endIndex - n)
-    } else
+    else
       this
   }
 
   override def dropRight(n: Int): Vector[A] = {
-    if (n < 0) throw new IllegalArgumentException(n.toString)
-    if (endIndex - n > startIndex) {
+    if (n <= 0)
+      this
+    else if (endIndex - n > startIndex)
       dropBack0(endIndex - n)
-    } else
+    else
       Vector.empty
   }
+
+  override /*IterableLike*/ def head: A = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.head")
+    apply(0)
+  }
+
+  override /*TraversableLike*/ def tail: Vector[A] = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.tail")
+    drop(1)
+  }
+
+  override /*TraversableLike*/ def last: A = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.last")
+    apply(length-1)
+  }
+
+  override /*TraversableLike*/ def init: Vector[A] = {
+    if (isEmpty) throw new UnsupportedOperationException("empty.init")
+    dropRight(1)
+  }
+
+  override /*IterableLike*/ def slice(from: Int, until: Int): Vector[A] =
+    take(until).drop(from)
+
+  override /*IterableLike*/ def splitAt(n: Int): (Vector[A], Vector[A]) = (take(n), drop(n))
+
 
 
   // semi-private api
 
-  def updateAt[B >: A](index: Int, elem: B): Vector[B] = {
+  private[immutable] def updateAt[B >: A](index: Int, elem: B): Vector[B] = {
     val idx = checkRangeConvert(index)
     val s = new Vector[B](startIndex, endIndex, idx)
     s.initFrom(this)
@@ -151,7 +197,6 @@ override def companion: GenericCompanion[Vector] = Vector
     s.display0(idx & 0x1f) = elem.asInstanceOf[AnyRef]
     s
   }
-
 
 
   private def gotoPosWritable(oldIndex: Int, newIndex: Int, xor: Int) = if (dirty) {
@@ -168,7 +213,7 @@ override def companion: GenericCompanion[Vector] = Vector
     dirty = true
   }
 
-  def appendFront[B>:A](value: B): Vector[B] = {
+  private[immutable] def appendFront[B>:A](value: B): Vector[B] = {
     if (endIndex != startIndex) {
       var blockIndex = (startIndex - 1) & ~31
       var lo = (startIndex - 1) & 31
@@ -263,7 +308,7 @@ override def companion: GenericCompanion[Vector] = Vector
     }
   }
 
-  def appendBack[B>:A](value: B): Vector[B] = {
+  private[immutable] def appendBack[B>:A](value: B): Vector[B] = {
 //    //println("------- append " + value)
 //    debug()
     if (endIndex != startIndex) {
@@ -361,22 +406,22 @@ override def companion: GenericCompanion[Vector] = Vector
       display5 = copyRange(display5, oldLeft, newLeft)
   }
 
-  def zeroLeft(array: Array[AnyRef], index: Int): Unit = {
+  private def zeroLeft(array: Array[AnyRef], index: Int): Unit = {
     var i = 0; while (i < index) { array(i) = null; i+=1 }
   }
 
-  def zeroRight(array: Array[AnyRef], index: Int): Unit = {
+  private def zeroRight(array: Array[AnyRef], index: Int): Unit = {
     var i = index; while (i < array.length) { array(i) = null; i+=1 }
   }
 
-  def copyLeft(array: Array[AnyRef], right: Int): Array[AnyRef] = {
+  private def copyLeft(array: Array[AnyRef], right: Int): Array[AnyRef] = {
 //    if (array eq null)
 //      println("OUCH!!! " + right + "/" + depth + "/"+startIndex + "/" + endIndex + "/" + focus)
     val a2 = new Array[AnyRef](array.length)
     Platform.arraycopy(array, 0, a2, 0, right)
     a2
   }
-  def copyRight(array: Array[AnyRef], left: Int): Array[AnyRef] = {
+  private def copyRight(array: Array[AnyRef], left: Int): Array[AnyRef] = {
     val a2 = new Array[AnyRef](array.length)
     Platform.arraycopy(array, left, a2, left, a2.length - left)
     a2
@@ -592,18 +637,17 @@ final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterato
     res
   }
 
-  // TODO: take
-  // TODO: drop
+  // TODO: drop (important?)
 
-  // TODO: remove!
-  @inline def foreach0[U](f: A =>  U) { while (hasNext) f(next()) }
+  @deprecated("this method is experimental and will be removed in a future release")
+  @inline def foreachFast[U](f: A =>  U) { while (hasNext) f(next()) }
 }
 
 
 final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A @uncheckedVariance] {
 
-  // TODO: possible alternative: start with display0 = null, blockIndex = -32, lo = 32
-  // to avoid allocation initial array if the result will be empty anyways
+  // possible alternative: start with display0 = null, blockIndex = -32, lo = 32
+  // to avoid allocating initial array if the result will be empty anyways
 
   display0 = new Array[AnyRef](32)
   depth = 1
@@ -612,7 +656,7 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
   private var lo = 0
 
   def += (elem: A): this.type = {
-    if (lo == 32) {
+    if (lo >= display0.length) {
       val newBlockIndex = blockIndex+32
       gotoNextBlockStartWritable(newBlockIndex, blockIndex ^ newBlockIndex)
       blockIndex = newBlockIndex
@@ -624,11 +668,12 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
   }
 
   def result: Vector[A] = {
-    if (blockIndex + lo == 0)
+    val size = blockIndex + lo
+    if (size == 0)
       return Vector.empty
-    val s = new Vector[A](0, blockIndex + lo, 0) // TODO: should focus front or back?
+    val s = new Vector[A](0, size, 0) // should focus front or back?
     s.initFrom(this)
-    if (depth > 1) s.gotoPos(0, blockIndex + lo)
+    if (depth > 1) s.gotoPos(0, size - 1) // we're currently focused to size - 1, not size!
     s
   }
 
@@ -643,18 +688,18 @@ final class VectorBuilder[A]() extends Builder[A,Vector[A]] with VectorPointer[A
 
 
 private[immutable] trait VectorPointer[T] {
-     var depth: Int = _
-     var display0: Array[AnyRef] = _
-     var display1: Array[AnyRef] = _
-     var display2: Array[AnyRef] = _
-     var display3: Array[AnyRef] = _
-     var display4: Array[AnyRef] = _
-     var display5: Array[AnyRef] = _
+    private[immutable] var depth: Int = _
+    private[immutable] var display0: Array[AnyRef] = _
+    private[immutable] var display1: Array[AnyRef] = _
+    private[immutable] var display2: Array[AnyRef] = _
+    private[immutable] var display3: Array[AnyRef] = _
+    private[immutable] var display4: Array[AnyRef] = _
+    private[immutable] var display5: Array[AnyRef] = _
 
     // used
-     final def initFrom[U](that: VectorPointer[U]): Unit = initFrom(that, that.depth)
+    private[immutable] final def initFrom[U](that: VectorPointer[U]): Unit = initFrom(that, that.depth)
 
-     final def initFrom[U](that: VectorPointer[U], depth: Int) = {
+    private[immutable] final def initFrom[U](that: VectorPointer[U], depth: Int) = {
       this.depth = depth
       (depth - 1) match {
         case -1 =>
@@ -690,7 +735,7 @@ private[immutable] trait VectorPointer[T] {
 
 
     // requires structure is at pos oldIndex = xor ^ index
-     final def getElem(index: Int, xor: Int): T = {
+    private[immutable] final def getElem(index: Int, xor: Int): T = {
       if (xor < (1 << 5)) { // level = 0
         display0(index & 31).asInstanceOf[T]
       } else
@@ -717,7 +762,7 @@ private[immutable] trait VectorPointer[T] {
     // go to specific position
     // requires structure is at pos oldIndex = xor ^ index,
     // ensures structure is at pos index
-     final def gotoPos(index: Int, xor: Int): Unit = {
+    private[immutable] final def gotoPos(index: Int, xor: Int): Unit = {
       if (xor < (1 << 5)) { // level = 0 (could maybe removed)
       } else
       if (xor < (1 << 10)) { // level = 1
@@ -754,7 +799,7 @@ private[immutable] trait VectorPointer[T] {
     // USED BY ITERATOR
 
     // xor: oldIndex ^ index
-     final def gotoNextBlockStart(index: Int, xor: Int): Unit = { // goto block start pos
+    private[immutable] final def gotoNextBlockStart(index: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 10)) { // level = 1
         display0 = display1((index >> 5) & 31).asInstanceOf[Array[AnyRef]]
       } else
@@ -787,7 +832,7 @@ private[immutable] trait VectorPointer[T] {
     // USED BY BUILDER
 
     // xor: oldIndex ^ index
-     final def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = { // goto block start pos
+    private[immutable] final def gotoNextBlockStartWritable(index: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 10)) { // level = 1
         if (depth == 1) { display1 = new Array(32); display1(0) = display0; depth+=1}
         display0 = new Array(32)
@@ -841,14 +886,15 @@ private[immutable] trait VectorPointer[T] {
 
     // STUFF BELOW USED BY APPEND / UPDATE
 
-     final def copyOf(a: Array[AnyRef]) = {
+    private[immutable] final def copyOf(a: Array[AnyRef]) = {
       //println("copy")
+      if (a eq null) println ("NULL")
       val b = new Array[AnyRef](a.length)
       Platform.arraycopy(a, 0, b, 0, a.length)
       b
     }
 
-     final def nullSlotAndCopy(array: Array[AnyRef], index: Int) = {
+    private[immutable] final def nullSlotAndCopy(array: Array[AnyRef], index: Int) = {
       //println("copy and null")
       val x = array(index)
       array(index) = null
@@ -860,7 +906,7 @@ private[immutable] trait VectorPointer[T] {
     // requires structure is at pos index
     // ensures structure is clean and at pos index and writable at all levels except 0
 
-     final def stabilize(index: Int) = (depth - 1) match {
+    private[immutable] final def stabilize(index: Int) = (depth - 1) match {
       case 5 =>
         display5 = copyOf(display5)
         display4 = copyOf(display4)
@@ -901,16 +947,13 @@ private[immutable] trait VectorPointer[T] {
 
 
 
-
-
-
     /// USED IN UPDATE AND APPEND BACK
 
     // prepare for writing at an existing position
 
     // requires structure is clean and at pos oldIndex = xor ^ newIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
-     final def gotoPosWritable0(newIndex: Int, xor: Int): Unit = (depth - 1) match {
+    private[immutable] final def gotoPosWritable0(newIndex: Int, xor: Int): Unit = (depth - 1) match {
       case 5 =>
         display5 = copyOf(display5)
         display4 = nullSlotAndCopy(display5, (newIndex >> 25) & 31).asInstanceOf[Array[AnyRef]]
@@ -943,7 +986,7 @@ private[immutable] trait VectorPointer[T] {
 
     // requires structure is dirty and at pos oldIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
-     final def gotoPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
+    private[immutable] final def gotoPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
       if (xor < (1 <<  5)) { // level = 0
         display0 = copyOf(display0)
       } else
@@ -1009,7 +1052,7 @@ private[immutable] trait VectorPointer[T] {
 
     // USED IN DROP
 
-     final def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
+    private[immutable] final def copyRange(array: Array[AnyRef], oldLeft: Int, newLeft: Int) = {
       val elems = new Array[AnyRef](32)
       Platform.arraycopy(array, oldLeft, elems, newLeft, 32 - math.max(newLeft,oldLeft))
       elems
@@ -1023,7 +1066,7 @@ private[immutable] trait VectorPointer[T] {
 
     // requires structure is clean and at pos oldIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
-     final def gotoFreshPosWritable0(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto block start pos
+    private[immutable] final def gotoFreshPosWritable0(oldIndex: Int, newIndex: Int, xor: Int): Unit = { // goto block start pos
       if (xor < (1 << 5)) { // level = 0
         //println("XXX clean with low xor")
       } else
@@ -1103,7 +1146,7 @@ private[immutable] trait VectorPointer[T] {
 
     // requires structure is dirty and at pos oldIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
-     final def gotoFreshPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
+    private[immutable] final def gotoFreshPosWritable1(oldIndex: Int, newIndex: Int, xor: Int): Unit = {
       stabilize(oldIndex)
       gotoFreshPosWritable0(oldIndex, newIndex, xor)
     }
@@ -1113,7 +1156,7 @@ private[immutable] trait VectorPointer[T] {
 
     // DEBUG STUFF
 
-    def debug(): Unit = {
+    private[immutable] def debug(): Unit = {
       return
 /*
       //println("DISPLAY 5: " + display5 + " ---> " + (if (display5 ne null) display5.map(x=> if (x eq null) "." else x + "->" +x.asInstanceOf[Array[AnyRef]].mkString("")).mkString(" ") else "null"))

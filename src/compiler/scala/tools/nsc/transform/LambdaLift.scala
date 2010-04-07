@@ -11,7 +11,6 @@ import symtab._
 import Flags._
 import util.TreeSet
 import scala.collection.mutable.{HashMap, LinkedHashMap, ListBuffer}
-import scala.tools.nsc.util.{Position, NoPosition}
 
 abstract class LambdaLift extends InfoTransform {
   import global._
@@ -151,7 +150,7 @@ abstract class LambdaLift extends InfoTransform {
             // The param symbol in the MethodType should not be renamed, only the symbol in scope. This way,
             // parameter names for named arguments are not changed. Example: without cloning the MethodType,
             //     def closure(x: Int) = { () => x }
-            // would have the signatrue
+            // would have the signature
             //     closure: (x$1: Int)() => Int
             if (sym.hasFlag(PARAM) && sym.owner.info.paramss.exists(_.contains(sym)))
               sym.owner.setInfo(sym.owner.info.cloneInfo(sym.owner))
@@ -429,7 +428,7 @@ abstract class LambdaLift extends InfoTransform {
     override def transformUnit(unit: CompilationUnit) {
       computeFreeVars
       atPhase(phase.next)(super.transformUnit(unit))
-      assert(liftedDefs.size == 0, liftedDefs.keysIterator.toList)
+      assert(liftedDefs.size == 0, liftedDefs.keys.toList)
     }
   } // class LambdaLifter
 

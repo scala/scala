@@ -1,0 +1,5 @@
+<!-- $Id$ -->
+<plugin>
+  <name>continuations</name>
+  <classname>scala.tools.selectivecps.SelectiveCPSPlugin</classname>
+</plugin>

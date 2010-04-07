@@ -11,8 +11,7 @@ package scala.tools.nsc
  *  @author  Lex Spoon
  *  @version 1.0
  */
-class InterpreterCommand(arguments: List[String], error: String => Unit)
-extends CompilerCommand(arguments, new Settings(error), error, false) {
+class InterpreterCommand(arguments: List[String], error: String => Unit) extends CompilerCommand(arguments, error) {
   override val cmdName = "scala"
   override lazy val fileEndings = List(".scalaint")
 }

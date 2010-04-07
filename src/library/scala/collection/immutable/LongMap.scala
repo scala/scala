@@ -138,6 +138,8 @@ import LongMap._;
  * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Long Maps</a>
  * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  *
+ * Note: This class is as of 2.8 largely superseded by HashMap.
+ *
  * @since 2.7
  */
 sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, LongMap[T]] {
@@ -344,7 +346,7 @@ sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, Lon
   }
 
   /**
-   * Forms the intersection of these two maps with a combinining function. The resulting map is
+   * Forms the intersection of these two maps with a combining function. The resulting map is
    * a map that has only keys present in both maps and has values produced from the original mappings
    * by combining them with f.
    *

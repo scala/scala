@@ -42,11 +42,11 @@ case class Success[+Out, +A](out : Out, value : A) extends Result[Out, A, Nothin
 
   def toOption = Some(value)
 
-  def map[B](f : A => B) = Success(out, f(value))
-  def mapOut[Out2](f : Out => Out2) = Success(f(out), value)
-  def map[Out2, B](f : (Out, A) => (Out2, B)) = f(out, value) match { case (out2, b) => Success(out2, b) }
-  def flatMap[Out2, B](f : (Out, A) => Result[Out2, B, Nothing]) = f(out, value)
-  def orElse[Out2 >: Out, B >: A](other : => Result[Out2, B, Nothing]) = this
+  def map[B](f : A => B) : Result[Out, B, Nothing] = Success(out, f(value))
+  def mapOut[Out2](f : Out => Out2) : Result[Out2, A, Nothing] = Success(f(out), value)
+  def map[Out2, B](f : (Out, A) => (Out2, B)) : Success[Out2, B] = f(out, value) match { case (out2, b) => Success(out2, b) }
+  def flatMap[Out2, B](f : (Out, A) => Result[Out2, B, Nothing]) : Result[Out2, B, Nothing]= f(out, value)
+  def orElse[Out2 >: Out, B >: A](other : => Result[Out2, B, Nothing]) : Result[Out2, B, Nothing] = this
 }
 
 sealed abstract class NoSuccess[+X] extends Result[Nothing, Nothing, X] {

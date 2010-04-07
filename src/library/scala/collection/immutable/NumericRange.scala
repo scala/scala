@@ -34,11 +34,18 @@ import generic._
  *  @version 2.8
  */
 @serializable
-abstract class NumericRange[+T]
+abstract class NumericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
 extends IndexedSeq[T]
 {
+  /** Note that NumericRange must be invariant so that constructs
+   *  such as
+   *
+   *    1L to 10 by 5
+   *
+   *  do not infer the range type as AnyVal.
+   */
   import num._
 
   private def fail(msg: String) = throw new IllegalArgumentException(msg)
@@ -56,20 +63,18 @@ extends IndexedSeq[T]
   // inclusive/exclusiveness captured this way because we do not have any
   // concept of a "unit", we can't just add an epsilon to an exclusive
   // endpoint to make it inclusive (as can be done with the int-based Range.)
-  protected def limitTest[U >: T](x: U)(implicit unum: Integral[U]) =
-    !isEmpty && isInclusive && unum.equiv(x, end)
+  protected def limitTest(x: T) = !isEmpty && isInclusive && equiv(x, end)
 
   protected def underlying = collection.immutable.IndexedSeq.empty[T]
 
   /** Create a new range with the start and end values of this range and
    *  a new <code>step</code>.
    */
-  def by[U >: T](newStep: U)(implicit unum: Integral[U]): NumericRange[U] =
-    copy(start, end, newStep)
+  def by(newStep: T): NumericRange[T] = copy(start, end, newStep)
 
   /** Create a copy of this range.
    */
-  def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): NumericRange[U]
+  def copy(start: T, end: T, step: T): NumericRange[T]
 
   override def foreach[U](f: T => U) {
     var i = start
@@ -115,9 +120,8 @@ extends IndexedSeq[T]
   }
 
   // a well-typed contains method.
-  def containsTyped[U >: T](x: U)(implicit unum: Integral[U]): Boolean = {
-    import unum._
-    def divides(d: U, by: U) = equiv(d % by, zero)
+  def containsTyped(x: T): Boolean = {
+    def divides(d: T, by: T) = equiv(d % by, zero)
 
     limitTest(x) || (
       if (step > zero)
@@ -154,7 +158,7 @@ extends IndexedSeq[T]
 
     // XXX This may be incomplete.
     new NumericRange[A](fm(start), fm(end), fm(step), isInclusive) {
-      def copy[A1 >: A](start: A1, end: A1, step: A1)(implicit unum: Integral[A1]): NumericRange[A1] =
+      def copy(start: A, end: A, step: A): NumericRange[A] =
         if (isInclusive) NumericRange.inclusive(start, end, step)
         else NumericRange(start, end, step)
 
@@ -162,8 +166,7 @@ extends IndexedSeq[T]
       override def foreach[U](f: A => U) { underlyingRange foreach (x => f(fm(x))) }
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
-      override def containsTyped[A1 >: A](el: A1)(implicit unum: Integral[A1]) =
-        underlyingRange exists (x => fm(x) == el)
+      override def containsTyped(el: A) = underlyingRange exists (x => fm(x) == el)
     }
   }
 
@@ -200,7 +203,7 @@ extends IndexedSeq[T]
 object NumericRange {
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends NumericRange(start, end, step, true) {
-    def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): Inclusive[U] =
+    def copy(start: T, end: T, step: T): Inclusive[T] =
       NumericRange.inclusive(start, end, step)
 
     def exclusive: Exclusive[T] = NumericRange(start, end, step)
@@ -208,7 +211,7 @@ object NumericRange {
 
   class Exclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends NumericRange(start, end, step, false) {
-    def copy[U >: T](start: U, end: U, step: U)(implicit unum: Integral[U]): Exclusive[U] =
+    def copy(start: T, end: T, step: T): Exclusive[T] =
       NumericRange(start, end, step)
 
     def inclusive: Inclusive[T] = NumericRange.inclusive(start, end, step)

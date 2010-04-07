@@ -79,6 +79,9 @@ abstract class Component extends UIElement {
     }
   }
 
+  def name: String = peer.getName
+  def name_=(s: String) = peer.setName(s)
+
   /**
    * Used by certain layout managers, e.g., BoxLayout or OverlayLayout to
    * align components relative to each other.
@@ -198,7 +201,7 @@ abstract class Component extends UIElement {
   def requestFocusInWindow() = peer.requestFocusInWindow()
   def hasFocus: Boolean = peer.isFocusOwner
 
-  override def onFirstSubscribe {
+  protected override def onFirstSubscribe {
     super.onFirstSubscribe
     // TODO: deprecated, remove after 2.8
     peer.addComponentListener(new java.awt.event.ComponentListener {
@@ -234,8 +237,8 @@ abstract class Component extends UIElement {
       def propertyChange(e: java.beans.PropertyChangeEvent) {
         e.getPropertyName match {
           case "font" => publish(FontChanged(Component.this))
-          case "background" => publish(ForegroundChanged(Component.this))
-          case "foreground" => publish(BackgroundChanged(Component.this))
+          case "background" => publish(BackgroundChanged(Component.this))
+          case "foreground" => publish(ForegroundChanged(Component.this))
           case _ =>
           /*case "focusable" =>
           case "focusTraversalKeysEnabled" =>

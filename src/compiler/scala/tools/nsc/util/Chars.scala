@@ -10,7 +10,6 @@ import annotation.{ tailrec, switch }
 
 /** Contains constants and classifier methods for characters */
 object Chars {
-
   // Be very careful touching these.
   // Apparently trivial changes to the way you write these constants
   // will cause Scanners.scala to go from a nice efficient switch to
@@ -21,6 +20,19 @@ object Chars {
   final val FF = '\u000C'
   final val CR = '\u000D'
   final val SU = '\u001A'
+
+  /** Convert a character digit to an Int according to given base,
+   *  -1 if no success */
+  def digit2int(ch: Char, base: Int): Int = {
+    if ('0' <= ch && ch <= '9' && ch < '0' + base)
+      ch - '0'
+    else if ('A' <= ch && ch < 'A' + base - 10)
+      ch - 'A' + 10
+    else if ('a' <= ch && ch < 'a' + base - 10)
+      ch - 'a' + 10
+    else
+      -1
+  }
 
   /** Is character a line break? */
   @inline def isLineBreakChar(c: Char) = (c: @switch) match {
@@ -38,16 +50,11 @@ object Chars {
 
   /** Can character start an alphanumeric Scala identifier? */
   def isIdentifierStart(c: Char): Boolean =
-    ('A' <= c && c <= 'Z') ||
-    ('a' <= c && c <= 'a') ||
-    (c == '_') || (c == '$') ||
-    Character.isUnicodeIdentifierStart(c)
+    (c == '_') || (c == '$') || Character.isUnicodeIdentifierStart(c)
 
   /** Can character form part of an alphanumeric Scala identifier? */
   def isIdentifierPart(c: Char) =
-    isIdentifierStart(c) ||
-    ('0' <= c && c <= '9') ||
-    Character.isUnicodeIdentifierPart(c)
+    (c == '$') || Character.isUnicodeIdentifierPart(c)
 
   /** Is character a math or other symbol in Unicode?  */
   def isSpecial(c: Char) = {

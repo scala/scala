@@ -9,11 +9,12 @@
 // $Id$
 
 
-package scala.util.parsing.combinator.lexical
-import scala.util.parsing.combinator._
+package scala.util.parsing
+package combinator
+package lexical
 
-import scala.util.parsing.syntax._
-import scala.util.parsing.input._
+import token._
+import input._
 
 /** <p>
  *    This component provides core functionality for lexical parsers.
@@ -22,13 +23,6 @@ import scala.util.parsing.input._
  *    See its subclasses {@see Lexical} and -- most interestingly
  *    {@see StdLexical}, for more functionality.
  *  </p>
- *
- *  @requires token      a parser that produces a token (from a stream of characters)
- *  @requires whitespace a unit-parser for white-space
- *  @provides Scanner    essentially a parser that parses a stream of characters
- *                       to produce `Token's, which are typically passed to a
- *                       syntactical parser (which operates on `Token's, not on
- *                       individual characters).
  *
  *  @author Martin Odersky, Adriaan Moors
  */

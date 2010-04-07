@@ -64,9 +64,9 @@ passed ok
       Text(x.attributes("value").toString + y.attributes("bazValue").toString+ "!")
     };
     val pelems_2 = new NodeSeq { val theSeq = List(Text("38!"),Text("58!")) };
-    assertSameElements(pelems_1, pelems_2)
+    assertSameElementsXML(pelems_1, pelems_2)
 
-    assertEquals(p \\ "@bazValue", Text("8"))
+    assertEqualsXML(p \\ "@bazValue", Text("8"))
 
     val books =
     <bks>
@@ -97,7 +97,7 @@ passed ok
   println( new scala.xml.PrettyPrinter(80, 5).formatNodes (
     for (t <- books \\ "title";
          r <- reviews \\ "entry"
-         if r \ "title" == t) yield
+         if (r \ "title") xml_== t) yield
           <result>
     { t }
     { r \ "remarks" }
@@ -139,7 +139,7 @@ val addrBook =
   println( new scala.xml.PrettyPrinter(80, 5).formatNodes (
     for (t <- addrBook \\ "entry";
          r <- phoneBook \\ "entry"
-         if t \ "name" == r \ "name") yield
+         if (t \ "name") xml_== (r \ "name")) yield
           <result>
     { t.child }
     { r \ "phone" }

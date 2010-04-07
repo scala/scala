@@ -24,6 +24,12 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
       ClassManifest.fromClass(
         repr.getClass.getComponentType.getComponentType.asInstanceOf[Predef.Class[U]]))
 
+  override def toArray[U >: T : ClassManifest]: Array[U] =
+    if (implicitly[ClassManifest[U]].erasure eq repr.getClass.getComponentType)
+      repr.asInstanceOf[Array[U]]
+    else
+      super.toArray[U]
+
   /** Flattens a two-dimensional array by concatenating all its rows
    *  into a single array
    */

@@ -21,6 +21,18 @@ trait AnnotationCheckers {
     /** Check the annotations on two types conform. */
     def annotationsConform(tpe1: Type, tpe2: Type): Boolean
 
+    /** Refine the computed least upper bound of a list of types.
+     *  All this should do is add annotations. */
+    def annotationsLub(tp: Type, ts: List[Type]): Type = tp
+
+    /** Refine the computed greatest lower bound of a list of types.
+     *  All this should do is add annotations. */
+    def annotationsGlb(tp: Type, ts: List[Type]): Type = tp
+
+    /** Refine the bounds on type parameters to the given type arguments. */
+    def adaptBoundsToAnnotations(bounds: List[TypeBounds],
+      tparams: List[Symbol], targs: List[Type]): List[TypeBounds] = bounds
+
     /** Modify the type that has thus far been inferred
      *  for a tree.  All this should do is add annotations. */
     def addAnnotations(tree: Tree, tpe: Type): Type = tpe
@@ -64,6 +76,27 @@ trait AnnotationCheckers {
        _.annotationsConform(tp1,tp2))
   }
 
+  /** Refine the computed least upper bound of a list of types.
+   *  All this should do is add annotations. */
+  def annotationsLub(tpe: Type, ts: List[Type]): Type = {
+    annotationCheckers.foldLeft(tpe)((tpe, checker) =>
+      checker.annotationsLub(tpe, ts))
+  }
+
+  /** Refine the computed greatest lower bound of a list of types.
+   *  All this should do is add annotations. */
+  def annotationsGlb(tpe: Type, ts: List[Type]): Type = {
+    annotationCheckers.foldLeft(tpe)((tpe, checker) =>
+      checker.annotationsGlb(tpe, ts))
+  }
+
+  /** Refine the bounds on type parameters to the given type arguments. */
+  def adaptBoundsToAnnotations(bounds: List[TypeBounds],
+    tparams: List[Symbol], targs: List[Type]): List[TypeBounds] = {
+      annotationCheckers.foldLeft(bounds)((bounds, checker) =>
+        checker.adaptBoundsToAnnotations(bounds, tparams, targs))
+  }
+
   /** Let all annotations checkers add extra annotations
    *  to this tree's type. */
   def addAnnotations(tree: Tree, tpe: Type): Type = {
@@ -74,8 +107,7 @@ trait AnnotationCheckers {
   /** Find out whether any annotation checker can adapt a tree
    *  to a given type. Called by Typers.adapt. */
   def canAdaptAnnotations(tree: Tree, mode: Int, pt: Type): Boolean = {
-    annotationCheckers.foldLeft(false)((res, checker) =>
-      res || checker.canAdaptAnnotations(tree, mode, pt))
+    annotationCheckers.exists(_.canAdaptAnnotations(tree, mode, pt))
   }
 
   /** Let registered annotation checkers adapt a tree

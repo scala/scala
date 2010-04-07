@@ -14,7 +14,6 @@ import java.io.{ File => JFile, IOException, InputStream, BufferedInputStream, B
 import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import PartialFunction._
 
-import scala.collection.Traversable
 import scala.collection.mutable.{ Map, HashMap }
 import scala.collection.JavaConversions.asIterator
 
@@ -157,8 +156,7 @@ private[io] trait ZipContainer extends AbstractFile
   /** Returns an abstract file with the given name. It does not
    *  check that it exists.
    */
-  override def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile =
-    throw new UnsupportedOperationException()
+  override def lookupNameUnchecked(name: String, directory: Boolean) = unsupported
 
   /** Returns all abstract subfiles of this abstract directory. */
   override def iterator: Iterator[AbstractFile] = root.iterator
@@ -207,9 +205,9 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     path: String
   ) extends VirtualFile(name, path)
   {
-    final override def path = "%s(%s)".format(self, pathInArchive)
-    final def getArchive = self.archive
-    def pathInArchive = super.path
+    override def underlyingSource = Some(self)
+    final override def path = "%s(%s)".format(self, super.path)
+    final def archive = self.archive
 
     override def hashCode = super.hashCode + container.hashCode
     override def equals(that : Any) =
@@ -234,15 +232,13 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
     val entry: ZipEntry
   ) extends Entry(container, name, path) with FileEntryInterface
   {
-    def archive = self.archive
     override def input = archive getInputStream entry
   }
 
   private def zipTraversableFromZipFile(z: ZipFile): ZipTrav =
-    new Traversable[ZipEntry] {
-      def zis: ZipInputStream = null  // not valid for this type
-      val itStream = asIterator(z.entries()).toStream
-      def foreach[U](f: ZipEntry => U) = itStream foreach f
+    new Iterable[ZipEntry] {
+      def zis: ZipInputStream = null    // not valid for this type
+      def iterator = asIterator(z.entries())
     }
 }
 
@@ -275,13 +271,14 @@ final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer
 
   /** Methods we don't support but have to implement because of the design */
   def file: JFile = null
-  def create: Unit = throw new UnsupportedOperationException
-  def delete: Unit = throw new UnsupportedOperationException
-  def output = throw new Error("unsupported")
-  def container = throw new Error("unsupported")
+  def create: Unit = unsupported
+  def delete: Unit = unsupported
+  def output = unsupported
+  def container = unsupported
 
   abstract class Entry(name: String, path: String) extends VirtualFile(name, path) {
     final override def path = "%s(%s)".format(URLZipArchive.this, super.path)
+    override def container = URLZipArchive.this
   }
   final class DirEntry(name: String, path: String) extends Entry(name, path) with DirEntryInterface {
     def source = input
