@@ -97,6 +97,12 @@ self =>
     loop(this, "")
   }
 
+  /** It's an imperfect world, but at least we can bottle up the
+   *  imperfection in a capsule.
+   */
+  @inline private def asThat[That](x: AnyRef): That     = x.asInstanceOf[That]
+  @inline private def asStream[B](x: AnyRef): Stream[B] = x.asInstanceOf[Stream[B]]
+
   // Overridden methods from Traversable
 
   override def toStream: Stream[A] = this
@@ -113,21 +119,23 @@ self =>
    *  then StreamBuilder will be chosen for the implicit.
    *  we recognize that fact and optimize to get more laziness.
    */
-  override def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+  override def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[A]
-    (if (isEmpty) that.toStream
-     else new Stream.Cons(head, (tail ++ that).asInstanceOf[Stream[A]])).asInstanceOf[That]
-  }
+    asThat[That](
+      if (isEmpty) that.toStream
+      else new Stream.Cons(head, asStream[A](tail ++ that))
+    )
 
   /**
    * Create a new stream which contains all intermediate results of applying the operator
    * to subsequent elements left to right.
    * @note This works because the target type of the Builder That is a Stream.
    */
-  override final def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-    (if (this.isEmpty) Stream(z)
-    else new Stream.Cons(z, tail.scanLeft(op(z, head))(op).asInstanceOf[Stream[B]])).asInstanceOf[That]
-  }
+  override final def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+    asThat[That](
+      if (isEmpty) Stream(z)
+      else new Stream.Cons(z, asStream[B](tail.scanLeft(op(z, head))(op)))
+    )
 
   /** Returns the stream resulting from applying the given function
    *  <code>f</code> to each element of this stream.
@@ -136,10 +144,11 @@ self =>
    *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
    *           sequence is <code>a<sub>0</sub>, ..., a<sub>n</sub></code>.
    */
-  override final def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
-    (if (isEmpty) Stream.Empty
-     else new Stream.Cons(f(head), (tail map f).asInstanceOf[Stream[B]])).asInstanceOf[That]
-  }
+  override final def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+    asThat[That](
+      if (isEmpty) Stream.Empty
+      else new Stream.Cons(f(head), asStream[B](tail map f))
+    )
 
   /** Applies the given function <code>f</code> to each element of
    *  this stream, then concatenates the results.
@@ -152,20 +161,22 @@ self =>
     // we assume there is no other builder factory on streams and therefore know that That = Stream[B]
     // optimisations are not for speed, but for functionality
     // see tickets #153, #498, #2147, and corresponding tests in run/ (as well as run/stream_flatmap_odds.scala)
-    (if (isEmpty) Stream.Empty
-    else {
-      // establish !prefix.isEmpty || nonEmptyPrefix.isEmpty
-      var nonEmptyPrefix = this
-      var prefix = f(nonEmptyPrefix.head).toStream
-      while (!nonEmptyPrefix.isEmpty && prefix.isEmpty) {
-        nonEmptyPrefix = nonEmptyPrefix.tail
-        if(!nonEmptyPrefix.isEmpty)
-          prefix = f(nonEmptyPrefix.head).toStream
-      }
+    asThat[That](
+      if (isEmpty) Stream.Empty
+      else {
+        // establish !prefix.isEmpty || nonEmptyPrefix.isEmpty
+        var nonEmptyPrefix = this
+        var prefix = f(nonEmptyPrefix.head).toStream
+        while (!nonEmptyPrefix.isEmpty && prefix.isEmpty) {
+          nonEmptyPrefix = nonEmptyPrefix.tail
+          if(!nonEmptyPrefix.isEmpty)
+            prefix = f(nonEmptyPrefix.head).toStream
+        }
 
-      if(nonEmptyPrefix.isEmpty) Stream.empty
-      else prefix append (nonEmptyPrefix.tail flatMap f).asInstanceOf[Stream[B]]
-    }).asInstanceOf[That]
+        if (nonEmptyPrefix.isEmpty) Stream.empty
+        else prefix append asStream[B](nonEmptyPrefix.tail flatMap f)
+      }
+    )
 
   /** Returns all the elements of this stream that satisfy the
    *  predicate <code>p</code>. The order of the elements is preserved.
@@ -178,6 +189,37 @@ self =>
     var rest = this dropWhile (!p(_))
     if (rest.isEmpty) Stream.Empty
     else new Stream.Cons(rest.head, rest.tail filter p)
+  }
+
+  override final def withFilter(p: A => Boolean): StreamWithFilter = new StreamWithFilter(p)
+
+  /** A lazier implementation of WithFilter than TraversableLike's.
+   */
+  final class StreamWithFilter(p: A => Boolean) extends WithFilter(p) {
+    override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+      def tailMap = asStream[B](tail withFilter p map f)
+      asThat[That](
+        if (isEmpty) Stream.Empty
+        else if (p(head)) new Stream.Cons(f(head), tailMap)
+        else tailMap
+      )
+    }
+
+    override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+      def tailFlatMap = asStream[B](tail withFilter p flatMap f)
+      asThat[That](
+        if (isEmpty) Stream.Empty
+        else if (p(head)) f(head).toStream append tailFlatMap
+        else tailFlatMap
+      )
+    }
+
+    override def foreach[B](f: A => B) =
+      for (x <- self)
+        if (p(x)) f(x)
+
+    override def withFilter(q: A => Boolean): StreamWithFilter =
+      new StreamWithFilter(x => p(x) && q(x))
   }
 
   /** Apply the given function <code>f</code> to each element of this linear sequence
@@ -224,11 +266,12 @@ self =>
    *              <code>Stream(a<sub>0</sub>, ..., a<sub>m</sub>)
    *              zip Stream(b<sub>0</sub>, ..., b<sub>n</sub>)</code> is invoked.
    */
-  override final def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That = {
+  override final def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Stream[A], (A1, B), That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[(A1, B)]
-    (if (this.isEmpty || that.isEmpty) Stream.Empty
-     else new Stream.Cons((this.head, that.head), (this.tail zip that.tail).asInstanceOf[Stream[(A1, B)]])).asInstanceOf[That]
-  }
+    asThat[That](
+      if (this.isEmpty || that.isEmpty) Stream.Empty
+      else new Stream.Cons((this.head, that.head), asStream[(A1, B)](this.tail zip that.tail))
+    )
 
   /** Zips this iterable with its indices. `s.zipWithIndex` is equivalent to
    *  `s zip s.indices`
@@ -359,7 +402,8 @@ self =>
     def loop(len: Int, these: Stream[A]): Stream[B] =
       if (these.isEmpty) Stream.fill(len)(elem)
       else new Stream.Cons(these.head, loop(len - 1, these.tail))
-    loop(len, this).asInstanceOf[That]
+
+    asThat[That](loop(len, this))
 // was:    if (bf.isInstanceOf[Stream.StreamCanBuildFrom[_]]) loop(len, this).asInstanceOf[That]
 //    else super.padTo(len, elem)
   }
