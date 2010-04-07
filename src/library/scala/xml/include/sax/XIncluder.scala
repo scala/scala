@@ -16,7 +16,7 @@ import collection.mutable.Stack
 
 import org.xml.sax.{ ContentHandler, XMLReader, Locator, Attributes }
 import org.xml.sax.ext.LexicalHandler
-import java.io.{ File, OutputStream, OutputStreamWriter, Writer }
+import java.io.{ File, OutputStream, OutputStreamWriter, Writer, IOException }
 
 /** XIncluder is a SAX <code>ContentHandler</code>
  * that writes its XML document onto an output stream after resolving
