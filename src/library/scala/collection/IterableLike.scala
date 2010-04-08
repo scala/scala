@@ -228,7 +228,7 @@ self =>
    *  @param   bf    $zipbfinfo
    *  @return        a new collection of type `That` containing pairs consisting of
    *                 corresponding elements of this $coll and `that`. The length
-   *                 of the returned collection is the minimum of the lengths of this $coll$ and `that`.
+   *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
    *
    *  @usecase def zip[B](that: Iterable[B]): $Coll[(A, B)]
    *
@@ -236,7 +236,7 @@ self =>
    *  @tparam  B     the type of the second half of the returned pairs
    *  @return        a new $coll containing pairs consisting of
    *                 corresponding elements of this $coll and `that`. The length
-   *                 of the returned collection is the minimum of the lengths of this $coll$ and `that`.
+   *                 of the returned collection is the minimum of the lengths of this $coll and `that`.
    */
   def zip[A1 >: A, B, That](that: Iterable[B])(implicit bf: CanBuildFrom[Repr, (A1, B), That]): That = {
     val b = bf(repr)
@@ -259,7 +259,7 @@ self =>
    *  @param thatElem the element to be used to fill up the result if `that` is shorter than this $coll.
    *  @return        a new collection of type `That` containing pairs consisting of
    *                 corresponding elements of this $coll and `that`. The length
-   *                 of the returned collection is the maximum of the lengths of this $coll$ and `that`.
+   *                 of the returned collection is the maximum of the lengths of this $coll and `that`.
    *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
    *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
    *
@@ -271,7 +271,7 @@ self =>
    *  @tparam  B     the type of the second half of the returned pairs
    *  @return        a new $coll containing pairs consisting of
    *                 corresponding elements of this $coll and `that`. The length
-   *                 of the returned collection is the maximum of the lengths of this $coll$ and `that`.
+   *                 of the returned collection is the maximum of the lengths of this $coll and `that`.
    *                 If this $coll is shorter than `that`, `thisElem` values are used to pad the result.
    *                 If `that` is shorter than this $coll, `thatElem` values are used to pad the result.
    */

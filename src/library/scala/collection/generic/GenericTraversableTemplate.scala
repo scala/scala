@@ -100,6 +100,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
   }
 
   /** Transposes this $coll of traversable collections into
+   *  a $coll of ${coll}s.
    *  @tparam B the type of the elements of each traversable collection.
    *  @param  asTraversable an implicit conversion which asserts that the element type of this
    *          $coll is a `Traversable`.

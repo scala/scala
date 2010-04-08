@@ -523,7 +523,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  Another way to express this
    *  is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
-   *  `union` is hence a counter-oart of `diff` and `intersect` which also work on multi-sets.
+   *  `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
    *
    *  $willNotTerminateInf
    *
@@ -552,7 +552,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
-   *  @usecase def union(that: Seq[A]): $Coll[A]
+   *  @usecase def diff(that: Seq[A]): $Coll[A]
    *  @return       a new $coll which contains all elements of this $coll
    *                except some of occurrences of elements that also appear in `that`.
    *                If an element value `x` appears
@@ -580,7 +580,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
-   *  @usecase def union(that: Seq[A]): $Coll[A]
+   *  @usecase def intersect(that: Seq[A]): $Coll[A]
    *  @return       a new $coll which contains all elements of this $coll
    *                which also appear in `that`.
    *                If an element value `x` appears

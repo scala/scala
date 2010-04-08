@@ -743,7 +743,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    *  @return    an object of class `WithFilter`, which supports
    *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
    *             All these operations apply to those elements of this $coll which
-   *             satify the predicate `p`.
+   *             satisfy the predicate `p`.
    */
   def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 
@@ -820,7 +820,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
      *  @return    an object of class `WithFilter`, which supports
      *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
      *             All these operations apply to those elements of this $coll which
-     *             satify the predicate `q` in addition to the predicate `p`.
+     *             satisfy the predicate `q` in addition to the predicate `p`.
      */
     def withFilter(q: A => Boolean): WithFilter =
       new WithFilter(x => p(x) && q(x))

@@ -25,6 +25,8 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This] with Traversable[
   def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[This, B, That]): That // could be fold or new collection too - where to put it?
+  def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[This, B, That]): That
 
   // new collections
   def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That
