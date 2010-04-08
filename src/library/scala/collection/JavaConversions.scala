@@ -25,6 +25,8 @@ package scala.collection
  *    <li><code>scala.collection.mutable.Buffer</code> <=> <code>java.util.List</code></li>
  *    <li><code>scala.collection.mutable.Set</code> <=> <code>java.util.Set</code></li>
  *    <li><code>scala.collection.mutable.Map</code> <=> <code>java.util.Map</code></li>
+ *    <li><code>scala.collection.mutable.ConcurrentMap</code> <=> <code>java.util.concurrent.ConcurrentMap</code></li>
+ *    <li><code>java.util.Properties</code></li> => <code>scala.collection.mutable.Map[String, String]</code></li>
  *  </ul>
  *  <p>
  *    In all cases, converting from a source type to a target type and back
@@ -184,6 +186,16 @@ object JavaConversions {
     case _ => new MutableMapWrapper(m)(ma)
   }
 
+  /**
+   * Implicitly converts a Scala mutable `ConcurrentMap` to a Java `ConcurrentMap`.
+   * The returned Java `ConcurrentMap` is backed by the provided Scala `ConcurrentMap`
+   * and any side-effects of using it via the Java interface will be visible
+   * via the Scala interface and vice versa.
+   * <p>
+   * If the Scala <code>ConcurrentMap</code> was previously obtained from an implicit or
+   * explicit call of <code>asConcurrentMap(java.util.concurrect.ConcurrentMap)</code> then the original
+   * Java <code>ConcurrentMap</code> will be returned.
+   */
   implicit def asConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B])
     (implicit ma: ClassManifest[A], mb: ClassManifest[B]): juc.ConcurrentMap[A, B] = m match {
     case JConcurrentMapWrapper(wrapped) => wrapped
@@ -334,6 +346,15 @@ object JavaConversions {
     case _ => new JConcurrentMapWrapper(m)
   }
 
+  /**
+   * Implicitly converts a Java <code>Properties</code> to a Scala mutable <code>Map[String, String]</code>.
+   * The returned Scala <code>Map[String, String]</code> is backed by the provided Java
+   * <code>Properties</code> and any side-effects of using it via the Scala interface will
+   * be visible via the Java interface and vice versa.
+   *
+   * @param m The <code>Properties</code> to be converted.
+   * @return A Scala mutable <code>Map[String, String]</code> view of the argument.
+   */
   implicit def asMap(p: ju.Properties): mutable.Map[String, String] = p match {
     case _ => new JPropertiesWrapper(p)
   }

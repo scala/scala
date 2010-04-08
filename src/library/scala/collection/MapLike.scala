@@ -60,7 +60,7 @@ self =>
   // note: can't inherit Addable because of variance problems: Map
   // is covariant in its value type B, but Addable is nonvariant.
 
-  /* The empty map of the same type as this map
+  /** The empty map of the same type as this map
    *   @return   an empty map of type `This`.
    */
   def empty: This
@@ -295,7 +295,7 @@ self =>
    *  @param p A predicate over key-value pairs
    *  @note    This method works by successively removing elements fro which the
    *           predicate is false from this set.
-   *           If removal is slow, or you expect that most elements of the set$
+   *           If removal is slow, or you expect that most elements of the set
    *           will be removed, you might consider using <code>filter</code>
    *           with a negated predicate instead.
    */
@@ -311,7 +311,7 @@ self =>
    *  `end`. Inside, the string representations of all bindings of this map
    *  in the form of `key -> value` are separated by the string `sep`.
    *
-   *  @param  b    the builder to which strings are appended.
+   *  @param b     the builder to which strings are appended.
    *  @param start the starting string.
    *  @param sep   the separator string.
    *  @param end   the ending string.
