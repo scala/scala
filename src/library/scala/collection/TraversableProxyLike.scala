@@ -18,7 +18,7 @@ import mutable.{Buffer, StringBuilder}
 
 
 /** This trait implements a proxy for traversable objects. It forwards
- *  all calls to a different traversable object
+ *  all calls to a different traversable object.
  *
  *  @author  Martin Odersky
  *  @version 2.8

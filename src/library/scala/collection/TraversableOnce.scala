@@ -31,7 +31,7 @@ import mutable.{ Buffer, ListBuffer, ArrayBuffer }
  *  @define coll traversable or iterator
  *  @define orderDependentFold
  *
- *    Note: might return different results for different runs, unless the underlying collection type is ordered.
+ *    Note: might return different results for different runs, unless the underlying collection type is ordered
  *    or the operator is associative and commutative.
  *  @define willNotTerminateInf
  *
@@ -123,7 +123,7 @@ trait TraversableOnce[+A] {
    *  @param   z    the start value.
    *  @param   op   the binary operator.
    *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
    *             op(...op(op(z, x,,1,,), x,,2,,), ..., x,,n,,)

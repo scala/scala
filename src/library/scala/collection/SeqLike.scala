@@ -434,7 +434,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    * @param  that    the sequence to test
    * @return `true` if this collection has `that` as a prefix, `false` otherwise.
-   * otherwise false
    */
   def startsWith[B](that: Seq[B]): Boolean = startsWith(that, 0)
 

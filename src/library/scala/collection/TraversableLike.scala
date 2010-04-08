@@ -473,7 +473,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
 
   /** Optionally selects the first element.
    *  $orderDependent
-   *  @return  the first element of this $coll$ if it is nonempty, `None` if it is empty.
+   *  @return  the first element of this $coll if it is nonempty, `None` if it is empty.
    */
   def headOption: Option[A] = if (isEmpty) None else Some(head)
 
