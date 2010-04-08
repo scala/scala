@@ -374,9 +374,12 @@ trait Iterator[+A] extends TraversableOnce[A] {
   def ++[B >: A](that: => Iterator[B]): Iterator[B] = new Iterator[B] {
     // optimize a little bit to prevent n log n behavior.
     private var cur : Iterator[B] = self
-    // this was unnecessarily looping forever on x ++ x
+    // since that is by-name, make sure it's only referenced once -
+    // if "val it = that" is inside the block, then hasNext on an empty
+    // iterator will continually reevaluate it.  (ticket #3269)
+    lazy val it = that
+    // the eq check is to avoid an infinite loop on "x ++ x"
     def hasNext = cur.hasNext || ((cur eq self) && {
-      val it = that
       it.hasNext && {
         cur = it
         true
