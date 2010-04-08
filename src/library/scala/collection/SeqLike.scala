@@ -296,7 +296,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return  the index `>= from` of the first element of this $coll that is equal (wrt `==`)
    *           to `elem`, or `-1`, if none exists.
    *
-   *  @usecase def indexOf(elem: A): Int
+   *  @usecase def indexOf(elem: A, from: Int): Int
    */
   def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem ==, from)
 
@@ -321,7 +321,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return  the index `<= end` of the last element of this $coll that is equal (wrt `==`)
    *           to `elem`, or `-1`, if none exists.
    *
-   *  @usecase def lastIndexOf(elem: A): Int
+   *  @usecase def lastIndexOf(elem: A, end: Int): Int
    */
   def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem ==, end)
 
@@ -434,7 +434,6 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    * @param  that    the sequence to test
    * @return `true` if this collection has `that` as a prefix, `false` otherwise.
-   * otherwise false
    */
   def startsWith[B](that: Seq[B]): Boolean = startsWith(that, 0)
 
@@ -524,7 +523,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *
    *  Another way to express this
    *  is that `xs union ys` computes the order-presevring multi-set union of `xs` and `ys`.
-   *  `union` is hence a counter-oart of `diff` and `intersect` which also work on multi-sets.
+   *  `union` is hence a counter-part of `diff` and `intersect` which also work on multi-sets.
    *
    *  $willNotTerminateInf
    *
@@ -553,7 +552,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will not form
    *                part of the result, but any following occurrences will.
-   *  @usecase def union(that: Seq[A]): $Coll[A]
+   *  @usecase def diff(that: Seq[A]): $Coll[A]
    *  @return       a new $coll which contains all elements of this $coll
    *                except some of occurrences of elements that also appear in `that`.
    *                If an element value `x` appears
@@ -581,7 +580,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *                If an element value `x` appears
    *                ''n'' times in `that`, then the first ''n'' occurrences of `x` will be retained
    *                in the result, but any following occurrences will be omitted.
-   *  @usecase def union(that: Seq[A]): $Coll[A]
+   *  @usecase def intersect(that: Seq[A]): $Coll[A]
    *  @return       a new $coll which contains all elements of this $coll
    *                which also appear in `that`.
    *                If an element value `x` appears

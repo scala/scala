@@ -473,7 +473,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
 
   /** Optionally selects the first element.
    *  $orderDependent
-   *  @return  the first element of this $coll$ if it is nonempty, `None` if it is empty.
+   *  @return  the first element of this $coll if it is nonempty, `None` if it is empty.
    */
   def headOption: Option[A] = if (isEmpty) None else Some(head)
 
@@ -688,7 +688,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
   def toTraversable: Traversable[A] = thisCollection
   def toIterator: Iterator[A] = toIterable.iterator
 
-  /** Converts this $coll to a string
+  /** Converts this $coll to a string.
    *  @return   a string representation of this collection. By default this
    *            string consists of the `stringPrefix` of this $coll,
    *            followed by all elements separated by commas and enclosed in parentheses.
@@ -743,7 +743,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    *  @return    an object of class `WithFilter`, which supports
    *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
    *             All these operations apply to those elements of this $coll which
-   *             satify the predicate `p`.
+   *             satisfy the predicate `p`.
    */
   def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 
@@ -820,7 +820,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
      *  @return    an object of class `WithFilter`, which supports
      *             `map`, `flatMap`, `foreach`, and `withFilter` operations.
      *             All these operations apply to those elements of this $coll which
-     *             satify the predicate `q` in addition to the predicate `p`.
+     *             satisfy the predicate `q` in addition to the predicate `p`.
      */
     def withFilter(q: A => Boolean): WithFilter =
       new WithFilter(x => p(x) && q(x))

@@ -23,7 +23,7 @@ import generic._
  *    <b>def</b> + [B1 >: B](kv: (A, B1)): This
  *    <b>def</b> -(key: A): This</pre>
  *  <p>
- *    If you wish that methods like, take, drop, filter return the same kind
+ *    If you wish that methods like `take`, `drop`, `filter` return the same kind
  *    of map, you should also override:
  *  </p><pre>
  *    <b>def</b> empty: This</pre>

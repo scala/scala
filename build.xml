@@ -1504,6 +1504,14 @@ BOOTRAPING TEST AND TEST SUITE
     </same>
   </target>
 
+  <target name="test.suite.clean.checkinit">
+	<antcall target="all.clean" />
+	<antcall target="test.suite" inheritAll="false">
+      <param name="scalac.args.optimise" value="-Xcheckinit" />
+      <param name="partest.scalacopts" value="-Xcheckinit" />
+    </antcall>
+  </target>
+
   <target name="test.suite" depends="pack.done">
 	<partest classpathref="pack.classpath">
 	  <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />

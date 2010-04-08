@@ -14,7 +14,7 @@ package scala.collection
 import generic._
 
 /** <p>
- *    A default map which implements the <code>updated</code> and <code>-</code>
+ *    A default map which implements the <code>+</code> and <code>-</code>
  *    methods of maps.<br/>
  *    Instances that inherit from <code>DefaultMap[A, B]</code> still have to
  *    define:

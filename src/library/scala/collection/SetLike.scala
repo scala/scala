@@ -53,7 +53,7 @@ extends IterableLike[A, This]
    with Subtractable[A, This] {
 self =>
 
-  /* The empty set of the same type as this set
+  /** The empty set of the same type as this set
    * @return  an empty set of type `This`.
    */
   def empty: This
