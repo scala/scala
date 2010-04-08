@@ -141,7 +141,7 @@ trait TraversableOnce[+A] {
    *  @param   z    the start value
    *  @param   op   the binary operator
    *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
    *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
@@ -158,7 +158,7 @@ trait TraversableOnce[+A] {
    *  @param   z    the start value.
    *  @param   op   the binary operator.
    *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right with the start value `z` on the left:
    *           {{{
    *             op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)
@@ -178,7 +178,7 @@ trait TraversableOnce[+A] {
    *  @param   z    the start value.
    *  @param   op   the binary operator.
    *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left with the start value `z` on the right:
    *           {{{
    *             op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))
@@ -194,7 +194,7 @@ trait TraversableOnce[+A] {
    *
    *  @param  op    the binary operator.
    *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going left to right:
    *           {{{
    *             op(...(op(x,,1,,, x,,2,,), ... ) , x,,n,,)
@@ -225,7 +225,7 @@ trait TraversableOnce[+A] {
    *
    *  @param  op    the binary operator.
    *  @tparam  B    the result type of the binary operator.
-   *  @return  the result of inserting `op` between consecutive elements of this $coll$,
+   *  @return  the result of inserting `op` between consecutive elements of this $coll,
    *           going right to left:
    *           {{{
    *             op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))
@@ -335,9 +335,9 @@ trait TraversableOnce[+A] {
    */
   def copyToBuffer[B >: A](dest: Buffer[B]): Unit = dest ++= self
 
-  /** Copies values produced by this iterator to an array.
-   *  Fills the given array `xs` with values produced by this iterator, after skipping `start` values.
-   *  Copying will stop once either the end of the current iterator is reached,
+  /** Copies values of this $coll to an array.
+   *  Fills the given array `xs` with values of this $coll, after skipping `start` values.
+   *  Copying will stop once either the end of the current $coll is reached,
    *  or the end of the array is reached.
    *
    *  $willNotTerminateInf
@@ -346,14 +346,14 @@ trait TraversableOnce[+A] {
    *  @param  start  the starting index.
    *  @tparam B      the type of the elements of the array.
    *
-   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *  @usecase def copyToArray(xs: Array[A], start: Int): Unit
    */
   def copyToArray[B >: A](xs: Array[B], start: Int): Unit =
     copyToArray(xs, start, xs.length - start)
 
-  /** Copies values produced by this iterator to an array.
-   *  Fills the given array `xs` with values produced by this iterator.
-   *  Copying will stop once either the end of the current iterator is reached,
+  /** Copies values of this $coll to an array.
+   *  Fills the given array `xs` with values of this $coll.
+   *  Copying will stop once either the end of the current $coll is reached,
    *  or the end of the array is reached.
    *
    *  $willNotTerminateInf
@@ -361,7 +361,7 @@ trait TraversableOnce[+A] {
    *  @param  xs     the array to fill.
    *  @tparam B      the type of the elements of the array.
    *
-   *  @usecase def copyToArray(xs: Array[A], start: Int, len: Int): Unit
+   *  @usecase def copyToArray(xs: Array[A]): Unit
    */
   def copyToArray[B >: A](xs: Array[B]): Unit =
     copyToArray(xs, 0, xs.length)

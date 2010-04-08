@@ -688,7 +688,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
   def toTraversable: Traversable[A] = thisCollection
   def toIterator: Iterator[A] = toIterable.iterator
 
-  /** Converts this $coll to a string
+  /** Converts this $coll to a string.
    *  @return   a string representation of this collection. By default this
    *            string consists of the `stringPrefix` of this $coll,
    *            followed by all elements separated by commas and enclosed in parentheses.

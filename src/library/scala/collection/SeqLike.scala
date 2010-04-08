@@ -296,7 +296,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return  the index `>= from` of the first element of this $coll that is equal (wrt `==`)
    *           to `elem`, or `-1`, if none exists.
    *
-   *  @usecase def indexOf(elem: A): Int
+   *  @usecase def indexOf(elem: A, from: Int): Int
    */
   def indexOf[B >: A](elem: B, from: Int): Int = indexWhere(elem ==, from)
 
@@ -321,7 +321,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return  the index `<= end` of the last element of this $coll that is equal (wrt `==`)
    *           to `elem`, or `-1`, if none exists.
    *
-   *  @usecase def lastIndexOf(elem: A): Int
+   *  @usecase def lastIndexOf(elem: A, end: Int): Int
    */
   def lastIndexOf[B >: A](elem: B, end: Int): Int = lastIndexWhere(elem ==, end)
 

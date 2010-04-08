@@ -72,17 +72,17 @@ self =>
   def append[B >: A](rest: => Traversable[B]): Stream[B] =
     if (isEmpty) rest.toStream else new Stream.Cons(head, tail append rest)
 
-  /** Force evaluation of the whole stream and return it */
+  /** Forces evaluation of the whole stream and returns it. */
   def force: Stream[A] = {
     var these = this
     while (!these.isEmpty) these = these.tail
     this
   }
 
-  /** Prints elements of this stream one by one, separated by commas */
+  /** Prints elements of this stream one by one, separated by commas. */
   def print() { print(", ") }
 
-  /** Prints elements of this stream one by one, separated by <code>sep</code>
+  /** Prints elements of this stream one by one, separated by <code>sep</code>.
    *  @param sep   The separator string printed between consecutive elements.
    */
   def print(sep: String) {
@@ -113,7 +113,7 @@ self =>
   }
 
   /** Create a new stream which contains all elements of this stream
-   *  followed by all elements of Traversable `that'
+   *  followed by all elements of Traversable `that`.
    *  @note It's subtle why this works. We know that if the target type
    *  of the Builder That is either a Stream, or one of its supertypes, or undefined,
    *  then StreamBuilder will be chosen for the implicit.
