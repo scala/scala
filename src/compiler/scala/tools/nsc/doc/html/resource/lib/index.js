@@ -97,7 +97,7 @@ function configureTextFilter() {
     scheduler.add("init", function() {
         $("#filter").append("<div id='textfilter'><input type='text' accesskey='/'/></div>");
         var input = $("#textfilter > input");
-	    resizeFilterBlock();
+        resizeFilterBlock();
         input.bind("keyup", function(event) {
             if (event.keyCode == 27) { // escape
                 input.attr("value", "");
@@ -105,7 +105,7 @@ function configureTextFilter() {
             textFilter();
         });
         input.focus(function(event) { input.select(); });
-	});
+    });
 }
 
 // Filters all focused templates and packages. This function should be made less-blocking.
@@ -227,9 +227,9 @@ function focusFilter(package) {
         domCache.update();
         $("#focusfilter").show();
         $("#kindfilter").hide();
-	    resizeFilterBlock();
+        resizeFilterBlock();
         focusFilterState = package;
-	    kindFilterSync();
+        kindFilterSync();
     });
 }
 
