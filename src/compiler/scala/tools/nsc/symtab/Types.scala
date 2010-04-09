@@ -5159,7 +5159,7 @@ A type's typeSymbol should never be inspected directly.
 // Errors and Diagnostics -----------------------------------------------------
 
   /** A throwable signalling a type error */
-  class TypeError(var pos: Position, val msg: String) extends Throwable(msg) with ControlThrowable {
+  class TypeError(var pos: Position, val msg: String) extends Throwable(msg) {
     def this(msg: String) = this(NoPosition, msg)
   }
 
