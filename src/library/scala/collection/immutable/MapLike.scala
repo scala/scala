@@ -91,12 +91,9 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   }
 
   /** Transforms this map by applying a function to every retrieved value.
-   *  @param  d   the function used to transform values of this map.
-   *  @return an immutable map which maps every key of this map
+   *  @param  f   the function used to transform values of this map.
+   *  @return a map view which maps every key of this map
    *          to `f(this(key))`. The resulting map wraps the original map without copying any elements.
-   */
-  /** A map view resulting from applying a given function `f` to each value
-   *  associated with a key in this map.
    */
   override def mapValues[C](f: B => C): Map[A, C] = new DefaultMap[A, C] {
     override def foreach[D](g: ((A, C)) => D): Unit = for ((k, v) <- self) g((k, f(v)))

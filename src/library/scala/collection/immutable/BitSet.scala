@@ -15,7 +15,7 @@ package immutable
 import generic._
 import BitSetLike.{LogWL, updateArray}
 
-/** A base class for immutable bit sets.
+/** A base class for immutable bit sets.x
  *  $bitsetinfo
  *
  *  @author Martin Odersky

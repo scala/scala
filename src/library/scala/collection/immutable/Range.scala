@@ -32,7 +32,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
-  /** Create a new range with the start and end values of this range and
+  /** Create a new range with the `start` and `end` values of this range and
    *  a new <code>step</code>.
    */
   def by(step: Int): Range = copy(start, end, step)

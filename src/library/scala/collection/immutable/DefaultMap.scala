@@ -19,7 +19,8 @@ import generic._
  *    methods of maps.<br/>
  *    Instances that inherit from <code>DefaultMap[A, B]</code> still have to
  *    define:
- *  </p><pre>
+ *  </p>
+ *  <pre>
  *    <b>def</b> get(key: A): Option[B]
  *    <b>def</b> iterator: Iterator[(A, B)]</pre>
  *  <p>

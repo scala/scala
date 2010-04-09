@@ -67,8 +67,8 @@ class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]
   def push[B >: A](elem1: B, elem2: B, elems: B*): Stack[B] =
     this.push(elem1).push(elem2).pushAll(elems)
 
-  /** Push all elements provided by the given iterator object onto
-   *  the stack. The last element returned by the iterable object
+  /** Push all elements provided by the given traversable object onto
+   *  the stack. The last element returned by the traversable object
    *  will be on top of the new stack.
    *
    *  @param   elems      the iterator object.

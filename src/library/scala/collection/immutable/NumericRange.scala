@@ -17,12 +17,12 @@ import generic._
 /** <p>
  *    <code>NumericRange</code> is a more generic version of the
  *    <code>Range</code> class which works with arbitrary types.
- *    It must be supplied with an Integral implementation of the
+ *    It must be supplied with an `Integral` implementation of the
  *    range type.
  *
- *    Factories for likely types include Range.BigInt, Range.Long,
- *    and Range.BigDecimal.  Range.Int exists for completeness, but
- *    the Int-based scala.Range should be more performant.
+ *    Factories for likely types include `Range.BigInt`, `Range.Long`,
+ *    and `Range.BigDecimal`.  `Range.Int` exists for completeness, but
+ *    the `Int`-based `scala.Range` should be more performant.
  *  </p><pre>
  *     <b>val</b> r1 = new Range(0, 100, 1)
  *     <b>val</b> veryBig = Int.MaxValue.toLong + 1

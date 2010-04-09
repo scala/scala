@@ -15,6 +15,14 @@ package immutable
 import mutable.StringBuilder
 
 /**
+ * This class serves as a wrapper providing `String`s with all the operations
+ * found in indexed sequences. Where needed, instances of `String` object
+ * are implicitly converted into this class.
+ *
+ * The difference between this class and `WrappedString` is that calling transformer
+ * methods such as `filter` and `map` will yield a `String` object, whereas a
+ * `WrappedString` will remain a `WrappedString`.
+ *
  * @since 2.8
  */
 final class StringOps(override val repr: String) extends StringLike[String] {

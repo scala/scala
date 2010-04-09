@@ -15,7 +15,8 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A sorted set.
+/** A subtrait of `collection.SortedSet` which represents sorted sets
+ *  which cannot be mutated.
  *
  *  @author Sean McDirmid
  *  @author Martin Odersky
@@ -28,6 +29,8 @@ trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with Sorted
 }
 
 /**
+ * A companion object for immutable sorted sets.
+ *
  * @since 2.4
  */
 object SortedSet extends ImmutableSortedSetFactory[SortedSet] {

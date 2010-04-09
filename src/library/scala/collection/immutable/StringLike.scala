@@ -49,7 +49,7 @@ self =>
 
   override def mkString = toString
 
-  /** return n times the current string
+  /** Return the current string concatenated `n` times.
    */
   def * (n: Int): String = {
     val buf = new StringBuilder
@@ -61,18 +61,16 @@ self =>
 
   private def isLineBreak(c: Char) = c == LF || c == FF
 
-  /** <p>
+  /**
    *    Strip trailing line end character from this string if it has one.
+   *
    *    A line end character is one of
-   *  </p>
-   *  <ul style="list-style-type: none;">
-   *    <li>LF - line feed   (0x0A hex)</li>
-   *    <li>FF - form feed   (0x0C hex)</li>
-   *  </ul>
-   *  <p>
+   *    <ul style="list-style-type: none;">
+   *      <li>LF - line feed   (0x0A hex)</li>
+   *      <li>FF - form feed   (0x0C hex)</li>
+   *    </ul>
    *    If a line feed character LF is preceded by a carriage return CR
    *    (0x0D hex), the CR character is also stripped (Windows convention).
-   *  </p>
    */
   def stripLineEnd: String = {
     val len = toString.length
@@ -86,19 +84,18 @@ self =>
     }
   }
 
-  /** <p>
+  /**
    *    Return all lines in this string in an iterator, including trailing
    *    line end characters.
-   *  </p>
-   *  <p>
+   *
    *    The number of strings returned is one greater than the number of line
    *    end characters in this string. For an empty string, a single empty
    *    line is returned. A line end character is one of
-   *  </p>
-   *  <ul style="list-style-type: none;">
-   *    <li>LF - line feed   (0x0A hex)</li>
-   *    <li>FF - form feed   (0x0C hex)</li>
-   *  </ul>
+   *
+   *    <ul style="list-style-type: none;">
+   *      <li>LF - line feed   (0x0A hex)</li>
+   *      <li>FF - form feed   (0x0C hex)</li>
+   *    </ul>
    */
   def linesWithSeparators: Iterator[String] = new Iterator[String] {
     val str = self.toString
@@ -148,13 +145,13 @@ self =>
     if (toString.endsWith(suffix)) toString.substring(0, toString.length() - suffix.length)
     else toString
 
-  /** <p>
+  /**
    *    For every line in this string:
-   *  </p>
-   *  <blockquote>
-   *     Strip a leading prefix consisting of blanks or control characters
-   *     followed by <code>marginChar</code> from the line.
-   *  </blockquote>
+   *
+   *    <blockquote>
+   *       Strip a leading prefix consisting of blanks or control characters
+   *       followed by <code>marginChar</code> from the line.
+   *    </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
     val buf = new StringBuilder
@@ -168,13 +165,13 @@ self =>
     buf.toString
   }
 
-  /** <p>
+  /**
    *    For every line in this string:
-   *  </p>
-   *  <blockquote>
-   *     Strip a leading prefix consisting of blanks or control characters
-   *     followed by <code>|</code> from the line.
-   *  </blockquote>
+   *
+   *    <blockquote>
+   *       Strip a leading prefix consisting of blanks or control characters
+   *       followed by <code>|</code> from the line.
+   *    </blockquote>
    */
   def stripMargin: String = stripMargin('|')
 
@@ -226,19 +223,18 @@ self =>
     case x              => x.asInstanceOf[AnyRef]
   }
 
-  /** <p>
+  /**
    *  Uses the underlying string as a pattern (in a fashion similar to
    *  printf in C), and uses the supplied arguments to fill in the
    *  holes.
-   *  </p>
-   *  <p>
+   *
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
    *    <code>java.util.Formatter</code></a>, with the addition that
-   *    classes deriving from ScalaNumber (such as scala.BigInt and
-   *    scala.BigDecimal) are unwrapped to pass a type which Formatter
+   *    classes deriving from `ScalaNumber` (such as `scala.BigInt` and
+   *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
    *    understands.
-   *  </p>
+   *
    *
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
@@ -246,20 +242,20 @@ self =>
   def format(args : Any*): String =
     java.lang.String.format(toString, args map unwrapArg: _*)
 
-  /** <p>
-   *  Like format(args*) but takes an initial Locale parameter
-   *  which influences formatting as in java.lang.String's format.
-   *  </p>
-   *  <p>
+  /**
+   *  Like `format(args*)` but takes an initial `Locale` parameter
+   *  which influences formatting as in `java.lang.String`'s format.
+   *
+   *
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
    *    <code>java.util.Formatter</code></a>, with the addition that
-   *    classes deriving from ScalaNumber (such as scala.BigInt and
-   *    scala.BigDecimal) are unwrapped to pass a type which Formatter
+   *    classes deriving from `ScalaNumber` (such as `scala.BigInt` and
+   *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
    *    understands.
-   *  </p>
    *
-   *  @param locale an instance of java.util.Locale
+   *
+   *  @param locale an instance of `java.util.Locale`
    *  @param args the arguments used to instantiating the pattern.
    *  @throws java.lang.IllegalArgumentException
    */
