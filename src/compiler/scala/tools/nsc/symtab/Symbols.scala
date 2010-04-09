@@ -902,7 +902,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else {
         val current = phase
         try {
-          while (phase.keepsTypeParams) phase = phase.prev
+          while (phase.keepsTypeParams && (phase.prev ne NoPhase)) phase = phase.prev
+          if (phase ne current) phase = phase.next
           rawInfo.typeParams
         } finally {
           phase = current
