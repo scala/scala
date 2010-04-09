@@ -85,6 +85,15 @@ abstract class Duplicators extends Analyzer {
             typeRef(mapOver(pre), newsym, mapOverArgs(args, newsym.typeParams))
           } else
             super.mapOver(tpe)
+
+        case SingleType(pre, sym) =>
+          val sym1 = updateSym(sym)
+          if (sym1 ne sym) {
+            log("fixing " + sym + " -> " + sym1)
+            singleType(mapOver(pre), sym1)
+          } else
+            super.mapOver(tpe)
+
         case _ =>
           super.mapOver(tpe)
       }
