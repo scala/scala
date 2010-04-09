@@ -618,6 +618,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *     m$D[ U](x: Double, y: U)
    */
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
+    log("normalizeMember: " + sym.fullName)
     if (sym.isMethod && !sym.info.typeParams.isEmpty) {
       val (stps, tps) = splitParams(sym.info.typeParams)
       val res = sym :: (for (env <- specializations(stps) if needsSpecialization(env, sym)) yield {
