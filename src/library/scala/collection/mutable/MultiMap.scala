@@ -28,6 +28,15 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
   @deprecated("use addBinding instead")
   def add(key: A, value: B): this.type = addBinding(key, value)
 
+  /** Assigns the specified `value` to a specified `key`, replacing
+   *  the existing value assigned to that `key` if it is equal to
+   *  the specified value. Otherwise, simply adds another binding to
+   *  the `key`.
+   *
+   *  @param key    The key to which to bind the new value.
+   *  @param value  The value to bind to the key.
+   *  @return       A reference to this multimap.
+   */
   def addBinding(key: A, value: B): this.type = {
     get(key) match {
       case None =>
@@ -40,6 +49,12 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
     this
   }
 
+  /** Removes the binding of `value` to `key` if it exists.
+   *
+   *  @param key     The key of the binding.
+   *  @param value   The value to remove.
+   *  @return        A reference to this multimap.
+   */
   def removeBinding(key: A, value: B): this.type = {
     get(key) match {
       case None =>
@@ -50,6 +65,12 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
     this
   }
 
+  /** Checks if there exists a binding to `key` such that it satisfies the predicate `p`.
+   *
+   *  @param key   The key for which the predicate is checked.
+   *  @param p     The predicate which a value assigned to the key must satisfy.
+   *  @return      A boolean if such a binding exists
+   */
   def entryExists(key: A, p: B => Boolean): Boolean = get(key) match {
     case None => false
     case Some(set) => set exists p

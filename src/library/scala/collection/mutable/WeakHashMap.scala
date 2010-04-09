@@ -16,8 +16,9 @@ import JavaConversions._
 import generic._
 
 
-/**
- * @since 2.8
+/** A hash map with weak references to entries which are weakly reachable.
+ *
+ *  @since 2.8
  */
 class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
 			   with JMapWrapperLike[A, B, WeakHashMap[A, B]] {
