@@ -57,11 +57,11 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    */
   def push(elem1: A, elem2: A, elems: A*): this.type = this.push(elem1).push(elem2).pushAll(elems)
 
-  /** Push all elements provided by the given iterator object onto
-   *  the stack. The last element returned by the iterator
+  /** Push all elements in the given traversable object onto
+   *  the stack. The last element in the traversable object
    *  will be on top of the new stack.
    *
-   *  @param   elems      the iterator object.
+   *  @param xs the traversable object.
    *  @return the stack with the new elements on top.
    */
   def pushAll(xs: TraversableOnce[A]): this.type = { xs foreach push ; this }

@@ -57,6 +57,9 @@ class OpenHashMap[Key, Value](initialSize : Int) extends Map[Key, Value]
   import OpenHashMap.OpenEntry
   type Entry = OpenEntry[Key, Value]
 
+  /**
+   * A default constructor creates a hashmap with initial size 8.
+   */
   def this() = this(8);
 
   override def empty: OpenHashMap[Key, Value] = OpenHashMap.empty[Key, Value]
@@ -212,7 +215,7 @@ class OpenHashMap[Key, Value](initialSize : Int) extends Map[Key, Value]
    *
    * @param  f The function to apply to each key, value mapping.
    */
-  override def foreach[U](f : ((Key, Value)) =>  U){
+  override def foreach[U](f : ((Key, Value)) =>  U) {
     val startModCount = modCount;
     foreachUndeletedEntry(entry => {
       if (modCount != startModCount) error("Concurrent Modification")

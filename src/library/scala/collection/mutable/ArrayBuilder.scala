@@ -15,7 +15,7 @@ package mutable
 import generic._
 import scala.reflect.ClassManifest
 
-/** A builder class for arrays
+/** A builder class for arrays.
  *
  * @since 2.8
  */

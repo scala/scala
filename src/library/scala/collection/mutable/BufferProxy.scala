@@ -52,21 +52,21 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
 
   override def readOnly = self.readOnly
 
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>iterator</code> method. The identity of the
+  /** Appends a number of elements provided by a traversable object
+   *  via its <code>foreach</code> method. The identity of the
    *  buffer is returned.
    *
-   *  @param iter  the iterable object.
+   *  @param iter  the traversable object.
    *  @return      the updated buffer.
    */
   @deprecated("Use ++= instead if you intend to add by side effect to an existing collection.\n"+
               "Use `clone() ++=` if you intend to create a new collection.")
   override def ++(xs: TraversableOnce[A]): Buffer[A] = self.++(xs)
 
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>iterator</code> method.
+  /** Appends a number of elements provided by a traversable object
+   *  via its <code>foreach</code> method.
    *
-   *  @param iter  the iterable object.
+   *  @param iter  the traversable object.
    */
   override def ++=(xs: TraversableOnce[A]): this.type = { self.++=(xs); this }
 
@@ -76,10 +76,10 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   override def append(elems: A*) { self.++=(elems) }
 
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>iterator</code> method.
+  /** Appends a number of elements provided by a traversable object
+   *  via its <code>foreach</code> method.
    *
-   *  @param iter  the iterable object.
+   *  @param iter  the traversable object.
    */
   override def appendAll(xs: TraversableOnce[A]) { self.appendAll(xs) }
 
@@ -98,11 +98,11 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    */
   override def prepend(elems: A*) { self.prependAll(elems) }
 
-  /** Prepends a number of elements provided by an iterable object
-   *  via its <code>iterator</code> method. The identity of the
+  /** Prepends a number of elements provided by a traversable object
+   *  via its <code>foreach</code> method. The identity of the
    *  buffer is returned.
    *
-   *  @param iter  the iterable object.
+   *  @param xs  the traversable object.
    */
   override def prependAll(xs: TraversableOnce[A]) { self.prependAll(xs) }
 

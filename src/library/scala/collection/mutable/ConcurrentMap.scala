@@ -3,6 +3,7 @@ package mutable
 
 /**
  * A template trait for mutable maps that allow concurrent access.
+ *
  * $concurrentmapinfo
  *
  * @tparam A  the key type of the map

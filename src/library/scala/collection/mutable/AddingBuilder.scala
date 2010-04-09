@@ -15,6 +15,7 @@ import generic._
 
 /** The canonical builder for collections that are addable, i.e. that support an efficient `+` method
  *  which adds an element to the collection.
+ *
  *  Collections are built from their empty element using this `+` method.
  *  @param empty  the empty element of the collection.
  *  @tparam Elem  the type of elements that get added to the builder.

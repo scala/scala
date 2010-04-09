@@ -108,7 +108,7 @@ trait HashTable[A] {
 
   private def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
 
-  /** Find entry with given key in table, null if not found
+  /** Find entry with given key in table, null if not found.
    */
   protected def findEntry(key: A): Entry = {
     val h = index(elemHashCode(key))
@@ -129,7 +129,7 @@ trait HashTable[A] {
       resize(2 * table.length)
   }
 
-  /** Remove entry from table if present
+  /** Remove entry from table if present.
    */
   protected def removeEntry(key: A) : Entry = {
     val h = index(elemHashCode(key))
@@ -155,7 +155,7 @@ trait HashTable[A] {
     null
   }
 
-  /** An iterator returning all entries
+  /** An iterator returning all entries.
    */
   protected def entriesIterator: Iterator[Entry] = new Iterator[Entry] {
     val iterTable = table

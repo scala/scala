@@ -144,10 +144,10 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     this
   }
 
-  /** Adds all elements provided by an <code>Iterable</code> object
+  /** Adds all elements provided by a `TraversableOnce` object
    *  into the priority queue.
    *
-   *  @param  iter        an iterable object
+   *  @param  xs    an iterable object
    */
   def ++(xs: TraversableOnce[A]) = { this.clone() ++= xs }
 
@@ -206,14 +206,16 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   /**
    * Returns the reverse of this queue. The priority queue that gets
    * returned will have an inversed ordering - if for some elements
-   * <code>x</code> and <code>y</code> the original queue's ordering
-   * had <code>compare</code> returning an integer w, the new one will return -w,
+   * `x` and `y` the original queue's ordering
+   * had `compare` returning an integer ''w'', the new one will return ''-w'',
    * assuming the original ordering abides its contract.
    *
    * Note that the order of the elements will be reversed unless the
-   * <code>compare</code> method returns 0. In this case, such elements
+   * `compare` method returns 0. In this case, such elements
    * will be subsequent, but their corresponding subinterval may be inappropriately
    * reversed. However, due to the compare-equals contract, they will also be equal.
+   *
+   * @return A reversed priority queue.
    */
   override def reverse = {
     val revq = new PriorityQueue[A]()(new math.Ordering[A] {

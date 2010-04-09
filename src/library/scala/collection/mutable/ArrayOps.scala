@@ -14,8 +14,15 @@ package mutable
 
 import scala.reflect.ClassManifest
 
-/**
- * @since 2.8
+/** This class serves as a wrapper for `Array`s with all the operations found in
+ *  indexed sequences. Where needed, instances of arrays are implicitly converted
+ *  into this class.
+ *
+ *  The difference between this class and `WrappedArray` is that calling transformer
+ *  methods such as `filter` and `map` will yield an array, whereas a `WrappedArray`
+ *  will remain a `WrappedArray`.
+ *
+ *  @since 2.8
  */
 abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
 
@@ -31,7 +38,11 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
       super.toArray[U]
 
   /** Flattens a two-dimensional array by concatenating all its rows
-   *  into a single array
+   *  into a single array.
+   *
+   *  @tparam U        Type of row elements.
+   *  @param asArray   A function that converts elements of this array to rows - arrays of type `U`.
+   *  @return          An array obtained by concatenating rows of this array.
    */
   def flatten[U](implicit asArray: T => /*<:<!!!*/ Array[U]): Array[U] = {
     val b = rowBuilder[U]
@@ -40,7 +51,11 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
     b.result
   }
 
-  /** Transposes a two dimensional array
+  /** Transposes a two dimensional array.
+   *
+   *  @tparam U       Type of row elements.
+   *  @param asArray  A function that converts elements of this array to rows - arrays of type `U`.
+   *  @return         An array obtained by replacing elements of this arrays with rows the represent.
    */
   def transpose[U](implicit asArray: T => Array[U]): Array[Array[U]] = {
     val bs = asArray(head) map (_ => rowBuilder[U])

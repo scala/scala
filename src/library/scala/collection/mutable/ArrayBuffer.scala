@@ -94,11 +94,11 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     this
   }
 
-  /** Prepends a number of elements provided by an iterable object
+  /** Prepends a number of elements provided by a traversable object
    *  via its <code>iterator</code> method. The identity of the
    *  buffer is returned.
    *
-   *  @param iter  the iterable object.
+   *  @param xs    the traversable object.
    *  @return      the updated buffer.
    */
   override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
@@ -108,7 +108,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
    *  one. Instead, it will insert a new element at index <code>n</code>.
    *
    *  @param n     the index where a new element will be inserted.
-   *  @param iter  the iterable object providing all elements to insert.
+   *  @param seq   the traversable object providing all elements to insert.
    *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
    */
   def insertAll(n: Int, seq: Traversable[A]) {
