@@ -304,6 +304,27 @@ object Test extends Application {
   }
 
 
+  // #3207
+  trait P3207[T] {
+    class Inner(val f: T => Unit = (x: T) => println(x))
+  }
+
+  object Test3207_1 {
+    val p = new P3207[Int] {}
+    val q = new p.Inner() {
+      def g = 0
+    }
+  }
+
+  object Test3207_2 {
+    val p = new P3207[Int] {
+      val inner = new Inner() {
+        def g = 0
+      }
+    }
+  }
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
