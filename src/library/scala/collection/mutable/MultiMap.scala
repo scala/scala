@@ -13,16 +13,28 @@ package scala.collection
 package mutable
 
 
-/** This class is typically used as a mixin. It turns maps which map <code>A</code>
- *  to <code>Set[B]</code> objects into multi maps which map <code>A</code> to
- *  <code>B</code> objects.
+/** A trait for mutable maps with multiple values assigned to a key.
  *
+ *  This class is typically used as a mixin. It turns maps which map `A`
+ *  to `Set[B]` objects into multi maps which map `A` to
+ *  `B` objects.
+ *
+ *  @define coll multimap
+ *  @define Coll MultiMap
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
  */
 trait MultiMap[A, B] extends Map[A, Set[B]] {
+  /** Creates a new set.
+   *
+   *  Classes that use this trait as a mixin can override this method
+   *  to have the desired implementation of sets assigned to new keys.
+   *  By default this is `HashSet`.
+   *
+   *  @return An empty set of values of type `B`.
+   */
   protected def makeSet: Set[B] = new HashSet[B]
 
   @deprecated("use addBinding instead")
@@ -50,6 +62,9 @@ trait MultiMap[A, B] extends Map[A, Set[B]] {
   }
 
   /** Removes the binding of `value` to `key` if it exists.
+   *
+   *  If this was the last value assigned to the specified key, the
+   *  set assigned to that key will be removed as well.
    *
    *  @param key     The key of the binding.
    *  @param value   The value to remove.
