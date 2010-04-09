@@ -17,8 +17,6 @@ import generic._
 /** A subtrait of <code>collection.LinearSeq</code> which represents sequences
  *  that can be mutated.
  *  $linearSeqInfo
- *
- *  @since 2.8
  */
 trait LinearSeq[A] extends Seq[A]
                            with scala.collection.LinearSeq[A]
@@ -27,6 +25,10 @@ trait LinearSeq[A] extends Seq[A]
   override def companion: GenericCompanion[LinearSeq] = LinearSeq
 }
 
+/** $factoryInfo
+ *  @define coll linear sequence
+ *  @define Coll LinearSeq
+ */
 object LinearSeq extends SeqFactory[LinearSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, LinearSeq[A]] = new MutableList[A]

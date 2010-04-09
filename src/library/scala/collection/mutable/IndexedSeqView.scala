@@ -92,6 +92,8 @@ self =>
 }
 
 /** $factoryInfo
+ * @define coll indexed sequence view
+ * @define Coll IndexedSeqView
  * Note that the canBuildFrom factories yield SeqViews, not IndexedSewqViews.
  * This is intentional, because not all operations yield again a mutable.IndexedSeqView.
  * For instance, map just gives a SeqView, which reflects the fact that

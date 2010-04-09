@@ -17,10 +17,6 @@ import BitSetLike.{LogWL, updateArray}
 
 /** A class for mutable bitsets.
  *  $bitsetinfo
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since 1
  */
 @serializable @SerialVersionUID(8483111450368547763L)
 class BitSet(protected var elems: Array[Long]) extends Set[Int]

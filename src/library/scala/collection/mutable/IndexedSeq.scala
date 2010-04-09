@@ -17,8 +17,6 @@ import generic._
 /** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
  *  that can be mutated.
  *  $indexedSeqInfo
- *
- *  @since 2.8
  */
 trait IndexedSeq[A] extends Seq[A]
                    with scala.collection.IndexedSeq[A]
@@ -27,6 +25,10 @@ trait IndexedSeq[A] extends Seq[A]
   override def companion: GenericCompanion[IndexedSeq]  = IndexedSeq
 }
 
+/** $factoryInfo
+ *  @define coll indexed sequence
+ *  @define Coll IndexedSeq
+ */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer[A]

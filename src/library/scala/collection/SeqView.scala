@@ -22,6 +22,8 @@ import TraversableView.NoBuilder
 trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]]
 
 /** $factoryInfo
+ *  @define coll sequence view
+ *  @define Coll SeqView
  */
 object SeqView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
