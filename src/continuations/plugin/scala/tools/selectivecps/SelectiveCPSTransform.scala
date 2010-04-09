@@ -288,9 +288,9 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
               def applyTrivial(ctxValSym: Symbol, body: Tree) = {
 
-                new TreeSymSubstituter(List(vd.symbol), List(ctxValSym)).traverse(body)
+                val body1 = (new TreeSymSubstituter(List(vd.symbol), List(ctxValSym)))(body)
 
-                val body2 = localTyper.typed(atPos(vd.symbol.pos) { body })
+                val body2 = localTyper.typed(atPos(vd.symbol.pos) { body1 })
 
                 // in theory it would be nicer to look for an @cps annotation instead
                 // of testing for Context
@@ -303,10 +303,10 @@ abstract class SelectiveCPSTransform extends PluginComponent with
 
               def applyCombinatorFun(ctxR: Tree, body: Tree) = {
                 val arg = currentOwner.newValueParameter(ctxR.pos, name).setInfo(tpe)
-                new TreeSymSubstituter(List(vd.symbol), List(arg)).traverse(body)
-                val fun = localTyper.typed(atPos(vd.symbol.pos) { Function(List(ValDef(arg)), body) }) // types body as well
+                val body1 = (new TreeSymSubstituter(List(vd.symbol), List(arg)))(body)
+                val fun = localTyper.typed(atPos(vd.symbol.pos) { Function(List(ValDef(arg)), body1) }) // types body as well
                 arg.owner = fun.symbol
-                new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(body)
+                new ChangeOwnerTraverser(currentOwner, fun.symbol).traverse(body1)
 
                 // see note about multiple traversals above
 
@@ -315,12 +315,12 @@ abstract class SelectiveCPSTransform extends PluginComponent with
                 log("arg.owner: "+arg.owner)
 
                 log("fun.tpe:"+fun.tpe)
-                log("return type of fun:"+body.tpe)
+                log("return type of fun:"+body1.tpe)
 
                 var methodName = "map"
 
-                if (body.tpe != null) {
-                  if (body.tpe.typeSymbol == Context)
+                if (body1.tpe != null) {
+                  if (body1.tpe.typeSymbol == Context)
                     methodName = "flatMap"
                 }
                 else

@@ -211,12 +211,12 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
         case ldef @ LabelDef(name, params, rhs) =>
           if (hasAnswerTypeAnn(tree.tpe)) {
-            val sym = currentOwner.newMethod(tree.pos, name)//unit.fresh.newName(tree.pos, "myloopvar"))
+            val sym = currentOwner.newMethod(tree.pos, name)//unit.fresh.newName(tree.pos, "myloopvar")
                         .setInfo(ldef.symbol.info)
                         .setFlag(Flags.SYNTHETIC)
 
-            new TreeSymSubstituter(List(ldef.symbol), List(sym)).traverse(rhs)
-            val rhsVal = transExpr(rhs, None, getAnswerTypeAnn(tree.tpe))
+            val rhs1 = new TreeSymSubstituter(List(ldef.symbol), List(sym)).transform(rhs)
+            val rhsVal = transExpr(rhs1, None, getAnswerTypeAnn(tree.tpe))
 
             val stm1 = localTyper.typed(DefDef(sym, rhsVal))
             val expr = localTyper.typed(Apply(Ident(sym), List()))

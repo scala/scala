@@ -354,8 +354,7 @@ abstract class ExplicitOuter extends InfoTransform
 
         localTyper typed (DEF(method) === {
           new ChangeOwnerTraverser(currentOwner, method) traverse guard
-          new TreeSymSubstituter(vs, method.paramss.head) traverse guard
-          guard
+          new TreeSymSubstituter(vs, method.paramss.head) transform (guard)
         })
       }
 
