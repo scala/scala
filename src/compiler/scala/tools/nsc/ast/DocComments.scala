@@ -58,13 +58,15 @@ trait DocComments { self: SymbolTable =>
    *                                  of the same string are done, which is
    *                                  interpreted as a recursive variable definition.
    */
-  def expandedDocComment(sym: Symbol, site: Symbol): String =
-    expandVariables(cookedDocComment(sym), sym, site)
+  def expandedDocComment(sym: Symbol, site: Symbol): String = {
+    val site1 = if (sym.isClass && (site hasFlag Flags.PACKAGE)) sym else site // when parsing a top level class, use the class itself to look up variable definitions
+    expandVariables(cookedDocComment(sym), sym, site1)
+  }
 
   /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
    *  @param sym  The symbol for which doc comment is returned (site is always the containing class)
    */
-  def expandedDocComment(sym: Symbol): String = expandedDocComment(sym, sym)
+  def expandedDocComment(sym: Symbol): String = expandedDocComment(sym, sym.enclClass)
 
   /** The list of use cases of doc comment of symbol `sym` seen as a member of class
    *  `site`. Each use case consists of a synthetic symbol (which is entered nowhere else),
