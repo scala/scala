@@ -15,20 +15,32 @@ import generic._
 import mutable.{Builder, ArrayBuffer}
 import TraversableView.NoBuilder
 
-/** <p>
- *    A template trait for views of <a href="../Traversable.html"
- *    target="contentFrame"><code>Traversable</code></a>.<br/>
- *    Every subclass has to implement the <code>foreach</code> method.
- *  </p>
- *  @note Methods such as map/flatMap on this will not invoke the implicitly passed
- *        Builder factory, but will return a new view directly, to preserve by-name behavior.
- *        The new view is then cast to the factory's result type.
- *        This means that every CanBuildFrom that takes a
- *        View as its From type parameter must yield the same view (or a generic superclass of it)
- *        as its result parameter. If that assumption is broken, cast errors might result.
+/** A template trait for non-strict views of traversable collections.
+ *  $traversableviewinfo
  *
+ *  Implementation note: Methods such as `map` or `flatMap` on this view will not invoke the implicitly passed
+ *  `Builder` factory, but will return a new view directly, to preserve by-name behavior.
+ *  The new view is then cast to the factory's result type. This means that every `CanBuildFrom`
+ *  that takes a `View` as its `From` type parameter must yield the same view (or a generic
+ *  superclass of it) as its result parameter. If that assumption is broken, cast errors might result.
+ *
+ * @define viewinfo
+ *  A view is a lazy version of some collection. Collection transformers such as
+ *  `map` or `filter` or `++` do not traverse any elements when applied on a view.
+ *  Instead they create a new view which simply records that fact that the operation
+ *  needs to be applied. The collection elements are accessed, and the view operations are applied,
+ *  when a non-view result is needed, or when the `force` method is called on a view.
+ * @define traversableviewinfo
+ *  $viewinfo
+ *
+ *  All views for traversable collections are defined by creating a new `foreach` method.
+
  *  @author Martin Odersky
  *  @version 2.8
+ *  @since   2.8
+ *  @tparam A    the element type of the view
+ *  @tparam Coll the type of the underlying collection containing the elements.
+ *  @tparam This the type of the view itself
  */
 trait TraversableViewLike[+A,
                           +Coll,

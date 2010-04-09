@@ -14,12 +14,9 @@ package mutable
 
 import generic._
 
-/** A subtrait of <code>collection.Traversable</code> which represents
- *  traversables that can be mutated.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** A trait for traversable collections that can be mutated.
+ *  $traversableInfo
+ *  @define mutability mutable
  */
 trait Traversable[A] extends scala.collection.Traversable[A]
                         with GenericTraversableTemplate[A, Traversable]

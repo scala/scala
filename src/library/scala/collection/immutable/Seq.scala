@@ -16,9 +16,9 @@ import generic._
 import mutable.Builder
 
 /** A subtrait of `collection.Seq` which represents sequences
- *  that cannot be mutated.
+ *  that are guaranteed immutable.
  *
- *  @since 2.8
+ *  $seqInfo
  */
 trait Seq[+A] extends Iterable[A]
                       with scala.collection.Seq[A]

@@ -15,10 +15,8 @@ import generic._
 import mutable.{Builder, Buffer, ArrayBuffer, ListBuffer}
 import scala.util.control.Breaks
 
-/** A template trait for traversable collections.
- *  $traversableinfo
- *
- *  @tparam A    The element type of the collection
+/** A trait for traversable collections.
+ *  $traversableInfo
  */
 trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
                          with GenericTraversableTemplate[A, Traversable] {
@@ -84,7 +82,8 @@ trait Traversable[+A] extends TraversableLike[A, Traversable[A]]
   */
 }
 
-/** $factoryInfo */
+/** $factoryInfo
+ */
 object Traversable extends TraversableFactory[Traversable] { self =>
 
   /** Provides break functionality separate from client code */

@@ -15,15 +15,7 @@ import generic._
 import mutable.Builder
 import TraversableView.NoBuilder
 
-/** <p>
- *    A base class for views of <a href="../Traversable.html"
- *    target="ContentFrame"><code>Traversable<code></a>.<br/>
- *    Every subclass has to implement the <code>foreach</code> method.
- *  </p>
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** $traversableviewinfo
  */
 trait TraversableView[+A, +Coll] extends TraversableViewLike[A, Coll, TraversableView[A, Coll]]
 

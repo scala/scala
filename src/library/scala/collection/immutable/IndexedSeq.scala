@@ -15,10 +15,8 @@ import generic._
 import mutable.{ArrayBuffer, Builder}
 
 /** A subtrait of <code>collection.IndexedSeq</code> which represents indexed sequences
- *  that cannot be mutated.
+ *  that are guaranteed immutable.
  *  $indexedSeqInfo
- *
- *  @since 2.8
  */
 trait IndexedSeq[+A] extends Seq[A]
                     with scala.collection.IndexedSeq[A]
@@ -27,8 +25,9 @@ trait IndexedSeq[+A] extends Seq[A]
   override def companion: GenericCompanion[IndexedSeq] = IndexedSeq
 }
 
-/**
- * @since 2.8
+/** $factoryInfo
+ *  @define coll indexed sequence
+ *  @define Coll IndexedSeq
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
   @serializable

@@ -17,18 +17,15 @@ import mutable.{Builder, StringBuilder, Buffer, ArrayBuffer, ListBuffer}
 import immutable.{List, Stream, Nil, ::}
 
 /** A template trait for traversable collections of type `Traversable[A]`.
- *  $traversableinfo
- *
- *  @tparam A    the element type of the collection
- *  @tparam Repr the type of the actual collection containing the elements.
- *
- *  @define traversableinfo
- *  This is a base trait of all kinds of Scala collections. It implements
+ *  $traversableInfo
+ *  @define mutability
+ *  @define traversableInfo
+ *  This is a base trait of all kinds of $mutability Scala collections. It implements
  *  the behavior common to all collections, in terms of a method
  *  `foreach` with signature:
- *  {{{
- *     def foreach[U](f: Elem => U): Unit</pre>
- *  }}}
+ * {{{
+ *     def foreach[U](f: Elem => U): Unit
+ * }}}
  *  Collection classes mixing in this trait provide a concrete
  *  `foreach` method which traverses all the
  *  elements contained in the collection, applying a given function to each.
@@ -63,7 +60,9 @@ import immutable.{List, Stream, Nil, ::}
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
-
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
+ *
  *  @define Coll Traversable
  *  @define coll traversable collection
  *  @define thatinfo the class of the returned collection. Where possible, `That` is
@@ -178,10 +177,10 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    *  @return       a new $coll which contains all elements of this $coll
    *                followed by all elements of `that`.
    */
-  def ++[B >: A, That](xs: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     b ++= thisCollection
-    b ++= xs
+    b ++= that
     b.result
   }
 

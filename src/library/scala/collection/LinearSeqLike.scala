@@ -25,10 +25,6 @@ import scala.util.control.Breaks._
  *  However, see `LinearSeqOptimized` for an implementation trait that overrides operations
  *  to make them run faster under the assumption of fast linear access with `head` and `tail`.
  *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
- *
  *  @define  linearSeqInfo
  *  Linear sequences are defined in terms of three abstract methods, which are assumed
  *  to have efficient implementations. These are:
@@ -41,6 +37,9 @@ import scala.util.control.Breaks._
  *
  *  Linear sequences do not add any new methods to `Seq`, but promise efficient implementations
  *  of linear access patterns.
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
  *
  *  @tparam A    the element type of the $coll
  *  @tparam Repr the type of the actual $coll containing the elements.

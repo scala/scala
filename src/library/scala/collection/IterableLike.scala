@@ -15,10 +15,8 @@ import annotation.unchecked.uncheckedVariance
 
 /** A template trait for iterable collections of type `Iterable[A]`.
  *  $iterableInfo
- *  @tparam A    the element type of the collection
- *  @tparam Repr the type of the actual collection containing the elements.
  *  @define iterableInfo
- *    This is a base trait for all scala collections that define an `iterator`
+ *    This is a base trait for all $mutability Scala collections that define an `iterator`
  *    method to step through one-by-one the collection's elements.
  *    Implementations of this trait need to provide a concrete method with
  *    signature:
@@ -44,6 +42,8 @@ import annotation.unchecked.uncheckedVariance
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
  *
  *  @define Coll Iterable
  *  @define coll iterable collection

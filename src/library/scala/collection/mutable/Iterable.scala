@@ -10,15 +10,8 @@ package mutable
 
 import generic._
 
-/** <p>
- *    A subtrait of <a href="../Iterable.html" target="contentFrame">
- *    <code>collection.Iterable</code></a> which represents iterables
- *    that can be mutated.
- *  </p>
- *
- *  @author   Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** A base trait for iterable collections that can be mutated.
+ *  $iterableInfo
  */
 trait Iterable[A] extends Traversable[A]
                      with scala.collection.Iterable[A]

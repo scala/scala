@@ -23,21 +23,20 @@ import scala.annotation.tailrec
  *  However, see `IndexedSeqOptimized` for an implementation trait that overrides operations
  *  to make them run faster under the assumption of fast random access with `apply`.
  *
- *  @author Sean McDirmid
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
  *  @define  Coll  IndexedSeq
  *  @define indexedSeqInfo
  *  Indexed sequences support constant-time or near constant-time element
  *  access and length computation. They are defined in terms of abstract methods
- *  `apply` fpor indexing and `length`.
+ *  `apply` for indexing and `length`.
  *
  *  Indexed sequences do not add any new methods wrt `Seq`, but promise
  *  efficient implementations of random access patterns.
  *
  *  @tparam A    the element type of the $coll
  *  @tparam Repr the type of the actual $coll containing the elements.
+ *  @author Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
  *  @define willNotTerminateInf
  *  @define mayNotTerminateInf
  */

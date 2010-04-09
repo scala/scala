@@ -15,11 +15,19 @@ import generic._
 import collection.immutable.Stream
 import TraversableView.NoBuilder
 
-/** A template trait for a non-strict view of an iterable.
+/** A template trait for non-strict views of iterable collections.
+ *  $iterableviewInfo
+ *
+ *  @define iterableviewInfo
+ *  $viewinfo
+ *  All views for iterable collections are defined by creating a new `iterator` method.
  *
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.8
+ *  @tparam A    the element type of the view
+ *  @tparam Coll the type of the underlying collection containing the elements.
+ *  @tparam This the type of the view itself
  */
 trait IterableViewLike[+A,
                        +Coll,
