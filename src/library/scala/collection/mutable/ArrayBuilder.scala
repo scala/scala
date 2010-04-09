@@ -17,19 +17,29 @@ import scala.reflect.ClassManifest
 
 /** A builder class for arrays.
  *
- * @since 2.8
+ *  @since 2.8
  */
 @serializable
 abstract class ArrayBuilder[T] extends Builder[T, Array[T]]
 
-/**
- * @since 2.8
+/** A companion object for array builders.
+ *
+ *  @since 2.8
  */
 object ArrayBuilder {
 
+  /** Creates a new arraybuilder of type `T`.
+   *
+   *  @tparam T     type of the elements for the array builder, with a `ClassManifest` context bound.
+   *  @return       a new empty array builder.
+   */
   def make[T: ClassManifest](): ArrayBuilder[T] =
     implicitly[ClassManifest[T]].newArrayBuilder()
 
+  /** A class for array builders for arrays of reference types.
+   *
+   *  @tparam T     type of elements for the array builder, subtype of `AnyRef` with a `ClassManifest` context bound.
+   */
   class ofRef[T <: AnyRef : ClassManifest] extends ArrayBuilder[T] {
 
     private var elems: Array[T] = _
@@ -94,6 +104,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofRef"
   }
 
+  /** A class for array builders for arrays of `byte`s. */
   class ofByte extends ArrayBuilder[Byte] {
 
     private var elems: Array[Byte] = _
@@ -158,6 +169,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofByte"
   }
 
+  /** A class for array builders for arrays of `short`s. */
   class ofShort extends ArrayBuilder[Short] {
 
     private var elems: Array[Short] = _
@@ -222,6 +234,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofShort"
   }
 
+  /** A class for array builders for arrays of `char`s. */
   class ofChar extends ArrayBuilder[Char] {
 
     private var elems: Array[Char] = _
@@ -286,6 +299,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofChar"
   }
 
+  /** A class for array builders for arrays of `int`s. */
   class ofInt extends ArrayBuilder[Int] {
 
     private var elems: Array[Int] = _
@@ -350,6 +364,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofInt"
   }
 
+  /** A class for array builders for arrays of `long`s. */
   class ofLong extends ArrayBuilder[Long] {
 
     private var elems: Array[Long] = _
@@ -414,6 +429,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofLong"
   }
 
+  /** A class for array builders for arrays of `float`s. */
   class ofFloat extends ArrayBuilder[Float] {
 
     private var elems: Array[Float] = _
@@ -478,6 +494,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofFloat"
   }
 
+  /** A class for array builders for arrays of `double`s. */
   class ofDouble extends ArrayBuilder[Double] {
 
     private var elems: Array[Double] = _
@@ -542,6 +559,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofDouble"
   }
 
+  /** A class for array builders for arrays of `boolean`s. */
   class ofBoolean extends ArrayBuilder[Boolean] {
 
     private var elems: Array[Boolean] = _
@@ -606,6 +624,7 @@ object ArrayBuilder {
     override def toString = "ArrayBuilder.ofBoolean"
   }
 
+  /** A class for array builders for arrays of `Unit` type. */
   class ofUnit extends ArrayBuilder[Unit] {
 
     private var elems: Array[Unit] = _
