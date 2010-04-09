@@ -204,7 +204,9 @@ INITIALISATION
 	<property name="scalac.args.quickonly" value=""/>
 	
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-	<property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+    <echo message="Using scalac.args.all: ${scalac.args.all}"/>
+    <echo message="Using javac.args: ${javac.args}"/>
+    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
   <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- This is the start time for the distribution -->
@@ -1115,7 +1117,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/continuations-plugin"
       compilerpathref="pack.classpath"
-      params="${scalac.args.quick}"
+      params="${scalac.args.all}"
       srcdir="${src.dir}/continuations/plugin"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1136,7 +1138,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.quick} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable"
+      params="${scalac.args.all} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1504,14 +1506,6 @@ BOOTRAPING TEST AND TEST SUITE
     </same>
   </target>
 
-  <target name="test.suite.clean.checkinit">
-	<antcall target="all.clean" />
-	<antcall target="test.suite" inheritAll="false">
-      <param name="scalac.args.optimise" value="-Xcheckinit" />
-      <param name="partest.scalacopts" value="-Xcheckinit" />
-    </antcall>
-  </target>
-
   <target name="test.suite" depends="pack.done">
 	<partest classpathref="pack.classpath">
 	  <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
@@ -1736,6 +1730,18 @@ FORWARDED TARGETS FOR NIGHTLY BUILDS
   <target name="nightly-nopt" depends="all.done">
     <!-- cannot antcall all.done, the properties defined in there (dist.dir) are not returned. need depends. -->
     <ant antfile="${src.dir}/build/pack.xml" target="pack-all.done" inheritall="yes" inheritrefs="yes"/>
+  </target>
+
+  <target name="nightly.checkinit">
+    <antcall target="nightly-nopt">
+      <param name="scalac.args.optimise" value="-Xcheckinit"/>
+    </antcall>
+  </target>
+
+  <target name="nightly.checkall">
+    <antcall target="nightly-nopt">
+      <param name="partest.scalacopts" value="-Ycheck:all"/>
+    </antcall>
   </target>
 
 <!-- ===========================================================================
