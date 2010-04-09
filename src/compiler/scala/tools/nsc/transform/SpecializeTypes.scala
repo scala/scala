@@ -243,51 +243,30 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  lazy val primitiveTypes = Map(
-    "Unit"    -> definitions.UnitClass.tpe,
-    "Boolean" -> definitions.BooleanClass.tpe,
-    "Byte"    -> definitions.ByteClass.tpe,
-    "Short"   -> definitions.ShortClass.tpe,
-    "Char"    -> definitions.CharClass.tpe,
-    "Int"     -> definitions.IntClass.tpe,
-    "Long"    -> definitions.LongClass.tpe,
-    "Float"   -> definitions.FloatClass.tpe,
-    "Double"  -> definitions.DoubleClass.tpe)
+  lazy val primitiveTypes = List(
+    definitions.UnitClass.tpe,
+    definitions.BooleanClass.tpe,
+    definitions.ByteClass.tpe,
+    definitions.ShortClass.tpe,
+    definitions.CharClass.tpe,
+    definitions.IntClass.tpe,
+    definitions.LongClass.tpe,
+    definitions.FloatClass.tpe,
+    definitions.DoubleClass.tpe)
 
-
-
-  /** Parse the given string into the list of types it contains.
-   *
-   *  @param str comma-separated string of distinct primitive types.
-   */
-  def parseTypes(str: String): List[Type] = {
-    if (str.trim == "")
-      List()
-    else {
-      val buf = new mutable.ListBuffer[Type]
-      for (t <- str.split(','))
-        primitiveTypes.get(t.trim) match {
-          case Some(tpe) => buf += tpe
-          case None =>
-            error("Invalid type " + t + ". Expected one of " + primitiveTypes.keysIterator.mkString("", ", ", "."))
-        }
-      buf.toList
-    }
-  }
-
-  /** Return the concrete types `sym' should be specialized at.
+   /** Return the concrete types `sym' should be specialized at.
    */
   def concreteTypes(sym: Symbol): List[Type] =
     sym.getAnnotation(SpecializedClass) match {
       case Some(AnnotationInfo(_, args, _)) =>
         args match {
-          case Literal(ct) :: _ =>
-            val tpes = parseTypes(ct.stringValue)
+          case Nil =>
+            log(sym + " specialized on everything")
+            primitiveTypes.toList
+          case _ =>
+            val tpes = args.map(_.symbol.companionClass.tpe)
             log(sym + " specialized on " + tpes)
             tpes
-          case _ =>
-            log(sym + " specialized on everything")
-            primitiveTypes.valuesIterator.toList
         }
       case _ =>
         Nil

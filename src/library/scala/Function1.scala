@@ -35,7 +35,7 @@ package scala
  *    println(anonfun1(0))
  *  }</pre>
  */
-trait Function1[-T1, +R] extends AnyRef { self =>
+trait Function1[@specialized(Int, Long, Double) -T1, @specialized(Unit, Int, Long, Double) +R] extends AnyRef { self =>
   def apply(v1:T1): R
   override def toString() = "<function1>"
 

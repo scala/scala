@@ -35,7 +35,9 @@ package scala
  *    println(anonfun2(0, 1))
  *  }</pre>
  */
-trait Function2[-T1, -T2, +R] extends AnyRef { self =>
+trait Function2[@specialized(Int, Long, Double) -T1,
+                @specialized(Int, Long, Double) -T2,
+                @specialized(Unit, Int, Long, Double) +R] extends AnyRef { self =>
   def apply(v1:T1,v2:T2): R
   override def toString() = "<function2>"
 

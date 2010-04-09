@@ -18,20 +18,17 @@ package scala
  *  </code>
  *
  *  Type T can be specialized on a subset of the primitive types by
- *  specifying a comma-separated string argument:
+ *  specifying a list of primitive types to specialize at:
  *
  *  <code>
- *   class MyList[@specialized("Int, Double, Boolean") T] ..
+ *   class MyList[@specialized(Int, Double, Boolean) T] ..
  *  </code>
- *  Only primitive types are supported and no name resolution is currently
- *  done on the string arguments (meaning imports and type aliases are
- *  not resolved).
  *
  *  @since 2.8
  */
-class specialized(types: String) extends StaticAnnotation {
+class specialized(types: runtime.AnyValCompanion*) extends StaticAnnotation {
   def this() {
-    this("Boolean, Byte, Short, Char, Int, Long, Float, Double")
+    this(Unit, Boolean, Byte, Short, Char, Int, Long, Float, Double)
   }
 }
 

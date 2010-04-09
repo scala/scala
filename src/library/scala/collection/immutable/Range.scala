@@ -39,7 +39,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   def isInclusive = false
 
-  override def foreach[U](f: Int => U) {
+  override def foreach[@specialized(Unit) U](f: Int => U) {
     if (fullLength > 0) {
       val last = this.last
       var i = start
@@ -191,7 +191,7 @@ object Range {
   def inclusive(start: Int, end: Int): Range.Inclusive with ByOne = new Inclusive(start, end, 1) with ByOne
 
   trait ByOne extends Range {
-    override final def foreach[U](f: Int => U) {
+    override final def foreach[@specialized(Unit) U](f: Int => U) {
       if (length > 0) {
         val last = this.last
         var i = start
