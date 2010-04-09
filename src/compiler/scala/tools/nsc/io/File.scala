@@ -77,7 +77,7 @@ with Streamable.Chars {
   /** Obtains a OutputStream. */
   def outputStream(append: Boolean = false) = new FileOutputStream(jfile, append)
   def bufferedOutput(append: Boolean = false) = new BufferedOutputStream(outputStream(append))
-  def printStream(append: Boolean = false) = new PrintStream(bufferedOutput(append))
+  def printStream(append: Boolean = false) = new PrintStream(outputStream(append), true)
 
   /** Obtains an OutputStreamWriter wrapped around a FileOutputStream.
    *  This should behave like a less broken version of java.io.FileWriter,
