@@ -45,7 +45,7 @@ object Flags extends reflect.generic.Flags {
   /** These modifiers appear in TreePrinter output. */
   final val PrintableFlags: Long =
     ExplicitFlags | LOCAL | SYNTHETIC | STABLE | CASEACCESSOR |
-    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC | VBRIDGE
+    ACCESSOR | SUPERACCESSOR | PARAMACCESSOR | BRIDGE | STATIC | VBRIDGE | SPECIALIZED
 
   /** The two bridge flags */
   final val BRIDGES = BRIDGE | VBRIDGE
@@ -98,6 +98,7 @@ object Flags extends reflect.generic.Flags {
     else if (flag == TRANS_FLAG  ) "<trans-flag>"
     else if (flag == LOCKED      ) "<locked>"
     else if (flag == LAZY        ) "lazy"
+    else if (flag == SPECIALIZED ) "<specialized>"
     else flag.toInt match {
       case IMPLICIT      => "implicit"
       case FINAL         => "final"
