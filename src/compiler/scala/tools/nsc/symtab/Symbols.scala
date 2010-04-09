@@ -331,6 +331,14 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def newRefinementClass(pos: Position) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName)
 
+    /** Create a new getter for current symbol (which must be a field)
+     */
+    final def newGetter: Symbol = {
+      val getter = owner.newMethod(pos.focus, nme.getterName(name)).setFlag(getterFlags(flags))
+      getter.privateWithin = privateWithin
+      getter.setInfo(MethodType(List(), tpe))
+    }
+
     final def newErrorClass(name: Name) = {
       val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
       clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz))

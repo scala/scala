@@ -60,6 +60,13 @@ object Flags extends reflect.generic.Flags {
   /** Module flags inherited by their module-class */
   final val ModuleToClassFlags: Long = AccessFlags | MODULE | PACKAGE | CASE | SYNTHETIC | JAVA
 
+  def getterFlags(fieldFlags: Long): Long =
+    ACCESSOR +
+    (if ((fieldFlags & MUTABLE) != 0) fieldFlags & ~MUTABLE & ~PRESUPER else fieldFlags & ~PRESUPER | STABLE)
+
+  def setterFlags(fieldFlags: Long): Long =
+    getterFlags(fieldFlags) & ~STABLE & ~CASEACCESSOR
+
   private def listToString(ss: List[String]): String =
     ss.filter("" !=).mkString("", " ", "")
 
