@@ -59,7 +59,9 @@ trait DocComments { self: SymbolTable =>
    *                                  interpreted as a recursive variable definition.
    */
   def expandedDocComment(sym: Symbol, site: Symbol): String = {
-    val site1 = if (sym.isClass && (site hasFlag Flags.PACKAGE)) sym else site // when parsing a top level class, use the class itself to look up variable definitions
+    // when parsing a top level class or module, use the (module-)class itself to look up variable definitions
+    val site1 = if ((sym.isModule || sym.isClass) && (site hasFlag Flags.PACKAGE)) sym
+                else site
     expandVariables(cookedDocComment(sym), sym, site1)
   }
 
@@ -205,11 +207,18 @@ trait DocComments { self: SymbolTable =>
   def lookupVariable(vble: String, site: Symbol): Option[String] =
     if (site == NoSymbol)
       None
-    else
-      mapFind(site.info.baseClasses)(defs(_).get(vble)) match {
+    else {
+      def lookInBaseClasses = mapFind(site.info.baseClasses)(defs(_).get(vble)) match {
         case None => lookupVariable(vble, site.owner)
         case someStr => someStr
       }
+      if (site.isModule)
+        defs(site).get(vble) match {
+          case Some(str) => return Some(str)
+          case None => lookInBaseClasses
+        }
+      else lookInBaseClasses
+    }
 
   private var expandCount = 0
   private final val expandLimit = 10
