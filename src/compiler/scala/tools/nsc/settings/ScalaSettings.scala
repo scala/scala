@@ -45,6 +45,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val optimise      = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program") .
                                             withAbbreviation("-optimize") .
                                             withPostSetHook(_ => List(inline, Xcloselim, Xdce) foreach (_.value = true))
+  val nospecialization = BooleanSetting    ("-no-specialization", "Ignore @specialize annotations.")
+
 
   /**
    * -X "Advanced" settings
@@ -126,7 +128,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
                       ChoiceSetting     ("-Ystruct-dispatch", "Selects dispatch method for structural refinement method calls",
                         List("no-cache", "mono-cache", "poly-cache", "invoke-dynamic"), "poly-cache") .
                         withHelpSyntax("-Ystruct-dispatch:<method>")
-  val specialize    = BooleanSetting    ("-Yspecialize", "Specialize generic code on types.")
   val Yrangepos     = BooleanSetting    ("-Yrangepos", "Use range positions for syntax trees.")
   val Yidedebug     = BooleanSetting    ("-Yide-debug", "Generate, validate and output trees using the interactive compiler.")
   val Ybuilderdebug = ChoiceSetting     ("-Ybuilder-debug", "Compile using the specified build manager", List("none", "refined", "simple"), "none") .
