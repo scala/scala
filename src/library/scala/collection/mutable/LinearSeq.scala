@@ -14,9 +14,12 @@ package mutable
 
 import generic._
 
-/** A subtrait of <code>collection.LinearSeq</code> which represents sequences
+/** A subtrait of `collection.LinearSeq` which represents sequences
  *  that can be mutated.
  *  $linearSeqInfo
+ *
+ *  @define Coll LinearSeq
+ *  @define coll linear sequence
  */
 trait LinearSeq[A] extends Seq[A]
                            with scala.collection.LinearSeq[A]

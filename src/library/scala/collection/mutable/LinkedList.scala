@@ -14,13 +14,29 @@ package mutable
 
 import generic._
 
-/** This class implements single linked lists where both the head (<code>elem</code>)
- *  and the tail (<code>next</code>) are mutable.
+/** This class implements single linked lists where both the head (`elem`)
+ *  and the tail (`next`) are mutable.
  *
  *  @author Matthias Zenger
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   1
+ *
+ *  @tparam A     the type of the elements contained in this linked list.
+ *
+ *  @define Coll LinkedList
+ *  @define coll linked list
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `LinkedList[B]` because an implicit of type `CanBuildFrom[LinkedList, B, LinkedList[B]]`
+ *    is defined in object `LinkedList`.
+ *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `LinkedList`.
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(-7308240733518833071L)
 class LinkedList[A]() extends LinearSeq[A]
@@ -39,6 +55,10 @@ class LinkedList[A]() extends LinearSeq[A]
   override def companion: GenericCompanion[LinkedList] = LinkedList
 }
 
+/** $factoryInfo
+ *  @define Coll LinkedList
+ *  @define coll linked list
+ */
 object LinkedList extends SeqFactory[LinkedList] {
 
   override def empty[A]: LinkedList[A] = new LinkedList[A]

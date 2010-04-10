@@ -13,9 +13,29 @@ package mutable
 
 import generic._
 
-/** Todo: this has O(n) cost for element removal.
- *  Should be rewritten to be more efficient.
- *  @since 2.2
+/** This class implements mutable sets using a hashtable.
+ *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
+ *
+ *  @author  Matthias Zenger
+ *  @author  Martin Odersky
+ *  @version 2.0, 31/12/2006
+ *  @since   1
+ *
+ *  @tparam A     the type of the elements contained in this set.
+ *
+ *  @define Coll LinkedHashSet
+ *  @define coll linked hash set
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `LinkedHashSet[B]` because an implicit of type `CanBuildFrom[LinkedHashSet, B, LinkedHashSet[B]]`
+ *    is defined in object `LinkedHashSet`.
+ *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `LinkedHashSet`.
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ *  @define orderDependent
+ *  @define orderDependentFold
  */
 @serializable @SerialVersionUID(1L)
 class LinkedHashSet[A] extends Set[A]
@@ -63,7 +83,10 @@ class LinkedHashSet[A] extends Set[A]
   }
 }
 
-/** Factory object for `LinkedHashSet` class */
+/** $factoryInfo
+ *  @define Coll LinkedHashSet
+ *  @define coll linked hash set
+ */
 object LinkedHashSet extends SetFactory[LinkedHashSet] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedHashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: LinkedHashSet[A] = new LinkedHashSet[A]

@@ -14,8 +14,8 @@ package mutable
 
 import generic._
 
-/** This class implements double linked lists where both the head (`elem`)
- *  and the tail (`next`) are mutable.
+/** This class implements double linked lists where both the head (`elem`),
+ *  the tail (`next`) and a reference to the previous node (`prev`) are mutable.
  *
  *  @author Matthias Zenger
  *  @author Martin Odersky

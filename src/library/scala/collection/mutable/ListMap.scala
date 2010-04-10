@@ -14,8 +14,26 @@ package mutable
 
 import generic._
 
-/** A simple map backed by a list.
- * @since 2.8
+/** A simple mutable map backed by a list.
+ *
+ *  @tparam A    the type of the keys contained in this list map.
+ *  @tparam B    the type of the values assigned to keys in this list map.
+ *
+ *  @define Coll mutable.ListMap
+ *  @define coll mutable list map
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `ListMap[A, B]` if the elements contained in the resulting collection are
+ *    pairs of type `(A, B)`. This is because an implicit of type `CanBuildFrom[ListMap, (A, B), ListMap[A, B]]`
+ *    is defined in object `ListMap`. Otherwise, `That` resolves to the most specific type that doesn't have
+ *    to contain pairs of type `(A, B)`, which is `Iterable`.
+ *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `ListMap`.
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ *  @define orderDependent
+ *  @define orderDependentFold
  */
 @serializable
 class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
@@ -40,10 +58,9 @@ class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
   override def size: Int = siz
 }
 
-/** This class implements mutable maps using a list.
- *
- *  @author  Martin Odersky
- *  @version 2.8
+/** $factoryInfo
+ *  @define Coll ListMap
+ *  @define coll list map
  */
 object ListMap extends MutableMapFactory[ListMap] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), ListMap[A, B]] = new MapCanBuildFrom[A, B]
