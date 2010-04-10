@@ -35,6 +35,10 @@ import generic._
  *    result class `That` from the current representation type `Repr`
  *    and the new element type `B`. This is usually the `canBuildFrom` value
  *    defined in object `ArrayBuffer`.
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A](override protected val initialSize: Int)

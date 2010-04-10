@@ -15,7 +15,7 @@ import generic._
 
 /** The base trait of all builders.
  *  A builder lets one construct a collection incrementally, by adding
- *  elements to the builder with += and then converting to the required
+ *  elements to the builder with `+=` and then converting to the required
  *  collection type with `result`.
  *
  *  @tparam  Elem  the type of elements that get added to the builder.

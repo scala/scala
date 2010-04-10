@@ -18,6 +18,9 @@ import generic._
  *
  *  @since 2.8
  *
+ *  @tparam A     type of the elements contained in the array like object.
+ *  @tparam Repr  the type of the actual collection containing the elements.
+ *
  *  @define Coll ArrayLike
  */
 trait ArrayLike[A, +Repr] extends IndexedSeqOptimized[A, Repr] { self =>

@@ -24,7 +24,13 @@ import scala.reflect.ClassManifest
  *
  *  @since 2.8
  *
+ *  @tparam T   type of the elements contained in this array.
+ *
  *  @define Coll ArrayOps
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
 

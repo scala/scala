@@ -15,8 +15,17 @@ package generic
 import scala.collection._
 import mutable.{Builder, AddingBuilder}
 
-/**
- * @since 2.8
+/** @define coll collection
+ *  @define Coll Traversable
+ *  @define factoryInfo
+ *    This object provides a set of operations to create `$Coll` values.
+ *    @author Martin Odersky
+ *    @version 2.8
+ *  @define canBuildFromInfo
+ *    The standard `CanBuildFrom` instance for $Coll objects.
+ *    @see CanBuildFrom
+ *  @define bitsetCanBuildFrom
+ *    The standard `CanBuildFrom` instance for bitsets.
  */
 trait BitSetFactory[Coll <: BitSet with BitSetLike[Coll]] {
   def newBuilder: Builder[Int, Coll] = new AddingBuilder[Int, Coll](empty)
