@@ -15,9 +15,9 @@ package mutable
 import annotation.migration
 
 /** This class can be used as an adaptor to create mutable maps from
- *  immutable map implementations. Only method <code>empty</code> has
+ *  immutable map implementations. Only method `empty` has
  *  to be redefined if the immutable map on which this mutable map is
- *  originally based is not empty. <code>empty</code> is supposed to
+ *  originally based is not empty. `empty` is supposed to
  *  return the representation of an empty map.
  *
  *  @author  Matthias Zenger

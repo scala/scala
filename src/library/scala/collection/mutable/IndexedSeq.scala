@@ -14,8 +14,9 @@ package mutable
 
 import generic._
 
-/** A subtrait of <code>collection.IndexedSeq</code> which represents sequences
+/** A subtrait of `collection.IndexedSeq` which represents sequences
  *  that can be mutated.
+ *
  *  $indexedSeqInfo
  */
 trait IndexedSeq[A] extends Seq[A]

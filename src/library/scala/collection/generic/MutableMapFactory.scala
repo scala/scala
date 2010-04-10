@@ -14,7 +14,7 @@ package generic
 
 import mutable.MapBuilder
 
-/** A template for companion objects of mutable.Map and subclasses thereof.
+/** A template for companion objects of `mutable.Map` and subclasses thereof.
  *
  *  @since 2.8
  */

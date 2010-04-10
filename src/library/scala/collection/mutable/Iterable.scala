@@ -20,13 +20,9 @@ trait Iterable[A] extends Traversable[A]
   override def companion: GenericCompanion[Iterable] = Iterable
 }
 
-/** <p>
- *    A factory object for the trait <a href="Iterable.html"
- *    target="contentFrame"><code>Iterable</code></a>.
- *  </p>
- *
- *  @author   Martin Odersky
- *  @version 2.8
+/** $factoryInfo
+ *  @define coll indexed sequence
+ *  @define Coll IndexedSeq
  */
 object Iterable extends TraversableFactory[Iterable] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = new GenericCanBuildFrom[A]

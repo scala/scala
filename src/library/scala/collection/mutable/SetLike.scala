@@ -26,7 +26,8 @@ import scala.annotation.migration
  *  @version 2.8
  *  @since 2.8
  *
- *  @define setnote @note
+ *  @define setnote
+ *  @note
  *    This trait provides most of the operations of a `mutable.Set` independently of its representation.
  *    It is typically inherited by concrete implementations of sets.
  *
@@ -108,6 +109,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 
   // abstract methods from Growable/Shrinkable
 
+  /** Adds a single element to the set. */
   def +=(elem: A): this.type
   def -=(elem: A): this.type
 

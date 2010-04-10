@@ -14,8 +14,27 @@ package mutable
 
 import generic._
 
-/**
- * @since 1
+
+/** This class implements mutable maps using a hashtable.
+ *
+ *  @since 1
+ *
+ *  @tparam A    the type of the keys contained in this hash map.
+ *  @tparam B    the type of the values assigned to keys in this hash map.
+ *
+ *  @define Coll mutable.HashMap
+ *  @define coll mutable hash map
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `HashMap[A, B]` if the elements contained in the resulting collection are
+ *    pairs of type `(A, B)`. This is because an implicit of type `CanBuildFrom[HashMap, (A, B), HashMap[A, B]]`
+ *    is defined in object `HashMap`. Otherwise, `That` resolves to the most specific type that doesn't have
+ *    to contain pairs of type `(A, B)`, which is `Iterable`.
+ *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `HashMap`.
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(1L)
 class HashMap[A, B] extends Map[A, B]
@@ -94,11 +113,9 @@ class HashMap[A, B] extends Map[A, B]
   }
 }
 
-/** This class implements mutable maps using a hashtable.
- *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @version 2.8
+/** $factoryInfo
+ *  @define Coll mutable.HashMap
+ *  @define coll mutable hash map
  */
 object HashMap extends MutableMapFactory[HashMap] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]

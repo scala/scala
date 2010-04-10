@@ -28,7 +28,7 @@ import generic._
  *  @define Coll ArraySeq
  *  @define coll array sequence
  *  @define thatinfo the class of the returned collection. In the standard library configuration,
- *    `That` is always `ArraySeq[B]` because an implicit of type `CanBuildFrom[ArraySeq, B, That]`
+ *    `That` is always `ArraySeq[B]` because an implicit of type `CanBuildFrom[ArraySeq, B, ArraySeq[B]]`
  *    is defined in object `ArraySeq`.
  *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
  *    result class `That` from the current representation type `Repr`

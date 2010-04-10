@@ -17,7 +17,19 @@ import mutable.{Builder, AddingBuilder}
 /** A template for companion objects of <code>Set</code> and subclasses
  *  thereof.
  *
- *  @since 2.8
+ *  @define coll set
+ *  @define Coll Set
+ *  @define factoryInfo
+ *    This object provides a set of operations needed to create `$Coll` values.
+ *    @author Martin Odersky
+ *    @version 2.8
+ *  @define canBuildFromInfo
+ *    The standard `CanBuildFrom` instance for `$Coll` objects.
+ *    @see CanBuildFrom
+ *  @define setCanBuildFromInfo
+ *    The standard `CanBuildFrom` instance for `$Coll` objects.
+ *    @see CanBuildFrom
+ *    @see GenericCanBuildFrom
  */
 abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]
   extends GenericCompanion[CC] {
