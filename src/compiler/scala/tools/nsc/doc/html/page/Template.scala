@@ -188,7 +188,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       { val inDefTpls = mbr.inDefinitionTemplates
         if (inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) NodeSeq.Empty else {
           <div class="block">
-            definition classes: { templatesToHtml(inDefTpls, xml.Text(" ⇐ ")) }
+            definition classes: { templatesToHtml(inDefTpls, xml.Text(" → ")) }
           </div>
         }
       }
