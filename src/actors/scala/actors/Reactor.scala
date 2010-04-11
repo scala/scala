@@ -50,23 +50,25 @@ private[actors] object Reactor {
  * The Reactor trait provides lightweight actors.
  *
  * @author Philipp Haller
+ *
+ * @define actor reactor
  */
 trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
 
-  /* The actor's mailbox. */
+  /* The $actor's mailbox. */
   private[actors] val mailbox = new MQueue[Msg]("Reactor")
 
   // guarded by this
   private[actors] val sendBuffer = new MQueue[Msg]("SendBuffer")
 
-  /* Whenever this actor executes on some thread, `waitingFor` is
+  /* Whenever this $actor executes on some thread, `waitingFor` is
    * guaranteed to be equal to `Reactor.waitingForNone`.
    *
    * In other words, whenever `waitingFor` is not equal to
-   * `Reactor.waitingForNone`, this actor is guaranteed not to execute
+   * `Reactor.waitingForNone`, this $actor is guaranteed not to execute
    * on some thread.
    *
-   * If the actor waits in a `react`, `waitingFor` holds the
+   * If the $actor waits in a `react`, `waitingFor` holds the
    * message handler that `react` was called with.
    *
    * guarded by this
@@ -78,8 +80,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
   private[actors] var _state: Actor.State.Value = Actor.State.New
 
   /**
-   * The behavior of a <code>Reactor</code> is specified by implementing
-   * this method.
+   * The $actor's behavior is specified by implementing this method.
    */
   def act(): Unit
 
@@ -92,13 +93,6 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
   protected[actors] def mailboxSize: Int =
     mailbox.size
 
-  /**
-   * Sends <code>msg</code> to this actor (asynchronous) supplying
-   * explicit reply destination.
-   *
-   * @param  msg      the message to send
-   * @param  replyTo  the reply destination
-   */
   def send(msg: Msg, replyTo: OutputChannel[Any]) {
     val todo = synchronized {
       if (waitingFor ne Reactor.waitingForNone) {
@@ -194,7 +188,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
   }
 
   /**
-   * Receives a message from this actor's mailbox.
+   * Receives a message from this $actor's mailbox.
    * <p>
    * This method never returns. Therefore, the rest of the computation
    * has to be contained in the actions of the partial function.
@@ -208,7 +202,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
   }
 
   /* This method is guaranteed to be executed from inside
-   * an actors act method.
+   * an $actor's act method.
    *
    * assume handler != null
    *
@@ -218,6 +212,9 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
     scheduler executeFromActor makeReaction(null, handler, msg)
   }
 
+  /**
+   * Starts this $actor.
+   */
   def start(): Reactor[Msg] = synchronized {
     if (_state == Actor.State.New) {
       _state = Actor.State.Runnable
@@ -228,7 +225,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
       this
   }
 
-  /** Returns the execution state of this actor.
+  /** Returns the execution state of this $actor.
    *
    *  @return the execution state
    */

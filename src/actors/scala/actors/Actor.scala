@@ -382,6 +382,8 @@ object Actor extends Combinators {
  * </ul>
  *
  * @author Philipp Haller
+ *
+ * @define actor actor
  */
 @serializable @SerialVersionUID(-781154067877019505L)
 trait Actor extends AbstractActor with ReplyReactor with ActorCanReply {
@@ -605,9 +607,6 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply {
     _state == Actor.State.Terminated
   }
 
-  /**
-   * Starts this actor.
-   */
   override def start(): Actor = synchronized {
     if (_state == Actor.State.New) {
       _state = Actor.State.Runnable

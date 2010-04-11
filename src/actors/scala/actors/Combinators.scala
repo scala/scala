@@ -12,28 +12,35 @@ package scala.actors
 
 private[actors] trait Combinators {
 
+  /**
+   * Enables the composition of suspendable closures using `andThen`,
+   * `loop`, `loopWhile`, etc.
+   */
   implicit def mkBody[a](body: => a): Actor.Body[a]
 
   /**
-   * Causes <code>self</code> to repeatedly execute
-   * <code>body</code>.
+   * Repeatedly executes `body`.
    *
-   * @param body the code block to be executed
+   * @param body the block to be executed
    */
   def loop(body: => Unit): Unit = body andThen loop(body)
 
   /**
-   * Causes <code>self</code> to repeatedly execute
-   * <code>body</code> while the condition
-   * <code>cond</code> is <code>true</code>.
+   * Repeatedly executes `body` while the condition `cond` is `true`.
    *
    * @param cond the condition to test
-   * @param body the code block to be executed
+   * @param body the block to be executed
    */
   def loopWhile(cond: => Boolean)(body: => Unit): Unit =
     if (cond) { body andThen loopWhile(cond)(body) }
     else continue
 
+  /**
+   * Continues with the execution of the closure registered as
+   * continuation following `andThen`. Continues with the execution
+   * of the next loop iteration when invoked inside the body of `loop`
+   * or `loopWhile`.
+   */
   def continue: Unit = throw new KillActorControl
 
 }
