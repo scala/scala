@@ -119,9 +119,9 @@ object PathResolver {
       case _                            => ""
     }
 
-    def scalaExtDirs        = Environment.scalaExtDirs
-    def scalaPluginDirs     = List("misc", "scala-devel", "plugins")
-    def scalaPluginPath     = join(scalaPluginDirs map (scalaHomeDir / _ path): _*)
+    def scalaExtDirs = Environment.scalaExtDirs
+
+    def scalaPluginPath = (scalaHomeDir / "misc" / "scala-devel" / "plugins").path
 
     override def toString = """
       |object Defaults {

@@ -230,18 +230,18 @@ INITIALISATION
 
     <!-- Both clauses of the conditional set svn.number -->
     <if>
-	  <equals arg1="${svn.number.svn}" arg2="0" />
-	  <then>
+      <equals arg1="${svn.number.svn}" arg2="0" />
+      <then>
         <!-- Finding SVN revision, git style -->
-	    <exec osfamily="unix" executable="tools/git-get-rev" outputproperty="svn.number.git" failifexecutionfails="false" />
-	    <propertyregex
-	      property="svn.number" input="${svn.number.git}" select="\1"
-	      regexp="\D*?(\d+)"
-	      defaultValue="0"/>
-	  </then>
-	  <else>
-		<property name="svn.number" value="${svn.number.svn}" />
-	  </else>
+        <exec osfamily="unix" executable="tools/git-get-rev" outputproperty="svn.number.git" failifexecutionfails="false" />
+        <propertyregex
+          property="svn.number" input="${svn.number.git}" select="\1"
+          regexp="\D*?(\d+)"
+          defaultValue="0"/>
+      </then>
+      <else>
+        <property name="svn.number" value="${svn.number.svn}" />
+      </else>
     </if>
 
     <property name="init.avail" value="yes"/>
@@ -623,15 +623,15 @@ QUICK BUILD (QUICK)
        file="${src.dir}/continuations/plugin/scalac-plugin.xml"
        todir="${build-quick.dir}/classes/continuations-plugin"/>
     <!-- not very nice to create jar here but needed to load plugin -->
-    <mkdir dir="${build-quick.dir}/plugins"/>
-    <jar destfile="${build-quick.dir}/plugins/continuations.jar">
+    <mkdir dir="${build-quick.dir}/misc/scala-devel/plugins"/>
+    <jar destfile="${build-quick.dir}/misc/scala-devel/plugins/continuations.jar">
       <fileset dir="${build-quick.dir}/classes/continuations-plugin"/>
     </jar>
     <!-- might split off library part into its own ant target -->
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
-      params="${scalac.args.quick} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable"
+      params="${scalac.args.quick} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -852,13 +852,13 @@ PACKED QUICK BUILD (PACK)
   <target name="pack.pre-plugins" depends="pack.comp">
     <uptodate
       property="pack.plugins.available"
-      targetfile="${build-pack.dir}/plugins/continuations.jar"
+      targetfile="${build-pack.dir}/misc/scala-devel/plugins/continuations.jar"
       srcfile="${build-quick.dir}/plugins.complete"/>
   </target>
 
   <target name="pack.plugins" depends="pack.pre-plugins" unless="pack.plugins.available">
-    <mkdir dir="${build-pack.dir}/plugins"/>
-    <jar destfile="${build-pack.dir}/plugins/continuations.jar">
+    <mkdir dir="${build-pack.dir}/misc/scala-devel/plugins"/>
+    <jar destfile="${build-pack.dir}/misc/scala-devel/plugins/continuations.jar">
       <fileset dir="${build-quick.dir}/classes/continuations-plugin"/>
     </jar>
   </target>
@@ -933,15 +933,6 @@ PACKED QUICK BUILD (PACK)
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/fsc"/>
     <chmod perm="ugo+rx" file="${build-pack.dir}/bin/scalap"/>
-
-	<mkdir dir="${build-pack.dir}/etc"/>
-	<exec osfamily="unix" executable="${build-pack.dir}/bin/scala" output="${build-pack.dir}/etc/scala_completion.sh" failifexecutionfails="false" >
-	  <arg line="scala.tools.util.BashCompletion" />
-    </exec>
-	<!-- <exec append="true" osfamily="unix" executable="${build-pack.dir}/bin/scala" output="${build-pack.dir}/etc/scala_completion.sh" failifexecutionfails="false" >
-	  <arg line="scala.tools.partest.PartestSpecDryRun" />
-    </exec> -->
-
     <touch file="${build-pack.dir}/bin.complete" verbose="no"/>
   </target>
   
@@ -1130,15 +1121,15 @@ BOOTSTRAPPING BUILD (STRAP)
        file="${src.dir}/continuations/plugin/scalac-plugin.xml"
        todir="${build-strap.dir}/classes/continuations-plugin"/>
     <!-- not very nice to create jar here but needed to load plugin -->
-    <mkdir dir="${build-strap.dir}/plugins"/>
-    <jar destfile="${build-strap.dir}/plugins/continuations.jar">
+    <mkdir dir="${build-strap.dir}/misc/scala-devel/plugins"/>
+    <jar destfile="${build-strap.dir}/misc/scala-devel/plugins/continuations.jar">
       <fileset dir="${build-strap.dir}/classes/continuations-plugin"/>
     </jar>
     <!-- might split off library part into its own ant target -->
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable"
+      params="${scalac.args.all} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1507,27 +1498,27 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
 
   <target name="test.suite" depends="pack.done">
-	<partest classpathref="pack.classpath">
-	  <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
-	  <sysproperty key="partest.srcdir" value="files" />
-	  <sysproperty key="partest.scalacopts" value="${scalac.args.all}" />
-	  <sysproperty key="partest.javacopts" value="${javac.args}" />
-	  <syspropertyset>
-		<propertyref prefix="partest"/>
-	  </syspropertyset>
+    <partest classpathref="pack.classpath">
+      <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
+      <sysproperty key="partest.srcdir" value="files" />
+      <sysproperty key="partest.scalacopts" value="${scalac.args.all}" />
+      <sysproperty key="partest.javacopts" value="${javac.args}" />
+      <syspropertyset>
+        <propertyref prefix="partest"/>
+      </syspropertyset>
     </partest>
   </target>
 
   <target name="test.continuations.suite" depends="pack.done">
-	<partest classpathref="pack.classpath">
-	  <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
-	  <sysproperty key="partest.srcdir" value="continuations" />
-	  <sysproperty key="partest.scalacopts" value="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/plugins -Xplugin-require:continuations -P:continuations:enable" />
-	  <sysproperty key="partest.runsets" value="neg run" />
-	  <syspropertyset>
-		<propertyref prefix="partest"/>
-	  </syspropertyset>
-	</partest>
+    <partest classpathref="pack.classpath">
+      <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
+      <sysproperty key="partest.srcdir" value="continuations" />
+      <sysproperty key="partest.scalacopts" value="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable" />
+      <sysproperty key="partest.runsets" value="neg run" />
+      <syspropertyset>
+        <propertyref prefix="partest"/>
+      </syspropertyset>
+    </partest>
   </target>
 
   <target name="test.done" depends="test.suite, test.continuations.suite, test.stability"/>
@@ -1554,13 +1545,9 @@ DISTRIBUTION
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scaladoc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/fsc"/>
     <chmod perm="ugo+rx" file="${dist.dir}/bin/scalap"/>
-    <mkdir dir="${dist.dir}/etc"/>
-    <copy toDir="${dist.dir}/etc">
-      <fileset dir="${build-pack.dir}/etc"/>
-    </copy>
-    <mkdir dir="${dist.dir}/plugins"/>
-    <copy toDir="${dist.dir}/plugins">
-      <fileset dir="${build-pack.dir}/plugins"/>
+    <mkdir dir="${dist.dir}/misc/scala-devel/plugins"/>
+    <copy toDir="${dist.dir}/misc/scala-devel/plugins">
+      <fileset dir="${build-pack.dir}/misc/scala-devel/plugins"/>
     </copy>
   </target>
 
