@@ -4,22 +4,18 @@
  */
 // $Id$
 
-package scala.tools.nsc
+package scala.tools
+package nsc
 package settings
 
-import io.AbstractFile
-import util.{ ClassPath, SourceFile, CommandLineParser }
 import annotation.elidable
-import scala.tools.util.{ PathResolver, StringOps }
-import scala.collection.mutable.{ HashSet, ListBuffer }
-import scala.collection.immutable.TreeSet
-import interpreter.{ returning }
+import scala.tools.util.PathResolver.Defaults
+import scala.collection.mutable.HashSet
 
 trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   self: MutableSettings =>
 
-  import PathResolver.{ Defaults, Environment }
-  import Defaults.{ scalaUserClassPath }
+  import Defaults.scalaUserClassPath
 
   /** Set of settings */
   protected lazy val allSettings = HashSet[Setting]()

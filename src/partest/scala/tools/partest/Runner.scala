@@ -9,13 +9,10 @@ package partest
 import nsc.io._
 
 object Runner {
-  def main(mainArgs: Array[String]) {
-    val propArgs = PartestSpecReference.sysPropsAsOptions()
-    val args = (propArgs ++ mainArgs).toList
+  def main(args: Array[String]) {
     val runner = Partest(args: _*)
     import runner._
 
-    if (isVersion) return println(versionMsg)
     if (args.isEmpty) return println(helpMsg)
     if (isValidate) return validateAll()
 

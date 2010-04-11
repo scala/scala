@@ -12,19 +12,21 @@ package ant
 
 import org.apache.tools.ant.Task
 import org.apache.tools.ant.taskdefs.Java
-import org.apache.tools.ant.types.{ EnumeratedAttribute, Commandline, Environment, PropertySet }
+import org.apache.tools.ant.types.Environment
 
 import scala.tools.nsc.io._
-import scala.tools.nsc.util.{ ClassPath, CommandLineSpec }
-import CommandLineSpec._
+import scala.tools.nsc.util.ClassPath
+import cmd.Spec._
 
 class JavaTask extends Java {
   override def getTaskName()      = "partest"
   private val scalaRunnerClass    = "scala.tools.nsc.MainGenericRunner"
+  private val partestRunnerClass  = "scala.tools.partest.Runner"
+  def defaultJvmArgs              = "-Xms64M -Xmx768M -Xss768K -XX:MaxPermSize=96M"
 
   protected def rootDir           = prop("partest.rootdir") getOrElse (baseDir / "test").path
-  protected def partestJVMArgs    = prop("partest.jvm.args") getOrElse "-Xms64M -Xmx768M -Xss768K -XX:MaxPermSize=96M"
-  protected def runnerArgs        = List("-usejavacp", "scala.tools.partest.Runner", "--javaopts", partestJVMArgs)
+  protected def partestJVMArgs    = prop("partest.jvm.args") getOrElse defaultJvmArgs
+  protected def runnerArgs        = List("-usejavacp", partestRunnerClass, "--javaopts", partestJVMArgs)
 
   private def baseDir             = Directory(getProject.getBaseDir)
   private def prop(s: String)     = Option(getProject getProperty s)

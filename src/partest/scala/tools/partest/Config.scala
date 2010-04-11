@@ -23,8 +23,6 @@ trait Config {
    *  run we only allocate one worker so the output isn't interspersed.
    */
   def workerTimeout   = 3600                                          // 1 hour, probably overly generous
-  def testTimeout     = testTimeout_ flatMap safeToInt getOrElse 900  // test timeout
-  def testWarning     = testWarning_ flatMap safeToInt getOrElse (testTimeout / 10) // test warning
   def numWorkers      = if (isDryRun) 1 else propOrElse("partest.actors", "8").toInt
   def expectedErrors  = propOrElse("partest.errors", "0").toInt
   def poolSize        = (wrapAccessControl(propOrNone("actors.corePoolSize")) getOrElse "16").toInt
@@ -121,6 +119,7 @@ trait Config {
       "Java binaries in:          " + javaBin,
       "Java runtime is:           " + javaInfoString,
       "Java runtime options:      " + (Process.javaVmArguments mkString " "),
+      "Javac options are:         " + universe.javacOpts,
       "Java options are:          " + universe.javaOpts,
       "Source directory is:       " + src,
       "Selected categories:       " + (selectedCategories mkString " "),

@@ -27,8 +27,10 @@ trait PartestCompilation {
     // }
 
     def javac(args: List[String]): Boolean = {
+      val allArgString = fromArgs(javacpArg :: javacOpts :: args)
+
       // javac -d outdir -classpath <basepath> <files>
-      val cmd = "%s -d %s %s %s".format(javacCmd, outDir, javacpArg, fromArgs(args))
+      val cmd = "%s -d %s %s".format(javacCmd, outDir, allArgString)
       def traceMsg =
         if (isVerbose) cmd
         else "%s -d %s %s".format(tracePath(Path(javacCmd)), tracePath(outDir), fromArgs(args))

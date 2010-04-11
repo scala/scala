@@ -6,7 +6,7 @@ package scala.tools
 package partest
 
 import nsc.io._
-import nsc.util.CommandLine
+import nsc.util._
 import category.AllCategories
 
 /** Global object for a Partest run.  It is completely configured by the list
@@ -15,10 +15,15 @@ import category.AllCategories
  *  for the complete list.
  */
 class Partest(args: List[String]) extends {
-  val parsed = PartestSpecReference(args: _*)
-} with Universe with PartestSpec with AllCategories {
+  val parsed = PartestSpec(args: _*)
+} with Universe with PartestSpec with cmd.Instance with AllCategories {
 
-  debug("Partest object created with args: " + (args mkString " "))
+  if (parsed.propertyArgs.nonEmpty)
+    debug("Partest property args: " + fromArgs(parsed.propertyArgs))
+
+  debug("Partest created with args: " + fromArgs(args))
+
+  def helpMsg     = PartestSpec.helpMsg
 
   // The abstract values from Universe.
   lazy val testBuildDir   = searchForDir(buildDir)
@@ -30,7 +35,6 @@ class Partest(args: List[String]) extends {
   // Coarse validation of partest directory: holds a file called partest.
   (partestDir / "partest").isFile || error("'%s' is not a valid partest directory." format partestDir)
 
-  def runSets         = toArgs(parsed.getOrElse("--runsets", ""))
   def specifiedTests  = parsed.residualArgs map (x => Path(x).normalize)
   def specifiedKinds  = testKinds filter (x => isSet(x) || (runSets contains x))
   def specifiedCats   = specifiedKinds flatMap (x => allCategories find (_.kind == x))

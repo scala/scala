@@ -136,4 +136,16 @@ with Streamable.Chars {
 
     true
   }
+
+  /** Reflection since we're into the java 6+ API.
+   */
+  def setExecutable(executable: Boolean, ownerOnly: Boolean = true): Boolean = {
+    type JBoolean = java.lang.Boolean
+    val method =
+      try classOf[JFile].getMethod("setExecutable", classOf[Boolean], classOf[Boolean])
+      catch { case _: NoSuchMethodException => return false }
+
+    try method.invoke(jfile, executable: JBoolean, ownerOnly: JBoolean).asInstanceOf[JBoolean].booleanValue
+    catch { case _: Exception => false }
+  }
 }
