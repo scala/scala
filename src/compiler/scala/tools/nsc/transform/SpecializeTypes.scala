@@ -1030,7 +1030,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val specMembers = makeSpecializedMembers(tree.symbol.enclClass) ::: (implSpecClasses(body) map localTyper.typed)
           if (!symbol.isPackageClass)
             (new CollectMethodBodies)(tree)
-          treeCopy.Template(tree, currentOwner.info.parents.map(TypeTree), self,
+          val parents1 = currentOwner.info.parents.zipWithIndex.map {
+            case (tpe, idx) => TypeTree(tpe) setPos parents(idx).pos
+          }
+          treeCopy.Template(tree,
+            parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/,
+            self,
             atOwner(currentOwner)(transformTrees(body ::: specMembers)))
 
         case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if info.isDefinedAt(symbol) =>
@@ -1122,8 +1127,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                     symbol.enclClass,
                     typeEnv(symbol.alias) ++ typeEnv(tree.symbol))
 
-        case Apply(Select(Super(qual, name), name1), args) =>
-          val res = localTyper.typed(atPos(tree.pos)(Apply(Select(Super(qual, name), name1), args)))
+        case Apply(sel @ Select(sup @ Super(qual, name), name1), args) =>
+          val res = localTyper.typed(
+            Apply(Select(Super(qual, name) setPos sup.pos, name1) setPos sel.pos, args) setPos tree.pos)
           log("retyping call to super, from: " + symbol + " to " + res.symbol)
           res
 
@@ -1296,8 +1302,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             for (((sym1, env), specCls) <- specializedClass if sym1 == tree.symbol) {
               val parents = specCls.info.parents.map(TypeTree)
               buf +=
-                ClassDef(specCls, Template(parents, emptyValDef, List())
-                           .setSymbol(specCls.newLocalDummy(sym1.pos)))
+                ClassDef(specCls, atPos(impl.pos)(Template(parents, emptyValDef, List()))
+                           .setSymbol(specCls.newLocalDummy(sym1.pos))) setPos tree.pos
               log("created synthetic class: " + specCls + " of " + sym1 + " in env: " + env)
             }
           case _ =>
