@@ -77,6 +77,7 @@ trait PartestSpec extends Spec with Meta.StdOpts with Interpolation {
   val isNoCleanup   = "nocleanup"     / "do not delete any logfiles or object dirs" --?
   val isStats       = "stats"         / "collect and print statistics about the tests" --?
   val isValidate    = "validate"      / "examine test filesystem for inconsistencies" --?
+  val isUpdateCheck = "update-check"  / "overwrite checkFile if diff fails" --?
 
                       "version"       / "print version"   --> runAndExit(println(Properties.versionMsg))
 

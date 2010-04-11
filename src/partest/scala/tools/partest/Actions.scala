@@ -136,7 +136,7 @@ trait Actions {
 
     /** The default cleanup normalizes paths relative to sourcesDir.
      */
-    def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString "\n"
+    def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString ("", "\n", "\n")
 
     /** If optional is true, a missing check file is considered
      *  a successful diff.  Necessary since many categories use
@@ -146,19 +146,23 @@ trait Actions {
       def arg1    = tracePath(check)
       def arg2    = tracePath(log)
       def noCheck = !check.exists && returning(true)(_ =>  trace("diff %s %s [unchecked]".format(arg1, arg2)))
+      def output  = diffCleanup(log)
+      def matches = safeSlurp(check).trim == output.trim
+
+      def traceMsg =
+        if (isDryRun) "diff %s %s".format(arg1, arg2)
+        else "diff %s %s [%s]".format(arg1, arg2, (if (matches) "passed" else "failed"))
 
       noCheck || {
-        def result  = safeSlurp(check).trim == diffCleanup(log).trim
-        def msg     = if (result) "passed" else "failed"
+        trace(traceMsg)
 
-        if (isDryRun) {
-          trace("diff %s %s".format(arg1, arg2))
+        isDryRun || matches || (isUpdateCheck && {
+          normal("** diff %s %s failed:\n".format(arg1, arg2))
+          normal(diffOutput())
+          normal("** updating %s and marking as passed.\n".format(arg1))
+          check writeAll output
           true
-        }
-        else {
-          trace("diff %s %s [%s]".format(arg1, arg2, msg))
-          result
-        }
+        })
       }
     }
 
