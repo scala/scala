@@ -13,7 +13,7 @@ package scala.actors
 import java.util.concurrent.ExecutionException
 
 /**
- * The ActorCanReply trait provides message send operations that
+ * The `ActorCanReply` trait provides message send operations that
  * may result in a response from the receiver.
  *
  * @author Philipp Haller
@@ -21,13 +21,6 @@ import java.util.concurrent.ExecutionException
 private[actors] trait ActorCanReply extends ReactorCanReply {
   thiz: AbstractActor with ReplyReactor =>
 
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous).
-   *
-   * @param  msg the message to be sent
-   * @return     the reply
-   */
   override def !?(msg: Any): Any = {
     val replyCh = new Channel[Any](Actor.self(thiz.scheduler))
     thiz.send(msg, replyCh)
@@ -36,15 +29,6 @@ private[actors] trait ActorCanReply extends ReactorCanReply {
     }
   }
 
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous) within <code>msec</code> milliseconds.
-   *
-   * @param  msec the time span before timeout
-   * @param  msg  the message to be sent
-   * @return      <code>None</code> in case of timeout, otherwise
-   *              <code>Some(x)</code> where <code>x</code> is the reply
-   */
   override def !?(msec: Long, msg: Any): Option[Any] = {
     val replyCh = new Channel[Any](Actor.self(thiz.scheduler))
     thiz.send(msg, replyCh)
@@ -54,13 +38,6 @@ private[actors] trait ActorCanReply extends ReactorCanReply {
     }
   }
 
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   * The reply is post-processed using the partial function
-   * <code>handler</code>. This also allows to recover a more
-   * precise type for the reply value.
-   */
   override def !![A](msg: Any, handler: PartialFunction[Any, A]): Future[A] = {
     val ftch = new Channel[A](Actor.self(thiz.scheduler))
     thiz.send(msg, new OutputChannel[Any] {
@@ -76,10 +53,6 @@ private[actors] trait ActorCanReply extends ReactorCanReply {
     Futures.fromInputChannel(ftch)
   }
 
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   */
   override def !!(msg: Any): Future[Any] = {
     val ftch = new Channel[Any](Actor.self(thiz.scheduler))
     val linkedChannel = new AbstractActor {

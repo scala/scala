@@ -14,6 +14,8 @@ package scala.actors
  * The <code>AbstractActor</code> trait.
  *
  * @author Philipp Haller
+ *
+ * @define actor actor
  */
 trait AbstractActor extends OutputChannel[Any] with CanReply[Any, Any] {
 

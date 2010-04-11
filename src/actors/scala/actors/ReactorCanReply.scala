@@ -19,25 +19,9 @@ package scala.actors
 private[actors] trait ReactorCanReply extends CanReply[Any, Any] {
   _: ReplyReactor =>
 
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous).
-   *
-   * @param  msg the message to be sent
-   * @return     the reply
-   */
   def !?(msg: Any): Any =
     (this !! msg)()
 
-  /**
-   * Sends <code>msg</code> to this actor and awaits reply
-   * (synchronous) within <code>msec</code> milliseconds.
-   *
-   * @param  msec the time span before timeout
-   * @param  msg  the message to be sent
-   * @return      <code>None</code> in case of timeout, otherwise
-   *              <code>Some(x)</code> where <code>x</code> is the reply
-   */
   def !?(msec: Long, msg: Any): Option[Any] = {
     val myself = Actor.rawSelf(this.scheduler)
     val res = new scala.concurrent.SyncVar[Any]
@@ -55,20 +39,9 @@ private[actors] trait ReactorCanReply extends CanReply[Any, Any] {
     res.get(msec)
   }
 
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   */
   override def !!(msg: Any): Future[Any] =
     this !! (msg, { case x => x })
 
-  /**
-   * Sends <code>msg</code> to this actor and immediately
-   * returns a future representing the reply value.
-   * The reply is post-processed using the partial function
-   * <code>handler</code>. This also allows to recover a more
-   * precise type for the reply value.
-   */
   override def !![A](msg: Any, handler: PartialFunction[Any, A]): Future[A] = {
     val myself = Actor.rawSelf(this.scheduler)
     val ftch = new ReactChannel[A](myself)

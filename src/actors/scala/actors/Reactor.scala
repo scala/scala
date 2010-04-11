@@ -189,7 +189,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
 
   /**
    * Receives a message from this $actor's mailbox.
-   * <p>
+   *
    * This method never returns. Therefore, the rest of the computation
    * has to be contained in the actions of the partial function.
    *

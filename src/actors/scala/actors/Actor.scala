@@ -384,9 +384,10 @@ object Actor extends Combinators {
  * @author Philipp Haller
  *
  * @define actor actor
+ * @define channel actor's mailbox
  */
 @serializable @SerialVersionUID(-781154067877019505L)
-trait Actor extends AbstractActor with ReplyReactor with ActorCanReply {
+trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with InputChannel[Any] {
 
   /* The following two fields are only used when the actor
    * suspends by blocking its underlying thread, for example,
@@ -415,12 +416,6 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply {
   private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
     new ActorTask(this, fun, handler, msg)
 
-  /**
-   * Receives a message from this actor's mailbox.
-   *
-   * @param  f    a partial function with message patterns and actions
-   * @return      result of processing the received value
-   */
   def receive[R](f: PartialFunction[Any, R]): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
 
@@ -464,14 +459,6 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply {
     result
   }
 
-  /**
-   * Receives a message from this actor's mailbox within a certain
-   * time span.
-   *
-   * @param  msec the time span before timeout
-   * @param  f    a partial function with message patterns and actions
-   * @return      result of processing the received value
-   */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     assert(Actor.self(scheduler) == this, "receive from channel belonging to other actor")
 
@@ -558,9 +545,6 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply {
     super.reactWithin(msec)(handler)
   }
 
-  /**
-   * Receives the next message from this actor's mailbox.
-   */
   def ? : Any = receive {
     case x => x
   }
