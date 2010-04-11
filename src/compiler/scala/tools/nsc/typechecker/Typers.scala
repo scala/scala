@@ -4193,9 +4193,12 @@ trait Typers { self: Analyzer =>
      *  @param tree ...
      *  @return     ...
      */
-    @inline final def typed(tree: Tree): Tree = typed(tree, EXPRmode, WildcardType)
+    def typed(tree: Tree): Tree = {
+      val ret = typed(tree, EXPRmode, WildcardType)
+      ret
+    }
 
-    @inline final def typedPos(pos: Position)(tree: Tree) = typed(atPos(pos)(tree))
+    def typedPos(pos: Position)(tree: Tree) = typed(atPos(pos)(tree))
 
     /** Types expression <code>tree</code> with given prototype <code>pt</code>.
      *
@@ -4203,7 +4206,8 @@ trait Typers { self: Analyzer =>
      *  @param pt   ...
      *  @return     ...
      */
-    @inline final def typed(tree: Tree, pt: Type): Tree = typed(tree, EXPRmode, pt)
+    def typed(tree: Tree, pt: Type): Tree =
+      typed(tree, EXPRmode, pt)
 
     /** Types qualifier <code>tree</code> of a select node.
      *  E.g. is tree occurs in a context like <code>tree.m</code>.
