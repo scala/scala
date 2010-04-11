@@ -290,7 +290,12 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
       val value = attrib.value.get
       val stringVal = value.isInstanceOf[String]
       if (stringVal) buffer.append("\"")
+      val stringValue = valueToString(value)
+      val isMultiline = stringVal && (stringValue.contains("\n")
+              || stringValue.contains("\r"))
+      if (isMultiline) buffer.append("\"\"")
       buffer.append(valueToString(value))
+      if (isMultiline) buffer.append("\"\"")
       if (stringVal) buffer.append("\"")
       buffer.append(")")
     }
