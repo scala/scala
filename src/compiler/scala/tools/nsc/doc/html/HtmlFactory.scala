@@ -63,11 +63,12 @@ class HtmlFactory(val universe: Universe) {
 
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
-    def writeTemplate(tpl: DocTemplateEntity): Unit = {
-      new page.Template(tpl) writeFor this
-      written += tpl
-      tpl.templates filter { t => !(written contains t) } map (writeTemplate(_))
-    }
+    def writeTemplate(tpl: DocTemplateEntity): Unit =
+      if (!(written contains tpl)) {
+        new page.Template(tpl) writeFor this
+        written += tpl
+        tpl.templates map (writeTemplate(_))
+      }
 
     writeTemplate(universe.rootPackage)
 
