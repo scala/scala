@@ -11,13 +11,14 @@ import java.util.{ Timer, TimerTask }
 trait Alarms {
   self: Universe =>
 
-  def interruptMeIn[T](seconds: Int)(body: => T): Option[T] = {
+  def interruptMeIn[T](debugMsg: String, seconds: Int)(body: => T): Option[T] = {
     val thisThread  = currentThread
     val alarm       = new SimpleAlarm(seconds * 1000) set thisThread.interrupt()
+    debug("interruptMeIn(%d) '%s'".format(seconds, debugMsg))
 
     try     { Some(body) }
-    catch   { case _: InterruptedException => None }
-    finally { alarm.cancel() ; Thread.interrupted() }
+    catch   { case _: InterruptedException => debug("Received interrupted exception.") ; None }
+    finally { debug("Cancelling interruptMeIn '%s'" format debugMsg) ; alarm.cancel() ; Thread.interrupted() }
   }
 
   case class AlarmerAction(secs: Int, action: () => Unit) extends Runnable {

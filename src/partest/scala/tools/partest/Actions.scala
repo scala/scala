@@ -49,7 +49,7 @@ trait Actions {
     protected def execAndLog(cmd: String): Boolean = {
       var proc: Process = null
 
-      val result = interruptMeIn(testTimeout) {
+      val result = interruptMeIn(cmd, testTimeout) {
         loggingResult {
           proc = Process.exec(toArgs(cmd), execEnv, execCwd.orNull, true)
           proc.slurp()
@@ -123,6 +123,10 @@ trait Actions {
     self: TestEntity =>
 
     def checkFile: File   = withExtension("check").toFile
+    def isCheckPresent    = checkFile.isFile || {
+      warnAndLog("A checkFile at '%s' is mandatory.\n" format checkFile.path)
+      false
+    }
 
     def normalizePaths(s: String) = {
       /** This accomodates slash/backslash issues by noticing when a given

@@ -32,7 +32,7 @@ trait Analysis {
   self: Universe =>
 
   object Scalap extends DirBasedCategory("scalap") {
-    val testSequence: TestSequence = List(compile, run, diff)
+    val testSequence: TestSequence = List(isCheckPresent, compile, run, diff)
     override def denotesTest(p: Path) = p.isDirectory && (p.toDirectory.files exists (_.name == "result.test"))
     override def createTest(location: Path) = new ScalapTest(location)
 
@@ -43,7 +43,6 @@ trait Analysis {
 
       override def classpathPaths = super.classpathPaths :+ build.scalap
       override def checkFile      = File(location / "result.test")
-      override def precondition   = checkFile.isFile && super.precondition
 
       private def runnerURLs        = build.classpathPaths ::: classpathPaths map (_.toURL)
       private def createClassLoader = new PartestClassLoader(runnerURLs.toArray, this.getClass.getClassLoader)

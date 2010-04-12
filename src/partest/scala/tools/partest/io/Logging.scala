@@ -76,7 +76,7 @@ trait Logging {
       try returning(true)(_ => logFile writeAll body)
       catch {
         case x: ControlThrowable      => throw x
-        case x: InterruptedException  => normal(this + " received interrupt, failing.\n") ; false
+        case x: InterruptedException  => debug(this + " received interrupt, failing.\n") ; false
         case x: Throwable             => logException(x)
       }
 
@@ -86,11 +86,13 @@ trait Logging {
       w.toString
     }
 
-    def warnAndLogException(msg: String, ex: Throwable) = {
-      val str = msg + throwableToString(ex)
+    def warnAndLog(str: String) = {
       warning(toStringTrunc(str, 800))
       logWriter append str
     }
+
+    def warnAndLogException(msg: String, ex: Throwable) =
+      warnAndLog(msg + throwableToString(ex))
 
     def deleteLog(force: Boolean = false) =
       if (universe.isNoCleanup && !force) debug("Not cleaning up " + logFile)

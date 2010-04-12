@@ -55,10 +55,11 @@ trait Categories {
     /** Standard actions.  These can be overridden either on the
      *  Category level or by individual tests.
      */
-    def compile: TestStep = (_: TestEntity).compile()
-    def diff: TestStep    = (_: TestEntity).diff()
-    def run: TestStep     = (_: TestEntity).run()
-    def exec: TestStep    = (_: TestEntity).exec()
+    def compile: TestStep         = (_: TestEntity).compile()
+    def isCheckPresent: TestStep  = (_: TestEntity).isCheckPresent
+    def diff: TestStep            = (_: TestEntity).diff()
+    def run: TestStep             = (_: TestEntity).run()
+    def exec: TestStep            = (_: TestEntity).exec()
 
     /** Combinators.
      */

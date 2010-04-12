@@ -58,7 +58,16 @@ class Partest(args: List[String]) extends {
     combinedFilter _
   }
 
-  def launchTestSuite() = runSelection(selectedCategories, filter)
+  def launchTestSuite() = {
+    def onTimeout() = {
+      warning("Partest test run timed out after " + timeout + " seconds.\n")
+      System.exit(-1)
+    }
+    val alarm = new Alarmer(AlarmerAction(timeout, () => onTimeout()))
+
+    try runSelection(selectedCategories, filter)
+    finally alarm.cancelAll()
+  }
 }
 
 object Partest {

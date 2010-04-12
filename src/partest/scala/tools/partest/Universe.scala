@@ -75,11 +75,6 @@ abstract class Universe
     def onException(x: Throwable): Unit
     def testClasspath: String
 
-    /** Any preconditions before running the test.  Test fails
-     *  immediately if this returns false.
-     */
-    def precondition: Boolean = true
-
     /** Most tests will use the sequence defined by the category,
      *  but the test can override and define a custom sequence.
      */
