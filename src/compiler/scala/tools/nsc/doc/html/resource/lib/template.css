@@ -123,7 +123,7 @@ div.members > ol > li {
 	text-align: right;
 	float: left;
 	display: inline-block;
-	width: 7em;
+	width: 8em;
 }
 
 .signature .symbol {
@@ -219,12 +219,12 @@ div.members > ol > li {
 
 p.comment {
 	display: block;
-	margin-left: 7.7em;
+	margin-left: 8.7em;
 }
 
 p.shortcomment {
 	display: block;
-	margin-left: 7.7em;
+	margin-left: 8.7em;
 	cursor: help;
 }
 
@@ -234,7 +234,7 @@ div.fullcomment {
 }
 
 #template div.fullcomment {
-	margin: 6px 0 6px 7.7em;
+	margin: 6px 0 6px 8.7em;
 }
 
 div.fullcomment .block {
