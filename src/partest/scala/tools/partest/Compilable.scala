@@ -82,8 +82,9 @@ trait PartestCompilation {
       def partestCompile(files: List[String], printSummary: Boolean): Boolean = {
         try   { new Run compile files }
         catch {
-          case FatalError(msg) => creporter.error(null, "fatal error: " + msg)
+          case FatalError(msg)    => creporter.error(null, "fatal error: " + msg)
           case ae: AssertionError => creporter.error(null, ""+ae)
+          case te: TypeError      => creporter.error(null, ""+te)
         }
 
         if (printSummary)
