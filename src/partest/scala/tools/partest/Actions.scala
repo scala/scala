@@ -54,7 +54,7 @@ trait Actions {
           proc = Process.exec(toArgs(cmd), execEnv, execCwd.orNull, true)
           proc.slurp()
         }
-        proc.waitFor() == 0
+        proc != null && (proc.waitFor() == 0)
       }
       result getOrElse {
         warning("Process never terminated: '%s'" format cmd)

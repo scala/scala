@@ -11,22 +11,28 @@
 package scala.actors
 
 /**
+ * Provides methods for generating debugging output.
+ *
  * @author Philipp Haller
  */
-object Debug {
+object Debug extends Logger("") {}
+
+private[actors] class Logger(tag: String) {
   private var lev = 2
 
   def level = lev
   def level_= (lev: Int) = { this.lev = lev }
 
+  private val tagString = if (tag == "") "" else " ["+tag+"]"
+
   def info(s: String) =
-    if (lev > 2) System.out.println("Info: " + s)
+    if (lev > 2) System.out.println("Info" + tagString + ": " + s)
 
   def warning(s: String) =
-    if (lev > 1) System.err.println("Warning: " + s)
+    if (lev > 1) System.err.println("Warning" + tagString + ": " + s)
 
   def error(s: String) =
-    if (lev > 0) System.err.println("Error: " + s)
+    if (lev > 0) System.err.println("Error" + tagString + ": " + s)
 
   def doInfo(b: => Unit) =
     if (lev > 2) b
@@ -38,18 +44,5 @@ object Debug {
     if (lev > 0) b
 }
 
-class Debug(tag: String) {
-  private var lev = 2
-
-  def level = lev
-  def level_= (lev: Int) = { this.lev = lev }
-
-  def info(s: String) =
-    if (lev > 2) System.out.println(tag + " (info): " + s)
-
-  def warning(s: String) =
-    if (lev > 1) System.err.println(tag + " (warn): " + s)
-
-  def error(s: String) =
-    if (lev > 0) System.err.println(tag + " (erro): " + s)
-}
+@deprecated("this class is going to be removed in a future release")
+class Debug(tag: String) extends Logger(tag) {}

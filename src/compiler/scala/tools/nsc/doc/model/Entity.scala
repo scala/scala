@@ -49,6 +49,7 @@ trait MemberEntity extends Entity {
   def isDef: Boolean
   def isVal: Boolean
   def isVar: Boolean
+  def isImplicit: Boolean
   def isConstructor: Boolean
   def isAliasType: Boolean
   def isAbstractType: Boolean
@@ -63,6 +64,7 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def sourceUrl: Option[java.net.URL]
   def typeParams: List[TypeParam]
   def parentType: Option[TypeEntity]
+  def parentTemplates: List[TemplateEntity]
   def linearization: List[TemplateEntity]
   def subClasses: List[DocTemplateEntity]
   def members: List[MemberEntity]

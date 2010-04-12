@@ -75,8 +75,9 @@ trait Logging {
     def loggingResult(body: => String) =
       try returning(true)(_ => logFile writeAll body)
       catch {
-        case x: ControlThrowable  => throw x
-        case x: Throwable         => logException(x)
+        case x: ControlThrowable      => throw x
+        case x: InterruptedException  => normal(this + " received interrupt, failing.\n") ; false
+        case x: Throwable             => logException(x)
       }
 
     def throwableToString(x: Throwable): String = {

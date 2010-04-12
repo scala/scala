@@ -52,6 +52,10 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     def inTemplate = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
+    override def equals(that: Any) = that match {
+    	case that: EntityImpl => this.sym == that.sym
+    	case _ => false
+    }
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -121,6 +125,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     def isDef = false
     def isVal = false
     def isVar = false
+    def isImplicit = sym.isImplicit
     def isConstructor = false
     def isAliasType = false
     def isAbstractType = false
@@ -154,6 +159,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       else None
     }
     def typeParams = if (sym.isClass) sym.typeParams map (makeTypeParam(_, this)) else Nil
+    def parentTemplates = sym.info.parents map { x: Type => makeTemplate(x.typeSymbol) }
     def parentType =
       if (sym.isPackage) None else
         Some(makeType(RefinedType(sym.tpe.parents filter (_ != ScalaObjectClass.tpe), EmptyScope)))

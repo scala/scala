@@ -2327,12 +2327,14 @@ trait Typers { self: Analyzer =>
             // if 1 formal, 1 arg (a tuple), otherwise unmodified args
             val tupleArgs = actualArgs(tree.pos.makeTransparent, args, formals.length)
 
-            if (tupleArgs.length != args.length) {
+            if (tupleArgs.length != args.length && !isUnitForVarArgs(args, params)) {
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
               silent(_.doTypedApply(tree, fun, tupleArgs, mode, pt)) match {
-                case t: Tree => Some(t)
+                case t: Tree =>
+//                  println("tuple conversion to "+t+" for "+mt)//DEBUG
+                  Some(t)
                 case ex =>
                   context.undetparams = savedUndetparams
                   None

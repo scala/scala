@@ -16,7 +16,7 @@ trait Results {
 
   /** The response from a Worker who has been given TestsToRun.
    */
-  case class ResultsOfRun(results: immutable.Map[TestEntity, Int])
+  case class ResultsOfRun(results: immutable.Map[TestEntity, TestResult])
 
   /** The result of a single test.  (0: OK, 1: FAILED, 2: TIMEOUT)
    */
@@ -39,7 +39,7 @@ trait Results {
       case _              => false
     }
     override def hashCode = entity.hashCode
-    override def toString = "%s (%s)".format(entity, if (passed) "passed" else "failed")
+    override def toString = "%s [%s]".format(entity, description)
   }
 
   class Success(val entity: TestEntity) extends TestResult(0, "   OK   ") {
@@ -58,6 +58,7 @@ trait Results {
       if (isShowLog || isTrace)
         normal(toStringTrunc(entity.failureMessage(), 1600))
     }
+    override def toString = List(super.toString, toStringTrunc(entity.failureMessage(), 400)) mkString "\n"
   }
   class Timeout(val entity: TestEntity) extends TestResult(2, "TIME OUT") {
     def colorize(s: String) = markFailure(s)
@@ -84,7 +85,8 @@ trait Results {
   case class CombinedTestResults(
     passed: Int,
     failed: Int,
-    elapsedMilliseconds: Long
+    elapsedMilliseconds: Long,
+    failures: List[TestResult]
   ) {
     // housekeeping
     val elapsedSecs = elapsedMilliseconds / 1000
@@ -100,14 +102,20 @@ trait Results {
     def ++(x: CombinedTestResults) = CombinedTestResults(
       passed + x.passed,
       failed + x.failed,
-      elapsedMilliseconds + x.elapsedMilliseconds
+      elapsedMilliseconds + x.elapsedMilliseconds,
+      failures ::: x.failures
     )
 
-    def elapsedString = "%02d:%02d:%02d".format(elapsedHrs, dispMins, dispSecs)
+    def elapsedString   = "%02d:%02d:%02d".format(elapsedHrs, dispMins, dispSecs)
+    def failuresString  = {
+      if (failures.isEmpty) ""
+      else "Summary of failures:" :: failures mkString ("\n", "\n", "")
+    }
+
     override def toString =
       if (total == 0) "There were no tests to run."
       else if (isDryRun) "%d tests would be run." format total
-      else if (hasFailures) "%d of %d tests failed (elapsed time: %s)".format(failed, total, elapsedString)
+      else if (hasFailures) "%d of %d tests failed (elapsed time: %s)".format(failed, total, elapsedString) + failuresString
       else "All %d tests were successful (elapsed time: %s)".format(total, elapsedString)
   }
 }

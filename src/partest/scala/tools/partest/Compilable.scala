@@ -81,7 +81,10 @@ trait PartestCompilation {
     class PartestGlobal(settings: Settings, val creporter: ConsoleReporter) extends Global(settings, creporter) {
       def partestCompile(files: List[String], printSummary: Boolean): Boolean = {
         try   { new Run compile files }
-        catch { case FatalError(msg) => creporter.error(null, "fatal error: " + msg) }
+        catch {
+          case FatalError(msg) => creporter.error(null, "fatal error: " + msg)
+          case ae: AssertionError => creporter.error(null, ""+ae)
+        }
 
         if (printSummary)
           creporter.printSummary

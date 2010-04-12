@@ -123,12 +123,12 @@ div.members > ol > li {
 	text-align: right;
 	float: left;
 	display: inline-block;
-	width: 72px;
+	width: 7em;
 }
 
 .signature .symbol {
 	display: inline;
-	padding-left: 8px;
+	padding-left: 0.7em;
 }
 
 .signature .name {
@@ -219,12 +219,12 @@ div.members > ol > li {
 
 p.comment {
 	display: block;
-	margin-left: 80px;
+	margin-left: 7.7em;
 }
 
 p.shortcomment {
 	display: block;
-	margin-left: 80px;
+	margin-left: 7.7em;
 	cursor: help;
 }
 
@@ -234,7 +234,7 @@ div.fullcomment {
 }
 
 #template div.fullcomment {
-	margin: 6px 0 6px 80px;
+	margin: 6px 0 6px 7.7em;
 }
 
 div.fullcomment .block {

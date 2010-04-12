@@ -45,8 +45,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     }
   }
 
-  protected val endOfText      = '\u0003'
-  protected val endOfLine      = '\u000A'
+  protected val endOfText = '\u0003'
+  protected val endOfLine = '\u000A'
 
   /** Something that should not have happened, happened, and Scaladoc should exit. */
   protected def oops(msg: String): Nothing =
@@ -55,6 +55,22 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
   /** The body of a line, dropping the (optional) start star-marker, one leading whitespace and all trailing whitespace. */
   protected val CleanCommentLine =
     new Regex("""(?:\s*\*\s?)?(.*)""")
+
+  /** Dangerous HTML tags that should be replaced by something safer, such as wiki syntax, or that should be dropped. */
+  protected val DangerousHtml =
+    new Regex("""<(/?(?:p|div|pre|ol|ul|li|h[1-6]|code))[^>]*>""")
+
+  /** Maps a dangerous HTML tag to a safe wiki replacement, or an empty string if it cannot be salvaged. */
+  protected def htmlReplacement(mtch: Regex.Match): String = mtch.matched match {
+    case "p" | "div" => "\n\n"
+    case "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => "\n= "
+    case "/h1" | "/h2" | "/h3" | "/h4" | "/h5" | "/h6" => " =\n"
+    case "pre" => "{{{"
+    case "/pre" => "}}}"
+    case "code" | "/code" => "`"
+    case "li" => "\n - "
+    case _ => ""
+  }
 
   /** A Scaladoc tag not linked to a symbol. Returns the name of the tag, and the rest of the line. */
   protected val SimpleTag =
@@ -99,7 +115,9 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
             tl
         }
       }
-      comment.trim.stripPrefix("/*").stripSuffix("*/").lines.toList map (cleanLine(_))
+      val strippedComment = comment.trim.stripPrefix("/*").stripSuffix("*/")
+      val safeComment = DangerousHtml.replaceAllIn(strippedComment, { htmlReplacement(_) })
+      safeComment.lines.toList map (cleanLine(_))
     }
 
     /** Parses a comment (in the form of a list of lines) to a Comment instance, recursively on lines. To do so, it
