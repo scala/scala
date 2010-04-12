@@ -134,10 +134,6 @@ trait Actions {
       if (s != s2) s2.replaceAll("""\\""", "/") else s2
     }
 
-    /** The default cleanup normalizes paths relative to sourcesDir.
-     */
-    def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString ("", "\n", "\n")
-
     /** If optional is true, a missing check file is considered
      *  a successful diff.  Necessary since many categories use
      *  checkfiles in an ad hoc manner.
@@ -146,7 +142,7 @@ trait Actions {
       def arg1    = tracePath(check)
       def arg2    = tracePath(log)
       def noCheck = !check.exists && returning(true)(_ =>  trace("diff %s %s [unchecked]".format(arg1, arg2)))
-      def output  = diffCleanup(log)
+      def output  = safeLines(log) mkString ("", "\n", "\n")
       def matches = safeSlurp(check).trim == output.trim
 
       def traceMsg =
@@ -166,7 +162,6 @@ trait Actions {
       }
     }
 
-    private def cleanedLog    = returning(File makeTemp "partest-diff")(_ writeAll diffCleanup(logFile))
-    def diffOutput(): String  = checkFile ifFile (f => diffFiles(f, cleanedLog)) getOrElse ""
+    def diffOutput(): String  = checkFile ifFile (f => diffFiles(f, logFile)) getOrElse ""
   }
 }

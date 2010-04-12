@@ -47,12 +47,18 @@ trait Logging {
     def loggingOutAndErr[T](body: => T): T = {
       val log = logFile.printStream(append = true)
 
-      try Console.withOut(log) {
+      val result = try Console.withOut(log) {
         Console.withErr(log) {
           body
         }
       }
       finally log.close()
+
+      // The default cleanup normalizes paths relative to sourcesDir.
+      val cleaned = safeLines(logFile) map normalizePaths mkString ("", "\n", "\n")
+      logFile writeAll cleaned
+
+      result
     }
 
     /** XXX needs attention.
@@ -73,8 +79,10 @@ trait Logging {
      *  caught, stringified, and written to the log.
      */
     def loggingResult(body: => String) =
-      try returning(true)(_ => logFile writeAll body)
-      catch {
+      try {
+        val result = (body split """\r\n|\r|\n""" toList) map (normalizePaths _) mkString ("", "\n", "\n")
+        returning(true)(_ => logFile writeAll result)
+      } catch {
         case x: ControlThrowable      => throw x
         case x: InterruptedException  => normal(this + " received interrupt, failing.\n") ; false
         case x: Throwable             => logException(x)
