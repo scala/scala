@@ -58,7 +58,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
   /** Dangerous HTML tags that should be replaced by something safer, such as wiki syntax, or that should be dropped. */
   protected val DangerousHtml =
-    new Regex("""<(/?(?:p|div|pre|ol|ul|li|h[1-6]))[^>]*>""")
+    new Regex("""<(/?(?:p|div|pre|ol|ul|li|h[1-6]|code))[^>]*>""")
 
   /** Maps a dangerous HTML tag to a safe wiki replacement, or an empty string if it cannot be salvaged. */
   protected def htmlReplacement(mtch: Regex.Match): String = mtch.matched match {
@@ -67,6 +67,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     case "/h1" | "/h2" | "/h3" | "/h4" | "/h5" | "/h6" => " =\n"
     case "pre" => "{{{"
     case "/pre" => "}}}"
+    case "code" | "/code" => "`"
     case "li" => "\n - "
     case _ => ""
   }
