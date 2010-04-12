@@ -77,7 +77,7 @@ with Streamable.Chars {
   /** Obtains a OutputStream. */
   def outputStream(append: Boolean = false) = new FileOutputStream(jfile, append)
   def bufferedOutput(append: Boolean = false) = new BufferedOutputStream(outputStream(append))
-  def printStream(append: Boolean = false) = new PrintStream(bufferedOutput(append))
+  def printStream(append: Boolean = false) = new PrintStream(outputStream(append), true)
 
   /** Obtains an OutputStreamWriter wrapped around a FileOutputStream.
    *  This should behave like a less broken version of java.io.FileWriter,
@@ -135,5 +135,17 @@ with Streamable.Chars {
       dest.lastModified = this.lastModified
 
     true
+  }
+
+  /** Reflection since we're into the java 6+ API.
+   */
+  def setExecutable(executable: Boolean, ownerOnly: Boolean = true): Boolean = {
+    type JBoolean = java.lang.Boolean
+    val method =
+      try classOf[JFile].getMethod("setExecutable", classOf[Boolean], classOf[Boolean])
+      catch { case _: NoSuchMethodException => return false }
+
+    try method.invoke(jfile, executable: JBoolean, ownerOnly: JBoolean).asInstanceOf[JBoolean].booleanValue
+    catch { case _: Exception => false }
   }
 }

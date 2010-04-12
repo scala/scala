@@ -12,8 +12,8 @@
 package scala.collection
 package mutable
 
-/**
- * @since 2.8
+/** Class for the linked hash map entry, used internally.
+ *  @since 2.8
  */
 @serializable
 final class LinkedEntry[A, B](val key: A, var value: B)

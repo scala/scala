@@ -16,13 +16,20 @@ import generic._
 import annotation.tailrec
 
 /** This extensible class may be used as a basis for implementing linked
- *  list. Type variable <code>A</code> refers to the element type of the
- *  list, type variable <code>This</code> is used to model self types of
+ *  list. Type variable `A` refers to the element type of the
+ *  list, type variable `This` is used to model self types of
  *  linked lists.
+ *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
- *  @version 2.8
+ *  @version 1.0, 08/07/2003
  *  @since   2.8
+ *
+ *  @tparam A    type of the elements contained in the linked list
+ *  @tparam This the type of the actual linked list holding the elements
+ *
+ *  @define Coll LinkedList
+ *  @define coll linked list
  */
 trait LinkedListLike[A, This <: Seq[A] with LinkedListLike[A, This]] extends SeqLike[A, This] { self =>
 

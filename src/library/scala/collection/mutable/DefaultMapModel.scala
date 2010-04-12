@@ -12,9 +12,8 @@
 package scala.collection
 package mutable
 
-/** This class is used internally. It implements the mutable <code>Map</code>
- *  class in terms of three functions: <code>findEntry</code>,
- *  <code>addEntry</code>, and <code>entries</code>.
+/** This class is used internally. It implements the mutable `Map`
+ *  class in terms of three functions: `findEntry`, `addEntry`, and `entries`.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003

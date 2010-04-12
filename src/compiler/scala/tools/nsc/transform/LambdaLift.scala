@@ -331,6 +331,17 @@ abstract class LambdaLift extends InfoTransform {
               lifted(MethodType(sym.info.params ::: addParams, sym.info.resultType)))
             treeCopy.DefDef(tree, mods, name, tparams, List(vparams ::: freeParams), tpt, rhs)
           case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
+            // Disabled attempt to to add getters to freeParams
+            // this does not work yet. Problem is that local symbols need local names
+            // and references to local symbols need to be transformed into
+            // method calls to setters.
+            // def paramGetter(param: Symbol): Tree = {
+            //   val getter = param.newGetter setFlag TRANS_FLAG resetFlag PARAMACCESSOR // mark because we have to add them to interface
+            //   sym.info.decls.enter(getter)
+            //   val rhs = Select(gen.mkAttributedThis(sym), param) setType param.tpe
+            //   DefDef(getter, rhs) setPos tree.pos setType NoType
+            // }
+            // val newDefs = if (sym.isTrait) freeParams ::: (ps map paramGetter) else freeParams
             treeCopy.ClassDef(tree, mods, name, tparams,
                               treeCopy.Template(impl, parents, self, body ::: freeParams))
         }
@@ -338,6 +349,38 @@ abstract class LambdaLift extends InfoTransform {
         tree
     }
 
+/*  Something like this will be necessary to eliminate the implementation
+ *  restiction from paramGetter above:
+ *  We need to pass getters to the interface of an implementation class.
+    private def fixTraitGetters(lifted: List[Tree]): List[Tree] =
+      for (stat <- lifted) yield stat match {
+        case ClassDef(mods, name, tparams, templ @ Template(parents, self, body))
+        if stat.symbol.isTrait && !stat.symbol.isImplClass =>
+          val iface = stat.symbol
+          lifted.find(l => l.symbol.isImplClass && l.symbol.toInterface == iface) match {
+            case Some(implDef) =>
+              val impl = implDef.symbol
+              val implGetters = impl.info.decls.toList filter (_ hasFlag TRANS_FLAG)
+              if (implGetters.nonEmpty) {
+                val ifaceGetters = implGetters map { ig =>
+                  ig resetFlag TRANS_FLAG
+                  val getter = ig cloneSymbol iface setFlag DEFERRED
+                  iface.info.decls enter getter
+                  getter
+                }
+                val ifaceGetterDefs = ifaceGetters map (DefDef(_, EmptyTree) setType NoType)
+                treeCopy.ClassDef(
+                  stat, mods, name, tparams,
+                  treeCopy.Template(templ, parents, self, body ::: ifaceGetterDefs))
+              } else
+                stat
+            case None =>
+              stat
+          }
+        case _ =>
+          stat
+      }
+*/
     private def liftDef(tree: Tree): Tree = {
       val sym = tree.symbol
       if (sym.owner.isAuxiliaryConstructor && sym.isMethod)  // # bug 1909
@@ -411,7 +454,7 @@ abstract class LambdaLift extends InfoTransform {
     override def transformStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       def addLifted(stat: Tree): Tree = stat match {
         case ClassDef(mods, name, tparams, impl @ Template(parents, self, body)) =>
-          val lifted = liftedDefs(stat.symbol).toList map addLifted
+          val lifted = /*fixTraitGetters*/(liftedDefs(stat.symbol).toList map addLifted)
           val result = treeCopy.ClassDef(
             stat, mods, name, tparams, treeCopy.Template(impl, parents, self, body ::: lifted))
           liftedDefs -= stat.symbol

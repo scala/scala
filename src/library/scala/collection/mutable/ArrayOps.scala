@@ -14,8 +14,23 @@ package mutable
 
 import scala.reflect.ClassManifest
 
-/**
- * @since 2.8
+/** This class serves as a wrapper for `Array`s with all the operations found in
+ *  indexed sequences. Where needed, instances of arrays are implicitly converted
+ *  into this class.
+ *
+ *  The difference between this class and `WrappedArray` is that calling transformer
+ *  methods such as `filter` and `map` will yield an array, whereas a `WrappedArray`
+ *  will remain a `WrappedArray`.
+ *
+ *  @since 2.8
+ *
+ *  @tparam T   type of the elements contained in this array.
+ *
+ *  @define Coll ArrayOps
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
 
@@ -31,7 +46,11 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
       super.toArray[U]
 
   /** Flattens a two-dimensional array by concatenating all its rows
-   *  into a single array
+   *  into a single array.
+   *
+   *  @tparam U        Type of row elements.
+   *  @param asArray   A function that converts elements of this array to rows - arrays of type `U`.
+   *  @return          An array obtained by concatenating rows of this array.
    */
   def flatten[U](implicit asArray: T => /*<:<!!!*/ Array[U]): Array[U] = {
     val b = rowBuilder[U]
@@ -40,7 +59,11 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
     b.result
   }
 
-  /** Transposes a two dimensional array
+  /** Transposes a two dimensional array.
+   *
+   *  @tparam U       Type of row elements.
+   *  @param asArray  A function that converts elements of this array to rows - arrays of type `U`.
+   *  @return         An array obtained by replacing elements of this arrays with rows the represent.
    */
   def transpose[U](implicit asArray: T => Array[U]): Array[Array[U]] = {
     val bs = asArray(head) map (_ => rowBuilder[U])
@@ -60,10 +83,13 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
 }
 
 /**
+ * A companion object for `ArrayOps`.
+ *
  * @since 2.8
  */
 object ArrayOps {
 
+  /** A class of `ArrayOps` for arrays containing reference types. */
   class ofRef[T <: AnyRef](override val repr: Array[T]) extends ArrayOps[T] with ArrayLike[T, Array[T]] {
 
     override protected[this] def thisCollection: WrappedArray[T] = new WrappedArray.ofRef[T](repr)
@@ -76,6 +102,7 @@ object ArrayOps {
     def update(index: Int, elem: T) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `byte`s. */
   class ofByte(override val repr: Array[Byte]) extends ArrayOps[Byte] with ArrayLike[Byte, Array[Byte]] {
 
     override protected[this] def thisCollection: WrappedArray[Byte] = new WrappedArray.ofByte(repr)
@@ -87,6 +114,7 @@ object ArrayOps {
     def update(index: Int, elem: Byte) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `short`s. */
   class ofShort(override val repr: Array[Short]) extends ArrayOps[Short] with ArrayLike[Short, Array[Short]] {
 
     override protected[this] def thisCollection: WrappedArray[Short] = new WrappedArray.ofShort(repr)
@@ -98,6 +126,7 @@ object ArrayOps {
     def update(index: Int, elem: Short) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `char`s. */
   class ofChar(override val repr: Array[Char]) extends ArrayOps[Char] with ArrayLike[Char, Array[Char]] {
 
     override protected[this] def thisCollection: WrappedArray[Char] = new WrappedArray.ofChar(repr)
@@ -109,6 +138,7 @@ object ArrayOps {
     def update(index: Int, elem: Char) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `int`s. */
   class ofInt(override val repr: Array[Int]) extends ArrayOps[Int] with ArrayLike[Int, Array[Int]] {
 
     override protected[this] def thisCollection: WrappedArray[Int] = new WrappedArray.ofInt(repr)
@@ -120,6 +150,7 @@ object ArrayOps {
     def update(index: Int, elem: Int) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `long`s. */
   class ofLong(override val repr: Array[Long]) extends ArrayOps[Long] with ArrayLike[Long, Array[Long]] {
 
     override protected[this] def thisCollection: WrappedArray[Long] = new WrappedArray.ofLong(repr)
@@ -131,6 +162,7 @@ object ArrayOps {
     def update(index: Int, elem: Long) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `float`s. */
   class ofFloat(override val repr: Array[Float]) extends ArrayOps[Float] with ArrayLike[Float, Array[Float]] {
 
     override protected[this] def thisCollection: WrappedArray[Float] = new WrappedArray.ofFloat(repr)
@@ -142,6 +174,7 @@ object ArrayOps {
     def update(index: Int, elem: Float) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `double`s. */
   class ofDouble(override val repr: Array[Double]) extends ArrayOps[Double] with ArrayLike[Double, Array[Double]] {
 
     override protected[this] def thisCollection: WrappedArray[Double] = new WrappedArray.ofDouble(repr)
@@ -153,6 +186,7 @@ object ArrayOps {
     def update(index: Int, elem: Double) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays containing `boolean`s. */
   class ofBoolean(override val repr: Array[Boolean]) extends ArrayOps[Boolean] with ArrayLike[Boolean, Array[Boolean]] {
 
     override protected[this] def thisCollection: WrappedArray[Boolean] = new WrappedArray.ofBoolean(repr)
@@ -164,6 +198,7 @@ object ArrayOps {
     def update(index: Int, elem: Boolean) { repr(index) = elem }
   }
 
+  /** A class of `ArrayOps` for arrays of `Unit` types. */
   class ofUnit(override val repr: Array[Unit]) extends ArrayOps[Unit] with ArrayLike[Unit, Array[Unit]] {
 
     override protected[this] def thisCollection: WrappedArray[Unit] = new WrappedArray.ofUnit(repr)

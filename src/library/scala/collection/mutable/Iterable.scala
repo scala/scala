@@ -10,15 +10,8 @@ package mutable
 
 import generic._
 
-/** <p>
- *    A subtrait of <a href="../Iterable.html" target="contentFrame">
- *    <code>collection.Iterable</code></a> which represents iterables
- *    that can be mutated.
- *  </p>
- *
- *  @author   Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** A base trait for iterable collections that can be mutated.
+ *  $iterableInfo
  */
 trait Iterable[A] extends Traversable[A]
                      with scala.collection.Iterable[A]
@@ -27,13 +20,9 @@ trait Iterable[A] extends Traversable[A]
   override def companion: GenericCompanion[Iterable] = Iterable
 }
 
-/** <p>
- *    A factory object for the trait <a href="Iterable.html"
- *    target="contentFrame"><code>Iterable</code></a>.
- *  </p>
- *
- *  @author   Martin Odersky
- *  @version 2.8
+/** $factoryInfo
+ *  @define coll indexed sequence
+ *  @define Coll IndexedSeq
  */
 object Iterable extends TraversableFactory[Iterable] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = new GenericCanBuildFrom[A]

@@ -36,11 +36,11 @@ class SynchronizedQueue[A] extends Queue[A] {
    */
   override def +=(elem: A): this.type = synchronized[this.type] { super.+=(elem) }
 
-  /** Adds all elements provided by an <code>Iterable</code> object
+  /** Adds all elements provided by a `TraversableOnce` object
    *  at the end of the queue. The elements are prepended in the order they
    *  are given out by the iterator.
    *
-   *  @param  iter        an iterable object
+   *  @param  xs        a traversable object
    */
   override def ++=(xs: TraversableOnce[A]): this.type = synchronized[this.type] { super.++=(xs) }
 

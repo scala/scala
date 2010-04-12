@@ -39,6 +39,9 @@ trait Set[A] extends Iterable[A]
   override def companion: GenericCompanion[Set] = Set
 }
 
+/**
+ * A companion object for immutable sets.
+ */
 object Set extends SetFactory[Set] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
   override def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]

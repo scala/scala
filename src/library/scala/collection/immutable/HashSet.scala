@@ -15,12 +15,11 @@ package immutable
 import generic._
 import annotation.unchecked.uncheckedVariance
 
-/** <p>
- *    This class implements immutable sets using a hash trie.
- *  </p>
+/**
+ *  This class implements immutable sets using a hash trie.
  *
- * @note the builder of a hash set returns specialized representations EmptySet,Set1,..., Set4
- * for sets of size <= 4.
+ * @note the builder of a hash set returns specialized representations `EmptySet`,`Set1`,..., `Set4`
+ * for sets of `size <= 4`.
  *
  *  @author  Martin Odersky
  *  @author  Tiark Rompf

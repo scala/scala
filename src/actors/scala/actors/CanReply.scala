@@ -14,11 +14,13 @@ package scala.actors
  * The <code>CanReply</code> trait defines result-bearing message send operations.
  *
  * @author Philipp Haller
+ *
+ * @define actor `CanReply`
  */
 trait CanReply[-T, +R] {
 
   /**
-   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * Sends <code>msg</code> to this $actor and
    * awaits reply (synchronous).
    *
    * @param  msg the message to be sent
@@ -27,7 +29,7 @@ trait CanReply[-T, +R] {
   def !?(msg: T): R
 
   /**
-   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * Sends <code>msg</code> to this $actor and
    * awaits reply (synchronous) within <code>msec</code>
    * milliseconds.
    *
@@ -39,7 +41,7 @@ trait CanReply[-T, +R] {
   def !?(msec: Long, msg: T): Option[R]
 
   /**
-   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * Sends <code>msg</code> to this $actor and
    * immediately returns a future representing the reply value.
    *
    * @param  msg the message to be sent
@@ -49,7 +51,7 @@ trait CanReply[-T, +R] {
     () => this !? msg
 
   /**
-   * Sends <code>msg</code> to this <code>CanReply</code> and
+   * Sends <code>msg</code> to this $actor and
    * immediately returns a future representing the reply value.
    * The reply is post-processed using the partial function
    * <code>handler</code>. This also allows to recover a more

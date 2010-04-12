@@ -935,19 +935,34 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
 
-  class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Traverser {
+  /** Substitute symbols in 'from' with symbols in 'to'. Returns a new
+   *  tree using the new symbols and whose Ident and Select nodes are
+   *  name-consistent with the new symbols.
+   */
+  class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
     val symSubst = new SubstSymMap(from, to)
-    override def traverse(tree: Tree) {
+    override def transform(tree: Tree): Tree = {
       def subst(from: List[Symbol], to: List[Symbol]) {
         if (!from.isEmpty)
           if (tree.symbol == from.head) tree setSymbol to.head
           else subst(from.tail, to.tail)
       }
+
       if (tree.tpe ne null) tree.tpe = symSubst(tree.tpe)
-      if (tree.hasSymbol) subst(from, to)
-      super.traverse(tree)
+      if (tree.hasSymbol) {
+        subst(from, to)
+        tree match {
+          case Ident(name0) if tree.symbol != NoSymbol =>
+            treeCopy.Ident(tree, tree.symbol.name)
+          case Select(qual, name0) =>
+            treeCopy.Select(tree, transform(qual), tree.symbol.name)
+          case _ =>
+            super.transform(tree)
+        }
+      } else
+        super.transform(tree)
     }
-    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+    def apply[T <: Tree](tree: T): T = transform(tree).asInstanceOf[T]
     override def toString() = "TreeSymSubstituter("+from+","+to+")"
   }
 

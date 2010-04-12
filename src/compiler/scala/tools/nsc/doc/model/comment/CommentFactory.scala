@@ -106,7 +106,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       * splits the whole comment into main body and tag bodies, then runs the `WikiParser` on each body before creating
       * the comment instance.
       *
-      * @param body        The body of the comment parsed until now.
+      * @param docBody     The body of the comment parsed until now.
       * @param tags        All tags parsed until now.
       * @param lastTagKey  The last parsed tag, or `None` if the tag section hasn't started. Lines that are not tagged
       *                    are part of the previous tag or, if none exists, of the body.
@@ -119,17 +119,17 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
           if (before.trim != "")
             parse0(docBody, tags, lastTagKey, before :: ("{{{" + after) :: ls, false)
           else if (after.trim != "")
-            parse0(docBody, tags, lastTagKey, after :: ls, true)
+            parse0(docBody, tags, lastTagKey, "{{{" :: after :: ls, true)
           else
-            parse0(docBody, tags, lastTagKey, ls, true)
+            parse0(docBody + endOfLine + "{{{", tags, lastTagKey, ls, true)
 
         case CodeBlockEnd(before, after) :: ls =>
           if (before.trim != "")
             parse0(docBody, tags, lastTagKey, before :: ("}}}" + after) :: ls, true)
           else if (after.trim != "")
-            parse0(docBody, tags, lastTagKey, after :: ls, false)
+            parse0(docBody, tags, lastTagKey, "}}}" :: after :: ls, false)
           else
-            parse0(docBody, tags, lastTagKey, ls, false)
+            parse0(docBody + endOfLine + "}}}", tags, lastTagKey, ls, false)
 
         case SymbolTag(name, sym, body) :: ls if (!inCodeBlock) =>
           val key = SymbolTagKey(name, sym)
@@ -269,11 +269,11 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /** {{{ block ::= code | title | hrule | para }}} */
     def block(): Block = {
-      if (check("{{{"))
+      if (checkSkipInitWhitespace("{{{"))
         code()
-      else if (check("="))
+      else if (checkSkipInitWhitespace("="))
         title()
-      else if (check("----"))
+      else if (checkSkipInitWhitespace("----"))
         hrule()
       else if (checkList)
         listBlock
@@ -284,7 +284,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /** Checks if the current line is formed with more than one space and one the listStyles */
     def checkList =
-      countWhitespace > 0 && listStyles.keysIterator.indexWhere(checkSkipWhitespace(_)) >= 0
+      countWhitespace > 0 && listStyles.keysIterator.indexWhere(checkSkipInitWhitespace(_)) >= 0
 
     /** {{{
       * nListBlock ::= nLine { mListBlock }
@@ -329,6 +329,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       listLevel(indentStr, style, constructor)
     }
     def code(): Block = {
+      jumpWhitespace()
       jump("{{{")
       readUntil("}}}")
       if (char == endOfText)
@@ -341,6 +342,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /** {{{ title ::= ('=' inline '=' | "==" inline "==" | ...) '\n' }}} */
     def title(): Block = {
+      jumpWhitespace()
       val inLevel = repeatJump("=")
       val text = inline(check(Array.fill(inLevel)('=')))
       val outLevel = repeatJump("=", inLevel)
@@ -352,6 +354,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /** {{{ hrule ::= "----" { '-' } '\n' }}} */
     def hrule(): Block = {
+      jumpWhitespace()
       repeatJump("-")
       blockEnded("horizontal rule")
       HorizontalRule()
@@ -504,11 +507,19 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     def checkParaEnded(): Boolean = {
       (char == endOfText) ||
       ((char == endOfLine) && {
-        check(Array(endOfLine, endOfLine)) ||
-        check(Array(endOfLine, '=')) ||
-        check(Array(endOfLine, '{', '{', '{')) ||
-        check(Array(endOfLine, ' ', '-', ' ')) ||
-        check(Array(endOfLine, '\u003D'))
+        val poff = offset
+        val pc = char
+        nextChar() // read EOL
+        val ok = {
+          checkSkipInitWhitespace(Array(endOfLine)) ||
+          checkSkipInitWhitespace(Array('=')) ||
+          checkSkipInitWhitespace(Array('{', '{', '{')) ||
+          checkSkipInitWhitespace(Array(' ', '-', ' ')) ||
+          checkSkipInitWhitespace(Array('\u003D'))
+        }
+        offset = poff
+        char = pc
+        ok
       })
     }
 
@@ -549,22 +560,26 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       ok
     }
 
-    def checkSkipWhitespace(chars: Array[Char]): Boolean = {
-      assert(chars.head!=' ') // or it makes no sense
+    def checkSkipInitWhitespace(chars: Array[Char]): Boolean = {
       val poff = offset
       val pc = char
-      jumpWhitespace
-      val ok = jump(chars)
+      jumpWhitespace()
+      val (ok0, chars0) =
+        if (chars.head == ' ')
+          (offset > poff, chars.tail)
+        else
+          (true, chars)
+      val ok = ok0 && jump(chars0)
       offset = poff
       char = pc
       ok
     }
 
-    def countWhitespace:Int = {
+    def countWhitespace: Int = {
       var count = 0
       val poff = offset
       val pc = char
-      while (isWhitespace(char) && char!=endOfText) {
+      while (isWhitespace(char) && char != endOfText) {
         nextChar()
         count += 1
       }

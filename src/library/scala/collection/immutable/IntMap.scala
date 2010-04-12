@@ -167,6 +167,8 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
 
   /**
    * Iterator over key, value pairs of the map in unsigned order of the keys.
+   *
+   * @return an iterator over pairs of integer keys and corresponding values.
    */
   def iterator : Iterator[(Int, T)] = this match {
     case IntMap.Nil => Iterator.empty;
@@ -278,15 +280,20 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
 
   /**
    * Updates the map, using the provided function to resolve conflicts if the key is already present.
-   * Equivalent to
-   * <pre>this.get(key) match {
-   *         case None => this.update(key, value);
-   *         case Some(oldvalue) => this.update(key, f(oldvalue, value) }
-   * </pre>
    *
-   * @param key The key to update
-   * @param value The value to use if there is no conflict
-   * @param f The function used to resolve conflicts.
+   * Equivalent to:
+   * {{{
+   *   this.get(key) match {
+   *     case None => this.update(key, value);
+   *     case Some(oldvalue) => this.update(key, f(oldvalue, value)
+   *   }
+   * }}}
+   *
+   * @tparam S     The supertype of values in this `LongMap`.
+   * @param key    The key to update
+   * @param value  The value to use if there is no conflict
+   * @param f      The function used to resolve conflicts.
+   * @return       The updated map.
    */
   def updateWith[S >: T](key : Int, value : S, f : (T, S) => S) : IntMap[S] = this match {
     case IntMap.Bin(prefix, mask, left, right) => if (!hasMatch(key, prefix, mask)) join(key, IntMap.Tip(key, value), prefix, this);
@@ -312,7 +319,9 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
    * A combined transform and filter function. Returns an IntMap such that for each (key, value) mapping
    * in this map, if f(key, value) == None the map contains no mapping for key, and if <code>f(key, value)
    *
-   * @param f The transforming function.
+   * @tparam S  The type of the values in the resulting `LongMap`.
+   * @param f   The transforming function.
+   * @return    The modified map.
    */
   def modifyOrRemove[S](f : (Int, T) => Option[S]) : IntMap[S] = this match {
       case IntMap.Bin(prefix, mask, left, right) => {
@@ -335,8 +344,10 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
   /**
    * Forms a union map with that map, using the combining function to resolve conflicts.
    *
-   * @param that the map to form a union with.
-   * @param f the function used to resolve conflicts between two mappings.
+   * @tparam S      The type of values in `that`, a supertype of values in `this`.
+   * @param that    The map to form a union with.
+   * @param f       The function used to resolve conflicts between two mappings.
+   * @return        Union of `this` and `that`, with identical key conflicts resolved using the function `f`.
    */
   def unionWith[S >: T](that : IntMap[S], f : (Int, S, S) => S) : IntMap[S] = (this, that) match{
     case (IntMap.Bin(p1, m1, l1, r1), that@(IntMap.Bin(p2, m2, l2, r2))) =>
@@ -364,8 +375,11 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
    * a map that has only keys present in both maps and has values produced from the original mappings
    * by combining them with f.
    *
-   * @param that The map to intersect with.
-   * @param f The combining function.
+   * @tparam S      The type of values in `that`.
+   * @tparam R      The type of values in the resulting `LongMap`.
+   * @param that    The map to intersect with.
+   * @param f       The combining function.
+   * @return        Intersection of `this` and `that`, with values for identical keys produced by function `f`.
    */
   def intersectionWith[S, R](that : IntMap[S], f : (Int, T, S) => R) : IntMap[R] = (this, that) match {
     case (IntMap.Bin(p1, m1, l1, r1), that@IntMap.Bin(p2, m2, l2, r2)) =>
@@ -394,7 +408,9 @@ sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap
    * Left biased intersection. Returns the map that has all the same mappings as this but only for keys
    * which are present in the other map.
    *
-   * @param that The map to intersect with.
+   * @tparam R      The type of values in `that`.
+   * @param that    The map to intersect with.
+   * @return        A map with all the keys both in `this` and `that`, mapped to corresponding values from `this`.
    */
   def intersection[R](that : IntMap[R]) : IntMap[T] = this.intersectionWith(that, (key : Int, value : T, value2 : R) => value);
 

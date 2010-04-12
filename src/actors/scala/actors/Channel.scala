@@ -35,45 +35,26 @@ case class ! [a](ch: Channel[a], msg: a)
  * <code>Channel</code> may receive from it.
  *
  * @author Philipp Haller
+ *
+ * @define actor channel
+ * @define channel channel
  */
-class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputChannel[Msg] {
+class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputChannel[Msg] with CanReply[Msg, Any] {
 
   def this() = this(Actor.self)
 
-  /**
-   * Sends a message to this <code>Channel</code>.
-   *
-   * @param  msg the message to be sent
-   */
   def !(msg: Msg) {
     receiver ! scala.actors.!(this, msg)
   }
 
-  /**
-   * Sends a message to this <code>Channel</code>
-   * (asynchronous) supplying explicit reply destination.
-   *
-   * @param  msg     the message to send
-   * @param  replyTo the reply destination
-   */
   def send(msg: Msg, replyTo: OutputChannel[Any]) {
     receiver.send(scala.actors.!(this, msg), replyTo)
   }
 
-  /**
-   * Forwards <code>msg</code> to <code>this</code> keeping the
-   * last sender as sender instead of <code>self</code>.
-   */
   def forward(msg: Msg) {
     receiver forward scala.actors.!(this, msg)
   }
 
-  /**
-   * Receives a message from this <code>Channel</code>.
-   *
-   * @param  f    a partial function with message patterns and actions
-   * @return      result of processing the received value
-   */
   def receive[R](f: PartialFunction[Msg, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
     val recvActor = receiver.asInstanceOf[Actor]
@@ -82,21 +63,10 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
     }
   }
 
-  /**
-   * Receives the next message from this <code>Channel</code>.
-   */
   def ? : Msg = receive {
     case x => x
   }
 
-  /**
-   * Receives a message from this <code>Channel</code> within a certain
-   * time span.
-   *
-   * @param  msec the time span before timeout
-   * @param  f    a partial function with message patterns and actions
-   * @return      result of processing the received value
-   */
   def receiveWithin[R](msec: Long)(f: PartialFunction[Any, R]): R = {
     val C = this.asInstanceOf[Channel[Any]]
     val recvActor = receiver.asInstanceOf[Actor]
@@ -106,14 +76,6 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
     }
   }
 
-  /**
-   * Receives a message from this <code>Channel</code>.
-   * <p>
-   * This method never returns. Therefore, the rest of the computation
-   * has to be contained in the actions of the partial function.
-   *
-   * @param  f    a partial function with message patterns and actions
-   */
   def react(f: PartialFunction[Msg, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
     receiver.react {
@@ -121,16 +83,6 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
     }
   }
 
-  /**
-   * Receives a message from this <code>Channel</code> within a certain
-   * time span.
-   * <p>
-   * This method never returns. Therefore, the rest of the computation
-   * has to be contained in the actions of the partial function.
-   *
-   * @param  msec the time span before timeout
-   * @param  f    a partial function with message patterns and actions
-   */
   def reactWithin(msec: Long)(f: PartialFunction[Any, Unit]): Nothing = {
     val C = this.asInstanceOf[Channel[Any]]
     val recvActor = receiver.asInstanceOf[Actor]
@@ -140,13 +92,6 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
     }
   }
 
-  /**
-   * Sends a message to this <code>Channel</code> and
-   * awaits reply.
-   *
-   * @param  msg the message to be sent
-   * @return     the reply
-   */
   def !?(msg: Msg): Any = {
     val replyCh = new Channel[Any](Actor.self(receiver.scheduler))
     receiver.send(scala.actors.!(this, msg), replyCh)
@@ -155,15 +100,6 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
     }
   }
 
-  /**
-   * Sends a message to this <code>Channel</code> and
-   * awaits reply within a certain time span.
-   *
-   * @param  msec the time span before timeout
-   * @param  msg  the message to be sent
-   * @return      <code>None</code> in case of timeout, otherwise
-   *              <code>Some(x)</code> where <code>x</code> is the reply
-   */
   def !?(msec: Long, msg: Msg): Option[Any] = {
     val replyCh = new Channel[Any](Actor.self(receiver.scheduler))
     receiver.send(scala.actors.!(this, msg), replyCh)

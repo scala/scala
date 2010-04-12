@@ -433,7 +433,10 @@ final case class ::[B](private var hd: B, private[scala] var tl: List[B]) extend
   }
 }
 
-/** $factoryInfo */
+/** $factoryInfo
+ *  @define coll list
+ *  @define Coll List
+ */
 object List extends SeqFactory[List] {
 
   import scala.collection.{Iterable, Seq, IndexedSeq}

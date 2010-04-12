@@ -85,6 +85,8 @@ class ListSet[A] extends Set[A]
    */
   protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
 
+  /** Represents an entry in the `ListSet`.
+   */
   @serializable
   protected class Node(override protected val elem: A) extends ListSet[A] {
 

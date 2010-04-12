@@ -82,8 +82,12 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val RuntimeNothingClass  = getClass("scala.runtime.Nothing$")
     lazy val RuntimeNullClass     = getClass("scala.runtime.Null$")
 
+    lazy val AnyValCompanionClass = getClass("scala.runtime.AnyValCompanion").setFlag(SEALED | ABSTRACT | TRAIT)
+
     // the scala value classes
-    lazy val UnitClass    = newClass(ScalaPackageClass, nme.Unit, anyvalparam).setFlag(ABSTRACT | FINAL)
+    lazy val UnitClass    =
+      newClass(ScalaPackageClass, nme.Unit, anyvalparam).setFlag(ABSTRACT | FINAL)
+
     lazy val ByteClass    = newValueClass(nme.Byte, 'B', 2)
     lazy val ShortClass   = newValueClass(nme.Short, 'S', 4)
     lazy val CharClass    = newValueClass(nme.Char, 'C', 3)
@@ -578,6 +582,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     val boxedModule = new HashMap[Symbol, Symbol]
     val unboxMethod = new HashMap[Symbol, Symbol] // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol] // Type -> Method
+    val primitiveCompanions = new HashSet[Symbol]
 
     def isUnbox(m: Symbol) = unboxMethod.valuesIterator contains m
     def isBox(m: Symbol) = boxMethod.valuesIterator contains m
@@ -596,6 +601,17 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         case None => false
       }
 
+    /** Create a companion object for scala.Unit.
+     */
+    private def initUnitCompanionObject() {
+      val module = ScalaPackageClass.newModule(NoPosition, "Unit")
+      ScalaPackageClass.info.decls.enter(module)
+      val mclass = module.moduleClass
+      mclass.setInfo(ClassInfoType(List(AnyRefClass.tpe, AnyValCompanionClass.tpe), new Scope, mclass))
+      module.setInfo(mclass.tpe)
+      primitiveCompanions += module
+    }
+
     private[symtab] def newValueClass(name: Name, tag: Char, weight: Int): Symbol = {
       val boxedName = sn.Boxed(name)
 
@@ -609,8 +625,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       val module = ScalaPackageClass.newModule(NoPosition, name)
       ScalaPackageClass.info.decls.enter(module)
       val mclass = module.moduleClass
-      mclass.setInfo(ClassInfoType(List(), new Scope, mclass))
+      mclass.setInfo(ClassInfoType(List(AnyRefClass.tpe, AnyValCompanionClass.tpe), new Scope, mclass))
       module.setInfo(mclass.tpe)
+      primitiveCompanions += module
 
       val box = newMethod(mclass, nme.box, List(clazz.typeConstructor), boxedClass(clazz).tpe)
       boxMethod(clazz) = box
@@ -769,6 +786,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       abbrvTag(UnitClass) = 'V'
 
       initValueClasses()
+      initUnitCompanionObject()
 
       // members of class scala.Any
       Any_== = newMethod(AnyClass, nme.EQ, anyparam, booltype) setFlag FINAL

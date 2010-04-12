@@ -191,6 +191,19 @@ abstract class TreeGen
   def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true): Tree =
     mkTypeApply(value, tpe, (if (any) Any_asInstanceOf else Object_asInstanceOf))
 
+  /** Cast `tree' to 'pt', unless tpe is a subtype of pt, or pt is Unit.  */
+  def maybeMkAsInstanceOf(tree: Tree, pt: Type, tpe: Type, beforeRefChecks: Boolean = false): Tree =
+    if ((pt == UnitClass.tpe) || (tpe <:< pt)) {
+      log("no need to cast from " + tpe + " to " + pt)
+      tree
+    } else
+      atPos(tree.pos) {
+        if (beforeRefChecks)
+          TypeApply(mkAttributedSelect(tree, Any_asInstanceOf), List(TypeTree(pt)))
+        else
+          mkAsInstanceOf(tree, pt)
+      }
+
   def mkClassOf(tp: Type): Tree =
     Literal(Constant(tp)) setType ConstantType(Constant(tp))// ClassType(tp)
 

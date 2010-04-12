@@ -16,7 +16,26 @@ import generic._
 /** A subtrait of scala.collection.IndexedSeq which represents sequences
  *  that can be mutated.
  *
- *  @since 2.8
+ *  It declares a method `update` which allows updating an element
+ *  at a specific index in the sequence.
+ *
+ *  This trait just implements `iterator` in terms of `apply` and `length`.
+ *  However, see `IndexedSeqOptimized` for an implementation trait that overrides operations
+ *  to make them run faster under the assumption of fast random access with `apply`.
+ *
+ *  $indexedSeqInfo
+ *
+ *  @tparam A    the element type of the $coll
+ *  @tparam Repr the type of the actual $coll containing the elements.
+ *
+ *  @define Coll IndexedSeq
+ *  @define coll mutable indexed sequence
+ *  @define indexedSeqInfo
+ *  @author Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
+ *  @define willNotTerminateInf
+ *  @define mayNotTerminateInf
  */
 trait IndexedSeqLike[A, +Repr] extends scala.collection.IndexedSeqLike[A, Repr] { self =>
 

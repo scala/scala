@@ -99,12 +99,8 @@ object SeqLike {
     }
 }
 
-/** A template trait for sequences of type `Seq[A]`, representing
- *  sequences of elements of type <code>A</code>.
+/** A template trait for sequences of type `Seq[A]`
  *  $seqInfo
- *
- *  @tparam A    the element type of the collection
- *  @tparam Repr the type of the actual collection containing the elements.
  *
  *  @define seqInfo
  *  Sequences are special cases of iterable collections of class `Iterable`.
@@ -121,10 +117,13 @@ object SeqLike {
  *  Sequences can be accessed in reverse order of their elements, using methods
  *  `reverse` and `reverseIterator`.
  *
- *  Sequences have two principle subtraits, `IndexedSeq` and `LinearSeq`, which give different guarantees for performance.
+ *  Sequences have two principal subtraits, `IndexedSeq` and `LinearSeq`, which give different guarantees for performance.
  *  An `IndexedSeq` provides fast random-access of elements and a fast `length` operation.
  *  A `LinearSeq` provides fast access only to the first element via `head`, but also
  *  has a fast `tail` operation.
+ *
+ *  @tparam A    the element type of the collection
+ *  @tparam Repr the type of the actual collection containing the elements.
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger

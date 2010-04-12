@@ -13,14 +13,17 @@ package scala.collection
 package mutable
 
 
-/** <code>History[A, B]</code> objects may subscribe to events of
- *  type <code>A</code> published by an object of type <code>B</code>.
+/** `History[A, B]` objects may subscribe to events of
+ *  type `A` published by an object of type `B`.
  *  The history subscriber object records all published events
- *  up to maximum number of <code>maxHistory</code> events.
+ *  up to maximum number of `maxHistory` events.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  *  @since   1
+ *
+ *  @tparam Evt   Type of events.
+ *  @tparam Pub   Type of publishers.
  */
 @serializable
 @SerialVersionUID(5219213543849892588L)
@@ -29,9 +32,10 @@ class History[Evt, Pub] extends Subscriber[Evt, Pub] with Iterable[(Pub, Evt)]
   protected val log: Queue[(Pub, Evt)] = new Queue
   val maxHistory: Int = 1000
 
-  /**
-   *  @param pub   ...
-   *  @param event ...
+  /** Notifies this listener with an event by enqueuing it in the log.
+   *
+   *  @param pub   the publisher.
+   *  @param event the event.
    */
   def notify(pub: Pub, event: Evt) {
     if (log.length >= maxHistory)

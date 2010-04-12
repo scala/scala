@@ -16,7 +16,6 @@ import mutable.Builder
 
 /** A base trait for sequences.
  *  $seqInfo
- *  @tparam A    the element type of the $coll
  */
 trait Seq[+A] extends PartialFunction[Int, A]
                       with Iterable[A]
@@ -25,7 +24,10 @@ trait Seq[+A] extends PartialFunction[Int, A]
   override def companion: GenericCompanion[Seq] = Seq
 }
 
-/** $factoryInfo */
+/** $factoryInfo
+ *  @define coll sequence
+ *  @define Coll Seq
+ */
 object Seq extends SeqFactory[Seq] {
 
   private[collection] val hashSeed = "Seq".hashCode

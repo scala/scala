@@ -37,7 +37,7 @@ class Pair[A](_first: A, _second: A) {
   def second = _second
 }
 
-class SpecializedPair[@specialized("Int") A](_first: A, _second: A) {
+class SpecializedPair[@specialized(Int) A](_first: A, _second: A) {
   def first = _first
   def second = _second
 }

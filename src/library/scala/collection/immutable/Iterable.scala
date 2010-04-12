@@ -15,13 +15,8 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A subtrait of scala.collection.Iterable which represents iterables
- *  that cannot be mutated.
- *
- *  @author  Matthias Zenger
- *  @author   Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** A base trait for iterable collections that are guaranteed immutable.
+ *  $iterableInfo
  */
 trait Iterable[+A] extends Traversable[A]
                       with scala.collection.Iterable[A]

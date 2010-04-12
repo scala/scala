@@ -5,7 +5,6 @@
 package scala.tools
 
 import nsc.io.{ File, Path, Process, Directory }
-import nsc.util.CommandLineSpec
 import java.nio.charset.CharacterCodingException
 
 package object partest {
@@ -18,13 +17,12 @@ package object partest {
 
   private[partest] def safeLines(f: File)     = safeSlurp(f) split """\r\n|\r|\n""" toList
   private[partest] def safeArgs(f: File)      = toArgs(safeSlurp(f))
-  private[partest] def safeToInt(s: String)   = try Some(s.toInt) catch { case _: NumberFormatException => None }
   private[partest] def isJava(f: Path)        = f.isFile && (f hasExtension "java")
   private[partest] def isScala(f: Path)       = f.isFile && (f hasExtension "scala")
   private[partest] def isJavaOrScala(f: Path) = isJava(f) || isScala(f)
 
-  private[partest] def toArgs(line: String) = CommandLineSpec toArgs line
-  private[partest] def fromArgs(args: List[String]) = CommandLineSpec fromArgs args
+  private[partest] def toArgs(line: String) = cmd toArgs line
+  private[partest] def fromArgs(args: List[String]) = cmd fromArgs args
 
   /** Strings, argument lists, etc. */
 

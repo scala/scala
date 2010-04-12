@@ -144,8 +144,8 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   def append(elems: A*) { appendAll(elems) }
 
-  /** Appends the elements contained in a traversable collection to this buffer.
-   *  @param elems  the collection containing the elements to append.
+  /** Appends the elements contained in a traversable object to this buffer.
+   *  @param xs  the traversable object containing the elements to append.
    */
   def appendAll(xs: TraversableOnce[A]) { this ++= xs }
 
@@ -154,7 +154,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    */
   def prepend(elems: A*) { prependAll(elems) }
 
-  /** Prepends the elements contained in a traversable collection to this buffer.
+  /** Prepends the elements contained in a traversable object to this buffer.
    *  @param elems  the collection containing the elements to prepend.
    */
   def prependAll(xs: TraversableOnce[A]) { xs ++=: this }
@@ -272,7 +272,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   /** Adds a number of elements provided by a traversable object and returns
    *  either the collection itself.
    *
-   *  @param iter     the iterable object.
+   *  @param xs     the traversable object.
    */
   @migration(2, 8,
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+

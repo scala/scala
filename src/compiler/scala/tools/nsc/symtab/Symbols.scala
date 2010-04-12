@@ -331,6 +331,14 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def newRefinementClass(pos: Position) =
       newClass(pos, nme.REFINE_CLASS_NAME.toTypeName)
 
+    /** Create a new getter for current symbol (which must be a field)
+     */
+    final def newGetter: Symbol = {
+      val getter = owner.newMethod(pos.focus, nme.getterName(name)).setFlag(getterFlags(flags))
+      getter.privateWithin = privateWithin
+      getter.setInfo(MethodType(List(), tpe))
+    }
+
     final def newErrorClass(name: Name) = {
       val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
       clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz))
@@ -389,10 +397,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Is this symbol a type but not a class? */
     def isNonClassType = false
 
-    /** Term symbols with the exception of static parts of Java classes and packages
-     *  and the faux companion objects of primitives.  (See tickets #1392 and #3123.)
+    /** Term symbols with the exception of static parts of Java classes and packages.
      */
-    final def isValue = isTerm && !(isModule && (hasFlag(PACKAGE | JAVA) || isValueClass(companionClass)))
+    final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA))
 
     final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
 
@@ -903,7 +910,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else {
         val current = phase
         try {
-          while (phase.keepsTypeParams) phase = phase.prev
+          while (phase.keepsTypeParams && (phase.prev ne NoPhase)) phase = phase.prev
+          if (phase ne current) phase = phase.next
           rawInfo.typeParams
         } finally {
           phase = current

@@ -16,9 +16,6 @@ import mutable.Builder
 
 /** A base trait for linear sequences.
  *  $linearSeqInfo
- *
- *  @author  Martin Odersky
- *  @since   2.8
  */
 trait LinearSeq[+A] extends Seq[A]
                             with GenericTraversableTemplate[A, LinearSeq]
@@ -26,8 +23,9 @@ trait LinearSeq[+A] extends Seq[A]
   override def companion: GenericCompanion[LinearSeq] = LinearSeq
 }
 
-/**
- *  @since 2.8
+/** $factoryInfo
+ *  @define coll linear sequence
+ *  @define Coll LinearSeq
  */
 object LinearSeq extends SeqFactory[LinearSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = new GenericCanBuildFrom[A]

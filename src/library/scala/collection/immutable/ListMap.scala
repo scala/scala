@@ -104,6 +104,8 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
   protected def value: B = throw new NoSuchElementException("empty map")
   protected def next: ListMap[A, B] = throw new NoSuchElementException("empty map")
 
+  /** This class represents an entry in the `ListMap`.
+   */
   @serializable @SerialVersionUID(-6453056603889598734L)
   protected class Node[B1 >: B](override protected val key: A,
                                 override protected val value: B1) extends ListMap[A, B1] {

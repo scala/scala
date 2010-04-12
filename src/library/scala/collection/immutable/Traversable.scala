@@ -15,13 +15,9 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A subtrait of <code>collection.Traversable</code> which represents
- *  traversables that cannot be mutated.
- *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** A trait for traversable collections that are guaranteed immutable.
+ *  $traversableInfo
+ *  @define mutability immutable
  */
 trait Traversable[+A] extends scala.collection.Traversable[A]
                          with GenericTraversableTemplate[A, Traversable]

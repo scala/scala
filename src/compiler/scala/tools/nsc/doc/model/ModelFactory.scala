@@ -108,10 +108,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     }
     def deprecation =
       if (sym.isDeprecated)
-        Some(sym.deprecationMessage map (x => parseWiki(x, NoPosition)) getOrElse Body(Nil))
+        Some(sym.deprecationMessage match {
+          case Some(msg) => parseWiki(msg, NoPosition)
+          case None =>Body(Nil)
+        })
       else
-        comment flatMap (_.deprecated)
-
+        comment flatMap { _.deprecated }
     def inheritedFrom =
       if (inTemplate.sym == this.sym.owner || inTemplate.sym.isPackage) Nil else
         makeTemplate(this.sym.owner) :: (sym.allOverriddenSymbols map { os => makeTemplate(os.owner) })
@@ -162,7 +164,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
           case _ =>
         }
       }
-      sym.ancestors filter (_ != ScalaObjectClass) map makeTemplate
+      sym.ancestors filter (_ != ScalaObjectClass) map { makeTemplate(_) }
     }
     private lazy val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
     def registerSubClass(sc: DocTemplateEntity) = {
@@ -198,13 +200,21 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
   abstract class NonTemplateMemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with NonTemplateMemberEntity {
     override def qualifiedName = optimize(inTemplate.qualifiedName + "#" + name)
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "#" + name)
+    def isUseCase = sym.isSynthetic
+  }
+
+  abstract class NonTemplateParamMemberImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends NonTemplateMemberImpl(sym, inTpl) {
+    def valueParams =
+      sym.paramss map { ps => (ps.zipWithIndex) map { case (p, i) =>
+        if (p.nameString contains "$") makeValueParam(p, inTpl, optimize("arg" + i)) else makeValueParam(p, inTpl)
+      }}
   }
 
   abstract class ParameterImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with ParameterEntity {
     override def inTemplate = inTpl
   }
 
-  private trait StdTypeBounds extends EntityImpl {
+  private trait TypeBoundsImpl extends EntityImpl {
     def lo = sym.info.normalize match {
       case TypeBounds(lo, hi) if lo.typeSymbol != NothingClass => Some(makeType(lo, inTemplate, sym))
       case _ => None
@@ -219,10 +229,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
 
   /** */
   def normalizeTemplate(aSym: Symbol): Symbol = aSym match {
-    case null | EmptyPackage | NoSymbol                   => normalizeTemplate(RootPackage)
-    case ScalaObjectClass | ObjectClass                   => normalizeTemplate(AnyRefClass)
-    case _ if aSym.isModuleClass || aSym.isPackageObject  => normalizeTemplate(aSym.sourceModule)
-    case _                                                => aSym
+    case null | EmptyPackage | NoSymbol =>
+      normalizeTemplate(RootPackage)
+    case ScalaObjectClass | ObjectClass =>
+      normalizeTemplate(AnyRefClass)
+    case _ if aSym.isModuleClass || aSym.isPackageObject =>
+      normalizeTemplate(aSym.sourceModule)
+    case _ =>
+      aSym
   }
 
   def makeRootPackage: Option[PackageImpl] =
@@ -305,7 +319,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
           List(sym.constrParamAccessors map (makeValueParam(_, this)))
         val constructors =
           members collect { case d: Constructor => d }
-        def primaryConstructor = constructors find (_.isPrimary)
+        def primaryConstructor = constructors find { _.isPrimary }
         def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
       }
     else
@@ -316,44 +330,31 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
   def makeMember(aSym: Symbol, inTpl: => DocTemplateImpl): List[MemberImpl] = {
 
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
-      abstract class MakeMemberTemplateImpl extends NonTemplateMemberImpl(bSym, inTpl) {
-        def isUseCase = bSym.isSynthetic
-      }
-      trait MethodParams extends MakeMemberTemplateImpl {
-        def valueParams =
-          sym.paramss map { ps =>
-            ps.zipWithIndex map { case (p, i) =>
-              if (p.nameString contains "$") makeValueParam(p, inTemplate, optimize("arg" + i))
-              else makeValueParam(p, inTemplate)
-            }
-          }
-      }
-
       if (bSym.isGetter && bSym.accessed.isMutable)
-        Some(new MakeMemberTemplateImpl with Val {
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true
         })
       else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor)
-        Some(new MakeMemberTemplateImpl with Def with MethodParams {
+        Some(new NonTemplateParamMemberImpl(bSym, inTpl) with Def {
           override def isDef = true
           def typeParams =
             sym.tpe.typeParams map (makeTypeParam(_, inTpl))
         })
       else if (bSym.isConstructor)
-        Some(new MakeMemberTemplateImpl with Constructor with MethodParams {
+        Some(new NonTemplateParamMemberImpl(bSym, inTpl) with Constructor {
           override def isConstructor = true
           def isPrimary = sym.isPrimaryConstructor
         })
       else if (bSym.isGetter) // Scala field accessor or Java field
-        Some(new MakeMemberTemplateImpl with Val {
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVal = true
         })
       else if (bSym.isAbstractType)
-        Some(new MakeMemberTemplateImpl with AbstractType with StdTypeBounds {
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with TypeBoundsImpl with AbstractType {
           override def isAbstractType = true
         })
       else if (bSym.isAliasType)
-        Some(new MakeMemberTemplateImpl with AliasType {
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with AliasType {
           override def isAliasType = true
           def alias = makeType(sym.tpe, inTpl, sym)
         })
@@ -364,19 +365,21 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       else
         None
     }
+
     if ((!aSym.isPackage && aSym.sourceFile == null) || !localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
         addCommentBody(bSym, inTpl, bComment, bPos)
       }
-      (allSyms :+ aSym) flatMap makeMember0
+      (allSyms :+ aSym) flatMap { makeMember0(_) }
     }
+
   }
 
   /** */
   def makeTypeParam(aSym: Symbol, inTpl: => DocTemplateImpl): TypeParam = {
-    new ParameterImpl(aSym, inTpl) with TypeParam with StdTypeBounds {
+    new ParameterImpl(aSym, inTpl) with TypeBoundsImpl with TypeParam {
       def isTypeParam = true
       def isValueParam = false
       def variance: String = {
@@ -492,10 +495,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       val name = optimize(nameBuffer.toString)
     }
 
-  def templateShouldDocument(aSym: Symbol): Boolean = {
-    (aSym.isPackageClass || (aSym.sourceFile != null)) && localShouldDocument(aSym) && ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) )
-  }
+  def templateShouldDocument(aSym: Symbol): Boolean =
+    (aSym.isPackageClass || (aSym.sourceFile != null)) && localShouldDocument(aSym) &&
+    ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) )
 
   def localShouldDocument(aSym: Symbol): Boolean =
     !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
+
 }

@@ -19,7 +19,8 @@ import scala.collection.generic.CanBuildFrom
 /** Tuple2 is the canonical representation of a @see Product2
  *
  */
-case class Tuple2[+T1, +T2](_1:T1,_2:T2)
+case class Tuple2[@specialized(Int, Long, Double) +T1,
+                  @specialized(Int, Long, Double) +T2](_1:T1,_2:T2)
   extends Product2[T1, T2]
 {
   override def toString() = "(" + _1 + "," + _2 + ")"

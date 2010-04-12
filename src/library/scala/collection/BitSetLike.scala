@@ -21,17 +21,17 @@ import mutable.StringBuilder
  * This trait provides most of the operations of a `BitSet` independently of its representation.
  * It is inherited by all concrete implementations of bitsets.
  *
- * @tparam  This the type of the bitset itself.
+ *  @tparam  This the type of the bitset itself.
  *
+ *  @define bitsetinfo
+ *  Bitsets are sets of non-negative integers which are represented as
+ *  variable-size arrays of bits packed into 64-bit words. The size of a bitset is
+ *  determined by the largest number stored in it.
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since 2.8
  *  @define coll bitset
  *  @define Coll BitSet
- *  @define bitsetinfo
- *  Bitsets are sets of non-negative integers which are represented as
- *  variable-size arrays of bits packed into 64-bit words. The size of a bitset is
- *  determined by the largest number stored in it.
  */
 trait BitSetLike[+This <: BitSetLike[This] with Set[Int]] extends SetLike[Int, This] { self =>
 

@@ -16,10 +16,6 @@ import mutable.Builder
 
 /** A base trait for indexed sequences.
  *  $indexedSeqInfo
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
  */
 trait IndexedSeq[+A] extends Seq[A]
                     with GenericTraversableTemplate[A, IndexedSeq]
@@ -27,6 +23,10 @@ trait IndexedSeq[+A] extends Seq[A]
   override def companion: GenericCompanion[IndexedSeq] = IndexedSeq
 }
 
+/** $factoryInfo
+ *  @define coll indexed sequence
+ *  @define Coll IndexedSeq
+ */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = immutable.IndexedSeq.newBuilder[A]

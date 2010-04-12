@@ -102,6 +102,8 @@ MAIN DISTRIBUTION SBAZ
           dir="${dist.dir}/bin"
           includes="scala,scala.bat,scalac,scalac.bat,scaladoc,scaladoc.bat,fsc,fsc.bat"/>
       <libset dir="${dist.dir}/lib" includes="scala-compiler.jar,jline.jar"/>
+      <miscset dir="${dist.dir}/misc/scala-devel"
+        includes="plugins/continuations.jar"/>
       <manset dir="${dist.dir}/man" includes="**"/>
       <srcset dir="${dist.dir}/src" includes="scala-compiler-src.jar"/>
     </sbaz>
@@ -200,7 +202,7 @@ MAIN DISTRIBUTION SBAZ
       <sequential>
         <mkdir dir="${dists.dir}/maven/${version.number}/plugins/@{mvn.artifact.name}"/>
         <copy todir="${dists.dir}/maven/${version.number}/plugins/@{mvn.artifact.name}">
-          <fileset dir="${dist.dir}/plugins/">
+          <fileset dir="${dist.dir}/misc/scala-devel/plugins/">
             <filename name="@{mvn.artifact.name}.jar"/>
           </fileset>
           <fileset dir="${src.dir}/build/maven/">

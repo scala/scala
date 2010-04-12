@@ -4,7 +4,8 @@
  */
 // $Id$
 
-package scala.tools.nsc
+package scala.tools
+package nsc
 package util
 
 import java.io.{File, FileInputStream, PrintStream, IOException}
@@ -290,7 +291,7 @@ object ShowPickled extends Names {
   /** Option --bare suppresses numbers so the output can be diffed.
    */
   def main(args: Array[String]) {
-    val parsed = CommandLine(args.toList, List("--bare"), Nil)
+    val parsed = cmd.CommandLine(args.toList, List("--bare"), Nil)
     def isBare = parsed isSet "--bare"
 
     parsed.residualArgs foreach { arg =>

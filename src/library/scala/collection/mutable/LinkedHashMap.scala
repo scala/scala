@@ -14,20 +14,36 @@ package mutable
 
 import generic._
 
-/** This class implements mutable maps using a hashtable.
- *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.7
+/** $factoryInfo
+ *  @define Coll LinkedHashMap
+ *  @define coll linked hash map
  */
 object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), LinkedHashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B] = new LinkedHashMap[A, B]
 }
 
-/**
- * @since 2.7
+/** This class implements mutable maps using a hashtable.
+ *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
+ *
+ *  @tparam A    the type of the keys contained in this hash map.
+ *  @tparam B    the type of the values assigned to keys in this hash map.
+ *
+ *  @define Coll LinkedHashMap
+ *  @define coll linked hash map
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `LinkedHashMap[A, B]` if the elements contained in the resulting collection are
+ *    pairs of type `(A, B)`. This is because an implicit of type `CanBuildFrom[LinkedHashMap, (A, B), LinkedHashMap[A, B]]`
+ *    is defined in object `LinkedHashMap`. Otherwise, `That` resolves to the most specific type that doesn't have
+ *    to contain pairs of type `(A, B)`, which is `Iterable`.
+ *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `LinkedHashMap`.
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ *  @define orderDependent
+ *  @define orderDependentFold
  */
 @serializable @SerialVersionUID(1L)
 class LinkedHashMap[A, B] extends Map[A, B]

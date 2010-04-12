@@ -19,12 +19,7 @@ import scala.annotation.tailrec
  *  the implementation of several methods under the assumption of fast random access.
  *
  *  $indexedSeqInfo
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
  *
- *  @tparam A    the element type of the $coll
- *  @tparam Repr the type of the actual $coll containing the elements.
  *  @define willNotTerminateInf
  *  @define mayNotTerminateInf
  */

@@ -12,7 +12,7 @@
 package scala.collection
 package mutable
 
-/** This class implements synchronized priority queues using a heap.
+/** This class implements synchronized priority queues using a binary heap.
  *  The elements of the queue have to be ordered in terms of the
  *  <code>Ordered[T]</code> class.
  *
@@ -39,13 +39,13 @@ class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQu
     this
   }
 
-  /** Adds all elements provided by an iterator into the priority queue.
+  /** Adds all elements of a traversable object into the priority queue.
    *
-   *  @param  it        an iterator
+   *  @param  xs        a traversable object
    */
-  override def ++=(it: TraversableOnce[A]): this.type = {
+  override def ++=(xs: TraversableOnce[A]): this.type = {
     synchronized {
-      super.++=(it)
+      super.++=(xs)
     }
     this
   }

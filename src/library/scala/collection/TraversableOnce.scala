@@ -10,8 +10,8 @@ package scala.collection
 
 import mutable.{ Buffer, ListBuffer, ArrayBuffer }
 
-/** A template trait for collections which can be traversed one
- *  or more times.
+/** A template trait for collections which can be traversed either once only
+ *  or one or more times.
  *  $traversableonceinfo
  *
  *  @tparam A    the element type of the collection

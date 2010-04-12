@@ -12,7 +12,7 @@
 package scala.collection
 package immutable
 
-/** An base class containing the implementations for TreeMaps and TreeSets
+/** A base class containing the implementations for TreeMaps and TreeSets
  *
  * @since 2.3
  */

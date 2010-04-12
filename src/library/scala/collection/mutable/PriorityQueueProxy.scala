@@ -11,7 +11,7 @@
 package scala.collection
 package mutable
 
-/** This class implements priority queues using a heap. The
+/** This class servers as a proxy for priority queues. The
  *  elements of the queue have to be ordered in terms of the
  *  <code>Ordered[T]</code> class.
  *

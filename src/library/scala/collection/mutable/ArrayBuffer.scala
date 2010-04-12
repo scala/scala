@@ -14,7 +14,7 @@ package mutable
 
 import generic._
 
-/** An implementation of the <code>Buffer</code> class using an array to
+/** An implementation of the `Buffer` class using an array to
  *  represent the assembled sequence internally. Append, update and random
  *  access take constant time (amortized time). Prepends and removes are
  *  linear in the buffer size.
@@ -23,6 +23,22 @@ import generic._
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
+ *
+ *  @tparam A    the type of this arraybuffer's elements.
+ *
+ *  @define Coll ArrayBuffer
+ *  @define coll arraybuffer
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `ArrayBuffer[B]` because an implicit of type `CanBuildFrom[ArrayBuffer, B, ArrayBuffer[B]]`
+ *    is defined in object `ArrayBuffer`.
+ *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `ArrayBuffer`.
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(1529165946227428979L)
 class ArrayBuffer[A](override protected val initialSize: Int)
@@ -50,9 +66,10 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   }
 
   /** Appends a single element to this buffer and returns
-   *  the identity of the buffer. It takes constant time.
+   *  the identity of the buffer. It takes constant amortized time.
    *
    *  @param elem  the element to append.
+   *  @return      the updated buffer.
    */
   def +=(elem: A): this.type = {
     ensureSize(size0 + 1)
@@ -61,11 +78,10 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     this
   }
 
-  /** Appends a number of elements provided by an iterable object
-   *  via its <code>iterator</code> method. The identity of the
-   *  buffer is returned.
+  /** Appends a number of elements provided by a traversable object.
+   *  The identity of the buffer is returned.
    *
-   *  @param iter  the iterable object.
+   *  @param xs    the traversable object.
    *  @return      the updated buffer.
    */
   override def ++=(xs: TraversableOnce[A]): this.type = xs match {
@@ -79,7 +95,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
       super.++=(xs)
   }
 
-  /** Prepends a single element to this buffer and return
+  /** Prepends a single element to this buffer and returns
    *  the identity of the buffer. It takes time linear in
    *  the buffer size.
    *
@@ -94,22 +110,21 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     this
   }
 
-  /** Prepends a number of elements provided by an iterable object
-   *  via its <code>iterator</code> method. The identity of the
-   *  buffer is returned.
+  /** Prepends a number of elements provided by a traversable object.
+   *  The identity of the buffer is returned.
    *
-   *  @param iter  the iterable object.
+   *  @param xs    the traversable object.
    *  @return      the updated buffer.
    */
   override def ++=:(xs: TraversableOnce[A]): this.type = { insertAll(0, xs.toTraversable); this }
 
-  /** Inserts new elements at the index <code>n</code>. Opposed to method
-   *  <code>update</code>, this method will not replace an element with a
-   *  one. Instead, it will insert a new element at index <code>n</code>.
+  /** Inserts new elements at the index `n`. Opposed to method
+   *  `update`, this method will not replace an element with a
+   *  one. Instead, it will insert a new element at index `n`.
    *
    *  @param n     the index where a new element will be inserted.
-   *  @param iter  the iterable object providing all elements to insert.
-   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @param seq   the traversable object providing all elements to insert.
+   *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
    */
   def insertAll(n: Int, seq: Traversable[A]) {
     if (n < 0 || n > size0) throw new IndexOutOfBoundsException(n.toString)
@@ -124,9 +139,9 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   /** Removes the element on a given index position. It takes time linear in
    *  the buffer size.
    *
-   *  @param n  the index which refers to the first element to delete.
+   *  @param n       the index which refers to the first element to delete.
    *  @param count   the number of elements to delete
-   *  @throws Predef.IndexOutOfBoundsException if <code>n</code> is out of bounds.
+   *  @throws Predef.IndexOutOfBoundsException if `n` is out of bounds.
    */
   override def remove(n: Int, count: Int) {
     require(count >= 0, "removing negative number of elements")
@@ -135,10 +150,10 @@ class ArrayBuffer[A](override protected val initialSize: Int)
     reduceToSize(size0 - count)
   }
 
-  /** Removes the element on a given index position
+  /** Removes the element at a given index position.
    *
    *  @param n  the index which refers to the element to delete.
-   *  @return  The element that was formerly at position `n`
+   *  @return   the element that was formerly at position `n`.
    */
   def remove(n: Int): A = {
     val result = apply(n)
@@ -148,7 +163,7 @@ class ArrayBuffer[A](override protected val initialSize: Int)
 
   /** Return a clone of this buffer.
    *
-   *  @return an <code>ArrayBuffer</code> with the same elements.
+   *  @return an `ArrayBuffer` with the same elements.
    */
   override def clone(): ArrayBuffer[A] = new ArrayBuffer[A] ++= this
 
@@ -159,13 +174,14 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   override def stringPrefix: String = "ArrayBuffer"
 }
 
-/** Factory object for <code>ArrayBuffer</code> class.
+/** Factory object for the `ArrayBuffer` class.
  *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
+ *  $factoryInfo
+ *  @define coll list
+ *  @define Coll List
  */
 object ArrayBuffer extends SeqFactory[ArrayBuffer] {
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayBuffer[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, ArrayBuffer[A]] = new ArrayBuffer[A]
 }

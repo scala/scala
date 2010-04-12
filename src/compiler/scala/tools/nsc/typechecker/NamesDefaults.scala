@@ -210,8 +210,11 @@ trait NamesDefaults { self: Analyzer =>
           blockWithoutQualifier(defaultQual)
 
         // super constructor calls
-        case Select(Super(_, _), _) if isConstr =>
-          val defaultQual = moduleQual(baseFun.pos, mod => gen.mkAttributedRef(mod))
+        case Select(sp @ Super(_, _), _) if isConstr =>
+          // fix for #3207. selection of the companion module of the superclass
+          // needs to have the same prefix as the the superclass.
+          val superprefix = sp.symbol.tpe.parents.head.prefix
+          val defaultQual = moduleQual(baseFun.pos, mod => gen.mkAttributedRef(superprefix, mod))
           blockWithoutQualifier(defaultQual)
 
         // self constructor calls (in secondary constructors)
@@ -377,7 +380,8 @@ trait NamesDefaults { self: Analyzer =>
       } else {
         val defGetterName = param.owner.name +"$default$"+ i
         if (param.owner.owner.isClass) {
-          param.owner.owner.info.member(defGetterName)
+          // .toInterface: otherwise we get the method symbol of the impl class
+          param.owner.owner.toInterface.info.member(defGetterName)
         } else {
           // the owner of the method is another method. find the default
           // getter in the context.

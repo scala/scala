@@ -16,9 +16,10 @@ import generic._
 
 /** A subtrait of <code>collection.Seq</code> which represents sequences
  *  that can be mutated.
- *  The class adds an <code>update</code> method to <code>collection.Seq</code>.
  *
- *  @since 2.8
+ *  $seqInfo
+ *
+ *  The class adds an <code>update</code> method to <code>collection.Seq</code>.
  */
 trait Seq[A] extends Iterable[A]
                      with scala.collection.Seq[A]

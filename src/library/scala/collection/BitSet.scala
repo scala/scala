@@ -15,17 +15,16 @@ import generic._
 
 /** A common base class for mutable and immutable bitsets.
  *  $bitsetinfo
-
- *  @author Martin Odersky
- *  @version 2.8
- *  @since 1
  */
 trait BitSet extends Set[Int]
                 with BitSetLike[BitSet] {
   override def empty: BitSet = BitSet.empty
 }
 
-/** $factoryInfo */
+/** $factoryInfo
+ *  @define coll bitset
+ *  @define Coll BitSet
+ */
 object BitSet extends BitSetFactory[BitSet] {
   val empty: BitSet = immutable.BitSet.empty
   /** $canBuildFromInfo */

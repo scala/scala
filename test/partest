@@ -75,11 +75,11 @@ if $cygwin; then
 fi
 
 # Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
-[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xms512M -Xmx1536M -Xss1M -XX:MaxPermSize=128M"
+[ -n "$JAVA_OPTS" ] || JAVA_OPTS="-Xms64M -Xmx1024M -Xss768K -XX:MaxPermSize=96M"
 [ -n "$SCALAC_OPTS" ] || SCALAC_OPTS=""
 
-export SCALAC_OPTS
-export JAVA_OPTS
+# export SCALAC_OPTS
+# export JAVA_OPTS
 export JAVACMD
 
 ${JAVACMD:=java} $JAVA_OPTS \

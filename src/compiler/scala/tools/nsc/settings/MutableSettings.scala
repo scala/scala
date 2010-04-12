@@ -4,15 +4,13 @@
  */
 // $Id$
 
-package scala.tools.nsc
+package scala.tools
+package nsc
 package settings
 
 import io.AbstractFile
-import util.{ ClassPath, CommandLineParser }
-import annotation.elidable
 import scala.tools.util.StringOps
 import scala.collection.mutable.ListBuffer
-import interpreter.{ returning }
 
 /** A mutable Settings object.
  */
@@ -84,7 +82,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
   /** Split the given line into parameters.
    */
-  def splitParams(line: String) = CommandLineParser.tokenize(line, errorFn)
+  def splitParams(line: String) = cmd.Parser.tokenize(line, errorFn)
 
   /** Returns any unprocessed arguments.
    */
@@ -426,7 +424,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     prependPath: StringSetting,
     appendPath: StringSetting)
   extends StringSetting(name, arg, descr, default) {
-    import ClassPath.join
+    import util.ClassPath.join
     def prepend(s: String) = prependPath.value = join(s, prependPath.value)
     def append(s: String) = appendPath.value = join(appendPath.value, s)
 

@@ -384,18 +384,13 @@ trait Namers { self: Analyzer =>
                     mods &~ LOCAL
                   } else mods
               // add getter and possibly also setter
-              val accflags: Long = ACCESSOR |
-              (if (mods1.isVariable) mods1.flags & ~MUTABLE & ~PRESUPER
-                 else mods1.flags & ~PRESUPER | STABLE)
               if (nme.isSetterName(name))
                 context.error(tree.pos, "Names of vals or vars may not end in `_='")
               // .isInstanceOf[..]: probably for (old) IDE hook. is this obsolete?
-              val getter = enterAliasMethod(tree, name, accflags, mods1)
+              val getter = enterAccessorMethod(tree, name, getterFlags(mods1.flags), mods1)
               setInfo(getter)(namerOf(getter).getterTypeCompleter(vd))
               if (mods1.isVariable) {
-                val setter = enterAliasMethod(tree, nme.getterToSetter(name),
-                                            accflags & ~STABLE & ~CASEACCESSOR,
-                                            mods1)
+                val setter = enterAccessorMethod(tree, nme.getterToSetter(name), setterFlags(mods1.flags), mods1)
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
               }
 
@@ -468,7 +463,7 @@ trait Namers { self: Analyzer =>
       sym
     }
 
-    def enterAliasMethod(tree: Tree, name: Name, flags: Long, mods: Modifiers): TermSymbol =
+    def enterAccessorMethod(tree: Tree, name: Name, flags: Long, mods: Modifiers): TermSymbol =
       enterNewMethod(tree, name, flags, mods, tree.pos.focus)
 
     private def addBeanGetterSetter(vd: ValDef, getter: Symbol) {
@@ -508,7 +503,7 @@ trait Namers { self: Analyzer =>
             // known. instead, uses the same machinery as for the non-bean setter:
             // create and enter the symbol here, add the tree in Typer.addGettterSetter.
             val setterName = "set" + beanName
-            val setter = enterAliasMethod(vd, setterName, flags, mods)
+            val setter = enterAccessorMethod(vd, setterName, flags, mods)
               .setPos(vd.pos.focus)
             setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
           }

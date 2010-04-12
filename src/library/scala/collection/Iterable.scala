@@ -15,7 +15,8 @@ import generic._
 import scala.util.control.Breaks._
 import mutable.Builder
 
-/** $iterableInfo
+/** A base trait for iterable collections.
+ *  $iterableInfo
  */
 trait Iterable[+A] extends Traversable[A]
                       with GenericTraversableTemplate[A, Iterable]
@@ -35,6 +36,8 @@ trait Iterable[+A] extends Traversable[A]
 }
 
 /** $factoryInfo
+ *  @define coll iterable collection
+ *  @define Coll Iterable
  */
 object Iterable extends TraversableFactory[Iterable] {
 

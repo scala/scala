@@ -20,6 +20,8 @@ import java.util.{Timer, TimerTask}
  *  </p>
  *
  *  @author Philipp Haller
+ *
+ *  @define actor `ReplyReactor`
  */
 trait ReplyReactor extends Reactor[Any] with ReactorCanReply {
 
@@ -38,7 +40,7 @@ trait ReplyReactor extends Reactor[Any] with ReactorCanReply {
   private[actors] var onTimeout: Option[TimerTask] = None
 
   /**
-   * Returns the actor which sent the last received message.
+   * Returns the $actor which sent the last received message.
    */
   protected[actors] def sender: OutputChannel[Any] = senders.head
 
@@ -49,16 +51,10 @@ trait ReplyReactor extends Reactor[Any] with ReactorCanReply {
     sender ! msg
   }
 
-  /**
-   * Sends <code>msg</code> to this actor (asynchronous).
-   */
   override def !(msg: Any) {
     send(msg, Actor.rawSelf(scheduler))
   }
 
-  /**
-   * Forwards <code>msg</code> to this actor (asynchronous).
-   */
   override def forward(msg: Any) {
     send(msg, Actor.sender)
   }
@@ -115,9 +111,9 @@ trait ReplyReactor extends Reactor[Any] with ReactorCanReply {
   }
 
   /**
-   * Receives a message from this actor's mailbox within a certain
+   * Receives a message from this $actor's mailbox within a certain
    * time span.
-   * <p>
+   *
    * This method never returns. Therefore, the rest of the computation
    * has to be contained in the actions of the partial function.
    *

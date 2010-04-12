@@ -40,7 +40,7 @@ import annotation.migration
  *    `drop`, `filter` return the same kind of map, you
  *    should also override:
  *  {{{
- *    def> empty: This
+ *    def empty: This
  *  }}}
  *    If you wish to avoid the unnecessary construction of an `Option`
  *    object, you could also override `apply`, `update`,
@@ -187,7 +187,8 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   def clear() { keysIterator foreach -= }
 
-  /** If given key is already in this map, returns associated value
+  /** If given key is already in this map, returns associated value.
+   *
    *  Otherwise, computes value from given expression `op`, stores with key
    *  in map and returns that value.
    *  @param  key the key to test

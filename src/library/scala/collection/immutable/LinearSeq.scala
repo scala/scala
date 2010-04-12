@@ -15,10 +15,9 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A subtrait of <code>collection.LinearSeq</code> which represents sequences
- *  that cannot be mutated.
+/** A subtrait of <code>collection.LinearSeq</code> which represents sequences that
+ *  are guaranteed immutable.
  *  $linearSeqInfo
- *  @since 2.8
  */
 trait LinearSeq[+A] extends Seq[A]
                             with scala.collection.LinearSeq[A]
@@ -27,8 +26,9 @@ trait LinearSeq[+A] extends Seq[A]
   override def companion: GenericCompanion[LinearSeq] = LinearSeq
 }
 
-/**
- * @since 2.8
+/** $factoryInfo
+ *  @define coll linear sequence
+ *  @define Coll LinearSeq
  */
 object LinearSeq extends SeqFactory[LinearSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = new GenericCanBuildFrom[A]

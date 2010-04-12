@@ -7,10 +7,10 @@ package scala.tools.nsc
 package doc
 package html
 
+import model._
+
 import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
-import reporters.Reporter
-import model._
 import scala.collection._
 
 /** A class that can generate Scaladoc sites to some fixed root folder.
@@ -27,16 +27,15 @@ class HtmlFactory(val universe: Universe) {
     * that document a model extracted from a compiler run.
     * @param model The model to generate in the form of a sequence of packages. */
   def generate(universe: Universe): Unit = {
+
     def copyResource(subPath: String) {
       val bytes = new Streamable.Bytes {
         val inputStream = getClass.getResourceAsStream("/scala/tools/nsc/doc/html/resource/" + subPath)
         assert(inputStream != null)
-      } . toByteArray()
-
+      }.toByteArray
       val dest = Directory(siteRoot) / subPath
       dest.parent.createDirectory()
       val out = dest.toFile.bufferedOutput()
-
       try out.write(bytes, 0, bytes.length)
       finally out.close()
     }
@@ -64,11 +63,12 @@ class HtmlFactory(val universe: Universe) {
 
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
-    def writeTemplate(tpl: DocTemplateEntity): Unit = {
-      new page.Template(tpl) writeFor this
-      written += tpl
-      tpl.templates filter { t => !(written contains t) } map (writeTemplate(_))
-    }
+    def writeTemplate(tpl: DocTemplateEntity): Unit =
+      if (!(written contains tpl)) {
+        new page.Template(tpl) writeFor this
+        written += tpl
+        tpl.templates map (writeTemplate(_))
+      }
 
     writeTemplate(universe.rootPackage)
 

@@ -15,6 +15,16 @@ package immutable
 import generic._
 
 /**
+ * A generic trait for immutable maps. Concrete classes have to provide
+ * functionality for the abstract methods in `Map`:
+ *
+ * {{{
+ *    def get(key: A): Option[B]
+ *    def iterator: Iterator[(A, B)]
+ *    def + [B1 >: B](kv: (A, B1)): Map[A, B1]
+ *    def -(key: A): Map[A, B]
+ * }}}
+ *
  * @since 1
  */
 trait Map[A, +B] extends Iterable[(A, B)]
@@ -39,6 +49,8 @@ trait Map[A, +B] extends Iterable[(A, B)]
 }
 
 /**
+ * A companion object for immutable maps.
+ *
  * @since 1
  */
 object Map extends ImmutableMapFactory[Map] {

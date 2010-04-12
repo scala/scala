@@ -17,6 +17,9 @@ import immutable.{List, Nil}
  *  be added to this builder with `++=` are not evaluated until `result` is called.
  *
  *  @since 2.8
+ *
+ *  @tparam Elem    type of the elements for this builder.
+ *  @tparam To      type of the collection this builder builds.
  */
 abstract class LazyBuilder[Elem, +To] extends Builder[Elem, To] {
   /** The different segments of elements to be added to the builder, represented as iterators */

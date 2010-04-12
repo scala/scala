@@ -512,7 +512,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     phasesSet += uncurry                    // uncurry, translate function values to anonymous classes
     phasesSet += tailCalls                  // replace tail calls by jumps
-    if (settings.specialize.value)
+    if (!settings.nospecialization.value)
       phasesSet += specializeTypes
     phasesSet += explicitOuter              // replace C.this by explicit outer pointers, eliminate pattern matching
     phasesSet += erasure                    // erase types, add interfaces for traits
