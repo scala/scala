@@ -802,6 +802,14 @@ trait Infer {
       (argtpes1, argPos, namesOK)
     }
 
+    /** don't do a () to (()) conversion for methods whose second parameter
+     * is a varargs. This is a fairly kludgey way to address #3224.
+     * We'll probably find a better way to do this by identifying
+     * tupled and n-ary methods, but thiws is something for a future major revision.
+     */
+    def isUnitForVarArgs(args: List[AnyRef], params: List[Symbol]): Boolean =
+      args.length == 0 && params.length == 2 && isVarArgs(params)
+
     /** Is there an instantiation of free type variables <code>undetparams</code>
      *  such that function type <code>ftpe</code> is applicable to
      *  <code>argtpes</code> and its result conform to <code>pt</code>?
@@ -833,14 +841,15 @@ trait Infer {
 
           def tryTupleApply: Boolean = {
             // if 1 formal, 1 argtpe (a tuple), otherwise unmodified argtpes0
-            val tupleArgTpe = actualTypes(argtpes0 map {
+            val tupleArgTpes = actualTypes(argtpes0 map {
                 // no assignment is treated as named argument here
               case NamedType(name, tp) => UnitClass.tpe
               case tp => tp
               }, formals.length)
 
-            argtpes0.length != tupleArgTpe.length &&
-              isApplicable(undetparams, ftpe, tupleArgTpe, pt)
+            argtpes0.length != tupleArgTpes.length &&
+            !isUnitForVarArgs(argtpes0, params) &&
+            isApplicable(undetparams, ftpe, tupleArgTpes, pt)
           }
           def typesCompatible(argtpes: List[Type]) = {
             val restpe = ftpe.resultType(argtpes)

@@ -1,0 +1,6 @@
+/home/odersky/workspace/scala/test/files/neg/t3224.scala:29: error: polymorphic expression cannot be instantiated to expected type;
+ found   : [T]Array[T]
+ required: List[?]
+  println(Texts textL Array()); println(Texts textL Array(1)); println(Texts textL Array(1, 1))
+                           ^
+one error found
