@@ -71,6 +71,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           </div>
         </div>
 
+        { if (constructors.isEmpty) NodeSeq.Empty else
+            <div id="constructors" class="members">
+              <h3>Instance constructors</h3>
+              <ol>{ constructors map (memberToHtml(_)) }</ol>
+            </div>
+        }
+
         { if (typeMembers.isEmpty) NodeSeq.Empty else
             <div id="types" class="members">
               <h3>Type Members</h3>
@@ -82,13 +89,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             <div id="values" class="members">
               <h3>Value Members</h3>
               <ol>{ valueMembers map (memberToHtml(_)) }</ol>
-            </div>
-        }
-
-        { if (constructors.isEmpty) NodeSeq.Empty else
-            <div id="constructors" class="members">
-              <h3>Instance constructors</h3>
-              <ol>{ constructors map (memberToHtml(_)) }</ol>
             </div>
         }
 
@@ -267,7 +267,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       if (tpl.isPackage) "package" else if (tpl.isClass) "class" else if (tpl.isTrait) "trait" else "object"
     case ctor: Constructor => "new"
     case tme: MemberEntity =>
-      if (tme.isDef) "def" else if (tme.isVal) "val" else if (tme.isVar) "var" else "type"
+    	val attr: String = if (tme.isImplicit) "implicit " else ""
+      val kind = if (tme.isDef) "def" else if (tme.isVal) "val" else if (tme.isVar) "var" else "type"
+      attr + kind
   }
 
   def boundsToHtml(hi: Option[TypeEntity], lo: Option[TypeEntity], hasLinks: Boolean): NodeSeq = {
