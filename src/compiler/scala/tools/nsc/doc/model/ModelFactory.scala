@@ -373,7 +373,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
         None
     }
 
-    if ((!aSym.isPackage && aSym.sourceFile == null) || !localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
+    if (!localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>
