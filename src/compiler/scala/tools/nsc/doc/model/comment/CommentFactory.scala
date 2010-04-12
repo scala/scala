@@ -102,17 +102,15 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     * @param comment The raw comment string (including start and end markers) to be parsed.
     * @param pos     The position of the comment in source. */
   protected def parse(comment: String, pos: Position): Comment = {
+
     /** The cleaned raw comment as a list of lines. Cleaning removes comment start and end markers, line start markers
       * and unnecessary whitespace. */
     val cleaned: List[String] = {
       def cleanLine(line: String): String = {
         //replaceAll removes trailing whitespaces
         line.replaceAll("""\s+$""", "") match {
-          case "" => ""  // Empty lines are require to keep paragraphs
           case CleanCommentLine(ctl) => ctl
-          case tl =>
-            reporter.warning(pos, "Please re-check this line of the comment")
-            tl
+          case tl => tl
         }
       }
       val strippedComment = comment.trim.stripPrefix("/*").stripSuffix("*/")
@@ -221,20 +219,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
             val deprecated  = oneTag(SimpleTagKey("deprecated"))
             val note        = allTags(SimpleTagKey("note"))
             val example     = allTags(SimpleTagKey("example"))
-            val short = {
-              def findShort(blocks: Iterable[Block]): Inline =
-                if (blocks.isEmpty) Text("")
-                else blocks.head match {
-                  case Title(text, _) => text
-                  case Paragraph(text) => text
-                  case Code(data) => Monospace(data.lines.next)
-                  case UnorderedList(items) => findShort(items)
-                  case OrderedList(items, _) => findShort(items)
-                  case DefinitionList(items) => findShort(items.values)
-                  case HorizontalRule() => findShort(blocks.tail)
-                }
-              findShort(body.blocks)
-            }
+            val short       = body.summary getOrElse Text("no summary matey")
           }
 
           for ((key, _) <- bodyTags)
@@ -263,6 +248,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     * @author Manohar Jonnalagedda
     * @author Gilles Dubochet */
   protected final class WikiParser(val buffer: Array[Char], pos: Position) extends CharReader(buffer) { wiki =>
+
+    var summaryParsed = false
 
     /** listStyle ::= '-' spc | '1.' spc | 'I.' spc | 'i.' spc | 'A.' spc | 'a.' spc
       * Characters used to build lists and their constructors */
@@ -380,7 +367,16 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /** {{{ para ::= inline '\n' }}} */
     def para(): Block = {
-      val p = Paragraph(inline(checkParaEnded()))
+      val p =
+        if (summaryParsed)
+          Paragraph(inline(false))
+        else {
+          val s = summary()
+          val r =
+            if (checkParaEnded) List(s) else List(s, inline(false))
+          summaryParsed = true
+          Paragraph(Chain(r))
+        }
       while (char == endOfLine && char != endOfText)
         nextChar()
       p
@@ -388,34 +384,26 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
 
     /* INLINES */
 
-    def inline(isBlockEnd: => Boolean): Inline =
-      inline(isBlockEnd, isBlockEnd)
+    def inline(isInlineEnd: => Boolean): Inline = {
 
-    def inline(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
       def inline0(): Inline = {
-        if (check("'''"))
-          bold(isInlineEnd, isBlockEnd)
-        else if (check("''"))
-          italic(isInlineEnd, isBlockEnd)
-        else if (check("`"))
-          monospace(isInlineEnd, isBlockEnd)
-        else if (check("__"))
-          underline(isInlineEnd, isBlockEnd)
-        else if (check("^"))
-          superscript(isInlineEnd, isBlockEnd)
-        else if (check(",,"))
-          subscript(isInlineEnd, isBlockEnd)
-        else if (check("[["))
-          link(isInlineEnd, isBlockEnd)
+        if (check("'''")) bold()
+        else if (check("''")) italic()
+        else if (check("`"))  monospace()
+        else if (check("__")) underline()
+        else if (check("^"))  superscript()
+        else if (check(",,")) subscript()
+        else if (check("[[")) link()
         else {
-          readUntil { check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || isBlockEnd || char == endOfLine }
+          readUntil { check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || checkParaEnded || char == endOfLine }
           Text(getRead())
         }
       }
+
       val inlines: List[Inline] = {
         val iss = mutable.ListBuffer.empty[Inline]
         iss += inline0()
-        while(!isInlineEnd && !isBlockEnd && !checkParaEnded) {
+        while(!isInlineEnd && !checkParaEnded) {
           if (char == endOfLine) nextChar()
           val current = inline0()
           (iss.last, current) match {
@@ -426,57 +414,66 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         }
         iss.toList
       }
+
       inlines match {
         case Nil => Text("")
         case i :: Nil => i
-        case i :: is => Chain(i :: is)
+        case is => Chain(is)
       }
+
     }
 
-    def bold(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
+    def bold(): Inline = {
       jump("'''")
-      val i = inline(check("'''"), isBlockEnd)
+      val i = inline(check("'''"))
       jump("'''")
       Bold(i)
     }
 
-    def italic(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
+    def italic(): Inline = {
       jump("''")
-      val i = inline(check("''"), isBlockEnd)
+      val i = inline(check("''"))
       jump("''")
       Italic(i)
     }
 
-    def monospace(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
+    def monospace(): Inline = {
       jump("`")
       readUntil { char == '`' }
       jump("`")
       Monospace(getRead())
     }
 
-    def underline(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
+    def underline(): Inline = {
       jump("__")
-      val i = inline(check("__"), isBlockEnd)
+      val i = inline(check("__"))
       jump("__")
       Underline(i)
     }
 
-    def superscript(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
+    def superscript(): Inline = {
       jump("^")
-      val i = inline(check("^"), isBlockEnd)
+      val i = inline(check("^"))
       jump("^")
       Superscript(i)
     }
 
-    def subscript(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
+    def subscript(): Inline = {
       jump(",,")
-      val i = inline(check(",,"), isBlockEnd)
+      val i = inline(check(",,"))
       jump(",,")
       Subscript(i)
     }
 
-    protected val SchemeUri =
-      new Regex("""([^:]+:.*)""")
+    def summary(): Inline = {
+      val i = inline(check("."))
+      Summary(
+        if (jump("."))
+          Chain(List(i, Text(".")))
+        else
+          i
+      )
+    }
 
     def entityLink(query: String): Inline = findTemplate(query) match {
       case Some(tpl) =>
@@ -485,14 +482,15 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         Text(query)
     }
 
-    def link(isInlineEnd: => Boolean, isBlockEnd: => Boolean): Inline = {
+    def link(): Inline = {
+      val SchemeUri = new Regex("""([^:]+:.*)""")
       jump("[[")
       readUntil { check("]]") || check(" ") }
       val target = getRead()
       val title =
         if (!check("]]")) Some({
           jump(" ")
-          inline(check("]]"), isBlockEnd)
+          inline(check("]]"))
         })
         else None
       jump("]]")
