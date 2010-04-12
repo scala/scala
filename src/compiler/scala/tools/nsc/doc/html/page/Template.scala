@@ -377,6 +377,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
         <h4 class="signature"><a href={ relativeLinkTo(dte) }>{ inside(hasLinks = false) }</a></h4>
+      case _ if isSelf =>
+        <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>
         <h4 class="signature">{ inside(hasLinks = true) }</h4>
     }

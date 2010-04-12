@@ -1,159 +1,187 @@
 * {
-	color: black;
-	text-decoration: none;
-	font-family: inherit;
-	font-size: inherit;
-	font-weight: normal;
-	border-width: 0px;
-	padding: 0px;
-	margin: 0px;
+  color: black;
+  text-decoration: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: normal;
+  border-width: 0px;
+  padding: 0px;
+  margin: 0px;
 }
 
 body {
-	font-family: sans-serif;
-	font-size: 10pt;
+  font-family: sans-serif;
+  font-size: 10pt;
 }
 
 a {
-	cursor: pointer;
+  cursor: pointer;
+  text-decoration: underline;
+  color: #4B0082; /* indigo */
 }
 
 a:hover {
-	text-decoration: underline;
+  text-decoration: none;
 }
 
 #owner {
-	padding: 4px;
-	font-size: 12pt;
-	display: block;
+  padding: 4px;
+  font-size: 12pt;
+  display: block;
 }
 
 .value #owner {
-	background-color: #ced8f4;
+  background-color: #ced8f4;
 }
 
 .type #owner {
-	background-color: #f4cece;
+  background-color: #f4cece;
 }
 
 #definition {
-	display: block;
-	padding: 6px;
+  display: block;
+  padding: 6px;
 }
 
 #definition > img {
-	float: left;
+  float: left;
 }
 
 #definition > h1 {
-	padding: 12px 0 12px 6px;
-	color: white;
-	font-size: 24pt;
-	display: inline-block;
+  padding: 12px 0 12px 6px;
+  color: white;
+  font-size: 24pt;
+  display: inline-block;
+}
+
+#signature > span.kind {
+  font-size: 11pt;
+  display: inline;
+  float: left;
+  text-align: left;
+  width: auto;
+  padding-left: 6px;
+}
+
+#signature > span.symbol {
+  font-size: 11pt;
+  text-align: left;
 }
 
 .value #definition {
-	background-color: #142556;
+  background-color: #142556;
 }
 
 .type #definition {
-	background-color: #561414;
+  background-color: #561414;
 }
 
 #comment {
-	padding-left: 8px;
+  padding-left: 8px;
 }
 
 #values > h3 {
-	color: white;
-	padding: 4px;
-	background-color: #142556;
-	font-size: 12pt;
-	font-weight: bold;
+  color: white;
+  padding: 4px;
+  background-color: #142556;
+  font-size: 12pt;
+  font-weight: bold;
 }
 
 #types > h3 {
-	padding: 4px;
-	color: white;
-	font-weight: bold;
-	font-size: 12pt;
-	background-color: #561414;
+  padding: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 12pt;
+  background-color: #561414;
 }
 
 #constructors > h3 {
-	padding: 4px;
-	color: white;
-	font-weight: bold;
-	font-size: 12pt;
-	background-color: #000000;
+  padding: 4px;
+  color: white;
+  font-weight: bold;
+  font-size: 12pt;
+  background-color: #000000;
 }
 
 /* Member cells */
 
 div.members > ol {
-	background-color: white;
-	list-style: none
+  background-color: white;
+  list-style: none
 }
 
 div.members > ol > li {
-	display: block;
+  display: block;
 }
 
 /* Member signatures */
 
 #tooltip {
-	background: #142556;
-	border: 2px solid white;
-	color: white;
-	display: none;
-	padding: 5px;
-	position: absolute;
+  background: #142556;
+  border: 2px solid white;
+  color: white;
+  display: none;
+  padding: 5px;
+  position: absolute;
 }
 
 .signature {
-	padding: 1px;
-	font-family: monospace;
-	font-size: 10pt;
-	clear: both;
-	display: block;
-	background-color: #dddddd;
+  padding: 3px;
+  font-family: monospace;
+  font-size: 10pt;
+  clear: both;
+  display: block;
+  background-color: #E5E5E5;
 }
 
 .signature .kind {
-	text-align: right;
-	float: left;
-	display: inline-block;
-	width: 8em;
+  text-align: right;
+  float: left;
+  display: inline-block;
+  width: 8em;
+}
+
+.signature > a > .symbol > .name {
+  text-decoration: underline;
+}
+
+.signature > a:hover > .symbol > .name {
+  text-decoration: none;
+}
+
+.signature > a {
+  text-decoration: none;
 }
 
 .signature .symbol {
-	display: inline;
-	padding-left: 0.7em;
+  display: inline;
+  padding-left: 0.7em;
 }
 
 .signature .name {
-	display: inline-block;
-	font-weight: bold;
+  display: inline-block;
+  font-weight: bold;
 }
 
 .signature .symbol .params .implicit {
-	font-style: italic;
+  font-style: italic;
 }
 
 .signature .symbol .name.deprecated {
-	text-decoration: line-through;
+  text-decoration: line-through;
 }
 
 .signature .symbol .params .default {
-	font-style: italic;
+  font-style: italic;
 }
 
 #values .signature .name {
-	color: blue;
+  color: blue;
 }
 
 #types .signature .name {
-	color: red;
+  color: red;
 }
 
 /* Comments text formating */
@@ -161,76 +189,76 @@ div.members > ol > li {
 .cmt {}
 
 .cmt p {
-	margin: 2px 0 2px 0;
+  margin: 2px 0 2px 0;
 }
 
 .cmt code {
-	font-family: monospace;
-	font-size: small;
+  font-family: monospace;
+  font-size: small;
 }
 
 .cmt pre {
-	display: block;
-	font-family: monospace;
-	font-size: small;
-	margin: 2px 0 2px 0;
+  display: block;
+  font-family: monospace;
+  font-size: small;
+  margin: 2px 0 2px 0;
 }
 
 .cmt ul {
-	display: block;
-	list-style: circle;
-	padding-left:20px;
+  display: block;
+  list-style: circle;
+  padding-left:20px;
 }
 
 .cmt ol {
-	display: block;
-	padding-left:20px;
+  display: block;
+  padding-left:20px;
 }
 
 .cmt ol.decimal {
-	list-style: decimal;
+  list-style: decimal;
 }
 
 .cmt ol.lowerAlpha {
-	list-style: lower-alpha;
+  list-style: lower-alpha;
 }
 
 .cmt ol.upperAlpha {
-	list-style: upper-alpha;
+  list-style: upper-alpha;
 }
 
 .cmt ol.lowerRoman {
-	list-style: lower-roman;
+  list-style: lower-roman;
 }
 
 .cmt ol.upperRoman {
-	list-style: upper-roman;
+  list-style: upper-roman;
 }
 
 .cmt li {
-	display:list-item;
+  display:list-item;
 }
 
 .cmt a {
-	text-decoration: underline;
+  text-decoration: underline;
 }
 
 /* Comments structured layout */
 
 p.comment {
-	display: block;
+  display: block;
 	margin-left: 8.7em;
 }
 
 p.shortcomment {
-	display: block;
+  display: block;
 	margin-left: 8.7em;
-	cursor: help;
+  cursor: help;
 }
 
 div.fullcomment {
-	display: block;
-	margin: 10px 0 10px 0;
+  display: block;
+  margin: 10px 0 10px 0;
 }
 
 #template div.fullcomment {
@@ -238,92 +266,92 @@ div.fullcomment {
 }
 
 div.fullcomment .block {
-	padding: 2px 0 2px 0;
-	border-top: 1px solid black;
-	border-bottom: 1px solid black;
+  padding: 2px 0 2px 0;
+  border-top: 1px solid gray;
+  border-bottom: 1px solid gray;
 }
 
 div.fullcomment div.block ol li p, 
 div.fullcomment div.block ol li {
-	display:inline
+  display:inline
 }
 
 div.fullcomment .block + .block {
-	border-top: none;
+  border-top: none;
 }
 
 div.fullcomment .block > h5 {
-	font-style: italic;
-	font-weight: normal;
-	display: inline-block;
+  font-style: italic;
+  font-weight: normal;
+  display: inline-block;
 }
 
 div.fullcomment .comment {
-	margin: 6px 0 6px 0;
+  margin: 6px 0 6px 0;
 }
 
 div.fullcomment dl.paramcmts > dt {
-	display: block;
-	float: left;
-	font-weight: bold;
-	margin: 2px 4px 2px 0;
+  display: block;
+  float: left;
+  font-weight: bold;
+  margin: 2px 4px 2px 0;
 }
 
 div.fullcomment dl.paramcmts > dd {
-	display: block;
-	padding-left: 80px;
-	border-top: 1px dashed black;
-	border-bottom: 1px dashed black;
+  display: block;
+  padding-left: 80px;
+  border-top: 1px dashed gray;
+  border-bottom: 1px dashed gray;
 }
 
 div.fullcomment dl.paramcmts > dt:first-child + dd {
-	border-top: none;
+  border-top: none;
 }
 
 div.fullcomment dl.paramcmts > dd:last-child {
-	border-bottom: none;
+  border-bottom: none;
 }
 
 div.fullcomment dl.paramcmts > dd + dt + dd {
-	border-top: none;
+  border-top: none;
 }
 
 /* Members filter tool */
 
 #mbrsel {
-	padding: 4px;
-	background-color: #cccccc;
-	display: block;
+  padding: 4px;
+  background-color: #cccccc;
+  display: block;
 }
 
 #mbrsel > div > h3 {
-	padding: 4px;
-	display: inline;
+  padding: 4px;
+  display: inline;
 }
 
 #mbrsel > div > ol {
-	display: inline-block;
-	background-color: white;
+  display: inline-block;
+  background-color: white;
 }
 
 #mbrsel > div > ol#linearization {
-	display: inline;
+  display: inline;
 }
 
 #mbrsel > div > ol > li {
-	padding: 4px 8px 4px 8px;
-	font-weight: bold;
-	background-color: white;
-	display: inline-block;
-	cursor: crosshair;
+  padding: 4px 8px 4px 8px;
+  font-weight: bold;
+  background-color: white;
+  display: inline-block;
+  cursor: crosshair;
 }
 
 #mbrsel > div > ol > li.in {
-	background-color: white;
+  background-color: white;
 }
 
 #mbrsel > div > ol > li.out {
-	color: #888888;
-	background-color: #bbbbbb;
+  color: #888888;
+  background-color: #bbbbbb;
 }
 
