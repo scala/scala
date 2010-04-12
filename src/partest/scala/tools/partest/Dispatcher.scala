@@ -31,14 +31,14 @@ trait Dispatcher {
     val groups    = selected groupBy (_.category)
     val count     = selected.size
 
-    if (count == 0) return CombinedTestResults(0, 0, 0)
+    if (count == 0) return CombinedTestResults(0, 0, 0, Nil)
     else if (count == allTests.size) verbose("Running all %d tests." format count)
     else verbose("Running %d/%d tests: %s".format(count, allTests.size, toStringTrunc(selected map (_.label) mkString ", ")))
 
     allCategories collect { case x if groups contains x => runCategory(x, groups(x)) } reduceLeft (_ ++ _)
   }
 
-  private def parallelizeTests(tests: List[TestEntity]): immutable.Map[TestEntity, Int] = {
+  private def parallelizeTests(tests: List[TestEntity]): immutable.Map[TestEntity, TestResult] = {
     // propagate verbosity
     if (isDebug) scala.actors.Debug.level = 3
 
@@ -63,9 +63,9 @@ trait Dispatcher {
         case ResultsOfRun(resultMap)  => resultMap
         case TIMEOUT                  =>
           warning("Worker %d timed out." format w.workerNum)
-          immutable.Map[TestEntity, Int]()
           // mark all the worker's tests as having timed out - should be hard to miss
-          groups(w.workerNum) map (_ -> 2) toMap
+          // immutable.Map[TestEntity, TestResult]()
+          groups(w.workerNum) map (x => (x -> new Timeout(x))) toMap
       }
     }) reduceLeft (_ ++ _)
   }
@@ -75,9 +75,10 @@ trait Dispatcher {
     normal("%s (%s tests in %s)\n".format(category.startMessage, tests.size, category))
 
     val (milliSeconds, resultMap) = timed2(parallelizeTests(tests))
-    val (passed, failed)          = resultsToStatistics(resultMap)
+    val (passed, failed)          = resultsToStatistics(resultMap mapValues (_.state))
+    val failures                  = resultMap.values filterNot (_.passed) toList
 
-    CombinedTestResults(passed, failed, milliSeconds)
+    CombinedTestResults(passed, failed, milliSeconds, failures)
   }
 
   /** A Worker is given a bundle of tests and runs them all sequentially.
@@ -92,8 +93,8 @@ trait Dispatcher {
 
     /** Runs the tests.  Passes the result Map to onCompletion when done.
      */
-    private def runTests(tests: List[TestEntity])(onCompletion: immutable.Map[TestEntity, Int] => Unit) {
-      var results       = new immutable.HashMap[TestEntity, Int] // maps tests to results
+    private def runTests(tests: List[TestEntity])(onCompletion: immutable.Map[TestEntity, TestResult] => Unit) {
+      var results       = new immutable.HashMap[TestEntity, TestResult] // maps tests to results
       val numberOfTests = tests.size
       val testIterator  = tests.iterator
       def processed     = results.size
@@ -122,7 +123,7 @@ trait Dispatcher {
           return warning("Received duplicate result for %s: was %s, now %s".format(test, results(test), state))
 
         // increment the counter for this result state
-        results += (test -> state)
+        results += (test -> result)
 
         // show on screen
         if (isDryRun) normal("\n")   // blank line between dry run traces
