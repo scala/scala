@@ -32,7 +32,8 @@ object genprod {
   def productFiles  = arities map Product.make
   def tupleFiles    = arities map Tuple.make
   def functionFiles = (0 :: arities) map Function.make
-  def allfiles      = productFiles ::: tupleFiles ::: functionFiles
+  def absFunctionFiles = (0 :: arities) map AbstractFunction.make
+  def allfiles      = productFiles ::: tupleFiles ::: functionFiles ::: absFunctionFiles
 
   trait Arity extends Group {
     def i: Int    // arity
@@ -48,8 +49,10 @@ object genprod {
     def xdefs           = to map ("x" + _)
     def mdefs           = to map ("_" + _)
     def invariantArgs   = typeArgsString(targs)
-    def covariantArgs   = typeArgsString(targs map ("+" + _))
-    def contraCoArgs    = typeArgsString((targs map ("-" + _)) ::: List("+R"))
+    def covariantArgs   = typeArgsString(targs map (covariantSpecs + "+" + _))
+    def covariantSpecs  = ""
+    def contravariantSpecs = ""
+    def contraCoArgs    = typeArgsString((targs map (contravariantSpecs + "-" + _)) ::: List(covariantSpecs + "+R"))
     def fields          = List.map2(mdefs, targs)(_ + ":" + _) mkString ","
     def funArgs         = List.map2(vdefs, targs)(_ + ":" + _) mkString ","
 
@@ -59,6 +62,8 @@ object genprod {
     def descriptiveComment  = ""
     def withFancy           = if (descriptiveComment.isEmpty) "" else "(with fancy comment)"
     def withMoreMethods     = if (moreMethods.isEmpty) "" else "(with extra methods)"
+    def packageDef          = "scala"
+    def imports             = ""
 
     def header = """
 /*                     __                                               *\
@@ -73,8 +78,9 @@ object genprod {
 
 %s
 
-package scala
-""".trim.format(genprodString) + "\n\n"
+package %s
+%s
+""".trim.format(genprodString, packageDef, imports) + "\n\n"
   }
 
   def main(args: Array[String]) {
@@ -96,7 +102,7 @@ package scala
         w.close
       } catch {
         case e: java.io.IOException =>
-          println(e.getMessage() + ": " + out)
+          println(e.getMessage() + ": " + f)
           exit(-1)
       }
     }
@@ -112,6 +118,7 @@ import genprod._
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 
 object FunctionZero extends Function(0) {
+  override def covariantSpecs = "@specialized "
   override def descriptiveComment = functionNTemplate.format("currentSeconds", "anonfun0",
 """ *
  *    <b>val</b> currentSeconds = () => System.currentTimeMillis() / 1000L
@@ -126,6 +133,9 @@ object FunctionZero extends Function(0) {
 }
 
 object FunctionOne extends Function(1) {
+  override def contravariantSpecs = "@specialized(Int, Long, Double) "
+  override def covariantSpecs = "@specialized(Unit, Boolean, Int, Long, Double) "
+
   override def descriptiveComment = functionNTemplate.format("succ", "anonfun1",
 """ *
  *    <b>val</b> succ = (x: Int) => x + 1
@@ -149,6 +159,9 @@ object FunctionOne extends Function(1) {
 }
 
 object FunctionTwo extends Function(2) {
+  override def contravariantSpecs = "@specialized(Int, Long, Double) "
+  override def covariantSpecs = "@specialized(Unit, Boolean, Int, Long, Double) "
+
   override def descriptiveComment = functionNTemplate.format("max", "anonfun2",
 """ *
  *    <b>val</b> max = (x: Int, y: Int) => <b>if</b> (x < y) y <b>else</b> x
@@ -254,16 +267,245 @@ object Tuple
 {
   def make(i: Int) = apply(i)()
   def apply(i: Int) = i match {
+    case 1  => TupleOne
     case 2  => TupleTwo
+    case 3  => TupleThree
     case _  => new Tuple(i)
   }
 }
 
+object TupleOne extends Tuple(1)
+{
+  override def covariantSpecs = "@specialized(Int, Long, Double) "
+}
+
 object TupleTwo extends Tuple(2)
 {
+  override def imports = """
+import scala.collection.{TraversableLike, IterableLike}
+import scala.collection.generic.CanBuildFrom
+"""
+  override def covariantSpecs = "@specialized(Int, Long, Double) "
   override def moreMethods = """
   /** Swap the elements of the tuple */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
+
+  def zip[Repr1, El1, El2, To](implicit w1:   T1 => TraversableLike[El1, Repr1],
+                                        w2:   T2 => Iterable[El2],
+                                        cbf1: CanBuildFrom[Repr1, (El1, El2), To]): To = {
+    val coll1: TraversableLike[El1, Repr1] = _1
+    val coll2: Iterable[El2] = _2
+    val b1 = cbf1(coll1.repr)
+    val elems2 = coll2.iterator
+
+    for(el1 <- coll1)
+      if(elems2.hasNext)
+        b1 += ((el1, elems2.next))
+
+    b1.result
+  }
+
+  /** Wraps a tuple in a `Zipped`, which supports 2-ary generalisations of map, flatMap, filter,...
+   *
+   * @see Zipped
+   * $willNotTerminateInf
+   */
+  def zipped[Repr1, El1, Repr2, El2](implicit w1: T1 => TraversableLike[El1, Repr1], w2: T2 => IterableLike[El2, Repr2]): Zipped[Repr1, El1, Repr2, El2]
+    = new Zipped[Repr1, El1, Repr2, El2](_1, _2)
+
+  class Zipped[+Repr1, +El1, +Repr2, +El2](coll1: TraversableLike[El1, Repr1], coll2: IterableLike[El2, Repr2]) { // coll2: IterableLike for filter
+    def map[B, To](f: (El1, El2) => B)(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+      val b = cbf(coll1.repr)
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1)
+       if(elems2.hasNext)
+         b += f(el1, elems2.next)
+
+      b.result
+    }
+
+    def flatMap[B, To](f: (El1, El2) => Traversable[B])(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+      val b = cbf(coll1.repr)
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1)
+       if(elems2.hasNext)
+         b ++= f(el1, elems2.next)
+
+      b.result
+    }
+
+    def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CanBuildFrom[Repr1, El1, To1], cbf2: CanBuildFrom[Repr2, El2, To2]): (To1, To2) = {
+      val b1 = cbf1(coll1.repr)
+      val b2 = cbf2(coll2.repr)
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1) {
+        if(elems2.hasNext) {
+          val el2 = elems2.next
+          if(f(el1, el2)) {
+            b1 += el1
+            b2 += el2
+          }
+        }
+      }
+
+      (b1.result, b2.result)
+    }
+
+    def exists(f: (El1, El2) => Boolean): Boolean = {
+      var acc = false
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1)
+       if(!acc && elems2.hasNext)
+         acc = f(el1, elems2.next)
+
+      acc
+    }
+
+    def forall(f: (El1, El2) => Boolean): Boolean = {
+      var acc = true
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1)
+       if(acc && elems2.hasNext)
+         acc = f(el1, elems2.next)
+
+      acc
+    }
+
+    def foreach[U](f: (El1, El2) => U): Unit = {
+      val elems2 = coll2.iterator
+
+      for(el1 <- coll1)
+       if(elems2.hasNext)
+         f(el1, elems2.next)
+    }
+  }
+"""
+}
+
+object TupleThree extends Tuple(3) {
+  override def imports = """
+import scala.collection.{TraversableLike, IterableLike}
+import scala.collection.generic.CanBuildFrom
+"""
+  override def moreMethods = """
+  def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 => TraversableLike[El1, Repr1],
+                                             w2:   T2 => Iterable[El2],
+                                             w3:   T3 => Iterable[El3],
+                                             cbf1: CanBuildFrom[Repr1, (El1, El2, El3), To]): To = {
+    val coll1: TraversableLike[El1, Repr1] = _1
+    val coll2: Iterable[El2] = _2
+    val coll3: Iterable[El3] = _3
+    val b1 = cbf1(coll1.repr)
+    val elems2 = coll2.iterator
+    val elems3 = coll3.iterator
+
+    for(el1 <- coll1)
+      if(elems2.hasNext && elems3.hasNext)
+        b1 += ((el1, elems2.next, elems3.next))
+
+    b1.result
+  }
+
+  /** Wraps a tuple in a `Zipped`, which supports 3-ary generalisations of map, flatMap, filter,...
+   *
+   * @see Zipped
+   * $willNotTerminateInf
+   */
+  def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 => TraversableLike[El1, Repr1],
+                                                          w2: T2 => IterableLike[El2, Repr2],
+                                                          w3: T3 => IterableLike[El3, Repr3]): Zipped[Repr1, El1, Repr2, El2, Repr3, El3]
+    = new Zipped[Repr1, El1, Repr2, El2, Repr3, El3](_1, _2, _3)
+
+  class Zipped[+Repr1, +El1, +Repr2, +El2, +Repr3, +El3](coll1: TraversableLike[El1, Repr1],
+                                                         coll2: IterableLike[El2, Repr2],
+                                                         coll3: IterableLike[El3, Repr3]) {
+    def map[B, To](f: (El1, El2, El3) => B)(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+     val b = cbf(coll1.repr)
+     val elems2 = coll2.iterator
+     val elems3 = coll3.iterator
+
+     for(el1 <- coll1)
+       if(elems2.hasNext && elems3.hasNext)
+         b += f(el1, elems2.next, elems3.next)
+
+     b.result
+    }
+
+    def flatMap[B, To](f: (El1, El2, El3) => Traversable[B])(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+      val b = cbf(coll1.repr)
+      val elems2 = coll2.iterator
+      val elems3 = coll3.iterator
+
+      for(el1 <- coll1)
+       if(elems2.hasNext && elems3.hasNext)
+         b ++= f(el1, elems2.next, elems3.next)
+
+      b.result
+    }
+
+    def filter[To1, To2, To3](f: (El1, El2, El3) => Boolean)(
+                 implicit cbf1: CanBuildFrom[Repr1, El1, To1],
+                          cbf2: CanBuildFrom[Repr2, El2, To2],
+                          cbf3: CanBuildFrom[Repr3, El3, To3]): (To1, To2, To3) = {
+      val b1 = cbf1(coll1.repr)
+      val b2 = cbf2(coll2.repr)
+      val b3 = cbf3(coll3.repr)
+      val elems2 = coll2.iterator
+      val elems3 = coll3.iterator
+
+      for(el1 <- coll1) {
+        if(elems2.hasNext && elems3.hasNext) {
+          val el2 = elems2.next
+          val el3 = elems3.next
+          if(f(el1, el2, el3)) {
+            b1 += el1
+            b2 += el2
+            b3 += el3
+          }
+        }
+      }
+
+      (b1.result, b2.result, b3.result)
+    }
+
+    def exists(f: (El1, El2, El3) => Boolean): Boolean = {
+      var acc = false
+      val elems2 = coll2.iterator
+      val elems3 = coll3.iterator
+
+      for(el1 <- coll1)
+       if(!acc && elems2.hasNext && elems3.hasNext)
+         acc = f(el1, elems2.next, elems3.next)
+
+      acc
+    }
+
+    def forall(f: (El1, El2, El3) => Boolean): Boolean = {
+      var acc = true
+      val elems2 = coll2.iterator
+      val elems3 = coll3.iterator
+
+      for(el1 <- coll1)
+       if(acc && elems2.hasNext && elems3.hasNext)
+         acc = f(el1, elems2.next, elems3.next)
+
+      acc
+    }
+
+    def foreach[U](f: (El1, El2, El3) => U): Unit = {
+      val elems2 = coll2.iterator
+      val elems3 = coll3.iterator
+
+      for(el1 <- coll1)
+       if(elems2.hasNext && elems3.hasNext)
+         f(el1, elems2.next, elems3.next)
+    }
+  }
 """
 }
 
@@ -271,7 +513,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity
 {
   // prettifies it a little if it's overlong
   def mkToString() = {
-    def str(xs: List[String]) = xs.mkString(""" + "," + """)
+  def str(xs: List[String]) = xs.mkString(""" + "," + """)
     if (i <= MAX_ARITY / 2) str(mdefs)
     else {
       val s1 = str(mdefs take (i / 2))
@@ -303,7 +545,21 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 object Product extends Group("Product")
 {
   def make(i: Int) = apply(i)()
-  def apply(i: Int) = new Product(i)
+  def apply(i: Int) = i match {
+    case 1  => ProductOne
+    case 2  => ProductTwo
+    case _ => new Product(i)
+  }
+}
+
+object ProductOne extends Product(1)
+{
+  override def covariantSpecs = "@specialized(Int, Long, Double) "
+}
+
+object ProductTwo extends Product(2)
+{
+  override def covariantSpecs = "@specialized(Int, Long, Double) "
 }
 
 class Product(val i: Int) extends Group("Product") with Arity
@@ -353,4 +609,45 @@ trait {className}{covariantArgs} extends Product {{
 }}
 </file>}
 
+}
+
+/** Abstract functions **/
+
+object AbstractFunctionZero extends AbstractFunction(0) {
+  override def covariantSpecs = FunctionZero.covariantSpecs
+}
+
+object AbstractFunctionOne extends AbstractFunction(1) {
+  override def covariantSpecs = FunctionOne.covariantSpecs
+  override def contravariantSpecs = FunctionOne.contravariantSpecs
+}
+
+object AbstractFunctionTwo extends AbstractFunction(2) {
+  override def covariantSpecs = FunctionTwo.covariantSpecs
+  override def contravariantSpecs = FunctionTwo.contravariantSpecs
+}
+
+class AbstractFunction(val i: Int) extends Group("AbstractFunction") with Arity
+{
+  override def packageDef = "scala.runtime"
+
+  val superTypeArgs = typeArgsString(targs ::: List("R"))
+
+  def apply() = {
+<file name={"runtime/" + fileName}>{header}
+abstract class {className}{contraCoArgs} extends Function{i}{superTypeArgs} {{
+{moreMethods}
+}}
+</file>}
+
+}
+object AbstractFunction
+{
+  def make(i: Int) = apply(i)()
+  def apply(i: Int) = i match {
+    case 0    => AbstractFunctionZero
+    case 1    => AbstractFunctionOne
+    case 2    => AbstractFunctionTwo
+    case _    => new AbstractFunction(i)
+  }
 }
