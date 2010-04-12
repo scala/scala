@@ -53,12 +53,13 @@ private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
         // print message on default error stream
         val msgException = "Uncaught exception in "+reactor+"\n"
         val msgMessage   = if (msg != null) "Message: "+msg+"\n" else ""
-        Console.err.print(msgException + msgMessage)
-        e.printStackTrace()
+        Debug.doWarning {
+          Console.err.print(msgException + msgMessage)
+          e.printStackTrace()
+        }
 
-        val uncaught = new UncaughtException(reactor, if (msg != null) Some(msg) else None, currentThread, e)
+        terminateExecution(e)
         reactor.terminated()
-        terminateExecution(uncaught)
     } finally {
       suspendExecution()
       this.reactor = null

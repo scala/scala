@@ -21,11 +21,12 @@ package scala.actors
  */
 class UncaughtException[Msg >: Null](val actor: Reactor[Msg],
                                      val message: Option[Msg],
+                                     val sender: Option[OutputChannel[Any]],
                                      val thread: Thread,
                                      cause: Exception)
 extends Exception(cause) {
 
   override def toString() =
-    "UncaughtException("+actor+","+message+","+cause+")"
+    "UncaughtException("+actor+","+message+","+sender+","+cause+")"
 
 }
