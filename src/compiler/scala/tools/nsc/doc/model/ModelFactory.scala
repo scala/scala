@@ -52,10 +52,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     def inTemplate = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
-    override def equals(that: Any) = that match {
-    	case that: EntityImpl => this.sym == that.sym
-    	case _ => false
-    }
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -124,6 +120,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     def resultType = makeType(sym.tpe.finalResultType, inTemplate, sym)
     def isDef = false
     def isVal = false
+    def isLazyVal = false
     def isVar = false
     def isImplicit = sym.isImplicit
     def isConstructor = false
@@ -336,7 +333,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
   def makeMember(aSym: Symbol, inTpl: => DocTemplateImpl): List[MemberImpl] = {
 
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
-      if (bSym.isGetter && bSym.accessed.isMutable)
+      if (bSym.isGetter && bSym.isLazy) // Scala field accessor or Java field
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
+          override def isLazyVal = true
+        })
+      else if (bSym.isGetter && bSym.accessed.isMutable)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true
         })

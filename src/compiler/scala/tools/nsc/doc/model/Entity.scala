@@ -48,6 +48,7 @@ trait MemberEntity extends Entity {
   def resultType: TypeEntity
   def isDef: Boolean
   def isVal: Boolean
+  def isLazyVal: Boolean
   def isVar: Boolean
   def isImplicit: Boolean
   def isConstructor: Boolean
@@ -131,7 +132,7 @@ trait Constructor extends NonTemplateMemberEntity {
   def valueParams : List[List[ValueParam]]
 }
 
-/** A value (`val`) or variable (`var`) of a ''documentable'' class, trait or object. */
+/** A value (`val`), lazy val (`lazy val`) or variable (`var`) of a ''documentable'' class, trait or object. */
 trait Val extends NonTemplateMemberEntity
 
 /** An abstract type of a ''documentable'' class, trait or object. */
