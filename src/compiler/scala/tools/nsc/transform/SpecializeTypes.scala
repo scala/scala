@@ -712,6 +712,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             }
             info(opc.overriding)  = Forward(om)
             log("typeEnv(om) = " + typeEnv(om))
+            om setPos opc.overriding.pos // set the position of the concrete, overriding member
           }
           overloads(opc.overriding) = Overload(om, env) :: overloads(opc.overriding)
           oms += om
@@ -825,12 +826,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val res = tpe match {
       case PolyType(targs, ClassInfoType(base, decls, clazz)) =>
         val parents = base map specializedType
+        log("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
         PolyType(targs, ClassInfoType(parents, new Scope(specializeClass(clazz, typeEnv(clazz))), clazz))
 
       case ClassInfoType(base, decls, clazz) if !clazz.isPackageClass =>
-//        base.map(_.typeSymbol.info)
+        atPhase(phase.next)(base.map(_.typeSymbol.info))
         val parents = base map specializedType
-        log("transformInfo " + clazz + " with parents1: " + parents)
+        log("transformInfo " + clazz + " with parents1: " + parents + " ph: " + phase)
         val res = ClassInfoType(base map specializedType, new Scope(specializeClass(clazz, typeEnv(clazz))), clazz)
         res
 
@@ -993,7 +995,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             if (!env.isEmpty) {
               val specMember = overload(symbol, env)
               if (specMember.isDefined) {
-                if (settings.debug.value) log("** routing " + tree + " to " + specMember.get.sym.fullName + " tree: " + Select(transform(qual), specMember.get.sym.name))
+                if (settings.debug.value) log("** routing " + tree + " to " + specMember.get.sym.fullName)
                 localTyper.typedOperator(atPos(tree.pos)(Select(transform(qual), specMember.get.sym.name)))
               } else {
                 val qual1 = transform(qual)
@@ -1006,7 +1008,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                   else
                     localTyper.typed(tree1)
                 } else
-                  super.transform(tree)
+                  treeCopy.Select(tree, qual1, name)
               }
             } else
               super.transform(tree)
@@ -1129,7 +1131,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         case Apply(sel @ Select(sup @ Super(qual, name), name1), args) =>
           val res = localTyper.typed(
-            Apply(Select(Super(qual, name) setPos sup.pos, name1) setPos sel.pos, args) setPos tree.pos)
+            Apply(Select(Super(qual, name) setPos sup.pos, name1) setPos sel.pos, transformTrees(args)) setPos tree.pos)
           log("retyping call to super, from: " + symbol + " to " + res.symbol)
           res
 
@@ -1277,9 +1279,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               mbrs += ValDef(acc, EmptyTree).setType(NoType).setPos(m.pos)
             }
             // ctor
-            mbrs += DefDef(m, Modifiers(m.flags), List(vparams) map (_ map ValDef), EmptyTree)
-          } else
-            mbrs += DefDef(m, { paramss => EmptyTree })
+            mbrs += atPos(m.pos)(DefDef(m, Modifiers(m.flags), List(vparams) map (_ map ValDef), EmptyTree))
+          } else {
+            mbrs += atPos(m.pos)(DefDef(m, { paramss => EmptyTree }))
+          }
         } else if (m.isValue) {
           mbrs += ValDef(m, EmptyTree).setType(NoType).setPos(m.pos)
         } else if (m.isClass) {
