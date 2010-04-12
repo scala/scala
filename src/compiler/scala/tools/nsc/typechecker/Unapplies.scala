@@ -134,9 +134,9 @@ trait Unapplies extends ast.TreeDSL
   /** The module corresponding to a case class; without any member definitions
    */
   def caseModuleDef(cdef: ClassDef): ModuleDef = {
-    def inheritFromFun1 = !(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParamss(cdef).length == 1
-    def createFun1      = gen.scalaFunctionConstr(constrParamss(cdef).head map (_.tpt), toIdent(cdef))
-    def parents         = if (inheritFromFun1) List(createFun1) else Nil
+    def inheritFromFun = !(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParamss(cdef).length == 1
+    def createFun      = gen.scalaFunctionConstr(constrParamss(cdef).head map (_.tpt), toIdent(cdef))
+    def parents        = if (inheritFromFun) List(createFun) else Nil
 
     companionModuleDef(cdef, parents ::: List(gen.scalaScalaObjectConstr))
   }
