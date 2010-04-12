@@ -333,7 +333,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
   def makeMember(aSym: Symbol, inTpl: => DocTemplateImpl): List[MemberImpl] = {
 
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
-      if (bSym.isGetter && bSym.isLazy) // Scala field accessor or Java field
+      if (bSym.isGetter && bSym.isLazy)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isLazyVal = true
         })
@@ -341,7 +341,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true
         })
-      else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor)
+      else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor && !bSym.isModule)
         Some(new NonTemplateParamMemberImpl(bSym, inTpl) with Def {
           override def isDef = true
           def typeParams =
