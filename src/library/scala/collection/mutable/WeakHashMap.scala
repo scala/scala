@@ -16,15 +16,35 @@ import JavaConversions._
 import generic._
 
 
-/** A hash map with weak references to entries which are weakly reachable.
+/** A hash map with references to entries which are weakly reachable.
+ *
+ *  @tparam A      type of keys contained in this map
+ *  @tparam B      type of values associated with the keys
  *
  *  @since 2.8
+ *  @define Coll WeakHashMap
+ *  @define coll weak hash map
+ *  @define thatinfo the class of the returned collection. In the standard library configuration,
+ *    `That` is always `WeakHashMap[A, B]` if the elements contained in the resulting collection are
+ *    pairs of type `(A, B)`. This is because an implicit of type `CanBuildFrom[WeakHashMap, (A, B), WeakHashMap[A, B]]`
+ *    is defined in object `WeakHashMap`. Otherwise, `That` resolves to the most specific type that doesn't have
+ *    to contain pairs of type `(A, B)`, which is `Iterable`.
+ *  @define $bfinfo an implicit value of class `CanBuildFrom` which determines the
+ *    result class `That` from the current representation type `Repr`
+ *    and the new element type `B`. This is usually the `canBuildFrom` value
+ *    defined in object `WeakHashMap`.
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 class WeakHashMap[A, B] extends JMapWrapper[A, B](new java.util.WeakHashMap)
 			   with JMapWrapperLike[A, B, WeakHashMap[A, B]] {
   override def empty = new WeakHashMap[A, B]
 }
 
+/** $factoryInfo
+ *  @define Coll WeakHashMap
+ *  @define coll weak hash map
+ */
 object WeakHashMap extends MutableMapFactory[WeakHashMap] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), WeakHashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: WeakHashMap[A, B] = new WeakHashMap[A, B]

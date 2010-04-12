@@ -17,6 +17,8 @@ import generic._
 /** This trait represents mutable maps.
  *  All implementations od mutable maps inherit from it.
  *
+ *  $mapnote
+ *
  *  @tparam A    the type of the keys of the map.
  *  @tparam B    the type of associated values.
  */
@@ -27,7 +29,7 @@ trait Map[A, B]
 
   override def empty: Map[A, B] = Map.empty
 
-  /** Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
+  /* Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
   def readOnly : scala.collection.Map[A, B] = new scala.collection.Map[A, B] {
     override def size = self.size
     override def update(key: A, value: B) = self.update(key, value)
@@ -40,8 +42,9 @@ trait Map[A, B]
   */
 }
 
-/* The standard factory for mutable maps.
- * Currently this uses `HashMap` as the implementation class.
+/** $factoryInfo
+ *  @define Coll Map
+ *  @define coll map
  */
 object Map extends MutableMapFactory[Map] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]

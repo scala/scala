@@ -14,17 +14,21 @@ package mutable
 
 import generic._
 
-/** A subtrait of <code>collection.Seq</code> which represents sequences
+
+/** A subtrait of `collection.Seq` which represents sequences
  *  that can be mutated.
  *
  *  $seqInfo
  *
- *  The class adds an <code>update</code> method to <code>collection.Seq</code>.
+ *  The class adds an `update` method to `collection.Seq`.
+ *
+ *  @define Coll mutable.Seq
+ *  @define coll mutable sequence
  */
 trait Seq[A] extends Iterable[A]
-                     with scala.collection.Seq[A]
-                     with GenericTraversableTemplate[A, Seq]
-                     with SeqLike[A, Seq[A]] {
+                with scala.collection.Seq[A]
+                with GenericTraversableTemplate[A, Seq]
+                with SeqLike[A, Seq[A]] {
   override def companion: GenericCompanion[Seq] = Seq
 
   /** Replaces element at given index with a new value.
@@ -36,13 +40,13 @@ trait Seq[A] extends Iterable[A]
   def update(idx: Int, elem: A)
 }
 
-/** A factory object for the trait <code>Seq</code>.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
+
+/** $factoryInfo
+ *  @define coll sequence
+ *  @define Coll Seq
  */
 object Seq extends SeqFactory[Seq] {
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
 }

@@ -12,8 +12,10 @@
 package scala.collection
 package mutable
 
-/** <code>Queue</code> objects implement data structures that allow to
+/** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
+ *
+ *  @tparam A   type of the elements in this queue proxy.
  *
  *  @author  Matthias Zenger
  *  @version 1.1, 03/05/2004

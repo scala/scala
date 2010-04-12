@@ -246,7 +246,7 @@ final class ListBuffer[A]
 // Overrides of methods in Buffer
 
   /** Removes the element on a given index position. May take time linear in
-   *  the buffer size
+   *  the buffer size.
    *
    *  @param  n  the index which refers to the element to delete.
    *  @return n  the element that was formerly at position `n`.

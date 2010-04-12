@@ -16,11 +16,19 @@ import scala.reflect.ClassManifest
 import scala.collection.generic._
 
 /**
- *  <p>A class representing <code>Array[T]</code></p>
+ *  A class representing `Array[T]`.
+ *
+ *  @tparam T    type of the elements in this wrapped array.
  *
  *  @author  Martin Odersky, Stephane Micheloud
  *  @version 1.0
  *  @since 2.8
+ *  @define Coll WrappedArray
+ *  @define coll wrapped array
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedArray[T]] {
 
@@ -59,6 +67,8 @@ abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedAr
     new WrappedArrayBuilder[T](elemManifest)
 }
 
+/** A companion object used to create instances of `WrappedArray`.
+ */
 object WrappedArray {
   def make[T](x: AnyRef): WrappedArray[T] = x match {
     case x: Array[AnyRef] => wrapRefArray[AnyRef](x).asInstanceOf[WrappedArray[T]]

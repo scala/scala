@@ -12,20 +12,17 @@
 package scala.collection
 package mutable
 
-/** <p>
- *    This is a simple wrapper class for <a href="Map.html"
- *    target="contentFrame"><code>scala.collection.mutable.Map</code></a>.
- *  </p>
- *  <p>
- *    It is most useful for assembling customized map abstractions
- *    dynamically using object composition and forwarding.
- *  </p>
+/**
+ *  This trait implements a proxy for <a href="Map.html"
+ *  target="contentFrame"><code>scala.collection.mutable.Map</code></a>.
+ *
+ *  It is most useful for assembling customized map abstractions
+ *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
  *  @since   1
  */
-
 trait MapProxy[A, B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]]
 {
   private def newProxy[B1 >: B](newSelf: Map[A, B1]): MapProxy[A, B1] =

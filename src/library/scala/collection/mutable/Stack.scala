@@ -20,10 +20,18 @@ import annotation.migration
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
  *
+ *  @tparam A    type of the elements contained in this stack.
+ *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
+ *  @define Coll Stack
+ *  @define coll stack
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @cloneable
 class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with Cloneable[Stack[A]] {

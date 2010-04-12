@@ -13,13 +13,17 @@ package scala.collection
 package mutable
 
 
-/** This is a synchronized version of the <code>Stack[T]</code> class. It
+/** This is a synchronized version of the `Stack[T]` class. It
  *  implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
+ *
+ *  @tparam A    type of the elements contained in this stack.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  *  @since   1
+ *  @define Coll SynchronizedStack
+ *  @define coll synchronized stack
  */
 class SynchronizedStack[A] extends Stack[A] {
   import scala.collection.Traversable

@@ -12,8 +12,11 @@
 package scala.collection
 package mutable
 
+
 /** A stack implements a data structure which allows to store and retrieve
  *  objects in a last-in-first-out (LIFO) fashion.
+ *
+ *  @tparam A   type of the elements in this stack proxy.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/05/2004

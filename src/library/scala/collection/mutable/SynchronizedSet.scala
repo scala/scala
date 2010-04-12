@@ -13,12 +13,16 @@ package mutable
 
 import script._
 
-/** This class should be used as a mixin. It synchronizes the <code>Set</code>
+/** This class should be used as a mixin. It synchronizes the `Set`
  *  functions of the class into which it is mixed in.
+ *
+ *  @tparam A    type of the elements contained in this synchronized set.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003
  *  @since   1
+ *  @define Coll SynchronizedSet
+ *  @define coll synchronized set
  */
 trait SynchronizedSet[A] extends Set[A] {
   import scala.collection.Traversable

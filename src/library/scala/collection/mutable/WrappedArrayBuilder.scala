@@ -15,7 +15,10 @@ package mutable
 import generic._
 import scala.reflect.ClassManifest
 
-/** A builder class for arrays
+/** A builder class for arrays.
+ *
+ *  @tparam A         type of elements that can be added to this builder.
+ *  @param manifest   class manifest for objects of type `A`.
  *
  *  @since 2.8
  */

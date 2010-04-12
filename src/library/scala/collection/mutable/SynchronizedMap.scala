@@ -14,12 +14,17 @@ package mutable
 
 import annotation.migration
 
-/** This class should be used as a mixin. It synchronizes the <code>Map</code>
+/** This class should be used as a mixin. It synchronizes the `Map`
  *  functions of the class into which it is mixed in.
+ *
+ *  @tparam A     type of the keys contained in this map.
+ *  @tparam B     type of the values associated with keys.
  *
  *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006
  *  @since   1
+ *  @define Coll SynchronizedMap
+ *  @define coll synchronized map
  */
 trait SynchronizedMap[A, B] extends Map[A, B] {
 
