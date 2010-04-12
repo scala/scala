@@ -114,139 +114,153 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     }
     mbr match {
       case dte: DocTemplateEntity if isSelf =>
-        <div id="comment" class="fullcomment">{ memberToFullCommentHtml(mbr, isSelf) }</div>
+        // comment of class itself
+        <div id="comment" class="fullcomment">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
       case dte: DocTemplateEntity if mbr.comment.isDefined =>
+        // comment of inner, documented class (only short comment, full comment is on the class' own page)
         <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
-      case _ if mbr.comment.isDefined =>
-        <p class="shortcomment cmt">{ useCaseCommentHtml }{ inlineToHtml(mbr.comment.get.short) }</p>
-        <div class="fullcomment">{ useCaseCommentHtml }{ memberToFullCommentHtml(mbr, isSelf) }</div>
-      case _ => useCaseCommentHtml
+      case _ =>
+        // comment of non-class member or non-documentented inner class
+        val commentBody = memberToCommentBodyHtml(mbr, isSelf = false)
+        if (commentBody.isEmpty)
+          NodeSeq.Empty
+        else {
+          <xml:group>
+            { if (mbr.comment.isEmpty) NodeSeq.Empty else {
+                <p class="shortcomment cmt">{ useCaseCommentHtml }{ inlineToHtml(mbr.comment.get.short) }</p>
+              }
+            }
+            <div class="fullcomment">{ useCaseCommentHtml }{ memberToCommentBodyHtml(mbr, isSelf) }</div>
+          </xml:group>
+        }
     }
   }
 
-  def memberToFullCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
-    <xml:group>
-      { if (mbr.comment.isEmpty) NodeSeq.Empty else
-          <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
+  def memberToCommentBodyHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
+    NodeSeq.Empty ++
+    { if (mbr.comment.isEmpty) NodeSeq.Empty else
+        <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
+    } ++
+    { val prs: List[ParameterEntity] = mbr match {
+        case cls: Class if cls.isCaseClass =>
+          cls.typeParams ::: (cls.primaryConstructor map (_.valueParams.flatten)).toList.flatten
+        case trt: Trait => trt.typeParams
+        case dfe: Def => dfe.typeParams ::: dfe.valueParams.flatten
+        case ctr: Constructor => ctr.valueParams.flatten
+        case _ => Nil
       }
-      { val prs: List[ParameterEntity] = mbr match {
-          case cls: Class if cls.isCaseClass =>
-            cls.typeParams ::: (cls.primaryConstructor map (_.valueParams.flatten)).toList.flatten
-          case trt: Trait => trt.typeParams
-          case dfe: Def => dfe.typeParams ::: dfe.valueParams.flatten
-          case ctr: Constructor => ctr.valueParams.flatten
-          case _ => Nil
-        }
-        def mbrCmt = mbr.comment.get
-        def paramCommentToHtml(prs: List[ParameterEntity]): NodeSeq = prs match {
-          case Nil =>
-            NodeSeq.Empty
-          case (tp: TypeParam) :: rest =>
-            val paramEntry: NodeSeq = {
-              <dt class="tparam">{ tp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.typeParams(tp.name)) }</dd>
-            }
-            paramEntry ++ paramCommentToHtml(rest)
-          case (vp: ValueParam) :: rest  =>
-            val paramEntry: NodeSeq = {
-              <dt class="param">{ vp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.valueParams(vp.name)) }</dd>
-            }
-            paramEntry ++ paramCommentToHtml(rest)
-        }
-        if (mbr.comment.isEmpty) NodeSeq.Empty
-        else {
-          val cmtedPrs = prs filter {
-            case tp: TypeParam => mbrCmt.typeParams isDefinedAt tp.name
-            case vp: ValueParam => mbrCmt.valueParams isDefinedAt vp.name
+      def mbrCmt = mbr.comment.get
+      def paramCommentToHtml(prs: List[ParameterEntity]): NodeSeq = prs match {
+        case Nil =>
+          NodeSeq.Empty
+        case (tp: TypeParam) :: rest =>
+          val paramEntry: NodeSeq = {
+            <dt class="tparam">{ tp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.typeParams(tp.name)) }</dd>
           }
-          if (cmtedPrs.isEmpty && mbrCmt.result.isEmpty) NodeSeq.Empty
-          else
-            <dl class="paramcmts block">{
-              paramCommentToHtml(cmtedPrs) ++ (
-              mbrCmt.result match {
-                case None => NodeSeq.Empty
-                case Some(cmt) =>
-                  <dt>returns</dt><dd class="cmt">{ bodyToHtml(cmt) }</dd>
-              })
-            }</dl>
-        }
+          paramEntry ++ paramCommentToHtml(rest)
+        case (vp: ValueParam) :: rest  =>
+          val paramEntry: NodeSeq = {
+            <dt class="param">{ vp.name }</dt><dd class="cmt">{ bodyToHtml(mbrCmt.valueParams(vp.name)) }</dd>
+          }
+          paramEntry ++ paramCommentToHtml(rest)
       }
-      { val fvs: List[comment.Paragraph] = visibility(mbr).toList ::: mbr.flags
-        if (fvs.isEmpty) NodeSeq.Empty else
+      if (mbr.comment.isEmpty) NodeSeq.Empty
+      else {
+        val cmtedPrs = prs filter {
+          case tp: TypeParam => mbrCmt.typeParams isDefinedAt tp.name
+          case vp: ValueParam => mbrCmt.valueParams isDefinedAt vp.name
+        }
+        if (cmtedPrs.isEmpty && mbrCmt.result.isEmpty) NodeSeq.Empty
+        else
+          <dl class="paramcmts block">{
+            paramCommentToHtml(cmtedPrs) ++ (
+            mbrCmt.result match {
+              case None => NodeSeq.Empty
+              case Some(cmt) =>
+                <dt>returns</dt><dd class="cmt">{ bodyToHtml(cmt) }</dd>
+            })
+          }</dl>
+      }
+    } ++
+    { val fvs: List[comment.Paragraph] = visibility(mbr).toList ::: mbr.flags
+      if (fvs.isEmpty) NodeSeq.Empty else
+        <div class="block">
+          attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
+        </div>
+    } ++
+    { tpl.companion match {
+        case Some(companion) if isSelf =>
           <div class="block">
-            attributes: { fvs map { fv => { inlineToHtml(fv.text) ++ xml.Text(" ") } } }
+            go to: <a href={relativeLinkTo(companion)}>companion</a>
           </div>
+        case _ =>
+          NodeSeq.Empty
       }
-      { tpl.companion match {
-          case Some(companion) if isSelf =>
-            <div class="block">
-              Go to: <a href={relativeLinkTo(companion)}>companion</a>
-            </div>
-          case _ =>
-            NodeSeq.Empty
-        }
+    } ++
+    { val inDefTpls = mbr.inDefinitionTemplates
+      if (inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) NodeSeq.Empty else {
+        <div class="block">
+          definition classes: { templatesToHtml(inDefTpls, xml.Text(" → ")) }
+        </div>
       }
-      { val inDefTpls = mbr.inDefinitionTemplates
-        if (inDefTpls.tail.isEmpty && (inDefTpls.head == mbr.inTemplate)) NodeSeq.Empty else {
+    } ++
+    { mbr match {
+        case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty) =>
           <div class="block">
-            definition classes: { templatesToHtml(inDefTpls, xml.Text(" → ")) }
+            known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
           </div>
-        }
+        case _ => NodeSeq.Empty
       }
-      { mbr match {
-          case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty) =>
-            <div class="block">
-              known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }
-            </div>
-          case _ => NodeSeq.Empty
-        }
+    } ++
+    { mbr match {
+        case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined) =>
+          val sourceUrl = tpl.sourceUrl.get
+          <div class="block">
+            source: { <a href={ sourceUrl.toString }>{ Text(new java.io.File(sourceUrl.getPath).getName) }</a> }
+          </div>
+        case _ => NodeSeq.Empty
       }
-      { mbr match {
-          case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined) =>
-            val sourceUrl = tpl.sourceUrl.get
-            <div class="block">
-              source: { <a href={ sourceUrl.toString }>{ Text(new java.io.File(sourceUrl.getPath).getName) }</a> }
-            </div>
-          case _ => NodeSeq.Empty
-        }
+    } ++
+    { if (mbr.deprecation.isEmpty) NodeSeq.Empty else
+        <div class="block"><ol>deprecated:
+          { <li>{ bodyToHtml(mbr.deprecation.get) }</li> }
+        </ol></div>
+    } ++
+    { mbr.comment match {
+        case Some(comment) =>
+          <xml:group>
+            { if(!comment.version.isEmpty)
+                <div class="block"><ol>version
+                  { for(body <- comment.version.toList) yield <li>{bodyToHtml(body)}</li> }
+                </ol></div>
+              else NodeSeq.Empty
+            }
+            { if(!comment.since.isEmpty)
+                <div class="block"><ol>since
+                  { for(body <- comment.since.toList) yield <li>{bodyToHtml(body)}</li> }
+                </ol></div>
+              else NodeSeq.Empty
+            }
+            { if(!comment.see.isEmpty)
+                <div class="block"><ol>see also:
+                  { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li>{bodyToHtml(see)}</li> )
+                    seeXml.reduceLeft(_ ++ Text(", ") ++ _)
+                  }
+                </ol></div>
+              else NodeSeq.Empty
+            }
+            { if(!comment.authors.isEmpty)
+                <div class="block"><ol>authors:
+                  { val authorsXml:List[scala.xml.NodeSeq]=(for(author <- comment.authors ) yield <li>{bodyToHtml(author)}</li> )
+                    authorsXml.reduceLeft(_ ++ Text(", ") ++ _)
+                  }
+                </ol></div>
+              else NodeSeq.Empty
+            }
+          </xml:group>
+        case None => NodeSeq.Empty
       }
-      { if(mbr.deprecation.isEmpty) NodeSeq.Empty else
-          <div class="block"><ol>deprecated:
-            { <li>{ bodyToHtml(mbr.deprecation.get) }</li> }
-          </ol></div>
-      }
-      { for(comment <- mbr.comment.toList) yield {
-        <xml:group>
-          { if(!comment.version.isEmpty)
-            <div class="block"><ol>version
-              { for(body <- comment.version.toList) yield <li>{bodyToHtml(body)}</li> }
-            </ol></div>
-           else NodeSeq.Empty
-          }
-          { if(!comment.since.isEmpty)
-            <div class="block"><ol>since
-              { for(body <- comment.since.toList) yield <li>{bodyToHtml(body)}</li> }
-            </ol></div>
-           else NodeSeq.Empty
-          }
-          { if(!comment.see.isEmpty)
-            <div class="block"><ol>see also:
-              { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li>{bodyToHtml(see)}</li> )
-                seeXml.reduceLeft(_ ++ Text(", ") ++ _)
-              }
-            </ol></div>
-           else NodeSeq.Empty
-          }
-          { if(!comment.authors.isEmpty)
-            <div class="block"><ol>authors:
-              { val authorsXml:List[scala.xml.NodeSeq]=(for(author <- comment.authors ) yield <li>{bodyToHtml(author)}</li> )
-                authorsXml.reduceLeft(_ ++ Text(", ") ++ _)
-              }
-            </ol></div>
-           else NodeSeq.Empty
-          }
-        </xml:group>
-      }}
-    </xml:group>
+    }
 
   def kindToString(mbr: MemberEntity): String = mbr match {
     case tpl: DocTemplateEntity =>
