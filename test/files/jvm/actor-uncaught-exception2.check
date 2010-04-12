@@ -1,0 +1,2 @@
+UncaughtException(StartError,None,None,MyException: I don't want to run!)
+UncaughtException(MessageError,Some('ping),Some(Supervisor),MyException: No message for me!)
