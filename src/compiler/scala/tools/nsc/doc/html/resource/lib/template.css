@@ -69,11 +69,11 @@ a:hover {
 }
 
 .value #definition {
-  background-color: #142556;
+  background-color: #004572;
 }
 
 .type #definition {
-  background-color: #561414;
+  background-color: #5D2424;
 }
 
 #comment {
@@ -83,7 +83,7 @@ a:hover {
 #values > h3 {
   color: white;
   padding: 4px;
-  background-color: #142556;
+  background-color: #004572;
   font-size: 12pt;
   font-weight: bold;
 }
@@ -93,7 +93,7 @@ a:hover {
   color: white;
   font-weight: bold;
   font-size: 12pt;
-  background-color: #561414;
+  background-color: #5D2424;
 }
 
 #constructors > h3 {
@@ -101,7 +101,7 @@ a:hover {
   color: white;
   font-weight: bold;
   font-size: 12pt;
-  background-color: #000000;
+  background-color: #333;
 }
 
 /* Member cells */
@@ -118,9 +118,9 @@ div.members > ol > li {
 /* Member signatures */
 
 #tooltip {
-  background: #142556;
-  border: 2px solid white;
-  color: white;
+  background: #FFE4B4;
+  border: 1px solid gray;
+  color: black;
   display: none;
   padding: 5px;
   position: absolute;
@@ -181,7 +181,7 @@ div.members > ol > li {
 }
 
 #types .signature .name {
-  color: red;
+  color: #8E003C;
 }
 
 /* Comments text formating */
