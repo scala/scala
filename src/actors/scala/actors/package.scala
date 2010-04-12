@@ -5,19 +5,19 @@ package object actors {
   // type of Reactors tracked by termination detector
   private[actors] type TrackedReactor = Reactor[A] forSome { type A >: Null }
 
-  @deprecated("use scala.actors.scheduler.ForkJoinScheduler instead")
+  @deprecated("use scheduler.ForkJoinScheduler instead")
   type FJTaskScheduler2 = scala.actors.scheduler.ForkJoinScheduler
 
-  @deprecated("use scala.actors.scheduler.ForkJoinScheduler instead")
+  @deprecated("use scheduler.ForkJoinScheduler instead")
   type TickedScheduler = scala.actors.scheduler.ForkJoinScheduler
 
-  @deprecated("use scala.actors.scheduler.ForkJoinScheduler instead")
+  @deprecated("use scheduler.ForkJoinScheduler instead")
   type WorkerThreadScheduler = scala.actors.scheduler.ForkJoinScheduler
 
   @deprecated("this class is going to be removed in a future release")
   type WorkerThread = java.lang.Thread
 
-  @deprecated("use scala.actors.scheduler.SingleThreadedScheduler instead")
+  @deprecated("use scheduler.SingleThreadedScheduler instead")
   type SingleThreadedScheduler = scala.actors.scheduler.SingleThreadedScheduler
 
   // This used to do a blind cast and throw a CCE after the package
