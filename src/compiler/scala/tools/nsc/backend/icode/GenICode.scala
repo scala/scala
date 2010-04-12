@@ -784,7 +784,7 @@ abstract class GenICode extends SubComponent  {
             if (settings.debug.value)
               log("LOAD_MODULE from 'This': " + tree.symbol);
             assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
-            ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
+            genLoadModule(ctx, tree.symbol, tree.pos)
             generatedType = REFERENCE(tree.symbol)
           } else {
             ctx.bb.emit(THIS(ctx.clazz.symbol), tree.pos)
@@ -803,21 +803,18 @@ abstract class GenICode extends SubComponent  {
             log("LOAD_MODULE from Select(<emptypackage>): " + tree.symbol);
           }
           assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
-          ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
+          genLoadModule(ctx, tree.symbol, tree.pos)
           ctx
 
         case Select(qualifier, selector) =>
-          var sym = tree.symbol
+          val sym = tree.symbol
           generatedType = toTypeKind(sym.info)
 
           if (sym.isModule) {
             if (settings.debug.value)
-              log("LOAD_MODULE from Select(qualifier, selector): " + sym);
+              log("LOAD_MODULE from Select(qualifier, selector): " + sym)
             assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
-            if (definitions.primitiveCompanions(sym))
-              ctx.bb.emit(LOAD_MODULE(definitions.getModule("scala.runtime." + sym.name)))
-            else
-              ctx.bb.emit(LOAD_MODULE(sym), tree.pos);
+            genLoadModule(ctx, sym, tree.pos)
             ctx
           } else if (sym.isStaticMember) {
             ctx.bb.emit(LOAD_FIELD(sym, true), tree.pos)
@@ -829,21 +826,22 @@ abstract class GenICode extends SubComponent  {
           }
 
         case Ident(name) =>
-          if (!tree.symbol.isPackage) {
-            if (tree.symbol.isModule) {
+          val sym = tree.symbol
+          if (!sym.isPackage) {
+            if (sym.isModule) {
               if (settings.debug.value)
-                log("LOAD_MODULE from Ident(name): " + tree.symbol);
-              assert(!tree.symbol.isPackageClass, "Cannot use package as value: " + tree)
-              ctx.bb.emit(LOAD_MODULE(tree.symbol), tree.pos)
-              generatedType = toTypeKind(tree.symbol.info)
+                log("LOAD_MODULE from Ident(name): " + sym)
+              assert(!sym.isPackageClass, "Cannot use package as value: " + tree)
+              genLoadModule(ctx, sym, tree.pos)
+              generatedType = toTypeKind(sym.info)
             } else {
               try {
-                val Some(l) = ctx.method.lookupLocal(tree.symbol)
+                val Some(l) = ctx.method.lookupLocal(sym)
                 ctx.bb.emit(LOAD_LOCAL(l), tree.pos)
                 generatedType = l.kind
               } catch {
                 case ex: MatchError =>
-                  abort("symbol " + tree.symbol + " does not exist in " + ctx.method)
+                  abort("symbol " + sym + " does not exist in " + ctx.method)
               }
             }
           }
@@ -1035,6 +1033,13 @@ abstract class GenICode extends SubComponent  {
         tpe = tpe.tail
       }
       ctx1
+    }
+
+    private def genLoadModule(ctx: Context, sym: Symbol, pos: Position) {
+      if (definitions.primitiveCompanions(sym))
+        ctx.bb.emit(LOAD_MODULE(definitions.getModule("scala.runtime." + sym.name)), pos)
+      else
+        ctx.bb.emit(LOAD_MODULE(sym), pos)
     }
 
     def genConversion(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean) = {
