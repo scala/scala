@@ -15,16 +15,19 @@ package immutable
 import generic._
 import annotation.unchecked.uncheckedVariance
 
-/**
- *  This class implements immutable sets using a hash trie.
+/** This class implements immutable sets using a hash trie.
  *
- * @note the builder of a hash set returns specialized representations `EmptySet`,`Set1`,..., `Set4`
- * for sets of `size <= 4`.
+ *  <b>Note:</b> the builder of a hash set returns specialized representations `EmptySet`,`Set1`,..., `Set4`
+ *  for sets of `size <= 4`.
+ *
+ *  @tparam A      the type of the elements contained in this hash set.
  *
  *  @author  Martin Odersky
  *  @author  Tiark Rompf
  *  @version 2.8
  *  @since   2.3
+ *  @define Coll immutable.HashSet
+ *  @define coll immutable hash set
  */
 @serializable @SerialVersionUID(2L)
 class HashSet[A] extends Set[A]
@@ -83,14 +86,19 @@ object HashSet extends SetFactory[HashSet] {
 */
 
 
-/** A factory object for immutable HashSets.
+/** $factoryInfo
+ *  @define Coll immutable.HashSet
+ *  @define coll immutable hash set
  *
- *  @author  Martin Odersky
  *  @author  Tiark Rompf
- *  @version 2.8
  *  @since   2.3
+ *  @define Coll immutable.HashSet
+ *  @define coll immutable hash set
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 object HashSet extends SetFactory[HashSet] {
+  /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]
 

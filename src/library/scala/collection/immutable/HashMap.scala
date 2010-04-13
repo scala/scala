@@ -15,17 +15,22 @@ package immutable
 import generic._
 import annotation.unchecked.uncheckedVariance
 
-/** <p>
- *    This class implements immutable maps using a hash trie.
- *  </p>
+/** This class implements immutable maps using a hash trie.
  *
- * @note the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
- * for maps of size <= 4.
+ *  <b>Note:</b> the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
+ *  for maps of size <= 4.
+ *
+ *  @tparam A      the type of the keys contained in this hash map.
+ *  @tparam B      the type of the values associated with the keys.
  *
  *  @author  Martin Odersky
  *  @author  Tiark Rompf
  *  @version 2.8
  *  @since   2.3
+ *  @define Coll immutable.HashMap
+ *  @define coll immutable hash map
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(2L)
 class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] {
@@ -76,11 +81,11 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] {
 
 }
 
-/** A factory object for immutable HashMaps.
+/** $factoryInfo
+ *  @define Coll immutable.HashMap
+ *  @define coll immutable hash map
  *
- *  @author  Martin Odersky
  *  @author  Tiark Rompf
- *  @version 2.8
  *  @since   2.3
  */
 object HashMap extends ImmutableMapFactory[HashMap] {

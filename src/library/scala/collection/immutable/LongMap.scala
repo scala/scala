@@ -1,8 +1,8 @@
 package scala.collection
 package immutable
 
-/**
- * @author David MacIver
+/** Utility class for long maps.
+ *  @author David MacIver
  */
 private[immutable] object LongMapUtils{
   def zero(i : Long, mask : Long) = (i & mask) == 0L;
@@ -40,8 +40,8 @@ private[immutable] object LongMapUtils{
 
 import LongMapUtils._
 
-/**
- * @since 2.7
+/** A companion object for long maps.
+ *  @since 2.7
  */
 object LongMap{
   def empty[T] : LongMap[T]  = LongMap.Nil;
@@ -134,13 +134,19 @@ private[immutable] class LongMapKeyIterator[V](it : LongMap[V]) extends LongMapI
 import LongMap._;
 
 /**
- * Specialised immutable map structure for long keys, based on
- * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Long Maps</a>
- * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
+ *  Specialised immutable map structure for long keys, based on
+ *  <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Long Maps</a>
+ *  by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  *
- * Note: This class is as of 2.8 largely superseded by HashMap.
+ *  Note: This class is as of 2.8 largely superseded by HashMap.
  *
- * @since 2.7
+ *  @tparam T      type of the values associated with the long keys.
+ *
+ *  @since 2.7
+ *  @define Coll immutable.LongMap
+ *  @define coll immutable long integer map
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, LongMap[T]] {
   override def empty: LongMap[T] = LongMap.Nil;
@@ -185,7 +191,7 @@ sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, Lon
     case LongMap.Bin(_, _, left, right) => {left.foreachKey(f); right.foreachKey(f); }
     case LongMap.Tip(key, _) => f(key);
     case LongMap.Nil => {}
-  }
+
 
   override def valuesIterator : Iterator[T] = this match {
     case LongMap.Nil => Iterator.empty;

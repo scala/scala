@@ -15,7 +15,7 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A subtrait of <code>collection.LinearSeq</code> which represents sequences that
+/** A subtrait of `collection.LinearSeq` which represents sequences that
  *  are guaranteed immutable.
  *  $linearSeqInfo
  */
