@@ -191,7 +191,7 @@ sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, Lon
     case LongMap.Bin(_, _, left, right) => {left.foreachKey(f); right.foreachKey(f); }
     case LongMap.Tip(key, _) => f(key);
     case LongMap.Nil => {}
-
+  }
 
   override def valuesIterator : Iterator[T] = this match {
     case LongMap.Nil => Iterator.empty;
