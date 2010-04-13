@@ -26,11 +26,9 @@ trait Traversable[+A] extends scala.collection.Traversable[A]
   override def companion: GenericCompanion[Traversable] = Traversable
 }
 
-/** A factory object for the trait <code>Traversable</code>.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** $factoryInfo
+ *  @define Coll immutable.Travesable
+ *  @define coll immutable traversable object
  */
 object Traversable extends TraversableFactory[Traversable] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]

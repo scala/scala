@@ -42,6 +42,10 @@ object Stack extends SeqFactory[Stack] {
  *  @since   1
  *  @define Coll immutable.Stack
  *  @define coll immutable stack
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(1976480595012942526L)
 class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]

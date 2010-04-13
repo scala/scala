@@ -14,7 +14,7 @@ package generic
 
 import mutable.{Builder, AddingBuilder}
 
-/** A template for companion objects of <code>Set</code> and subclasses
+/** A template for companion objects of `Set` and subclasses
  *  thereof.
  *
  *  @define coll set

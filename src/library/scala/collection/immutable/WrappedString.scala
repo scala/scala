@@ -17,14 +17,18 @@ import mutable.{Builder, StringBuilder}
 import scala.util.matching.Regex
 
 /**
- * This class serves as a wrapper augmenting `String`s with all the operations
- * found in indexed sequences.
+ *  This class serves as a wrapper augmenting `String`s with all the operations
+ *  found in indexed sequences.
  *
- * The difference between this class and `StringOps` is that calling transformer
- * methods such as `filter` and `map` will yield an object of type `WrappedString`
- * rather than a `String`.
+ *  The difference between this class and `StringOps` is that calling transformer
+ *  methods such as `filter` and `map` will yield an object of type `WrappedString`
+ *  rather than a `String`.
  *
- * @since 2.8
+ *  @param self    a string contained within this wrapped string
+ *
+ *  @since 2.8
+ *  @define Coll WrappedString
+ *  @define coll wrapped string
  */
 class WrappedString(override val self: String) extends IndexedSeq[Char] with StringLike[WrappedString] with Proxy {
 
@@ -38,8 +42,9 @@ class WrappedString(override val self: String) extends IndexedSeq[Char] with Str
     new WrappedString(self.substring(from max 0, until min self.length))
 }
 
-/**
- * @since 2.8
+/** A companion object for wrapped strings.
+ *
+ *  @since 2.8
  */
 object WrappedString {
   def newBuilder: Builder[Char, WrappedString] = new StringBuilder() mapResult (new WrappedString(_))

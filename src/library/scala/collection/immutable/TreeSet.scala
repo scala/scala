@@ -15,11 +15,11 @@ package immutable
 import generic._
 import mutable.{Builder, AddingBuilder}
 
-/** The canonical factory of <a href="TreeSet.html">TreeSet</a>'s.
- *
- *  @since 1
+/** $factoryInfo
+ *  @define Coll immutable.TreeSet
+ *  @define coll immutable tree set
  */
-object TreeSet extends SortedSetFactory[TreeSet] {
+object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
   implicit def implicitBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = newBuilder[A](ordering)
   override def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
     new AddingBuilder(empty[A](ordering))
@@ -31,9 +31,18 @@ object TreeSet extends SortedSetFactory[TreeSet] {
 
 /** This class implements immutable sets using a tree.
  *
+ *  @tparam A         the type of the elements contained in this tree set
+ *  @param ordering   the implicit ordering used to compare objects of type `A`
+ *
  *  @author  Martin Odersky
  *  @version 2.0, 02/01/2007
  *  @since   1
+ *  @define Coll immutable.TreeSet
+ *  @define coll immutable tree set
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(-234066569443569402L)
 class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
@@ -54,29 +63,40 @@ class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
    */
   override def empty = TreeSet.empty
 
-  /** A new TreeSet with the entry added is returned,
+  /** Creates a new `TreeSet` with the entry added.
+   *
+   *  @param elem    a new element to add.
+   *  @return        a new $coll containing `elem` and all the elements of this $coll.
    */
   def + (elem: A): TreeSet[A] = {
     val newsize = if (tree.lookup(elem).isEmpty) size + 1 else size
     newSet(newsize, tree.update(elem, ()))
   }
 
-  /** A new TreeSet with the entry added is returned,
+  /** A new `TreeSet` with the entry added is returned,
    *  assuming that elem is <em>not</em> in the TreeSet.
+   *
+   *  @param elem    a new element to add.
+   *  @return        a new $coll containing `elem` and all the elements of this $coll.
    */
   def insert(elem: A): TreeSet[A] = {
     assert(tree.lookup(elem).isEmpty)
     newSet(size + 1, tree.update(elem, ()))
   }
 
+  /** Creates a new `TreeSet` with the entry removed.
+   *
+   *  @param elem    a new element to add.
+   *  @return        a new $coll containing all the elements of this $coll except `elem`.
+   */
   def - (elem:A): TreeSet[A] =
     if (tree.lookup(elem).isEmpty) this
     else newSet(size - 1, tree delete elem)
 
-  /** Checks if this set contains element <code>elem</code>.
+  /** Checks if this set contains element `elem`.
    *
    *  @param  elem    the element to check for membership.
-   *  @return true, iff <code>elem</code> is contained in this set.
+   *  @return true, iff `elem` is contained in this set.
    */
   def contains(elem: A): Boolean = !tree.lookup(elem).isEmpty
 

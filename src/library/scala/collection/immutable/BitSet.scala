@@ -56,6 +56,8 @@ abstract class BitSet extends Set[Int]
 }
 
 /** $factoryInfo
+ *  @define Coll immutable.BitSet
+ *  @define coll immutable bitset
  */
 object BitSet extends BitSetFactory[BitSet] {
 

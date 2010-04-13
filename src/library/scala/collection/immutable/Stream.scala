@@ -16,27 +16,33 @@ import generic._
 import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
 import scala.annotation.tailrec
 
-/**
- * <p>The class <code>Stream</code> implements lazy lists where elements
- * are only evaluated when they are needed. Here is an example:</p>
- * <pre>
- * <b>object</b> Main <b>extends</b> Application {
+/** The class `Stream` implements lazy lists where elements
+ *  are only evaluated when they are needed. Here is an example:
  *
- *   <b>def</b> from(n: Int): Stream[Int] =
- *     Stream.cons(n, from(n + 1))
+ *  {{{
+ *  object Main extends Application {
  *
- *   <b>def</b> sieve(s: Stream[Int]): Stream[Int] =
- *     Stream.cons(s.head, sieve(s.tail filter { _ % s.head != 0 }))
+ *    def from(n: Int): Stream[Int] =
+ *      Stream.cons(n, from(n + 1))
  *
- *   <b>def</b> primes = sieve(from(2))
+ *    def sieve(s: Stream[Int]): Stream[Int] =
+ *      Stream.cons(s.head, sieve(s.tail filter { _ % s.head != 0 }))
  *
- *   primes take 10 print
- * }
- * </pre>
+ *    def primes = sieve(from(2))
  *
- * @author Martin Odersky, Matthias Zenger
- * @version 1.1 08/08/03
- * @since   2.8
+ *    primes take 10 print
+ *  }
+ *  }}}
+ *
+ *  @tparam A    the type of the elements contained in this stream.
+ *
+ *  @author Martin Odersky, Matthias Zenger
+ *  @version 1.1 08/08/03
+ *  @since   2.8
+ *  @define Coll Stream
+ *  @define coll stream
+ *  @define orderDependent
+ *  @define orderDependentFold
  */
 abstract class Stream[+A] extends LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
@@ -68,6 +74,7 @@ self =>
 
   /** The stream resulting from the concatenation of this stream with the argument stream.
    *  @param rest   The stream that gets appended to this stream
+   *  @return       The stream containing elements of this stream and the traversable object.
    */
   def append[B >: A](rest: => Traversable[B]): Stream[B] =
     if (isEmpty) rest.toStream else new Stream.Cons(head, tail append rest)
@@ -82,7 +89,7 @@ self =>
   /** Prints elements of this stream one by one, separated by commas. */
   def print() { print(", ") }
 
-  /** Prints elements of this stream one by one, separated by <code>sep</code>.
+  /** Prints elements of this stream one by one, separated by `sep`.
    *  @param sep   The separator string printed between consecutive elements.
    */
   def print(sep: String) {
@@ -138,7 +145,7 @@ self =>
     )
 
   /** Returns the stream resulting from applying the given function
-   *  <code>f</code> to each element of this stream.
+   *  `f` to each element of this stream.
    *
    *  @param f function to apply to each element.
    *  @return  <code>f(a<sub>0</sub>), ..., f(a<sub>n</sub>)</code> if this
@@ -150,10 +157,11 @@ self =>
       else new Stream.Cons(f(head), asStream[B](tail map f))
     )
 
-  /** Applies the given function <code>f</code> to each element of
+  /** Applies the given function `f` to each element of
    *  this stream, then concatenates the results.
    *
-   *  @param f the function to apply on each element.
+   *  @param f  the function to apply on each element.
+   *  @param bf $bfinfo
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
