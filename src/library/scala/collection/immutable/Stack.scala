@@ -15,7 +15,12 @@ package immutable
 import generic._
 import mutable.{ ArrayBuffer, Builder }
 
+/** $factoryInfo
+ *  @define Coll immutable.Stack
+ *  @define coll immutable stack
+ */
 object Stack extends SeqFactory[Stack] {
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stack[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Stack[A]] = new ArrayBuffer[A] mapResult (buf => new Stack(buf.toList))
 
@@ -26,13 +31,17 @@ object Stack extends SeqFactory[Stack] {
 /** This class implements immutable stacks using a list-based data
  *  structure.
  *
- *  @note    This class exists only for historical reason and as an
- *           analogue of mutable stacks
+ *  '''Note:''' This class exists only for historical reason and as an
+ *           analogue of mutable stacks.
  *           Instead of an immutable stack you can just use a list.
+ *
+ *  @tparam A    the type of the elements contained in this stack.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 10/07/2003
  *  @since   1
+ *  @define Coll immutable.Stack
+ *  @define coll immutable stack
  */
 @serializable @SerialVersionUID(1976480595012942526L)
 class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]

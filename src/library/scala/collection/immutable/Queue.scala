@@ -23,6 +23,8 @@ import mutable.{ Builder, ListBuffer }
  *  @since   1
  *  @define Coll immutable.Queue
  *  @define coll immutable queue
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable
 @SerialVersionUID(-7622936493364270175L)

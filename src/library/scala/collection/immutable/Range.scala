@@ -10,20 +10,31 @@
 
 package scala.collection.immutable
 
-/** <p>
- *    The <code>Range</code> class represents integer values in range
- *    <code>[start;end)</code> with non-zero step value <code>step</code>.
- *    It's a special case of an indexed sequence.
- *    For example:
- *  </p><pre>
- *     <b>val</b> r1 = 0 until 10
- *     <b>val</b> r2 = r1.start until r1.end by r1.step + 1
+/** The `Range` class represents integer values in range
+ *  ''[start;end)'' with non-zero step value `step`.
+ *  It's a special case of an indexed sequence.
+ *  For example:
+ *
+ *  {{{
+ *     val r1 = 0 until 10
+ *     val r2 = r1.start until r1.end by r1.step + 1
  *     println(r2.length) // = 5
- *  </pre>
+ *  }}}
+ *
+ *  @param start      the start of this range.
+ *  @param end        the exclusive end of the range.
+ *  @param step       the step for the range.
  *
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.5
+ *  @define Coll Range
+ *  @define coll range
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
+ *  @define doesNotUseBuilders
+ *    '''Note:''' this method does not use builders to construct a new range,
+ *         and its complexity is O(1).
  */
 @serializable @SerialVersionUID(7618862778670199309L)
 class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int] {
@@ -33,7 +44,9 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
   protected def copy(start: Int, end: Int, step: Int): Range = new Range(start, end, step)
 
   /** Create a new range with the `start` and `end` values of this range and
-   *  a new <code>step</code>.
+   *  a new `step`.
+   *
+   *  @return a new range with a different step
    */
   def by(step: Int): Range = copy(start, end, step)
 
@@ -84,18 +97,46 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
     start
   }
 
+  /** Creates a new range containing the first `n` elements of this range.
+   *
+   *  $doesNotUseBuilders
+   *
+   *  @param n  the number of elements to take.
+   *  @return   a new range consisting of `n` first elements.
+   */
   final override def take(n: Int): Range = if (n > 0 && length > 0) {
     Range(start, locationAfterN(n - 1), step).inclusive
   } else {
     Range(start, start, step)
   }
 
+  /** Creates a new range containing all the elements of this range except the first `n` elements.
+   *
+   *  $doesNotUseBuilders
+   *
+   *  @param n  the number of elements to drop.
+   *  @return   a new range consisting of all the elements of this range except `n` first elements.
+   */
   final override def drop(n: Int): Range =
     copy(locationAfterN(n), end, step)
 
+  /** Creates a new range containing all the elements of this range except the last one.
+   *
+   *  $doesNotUseBuilders
+   *
+   *  @return  a new range consisting of all the elements of this range except the last one.
+   */
   final override def init: Range =
     take(length - 1)
 
+  /** Creates a new range contained in the specified slice of this range.
+   *
+   *  $doesNotUseBuilders
+   *
+   *  @param from   the start of the slice.
+   *  @param until  the end of the slice.
+   *  @return       a new range consisting of all the elements of this range contained in the specified slice.
+   */
   final override def slice(from: Int, until: Int): Range =
     drop(from).take(until - from)
 
@@ -117,12 +158,29 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
     (Range(start, split, step), copy(split, end, step))
   }
 
+  /** Creates a pair of new ranges, first consisting of elements before `n`, and the second
+   *  of elements after `n`.
+   *
+   *  $doesNotUseBuilders
+   */
   final override def splitAt(n: Int) = (take(n), drop(n))
 
+  /** Creates a new range consisting of the `length - n` last elements of the range.
+   *
+   *  $doesNotUseBuilders
+   */
   final override def takeRight(n: Int): Range = drop(length - n)
 
+  /** Creates a new range consisting of the initial `length - n` elements of the range.
+   *
+   *  $doesNotUseBuilders
+   */
   final override def dropRight(n: Int): Range = take(length - n)
 
+  /** Returns the reverse of this range.
+   *
+   *  $doesNotUseBuilders
+   */
   final override def reverse: Range = if (length > 0) new Range.Inclusive(last, start, -step) else this
 
   /** Make range inclusive.
@@ -156,6 +214,8 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
   }
 }
 
+/** A companion object for the `Range` class.
+ */
 object Range {
   private[immutable] val MAX_PRINT = 512  // some arbitrary value
 

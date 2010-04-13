@@ -12,8 +12,16 @@
 package scala.collection
 package generic
 
-/** A template for companion objects of immutable.Map and subclasses thereof.
+/** A template for companion objects of `SortedMap` and subclasses thereof.
  *
  *  @since 2.8
+ *  @define Coll SortedMap
+ *  @define coll sorted map
+ *  @define factoryInfo
+ *    This object provides a set of operations needed to create sorted maps of type `$Coll`.
+ *    @author Martin Odersky
+ *    @version 2.8
+ *  @define sortedMapCanBuildFromInfo
+ *    The standard `CanBuildFrom` instance for sorted maps
  */
 abstract class ImmutableSortedMapFactory[CC[A, B] <: immutable.SortedMap[A, B] with SortedMapLike[A, B, CC[A, B]]] extends SortedMapFactory[CC]

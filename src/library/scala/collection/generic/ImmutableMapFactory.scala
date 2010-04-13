@@ -11,14 +11,14 @@
 package scala.collection
 package generic
 
-/** A template for companion objects of `immutable.Map` and
+/** A template for companion objects of `Map` and
  *  subclasses thereof.
  *
  *  @since 2.8
- *  @define Coll immutable.Map
- *  @define coll immutable map
+ *  @define Coll Map
+ *  @define coll map
  *  @define factoryInfo
- *    This object provides a set of operations needed to create immutable maps of type `$Coll`.
+ *    This object provides a set of operations needed to create maps of type `$Coll`.
  *    @author Martin Odersky
  *    @version 2.8
  *  @define mapCanBuildFromInfo
