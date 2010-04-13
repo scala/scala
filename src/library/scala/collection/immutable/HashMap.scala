@@ -17,7 +17,7 @@ import annotation.unchecked.uncheckedVariance
 
 /** This class implements immutable maps using a hash trie.
  *
- *  <b>Note:</b> the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
+ *  '''Note:''' the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
  *  for maps of size <= 4.
  *
  *  @tparam A      the type of the keys contained in this hash map.
@@ -90,6 +90,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] {
  *  @since   2.3
  */
 object HashMap extends ImmutableMapFactory[HashMap] {
+  /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: HashMap[A, B] = EmptyHashMap.asInstanceOf[HashMap[A, B]]
 

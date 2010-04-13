@@ -15,12 +15,14 @@ package immutable
 import generic._
 import mutable.{ Builder, ListBuffer }
 
-/** <code>Queue</code> objects implement data structures that allow to
+/** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
  *
  *  @author  Erik Stenman
  *  @version 1.0, 08/07/2003
  *  @since   1
+ *  @define Coll immutable.Queue
+ *  @define coll immutable queue
  */
 @serializable
 @SerialVersionUID(-7622936493364270175L)
@@ -31,11 +33,11 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
 
   override def companion: GenericCompanion[Queue] = Queue
 
-  /** Returns the <code>n</code>-th element of this queue.
+  /** Returns the `n`-th element of this queue.
    *  The first element is at position 0.
    *
    *  @param  n index of the element to return
-   *  @return   the element at position <code>n</code> in this queue.
+   *  @return   the element at position `n` in this queue.
    *  @throws Predef.NoSuchElementException if the queue is too short.
    */
   def apply(n: Int): A = {
@@ -127,7 +129,12 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
   override def toString() = mkString("Queue(", ", ", ")")
 }
 
+/** $factoryInfo
+ *  @define Coll immutable.Queue
+ *  @define coll immutable queue
+ */
 object Queue extends SeqFactory[Queue] {
+  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
   override def empty[A]: Queue[A] = new Queue[A](Nil, Nil)

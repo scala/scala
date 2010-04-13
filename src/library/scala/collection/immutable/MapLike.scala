@@ -14,32 +14,38 @@ package immutable
 
 import generic._
 
-/** <p>
- *    A generic template for immutable maps from keys of type <code>A</code>
- *    to values of type <code>B</code>.<br/>
- *    To implement a concrete map, you need to provide implementations of the
- *    following methods (where <code>This</code> is the type of the map in
- *    question):
- *  </p>
- *  <pre>
- *    <b>def</b> get(key: A): Option[B]
- *    <b>def</b> iterator: Iterator[(A, B)]
- *    <b>def</b> + [B1 >: B](kv: (A, B)): Map[A, B1]
- *    <b>def</b> - (key: A): This</pre>
- *  <p>
- *    If you wish that methods <code>like</code>, <code>take</code>, <code>drop</code>,
- *    <code>filter</code> return the same kind of map, you should also override:
- *  </p>
- *  <pre>
- *    <b>def</b> empty: This</pre>
- *  <p>
- *    It is also good idea to override methods <code>foreach</code> and
- *    <code>size</code> for efficiency.
- *  </p>
+/**
+ *  A generic template for immutable maps from keys of type `A`
+ *  to values of type `B`.
+ *  To implement a concrete map, you need to provide implementations of the
+ *  following methods (where `This` is the type of the actual map implementation):
+ *
+ *  {{{
+ *    def get(key: A): Option[B]
+ *    def iterator: Iterator[(A, B)]
+ *    def + [B1 >: B](kv: (A, B)): Map[A, B1]
+ *    def - (key: A): This
+ *  }}}
+ *
+ *  If you wish that transformer methods like `take`, `drop`, `filter` return the
+ *  same kind of map, you should also override:
+ *
+ *  {{{
+ *    def empty: This
+ *  }}}
+ *
+ *  It is also good idea to override methods `foreach` and
+ *  `size` for efficiency.
+ *
+ *  @param A     the type of the keys contained in this collection.
+ *  @param B     the type of the values associated with the keys.
+ *  @param This  The type of the actual map implementation.
  *
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   2.8
+ *  @define Coll immutable.Map
+ *  @define coll immutable map
  */
 trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends scala.collection.MapLike[A, B, This]
@@ -55,8 +61,8 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   override def updated [B1 >: B](key: A, value: B1): immutable.Map[A, B1] = this + ((key, value))
 
   /** Add a key/value pair to this map, returning a new map.
-   *  @param    kv the key/value pair
-   *  @return   A new map with the new binding added to this map
+   *  @param    kv the key/value pair.
+   *  @return   A new map with the new binding added to this map.
    */
   def + [B1 >: B] (kv: (A, B1)): immutable.Map[A, B1]
 
@@ -66,6 +72,7 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
+   *  @return A new map with the new bindings added to this map.
    */
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): immutable.Map[A, B1] =
     this + elem1 + elem2 ++ elems
@@ -73,7 +80,8 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   /** Adds a number of elements provided by a traversable object
    *  and returns a new collection with the added elements.
    *
-   *  @param elems     the traversable object.
+   *  @param xs      the traversable object consisting of key-value pairs.
+   *  @return        a new immutable map with the bindings of this map and those from `xs`.
    */
   override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): immutable.Map[A, B1] =
     ((repr: immutable.Map[A, B1]) /: xs) (_ + _)
@@ -104,7 +112,7 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   }
 
   /** This function transforms all the values of mappings contained
-   *  in this map with function <code>f</code>.
+   *  in this map with function `f`.
    *
    *  @param f A function over keys and values
    *  @return  the updated map

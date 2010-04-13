@@ -12,14 +12,12 @@
 package scala.collection
 package immutable
 
-/** <p>
- *    This is a simple wrapper class for <a href="Map.html"
- *    target="contentFrame"><code>scala.collection.mutable.Map</code></a>.
- *  </p>
- *  <p>
- *    It is most useful for assembling customized map abstractions
- *    dynamically using object composition and forwarding.
- *  </p>
+/**
+ *  This is a simple wrapper class for <a href="Map.html"
+ *  target="contentFrame">`scala.collection.immutable.Map`</a>.
+ *
+ *  It is most useful for assembling customized map abstractions
+ *  dynamically using object composition and forwarding.
  *
  *  @author  Matthias Zenger, Martin Odersky
  *  @version 2.0, 31/12/2006

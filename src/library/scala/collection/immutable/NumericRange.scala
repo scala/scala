@@ -14,24 +14,28 @@ package immutable
 import mutable.{ Builder, ListBuffer }
 import generic._
 
-/** <p>
- *    <code>NumericRange</code> is a more generic version of the
- *    <code>Range</code> class which works with arbitrary types.
- *    It must be supplied with an `Integral` implementation of the
- *    range type.
+/** `NumericRange` is a more generic version of the
+ *  `Range` class which works with arbitrary types.
+ *  It must be supplied with an `Integral` implementation of the
+ *  range type.
  *
- *    Factories for likely types include `Range.BigInt`, `Range.Long`,
- *    and `Range.BigDecimal`.  `Range.Int` exists for completeness, but
- *    the `Int`-based `scala.Range` should be more performant.
- *  </p><pre>
- *     <b>val</b> r1 = new Range(0, 100, 1)
- *     <b>val</b> veryBig = Int.MaxValue.toLong + 1
- *     <b>val</b> r2 = Range.Long(veryBig, veryBig + 100, 1)
+ *  Factories for likely types include `Range.BigInt`, `Range.Long`,
+ *  and `Range.BigDecimal`.  `Range.Int` exists for completeness, but
+ *  the `Int`-based `scala.Range` should be more performant.
+ *
+ *  {{{
+ *     val r1 = new Range(0, 100, 1)
+ *     val veryBig = Int.MaxValue.toLong + 1
+ *     val r2 = Range.Long(veryBig, veryBig + 100, 1)
  *     assert(r1 sameElements r2.map(_ - veryBig))
- *  </pre>
+ *  }}}
  *
  *  @author  Paul Phillips
  *  @version 2.8
+ *  @define Coll NumericRange
+ *  @define coll numeric range
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable
 abstract class NumericRange[T]
@@ -68,7 +72,7 @@ extends IndexedSeq[T]
   protected def underlying = collection.immutable.IndexedSeq.empty[T]
 
   /** Create a new range with the start and end values of this range and
-   *  a new <code>step</code>.
+   *  a new `step`.
    */
   def by(newStep: T): NumericRange[T] = copy(start, end, newStep)
 
@@ -200,6 +204,8 @@ extends IndexedSeq[T]
   }
 }
 
+/** A companion object for numeric ranges.
+ */
 object NumericRange {
   class Inclusive[T](start: T, end: T, step: T)(implicit num: Integral[T])
   extends NumericRange(start, end, step, true) {

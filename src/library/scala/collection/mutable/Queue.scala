@@ -22,8 +22,8 @@ import generic._
  *  @version 2.8
  *  @since   1
  *
- *  @define Coll Queue
- *  @define coll queue
+ *  @define Coll mutable.Queue
+ *  @define coll mutable queue
  *  @define orderDependent
  *  @define orderDependentFold
  *  @define mayNotTerminateInf

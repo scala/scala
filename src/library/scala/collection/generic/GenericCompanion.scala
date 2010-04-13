@@ -14,7 +14,7 @@ package generic
 
 import mutable.Builder
 
-/** A template class for companion objects of ``regular'' collection classes
+/** A template class for companion objects of ''regular'' collection classes
  *  represent an unconstrained higher-kinded type. Typically
  *  such classes inherit from trait `GenericTraversableTemplate`.
  *  @tparam  CC   The type constructor representing the collection class.
@@ -28,10 +28,10 @@ abstract class GenericCompanion[+CC[X] <: Traversable[X]] {
   /** The underlying collection type with unknown element type */
   type Coll = CC[_]
 
-  /** The default builder for $Coll objects. */
+  /** The default builder for `$Coll` objects. */
   def newBuilder[A]: Builder[A, CC[A]]
 
-  /** The empty collection of type $Coll[A] */
+  /** The empty collection of type `$Coll[A]` */
   def empty[A]: CC[A] = newBuilder[A].result
 
   /** Creates a $coll with the specified elements.

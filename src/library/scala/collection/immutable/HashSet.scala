@@ -17,7 +17,7 @@ import annotation.unchecked.uncheckedVariance
 
 /** This class implements immutable sets using a hash trie.
  *
- *  <b>Note:</b> the builder of a hash set returns specialized representations `EmptySet`,`Set1`,..., `Set4`
+ *  '''Note:''' the builder of a hash set returns specialized representations `EmptySet`,`Set1`,..., `Set4`
  *  for sets of `size <= 4`.
  *
  *  @tparam A      the type of the elements contained in this hash set.

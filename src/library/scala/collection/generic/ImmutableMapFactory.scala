@@ -21,5 +21,7 @@ package generic
  *    This object provides a set of operations needed to create immutable maps of type `$Coll`.
  *    @author Martin Odersky
  *    @version 2.8
+ *  @define mapCanBuildFromInfo
+ *    The standard `CanBuildFrom` instance for maps.
  */
 abstract class ImmutableMapFactory[CC[A, +B] <: immutable.Map[A, B] with immutable.MapLike[A, B, CC[A, B]]] extends MapFactory[CC]
