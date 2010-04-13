@@ -41,7 +41,7 @@ h1 {
 	right: 0;
 	left: 0;
 	top: 0;
-	background-color: grey;
+	background-color: #B78E99;
 }
 
 #textfilter {
@@ -129,7 +129,7 @@ h1 {
 
 #tpl .packages > li > h3 {
 	display: block;
-	background-color: #004572;
+	background-color: #2C475C;
 	color: white;
 	padding: 1px 4px 1px 4px;
 	font-weight: bold;

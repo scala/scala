@@ -17,7 +17,7 @@ body {
 a {
   cursor: pointer;
   text-decoration: underline;
-  color: #4B0082; /* indigo */
+  color: #69481D; /* brown */
 }
 
 a:hover {
@@ -30,12 +30,16 @@ a:hover {
   display: block;
 }
 
+#owner a {
+  color: black;
+}
+
 .value #owner {
-  background-color: #ced8f4;
+  background-color: #7996AC;
 }
 
 .type #owner {
-  background-color: #f4cece;
+  background-color: #799F5A;
 }
 
 #definition {
@@ -69,11 +73,11 @@ a:hover {
 }
 
 .value #definition {
-  background-color: #004572;
+  background-color: #2C475C;
 }
 
 .type #definition {
-  background-color: #5D2424;
+  background-color: #385E1A;
 }
 
 #comment {
@@ -83,7 +87,7 @@ a:hover {
 #values > h3 {
   color: white;
   padding: 4px;
-  background-color: #004572;
+  background-color: #7996AC;
   font-size: 12pt;
   font-weight: bold;
 }
@@ -93,7 +97,7 @@ a:hover {
   color: white;
   font-weight: bold;
   font-size: 12pt;
-  background-color: #5D2424;
+  background-color: #799F5A;
 }
 
 #constructors > h3 {
@@ -118,7 +122,7 @@ div.members > ol > li {
 /* Member signatures */
 
 #tooltip {
-  background: #FFE4B4;
+  background: #EFD5B5;
   border: 1px solid gray;
   color: black;
   display: none;
@@ -181,7 +185,7 @@ div.members > ol > li {
 }
 
 #types .signature .name {
-  color: #8E003C;
+  color: green;
 }
 
 /* Comments text formating */
@@ -202,28 +206,6 @@ div.members > ol > li {
   font-family: monospace;
 /*  font-size: small;*/
   margin: 2px 0 2px 0;
-}
-
-.cmt b {
-  font-weight: bold;
-}
-
-.cmt i {
-	font-style: italic;
-}
-
-.cmt u {
-	text-decoration: underline;
-}
-
-.cmt sub {
-	font-size: xx-small;
-	vertical-align: bottom;
-}
-
-.cmt sup {
-	font-size: xx-small;
-	vertical-align: top;
 }
 
 .cmt ul {
@@ -342,13 +324,15 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 #mbrsel {
   padding: 4px;
-  background-color: #cccccc;
+  background-color: #B78E99; /* grayish pink */
   display: block;
+  margin-bottom: 10px;
 }
 
 #mbrsel > div > h3 {
   padding: 4px;
   display: inline;
+  color: white;
 }
 
 #mbrsel > div > ol {
@@ -362,7 +346,7 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 #mbrsel > div > ol > li {
   padding: 4px 8px 4px 8px;
-  font-weight: bold;
+/*  font-weight: bold;*/
   background-color: white;
   display: inline-block;
   cursor: crosshair;
@@ -370,10 +354,20 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 #mbrsel > div > ol > li.in {
   background-color: white;
+  color: #4C4C4C;
 }
 
 #mbrsel > div > ol > li.out {
-  color: #888888;
-  background-color: #bbbbbb;
+  color: #80384E;
+  background-color: #9E6A77;
 }
 
+#mbrsel .hideall {
+  color: #4C4C4C;
+  font-weight: bold;
+}
+
+#mbrsel .showall {
+  color: #4C4C4C;
+  font-weight: bold;  
+}
