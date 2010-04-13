@@ -14,8 +14,7 @@ package generic
 
 import mutable.{Builder, AddingBuilder}
 
-/** A template for companion objects of `Set` and subclasses
- *  thereof.
+/** A template for companion objects of `Set` and subclasses thereof.
  *
  *  @define coll set
  *  @define Coll Set
@@ -23,6 +22,7 @@ import mutable.{Builder, AddingBuilder}
  *    This object provides a set of operations needed to create `$Coll` values.
  *    @author Martin Odersky
  *    @version 2.8
+ *    @since 2.8
  *  @define canBuildFromInfo
  *    The standard `CanBuildFrom` instance for `$Coll` objects.
  *    @see CanBuildFrom
@@ -36,6 +36,8 @@ abstract class SetFactory[CC[X] <: Set[X] with SetLike[X, CC[X]]]
 
   def newBuilder[A]: Builder[A, CC[A]] = new AddingBuilder[A, CC[A]](empty[A])
 
+  /** $setCanBuildFromInfo
+   */
   def setCanBuildFrom[A] = new CanBuildFrom[CC[_], A, CC[A]] {
     def apply(from: CC[_]) = newBuilder[A]
     def apply() = newBuilder[A]

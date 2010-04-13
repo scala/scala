@@ -14,14 +14,14 @@ package scala.collection
 import generic._
 import TraversableView.NoBuilder
 
-/** A base class for views of Iterables.
- *
- *  @author Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** A base trait for non-strict views of `Iterable`s.
+ *  $iterableViewInfo
  */
 trait IterableView[+A, +Coll] extends IterableViewLike[A, Coll, IterableView[A, Coll]]
 
+/** An object containing the necessary implicit definitions to make
+ *  `IterableView`s work. Its definitions are generally not accessed directly by clients.
+ */
 object IterableView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IterableView[A, Iterable[_]]] =

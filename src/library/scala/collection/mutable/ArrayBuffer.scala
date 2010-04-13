@@ -177,8 +177,8 @@ class ArrayBuffer[A](override protected val initialSize: Int)
 /** Factory object for the `ArrayBuffer` class.
  *
  *  $factoryInfo
- *  @define coll list
- *  @define Coll List
+ *  @define coll array buffer
+ *  @define Coll ArrayBuffer
  */
 object ArrayBuffer extends SeqFactory[ArrayBuffer] {
   /** $genericCanBuildFromInfo */

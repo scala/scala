@@ -16,6 +16,7 @@ import generic._
 
 /** A subtrait of `collection.IndexedSeq` which represents sequences
  *  that can be mutated.
+ *
  *  $indexedSeqInfo
  */
 trait IndexedSeq[A] extends Seq[A]
@@ -26,8 +27,9 @@ trait IndexedSeq[A] extends Seq[A]
 }
 
 /** $factoryInfo
- *  @define coll indexed sequence
- *  @define Coll IndexedSeq
+ *  The current default implementation of a $Coll is an `ArrayBuffer`.
+ *  @define coll mutable indexed sequence
+ *  @define Coll mutable.IndexedSeq
  */
 object IndexedSeq extends SeqFactory[IndexedSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IndexedSeq[A]] = new GenericCanBuildFrom[A]

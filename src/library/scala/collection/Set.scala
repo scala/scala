@@ -12,14 +12,16 @@ package scala.collection
 
 import generic._
 
-/** <p>
- *    A set is a collection that includes at most one of any object.
- *  </p>
+/** A base trait for all sets, mutable as well as immutable.
  *
- *  @author  Matthias Zenger
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   1
+ * $setNote
+ * $setNote2
+ * $setTags
+ * @since 1.0
+ * @author Matthias Zenger
+ * @define setNote2
+ * '''Implementation note:''' If your additions and mutations return the same kind of set as the set
+ *       you are defining, you should inherit from `SetLike` as well.
  */
 trait Set[A] extends (A => Boolean)
                 with Iterable[A]
@@ -28,11 +30,11 @@ trait Set[A] extends (A => Boolean)
   override def companion: GenericCompanion[Set] = Set
 }
 
-/** Factory object for <code>Set</code> class.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** $factoryInfo
+ *  The current default implementation of a $Coll is one of `EmptySet`, `Set1`, `Set2`, `Set3`, `Set4` in
+ *  class `immutable.Set` for sets of sizes up to 4, and a `immutable.HashSet` for sets of larger sizes.
+ *  @define coll set
+ *  @define Coll Set
  */
 object Set extends SetFactory[Set] {
   override def empty[A]: Set[A] = immutable.Set.empty[A]

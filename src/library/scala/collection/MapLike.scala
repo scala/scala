@@ -15,21 +15,14 @@ import mutable.{Builder, StringBuilder, MapBuilder}
 import annotation.migration
 import PartialFunction._
 
-/** A template trait for maps of type `Map[A, B]` which associate keys of type `A`
- *  with values of type `B`.
+/** A template trait for maps, which associate keys with values.
  *
- *  $mapnote
+ *  $mapNote
+ *  $mapTags
+ *  @since 2.8
  *
- *  @tparam A    the type of the keys.
- *  @tparam B    the type of associated values.
- *  @tparam This the type of the map itself.
- *
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
- *  @define $mapnote
- *    '''Note:'''
+ *  @define mapNote
+ *    '''Implementation note:'''
  *    This trait provides most of the operations of a `Map` independently of its representation.
  *    It is typically inherited by concrete implementations of maps.
  *
@@ -48,6 +41,15 @@ import PartialFunction._
  *    }}}
  *    It is also good idea to override methods `foreach` and
  *    `size` for efficiency.
+ *
+ *  @define mapTags
+ *  @tparam A    the type of the keys.
+ *  @tparam B    the type of associated values.
+ *  @tparam This the type of the map itself.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *
  *  @define coll map
  *  @define Coll Map
  *  @define willNotTerminateInf

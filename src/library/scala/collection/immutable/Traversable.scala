@@ -27,8 +27,9 @@ trait Traversable[+A] extends scala.collection.Traversable[A]
 }
 
 /** $factoryInfo
- *  @define Coll immutable.Travesable
- *  @define coll immutable traversable object
+ *  The current default implementation of a $Coll is a `Vector`.
+ *  @define coll immutable traversable collection
+ *  @define Coll immutable.Traversable
  */
 object Traversable extends TraversableFactory[Traversable] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]

@@ -21,8 +21,9 @@ trait Iterable[A] extends Traversable[A]
 }
 
 /** $factoryInfo
- *  @define coll indexed sequence
- *  @define Coll IndexedSeq
+ *  The current default implementation of a $Coll is an `ArrayBuffer`.
+ *  @define coll mutable iterable collection
+ *  @define Coll mutable.Iterable
  */
 object Iterable extends TraversableFactory[Iterable] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Iterable[A]] = new GenericCanBuildFrom[A]

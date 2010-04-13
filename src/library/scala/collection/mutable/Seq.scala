@@ -26,9 +26,9 @@ import generic._
  *  @define coll mutable sequence
  */
 trait Seq[A] extends Iterable[A]
-                with scala.collection.Seq[A]
-                with GenericTraversableTemplate[A, Seq]
-                with SeqLike[A, Seq[A]] {
+                     with scala.collection.Seq[A]
+                     with GenericTraversableTemplate[A, Seq]
+                     with SeqLike[A, Seq[A]] {
   override def companion: GenericCompanion[Seq] = Seq
 
   /** Replaces element at given index with a new value.
@@ -40,13 +40,12 @@ trait Seq[A] extends Iterable[A]
   def update(idx: Int, elem: A)
 }
 
-
 /** $factoryInfo
- *  @define coll sequence
- *  @define Coll Seq
+ *  The current default implementation of a $Coll is an `ArrayBuffer`.
+ *  @define coll mutable sequence
+ *  @define Coll mutable.Seq
  */
 object Seq extends SeqFactory[Seq] {
-  /** $genericCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = new GenericCanBuildFrom[A]
   def newBuilder[A]: Builder[A, Seq[A]] = new ArrayBuffer
 }

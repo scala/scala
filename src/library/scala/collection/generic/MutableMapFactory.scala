@@ -14,9 +14,10 @@ package generic
 
 import mutable.MapBuilder
 
-/** A template for companion objects of `mutable.Map` and subclasses thereof.
- *
- *  @since 2.8
+/** A template for companion objects of `immutable.Map` and subclasses thereof.
+ *    @author Martin Odersky
+ *    @version 2.8
+ *    @since 2.8
  */
 abstract class MutableMapFactory[CC[A, B] <: mutable.Map[A, B] with mutable.MapLike[A, B, CC[A, B]]]
   extends MapFactory[CC]

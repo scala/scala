@@ -14,13 +14,11 @@ package mutable
 
 import generic._
 
-/** This trait represents mutable maps.
- *  All implementations od mutable maps inherit from it.
- *
- *  $mapnote
- *
- *  @tparam A    the type of the keys of the map.
- *  @tparam B    the type of associated values.
+/** A base trait for maps that can be mutated.
+ *  $mapNote
+ *  $mapTags
+ *  @since 1.0
+ *  @author  Matthias Zenger
  */
 trait Map[A, B]
   extends Iterable[(A, B)]
@@ -29,7 +27,7 @@ trait Map[A, B]
 
   override def empty: Map[A, B] = Map.empty
 
-  /* Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
+  /** Return a read-only projection of this map.  !!! or just use an (immutable) MapProxy?
   def readOnly : scala.collection.Map[A, B] = new scala.collection.Map[A, B] {
     override def size = self.size
     override def update(key: A, value: B) = self.update(key, value)
@@ -43,11 +41,14 @@ trait Map[A, B]
 }
 
 /** $factoryInfo
- *  @define Coll Map
- *  @define coll map
+ *  The current default implementation of a $Coll is a `HashMap`.
+ *  @define coll mutable map
+ *  @define Coll mutable.Map
  */
 object Map extends MutableMapFactory[Map] {
+  /** $canBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
+
   def empty[A, B]: Map[A, B] = new HashMap[A, B]
 }
 

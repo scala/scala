@@ -11,17 +11,9 @@
 package scala.collection
 package generic
 
-/** A template for companion objects of `Map` and
- *  subclasses thereof.
- *
- *  @since 2.8
- *  @define Coll Map
- *  @define coll map
- *  @define factoryInfo
- *    This object provides a set of operations needed to create maps of type `$Coll`.
+/** A template for companion objects of `immutable.Map` and subclasses thereof.
  *    @author Martin Odersky
  *    @version 2.8
- *  @define mapCanBuildFromInfo
- *    The standard `CanBuildFrom` instance for maps.
+ *    @since 2.8
  */
 abstract class ImmutableMapFactory[CC[A, +B] <: immutable.Map[A, B] with immutable.MapLike[A, B, CC[A, B]]] extends MapFactory[CC]

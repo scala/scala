@@ -29,8 +29,9 @@ trait LinearSeq[A] extends Seq[A]
 }
 
 /** $factoryInfo
- *  @define coll linear sequence
- *  @define Coll LinearSeq
+ *  The current default implementation of a $Coll is a `MutableList`.
+ *  @define coll mutable linear sequence
+ *  @define Coll mutable.LinearSeq
  */
 object LinearSeq extends SeqFactory[LinearSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = new GenericCanBuildFrom[A]
