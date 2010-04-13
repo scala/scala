@@ -9,9 +9,7 @@ import java.io.{
   FileInputStream, FileOutputStream, BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter,
   BufferedInputStream, BufferedOutputStream, RandomAccessFile, File => JFile }
 import java.net.{ URI, URL }
-import collection.{ Seq, Traversable }
-import PartialFunction._
-import scala.util.Random.nextASCIIString
+import scala.util.Random.alphanumeric
 
 /** An abstraction for filesystem paths.  The differences between
  *  Path, File, and Directory are primarily to communicate intent.
@@ -71,7 +69,8 @@ object Path
     else if (jfile.isDirectory) new Directory(jfile)
     else new Path(jfile)
 
-  private[io] def randomPrefix = nextASCIIString(6)
+  /** Avoiding any shell/path issues by only using alphanumerics. */
+  private[io] def randomPrefix = alphanumeric take 6 mkString
   private[io] def fail(msg: String) = throw FileOperationException(msg)
 }
 import Path._
