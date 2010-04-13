@@ -90,7 +90,7 @@ trait DocComments { self: SymbolTable =>
     getDocComment(sym) map getUseCases getOrElse List()
   }
 
-  def useCases(sym: Symbol): List[(Symbol, String, Position)] = useCases(sym, sym)
+  def useCases(sym: Symbol): List[(Symbol, String, Position)] = useCases(sym, sym.enclClass)
 
   /** Returns the javadoc format of doc comment string `s`, including wiki expansion
    */
@@ -416,10 +416,8 @@ trait DocComments { self: SymbolTable =>
       }
 
       for (defn <- defined) yield {
-        val sym = defn.cloneSymbol(site).setFlag(Flags.SYNTHETIC).setInfo(
+        defn.cloneSymbol(site).setFlag(Flags.SYNTHETIC).setInfo(
           substAliases(defn.info).asSeenFrom(site.thisType, defn.owner))
-        sym.owner = defn.owner
-        sym
       }
     }
   }
