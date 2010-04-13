@@ -204,6 +204,28 @@ div.members > ol > li {
   margin: 2px 0 2px 0;
 }
 
+.cmt b {
+  font-weight: bold;
+}
+
+.cmt i {
+	font-style: italic;
+}
+
+.cmt u {
+	text-decoration: underline;
+}
+
+.cmt sub {
+	font-size: xx-small;
+	vertical-align: bottom;
+}
+
+.cmt sup {
+	font-size: xx-small;
+	vertical-align: top;
+}
+
 .cmt ul {
   display: block;
   list-style: circle;
