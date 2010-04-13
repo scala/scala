@@ -73,11 +73,7 @@ object UIDemo extends SimpleSwingApplication {
                 reactLive = live.selected
             }
           }
-          contents += new Button("Center Frame") {
-            reactions += {
-              case ButtonClicked(_) => centerOnScreen()
-            }
-          }
+          contents += new Button(Action("Center Frame") { centerOnScreen() })
         }
         pages += new Page("Buttons", buttons)
         pages += new Page("GridBag", GridBagDemo.ui)
