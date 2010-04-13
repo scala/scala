@@ -68,6 +68,25 @@ trait IScheduler {
 
   def managedBlock(blocker: scala.concurrent.ManagedBlocker): Unit
 
+  /** This method is called when an exception is not handled by
+   *  some reactor while processing a certain message.
+   *
+   *  @param t       the unhandled exception
+   *  @param reactor the reactor inside which the exception was thrown
+   *  @param msg     the message last removed from the reactor's mailbox
+   */
+  def handleUncaughtThrowable[Msg >: Null](t: Throwable, reactor: Reactor[Msg], msg: Msg) {
+    // print message on default error stream
+    val msgException = "Uncaught exception in "+reactor+"\n"
+    val msgMessage   = if (msg != null) "Message: "+msg+"\n" else ""
+    Debug.doWarning {
+      Console.err.print(msgException + msgMessage)
+      t.printStackTrace()
+    }
+    if (t.isInstanceOf[Error])
+      throw t
+  }
+
   @deprecated("this member is going to be removed in a future release")
   def tick(a: Actor) {}
 

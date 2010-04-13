@@ -29,7 +29,7 @@ private[actors] class ActorTask(actor: Actor,
       actor.exit()
   }
 
-  protected override def terminateExecution(e: Exception) {
+  protected override def terminateExecution(e: Throwable) {
     val senderInfo = try { Some(actor.sender) } catch {
       case _: Exception => None
     }

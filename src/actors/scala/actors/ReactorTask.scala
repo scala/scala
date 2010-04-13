@@ -49,14 +49,9 @@ private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
       case _: SuspendActorControl =>
         // do nothing (continuation is already saved)
 
-      case e: Exception =>
-        // print message on default error stream
-        val msgException = "Uncaught exception in "+reactor+"\n"
-        val msgMessage   = if (msg != null) "Message: "+msg+"\n" else ""
-        Debug.doWarning {
-          Console.err.print(msgException + msgMessage)
-          e.printStackTrace()
-        }
+      case e: Throwable =>
+        // re-throws `Error`s by default
+        reactor.scheduler.handleUncaughtThrowable(e, reactor, msg)
 
         terminateExecution(e)
         reactor.terminated()
@@ -77,6 +72,6 @@ private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
 
   protected def suspendExecution() {}
 
-  protected def terminateExecution(e: Exception) {}
+  protected def terminateExecution(e: Throwable) {}
 
 }

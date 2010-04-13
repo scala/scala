@@ -23,7 +23,7 @@ class UncaughtException[Msg >: Null](val actor: Reactor[Msg],
                                      val message: Option[Msg],
                                      val sender: Option[OutputChannel[Any]],
                                      val thread: Thread,
-                                     cause: Exception)
+                                     cause: Throwable)
 extends Exception(cause) {
 
   override def toString() =
