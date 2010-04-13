@@ -124,20 +124,24 @@ h1 {
 	float: right;
 	font-weight: normal;
 	color: white;
-	padding: 1px 4px 1px 4px;
+	padding: 1px 0.5em 1px 4px;
 }
 
 #tpl .packages > li > h3 {
 	display: block;
 	background-color: #2C475C;
 	color: white;
-	padding: 1px 4px 1px 4px;
+	padding: 1px 4px 1px 0.5em;
 	font-weight: bold;
 	display: block;
 }
 
 #tpl ol > li {
 	display: block;
+}
+
+#tpl .templates > li {
+  padding-left: 0.5em;
 }
 
 #tpl ol > li .icon {
