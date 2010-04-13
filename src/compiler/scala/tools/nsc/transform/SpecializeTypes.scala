@@ -82,7 +82,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   /** For a given class and concrete type arguments, give its specialized class */
-  val specializedClass: mutable.Map[(Symbol, TypeEnv), Symbol] = new mutable.HashMap
+  val specializedClass: mutable.Map[(Symbol, TypeEnv), Symbol] = new mutable.LinkedHashMap
 
   /** Returns the generic class that was specialized to 'cls', or
    *  'cls' itself if cls is not a specialized subclass.
