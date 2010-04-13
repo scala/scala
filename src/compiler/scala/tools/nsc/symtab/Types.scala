@@ -3810,7 +3810,7 @@ A type's typeSymbol should never be inspected directly.
     util.trace("is same specialized skolem "+sym1+" "+sym2+" at "+phase+phase.specialized+" ?") {
     sym1.name == sym2.name &&
     phase.specialized &&
-    sym1.info =:= sym2.info
+    sym1.info =:= sym2.info &&
     pre1 =:= pre2
   }}
 
