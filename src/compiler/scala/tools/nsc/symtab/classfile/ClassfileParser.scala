@@ -221,9 +221,14 @@ abstract class ClassfileParser {
         val ownerTpe = getClassOrArrayType(in.getChar(start + 1))
         if (settings.debug.value)
           log("getMemberSymbol(static: " + static + "): owner type: " + ownerTpe + " " + ownerTpe.typeSymbol.originalName)
-        val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
+        val (name0, tpe0) = getNameAndType(in.getChar(start + 3), ownerTpe)
         if (settings.debug.value)
-          log("getMemberSymbol: name and tpe: " + name + ": " + tpe)
+          log("getMemberSymbol: name and tpe: " + name0 + ": " + tpe0)
+
+        forceMangledName(tpe0.typeSymbol.name, false)
+        val (name, tpe) = getNameAndType(in.getChar(start + 3), ownerTpe)
+//        println("new tpe: " + tpe + " at phase: " + phase)
+
         if (name == nme.MODULE_INSTANCE_FIELD) {
           val index = in.getChar(start + 1)
           val name = getExternalName(in.getChar(starts(index) + 1))
@@ -240,9 +245,10 @@ abstract class ClassfileParser {
             f = owner.info.member(newTermName(origName.toString + nme.LOCAL_SUFFIX)).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
-            if (ownerTpe.typeSymbol.isImplClass)
+            if (ownerTpe.typeSymbol.isImplClass) {
+//              println("impl class, member: " + owner.tpe.member(origName) + ": " + owner.tpe.member(origName).tpe)
               f = ownerTpe.member(origName).suchThat(_.tpe =:= tpe)
-            else {
+            } else {
               log("Couldn't find " + name + ": " + tpe + " inside: \n" + ownerTpe)
               f = if (tpe.isInstanceOf[MethodType]) owner.newMethod(owner.pos, name).setInfo(tpe)
                   else owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE)
@@ -384,11 +390,14 @@ abstract class ClassfileParser {
    *  flatten would not lift classes that were not referenced in the source code.
    */
   def forceMangledName(name: Name, module: Boolean): Symbol = {
-    val parts = name.toString.split(Array('.', '$'))
+    val parts = name.decode.toString.split(Array('.', '$'))
     var sym: Symbol = definitions.RootClass
     atPhase(currentRun.flattenPhase.prev) {
-      for (part0 <- parts; val part = newTermName(part0)) {
-        val sym1 = sym.info.decl(part.encode)//.suchThat(module == _.isModule)
+      for (part0 <- parts; if !(part0 == ""); val part = newTermName(part0)) {
+        val sym1 = atPhase(currentRun.icodePhase) {
+          sym.linkedClassOfClass.info
+          sym.info.decl(part.encode)
+        }//.suchThat(module == _.isModule)
         if (sym1 == NoSymbol)
           sym = sym.info.decl(part.encode.toTypeName)
         else
