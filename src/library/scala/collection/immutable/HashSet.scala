@@ -72,19 +72,10 @@ class HashSet[A] extends Set[A]
   protected def updated0(key: A, hash: Int, level: Int): HashSet[A] =
     new HashSet.HashSet1(key, hash)
 
-
-
   protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = this
 
+  protected def writeReplace(): AnyRef = new HashSet.SerializationProxy(this)
 }
-
-/*
-object HashSet extends SetFactory[HashSet] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
-  override def empty[A]: HashSet[A] = new HashSet
-}
-*/
-
 
 /** $factoryInfo
  *  @define Coll immutable.HashSet
@@ -122,14 +113,7 @@ object HashSet extends SetFactory[HashSet] {
           m.updated0(this.key, this.hash, level).updated0(key, hash, level)
         } else {
           // 32-bit hash collision (rare, but not impossible)
-          // wrap this in a HashTrieSet if called with level == 0 (otherwise serialization won't work)
-          if (level == 0) {
-            val elems = new Array[HashSet[A]](1)
-            elems(0) = new HashSetCollision1(hash, ListSet.empty + this.key + key)
-            new HashTrieSet[A](1 << ((hash >>> level) & 0x1f), elems, 2)
-          } else {
-            new HashSetCollision1(hash, ListSet.empty + this.key + key)
-          }
+          new HashSetCollision1(hash, ListSet.empty + this.key + key)
         }
       }
 
@@ -138,16 +122,6 @@ object HashSet extends SetFactory[HashSet] {
 
     override def iterator: Iterator[A] = Iterator(key)
     override def foreach[U](f: A => U): Unit = f(key)
-
-    private def writeObject(out: java.io.ObjectOutputStream) {
-      out.writeObject(key)
-    }
-
-    private def readObject(in: java.io.ObjectInputStream) {
-      key = in.readObject().asInstanceOf[A]
-      hash = computeHash(key)
-    }
-
   }
 
   private class HashSetCollision1[A](private[HashSet] var hash: Int, var ks: ListSet[A]) extends HashSet[A] {
@@ -240,23 +214,32 @@ object HashSet extends SetFactory[HashSet] {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
-      if (((bitmap >>> index) & 1) == 1) {
-        val elemsNew = new Array[HashSet[A]](elems.length)
-        Array.copy(elems, 0, elemsNew, 0, elems.length)
+      if ((bitmap & mask) != 0) {
         val sub = elems(offset)
-        // TODO: might be worth checking if sub is HashTrieSet (-> monomorphic call site)
+        // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.removed0(key, hash, level + 5)
-        elemsNew(offset) = subNew
-        // TODO: handle shrinking
-        val sizeNew = size + (subNew.size - sub.size)
-        if (sizeNew > 0)
-          new HashTrieSet(bitmap, elemsNew, size + (subNew.size - sub.size))
-        else
-          HashSet.empty[A]
+        if (subNew.isEmpty) {
+          val bitmapNew = bitmap ^ mask
+          if (bitmapNew != 0) {
+            val elemsNew = new Array[HashSet[A]](elems.length - 1)
+            Array.copy(elems, 0, elemsNew, 0, offset)
+            Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
+            val sizeNew = size - sub.size
+            new HashTrieSet(bitmapNew, elemsNew, sizeNew)
+          } else
+            HashSet.empty[A]
+        } else {
+          val elemsNew = new Array[HashSet[A]](elems.length)
+          Array.copy(elems, 0, elemsNew, 0, elems.length)
+          elemsNew(offset) = subNew
+          val sizeNew = size + (subNew.size - sub.size)
+          new HashTrieSet(bitmap, elemsNew, sizeNew)
+        }
       } else {
         this
       }
     }
+
 
     override def iterator = new Iterator[A] {
       private[this] var depth = 0
@@ -341,31 +324,27 @@ time { mNew.iterator.foreach( p => ()) }
         i += 1
       }
     }
+  }
 
-
+  @serializable  @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashSet[A]) {
     private def writeObject(out: java.io.ObjectOutputStream) {
-      // no out.defaultWriteObject()
-      out.writeInt(size)
-      foreach { e =>
+      val s = orig.size
+      out.writeInt(s)
+      for (e <- orig) {
         out.writeObject(e)
       }
     }
 
     private def readObject(in: java.io.ObjectInputStream) {
-      val size = in.readInt
-      var index = 0
-      var m = HashSet.empty[A]
-      while (index < size) {
-        // TODO: optimize (use unsafe mutable update)
-        m = m + in.readObject.asInstanceOf[A]
-        index += 1
+      orig = empty
+      val s = in.readInt()
+      for (i <- 0 until s) {
+        val e = in.readObject().asInstanceOf[A]
+        orig = orig + e
       }
-      var tm = m.asInstanceOf[HashTrieSet[A]]
-      bitmap = tm.bitmap
-      elems = tm.elems
-      size0 = tm.size0
     }
 
+    private def readResolve(): AnyRef = orig
   }
 
 }
