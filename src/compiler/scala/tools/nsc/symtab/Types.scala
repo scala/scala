@@ -3807,12 +3807,11 @@ A type's typeSymbol should never be inspected directly.
    */
   private def isSameSpecializedSkolem(sym1: Symbol, sym2: Symbol, pre1: Type, pre2: Type) = {
     sym1.isExistentialSkolem && sym2.isExistentialSkolem &&
-    util.trace("is same specialized skolem "+sym1+" "+sym2+" at "+phase+phase.specialized+" ?") {
     sym1.name == sym2.name &&
     phase.specialized &&
     sym1.info =:= sym2.info &&
     pre1 =:= pre2
-  }}
+  }
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
     if (sym1 == sym2) sym1.hasFlag(PACKAGE) || phase.erasedTypes || pre1 =:= pre2
