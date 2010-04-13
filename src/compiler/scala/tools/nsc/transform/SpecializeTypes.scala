@@ -1202,9 +1202,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       override def transform(tree: Tree): Tree = tree match {
         case Select(qual, name) =>
           if (tree.symbol.hasFlag(PRIVATE | PROTECTED)) {
-            log("changing private flag of " + tree.symbol)
+            log("changing private flag of " + tree.symbol + " privateWithin: " + tree.symbol.privateWithin)
 //            tree.symbol.resetFlag(PRIVATE).setFlag(PROTECTED)
-            tree.symbol.resetFlag(PRIVATE | PROTECTED)
+            tree.symbol.makeNotPrivate(tree.symbol.owner)
+//            tree.symbol.resetFlag(PRIVATE | PROTECTED)
+//            tree.symbol.privateWithin = NoSymbol
           }
           super.transform(tree)
 
@@ -1296,7 +1298,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     /** Create specialized class definitions */
-      def implSpecClasses(trees: List[Tree]): List[Tree] = {
+    def implSpecClasses(trees: List[Tree]): List[Tree] = {
       val buf = new mutable.ListBuffer[Tree]
       for (tree <- trees)
         tree match {
