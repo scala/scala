@@ -194,13 +194,13 @@ div.members > ol > li {
 
 .cmt code {
   font-family: monospace;
-  font-size: small;
+/*  font-size: small;*/
 }
 
 .cmt pre {
   display: block;
   font-family: monospace;
-  font-size: small;
+/*  font-size: small;*/
   margin: 2px 0 2px 0;
 }
 
