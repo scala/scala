@@ -2,6 +2,7 @@ import scala.actors.ReplyReactor
 
 class MyActor extends ReplyReactor {
   def act() {
+    try {
     loop {
       react {
         case 'hello =>
@@ -9,6 +10,10 @@ class MyActor extends ReplyReactor {
         case 'stop =>
           exit()
       }
+    }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
     }
   }
 }
@@ -20,6 +25,7 @@ object Test {
 
     val b = new ReplyReactor {
       def act() {
+        try {
         react {
           case r: MyActor =>
             var i = 0
@@ -36,6 +42,10 @@ object Test {
                   }
               }
             }
+        }
+        } catch {
+          case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+            e.printStackTrace()
         }
       }
     }

@@ -4,9 +4,14 @@ object Test {
   def main(args: Array[String]) {
     val a = new ReplyReactor {
       def act() {
+        try {
         react {
           case 'hello =>
             sender ! 'hello
+        }
+        } catch {
+          case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+            e.printStackTrace()
         }
       }
     }
@@ -14,6 +19,7 @@ object Test {
 
     val b = new ReplyReactor {
       def act() {
+        try {
         react {
           case r: ReplyReactor =>
             r ! 'hello
@@ -21,6 +27,10 @@ object Test {
               case any =>
                 println(any)
             }
+        }
+        } catch {
+          case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+            e.printStackTrace()
         }
       }
     }

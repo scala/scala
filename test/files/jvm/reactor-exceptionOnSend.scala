@@ -19,6 +19,7 @@ object A extends Reactor[Any] {
   var state = 0
 
   def act() {
+    try {
     loop {
       react {
         case 'hello if guard() =>
@@ -26,14 +27,24 @@ object A extends Reactor[Any] {
           exit()
       }
     }
+    } catch {
+      case e: Throwable if (!e.isInstanceOf[scala.util.control.ControlThrowable] &&
+                            !e.isInstanceOf[MyException]) =>
+        e.printStackTrace()
+    }
   }
 }
 
 object B extends Reactor[Any] {
   def act() {
+    try {
     A.start()
     A ! 'hello
     A ! 'hello
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
+    }
   }
 }
 

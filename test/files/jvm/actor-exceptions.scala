@@ -13,11 +13,16 @@ case class MyOtherException(text: String) extends Exception {
 object Master extends Actor {
   trapExit = true
   def act() {
+    try {
     link(Slave)
     Slave.start()
     for (i <- 0 until 10) Slave ! A
     react {
       case Exit(from, reason) =>
+    }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
     }
   }
 }
@@ -28,6 +33,7 @@ object Slave extends Actor {
     case MyException(text) =>
   }
   def act() {
+    try {
     var cnt = 0
     loop {
       react {
@@ -38,6 +44,10 @@ object Slave extends Actor {
             throw new MyOtherException("unhandled")
           }
       }
+    }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
     }
   }
 }

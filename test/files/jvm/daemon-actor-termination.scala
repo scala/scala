@@ -5,6 +5,7 @@ object Test {
 
   class MyDaemon extends DaemonActor {
     def act() {
+      try {
       react {
         case 'hello =>
           println("MSG1")
@@ -14,6 +15,10 @@ object Test {
               println("done")
           }
       }
+      } catch {
+        case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+          e.printStackTrace()
+      }
     }
   }
 
@@ -21,8 +26,13 @@ object Test {
     val daemon = new MyDaemon
     daemon.start()
     Actor.actor {
+      try {
       daemon !? 'hello
       println("MSG2")
+      } catch {
+        case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+          e.printStackTrace()
+      }
     }
   }
 }
