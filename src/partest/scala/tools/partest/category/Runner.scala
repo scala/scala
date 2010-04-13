@@ -75,7 +75,7 @@ trait Runner {
 
         def allResults() =
           for ((prop, res) <- result) yield {
-            ScalacheckTest.this.trace("scalacheck result for %s: %s".format(prop, res))
+            ScalacheckTest.this.trace("%s: %s".format(prop, res))
             res.asInstanceOf[ScalacheckResult].passed
           }
 

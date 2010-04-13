@@ -124,7 +124,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   override def equals(that: Any): Boolean = that match {
     case that: BigInt     => this equals that
     case that: BigDecimal => that.toBigIntExact exists (this equals _)
-    case x                => unifiedPrimitiveEquals(x)
+    case x                => (this <= BigInt.MaxLong && this >= BigInt.MinLong) && unifiedPrimitiveEquals(x)
   }
 
   protected[math] def isWhole = true
