@@ -14,12 +14,16 @@ package mutable
 
 import generic._
 
-/** A subtrait of <code>collection.Seq</code> which represents sequences
+
+/** A subtrait of `collection.Seq` which represents sequences
  *  that can be mutated.
  *
  *  $seqInfo
  *
- *  The class adds an <code>update</code> method to <code>collection.Seq</code>.
+ *  The class adds an `update` method to `collection.Seq`.
+ *
+ *  @define Coll mutable.Seq
+ *  @define coll mutable sequence
  */
 trait Seq[A] extends Iterable[A]
                      with scala.collection.Seq[A]
@@ -36,11 +40,10 @@ trait Seq[A] extends Iterable[A]
   def update(idx: Int, elem: A)
 }
 
-/** A factory object for the trait <code>Seq</code>.
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
+/** $factoryInfo
+ *  The current default implementation of a $Coll is an `ArrayBuffer`.
+ *  @define coll mutable sequence
+ *  @define Coll mutable.Seq
  */
 object Seq extends SeqFactory[Seq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Seq[A]] = new GenericCanBuildFrom[A]

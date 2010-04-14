@@ -13,12 +13,16 @@ package scala.collection
 package mutable
 
 /** This class implements synchronized priority queues using a binary heap.
- *  The elements of the queue have to be ordered in terms of the
- *  <code>Ordered[T]</code> class.
+ *  The elements of the queue have to be ordered in terms of the `Ordered[T]` class.
+ *
+ *  @tparam A    type of the elements contained in this synchronized priority queue
+ *  @param ord   implicit ordering used to compared elements of type `A`
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  *  @since   1
+ *  @define Coll SynchronizedPriorityQueue
+ *  @define coll synchronized priority queue
  */
 class SynchronizedPriorityQueue[A](implicit ord: Ordering[A]) extends PriorityQueue[A] {
 

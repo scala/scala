@@ -6,6 +6,7 @@ object Test {
 
   def main(args: Array[String]) {
     val a = actor {
+      try {
       var cnt = 0
       loop {
         react {
@@ -19,6 +20,10 @@ object Test {
               exit()
             }
         }
+      }
+      } catch {
+        case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+          e.printStackTrace()
       }
     }
 

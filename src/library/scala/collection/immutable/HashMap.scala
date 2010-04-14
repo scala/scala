@@ -15,17 +15,22 @@ package immutable
 import generic._
 import annotation.unchecked.uncheckedVariance
 
-/** <p>
- *    This class implements immutable maps using a hash trie.
- *  </p>
+/** This class implements immutable maps using a hash trie.
  *
- * @note the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
- * for maps of size <= 4.
+ *  '''Note:''' the builder of a hash map returns specialized representations EmptyMap,Map1,..., Map4
+ *  for maps of size <= 4.
+ *
+ *  @tparam A      the type of the keys contained in this hash map.
+ *  @tparam B      the type of the values associated with the keys.
  *
  *  @author  Martin Odersky
  *  @author  Tiark Rompf
  *  @version 2.8
  *  @since   2.3
+ *  @define Coll immutable.HashMap
+ *  @define coll immutable hash map
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(2L)
 class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] {
@@ -70,20 +75,22 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] {
   protected def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1)): HashMap[A, B1] =
     new HashMap.HashMap1(key, hash, value, kv)
 
-
-
   protected def removed0(key: A, hash: Int, level: Int): HashMap[A, B] = this
+
+
+  protected def writeReplace(): AnyRef = new HashMap.SerializationProxy(this)
 
 }
 
-/** A factory object for immutable HashMaps.
+/** $factoryInfo
+ *  @define Coll immutable.HashMap
+ *  @define coll immutable hash map
  *
- *  @author  Martin Odersky
  *  @author  Tiark Rompf
- *  @version 2.8
  *  @since   2.3
  */
 object HashMap extends ImmutableMapFactory[HashMap] {
+  /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
   def empty[A, B]: HashMap[A, B] = EmptyHashMap.asInstanceOf[HashMap[A, B]]
 
@@ -108,14 +115,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
           m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv)
         } else {
           // 32-bit hash collision (rare, but not impossible)
-          // wrap this in a HashTrieMap if called with level == 0 (otherwise serialization won't work)
-          if (level == 0) {
-            val elems = new Array[HashMap[A,B1]](1)
-            elems(0) = new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
-            new HashTrieMap[A,B1](1 << ((hash >>> level) & 0x1f), elems, 2)
-          } else {
-            new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
-          }
+          new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
         }
       }
 
@@ -125,18 +125,6 @@ object HashMap extends ImmutableMapFactory[HashMap] {
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
-
-    private def writeObject(out: java.io.ObjectOutputStream) {
-      out.writeObject(key)
-      out.writeObject(value)
-    }
-
-    private def readObject(in: java.io.ObjectInputStream) {
-      key = in.readObject().asInstanceOf[A]
-      value = in.readObject().asInstanceOf[B]
-      hash = computeHash(key)
-    }
-
   }
 
   private class HashMapCollision1[A,+B](private[HashMap] var hash: Int, var kvs: ListMap[A,B @uncheckedVariance]) extends HashMap[A,B] {
@@ -166,22 +154,6 @@ object HashMap extends ImmutableMapFactory[HashMap] {
 
     override def iterator: Iterator[(A,B)] = kvs.iterator
     override def foreach[U](f: ((A, B)) => U): Unit = kvs.foreach(f)
-
-    private def writeObject(out: java.io.ObjectOutputStream) {
-      // this cannot work - reading things in might produce different
-      // hash codes and remove the collision. however this is never called
-      // because no references to this class are ever handed out to client code
-      // and HashTrieMap serialization takes care of the situation
-      error("cannot serialize an immutable.HashMap where all items have the same 32-bit hash code")
-      //out.writeObject(kvs)
-    }
-
-    private def readObject(in: java.io.ObjectInputStream) {
-      error("cannot deserialize an immutable.HashMap where all items have the same 32-bit hash code")
-      //kvs = in.readObject().asInstanceOf[ListMap[A,B]]
-      //hash = computeHash(kvs.)
-    }
-
   }
 
 
@@ -246,19 +218,27 @@ object HashMap extends ImmutableMapFactory[HashMap] {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask-1))
-      if (((bitmap >>> index) & 1) == 1) {
-        val elemsNew = new Array[HashMap[A,B]](elems.length)
-        Array.copy(elems, 0, elemsNew, 0, elems.length)
+      if ((bitmap & mask) != 0) {
         val sub = elems(offset)
         // TODO: might be worth checking if sub is HashTrieMap (-> monomorphic call site)
         val subNew = sub.removed0(key, hash, level + 5)
-        elemsNew(offset) = subNew
-        // TODO: handle shrinking
-        val sizeNew = size + (subNew.size - sub.size)
-        if (sizeNew > 0)
-          new HashTrieMap(bitmap, elemsNew, size + (subNew.size - sub.size))
-        else
-          HashMap.empty[A,B]
+        if (subNew.isEmpty) {
+          val bitmapNew = bitmap ^ mask
+          if (bitmapNew != 0) {
+            val elemsNew = new Array[HashMap[A,B]](elems.length - 1)
+            Array.copy(elems, 0, elemsNew, 0, offset)
+            Array.copy(elems, offset + 1, elemsNew, offset, elems.length - offset - 1)
+            val sizeNew = size - sub.size
+            new HashTrieMap(bitmapNew, elemsNew, sizeNew)
+          } else
+            HashMap.empty[A,B]
+        } else {
+          val elemsNew = new Array[HashMap[A,B]](elems.length)
+          Array.copy(elems, 0, elemsNew, 0, elems.length)
+          elemsNew(offset) = subNew
+          val sizeNew = size + (subNew.size - sub.size)
+          new HashTrieMap(bitmap, elemsNew, sizeNew)
+        }
       } else {
         this
       }
@@ -367,31 +347,29 @@ time { mNew.iterator.foreach( p => ()) }
       }
     }
 
+  }
 
+  @serializable  @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashMap[A, B]) {
     private def writeObject(out: java.io.ObjectOutputStream) {
-      // no out.defaultWriteObject()
-      out.writeInt(size)
-      foreach { p =>
-        out.writeObject(p._1)
-        out.writeObject(p._2)
+      val s = orig.size
+      out.writeInt(s)
+      for ((k,v) <- orig) {
+        out.writeObject(k)
+        out.writeObject(v)
       }
     }
 
     private def readObject(in: java.io.ObjectInputStream) {
-      val size = in.readInt
-      var index = 0
-      var m = HashMap.empty[A,B]
-      while (index < size) {
-        // TODO: optimize (use unsafe mutable update)
-        m = m + ((in.readObject.asInstanceOf[A], in.readObject.asInstanceOf[B]))
-        index += 1
+      orig = empty
+      val s = in.readInt()
+      for (i <- 0 until s) {
+        val key = in.readObject().asInstanceOf[A]
+        val value = in.readObject().asInstanceOf[B]
+        orig = orig.updated(key, value)
       }
-      var tm = m.asInstanceOf[HashTrieMap[A,B]]
-      bitmap = tm.bitmap
-      elems = tm.elems
-      size0 = tm.size0
     }
 
+    private def readResolve(): AnyRef = orig
   }
 
 }

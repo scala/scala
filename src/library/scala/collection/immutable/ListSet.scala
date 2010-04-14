@@ -14,24 +14,32 @@ package immutable
 
 import generic._
 
-/** The canonical factory of <a href="ListSet.html">ListSet</a>'s
- *
+/** $factoryInfo
+ *  @define Coll immutable.ListSet
+ *  @define coll immutable list set
  *  @since 1
  */
 object ListSet extends SetFactory[ListSet] {
+  /** setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListSet[A]] = setCanBuildFrom[A]
   override def empty[A] = new ListSet[A]
 }
 
 
 /** This class implements immutable sets using a list-based data
- *  structure. Instances of <code>ListSet</code> represent
+ *  structure. Instances of `ListSet` represent
  *  empty sets; they can be either created by calling the constructor
- *  directly, or by applying the function <code>ListSet.empty</code>.
+ *  directly, or by applying the function `ListSet.empty`.
+ *
+ *  @tparam A    the type of the elements contained in this list set.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 09/07/2003
  *  @since   1
+ *  @define Coll immutable.ListSet
+ *  @define coll immutable list set
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable
 class ListSet[A] extends Set[A]

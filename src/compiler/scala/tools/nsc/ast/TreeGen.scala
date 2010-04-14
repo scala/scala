@@ -31,10 +31,13 @@ abstract class TreeGen
 
   private def isRootOrEmptyPackageClass(s: Symbol) = s.isRoot || s.isEmptyPackageClass
 
-  def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree): Tree =
-    AppliedTypeTree(
-      scalaDot(newTypeName("Function"+argtpes.length)),
-      argtpes ::: List(restpe))
+  def scalaFunctionConstr(argtpes: List[Tree], restpe: Tree, abstractFun: Boolean = false): Tree = {
+    val cls = if (abstractFun)
+      mkAttributedRef(AbstractFunctionClass(argtpes.length))
+    else
+      mkAttributedRef(FunctionClass(argtpes.length))
+    AppliedTypeTree(cls, argtpes ::: List(restpe))
+  }
 
   /** Builds a reference to value whose type is given stable prefix.
    *  The type must be suitable for this.  For example, it

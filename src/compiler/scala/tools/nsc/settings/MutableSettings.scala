@@ -95,10 +95,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     ): Option[List[String]] =
       lookupSetting(cmd) match {
         case None       => errorFn("Parameter '" + cmd + "' is not recognised by Scalac.") ; None
-        case Some(cmd)  =>
-          val res = setter(cmd)(args)
-          cmd.postSetHook()
-          res
+        case Some(cmd)  => setter(cmd)(args)
       }
 
     // if arg is of form -Xfoo:bar,baz,quux
@@ -191,10 +188,15 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   trait SettingValue extends AbsSettingValue {
     protected var v: T
     protected var setByUser: Boolean = false
+    def postSetHook(): Unit
 
     def isDefault: Boolean = !setByUser
     def value: T = v
-    def value_=(arg: T) = { setByUser = true ; v = arg }
+    def value_=(arg: T) = {
+      setByUser = true
+      v = arg
+      postSetHook()
+    }
   }
 
   /** A class for holding mappings from source directories to
@@ -305,7 +307,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue with Mutable {
     /** Will be called after this Setting is set for any extra work. */
     private var _postSetHook: this.type => Unit = (x: this.type) => ()
-    def postSetHook() = { _postSetHook(this) ; this }
+    def postSetHook(): Unit = _postSetHook(this)
     def withPostSetHook(f: this.type => Unit): this.type = { _postSetHook = f ; this }
 
     /** The syntax defining this setting in a help string */

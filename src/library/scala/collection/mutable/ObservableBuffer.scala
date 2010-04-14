@@ -15,9 +15,9 @@ package mutable
 import script._
 
 /** This class is typically used as a mixin. It adds a subscription
- *  mechanism to the <code>Buffer</code> class into which this abstract
- *  class is mixed in. Class <code>ObservableBuffer</code> publishes
- *  events of the type <code>Message</code>.
+ *  mechanism to the `Buffer` class into which this abstract
+ *  class is mixed in. Class `ObservableBuffer` publishes
+ *  events of the type `Message`.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003

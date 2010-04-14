@@ -28,13 +28,18 @@ abstract class GenericCompanion[+CC[X] <: Traversable[X]] {
   /** The underlying collection type with unknown element type */
   type Coll = CC[_]
 
-  /** The default builder for $Coll objects. */
+  /** The default builder for `$Coll` objects.
+   *  @tparam A      the type of the ${coll}'s elements
+   */
   def newBuilder[A]: Builder[A, CC[A]]
 
-  /** The empty collection of type $Coll[A] */
+  /** An empty collection of type `$Coll[A]`
+   *  @tparam A      the type of the ${coll}'s elements
+   */
   def empty[A]: CC[A] = newBuilder[A].result
 
   /** Creates a $coll with the specified elements.
+   *  @tparam A      the type of the ${coll}'s elements
    *  @param elems  the elements of the created $coll
    *  @return a new $coll with elements `elems`
    */

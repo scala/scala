@@ -195,7 +195,7 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
    *
    * @param  handler  a partial function with message patterns and actions
    */
-  protected[actors] def react(handler: PartialFunction[Msg, Unit]): Nothing = {
+  protected def react(handler: PartialFunction[Msg, Unit]): Nothing = {
     synchronized { drainSendBuffer(mailbox) }
     searchMailbox(mailbox, handler, false)
     throw Actor.suspendException

@@ -874,7 +874,7 @@ abstract class GenJVM extends SubComponent {
         atPhase(currentRun.picklerPhase) (
           m.owner != definitions.ObjectClass
           && m.isMethod
-          && !m.hasFlag(Flags.CASE | Flags.PROTECTED | Flags.DEFERRED)
+          && !m.hasFlag(Flags.CASE | Flags.PROTECTED | Flags.DEFERRED | Flags.SPECIALIZED)
           && !m.isConstructor
           && !m.isStaticMember
           && !(m.owner == definitions.AnyClass)

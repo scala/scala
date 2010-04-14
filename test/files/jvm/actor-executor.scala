@@ -9,6 +9,7 @@ trait AdaptedActor extends Actor {
 
 object One extends AdaptedActor {
   def act() {
+    try {
     Two.start()
     var i = 0
     loopWhile (i < 10000) {
@@ -22,11 +23,16 @@ object One extends AdaptedActor {
             Test.executor.shutdown()
       }
     }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
+    }
   }
 }
 
 object Two extends AdaptedActor {
   def act() {
+    try {
     var i = 0
     loopWhile (i < 10000) {
       i += 1
@@ -36,6 +42,10 @@ object Two extends AdaptedActor {
             println("Two: OK")
           One ! 'MsgForOne
       }
+    }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
     }
   }
 }

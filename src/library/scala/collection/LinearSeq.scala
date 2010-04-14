@@ -24,6 +24,7 @@ trait LinearSeq[+A] extends Seq[A]
 }
 
 /** $factoryInfo
+ *  The current default implementation of a $Coll is a `Vector`.
  *  @define coll linear sequence
  *  @define Coll LinearSeq
  */

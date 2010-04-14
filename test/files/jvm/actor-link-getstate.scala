@@ -7,6 +7,7 @@ case class MyException(text: String) extends Exception(text) {
 
 object Slave extends Actor {
   def act() {
+    try {
     loop {
       react {
         case 'doWork =>
@@ -14,17 +15,26 @@ object Slave extends Actor {
           reply('done)
       }
     }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
+    }
   }
 }
 
 object Master extends Actor {
   override def toString = "Master"
   def act() {
+    try {
     link(Slave)
     Slave ! 'doWork
     react {
       case 'done =>
         throw new MyException("Master crashed")
+    }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
     }
   }
 }
@@ -33,6 +43,7 @@ object Test {
 
   def main(args: Array[String]) {
     actor {
+      try {
       self.trapExit = true
       link(Slave)
       Slave.start()
@@ -40,6 +51,10 @@ object Test {
       react {
         case Exit(from, reason) if (from == Slave) =>
           Console.err.println(Slave.getState)
+      }
+      } catch {
+        case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+          e.printStackTrace()
       }
     }
   }

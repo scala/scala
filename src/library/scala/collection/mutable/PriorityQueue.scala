@@ -19,11 +19,20 @@ import annotation.migration
  *  To prioritize elements of type T there must be an implicit
  *  Ordering[T] available at creation.
  *
+ *  @tparam A    type of the elements in this priority queue.
+ *  @param ord   implicit ordering used to compare the elements of type `A`.
+ *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
  *  @since   1
+ *
+ *  @define Coll PriorityQueue
+ *  @define coll priority queue
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
-
 @serializable @cloneable
 class PriorityQueue[A](implicit ord: Ordering[A])
       extends Seq[A]
@@ -98,6 +107,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
       k = k / 2
     }
   }
+
   protected def fixDown(as: Array[AnyRef], m: Int, n: Int): Unit = {
     var k: Int = m
     while (n >= 2 * k) {
@@ -134,7 +144,8 @@ class PriorityQueue[A](implicit ord: Ordering[A])
 
   /** Inserts a single element into the priority queue.
    *
-   *  @param  elem        the element to insert
+   *  @param  elem        the element to insert.
+   *  @return             this $coll.
    */
   def +=(elem: A): this.type = {
     resarr.p_ensureSize(resarr.p_size0 + 1)
@@ -147,7 +158,8 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   /** Adds all elements provided by a `TraversableOnce` object
    *  into the priority queue.
    *
-   *  @param  xs    an iterable object
+   *  @param  xs    a traversable object.
+   *  @return       a new priority queue containing elements of both `xs` and `this`.
    */
   def ++(xs: TraversableOnce[A]) = { this.clone() ++= xs }
 
@@ -203,19 +215,19 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     }
   }
 
-  /**
-   * Returns the reverse of this queue. The priority queue that gets
-   * returned will have an inversed ordering - if for some elements
-   * `x` and `y` the original queue's ordering
-   * had `compare` returning an integer ''w'', the new one will return ''-w'',
-   * assuming the original ordering abides its contract.
+
+  /** Returns the reverse of this queue. The priority queue that gets
+   *  returned will have an inversed ordering - if for some elements
+   *  `x` and `y` the original queue's ordering
+   *  had `compare` returning an integer ''w'', the new one will return ''-w'',
+   *  assuming the original ordering abides its contract.
    *
-   * Note that the order of the elements will be reversed unless the
-   * `compare` method returns 0. In this case, such elements
-   * will be subsequent, but their corresponding subinterval may be inappropriately
-   * reversed. However, due to the compare-equals contract, they will also be equal.
+   *  Note that the order of the elements will be reversed unless the
+   *  `compare` method returns 0. In this case, such elements
+   *  will be subsequent, but their corresponding subinterval may be inappropriately
+   *  reversed. However, due to the compare-equals contract, they will also be equal.
    *
-   * @return A reversed priority queue.
+   *  @return   A reversed priority queue.
    */
   override def reverse = {
     val revq = new PriorityQueue[A]()(new math.Ordering[A] {

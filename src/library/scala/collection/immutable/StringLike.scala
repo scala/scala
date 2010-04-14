@@ -17,8 +17,8 @@ import mutable.Builder
 import scala.util.matching.Regex
 import scala.math.ScalaNumber
 
-/**
- * @since 2.8
+/** A companion object for the `StringLike` containing some constants.
+ *  @since 2.8
  */
 object StringLike {
 
@@ -31,8 +31,17 @@ object StringLike {
 
 import StringLike._
 
-/**
- * @since 2.8
+/** A trait describing stringlike collections.
+ *
+ *  @tparam Repr   The type of the actual collection inheriting `StringLike`.
+ *
+ *  @since 2.8
+ *  @define Coll String
+ *  @define coll string
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 trait StringLike[+Repr] extends IndexedSeqOptimized[Char, Repr] with Ordered[String] {
 self =>
@@ -62,15 +71,15 @@ self =>
   private def isLineBreak(c: Char) = c == LF || c == FF
 
   /**
-   *    Strip trailing line end character from this string if it has one.
+   *  Strip trailing line end character from this string if it has one.
    *
-   *    A line end character is one of
-   *    <ul style="list-style-type: none;">
-   *      <li>LF - line feed   (0x0A hex)</li>
-   *      <li>FF - form feed   (0x0C hex)</li>
-   *    </ul>
-   *    If a line feed character LF is preceded by a carriage return CR
-   *    (0x0D hex), the CR character is also stripped (Windows convention).
+   *  A line end character is one of
+   *  <ul style="list-style-type: none;">
+   *    <li>LF - line feed   (0x0A hex)</li>
+   *    <li>FF - form feed   (0x0C hex)</li>
+   *  </ul>
+   *  If a line feed character LF is preceded by a carriage return CR
+   *  (0x0D hex), the CR character is also stripped (Windows convention).
    */
   def stripLineEnd: String = {
     val len = toString.length
@@ -112,15 +121,15 @@ self =>
   }
 
   /** Return all lines in this string in an iterator, excluding trailing line
-   *  end characters, i.e. apply <code>.stripLineEnd</code> to all lines
-   *  returned by <code>linesWithSeparators</code>.
+   *  end characters, i.e. apply `.stripLineEnd` to all lines
+   *  returned by `linesWithSeparators`.
    */
   def lines: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
 
   /** Return all lines in this string in an iterator, excluding trailing line
-   *  end characters, i.e. apply <code>.stripLineEnd</code> to all lines
-   *  returned by <code>linesWithSeparators</code>.
+   *  end characters, i.e. apply `.stripLineEnd` to all lines
+   *  returned by `linesWithSeparators`.
    */
   def linesIterator: Iterator[String] =
     linesWithSeparators map (line => new WrappedString(line).stripLineEnd)
@@ -135,12 +144,12 @@ self =>
       new String(chars)
     }
 
-  /** Returns this string with the given <code>prefix</code> stripped. */
+  /** Returns this string with the given `prefix` stripped. */
   def stripPrefix(prefix: String) =
     if (toString.startsWith(prefix)) toString.substring(prefix.length)
     else toString
 
-  /** Returns this string with the given <code>suffix</code> stripped. */
+  /** Returns this string with the given `suffix` stripped. */
   def stripSuffix(suffix: String) =
     if (toString.endsWith(suffix)) toString.substring(0, toString.length() - suffix.length)
     else toString
@@ -150,7 +159,7 @@ self =>
    *
    *    <blockquote>
    *       Strip a leading prefix consisting of blanks or control characters
-   *       followed by <code>marginChar</code> from the line.
+   *       followed by `marginChar` from the line.
    *    </blockquote>
    */
   def stripMargin(marginChar: Char): String = {
@@ -170,7 +179,7 @@ self =>
    *
    *    <blockquote>
    *       Strip a leading prefix consisting of blanks or control characters
-   *       followed by <code>|</code> from the line.
+   *       followed by `|` from the line.
    *    </blockquote>
    */
   def stripMargin: String = stripMargin('|')
@@ -230,7 +239,7 @@ self =>
    *
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
-   *    <code>java.util.Formatter</code></a>, with the addition that
+   *    `java.util.Formatter`</a>, with the addition that
    *    classes deriving from `ScalaNumber` (such as `scala.BigInt` and
    *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
    *    understands.
@@ -249,7 +258,7 @@ self =>
    *
    *    The interpretation of the formatting patterns is described in
    *    <a href="" target="contentFrame" class="java/util/Formatter">
-   *    <code>java.util.Formatter</code></a>, with the addition that
+   *    `java.util.Formatter`</a>, with the addition that
    *    classes deriving from `ScalaNumber` (such as `scala.BigInt` and
    *    `scala.BigDecimal`) are unwrapped to pass a type which `Formatter`
    *    understands.

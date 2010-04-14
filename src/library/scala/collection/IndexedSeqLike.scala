@@ -66,13 +66,13 @@ trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
       if (i < end) self(i) else Iterator.empty.next
 
     /** $super
-     *  @note `drop` is overridden to enable fast searching in the middle of indexed sequences.
+     *  '''Note:''' `drop` is overridden to enable fast searching in the middle of indexed sequences.
      */
     override def drop(n: Int): Iterator[A] =
       if (n > 0) new Elements(start + n, end) else this
 
     /** $super
-     *  @note `take` is overridden to be symmetric to `drop`.
+     *  '''Note:''' `take` is overridden to be symmetric to `drop`.
      */
     override def take(n: Int): Iterator[A] =
       if (n <= 0) Iterator.empty.buffered

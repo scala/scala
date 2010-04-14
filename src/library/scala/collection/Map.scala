@@ -13,43 +13,33 @@ package scala.collection
 
 import generic._
 
-/** <p>
- *    A map from keys of type <code>A</code> to values of type <code>B</code>.
- *    To implement a concrete map, you need to provide implementations of the
- *    following methods (where <code>This</code> is the type of the map in question):
- *  </p><pre>
- *    <b>def</b> get(key: A): Option[B]
- *    <b>def</b> iterator: Iterator[(A, B)]
- *    <b>def</b> + [B1 >: B](kv: (A, B1)): This
- *    <b>def</b> -(key: A): This</pre>
- *  <p>
- *    If you wish that methods like `take`, `drop`, `filter` return the same kind
- *    of map, you should also override:
- *  </p><pre>
- *    <b>def</b> empty: This</pre>
- *  <p>
- *    It might also be a good idea to override methods <code>foreach</code>
- *    and <code>size</code> for efficiency.
- *  </p>
+/**
+ *  A map from keys of type `A` to values of type `B`.
  *
- * @note If you do not have specific implementations for `add` and `-` in mind,
- *       you might consider inheriting from <code>DefaultMap</code> instead.
+ *  $mapnote
  *
- * @note If your additions and mutations return the same kind of map as the map
- *       you are defining, you should inherit from <code>MapLike</code> as well.
+ *  '''Note:''' If you do not have specific implementations for `add` and `-` in mind,
+ *        you might consider inheriting from `DefaultMap` instead.
  *
- * @since 1
+ *  '''Note:''' If your additions and mutations return the same kind of map as the map
+ *        you are defining, you should inherit from `MapLike` as well.
+ *
+ *  @tparam A     the type of the keys in this map.
+ *  @tparam B     the type of the values associated with keys.
+ *
+ *  @since 1
  */
 trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
 }
 
-/* Factory object for `Map` class
- *
- * @since 2.5
+/** $factoryInfo
+ *  @define Coll Map
+ *  @define coll map
  */
 object Map extends MapFactory[Map] {
   def empty[A, B]: immutable.Map[A, B] = immutable.Map.empty
 
+  /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
 }

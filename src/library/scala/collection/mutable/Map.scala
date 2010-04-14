@@ -14,11 +14,11 @@ package mutable
 
 import generic._
 
-/** This trait represents mutable maps.
- *  All implementations od mutable maps inherit from it.
- *
- *  @tparam A    the type of the keys of the map.
- *  @tparam B    the type of associated values.
+/** A base trait for maps that can be mutated.
+ *  $mapNote
+ *  $mapTags
+ *  @since 1.0
+ *  @author  Matthias Zenger
  */
 trait Map[A, B]
   extends Iterable[(A, B)]
@@ -40,11 +40,15 @@ trait Map[A, B]
   */
 }
 
-/* The standard factory for mutable maps.
- * Currently this uses `HashMap` as the implementation class.
+/** $factoryInfo
+ *  The current default implementation of a $Coll is a `HashMap`.
+ *  @define coll mutable map
+ *  @define Coll mutable.Map
  */
 object Map extends MutableMapFactory[Map] {
+  /** $canBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
+
   def empty[A, B]: Map[A, B] = new HashMap[A, B]
 }
 

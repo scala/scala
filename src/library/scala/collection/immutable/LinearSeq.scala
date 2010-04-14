@@ -15,7 +15,7 @@ package immutable
 import generic._
 import mutable.Builder
 
-/** A subtrait of <code>collection.LinearSeq</code> which represents sequences that
+/** A subtrait of `collection.LinearSeq` which represents sequences that
  *  are guaranteed immutable.
  *  $linearSeqInfo
  */
@@ -27,8 +27,9 @@ trait LinearSeq[+A] extends Seq[A]
 }
 
 /** $factoryInfo
- *  @define coll linear sequence
- *  @define Coll LinearSeq
+ *  The current default implementation of a $Coll is a `List`.
+ *  @define coll immutable linear sequence
+ *  @define Coll immutable.LinearSeq
  */
 object LinearSeq extends SeqFactory[LinearSeq] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinearSeq[A]] = new GenericCanBuildFrom[A]

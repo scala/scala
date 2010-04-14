@@ -15,41 +15,10 @@ package mutable
 import generic._
 import annotation.migration
 
-/** A template trait for mutable maps of type `mutable.Map[A, B]` which
- *  associate keys of type `A` with values of type `B`.
- *
- *  @tparam A    the type of the keys.
- *  @tparam B    the type of associated values.
- *  @tparam This the type of the `Map` itself.
- *
- * $mapnote
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since 2.8
- *  @define mapnote
- *    To implement a concrete mutable map, you need to provide implementations
- *    of the following methods:
- *  {{{
- *    def get(key: A): Option[B]
- *    def iterator: Iterator[(A, B)]
- *    def += (kv: (A, B)): this.type
- *    def -= (key: A): this.type
- *  }}}
- *    If you wish that methods like `take`,
- *    `drop`, `filter` return the same kind of map, you
- *    should also override:
- *  {{{
- *    def empty: This
- *  }}}
- *    If you wish to avoid the unnecessary construction of an `Option`
- *    object, you could also override `apply`, `update`,
- *    and `delete`.
-
- *    It is also good idea to override methods `foreach` and
- *    `size` for efficiency.
- *  @define coll mutable map
- *  @define Coll mutable.Map
+/** A template trait for mutable maps.
+ *  $mapNote
+ *  $mapTags
+ *  @since   2.8
  */
 trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends scala.collection.MapLike[A, B, This]

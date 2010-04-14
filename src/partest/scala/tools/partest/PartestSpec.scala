@@ -70,7 +70,7 @@ trait PartestSpec extends Spec with Meta.StdOpts with Interpolation {
   val isAnsi        = "ansi"        / "print output in color" --?
 
   heading             ("Other options:")
-  val timeout       = "timeout"       / "Overall timeout in seconds"                defaultTo 14400
+  val timeout       = "timeout"       / "Overall timeout in seconds"                defaultTo 7200
   val testWarning   = "test-warning"  / "Test warning in seconds"                   defaultTo 90
   val testTimeout   = "test-timeout"  / "Test timeout in seconds"                   defaultTo 900
   val isCleanup     = "cleanup"       / "delete all stale files and dirs before run" --?

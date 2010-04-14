@@ -267,9 +267,12 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       if (tpl.isPackage) "package" else if (tpl.isClass) "class" else if (tpl.isTrait) "trait" else "object"
     case ctor: Constructor => "new"
     case tme: MemberEntity =>
-    	val attr: String = if (tme.isImplicit) "implicit " else ""
-      val kind = if (tme.isDef) "def" else if (tme.isVal) "val" else if (tme.isVar) "var" else "type"
-      attr + kind
+      ( if (tme.isImplicit) "implicit " else "" ) +
+      ( if (tme.isDef) "def"
+        else if (tme.isVal) "val"
+        else if (tme.isLazyVal) "lazy val"
+        else if (tme.isVar) "var"
+        else "type")
   }
 
   def boundsToHtml(hi: Option[TypeEntity], lo: Option[TypeEntity], hasLinks: Boolean): NodeSeq = {
@@ -357,7 +360,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
                 case Some(st) => <span class="result"> extends { typeToHtml(st, hasLinks) }</span>
                 case None =>NodeSeq.Empty
               }
-            case tme: MemberEntity if (tme.isDef || tme.isVal || tme.isVar) =>
+            case tme: MemberEntity if (tme.isDef || tme.isVal || tme.isLazyVal || tme.isVar) =>
               <span class="result">: { typeToHtml(tme.resultType, hasLinks) }</span>
             case abt: AbstractType =>
               val b2s = boundsToHtml(abt.hi, abt.lo, hasLinks)
@@ -374,6 +377,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     mbr match {
       case dte: DocTemplateEntity if !isSelf =>
         <h4 class="signature"><a href={ relativeLinkTo(dte) }>{ inside(hasLinks = false) }</a></h4>
+      case _ if isSelf =>
+        <h4 id="signature" class="signature">{ inside(hasLinks = true) }</h4>
       case _ =>
         <h4 class="signature">{ inside(hasLinks = true) }</h4>
     }

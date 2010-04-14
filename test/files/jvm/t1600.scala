@@ -12,11 +12,11 @@ object Test {
       def elements = entries.map(_._1)
 
       val maps = Seq[Map[Foo, Int]](new mutable.HashMap, new mutable.LinkedHashMap,
-          new immutable.HashMap).map(_ ++ entries)
+          immutable.HashMap.empty).map(_ ++ entries)
       test[Map[Foo, Int]](maps, entries.size, assertMap _)
 
       val sets = Seq[Set[Foo]](new mutable.HashSet, new mutable.LinkedHashSet,
-          new immutable.HashSet).map(_ ++ elements)
+          immutable.HashSet.empty).map(_ ++ elements)
       test[Set[Foo]](sets, entries.size, assertSet _)
     }
   }
@@ -31,7 +31,7 @@ object Test {
 
       assertFunction(deserializedCollection, expectedSize)
       assert(deserializedCollection.getClass == collection.getClass,
-          "collection class should remain the same after deserialization")
+          "collection class should remain the same after deserialization ("+deserializedCollection.getClass+" != "+collection.getClass+")")
       Foo.hashCodeModifier = 0
     }
   }

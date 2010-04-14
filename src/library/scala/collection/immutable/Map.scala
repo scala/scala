@@ -48,12 +48,13 @@ trait Map[A, +B] extends Iterable[(A, B)]
   def withDefaultValue[B1 >: B](d: B1): Map[A, B1] = new Map.WithDefault[A, B1](this, x => d)
 }
 
-/**
- * A companion object for immutable maps.
- *
- * @since 1
+/** $factoryInfo
+ *  @define Coll immutable.Map
+ *  @define coll immutable map
  */
 object Map extends ImmutableMapFactory[Map] {
+
+  /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
 
   def empty[A, B]: Map[A, B] = EmptyMap.asInstanceOf[Map[A, B]]

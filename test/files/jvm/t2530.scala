@@ -50,6 +50,7 @@ case class Matrix(numRows: Int, numCols: Int, values: Array[Double])  {
 
     val rows = for (j <- 0 until m) yield {
       Futures.future {
+        try {
         val b_j = new Array[Double](n)
         var k = 0
         while (k < n) { // sadly, while loops are still faster than for loops
@@ -69,13 +70,22 @@ case class Matrix(numRows: Int, numCols: Int, values: Array[Double])  {
         }
         //printf("future %d of %d completed.%n", j, m)
         j
+        } catch {
+          case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+            e.printStackTrace()
+        }
       }
     }
 
     // rows.foreach { x=> x() } // This appears to force sequential execution, so use:
     // timeout is 10 years; see http://lampsvn.epfl.ch/trac/scala/ticket/2515
-
-    val done = Futures.awaitAll(10*365*24*60*60*1000, rows.toArray : _*) // list to array, as varargs.
+    val done: List[Option[Any]] = try {
+      Futures.awaitAll(10*365*24*60*60*1000, rows.toArray : _*) // list to array, as varargs.
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
+        List()
+    }
 
     if (done.contains(None))
       None

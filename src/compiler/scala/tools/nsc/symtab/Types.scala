@@ -3801,6 +3801,18 @@ A type's typeSymbol should never be inspected directly.
   private def isUnifiable(pre1: Type, pre2: Type) =
     (beginsWithTypeVarOrIsRefined(pre1) || beginsWithTypeVarOrIsRefined(pre2)) && (pre1 =:= pre2)
 
+  /** Returns true iff we are past phase specialize,
+   *  sym1 and sym2 are two existential skolems with equal names and bounds,
+   *  and pre1 and pre2 are equal prefixes
+   */
+  private def isSameSpecializedSkolem(sym1: Symbol, sym2: Symbol, pre1: Type, pre2: Type) = {
+    sym1.isExistentialSkolem && sym2.isExistentialSkolem &&
+    sym1.name == sym2.name &&
+    phase.specialized &&
+    sym1.info =:= sym2.info &&
+    pre1 =:= pre2
+  }
+
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
     if (sym1 == sym2) sym1.hasFlag(PACKAGE) || phase.erasedTypes || pre1 =:= pre2
     else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
@@ -4264,8 +4276,9 @@ A type's typeSymbol should never be inspected directly.
             val pre1 = tr1.pre
             val pre2 = tr2.pre
             (((if (sym1 == sym2) phase.erasedTypes || pre1 <:< pre2
-              else (sym1.name == sym2.name && isUnifiable(pre1, pre2))) &&
-             isSubArgs(tr1.args, tr2.args, sym1.typeParams))
+               else (sym1.name == sym2.name &&
+                     (isUnifiable(pre1, pre2) || isSameSpecializedSkolem(sym1, sym2, pre1, pre2)))) &&
+                    isSubArgs(tr1.args, tr2.args, sym1.typeParams))
              ||
              sym2.isClass && {
                val base = tr1 baseType sym2

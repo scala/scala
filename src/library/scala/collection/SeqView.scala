@@ -14,16 +14,13 @@ package scala.collection
 import generic._
 import TraversableView.NoBuilder
 
-/** A non-strict projection of an iterable.
- * @author Sean McDirmid
- * @author Martin Odersky
- * @version 2.8
+/** A base trait for non-strict views of sequences.
+ *  $seqViewInfo
  */
 trait SeqView[+A, +Coll] extends SeqViewLike[A, Coll, SeqView[A, Coll]]
 
-/** $factoryInfo
- *  @define coll sequence view
- *  @define Coll SeqView
+/** An object containing the necessary implicit definitions to make
+ *  `SeqView`s work. Its definitions are generally not accessed directly by clients.
  */
 object SeqView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}

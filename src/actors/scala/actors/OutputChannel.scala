@@ -18,7 +18,7 @@ package scala.actors
  *
  * @define actor `OutputChannel`
  */
-trait OutputChannel[-Msg] extends AbstractReactor[Msg] {
+trait OutputChannel[-Msg] {
 
   /**
    * Sends <code>msg</code> to this $actor (asynchronous).

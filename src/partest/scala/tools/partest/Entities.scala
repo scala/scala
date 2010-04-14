@@ -63,9 +63,7 @@ trait Entities {
     /** The memoized result of the test run.
      */
     private lazy val process = {
-      def preCheck  = precondition || returning(false)(_ => trace("precondition failed"))
-      def allSteps  = testSequence.actions forall (f => f(this))
-      val outcome   = runWrappers(preCheck && allSteps)
+      val outcome   = runWrappers(testSequence.actions forall (f => f(this)))
 
       // an empty outcome means we've been interrupted and are shutting down.
       outcome getOrElse false

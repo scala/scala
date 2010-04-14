@@ -13,15 +13,15 @@ package scala.collection
 package mutable
 import generic._
 
-/** A subtrait of `collection.IndexedSeq` which represents sequences
- *  that can be mutated.
- *
- *  @since 2.8
+/** A common supertrait of `ArrayOps` and `WrappedArray` that factors out most
+ *  operations on arrays and wrapped arrays.
  *
  *  @tparam A     type of the elements contained in the array like object.
  *  @tparam Repr  the type of the actual collection containing the elements.
  *
  *  @define Coll ArrayLike
+ *  @version 2.8
+ *  @since   2.8
  */
 trait ArrayLike[A, +Repr] extends IndexedSeqOptimized[A, Repr] { self =>
 

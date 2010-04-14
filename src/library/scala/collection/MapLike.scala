@@ -15,20 +15,14 @@ import mutable.{Builder, StringBuilder, MapBuilder}
 import annotation.migration
 import PartialFunction._
 
-/** A template trait for maps of type `Map[A, B]` which associate keys of type `A`
- *  with values of type `B`.
+/** A template trait for maps, which associate keys with values.
  *
- *  @tparam A    the type of the keys.
- *  @tparam B    the type of associated values.
- *  @tparam This the type of the map itself.
+ *  $mapNote
+ *  $mapTags
+ *  @since 2.8
  *
- *  $mapnote
- *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @since   2.8
- *  $mapnote
- *  @define $mapnote  @note
+ *  @define mapNote
+ *    '''Implementation note:'''
  *    This trait provides most of the operations of a `Map` independently of its representation.
  *    It is typically inherited by concrete implementations of maps.
  *
@@ -47,6 +41,15 @@ import PartialFunction._
  *    }}}
  *    It is also good idea to override methods `foreach` and
  *    `size` for efficiency.
+ *
+ *  @define mapTags
+ *  @tparam A    the type of the keys.
+ *  @tparam B    the type of associated values.
+ *  @tparam This the type of the map itself.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *
  *  @define coll map
  *  @define Coll Map
  *  @define willNotTerminateInf
@@ -287,14 +290,15 @@ self =>
     ((repr: Map[A, B1]) /: xs) (_ + _)
 
   /** Returns a new map with all key/value pairs for which the predicate
-   *  <code>p</code> returns <code>true</code>.
+   *  `p` returns `true`.
    *
-   *  @param p A predicate over key-value pairs
-   *  @note    This method works by successively removing elements fro which the
+   *  '''Note:'''    This method works by successively removing elements fro which the
    *           predicate is false from this set.
    *           If removal is slow, or you expect that most elements of the set
-   *           will be removed, you might consider using <code>filter</code>
+   *           will be removed, you might consider using `filter`
    *           with a negated predicate instead.
+   *  @param p    A predicate over key-value pairs
+   *  @return     A new map containing elements not satisfying the predicate.
    */
   override def filterNot(p: ((A, B)) => Boolean): This = {
     var res: This = repr

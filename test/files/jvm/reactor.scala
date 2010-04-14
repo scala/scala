@@ -21,6 +21,7 @@ object Test {
 
 class PingActor(count: Int, pong: Reactor[Any]) extends Reactor[Any] {
   def act() {
+    try {
     var pingsLeft = count - 1
     pong ! Ping(this)
     loop {
@@ -38,11 +39,16 @@ class PingActor(count: Int, pong: Reactor[Any]) extends Reactor[Any] {
           }
       }
     }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
+    }
   }
 }
 
 class PongActor extends Reactor[Any] {
   def act() {
+    try {
     var pongCount = 0
     loop {
       react {
@@ -55,6 +61,10 @@ class PongActor extends Reactor[Any] {
           println("Pong: stop")
           exit()
       }
+    }
+    } catch {
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+        e.printStackTrace()
     }
   }
 }

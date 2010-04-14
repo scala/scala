@@ -167,6 +167,7 @@ abstract class HtmlPage { thisPage =>
     case EntityLink(entity) => templateToHtml(entity)
     case Monospace(text) => <code>{ Unparsed(text) }</code>
     case Text(text) => Unparsed(text)
+    case Summary(in) => inlineToHtml(in)
   }
 
   def typeToHtml(tpe: model.TypeEntity, hasLinks: Boolean): NodeSeq = {

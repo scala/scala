@@ -1538,7 +1538,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         "package object "+owner.nameString
       else
         compose(List(kindString,
-                     if (isClassConstructor) owner.simpleName.decode+idString else nameString))
+                     if (isClassConstructor) owner.simpleName+idString else nameString))
 
     /** If owner is a package object, its owner, else the normal owner.
      */

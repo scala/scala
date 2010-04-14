@@ -124,7 +124,7 @@ class Table extends Component with Scrollable.Wrapper {
   // TODO: use IndexedSeq[_ <: IndexedSeq[Any]], see ticket #2005
   def this(rowData: Array[Array[Any]], columnNames: Seq[_]) = {
     this()
-    peer.setModel(new AbstractTableModel {
+    model = new AbstractTableModel {
       override def getColumnName(column: Int) = columnNames(column).toString
       def getRowCount() = rowData.length
       def getColumnCount() = columnNames.length
@@ -134,7 +134,7 @@ class Table extends Component with Scrollable.Wrapper {
         rowData(row)(col) = value
         fireTableCellUpdated(row, col)
       }
-    })
+    }
   }
   def this(rows: Int, columns: Int) = {
     this()
@@ -155,6 +155,7 @@ class Table extends Component with Scrollable.Wrapper {
   def model = peer.getModel()
   def model_=(x: TableModel) = {
     peer.setModel(x)
+    model.removeTableModelListener(modelListener)
     model.addTableModelListener(modelListener)
   }
 
@@ -312,5 +313,4 @@ class Table extends Component with Scrollable.Wrapper {
       }
     )
   }
-  model.addTableModelListener(modelListener)
 }

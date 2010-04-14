@@ -25,10 +25,10 @@ trait Traversable[A] extends scala.collection.Traversable[A]
   override def companion: GenericCompanion[Traversable] = Traversable
 }
 
-/** A factory object for the trait <code>Traversable</code>.
- *
- *  @author  Martin Odersky
- *  @version 2.8
+/** $factoryInfo
+ *  The current default implementation of a $Coll is an `ArrayBuffer`.
+ *  @define coll mutable traversable collection
+ *  @define Coll mutable.Traversable
  */
 object Traversable extends TraversableFactory[Traversable] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Traversable[A]] = new GenericCanBuildFrom[A]

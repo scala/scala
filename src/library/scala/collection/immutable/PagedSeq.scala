@@ -15,7 +15,7 @@ package immutable
 import java.io._
 import scala.util.matching.Regex
 
-/** The PagedSeq object defines a lazy implementations of
+/** The `PagedSeq` object defines a lazy implementations of
  *  a random access sequence.
  *
  *  @since 2.7
@@ -108,8 +108,14 @@ import PagedSeq._
 /** An implementation of lazily computed sequences, where elements are stored
  *  in ``pages'', i.e. arrays of fixed size.
  *
- * @author Martin Odersky
- * @since  2.7
+ *  @tparam T     the type of the elements contained in this paged sequence, with a `ClassManifest` context bound.
+ *
+ *  @author Martin Odersky
+ *  @since  2.7
+ *  @define Coll PagedSeq
+ *  @define coll paged sequence
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 class PagedSeq[T: ClassManifest] protected(
   more: (Array[T], Int, Int) => Int,

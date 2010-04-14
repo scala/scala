@@ -17,6 +17,8 @@ import BitSetLike.{LogWL, updateArray}
 
 /** A class for immutable bitsets.
  *  $bitsetinfo
+ *  @define Coll immutable.BitSet
+ *  @define coll immutable bitset
  */
 @serializable @SerialVersionUID(1611436763290191562L)
 abstract class BitSet extends Set[Int]
@@ -53,12 +55,16 @@ abstract class BitSet extends Set[Int]
   }
 }
 
-/** A factory object for bitsets */
+/** $factoryInfo
+ *  @define Coll immutable.BitSet
+ *  @define coll immutable bitset
+ */
 object BitSet extends BitSetFactory[BitSet] {
 
   /** The empty bitset */
   val empty: BitSet = new BitSet1(0L)
 
+  /** $bitsetCanBuildFrom */
   implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
   /** A bitset containing all the bits in an array */

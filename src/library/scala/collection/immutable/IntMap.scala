@@ -12,8 +12,8 @@
 package scala.collection
 package immutable;
 
-/**
- * @author David MacIver
+/** Utility class for integer maps.
+ *  @author David MacIver
  */
 private[immutable] object IntMapUtils {
   def zero(i : Int, mask : Int) = (i & mask) == 0;
@@ -50,8 +50,8 @@ private[immutable] object IntMapUtils {
 
 import IntMapUtils._
 
-/**
- * @since 2.7
+/** A companion object for integer maps.
+ *  @since 2.7
  */
 object IntMap {
   def empty[T] : IntMap[T]  = IntMap.Nil;
@@ -146,15 +146,19 @@ private[immutable] class IntMapKeyIterator[V](it : IntMap[V]) extends IntMapIter
 
 import IntMap._
 
-/**
- * Specialised immutable map structure for integer keys, based on
- * <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Integer Maps</a>
- * by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
+/** Specialised immutable map structure for integer keys, based on
+ *  <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Integer Maps</a>
+ *  by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  *
- * Note: This class is as of 2.8 largely superseded by HashMap.
+ *  Note: This class is as of 2.8 largely superseded by HashMap.
  *
- * @since 2.7
+ *  @tparam T    type of the values associated with integer keys.
  *
+ *  @since 2.7
+ *  @define Coll immutable.IntMap
+ *  @define coll immutable integer map
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 sealed abstract class IntMap[+T] extends Map[Int, T] with MapLike[Int, T, IntMap[T]] {
   override def empty: IntMap[T] = IntMap.Nil;

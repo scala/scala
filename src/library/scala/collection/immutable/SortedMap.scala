@@ -18,10 +18,15 @@ import annotation.unchecked.uncheckedVariance
 
 /** A map whose keys are sorted.
  *
+ *  @tparam A     the type of the keys contained in this sorted map.
+ *  @tparam B     the type of the values associated with the keys.
+ *
  *  @author Sean McDirmid
  *  @author Martin Odersky
  *  @version 2.8
  *  @since   2.4
+ *  @define Coll immutable.SortedMap
+ *  @define coll immutable sorted map
  */
 trait SortedMap[A, +B] extends Map[A, B]
                          with scala.collection.SortedMap[A, B]
@@ -62,10 +67,12 @@ trait SortedMap[A, +B] extends Map[A, B]
     ((repr: SortedMap[A, B1]) /: xs) (_ + _)
 }
 
-/**
- * @since 2.4
+/** $factoryInfo
+ *  @define Coll immutable.SortedMap
+ *  @define coll immutable sorted map
  */
 object SortedMap extends ImmutableSortedMapFactory[SortedMap] {
+  /** $sortedMapCanBuildFromInfo */
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), SortedMap[A, B]] = new SortedMapCanBuildFrom[A, B]
   def empty[A, B](implicit ord: Ordering[A]): SortedMap[A, B] = TreeMap.empty[A, B]
 }

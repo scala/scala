@@ -16,11 +16,8 @@ import generic._
 import compat.Platform.arraycopy
 import scala.reflect.Manifest
 
-/** <p>
- *    A mutable sequence of characters.  This class provides an API compatible
- *    with <a class="java/lang/StringBuilder" href="" target="_top">
- *    <code>java.lang.StringBuilder</code></a>.
- *  </p>generic/
+/** A builder for mutable sequence of characters.  This class provides an API compatible
+ *  with <a class="java/lang/StringBuilder" href="" target="_top">`java.lang.StringBuilder`</a>.
  *
  *  @author Stephane Micheloud
  *  @author Martin Odersky

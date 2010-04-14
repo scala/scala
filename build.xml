@@ -1129,7 +1129,7 @@ BOOTSTRAPPING BUILD (STRAP)
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
-      params="${scalac.args.all} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable"
+      params="${scalac.args.all} -Xpluginsdir ${build-strap.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable"
       srcdir="${src.dir}/continuations/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1493,7 +1493,7 @@ BOOTRAPING TEST AND TEST SUITE
       <exclude name="**/*.properties"/>
       <exclude name="bin/**"/>
       <exclude name="*.complete"/>
-      <exclude name="plugins/*.jar"/>
+      <exclude name="misc/scala-devel/plugins/*.jar"/>
     </same>
   </target>
 
@@ -1515,6 +1515,29 @@ BOOTRAPING TEST AND TEST SUITE
       <sysproperty key="partest.srcdir" value="continuations" />
       <sysproperty key="partest.scalacopts" value="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable" />
       <sysproperty key="partest.runsets" value="neg run" />
+      <syspropertyset>
+        <propertyref prefix="partest"/>
+      </syspropertyset>
+    </partest>
+  </target>
+  
+  <target name="test.partest-opt" depends="pack.done">
+    <antcall target="test.partest">
+      <param name="scalac.args.optimise" value="-optimise"/>
+    </antcall>
+  </target>
+
+  <target name="test.partest" depends="pack.done">
+    <partest classpathref="pack.classpath">
+      <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
+      <sysproperty key="partest.srcdir" value="partest-tests" />
+      <sysproperty key="partest.scalacopts" value="${scalac.args.all}" />
+      <sysproperty key="partest.javacopts" value="${javac.args}" />
+      <sysproperty key="partest.verbose" value="true" />
+      <sysproperty key="partest.trace" value="true" />
+      <sysproperty key="partest.debug" value="true" />
+      <sysproperty key="partest.test-timeout" value="25" />
+      <sysproperty key="partest.scalacopts" value="${scalac.args.optimise}" />
       <syspropertyset>
         <propertyref prefix="partest"/>
       </syspropertyset>

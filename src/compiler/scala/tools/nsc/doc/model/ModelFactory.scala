@@ -52,10 +52,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     def inTemplate = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
-    override def equals(that: Any) = that match {
-    	case that: EntityImpl => this.sym == that.sym
-    	case _ => false
-    }
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -124,6 +120,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
     def resultType = makeType(sym.tpe.finalResultType, inTemplate, sym)
     def isDef = false
     def isVal = false
+    def isLazyVal = false
     def isVar = false
     def isImplicit = sym.isImplicit
     def isConstructor = false
@@ -336,11 +333,15 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
   def makeMember(aSym: Symbol, inTpl: => DocTemplateImpl): List[MemberImpl] = {
 
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
-      if (bSym.isGetter && bSym.accessed.isMutable)
+      if (bSym.isGetter && bSym.isLazy)
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
+          override def isLazyVal = true
+        })
+      else if (bSym.isGetter && bSym.accessed.isMutable)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true
         })
-      else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor)
+      else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor && !bSym.isModule)
         Some(new NonTemplateParamMemberImpl(bSym, inTpl) with Def {
           override def isDef = true
           def typeParams =
@@ -372,7 +373,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
         None
     }
 
-    if ((!aSym.isPackage && aSym.sourceFile == null) || !localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
+    if (!localShouldDocument(aSym) || aSym.isModuleClass || aSym.isPackageObject || aSym.isMixinConstructor)
       Nil
     else {
       val allSyms = useCases(aSym, inTpl.sym) map { case (bSym, bComment, bPos) =>

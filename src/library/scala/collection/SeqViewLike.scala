@@ -15,10 +15,19 @@ import generic._
 import Seq.fill
 import TraversableView.NoBuilder
 
-/** A template trait for a non-strict view of a sequence.
- * @author Sean McDirmid
- * @author Martin Odersky
- * @version 2.8
+/** A template trait for non-strict views of sequences.
+ *  $seqViewInfo
+ *
+ *  @define seqViewInfo
+ *  $viewInfo
+ *  All views for sequences are defined by re-interpreting the `length` and `apply` methods.
+ *
+ *  @author Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
+ *  @tparam A    the element type of the view
+ *  @tparam Coll the type of the underlying collection containing the elements.
+ *  @tparam This the type of the view itself
  */
 trait SeqViewLike[+A,
                   +Coll,

@@ -14,20 +14,21 @@ import generic._
 import mutable.{Builder, AddingBuilder}
 import PartialFunction._
 
-/** A template trait for sets of type `Set[A]`.
+/** A template trait for sets.
  *
- * This trait provides most of the operations of a `Set` independently of its representation.
- * It is typically inherited by concrete implementations of sets.
+ *  $setNote
+ *  $setTags
+ *  @since 2.8
  *
- * $setnote
+ *  @define setNote
  *
- *  @tparam A    the type of the elements of the set
- *  @tparam This the type of the set itself.
+ *  A set is a collection that contains no duplicate elements.
  *
- *  @author  Martin Odersky
- *  @version 2.8
- *  @define setnote
- *    To implement a concrete set, you need  to provide implementations of the
+ *    '''Implementation note:'''
+ *    This trait provides most of the operations of a `Set` independently of its representation.
+ *    It is typically inherited by concrete implementations of sets.
+ *
+ *    To implement a concrete set, you need to provide implementations of the
  *    following methods:
  *    {{{
  *       def contains(key: A): Boolean
@@ -42,10 +43,18 @@ import PartialFunction._
  *    }}}
  *    It is also good idea to override methods `foreach` and
  *    `size` for efficiency.
- *   @define coll set
- *   @define Coll Set
- *   @define willNotTerminateInf
- *   @define mayNotTerminateInf
+ *
+ * @define setTags
+ *  @tparam A    the type of the elements of the set
+ *  @tparam This the type of the set itself.
+ *
+ *  @author  Martin Odersky
+ *  @version 2.8
+ *
+ *  @define coll set
+ *  @define Coll Set
+ *  @define willNotTerminateInf
+ *  @define mayNotTerminateInf
  */
 trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 extends IterableLike[A, This]
@@ -113,10 +122,10 @@ self =>
 
   /** Computes the intersection between this set and another set.
    *
+   *  '''Note:'''  Same as `intersect`.
    *  @param   that  the set to intersect with.
    *  @return  a new set consisting of all elements that are both in this
    *  set and in the given set `that`.
-   *  @note  Same as `intersect`.
    */
   def &(that: Set[A]): This = intersect(that)
 
@@ -138,10 +147,10 @@ self =>
 
   /** Computes the union between this set and another set.
    *
+   *  '''Note:'''  Same as `union`.
    *  @param   that  the set to form the union with.
    *  @return  a new set consisting of all elements that are in this
    *  set or in the given set `that`.
-   *  @note       Same as `union`.
    */
   def | (that: Set[A]): This = union(that)
 
@@ -155,10 +164,10 @@ self =>
 
   /** The difference of this set and another set.
    *
+   *  '''Note:'''  Same as `diff`.
    *  @param that the set of elements to exclude.
    *  @return     a set containing those elements of this
    *              set that are not also contained in the given set `that`.
-   *  @note       Same as `diff`.
    */
   def &~(that: Set[A]): This = diff(that)
 
@@ -181,13 +190,13 @@ self =>
 
   /** Compares this set with another object for equality.
    *
-   *  @param that the other object
-   *  @return     `true` if `that` is a set which contains the same elements
-   *              as this set.
-   *  @note This operation contains an unchecked cast: if `that`
+   *  '''Note:''' This operation contains an unchecked cast: if `that`
    *        is a set, it will assume with an unchecked cast
    *        that it has the same element type as this set.
    *        Any subsequent ClassCastException is treated as a `false` result.
+   *  @param that the other object
+   *  @return     `true` if `that` is a set which contains the same elements
+   *              as this set.
    */
   override def equals(that: Any): Boolean = that match {
     case that: Set[_] =>

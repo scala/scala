@@ -14,7 +14,7 @@ package immutable
 import generic._
 import mutable.{ArrayBuffer, Builder}
 
-/** A subtrait of <code>collection.IndexedSeq</code> which represents indexed sequences
+/** A subtrait of `collection.IndexedSeq` which represents indexed sequences
  *  that are guaranteed immutable.
  *  $indexedSeqInfo
  */
@@ -26,6 +26,7 @@ trait IndexedSeq[+A] extends Seq[A]
 }
 
 /** $factoryInfo
+ *  The current default implementation of a $Coll is a `Vector`.
  *  @define coll indexed sequence
  *  @define Coll IndexedSeq
  */

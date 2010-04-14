@@ -14,13 +14,20 @@ package mutable
 
 import generic._
 
-/** <code>Queue</code> objects implement data structures that allow to
+/** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
  *
  *  @author  Matthias Zenger
  *  @author  Martin Odersky
  *  @version 2.8
  *  @since   1
+ *
+ *  @define Coll mutable.Queue
+ *  @define coll mutable queue
+ *  @define orderDependent
+ *  @define orderDependentFold
+ *  @define mayNotTerminateInf
+ *  @define willNotTerminateInf
  */
 @serializable @cloneable
 class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {

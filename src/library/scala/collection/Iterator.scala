@@ -32,10 +32,10 @@ object Iterator {
   }
 
   /** Creates an iterator which produces a single element.
+   *  '''Note:''' Equivalent, but more efficient than Iterator(elem)
    *  @param elem the element
    *  @return An iterator which produces `elem` on the first call to `next`,
    *          and which has no further elements.
-   *  @note  Equivalent, but more efficient than Iterator(elem)
    */
   def single[A](elem: A) = new Iterator[A] {
     private var hasnext = true
@@ -429,7 +429,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  satisfy the predicate `p`. The order of the elements
    *  is preserved.
    *
-   *  @note `withFilter` is the same as `filter` on iterators. It exists so that
+   *  '''Note:''' `withFilter` is the same as `filter` on iterators. It exists so that
    *  for-expressions with filters work over iterators.
    *
    *  @param p the predicate used to test values.
@@ -1033,10 +1033,10 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  this sequence starting at position `start`.  Like `copyToArray`,
    *  but designed to accomodate IO stream operations.
    *
+   *  '''Note:'''   the array must be large enough to hold `sz` elements.
    *  @param  xs    the array to fill.
    *  @param  start the starting index.
    *  @param  sz    the maximum number of elements to be read.
-   *  @note          the array must be large enough to hold `sz` elements.
    */
   @deprecated("use copyToArray instead")
   def readInto[B >: A](xs: Array[B], start: Int, sz: Int) {

@@ -13,7 +13,7 @@ package mutable
 
 /** This class servers as a proxy for priority queues. The
  *  elements of the queue have to be ordered in terms of the
- *  <code>Ordered[T]</code> class.
+ *  `Ordered[T]` class.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 03/05/2004
@@ -22,7 +22,6 @@ package mutable
 abstract class PriorityQueueProxy[A](implicit ord: Ordering[A]) extends PriorityQueue[A]
          with Proxy
 {
-
   def self: PriorityQueue[A]
 
   /** Creates a new iterator over all elements contained in this

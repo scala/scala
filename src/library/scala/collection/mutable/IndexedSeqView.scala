@@ -16,14 +16,16 @@ import generic._
 
 import TraversableView.NoBuilder
 
-/** A non-strict view of a mutable IndexedSeq.
- *  This is a leaf class which mixes methods returning a plain IndexedSeq view
- *  and methods returning a mutable IndexedSeq view.
- *  There is no associated `Like' class.
- * @author Sean McDirmid
- * @author Martin Odersky
- * @version 2.8
- * @since   2.8
+/** A non-strict view of a mutable `IndexedSeq`.
+ *  $viewinfo
+ *  Some of the operations of this class will yield again a mutable indexed sequence,
+ *  others will just yield a plain indexed sequence of type `collection.IndexedSeq`.
+ *  Because this is a leaf class there is no associated `Like' class.
+ *  @author Martin Odersky
+ *  @version 2.8
+ *  @since   2.8
+ *  @tparam A    the element type of the view
+ *  @tparam Coll the type of the underlying collection containing the elements.
  */
 trait IndexedSeqView[A, +Coll] extends IndexedSeq[A]
                                   with IndexedSeqOptimized[A, IndexedSeqView[A, Coll]]
@@ -91,13 +93,13 @@ self =>
   override def reverse: IndexedSeqView[A, Coll] = newReversed.asInstanceOf[IndexedSeqView[A, Coll]]
 }
 
-/** $factoryInfo
- * @define coll indexed sequence view
- * @define Coll IndexedSeqView
- * Note that the canBuildFrom factories yield SeqViews, not IndexedSewqViews.
- * This is intentional, because not all operations yield again a mutable.IndexedSeqView.
- * For instance, map just gives a SeqView, which reflects the fact that
- * map cannot do its work and maintain a pointer into the original indexed sequence.
+/** An object containing the necessary implicit definitions to make
+ *  `SeqView`s work. Its definitions are generally not accessed directly by clients.
+ *
+ * Note that the `canBuildFrom` factories yield `SeqView`s, not `IndexedSewqView`s.
+ * This is intentional, because not all operations yield again a `mutable.IndexedSeqView`.
+ * For instance, `map` just gives a `SeqView`, which reflects the fact that
+ * `map` cannot do its work and maintain a pointer into the original indexed sequence.
  */
 object IndexedSeqView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}

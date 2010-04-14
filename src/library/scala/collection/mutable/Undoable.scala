@@ -13,8 +13,8 @@ package scala.collection
 package mutable
 
 
-/** Classes that mix in the <code>Undoable</code> class provide an operation
- *  <code>undo</code> which can be used to undo the last operation.
+/** Classes that mix in the `Undoable` class provide an operation
+ *  `undo` which can be used to undo the last operation.
  *
  *  @author  Matthias Zenger
  *  @version 1.0, 08/07/2003

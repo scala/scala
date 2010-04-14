@@ -19,7 +19,7 @@ trait Compiler {
    *  $SCALAC -d dir.obj -Xresident -sourcepath . "$@"
    */
   object Res extends DirBasedCategory("res") {
-    lazy val testSequence: TestSequence = List(compile, diff)
+    lazy val testSequence: TestSequence = List(isCheckPresent, compile, diff)
 
     override def denotesTest(p: Path)       = p.isDirectory && resFile(p).isFile
     override def createTest(location: Path) = new ResidentTest(location.toDirectory)
@@ -32,7 +32,6 @@ trait Compiler {
 
     class ResidentTest(val location: Directory) extends TestEntity {
       val category = Res
-      override def precondition   = checkFile.isFile && super.precondition
       override def sourcesDir     = categoryDir
 
       override def acknowledges(p: Path) =
@@ -62,7 +61,7 @@ trait Compiler {
   }
 
   object BuildManager extends DirBasedCategory("buildmanager") {
-    lazy val testSequence: TestSequence = List(compile, diff)
+    lazy val testSequence: TestSequence = List(isCheckPresent, compile, diff)
     override def denotesTest(p: Path) = p.isDirectory && testFile(p).isFile
     override def createTest(location: Path) = new BuildManagerTest(location.toDirectory)
 
@@ -100,7 +99,6 @@ trait Compiler {
       override def sourcesDir     = outDir
       override def sourceFiles    = Path onlyFiles (location walkFilter (_ != changesDir) filter isJavaOrScala toList)
       override def checkFile      = File(location / location.name addExtension "check")
-      override def precondition   = checkFile.isFile && super.precondition
 
       override def acknowledges(p: Path) = super.acknowledges(p) || (p isSame testFile(location))
 

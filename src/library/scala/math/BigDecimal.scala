@@ -30,6 +30,9 @@ object BigDecimal
   private val minCached = -512
   private val maxCached = 512
 
+  val MinLong = BigDecimal(Long.MinValue)
+  val MaxLong = BigDecimal(Long.MaxValue)
+
   /** Cache ony for defaultMathContext using BigDecimals in a small range. */
   private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
 
@@ -173,12 +176,11 @@ extends ScalaNumber with ScalaNumericConversions
     else doubleValue.hashCode()
 
   /** Compares this BigDecimal with the specified value for equality.
-   *  Will only claim equality with scala.BigDecimal and java.math.BigDecimal.
    */
   override def equals (that: Any): Boolean = that match {
     case that: BigDecimal => this equals that
     case that: BigInt     => this.toBigIntExact exists (that equals _)
-    case x                => unifiedPrimitiveEquals(x)
+    case x                => (this <= BigDecimal.MaxLong && this >= BigDecimal.MinLong) && unifiedPrimitiveEquals(x)
   }
 
   protected[math] def isWhole = (this remainder 1) == BigDecimal(0)

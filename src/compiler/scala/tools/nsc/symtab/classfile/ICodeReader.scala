@@ -99,26 +99,34 @@ abstract class ICodeReader extends ClassfileParser {
     val owner = getOwner(jflags)
     val dummySym = owner.newMethod(owner.pos, name).setFlag(javaToScalaFlags(jflags))
 
-    var tpe  = pool.getType(dummySym, in.nextChar)
+    try {
+      val ch = in.nextChar
+      var tpe  = pool.getType(dummySym, ch)
 
-    if ("<clinit>" == name.toString)
-      (jflags, NoSymbol)
-    else {
-      val owner = getOwner(jflags)
-      var sym = owner.info.member(name).suchThat(old => sameType(old.tpe, tpe));
-      if (sym == NoSymbol)
-        sym = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
-      if (sym == NoSymbol) {
-        log("Could not find symbol for " + name + ": " + tpe + " in " + owner.info.decls)
-        log(owner.info.member(name).tpe + " : " + tpe)
-        if (field)
-          sym = owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE | javaToScalaFlags(jflags))
-        else
-          sym = dummySym.setInfo(tpe)
-        owner.info.decls.enter(sym)
-        log("added " + sym + ": " + sym.tpe)
+      if ("<clinit>" == name.toString)
+        (jflags, NoSymbol)
+      else {
+        val owner = getOwner(jflags)
+        var sym = owner.info.member(name).suchThat(old => sameType(old.tpe, tpe));
+        if (sym == NoSymbol)
+          sym = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
+        if (sym == NoSymbol) {
+          log("Could not find symbol for " + name + ": " + tpe + " in " + owner.info.decls)
+          log(owner.info.member(name).tpe + " : " + tpe)
+          if (name.toString() == "toMap")
+            tpe = pool.getType(dummySym, ch)
+          if (field)
+            sym = owner.newValue(owner.pos, name).setInfo(tpe).setFlag(MUTABLE | javaToScalaFlags(jflags))
+          else
+            sym = dummySym.setInfo(tpe)
+          owner.info.decls.enter(sym)
+          log("added " + sym + ": " + sym.tpe)
+        }
+        (jflags, sym)
       }
-      (jflags, sym)
+    } catch {
+      case e: MissingRequirementError =>
+        (jflags, NoSymbol)
     }
   }
 
@@ -149,18 +157,25 @@ abstract class ICodeReader extends ClassfileParser {
 
   override def parseMethod() {
     val (jflags, sym) = parseMember(false)
-    if (sym != NoSymbol) {
-      log("Parsing method " + sym.fullName + ": " + sym.tpe);
-      this.method = new IMethod(sym);
-      this.method.returnType = toTypeKind(sym.tpe.resultType)
-      getCode(jflags).addMethod(this.method)
-      if ((jflags & JAVA_ACC_NATIVE) != 0)
-        this.method.native = true
-      val attributeCount = in.nextChar
-      for (i <- 0 until attributeCount) parseAttribute()
-    } else {
-      if (settings.debug.value) log("Skipping non-existent method.");
-      skipAttributes();
+    var beginning = in.bp
+    try {
+      if (sym != NoSymbol) {
+        log("Parsing method " + sym.fullName + ": " + sym.tpe);
+        this.method = new IMethod(sym);
+        this.method.returnType = toTypeKind(sym.tpe.resultType)
+        getCode(jflags).addMethod(this.method)
+        if ((jflags & JAVA_ACC_NATIVE) != 0)
+          this.method.native = true
+        val attributeCount = in.nextChar
+        for (i <- 0 until attributeCount) parseAttribute()
+      } else {
+        if (settings.debug.value) log("Skipping non-existent method.");
+        skipAttributes();
+      }
+    } catch {
+      case e: MissingRequirementError =>
+        in.bp = beginning; skipAttributes
+        if (settings.debug.value) log("Skipping non-existent method. " + e.msg);
     }
   }
 
@@ -187,12 +202,15 @@ abstract class ICodeReader extends ClassfileParser {
       definitions.getClass(name)
     } else if (name.endsWith("$")) {
       val sym = forceMangledName(name.subName(0, name.length -1).decode, true)
+//      println("classNameToSymbol: " + name + " sym: " + sym)
+      if (name.toString == "scala.collection.immutable.Stream$$hash$colon$colon$")
+        print("")
       if (sym == NoSymbol)
         definitions.getModule(name.subName(0, name.length - 1))
       else sym
     } else {
       forceMangledName(name, false)
-      definitions.getClass(name)
+      atPhase(currentRun.flattenPhase.next)(definitions.getClass(name))
     }
     if (sym.isModule)
       sym.moduleClass
