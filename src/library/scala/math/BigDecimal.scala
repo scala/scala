@@ -19,24 +19,23 @@ import scala.collection.immutable.NumericRange
  *  @version 1.0
  *  @since 2.7
  */
-object BigDecimal
-{
+object BigDecimal {
+  private val minCached = -512
+  private val maxCached = 512
+
+  val defaultMathContext = MathContext.UNLIMITED
+
+  val MinLong = new BigDecimal(BigDec valueOf Long.MinValue, defaultMathContext)
+  val MaxLong = new BigDecimal(BigDec valueOf Long.MaxValue, defaultMathContext)
+
+  /** Cache ony for defaultMathContext using BigDecimals in a small range. */
+  private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
+
   @serializable
   object RoundingMode extends Enumeration(java.math.RoundingMode.values map (_.toString) : _*) {
     type RoundingMode = Value
     val UP, DOWN, CEILING, FLOOR, HALF_UP, HALF_DOWN, HALF_EVEN, UNNECESSARY = Value
   }
-
-  private val minCached = -512
-  private val maxCached = 512
-
-  val MinLong = BigDecimal(Long.MinValue)
-  val MaxLong = BigDecimal(Long.MaxValue)
-
-  /** Cache ony for defaultMathContext using BigDecimals in a small range. */
-  private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
-
-  val defaultMathContext = MathContext.UNLIMITED
 
   /** Constructs a <code>BigDecimal</code> using the java BigDecimal static
    *  valueOf constructor.
