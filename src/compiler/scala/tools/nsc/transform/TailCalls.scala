@@ -163,15 +163,8 @@ abstract class TailCalls extends Transform
           newCtx.tailPos = true
 
           val isEligible = newCtx.currentMethod.isEffectivelyFinal || (newCtx.currentMethod.enclClass hasFlag Flags.MODULE)
-          // If -Ytailrecommend is given, we speculatively try transforming ineligible methods and
-          // report where we would have been successful.
-          val recommend = settings.Ytailrec.value
-          val savedFlags: Option[Long] = if (recommend) Some(newCtx.currentMethod.flags) else None
 
-          if (isEligible || recommend) {
-            if (recommend)
-              newCtx.currentMethod.flags |= Flags.FINAL
-
+          if (isEligible) {
             newCtx.tparams = Nil
             log("  Considering " + name + " for tailcalls")
             tree.symbol.tpe match {
@@ -185,7 +178,6 @@ abstract class TailCalls extends Transform
 
           val t1 = treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt, {
             val transformed = transform(rhs, newCtx)
-            savedFlags foreach (newCtx.currentMethod.flags = _)
 
             transformed match {
               case newRHS if isEligible && newCtx.accessed =>
@@ -200,12 +192,6 @@ abstract class TailCalls extends Transform
                   List(ValDef(newThis, This(currentClass))),
                   LabelDef(newCtx.label, newThis :: (vparams.flatten map (_.symbol)), newRHS)
                 )))
-              case _ if recommend =>
-                if (newCtx.accessed)
-                  unit.warning(dd.pos, "method is tailrecommended")
-                // transform with the original flags restored
-                transform(rhs, newCtx)
-
               case rhs => rhs
             }
           })

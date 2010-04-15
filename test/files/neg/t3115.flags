@@ -1,1 +1,1 @@
--deprecation -Yfatal-warnings
+-deprecation -Xfatal-warnings

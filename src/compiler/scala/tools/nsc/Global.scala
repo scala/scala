@@ -137,7 +137,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def error(msg: String) = reporter.error(NoPosition, msg)
   def warning(msg: String) =
-    if (settings.Ywarnfatal.value) reporter.error(NoPosition, msg)
+    if (settings.Xwarnfatal.value) reporter.error(NoPosition, msg)
     else reporter.warning(NoPosition, msg)
   def inform(msg: String) = reporter.info(NoPosition, msg, true)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }

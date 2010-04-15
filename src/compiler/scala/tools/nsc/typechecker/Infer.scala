@@ -1591,7 +1591,7 @@ trait Infer {
     }
 
     def checkDead(tree: Tree): Tree = {
-      if (settings.Xwarndeadcode.value && tree.tpe != null && tree.tpe.typeSymbol == NothingClass)
+      if (settings.Ywarndeadcode.value && tree.tpe != null && tree.tpe.typeSymbol == NothingClass)
         context.warning (tree.pos, "dead code following this construct")
       tree
     }

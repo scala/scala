@@ -1676,77 +1676,6 @@ trait Typers { self: Analyzer =>
         }
       }
 
-    /** does given name name an identifier visible at this point?
-     *
-     *  @param name the given name
-     *  @return     <code>true</code> if an identifier with the given name is visible.
-     */
-    def namesSomeIdent(name: Name): Boolean = namesWhatIdent(name).isDefined
-
-    /** If this name returns a visible identifier, return its symbol.
-     *
-     *  @param name the given name
-     *  @return     <code>Some(sym)</code> if an ident is visible, None otherwise.
-     */
-    def namesWhatIdent(name: Name): Option[Symbol] = {
-      var cx = context
-      while (cx != NoContext) {
-        val pre = cx.enclClass.prefix
-        val defEntry = cx.scope.lookupEntry(name)
-        if ((defEntry ne null) && reallyExists(defEntry.sym))
-          return Some(defEntry.sym)
-
-        cx = cx.enclClass
-        (pre member name filter (sym => reallyExists(sym) && context.isAccessible(sym, pre, false))) match {
-          case NoSymbol   => cx = cx.outer
-          case other      => return Some(other)
-        }
-      }
-      context.imports map (_ importedSymbol name) find (_ != NoSymbol)
-    }
-
-    /** Does this tree declare a val or def with the same name as one in scope?
-     *  This only catches identifiers in the same file, so more work is needed.
-     *
-     *  @param    tree  the given tree
-     *  @param    filt  filter for any conflicting symbols found -- false means ignore
-     */
-    def checkShadowings(tree: Tree, filt: (Symbol) => Boolean = _ => true) {
-      def sameFile(other: Symbol) =
-        (tree.symbol != null) && tree.symbol.sourceFile == other.sourceFile
-      def inFile(other: Symbol) =
-        if (sameFile(other)) ""
-        else if (other.sourceFile != null) "in %s ".format(other.sourceFile)
-        else ""
-
-      def positionStr(other: Symbol) = other.pos match {
-        case NoPosition => inFile(other) match { case "" => "(location unknown) " ; case x => x }
-        case pos        => "%sat line %s\n%s".format(inFile(other), pos.line, pos.lineContent) + """        /* is shadowed by */"""
-      }
-      def include(v: ValOrDefDef, other: Symbol) = {
-        // shadowing on the same line is a good bet for noise
-        (v.pos == NoPosition || other.pos == NoPosition || v.pos.line != other.pos.line) &&
-        // not likely we'll shadow a whole package without realizing it
-        !other.isPackage &&
-        // (v.symbol == null || !v.symbol.hasTransOwner(other)) &&
-        filt(other)
-      }
-
-      tree match {
-        // while I try to figure out how to limit the noise far enough to make this
-        // genuinely useful, I'm setting minimum identifier length to 3 to omit all
-        // those x's and i's we so enjoy reusing.
-        case v: ValOrDefDef if v.name.toString.length > 2 =>
-          namesWhatIdent(v.name) map { other =>
-            if (include(v, other) && unit != null) {
-              val fstr = "%s (%s) shadows usage %s"
-              unit.warning(v.pos, fstr.format(v.name, v.tpt, positionStr(other)))
-            }
-          }
-        case _ =>
-      }
-    }
-
     def typedUseCase(useCase: UseCase) {
       def stringParser(str: String): syntaxAnalyzer.Parser = {
         val file = new BatchSourceFile(context.unit.source.file, str) {
@@ -1792,15 +1721,6 @@ trait Typers { self: Analyzer =>
      */
     def typedDefDef(ddef: DefDef): DefDef = {
       val meth = ddef.symbol
-
-      // If warnings are enabled, attempt to alert about variable shadowing.  This only
-      // catches method parameters shadowing identifiers declared in the same file, so more
-      // work is needed.  Most of the code here is to filter out false positives.
-      def isAuxConstructor(sym: Symbol) = sym.isConstructor && !sym.isPrimaryConstructor
-      if (settings.YwarnShadow.value && !isAuxConstructor(ddef.symbol)) {
-        for (v <- ddef.vparamss.flatten ; if v.symbol != null && !(v.symbol hasFlag SYNTHETIC))
-          checkShadowings(v, (sym => !sym.isDeferred && !sym.isMethod))
-      }
 
       reenterTypeParams(ddef.tparams)
       reenterValueParams(ddef.vparamss)
@@ -1933,7 +1853,6 @@ trait Typers { self: Analyzer =>
           while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
           if (e eq null) context.scope.enter(stat.symbol)
         }
-        if (settings.YwarnShadow.value) checkShadowings(stat)
         enterLabelDef(stat)
       }
       if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
@@ -3114,13 +3033,6 @@ trait Typers { self: Analyzer =>
           if (vble == NoSymbol)
             vble = context.owner.newValue(tree.pos, name)
           if (vble.name.toTermName != nme.WILDCARD) {
-/*
-          if (namesSomeIdent(vble.name))
-            context.warning(tree.pos,
-              "pattern variable"+vble.name+" shadows a value visible in the environment;\n"+
-              "use backquotes `"+vble.name+"` if you mean to match against that value;\n" +
-              "or rename the variable or use an explicit bind "+vble.name+"@_ to avoid this warning.")
-*/
             if ((mode & ALTmode) != 0)
               error(tree.pos, "illegal variable in pattern alternative")
             vble = namer.enterInScope(vble)
