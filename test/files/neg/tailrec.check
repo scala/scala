@@ -1,10 +1,16 @@
-tailrec.scala:6: error: could not optimize @tailrec annotated method
+tailrec.scala:43: error: could not optimize @tailrec annotated method: it contains a recursive call not in tail position
   def facfail(n: Int): Int =
       ^
-tailrec.scala:42: error: could not optimize @tailrec annotated method
+tailrec.scala:50: error: could not optimize @tailrec annotated method: it is neither private nor final so can be overridden
   @tailrec def fail1(x: Int): Int = fail1(x)
                ^
-tailrec.scala:45: error: could not optimize @tailrec annotated method
-  @tailrec def fail2[T](xs: List[T]): List[T] = xs match {
-               ^
-three errors found
+tailrec.scala:53: error: could not optimize @tailrec annotated method: it contains a recursive call not in tail position
+  @tailrec final def fail2[T](xs: List[T]): List[T] = xs match {
+                     ^
+tailrec.scala:59: error: could not optimize @tailrec annotated method: it is called recursively with different type arguments
+  @tailrec final def fail3[T](x: Int): Int = fail3(x - 1)
+                     ^
+tailrec.scala:63: error: could not optimize @tailrec annotated method: it changes type of 'this' on a polymorphic recursive call
+    @tailrec final def fail4[U](other: Tom[U], x: Int): Int = other.fail4[U](other, x - 1)
+                       ^
+5 errors found
