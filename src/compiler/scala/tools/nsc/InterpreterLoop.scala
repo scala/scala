@@ -527,7 +527,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       interpretAsPastedTranscript(List(code))
       None
     }
-    else if (Completion.looksLikeInvocation(code)) {
+    else if (Completion.looksLikeInvocation(code) && interpreter.mostRecentVar != "") {
       interpretStartingWith(interpreter.mostRecentVar + code)
     }
     else {
