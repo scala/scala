@@ -19,7 +19,7 @@ trait Compiler {
    *  $SCALAC -d dir.obj -Xresident -sourcepath . "$@"
    */
   object Res extends DirBasedCategory("res") {
-    lazy val testSequence: TestSequence = List(isCheckPresent, compile, diff)
+    lazy val testSequence: TestSequence = List(checkFileRequired, compile, diff)
 
     override def denotesTest(p: Path)       = p.isDirectory && resFile(p).isFile
     override def createTest(location: Path) = new ResidentTest(location.toDirectory)
@@ -61,7 +61,7 @@ trait Compiler {
   }
 
   object BuildManager extends DirBasedCategory("buildmanager") {
-    lazy val testSequence: TestSequence = List(isCheckPresent, compile, diff)
+    lazy val testSequence: TestSequence = List(checkFileRequired, compile, diff)
     override def denotesTest(p: Path) = p.isDirectory && testFile(p).isFile
     override def createTest(location: Path) = new BuildManagerTest(location.toDirectory)
 

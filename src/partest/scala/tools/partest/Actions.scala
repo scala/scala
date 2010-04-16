@@ -123,10 +123,9 @@ trait Actions {
     self: TestEntity =>
 
     def checkFile: File   = withExtension("check").toFile
-    def isCheckPresent    = checkFile.isFile || {
-      warnAndLog("A checkFile at '%s' is mandatory.\n" format checkFile.path)
-      false
-    }
+    def checkFileRequired =
+      returning(checkFile.isFile)(res => if (!res) warnAndLog("A checkFile at '%s' is mandatory.\n" format checkFile.path))
+
     lazy val sourceFileNames = sourceFiles map (_.name)
 
     /** Given the difficulty of verifying that any selective approach works
@@ -149,43 +148,57 @@ trait Actions {
      */
     def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString "\n" trim
 
+    /** diffFiles requires actual Files as arguments but the output we want
+     *  is the post-processed versions of log/check, so we resort to tempfiles.
+     */
+    lazy val diffOutput = {
+      if (!checkFile.exists) "" else {
+        val input   = diffCleanup(checkFile)
+        val output  = diffCleanup(logFile)
+        def asFile(s: String) = returning(File.makeTemp("partest-diff"))(_ writeAll s)
+
+        if (input == output) ""
+        else diffFiles(asFile(input), asFile(output))
+      }
+    }
+    private def checkTraceName  = tracePath(checkFile)
+    private def logTraceName    = tracePath(logFile)
+    private def isDiffConfirmed = checkFile.exists && (diffOutput == "")
+
+    private def sendTraceMsg() {
+      def result =
+        if (isDryRun) ""
+        else if (isDiffConfirmed) " [passed]"
+        else if (checkFile.exists) " [failed]"
+        else " [unchecked]"
+
+      trace("diff %s %s%s".format(checkTraceName, logTraceName, result))
+    }
+
     /** If optional is true, a missing check file is considered
      *  a successful diff.  Necessary since many categories use
      *  checkfiles in an ad hoc manner.
      */
-    def runDiff(check: File, log: File) = {
-      def arg1    = tracePath(check)
-      def arg2    = tracePath(log)
-      def noCheck = !check.exists && returning(true)(_ =>  trace("diff %s %s [unchecked]".format(arg1, arg2)))
-      def input   = diffCleanup(check)
-      def output  = diffCleanup(log)
-      def matches = input == output
-
-      def traceMsg =
-        if (isDryRun) "diff %s %s".format(arg1, arg2)
-        else "diff %s %s [%s]".format(arg1, arg2, (if (matches) "passed" else "failed"))
+    def runDiff() = {
+      sendTraceMsg()
 
       def updateCheck = (
         isUpdateCheck && {
-          if (check.exists) {
-            normal("** diff %s %s failed:\n".format(arg1, arg2))
-            normal(diffOutput())
-          }
-          val verb = if (check.exists) "updating" else "creating"
-          normal("** %s %s and marking as passed.\n".format(verb, arg1))
-          check writeAll output
+          val formatStr = "** diff %s %s: " + (
+            if (checkFile.exists) "failed, updating '%s' and marking as passed."
+            else if (diffOutput == "") "not creating checkFile at '%s' as there is no output."
+            else "was unchecked, creating '%s' for future tests."
+          ) + "\n"
+
+          normal(formatStr.format(checkTraceName, logTraceName, checkFile.path))
+          if (diffOutput != "") normal(diffOutput)
+
+          checkFile.writeAll(diffCleanup(logFile), "\n")
           true
         }
       )
 
-      if (noCheck) returning(true)(_ => updateCheck)
-      else {
-        trace(traceMsg)
-        isDryRun || matches || updateCheck
-      }
+      isDryRun || isDiffConfirmed || (updateCheck || !checkFile.exists)
     }
-
-    private def cleanedLog    = returning(File makeTemp "partest-diff")(_ writeAll diffCleanup(logFile))
-    def diffOutput(): String  = checkFile ifFile (f => diffFiles(f, cleanedLog)) getOrElse ""
   }
 }

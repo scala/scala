@@ -47,7 +47,6 @@ trait Entities {
      */
     def argumentsToRun  = List("Test", "jvm")
     def argumentsToExec = List(location.path)
-    def argumentsToDiff = ((checkFile, logFile))
 
     /** Using a .cmds file for a custom test sequence.
      */
@@ -58,7 +57,7 @@ trait Entities {
 
     def run()   = runScala(argumentsToRun)
     def exec()  = runExec(argumentsToExec)
-    def diff()  = runDiff(argumentsToDiff._1, argumentsToDiff._2)
+    def diff()  = runDiff() // checkFile, logFile
 
     /** The memoized result of the test run.
      */
