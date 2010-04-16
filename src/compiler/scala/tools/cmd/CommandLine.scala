@@ -32,13 +32,6 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) {
   lazy val (argMap, residualArgs) = {
     val residualBuffer = new ListBuffer[String]
 
-    def isOption(s: String) = isAnyOption(s) || ((s startsWith "-") && !onlyKnownOptions)
-
-    def unknownOption(opt: String) =
-      errorFn("Option '%s' not recognized.".format(opt))
-    def missingArg(opt: String, what: String) =
-      errorFn("Option '%s' requires argument, found %s instead.".format(opt, what))
-
     def loop(args: List[String]): Map[String, String] = {
       def residual(xs: List[String]) = { residualBuffer ++= xs ; Map[String, String]() }
 
@@ -54,22 +47,32 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) {
         else None
       }
 
+      /** Assumes known options have all been ruled out already. */
+      def isUnknown(opt: String) =
+        onlyKnownOptions && (opt startsWith "-") && {
+          errorFn("Option '%s' not recognized.".format(opt))
+          true
+        }
+
       args match {
         case Nil              => Map()
         case Terminator :: xs => residual(xs)
         case x :: Nil         =>
           expand(x) foreach (exp => return loop(exp))
           if (isBinaryOption(x) && enforceArity)
-            missingArg(x, "EOF")
+            errorFn("Option '%s' requires argument, found EOF instead.".format(x))
 
           if (isUnaryOption(x)) mapForUnary(x)
+          else if (isUnknown(x)) Map()
           else residual(args)
+
         case x1 :: x2 :: xs   =>
           expand(x1) foreach (exp => return loop(exp ++ args.tail))
 
           if (x2 == Terminator)         mapForUnary(x1) ++ residual(xs)
           else if (isUnaryOption(x1))   mapForUnary(x1) ++ loop(args.tail)
           else if (isBinaryOption(x1))  Map(x1 -> x2) ++ loop(xs)
+          else if (isUnknown(x1))       loop(args.tail)
           else                          residual(List(x1)) ++ loop(args.tail)
       }
     }
