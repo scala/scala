@@ -127,20 +127,27 @@ trait Actions {
       warnAndLog("A checkFile at '%s' is mandatory.\n" format checkFile.path)
       false
     }
+    lazy val sourceFileNames = sourceFiles map (_.name)
 
-    def normalizePaths(s: String) = {
-      /** This accomodates slash/backslash issues by noticing when a given
-       *  line was altered, which means it held a path, and only then converting any
-       *  backslashes to slashes.  It's not foolproof but it's as close as we
-       *  can get in one line.
-       */
-      val s2 = s.replaceAll("""(?m)\Q%s\E""" format (sourcesDir + File.separator), "")
-      if (s != s2) s2.replaceAll("""\\""", "/") else s2
-    }
-
-    /** The default cleanup normalizes paths relative to sourcesDir.
+    /** Given the difficulty of verifying that any selective approach works
+     *  everywhere, the algorithm now is to look for the name of any known
+     *  source file for this test, and if seen, remove all the non-whitespace
+     *  preceding it.  (Paths with whitespace don't work anyway.) This should
+     *  wipe out all slashes, backslashes, C:\, cygwin/windows differences,
+     *  and whatever else makes a simple diff not simple.
+     *
+     *  The log and check file are both transformed, which I don't think is
+     *  correct -- only the log should be -- but doing it this way until I
+     *  can clarify martin's comments in #3283.
      */
-    def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString ("", "\n", "\n")
+    def normalizePaths(s: String) =
+      sourceFileNames.foldLeft(s)((res, name) => res.replaceAll("""\S+\Q%s\E""" format name, name))
+
+    /** The default cleanup normalizes paths relative to sourcesDir,
+     *  absorbs line terminator differences by going to lines and back,
+     *  and trims leading or trailing whitespace.
+     */
+    def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString "\n" trim
 
     /** If optional is true, a missing check file is considered
      *  a successful diff.  Necessary since many categories use
@@ -150,23 +157,31 @@ trait Actions {
       def arg1    = tracePath(check)
       def arg2    = tracePath(log)
       def noCheck = !check.exists && returning(true)(_ =>  trace("diff %s %s [unchecked]".format(arg1, arg2)))
+      def input   = diffCleanup(check)
       def output  = diffCleanup(log)
-      def matches = safeSlurp(check).trim == output.trim
+      def matches = input == output
 
       def traceMsg =
         if (isDryRun) "diff %s %s".format(arg1, arg2)
         else "diff %s %s [%s]".format(arg1, arg2, (if (matches) "passed" else "failed"))
 
-      noCheck || {
-        trace(traceMsg)
-
-        isDryRun || matches || (isUpdateCheck && {
-          normal("** diff %s %s failed:\n".format(arg1, arg2))
-          normal(diffOutput())
-          normal("** updating %s and marking as passed.\n".format(arg1))
+      def updateCheck = (
+        isUpdateCheck && {
+          if (check.exists) {
+            normal("** diff %s %s failed:\n".format(arg1, arg2))
+            normal(diffOutput())
+          }
+          val verb = if (check.exists) "updating" else "creating"
+          normal("** %s %s and marking as passed.\n".format(verb, arg1))
           check writeAll output
           true
-        })
+        }
+      )
+
+      if (noCheck) returning(true)(_ => updateCheck)
+      else {
+        trace(traceMsg)
+        isDryRun || matches || updateCheck
       }
     }
 
