@@ -291,7 +291,8 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
         classFile.path.startsWith(outDir.path)
 
       singleOutDir match {
-        case Some(d) => Nil
+        case Some(d) =>
+          List(d.lookupPathUnchecked(srcPath, false))
         case None =>
           (outputs filter (isBelow _).tupled) match {
             case Nil => Nil

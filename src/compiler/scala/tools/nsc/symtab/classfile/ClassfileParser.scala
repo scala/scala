@@ -876,6 +876,7 @@ abstract class ClassfileParser {
           val srcfileLeaf = pool.getName(in.nextChar).toString.trim
           val srcpath = sym.enclosingPackage match {
             case NoSymbol => srcfileLeaf
+            case definitions.EmptyPackage => srcfileLeaf
             case pkg => pkg.fullName(File.separatorChar)+File.separator+srcfileLeaf
           }
           srcfile0 = settings.outputDirs.srcFilesFor(in.file, srcpath).find(_.exists)
