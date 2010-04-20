@@ -325,18 +325,19 @@ abstract class TreeInfo {
       false
   }
 
-  /** Compilation unit is the predef object
+  /** Compilation unit is class or object 'name' in package 'scala'
    */
   def isUnitInScala(tree: Tree, name: Name) = tree match {
-    case PackageDef(Ident(nme.scala_), defs) => isObject(defs, name)
+    case PackageDef(Ident(nme.scala_), defs) => isImplDef(defs, name)
     case _ => false
   }
 
-  private def isObject(trees: List[Tree], name: Name): Boolean = trees match {
-    case Import(_, _) :: xs => isObject(xs, name)
-    case DocDef(_, tree1) :: Nil => isObject(List(tree1), name)
-    case Annotated(_, tree1) :: Nil => isObject(List(tree1), name)
+  private def isImplDef(trees: List[Tree], name: Name): Boolean = trees match {
+    case Import(_, _) :: xs => isImplDef(xs, name)
+    case DocDef(_, tree1) :: Nil => isImplDef(List(tree1), name)
+    case Annotated(_, tree1) :: Nil => isImplDef(List(tree1), name)
     case ModuleDef(_, `name`, _) :: Nil => true
+    case ClassDef(_, `name`, _, _) :: Nil => true
     case _ => false
   }
 

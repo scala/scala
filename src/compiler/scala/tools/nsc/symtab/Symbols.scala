@@ -606,6 +606,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
 
+    // Does not always work if the rawInfo is a SourcefileLoader, see comment
+    // in "def coreClassesFirst" in Global.
     final def exists: Boolean =
       this != NoSymbol && (!owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType })
 
