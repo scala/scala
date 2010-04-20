@@ -14,6 +14,7 @@ package immutable
 
 import generic._
 import mutable.{ Builder, ListBuffer }
+import annotation.tailrec
 
 /** `Queue` objects implement data structures that allow to
  *  insert and retrieve elements in a first-in-first-out (FIFO) manner.
@@ -29,9 +30,9 @@ import mutable.{ Builder, ListBuffer }
 @serializable
 @SerialVersionUID(-7622936493364270175L)
 class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
-            extends Seq[A]
+            extends LinearSeq[A]
             with GenericTraversableTemplate[A, Queue]
-            with SeqLike[A, Queue[A]] {
+            with LinearSeqLike[A, Queue[A]] {
 
   override def companion: GenericCompanion[Queue] = Queue
 
@@ -42,7 +43,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *  @return   the element at position `n` in this queue.
    *  @throws Predef.NoSuchElementException if the queue is too short.
    */
-  def apply(n: Int): A = {
+  override def apply(n: Int): A = {
     val len = out.length
     if (n < len) out.apply(n)
     else {
@@ -62,9 +63,19 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    */
   override def isEmpty: Boolean = in.isEmpty && out.isEmpty
 
+  override def head: A =
+    if (out.nonEmpty) out.head
+    else if (in.nonEmpty) in.last
+    else throw new NoSuchElementException("head on empty queue")
+
+  override def tail: Queue[A] =
+    if (out.nonEmpty) new Queue(in, out.tail)
+    else if (in.nonEmpty) new Queue(Nil, in.reverse.tail)
+    else throw new NoSuchElementException("tail on empty queue")
+
   /** Returns the length of the queue.
    */
-  def length = in.length + out.length
+  override def length = in.length + out.length
 
   /** Creates a new queue with element added at the end
    *  of the old queue.
@@ -101,7 +112,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *  @param  iter        an iterable object
    */
   def enqueue[B >: A](iter: Iterable[B]) =
-    new Queue(iter.iterator.toList.reverse ::: in, out)
+    new Queue(iter.toList.reverse ::: in, out)
 
   /** Returns a tuple with the first element in the queue,
    *  and a new queue with this element removed.
@@ -121,10 +132,7 @@ class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
    *  @throws Predef.NoSuchElementException
    *  @return the first element.
    */
-  def front: A =
-    if (!out.isEmpty) out.head
-    else if (!in.isEmpty) in.last
-    else throw new NoSuchElementException("front on empty queue")
+  def front: A = head
 
   /** Returns a string representation of this queue.
    */
