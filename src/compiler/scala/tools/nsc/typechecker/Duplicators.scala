@@ -94,6 +94,15 @@ abstract class Duplicators extends Analyzer {
           } else
             super.mapOver(tpe)
 
+        case ThisType(sym) =>
+          val sym1 = updateSym(sym)
+          if (sym1 ne sym) {
+            log("fixing " + sym + " -> " + sym1)
+            ThisType(sym1)
+          } else
+            super.mapOver(tpe)
+
+
         case _ =>
           super.mapOver(tpe)
       }
@@ -136,7 +145,7 @@ abstract class Duplicators extends Analyzer {
             ldef.symbol = newsym
             log("newsym: " + newsym + " info: " + newsym.info)
 
-          case DefDef(_, _, tparams, vparamss, _, rhs) =>
+          case DefDef(_, name, tparams, vparamss, _, rhs) =>
             // invalidate parameters
             invalidate(tparams ::: vparamss.flatten)
             tree.symbol = NoSymbol
@@ -243,6 +252,11 @@ abstract class Duplicators extends Analyzer {
           val tree1 = This(newClassOwner)
           if (settings.debug.value) log("mapped " + tree + " to " + tree1)
           super.typed(atPos(tree.pos)(tree1), mode, pt)
+
+        case This(_) =>
+          tree.symbol = updateSym(tree.symbol)
+          tree.tpe = null
+          super.typed(tree, mode, pt)
 
         case Super(qual, mix) if (oldClassOwner ne null) && (tree.symbol == oldClassOwner) =>
           val tree1 = Super(qual, mix)

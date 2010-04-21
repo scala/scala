@@ -893,15 +893,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     satisfiable(env, silent)
   }
 
-  import java.io.PrintWriter
-
   /*************************** Term transformation ************************************/
 
   class Duplicator extends {
     val global: SpecializeTypes.this.global.type = SpecializeTypes.this.global
   } with typechecker.Duplicators
-
-  import global.typer.typed
 
   def specializeCalls(unit: CompilationUnit) = new TypingTransformer(unit) {
     /** Map a specializable method to it's rhs, when not deferred. */
@@ -927,8 +923,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           super.traverse(tree)
       }
     }
-
-    import posAssigner._
 
     override def transform(tree: Tree): Tree = {
       val symbol = tree.symbol
@@ -986,6 +980,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         case Select(qual, name) =>
           if (settings.debug.value)
             log("looking at Select: " + tree + " sym: " + symbol + ": " + symbol.info + "[tree.tpe: " + tree.tpe + "]")
+          if (name.toString == "zero")
+            println("zero")
           //if (settings.debug.value) log("\toverloads: " + overloads.mkString("", "\n", ""))
           if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) {
             if (settings.debug.value)
@@ -1036,7 +1032,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case (tpe, idx) => TypeTree(tpe) setPos parents(idx).pos
           }
           treeCopy.Template(tree,
-            parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/,
+            parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/ ,
             self,
             atOwner(currentOwner)(transformTrees(body ::: specMembers)))
 
@@ -1201,10 +1197,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        */
       override def transform(tree: Tree): Tree = tree match {
         case Select(qual, name) =>
-          if (tree.symbol.hasFlag(PRIVATE | PROTECTED)) {
-            log("changing private flag of " + tree.symbol + " privateWithin: " + tree.symbol.privateWithin)
+          val sym = tree.symbol
+          if (sym.hasFlag(PRIVATE | PROTECTED) && !nme.isLocalName(sym.name)
+              && (currentClass != sym.owner.enclClass)) {
+            log("changing private flag of " + sym)
 //            tree.symbol.resetFlag(PRIVATE).setFlag(PROTECTED)
-            tree.symbol.makeNotPrivate(tree.symbol.owner)
+            sym.makeNotPrivate(sym.owner)
 //            tree.symbol.resetFlag(PRIVATE | PROTECTED)
 //            tree.symbol.privateWithin = NoSymbol
           }
