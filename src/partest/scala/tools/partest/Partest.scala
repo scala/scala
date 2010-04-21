@@ -29,11 +29,7 @@ class Partest(args: List[String]) extends {
   lazy val testBuildDir   = searchForDir(buildDir)
   lazy val partestDir     = searchForDir(rootDir)
   lazy val allCategories  = List(Pos, Neg, Run, Jvm, Res, Shootout, Scalap, Scalacheck, BuildManager, Script)
-
   lazy val selectedCategories = if (isAllImplied) allCategories else specifiedCats
-
-  // Coarse validation of partest directory: holds a file called partest.
-  (partestDir / "partest").isFile || error("'%s' is not a valid partest directory." format partestDir)
 
   def specifiedTests  = parsed.residualArgs map (x => Path(x).normalize)
   def specifiedKinds  = testKinds filter (x => isSet(x) || (runSets contains x))

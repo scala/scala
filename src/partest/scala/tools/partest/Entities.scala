@@ -23,7 +23,7 @@ trait Entities {
     def category: TestCategory
 
     lazy val label          = location.stripExtension
-    lazy val testClasspath  = returning(createClasspathString())(vtrace)
+    lazy val testClasspath  = returning(createClasspathString())(x => vtrace("testClasspath: " + x))
 
     /** Was this test successful? Calling this for the first time forces
      *  lazy val "process" which actually runs the test.

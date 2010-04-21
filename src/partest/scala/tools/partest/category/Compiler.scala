@@ -123,7 +123,7 @@ trait Compiler {
         def sendCommand(line: String): Boolean = {
           val compileRegex  = """^>>compile (.*)$""".r
           val updateRegex   = """^>>update\s+(.*)""".r
-          trace(line drop 2)
+          trace("send: " + (line drop 2))
 
           isDryRun || (line match {
             case compileRegex(xs)   => pbm.buildManagerCompile(xs)

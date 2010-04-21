@@ -35,11 +35,11 @@ trait Actions {
       val cmd     = fromArgs(args)
 
       if (isVerbose) {
-        trace(execEnv.mkString("ENV(", "\n", "\n)"))
+        trace("runExec: " + execEnv.mkString("ENV(", "\n", "\n)"))
         execCwd foreach (x => trace("CWD(" + x + ")"))
       }
 
-      trace(cmd)
+      trace("runExec: " + cmd)
       isDryRun || execAndLog(cmd)
     }
 
@@ -69,20 +69,19 @@ trait Actions {
   trait ScriptableTest {
     self: TestEntity =>
 
-    // def customTestStep(line: String): TestStep
-
     /** Translates a line from a .cmds file into a teststep.
      */
     def customTestStep(line: String): TestStep = {
+      trace("customTestStep: " + line)
       val (cmd, rest) = line span (x => !Character.isWhitespace(x))
-      val args = toArgs(rest)
+      def qualify(name: String) = sourcesDir / name path
+      val args = toArgs(rest) map qualify
       def fail: TestStep = (_: TestEntity) => error("Parse error: did not understand '%s'" format line)
 
       val f: TestEntity => Boolean = cmd match {
         case "scalac"   => _ scalac args
         case "javac"    => _ javac args
         case "scala"    => _ runScala args
-        case "diff"     => if (args.size != 2) fail else _ => diffFiles(File(args(0)), File(args(1))) == ""
         case _          => fail
       }
       f
@@ -109,6 +108,8 @@ trait Actions {
      *  to know exactly when and how two-pass compilation fails.
      */
     def compile() = {
+      trace("compile: " + sourceFiles)
+
       def compileJava()   = javac(javaSources)
       def compileScala()  = scalac(scalaSources)
       def compileAll()    = scalac(allSources)
