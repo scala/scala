@@ -31,10 +31,10 @@ object Tokens {
     import runner._
 
     val files = (residualArgs flatMap walk).distinct
-    if (parsed isSet "verbose")
+    if (parsed isSet "--verbose")
       println("Tokenizing: " + (files map (_.name) mkString " "))
 
-    if (parsed isSet "stats")
+    if (parsed isSet "--stats")
       println("Stats not yet implemented.")
 
     files flatMap fromScalaSource foreach println
@@ -42,8 +42,11 @@ object Tokens {
 
   /** Given a path, returns all .scala files underneath it.
    */
-  private def walk(arg: String): List[File] =
-    Path(arg).walkFilter(x => x.isFile && x.hasExtension("scala")) map (_.toFile) toList
+  private def walk(arg: String): List[File] = {
+    def traverse = Path(arg) ifDirectory (_.deepList()) getOrElse Iterator(File(arg))
+
+    Path onlyFiles traverse filter (_ hasExtension "scala") toList
+  }
 
   /** Tokenizes a single scala file.
    */
