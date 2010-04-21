@@ -8,17 +8,18 @@ package cmd
 
 import scala.collection.mutable.ListBuffer
 
+trait CommandLineConfig {
+  def enforceArity: Boolean = true
+  def onlyKnownOptions: Boolean = true
+}
+
 /** An instance of a command line, parsed according to a Spec.
  */
-class CommandLine(val spec: Reference, val originalArgs: List[String]) {
+class CommandLine(val spec: Reference, val originalArgs: List[String]) extends CommandLineConfig {
   def this(spec: Reference, line: String) = this(spec, Parser tokenize line)
   def this(spec: Reference, args: Array[String]) = this(spec, args.toList)
 
   import spec.{ isAnyOption, isUnaryOption, isBinaryOption, isExpandOption }
-
-  def assumeBinary  = true
-  def enforceArity  = true
-  def onlyKnownOptions = false
 
   val Terminator = "--"
   val ValueForUnaryOption = "true"  // so if --opt is given, x(--opt) = true
@@ -88,23 +89,3 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) {
 
   override def toString() = argMap.toString + " " + residualArgs.toString
 }
-
-object CommandLine {
-  def apply(args: List[String], unary: List[String], binary: List[String]) = {
-    /** XXX Temporarily assembling a fake spec so we can continue to
-     *  do ad-hoc parsing based on a list of unary and binary args.
-     *  Should either clean this up or do it differently.
-     */
-    object NoSpec extends Reference {
-      unary foreach (_ --? )
-      binary foreach (_ --| )
-
-      protected def creator(args: List[String]) = error("No Spec")
-      def programInfo = Spec.Names("", "")
-      lazy val referenceSpec = this
-    }
-
-    new CommandLine(NoSpec, args)
-  }
-}
-

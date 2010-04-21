@@ -7,7 +7,7 @@ package scala.tools
 package cmd
 
 import nsc.Properties.envOrElse
-import Spec.Names
+import Spec.Info
 
 /** Machinery for what amounts to a command line specification DSL.
  *  It is designed so the same specification trait can be used for
@@ -25,7 +25,7 @@ object Opt {
 
   trait Implicit {
     def name: String
-    def programInfo: Names
+    def programInfo: Info
     protected def opt = toOpt(name)
 
     def --? : Boolean                       // --opt is set
@@ -47,7 +47,7 @@ object Opt {
     def /(descr: String): String            // --opt has help description 'descr'
   }
 
-  class Reference(val programInfo: Names, val options: Reference.Accumulators, val name: String) extends Implicit {
+  class Reference(val programInfo: Info, val options: Reference.Accumulators, val name: String) extends Implicit {
     import options._
 
     def --?                             = { addUnary(opt) ; false }
@@ -63,7 +63,7 @@ object Opt {
     def /(descr: String)                = returning(name)(_ => addHelp(() => helpFormatStr.format(opt, descr)))
   }
 
-  class Instance(val programInfo: Names, val parsed: CommandLine, val name: String) extends Implicit with Error {
+  class Instance(val programInfo: Info, val parsed: CommandLine, val name: String) extends Implicit with Error {
     def --?                             = parsed isSet opt
     def --> (body: => Unit)             = if (parsed isSet opt) body
     def --|                             = parsed get opt

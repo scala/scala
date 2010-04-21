@@ -10,7 +10,8 @@ import java.io.File
 import java.lang.reflect
 import java.util.jar.{ JarEntry, JarFile }
 import java.util.concurrent.ConcurrentHashMap
-import util.ScalaClassLoader.getSystemLoader
+import util.ScalaClassLoader
+import ScalaClassLoader.getSystemLoader
 
 object ByteCode {
   /** Until I figure out why I can't get scalap onto the classpath such
@@ -34,8 +35,8 @@ object ByteCode {
   def scalaSigBytesForPath(path: String) =
     for {
       module <- DECODER
-      method <- decoderMethod("scalaSigBytes", classOf[String], classOf[ClassLoader])
-      names <- method.invoke(module, path, this.getClass.getClassLoader).asInstanceOf[Option[Array[Byte]]]
+      method <- decoderMethod("scalaSigAnnotationBytes", classOf[String])
+      names <- method.invoke(module, path).asInstanceOf[Option[Array[Byte]]]
     }
     yield names
 

@@ -10,7 +10,7 @@ package cmd
  *  First take advantage of the meta-options:
  *
  *    // this command creates an executable runner script "demo"
- *    % scala scala.tools.cmd.Demo --generate-runner demo
+ *    % scala scala.tools.cmd.Demo --self-update demo
  *
  *    // this one creates and sources a completion file - note backticks
  *    % `./demo --bash`
@@ -19,13 +19,13 @@ package cmd
  *    % ./demo --<tab>
  *       --action           --defint           --int
  *       --bash             --defstr           --str
- *       --defenv           --generate-runner  --unary
+ *       --defenv           --self-update      --unary
  *
  *  The normal option configuration is plausibly self-explanatory.
  */
 trait DemoSpec extends Spec with Meta.StdOpts with Interpolation {
   lazy val referenceSpec  = DemoSpec
-  lazy val programInfo    = Spec.Names("demo", "scala.tools.cmd.Demo")
+  lazy val programInfo    = Spec.Info("demo", "Usage: demo [<options>]", "scala.tools.cmd.Demo")
 
   help("""Usage: demo [<options>]""")
   heading("Unary options:")
@@ -48,7 +48,6 @@ object DemoSpec extends DemoSpec with Property {
   type ThisCommandLine = SpecCommandLine
   def creator(args: List[String]) =
     new SpecCommandLine(args) {
-      override def onlyKnownOptions     = true
       override def errorFn(msg: String) = { println("Error: " + msg) ; System.exit(0) }
     }
 }
