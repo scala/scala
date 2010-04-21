@@ -3334,31 +3334,41 @@ trait Typers { self: Analyzer =>
             Apply(
               Select(vble.duplicate, prefix) setPos fun.pos.focus, args) setPos tree.pos.makeTransparent
           ) setPos tree.pos
+
+        def mkUpdate(table: Tree, indices: List[Tree]) = {
+          gen.evalOnceAll(table :: indices, context.owner, context.unit) { ts =>
+            val tab = ts.head
+            val is = ts.tail
+            Apply(
+               Select(tab(), nme.update) setPos table.pos,
+               ((is map (i => i())) ::: List(
+                 Apply(
+                   Select(
+                     Apply(
+                       Select(tab(), nme.apply) setPos table.pos,
+                       is map (i => i())) setPos qual.pos,
+                     prefix) setPos fun.pos,
+                   args) setPos tree.pos)
+               )
+             ) setPos tree.pos
+           }
+        }
+
         val tree1 = qual match {
+          case Ident(_) =>
+            mkAssign(qual)
+
           case Select(qualqual, vname) =>
             gen.evalOnce(qualqual, context.owner, context.unit) { qq =>
               val qq1 = qq()
               mkAssign(Select(qq1, vname) setPos qual.pos)
             }
-          case Apply(Select(table, nme.apply), indices) =>
-            gen.evalOnceAll(table :: indices, context.owner, context.unit) { ts =>
-              val tab = ts.head
-              val is = ts.tail
-              Apply(
-                 Select(tab(), nme.update) setPos table.pos,
-                 ((is map (i => i())) ::: List(
-                   Apply(
-                     Select(
-                       Apply(
-                         Select(tab(), nme.apply) setPos table.pos,
-                         is map (i => i())) setPos qual.pos,
-                       prefix) setPos fun.pos,
-                     args) setPos tree.pos)
-                 )
-               ) setPos tree.pos
-             }
-           case Ident(_) =>
-             mkAssign(qual)
+
+          case Apply(fn, indices) =>
+            treeInfo.methPart(fn) match {
+              case Select(table, nme.apply) => mkUpdate(table, indices)
+              case _                        => errorTree(qual, "Unexpected tree during assignment conversion.")
+            }
         }
         typed1(tree1, mode, pt)
 /*

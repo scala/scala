@@ -102,17 +102,20 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  def isVariableOrGetter(tree: Tree) = tree match {
-    case Ident(_) =>
-      tree.symbol.isVariable
-    case Select(qual, _) =>
-      tree.symbol.isVariable ||
-      (mayBeVarGetter(tree.symbol) &&
-       tree.symbol.owner.info.member(nme.getterToSetter(tree.symbol.name)) != NoSymbol)
-    case Apply(Select(qual, nme.apply), _) =>
-      qual.tpe.member(nme.update) != NoSymbol
-    case _ =>
-      false
+  def isVariableOrGetter(tree: Tree) = {
+    def sym       = tree.symbol
+    def isVar     = sym.isVariable
+    def isGetter  = mayBeVarGetter(sym) && sym.owner.info.member(nme.getterToSetter(sym.name)) != NoSymbol
+
+    tree match {
+      case Ident(_)         => isVar
+      case Select(_, _)     => isVar || isGetter
+      case _                =>
+        methPart(tree) match {
+          case Select(qual, nme.apply)  => qual.tpe.member(nme.update) != NoSymbol
+          case _                        => false
+        }
+    }
   }
 
   /** Is tree a self constructor call?
@@ -295,10 +298,10 @@ abstract class TreeInfo {
   /** The method part of an application node
    */
   def methPart(tree: Tree): Tree = tree match {
-    case Apply(fn, _) => methPart(fn)
-    case TypeApply(fn, _) => methPart(fn)
+    case Apply(fn, _)           => methPart(fn)
+    case TypeApply(fn, _)       => methPart(fn)
     case AppliedTypeTree(fn, _) => methPart(fn)
-    case _ => tree
+    case _                      => tree
   }
 
   def firstArgument(tree: Tree): Tree = tree match {
