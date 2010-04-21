@@ -27,7 +27,7 @@ import scala.util.control.Exception.{ Catcher, catching, ultimately, unwrapping 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
-import util.{ SourceFile, BatchSourceFile, ClassPath }
+import util.{ SourceFile, BatchSourceFile, ClassPath, Chars }
 import scala.reflect.NameTransformer
 import scala.tools.nsc.{ InterpreterResults => IR }
 import interpreter._
@@ -1275,21 +1275,10 @@ object Interpreter {
    *  This requires replacing all special characters by escape
    *  codes. It does not add the surrounding " marks.  */
   def string2code(str: String): String = {
-    /** Convert a character to a backslash-u escape */
-    def char2uescape(c: Char): String = {
-      var rest = c.toInt
-      val buf = new StringBuilder
-      for (i <- 1 to 4) {
-        buf ++= (rest % 16).toHexString
-        rest = rest / 16
-      }
-      "\\u" + buf.toString.reverse
-    }
-
     val res = new StringBuilder
     for (c <- str) c match {
       case '"' | '\'' | '\\'  => res += '\\' ; res += c
-      case _ if c.isControl   => res ++= char2uescape(c)
+      case _ if c.isControl   => res ++= Chars.char2uescape(c)
       case _                  => res += c
     }
     res.toString

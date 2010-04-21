@@ -8,6 +8,7 @@ package cmd
 package program
 
 import nsc._
+import util.Chars.char2uescape
 import io._
 import ast.parser.Tokens._
 
@@ -16,12 +17,19 @@ import ast.parser.Tokens._
  */
 object Tokens {
   private val tokensUsage = "Usage: tokens [options] <path1 path2 ...>\n\nOptions:"
-  private val tokensOptions = List(
+  private val tokensUnary = List(
     "verbose" -> "be more verbose",
+    "freq"    -> "combine token lists and sort by frequency",
     "stats"   -> "output some stats"
   )
+  private val tokensBinary = List(
+    "sliding" -> "print tokens in groups of given size"
+  )
   private val tokensInfo = Simple.scalaProgramInfo("tokens", tokensUsage)
-  private lazy val TokensSpec = Simple(tokensInfo, tokensOptions, Nil, null)
+  private lazy val TokensSpec = Simple(tokensInfo, tokensUnary, tokensBinary, null)
+
+  def sanitize(x: Any): String = sanitize(x.toString)
+  def sanitize(str: String): String = str flatMap (x => if (x.isControl) char2uescape(x) else x.toString)
 
   def main(args0: Array[String]): Unit = {
     if (args0.isEmpty)
@@ -37,8 +45,22 @@ object Tokens {
     if (parsed isSet "--stats")
       println("Stats not yet implemented.")
 
-    files flatMap fromScalaSource foreach println
+    def raw = files flatMap fromScalaSource
+    def tokens: List[Any] =
+      if (parsed isSet "--sliding") raw sliding parsed("--sliding").toInt map (_ map sanitize mkString " ") toList
+      else raw
+
+    def output =
+      if (parsed isSet "--freq")
+        (tokens groupBy (x => x) mapValues (_.length)).toList sortBy (-_._2) map (x => x._2 + " " + x._1)
+      else
+        tokens
+
+    output foreach println
   }
+
+  def fromPaths(paths: String*): List[Any] =
+    (paths.toList flatMap walk).distinct flatMap fromScalaSource
 
   /** Given a path, returns all .scala files underneath it.
    */
