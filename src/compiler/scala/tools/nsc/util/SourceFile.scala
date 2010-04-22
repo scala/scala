@@ -163,7 +163,6 @@ extends BatchSourceFile(name, contents)
   override def positionInUltimateSource(position: Position) = {
     if (!position.isDefined) super.positionInUltimateSource(position)
     else {
-      println("!!!")
       var off = position.point
       var compsLeft = components
       // the search here has to be against the length of the files underlying the
@@ -171,7 +170,6 @@ extends BatchSourceFile(name, contents)
       // less than the underlying length.) Otherwise we can and will overshoot the
       // correct component and return a garbage position.
       while (compsLeft.head.underlyingLength-1 <= off && !compsLeft.tail.isEmpty) {
-        println("discarding "+compsLeft.head)
         off = off - compsLeft.head.underlyingLength + 1
         compsLeft = compsLeft.tail
       }
