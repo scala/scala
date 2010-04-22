@@ -39,8 +39,7 @@ private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
         case _: KillActorControl =>
           // do nothing
 
-        case e: Throwable if !e.isInstanceOf[SuspendActorControl] &&
-                             reactor.exceptionHandler.isDefinedAt(e) =>
+        case e: Exception if reactor.exceptionHandler.isDefinedAt(e) =>
           reactor.exceptionHandler(e)
       }
       reactor.kill()

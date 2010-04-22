@@ -30,7 +30,7 @@ object Master extends Actor {
 
 object Slave extends Actor {
   override def toString = "Slave"
-  override def exceptionHandler: PartialFunction[Throwable, Unit] = {
+  override def exceptionHandler: PartialFunction[Exception, Unit] = {
     case MyException(text) =>
     case other if !other.isInstanceOf[scala.util.control.ControlThrowable] => super.exceptionHandler(other)
   }
