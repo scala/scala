@@ -58,7 +58,6 @@ object Test {
   }
 
   def main(args: Array[String]) {
-    Debug.level = 1 // decrease level so that it does not print warnings
     Supervisor.start()
   }
 }

@@ -25,11 +25,13 @@ private[actors] class ActorTask(actor: Actor,
 
   protected override def beginExecution() {
     super.beginExecution()
-    if (actor.shouldExit)
-      actor.exit()
+    actor.synchronized { // shouldExit guarded by actor
+      if (actor.shouldExit)
+        actor.exit()
+    }
   }
 
-  protected override def terminateExecution(e: Exception) {
+  protected override def terminateExecution(e: Throwable) {
     val senderInfo = try { Some(actor.sender) } catch {
       case _: Exception => None
     }
@@ -41,7 +43,9 @@ private[actors] class ActorTask(actor: Actor,
 
     actor.synchronized {
       if (!actor.links.isEmpty)
-        actor exitLinked uncaught
+        actor.exitLinked(uncaught)
+      else
+        super.terminateExecution(e)
     }
   }
 

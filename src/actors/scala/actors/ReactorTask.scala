@@ -31,17 +31,17 @@ private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
     try {
       beginExecution()
       try {
-        try {
-          if (fun eq null)
-            handler(msg)
-          else
-            fun()
-        } catch {
-          case e: Exception if (reactor.exceptionHandler.isDefinedAt(e)) =>
-            reactor.exceptionHandler(e)
-        }
+        if (fun eq null)
+          handler(msg)
+        else
+          fun()
       } catch {
         case _: KillActorControl =>
+          // do nothing
+
+        case e: Throwable if !e.isInstanceOf[SuspendActorControl] &&
+                             reactor.exceptionHandler.isDefinedAt(e) =>
+          reactor.exceptionHandler(e)
       }
       reactor.kill()
     }
@@ -49,17 +49,11 @@ private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
       case _: SuspendActorControl =>
         // do nothing (continuation is already saved)
 
-      case e: Exception =>
-        // print message on default error stream
-        val msgException = "Uncaught exception in "+reactor+"\n"
-        val msgMessage   = if (msg != null) "Message: "+msg+"\n" else ""
-        Debug.doWarning {
-          Console.err.print(msgException + msgMessage)
-          e.printStackTrace()
-        }
-
+      case e: Throwable =>
         terminateExecution(e)
         reactor.terminated()
+        if (!e.isInstanceOf[Exception])
+          throw e
     } finally {
       suspendExecution()
       this.reactor = null
@@ -77,6 +71,9 @@ private[actors] class ReactorTask[Msg >: Null](var reactor: Reactor[Msg],
 
   protected def suspendExecution() {}
 
-  protected def terminateExecution(e: Exception) {}
+  protected def terminateExecution(e: Throwable) {
+    Console.err.println(reactor+": caught "+e)
+    e.printStackTrace()
+  }
 
 }

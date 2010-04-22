@@ -84,7 +84,11 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
    */
   def act(): Unit
 
-  protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] =
+  /**
+   * This partial function is applied to `Throwable`s that propagate out of
+   * this $actor's body.
+   */
+  protected[actors] def exceptionHandler: PartialFunction[Throwable, Unit] =
     Map()
 
   protected[actors] def scheduler: IScheduler =

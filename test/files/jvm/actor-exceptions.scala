@@ -19,6 +19,7 @@ object Master extends Actor {
     for (i <- 0 until 10) Slave ! A
     react {
       case Exit(from, reason) =>
+        println("OK")
     }
     } catch {
       case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
@@ -29,8 +30,9 @@ object Master extends Actor {
 
 object Slave extends Actor {
   override def toString = "Slave"
-  override def exceptionHandler: PartialFunction[Exception, Unit] = {
+  override def exceptionHandler: PartialFunction[Throwable, Unit] = {
     case MyException(text) =>
+    case other if !other.isInstanceOf[scala.util.control.ControlThrowable] => super.exceptionHandler(other)
   }
   def act() {
     try {
@@ -41,12 +43,14 @@ object Slave extends Actor {
           cnt += 1
           if (cnt % 2 != 0) throw MyException("problem")
           if (cnt == 10) {
-            throw new MyOtherException("unhandled")
+            throw MyOtherException("unhandled")
           }
       }
     }
     } catch {
-      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] =>
+      case e: Throwable if !e.isInstanceOf[scala.util.control.ControlThrowable] &&
+                           !e.isInstanceOf[MyException] &&
+                           !e.isInstanceOf[MyOtherException] =>
         e.printStackTrace()
     }
   }
