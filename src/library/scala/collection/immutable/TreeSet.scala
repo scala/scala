@@ -13,7 +13,7 @@ package scala.collection
 package immutable
 
 import generic._
-import mutable.{Builder, AddingBuilder}
+import mutable.{ Builder, AddingBuilder }
 
 /** $factoryInfo
  *  @define Coll immutable.TreeSet

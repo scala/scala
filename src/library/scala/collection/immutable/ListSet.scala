@@ -19,7 +19,7 @@ import generic._
  *  @define coll immutable list set
  *  @since 1
  */
-object ListSet extends SetFactory[ListSet] {
+object ListSet extends ImmutableSetFactory[ListSet] {
   /** setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListSet[A]] = setCanBuildFrom[A]
   override def empty[A] = new ListSet[A]

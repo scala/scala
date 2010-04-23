@@ -88,7 +88,7 @@ class HashSet[A] extends Set[A]
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-object HashSet extends SetFactory[HashSet] {
+object HashSet extends ImmutableSetFactory[HashSet] {
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: HashSet[A] = EmptyHashSet.asInstanceOf[HashSet[A]]

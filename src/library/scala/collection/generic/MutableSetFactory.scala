@@ -6,30 +6,13 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
-
-
 package scala.collection
+package generic
 
-import generic._
+import mutable.{ Builder, GrowingBuilder }
 
-/** A common base class for mutable and immutable bitsets.
- *  $bitsetinfo
- */
-trait BitSet extends Set[Int]
-                with BitSetLike[BitSet] {
-  override def empty: BitSet = BitSet.empty
+abstract class MutableSetFactory[CC[X] <: mutable.Set[X] with mutable.SetLike[X, CC[X]]]
+  extends SetFactory[CC] {
+
+  def newBuilder[A]: Builder[A, CC[A]] = new GrowingBuilder[A, CC[A]](empty[A])
 }
-
-/** $factoryInfo
- *  @define coll bitset
- *  @define Coll BitSet
- */
-object BitSet extends BitSetFactory[BitSet] {
-  val empty: BitSet = immutable.BitSet.empty
-  def newBuilder = immutable.BitSet.newBuilder
-
-  /** $canBuildFromInfo */
-  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
-}
-
