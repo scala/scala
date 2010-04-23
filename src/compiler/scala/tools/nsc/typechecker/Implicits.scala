@@ -784,7 +784,6 @@ self: Analyzer =>
         inferImplicit(tree, appliedType(manifestClass.typeConstructor, List(tp)), true, false, context).tree
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
-      def findElemManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else PartialManifestClass)
 
       def mot(tp0: Type): Tree = {
         val tp1 = tp0.normalize
@@ -801,39 +800,26 @@ self: Analyzer =>
             } else if (sym == RepeatedParamClass || sym == ByNameParamClass) {
               EmptyTree
             } else if (sym == ArrayClass && args.length == 1) {
-              manifestFactoryCall("arrayType", args.head, findElemManifest(args.head))
+              manifestFactoryCall("arrayType", args.head, findManifest(args.head))
             } else if (sym.isClass) {
-              val suffix = gen.mkClassOf(tp1) :: (args map findSubManifest)
+              val classarg0 = gen.mkClassOf(tp1)
+              val classarg = tp match {
+                case ExistentialType(_, _) =>
+                  TypeApply(Select(classarg0, Any_asInstanceOf),
+                            List(TypeTree(appliedType(ClassClass.typeConstructor, List(tp)))))
+                case _ =>
+                  classarg0
+              }
+              val suffix = classarg :: (args map findSubManifest)
               manifestFactoryCall(
                 "classType", tp,
                 (if ((pre eq NoPrefix) || pre.typeSymbol.isStaticOwner) suffix
                  else findSubManifest(pre) :: suffix): _*)
-            } else {
-              EmptyTree
-/* the following is dropped because it is dangerous
- *
-             if (sym.isAbstractType) {
-              if (sym.isExistentiallyBound)
-                EmptyTree // todo: change to existential parameter manifest
-              else if (sym.isTypeParameterOrSkolem)
-                EmptyTree  // a manifest should have been found by normal searchImplicit
-              else {
-                // The following is tricky! We want to find the parameterized version of
-                // what will become the erasure of the upper bound.
-                // But there is a case where the erasure is not a superclass of the current type:
-                // Any erases to Object. So an abstract type having Any as upper bound will not see
-                // Object as a baseType. That's why we do the basetype trick only when we must,
-                // i.e. when the baseclass is parameterized.
-                var era = erasure.erasure(tp1)
-                if (era.typeSymbol.typeParams.nonEmpty)
-                  era = tp1.baseType(era.typeSymbol)
-                manifestFactoryCall(
-                  "abstractType", tp,
-                  findSubManifest(pre) :: Literal(sym.name.toString) :: gen.mkClassOf(era) :: (args map findSubManifest): _*)
-              }
+            } else if (sym.isExistentiallyBound && full) {
+              manifestFactoryCall("wildcardType", tp,
+                                  findManifest(tp.bounds.lo), findManifest(tp.bounds.hi))
             } else {
               EmptyTree  // a manifest should have been found by normal searchImplicit
-*/
             }
           case RefinedType(parents, decls) =>
             // refinement is not generated yet
@@ -841,10 +827,7 @@ self: Analyzer =>
             else if (full) manifestFactoryCall("intersectionType", tp, parents map (findSubManifest(_)): _*)
             else mot(erasure.erasure.intersectionDominator(parents))
           case ExistentialType(tparams, result) =>
-            existentialAbstraction(tparams, result) match {
-              case ExistentialType(_, _) => mot(result)
-              case t => mot(t)
-            }
+            mot(tp1.skolemizeExistential)
           case _ =>
             EmptyTree
         }
