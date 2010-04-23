@@ -219,6 +219,23 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 object Range {
   private[immutable] val MAX_PRINT = 512  // some arbitrary value
 
+  /** Calculates the number of elements in a range given start, end, step, and
+   *  whether or not it is inclusive.  Returns -1 if parameters are invalid.
+   */
+  def count(start: Int, end: Int, step: Int): Int = count(start, end, step, false)
+  def count(start: Int, end: Int, step: Int, isInclusive: Boolean): Int = {
+    def last =
+      if (isInclusive && step < 0) end - 1
+      else if (isInclusive && step > 0) end + 1
+      else end
+
+    if (step == 0) -1
+    else if (start == end) { if (isInclusive) 1 else 0 }
+    else if (end > start != step > 0) -1
+    else if (step == 1 || step == -1) last - start
+    else ((last - start - 1) / step) + 1
+  }
+
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     override def isInclusive = true
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
