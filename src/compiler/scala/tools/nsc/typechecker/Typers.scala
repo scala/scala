@@ -2313,7 +2313,8 @@ trait Typers { self: Analyzer =>
                 val (allArgs, missing) = addDefaults(args, qual, targs, previousArgss, params, fun.pos.focus, context)
                 if (allArgs.length == formals.length) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
-                  context.diagnostic = "Error occurred in an application involving default arguments." :: context.diagnostic
+                  val note = "Error occurred in an application involving default arguments."
+                  if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
                   tryTupleApply.getOrElse {
