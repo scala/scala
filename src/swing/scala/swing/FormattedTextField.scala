@@ -33,7 +33,7 @@ object FormattedTextField {
  * @see javax.swing.JFormattedTextField
  */
 class FormattedTextField(format: java.text.Format) extends TextComponent {
-  override lazy val peer: JFormattedTextField = new JFormattedTextField(format)
+  override lazy val peer: JFormattedTextField = new JFormattedTextField(format) with SuperMixin
 
   import FormattedTextField._
 

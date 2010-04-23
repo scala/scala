@@ -11,7 +11,7 @@
 
 package scala.swing
 
-import java.awt.{GridBagConstraints}
+import java.awt.{GridBagConstraints, GridBagLayout}
 
 
 object GridBagPanel {
@@ -50,10 +50,10 @@ object GridBagPanel {
  * @see java.awt.GridBagLayout
  */
 class GridBagPanel extends Panel with LayoutContainer {
-  override lazy val peer = new javax.swing.JPanel(new java.awt.GridBagLayout)
+  override lazy val peer = new javax.swing.JPanel(new GridBagLayout) with SuperMixin
   import GridBagPanel._
 
-  private def layoutManager = peer.getLayout.asInstanceOf[java.awt.GridBagLayout]
+  private def layoutManager = peer.getLayout.asInstanceOf[GridBagLayout]
 
   /**
    * Convenient conversion from xy-coords given as pairs to

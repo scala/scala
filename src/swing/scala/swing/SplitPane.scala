@@ -23,7 +23,7 @@ import Swing._
  */
 class SplitPane(o: Orientation.Value, left: Component, right: Component) extends Component with Container with Orientable.Wrapper {
   override lazy val peer: javax.swing.JSplitPane =
-    new javax.swing.JSplitPane(o.id, left.peer, right.peer)
+    new javax.swing.JSplitPane(o.id, left.peer, right.peer) with SuperMixin
   def this(o: Orientation.Value) = this(o, new Component {}, new Component {})
   def this() = this(Orientation.Horizontal)
 

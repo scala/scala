@@ -43,7 +43,7 @@ object ScrollPane {
 class ScrollPane extends Component with Container {
   import ScrollPane._
 
-  override lazy val peer: JScrollPane = new JScrollPane
+  override lazy val peer: JScrollPane = new JScrollPane with SuperMixin
   def this(c: Component) = {
     this()
     contents = c

@@ -21,7 +21,7 @@ import java.awt.event._
  * @see javax.swing.JEditorPane
  */
 class EditorPane(contentType0: String, text0: String) extends TextComponent {
-	override lazy val peer: JEditorPane = new JEditorPane(contentType0, text0) with SuperMixin {}
+	override lazy val peer: JEditorPane = new JEditorPane(contentType0, text0) with SuperMixin
 	def this() = this("text/plain", "")
 
 	def contentType: String = peer.getContentType
