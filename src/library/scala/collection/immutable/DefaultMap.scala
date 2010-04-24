@@ -50,7 +50,7 @@ trait DefaultMap[A, +B] extends Map[A, B] { self =>
    */
   override def - (key: A): Map[A, B] = {
     val b = newBuilder
-    b ++= this filter (key !=)
+    for (kv <- this ; if kv._1 != key) b += kv
     b.result
   }
 }
