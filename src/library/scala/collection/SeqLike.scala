@@ -20,6 +20,7 @@ import generic._
 object SeqLike {
 
   /**  A KMP implementation, based on the undoubtedly reliable wikipedia entry.
+   *
    *  @author paulp
    *  @since  2.8
    */
@@ -72,7 +73,23 @@ object SeqLike {
     None
   }
 
-  /** Waiting for a doc comment from Paul
+  /** Finds a particular index at which one sequence occurs in another sequence.
+   *  Both the source sequence and the target sequence are expressed in terms
+   *  other sequences S' and T' with offset and length parameters.  This
+   *  function is designed to wrap the KMP machinery in a sufficiently general
+   *  way that all library sequence searches can use it.  It is unlikely you
+   *  have cause to call it directly: prefer functions such as StringBuilder#indexOf
+   *  and Seq#lastIndexOf.
+   *
+   *  @param  source        the sequence to search in
+   *  @param  sourceOffset  the starting offset in source
+   *  @param  sourceCount   the length beyond sourceOffset to search
+   *  @param  target        the sequence being searched for
+   *  @param  targetOffset  the starting offset in target
+   *  @param  targetCount   the length beyond targetOffset which makes up the target string
+   *  @param  fromIndex     the smallest index at which the target sequence may start
+   *
+   *  @return the applicable index in source where target exists, or -1 if not found
    */
   def indexOf[B](
     source: Seq[B], sourceOffset: Int, sourceCount: Int,
@@ -83,7 +100,10 @@ object SeqLike {
         case Some(x) => x + fromIndex
       }
 
-  /** Waiting for a doc comment from Paul
+  /** Finds a particular index at which one sequence occurs in another sequence.
+   *  Like indexOf, but finds the latest occurrence rather than earliest.
+   *
+   *  @see  SeqLike#indexOf
    */
   def lastIndexOf[B](
     source: Seq[B], sourceOffset: Int, sourceCount: Int,

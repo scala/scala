@@ -1,5 +1,7 @@
 object Test extends Application {
   val str = "ABCDEFGHIJKLMABCDEFGHIJKLM"
+  val surrogateStr = "an old Turkic letter: \uD803\uDC22"
+
   type SB = {
     def indexOf(str: String): Int
     def indexOf(str: String, fromIndex: Int): Int
@@ -29,4 +31,10 @@ object Test extends Application {
   sameAnswers(_.lastIndexOf("QZV"))
   sameAnswers(_.lastIndexOf("GHI", 22))
   sameAnswers(_.lastIndexOf("KLM", 22))
+
+  // testing that the "reverse" implementation avoids reversing surrogate pairs
+  val jsb = new JavaStringBuilder(surrogateStr) reverse
+  val ssb = new ScalaStringBuilder(surrogateStr) reverseContents ;
+
+  assert(jsb.toString == ssb.toString)
 }

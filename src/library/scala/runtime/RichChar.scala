@@ -48,6 +48,7 @@ final class RichChar(x: Char) extends Proxy with Ordered[Char] {
   def isSpaceChar: Boolean = Character.isSpaceChar(x)
   def isHighSurrogate: Boolean = Character.isHighSurrogate(x)
   def isLowSurrogate: Boolean = Character.isLowSurrogate(x)
+  def isSurrogate: Boolean = isHighSurrogate || isLowSurrogate
   def isUnicodeIdentifierStart: Boolean = Character.isUnicodeIdentifierStart(x)
   def isUnicodeIdentifierPart: Boolean = Character.isUnicodeIdentifierPart(x)
   def isIdentifierIgnorable: Boolean = Character.isIdentifierIgnorable(x)
