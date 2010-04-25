@@ -54,7 +54,7 @@ trait CompletionAware {
   def completionsFor(parsed: Parsed): List[String] = {
     import parsed._
 
-    val cs =
+    def cs =
       if (isEmpty) completions()
       else if (isUnqualified && !isLastDelimiter) completions(buffer)
       else follow(bufferHead) map (_ completionsFor bufferTail) getOrElse Nil

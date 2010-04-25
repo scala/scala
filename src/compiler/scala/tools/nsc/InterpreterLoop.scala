@@ -217,9 +217,9 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   val powerCommands: List[Command] = {
     import CommandImplicits._
     List(
+      OneArg("completions", "generate list of completions for a given String", completions),
       VarArgs("dump", "displays a view of the interpreter's internal state",
-        (xs: List[String]) => interpreter dumpState xs),
-      OneArg("search", "search the classpath for classes matching regex", search)
+        (xs: List[String]) => interpreter dumpState xs)
 
       // VarArgs("tree", "displays ASTs for specified identifiers",
       //   (xs: List[String]) => interpreter dumpTrees xs)
@@ -331,35 +331,11 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     else out.println("The path '" + f + "' doesn't seem to exist.")
   }
 
-  /** This isn't going to win any efficiency awards, but it's only
-   *  available in power mode so I'm unconcerned for the moment.
-   */
-  def search(arg: String) {
-    val MAX_RESULTS = 40
-    if (in.completion.isEmpty) return println("No classpath data available")
-    val comp = in.completion.get
+  def completions(arg: String): Unit = {
+    val comp = in.completion getOrElse { return println("Completion unavailable.") }
+    val xs  = comp completions arg
 
-    import java.util.regex.PatternSyntaxException
-    import comp.pkgs.agent._
-    import scala.collection.JavaConversions._
-
-    try {
-      val regex = arg.r
-      val matches = (
-        for ((k, vs) <- dottedPaths) yield {
-          val pkgs = if (regex findFirstMatchIn k isDefined) List("package " + k) else Nil
-          val classes = vs filter (regex findFirstMatchIn _.visibleName isDefined) map ("  class " + k + "." + _.visibleName)
-
-          pkgs ::: classes
-        }
-      ).flatten
-
-      matches take MAX_RESULTS foreach println
-    }
-    catch {
-      case _: PatternSyntaxException =>
-        return println("Invalid regular expression: you must use java.util.regex.Pattern syntax.")
-    }
+    injectAndName(xs)
   }
 
   def power() {
@@ -496,6 +472,9 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     * to be recorded for replay, if any.
     */
   def interpretStartingWith(code: String): Option[String] = {
+    // signal completion non-completion input has been received
+    in.completion foreach (_.resetVerbosity())
+
     def reallyInterpret = {
       interpreter.interpret(code) match {
         case IR.Error       => None

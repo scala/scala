@@ -236,6 +236,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private val boundNameMap = new HashMap[Name, Request]()
   private def allHandlers = prevRequests.toList flatMap (_.handlers)
 
+  def printAllTypeOf = {
+    prevRequests foreach { req =>
+      req.typeOf foreach { case (k, v) => Console.println(k + " => " + v) }
+    }
+  }
+
   /** Most recent tree handled which wasn't wholly synthetic. */
   private def mostRecentlyHandledTree: Option[Tree] = {
     for {
@@ -511,11 +517,13 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   def mkType(id: String): compiler.Type = {
     // if it's a recognized identifier, the type of that; otherwise treat the
-    // String like it is itself a type (e.g. scala.collection.Map) .
-    val typeName = typeForIdent(id) getOrElse id
+    // String like a value (e.g. scala.collection.Map) .
+    def findType = typeForIdent(id) match {
+      case Some(x)  => definitions.getClass(newTermName(x)).tpe
+      case _        => definitions.getModule(newTermName(id)).tpe
+    }
 
-    try definitions.getClass(newTermName(typeName)).tpe
-    catch { case _: Throwable => NoType }
+    try findType catch { case _: MissingRequirementError => NoType }
   }
 
   private[nsc] val powerMkImports = List(
@@ -796,16 +804,32 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private class ImportHandler(imp: Import) extends MemberHandler(imp) {
+    lazy val Import(expr, selectors) = imp
+    def targetType = mkType(expr.toString) match {
+      case NoType => None
+      case x      => Some(x)
+    }
+
+    private def selectorWild    = selectors filter (_.name == USCOREkw)   // wildcard imports, e.g. import foo._
+    private def selectorMasked  = selectors filter (_.rename == USCOREkw) // masking imports, e.g. import foo.{ bar => _ }
+    private def selectorNames   = selectors map (_.name)
+    private def selectorRenames = selectors map (_.rename) filterNot (_ == null)
+
     /** Whether this import includes a wildcard import */
-    val importsWildcard = imp.selectors map (_.name) contains USCOREkw
+    val importsWildcard = selectorWild.nonEmpty
+
+    /** Complete list of names imported by a wildcard */
+    def wildcardImportedNames: List[Name] = (
+      for (tpe <- targetType ; if importsWildcard) yield
+        tpe.nonPrivateMembers filter (x => x.isMethod && x.isPublic) map (_.name) distinct
+    ).toList.flatten
 
     /** The individual names imported by this statement */
-    val importedNames: List[Name] = (
-      imp.selectors
-      . map (x => x.rename)
-      . filter (x => x != null && x != USCOREkw)
-      . flatMap (x => List(x.toTypeName, x.toTermName))
-    )
+    /** XXX come back to this and see what can be done with wildcards now that
+     *  we know how to enumerate the identifiers.
+     */
+    val importedNames: List[Name] =
+      selectorRenames filterNot (_ == USCOREkw) flatMap (x => List(x.toTypeName, x.toTermName))
 
     override def resultExtractionCode(req: Request, code: PrintWriter) =
       code println codegenln(imp.toString)
@@ -830,9 +854,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** def and val names */
     def defNames = partialFlatMap(handlers) { case x: DefHandler => x.boundNames }
-    def valAndVarNames = partialFlatMap(handlers) {
+    def valueNames = partialFlatMap(handlers) {
       case x: AssignHandler => List(x.helperName)
       case x: ValHandler    => boundNames
+      case x: ModuleHandler => List(x.name)
     }
 
     /** Code to import bound names from previous lines - accessPath is code to
@@ -940,7 +965,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       !reporter.hasErrors
     }
 
-
     def atNextPhase[T](op: => T): T = compiler.atPhase(objRun.typerPhase.next)(op)
 
     /** The outermost wrapper object */
@@ -972,7 +996,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         }
       }
 
-      getTypes(valAndVarNames, nme.getterToLocal(_)) ++ getTypes(defNames, identity)
+      getTypes(valueNames, nme.getterToLocal(_)) ++ getTypes(defNames, identity)
     }
 
     /** load and run the code using reflection */
@@ -1052,11 +1076,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def requestForName(name: Name): Option[Request] =
     prevRequests.reverse find (_.boundNames contains name)
 
-  private def requestForIdent(line: String): Option[Request] =
-    requestForName(newTermName(line))
+  private def requestForIdent(line: String): Option[Request] = requestForName(newTermName(line))
 
   def typeForIdent(id: String): Option[String] =
-    requestForIdent(id) map (_ typeOf newTermName(id))
+    requestForIdent(id) flatMap (x => x.typeOf get newTermName(id))
 
   def methodsOf(name: String) =
     evalExpr[List[String]](methodsCode(name)) map (x => NameTransformer.decode(getOriginalName(x)))
@@ -1160,6 +1183,22 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     case x: ImportHandler => x.importedNames
   } filterNot isSynthVarName
 
+  /** Types which have been wildcard imported, such as:
+   *    val x = "abc" ; import x._  // type java.lang.String
+   *    import java.lang.String._   // object java.lang.String
+   *
+   *  Used by tab completion.
+   *
+   *  XXX right now this gets import x._ and import java.lang.String._,
+   *  but doesn't figure out import String._.  There's a lot of ad hoc
+   *  scope twiddling which should be swept away in favor of digging
+   *  into the compiler scopes.
+   */
+  def wildcardImportedTypes(): List[Type] = {
+    val xs = allHandlers collect { case x: ImportHandler if x.importsWildcard => x.targetType }
+    xs.flatten.reverse.distinct
+  }
+
   /** Another entry point for tab-completion, ids in scope */
   def unqualifiedIds() = (unqualifiedIdNames() map (_.toString)).distinct.sorted
 
@@ -1191,6 +1230,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   // debugging
   def isReplDebug = settings.Yrepldebug.value
+  def isCompletionDebug = settings.Ycompletion.value
   def DBG(s: String) = if (isReplDebug) out println s else ()
 }
 
