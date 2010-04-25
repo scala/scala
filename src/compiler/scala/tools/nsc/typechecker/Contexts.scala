@@ -486,6 +486,19 @@ trait Contexts { self: Analyzer =>
       }
       implicitsCache
     }
+
+    def lookup(name: Name, expectedOwner: Symbol) = {
+      var res: Symbol = NoSymbol
+      var ctx = this
+      while(res == NoSymbol && ctx.outer != ctx) {
+        val s = ctx.scope.lookup(name)
+        if (s != NoSymbol && s.owner == expectedOwner)
+          res = s
+        else
+          ctx = ctx.outer
+      }
+      res
+    }
   }
   class ImportInfo(val tree: Import, val depth: Int) {
     /** The prefix expression */

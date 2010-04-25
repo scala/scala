@@ -607,6 +607,17 @@ trait Namers { self: Analyzer =>
       vparamss.map(_.map(enterValueParam))
     }
 
+    /**
+     * Finds the companion module of a class symbol. Calling .companionModule
+     * does not work for classes defined inside methods.
+     */
+    private def companionModuleOf(clazz: Symbol) = {
+      var res = clazz.companionModule
+      if (res == NoSymbol)
+        res = context.lookup(clazz.name.toTermName, clazz.owner)
+      res
+    }
+
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
@@ -712,29 +723,36 @@ trait Namers { self: Analyzer =>
 
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already; here, "clazz" is the module class
-      Namers.this.caseClassOfModuleClass get clazz match {
-        case Some(cdef) =>
-          addApplyUnapply(cdef, templateNamer)
-          caseClassOfModuleClass -= clazz
-        case None =>
+      if (clazz.isModuleClass) {
+        Namers.this.caseClassOfModuleClass get clazz match {
+          case Some(cdef) =>
+            addApplyUnapply(cdef, templateNamer)
+            caseClassOfModuleClass -= clazz
+          case None =>
+        }
       }
 
       // add the copy method to case classes; this needs to be done here, not in SyntheticMethods, because
       // the namer phase must traverse this copy method to create default getters for its parameters.
-      Namers.this.caseClassOfModuleClass get clazz.companionModule.moduleClass match {
-        case Some(cdef) =>
-          def hasCopy(decls: Scope) = {
-            decls.iterator exists (_.name == nme.copy)
-          }
-          if (!hasCopy(decls) &&
-              !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
-              !parents.flatMap(_.baseClasses).distinct.exists(bc => hasCopy(bc.info.decls)))
-            addCopyMethod(cdef, templateNamer)
-        case None =>
+      // here, clazz is the ClassSymbol of the case class (not the module).
+      // @check: this seems to work only if the type completer of the class runs before the one of the
+      // module class: the one from the module class removes the entry form caseClassOfModuleClass (see above).
+      if (clazz.isClass && !clazz.hasFlag(MODULE)) {
+        Namers.this.caseClassOfModuleClass get companionModuleOf(clazz).moduleClass match {
+          case Some(cdef) =>
+            def hasCopy(decls: Scope) = {
+              decls.iterator exists (_.name == nme.copy)
+            }
+            if (!hasCopy(decls) &&
+                    !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
+                    !parents.flatMap(_.baseClasses).distinct.exists(bc => hasCopy(bc.info.decls)))
+              addCopyMethod(cdef, templateNamer)
+          case None =>
+        }
       }
 
-      // if default getters (for constructor defaults) need to be added to that module,
-      // here's the namer to use
+      // if default getters (for constructor defaults) need to be added to that module, here's the namer
+      // to use. clazz is the ModuleClass. sourceModule works also for classes defined in methods.
       val module = clazz.sourceModule
       if (classAndNamerOfModule contains module) {
         val (cdef, _) = classAndNamerOfModule(module)
@@ -947,6 +965,7 @@ trait Namers { self: Analyzer =>
         if (vparamss == List(Nil) && baseParamss.isEmpty) baseParamss = List(Nil)
         assert(!overrides || vparamss.length == baseParamss.length, ""+ meth.fullName + ", "+ overridden.fullName)
 
+      // cache the namer used for entering the default getter symbols
       var ownerNamer: Option[Namer] = None
       var moduleNamer: Option[(ClassDef, Namer)] = None
 
@@ -978,7 +997,7 @@ trait Namers { self: Analyzer =>
 
             val parentNamer = if (isConstr) {
               val (cdef, nmr) = moduleNamer.getOrElse {
-                val module = meth.owner.companionModule
+                val module = companionModuleOf(meth.owner)
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
                 val (cdef, nmr) = classAndNamerOfModule(module)
@@ -1029,7 +1048,8 @@ trait Namers { self: Analyzer =>
                 Modifiers(meth.flags & (PRIVATE | PROTECTED | FINAL)) | SYNTHETIC | DEFAULTPARAM | oflag,
                 name, deftParams, defvParamss, defTpt, defRhs)
             }
-            meth.owner.resetFlag(INTERFACE) // there's a concrete member now
+            if (!isConstr)
+              meth.owner.resetFlag(INTERFACE) // there's a concrete member now
             val default = parentNamer.enterSyntheticSym(defaultTree)
           } else if (baseHasDefault) {
             // the parameter does not have a default itself, but the corresponding parameter

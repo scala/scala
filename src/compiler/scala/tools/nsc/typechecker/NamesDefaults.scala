@@ -187,10 +187,21 @@ trait NamesDefaults { self: Analyzer =>
       baseFun1 match {
         // constructor calls
 
-        case Select(New(TypeTree()), _) if isConstr =>
-          blockWithoutQualifier(None)
-        case Select(TypeApply(New(TypeTree()), _), _) if isConstr =>
-          blockWithoutQualifier(None)
+        case Select(New(tp @ TypeTree()), _) if isConstr =>
+          // fixes #3338. Same qualifier for selecting the companion object as for the class.
+          val dq = tp.tpe match {
+            case TypeRef(pre, _, _) if (!pre.typeSymbol.isEmptyPackageClass) =>
+              moduleQual(tp.pos, mod => gen.mkAttributedSelect(gen.mkAttributedQualifier(pre), mod))
+            case _ => None
+          }
+          blockWithoutQualifier(dq)
+        case Select(TypeApply(New(tp @ TypeTree()), _), _) if isConstr =>
+          val dq = tp.tpe match {
+            case TypeRef(pre, _, _) if (!pre.typeSymbol.isEmptyPackageClass) =>
+              moduleQual(tp.pos, mod => gen.mkAttributedSelect(gen.mkAttributedQualifier(pre), mod))
+            case _ => None
+          }
+          blockWithoutQualifier(dq)
 
         case Select(New(Ident(_)), _) if isConstr =>
           blockWithoutQualifier(None)
@@ -350,8 +361,11 @@ trait NamesDefaults { self: Analyzer =>
       if (missing forall (_.hasFlag(DEFAULTPARAM))) {
         val defaultArgs = missing map (p => {
           var default1 = qual match {
-            case Some(q) => gen.mkAttributedSelect(q.duplicate, defaultGetter(p, context))
-            case None => gen.mkAttributedRef(defaultGetter(p, context))
+            case Some(q) => gen.mkAttributedSelect(q.duplicate, defaultGetter(p, context)._1)
+            case None =>
+              val (m, q) = defaultGetter(p, context)
+              if (q.isDefined) gen.mkAttributedSelect(q.get, m)
+              else             gen.mkAttributedRef(m)
           }
           default1 = if (targs.isEmpty) default1
                      else TypeApply(default1, targs.map(_.duplicate))
@@ -369,35 +383,32 @@ trait NamesDefaults { self: Analyzer =>
 
   /**
    * For a parameter with default argument, find the method symbol of
-   * the default getter.
+   * the default getter. Can return a qualifier tree for the selecting
+   * the method's symbol (part of #3334 fix).
    */
-  def defaultGetter(param: Symbol, context: Context) = {
+  def defaultGetter(param: Symbol, context: Context): (Symbol, Option[Tree]) = {
     val i = param.owner.paramss.flatten.findIndexOf(p => p.name == param.name) + 1
     if (i > 0) {
       if (param.owner.isConstructor) {
         val defGetterName = "init$default$"+ i
-        param.owner.owner.companionModule.info.member(defGetterName)
+        var mod = param.owner.owner.companionModule
+        // if the class's owner is a method, .companionModule does not work
+        if (mod == NoSymbol)
+          mod = context.lookup(param.owner.owner.name.toTermName, param.owner.owner.owner)
+        (mod.info.member(defGetterName), Some(gen.mkAttributedRef(mod)))
       } else {
         val defGetterName = param.owner.name +"$default$"+ i
+        // isClass also works for methods in objects, owner is the ModuleClassSymbol
         if (param.owner.owner.isClass) {
           // .toInterface: otherwise we get the method symbol of the impl class
-          param.owner.owner.toInterface.info.member(defGetterName)
+          (param.owner.owner.toInterface.info.member(defGetterName), None)
         } else {
           // the owner of the method is another method. find the default
           // getter in the context.
-          var res: Symbol = NoSymbol
-          var ctx = context
-          while(res == NoSymbol && ctx.outer != ctx) {
-            val s = ctx.scope.lookup(defGetterName)
-            if (s != NoSymbol && s.owner == param.owner.owner)
-              res = s
-            else
-              ctx = ctx.outer
-          }
-          res
+          (context.lookup(defGetterName, param.owner.owner), None)
         }
       }
-    } else NoSymbol
+    } else (NoSymbol, None)
   }
 
   /**
