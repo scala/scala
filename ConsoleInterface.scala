@@ -8,9 +8,9 @@ import scala.tools.nsc.{GenericRunnerCommand,InterpreterLoop}
 
 class ConsoleInterface
 {
-	def run(bootClasspathString: String, classpathString: String, initialCommands: String, log: Logger)
+	def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, log: Logger)
 	{
-		val settings = MakeSettings(log)
+		val settings = MakeSettings(args.toList, log)
 		if(!bootClasspathString.isEmpty)
 			settings.bootclasspath.value = bootClasspathString
 		settings.classpath.value = classpathString
@@ -28,9 +28,9 @@ class ConsoleInterface
 }
 object MakeSettings
 {
-	def apply(log: Logger) =
+	def apply(args: List[String], log: Logger) =
 	{
-		val command = new GenericRunnerCommand(Nil, message => log.error(Message(message)))
+		val command = new GenericRunnerCommand(args, message => log.error(Message(message)))
 		if(command.ok)
 			command.settings
 		else
