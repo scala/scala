@@ -12,7 +12,6 @@ package scala.actors
 
 import scala.util.control.ControlThrowable
 import java.util.{Timer, TimerTask}
-import java.util.concurrent.{ExecutionException, Callable}
 
 /**
  * The <code>Actor</code> object provides functions for the definition of
@@ -695,37 +694,51 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
    *   <code>reason != 'normal</code>.
    * </p>
    */
-  protected[actors] def exit(reason: AnyRef): Nothing = synchronized {
-    exitReason = reason
+  protected[actors] def exit(reason: AnyRef): Nothing = {
+    synchronized {
+      exitReason = reason
+    }
     exit()
   }
 
   /**
    * Terminates with exit reason <code>'normal</code>.
    */
-  protected[actors] override def exit(): Nothing = synchronized {
-    if (!links.isEmpty)
-      exitLinked()
+  protected[actors] override def exit(): Nothing = {
+    val todo = synchronized {
+      if (!links.isEmpty)
+        exitLinked()
+      else
+        () => {}
+    }
+    todo()
     super.exit()
   }
 
   // Assume !links.isEmpty
   // guarded by this
-  private[actors] def exitLinked() {
+  private[actors] def exitLinked(): () => Unit = {
     _state = Actor.State.Terminated
+    // reset waitingFor, otherwise getState returns Suspended
+    waitingFor = Reactor.waitingForNone
     // remove this from links
     val mylinks = links.filterNot(this.==)
-    // exit linked processes
-    mylinks.foreach((linked: AbstractActor) => {
-      unlink(linked)
-      if (!linked.exiting)
-        linked.exit(this, exitReason)
-    })
+    // unlink actors
+    mylinks.foreach(unlinkFrom(_))
+    // return closure that locks linked actors
+    () => {
+      mylinks.foreach((linked: AbstractActor) => {
+        linked.synchronized {
+          if (!linked.exiting)
+            linked.exit(this, exitReason)
+        }
+      })
+    }
   }
 
   // Assume !links.isEmpty
   // guarded by this
-  private[actors] def exitLinked(reason: AnyRef) {
+  private[actors] def exitLinked(reason: AnyRef): () => Unit = {
     exitReason = reason
     exitLinked()
   }

@@ -10,8 +10,6 @@
 
 package scala.actors
 
-import java.util.concurrent.ExecutionException
-
 /**
  * The `ActorCanReply` trait provides message send operations that
  * may result in a response from the receiver.
@@ -19,19 +17,17 @@ import java.util.concurrent.ExecutionException
  * @author Philipp Haller
  */
 private[actors] trait ActorCanReply extends ReactorCanReply {
-  thiz: AbstractActor with ReplyReactor =>
+  this: AbstractActor with ReplyReactor =>
 
   override def !?(msg: Any): Any = {
-    val replyCh = new Channel[Any](Actor.self(thiz.scheduler))
-    thiz.send(msg, replyCh)
-    replyCh.receive {
-      case x => x
-    }
+    val replyCh = new Channel[Any](Actor.self(scheduler))
+    send(msg, replyCh)
+    replyCh.?
   }
 
   override def !?(msec: Long, msg: Any): Option[Any] = {
-    val replyCh = new Channel[Any](Actor.self(thiz.scheduler))
-    thiz.send(msg, replyCh)
+    val replyCh = new Channel[Any](Actor.self(scheduler))
+    send(msg, replyCh)
     replyCh.receiveWithin(msec) {
       case TIMEOUT => None
       case x => Some(x)
@@ -39,8 +35,8 @@ private[actors] trait ActorCanReply extends ReactorCanReply {
   }
 
   override def !![A](msg: Any, handler: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[A](Actor.self(thiz.scheduler))
-    thiz.send(msg, new OutputChannel[Any] {
+    val ftch = new Channel[A](Actor.self(scheduler))
+    send(msg, new OutputChannel[Any] {
       def !(msg: Any) =
         ftch ! handler(msg)
       def send(msg: Any, replyTo: OutputChannel[Any]) =
@@ -54,85 +50,8 @@ private[actors] trait ActorCanReply extends ReactorCanReply {
   }
 
   override def !!(msg: Any): Future[Any] = {
-    val ftch = new Channel[Any](Actor.self(thiz.scheduler))
-    val linkedChannel = new AbstractActor {
-      def !(msg: Any) = {
-        ftch ! msg
-        thiz unlinkFrom this
-      }
-      def send(msg: Any, replyTo: OutputChannel[Any]) = {
-        ftch.send(msg, replyTo)
-        thiz unlinkFrom this
-      }
-      def forward(msg: Any) = {
-        ftch.forward(msg)
-        thiz unlinkFrom this
-      }
-      def receiver =
-        ftch.receiver
-      def linkTo(to: AbstractActor) { /* do nothing */ }
-      def unlinkFrom(from: AbstractActor) { /* do nothing */ }
-      def exit(from: AbstractActor, reason: AnyRef) {
-        ftch.send(Exit(from, reason), thiz)
-        thiz unlinkFrom this
-      }
-      // should never be invoked; return dummy value
-      def !?(msg: Any) = msg
-      // should never be invoked; return dummy value
-      def !?(msec: Long, msg: Any): Option[Any] = Some(msg)
-      // should never be invoked; return dummy value
-      override def !!(msg: Any): Future[Any] = {
-        val someChan = new Channel[Any](Actor.self(thiz.scheduler))
-        Futures.fromInputChannel(someChan)
-      }
-      // should never be invoked; return dummy value
-      override def !![A](msg: Any, f: PartialFunction[Any, A]): Future[A] = {
-        val someChan = new Channel[A](Actor.self(thiz.scheduler))
-        Futures.fromInputChannel(someChan)
-      }
-    }
-    thiz linkTo linkedChannel
-    thiz.send(msg, linkedChannel)
-    new Future[Any](ftch) {
-      var exitReason: Option[Any] = None
-      val handleReply: PartialFunction[Any, Unit] = {
-        case Exit(from, reason) =>
-          exitReason = Some(reason)
-        case any =>
-          fvalue = Some(any)
-      }
-
-      def apply(): Any =
-        if (isSet) {
-          if (!fvalue.isEmpty)
-            fvalue.get
-          else if (!exitReason.isEmpty) {
-            val reason = exitReason.get
-            if (reason.isInstanceOf[Throwable])
-              throw new ExecutionException(reason.asInstanceOf[Throwable])
-            else
-              throw new ExecutionException(new Exception(reason.toString()))
-          }
-        } else inputChannel.receive(handleReply andThen { _ => apply() })
-
-      def respond(k: Any => Unit): Unit =
- 	if (isSet)
-          apply()
- 	else
-          inputChannel.react(handleReply andThen { _ => k(apply()) })
-
-      def isSet = (fvalue match {
-        case None =>
-          val handleTimeout: PartialFunction[Any, Boolean] = {
-            case TIMEOUT =>
-              false
-          }
-          val whatToDo =
-            handleTimeout orElse (handleReply andThen { _ => true })
-          inputChannel.receiveWithin(0)(whatToDo)
-        case Some(_) => true
-      }) || !exitReason.isEmpty
-    }
+    val noTransform: PartialFunction[Any, Any] = { case x => x}
+    this !! (msg, noTransform)
   }
 
 }

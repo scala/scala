@@ -41,12 +41,15 @@ private[actors] class ActorTask(actor: Actor,
                                          currentThread,
                                          e)
 
-    actor.synchronized {
+    val todo = actor.synchronized {
       if (!actor.links.isEmpty)
         actor.exitLinked(uncaught)
-      else
+      else {
         super.terminateExecution(e)
+        () => {}
+      }
     }
+    todo()
   }
 
 }
