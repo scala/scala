@@ -198,13 +198,11 @@ div.members > ol > li {
 
 .cmt code {
   font-family: monospace;
-/*  font-size: small;*/
 }
 
 .cmt pre {
   display: block;
   font-family: monospace;
-/*  font-size: small;*/
   margin: 2px 0 2px 0;
 }
 
@@ -348,7 +346,6 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 #mbrsel > div > ol > li {
   padding: 4px 8px 4px 8px;
-/*  font-weight: bold;*/
   background-color: white;
   display: inline-block;
   cursor: crosshair;
