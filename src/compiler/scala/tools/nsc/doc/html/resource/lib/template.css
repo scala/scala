@@ -329,10 +329,12 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
   margin-bottom: 10px;
 }
 
-#mbrsel > div > h3 {
+#mbrsel > div > span.filtertype {
   padding: 4px;
-  display: inline;
+  float: left;
+  display: inline-block;
   color: white;
+  width: 4.5em;
 }
 
 #mbrsel > div > ol {

@@ -60,13 +60,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <div id="mbrsel">
           { if (tpl.linearization.isEmpty) NodeSeq.Empty else
               <div id="ancestors">
-                <h3>Inherited</h3>
+                <span class="filtertype">Inherited</span>
                 <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
                 <ol id="linearization">{ tpl.linearization map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
               </div>
           }
           <div id="visbl">
-            <h3>Visibility</h3>
+            <span class="filtertype">Visibility</span>
             <ol><li class="public in">Public</li><li class="all out">All</li></ol>
           </div>
         </div>
@@ -263,8 +263,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     }
 
   def kindToString(mbr: MemberEntity): String = mbr match {
-    case tpl: DocTemplateEntity =>
-      if (tpl.isPackage) "package" else if (tpl.isClass) "class" else if (tpl.isTrait) "trait" else "object"
+    case tpl: DocTemplateEntity => docEntityKindToString(tpl)
     case ctor: Constructor => "new"
     case tme: MemberEntity =>
       ( if (tme.isImplicit) "implicit " else "" ) +
