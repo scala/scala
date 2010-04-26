@@ -73,16 +73,18 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
     case _          => false
   }
 
-  /** Projection function. Similar to XPath, use <code>this \ "foo"</code>
-   *  to get a list of all elements of this sequence that are labelled with
-   *  <code>"foo"</code>. Use <code>\ "_"</code> as a wildcard. Use
-   *  <code>ns \ "@foo"</code> to get the unprefixed attribute "foo".
-   *  Use <code>ns \ "@{uri}foo"</code> to get the prefixed attribute
-   *  "pre:foo" whose prefix "pre" is resolved to the namespace "uri".
-   *  For attribute projections, the resulting NodeSeq attribute values are
-   *  wrapped in a Group.
-   *  There is no support for searching a prefixed attribute by
-   *  its literal prefix.
+  /** Projection function, which returns  elements of `this` sequence based on the string `that`. Use:
+   *   - `this \ "foo"` to get a list of all elements that are labelled with `"foo"`;
+   *   - `\ "_"` to get a list of all elements (wildcard);
+   *   - `ns \ "@foo"` to get the unprefixed attribute `"foo"`;
+   *   - `ns \ "@{uri}foo"` to get the prefixed attribute `"pre:foo"` whose prefix `"pre"` is resolved to the
+   *     namespace `"uri"`.
+   *
+   *  For attribute projections, the resulting [[scala.xml.NodeSeq]] attribute values are wrapped in a
+   *  [[scala.xml.Group]].
+   *
+   *  There is no support for searching a prefixed attribute by its literal prefix.
+   *
    *  The document order is preserved.
    *
    *  @param that ...
@@ -120,16 +122,19 @@ abstract class NodeSeq extends immutable.Seq[Node] with SeqLike[Node, NodeSeq] w
     }
   }
 
-  /** projection function. Similar to XPath, use <code>this \\ 'foo</code>
-   *  to get a list of all elements of this sequence that are labelled with
-   *  <code>"foo"</code>. Use <code>\\ "_"</code> as a wildcard.  Use
-   *  <code>ns \\ "@foo"</code> to get the unprefixed attribute "foo".
-   *  Use <code>ns \\ "@{uri}foo"</code> to get each prefixed attribute
-   *  "pre:foo" whose prefix "pre" is resolved to the namespace "uri".
-   *  For attribute projections, the resulting NodeSeq attribute values are
-   *  wrapped in a Group.
-   *  There is no support for searching a prefixed attribute by
-   *  its literal prefix.
+  /** Projection function, which returns elements of `this` sequence and of all its subsequences, based on
+   *  the string `that`. Use:
+   *   - `this \\ 'foo` to get a list of all elements that are labelled with `"foo"`;
+   *   - `\\ "_"` to get a list of all elements (wildcard);
+   *   - `ns \\ "@foo"` to get the unprefixed attribute `"foo"`;
+   *   - `ns \\ "@{uri}foo"` to get each prefixed attribute `"pre:foo"` whose prefix `"pre"` is resolved to the
+   *     namespace `"uri"`.
+   *
+   *  For attribute projections, the resulting [[scala.xml.NodeSeq]] attribute values are wrapped in a
+   *  [[scala.xml.Group]].
+   *
+   *  There is no support for searching a prefixed attribute by its literal prefix.
+   *
    *  The document order is preserved.
    *
    *  @param that ...
