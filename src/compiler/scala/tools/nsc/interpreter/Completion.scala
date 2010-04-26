@@ -25,7 +25,7 @@ object Completion {
 
   object Forwarder {
     def apply(forwardTo: () => Option[CompletionAware]): CompletionAware = new CompletionAware {
-      def completions() = forwardTo() map (_.completions()) getOrElse Nil
+      def completions(verbosity: Int) = forwardTo() map (_ completions verbosity) getOrElse Nil
       override def follow(s: String) = forwardTo() flatMap (_ follow s)
     }
   }
@@ -41,10 +41,11 @@ class Completion(val repl: Interpreter) {
 
   def isCompletionDebug = repl.isCompletionDebug
   def DBG(msg: => Any) = if (isCompletionDebug) println(msg.toString)
+  def debugging[T](msg: String): T => T = (res: T) => returning[T](res)(x => DBG(msg + x))
 
   lazy val global: repl.compiler.type = repl.compiler
   import global._
-  import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
+  import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage, isRepeatedParamType }
 
   // XXX not yet used.
   lazy val dottedPaths = {
@@ -68,6 +69,7 @@ class Completion(val repl: Interpreter) {
     def tp: Type
     def effectiveTp = tp match {
       case MethodType(Nil, resType) => resType
+      case PolyType(Nil, resType)   => resType
       case _                        => tp
     }
 
@@ -76,10 +78,46 @@ class Completion(val repl: Interpreter) {
     private def anyMembers = AnyClass.tpe.nonPrivateMembers
     def anyRefMethodsToShow = List("isInstanceOf", "asInstanceOf", "toString")
 
+    /** Only prints the parameter names if they're not synthetic,
+     *  since "x$1: Int" does not offer any more information than "Int".
+     */
+    def typeString(tp: Type): String = {
+      val str = tp.toString
+      val prefixes = List("java.lang.", "scala.collection.")
+
+      prefixes.foldLeft(str)(_ stripPrefix _)
+    }
+
+    def methodSignatureString(name: String, sym: Symbol) = atPhase(currentRun.typerPhase) {
+      def assembleParams(params: List[Symbol]): String = {
+        if (params.isEmpty)
+          return "()"
+        if (isRepeatedParamType(params.last.tpe)) // (
+          return assembleParams(params.init).init + "*)"
+
+        val xs =
+          if (params exists (_.isSynthetic)) params map (x => typeString(x.tpe))
+          else params map (_.defString)
+
+        xs.mkString("(", ", ", ")")
+      }
+
+      def assemble(paramPart: String, resType: Type): String =
+        "def " + name + paramPart + ": " + typeString(resType)
+
+      sym.info match {
+        case MethodType(params, resType)  => assemble(assembleParams(params), resType)
+        case PolyType(tparams, resType)   => assemble("", resType)
+        case x                            => x.toString
+      }
+    }
+
     def tos(sym: Symbol) = sym.name.decode.toString
     def memberNamed(s: String) = members find (x => tos(x) == s)
     def hasMethod(s: String) = methods exists (x => tos(x) == s)
 
+    // XXX we'd like to say "filterNot (_.isDeprecated)" but this causes the
+    // compiler to crash for reasons not yet known.
     def members     = (effectiveTp.nonPrivateMembers ++ anyMembers) filter (_.isPublic)
     def methods     = members filter (_.isMethod)
     def packages    = members filter (_.isPackage)
@@ -99,7 +137,7 @@ class Completion(val repl: Interpreter) {
     def imported(tp: Type) = new ImportCompletion(tp)
   }
 
-  class TypeMemberCompletion (val tp: Type) extends CompletionAware with CompilerCompletion {
+  class TypeMemberCompletion(val tp: Type) extends CompletionAware with CompilerCompletion {
     def excludeEndsWith: List[String] = Nil
     def excludeStartsWith: List[String] = List("<") // <byname>, <repeated>, etc.
     def excludeNames: List[String] = anyref.methodNames -- anyRefMethodsToShow ++ List("_root_")
@@ -111,12 +149,19 @@ class Completion(val repl: Interpreter) {
       (excludeStartsWith exists (name startsWith _))
     )
     def filtered(xs: List[String]) = xs filterNot exclude distinct
-    def completions = {
-      returning(filtered(memberNames))(xs => DBG("%s completions: %s".format(tp, xs)))
-    }
+
+    def completions(verbosity: Int) =
+      debugging(tp + " completions ==> ")(filtered(memberNames))
 
     override def follow(s: String): Option[CompletionAware] =
-      memberNamed(s) map (x => TypeMemberCompletion(x.tpe))
+      debugging(tp + " -> '" + s + "' ==> ")(memberNamed(s) map (x => TypeMemberCompletion(x.tpe)))
+
+    override def alternativesFor(id: String): List[String] =
+      debugging(id + " alternatives ==> ") {
+        val alts = members filter (x => x.isMethod && tos(x) == id) map (sym => methodSignatureString(id, sym))
+
+        if (alts.nonEmpty) "" :: alts else Nil
+      }
 
     override def toString = "TypeMemberCompletion(%s)".format(tp)
   }
@@ -126,15 +171,17 @@ class Completion(val repl: Interpreter) {
   }
 
   class LiteralCompletion(lit: Literal) extends TypeMemberCompletion(lit.value.tpe) {
-    private lazy val completions0 = filtered(memberNames)
-    private lazy val completions1 = memberNames
-    override def completions      = if (verbosity == 0) completions0 else completions1
+    override def completions(verbosity: Int) = verbosity match {
+      case 0    => filtered(memberNames)
+      case _    => memberNames
+    }
   }
 
   class ImportCompletion(tp: Type) extends TypeMemberCompletion(tp) {
-    private lazy val completions0 = filtered(methods filterNot (_.isSetter) map tos)
-    private lazy val completions1 = super.completions
-    override def completions      = if (verbosity == 0) completions0 else completions1
+    override def completions(verbosity: Int) = verbosity match {
+      case 0    => filtered(methods filterNot (_.isSetter) map tos)
+      case _    => super.completions(verbosity)
+    }
   }
 
   // not for completion but for excluding
@@ -142,11 +189,11 @@ class Completion(val repl: Interpreter) {
 
   // the unqualified vals/defs/etc visible in the repl
   object ids extends CompletionAware {
-    def completions() = repl.unqualifiedIds ::: List("classOf")
+    override def completions(verbosity: Int) = repl.unqualifiedIds ::: List("classOf")
     // we try to use the compiler and fall back on reflection if necessary
     // (which at present is for anything defined in the repl session.)
     override def follow(id: String) =
-      if (completions contains id) {
+      if (completions(0) contains id) {
         for (clazz <- repl clazzForIdent id) yield {
           (typeOf(clazz.getName) map TypeMemberCompletion.apply) getOrElse new InstanceCompletion(clazz)
         }
@@ -167,7 +214,7 @@ class Completion(val repl: Interpreter) {
       if (tss.size == 1) tss.head else EmptyTree
     }
 
-    val completions = Nil
+    def completions(verbosity: Int) = Nil
 
     override def follow(id: String) = simpleParse(id) match {
       case x: Literal   => Some(new LiteralCompletion(x))
@@ -187,9 +234,10 @@ class Completion(val repl: Interpreter) {
       (name contains "2")
     )
 
-    private lazy val completions0 = Nil
-    private lazy val completions1 = super.completions
-    override def completions = if (verbosity == 0) completions0 else completions1
+    override def completions(verbosity: Int) = verbosity match {
+      case 0    => Nil
+      case _    => super.completions(verbosity)
+    }
   }
   // members of scala.*
   object scalalang extends PackageCompletion(ScalaPackage.tpe) {
@@ -199,18 +247,20 @@ class Completion(val repl: Interpreter) {
       skipArity(name)
     )
 
-    private lazy val completions0 = filtered(packageNames ++ aliasNames)
-    private lazy val completions1 = super.completions
-    override def completions = if (verbosity == 0) completions0 else completions1
+    override def completions(verbosity: Int) = verbosity match {
+      case 0    => filtered(packageNames ++ aliasNames)
+      case _    => super.completions(verbosity)
+    }
   }
   // members of java.lang.*
   object javalang extends PackageCompletion(JavaLangPackage.tpe) {
     override lazy val excludeEndsWith   = super.excludeEndsWith ++ List("Exception", "Error")
     override lazy val excludeStartsWith = super.excludeStartsWith ++ List("CharacterData")
 
-    private lazy val completions0 = filtered(packageNames)
-    private lazy val completions1 = super.completions
-    override def completions = if (verbosity == 0) completions0 else completions1
+    override def completions(verbosity: Int) = verbosity match {
+      case 0    => filtered(packageNames)
+      case _    => super.completions(verbosity)
+    }
   }
 
   // the list of completion aware objects which should be consulted
@@ -252,19 +302,30 @@ class Completion(val repl: Interpreter) {
   lazy val jline: ArgumentCompletor =
     returning(new ArgumentCompletor(new JLineCompletion, new JLineDelimiter))(_ setStrict false)
 
+  /** This gets a little bit hairy.  It's no small feat delegating everything
+   *  and also keeping track of exactly where the cursor is and where it's supposed
+   *  to end up.  The alternatives mechanism is a little hacky: if there is an empty
+   *  string in the list of completions, that means we are expanding a unique
+   *  completion, so don't update the "last" buffer because it'll be wrong.
+   */
   class JLineCompletion extends Completor {
     // For recording the buffer on the last tab hit
-    private var lastTab: (String, Int) = ("", -1)
+    private var lastBuf: String = ""
+    private var lastCursor: Int = -1
 
     // Does this represent two consecutive tabs?
-    def isConsecutiveTabs(current: (String, Int)) = current == lastTab
+    def isConsecutiveTabs(buf: String, cursor: Int) = cursor == lastCursor && buf == lastBuf
+
+    // Longest common prefix
+    def commonPrefix(xs: List[String]) =
+      if (xs.isEmpty) ""
+      else xs.reduceLeft(_ zip _ takeWhile (x => x._1 == x._2) map (_._1) mkString)
 
     // This is jline's entry point for completion.
-    override def complete(buf: String, cursor: Int, candidates: JList[String]): Int = {
-      verbosity = if (isConsecutiveTabs((buf, cursor))) verbosity + 1 else 0
-      DBG("complete(%s, %d), verbosity: %s".format(buf, cursor, verbosity))
-
-      lastTab = (buf, cursor)
+    override def complete(_buf: String, cursor: Int, candidates: JList[String]): Int = {
+      val buf = onull(_buf)
+      verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
+      DBG("complete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
 
       // we don't try lower priority completions unless higher ones return no results.
       def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Int] = {
@@ -273,19 +334,30 @@ class Completion(val repl: Interpreter) {
           case xs   =>
             // modify in place and return the position
             xs foreach (candidates add _)
-            // DBG("Completion candidates: " + (xs mkString " "))
 
-            Some(p.position)
+            // update the last buffer unless this is an alternatives list
+            if (xs contains "") Some(p.cursor)
+            else {
+              val advance = commonPrefix(xs)
+              lastCursor = p.position + advance.length
+              lastBuf = (buf take p.position) + advance
+
+              DBG("tryCompletion(%s, _) lastBuf = %s, lastCursor = %s, p.position = %s".format(p, lastBuf, lastCursor, p.position))
+              Some(p.position)
+            }
         }
       }
+
+      def mkDotted      = Parsed.dotted(buf, cursor) withVerbosity verbosity
+      def mkUndelimited = Parsed.undelimited(buf, cursor) withVerbosity verbosity
 
       // a single dot is special cased to completion on the previous result
       def lastResultCompletion =
         if (!looksLikeInvocation(buf)) None
         else tryCompletion(Parsed.dotted(buf drop 1, cursor), lastResultFor)
 
-      def regularCompletion = tryCompletion(Parsed.dotted(buf, cursor), topLevelFor)
-      def fileCompletion    = tryCompletion(Parsed.undelimited(buf, cursor), FileCompletion completionsFor _.buffer)
+      def regularCompletion = tryCompletion(mkDotted, topLevelFor)
+      def fileCompletion    = tryCompletion(mkUndelimited, FileCompletion completionsFor _.buffer)
 
       (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse cursor
     }

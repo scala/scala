@@ -46,15 +46,6 @@ trait ReflectionCompletion extends CompletionAware {
   }
 }
 
-/** An instance completion which hides a few useless members.
- */
-class PackageObjectCompletion(clazz: Class[_]) extends InstanceCompletion(clazz) {
-  override lazy val completions = memberCompletions
-  override def filterNotFunction(s: String) = {
-    super.filterNotFunction(s) || (s == "getClass") || (s == "toString")
-  }
-}
-
 /** A completion aware object representing a single instance of some class.
  *  It completes to instance fields and methods, and delegates to another
  *  InstanceCompletion object if it can determine the result type of the element.
@@ -63,6 +54,7 @@ class InstanceCompletion(val clazz: Class[_]) extends ReflectionCompletion {
   protected def visibleMembers = instanceMethods ::: instanceFields
   def extras = List("isInstanceOf", "asInstanceOf", "toString")
   lazy val completions = memberCompletions ::: extras
+  def completions(verbosity: Int) = completions
 
   val (zeroArg, otherArg) = instanceMethods partition (_.getParameterTypes.size == 0)
   override def follow(id: String) = {
@@ -78,6 +70,7 @@ class InstanceCompletion(val clazz: Class[_]) extends ReflectionCompletion {
 class StaticCompletion(val clazz: Class[_]) extends ReflectionCompletion {
   protected def visibleMembers = whichMethods ::: whichFields
   lazy val completions = memberCompletions
+  def completions(verbosity: Int) = completions
 
   private def aliasForPath(path: String) = ByteCode aliasForType path flatMap (x => classForName(x + "$"))
   def className = clazz.getName
