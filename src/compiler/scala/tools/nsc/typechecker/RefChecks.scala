@@ -971,17 +971,20 @@ abstract class RefChecks extends InfoTransform {
     private def checkAnnotations(tpes: List[Type], pos: Position) = tpes foreach (tp => checkTypeRef(tp, pos))
     private def doTypeTraversal(tree: Tree)(f: Type => Unit) = if (!inPattern) tree.tpe foreach f
 
-    private def applyRefchecksToAnnotations(tree: Tree) = tree match {
-      case m: MemberDef =>
-        checkAnnotations(m.symbol.annotations map (_.atp), tree.pos)
-        transformTrees(m.symbol.annotations.flatMap(_.args))
-      case TypeTree() => doTypeTraversal(tree) {
-        case AnnotatedType(annots, _, _) =>
-          checkAnnotations(annots map (_.atp), tree.pos)
-          transformTrees(annots.flatMap(_.args))
+    private def applyRefchecksToAnnotations(tree: Tree) = {
+      def applyChecks(annots: List[AnnotationInfo]) = {
+        checkAnnotations(annots map (_.atp), tree.pos)
+        transformTrees(annots flatMap (_.args))
+      }
+
+      tree match {
+        case m: MemberDef => applyChecks(m.symbol.annotations)
+        case TypeTree()   => doTypeTraversal(tree) {
+          case AnnotatedType(annots, _, _)  => applyChecks(annots)
+          case _ =>
+        }
         case _ =>
       }
-      case _ =>
     }
 
     private def transformCaseApply(tree: Tree, ifNot: => Unit) = {

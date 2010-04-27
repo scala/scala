@@ -1,6 +1,6 @@
 typeerror.scala:6: error: type mismatch;
  found   : Long(in method add)
- required: Long(in package scala)
+ required: scala.Long
     else add2(x.head, y.head) :: add(x.tail, y.tail)
                 ^
 one error found

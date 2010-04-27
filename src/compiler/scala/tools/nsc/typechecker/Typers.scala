@@ -161,7 +161,7 @@ trait Typers { self: Analyzer =>
     else mode
   }
 
-  abstract class Typer(context0: Context) {
+  abstract class Typer(context0: Context) extends TyperDiagnostics {
     import context0.unit
 
     val infer = new Inferencer(context0) {
@@ -251,35 +251,6 @@ trait Typers { self: Analyzer =>
 
     private[typechecker] var context = context0
     def context1 = context
-
-    /** Report a type error.
-     *
-     *  @param pos0   The position where to report the error
-     *  @param ex     The exception that caused the error
-     */
-    def reportTypeError(pos: Position, ex: TypeError) {
-      if (ex.pos == NoPosition) ex.pos = pos
-      if (!context.reportGeneralErrors) throw ex
-      if (settings.debug.value) ex.printStackTrace()
-      ex match {
-        case CyclicReference(sym, info: TypeCompleter) =>
-          val msg =
-            info.tree match {
-              case ValDef(_, _, tpt, _) if (tpt.tpe eq null) =>
-                "recursive "+sym+" needs type"
-              case DefDef(_, _, _, _, tpt, _) if (tpt.tpe eq null) =>
-                (if (sym.owner.isClass && sym.owner.info.member(sym.name).hasFlag(OVERLOADED)) "overloaded "
-                 else "recursive ")+sym+" needs result type"
-              case _ =>
-                ex.getMessage()
-            }
-          context.error(ex.pos, msg)
-          if (sym == ObjectClass)
-            throw new FatalError("cannot redefine root "+sym)
-        case _ =>
-          context.error(ex.pos, ex)
-      }
-    }
 
     /** Check that <code>tree</code> is a stable expression.
      *
@@ -2936,6 +2907,8 @@ trait Typers { self: Analyzer =>
      *  @return     ...
      */
     protected def typed1(tree: Tree, mode: Int, pt: Type): Tree = {
+      def isPatternMode = (mode & PATTERNmode) != 0
+
       //Console.println("typed1("+tree.getClass()+","+Integer.toHexString(mode)+","+pt+")")
       def ptOrLub(tps: List[Type]) = if (isFullyDefined(pt)) (pt, false) else weakLub(tps map (_.deconst))
 
@@ -3056,32 +3029,36 @@ trait Typers { self: Analyzer =>
       }
 
       def typedAssign(lhs: Tree, rhs: Tree): Tree = {
-        val lhs1 = typed(lhs, EXPRmode | LHSmode, WildcardType)
-        val varsym = lhs1.symbol
-        if ((varsym ne null) && treeInfo.mayBeVarGetter(varsym))
-          lhs1 match {
-            case Select(qual, name) =>
-              return typed(
-                Apply(
-                  Select(qual, nme.getterToSetter(name)) setPos lhs.pos,
-                  List(rhs)) setPos tree.pos,
-                mode, pt)
+        val lhs1    = typed(lhs, EXPRmode | LHSmode, WildcardType)
+        val varsym  = lhs1.symbol
+        def failMsg =
+          if (varsym != null && varsym.isValue) "reassignment to val"
+          else "assignment to non variable"
 
-            case _ =>
+        def fail = {
+          if (!lhs1.tpe.isError)
+            error(tree.pos, failMsg)
 
-          }
-        if ((varsym ne null) && (varsym.isVariable || varsym.isValue && phase.erasedTypes)) {
-          val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
-          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
-        } else {
-          if (!lhs1.tpe.isError) {
-            //println(lhs1+" = "+rhs+" "+varsym+" "+mayBeVarGetter(varsym)+" "+varsym.ownerChain+" "+varsym.info)// DEBUG
-            error(tree.pos,
-                  if ((varsym ne null) && varsym.isValue) "reassignment to val"
-                  else "assignment to non variable")
-          }
           setError(tree)
         }
+        if (varsym == null)
+          return fail
+
+        if (treeInfo.mayBeVarGetter(varsym)) {
+          lhs1 match {
+            case Select(qual, name) =>
+              val sel = Select(qual, nme.getterToSetter(name)) setPos lhs.pos
+              val app = Apply(sel, List(rhs)) setPos tree.pos
+              return typed(app, mode, pt)
+
+            case _ =>
+          }
+        }
+        if (varsym.isVariable || varsym.isValue && phase.erasedTypes) {
+          val rhs1 = typed(rhs, EXPRmode | BYVALmode, lhs1.tpe)
+          treeCopy.Assign(tree, lhs1, checkDead(rhs1)) setType UnitClass.tpe
+        }
+        else fail
       }
 
       def typedIf(cond: Tree, thenp: Tree, elsep: Tree) = {
@@ -3227,19 +3204,19 @@ trait Typers { self: Analyzer =>
             t
           case ex: TypeError =>
             stopTimer(failedApplyNanos, start)
-            def errorInResult(tree: Tree): Boolean = tree.pos == ex.pos || {
-              tree match {
-                case Block(_, r) => errorInResult(r)
-                case Match(_, cases) => cases exists errorInResult
-                case CaseDef(_, _, r) => errorInResult(r)
-                case Annotated(_, r) => errorInResult(r)
-                case If(_, t, e) => errorInResult(t) || errorInResult(e)
-                case Try(b, catches, _) => errorInResult(b) || (catches exists errorInResult)
-                case Typed(r, Function(List(), EmptyTree)) => errorInResult(r)
-                case _ => false
-              }
-            }
-            if (errorInResult(fun) || (args exists errorInResult) || errorInResult(tree)) {
+            def treesInResult(tree: Tree): List[Tree] = tree :: (tree match {
+              case Block(_, r)                        => treesInResult(r)
+              case Match(_, cases)                    => cases
+              case CaseDef(_, _, r)                   => treesInResult(r)
+              case Annotated(_, r)                    => treesInResult(r)
+              case If(_, t, e)                        => treesInResult(t) ++ treesInResult(e)
+              case Try(b, catches, _)                 => treesInResult(b) ++ catches
+              case Typed(r, Function(Nil, EmptyTree)) => treesInResult(r)
+              case _                                  => Nil
+            })
+            def errorInResult(tree: Tree) = treesInResult(tree) exists (_.pos == ex.pos)
+
+            if (fun :: tree :: args exists errorInResult) {
               if (printTypings) println("second try for: "+fun+" and "+args)
               val Select(qual, name) = fun
               val args1 = tryTypedArgs(args, argMode(fun, mode), ex)
@@ -3260,11 +3237,11 @@ trait Typers { self: Analyzer =>
 
       def typedApply(fun: Tree, args: List[Tree]) = {
         val stableApplication = (fun.symbol ne null) && fun.symbol.isMethod && fun.symbol.isStable
-        if (stableApplication && (mode & PATTERNmode) != 0) {
+        if (stableApplication && isPatternMode) {
           // treat stable function applications f() as expressions.
           typed1(tree, mode & ~PATTERNmode | EXPRmode, pt)
         } else {
-          val funpt = if ((mode & PATTERNmode) != 0) pt else WildcardType
+          val funpt = if (isPatternMode) pt else WildcardType
           val appStart = startTimer(failedApplyNanos)
           val opeqStart = startTimer(failedOpEqNanos)
           silent(_.typed(fun, funMode(mode), funpt)) match {
@@ -3305,7 +3282,7 @@ trait Typers { self: Analyzer =>
             case ex: TypeError =>
               fun match {
                 case Select(qual, name)
-                if (mode & PATTERNmode) == 0 && nme.isOpAssignmentName(name.decode) =>
+                if !isPatternMode && nme.isOpAssignmentName(name.decode) =>
                   val qual1 = typedQualifier(qual)
                   if (treeInfo.isVariableOrGetter(qual1)) {
                     stopTimer(failedOpEqNanos, opeqStart)
@@ -3482,19 +3459,9 @@ trait Typers { self: Analyzer =>
           if (name == nme.ERROR && onlyPresentation)
             return makeErrorTree
 
-          if (!qual.tpe.widen.isErroneous) {
-            error(tree.pos,
-              if (name == nme.CONSTRUCTOR)
-                qual.tpe.widen+" does not have a constructor"
-              else
-                decode(name)+" is not a member of "+
-                (if (qual.tpe.typeSymbol.isTypeParameterOrSkolem) "type parameter " else "") +
-                qual.tpe.widen +
-                (if ((context.unit ne null) && // Martin: why is this condition needed?
-                     qual.pos.isDefined && tree.pos.isDefined && qual.pos.line < tree.pos.line)
-                  "\npossible cause: maybe a semicolon is missing before `"+decode(name)+"'?"
-                 else ""))
-          }
+          if (!qual.tpe.widen.isErroneous)
+            notAMember(tree, qual, name)
+
           if (onlyPresentation) makeErrorTree else setError(tree)
         } else {
           val tree1 = tree match {
@@ -3634,7 +3601,7 @@ trait Typers { self: Analyzer =>
               if (settings.debug.value) {
                 log(context.imports)//debug
               }
-              error(tree.pos, "not found: "+decode(name))
+              error(tree.pos, "not found: "+decodeWithNamespace(name))
               defSym = context.owner.newErrorSymbol(name)
             }
           }
@@ -3871,7 +3838,7 @@ trait Typers { self: Analyzer =>
             val tpt1 = typedType(tpt, mode)
             val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
             val owntype =
-              if ((mode & PATTERNmode) != 0) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
+              if (isPatternMode) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
               else tpt1.tpe
             //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
             treeCopy.Typed(tree, expr1, tpt1) setType owntype

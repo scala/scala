@@ -37,6 +37,7 @@ trait Trees { self: Universe =>
     def isProtected     = hasFlag(PROTECTED)
     def isPublic        = !isPrivate && !isProtected
     def isSealed        = hasFlag(SEALED   )
+    def isSynthetic     = hasFlag(SYNTHETIC)
     def isTrait         = hasFlag(TRAIT    )
     def isVariable      = hasFlag(MUTABLE  )
 

@@ -639,9 +639,9 @@ self: Analyzer =>
       val applicable = applicableInfos(implicitInfoss, isLocal, invalidImplicits)
 
       if (applicable.isEmpty && !invalidImplicits.isEmpty) {
-        infer.setAddendum(tree.pos, () =>
+        setAddendum(tree.pos, () =>
           "\n Note: implicit "+invalidImplicits.head+" is not applicable here"+
-          "\n because it comes after the application point and it lacks an explicit result type")
+          " because it comes after the application point and it lacks an explicit result type")
       }
 
       val start = startCounter(subtypeImprovCount)

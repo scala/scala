@@ -22,6 +22,7 @@ trait Analyzer extends AnyRef
             with SyntheticMethods
             with Unapplies
             with NamesDefaults
+            with TypeDiagnostics
 {
   val global : Global
   import global._
