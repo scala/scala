@@ -1747,20 +1747,22 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     private var mtpePeriod = NoPeriod
     private var mtpePre: Type = _
     private var mtpeResult: Type = _
+    private var mtpeInfo: Type = _
 
     override def cloneSymbolImpl(owner: Symbol): Symbol =
       new MethodSymbol(owner, pos, name).copyAttrsFrom(this)
 
     def typeAsMemberOf(pre: Type): Type = {
       if (mtpePeriod == currentPeriod) {
-        if (mtpePre eq pre) return mtpeResult
+        if ((mtpePre eq pre) && (mtpeInfo eq info)) return mtpeResult
       } else if (isValid(mtpePeriod)) {
         mtpePeriod = currentPeriod
-        if (mtpePre eq pre) return mtpeResult
+        if ((mtpePre eq pre) && (mtpeInfo eq info)) return mtpeResult
       }
       val res = pre.computeMemberType(this)
       mtpePeriod = currentPeriod
       mtpePre = pre
+      mtpeInfo = info
       mtpeResult = res
       res
     }
