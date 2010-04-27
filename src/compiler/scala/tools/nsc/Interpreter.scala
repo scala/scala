@@ -991,6 +991,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  in power mode.
    */
   class Power {
+    import compiler.{ phaseNames, atPhase, currentRun }
     def mkContext(code: String = "") = compiler.analyzer.rootContext(mkUnit(code))
     def mkAlias(name: String, what: String) = interpret("type %s = %s".format(name, what))
     def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
@@ -1017,6 +1018,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       ("Names used: " :: allUsedNames) ++
       ("\nIdentifiers: " :: unqualifiedIds)
     ) mkString " "
+
+    lazy val allPhases: List[Phase] = phaseNames map (currentRun phaseNamed _)
+    def atAllPhases[T](op: => T): List[(String, T)] = allPhases map (ph => (ph.name, atPhase(ph)(op)))
+    def showAtAllPhases(op: => Any): Unit =
+      atAllPhases(op.toString) foreach { case (ph, op) => Console.println("%15s -> %s".format(ph, op take 240)) }
   }
 
   lazy val power = new Power

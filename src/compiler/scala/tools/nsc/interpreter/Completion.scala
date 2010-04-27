@@ -8,11 +8,7 @@ package scala.tools.nsc
 package interpreter
 
 import jline._
-import java.net.URL
 import java.util.{ List => JList }
-import java.lang.reflect
-import scala.tools.util.PathResolver
-import io.{ Path, Directory }
 
 object Completion {
   def looksLikeInvocation(code: String) = (
@@ -34,7 +30,7 @@ import Completion._
 
 // REPL completor - queries supplied interpreter for valid
 // completions based on current contents of buffer.
-class Completion(val repl: Interpreter) {
+class Completion(val repl: Interpreter) extends CompletionOutput {
   // verbosity goes up with consecutive tabs
   private var verbosity: Int = 0
   def resetVerbosity() = verbosity = 0
@@ -45,7 +41,7 @@ class Completion(val repl: Interpreter) {
 
   lazy val global: repl.compiler.type = repl.compiler
   import global._
-  import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage, isRepeatedParamType }
+  import definitions.{ PredefModule, RootClass, AnyClass, AnyRefClass, ScalaPackage, JavaLangPackage }
 
   // XXX not yet used.
   lazy val dottedPaths = {
@@ -78,40 +74,6 @@ class Completion(val repl: Interpreter) {
     private def anyMembers = AnyClass.tpe.nonPrivateMembers
     def anyRefMethodsToShow = List("isInstanceOf", "asInstanceOf", "toString")
 
-    /** Only prints the parameter names if they're not synthetic,
-     *  since "x$1: Int" does not offer any more information than "Int".
-     */
-    def typeString(tp: Type): String = {
-      val str = tp.toString
-      val prefixes = List("java.lang.", "scala.collection.")
-
-      prefixes.foldLeft(str)(_ stripPrefix _)
-    }
-
-    def methodSignatureString(name: String, sym: Symbol) = atPhase(currentRun.typerPhase) {
-      def assembleParams(params: List[Symbol]): String = {
-        if (params.isEmpty)
-          return "()"
-        if (isRepeatedParamType(params.last.tpe)) // (
-          return assembleParams(params.init).init + "*)"
-
-        val xs =
-          if (params exists (_.isSynthetic)) params map (x => typeString(x.tpe))
-          else params map (_.defString)
-
-        xs.mkString("(", ", ", ")")
-      }
-
-      def assemble(paramPart: String, resType: Type): String =
-        "def " + name + paramPart + ": " + typeString(resType)
-
-      sym.info match {
-        case MethodType(params, resType)  => assemble(assembleParams(params), resType)
-        case PolyType(tparams, resType)   => assemble("", resType)
-        case x                            => x.toString
-      }
-    }
-
     def tos(sym: Symbol) = sym.name.decode.toString
     def memberNamed(s: String) = members find (x => tos(x) == s)
     def hasMethod(s: String) = methods exists (x => tos(x) == s)
@@ -142,6 +104,15 @@ class Completion(val repl: Interpreter) {
     def excludeStartsWith: List[String] = List("<") // <byname>, <repeated>, etc.
     def excludeNames: List[String] = anyref.methodNames -- anyRefMethodsToShow ++ List("_root_")
 
+    def methodSignatureString(sym: Symbol) = {
+      def asString = new MethodSymbolOutput(sym).methodString()
+
+      if (isCompletionDebug)
+        repl.power.showAtAllPhases(asString)
+
+      atPhase(currentRun.typerPhase)(asString)
+    }
+
     def exclude(name: String): Boolean = (
       (name contains "$") ||
       (excludeNames contains name) ||
@@ -158,7 +129,7 @@ class Completion(val repl: Interpreter) {
 
     override def alternativesFor(id: String): List[String] =
       debugging(id + " alternatives ==> ") {
-        val alts = members filter (x => x.isMethod && tos(x) == id) map (sym => methodSignatureString(id, sym))
+        val alts = members filter (x => x.isMethod && tos(x) == id) map methodSignatureString
 
         if (alts.nonEmpty) "" :: alts else Nil
       }

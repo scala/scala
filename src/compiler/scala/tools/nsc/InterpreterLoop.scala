@@ -346,6 +346,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     powerUserOn = true
     interpreter.unleash()
     injectOne("history", in.historyList)
+    in.completion foreach (x => injectOne("completion", x))
     out println powerUserBanner
   }
 
