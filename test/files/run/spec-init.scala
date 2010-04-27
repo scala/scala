@@ -30,7 +30,7 @@ class TouchGlobal[@specialized(Int) T](_x: T) {
 
 object Test {
   def main(args: Array[String]) {
-    (new Foo(new Object))
+    (new Foo("abc"))
     println("shouldn't see two initialized values and one uninitialized")
     (new Foo(42))
 
