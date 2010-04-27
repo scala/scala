@@ -11,19 +11,18 @@
 package scala.actors
 
 
-/** <p>
- *    This class is used to pattern match on values that were sent
- *    to some channel <code>Chan<sub>n</sub></code> by the current
- *    actor <code>self</code>.
- *  </p>
- *  <p>
- *    The following example demonstrates its usage:
- *  </p><pre>
+/**
+ *  This class is used to pattern match on values that were sent
+ *  to some channel <code>Chan<sub>n</sub></code> by the current
+ *  actor <code>self</code>.
+ *
+ *  The following example demonstrates its usage:
+ *  {{{
  *  receive {
  *    <b>case</b> Chan1 ! msg1 => ...
  *    <b>case</b> Chan2 ! msg2 => ...
  *  }
- *  </pre>
+ *  }}}
  *
  * @author Philipp Haller
  */

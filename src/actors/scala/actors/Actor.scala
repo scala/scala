@@ -116,17 +116,17 @@ object Actor extends Combinators {
   }
 
   /**
-   * <p>This is a factory method for creating actors.</p>
+   * This is a factory method for creating actors.
    *
-   * <p>The following example demonstrates its usage:</p>
+   * The following example demonstrates its usage:
    *
-   * <pre>
+   * {{{
    * import scala.actors.Actor._
    * ...
    * val a = actor {
    *   ...
    * }
-   * </pre>
+   * }}}
    *
    * @param  body  the code block to be executed by the newly created actor
    * @return       the newly created actor. Note that it is automatically started.
@@ -141,14 +141,12 @@ object Actor extends Combinators {
   }
 
   /**
-   * <p>
    * This is a factory method for creating actors whose
-   * body is defined using a <code>Responder</code>.
-   * </p>
+   * body is defined using a `Responder`.
    *
-   * <p>The following example demonstrates its usage:</p>
+   * The following example demonstrates its usage:
    *
-   * <pre>
+   * {{{
    * import scala.actors.Actor._
    * import Responder.exec
    * ...
@@ -158,9 +156,9 @@ object Actor extends Combinators {
    *     if exec(println("result: "+res))
    *   } yield {}
    * }
-   * </pre>
+   * }}}
    *
-   * @param  body  the <code>Responder</code> to be executed by the newly created actor
+   * @param  body  the `Responder` to be executed by the newly created actor
    * @return       the newly created actor. Note that it is automatically started.
    */
   def reactor(body: => Responder[Unit]): Actor = {
@@ -274,20 +272,18 @@ object Actor extends Combinators {
   def mailboxSize: Int = rawSelf.mailboxSize
 
   /**
-   * <p>
    * Converts a synchronous event-based operation into
-   * an asynchronous <code>Responder</code>.
-   * </p>
+   * an asynchronous `Responder`.
    *
-   * <p>The following example demonstrates its usage:</p>
+   * The following example demonstrates its usage:
    *
-   * <pre>
+   * {{{
    * val adder = reactor {
    *   for {
    *     _ <- respondOn(react) { case Add(a, b) => reply(a+b) }
    *   } yield {}
    * }
-   * </pre>
+   * }}}
    */
   def respondOn[A, B](fun: PartialFunction[A, Unit] => Nothing):
     PartialFunction[A, B] => Responder[B] =
