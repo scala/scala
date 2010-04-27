@@ -62,6 +62,10 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
    */
   def concat[A](xss: Traversable[A]*): CC[A] = {
     val b = newBuilder[A]
+    // At present we're using IndexedSeq as a proxy for "has a cheap size method".
+    if (xss forall (_.isInstanceOf[IndexedSeq[_]]))
+      b.sizeHint(xss map (_.size) sum)
+
     for (xs <- xss) b ++= xs
     b.result
   }
@@ -73,6 +77,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
    */
   def fill[A](n: Int)(elem: => A): CC[A] = {
     val b = newBuilder[A]
+    b.sizeHint(n)
     var i = 0
     while (i < n) {
       b += elem
@@ -130,6 +135,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
    */
   def tabulate[A](n: Int)(f: Int => A): CC[A] = {
     val b = newBuilder[A]
+    b.sizeHint(n)
     var i = 0
     while (i < n) {
       b += f(i)
@@ -201,6 +207,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
   def range(start: Int, end: Int, step: Int): CC[Int] = {
     if (step == 0) throw new IllegalArgumentException("zero step")
     val b = newBuilder[Int]
+    b.sizeHint(Range.count(start, end, step, false))
     var i = start
     while (if (step < 0) end < i else i < end) {
       b += i
@@ -218,6 +225,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
    */
   def iterate[A](start: A, len: Int)(f: A => A): CC[A] = {
     val b = newBuilder[A]
+    b.sizeHint(len)
     var acc = start
     var i = 0
     while (i < len) {

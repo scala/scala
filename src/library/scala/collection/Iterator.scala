@@ -11,8 +11,7 @@
 
 package scala.collection
 
-import mutable.{Buffer, ArrayBuffer, ListBuffer, StringBuilder}
-import immutable.{List, Stream}
+import mutable.ArrayBuffer
 import annotation.{ tailrec, migration }
 
 /** The `Iterator` object provides various functions for
