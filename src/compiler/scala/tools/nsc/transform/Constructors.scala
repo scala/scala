@@ -1,4 +1,4 @@
-/* NSC -- new Scala compiler
+/*  NSC -- new Scala compiler
  * Copyright 2005-2010 LAMP/EPFL
  * @author
  */
@@ -25,11 +25,17 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     new ConstructorTransformer(unit)
 
   class ConstructorTransformer(unit: CompilationUnit) extends Transformer {
+    import collection.mutable
+
+    private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = new mutable.HashMap[Symbol, List[Tree]]
 
     def transformClassTemplate(impl: Template): Template = {
       val clazz = impl.symbol.owner  // the transformed class
       val stats = impl.body          // the transformed template body
       val localTyper = typer.atOwner(impl, clazz)
+
+      val specializedFlag: Symbol = clazz.info.decl(nme.SPECIALIZED_INSTANCE)
+      val shouldGuard = (specializedFlag != NoSymbol) && !clazz.hasFlag(SPECIALIZED)
 
       var constr: DefDef = null      // The primary constructor
       var constrParams: List[Symbol] = null // ... and its parameters
@@ -68,6 +74,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       }
 
       var thisRefSeen: Boolean = false
+      var usesSpecializedField: Boolean = false
 
       // A transformer for expressions that go into the constructor
       val intoConstructorTransformer = new Transformer {
@@ -87,6 +94,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
             thisRefSeen = true
+            if (specializeTypes.specializedTypeVars(tree.symbol).nonEmpty)
+              usesSpecializedField = true
             super.transform(tree)
           case This(_) =>
             thisRefSeen = true
@@ -275,12 +284,106 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           copyParam(acc, parameter(acc))
         }
 
+      /** Return a single list of statements, merging the generic class constructor with the
+       *  specialized stats. The original statements are retyped in the current class, and
+       *  assignments to generic fields that have a corresponding specialized assignment in
+       *  `specializedStats` are replaced by the specialized assignment.
+       */
+      def mergeConstructors(genericClazz: Symbol, originalStats: List[Tree], specializedStats: List[Tree]): List[Tree] = {
+        val specBuf = new ListBuffer[Tree]
+        specBuf ++= specializedStats
+
+        def specializedAssignFor(sym: Symbol): Option[Tree] =
+          specializedStats.find {
+            case Assign(sel @ Select(This(_), _), rhs) if sel.symbol.hasFlag(SPECIALIZED) =>
+              val (generic, _, _) = nme.splitSpecializedName(nme.localToGetter(sel.symbol.name))
+              generic == nme.localToGetter(sym.name)
+            case _ => false
+          }
+
+        log("merging: " + originalStats.mkString("\n") + " : " + specializedStats.mkString("\n"))
+        val res = for (s <- originalStats; val stat = s.duplicate) yield {
+          log("merge: looking at " + stat)
+          val stat1 = stat match {
+            case Assign(sel @ Select(This(_), field), _) =>
+              specializedAssignFor(sel.symbol).getOrElse(stat)
+            case _ => stat
+          }
+          if (stat1 ne stat) {
+            log("replaced " + stat + " with " + stat1)
+            specBuf -= stat1
+          }
+
+          if (stat1 eq stat) {
+            // statements coming from the original class need retyping in the current context
+            if (settings.debug.value) log("retyping " + stat1)
+            val d = new specializeTypes.Duplicator
+            d.retyped(localTyper.context1.asInstanceOf[d.Context],
+                      stat1,
+                      genericClazz,
+                      clazz,
+                      Map.empty)
+          } else
+            stat1
+        }
+        if (specBuf.nonEmpty)
+          println("residual specialized constructor statements: " + specBuf)
+        res
+      }
+
+      /** Add an 'if' around the statements coming after the super constructor. This
+       *  guard is necessary if the code uses specialized fields. A specialized field is
+       *  initialized in the subclass constructor, but the accessors are (already) overridden
+       *  and pointing to the (empty) fields. To fix this, a class with specialized fields
+       *  will not run its constructor statements if the instance is specialized. The specialized
+       *  subclass includes a copy of those constructor statements, and runs them. To flag that a class
+       *  has specialized fields, and their initialization should be deferred to the subclass, method
+       *  'specInstance$' is added in phase specialize.
+       */
+      def guardSpecializedInitializer(stats0: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats0 else {
+        // split the statements in presuper and postsuper
+        var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
+        if (postfix.nonEmpty) {
+          prefix = prefix :+ postfix.head
+          postfix = postfix.tail
+        }
+
+        if (usesSpecializedField && shouldGuard && postfix.nonEmpty) {
+          // save them for duplication in the specialized subclass
+          guardedCtorStats(clazz) = postfix
+
+          val tree =
+            If(
+              Apply(
+                Select(
+                  Apply(gen.mkAttributedRef(specializedFlag), List()),
+                  definitions.getMember(definitions.BooleanClass, nme.UNARY_!)),
+                List()),
+              Block(postfix, Literal(())),
+              EmptyTree)
+
+          prefix ::: List(localTyper.typed(tree))
+        } else if (clazz.hasFlag(SPECIALIZED)) {
+          // add initialization from its generic class constructor
+          val (genericName, _, _) = nme.splitSpecializedName(clazz.name)
+          val genericClazz = clazz.owner.info.decl(genericName.toTypeName)
+          assert(genericClazz != NoSymbol)
+
+          guardedCtorStats.get(genericClazz) match {
+            case Some(stats1) =>
+              val merged = mergeConstructors(genericClazz, stats1, postfix)
+              prefix ::: merged
+            case None => stats0
+          }
+        } else stats0
+      }
+
       // Assemble final constructor
       defBuf += treeCopy.DefDef(
         constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,
         treeCopy.Block(
           constrBody,
-          paramInits ::: constrPrefixBuf.toList ::: constrStatBuf.toList,
+          paramInits ::: constrPrefixBuf.toList ::: guardSpecializedInitializer(constrStatBuf.toList),
           constrBody.expr));
 
       // Unlink all fields that can be dropped from class scope
