@@ -211,15 +211,12 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   }
 
   /** Power user commands */
-  // XXX - why does a third argument like "interpreter dumpState(_)" throw an NPE
-  // while the version below works?
   var powerUserOn = false
   val powerCommands: List[Command] = {
     import CommandImplicits._
     List(
       OneArg("completions", "generate list of completions for a given String", completions),
-      VarArgs("dump", "displays a view of the interpreter's internal state",
-        (xs: List[String]) => interpreter dumpState xs)
+      NoArgs("dump", "displays a view of the interpreter's internal state", () => interpreter.power.dump())
 
       // VarArgs("tree", "displays ASTs for specified identifiers",
       //   (xs: List[String]) => interpreter dumpTrees xs)
@@ -339,13 +336,17 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   }
 
   def power() {
-    powerUserOn = true
-    out println interpreter.powerUser()
-    if (in.history.isDefined)
-      interpreter.quietBind("history", "scala.collection.immutable.List[String]", in.historyList)
+    val powerUserBanner =
+      """** Power User mode enabled - BEEP BOOP      **
+        |** scala.tools.nsc._ has been imported      **
+        |** New vals! Try repl, global, power        **
+        |** New cmds! :help to discover them         **
+        |** New defs! Type power.<tab> to reveal     **""".stripMargin
 
-    if (in.completion.isDefined)
-      interpreter.quietBind("replHelper", "scala.tools.nsc.interpreter.CompletionAware", interpreter.replVarsObject())
+    powerUserOn = true
+    interpreter.unleash()
+    injectOne("history", in.historyList)
+    out println powerUserBanner
   }
 
   def verbosity() = {

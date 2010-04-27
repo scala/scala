@@ -179,7 +179,7 @@ class Completion(val repl: Interpreter) {
 
   class ImportCompletion(tp: Type) extends TypeMemberCompletion(tp) {
     override def completions(verbosity: Int) = verbosity match {
-      case 0    => filtered(methods filterNot (_.isSetter) map tos)
+      case 0    => filtered(members filterNot (_.isSetter) map tos)
       case _    => super.completions(verbosity)
     }
   }

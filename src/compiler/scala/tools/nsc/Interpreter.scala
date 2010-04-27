@@ -74,6 +74,8 @@ import Interpreter._
  * @author Lex Spoon
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
+  repl =>
+
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
   def this() = this(new Settings())
@@ -493,44 +495,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
   }
 
-  /** For :power - create trees and type aliases from code snippets. */
-  def mkContext(code: String = "") = compiler.analyzer.rootContext(mkUnit(code))
-  def mkAlias(name: String, what: String) = interpret("type %s = %s".format(name, what))
-  def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
-  def mkUnit(code: String) = new CompilationUnit(mkSourceFile(code))
-
-  def mkTree(code: String): Tree = mkTrees(code).headOption getOrElse EmptyTree
-  def mkTrees(code: String): List[Tree] = parse(code) getOrElse Nil
-  def mkTypedTrees(code: String*): List[compiler.Tree] = {
-    class TyperRun extends compiler.Run {
-      override def stopPhase(name: String) = name == "superaccessors"
-    }
-
-    reporter.reset
-    val run = new TyperRun
-    run compileSources (code.toList.zipWithIndex map {
-      case (s, i) => new BatchSourceFile("<console %d>".format(i), s)
-    })
-    run.units.toList map (_.body)
-  }
-  def mkTypedTree(code: String) = mkTypedTrees(code).head
-
-  def mkType(id: String): compiler.Type = {
-    // if it's a recognized identifier, the type of that; otherwise treat the
-    // String like a value (e.g. scala.collection.Map) .
-    def findType = typeForIdent(id) match {
-      case Some(x)  => definitions.getClass(newTermName(x)).tpe
-      case _        => definitions.getModule(newTermName(id)).tpe
-    }
-
-    try findType catch { case _: MissingRequirementError => NoType }
-  }
-
-  private[nsc] val powerMkImports = List(
-    "mkContext", "mkTree", "mkTrees", "mkAlias", "mkSourceFile", "mkUnit", "mkType", "mkTypedTree", "mkTypedTrees"
-    // , "treeWrapper"
-  )
-
   /** Compile an nsc SourceFile.  Returns true if there are
    *  no compilation errors, or false otherwise.
    */
@@ -805,7 +769,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   private class ImportHandler(imp: Import) extends MemberHandler(imp) {
     lazy val Import(expr, selectors) = imp
-    def targetType = mkType(expr.toString) match {
+    def targetType = stringToCompilerType(expr.toString) match {
       case NoType => None
       case x      => Some(x)
     }
@@ -1023,42 +987,57 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
   }
 
-  /** These methods are exposed so REPL commands can access them.
-   *  The command infrastructure is in InterpreterLoop.
+  /** A container class for methods to be injected into the repl
+   *  in power mode.
    */
-  def dumpState(xs: List[String]): String = """
-    |   Names used: %s
-    |
-    |  Identifiers: %s
-    |
-    |    synthvars: %d
-  """.stripMargin.format(
-        allUsedNames mkString " ",
-        unqualifiedIds mkString " ",
-        allBoundNames filter isSynthVarName size
-      )
+  class Power {
+    def mkContext(code: String = "") = compiler.analyzer.rootContext(mkUnit(code))
+    def mkAlias(name: String, what: String) = interpret("type %s = %s".format(name, what))
+    def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
+    def mkUnit(code: String) = new CompilationUnit(mkSourceFile(code))
 
-  // def dumpTrees(xs: List[String]): String = {
-  //   val treestrs = (xs map requestForIdent).flatten flatMap (_.trees)
-  //
-  //   if (treestrs.isEmpty) "No trees found."
-  //   else treestrs.map(t => t.toString + " (" + t.getClass.getSimpleName + ")\n").mkString
-  // }
+    def mkTree(code: String): Tree = mkTrees(code).headOption getOrElse EmptyTree
+    def mkTrees(code: String): List[Tree] = parse(code) getOrElse Nil
+    def mkTypedTrees(code: String*): List[compiler.Tree] = {
+      class TyperRun extends compiler.Run {
+        override def stopPhase(name: String) = name == "superaccessors"
+      }
 
-  def powerUser(): String = {
-    beQuietDuring {
-      this.bind("repl", "scala.tools.nsc.Interpreter", this)
-      this.bind("global", "scala.tools.nsc.Global", compiler)
-      interpret("import repl.{ %s, eval }".format(powerMkImports mkString ", "), false)
+      reporter.reset
+      val run = new TyperRun
+      run compileSources (code.toList.zipWithIndex map {
+        case (s, i) => new BatchSourceFile("<console %d>".format(i), s)
+      })
+      run.units.toList map (_.body)
     }
+    def mkTypedTree(code: String) = mkTypedTrees(code).head
+    def mkType(id: String): compiler.Type = stringToCompilerType(id)
 
-    """** Power User mode enabled - BEEP BOOP      **
-      |** New vals! Try repl, global               **
-      |** New cmds! :help to discover them         **
-      |** New defs! Give these a whirl:            **
-      |**   mkAlias("Fn", "(String, Int) => Int")  **
-      |**   mkTree("def f(x: Int, y: Int) = x+y")  **""".stripMargin
+    def dump(): String = (
+      ("Names used: " :: allUsedNames) ++
+      ("\nIdentifiers: " :: unqualifiedIds)
+    ) mkString " "
   }
+
+  lazy val power = new Power
+
+  def unleash(): Unit = beQuietDuring {
+    interpret("import scala.tools.nsc._")
+    repl.bind("repl", "scala.tools.nsc.Interpreter", this)
+    interpret("val global: repl.compiler.type = repl.compiler")
+    interpret("val power: scala.tools.nsc.Interpreter#Power = repl.power")
+    // interpret("val replVars = repl.replVars")
+  }
+
+  /** Artificial object demonstrating completion */
+  // lazy val replVars = CompletionAware(
+  //   Map[String, CompletionAware](
+  //     "ids" -> CompletionAware(() => unqualifiedIds, completionAware _),
+  //     "synthVars" -> CompletionAware(() => allBoundNames filter isSynthVarName map (_.toString)),
+  //     "types" -> CompletionAware(() => allSeenTypes map (_.toString)),
+  //     "implicits" -> CompletionAware(() => allImplicits map (_.toString))
+  //   )
+  // )
 
   /** Returns the name of the most recent interpreter result.
    *  Mostly this exists so you can conveniently invoke methods on
@@ -1077,6 +1056,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     prevRequests.reverse find (_.boundNames contains name)
 
   private def requestForIdent(line: String): Option[Request] = requestForName(newTermName(line))
+
+  def stringToCompilerType(id: String): compiler.Type = {
+    // if it's a recognized identifier, the type of that; otherwise treat the
+    // String like a value (e.g. scala.collection.Map) .
+    def findType = typeForIdent(id) match {
+      case Some(x)  => definitions.getClass(newTermName(x)).tpe
+      case _        => definitions.getModule(newTermName(id)).tpe
+    }
+
+    try findType catch { case _: MissingRequirementError => NoType }
+  }
 
   def typeForIdent(id: String): Option[String] =
     requestForIdent(id) flatMap (x => x.typeOf get newTermName(id))
@@ -1207,16 +1197,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** Parse the ScalaSig to find type aliases */
   def aliasForType(path: String) = ByteCode.aliasForType(path)
-
-  /** Artificial object demonstrating completion */
-  def replVarsObject() = CompletionAware(
-    Map[String, CompletionAware](
-      "ids" -> CompletionAware(() => unqualifiedIds, completionAware _),
-      "synthVars" -> CompletionAware(() => allBoundNames filter isSynthVarName map (_.toString)),
-      "types" -> CompletionAware(() => allSeenTypes map (_.toString)),
-      "implicits" -> CompletionAware(() => allImplicits map (_.toString))
-    )
-  )
 
   // Coming soon
   // implicit def string2liftedcode(s: String): LiftedCode = new LiftedCode(s)
