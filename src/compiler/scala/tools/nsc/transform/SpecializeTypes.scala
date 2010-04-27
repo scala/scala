@@ -336,7 +336,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (sym.isTypeParameter && sym.hasAnnotation(SpecializedClass))
         specializedTypeVars(args) + sym
       else if (sym.isTypeSkolem && sym.deSkolemize.hasAnnotation(SpecializedClass)) {
-        println("cought skolem without @specialized")
         specializedTypeVars(args) + sym
       } else
         specializedTypeVars(args)
@@ -1147,7 +1146,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                     symbol.enclClass,
                     typeEnv(symbol.alias) ++ typeEnv(tree.symbol))
 
-        case Apply(sel @ Select(sup @ Super(qual, name), name1), args) =>
+        case Apply(sel @ Select(sup @ Super(qual, name), name1), args)
+          if (sup.symbol.info.parents != atPhase(phase.prev)(sup.symbol.info.parents)) =>
+
+          def parents = sup.symbol.info.parents
+          log(tree + " parents changed from: " + atPhase(phase.prev)(parents) + " to: " + parents)
+
           val res = localTyper.typed(
             Apply(Select(Super(qual, name) setPos sup.pos, name1) setPos sel.pos, transformTrees(args)) setPos tree.pos)
           log("retyping call to super, from: " + symbol + " to " + res.symbol)
