@@ -203,7 +203,7 @@ abstract class TailCalls extends Transform
           newCtx.tailPos = true
 
           val isEligible  = newCtx.currentMethod.isEffectivelyFinal
-          val isMandatory = dd.symbol hasAnnotation TailrecClass    // @tailrec annotation indicates mandatory transformation
+          val isMandatory = dd.symbol.hasAnnotation(TailrecClass) && !forMSIL  // @tailrec annotation indicates mandatory transformation
 
           if (isEligible) {
             newCtx.tparams = Nil
