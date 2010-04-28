@@ -109,9 +109,15 @@ object Iterator {
    *  @return      the iterator producing the infinite sequence of values `start, f(start), f(f(start)), ...`
    */
   def iterate[T](start: T)(f: T => T): Iterator[T] = new Iterator[T] {
+    private[this] var first = true
     private[this] var acc = start
     def hasNext: Boolean = true
-    def next(): T = { val res = acc ; acc = f(acc) ; res }
+    def next(): T = {
+      if (first) first = false
+      else acc = f(acc)
+
+      acc
+    }
   }
 
   /** Creates an infinite-length iterator which returns successive values from some start value.
