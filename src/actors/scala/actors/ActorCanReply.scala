@@ -50,7 +50,7 @@ private[actors] trait ActorCanReply extends ReactorCanReply {
   }
 
   override def !!(msg: Any): Future[Any] = {
-    val noTransform: PartialFunction[Any, Any] = { case x => x}
+    val noTransform: PartialFunction[Any, Any] = { case x => x }
     this !! (msg, noTransform)
   }
 

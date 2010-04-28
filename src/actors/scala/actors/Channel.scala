@@ -40,6 +40,8 @@ case class ! [a](ch: Channel[a], msg: a)
  */
 class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputChannel[Msg] with CanReply[Msg, Any] {
 
+  type Future[+P] = scala.actors.Future[P]
+
   def this() = this(Actor.self)
 
   def !(msg: Msg) {
@@ -106,6 +108,26 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
       case TIMEOUT => None
       case x => Some(x)
     }
+  }
+
+  def !![A](msg: Msg, handler: PartialFunction[Any, A]): Future[A] = {
+    val ftch = new Channel[A](Actor.self(receiver.scheduler))
+    receiver.send(scala.actors.!(this, msg), new OutputChannel[Any] {
+      def !(msg: Any) =
+        ftch ! handler(msg)
+      def send(msg: Any, replyTo: OutputChannel[Any]) =
+        ftch.send(handler(msg), replyTo)
+      def forward(msg: Any) =
+        ftch.forward(handler(msg))
+      def receiver =
+        ftch.receiver
+    })
+    Futures.fromInputChannel(ftch)
+  }
+
+  def !!(msg: Msg): Future[Any] = {
+    val noTransform: PartialFunction[Any, Any] = { case x => x }
+    this !! (msg, noTransform)
   }
 
 }
