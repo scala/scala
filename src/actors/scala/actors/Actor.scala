@@ -320,7 +320,7 @@ object Actor extends Combinators {
    *
    * @param from the actor to unlink from
    */
-  def unlink(from: Actor): Unit = self.unlink(from)
+  def unlink(from: AbstractActor): Unit = self.unlink(from)
 
   /**
    * <p>
