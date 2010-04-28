@@ -990,8 +990,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** A container class for methods to be injected into the repl
    *  in power mode.
    */
-  class Power {
+  object power {
+    lazy val compiler: repl.compiler.type = repl.compiler
     import compiler.{ phaseNames, atPhase, currentRun }
+
     def mkContext(code: String = "") = compiler.analyzer.rootContext(mkUnit(code))
     def mkAlias(name: String, what: String) = interpret("type %s = %s".format(name, what))
     def mkSourceFile(code: String) = new BatchSourceFile("<console>", code)
@@ -1025,13 +1027,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       atAllPhases(op.toString) foreach { case (ph, op) => Console.println("%15s -> %s".format(ph, op take 240)) }
   }
 
-  lazy val power = new Power
-
   def unleash(): Unit = beQuietDuring {
     interpret("import scala.tools.nsc._")
     repl.bind("repl", "scala.tools.nsc.Interpreter", this)
     interpret("val global: repl.compiler.type = repl.compiler")
-    interpret("val power: scala.tools.nsc.Interpreter#Power = repl.power")
+    interpret("val power: repl.power.type = repl.power")
     // interpret("val replVars = repl.replVars")
   }
 
