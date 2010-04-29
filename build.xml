@@ -1116,6 +1116,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
+        <pathelement location="${build-strap.dir}/classes/continuations-plugin"/>
       </compilationpath>
     </scalacfork>
     <copy
