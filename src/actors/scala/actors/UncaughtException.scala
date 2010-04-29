@@ -13,17 +13,18 @@ package scala.actors
  *
  * @param actor   the actor that threw the exception
  * @param message the message the actor was processing, or None if no message (e.g. on initial startup)
+ * @param sender  the sender of the most recent message
  * @param thread  the thread on which the actor was running
  * @param cause   the uncaught exception
  *
  * @author Philipp Haller
  * @author Erik Engbrecht
  */
-class UncaughtException[Msg >: Null](val actor: Reactor[Msg],
-                                     val message: Option[Msg],
-                                     val sender: Option[OutputChannel[Any]],
-                                     val thread: Thread,
-                                     cause: Throwable)
+case class UncaughtException(actor: Actor,
+                             message: Option[Any],
+                             sender: Option[OutputChannel[Any]],
+                             thread: Thread,
+                             cause: Throwable)
 extends Exception(cause) {
 
   override def toString() =

@@ -35,11 +35,11 @@ private[actors] class ActorTask(actor: Actor,
     val senderInfo = try { Some(actor.sender) } catch {
       case _: Exception => None
     }
-    val uncaught = new UncaughtException(actor,
-                                         if (msg != null) Some(msg) else None,
-                                         senderInfo,
-                                         currentThread,
-                                         e)
+    val uncaught = UncaughtException(actor,
+                                     if (msg != null) Some(msg) else None,
+                                     senderInfo,
+                                     currentThread,
+                                     e)
 
     val todo = actor.synchronized {
       if (!actor.links.isEmpty)
