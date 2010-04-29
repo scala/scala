@@ -48,11 +48,10 @@ object Symbol extends UniquenessCache[String, Symbol]
   * abstracted to offer some hope of reusability.  */
 private[scala] abstract class UniquenessCache[K, V >: Null]
 {
-  import java.lang.ref.{ ReferenceQueue, WeakReference }
+  import java.lang.ref.WeakReference
   import java.util.WeakHashMap
   import java.util.concurrent.locks.ReentrantReadWriteLock
 
-  private val queue = new ReferenceQueue[V]
   private val rwl = new ReentrantReadWriteLock()
   private val rlock = rwl.readLock
   private val wlock = rwl.writeLock
@@ -78,7 +77,7 @@ private[scala] abstract class UniquenessCache[K, V >: Null]
         if (res != null) res
         else {
           val sym = valueFromKey(name)
-          map.put(name, new WeakReference(sym, queue))
+          map.put(name, new WeakReference(sym))
           sym
         }
       }
