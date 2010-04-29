@@ -1053,7 +1053,7 @@ abstract class GenMSIL extends SubComponent {
               }
 
               var doEmit = true
-              types.get(msym.owner) match {
+              getTypeOpt(msym.owner) match {
                 case Some(typ) if (typ.IsEnum) => {
                   def negBool = {
                     mcode.Emit(OpCodes.Ldc_I4_0)
@@ -1577,9 +1577,9 @@ abstract class GenMSIL extends SubComponent {
           mf = mf | FieldAttributes.Static
         else {
           mf = mf | MethodAttributes.Virtual
-          if (sym.isFinal && !types(sym.owner).IsInterface)
+          if (sym.isFinal && !getType(sym.owner).IsInterface)
             mf = mf | MethodAttributes.Final
-          if (sym.hasFlag(Flags.DEFERRED) || types(sym.owner).IsInterface)
+          if (sym.hasFlag(Flags.DEFERRED) || getType(sym.owner).IsInterface)
             mf = mf | MethodAttributes.Abstract
         }
       }
@@ -1679,8 +1679,14 @@ abstract class GenMSIL extends SubComponent {
       sym.tpe.paramTypes.map(msilType).toArray
     }
 
-    def getType(sym: Symbol): MsilType = types.get(sym) match {
-      case Some(typ) => typ
+    def getType(sym: Symbol) = getTypeOpt(sym).getOrElse(abort(showsym(sym)))
+
+    /**
+     * Get an MSIL type form a symbol. First look in the clrTypes.types map, then
+     * lookup the name using clrTypes.getType
+     */
+    def getTypeOpt(sym: Symbol): Option[MsilType] = types.get(sym) match {
+      case typ @ Some(_) => typ
       case None =>
         def typeString(sym: Symbol): String = {
           val s = if (sym.isNestedClass) typeString(sym.owner) +"+"+ sym.simpleName
@@ -1690,10 +1696,10 @@ abstract class GenMSIL extends SubComponent {
         val name = typeString(sym)
         val typ = clrTypes.getType(name)
         if (typ == null)
-          abort(showsym(sym) + " with name " + name)
+          None
         else {
-          clrTypes.types(sym) = typ
-          typ
+          types(sym) = typ
+          Some(typ)
         }
     }
 
@@ -1703,10 +1709,20 @@ abstract class GenMSIL extends SubComponent {
     }
 
     def createTypeBuilder(iclass: IClass) {
+      /**
+       * First look in the clrTypes.types map, then see if it's a class we're
+       * currently compiling by looking at the icodes.classes map, then finally
+       * lookup the name using clrTypes.getType (by calling getType).
+       */
       def msilTypeFromSym(sym: Symbol): MsilType = {
-	types.get(sym) match {
-          case Some(mtype) => mtype
-          case None => createTypeBuilder(classes(sym)); types(sym)
+        types.get(sym).getOrElse {
+          classes.get(sym) match {
+            case Some(iclass) =>
+              createTypeBuilder(iclass)
+              types (sym)
+            case None =>
+              getType(sym)
+          }
         }
       }
 
