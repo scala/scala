@@ -1,13 +1,16 @@
-variances.scala:4: error: covariant type A occurs in contravariant position in type test.Vector[A] of value x
+/home/odersky/workspace/scala/test/files/neg/variances.scala:4: error: covariant type A occurs in contravariant position in type test.Vector[A] of value x
   def append(x: Vector[A]): Vector[A] 
              ^
-variances.scala:14: error: covariant type A occurs in contravariant position in type A of value a
+/home/odersky/workspace/scala/test/files/neg/variances.scala:14: error: covariant type A occurs in contravariant position in type A of value a
     private[this] def setA(a : A) = this.a = a 
                            ^
-variances.scala:16: error: covariant type A occurs in invariant position in supertype test.C[A] with ScalaObject of object Baz
+/home/odersky/workspace/scala/test/files/neg/variances.scala:16: error: covariant type A occurs in invariant position in supertype test.C[A] with ScalaObject of object Baz
     object Baz extends C[A]
            ^
-variances.scala:63: error: covariant type A occurs in contravariant position in type => test.Covariant.T[A]{def m: (A) => A} of value x
+/home/odersky/workspace/scala/test/files/neg/variances.scala:63: error: covariant type A occurs in contravariant position in type => test.Covariant.T[A]{def m: (A) => A} of value x
     val x: T[A] {
         ^
-four errors found
+/home/odersky/workspace/scala/test/files/neg/variances.scala:79: error: covariant type T occurs in contravariant position in type => test.TestAlias.B[C.this.A] of method foo
+    def foo: B[A]
+        ^
+5 errors found
