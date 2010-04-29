@@ -408,6 +408,43 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
       }
     } else super.startSearch(msg, replyTo, handler)
 
+  // we override this method to check `shouldExit` before suspending
+  private[actors] override def searchMailbox(startMbox: MQueue[Any],
+                                             handler: PartialFunction[Any, Any],
+                                             resumeOnSameThread: Boolean) {
+    var tmpMbox = startMbox
+    var done = false
+    while (!done) {
+      val qel = tmpMbox.extractFirst((msg: Any, replyTo: OutputChannel[Any]) => {
+        senders = List(replyTo)
+        handler.isDefinedAt(msg)
+      })
+      if (tmpMbox ne mailbox)
+        tmpMbox.foreach((m, s) => mailbox.append(m, s))
+      if (null eq qel) {
+        synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            tmpMbox = new MQueue[Any]("Temp")
+            drainSendBuffer(tmpMbox)
+            // keep going
+          } else {
+            // very important to check for `shouldExit` at this point
+            // since linked actors might have set it after we checked
+            // last time (e.g., at the beginning of `react`)
+            if (shouldExit) exit()
+            waitingFor = handler
+            // see Reactor.searchMailbox
+            throw Actor.suspendException
+          }
+        }
+      } else {
+        resumeReceiver((qel.msg, qel.session), handler, resumeOnSameThread)
+        done = true
+      }
+    }
+  }
+
   private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
     new ActorTask(this, fun, handler, msg)
 
@@ -754,6 +791,8 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
         if (isSuspended)
           resumeActor()
         else if (waitingFor ne Reactor.waitingForNone) {
+          waitingFor = Reactor.waitingForNone
+          // it doesn't matter what partial function we are passing here
           scheduleActor(waitingFor, null)
           /* Here we should not throw a SuspendActorControl,
              since the current method is called from an actor that
