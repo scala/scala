@@ -57,10 +57,10 @@ object RemoteActor {
    * <code>port</code>.
    */
   def alive(port: Int): Unit = synchronized {
-    createKernelOnPort(port)
+    createNetKernelOnPort(port)
   }
 
-  def createKernelOnPort(port: Int): NetKernel = {
+  private def createNetKernelOnPort(port: Int): NetKernel = {
     val serv = TcpService(port, cl)
     val kern = serv.kernel
     val s = Actor.self
@@ -82,6 +82,10 @@ object RemoteActor {
     kern
   }
 
+  @deprecated("this member is going to be removed in a future release")
+  def createKernelOnPort(port: Int): NetKernel =
+    createNetKernelOnPort(port)
+
   /**
    * Registers <code>a</code> under <code>name</code> on this
    * node.
@@ -102,7 +106,7 @@ object RemoteActor {
     case None =>
       // establish remotely accessible
       // return path (sender)
-      createKernelOnPort(TcpService.generatePort)
+      createNetKernelOnPort(TcpService.generatePort)
     case Some(k) =>
       k
   }
@@ -115,8 +119,12 @@ object RemoteActor {
     selfKernel.getOrCreateProxy(node, sym)
   }
 
-  def someKernel: NetKernel =
+  private[remote] def someNetKernel: NetKernel =
     kernels.valuesIterator.next
+
+  @deprecated("this member is going to be removed in a future release")
+  def someKernel: NetKernel =
+    someNetKernel
 }
 
 
