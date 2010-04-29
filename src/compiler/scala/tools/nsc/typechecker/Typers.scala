@@ -1323,6 +1323,7 @@ trait Typers { self: Analyzer =>
      */
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpt, rhs)
+        // PRIVATE | LOCAL are fields generated for primary constructor arguments
         if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL).toLong && !stat.symbol.isModuleVar =>
 
         val isDeferred = mods hasFlag DEFERRED

@@ -259,7 +259,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     }
     // println("typed template, gvdefs = "+gvdefs+", parents = "+parents+", constrs = "+constrs)
     constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs))
-    // remove defaults
+    // vparamss2 are used as field definitions for the class. remove defaults
     val vparamss2 = vparamss map (vps => vps map { vd =>
       treeCopy.ValDef(vd, vd.mods &~ DEFAULTPARAM, vd.name, vd.tpt, EmptyTree)
     })

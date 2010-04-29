@@ -53,9 +53,10 @@ class Flags {
   final val ACCESSOR      = 0x08000000    // a value or variable accessor (getter or setter)
 
   final val SUPERACCESSOR = 0x10000000    // a super accessor
-  final val PARAMACCESSOR = 0x20000000    // for value definitions: is an access method
-                                          // for a final val parameter
-                                          // for parameters: is a val parameter
+  final val PARAMACCESSOR = 0x20000000    // for field definitions generated for primary constructor
+                                          //   parameters (no matter if it's a 'val' parameter or not)
+                                          // for parameters of a primary constructor ('val' or not)
+                                          // for the accessor methods generated for 'val' or 'var' parameters
   final val MODULEVAR     = 0x40000000    // for variables: is the variable caching a module value
   final val SYNTHETICMETH = 0x40000000    // for methods: synthetic method, but without SYNTHETIC flag
   final val MONOMORPHIC   = 0x40000000    // for type symbols: does not have type parameters
