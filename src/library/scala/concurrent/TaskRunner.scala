@@ -25,9 +25,4 @@ trait TaskRunner {
 
   def shutdown(): Unit
 
-  /** If expression computed successfully return it in <code>Right</code>,
-   *  otherwise return exception in <code>Left</code>.
-   */
-  protected def tryCatch[A](body: => A): Either[Exception, A] =
-    ops tryCatchEx body
 }
