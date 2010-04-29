@@ -523,7 +523,7 @@ abstract class Inliners extends SubComponent {
        var score = 0
        if (callee.code.blocks.length <= SMALL_METHOD_SIZE) score = score + 1
        if (caller.code.blocks.length <= SMALL_METHOD_SIZE
-           && ((caller.code.blocks.length + callee.code.blocks.length) > SMALL_METHOD_SIZE)) {
+           && ((caller.code.blocks.length + callee.code.blocks.length - 1) > SMALL_METHOD_SIZE)) {
          score -= 1
          if (settings.debug.value)
            log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
