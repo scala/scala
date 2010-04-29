@@ -614,9 +614,9 @@ abstract class ICodeReader extends ClassfileParser {
 
     // add parameters
     var idx = if (method.isStatic) 0 else 1
-    for (t <- method.symbol.tpe.paramTypes) {
-      this.method.addParam(code.enterParam(idx, toTypeKind(t)))
-      idx += 1
+    for (t <- method.symbol.tpe.paramTypes; val kind = toTypeKind(t)) {
+      this.method.addParam(code.enterParam(idx, kind))
+      idx += (if (kind.isWideType) 2 else 1)
     }
 
     pc = 0
