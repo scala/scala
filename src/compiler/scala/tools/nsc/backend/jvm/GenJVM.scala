@@ -163,10 +163,10 @@ abstract class GenJVM extends SubComponent {
             fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaSignatureATTR.toString,
                                         versionPickle.bytes, versionPickle.writeIndex)
           jclass.addAttribute(scalaAttr)
-          val scalaAnnot =
-            AnnotationInfo(definitions.ScalaSignatureAnnotation.tpe, Nil, List(
-              (nme.bytes, ScalaSigBytes(pickle.bytes.take(pickle.writeIndex)))
-            ))
+          val scalaAnnot = {
+            val sigBytes = ScalaSigBytes(pickle.bytes.take(pickle.writeIndex))
+            AnnotationInfo(sigBytes.sigAnnot, Nil, List((nme.bytes, sigBytes)))
+          }
           pickledBytes = pickledBytes + pickle.writeIndex
           currentRun.symData -= sym
           currentRun.symData -= sym.companionSymbol
@@ -416,9 +416,20 @@ abstract class GenJVM extends SubComponent {
               buf.putShort(cpool.addUtf8(const.symbolValue.name.toString).toShort)
           }
 
-        case ScalaSigBytes(bytes) =>
+        case sb@ScalaSigBytes(bytes) if (!sb.isLong) =>
           buf.put('s'.toByte)
-          buf.putShort(cpool.addUtf8(reflect.generic.ByteCodecs.encode(bytes)).toShort)
+          buf.putShort(cpool.addUtf8(sb.encodedBytes).toShort)
+
+        case sb@ScalaSigBytes(bytes) if (sb.isLong) =>
+          buf.put('['.toByte)
+          val stringCount = (sb.encodedBytes.length / 65534) + 1
+          buf.putShort(stringCount.toShort)
+          for (i <- 0 until stringCount) {
+            buf.put('s'.toByte)
+            val j = i * 65535
+            val string = sb.encodedBytes.slice(j, j + 65535)
+            buf.putShort(cpool.addUtf8(string).toShort)
+          }
 
         case ArrayAnnotArg(args) =>
           buf.put('['.toByte)

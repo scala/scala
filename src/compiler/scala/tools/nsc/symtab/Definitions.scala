@@ -243,6 +243,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def Code_lift = getMember(CodeModule, nme.lift_)
 
     lazy val ScalaSignatureAnnotation = getClass("scala.reflect.ScalaSignature")
+    lazy val ScalaLongSignatureAnnotation = getClass("scala.reflect.ScalaLongSignature")
 
     // invoke dynamic support
     lazy val LinkageModule = getModule("java.dyn.Linkage")
