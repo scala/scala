@@ -53,7 +53,7 @@ trait Results {
       super.show(msg)
 
       if (isShowDiff || isTrace)
-        normal(entity.diffOutput())
+        normal(entity.diffOutput)
 
       if (isShowLog || isTrace)
         normal(toStringTrunc(entity.failureMessage(), 1600))

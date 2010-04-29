@@ -2630,7 +2630,8 @@ self =>
         } else if (isStatSep) {
           in.nextToken()
         } else {
-          syntaxErrorOrIncomplete("illegal start of statement", true)
+          val addendum = if (isModifier) " (no modifiers allowed here)" else ""
+          syntaxErrorOrIncomplete("illegal start of statement" + addendum, true)
         }
       }
       stats.toList

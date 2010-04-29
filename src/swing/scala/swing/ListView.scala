@@ -143,7 +143,7 @@ object ListView {
  */
 class ListView[A] extends Component {
   import ListView._
-  override lazy val peer: JList = new JList
+  override lazy val peer: JList = new JList with SuperMixin
 
   def this(items: Seq[A]) = {
     this()

@@ -77,7 +77,7 @@ object TabbedPane {
  * @see javax.swing.JTabbedPane
  */
 class TabbedPane extends Component with Publisher {
-  override lazy val peer: JTabbedPane = new JTabbedPane
+  override lazy val peer: JTabbedPane = new JTabbedPane with SuperMixin
   import TabbedPane._
 
   object pages extends BufferWrapper[Page] {

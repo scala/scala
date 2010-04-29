@@ -19,9 +19,9 @@ import annotation.tailrec
 /** A class for immutable linked lists representing ordered collections
  *  of elements of type.
  *
- * This class comes with two implementing case classes `scala.Nil`
- * and `scala.::` that implement the abstract members `isEmpty`,
- * `head` and `tail`.
+ *  This class comes with two implementing case classes `scala.Nil`
+ *  and `scala.::` that implement the abstract members `isEmpty`,
+ *  `head` and `tail`.
  *
  *  @author  Martin Odersky and others
  *  @version 2.8

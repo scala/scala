@@ -153,9 +153,8 @@ class Process(processCreator: () => JProcess) extends Iterable[String] {
     private val reader  = new BufferedReader(new InputStreamReader(in))
 
     private def finish() {
-      // make sure this thread is complete, and close the process's stdin
+      // make sure this thread is complete
       join()
-      _in.close()
     }
 
     def slurp(): String = {
@@ -171,14 +170,19 @@ class Process(processCreator: () => JProcess) extends Iterable[String] {
         def next = it.next
       }
     }
-    @tailrec override final def run() {
-      reader.readLine match {
-        case null =>
-          reader.close()
-        case x    =>
-          queue put x
-          run()
+    override final def run() {
+      @tailrec def loop() {
+        reader.readLine match {
+          case null =>
+            reader.close()
+          case x    =>
+            queue put x
+            loop()
+        }
       }
+
+      try loop()
+      catch { case _: IOException => () }
     }
   }
 

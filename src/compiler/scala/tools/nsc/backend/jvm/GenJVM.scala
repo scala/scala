@@ -851,7 +851,7 @@ abstract class GenJVM extends SubComponent {
     def addForwarders(jclass: JClass, module: Symbol) { addForwarders(jclass, module, _ => true) }
     def addForwarders(jclass: JClass, module: Symbol, cond: (Symbol) => Boolean) {
       def conflictsIn(cls: Symbol, name: Name) =
-        cls.info.nonPrivateMembers.exists(_.name == name)
+        cls.info.members exists (_.name == name)
 
       /** List of parents shared by both class and module, so we don't add forwarders
        *  for methods defined there - bug #1804 */
@@ -874,7 +874,7 @@ abstract class GenJVM extends SubComponent {
         atPhase(currentRun.picklerPhase) (
           m.owner != definitions.ObjectClass
           && m.isMethod
-          && !m.hasFlag(Flags.CASE | Flags.PROTECTED | Flags.DEFERRED | Flags.SPECIALIZED)
+          && !m.hasFlag(Flags.CASE | Flags.PRIVATE | Flags.PROTECTED | Flags.DEFERRED | Flags.SPECIALIZED)
           && !m.isConstructor
           && !m.isStaticMember
           && !(m.owner == definitions.AnyClass)

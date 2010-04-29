@@ -45,7 +45,7 @@ trait IndexedSeqLike[A, +Repr] extends scala.collection.IndexedSeqLike[A, Repr] 
   /** Replaces element at given index with a new value.
    *
    *  @param n       the index of the element to replace.
-   *  @param lem     the new value.
+   *  @param elem    the new value.
    *  @throws   IndexOutofBoundsException if the index is not valid.
    */
   def update(idx: Int, elem: A)

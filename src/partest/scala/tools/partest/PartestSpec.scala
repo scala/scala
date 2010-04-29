@@ -17,7 +17,7 @@ import cmd._
  */
 trait PartestSpec extends Spec with Meta.StdOpts with Interpolation {
   def referenceSpec       = PartestSpec
-  def programInfo         = Spec.Names("partest", "scala.tools.partest.Runner")
+  def programInfo         = Spec.Info("partest", "", "scala.tools.partest.Runner")
   private val kind        = new Spec.Accumulator[String]()
   protected def testKinds = kind.get
 
@@ -95,7 +95,6 @@ object PartestSpec extends PartestSpec with Property {
 
   type ThisCommandLine = PartestCommandLine
   class PartestCommandLine(args: List[String]) extends SpecCommandLine(args) {
-    override def onlyKnownOptions     = true
     override def errorFn(msg: String) = printAndExit("Error: " + msg)
 
     def propertyArgs = PartestSpec.propertyArgs

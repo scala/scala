@@ -48,7 +48,8 @@ object Stack extends SeqFactory[Stack] {
  *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(1976480595012942526L)
-class Stack[+A] protected (protected val elems: List[A]) extends LinearSeq[A]
+class Stack[+A] protected (protected val elems: List[A])
+                    extends LinearSeq[A]
                     with GenericTraversableTemplate[A, Stack]
                     with LinearSeqOptimized[A, Stack[A]] {
   override def companion: GenericCompanion[Stack] = Stack

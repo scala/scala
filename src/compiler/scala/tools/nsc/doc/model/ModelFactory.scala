@@ -13,7 +13,7 @@ import symtab.Flags
 import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */
-class ModelFactory(val global: Global, val settings: doc.Settings) extends CommentFactory { thisFactory =>
+class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory: ModelFactory with CommentFactory =>
 
   import global._
   import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyRefClass }
@@ -502,9 +502,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) extends Comme
       val name = optimize(nameBuffer.toString)
     }
 
-  def templateShouldDocument(aSym: Symbol): Boolean =
-    (aSym.isPackageClass || (aSym.sourceFile != null)) && localShouldDocument(aSym) &&
+  def templateShouldDocument(aSym: Symbol): Boolean = {
+  	// TODO: document sourceless entities (e.g., Any, etc), based on a new Setting to be added
+  	(aSym.isPackageClass || (aSym.sourceFile != null)) && localShouldDocument(aSym) &&
     ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) )
+  }
 
   def localShouldDocument(aSym: Symbol): Boolean =
     !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic

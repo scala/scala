@@ -198,13 +198,11 @@ div.members > ol > li {
 
 .cmt code {
   font-family: monospace;
-/*  font-size: small;*/
 }
 
 .cmt pre {
   display: block;
   font-family: monospace;
-/*  font-size: small;*/
   margin: 2px 0 2px 0;
 }
 
@@ -329,10 +327,12 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
   margin-bottom: 10px;
 }
 
-#mbrsel > div > h3 {
+#mbrsel > div > span.filtertype {
   padding: 4px;
-  display: inline;
+  float: left;
+  display: inline-block;
   color: white;
+  width: 4.5em;
 }
 
 #mbrsel > div > ol {
@@ -346,7 +346,6 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 #mbrsel > div > ol > li {
   padding: 4px 8px 4px 8px;
-/*  font-weight: bold;*/
   background-color: white;
   display: inline-block;
   cursor: crosshair;

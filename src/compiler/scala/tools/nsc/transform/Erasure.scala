@@ -152,7 +152,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             if (unboundedGenericArrayLevel(tp) == 1) ObjectClass.tpe
             else if (args.head.typeSymbol == NothingClass || args.head.typeSymbol == NullClass) arrayType(ObjectClass.tpe)
             else typeRef(apply(pre), sym, args map this)
-          else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass) erasedTypeRef(ObjectClass)
+          else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass || sym == NotNullClass) erasedTypeRef(ObjectClass)
           else if (sym == UnitClass) erasedTypeRef(BoxedUnitClass)
           else if (sym.isRefinementClass) apply(intersectionDominator(tp.parents))
           else if (sym.isClass) typeRef(apply(rebindInnerClass(pre, sym)), sym, List())  // #2585

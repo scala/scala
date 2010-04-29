@@ -110,7 +110,7 @@ object Table {
  * @see javax.swing.JTable
  */
 class Table extends Component with Scrollable.Wrapper {
-  override lazy val peer: JTable = new JTable with Table.JTableMixin {
+  override lazy val peer: JTable = new JTable with Table.JTableMixin with SuperMixin {
     def tableWrapper = Table.this
     override def getCellRenderer(r: Int, c: Int) = new TableCellRenderer {
       def getTableCellRendererComponent(table: JTable, value: AnyRef, isSelected: Boolean, hasFocus: Boolean, row: Int, column: Int) =

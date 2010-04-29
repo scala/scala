@@ -55,15 +55,17 @@ trait Logging {
       finally log.close()
     }
 
-    /** XXX needs attention.
+    /** What to print in a failure summary.
      */
-    def failureMessage() = safeSlurp(logFile)
+    def failureMessage() = if (diffOutput != "") diffOutput else safeSlurp(logFile)
 
     /** For tracing.  Outputs a line describing the next action.  tracePath
      *  is a path wrapper which prints name or full path depending on verbosity.
      */
-    def trace(msg: String)    = if (isTrace || isDryRun) System.err.println(">> [%s] %s".format(label, msg))
-    def tracePath(path: Path) = if (isVerbose) path.path else path.name
+    def trace(msg: String) = if (isTrace || isDryRun) System.err.println(">> [%s] %s".format(label, msg))
+
+    def tracePath(path: Path): String   = if (isVerbose) path.path else path.name
+    def tracePath(path: String): String = tracePath(Path(path))
 
     /** v == verbose.
      */

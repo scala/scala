@@ -12,7 +12,6 @@ package scala.actors
 
 import scala.util.control.ControlThrowable
 import java.util.{Timer, TimerTask}
-import java.util.concurrent.{ExecutionException, Callable}
 
 /**
  * The <code>Actor</code> object provides functions for the definition of
@@ -117,17 +116,17 @@ object Actor extends Combinators {
   }
 
   /**
-   * <p>This is a factory method for creating actors.</p>
+   * This is a factory method for creating actors.
    *
-   * <p>The following example demonstrates its usage:</p>
+   * The following example demonstrates its usage:
    *
-   * <pre>
+   * {{{
    * import scala.actors.Actor._
    * ...
    * val a = actor {
    *   ...
    * }
-   * </pre>
+   * }}}
    *
    * @param  body  the code block to be executed by the newly created actor
    * @return       the newly created actor. Note that it is automatically started.
@@ -142,14 +141,12 @@ object Actor extends Combinators {
   }
 
   /**
-   * <p>
    * This is a factory method for creating actors whose
-   * body is defined using a <code>Responder</code>.
-   * </p>
+   * body is defined using a `Responder`.
    *
-   * <p>The following example demonstrates its usage:</p>
+   * The following example demonstrates its usage:
    *
-   * <pre>
+   * {{{
    * import scala.actors.Actor._
    * import Responder.exec
    * ...
@@ -159,9 +156,9 @@ object Actor extends Combinators {
    *     if exec(println("result: "+res))
    *   } yield {}
    * }
-   * </pre>
+   * }}}
    *
-   * @param  body  the <code>Responder</code> to be executed by the newly created actor
+   * @param  body  the `Responder` to be executed by the newly created actor
    * @return       the newly created actor. Note that it is automatically started.
    */
   def reactor(body: => Responder[Unit]): Actor = {
@@ -275,20 +272,18 @@ object Actor extends Combinators {
   def mailboxSize: Int = rawSelf.mailboxSize
 
   /**
-   * <p>
    * Converts a synchronous event-based operation into
-   * an asynchronous <code>Responder</code>.
-   * </p>
+   * an asynchronous `Responder`.
    *
-   * <p>The following example demonstrates its usage:</p>
+   * The following example demonstrates its usage:
    *
-   * <pre>
+   * {{{
    * val adder = reactor {
    *   for {
    *     _ <- respondOn(react) { case Add(a, b) => reply(a+b) }
    *   } yield {}
    * }
-   * </pre>
+   * }}}
    */
   def respondOn[A, B](fun: PartialFunction[A, Unit] => Nothing):
     PartialFunction[A, B] => Responder[B] =
@@ -325,7 +320,7 @@ object Actor extends Combinators {
    *
    * @param from the actor to unlink from
    */
-  def unlink(from: Actor): Unit = self.unlink(from)
+  def unlink(from: AbstractActor): Unit = self.unlink(from)
 
   /**
    * <p>
@@ -412,6 +407,43 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
         resumeActor()
       }
     } else super.startSearch(msg, replyTo, handler)
+
+  // we override this method to check `shouldExit` before suspending
+  private[actors] override def searchMailbox(startMbox: MQueue[Any],
+                                             handler: PartialFunction[Any, Any],
+                                             resumeOnSameThread: Boolean) {
+    var tmpMbox = startMbox
+    var done = false
+    while (!done) {
+      val qel = tmpMbox.extractFirst((msg: Any, replyTo: OutputChannel[Any]) => {
+        senders = List(replyTo)
+        handler.isDefinedAt(msg)
+      })
+      if (tmpMbox ne mailbox)
+        tmpMbox.foreach((m, s) => mailbox.append(m, s))
+      if (null eq qel) {
+        synchronized {
+          // in mean time new stuff might have arrived
+          if (!sendBuffer.isEmpty) {
+            tmpMbox = new MQueue[Any]("Temp")
+            drainSendBuffer(tmpMbox)
+            // keep going
+          } else {
+            // very important to check for `shouldExit` at this point
+            // since linked actors might have set it after we checked
+            // last time (e.g., at the beginning of `react`)
+            if (shouldExit) exit()
+            waitingFor = handler
+            // see Reactor.searchMailbox
+            throw Actor.suspendException
+          }
+        }
+      } else {
+        resumeReceiver((qel.msg, qel.session), handler, resumeOnSameThread)
+        done = true
+      }
+    }
+  }
 
   private[actors] override def makeReaction(fun: () => Unit, handler: PartialFunction[Any, Any], msg: Any): Runnable =
     new ActorTask(this, fun, handler, msg)
@@ -695,37 +727,51 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
    *   <code>reason != 'normal</code>.
    * </p>
    */
-  protected[actors] def exit(reason: AnyRef): Nothing = synchronized {
-    exitReason = reason
+  protected[actors] def exit(reason: AnyRef): Nothing = {
+    synchronized {
+      exitReason = reason
+    }
     exit()
   }
 
   /**
    * Terminates with exit reason <code>'normal</code>.
    */
-  protected[actors] override def exit(): Nothing = synchronized {
-    if (!links.isEmpty)
-      exitLinked()
+  protected[actors] override def exit(): Nothing = {
+    val todo = synchronized {
+      if (!links.isEmpty)
+        exitLinked()
+      else
+        () => {}
+    }
+    todo()
     super.exit()
   }
 
   // Assume !links.isEmpty
   // guarded by this
-  private[actors] def exitLinked() {
+  private[actors] def exitLinked(): () => Unit = {
     _state = Actor.State.Terminated
+    // reset waitingFor, otherwise getState returns Suspended
+    waitingFor = Reactor.waitingForNone
     // remove this from links
     val mylinks = links.filterNot(this.==)
-    // exit linked processes
-    mylinks.foreach((linked: AbstractActor) => {
-      unlink(linked)
-      if (!linked.exiting)
-        linked.exit(this, exitReason)
-    })
+    // unlink actors
+    mylinks.foreach(unlinkFrom(_))
+    // return closure that locks linked actors
+    () => {
+      mylinks.foreach((linked: AbstractActor) => {
+        linked.synchronized {
+          if (!linked.exiting)
+            linked.exit(this, exitReason)
+        }
+      })
+    }
   }
 
   // Assume !links.isEmpty
   // guarded by this
-  private[actors] def exitLinked(reason: AnyRef) {
+  private[actors] def exitLinked(reason: AnyRef): () => Unit = {
     exitReason = reason
     exitLinked()
   }
@@ -745,6 +791,8 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
         if (isSuspended)
           resumeActor()
         else if (waitingFor ne Reactor.waitingForNone) {
+          waitingFor = Reactor.waitingForNone
+          // it doesn't matter what partial function we are passing here
           scheduleActor(waitingFor, null)
           /* Here we should not throw a SuspendActorControl,
              since the current method is called from an actor that

@@ -18,6 +18,11 @@ import generic._
  *  interacting surprisingly with any2stringadd thus driving '+' out of the `Seq`
  *  hierarchy.  The tendrils of original sin should never be underestimated.
  *
+ *  Addendum: of even greater significance is that '+' on mutable collections now
+ *  creates a new collection.  This means using AddingBuilder on them will create
+ *  a new intermediate collection for every element given to the builder, taking
+ *  '+' from an O(1) to O(n) operation.
+ *
  *  @author Paul Phillips
  *  @version 2.8
  *  @since 2.8

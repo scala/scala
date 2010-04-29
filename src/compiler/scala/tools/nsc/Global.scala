@@ -137,7 +137,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def error(msg: String) = reporter.error(NoPosition, msg)
   def warning(msg: String) =
-    if (settings.Ywarnfatal.value) reporter.error(NoPosition, msg)
+    if (settings.Xwarnfatal.value) reporter.error(NoPosition, msg)
     else reporter.warning(NoPosition, msg)
   def inform(msg: String) = reporter.info(NoPosition, msg, true)
   def inform[T](msg: String, value: T): T = { inform(msg+value); value }
@@ -714,7 +714,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
       val depSources = dependencyAnalysis.filter(_sources.distinct) // bug #1268, scalac confused by duplicated filenames
-      val sources = scalaObjectFirst(depSources)
+      val sources = coreClassesFirst(depSources)
       if (reporter.hasErrors)
         return  // there is a problem already, e.g. a
                 // plugin was passed a bad option
@@ -871,14 +871,43 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       if (!pclazz.isRoot) resetPackageClass(pclazz.owner)
     }
 
-    private def scalaObjectFirst(files: List[SourceFile]) = {
+    /**
+     * Re-orders the source files to
+     *  1. ScalaObject
+     *  2. LowPriorityImplicits / StandardEmbeddings (i.e. parents of Predef)
+     *  3. the rest
+     *
+     * 1 is to avoid cyclic reference errors.
+     * 2 is due to the following. When completing "Predef" (*), typedIdent is called
+     * for its parents (e.g. "LowPriorityImplicits"). typedIdent checks wethter
+     * the symbol reallyExists, which tests if the type of the symbol after running
+     * its completer is != NoType.
+     * If the "namer" phase has not yet run for "LowPriorityImplicits", the symbol
+     * has a SourcefileLoader as type. Calling "doComplete" on it does nothing at
+     * all, because the source file is part of the files to be compiled anyway.
+     * So the "reallyExists" test will return "false".
+     * Only after the namer, the symbol has a lazy type which actually computes
+     * the info, and "reallyExists" behaves as expected.
+     * So we need to make sure that the "namer" phase is run on predef's parents
+     * before running it on predef.
+     *
+     * (*) Predef is completed early when calling "mkAttributedRef" during the
+     *   addition of "import Predef._" to sourcefiles. So this situation can't
+     *   happen for user classes.
+     *
+     */
+    private def coreClassesFirst(files: List[SourceFile]) = {
       def inScalaFolder(f: SourceFile) =
         f.file.container.name == "scala"
+      var scalaObject: Option[SourceFile] = None
       val res = new ListBuffer[SourceFile]
       for (file <- files) file.file.name match {
-        case "ScalaObject.scala" if inScalaFolder(file) => file +=: res
+        case "ScalaObject.scala" if inScalaFolder(file) => scalaObject = Some(file)
+        case "LowPriorityImplicits.scala" if inScalaFolder(file) => file +=: res
+        case "StandardEmbeddings.scala" if inScalaFolder(file) => file +=: res
         case _ => res += file
       }
+      for (so <- scalaObject) so +=: res
       res.toList
     }
   } // class Run

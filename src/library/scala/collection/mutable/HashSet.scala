@@ -79,7 +79,7 @@ class HashSet[A] extends Set[A]
  *  @define Coll mutable.HashSet
  *  @define coll mutable hash set
  */
-object HashSet extends SetFactory[HashSet] {
+object HashSet extends MutableSetFactory[HashSet] {
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
   override def empty[A]: HashSet[A] = new HashSet[A]
 }

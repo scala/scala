@@ -120,7 +120,7 @@ trait Infer {
     case NoPrefix | ThisType(_) | ConstantType(_) =>
       true
     case TypeRef(pre, sym, args) =>
-      isFullyDefined(pre) && (args.isEmpty || (args forall isFullyDefined))
+      isFullyDefined(pre) && (args forall isFullyDefined)
     case SingleType(pre, sym) =>
       isFullyDefined(pre)
     case RefinedType(ts, decls) =>
@@ -197,72 +197,17 @@ trait Infer {
 
   /** The context-dependent inferencer part */
   class Inferencer(context: Context) {
-
     /* -- Error Messages --------------------------------------------------- */
-
-    private var addendumPos: Position = NoPosition
-    private var addendum: () => String = _
-
-    def setAddendum(pos: Position, msg: () => String) = {
-      addendumPos = pos
-      addendum = msg
-    }
-
     def setError[T <: Tree](tree: T): T = {
+      def name        = newTermName("<error: " + tree.symbol + ">")
+      def errorClass  = if (context.reportGeneralErrors) context.owner.newErrorClass(name.toTypeName) else stdErrorClass
+      def errorValue  = if (context.reportGeneralErrors) context.owner.newErrorValue(name) else stdErrorValue
+      def errorSym    = if (tree.isType) errorClass else errorValue
+
       if (tree.hasSymbol)
-        if (context.reportGeneralErrors) {
-          val name = newTermName("<error: " + tree.symbol + ">")
-          tree.setSymbol(
-            if (tree.isType) context.owner.newErrorClass(name.toTypeName)
-            else context.owner.newErrorValue(name))
-        } else {
-          tree.setSymbol(if (tree.isType) stdErrorClass else stdErrorValue)
-        }
-      tree.setType(ErrorType)
-    }
+        tree setSymbol errorSym
 
-    def decode(name: Name): String =
-      (if (name.isTypeName) "type " else "value ") + name.decode
-
-    def treeSymTypeMsg(tree: Tree): String =
-      if (tree.symbol eq null)
-        "expression of type " + tree.tpe
-      else if (tree.symbol.hasFlag(OVERLOADED))
-        "overloaded method " + tree.symbol + " with alternatives " + tree.tpe
-      else
-        tree.symbol.toString() +
-        (if (tree.symbol.isModule) ""
-         else if (tree.tpe.paramSectionCount > 0) ": "+tree.tpe
-         else " of type "+tree.tpe) +
-        (if (tree.symbol.name == nme.apply) tree.symbol.locationString else "")
-
-    def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) =
-      treeSymTypeMsg(tree) + msg + argtpes.mkString("(", ",", ")") +
-       (if (isWildcard(pt)) "" else " with expected result type " + pt)
-
-    // todo: use also for other error messages
-    private def existentialContext(tp: Type) = tp.existentialSkolems match {
-      case List() => ""
-      case skolems =>
-        def disambiguate(ss: List[String]) = ss match {
-          case List() => ss
-          case s :: ss1 => s :: (ss1 map (s1 => if (s1 == s) "(some other)"+s1 else s1))
-        }
-      " where "+(disambiguate(skolems map (_.existentialToString)) mkString ", ")
-    }
-
-    def foundReqMsg(found: Type, req: Type): String =
-      withDisambiguation(found, req) {
-        ";\n found   : " + found.toLongString + existentialContext(found) +
-         "\n required: " + req + existentialContext(req)
-      }
-
-    def typeErrorMsg(found: Type, req: Type) = {
-      //println(found.baseTypeSeq)
-      "type mismatch" + foundReqMsg(found, req) +
-      (if ((found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req))
-        "\n possible cause: missing arguments for method or constructor"
-       else "")
+      tree setType ErrorType
     }
 
     def error(pos: Position, msg: String) {
@@ -276,12 +221,18 @@ trait Infer {
 
     def typeError(pos: Position, found: Type, req: Type) {
       if (!found.isErroneous && !req.isErroneous) {
-        error(pos,
-              typeErrorMsg(found, req)+
-              (if (pos != NoPosition && pos == addendumPos) addendum()
-               else ""))
-        if (settings.explaintypes.value) explainTypes(found, req)
+        error(pos, withAddendum(pos)(typeErrorMsg(found, req)))
+
+        if (settings.explaintypes.value)
+          explainTypes(found, req)
       }
+    }
+
+    def typeErrorMsg(found: Type, req: Type) = {
+      def isPossiblyMissingArgs = (found.resultApprox ne found) && isWeaklyCompatible(found.resultApprox, req)
+      def missingArgsMsg = if (isPossiblyMissingArgs) "\n possible cause: missing arguments for method or constructor" else ""
+
+      "type mismatch" + foundReqMsg(found, req) + missingArgsMsg
     }
 
     def typeErrorTree(tree: Tree, found: Type, req: Type): Tree = {
@@ -290,53 +241,7 @@ trait Infer {
     }
 
     def explainTypes(tp1: Type, tp2: Type) =
-      withDisambiguation(tp1, tp2) { global.explainTypes(tp1, tp2) }
-
-    /** If types `tp1' `tp2' contain different type variables with same name
-     *  differentiate the names by including owner information.  Also, if the
-     *  type error is because of a conflict between two identically named
-     *  classes and one is in package scala, fully qualify the name so one
-     *  need not deduce why "java.util.Iterator" and "Iterator" don't match.
-     */
-    private def withDisambiguation[T](tp1: Type, tp2: Type)(op: => T): T = {
-
-      def explainName(sym: Symbol) = {
-        if (!sym.name.toString.endsWith(")")) {
-          sym.name = newTypeName(sym.name.toString+"(in "+sym.owner+")")
-        }
-      }
-
-      val patches = new ListBuffer[(Symbol, Symbol, Name)]
-      for {
-        t1 @ TypeRef(_, sym1, _) <- tp1
-        t2 @ TypeRef(_, sym2, _) <- tp2
-        if sym1 != sym2
-      } {
-        if (t1.toString == t2.toString) { // type variable collisions
-          val name = sym1.name
-          explainName(sym1)
-          explainName(sym2)
-          if (sym1.owner == sym2.owner) sym2.name = newTypeName("(some other)"+sym2.name)
-          patches += ((sym1, sym2, name))
-        }
-        else if (sym1.name == sym2.name) { // symbol name collisions where one is in scala._
-          val name = sym1.name
-          def scalaQualify(s: Symbol) =
-            if (s.owner.isScalaPackageClass) s.name = newTypeName("scala." + s.name)
-          List(sym1, sym2) foreach scalaQualify
-          patches += ((sym1, sym2, name))
-        }
-      }
-
-      val result = op
-
-      for ((sym1, sym2, name) <- patches) {
-        sym1.name = name
-        sym2.name = name
-      }
-
-      result
-    }
+      withDisambiguation(tp1, tp2)(global.explainTypes(tp1, tp2))
 
     /* -- Tests & Checks---------------------------------------------------- */
 
@@ -1591,7 +1496,7 @@ trait Infer {
     }
 
     def checkDead(tree: Tree): Tree = {
-      if (settings.Xwarndeadcode.value && tree.tpe != null && tree.tpe.typeSymbol == NothingClass)
+      if (settings.Ywarndeadcode.value && tree.tpe != null && tree.tpe.typeSymbol == NothingClass)
         context.warning (tree.pos, "dead code following this construct")
       tree
     }

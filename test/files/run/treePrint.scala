@@ -35,6 +35,6 @@ object Test {
 
     val repl = new Interpreter(settings, new PrintWriter(new NullOutputStream))
     repl.interpret("""def initialize = "Have to interpret something or we get errors." """)
-    println(repl mkTree code)
+    println(repl.power mkTree code)
   }
 }

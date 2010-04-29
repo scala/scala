@@ -33,6 +33,7 @@ class XMLCompletion(root: Node) extends CompletionAware {
       s :: res
     }).sorted
   }
+  def completions(verbosity: Int) = completions
 
   override def execute(id: String)  = getNode(id)
   override def follow(id: String)   = getNode(id) map (x => new XMLCompletion(x))

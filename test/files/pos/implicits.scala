@@ -82,3 +82,8 @@ package foo2709 {
     }
   }
 }
+
+// Problem with specs
+object specsProblem {
+  println(implicitly[Manifest[Class[_]]])
+}

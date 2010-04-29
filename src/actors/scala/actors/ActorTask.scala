@@ -25,24 +25,31 @@ private[actors] class ActorTask(actor: Actor,
 
   protected override def beginExecution() {
     super.beginExecution()
-    if (actor.shouldExit)
-      actor.exit()
+    actor.synchronized { // shouldExit guarded by actor
+      if (actor.shouldExit)
+        actor.exit()
+    }
   }
 
-  protected override def terminateExecution(e: Exception) {
+  protected override def terminateExecution(e: Throwable) {
     val senderInfo = try { Some(actor.sender) } catch {
       case _: Exception => None
     }
-    val uncaught = new UncaughtException(actor,
-                                         if (msg != null) Some(msg) else None,
-                                         senderInfo,
-                                         currentThread,
-                                         e)
+    val uncaught = UncaughtException(actor,
+                                     if (msg != null) Some(msg) else None,
+                                     senderInfo,
+                                     currentThread,
+                                     e)
 
-    actor.synchronized {
+    val todo = actor.synchronized {
       if (!actor.links.isEmpty)
-        actor exitLinked uncaught
+        actor.exitLinked(uncaught)
+      else {
+        super.terminateExecution(e)
+        () => {}
+      }
     }
+    todo()
   }
 
 }

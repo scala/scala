@@ -102,17 +102,20 @@ abstract class TreeInfo {
     case _ => false
   }
 
-  def isVariableOrGetter(tree: Tree) = tree match {
-    case Ident(_) =>
-      tree.symbol.isVariable
-    case Select(qual, _) =>
-      tree.symbol.isVariable ||
-      (mayBeVarGetter(tree.symbol) &&
-       tree.symbol.owner.info.member(nme.getterToSetter(tree.symbol.name)) != NoSymbol)
-    case Apply(Select(qual, nme.apply), _) =>
-      qual.tpe.member(nme.update) != NoSymbol
-    case _ =>
-      false
+  def isVariableOrGetter(tree: Tree) = {
+    def sym       = tree.symbol
+    def isVar     = sym.isVariable
+    def isGetter  = mayBeVarGetter(sym) && sym.owner.info.member(nme.getterToSetter(sym.name)) != NoSymbol
+
+    tree match {
+      case Ident(_)         => isVar
+      case Select(_, _)     => isVar || isGetter
+      case _                =>
+        methPart(tree) match {
+          case Select(qual, nme.apply)  => qual.tpe.member(nme.update) != NoSymbol
+          case _                        => false
+        }
+    }
   }
 
   /** Is tree a self constructor call?
@@ -295,10 +298,10 @@ abstract class TreeInfo {
   /** The method part of an application node
    */
   def methPart(tree: Tree): Tree = tree match {
-    case Apply(fn, _) => methPart(fn)
-    case TypeApply(fn, _) => methPart(fn)
+    case Apply(fn, _)           => methPart(fn)
+    case TypeApply(fn, _)       => methPart(fn)
     case AppliedTypeTree(fn, _) => methPart(fn)
-    case _ => tree
+    case _                      => tree
   }
 
   def firstArgument(tree: Tree): Tree = tree match {
@@ -325,18 +328,19 @@ abstract class TreeInfo {
       false
   }
 
-  /** Compilation unit is the predef object
+  /** Compilation unit is class or object 'name' in package 'scala'
    */
   def isUnitInScala(tree: Tree, name: Name) = tree match {
-    case PackageDef(Ident(nme.scala_), defs) => isObject(defs, name)
+    case PackageDef(Ident(nme.scala_), defs) => isImplDef(defs, name)
     case _ => false
   }
 
-  private def isObject(trees: List[Tree], name: Name): Boolean = trees match {
-    case Import(_, _) :: xs => isObject(xs, name)
-    case DocDef(_, tree1) :: Nil => isObject(List(tree1), name)
-    case Annotated(_, tree1) :: Nil => isObject(List(tree1), name)
+  private def isImplDef(trees: List[Tree], name: Name): Boolean = trees match {
+    case Import(_, _) :: xs => isImplDef(xs, name)
+    case DocDef(_, tree1) :: Nil => isImplDef(List(tree1), name)
+    case Annotated(_, tree1) :: Nil => isImplDef(List(tree1), name)
     case ModuleDef(_, `name`, _) :: Nil => true
+    case ClassDef(_, `name`, _, _) :: Nil => true
     case _ => false
   }
 

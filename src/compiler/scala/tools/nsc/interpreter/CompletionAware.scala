@@ -21,8 +21,7 @@ trait CompletionAware {
   /** The complete list of unqualified Strings to which this
    *  object will complete.
    */
-  def completions(): List[String]
-  def completions(start: String): List[String] = completions filter (_ startsWith start)
+  def completions(verbosity: Int): List[String]
 
   /** Default filter to apply to completions.
    */
@@ -47,6 +46,19 @@ trait CompletionAware {
    */
   def execute(id: String): Option[Any] = None
 
+  /** A list of useful information regarding a specific uniquely
+   *  identified completion.  This is specifically written for the
+   *  following situation, but should be useful elsewhere too:
+   *
+   *    x.y.z.methodName<tab>
+   *
+   *  If "methodName" is among z's completions, and verbosity > 0
+   *  indicating tab has been pressed twice consecutively, then we
+   *  call alternativesFor and show a list of overloaded method
+   *  signatures.
+   */
+  def alternativesFor(id: String): List[String] = Nil
+
   /** Given string 'buf', return a list of all the strings
    *  to which it can complete.  This may involve delegating
    *  to other CompletionAware objects.
@@ -54,12 +66,16 @@ trait CompletionAware {
   def completionsFor(parsed: Parsed): List[String] = {
     import parsed._
 
-    val cs =
-      if (isEmpty) completions()
-      else if (isUnqualified && !isLastDelimiter) completions(buffer)
+    val comps = completions(verbosity) filter (_ startsWith buffer)
+    val results =
+      if (isEmpty) comps
+      else if (isUnqualified && !isLastDelimiter) {
+        if (verbosity > 0 && (comps contains buffer)) alternativesFor(buffer)
+        else comps
+      }
       else follow(bufferHead) map (_ completionsFor bufferTail) getOrElse Nil
 
-    cs filterNot filterNotFunction map mapFunction sortWith (sortFunction _)
+    results filterNot filterNotFunction map mapFunction sortWith (sortFunction _)
   }
 
   /** TODO - unify this and completionsFor under a common traverser.
@@ -67,14 +83,14 @@ trait CompletionAware {
   def executionFor(parsed: Parsed): Option[Any] = {
     import parsed._
 
-    if (isUnqualified && !isLastDelimiter && (completions contains buffer)) execute(buffer)
+    if (isUnqualified && !isLastDelimiter && (completions(verbosity) contains buffer)) execute(buffer)
     else if (!isQualified) None
     else follow(bufferHead) flatMap (_ executionFor bufferTail)
   }
 }
 
 object CompletionAware {
-  val Empty = new CompletionAware { val completions = Nil }
+  val Empty = new CompletionAware { def completions(verbosity: Int) = Nil }
 
   // class Forwarder(underlying: CompletionAware) extends CompletionAware {
   //   override def completions() = underlying.completions()
@@ -101,6 +117,7 @@ object CompletionAware {
   def apply(terms: () => List[String], followFunction: String => Option[CompletionAware]): CompletionAware =
     new CompletionAware {
       def completions = terms()
+      def completions(verbosity: Int) = completions
       override def follow(id: String) = followFunction(id)
     }
 

@@ -1,0 +1,9 @@
+abc
+abc
+null
+shouldn't see two initialized values and one uninitialized
+42
+42
+0
+ok
+ok

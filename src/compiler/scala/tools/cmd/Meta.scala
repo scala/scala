@@ -22,11 +22,11 @@ object Meta {
   trait StdOpts {
     self: Spec with Interpolation =>
 
-                          Bash.name     --> runAndExit(Bash.action())
-    val runnerFileName  = Runner.name   --| ;
+                                Bash.name   --> runAndExit(Bash.action())
+    val selfUpdateName  = SelfUpdate.name   --| ;
 
-    if (runnerFileName.isDefined)
-      runAndExit(Runner.action())
+    if (selfUpdateName.isDefined)
+      runAndExit(SelfUpdate.action())
 
     /** I think we're as close as we can get to bundling completion with
      *  the program given the constraints imposed by bash.  This outputs
@@ -47,12 +47,17 @@ object Meta {
       }
     }
 
-    /** A very basic runner script.
+    /** Generates a very basic runner script.  It's called SelfUpdate
+     *  because once it exists you can do something like
+     *
+     *    tools/scmp --self-update tools/scmp
+     *
+     *  and it will overwrite itself with the current version.
      */
-    object Runner extends Opt {
-      val name    = "generate-runner"
+    object SelfUpdate extends Opt {
+      val name    = "self-update"
       val action  = () => {
-        val file = File(runnerFileName.get)
+        val file = File(selfUpdateName.get)
         file writeAll interpolate(runnerTemplate)
         file setExecutable true
         ()

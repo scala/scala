@@ -145,8 +145,19 @@ h1 {
 }
 
 #tpl ol > li .icon {
+  padding-right: 5px;
 	bottom: -2px;
 	position: relative;
+}
+
+#tpl .templates div.placeholder {
+  padding-right: 5px;
+  width: 13px;
+  display: inline-block;  
+}
+
+#tpl .templates span.tplLink {
+  padding-left: 8px;
 }
 
 #content {

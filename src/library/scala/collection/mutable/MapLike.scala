@@ -191,9 +191,10 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    *
    * @param p  The test predicate
    */
-  @deprecated("cannot be type inferred because of retain in Iterable.")
   def retain(p: (A, B) => Boolean): this.type = {
-    for ((k, v) <- this) if (!p(k, v)) -=(k)
+    for ((k, v) <- this ; if !p(k, v))
+      this -= k
+
     this
   }
 

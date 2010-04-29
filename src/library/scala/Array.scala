@@ -207,6 +207,7 @@ object Array extends FallbackArrayBuilding {
    */
   def fill[T: ClassManifest](n: Int)(elem: => T): Array[T] = {
     val b = newBuilder[T]
+    b.sizeHint(n)
     var i = 0
     while (i < n) {
       b += elem
@@ -270,6 +271,7 @@ object Array extends FallbackArrayBuilding {
    */
   def tabulate[T: ClassManifest](n: Int)(f: Int => T): Array[T] = {
     val b = newBuilder[T]
+    b.sizeHint(n)
     var i = 0
     while (i < n) {
       b += f(i)
@@ -343,6 +345,8 @@ object Array extends FallbackArrayBuilding {
   def range(start: Int, end: Int, step: Int): Array[Int] = {
     if (step == 0) throw new IllegalArgumentException("zero step")
     val b = newBuilder[Int]
+    b.sizeHint(Range.count(start, end, step, false))
+
     var i = start
     while (if (step < 0) end < i else i < end) {
       b += i
@@ -360,6 +364,7 @@ object Array extends FallbackArrayBuilding {
    */
   def iterate[T: ClassManifest](start: T, len: Int)(f: T => T): Array[T] = {
     val b = newBuilder[T]
+    b.sizeHint(len)
     var acc = start
     var i = 0
     while (i < len) {

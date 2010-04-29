@@ -84,6 +84,10 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
    */
   def act(): Unit
 
+  /**
+   * This partial function is applied to exceptions that propagate out of
+   * this $actor's body.
+   */
   protected[actors] def exceptionHandler: PartialFunction[Exception, Unit] =
     Map()
 

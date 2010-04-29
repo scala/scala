@@ -17,9 +17,12 @@ import generic._
  *  which adds an element to the collection.
  *
  *  Collections are built from their empty element using this `+` method.
- *  @param empty  the empty element of the collection.
- *  @tparam Elem  the type of elements that get added to the builder.
- *  @tparam To    the type of the built collection.
+ *  @param  empty   the empty element of the collection.
+ *  @tparam Elem    the type of elements that get added to the builder.
+ *  @tparam To      the type of the built collection.
+ *
+ *  @note   "efficient `+`" is not idle talk.  Do not use this on mutable collections or any others
+ *  for which `+` may perform an unshared copy! See GrowingBuilder comments for more.
  *
  *  @author Martin Odersky
  *  @version 2.8

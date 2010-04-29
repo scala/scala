@@ -56,7 +56,7 @@ trait Categories {
      *  Category level or by individual tests.
      */
     def compile: TestStep         = (_: TestEntity).compile()
-    def isCheckPresent: TestStep  = (_: TestEntity).isCheckPresent
+    def checkFileRequired: TestStep  = (_: TestEntity).checkFileRequired
     def diff: TestStep            = (_: TestEntity).diff()
     def run: TestStep             = (_: TestEntity).run()
     def exec: TestStep            = (_: TestEntity).exec()

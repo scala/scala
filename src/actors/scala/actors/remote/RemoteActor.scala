@@ -13,33 +13,30 @@ package scala.actors
 package remote
 
 
-/** <p>
- *    This object provides methods for creating, registering, and
- *    selecting remotely accessible actors.
- *  </p>
- *  <p>
- *    A remote actor is typically created like this:
- *  </p><pre>
+/**
+ *  This object provides methods for creating, registering, and
+ *  selecting remotely accessible actors.
+ *
+ *  A remote actor is typically created like this:
+ *  {{{
  *  actor {
  *    alive(9010)
  *    register('myName, self)
  *
  *    // behavior
  *  }
- *  </pre>
- *  <p>
- *    It can be accessed by an actor running on a (possibly)
- *    different node by selecting it in the following way:
- *  </p><pre>
+ *  }}}
+ *  It can be accessed by an actor running on a (possibly)
+ *  different node by selecting it in the following way:
+ *  {{{
  *  actor {
  *    // ...
- *    <b>val</b> c = select(Node("127.0.0.1", 9010), 'myName)
+ *    val c = select(Node("127.0.0.1", 9010), 'myName)
  *    c ! msg
  *    // ...
  *  }
- *  </pre>
+ *  }}}
  *
- * @version 0.9.18
  * @author Philipp Haller
  */
 object RemoteActor {

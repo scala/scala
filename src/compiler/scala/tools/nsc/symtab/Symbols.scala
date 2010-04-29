@@ -606,6 +606,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         supersym == NoSymbol || supersym.isIncompleteIn(base)
       }
 
+    // Does not always work if the rawInfo is a SourcefileLoader, see comment
+    // in "def coreClassesFirst" in Global.
     final def exists: Boolean =
       this != NoSymbol && (!owner.isPackageClass || { rawInfo.load(this); rawInfo != NoType })
 
@@ -910,8 +912,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else {
         val current = phase
         try {
-          while (phase.keepsTypeParams && (phase.prev ne NoPhase)) phase = phase.prev
+          while ((phase.prev ne NoPhase) && phase.prev.keepsTypeParams) phase = phase.prev
+//          while (phase.keepsTypeParams && (phase.prev ne NoPhase))        phase = phase.prev
           if (phase ne current) phase = phase.next
+          if (settings.debug.value && (phase ne current))
+            log("checking unsafeTypeParams(" + this + ") at: " + current + " reading at: " + phase)
           rawInfo.typeParams
         } finally {
           phase = current
@@ -1538,7 +1543,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         "package object "+owner.nameString
       else
         compose(List(kindString,
-                     if (isClassConstructor) owner.simpleName+idString else nameString))
+                     if (isClassConstructor) owner.simpleName.decode+idString else nameString))
 
     /** If owner is a package object, its owner, else the normal owner.
      */
@@ -1742,20 +1747,22 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     private var mtpePeriod = NoPeriod
     private var mtpePre: Type = _
     private var mtpeResult: Type = _
+    private var mtpeInfo: Type = _
 
     override def cloneSymbolImpl(owner: Symbol): Symbol =
       new MethodSymbol(owner, pos, name).copyAttrsFrom(this)
 
     def typeAsMemberOf(pre: Type): Type = {
       if (mtpePeriod == currentPeriod) {
-        if (mtpePre eq pre) return mtpeResult
+        if ((mtpePre eq pre) && (mtpeInfo eq info)) return mtpeResult
       } else if (isValid(mtpePeriod)) {
         mtpePeriod = currentPeriod
-        if (mtpePre eq pre) return mtpeResult
+        if ((mtpePre eq pre) && (mtpeInfo eq info)) return mtpeResult
       }
       val res = pre.computeMemberType(this)
       mtpePeriod = currentPeriod
       mtpePre = pre
+      mtpeInfo = info
       mtpeResult = res
       res
     }

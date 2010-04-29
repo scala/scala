@@ -160,6 +160,9 @@ object Test5 {
   }
 }
 
+// #3345
+class A3345(@volatile private var i:Int)
+
 object Test {
   def main(args: Array[String]) {
     Test1.run

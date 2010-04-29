@@ -43,18 +43,12 @@ trait PartestCompilation {
     def scalac(args: List[String]): Boolean = {
       val allArgs = assembleScalacArgs(args)
       val (global, files) = newGlobal(allArgs)
-      val foundFiles = execCwd match {
-        case Some(cwd)  => files map (x => File(cwd / x))
-        case _          => files map (x => File(x))
-      }
       def nonFileArgs = if (isVerbose) global.settings.recreateArgs else assembleScalacArgs(Nil)
-      def traceArgs   = fromArgs(nonFileArgs ++ (foundFiles map tracePath))
-      def traceMsg    =
-        if (isVerbose) "%s %s".format(build.scalaBin / "scalac", traceArgs)
-        else "scalac " + traceArgs
+      def traceArgs   = fromArgs(nonFileArgs ++ (files map tracePath))
+      def traceMsg    = "scalac " + traceArgs
 
       trace(traceMsg)
-      isDryRun || global.partestCompile(foundFiles map (_.path), true)
+      isDryRun || global.partestCompile(files, true)
     }
 
     /** Actually running the test, post compilation.
@@ -71,7 +65,7 @@ trait PartestCompilation {
       val cmd = fromArgs(javaCmdAndOptions ++ createPropertyString() ++ scalaCmdAndOptions)
 
       def traceMsg = if (isVerbose) cmd else fromArgs(javaCmd :: args)
-      trace(traceMsg)
+      trace("runScala: " + traceMsg)
 
       isDryRun || execAndLog(cmd)
     }

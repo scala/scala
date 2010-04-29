@@ -21,6 +21,6 @@ import javax.swing._
  * @see javax.swing.JToggleButton
  */
 class ToggleButton(text0: String) extends AbstractButton {
-  override lazy val peer: JToggleButton = new JToggleButton(text0)
+  override lazy val peer: JToggleButton = new JToggleButton(text0) with SuperMixin
   def this() = this("")
 }

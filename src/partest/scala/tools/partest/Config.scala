@@ -15,7 +15,7 @@ trait Config {
   lazy val src    = absolutize(srcDir).toDirectory
   lazy val build  = new TestBuild()
 
-  def javaHomeEnv = envOrElse("JAVA_HOME", null)
+  def javaHomeEnv = envOrElse("JAVA_HOME", "")
   def javaCmd     = envOrElse("JAVACMD", "java")
   def javacCmd    = Option(javaHomeEnv) map (x => Path(x) / "bin" / "javac" path) getOrElse "javac"
 

@@ -8,6 +8,7 @@ package interpreter
 
 class SeqCompletion[T](elems: Seq[T]) extends CompletionAware {
   lazy val completions = elems.indices.toList map ("(%d)" format _)
+  def completions(verbosity: Int) = completions
   private def elemAt(name: String) =
     if (completions contains name) Some(elems(name drop 1 dropRight 1 toInt)) else None
 
@@ -27,6 +28,7 @@ class ProductCompletion(root: Product) extends CompletionAware {
   }
 
   lazy val completions = caseNames
+  def completions(verbosity: Int) = completions
   override def execute(name: String) = fieldForName(name)
   override def follow(name: String) = fieldForName(name) map (x => ProductCompletion(x))
 }

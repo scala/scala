@@ -11,19 +11,18 @@
 package scala.actors
 
 
-/** <p>
- *    This class is used to pattern match on values that were sent
- *    to some channel <code>Chan<sub>n</sub></code> by the current
- *    actor <code>self</code>.
- *  </p>
- *  <p>
- *    The following example demonstrates its usage:
- *  </p><pre>
+/**
+ *  This class is used to pattern match on values that were sent
+ *  to some channel <code>Chan<sub>n</sub></code> by the current
+ *  actor <code>self</code>.
+ *
+ *  The following example demonstrates its usage:
+ *  {{{
  *  receive {
  *    <b>case</b> Chan1 ! msg1 => ...
  *    <b>case</b> Chan2 ! msg2 => ...
  *  }
- *  </pre>
+ *  }}}
  *
  * @author Philipp Haller
  */
@@ -40,6 +39,8 @@ case class ! [a](ch: Channel[a], msg: a)
  * @define channel channel
  */
 class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputChannel[Msg] with CanReply[Msg, Any] {
+
+  type Future[+P] = scala.actors.Future[P]
 
   def this() = this(Actor.self)
 
@@ -107,6 +108,26 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
       case TIMEOUT => None
       case x => Some(x)
     }
+  }
+
+  def !![A](msg: Msg, handler: PartialFunction[Any, A]): Future[A] = {
+    val ftch = new Channel[A](Actor.self(receiver.scheduler))
+    receiver.send(scala.actors.!(this, msg), new OutputChannel[Any] {
+      def !(msg: Any) =
+        ftch ! handler(msg)
+      def send(msg: Any, replyTo: OutputChannel[Any]) =
+        ftch.send(handler(msg), replyTo)
+      def forward(msg: Any) =
+        ftch.forward(handler(msg))
+      def receiver =
+        ftch.receiver
+    })
+    Futures.fromInputChannel(ftch)
+  }
+
+  def !!(msg: Msg): Future[Any] = {
+    val noTransform: PartialFunction[Any, Any] = { case x => x }
+    this !! (msg, noTransform)
   }
 
 }

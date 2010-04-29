@@ -34,6 +34,17 @@ object Chars {
       -1
   }
 
+  /** Convert a character to a backslash-u escape */
+  def char2uescape(c: Char): String = {
+    var rest = c.toInt
+    val buf = new StringBuilder
+    for (i <- 1 to 4) {
+      buf ++= (rest % 16).toHexString
+      rest = rest / 16
+    }
+    "\\u" + buf.toString.reverse
+  }
+
   /** Is character a line break? */
   @inline def isLineBreakChar(c: Char) = (c: @switch) match {
     case LF|FF|CR|SU  => true

@@ -221,9 +221,8 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     var vparamss1 =
       vparamss map (vps => vps.map { vd =>
         atPos(vd.pos.focus) {
-          val pa = if (vd.hasFlag(PRIVATE | LOCAL)) 0L else PARAMACCESSOR
           ValDef(
-            Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | pa) withAnnotations vd.mods.annotations,
+            Modifiers(vd.mods.flags & (IMPLICIT | DEFAULTPARAM | BYNAMEPARAM) | PARAM | PARAMACCESSOR) withAnnotations vd.mods.annotations,
             vd.name, vd.tpt.duplicate, vd.rhs.duplicate)
         }})
     val (edefs, rest) = body span treeInfo.isEarlyDef
@@ -260,7 +259,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     }
     // println("typed template, gvdefs = "+gvdefs+", parents = "+parents+", constrs = "+constrs)
     constrs foreach (ensureNonOverlapping(_, parents ::: gvdefs))
-    // remove defaults
+    // vparamss2 are used as field definitions for the class. remove defaults
     val vparamss2 = vparamss map (vps => vps map { vd =>
       treeCopy.ValDef(vd, vd.mods &~ DEFAULTPARAM, vd.name, vd.tpt, EmptyTree)
     })

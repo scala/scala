@@ -13,6 +13,7 @@ import java.lang.Long.toHexString
 import java.lang.Float.intBitsToFloat
 import java.lang.Double.longBitsToDouble
 
+import cmd.program.Simple
 import symtab.{ Flags, Names }
 import scala.reflect.generic.{ PickleBuffer, PickleFormat }
 import interpreter.ByteCode.scalaSigBytesForPath
@@ -288,15 +289,23 @@ object ShowPickled extends Names {
     printFile(pickle, Console.out, bare)
   }
 
+  private lazy val ShowPickledSpec =
+    Simple(
+      Simple.scalaProgramInfo("showPickled", "Usage: showPickled [--bare] <classname>"),
+      List("--bare" -> "suppress numbers in output"),
+      Nil,
+      null
+    )
+
   /** Option --bare suppresses numbers so the output can be diffed.
    */
   def main(args: Array[String]) {
-    val parsed = cmd.CommandLine(args.toList, List("--bare"), Nil)
-    def isBare = parsed isSet "--bare"
+    val runner = ShowPickledSpec instance args
+    import runner._
 
-    parsed.residualArgs foreach { arg =>
+    residualArgs foreach { arg =>
       (fromFile(arg) orElse fromName(arg)) match {
-        case Some(pb) => show(arg, pb, isBare)
+        case Some(pb) => show(arg, pb, parsed isSet "--bare")
         case _        => Console.println("Cannot read " + arg)
       }
     }

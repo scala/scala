@@ -8,7 +8,7 @@ package scala.tools
 package nsc
 package settings
 
-import io.AbstractFile
+import io.{AbstractFile, VirtualDirectory}
 import scala.tools.util.StringOps
 import scala.collection.mutable.ListBuffer
 
@@ -291,7 +291,11 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
         classFile.path.startsWith(outDir.path)
 
       singleOutDir match {
-        case Some(d) => Nil
+        case Some(d) =>
+          d match {
+              case _: VirtualDirectory => Nil
+              case _                   => List(d.lookupPathUnchecked(srcPath, false))
+          }
         case None =>
           (outputs filter (isBelow _).tupled) match {
             case Nil => Nil

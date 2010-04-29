@@ -104,6 +104,16 @@ self =>
     loop(this, "")
   }
 
+  override def length: Int = {
+    var len = 0
+    var left = this
+    while (!left.isEmpty) {
+      len += 1
+      left = left.tail
+    }
+    len
+  }
+
   /** It's an imperfect world, but at least we can bottle up the
    *  imperfection in a capsule.
    */

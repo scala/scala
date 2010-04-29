@@ -52,8 +52,6 @@ object Interpolation {
     |#!/bin/sh
     |#
     |
-    |scala @@MAINCLASS@@ $*
-    |
-  """.stripMargin
+    |scala @@MAINCLASS@@ "$@"
+    |""".stripMargin.trim + "\n"
 }
-

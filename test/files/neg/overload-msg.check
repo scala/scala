@@ -1,0 +1,13 @@
+overload-msg.scala:3: error: overloaded method value + with alternatives:
+  (Double)Double <and>
+  (Float)Float <and>
+  (Long)Long <and>
+  (scala.Int)scala.Int <and>
+  (Char)scala.Int <and>
+  (Short)scala.Int <and>
+  (Byte)scala.Int <and>
+  (java.lang.String)java.lang.String
+ cannot be applied to (Int(in method f))
+  def f[Int](y: Int) = x + y
+                       ^
+one error found

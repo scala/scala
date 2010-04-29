@@ -1205,7 +1205,18 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
           } else {
             incCounter(compoundBaseTypeSeqCount)
             baseTypeSeqCache = undetBaseTypeSeq
-            baseTypeSeqCache = memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
+            baseTypeSeqCache = if (typeSymbol.isRefinementClass)
+              memo(compoundBaseTypeSeq(this))(_.baseTypeSeq updateHead typeSymbol.tpe)
+            else
+              compoundBaseTypeSeq(this)
+            // [Martin] suppressing memo-ization solves the problem with "same type after erasure" errors
+            // when compiling with
+            // scalac scala.collection.IterableViewLike.scala scala.collection.IterableLike.scala
+            // I have not yet figured out precisely why this is the case.
+            // My current assumption is that taking memos forces baseTypeSeqs to be computed
+            // at stale types (i.e. the underlying typeSymbol has already another type).
+            // I do not yet see precisely why this would cause a problem, but it looks
+            // fishy in any case.
           }
         }
         //Console.println("baseTypeSeq(" + typeSymbol + ") = " + baseTypeSeqCache.toList);//DEBUG

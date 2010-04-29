@@ -215,4 +215,10 @@ abstract class HtmlPage { thisPage =>
     case tpl :: tpls => templateToHtml(tpl) ++ sep ++ templatesToHtml(tpls, sep)
   }
 
+  def docEntityKindToString(ety: DocTemplateEntity) =
+  	if (ety.isTrait) "trait"
+  	else if (ety.isClass) "class"
+  	else if (ety.isObject) "object"
+  	else if (ety.isPackage) "package"
+  	else "class"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
 }

@@ -1,6 +1,6 @@
 package scala.tools.nsc
-package dependencies;
-import util.SourceFile;
+package dependencies
+import util.SourceFile
 import io.AbstractFile
 import collection._
 import symtab.Flags
@@ -8,11 +8,11 @@ import symtab.Flags
 trait DependencyAnalysis extends SubComponent with Files {
   import global._
 
-  val phaseName = "dependencyAnalysis";
+  val phaseName = "dependencyAnalysis"
 
   def off = settings.make.value == "all"
 
-  def newPhase(prev : Phase) = new AnalysisPhase(prev)
+  def newPhase(prev: Phase) = new AnalysisPhase(prev)
 
   lazy val maxDepth = settings.make.value match {
     case "changed" => 0
@@ -25,7 +25,7 @@ trait DependencyAnalysis extends SubComponent with Files {
   // todo: order insensible checking and, also checking timestamp?
   def validateClasspath(cp1: String, cp2: String): Boolean = cp1 == cp2
 
-  def nameToFile(src: AbstractFile, name : String) =
+  def nameToFile(src: AbstractFile, name: String) =
     settings.outputDirs.outputDirFor(src)
       .lookupPathUnchecked(name.toString.replace(".", java.io.File.separator) + ".class", false)
 
@@ -39,7 +39,7 @@ trait DependencyAnalysis extends SubComponent with Files {
   def dependenciesFile: Option[AbstractFile] = depFile
 
   def classpath = settings.classpath.value
-  def newDeps = new FileDependencies(classpath);
+  def newDeps = new FileDependencies(classpath)
 
   var dependencies = newDeps
 
@@ -48,19 +48,19 @@ trait DependencyAnalysis extends SubComponent with Files {
   /** Top level definitions per source file. */
   val definitions: mutable.Map[AbstractFile, List[Symbol]] =
     new mutable.HashMap[AbstractFile, List[Symbol]] {
-      override def default(f : AbstractFile) = Nil
+      override def default(f: AbstractFile) = Nil
   }
 
   /** External references used by source file. */
   val references: mutable.Map[AbstractFile, immutable.Set[String]] =
     new mutable.HashMap[AbstractFile, immutable.Set[String]] {
-      override def default(f : AbstractFile) = immutable.Set()
+      override def default(f: AbstractFile) = immutable.Set()
     }
 
   /** External references for inherited members used in the source file */
   val inherited: mutable.Map[AbstractFile, immutable.Set[Inherited]] =
     new mutable.HashMap[AbstractFile, immutable.Set[Inherited]] {
-      override def default(f : AbstractFile) = immutable.Set()
+      override def default(f: AbstractFile) = immutable.Set()
     }
 
   /** Write dependencies to the current file. */
@@ -71,15 +71,14 @@ trait DependencyAnalysis extends SubComponent with Files {
   /** Load dependencies from the given file and save the file reference for
    *  future saves.
    */
-  def loadFrom(f: AbstractFile, toFile: String => AbstractFile) : Boolean = {
+  def loadFrom(f: AbstractFile, toFile: String => AbstractFile): Boolean = {
     dependenciesFile = f
     FileDependencies.readFrom(f, toFile) match {
       case Some(fd) =>
         val success = if (shouldCheckClasspath) validateClasspath(fd.classpath, classpath) else true
         dependencies = if (success) fd else {
-          if (settings.debug.value) {
-            println("Classpath has changed. Nuking dependencies");
-          }
+          if (settings.debug.value)
+            println("Classpath has changed. Nuking dependencies")
           newDeps
         }
 
@@ -88,15 +87,13 @@ trait DependencyAnalysis extends SubComponent with Files {
     }
   }
 
-  def filter(files : List[SourceFile]) : List[SourceFile] =
+  def filter(files: List[SourceFile]): List[SourceFile] =
     if (off) files
-    else if (dependencies.isEmpty){
-      if(settings.debug.value){
-        println("No known dependencies. Compiling everything");
-      }
+    else if (dependencies.isEmpty) {
+      println("No known dependencies. Compiling " +
+              (if (settings.debug.value) files.mkString(", ") else "everything"))
       files
-    }
-    else {
+    } else {
       val (direct, indirect) = dependencies.invalidatedFiles(maxDepth);
       val filtered = files.filter(x => {
         val f = x.file.absolute
@@ -105,8 +102,7 @@ trait DependencyAnalysis extends SubComponent with Files {
       filtered match {
         case Nil => println("No changes to recompile");
         case x => println("Recompiling " + (
-          if(settings.debug.value) x.mkString(", ")
-          else x.length + " files")
+          if(settings.debug.value) x.mkString(", ") else x.length + " files")
         )
       }
       filtered
@@ -114,13 +110,13 @@ trait DependencyAnalysis extends SubComponent with Files {
 
   case class Inherited(qualifier: String, member: Name)
 
-  class AnalysisPhase(prev : Phase) extends StdPhase(prev){
+  class AnalysisPhase(prev: Phase) extends StdPhase(prev) {
 
     override def cancelled(unit: CompilationUnit) =
       super.cancelled(unit) && !unit.isJava
 
     def apply(unit : global.CompilationUnit) {
-      val f = unit.source.file.file;
+      val f = unit.source.file.file
       // When we're passed strings by the interpreter
       // they  have no source file. We simply ignore this case
       // as irrelevant to dependency analysis.
@@ -145,7 +141,7 @@ trait DependencyAnalysis extends SubComponent with Files {
 
         dependencies.reset(source)
         for (d <- unit.depends; if (d.sourceFile != null)){
-          dependencies.depends(source, d.sourceFile);
+          dependencies.depends(source, d.sourceFile)
         }
       }
 

@@ -449,7 +449,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val BooleanBeanPropertyAttr: Symbol = getClass(sn.BooleanBeanProperty)
 
     lazy val AnnotationDefaultAttr: Symbol = {
-      val attr = newClass(RootClass, nme.AnnotationDefaultATTR, List(AnnotationClass.typeConstructor))
+      val RuntimePackageClass = getModule("scala.runtime").tpe.typeSymbol
+      val attr = newClass(RuntimePackageClass, nme.AnnotationDefaultATTR, List(AnnotationClass.typeConstructor))
       // This attribute needs a constructor so that modifiers in parsed Java code make sense
       attr.info.decls enter (attr newConstructor NoPosition setInfo MethodType(Nil, attr.tpe))
       attr
@@ -815,7 +816,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         StringClass, "+", anyparam, stringtype) setFlag FINAL
 
       val forced = List( // force initialization of every symbol that is entered as a side effect
-        AnnotationDefaultAttr,
+        AnnotationDefaultAttr, // #2264
         RepeatedParamClass,
         JavaRepeatedParamClass,
         ByNameParamClass,
@@ -839,9 +840,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         Object_asInstanceOf
       )
 
-      // #2264
-      var tmp = AnnotationDefaultAttr
-      tmp = RepeatedParamClass // force initialization
       if (forMSIL) {
         val intType = IntClass.typeConstructor
         val intParam = List(intType)

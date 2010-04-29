@@ -36,7 +36,7 @@ trait Set[A] extends Iterable[A]
  *  @define Coll immutable.Set
  *  @define coll immutable set
  */
-object Set extends SetFactory[Set] {
+object Set extends ImmutableSetFactory[Set] {
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
   override def empty[A]: Set[A] = EmptySet.asInstanceOf[Set[A]]

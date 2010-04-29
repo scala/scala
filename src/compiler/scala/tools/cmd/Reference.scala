@@ -32,7 +32,8 @@ trait Reference extends Spec {
 
   protected def help(str: => String)        = addHelp(() => str)
 
-  type ThisCommandLine <: SpecCommandLine
+  type ThisCommandLine <: CommandLine
+
   class SpecCommandLine(args: List[String]) extends CommandLine(Reference.this, args) { }
   protected def creator(args: List[String]): ThisCommandLine
   final def apply(args: String*): ThisCommandLine = creator(propertyArgs ++ args flatMap expandArg)

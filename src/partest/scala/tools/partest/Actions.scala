@@ -35,11 +35,11 @@ trait Actions {
       val cmd     = fromArgs(args)
 
       if (isVerbose) {
-        trace(execEnv.mkString("ENV(", "\n", "\n)"))
+        trace("runExec: " + execEnv.mkString("ENV(", "\n", "\n)"))
         execCwd foreach (x => trace("CWD(" + x + ")"))
       }
 
-      trace(cmd)
+      trace("runExec: " + cmd)
       isDryRun || execAndLog(cmd)
     }
 
@@ -69,20 +69,19 @@ trait Actions {
   trait ScriptableTest {
     self: TestEntity =>
 
-    // def customTestStep(line: String): TestStep
-
     /** Translates a line from a .cmds file into a teststep.
      */
     def customTestStep(line: String): TestStep = {
+      trace("customTestStep: " + line)
       val (cmd, rest) = line span (x => !Character.isWhitespace(x))
-      val args = toArgs(rest)
+      def qualify(name: String) = sourcesDir / name path
+      val args = toArgs(rest) map qualify
       def fail: TestStep = (_: TestEntity) => error("Parse error: did not understand '%s'" format line)
 
       val f: TestEntity => Boolean = cmd match {
         case "scalac"   => _ scalac args
         case "javac"    => _ javac args
         case "scala"    => _ runScala args
-        case "diff"     => if (args.size != 2) fail else _ => diffFiles(File(args(0)), File(args(1))) == ""
         case _          => fail
       }
       f
@@ -109,6 +108,8 @@ trait Actions {
      *  to know exactly when and how two-pass compilation fails.
      */
     def compile() = {
+      trace("compile: " + sourceFiles)
+
       def compileJava()   = javac(javaSources)
       def compileScala()  = scalac(scalaSources)
       def compileAll()    = scalac(allSources)
@@ -123,54 +124,82 @@ trait Actions {
     self: TestEntity =>
 
     def checkFile: File   = withExtension("check").toFile
-    def isCheckPresent    = checkFile.isFile || {
-      warnAndLog("A checkFile at '%s' is mandatory.\n" format checkFile.path)
-      false
-    }
+    def checkFileRequired =
+      returning(checkFile.isFile)(res => if (!res) warnAndLog("A checkFile at '%s' is mandatory.\n" format checkFile.path))
 
-    def normalizePaths(s: String) = {
-      /** This accomodates slash/backslash issues by noticing when a given
-       *  line was altered, which means it held a path, and only then converting any
-       *  backslashes to slashes.  It's not foolproof but it's as close as we
-       *  can get in one line.
-       */
-      val s2 = s.replaceAll("""(?m)\Q%s\E""" format (sourcesDir + File.separator), "")
-      if (s != s2) s2.replaceAll("""\\""", "/") else s2
-    }
+    lazy val sourceFileNames = sourceFiles map (_.name)
 
-    /** The default cleanup normalizes paths relative to sourcesDir.
+    /** Given the difficulty of verifying that any selective approach works
+     *  everywhere, the algorithm now is to look for the name of any known
+     *  source file for this test, and if seen, remove all the non-whitespace
+     *  preceding it.  (Paths with whitespace don't work anyway.) This should
+     *  wipe out all slashes, backslashes, C:\, cygwin/windows differences,
+     *  and whatever else makes a simple diff not simple.
+     *
+     *  The log and check file are both transformed, which I don't think is
+     *  correct -- only the log should be -- but doing it this way until I
+     *  can clarify martin's comments in #3283.
      */
-    def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString ("", "\n", "\n")
+    def normalizePaths(s: String) =
+      sourceFileNames.foldLeft(s)((res, name) => res.replaceAll("""\S+\Q%s\E""" format name, name))
+
+    /** The default cleanup normalizes paths relative to sourcesDir,
+     *  absorbs line terminator differences by going to lines and back,
+     *  and trims leading or trailing whitespace.
+     */
+    def diffCleanup(f: File) = safeLines(f) map normalizePaths mkString "\n" trim
+
+    /** diffFiles requires actual Files as arguments but the output we want
+     *  is the post-processed versions of log/check, so we resort to tempfiles.
+     */
+    lazy val diffOutput = {
+      if (!checkFile.exists) "" else {
+        val input   = diffCleanup(checkFile)
+        val output  = diffCleanup(logFile)
+        def asFile(s: String) = returning(File.makeTemp("partest-diff"))(_ writeAll s)
+
+        if (input == output) ""
+        else diffFiles(asFile(input), asFile(output))
+      }
+    }
+    private def checkTraceName  = tracePath(checkFile)
+    private def logTraceName    = tracePath(logFile)
+    private def isDiffConfirmed = checkFile.exists && (diffOutput == "")
+
+    private def sendTraceMsg() {
+      def result =
+        if (isDryRun) ""
+        else if (isDiffConfirmed) " [passed]"
+        else if (checkFile.exists) " [failed]"
+        else " [unchecked]"
+
+      trace("diff %s %s%s".format(checkTraceName, logTraceName, result))
+    }
 
     /** If optional is true, a missing check file is considered
      *  a successful diff.  Necessary since many categories use
      *  checkfiles in an ad hoc manner.
      */
-    def runDiff(check: File, log: File) = {
-      def arg1    = tracePath(check)
-      def arg2    = tracePath(log)
-      def noCheck = !check.exists && returning(true)(_ =>  trace("diff %s %s [unchecked]".format(arg1, arg2)))
-      def output  = diffCleanup(log)
-      def matches = safeSlurp(check).trim == output.trim
+    def runDiff() = {
+      sendTraceMsg()
 
-      def traceMsg =
-        if (isDryRun) "diff %s %s".format(arg1, arg2)
-        else "diff %s %s [%s]".format(arg1, arg2, (if (matches) "passed" else "failed"))
+      def updateCheck = (
+        isUpdateCheck && {
+          val formatStr = "** diff %s %s: " + (
+            if (checkFile.exists) "failed, updating '%s' and marking as passed."
+            else if (diffOutput == "") "not creating checkFile at '%s' as there is no output."
+            else "was unchecked, creating '%s' for future tests."
+          ) + "\n"
 
-      noCheck || {
-        trace(traceMsg)
+          normal(formatStr.format(checkTraceName, logTraceName, checkFile.path))
+          if (diffOutput != "") normal(diffOutput)
 
-        isDryRun || matches || (isUpdateCheck && {
-          normal("** diff %s %s failed:\n".format(arg1, arg2))
-          normal(diffOutput())
-          normal("** updating %s and marking as passed.\n".format(arg1))
-          check writeAll output
+          checkFile.writeAll(diffCleanup(logFile), "\n")
           true
-        })
-      }
-    }
+        }
+      )
 
-    private def cleanedLog    = returning(File makeTemp "partest-diff")(_ writeAll diffCleanup(logFile))
-    def diffOutput(): String  = checkFile ifFile (f => diffFiles(f, cleanedLog)) getOrElse ""
+      isDryRun || isDiffConfirmed || (updateCheck || !checkFile.exists)
+    }
   }
 }

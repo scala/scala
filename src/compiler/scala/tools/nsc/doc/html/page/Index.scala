@@ -63,18 +63,41 @@ class Index(universe: Universe) extends HtmlPage {
               <ol class="templates">{
                 val tpls: Map[String, Seq[DocTemplateEntity]] =
                   (pack.templates filter (t => !t.isPackage && !isExcluded(t) )) groupBy (_.name)
+
+                val placeholderSeq: NodeSeq = <div class="placeholder"></div>
+
+                def createLink(entity: DocTemplateEntity, includePlaceholder: Boolean, includeText: Boolean) = {
+                	val entityType = docEntityKindToString(entity)
+                	val linkContent = (
+                		{ if (includePlaceholder) placeholderSeq else NodeSeq.Empty }
+                		++
+                		{ if (includeText) <span class="tplLink">{ Text(packageQualifiedName(entity)) }</span> else NodeSeq.Empty }
+                	)
+                	<a class="tplshow" href={ relativeLinkTo(entity) }><span class={ entityType }>({ Text(entityType) })</span>{ linkContent }</a>
+                }
+
                 for (tn <- tpls.keySet.toSeq sortBy (_.toLowerCase)) yield {
-                  val entries = tpls(tn) sortWith { (less, more) => less.isTrait || more.isObject }
-                  def doEntry(ety: DocTemplateEntity, firstEty: Boolean): NodeSeq = {
-                    val etyTpe =
-                      if (ety.isTrait) "trait" else if (ety.isClass) "class" else if (ety.isObject) "object" else "package"
-                    <a class="tplshow" href={ relativeLinkTo(ety) }>
-                      { if (firstEty) Text(packageQualifiedName(ety)) else NodeSeq.Empty }
-                      <span class={ etyTpe }>({ Text(etyTpe) })</span>
-                    </a>
-                  }
-                  <li title={ entries.head.qualifiedName }>{
-                    doEntry(entries.head, true) ++ (entries.tail map (doEntry(_, false)))
+                	val entities = tpls(tn)
+                	val row = (entities find (e => e.isPackage || e.isObject), entities find (e => e.isTrait || e.isClass))
+
+                	val itemContents = row match {
+              			case (Some(obj), None) => createLink(obj, includePlaceholder = true, includeText = true)
+
+              			case (maybeObj, Some(template)) =>
+              				val firstLink = maybeObj match {
+              					case Some(obj) => createLink(obj, includePlaceholder = false, includeText = false)
+              					case None => placeholderSeq
+              				}
+
+              				firstLink ++ createLink(template, includePlaceholder = false, includeText = true)
+
+              			case _ => // FIXME: this default case should not be necessary. For some reason AnyRef is not a package, object, trait, or class
+              				val entry = entities.head
+              				placeholderSeq ++ createLink(entry, includePlaceholder = false, includeText = true)
+               		}
+
+                  <li title={ entities.head.qualifiedName }>{
+                  	itemContents
                   }</li>
                 }
               }</ol>

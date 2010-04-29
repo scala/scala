@@ -256,23 +256,25 @@ trait Contexts { self: Analyzer =>
       if (diagnostic.isEmpty) ""
       else diagnostic.mkString("\n","\n", "")
 
-    def error(pos: Position, err: Throwable) {
-      val msg = err.getMessage() + diagString
-      if (reportGeneralErrors)
-        unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
-      else
-        throw err
+    private def addDiagString(msg: String) = {
+      val ds = diagString
+      if (msg endsWith ds) msg else msg + ds
     }
 
-    def error(pos: Position, msg: String) {
-      val msg1 = msg + diagString
-      if (reportGeneralErrors)
-        unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg1 else msg1)
-      else
-        throw new TypeError(pos, msg1)
+    private def unitError(pos: Position, msg: String) =
+      unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
+
+    def error(pos: Position, err: Throwable) =
+      if (reportGeneralErrors) unitError(pos, addDiagString(err.getMessage()))
+      else throw err
+
+    def error(pos: Position, msg: String) = {
+      val msg1 = addDiagString(msg)
+      if (reportGeneralErrors) unitError(pos, msg1)
+      else throw new TypeError(pos, msg1)
     }
 
-    def warning(pos:  Position, msg: String) {
+    def warning(pos:  Position, msg: String) = {
       if (reportGeneralErrors) unit.warning(pos, msg)
     }
 
@@ -483,6 +485,19 @@ trait Contexts { self: Analyzer =>
                          else newImplicits :: nextOuter.implicitss
       }
       implicitsCache
+    }
+
+    def lookup(name: Name, expectedOwner: Symbol) = {
+      var res: Symbol = NoSymbol
+      var ctx = this
+      while(res == NoSymbol && ctx.outer != ctx) {
+        val s = ctx.scope.lookup(name)
+        if (s != NoSymbol && s.owner == expectedOwner)
+          res = s
+        else
+          ctx = ctx.outer
+      }
+      res
     }
   }
   class ImportInfo(val tree: Import, val depth: Int) {

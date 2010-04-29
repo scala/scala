@@ -27,7 +27,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
    *  Temporary Settings
    */
   val suppressVTWarn = BooleanSetting    ("-Ysuppress-vt-typer-warnings", "Suppress warnings from the typer when testing the virtual class encoding, NOT FOR FINAL!")
-  val javaignorecp   = BooleanSetting    ("-javaignorecp", "Does nothing - is being removed.")  // !!! marked for death, but need new starr.
 
   /**
    *  Standard settings
@@ -80,6 +79,9 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Xshowobj      = StringSetting     ("-Xshow-object", "object", "Show object info", "")
   val showPhases    = BooleanSetting    ("-Xshow-phases", "Print a synopsis of compiler phases")
   val sourceReader  = StringSetting     ("-Xsource-reader", "classname", "Specify a custom method for reading source files", "scala.tools.nsc.io.SourceReader")
+  val Xwarnfatal    = BooleanSetting    ("-Xfatal-warnings", "Fail the compilation if there are any warnings.")
+  val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics")
+  val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
@@ -133,21 +135,13 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
   val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.")
+  val Ycompletion   = BooleanSetting    ("-Ycompletion-debug", "Trace all tab completion activity.")
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible..")
-  val Ytailrec      = BooleanSetting    ("-Ytailrecommend", "Alert methods which would be tail-recursive if private or final.")
   val Yjenkins      = BooleanSetting    ("-Yjenkins-hashCodes", "Use jenkins hash algorithm for case class generated hashCodes.")
 
   // Warnings
-  val Ywarnfatal    = BooleanSetting    ("-Yfatal-warnings", "Fail the compilation if there are any warnings.")
-  val Xwarninit     = BooleanSetting    ("-Xwarninit", "Warn about possible changes in initialization semantics")
-  val Xchecknull    = BooleanSetting    ("-Xcheck-null", "Emit warning on selection of nullable reference")
-  val Xwarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
-  val YwarnShadow   = BooleanSetting    ("-Ywarn-shadowing", "Emit warnings about possible variable shadowing.")
-  val YwarnCatches  = BooleanSetting    ("-Ywarn-catches", "Emit warnings about catch blocks which catch everything.")
-  val Xwarnings     = BooleanSetting    ("-Xstrict-warnings", "Emit warnings about lots of things.") .
-                          withPostSetHook(_ =>
-                            List(YwarnShadow, YwarnCatches, Xwarndeadcode, Xwarninit) foreach (_.value = true)
-                          )
+  val Ywarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
+
   /**
    * "fsc-specific" settings.
    */
