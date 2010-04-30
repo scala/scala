@@ -377,6 +377,26 @@ abstract class ClassfileParser {
       value
     }
 
+    def getBytes(indices: List[Int]): Array[Byte] = {
+      assert(!indices.isEmpty)
+      var value = values(indices.head).asInstanceOf[Array[Byte]]
+      if (value eq null) {
+        val bytesBuffer = ArrayBuffer.empty[Byte]
+        for (index <- indices) {
+          if (index <= 0 || ConstantPool.this.len <= index) errorBadIndex(index)
+          val start = starts(index)
+          if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
+          val len = in.getChar(start + 1)
+          bytesBuffer ++= (in.buf, start + 3, len)
+        }
+        val bytes = bytesBuffer.toArray
+        val decodedLength = reflect.generic.ByteCodecs.decode(bytes)
+        value = bytes.take(decodedLength)
+        values(indices.head) = value
+      }
+      value
+    }
+
     /** Throws an exception signaling a bad constant index. */
     private def errorBadIndex(index: Int) =
       throw new RuntimeException("bad constant pool index: " + index + " at pos: " + in.bp)
@@ -923,6 +943,24 @@ abstract class ClassfileParser {
       Some(ScalaSigBytes(pool.getBytes(in.nextChar)))
     }
 
+    def parseScalaLongSigBytes: Option[ScalaSigBytes] = try {
+      val tag = in.nextByte.toChar
+      assert(tag == ARRAY_TAG)
+      val stringCount = in.nextChar
+      val entries =
+        for (i <- 0 until stringCount) yield {
+          val stag = in.nextByte.toChar
+          assert(stag == STRING_TAG)
+          in.nextChar.toInt
+        }
+      Some(ScalaSigBytes(pool.getBytes(entries.toList)))
+    }
+    catch {
+      case e: Throwable =>
+        e.printStackTrace
+        throw e
+    }
+
     /** Parse and return a single annotation.  If it is malformed,
      *  return None.
      */
@@ -938,6 +976,11 @@ abstract class ClassfileParser {
         // is encoded as a string because of limitations in the Java class file format.
         if ((attrType == definitions.ScalaSignatureAnnotation.tpe) && (name == nme.bytes))
           parseScalaSigBytes match {
+            case Some(c) => nvpairs += ((name, c))
+            case None => hasError = true
+          }
+        else if ((attrType == definitions.ScalaLongSignatureAnnotation.tpe) && (name == nme.bytes))
+          parseScalaLongSigBytes match {
             case Some(c) => nvpairs += ((name, c))
             case None => hasError = true
           }
@@ -980,6 +1023,8 @@ abstract class ClassfileParser {
       for (n <- 0 until nAttr)
         parseAnnotation(in.nextChar) match {
           case Some(scalaSig) if (scalaSig.atp == definitions.ScalaSignatureAnnotation.tpe) =>
+            scalaSigAnnot = Some(scalaSig)
+          case Some(scalaSig) if (scalaSig.atp == definitions.ScalaLongSignatureAnnotation.tpe) =>
             scalaSigAnnot = Some(scalaSig)
           case Some(annot) =>
             sym.addAnnotation(annot)

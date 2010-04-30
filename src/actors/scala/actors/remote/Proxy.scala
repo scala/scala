@@ -42,7 +42,7 @@ private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: Net
   }
 
   private def setupKernel() {
-    kernel = RemoteActor.someKernel
+    kernel = RemoteActor.someNetKernel
     kernel.registerProxy(node, name, this)
   }
 

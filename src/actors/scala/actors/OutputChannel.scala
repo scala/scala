@@ -22,6 +22,8 @@ trait OutputChannel[-Msg] {
 
   /**
    * Sends <code>msg</code> to this $actor (asynchronous).
+   *
+   * @param  msg      the message to send
    */
   def !(msg: Msg): Unit
 
@@ -36,6 +38,8 @@ trait OutputChannel[-Msg] {
 
   /**
    * Forwards <code>msg</code> to this $actor (asynchronous).
+   *
+   * @param  msg      the message to forward
    */
   def forward(msg: Msg): Unit
 

@@ -593,7 +593,8 @@ abstract class RefChecks extends InfoTransform {
           case SingleType(pre, sym) =>
             validateVariance(pre, variance)
           case TypeRef(pre, sym, args) =>
-            if (sym.isAliasType && relativeVariance(sym) == AnyVariance)
+//            println("validate "+sym+" at "+relativeVariance(sym))
+            if (sym.isAliasType/* && relativeVariance(sym) == AnyVariance*/)
               validateVariance(tp.normalize, variance)
             else if (sym.variance != NoVariance) {
               val v = relativeVariance(sym)

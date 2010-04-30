@@ -347,7 +347,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             vlsss map { vlss => <span class="params">({implicitCheck(vlss) ++ params0(vlss) })</span> }
           }
           mbr match {
-            case cls: Class if cls.isCaseClass => paramsToHtml(cls.primaryConstructor.get.valueParams)
+            case cls: Class if cls.isCaseClass && cls.primaryConstructor.isDefined =>
+              paramsToHtml(cls.primaryConstructor.get.valueParams)
             case ctr: Constructor => paramsToHtml(ctr.valueParams)
             case dfe: Def => paramsToHtml(dfe.valueParams)
             case _ => NodeSeq.Empty

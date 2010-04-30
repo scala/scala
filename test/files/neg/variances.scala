@@ -71,3 +71,11 @@ object Covariant {
   val t: T[Any] = ST
   t.x.m(new Object)
 }
+
+object TestAlias {
+  class B[-T]
+  trait C[+T] {
+    type A = T
+    def foo: B[A]
+  }
+}
