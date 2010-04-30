@@ -393,12 +393,22 @@ abstract class RefChecks extends InfoTransform {
 
       // 2. Check that only abstract classes have deferred members
       if (clazz.isClass && !clazz.isTrait) {
+        def isClazzAbstract = clazz hasFlag ABSTRACT
+        val abstractErrors = new ListBuffer[String]
+        def abstractErrorMessage =
+          // a little formatting polish
+          if (abstractErrors.size <= 2) abstractErrors mkString " "
+          else abstractErrors.tail.mkString(abstractErrors.head + ":\n", "\n", "")
+
         def abstractClassError(mustBeMixin: Boolean, msg: String) {
-          unit.error(clazz.pos,
-            (if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
-             else if (mustBeMixin) clazz.toString() + " needs to be a mixin"
-             else clazz.toString() + " needs to be abstract") + ", since " + msg);
-          clazz.setFlag(ABSTRACT)
+          def prelude = (
+            if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible"
+            else if (mustBeMixin) clazz + " needs to be a mixin"
+            else clazz + " needs to be abstract"
+          ) + ", since"
+
+          if (abstractErrors.isEmpty) abstractErrors ++= List(prelude, msg)
+          else abstractErrors += msg
         }
 
         def javaErasedOverridingSym(sym: Symbol): Symbol =
@@ -415,7 +425,7 @@ abstract class RefChecks extends InfoTransform {
           ((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)
 
         for (member <- clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE))
-          if (member.isDeferred && !(clazz hasFlag ABSTRACT) && !ignoreDeferred(member)) {
+          if (member.isDeferred && !isClazzAbstract && !ignoreDeferred(member)) {
             abstractClassError(
               false, infoString(member) + " is not defined" + analyzer.varNotice(member))
           } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
@@ -449,7 +459,11 @@ abstract class RefChecks extends InfoTransform {
           if (!parents.isEmpty && parents.head.typeSymbol.hasFlag(ABSTRACT))
             checkNoAbstractDecls(parents.head.typeSymbol)
         }
-        if (!(clazz hasFlag ABSTRACT)) checkNoAbstractDecls(clazz)
+        if (abstractErrors.isEmpty && !isClazzAbstract)
+          checkNoAbstractDecls(clazz)
+
+        if (abstractErrors.nonEmpty)
+          unit.error(clazz.pos, abstractErrorMessage)
       }
 
       /** Returns whether there is a symbol declared in class `inclazz`
