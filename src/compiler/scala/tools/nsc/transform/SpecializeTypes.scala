@@ -389,7 +389,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         def specializedParents(parents: List[Type]): List[Type] = {
           val res = new mutable.ListBuffer[Type]
           for (p <- parents) {
-            val stp = specializedType(p)
+            val stp = atPhase(phase.next)(specializedType(p))
             if (stp != p)
               if (p.typeSymbol.isTrait) res += stp
               else if (currentRun.compiles(clazz))
