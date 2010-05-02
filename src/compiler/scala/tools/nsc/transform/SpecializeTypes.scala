@@ -1205,7 +1205,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       // replace value and type parameters of the old method with the new ones
       val symSubstituter = new ImplementationAdapter(
         parameters(source).flatten ::: origtparams,
-        vparamss1.flatten.map(_.symbol) ::: newtparams)
+        vparamss1.flatten.map(_.symbol) ::: newtparams,
+        symbol.enclClass)
       val tmp = symSubstituter(body(source).duplicate)
       tpt.tpe = tpt.tpe.substSym(oldtparams, newtparams)
 
@@ -1221,7 +1222,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *  All private members are made protected in order to be accessible from
      *  specialized classes.
      */
-    class ImplementationAdapter(from: List[Symbol], to: List[Symbol]) extends TreeSymSubstituter(from, to) {
+    class ImplementationAdapter(from: List[Symbol], to: List[Symbol], targetClass: Symbol) extends TreeSymSubstituter(from, to) {
       override val symSubst = new SubstSymMap(from, to) {
         override def matches(sym1: Symbol, sym2: Symbol) =
           if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
@@ -1234,8 +1235,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       override def transform(tree: Tree): Tree = tree match {
         case Select(qual, name) =>
           val sym = tree.symbol
+          if (sym.hasFlag(PRIVATE))
+            log("seeing private member " + sym + " targetClass: " + targetClass + " owner: " + sym.owner.enclClass)
           if (sym.hasFlag(PRIVATE | PROTECTED) && !nme.isLocalName(sym.name)
-              && (currentClass != sym.owner.enclClass)) {
+              && (targetClass != sym.owner.enclClass)) {
             log("changing private flag of " + sym)
 //            tree.symbol.resetFlag(PRIVATE).setFlag(PROTECTED)
             sym.makeNotPrivate(sym.owner)
