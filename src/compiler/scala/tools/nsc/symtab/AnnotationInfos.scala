@@ -56,7 +56,6 @@ trait AnnotationInfos extends reflect.generic.AnnotationInfos { self: SymbolTabl
       else
         definitions.ScalaSignatureAnnotation.tpe
   }
-  object ScalaSigBytes extends ScalaSigBytesExtractor
 
   /** Represents a nested classfile annotation */
   case class NestedAnnotArg(annInfo: AnnotationInfo)
