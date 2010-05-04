@@ -541,12 +541,12 @@ self: Analyzer =>
       }
       def comesBefore(sym: Symbol, owner: Symbol) = {
         val ownerPos = owner.pos.pointOrElse(Integer.MAX_VALUE)
-        sym.pos.pointOrElse(0) < ownerPos &&
+        sym.pos.pointOrElse(0) < ownerPos && (
           if(sym isGetterOrSetter) {
             val symAcc = sym.accessed // #3373
             symAcc.pos.pointOrElse(0) < ownerPos &&
             !(owner.ownerChain exists (o => (o eq sym) || (o eq symAcc))) // probably faster to iterate only once, don't feel like duplicating hasTransOwner for this case
-          } else !(owner hasTransOwner sym) // faster than owner.ownerChain contains sym
+          } else !(owner hasTransOwner sym)) // faster than owner.ownerChain contains sym
       }
 
       sym.isInitialized ||
