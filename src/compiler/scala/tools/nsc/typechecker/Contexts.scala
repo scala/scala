@@ -487,6 +487,15 @@ trait Contexts { self: Analyzer =>
       implicitsCache
     }
 
+    /**
+     * Find a symbol in this context or one of its outers.
+     *
+     * Used to find symbols are owned by methods (or fields), they can't be
+     * found in some scope.
+     *
+     * Examples: companion module of classes owned by a method, default getter
+     * methods of nested methods. See NamesDefaults.scala
+     */
     def lookup(name: Name, expectedOwner: Symbol) = {
       var res: Symbol = NoSymbol
       var ctx = this

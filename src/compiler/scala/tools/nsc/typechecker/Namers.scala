@@ -607,17 +607,6 @@ trait Namers { self: Analyzer =>
       vparamss.map(_.map(enterValueParam))
     }
 
-    /**
-     * Finds the companion module of a class symbol. Calling .companionModule
-     * does not work for classes defined inside methods.
-     */
-    private def companionModuleOf(clazz: Symbol) = {
-      var res = clazz.companionModule
-      if (res == NoSymbol)
-        res = context.lookup(clazz.name.toTermName, clazz.owner)
-      res
-    }
-
     private def templateSig(templ: Template): Type = {
       val clazz = context.owner
       def checkParent(tpt: Tree): Type = {
@@ -738,7 +727,7 @@ trait Namers { self: Analyzer =>
       // @check: this seems to work only if the type completer of the class runs before the one of the
       // module class: the one from the module class removes the entry form caseClassOfModuleClass (see above).
       if (clazz.isClass && !clazz.hasFlag(MODULE)) {
-        Namers.this.caseClassOfModuleClass get companionModuleOf(clazz).moduleClass match {
+        Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass match {
           case Some(cdef) =>
             def hasCopy(decls: Scope) = {
               decls.iterator exists (_.name == nme.copy)
@@ -997,7 +986,7 @@ trait Namers { self: Analyzer =>
 
             val parentNamer = if (isConstr) {
               val (cdef, nmr) = moduleNamer.getOrElse {
-                val module = companionModuleOf(meth.owner)
+                val module = companionModuleOf(meth.owner, context)
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
                 val (cdef, nmr) = classAndNamerOfModule(module)
