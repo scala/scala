@@ -324,7 +324,9 @@ abstract class ExplicitOuter extends InfoTransform
       val path =
         if (mixinClass.owner.isTerm) THIS(mixinClass.owner.enclClass)
         else gen.mkAttributedQualifier(currentClass.thisType baseType mixinClass prefix)
-      val rhs = ExplicitOuterTransformer.this.transform(path)
+      // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
+      val rhs = gen.mkAsInstanceOf(ExplicitOuterTransformer.this.transform(path),
+          outerAcc.info.resultType)
 
       // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
       rhs setPos currentClass.pos
