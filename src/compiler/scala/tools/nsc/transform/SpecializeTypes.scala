@@ -697,8 +697,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           log("Added specialized overload for " + overriding.fullName + " in env: " + env)
           val om = specializedOverload(clazz, overridden, env)
           typeEnv(om) = env
+          concreteSpecMethods += overriding
           if (!overriding.isDeferred) {
-            concreteSpecMethods += overriding
             // if the override is a normalized member, 'om' gets the implementation from
             // its original target, and adds the environment of the normalized member (that is,
             // any specialized /method/ type parameter bindings)
@@ -711,6 +711,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             info(overriding)  = Forward(om)
             log("typeEnv(om) = " + typeEnv(om))
             om setPos overriding.pos // set the position of the concrete, overriding member
+          } else {
+            // abstract override
+            log("abstract override " + overriding.fullName + " with specialized " + om.fullName)
+            info(om) = Forward(overriding)
           }
           overloads(overriding) = Overload(om, env) :: overloads(overriding)
           oms += om
