@@ -514,7 +514,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         else sym.info.member(fullname.subName(i, j).toTypeName)
       if (result == NoSymbol) {
         if (settings.debug.value)
-          { Console.println(sym.info); Console.println(sym.info.members) }//debug
+          { log(sym.info); log(sym.info.members) }//debug
         throw new MissingRequirementError((if (module) "object " else "class ") + fullname)
       }
       result
