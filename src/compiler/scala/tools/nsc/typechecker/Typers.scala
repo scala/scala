@@ -1330,9 +1330,7 @@ trait Typers { self: Analyzer =>
         val value = stat.symbol
         val allAnnots = value.annotations
         if (!isDeferred)
-          // keepClean: by default annotations go to the field, except if the field is
-          // generated for a class parameter (PARAMACCESSOR).
-          value.setAnnotations(memberAnnots(allAnnots, FieldTargetClass, keepClean = !mods.hasFlag(PARAMACCESSOR)))
+          value.setAnnotations(memberAnnots(allAnnots, FieldTargetClass))
 
         val getter = if (isDeferred) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
@@ -1412,12 +1410,10 @@ trait Typers { self: Analyzer =>
         List(stat)
     }
 
-    /**
-     * The annotations amongst `annots` that should go on a member of class
-     * `memberClass` (field, getter, setter, beanGetter, beanSetter, param)
-     * If 'keepClean' is true, annotations without any meta-annotation are kept
+    /** The annotations amongst `annots` that should go on a member of class
+     *  `memberClass` (field, getter, setter, beanGetter, beanSetter, param)
      */
-    protected def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol, keepClean: Boolean = false) = {
+    protected def memberAnnots(annots: List[AnnotationInfo], memberClass: Symbol) = {
 
       def hasMatching(metaAnnots: List[AnnotationInfo], orElse: => Boolean) = {
         // either one of the meta-annotations matches the `memberClass`
@@ -1434,7 +1430,7 @@ trait Typers { self: Analyzer =>
       // there was no meta-annotation on `ann`. Look if the class annotations of
       // `ann` has a `target` annotation, otherwise put `ann` only on fields.
       def noMetaAnnot(ann: AnnotationInfo) = {
-        hasMatching(ann.atp.typeSymbol.annotations, keepClean)
+        hasMatching(ann.atp.typeSymbol.annotations, memberClass == FieldTargetClass)
       }
 
       annots.filter(ann => ann.atp match {
@@ -1706,7 +1702,7 @@ trait Typers { self: Analyzer =>
         for (vparams <- ddef.vparamss; vd <- vparams) {
           if (vd hasFlag PARAMACCESSOR) {
             val sym = vd.symbol
-            sym.setAnnotations(memberAnnots(sym.annotations, ParamTargetClass, keepClean = true))
+            sym.setAnnotations(memberAnnots(sym.annotations, ParamTargetClass))
           }
         }
       }

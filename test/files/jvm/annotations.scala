@@ -102,29 +102,18 @@ object Test4 {
     type myAnn = SourceAnnotation @beanGetter @field
     @BeanProperty @myAnn("http://eppli.com") var z = 0
   }
-  class Foo10(@SourceAnnotation("on param 1") val name: String)
-  class Foo11(@(SourceAnnotation @scala.annotation.target.field)("on param 2") val name: String)
-  class Foo12(@(SourceAnnotation @scala.annotation.target.setter)("on param 3") var name: String)
   def run {
     import java.lang.annotation.Annotation
     import java.lang.reflect.AnnotatedElement
-    def printSourceAnnotation(a: Annotation) {
-      val ann = a.asInstanceOf[SourceAnnotation]
-      println("@test.SourceAnnotation(mails=" + ann.mails.deepMkString("{", ",", "}") +
-              ", value=" + ann.value + ")")
-    }
     def printSourceAnnotations(target: AnnotatedElement) {
       //print SourceAnnotation in a predefined way to insure
       // against difference in the JVMs (e.g. Sun's vs IBM's)
-      val anns = target.getAnnotations()
-      anns foreach printSourceAnnotation
-      if (anns.length > 0) {
-        println(target)
-        println
+      def printSourceAnnotation(a: Annotation) {
+        val ann = a.asInstanceOf[SourceAnnotation]
+        println("@test.SourceAnnotation(mails=" + ann.mails.deepMkString("{", ",", "}") +
+                ", value=" + ann.value + ")")
       }
-    }
-    def printParamSourceAnnotations(target: { def getParameterAnnotations(): Array[Array[Annotation]] }) {
-      val anns = target.getParameterAnnotations().flatten
+      val anns = target.getAnnotations()
       anns foreach printSourceAnnotation
       if (anns.length > 0) {
         println(target)
@@ -141,18 +130,8 @@ object Test4 {
     classOf[Foo7].getDeclaredConstructors foreach printSourceAnnotations
     classOf[Foo8].getDeclaredFields  foreach printSourceAnnotations
     classOf[Foo8].getDeclaredMethods foreach printSourceAnnotations
-    classOf[Foo8].getDeclaredConstructors foreach printParamSourceAnnotations
     classOf[Foo9].getDeclaredFields.sortWith((x, y) => x.toString < y.toString)  foreach printSourceAnnotations
     classOf[Foo9].getDeclaredMethods.sortWith((x, y) => x.toString < y.toString) foreach printSourceAnnotations
-    classOf[Foo10].getDeclaredFields.sortWith((x, y) => x.toString < y.toString)  foreach printSourceAnnotations
-    classOf[Foo10].getDeclaredMethods.sortWith((x, y) => x.toString < y.toString) foreach printSourceAnnotations
-    classOf[Foo10].getDeclaredConstructors foreach printParamSourceAnnotations
-    classOf[Foo11].getDeclaredFields.sortWith((x, y) => x.toString < y.toString)  foreach printSourceAnnotations
-    classOf[Foo11].getDeclaredMethods.sortWith((x, y) => x.toString < y.toString) foreach printSourceAnnotations
-    classOf[Foo11].getDeclaredConstructors foreach printParamSourceAnnotations
-    classOf[Foo12].getDeclaredFields.sortWith((x, y) => x.toString < y.toString)  foreach printSourceAnnotations
-    classOf[Foo12].getDeclaredMethods.sortWith((x, y) => x.toString < y.toString) foreach printSourceAnnotations
-    classOf[Foo12].getDeclaredConstructors foreach printParamSourceAnnotations
   }
 }
 

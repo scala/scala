@@ -23,7 +23,7 @@ public Test4$Foo6(java.lang.String)
 public Test4$Foo7()
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=constructor val)
-public Test4$Foo8(int)
+private final int Test4$Foo8.n
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://eppli.com)
 private int Test4$Foo9.z
@@ -36,15 +36,6 @@ public int Test4$Foo9.x()
 
 @test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=http://uppla.com)
 public void Test4$Foo9.setY(int)
-
-@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=on param 1)
-public Test4$Foo10(java.lang.String)
-
-@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=on param 2)
-private final java.lang.String Test4$Foo11.name
-
-@test.SourceAnnotation(mails={bill.gates@bloodsuckers.com}, value=on param 3)
-public void Test4$Foo12.name_$eq(java.lang.String)
 
 0
 99
