@@ -1233,6 +1233,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           else sym1 eq sym2
       }
 
+      // initialize the current owner to the enclosing class
+      currentOwner = targetClass
+
       /** All private members that are referenced are made protected,
        *  in order to be accessible from specialized subclasses.
        */
