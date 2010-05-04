@@ -14,7 +14,7 @@ package scala.runtime
 import scala.reflect.ClassManifest
 import scala.collection.{ Seq, IndexedSeq, TraversableView }
 import scala.collection.mutable.WrappedArray
-import scala.collection.immutable.{ List, Stream, Nil, :: }
+import scala.collection.immutable.{ NumericRange, List, Stream, Nil, :: }
 import scala.xml.{ Node, MetaData }
 import scala.util.control.ControlThrowable
 
@@ -239,6 +239,9 @@ object ScalaRunTime {
       case x: Node                  => x toString
       // Not to mention MetaData extends Iterable[MetaData]
       case x: MetaData              => x toString
+      // Range/NumericRange have a custom toString to avoid walking a gazillion elements
+      case x: Range                 => x toString
+      case x: NumericRange[_]       => x toString
       case x: AnyRef if isArray(x)  => WrappedArray make x map inner mkString ("Array(", ", ", ")")
       case x: TraversableView[_, _] => x.toString
       case x: Traversable[_] if !x.hasDefiniteSize => x.toString
