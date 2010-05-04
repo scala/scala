@@ -996,9 +996,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 localTyper.typedOperator(atPos(tree.pos)(Select(transform(qual), specMember.get.sym.name)))
               } else {
                 val qual1 = transform(qual)
-                val specMember = qual1.tpe.member(specializedName(symbol, env))
+                val specMember = qual1.tpe.member(specializedName(symbol, env)).suchThat(_.tpe matches subst(env, symbol.tpe))
                 if (specMember ne NoSymbol) {
-                  log("** using spec member " + specMember)
+                  log("** using spec member " + specMember + ": " + specMember.tpe)
                   val tree1 = atPos(tree.pos)(Select(qual1, specMember))
                   if (specMember.isMethod)
                     localTyper.typedOperator(tree1)
