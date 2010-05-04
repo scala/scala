@@ -1503,8 +1503,8 @@ BOOTRAPING TEST AND TEST SUITE
     <partest classpathref="pack.classpath">
       <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
       <sysproperty key="partest.timeout" value="36000" />
-      <sysproperty key="partest.test-warning" value="300" />
-      <sysproperty key="partest.test-timeout" value="3600" />
+      <sysproperty key="partest.test-warning" value="600" />
+      <sysproperty key="partest.test-timeout" value="5400" />
       <sysproperty key="partest.srcdir" value="files" />
       <sysproperty key="partest.scalacopts" value="${scalac.args.all}" />
       <sysproperty key="partest.javacopts" value="${javac.args}" />
