@@ -1242,7 +1242,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (sym.hasFlag(PRIVATE))
             log("seeing private member " + sym + " targetClass: " + targetClass + " owner: " + sym.owner.enclClass)
           if (sym.hasFlag(PRIVATE | PROTECTED) && !nme.isLocalName(sym.name)
-              && (targetClass != sym.owner.enclClass)) {
+              && (currentClass != sym.owner.enclClass)) {
             log("changing private flag of " + sym)
 //            tree.symbol.resetFlag(PRIVATE).setFlag(PROTECTED)
             sym.makeNotPrivate(sym.owner)
