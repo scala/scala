@@ -288,21 +288,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     else for (v <- values(xs.head); vs <- count(xs.tail, values)) yield v :: vs
   }
 
-  /** Does the given tpe need to be specialized in the environment 'env'? */
+  /** Does the given tpe need to be specialized in the environment 'env'?
+   *  Specialization is needed for
+   *    - members with specialized type parameters found in the given environment
+   *    - constructors of specialized classes
+   *    - normalized members whose type bounds appear in the environment
+   */
   private def needsSpecialization(env: TypeEnv, sym: Symbol): Boolean = {
-    def needsIt(tpe: Type): Boolean =  tpe match {
-      case TypeRef(pre, sym, args) =>
-        (env.keysIterator.contains(sym)
-         || (args exists needsIt))
-      case PolyType(tparams, resTpe) => needsIt(resTpe)
-      case MethodType(argTpes, resTpe) =>
-        (argTpes exists (sym => needsIt(sym.tpe))) || needsIt(resTpe)
-      case ClassInfoType(parents, stats, sym) =>
-        stats.toList exists (s => needsIt(s.info))
-      case _ => false
-    }
-
-    (needsIt(sym.info)
+    (specializedTypeVars(sym).intersect(env.keySet).nonEmpty
+     || (sym.isClassConstructor && sym.enclClass.typeParams.exists(_.hasAnnotation(SpecializedClass)))
      || (isNormalizedMember(sym) && info(sym).typeBoundsIn(env)))
 
   }
@@ -322,19 +316,25 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] =
     specializedTypeVars(atPhase(currentRun.typerPhase)(sym.info))
 
-  /** Return the set of @specialized type variables mentioned by the given type. */
+  /** Return the set of @specialized type variables mentioned by the given type.
+   *  It only counts type variables that appear naked or as arguments to Java
+   *  arrays (the only places where it makes sense to specialize).
+   */
   def specializedTypeVars(tpe: Type): immutable.Set[Symbol] = tpe match {
     case TypeRef(pre, sym, args) =>
-      if (sym.isTypeParameter && sym.hasAnnotation(SpecializedClass))
-        specializedTypeVars(args) + sym
-      else if (sym.isTypeSkolem && sym.deSkolemize.hasAnnotation(SpecializedClass)) {
-        specializedTypeVars(args) + sym
-      } else
+      if (   sym.isTypeParameter && sym.hasAnnotation(SpecializedClass)
+         || (sym.isTypeSkolem && sym.deSkolemize.hasAnnotation(SpecializedClass)))
+        immutable.ListSet.empty + sym
+      else if (sym == definitions.ArrayClass)
         specializedTypeVars(args)
+      else immutable.ListSet.empty[Symbol]
+
     case PolyType(tparams, resTpe) =>
       specializedTypeVars(tparams map (_.info)) ++ specializedTypeVars(resTpe)
+
     case MethodType(argSyms, resTpe) =>
       specializedTypeVars(argSyms map (_.tpe)) ++ specializedTypeVars(resTpe)
+
     case ExistentialType(_, res) => specializedTypeVars(res)
     case AnnotatedType(_, tp, _) => specializedTypeVars(tp)
     case TypeBounds(hi, lo) => specializedTypeVars(hi) ++ specializedTypeVars(lo)
