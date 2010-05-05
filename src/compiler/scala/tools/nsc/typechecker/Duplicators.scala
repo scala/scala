@@ -111,13 +111,10 @@ abstract class Duplicators extends Analyzer {
     /** Fix the given type by replacing invalid symbols with the new ones. */
     def fixType(tpe: Type): Type = {
       val tpe1 = envSubstitution(tpe)
-      log("tpe1: " + tpe1)
       val tpe2: Type = (new FixInvalidSyms)(tpe1)
       val tpe3 = if (newClassOwner ne null) {
-        log("seeing it from a different angle: " + tpe2 + " nco: " + newClassOwner + " oco: " + oldClassOwner)
         tpe2.asSeenFrom(newClassOwner.thisType, oldClassOwner)
       } else tpe2
-      log("tpe2: " + tpe3)
       tpe3
     }
 
