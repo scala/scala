@@ -59,7 +59,7 @@ class FileChooser(dir: File) {
   def title: String = peer.getDialogTitle
   def title_=(t: String) { peer.setDialogTitle(t) }
 
-  def accessory: Component = UIElement.cachedWrapper(peer.getAccessory)
+  def accessory: Component = UIElement.cachedWrapper[Component](peer.getAccessory)
   def accessory_=(c: Component) { peer.setAccessory(c.peer) }
 
   def fileHidingEnabled: Boolean = peer.isFileHidingEnabled

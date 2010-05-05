@@ -30,7 +30,7 @@ object Container {
       override def remove(n: Int): Component = {
         val c = peer.getComponent(n)
         peer.remove(n)
-        UIElement.cachedWrapper(c)
+        UIElement.cachedWrapper[Component](c)
       }
       protected def insertAt(n: Int, c: Component) { peer.add(c.peer, n) }
       def +=(c: Component): this.type = { peer.add(c.peer) ; this }
@@ -41,11 +41,11 @@ object Container {
     peer.addContainerListener(new java.awt.event.ContainerListener {
       def componentAdded(e: java.awt.event.ContainerEvent) {
         publish(ComponentAdded(Wrapper.this,
-                               UIElement.cachedWrapper(e.getChild.asInstanceOf[javax.swing.JComponent])))
+          UIElement.cachedWrapper[Component](e.getChild.asInstanceOf[javax.swing.JComponent])))
       }
       def componentRemoved(e: java.awt.event.ContainerEvent) {
         publish(ComponentRemoved(Wrapper.this,
-                                 UIElement.cachedWrapper(e.getChild.asInstanceOf[javax.swing.JComponent])))
+          UIElement.cachedWrapper[Component](e.getChild.asInstanceOf[javax.swing.JComponent])))
       }
     })
   }

@@ -27,46 +27,54 @@ sealed abstract class MouseButtonEvent extends MouseEvent {
 case class MouseClicked(val source: Component, point: Point, val modifiers: Key.Modifiers,
                      clicks: Int, triggersPopup: Boolean)(val peer: java.awt.event.MouseEvent)
            extends MouseButtonEvent {
-  def this(e: java.awt.event.MouseEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e)
+  def this(e: java.awt.event.MouseEvent) =
+    this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+        e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e)
 }
 case class MousePressed(val source: Component, point: Point, val modifiers: Key.Modifiers,
                         clicks: Int, triggersPopup: Boolean)(val peer: java.awt.event.MouseEvent)
            extends MouseButtonEvent {
-  def this(e: java.awt.event.MouseEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e)
+  def this(e: java.awt.event.MouseEvent) =
+    this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+        e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e)
 }
 case class MouseReleased(val source: Component, point: Point, val modifiers: Key.Modifiers,
                         clicks: Int, triggersPopup: Boolean)(val peer: java.awt.event.MouseEvent)
            extends MouseButtonEvent {
-  def this(e: java.awt.event.MouseEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e)
+  def this(e: java.awt.event.MouseEvent) =
+    this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+        e.getPoint, e.getModifiersEx, e.getClickCount, e.isPopupTrigger)(e)
 }
 
 sealed abstract class MouseMotionEvent extends MouseEvent
 case class MouseMoved(val source: Component, point: Point, val modifiers: Key.Modifiers)(val peer: java.awt.event.MouseEvent)
            extends MouseMotionEvent {
-  def this(e: java.awt.event.MouseEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx)(e)
+  def this(e: java.awt.event.MouseEvent) =
+    this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+        e.getPoint, e.getModifiersEx)(e)
 }
 case class MouseDragged(val source: Component, point: Point, val modifiers: Key.Modifiers)(val peer: java.awt.event.MouseEvent)
            extends MouseMotionEvent {
-  def this(e: java.awt.event.MouseEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx)(e)
+  def this(e: java.awt.event.MouseEvent) =
+    this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+        e.getPoint, e.getModifiersEx)(e)
 }
 case class MouseEntered(val source: Component, point: Point, val modifiers: Key.Modifiers)(val peer: java.awt.event.MouseEvent)
            extends MouseMotionEvent {
-  def this(e: java.awt.event.MouseEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx)(e)
+  def this(e: java.awt.event.MouseEvent) =
+    this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+        e.getPoint, e.getModifiersEx)(e)
 }
 case class MouseExited(val source: Component, point: Point, val modifiers: Key.Modifiers)(val peer: java.awt.event.MouseEvent)
            extends MouseMotionEvent {
-  def this(e: java.awt.event.MouseEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx)(e)
+  def this(e: java.awt.event.MouseEvent) =
+      this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+          e.getPoint, e.getModifiersEx)(e)
 }
 
 case class MouseWheelMoved(val source: Component, point: Point, val modifiers: Key.Modifiers, rotation: Int)(val peer: java.awt.event.MouseEvent)
            extends MouseEvent {
-  def this(e: java.awt.event.MouseWheelEvent) = this(UIElement.cachedWrapper(e.getSource.asInstanceOf[JComponent]),
-                               e.getPoint, e.getModifiersEx, e.getWheelRotation)(e)
+  def this(e: java.awt.event.MouseWheelEvent) =
+    this(UIElement.cachedWrapper[Component](e.getSource.asInstanceOf[JComponent]),
+        e.getPoint, e.getModifiersEx, e.getWheelRotation)(e)
 }

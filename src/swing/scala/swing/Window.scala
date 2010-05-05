@@ -54,6 +54,8 @@ abstract class Window extends UIElement with RootPanel with Publisher { outer =>
   def setLocationRelativeTo(c: UIElement) { peer.setLocationRelativeTo(c.peer) }
   def centerOnScreen() { peer.setLocationRelativeTo(null) }
   def location_=(p: Point) { peer.setLocation(p) }
+  override def size_=(size: Dimension) { peer.setSize(size) }
+  def bounds_=(rect: Rectangle) { peer.setBounds(rect) }
 
   def owner: Window = UIElement.cachedWrapper[Window](peer.getOwner)
 
