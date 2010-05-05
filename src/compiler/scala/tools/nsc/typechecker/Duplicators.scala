@@ -113,12 +113,10 @@ abstract class Duplicators extends Analyzer {
       val tpe1 = envSubstitution(tpe)
       log("tpe1: " + tpe1)
       val tpe2: Type = (new FixInvalidSyms)(tpe1)
-      val tpe3 = tpe2 match {
-        case TypeRef(_, sym, _) if (sym.owner == oldClassOwner) =>
-          log("seeing " + sym.fullName + " from a different angle")
-          tpe2.asSeenFrom(newClassOwner.thisType, oldClassOwner)
-        case _ => tpe2
-      }
+      val tpe3 = if (newClassOwner ne null) {
+        log("seeing it from a different angle: " + tpe2 + " nco: " + newClassOwner + " oco: " + oldClassOwner)
+        tpe2.asSeenFrom(newClassOwner.thisType, oldClassOwner)
+      } else tpe2
       log("tpe2: " + tpe3)
       tpe3
     }

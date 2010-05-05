@@ -31,7 +31,8 @@ import StringBuilder._
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(initCapacity: Int, private val initValue: String)
       extends Builder[Char, String]
-         with IndexedSeq[Char] {
+         with IndexedSeq[Char]
+         with IndexedSeqOptimized[Char, IndexedSeq[Char]] {
 
   require(initCapacity >= 0)
 
