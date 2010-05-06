@@ -147,9 +147,7 @@ PROPERTIES
   <property name="lib.dir" value="${basedir}/lib"/>
   <property name="lib-ant.dir" value="${lib.dir}/ant"/>
   <property name="src.dir" value="${basedir}/src"/>
-  <property name="partest.rootdir" location="test" />
-  <property name="partest.srcdir.default" value="files" />
-  <property name="partest.options" value="" />
+  <property name="partest.dir" value="${basedir}/test"/>
 
   <!-- Loads custom properties definitions -->
   <property file="${basedir}/build.properties"/>
@@ -178,7 +176,7 @@ PROPERTIES
   <property name="dists.dir" value="${basedir}/dists"/>
 
   <property name="copyright.string" value="Copyright 2002-2010, LAMP/EPFL"/>
-  <property name="partest.version.number" value="0.9.3"/>
+  <property name="partest.version.number" value="0.9.2"/>
 
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
@@ -186,11 +184,13 @@ PROPERTIES
 
   <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
        but if it is unset it will take this default value. -->
-  <property name="env.ANT_OPTS" value="-Xms128M -Xmx1024M -Xss1M -XX:MaxPermSize=128M" />
+  <property name="env.ANT_OPTS" value="-Xms512M -Xmx1536M -Xss1M -XX:MaxPermSize=128M" />
   <!--  to find max heap usage: -Xaprof ; currently at 980M for locker.comp -->
+  <echo message="Using ANT_OPTS: ${env.ANT_OPTS}" />
 
-  <property name="scalacfork.jvmargs" value="${env.ANT_OPTS}" />
-  <echo message="Using scalacfork.jvmargs: ${scalacfork.jvmargs}" />
+  <property
+      name="scalacfork.jvmargs"
+      value="${env.ANT_OPTS}"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -204,9 +204,7 @@ INITIALISATION
 	<property name="scalac.args.quickonly" value=""/>
 	
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-    <echo message="Using scalac.args.all: ${scalac.args.all}"/>
-    <echo message="Using javac.args: ${javac.args}"/>
-    <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+	<property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
   <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- This is the start time for the distribution -->
@@ -1498,54 +1496,68 @@ BOOTRAPING TEST AND TEST SUITE
       <exclude name="misc/scala-devel/plugins/*.jar"/>
     </same>
   </target>
+  
+  <!-- this target will run only those tests found in test/debug -->
+  <target name="test.debug">
+    <antcall target="test.suite">
+      <param name="partest.srcdir" value="debug" />
+    </antcall>
+  </target>
+
+  <target name="test.run" depends="pack.done">
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             timeout="1200000"
+             scalacopts="${scalac.args.optimise}">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
+      <runtests  dir="${partest.dir}/files">
+        <include name="run/**/*.scala"/>
+        <include name="jvm/**/*.scala"/>
+      </runtests>
+    </partest>
+  </target>
 
   <target name="test.suite" depends="pack.done">
-    <partest classpathref="pack.classpath">
-      <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
-      <sysproperty key="partest.timeout" value="36000" />
-      <sysproperty key="partest.test-warning" value="600" />
-      <sysproperty key="partest.test-timeout" value="5400" />
-      <sysproperty key="partest.srcdir" value="files" />
-      <sysproperty key="partest.scalacopts" value="${scalac.args.all}" />
-      <sysproperty key="partest.javacopts" value="${javac.args}" />
-      <syspropertyset>
-        <propertyref prefix="partest"/>
-      </syspropertyset>
+    <property name="partest.srcdir" value="files" />
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             timeout="2400000"
+             srcdir="${partest.srcdir}"
+             scalacopts="${scalac.args.optimise}">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
+      <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
+      <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
+      <runtests  dir="${partest.dir}/${partest.srcdir}">
+        <include name="run/**/*.scala"/>
+      </runtests>
+      <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
+	  <scalachecktests dir="${partest.dir}/${partest.srcdir}/scalacheck" includes="**/*.scala"/>
+      <residenttests dir="${partest.dir}/${partest.srcdir}/res" includes="*.res"/>
+      <buildmanagertests dir="${partest.dir}/${partest.srcdir}/buildmanager" includes="*"/>
+      <scalaptests dir="${partest.dir}/${partest.srcdir}/scalap" includes="**/*.scala"/>
+      <!-- <scripttests dir="${partest.dir}/${partest.srcdir}/script" includes="*.scala"/> -->
     </partest>
   </target>
 
   <target name="test.continuations.suite" depends="pack.done">
-    <partest classpathref="pack.classpath">
-      <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
-      <sysproperty key="partest.srcdir" value="continuations" />
-      <sysproperty key="partest.scalacopts" value="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable" />
-      <sysproperty key="partest.runsets" value="neg run" />
-      <syspropertyset>
-        <propertyref prefix="partest"/>
-      </syspropertyset>
-    </partest>
-  </target>
-  
-  <target name="test.partest-opt" depends="pack.done">
-    <antcall target="test.partest">
-      <param name="scalac.args.optimise" value="-optimise"/>
-    </antcall>
-  </target>
-
-  <target name="test.partest" depends="pack.done">
-    <partest classpathref="pack.classpath">
-      <env key="PATH" path="${build-pack.dir}/bin:${env.PATH}" />
-      <sysproperty key="partest.srcdir" value="partest-tests" />
-      <sysproperty key="partest.scalacopts" value="${scalac.args.all}" />
-      <sysproperty key="partest.javacopts" value="${javac.args}" />
-      <sysproperty key="partest.verbose" value="true" />
-      <sysproperty key="partest.trace" value="true" />
-      <sysproperty key="partest.debug" value="true" />
-      <sysproperty key="partest.test-timeout" value="25" />
-      <sysproperty key="partest.scalacopts" value="${scalac.args.optimise}" />
-      <syspropertyset>
-        <propertyref prefix="partest"/>
-      </syspropertyset>
+    <property name="partest.srcdir" value="files" />
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             timeout="2400000"
+             srcdir="${partest.srcdir}"
+             scalacopts="${scalac.args.optimise} -Xpluginsdir ${build-quick.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
+      <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
+      <runtests  dir="${partest.dir}/${partest.srcdir}">
+        <include name="continuations-run/**/*.scala"/>
+      </runtests>
     </partest>
   </target>
 
@@ -1767,7 +1779,7 @@ POSITIONS
 
   <target name="test.positions" depends="quick.comp">
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.rootdir}/${partest.srcdir.default}/positions"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/positions"/>
     </antcall>
     <antcall target="test.positions.sub" inheritRefs="true">
       <param name="test.srcs" value="${src.dir}/compiler"/>
@@ -1791,13 +1803,13 @@ POSITIONS
       <param name="test.srcs" value="${src.dir}/scalap"/>
     </antcall>
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.rootdir}/${partest.srcdir.default}/pos"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/pos"/>
     </antcall>
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.rootdir}/${partest.srcdir.default}/run"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/run"/>
     </antcall>
     <antcall target="test.positions.tests.sub" inheritRefs="true">
-      <param name="test.tests.srcs" value="${partest.rootdir}/${partest.srcdir.default}/neg"/>
+      <param name="test.tests.srcs" value="${partest.dir}/files/neg"/>
     </antcall>
   </target>
   

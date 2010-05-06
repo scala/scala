@@ -1,3 +1,4 @@
 <antlib>
-  <taskdef name="partest" classname="scala.tools.partest.ant.JavaTask"/>
+    <taskdef name="partest"
+             classname="scala.tools.partest.PartestTask"/>
 </antlib>
