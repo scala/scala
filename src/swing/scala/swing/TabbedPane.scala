@@ -99,8 +99,8 @@ class TabbedPane extends Component with Publisher {
     def +=(t: Page): this.type = { t.parent = TabbedPane.this; peer.addTab(t.title, null, t.content.peer, t.tip); this }
     def length = peer.getTabCount
     def apply(n: Int) = new Page(TabbedPane.this, peer.getTitleAt(n),
-                                UIElement.cachedWrapper(peer.getComponentAt(n).asInstanceOf[javax.swing.JComponent]),
-                                peer.getToolTipTextAt(n))
+      UIElement.cachedWrapper[Component](peer.getComponentAt(n).asInstanceOf[javax.swing.JComponent]),
+      peer.getToolTipTextAt(n))
   }
 
   def tabLayoutPolicy: Layout.Value = Layout(peer.getTabLayoutPolicy)

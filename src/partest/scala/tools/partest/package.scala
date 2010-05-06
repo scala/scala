@@ -4,42 +4,37 @@
 
 package scala.tools
 
-import nsc.io.{ File, Path, Process, Directory }
-import java.nio.charset.CharacterCodingException
+import java.io.{ File => JFile }
+import nsc.io.{ Path, Process, Directory }
+import util.{ PathResolver }
+import nsc.Properties.{ propOrElse, propOrNone, propOrEmpty }
 
 package object partest {
-  /** The CharacterCodingExceptions are thrown at least on windows trying
-   *  to read a file like script/utf-8.scala
-   */
-  private[partest] def safeSlurp(f: File) =
-    try if (f.exists) f.slurp() else ""
-    catch { case _: CharacterCodingException  => "" }
+  import nest.NestUI
 
-  private[partest] def safeLines(f: File)     = safeSlurp(f) split """\r\n|\r|\n""" toList
-  private[partest] def safeArgs(f: File)      = toArgs(safeSlurp(f))
-  private[partest] def isJava(f: Path)        = f.isFile && (f hasExtension "java")
-  private[partest] def isScala(f: Path)       = f.isFile && (f hasExtension "scala")
-  private[partest] def isJavaOrScala(f: Path) = isJava(f) || isScala(f)
+  implicit private[partest] def temporaryPath2File(x: Path): JFile = x.jfile
+  implicit private[partest] def temporaryFile2Path(x: JFile): Path = Path(x)
 
-  private[partest] def toArgs(line: String) = cmd toArgs line
-  private[partest] def fromArgs(args: List[String]) = cmd fromArgs args
-
-  /** Strings, argument lists, etc. */
-
-  private[partest] def fromAnyArgs(args: List[Any]) = args mkString " " // separate to avoid accidents
-  private[partest] def toStringTrunc(x: Any, max: Int = 240) = {
-    val s = x.toString
-    if (s.length < max) s
-    else (s take max) + " [...]"
-  }
-  private[partest] def setProp(k: String, v: String) = scala.util.Properties.setProp(k, v)
-
-  /** Pretty self explanatory. */
-  def printAndExit(msg: String): Unit = {
-    println(msg)
-    exit(1)
+  def basename(name: String): String = Path(name).stripExtension
+  def resultsToStatistics(results: Iterable[(_, Int)]): (Int, Int) = {
+    val (files, failures) = results map (_._2 == 0) partition (_ == true)
+    (files.size, failures.size)
   }
 
-  /** Apply a function and return the passed value */
-  def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
+  def vmArgString = {
+    val str = Process.javaVmArguments mkString " "
+    "Java VM started with arguments: '%s'" format str
+  }
+
+  def allPropertiesString = {
+    import collection.JavaConversions._
+    System.getProperties.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString
+  }
+
+  def showAllJVMInfo {
+    NestUI.verbose(vmArgString)
+    NestUI.verbose(allPropertiesString)
+  }
+
+  def isPartestDebug = propOrEmpty("partest.debug") == "true"
 }

@@ -33,7 +33,7 @@ object Test {
     val sets = setneg1 ++ setneg2 ++ List(zero) ++ setpos1 ++ setpos2
 
     for (set <- sets ; x <- set ; y <- set) {
-      println("'%s' == '%s' (%s == %s) (%s == %s)".format(x, y, x.hashCode, y.hashCode, x.##, y.##))
+      // println("'%s' == '%s' (%s == %s) (%s == %s)".format(x, y, x.hashCode, y.hashCode, x.##, y.##))
       assert(x == y, "%s/%s != %s/%s".format(x, x.getClass, y, y.getClass))
       assert(x.## == y.##, "%s != %s".format(x.getClass, y.getClass))
     }

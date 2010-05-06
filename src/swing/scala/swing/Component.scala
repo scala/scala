@@ -103,12 +103,12 @@ abstract class Component extends UIElement {
   def tooltip: String = peer.getToolTipText
   def tooltip_=(t: String) = peer.setToolTipText(t)
 
-  def inputVerifier: this.type => Boolean = { a =>
-    peer.getInputVerifier().verify(a.peer)
+  def inputVerifier: Component => Boolean = { a =>
+    peer.getInputVerifier.verify(a.peer)
   }
-  def inputVerifier_=(v: this.type => Boolean) {
+  def inputVerifier_=(v: Component => Boolean) {
     peer.setInputVerifier(new javax.swing.InputVerifier {
-      def verify(c: javax.swing.JComponent) = v(UIElement.cachedWrapper(c))
+      def verify(c: javax.swing.JComponent) = v(UIElement.cachedWrapper[Component](c))
     })
   }
 
@@ -117,7 +117,7 @@ abstract class Component extends UIElement {
   }
   def verifyOnTraversal_=(v: (Component, Component) => Boolean) {
     peer.setInputVerifier(new javax.swing.InputVerifier {
-      def verify(c: javax.swing.JComponent) = v(UIElement.cachedWrapper(c))
+      def verify(c: javax.swing.JComponent) = v(UIElement.cachedWrapper[Component](c))
     })
   }*/
 
@@ -221,7 +221,7 @@ abstract class Component extends UIElement {
 
     peer.addFocusListener(new java.awt.event.FocusListener {
       def other(e: java.awt.event.FocusEvent) = e.getOppositeComponent match {
-        case c: JComponent => Some(UIElement.cachedWrapper(c))
+        case c: JComponent => Some(UIElement.cachedWrapper[Component](c))
         case _ => None
       }
 
