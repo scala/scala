@@ -11,6 +11,8 @@
 
 package scala.reflect
 
+import annotation.target._
+
 /** <p>
  *    This annotation has the same functionality as
  *    <code>scala.reflect.BeanProperty</code>, but the generated
@@ -18,4 +20,5 @@ package scala.reflect
  *    of <code>getFieldName</code>.
  *  </p>
  */
+@field
 class BooleanBeanProperty extends StaticAnnotation
