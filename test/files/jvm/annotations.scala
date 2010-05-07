@@ -181,6 +181,24 @@ object Test5 {
   }
 }
 
+object Test6 {
+  import scala.reflect.BeanProperty
+  import scala.reflect.BooleanBeanProperty
+  class C(@BeanProperty var text: String)
+  class D(@BooleanBeanProperty var prop: Boolean) {
+    @BeanProperty val m: Int = if (prop) 1 else 2
+  }
+
+  def run {
+    val c = new C("bob")
+    c.setText("dylan")
+    println(c.getText())
+    if (new D(true).isProp()) {
+      println(new D(false).getM())
+    }
+  }
+}
+
 // #3345
 class A3345(@volatile private var i:Int)
 
@@ -191,5 +209,6 @@ object Test {
     Test3.run     // requires the use of -target:jvm-1.5
     Test4.run
     Test5.run
+    Test6.run
   }
 }
