@@ -614,8 +614,8 @@ class Worker(val fileManager: FileManager) extends Actor {
                 loop()
                 testReader.close()
               }
-              val unixsrcpath = sourcepath.replaceAll(java.util.regex.Matcher.quoteReplacement("\\"), "/")
-              fileManager.mapFile(logFile, "tmp", file, _.replace(unixsrcpath, ""))
+              fileManager.mapFile(logFile, "tmp", file, _.replace(sourcepath, "").
+                      replaceAll(java.util.regex.Matcher.quoteReplacement("\\"), "/"))
 
               diffCheck(compareOutput(file, fileBase, kind, logFile))
             }
