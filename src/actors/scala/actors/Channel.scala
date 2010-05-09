@@ -10,6 +10,7 @@
 
 package scala.actors
 
+import scala.concurrent.SyncVar
 
 /**
  *  This class is used to pattern match on values that were sent
@@ -108,18 +109,26 @@ class Channel[Msg](val receiver: Actor) extends InputChannel[Msg] with OutputCha
   }
 
   def !![A](msg: Msg, handler: PartialFunction[Any, A]): Future[A] = {
-    val ftch = new Channel[A](Actor.self(receiver.scheduler))
-    receiver.send(scala.actors.!(this, msg), new OutputChannel[Any] {
-      def !(msg: Any) =
-        ftch ! handler(msg)
-      def send(msg: Any, replyTo: OutputChannel[Any]) =
-        ftch.send(handler(msg), replyTo)
-      def forward(msg: Any) =
-        ftch.forward(handler(msg))
-      def receiver =
-        ftch.receiver
-    })
-    Futures.fromInputChannel(ftch)
+    val c = new Channel[A](Actor.self(receiver.scheduler))
+    val fun = (res: SyncVar[A]) => {
+      val ftch = new Channel[A](Actor.self(receiver.scheduler))
+      receiver.send(scala.actors.!(this, msg), new OutputChannel[Any] {
+        def !(msg: Any) =
+          ftch ! handler(msg)
+        def send(msg: Any, replyTo: OutputChannel[Any]) =
+          ftch.send(handler(msg), replyTo)
+        def forward(msg: Any) =
+          ftch.forward(handler(msg))
+        def receiver =
+          ftch.receiver
+      })
+      ftch.react {
+        case any => res.set(any)
+      }
+    }
+    val a = new FutureActor[A](fun, c)
+    a.start()
+    a
   }
 
   def !!(msg: Msg): Future[Any] = {
