@@ -374,7 +374,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val specializedInfoType: Type = {
         val (_, unspecParams) = splitParams(clazz.info.typeParams)
         oldClassTParams = unspecParams
-        newClassTParams = cloneSymbols(unspecParams, cls)
+        newClassTParams = cloneSymbols(unspecParams, cls) map subst(env)
 
         def applyContext(tpe: Type) =
           subst(env, tpe).subst(unspecParams, newClassTParams map (_.tpe))
@@ -408,6 +408,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         if (newClassTParams.isEmpty) infoType else PolyType(newClassTParams, infoType)
       }
 
+      log("specializedClass " + cls + ": " + specializedInfoType)
       atPhase(phase.next)(cls.setInfo(specializedInfoType))
 
       val fullEnv = outerEnv ++ env
