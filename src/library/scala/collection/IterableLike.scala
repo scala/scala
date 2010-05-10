@@ -104,6 +104,7 @@ self =>
 
   override /*TraversableLike*/ def take(n: Int): Repr = {
     val b = newBuilder
+    b.sizeHintBounded(n, this)
     var i = 0
     val it = iterator
     while (i < n && it.hasNext) {
@@ -115,6 +116,7 @@ self =>
 
   override /*TraversableLike*/ def slice(from: Int, until: Int): Repr = {
     val b = newBuilder
+    b.sizeHintBounded(until - from, this)
     var i = from
     val it = iterator drop from
     while (i < until && it.hasNext) {
@@ -176,6 +178,7 @@ self =>
    */
   def takeRight(n: Int): Repr = {
     val b = newBuilder
+    b.sizeHintBounded(n, this)
     val lead = this.iterator drop n
     var go = false
     for (x <- this) {
@@ -195,6 +198,7 @@ self =>
    */
   def dropRight(n: Int): Repr = {
     val b = newBuilder
+    if (n >= 0) b.sizeHint(this, -n)
     val lead = iterator drop n
     val it = iterator
     while (lead.hasNext) {
