@@ -71,7 +71,7 @@ private[actors] trait ReactorCanReply extends CanReply[Any, Any] {
 
     this.send(msg, out)
 
-    new Future[A](ftch) {
+    new Future[A] {
       def apply() = {
         if (!isSet)
           fvalue = Some(res.get)
@@ -85,6 +85,7 @@ private[actors] trait ReactorCanReply extends CanReply[Any, Any] {
         }
       def isSet =
         !fvalue.isEmpty
+      def inputChannel = ftch
     }
   }
 }

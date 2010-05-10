@@ -11,6 +11,7 @@
 package scala.actors
 
 import scala.actors.scheduler.DaemonScheduler
+import scala.concurrent.SyncVar
 
 /** A `Future[T]` is a function of arity 0 that returns
  *  a value of type `T`.
@@ -22,7 +23,8 @@ import scala.actors.scheduler.DaemonScheduler
  *
  *  @author Philipp Haller
  */
-abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T] with Function0[T] {
+abstract class Future[+T] extends Responder[T] with Function0[T] {
+
   @volatile
   private[actors] var fvalue: Option[Any] = None
   private[actors] def fvalueTyped = fvalue.get.asInstanceOf[T]
@@ -41,6 +43,72 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
    *          `false` otherwise.
    */
   def isSet: Boolean
+
+  /** Returns an input channel that can be used to receive the future's result.
+   *
+   *  @return the future's input channel
+   */
+  def inputChannel: InputChannel[T]
+
+}
+
+private case object Eval
+
+private class FutureActor[T](fun: SyncVar[T] => Unit, channel: Channel[T]) extends Future[T] with DaemonActor {
+
+  var enableChannel = false // guarded by this
+
+  def isSet = !fvalue.isEmpty
+
+  def apply(): T = {
+    if (fvalue.isEmpty) {
+      this !? Eval
+    }
+    fvalueTyped
+  }
+
+  def respond(k: T => Unit) {
+    if (isSet) k(fvalueTyped)
+    else {
+      val ft = this !! Eval
+      ft.inputChannel.react {
+        case _ => k(fvalueTyped)
+      }
+    }
+  }
+
+  def inputChannel: InputChannel[T] = {
+    synchronized {
+      if (!enableChannel) {
+        if (isSet)
+          channel ! fvalueTyped
+        enableChannel = true
+      }
+    }
+    channel
+  }
+
+  def act() {
+    val res = new SyncVar[T]
+
+    {
+      fun(res)
+    } andThen {
+
+      synchronized {
+        val v = res.get
+        fvalue =  Some(v)
+        if (enableChannel)
+          channel ! v
+      }
+
+      loop {
+        react {
+          case Eval => reply()
+        }
+      }
+    }
+  }
 }
 
 /** The `Futures` object contains methods that operate on futures.
@@ -48,50 +116,6 @@ abstract class Future[+T](val inputChannel: InputChannel[T]) extends Responder[T
  *  @author Philipp Haller
  */
 object Futures {
-
-  import scala.concurrent.SyncVar
-
-  private case object Eval
-
-  private class FutureActor[T](fun: SyncVar[T] => Unit, channel: Channel[T])
-    extends Future[T](channel) with DaemonActor {
-
-    import Actor._
-
-    def isSet = !fvalue.isEmpty
-
-    def apply(): T = {
-      if (fvalue.isEmpty)
-        this !? Eval
-      fvalueTyped
-    }
-
-    def respond(k: T => Unit) {
-      if (isSet) k(fvalueTyped)
-      else {
-        val ft = this !! Eval
-        ft.inputChannel.react {
-          case _ => k(fvalueTyped)
-        }
-      }
-    }
-
-    def act() {
-      val res = new SyncVar[T]
-
-      {
-        fun(res)
-      } andThen {
-        fvalue =  Some(res.get)
-        channel ! res.get
-        loop {
-          react {
-            case Eval => reply()
-          }
-        }
-      }
-    }
-  }
 
   /** Arranges for the asynchronous execution of `body`,
    *  returning a future representing the result.
@@ -221,26 +245,5 @@ object Futures {
 
     results
   }
-
-  private[actors] def fromInputChannel[T](inputChannel: InputChannel[T]): Future[T] =
-    new Future[T](inputChannel) {
-      def apply() =
-        if (isSet) fvalueTyped
-        else inputChannel.receive {
-          case any => fvalue = Some(any); fvalueTyped
-        }
-      def respond(k: T => Unit): Unit =
-        if (isSet) k(fvalueTyped)
-        else inputChannel.react {
-          case any => fvalue = Some(any); k(fvalueTyped)
-        }
-      def isSet = fvalue match {
-        case None => inputChannel.receiveWithin(0) {
-          case TIMEOUT => false
-          case any => fvalue = Some(any); true
-        }
-        case Some(_) => true
-      }
-    }
 
 }
