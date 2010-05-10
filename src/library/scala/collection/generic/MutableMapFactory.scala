@@ -12,12 +12,19 @@
 package scala.collection
 package generic
 
-import mutable.MapBuilder
+import mutable.Builder
 
-/** A template for companion objects of `immutable.Map` and subclasses thereof.
+/** A template for companion objects of `mutable.Map` and subclasses thereof.
  *    @author Martin Odersky
  *    @version 2.8
  *    @since 2.8
  */
 abstract class MutableMapFactory[CC[A, B] <: mutable.Map[A, B] with mutable.MapLike[A, B, CC[A, B]]]
-  extends MapFactory[CC]
+  extends MapFactory[CC] {
+
+  /** The default builder for $Coll objects.
+   *  @tparam A      the type of the keys
+   *  @tparam B      the type of the associated values
+   */
+  override def newBuilder[A, B]: Builder[(A, B), CC[A, B]] = empty[A, B]
+}
