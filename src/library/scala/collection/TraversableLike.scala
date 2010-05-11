@@ -430,7 +430,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    b.sizeHint(this)
+    b.sizeHint(this, 1)
     var acc = z
     b += acc
     for (x <- this) { acc = op(acc, x); b += acc }
@@ -451,7 +451,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
-    b.sizeHint(this)
+    b.sizeHint(this, 1)
     var acc = z
     b += acc
     for (x <- reversed) { acc = op(x, acc); b += acc }
