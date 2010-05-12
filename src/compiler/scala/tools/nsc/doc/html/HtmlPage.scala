@@ -10,7 +10,7 @@ package html
 import model._
 import comment._
 
-import xml.{Unparsed, XML, NodeSeq}
+import xml.{XML, NodeSeq}
 import xml.dtd.{DocType, PublicID}
 import scala.collection._
 import scala.reflect.NameTransformer
@@ -133,7 +133,7 @@ abstract class HtmlPage { thisPage =>
     case Title(in, 3) => <h3>{ inlineToHtml(in) }</h3>
     case Title(in, _) => <h4>{ inlineToHtml(in) }</h4>
     case Paragraph(in) => <p>{ inlineToHtml(in) }</p>
-    case Code(data) => <pre>{ Unparsed(data) }</pre>
+    case Code(data) => <pre>{ xml.Text(data) }</pre>
     case UnorderedList(items) =>
       <ul>{ listItemsToHtml(items) }</ul>
     case OrderedList(items, listStyle) =>
@@ -165,8 +165,8 @@ abstract class HtmlPage { thisPage =>
     case Subscript(in) => <sub>{ inlineToHtml(in) }</sub>
     case Link(raw, title) => <a href={ raw }>{ inlineToHtml(title) }</a>
     case EntityLink(entity) => templateToHtml(entity)
-    case Monospace(text) => <code>{ Unparsed(text) }</code>
-    case Text(text) => Unparsed(text)
+    case Monospace(text) => <code>{ xml.Text(text) }</code>
+    case Text(text) => xml.Text(text)
     case Summary(in) => inlineToHtml(in)
   }
 

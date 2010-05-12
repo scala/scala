@@ -333,6 +333,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       val constructor = listStyles(style)
       listLevel(indentStr, style, constructor)
     }
+
     def code(): Block = {
       jumpWhitespace()
       jump("{{{")
