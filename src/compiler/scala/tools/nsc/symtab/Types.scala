@@ -1179,18 +1179,19 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
         if (!isValidForBaseClasses(period)) {
           if (parents.exists(_.exists(_.isInstanceOf[TypeVar]))) {
             // rename type vars to fresh type params, take base type sequence of
-            // resulting type, and rename back allthe entries in thats sequence
+            // resulting type, and rename back all the entries in that sequence
             var tvs = Set[TypeVar]()
             for (p <- parents)
               for (t <- p) t match {
                 case tv: TypeVar => tvs += tv
                 case _ =>
               }
-            val varToParamMap = (Map[Type, Symbol]() /: tvs)((m, tv) => m + (tv -> tv.origin.typeSymbol.cloneSymbol))
-            val paramToVarMap = Map[Symbol, Type]() ++ (varToParamMap map { case (t, tsym) => (tsym -> t) })
+ 	        val varToParamMap: Map[Type, Symbol] = tvs map (tv => tv -> tv.origin.typeSymbol.cloneSymbol) toMap
+ 	        val paramToVarMap = varToParamMap map (_.swap)
+
             val varToParam = new TypeMap {
-              def apply(tp: Type): Type = tp match {
-                case tv: TypeVar => varToParamMap(tp).tpe
+              def apply(tp: Type) = varToParamMap get tp match {
+                case Some(sym) => sym.tpe
                 case _ => mapOver(tp)
               }
             }

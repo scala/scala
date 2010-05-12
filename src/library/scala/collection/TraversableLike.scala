@@ -179,6 +179,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def ++[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
+    if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.size)
     b ++= thisCollection
     b ++= that
     b.result
@@ -200,6 +201,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
+    b.sizeHint(this)
     for (x <- this) b += f(x)
     b.result
   }
@@ -428,6 +430,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
+    b.sizeHint(this, 1)
     var acc = z
     b += acc
     for (x <- this) { acc = op(acc, x); b += acc }
@@ -448,6 +451,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
+    b.sizeHint(this, 1)
     var acc = z
     b += acc
     for (x <- reversed) { acc = op(x, acc); b += acc }
@@ -516,6 +520,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
     var lst = head
     var follow = false
     val b = newBuilder
+    b.sizeHint(this, -1)
     for (x <- this) {
       if (follow) b += lst
       else follow = true
@@ -532,6 +537,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def take(n: Int): Repr = {
     val b = newBuilder
+    b.sizeHintBounded(n, this)
     var i = 0
     breakable {
       for (x <- this) {
@@ -551,6 +557,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def drop(n: Int): Repr = {
     val b = newBuilder
+    if (n >= 0) b.sizeHint(this, -n)
     var i = 0
     for (x <- this) {
       if (i >= n) b += x
@@ -572,6 +579,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def slice(from: Int, until: Int): Repr = {
     val b = newBuilder
+    b.sizeHintBounded(until - from, this)
     var i = 0
     breakable {
       for (x <- this) {
@@ -648,6 +656,8 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    */
   def splitAt(n: Int): (Repr, Repr) = {
     val l, r = newBuilder
+    l.sizeHintBounded(n, this)
+    if (n >= 0) r.sizeHint(this, -n)
     var i = 0
     for (x <- this) {
       (if (i < n) l else r) += x

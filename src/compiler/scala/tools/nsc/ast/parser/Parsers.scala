@@ -1906,13 +1906,19 @@ self =>
      */
     def importClause(): List[Tree] = {
       val offset = accept(IMPORT)
-      commaSeparated(importExpr(offset))
+      commaSeparated(importExpr()) match {
+        case Nil => Nil
+        case t :: rest =>
+          // The first import should start at the position of the keyword.
+          t.setPos(t.pos.withStart(offset))
+          t :: rest
+      }
     }
 
     /**  ImportExpr ::= StableId `.' (Id | `_' | ImportSelectors)
      * XXX: Hook for IDE
      */
-    def importExpr(importOffset: Int): Tree = {
+    def importExpr(): Tree = {
       val start = in.offset
       var t: Tree = null
       if (in.token == THIS) {
@@ -1956,7 +1962,7 @@ self =>
             Import(t, List(ImportSelector(name, nameOffset, name, nameOffset)))
           }
         }
-      atPos(importOffset, start) { loop() }
+      atPos(start) { loop() }
     }
 
     /** ImportSelectors ::= `{' {ImportSelector `,'} (ImportSelector | `_') `}'

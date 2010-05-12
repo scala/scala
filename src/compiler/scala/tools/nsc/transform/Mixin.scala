@@ -738,7 +738,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val res = (settings.checkInit.value
            && sym.isGetter
            && !sym.isInitializedToDefault
-           && !sym.hasFlag(PARAMACCESSOR)
+           && !sym.hasFlag(PARAMACCESSOR | SPECIALIZED)
            && !sym.accessed.hasFlag(PRESUPER)
            && !sym.isOuterAccessor)
 

@@ -378,6 +378,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     for (x <- this)
       xs = x :: xs
     val b = newBuilder
+    b.sizeHint(this)
     for (x <- xs)
       b += x
     b.result
@@ -827,6 +828,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     }
     java.util.Arrays.sort(arr.array, ord.asInstanceOf[Ordering[Object]])
     val b = newBuilder
+    b.sizeHint(this)
     for (x <- arr) b += x
     b.result
   }

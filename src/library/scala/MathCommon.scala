@@ -13,7 +13,7 @@ package scala
 /** Common code between the deprecated scala.Math object and
  *  the scala.math package object.
  */
-private[scala] trait MathCommon {
+private[scala] class MathCommon {
   /** The <code>double</code> value that is closer than any other to
    *  <code>e</code>, the base of the natural logarithms.
    */
