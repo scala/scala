@@ -236,6 +236,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private val usedNameMap = new HashMap[Name, Request]()
   private val boundNameMap = new HashMap[Name, Request]()
   private def allHandlers = prevRequests.toList flatMap (_.handlers)
+  private def allReqAndHandlers = prevRequests.toList flatMap (req => req.handlers map (req -> _))
 
   def printAllTypeOf = {
     prevRequests foreach { req =>
@@ -418,10 +419,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       }
 
       /** Flatten the handlers out and pair each with the original request */
-      val rhpairs = prevRequests.reverse.toList flatMap { req =>
-        req.handlers map (ReqAndHandler(req, _))
-      }
-      select(rhpairs, wanted).reverse
+      select(allReqAndHandlers map { case (r, h) => ReqAndHandler(r, h) }, wanted)
     }
 
     val code, trailingBraces, accessPath = new StringBuffer
@@ -682,7 +680,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
     def resultExtractionCode(req: Request, code: PrintWriter) { }
 
-    override def toString = "%s(usedNames = %s)".format(this.getClass, usedNames)
+    override def toString = "%s(used = %s)".format(this.getClass.toString split '.' last, usedNames)
   }
 
   private class GenericHandler(member: Tree) extends MemberHandler(member)
@@ -985,6 +983,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         }
       }
     }
+
+    override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
   }
 
   /** A container class for methods to be injected into the repl
