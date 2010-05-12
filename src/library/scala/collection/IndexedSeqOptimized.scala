@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: IndexedSeqLike.scala 20129 2009-12-14 17:12:17Z odersky $
 
 
 package scala.collection

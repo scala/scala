@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author Alexander Spoon
  */
-// $Id$
 
 package scala.tools.nsc
 

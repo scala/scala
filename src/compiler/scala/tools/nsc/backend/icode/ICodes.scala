@@ -7,7 +7,6 @@
  * @author  Martin Odersky
  */
 
-// $Id$
 
 package scala.tools.nsc
 package backend

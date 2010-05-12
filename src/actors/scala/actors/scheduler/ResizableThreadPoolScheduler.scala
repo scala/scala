@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ThreadPoolScheduler.scala 18948 2009-10-06 17:30:27Z phaller $
 
 package scala.actors.scheduler
 

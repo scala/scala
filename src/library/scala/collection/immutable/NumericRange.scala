@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: NumericRange.scala 18987 2009-10-08 18:31:44Z odersky $
 
 package scala.collection
 package immutable

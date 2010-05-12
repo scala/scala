@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 //todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
 //todo: use inherited type info also for vars and values

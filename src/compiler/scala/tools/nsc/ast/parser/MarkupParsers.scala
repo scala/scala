@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author Burak Emir
  */
-// $Id$
 
 package scala.tools.nsc
 package ast.parser

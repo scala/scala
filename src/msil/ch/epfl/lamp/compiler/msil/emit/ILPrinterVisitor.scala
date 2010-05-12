@@ -2,7 +2,6 @@
  * System.Reflection.Emit-like API for writing .NET assemblies in MSIL
  */
 
-// $Id$
 
 package ch.epfl.lamp.compiler.msil.emit
 

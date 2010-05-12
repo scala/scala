@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author Stephane Micheloud
  */
-//$Id$
 
 package scala.man1
 

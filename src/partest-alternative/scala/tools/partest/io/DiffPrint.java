@@ -1,4 +1,3 @@
-// $Id$
 
 package scala.tools.partest.io;
 

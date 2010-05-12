@@ -3,7 +3,6 @@
  * @author Nikolay Mihaylov
  */
 
-// $Id$
 
 package scala.tools.nsc
 package backend.msil

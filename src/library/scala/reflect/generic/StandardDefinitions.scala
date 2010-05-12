@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Definitions.scala 20619 2010-01-20 10:55:56Z rytz $
 
 package scala.reflect
 package generic

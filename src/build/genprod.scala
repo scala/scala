@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 /** <p>
  *   This program generates the <code>ProductN</code>, <code>TupleN</code> <code>FunctionN</code> classes, where
@@ -74,7 +73,6 @@ object genprod {
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 %s
 

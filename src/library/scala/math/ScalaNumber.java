@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: ScalaNumber.java 19428 2009-11-06 23:59:26Z extempore $
 
 
 package scala.math;

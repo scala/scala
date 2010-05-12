@@ -3,7 +3,6 @@
  * @author Lex Spoon
  * Updated by Anders Bach Nielsen
  */
-// $Id$
 
 package scala.tools.nsc
 package plugins

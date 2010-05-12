@@ -3,7 +3,6 @@
  * Copyright 2007 Google Inc. All Rights Reserved.
  * Author: bqe@google.com (Burak Emir)
  */
-// $Id$
 
 package scala.tools.nsc
 package matching
