@@ -54,7 +54,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
     /** Reduce the given environment to contain mappings only for type variables in tps. */
-    def reduce(env: TypeEnv, tps: immutable.Set[Symbol]): TypeEnv = {
+    def restrict(env: TypeEnv, tps: immutable.Set[Symbol]): TypeEnv = {
       env filter { kv => tps.contains(kv._1)}
     }
 
@@ -681,8 +681,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       if (settings.debug.value)
         log("\toverriding pairs: " + overridden.fullName + ": " + overridden.info
                + " overriden by " + overriding.fullName + ": " + overriding.info)
-      if (overriding.owner == clazz && !specializedTypeVars(overridden.info).isEmpty) {
-        if (settings.debug.value) log("\t\tspecializedTVars: " + specializedTypeVars(overridden.info))
+      val stvars = specializedTypeVars(overridden.info)
+      if (overriding.owner == clazz && !stvars.isEmpty) {
+        if (settings.debug.value) log("\t\tspecializedTVars: " + stvars)
         val env = unify(overridden.info, overriding.info, emptyEnv)
         if (settings.debug.value)
           log("\t\tenv: " + env + "isValid: "
@@ -690,14 +691,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
                 + " looking for: " + specializedName(overridden, env) + " in:\n"
                 + atPhase(phase.next)(overridden.owner.info.decls)
                 + "found: " + atPhase(phase.next)(overridden.owner.info.decl(specializedName(overridden, env))))
-        if (!env.isEmpty
+        if (!TypeEnv.restrict(env, stvars).isEmpty
             && TypeEnv.isValid(env, overridden)
             && atPhase(phase.next)(overridden.owner.info.decl(specializedName(overridden, env))) != NoSymbol) {
           log("Added specialized overload for " + overriding.fullName + " in env: " + env)
           val om = specializedOverload(clazz, overridden, env)
           typeEnv(om) = env
           concreteSpecMethods += overriding
-          if (!overriding.isDeferred) {
+          if (!overriding.isDeferred) {  // concrete method
             // if the override is a normalized member, 'om' gets the implementation from
             // its original target, and adds the environment of the normalized member (that is,
             // any specialized /method/ type parameter bindings)
@@ -708,9 +709,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               case _ => SpecialOverride(overriding)
             }
             info(overriding)  = Forward(om)
-            om setPos overriding.pos // set the position of the concrete, overriding member
-          } else {
-            // abstract override
+            om setPos overriding.pos
+          } else { // abstract override
             if (settings.debug.value) log("abstract override " + overriding.fullName + " with specialized " + om.fullName)
             info(om) = Forward(overriding)
           }
@@ -1290,11 +1290,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
       if (hasSpecializedFields) {
+        import definitions.BooleanClass
+
+        val isSpecializedInstance = cls.hasFlag(SPECIALIZED) || cls.info.parents.exists(_.typeSymbol.hasFlag(SPECIALIZED))
         val sym = cls.newMethod(nme.SPECIALIZED_INSTANCE, cls.pos)
-                     .setInfo(MethodType(Nil, definitions.BooleanClass.tpe))
+                     .setInfo(MethodType(Nil, BooleanClass.tpe))
         cls.info.decls.enter(sym)
         mbrs += atPos(sym.pos) {
-          DefDef(sym, Literal(cls.hasFlag(SPECIALIZED)).setType(sym.tpe.finalResultType)).setType(NoType)
+          DefDef(sym, Literal(isSpecializedInstance).setType(BooleanClass.tpe)).setType(NoType)
         }
       }
       mbrs.toList
