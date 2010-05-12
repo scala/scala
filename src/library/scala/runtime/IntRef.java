@@ -17,5 +17,5 @@ public class IntRef implements java.io.Serializable {
 
     public int elem;
     public IntRef(int elem) { this.elem = elem; }
-    public String toString() { return Integer.toString(elem); }
+    public String toString() { return java.lang.Integer.toString(elem); }
 }

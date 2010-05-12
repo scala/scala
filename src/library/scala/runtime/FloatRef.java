@@ -17,5 +17,5 @@ public class FloatRef implements java.io.Serializable {
 
     public float elem;
     public FloatRef(float elem) { this.elem = elem; }
-    public String toString() { return Float.toString(elem); }
+    public String toString() { return java.lang.Float.toString(elem); }
 }

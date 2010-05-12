@@ -17,5 +17,5 @@ public class DoubleRef implements java.io.Serializable {
 
     public double elem;
     public DoubleRef(double elem) { this.elem = elem; }
-    public String toString() { return Double.toString(elem); }
+    public String toString() { return java.lang.Double.toString(elem); }
 }
