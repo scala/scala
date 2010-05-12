@@ -93,6 +93,7 @@ trait TreeDSL {
 
       def INT_|   (other: Tree)     = fn(target, getMember(IntClass, nme.OR), other)
       def INT_&   (other: Tree)     = fn(target, getMember(IntClass, nme.AND), other)
+      def INT_>=  (other: Tree)     = fn(target, getMember(IntClass, nme.GE), other)
       def INT_==  (other: Tree)     = fn(target, getMember(IntClass, nme.EQ), other)
       def INT_!=  (other: Tree)     = fn(target, getMember(IntClass, nme.NE), other)
 

@@ -177,9 +177,9 @@ trait Patterns extends ast.TreeDSL {
   }
 
   // 8.1.8 (unapplySeq calls)
-  case class SequenceExtractorPattern(tree: UnApply) extends UnapplyPattern {
+  case class SequenceExtractorPattern(tree: UnApply) extends UnapplyPattern with SequenceLikePattern {
 
-    private val UnApply(
+    lazy val UnApply(
       Apply(TypeApply(Select(_, nme.unapplySeq), List(tptArg)), _),
       List(ArrayValue(_, elems))
     ) = tree
@@ -211,88 +211,34 @@ trait Patterns extends ast.TreeDSL {
     override def description = "UnSeq(%s => %s)".format(tptArg, resTypesString)
   }
 
-  abstract class SequencePattern extends Pattern {
-    val tree: ArrayValue
-    def nonStarPatterns: List[Pattern]
-    def subsequences(other: Pattern, seqType: Type): Option[List[Pattern]]
-    def canSkipSubsequences(second: Pattern): Boolean
+  trait SequenceLikePattern extends Pattern {
+    def elems: List[Tree]
+    def elemPatterns = toPats(elems)
 
-    lazy val ArrayValue(elemtpt, elems) = tree
-    lazy val elemPatterns = toPats(elems)
-
-    override def dummies = emptyPatterns(elems.length + 1)
-    override def subpatternsForVars: List[Pattern] = elemPatterns
-
+    def nonStarPatterns: List[Pattern] = if (hasStar) elemPatterns.init else elemPatterns
     def nonStarLength = nonStarPatterns.length
     def isAllDefaults = nonStarPatterns forall (_.isDefault)
 
-    def isShorter(other: SequencePattern) = nonStarLength < other.nonStarLength
-    def isSameLength(other: SequencePattern) = nonStarLength == other.nonStarLength
+    def isShorter(other: SequenceLikePattern) = nonStarLength < other.nonStarLength
+    def isSameLength(other: SequenceLikePattern) = nonStarLength == other.nonStarLength
+  }
 
-    protected def lengthCheckOp: (Tree, Tree) => Tree =
-      if (hasStar) _ ANY_>= _
-      else _ MEMBER_== _
+  abstract class SequencePattern extends Pattern with SequenceLikePattern {
+    val tree: ArrayValue
+    lazy val ArrayValue(elemtpt, elems) = tree
 
-    // optimization to avoid trying to match if length makes it impossible
-    override def precondition(pm: PatternMatch) = {
-      import pm.{ scrut, head }
-      val len = nonStarLength
-      val compareOp = head.tpe member nme.lengthCompare
-
-      def cmpFunction(t1: Tree) = lengthCheckOp((t1 DOT compareOp)(LIT(len)), ZERO)
-
-      Some(nullSafe(cmpFunction _, FALSE)(scrut.id))
-    }
-
-    /** True if 'next' must be checked even if 'first' failed to match after passing its length test
-      * (the conditional supplied by getPrecondition.) This is an optimization to avoid checking sequences
-      * which cannot match due to a length incompatibility.
-      */
+    override def subpatternsForVars: List[Pattern] = elemPatterns
     override def description = "Seq(%s)".format(elemPatterns)
   }
 
   // 8.1.8 (b) (literal ArrayValues)
   case class SequenceNoStarPattern(tree: ArrayValue) extends SequencePattern {
     require(!hasStar)
-    lazy val nonStarPatterns = elemPatterns
-
-    // no star
-    def subsequences(other: Pattern, seqType: Type): Option[List[Pattern]] =
-      condOpt(other) {
-        case next: SequenceStarPattern if isSameLength(next)    => next rebindStar seqType
-        case next: SequenceNoStarPattern if isSameLength(next)  => next.elemPatterns ::: List(NoPattern)
-        case WildcardPattern() | (_: SequencePattern)           => dummies
-      }
-
-    def canSkipSubsequences(second: Pattern): Boolean =
-      (tree eq second.tree) || (cond(second) {
-        case x: SequenceNoStarPattern => (x isShorter this) && this.isAllDefaults
-      })
   }
 
   // 8.1.8 (b)
   case class SequenceStarPattern(tree: ArrayValue) extends SequencePattern {
     require(hasStar)
-    lazy val nonStarPatterns = elemPatterns.init
-
-    // yes star
-    private def nilPats = List(NilPattern, NoPattern)
-    def subsequences(other: Pattern, seqType: Type): Option[List[Pattern]] =
-      condOpt(other) {
-        case next: SequenceStarPattern if isSameLength(next)    => (next rebindStar seqType) ::: List(NoPattern)
-        case next: SequenceStarPattern if (next isShorter this) => (dummies drop 1) ::: List(next)
-        case next: SequenceNoStarPattern if isSameLength(next)  => next.elemPatterns ::: nilPats
-        case WildcardPattern() | (_: SequencePattern)           => dummies
-      }
-
-    def rebindStar(seqType: Type): List[Pattern] =
-      nonStarPatterns ::: List(elemPatterns.last rebindTo WILD(seqType))
-
-    def canSkipSubsequences(second: Pattern): Boolean =
-      (tree eq second.tree) || (cond(second) {
-        case x: SequenceStarPattern   => this isShorter x
-        case x: SequenceNoStarPattern => !(x isShorter this)
-      })
 
     override def description = "Seq*(%s)".format(elemPatterns)
   }
@@ -503,10 +449,6 @@ trait Patterns extends ast.TreeDSL {
 
     // the right number of dummies for this pattern
     def dummies: List[Pattern] = Nil
-
-    // given this scrutinee, what if any condition must be satisfied before
-    // we even try to match?
-    def precondition(scrut: PatternMatch): Option[Tree] = None
 
     // 8.1.13
     // A pattern p is irrefutable for type T if any of the following applies:

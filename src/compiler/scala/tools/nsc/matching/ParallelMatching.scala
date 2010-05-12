@@ -175,7 +175,6 @@ trait ParallelMatching extends ast.TreeDSL
       def isCaseHead = head.isCaseClass
       private val dummyCount = if (isCaseHead) headType.typeSymbol.caseFieldAccessors.length else 0
       def dummies = emptyPatterns(dummyCount)
-      // def dummies = head.dummies
 
       def apply(i: Int): Pattern = ps(i)
       def pzip() = ps.zipWithIndex
@@ -443,32 +442,92 @@ trait ParallelMatching extends ast.TreeDSL
      *  Note: pivot == head, just better typed.
      */
     sealed class MixSequence(val pmatch: PatternMatch, val rest: Rep, pivot: SequencePattern) extends RuleApplication {
+      require(scrut.tpe <:< head.tpe)
+
       def hasStar = pivot.hasStar
-      private def pivotLen = pivot.nonStarLength
+      private def pivotLen    = pivot.nonStarLength
+      private def seqDummies  = emptyPatterns(pivot.elems.length + 1)
 
       // one pattern var per sequence element up to elemCount, and one more for the rest of the sequence
       lazy val pvs = scrut createSequenceVars pivotLen
 
-      // divide the remaining rows into success/failure branches, expanding subsequences of patterns
-      private lazy val rowsplit = {
-        require(scrut.tpe <:< head.tpe)
-
-        val res = for ((c, rows) <- pmatch pzip rest.rows) yield {
-          def canSkip                     = pivot canSkipSubsequences c
-          def passthrough(skip: Boolean)  = if (skip) None else Some(rows insert c)
-
-          pivot.subsequences(c, scrut.seqType) match {
-            case Some(ps) => (Some(rows insert ps), passthrough(canSkip))
-            case None     => (None, passthrough(false))
-          }
+      // Should the given pattern join the expanded pivot in the success matrix? If so,
+      // this partial function will be defined for the pattern, and the result of the apply
+      // is the expanded sequence of new patterns.
+      lazy val successMatrixFn = new PartialFunction[Pattern, List[Pattern]] {
+        private def seqIsDefinedAt(x: SequenceLikePattern) = (hasStar, x.hasStar) match {
+          case (true, true)   => true
+          case (true, false)  => pivotLen <= x.nonStarLength
+          case (false, true)  => pivotLen >= x.nonStarLength
+          case (false, false) => pivotLen == x.nonStarLength
         }
 
-        res.unzip match { case (l1, l2) => (l1.flatten, l2.flatten) }
+        def isDefinedAt(pat: Pattern) = pat match {
+          case x: SequenceLikePattern => seqIsDefinedAt(x)
+          case WildcardPattern()      => true
+          case _                      => false
+        }
+
+        def apply(pat: Pattern): List[Pattern] = pat match {
+          case x: SequenceLikePattern =>
+            def isSameLength  = pivotLen == x.nonStarLength
+            def rebound       = x.nonStarPatterns :+ (x.elemPatterns.last rebindTo WILD(scrut.seqType))
+
+            (pivot.hasStar, x.hasStar, isSameLength) match {
+              case (true, true, true)   => rebound :+ NoPattern
+              case (true, true, false)  => (seqDummies drop 1) :+ x
+              case (true, false, true)  => x.elemPatterns ++ List(NilPattern, NoPattern)
+              case (false, true, true)  => rebound
+              case (false, false, true) => x.elemPatterns :+ NoPattern
+              case _                    => seqDummies
+            }
+
+          case _  => seqDummies
+        }
       }
 
-      lazy val cond     = (pivot precondition pmatch).get   // length check
-      lazy val success  = squeezedBlockPVs(pvs, remake(rowsplit._1, pvs, hasStar).toTree)
-      lazy val failure  = remake(rowsplit._2).toTree
+      // Should the given pattern be in the fail matrix? This is true of any sequences
+      // as long as the result of the length test on the pivot doesn't make it impossible:
+      // for instance if neither sequence is right ignoring and they are of different
+      // lengths, the later one cannot match since its length must be wrong.
+      def failureMatrixFn(c: Pattern) = (pivot ne c) && (c match {
+        case x: SequenceLikePattern =>
+          (hasStar, x.hasStar) match {
+            case (_, true)      => true
+            case (true, false)  => pivotLen > x.nonStarLength
+            case (false, false) => pivotLen != x.nonStarLength
+          }
+        case WildcardPattern()      => true
+        case _                      => false
+      })
+
+      // divide the remaining rows into success/failure branches, expanding subsequences of patterns
+      val successRows = pmatch pzip rest.rows collect {
+        case (c, row) if successMatrixFn isDefinedAt c => row insert successMatrixFn(c)
+      }
+      val failRows = pmatch pzip rest.rows collect {
+        case (c, row) if failureMatrixFn(c) => row insert c
+      }
+
+      // the discrimination test for sequences is a call to lengthCompare.  Note that
+      // this logic must be fully consistent wiith successMatrixFn and failureMatrixFn above:
+      // any inconsistency will (and frequently has) manifested as pattern matcher crashes.
+      lazy val cond = {
+        // the method call symbol
+        val methodOp: Symbol                = head.tpe member nme.lengthCompare
+
+        // the comparison to perform.  If the pivot is right ignoring, then a scrutinee sequence
+        // of >= pivot length could match it; otherwise it must be exactly equal.
+        val compareOp: (Tree, Tree) => Tree = if (hasStar) _ INT_>= _ else _ INT_== _
+
+        // scrutinee.lengthCompare(pivotLength) [== | >=] 0
+        val compareFn: Tree => Tree         = (t: Tree) => compareOp((t DOT methodOp)(LIT(pivotLen)), ZERO)
+
+        // wrapping in a null check on the scrutinee
+        nullSafe(compareFn, FALSE)(scrut.id)
+      }
+      lazy val success  = squeezedBlockPVs(pvs, remake(successRows, pvs, hasStar).toTree)
+      lazy val failure  = remake(failRows).toTree
 
       final def tree(): Tree = codegen
     }
