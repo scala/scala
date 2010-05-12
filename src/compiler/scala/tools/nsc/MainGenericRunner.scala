@@ -38,14 +38,23 @@ object MainGenericRunner {
     else if (settings.version.value)      return errorFn("Scala code runner %s -- %s".format(versionString, copyrightString))
     else if (command.shouldStopWithInfo)  return errorFn(command getInfoMessage sampleCompiler)
 
+    def isE   = !settings.execute.isDefault
     def dashe = settings.execute.value
+
+    def isI   = !settings.loadfiles.isDefault
     def dashi = settings.loadfiles.value
-    def slurp = dashi map (file => File(file).slurp()) mkString "\n"
+
+    def combinedCode  = {
+      val files   = if (isI) dashi map (file => File(file).slurp()) else Nil
+      val str     = if (isE) List(dashe) else Nil
+
+      files ++ str mkString "\n\n"
+    }
 
     val classpath: List[URL] = new PathResolver(settings) asURLs
 
     /** Was code given in a -e argument? */
-    if (!settings.execute.isDefault) {
+    if (isE) {
       /** If a -i argument was also given, we want to execute the code after the
        *  files have been included, so they are read into strings and prepended to
        *  the code given in -e.  The -i option is documented to only make sense
@@ -54,11 +63,8 @@ object MainGenericRunner {
        *  This all needs a rewrite though.
        */
       val fullArgs = command.thingToRun.toList ::: command.arguments
-      val code =
-        if (settings.loadfiles.isDefault) dashe
-        else slurp + "\n" + dashe
 
-      exitCond(ScriptRunner.runCommand(settings, code, fullArgs))
+      exitCond(ScriptRunner.runCommand(settings, combinedCode, fullArgs))
     }
     else command.thingToRun match {
       case None             =>

@@ -245,31 +245,18 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
         case _                          => true
       }
 
-    // this is about the illusion of snappiness.  We call initialize()
-    // which spins off a separate thread, then print the prompt and try
-    // our best to look ready.  Ideally the user will spend a
-    // couple seconds saying "wow, it starts so fast!" and by the time
-    // they type a command the compiler is ready to roll.
-    interpreter.initialize()
-
     while (processLine(readOneLine)) { }
   }
 
   /** interpret all lines from a specified file */
-  def interpretAllFrom(filename: String) {
-    val fileIn = File(filename)
-    if (!fileIn.exists)
-      return out.println("Error opening file: " + filename)
-
+  def interpretAllFrom(file: File) {
     val oldIn = in
     val oldReplay = replayCommandStack
 
-    try {
-      fileIn applyReader { reader =>
-        in = new SimpleReader(reader, out, false)
-        plushln("Loading " + filename + "...")
-        repl
-      }
+    try file applyReader { reader =>
+      in = new SimpleReader(reader, out, false)
+      plushln("Loading " + file + "...")
+      repl()
     }
     finally {
       in = oldIn
@@ -302,8 +289,10 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     List(("stdout", p.stdout), ("stderr", p.stderr)) foreach (add _).tupled
   }
 
-  def withFile(filename: String)(action: String => Unit) {
-    if (File(filename).exists) action(filename)
+  def withFile(filename: String)(action: File => Unit) {
+    val f = File(filename)
+
+    if (f.exists) action(f)
     else out.println("That file does not exist")
   }
 
@@ -369,7 +358,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     if (!line.startsWith(":"))
       return Result(true, interpretStartingWith(line))
 
-    val tokens = line.substring(1).split("""\s+""").toList
+    val tokens = (line drop 1 split """\s+""").toList
     if (tokens.isEmpty)
       return withError(ambiguous(commands))
 
@@ -476,20 +465,25 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     // signal completion non-completion input has been received
     in.completion foreach (_.resetVerbosity())
 
-    def reallyInterpret = {
-      interpreter.interpret(code) match {
-        case IR.Error       => None
-        case IR.Success     => Some(code)
-        case IR.Incomplete  =>
-          if (in.interactive && code.endsWith("\n\n")) {
-            out.println("You typed two blank lines.  Starting a new command.")
+    def reallyInterpret = interpreter.interpret(code) match {
+      case IR.Error       => None
+      case IR.Success     => Some(code)
+      case IR.Incomplete  =>
+        if (in.interactive && code.endsWith("\n\n")) {
+          out.println("You typed two blank lines.  Starting a new command.")
+          None
+        }
+        else in.readLine(CONTINUATION_STRING) match {
+          case null =>
+            // we know compilation is going to fail since we're at EOF and the
+            // parser thinks the input is still incomplete, but since this is
+            // a file being read non-interactively we want to fail.  So we send
+            // it straight to the compiler for the nice error message.
+            interpreter.compileString(code)
             None
-          }
-          else in.readLine(CONTINUATION_STRING) match {
-            case null => None         // end of file
-            case line => interpretStartingWith(code + "\n" + line)
-          }
-      }
+
+          case line => interpretStartingWith(code + "\n" + line)
+        }
     }
 
     /** Here we place ourselves between the user and the interpreter and examine
@@ -551,8 +545,16 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       if (interpreter.reporter.hasErrors) return
 
       printWelcome()
+
+      // this is about the illusion of snappiness.  We call initialize()
+      // which spins off a separate thread, then print the prompt and try
+      // our best to look ready.  Ideally the user will spend a
+      // couple seconds saying "wow, it starts so fast!" and by the time
+      // they type a command the compiler is ready to roll.
+      interpreter.initialize()
       repl()
-    } finally closeInterpreter()
+    }
+    finally closeInterpreter()
   }
 
   private def objClass(x: Any) = x.asInstanceOf[AnyRef].getClass

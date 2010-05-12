@@ -578,26 +578,27 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    */
   def interpret(line: String): IR.Result = interpret(line, false)
   def interpret(line: String, synthetic: Boolean): IR.Result = {
-    val req = requestFromLine(line, synthetic) match {
-      case Left(result) => return result
-      case Right(req)   => req
+    def loadAndRunReq(req: Request) = {
+      val (result, succeeded) = req.loadAndRun
+      if (printResults || !succeeded)
+        out print clean(result)
+
+      // book-keeping
+      if (succeeded && !synthetic)
+        recordRequest(req)
+
+      if (succeeded) IR.Success
+      else IR.Error
     }
-    // null indicates a disallowed statement type; otherwise compile and
-    // fail if false (implying e.g. a type error)
-    if (req == null || !req.compile)
-      return IR.Error
 
-    val (result, succeeded) = req.loadAndRun
-    if (printResults || !succeeded)
-      out print clean(result)
-
-    if (succeeded) {
-      if (!synthetic)
-        recordRequest(req)    // book-keeping
-
-      IR.Success
+    requestFromLine(line, synthetic) match {
+      case Left(result) => result
+      case Right(req)   =>
+        // null indicates a disallowed statement type; otherwise compile and
+        // fail if false (implying e.g. a type error)
+        if (req == null || !req.compile) IR.Error
+        else loadAndRunReq(req)
     }
-    else IR.Error
   }
 
   /** A name creator used for objects created by <code>bind()</code>. */
