@@ -419,7 +419,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       }
 
       /** Flatten the handlers out and pair each with the original request */
-      select(allReqAndHandlers map { case (r, h) => ReqAndHandler(r, h) }, wanted)
+      select(allReqAndHandlers reverseMap  { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
     }
 
     val code, trailingBraces, accessPath = new StringBuffer
