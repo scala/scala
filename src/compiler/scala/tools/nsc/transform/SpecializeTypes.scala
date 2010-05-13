@@ -598,7 +598,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     if (settings.debug.value) log("normalizeMember: " + sym.fullName)
     if (sym.isMethod && !atPhase(currentRun.typerPhase)(sym.typeParams.isEmpty)) {
-      val (stps, tps) = splitParams(sym.info.typeParams)
+      var (stps, tps) = splitParams(sym.info.typeParams)
+      val unusedStvars = stps -- specializedTypeVars(sym.info).toList
+      if (unusedStvars.nonEmpty && currentRun.compiles(sym)) {
+        reporter.warning(sym.pos, "%s %s unused or used in non-specializable positions."
+          .format(unusedStvars.mkString("", ", ", ""), if (unusedStvars.length == 1) "is" else "are"))
+        unusedStvars foreach (_.removeAnnotation(SpecializedClass))
+        stps = stps -- unusedStvars
+        tps = tps ::: unusedStvars
+      }
       val res = sym :: (for (env <- specializations(stps) if needsSpecialization(env, sym)) yield {
         val keys = env.keysIterator.toList;
         val vals = env.valuesIterator.toList
