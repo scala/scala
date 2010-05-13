@@ -5,10 +5,16 @@ package xsbt
 
 import xsbti.{F0,Logger}
 
+private object LoggerReporter
+{
+	def apply(settings: scala.tools.nsc.Settings, maximumErrors: Int, log: Logger): LoggerReporter =
+		new LoggerReporter(Command.getWarnFatal(settings), maximumErrors, log)
+}
+
 // The following code is based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
 // Copyright 2002-2009 LAMP/EPFL
 // Original author: Martin Odersky
-private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scala.tools.nsc.reporters.Reporter
+private final class LoggerReporter(warnFatal: Boolean, maximumErrors: Int, log: Logger) extends scala.tools.nsc.reporters.Reporter
 {
 	import scala.tools.nsc.util.{FakePos,NoPosition,Position}
 	private val positions = new scala.collection.mutable.HashMap[Position, Severity]
@@ -40,7 +46,7 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 			})
 		}
 
-		// the help keep source compatibility with the changes in 2.8 : Position.{source,line,column} are no longer Option[X]s, just plain Xs
+		// this helps keep source compatibility with the changes in 2.8 : Position.{source,line,column} are no longer Option[X]s, just plain Xs
 		// so, we normalize to Option[X]
 	private def o[T](t: Option[T]): Option[T] = t
 	private def o[T](t: T): Option[T] = Some(t)
@@ -82,8 +88,10 @@ private final class LoggerReporter(maximumErrors: Int, log: Logger) extends scal
 		positions.clear
 	}
 
-	protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean)
+	
+	protected def info0(pos: Position, msg: String, rawSeverity: Severity, force: Boolean)
 	{
+		val severity = if(warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
 		severity match
 		{
 			case WARNING | ERROR =>

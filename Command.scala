@@ -20,4 +20,11 @@ object Command
 			constr(classOf[List[_]], classOf[Settings], classOf[Function1[_, _]], classOf[Boolean]).newInstance(arguments, settings, error _, false.asInstanceOf[AnyRef])
 		}
 	}
+	
+	def getWarnFatal(settings: Settings): Boolean =
+	{
+		implicit def compat27(settings: Settings): SettingsCompat = new SettingsCompat
+		class SettingsCompat { def Xwarnfatal = this; def value = false }
+		settings.Xwarnfatal.value
+	}
 }

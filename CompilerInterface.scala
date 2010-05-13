@@ -15,10 +15,10 @@ class CompilerInterface
 
 		debug(log, "Interfacing (CompilerInterface) with Scala compiler " + scala.tools.nsc.Properties.versionString)
 
-		val reporter = new LoggerReporter(maximumErrors, log)
-		val settings = new Settings(reporter.error)
-		
+		val settings = new Settings(Log.settingsError(log))
 		val command = Command(args.toList, settings)
+		val reporter = LoggerReporter(settings, maximumErrors, log)
+		def noErrors = !reporter.hasErrors && command.ok
 
 		val phasesSet = new scala.collection.mutable.HashSet[Any] // 2.7 compatibility
 		object compiler extends Global(command.settings, reporter)
@@ -74,14 +74,14 @@ class CompilerInterface
 			}
 			trait Compat27 { val runsBefore: List[String] = Nil }
 		}
-		if(!reporter.hasErrors)
+		if(noErrors)
 		{
 			val run = new compiler.Run
 			debug(log, args.mkString("Calling Scala compiler with arguments  (CompilerInterface):\n\t", "\n\t", ""))
 			run compile command.files
 		}
 		reporter.printSummary()
-		if(reporter.hasErrors)
+		if(!noErrors)
 		{
 			debug(log, "Compilation failed (CompilerInterface)")
 			throw new InterfaceCompileFailed(args, "Compilation failed")

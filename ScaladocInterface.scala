@@ -13,22 +13,23 @@ class ScaladocInterface
 private class Runner(args: Array[String], maximumErrors: Int, log: Logger)
 {
 	import scala.tools.nsc.{doc, Global}
-	val reporter = new LoggerReporter(maximumErrors, log)
-	val docSettings: doc.Settings = new doc.Settings(reporter.error)
+	val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
 	val command = Command(args.toList, docSettings)
+	val reporter = LoggerReporter(docSettings, maximumErrors, log)
+	def noErrors = !reporter.hasErrors && command.ok
 
 	import forScope._
 	def run()
 	{
 		debug(log, "Calling Scaladoc with arguments:\n\t" + args.mkString("\n\t"))
-		if(!reporter.hasErrors)
+		if(noErrors)
 		{
 			import doc._ // 2.8 trunk and Beta1-RC4 have doc.DocFactory.  For other Scala versions, the next line creates forScope.DocFactory
 			val processor = new DocFactory(reporter, docSettings)
 			processor.document(command.files)
 		}
 		reporter.printSummary()
-		if(reporter.hasErrors) throw new InterfaceCompileFailed(args, "Scaladoc generation failed")
+		if(!noErrors) throw new InterfaceCompileFailed(args, "Scaladoc generation failed")
 	}
 
 	object forScope
