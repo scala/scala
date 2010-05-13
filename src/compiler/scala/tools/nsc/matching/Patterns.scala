@@ -85,7 +85,8 @@ trait Patterns extends ast.TreeDSL {
 
   // 8.1.4 (a)
   case class ApplyIdentPattern(tree: Apply) extends ApplyPattern with NamePattern {
-    require (!isVarPattern(fn) && args.isEmpty)
+    // XXX - see bug 3411 for code which violates this assumption
+    // require (!isVarPattern(fn) && args.isEmpty)
     val ident @ Ident(name) = fn
 
     override def sufficientType = Pattern(ident).equalsCheck
@@ -223,24 +224,12 @@ trait Patterns extends ast.TreeDSL {
     def isSameLength(other: SequenceLikePattern) = nonStarLength == other.nonStarLength
   }
 
-  abstract class SequencePattern extends Pattern with SequenceLikePattern {
-    val tree: ArrayValue
+  // 8.1.8 (b) (literal ArrayValues)
+  case class SequencePattern(tree: ArrayValue) extends Pattern with SequenceLikePattern {
     lazy val ArrayValue(elemtpt, elems) = tree
 
     override def subpatternsForVars: List[Pattern] = elemPatterns
-    override def description = "Seq(%s)".format(elemPatterns)
-  }
-
-  // 8.1.8 (b) (literal ArrayValues)
-  case class SequenceNoStarPattern(tree: ArrayValue) extends SequencePattern {
-    require(!hasStar)
-  }
-
-  // 8.1.8 (b)
-  case class SequenceStarPattern(tree: ArrayValue) extends SequencePattern {
-    require(hasStar)
-
-    override def description = "Seq*(%s)".format(elemPatterns)
+    override def description = "Seq(%s)".format(elemPatterns mkString ", ")
   }
 
   // 8.1.8 (c)
@@ -299,7 +288,7 @@ trait Patterns extends ast.TreeDSL {
         case x: Literal           => LiteralPattern(x)
         case x: UnApply           => UnapplyPattern(x)
         case x: Ident             => if (isVarPattern(x)) VariablePattern(x) else SimpleIdPattern(x)
-        case x: ArrayValue        => if (isRightIgnoring(x)) SequenceStarPattern(x) else SequenceNoStarPattern(x)
+        case x: ArrayValue        => SequencePattern(x)
         case x: Select            => StableIdPattern(x)
         case x: Star              => StarPattern(x)
         case x: This              => ThisPattern(x) // XXX ?
