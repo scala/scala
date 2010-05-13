@@ -39,6 +39,14 @@ package scala.collection
  *    <b>val</b> sl2 : scala.collection.mutable.Buffer[Int] = jl
  *    assert(sl eq sl2)g</pre>
  *  <p>
+ *  In addition, the following one way conversions are provided:
+ *  </p>
+ *  <ul>
+ *    <li><code>scala.collection.IndexedSeq => <code>java.util.List }</code></li>
+ *    <li><code>scala.collection.mutable.IndexedSeq => <code>java.util.List</code></li>
+ *    <li><code>scala.collection.Set</code> => <code>java.util.Set</code></li>
+ *    <li><code>scala.collection.Map</code> => <code>java.util.Map</code></li>
+ *  </ul>
  *    Note that no conversion is provided from <code>scala.collection.immutable.List</code>
  *    to <code>java.util.List</code>. Instead it is convertible to an immutable
  *    <code>java.util.Collection</code> which provides size and interaction
@@ -55,7 +63,6 @@ package scala.collection
 object JavaConversions {
   import java.{ lang => jl, util => ju }
   import java.util.{ concurrent => juc }
-  import scala.collection.{ generic, immutable, mutable, Traversable }
   import scala.reflect.ClassManifest
 
   // Scala => Java
@@ -73,7 +80,7 @@ object JavaConversions {
    * @param i The <code>Iterator</code> to be converted.
    * @return A Java <code>Iterator</code> view of the argument.
    */
-  implicit def asIterator[A](i : Iterator[A]) = i match {
+  implicit def asIterator[A](i : Iterator[A]): ju.Iterator[A] = i match {
     case JIteratorWrapper(wrapped) => wrapped
     case _ => IteratorWrapper(i)
   }
@@ -91,7 +98,7 @@ object JavaConversions {
    * @param i The <code>Iterator</code> to be converted.
    * @return A Java <code>Enumeration</code> view of the argument.
    */
-  implicit def asEnumeration[A](i : Iterator[A]) = i match {
+  implicit def asEnumeration[A](i : Iterator[A]): ju.Enumeration[A] = i match {
     case JEnumerationWrapper(wrapped) => wrapped
     case _ => IteratorWrapper(i)
   }
@@ -109,7 +116,7 @@ object JavaConversions {
    * @param i The <code>Iterable</code> to be converted.
    * @return A Java <code>Iterable</code> view of the argument.
    */
-  implicit def asIterable[A](i : Iterable[A]) = i match {
+  implicit def asIterable[A](i : Iterable[A]): jl.Iterable[A] = i match {
     case JIterableWrapper(wrapped) => wrapped
     case _ => IterableWrapper(i)
   }
@@ -125,7 +132,7 @@ object JavaConversions {
    * @param i The <code>SizedIterable</code> to be converted.
    * @return A Java <code>Collection</code> view of the argument.
    */
-  implicit def asCollection[A](i : Iterable[A]) = i match {
+  implicit def asCollection[A](i : Iterable[A]): ju.Collection[A] = i match {
     case JCollectionWrapper(wrapped) => wrapped
     case _ => new IterableWrapper(i)
   }
@@ -143,9 +150,46 @@ object JavaConversions {
    * @param b The <code>Buffer</code> to be converted.
    * @return A Java <code>List</code> view of the argument.
    */
-  implicit def asList[A](b : mutable.Buffer[A]) : ju.List[A] = b match {
+  implicit def asList[A](b : mutable.Buffer[A]): ju.List[A] = b match {
     case JListWrapper(wrapped) => wrapped
     case _ => new MutableBufferWrapper(b)
+  }
+
+  /**
+   * Implicitly converts a Scala mutable <code>Seq</code> to a Java <code>List</code>.
+   * The returned Java <code>List</code> is backed by the provided Scala
+   * <code>Seq</code> and any side-effects of using it via the Java interface will
+   * be visible via the Scala interface and vice versa.
+   * <p>
+   * If the Scala <code>Seq</code> was previously obtained from an implicit or
+   * explicit call of <code>asSeq(java.util.List)</code> then the original
+   * Java <code>List</code> will be returned.
+   *
+   * @param b The <code>Seq</code> to be converted.
+   * @return A Java <code>List</code> view of the argument.
+   */
+  implicit def asList[A](b : mutable.IndexedSeq[A]): ju.List[A] = b match {
+    case jlw: JListWrapper[_] => jlw.underlying.asInstanceOf[ju.List[A]]
+    case _ => new MutableIndexedSeqWrapper(b)
+  }
+
+  /**
+   * Implicitly converts a Scala <code>Seq</code> to a Java <code>List</code>.
+   * The returned Java <code>List</code> is backed by the provided Scala
+   * <code>Seq</code> and any side-effects of using it via the Java interface will
+   * be visible via the Scala interface and vice versa.
+   * <p>
+   * If the Scala <code>Seq</code> was previously obtained from an implicit or
+   * explicit call of <code>asSeq(java.util.List)</code> then the original
+   * Java <code>List</code> will be returned.
+   *
+   * @param b The <code>Seq</code> to be converted.
+   * @return A Java <code>List</co *
+de> view of the argument.
+   */
+  implicit def asList[A](b : IndexedSeq[A]): ju.List[A] = b match {
+    case jlw: JListWrapper[_] => jlw.underlying.asInstanceOf[ju.List[A]]
+    case _ => new IndexedSeqWrapper(b)
   }
 
   /**
@@ -161,9 +205,27 @@ object JavaConversions {
    * @param s The <code>Set</code> to be converted.
    * @return A Java <code>Set</code> view of the argument.
    */
-  implicit def asSet[A](s : mutable.Set[A])(implicit m : ClassManifest[A]) : ju.Set[A] = s match {
+  implicit def asSet[A](s : mutable.Set[A])(implicit m : ClassManifest[A]): ju.Set[A] = s match {
     case JSetWrapper(wrapped) => wrapped
     case _ => new MutableSetWrapper(s)(m)
+  }
+
+  /**
+   * Implicitly converts a Scala <code>Set</code> to a Java <code>Set</code>.
+   * The returned Java <code>Set</code> is backed by the provided Scala
+   * <code>Set</code> and any side-effects of using it via the Java interface will
+   * be visible via the Scala interface and vice versa.
+   * <p>
+   * If the Scala <code>Set</code> was previously obtained from an implicit or
+   * explicit call of <code>asSet(java.util.Set)</code> then the original
+   * Java <code>Set</code> will be returned.
+   *
+   * @param s The <code>Set</code> to be converted.
+   * @return A Java <code>Set</code> view of the argument.
+   */
+  implicit def asSet[A](s: Set[A]): ju.Set[A] = s match {
+    case JSetWrapper(wrapped) => wrapped
+    case _ => new SetWrapper(s)
   }
 
   /**
@@ -179,10 +241,29 @@ object JavaConversions {
    * @param m The <code>Map</code> to be converted.
    * @return A Java <code>Map</code> view of the argument.
    */
-  implicit def asMap[A, B](m : mutable.Map[A, B])(implicit ma : ClassManifest[A]) : ju.Map[A, B] = m match {
+  implicit def asMap[A, B](m : mutable.Map[A, B])(implicit ma : ClassManifest[A]): ju.Map[A, B] = m match {
     //case JConcurrentMapWrapper(wrapped) => wrapped
     case JMapWrapper(wrapped) => wrapped
     case _ => new MutableMapWrapper(m)(ma)
+  }
+
+  /**
+   * Implicitly converts a Scala <code>Map</code> to a Java <code>Map</code>.
+   * The returned Java <code>Map</code> is backed by the provided Scala
+   * <code>Map</code> and any side-effects of using it via the Java interface will
+   * be visible via the Scala interface and vice versa.
+   * <p>
+   * If the Scala <code>Map</code> was previously obtained from an implicit or
+   * explicit call of <code>asMap(java.util.Map)</code> then the original
+   * Java <code>Map</code> will be returned.
+   *
+   * @param m The <code>Map</code> to be converted.
+   * @return A Java <code>Map</code> view of the argument.
+   */
+  implicit def asMap[A, B](m : Map[A, B])(implicit ma : ClassManifest[A]): ju.Map[A, B] = m match {
+    //case JConcurrentMapWrapper(wrapped) => wrapped
+    case JMapWrapper(wrapped) => wrapped
+    case _ => new MapWrapper(m)
   }
 
   /**
@@ -216,7 +297,7 @@ object JavaConversions {
    * @param i The <code>Iterator</code> to be converted.
    * @return A Scala <code>Iterator</code> view of the argument.
    */
-  implicit def asIterator[A](i : ju.Iterator[A]) = i match {
+  implicit def asIterator[A](i : ju.Iterator[A]): Iterator[A] = i match {
     case IteratorWrapper(wrapped) => wrapped
     case _ => JIteratorWrapper(i)
   }
@@ -234,7 +315,7 @@ object JavaConversions {
    * @param i The <code>Enumeration</code> to be converted.
    * @return A Scala <code>Iterator</code> view of the argument.
    */
-  implicit def asIterator[A](i : ju.Enumeration[A]) = i match {
+  implicit def asIterator[A](i : ju.Enumeration[A]): Iterator[A] = i match {
     case IteratorWrapper(wrapped) => wrapped
     case _ => JEnumerationWrapper(i)
   }
@@ -252,7 +333,7 @@ object JavaConversions {
    * @param i The <code>Iterable</code> to be converted.
    * @return A Scala <code>Iterable</code> view of the argument.
    */
-  implicit def asIterable[A](i : jl.Iterable[A]) = i match {
+  implicit def asIterable[A](i : jl.Iterable[A]): Iterable[A] = i match {
     case IterableWrapper(wrapped) => wrapped
     case _ => JIterableWrapper(i)
   }
@@ -267,7 +348,7 @@ object JavaConversions {
    * @param i The <code>Collection</code> to be converted.
    * @return A Scala <code>SizedIterable</code> view of the argument.
    */
-  implicit def asIterable[A](i : ju.Collection[A]) = i match {
+  implicit def asIterable[A](i : ju.Collection[A]): Iterable[A] = i match {
     case IterableWrapper(wrapped) => wrapped
     case _ => JCollectionWrapper(i)
   }
@@ -285,7 +366,7 @@ object JavaConversions {
    * @param l The <code>List</code> to be converted.
    * @return A Scala mutable <code>Buffer</code> view of the argument.
    */
-  implicit def asBuffer[A](l : ju.List[A]) = l match {
+  implicit def asBuffer[A](l : ju.List[A]): mutable.Buffer[A] = l match {
     case MutableBufferWrapper(wrapped) => wrapped
     case _ =>new JListWrapper(l)
   }
@@ -298,12 +379,12 @@ object JavaConversions {
    * <p>
    * If the Java <code>Set</code> was previously obtained from an implicit or
    * explicit call of <code>asSet(scala.collection.mutable.Set)</code> then the original
-   * Scala <code>Set</code> will be returned.
+   * ScalaThe reported problems have to do with dependent method types, which is currently an experimental feature in Scala and is still under development. We emphasize that these problems are related to type-inference and, as stated in the paper, it is possible to run and type-check the programs with additional annotations. <code>Set</code> will be returned.
    *
    * @param s The <code>Set</code> to be converted.
    * @return A Scala mutable <code>Set</code> view of the argument.
    */
-  implicit def asSet[A](s : ju.Set[A]) = s match {
+  implicit def asSet[A](s : ju.Set[A]): mutable.Set[A] = s match {
     case MutableSetWrapper(wrapped) => wrapped
     case _ =>new JSetWrapper(s)
   }
@@ -321,7 +402,7 @@ object JavaConversions {
    * @param m The <code>Map</code> to be converted.
    * @return A Scala mutable <code>Map</code> view of the argument.
    */
-  implicit def asMap[A, B](m : ju.Map[A, B]) = m match {
+  implicit def asMap[A, B](m : ju.Map[A, B]): mutable.Map[A, B] = m match {
     //case ConcurrentMapWrapper(wrapped) => wrapped
     case MutableMapWrapper(wrapped) => wrapped
     case _ => new JMapWrapper(m)
@@ -340,7 +421,7 @@ object JavaConversions {
    * @param m The <code>ConcurrentMap</code> to be converted.
    * @return A Scala mutable <code>ConcurrrentMap</code> view of the argument.
    */
-  implicit def asConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]) = m match {
+  implicit def asConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
     case ConcurrentMapWrapper(wrapped) => wrapped
     case _ => new JConcurrentMapWrapper(m)
   }
@@ -396,6 +477,17 @@ object JavaConversions {
     def newBuilder[B] = new mutable.ArrayBuffer[B]
   }
 
+  case class IndexedSeqWrapper[A](underlying : IndexedSeq[A]) extends ju.AbstractList[A] {
+    def size = underlying.length
+    def get(i : Int) = underlying(i)
+  }
+
+  case class MutableIndexedSeqWrapper[A](underlying : mutable.IndexedSeq[A]) extends ju.AbstractList[A] {
+    def size = underlying.length
+    def get(i : Int) = underlying(i)
+    override def set(i : Int, elem: A) = { val p = underlying(i) ; underlying(i) = elem ; p }
+  }
+
   case class MutableBufferWrapper[A](underlying : mutable.Buffer[A]) extends ju.AbstractList[A] {
     def size = underlying.length
     def get(i : Int) = underlying(i)
@@ -418,9 +510,29 @@ object JavaConversions {
     def result = this
   }
 
-  case class MutableSetWrapper[A](underlying : mutable.Set[A])(m : ClassManifest[A]) extends ju.AbstractSet[A] {
+  class SetWrapper[A](underlying: Set[A]) extends ju.AbstractSet[A] {
     self =>
     def size = underlying.size
+    def iterator = new ju.Iterator[A] {
+      val ui = underlying.iterator
+      var prev : Option[A] = None
+      def hasNext = ui.hasNext
+      def next = { val e = ui.next ; prev = Some(e) ; e }
+      def remove = prev match {
+        case Some(e) =>
+          self match {
+            case ms: mutable.Set[a] =>
+              ms.remove(e.asInstanceOf[a])
+              prev = None
+            case _ =>
+              throw new UnsupportedOperationException("remove")
+          }
+        case _ => throw new IllegalStateException("next must be called at least once before remove")
+      }
+    }
+  }
+
+  case class MutableSetWrapper[A](underlying : mutable.Set[A])(m : ClassManifest[A]) extends SetWrapper[A](underlying) {
     override def add(elem: A) = { val sz = underlying.size ; underlying += elem ; sz < underlying.size }
     override def remove(elem : AnyRef) = {
       m.erasure.isInstance(elem) && {
@@ -429,18 +541,6 @@ object JavaConversions {
         sz > underlying.size
       }
     }
-    def iterator = new ju.Iterator[A] {
-      val ui = underlying.iterator
-      var prev : Option[A] = None
-
-      def hasNext = ui.hasNext
-      def next = { val e = ui.next ; prev = Some(e) ; e }
-      def remove = prev match {
-        case Some(e) => self.remove(e.asInstanceOf[AnyRef]) ; prev = None
-        case _ => throw new IllegalStateException("next must be called at least once before remove")
-      }
-    }
-
   }
 
   case class JSetWrapper[A](underlying : ju.Set[A]) extends mutable.Set[A] with mutable.SetLike[A, JSetWrapper[A]] {
@@ -461,29 +561,10 @@ object JavaConversions {
     override def empty = JSetWrapper(new ju.HashSet[A])
   }
 
-  abstract class MutableMapWrapperLike[A, B](underlying: mutable.Map[A, B])(m: ClassManifest[A])
-  extends ju.AbstractMap[A, B] {
-    self =>
+  class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] { self =>
     override def size = underlying.size
 
-    override def put(k : A, v : B) = underlying.put(k, v) match {
-      case Some(v1) => v1
-      case None => null.asInstanceOf[B]
-    }
-
-    override def remove(k : AnyRef) = {
-      if (!m.erasure.isInstance(k))
-        null.asInstanceOf[B]
-      else {
-        val k1 = k.asInstanceOf[A]
-        underlying.get(k1) match {
-          case Some(v) => underlying -= k1 ; v
-          case None => null.asInstanceOf[B]
-        }
-      }
-    }
-
-    override def entrySet : ju.Set[ju.Map.Entry[A, B]] = new ju.AbstractSet[ju.Map.Entry[A, B]] {
+    override def entrySet: ju.Set[ju.Map.Entry[A, B]] = new ju.AbstractSet[ju.Map.Entry[A, B]] {
       def size = self.size
 
       def iterator = new ju.Iterator[ju.Map.Entry[A, B]] {
@@ -507,15 +588,44 @@ object JavaConversions {
         }
 
         def remove = prev match {
-          case Some(k) => val v = self.remove(k.asInstanceOf[AnyRef]) ; prev = None ; v
-          case _ => throw new IllegalStateException("next must be called at least once before remove")
+          case Some(k) =>
+            self match {
+              case mm: mutable.Map[a, _] =>
+                val v = mm.remove(k.asInstanceOf[a])
+                prev = None
+                v
+              case _ =>
+                throw new UnsupportedOperationException("remove")
+            }
+          case _ =>
+            throw new IllegalStateException("next must be called at least once before remove")
+        }
+      }
+    }
+  }
+
+  abstract class MutableMapWrapperCommon[A, B](underlying: mutable.Map[A, B])(m: ClassManifest[A])
+  extends MapWrapper[A, B](underlying) {
+    override def put(k : A, v : B) = underlying.put(k, v) match {
+      case Some(v1) => v1
+      case None => null.asInstanceOf[B]
+    }
+
+    override def remove(k : AnyRef) = {
+      if (!m.erasure.isInstance(k))
+        null.asInstanceOf[B]
+      else {
+        val k1 = k.asInstanceOf[A]
+        underlying.get(k1) match {
+          case Some(v) => underlying -= k1 ; v
+          case None => null.asInstanceOf[B]
         }
       }
     }
   }
 
   case class MutableMapWrapper[A, B](underlying : mutable.Map[A, B])(m : ClassManifest[A])
-  extends MutableMapWrapperLike[A, B](underlying)(m)
+  extends MutableMapWrapperCommon[A, B](underlying)(m)
 
   trait JMapWrapperLike[A, B, +Repr <: mutable.MapLike[A, B, Repr] with mutable.Map[A, B]]
   extends mutable.Map[A, B] with mutable.MapLike[A, B, Repr] {
@@ -566,7 +676,7 @@ object JavaConversions {
 
   case class ConcurrentMapWrapper[A, B](underlying: mutable.ConcurrentMap[A, B])
     (m: ClassManifest[A], mv: ClassManifest[B])
-  extends MutableMapWrapperLike[A, B](underlying)(m) with juc.ConcurrentMap[A, B] {
+  extends MutableMapWrapperCommon[A, B](underlying)(m) with juc.ConcurrentMap[A, B] {
     self =>
 
     override def remove(k : AnyRef) = {
