@@ -673,54 +673,65 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def specialOverrides(clazz: Symbol): List[Symbol] = {
     log("specialOverrides(" + clazz + ")")
-    val oms = new mutable.ListBuffer[Symbol]
-    for  (overriding <- clazz.info.decls;
-          val allOverridden = overriding.allOverriddenSymbols
-          if !allOverridden.isEmpty;
-          val overridden = allOverridden.head) {
-      if (settings.debug.value)
-        log("\toverriding pairs: " + overridden.fullName + ": " + overridden.info
-               + " overriden by " + overriding.fullName + ": " + overriding.info)
-      val stvars = specializedTypeVars(overridden.info)
-      if (overriding.owner == clazz && !stvars.isEmpty) {
-        if (settings.debug.value) log("\t\tspecializedTVars: " + stvars)
-        val env = unify(overridden.info, overriding.info, emptyEnv)
+
+    /** Return the overridden symbol in syms that needs a specialized overriding symbol,
+     *  together with its specialization environment. The overridden symbol may not be
+     *  the closest to 'overriding', in a given hierarchy.
+     *
+     *  An method m needs a special override if
+     *    * m overrides a method whose type contains specialized type variables
+     *    * there is a valid specialization environment that maps the overridden method type to m's type.
+     */
+    def needsSpecialOverride(overriding: Symbol, syms: List[Symbol]): (Symbol, TypeEnv) = {
+      for (overridden <- syms) {
         if (settings.debug.value)
-          log("\t\tenv: " + env + "isValid: "
-                + TypeEnv.isValid(env, overridden)
-                + " looking for: " + specializedName(overridden, env) + " in:\n"
-                + atPhase(phase.next)(overridden.owner.info.decls)
-                + "found: " + atPhase(phase.next)(overridden.owner.info.decl(specializedName(overridden, env))))
-        if (!TypeEnv.restrict(env, stvars).isEmpty
-            && TypeEnv.isValid(env, overridden)
-            && atPhase(phase.next)(overridden.owner.info.decl(specializedName(overridden, env))) != NoSymbol) {
-          log("Added specialized overload for " + overriding.fullName + " in env: " + env)
-          val om = specializedOverload(clazz, overridden, env)
-          typeEnv(om) = env
-          concreteSpecMethods += overriding
-          if (!overriding.isDeferred) {  // concrete method
-            // if the override is a normalized member, 'om' gets the implementation from
-            // its original target, and adds the environment of the normalized member (that is,
-            // any specialized /method/ type parameter bindings)
-            info(om) = info.get(overriding) match {
-              case Some(NormalizedMember(target)) =>
-                typeEnv(om) = env ++ typeEnv(overriding)
-                SpecialOverride(target)
-              case _ => SpecialOverride(overriding)
-            }
-            info(overriding)  = Forward(om)
-            om setPos overriding.pos
-          } else { // abstract override
-            if (settings.debug.value) log("abstract override " + overriding.fullName + " with specialized " + om.fullName)
-            info(om) = Forward(overriding)
-          }
-          overloads(overriding) = Overload(om, env) :: overloads(overriding)
-          oms += om
-          atPhase(phase.next)(
-            assert(overridden.owner.info.decl(om.name) != NoSymbol,
-                   "Could not find " + om.name + " in " + overridden.owner.info.decls))
+          log("Overridden: " + overridden.fullName + ": " + overridden.info
+             + "\n by " + overriding.fullName + ": " + overriding.info)
+        val stvars = specializedTypeVars(overridden.info)
+        if (!stvars.isEmpty) {
+          if (settings.debug.value) log("\t\tspecializedTVars: " + stvars)
+          val env = unify(overridden.info, overriding.info, emptyEnv)
+          if (settings.debug.value)
+            log("\t\tenv: " + env + "isValid: " + TypeEnv.isValid(env, overridden)
+                  + "found: " + atPhase(phase.next)(overridden.owner.info.decl(specializedName(overridden, env))))
+          if (!TypeEnv.restrict(env, stvars).isEmpty
+              && TypeEnv.isValid(env, overridden)
+              && atPhase(phase.next)(overridden.owner.info.decl(specializedName(overridden, env))) != NoSymbol)
+            return (overridden, env)
         }
       }
+      (NoSymbol, emptyEnv)
+    }
+
+    val oms = new mutable.ListBuffer[Symbol]
+    for  (overriding <- clazz.info.decls;
+          val (overridden, env) = needsSpecialOverride(overriding, overriding.allOverriddenSymbols)
+          if overridden != NoSymbol) {
+      log("Added specialized overload for " + overriding.fullName + " in env: " + env)
+      val om = specializedOverload(clazz, overridden, env)
+      typeEnv(om) = env
+      concreteSpecMethods += overriding
+      if (!overriding.isDeferred) {  // concrete method
+        // if the override is a normalized member, 'om' gets the implementation from
+        // its original target, and adds the environment of the normalized member (that is,
+        // any specialized /method/ type parameter bindings)
+        info(om) = info.get(overriding) match {
+          case Some(NormalizedMember(target)) =>
+            typeEnv(om) = env ++ typeEnv(overriding)
+            SpecialOverride(target)
+          case _ => SpecialOverride(overriding)
+        }
+        info(overriding)  = Forward(om)
+        om setPos overriding.pos
+      } else { // abstract override
+        if (settings.debug.value) log("abstract override " + overriding.fullName + " with specialized " + om.fullName)
+        info(om) = Forward(overriding)
+      }
+      overloads(overriding) = Overload(om, env) :: overloads(overriding)
+      oms += om
+      atPhase(phase.next)(
+        assert(overridden.owner.info.decl(om.name) != NoSymbol,
+               "Could not find " + om.name + " in " + overridden.owner.info.decls))
     }
     oms.toList
   }
