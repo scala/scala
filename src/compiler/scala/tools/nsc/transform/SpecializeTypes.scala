@@ -600,7 +600,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     if (sym.isMethod && !atPhase(currentRun.typerPhase)(sym.typeParams.isEmpty)) {
       var (stps, tps) = splitParams(sym.info.typeParams)
       val unusedStvars = stps -- specializedTypeVars(sym.info).toList
-      if (unusedStvars.nonEmpty && currentRun.compiles(sym)) {
+      if (unusedStvars.nonEmpty && currentRun.compiles(sym) && !sym.isSynthetic) {
         reporter.warning(sym.pos, "%s %s unused or used in non-specializable positions."
           .format(unusedStvars.mkString("", ", ", ""), if (unusedStvars.length == 1) "is" else "are"))
         unusedStvars foreach (_.removeAnnotation(SpecializedClass))
@@ -643,7 +643,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       for (spec <- specializations(tparams)) yield {
         if (sym.hasFlag(PRIVATE)) sym.resetFlag(PRIVATE).setFlag(PROTECTED)
         val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
-        typeEnv(specMember) = outerEnv ++ spec
+        typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
         overloads(sym) = Overload(specMember, spec) :: overloads(sym)
         specMember
       }
@@ -956,20 +956,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       /** The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
       def specSym(qual: Tree): Option[Symbol] = {
         val env = unify(symbol.tpe, tree.tpe, emptyEnv)
-        log("checking for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
+        log("checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
+                .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
         if (!env.isEmpty) {  // a method?
-          val specMember = overload(symbol, env)
-          if (specMember.isDefined) Some(specMember.get.sym)
-          else {  // a field?
-            val specMember = qual.tpe.member(specializedName(symbol, env))
-            if (specMember ne NoSymbol) Some(specMember)
-            else None
-          }
+          val specMember = qual.tpe.member(specializedName(symbol, env))
+          if (specMember ne NoSymbol) Some(specMember)
+          else None
         } else None
       }
 
       def maybeTypeApply(fun: Tree, targs: List[Tree]) =
-        if (targs.isEmpty)fun else TypeApply(fun, targs)
+        if (targs.isEmpty) fun else TypeApply(fun, targs)
 
       curTree = tree
       tree match {
@@ -989,13 +986,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val qual1 = transform(qual)
           specSym(qual1) match {
             case Some(specMember) =>
-              if (settings.debug.value) log("found " + specMember)
+              if (settings.debug.value) log("found " + specMember.fullName)
               assert(symbol.info.typeParams.length == targs.length)
               val env = typeEnv(specMember)
               val residualTargs =
                 for ((tvar, targ) <-symbol.info.typeParams.zip(targs) if !env.isDefinedAt(tvar))
                   yield targ
-              assert(residualTargs.length == specMember.info.typeParams.length)
+              assert(residualTargs.length == specMember.info.typeParams.length, env)
               val tree1 = maybeTypeApply(Select(qual1, specMember), residualTargs)
               log("rewrote " + tree + " to " + tree1)
               localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
@@ -1006,10 +1003,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         case Select(qual, name) =>
           if (settings.debug.value)
             log("looking at Select: " + tree + " sym: " + symbol + ": " + symbol.info + "[tree.tpe: " + tree.tpe + "]")
-          //if (settings.debug.value) log("\toverloads: " + overloads.mkString("", "\n", ""))
+
           if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) {
-            if (settings.debug.value)
-              log("checking for unification at " + tree + " with sym.tpe: " + symbol.tpe + " and tree.tpe: " + tree.tpe + " at " + tree.pos.line)
             val env = unify(symbol.tpe, tree.tpe, emptyEnv)
             if (settings.debug.value) log("checking for rerouting: " + tree + " with sym.tpe: " + symbol.tpe + " tree.tpe: " + tree.tpe + " env: " + env)
             if (!env.isEmpty) {
