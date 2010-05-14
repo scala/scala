@@ -171,10 +171,9 @@ trait ParallelMatching extends ast.TreeDSL
       def tail = ps.tail
       def size = ps.length
 
-      def headType = head.necessaryType
-      def isCaseHead = head.isCaseClass
-      private val dummyCount = if (isCaseHead) headType.typeSymbol.caseFieldAccessors.length else 0
-      def dummies = emptyPatterns(dummyCount)
+      def caseAccessors = head.necessaryType.typeSymbol.caseFieldAccessors
+      def currentArity  = if (head.isCaseClass) caseAccessors.length else 0
+      def dummies       = emptyPatterns(currentArity)
 
       def apply(i: Int): Pattern = ps(i)
       def pzip() = ps.zipWithIndex
@@ -566,52 +565,35 @@ trait ParallelMatching extends ast.TreeDSL
      *     remaining: remaining, rows index and pattern
      */
     class MixTypes(val pmatch: PatternMatch, val rest: Rep) extends RuleApplication {
-      case class Yes(bx: Int, moreSpecific: Pattern, subsumed: List[Pattern])
-      case class No(bx: Int, remaining: Pattern)
+      val succRows = new ListBuffer[(Int, List[Pattern])]
+      val failRows = new ListBuffer[(Int, Pattern)]
 
-      val (yeses, noes) = {
-        val _ys = new ListBuffer[Yes]
-        val _ns = new ListBuffer[No]
+      for ((pattern, j) <- pmatch.pzip()) {
+        def isMoreSpecific  = matches(pattern.tpe, head.necessaryType)
+        def isLessSpecific  = matches(head.necessaryType, pattern.tpe)
+        def isEquivalent    = head.necessaryType =:= pattern.tpe
+        def isObjectTest    = pattern.isObject && (head.necessaryType =:= pattern.necessaryType)
 
-        for ((pattern, j) <- pmatch.pzip()) {
-          // scrutinee, head of pattern group
-          val (s, p) = (pattern.tpe, head.necessaryType)
+        def ifElsePattern(yes: Pattern) = if (isEquivalent) yes else pattern
 
-          def isEquivalent  = head.necessaryType =:= pattern.tpe
-          def isObjectTest  = pattern.isObject && (p =:= pattern.necessaryType)
+        def succDummy = succRows += ((j, NoPattern :: pmatch.dummies))
+        def succTyped(pp: Pattern) = succRows += ((j, ifElsePattern(pp) :: pmatch.dummies))
+        def succSubs  = succRows += ((j, ifElsePattern(NoPattern) :: (pattern subpatterns pmatch)))
+        def failOnly  = failRows += ((j, pattern))
 
-          def sMatchesP = matches(s, p)
-          def pMatchesS = matches(p, s)
-
-          def ifEquiv(yes: Pattern): Pattern = if (isEquivalent) yes else pattern
-
-          def passl(p: Pattern = NoPattern, ps: List[Pattern] = pmatch.dummies) = Some(Yes(j, p, ps))
-          def passr()                                                           = Some( No(j, pattern))
-
-          def typed(pp: Tree) = passl(ifEquiv(Pattern(pp)))
-          def subs()          = passl(ifEquiv(NoPattern), pattern subpatterns pmatch)
-
-          val (oneY, oneN) = pattern match {
-            case Pattern(LIT(null), _) if !(p =:= s)        => (None, passr)      // (1)
-            case x if isObjectTest                          => (passl(), None)    // (2)
-            case Pattern(Typed(pp, _), _)     if sMatchesP  => (typed(pp), None)  // (4)
-            // The next line used to be this which "fixed" 1697 but introduced
-            // numerous regressions including #3136.
-            // case Pattern(_: UnApply, _)                     => (passl(), passr)
-            case Pattern(_: UnApply, _)                     => (None, passr)
-            case x if !x.isDefault && sMatchesP             => (subs(), None)
-            case x if  x.isDefault || pMatchesS             => (passl(), passr)
-            case _                                          => (None, passr)
-          }
-          oneY map (_ys +=)
-          oneN map (_ns +=)
+        pattern match {
+          case Pattern(LIT(null), _) if !isEquivalent       => failOnly
+          case x if isObjectTest                            => succDummy
+          // Note: bugs 1697/2337/etc have their origins right here because they
+          // have a type test which when passed doesn't guarantee a match: the
+          // unapply can still fail.
+          case Pattern(Typed(pp, _), _) if isMoreSpecific   => succTyped(Pattern(pp))
+          case Pattern(UnApply(_, _), _)                    => failOnly
+          case x if !x.isDefault && isMoreSpecific          => succSubs
+          case x if x.isDefault || isLessSpecific           => succDummy ; failOnly
+          case _                                            => failOnly
         }
-        (_ys.toList, _ns.toList)
       }
-
-      val moreSpecific = yeses map (_.moreSpecific)
-      val subsumed = yeses map (x => (x.bx, x.subsumed))
-      val remaining = noes map (x => (x.bx, x.remaining))
 
       // temporary checks so we're less crashy while we determine what to implement.
       def checkErroneous(scrut: Scrutinee): Type = {
@@ -623,29 +605,20 @@ trait ParallelMatching extends ast.TreeDSL
         }
       }
 
-      private def mkZipped =
-        for (Yes(j, moreSpecific, subsumed) <- yeses) yield
-          j -> (moreSpecific :: subsumed)
-
-      lazy val casted = scrut castedTo pmatch.headType
+      lazy val casted = scrut castedTo head.necessaryType
       lazy val cond   = condition(checkErroneous(casted), scrut, head.boundVariables.nonEmpty)
 
-      private def isAnyMoreSpecific = yeses exists (x => !x.moreSpecific.isEmpty)
-      lazy val (subtests, subtestVars) =
-        if (isAnyMoreSpecific)  (mkZipped, List(casted.pv))
-        else                    (subsumed, Nil)
-
-      lazy val newRows =
-        for ((j, ps) <- subtests) yield
-          (rest rows j).insert2(ps, pmatch(j).boundVariables, casted.sym)
-
       lazy val success = {
-        val srep = remake(newRows, subtestVars ::: casted.accessorPatternVars, includeScrut = false)
+        val newRows =
+          for ((j, ps) <- succRows.toList) yield
+            (rest rows j).insert2(ps, pmatch(j).boundVariables, casted.sym)
+
+        val newRoots = casted.pv :: casted.accessorPatternVars
+        val srep = remake(newRows, newRoots, false)
         squeezedBlock(casted.allValDefs, srep.toTree)
       }
 
-      lazy val failure =
-        mkFail(remaining map { case (p1, p2) => rest rows p1 insert p2 })
+      lazy val failure = mkFail(failRows.toList map { case (p1, p2) => rest rows p1 insert p2 })
 
       final def tree(): Tree = codegen
     }
