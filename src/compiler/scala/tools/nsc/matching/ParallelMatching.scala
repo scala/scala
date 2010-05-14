@@ -171,9 +171,7 @@ trait ParallelMatching extends ast.TreeDSL
       def tail = ps.tail
       def size = ps.length
 
-      def caseAccessors = head.necessaryType.typeSymbol.caseFieldAccessors
-      def currentArity  = if (head.isCaseClass) caseAccessors.length else 0
-      def dummies       = emptyPatterns(currentArity)
+      def dummies       = head.dummies
 
       def apply(i: Int): Pattern = ps(i)
       def pzip() = ps.zipWithIndex
@@ -190,17 +188,11 @@ trait ParallelMatching extends ast.TreeDSL
         }
       }
 
-      object TypedUnapply {
-        def unapply(x: Tree): Option[Boolean] = condOpt(x) {
-          case Typed(UnapplyParamType(tpe), tpt) => !(tpt.tpe <:< tpe)
-        }
-      }
-
       def mkRule(rest: Rep): RuleApplication = {
         tracing("Rule", head match {
           case x if isEquals(x.tree.tpe)        => new MixEquals(this, rest)
           case x: SequencePattern               => new MixSequence(this, rest, x)
-          case AnyUnapply(false)                => new MixUnapply(this, rest, false)
+          case AnyUnapply(false)                => new MixUnapply(this, rest)
           case _ =>
             isPatternSwitch(scrut, ps) match {
               case Some(x)  => new MixLiteralInts(x, rest)
@@ -356,7 +348,7 @@ trait ParallelMatching extends ast.TreeDSL
 
     /** mixture rule for unapply pattern
      */
-    class MixUnapply(val pmatch: PatternMatch, val rest: Rep, typeTest: Boolean) extends RuleApplication {
+    class MixUnapply(val pmatch: PatternMatch, val rest: Rep) extends RuleApplication {
       val uapattern = head match { case x: UnapplyPattern => x ; case _ => abort("XXX") }
       val ua @ UnApply(app, args) = head.tree
 
@@ -569,16 +561,16 @@ trait ParallelMatching extends ast.TreeDSL
       val failRows = new ListBuffer[(Int, Pattern)]
 
       for ((pattern, j) <- pmatch.pzip()) {
-        def isMoreSpecific  = matches(pattern.tpe, head.necessaryType)
-        def isLessSpecific  = matches(head.necessaryType, pattern.tpe)
-        def isEquivalent    = head.necessaryType =:= pattern.tpe
-        def isObjectTest    = pattern.isObject && (head.necessaryType =:= pattern.necessaryType)
+        def isMoreSpecific  = matches(pattern.tpe, head.tpe)
+        def isLessSpecific  = matches(head.tpe, pattern.tpe)
+        def isEquivalent    = head.tpe =:= pattern.tpe
+        def isObjectTest    = pattern.isObject && (head.tpe =:= pattern.tpe)
 
         def ifElsePattern(yes: Pattern) = if (isEquivalent) yes else pattern
 
         def succDummy = succRows += ((j, NoPattern :: pmatch.dummies))
         def succTyped(pp: Pattern) = succRows += ((j, ifElsePattern(pp) :: pmatch.dummies))
-        def succSubs  = succRows += ((j, ifElsePattern(NoPattern) :: (pattern subpatterns pmatch)))
+        def succSubs  = succRows += ((j, ifElsePattern(NoPattern) :: (pattern expandToArity head.arity)))
         def failOnly  = failRows += ((j, pattern))
 
         pattern match {
@@ -605,7 +597,7 @@ trait ParallelMatching extends ast.TreeDSL
         }
       }
 
-      lazy val casted = scrut castedTo head.necessaryType
+      lazy val casted = scrut castedTo head.tpe
       lazy val cond   = condition(checkErroneous(casted), scrut, head.boundVariables.nonEmpty)
 
       lazy val success = {
