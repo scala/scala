@@ -23,9 +23,8 @@ package scala.collection
  *    <li><code>scala.collection.Iterator</code> <=> <code>java.util.{ Iterator, Enumeration }</code></li>
  *    <li><code>scala.collection.mutable.Buffer</code> <=> <code>java.util.List</code></li>
  *    <li><code>scala.collection.mutable.Set</code> <=> <code>java.util.Set</code></li>
- *    <li><code>scala.collection.mutable.Map</code> <=> <code>java.util.Map</code></li>
+ *    <li><code>scala.collection.mutable.Map</code> <=> <code>java.util.{ Map, Dictionary }</code></li>
  *    <li><code>scala.collection.mutable.ConcurrentMap</code> <=> <code>java.util.concurrent.ConcurrentMap</code></li>
- *    <li><code>java.util.Properties</code></li> => <code>scala.collection.mutable.Map[String, String]</code></li>
  *  </ul>
  *  <p>
  *    In all cases, converting from a source type to a target type and back
@@ -42,28 +41,19 @@ package scala.collection
  *  In addition, the following one way conversions are provided:
  *  </p>
  *  <ul>
- *    <li><code>scala.collection.IndexedSeq => <code>java.util.List }</code></li>
- *    <li><code>scala.collection.mutable.IndexedSeq => <code>java.util.List</code></li>
+ *    <li><code>scala.collection.Seq => <code>java.util.List }</code></li>
+ *    <li><code>scala.collection.mutable.Seq => <code>java.util.List</code></li>
  *    <li><code>scala.collection.Set</code> => <code>java.util.Set</code></li>
  *    <li><code>scala.collection.Map</code> => <code>java.util.Map</code></li>
  *  </ul>
- *    Note that no conversion is provided from <code>scala.collection.immutable.List</code>
- *    to <code>java.util.List</code>. Instead it is convertible to an immutable
- *    <code>java.util.Collection</code> which provides size and interaction
- *    capabilities, but not access by index as would be provided by
- *    <code>java.util.List</code>.<br/>
- *    This is intentional: in combination the implementation of
- *    <code>scala.collection.immutable.List</code> and the typical usage
- *    patterns of <code>java.util.List</code> would perform extremely poorly.
- *  </p>
  *
  *  @author Miles Sabin
+ *  @author Martin Odersky
  *  @since  2.8
  */
 object JavaConversions {
   import java.{ lang => jl, util => ju }
   import java.util.{ concurrent => juc }
-  import scala.reflect.ClassManifest
 
   // Scala => Java
 
@@ -168,9 +158,9 @@ object JavaConversions {
    * @param b The <code>Seq</code> to be converted.
    * @return A Java <code>List</code> view of the argument.
    */
-  implicit def asList[A](b : mutable.IndexedSeq[A]): ju.List[A] = b match {
-    case jlw: JListWrapper[_] => jlw.underlying.asInstanceOf[ju.List[A]]
-    case _ => new MutableIndexedSeqWrapper(b)
+  implicit def asList[A](b : mutable.Seq[A]): ju.List[A] = b match {
+    case JListWrapper(wrapped) => wrapped
+    case _ => new MutableSeqWrapper(b)
   }
 
   /**
@@ -187,9 +177,9 @@ object JavaConversions {
    * @return A Java <code>List</co *
 de> view of the argument.
    */
-  implicit def asList[A](b : IndexedSeq[A]): ju.List[A] = b match {
-    case jlw: JListWrapper[_] => jlw.underlying.asInstanceOf[ju.List[A]]
-    case _ => new IndexedSeqWrapper(b)
+  implicit def asList[A](b : Seq[A]): ju.List[A] = b match {
+    case JListWrapper(wrapped) => wrapped
+    case _ => new SeqWrapper(b)
   }
 
   /**
@@ -205,9 +195,9 @@ de> view of the argument.
    * @param s The <code>Set</code> to be converted.
    * @return A Java <code>Set</code> view of the argument.
    */
-  implicit def asSet[A](s : mutable.Set[A])(implicit m : ClassManifest[A]): ju.Set[A] = s match {
+  implicit def asSet[A](s : mutable.Set[A]): ju.Set[A] = s match {
     case JSetWrapper(wrapped) => wrapped
-    case _ => new MutableSetWrapper(s)(m)
+    case _ => new MutableSetWrapper(s)
   }
 
   /**
@@ -241,10 +231,42 @@ de> view of the argument.
    * @param m The <code>Map</code> to be converted.
    * @return A Java <code>Map</code> view of the argument.
    */
-  implicit def asMap[A, B](m : mutable.Map[A, B])(implicit ma : ClassManifest[A]): ju.Map[A, B] = m match {
+  implicit def asMap[A, B](m : mutable.Map[A, B]): ju.Map[A, B] = m match {
     //case JConcurrentMapWrapper(wrapped) => wrapped
     case JMapWrapper(wrapped) => wrapped
-    case _ => new MutableMapWrapper(m)(ma)
+    case _ => new MutableMapWrapper(m)
+  }
+
+  /**
+   * Implicitly converts a Scala mutable <code>Map</code> to a Java <code>Dictionary</code>.
+   * The returned Java <code>Dictionary</code> is backed by the provided Scala
+   * <code>Dictionary</code> and any side-effects of using it via the Java interface will
+   * be visible via the Scala interface and vice versa.
+   * <p>
+   * If the Scala <code>Dictionary</code> was previously obtained from an implicit or
+   * explicit call of <code>asMap(java.util.Dictionary)</code> then the original
+   * Java <code>Dictionary</code> will be returned.
+   *
+   * @param m The <code>Map</code> to be converted.
+   * @return A Java <code>Dictionary</code> view of the argument.
+   */
+  implicit def asDictionary[A, B](m : mutable.Map[A, B]): ju.Dictionary[A, B] = m match {
+    //case JConcurrentMapWrapper(wrapped) => wrapped
+    case JDictionaryWrapper(wrapped) => wrapped
+    case _ => new DictionaryWrapper(m)
+  }
+
+  /**
+   * Implicitly converts a Java <code>Properties</code> to a Scala mutable <code>Map[String, String]</code>.
+   * The returned Scala <code>Map[String, String]</code> is backed by the provided Java
+   * <code>Properties</code> and any side-effects of using it via the Scala interface will
+   * be visible via the Java interface and vice versa.
+   *
+   * @param m The <code>Properties</code> to be converted.
+   * @return A Scala mutable <code>Map[String, String]</code> view of the argument.
+   */
+  implicit def asMap(p: ju.Properties): mutable.Map[String, String] = p match {
+    case _ => new JPropertiesWrapper(p)
   }
 
   /**
@@ -260,7 +282,7 @@ de> view of the argument.
    * @param m The <code>Map</code> to be converted.
    * @return A Java <code>Map</code> view of the argument.
    */
-  implicit def asMap[A, B](m : Map[A, B])(implicit ma : ClassManifest[A]): ju.Map[A, B] = m match {
+  implicit def asMap[A, B](m : Map[A, B]): ju.Map[A, B] = m match {
     //case JConcurrentMapWrapper(wrapped) => wrapped
     case JMapWrapper(wrapped) => wrapped
     case _ => new MapWrapper(m)
@@ -276,10 +298,9 @@ de> view of the argument.
    * explicit call of <code>asConcurrentMap(java.util.concurrect.ConcurrentMap)</code> then the original
    * Java <code>ConcurrentMap</code> will be returned.
    */
-  implicit def asConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B])
-    (implicit ma: ClassManifest[A], mb: ClassManifest[B]): juc.ConcurrentMap[A, B] = m match {
+  implicit def asConcurrentMap[A, B](m: mutable.ConcurrentMap[A, B]): juc.ConcurrentMap[A, B] = m match {
     case JConcurrentMapWrapper(wrapped) => wrapped
-    case _ => new ConcurrentMapWrapper(m)(ma, mb)
+    case _ => new ConcurrentMapWrapper(m)
   }
 
   // Java => Scala
@@ -422,21 +443,22 @@ de> view of the argument.
    * @return A Scala mutable <code>ConcurrrentMap</code> view of the argument.
    */
   implicit def asConcurrentMap[A, B](m: juc.ConcurrentMap[A, B]): mutable.ConcurrentMap[A, B] = m match {
-    case ConcurrentMapWrapper(wrapped) => wrapped
+    case cmw: ConcurrentMapWrapper[a, b] => cmw.underlying
     case _ => new JConcurrentMapWrapper(m)
   }
 
   /**
-   * Implicitly converts a Java <code>Properties</code> to a Scala mutable <code>Map[String, String]</code>.
+   * Implicitly converts a Java <code>Dictionary</code> to a Scala mutable <code>Map[String, String]</code>.
    * The returned Scala <code>Map[String, String]</code> is backed by the provided Java
-   * <code>Properties</code> and any side-effects of using it via the Scala interface will
+   * <code>Dictionary</code> and any side-effects of using it via the Scala interface will
    * be visible via the Java interface and vice versa.
    *
-   * @param m The <code>Properties</code> to be converted.
+   * @param m The <code>Dictionary</code> to be converted.
    * @return A Scala mutable <code>Map[String, String]</code> view of the argument.
    */
-  implicit def asMap(p: ju.Properties): mutable.Map[String, String] = p match {
-    case _ => new JPropertiesWrapper(p)
+  implicit def asMap[A, B](p: ju.Dictionary[A, B]): mutable.Map[A, B] = p match {
+    case DictionaryWrapper(wrapped) => wrapped
+    case _ => new JDictionaryWrapper(p)
   }
 
   // Private implementations ...
@@ -477,12 +499,12 @@ de> view of the argument.
     def newBuilder[B] = new mutable.ArrayBuffer[B]
   }
 
-  case class IndexedSeqWrapper[A](underlying : IndexedSeq[A]) extends ju.AbstractList[A] {
+  case class SeqWrapper[A](underlying : Seq[A]) extends ju.AbstractList[A] {
     def size = underlying.length
     def get(i : Int) = underlying(i)
   }
 
-  case class MutableIndexedSeqWrapper[A](underlying : mutable.IndexedSeq[A]) extends ju.AbstractList[A] {
+  case class MutableSeqWrapper[A](underlying : mutable.Seq[A]) extends ju.AbstractList[A] {
     def size = underlying.length
     def get(i : Int) = underlying(i)
     override def set(i : Int, elem: A) = { val p = underlying(i) ; underlying(i) = elem ; p }
@@ -532,15 +554,14 @@ de> view of the argument.
     }
   }
 
-  case class MutableSetWrapper[A](underlying : mutable.Set[A])(m : ClassManifest[A]) extends SetWrapper[A](underlying) {
+  case class MutableSetWrapper[A](underlying : mutable.Set[A]) extends SetWrapper[A](underlying) {
     override def add(elem: A) = { val sz = underlying.size ; underlying += elem ; sz < underlying.size }
-    override def remove(elem : AnyRef) = {
-      m.erasure.isInstance(elem) && {
-        val sz = underlying.size
-        underlying -= elem.asInstanceOf[A]
-        sz > underlying.size
-      }
+    override def remove(elem : AnyRef) = try {
+      underlying.remove(elem.asInstanceOf[A])
+    } catch {
+      case ex: ClassCastException => false
     }
+    override def clear() = underlying.clear()
   }
 
   case class JSetWrapper[A](underlying : ju.Set[A]) extends mutable.Set[A] with mutable.SetLike[A, JSetWrapper[A]] {
@@ -555,14 +576,22 @@ de> view of the argument.
 
     override def add(elem: A): Boolean = underlying.add(elem)
     override def remove(elem: A): Boolean = underlying.remove(elem)
-
-    override def clear = underlying.clear
+    override def clear() = underlying.clear()
 
     override def empty = JSetWrapper(new ju.HashSet[A])
   }
 
   class MapWrapper[A, B](underlying: Map[A, B]) extends ju.AbstractMap[A, B] { self =>
     override def size = underlying.size
+
+    override def get(key: AnyRef): B = try {
+      underlying get key.asInstanceOf[A] match {
+        case None => null.asInstanceOf[B]
+        case Some(v) => v
+      }
+    } catch {
+      case ex: ClassCastException => null.asInstanceOf[B]
+    }
 
     override def entrySet: ju.Set[ju.Map.Entry[A, B]] = new ju.AbstractSet[ju.Map.Entry[A, B]] {
       def size = self.size
@@ -604,28 +633,24 @@ de> view of the argument.
     }
   }
 
-  abstract class MutableMapWrapperCommon[A, B](underlying: mutable.Map[A, B])(m: ClassManifest[A])
+  case class MutableMapWrapper[A, B](underlying: mutable.Map[A, B])
   extends MapWrapper[A, B](underlying) {
     override def put(k : A, v : B) = underlying.put(k, v) match {
       case Some(v1) => v1
       case None => null.asInstanceOf[B]
     }
 
-    override def remove(k : AnyRef) = {
-      if (!m.erasure.isInstance(k))
-        null.asInstanceOf[B]
-      else {
-        val k1 = k.asInstanceOf[A]
-        underlying.get(k1) match {
-          case Some(v) => underlying -= k1 ; v
-          case None => null.asInstanceOf[B]
-        }
+    override def remove(k : AnyRef): B = try {
+      underlying.remove(k.asInstanceOf[A]) match {
+        case None => null.asInstanceOf[B]
+        case Some(v) => v
       }
+    } catch {
+      case ex: ClassCastException => null.asInstanceOf[B]
     }
-  }
 
-  case class MutableMapWrapper[A, B](underlying : mutable.Map[A, B])(m : ClassManifest[A])
-  extends MutableMapWrapperCommon[A, B](underlying)(m)
+    override def clear() = underlying.clear()
+  }
 
   trait JMapWrapperLike[A, B, +Repr <: mutable.MapLike[A, B, Repr] with mutable.Map[A, B]]
   extends mutable.Map[A, B] with mutable.MapLike[A, B, Repr] {
@@ -664,7 +689,7 @@ de> view of the argument.
       def next = { val e = ui.next ; (e.getKey, e.getValue) }
     }
 
-    override def clear = underlying.clear
+    override def clear() = underlying.clear()
 
     override def empty: Repr = null.asInstanceOf[Repr]
   }
@@ -674,36 +699,19 @@ de> view of the argument.
     override def empty = JMapWrapper(new ju.HashMap[A, B])
   }
 
-  case class ConcurrentMapWrapper[A, B](underlying: mutable.ConcurrentMap[A, B])
-    (m: ClassManifest[A], mv: ClassManifest[B])
-  extends MutableMapWrapperCommon[A, B](underlying)(m) with juc.ConcurrentMap[A, B] {
-    self =>
-
-    override def remove(k : AnyRef) = {
-      if (!m.erasure.isInstance(k))
-        null.asInstanceOf[B]
-      else {
-        val k1 = k.asInstanceOf[A]
-        underlying.remove(k1) match {
-          case Some(v) => v
-          case None => null.asInstanceOf[B]
-        }
-      }
-    }
+  class ConcurrentMapWrapper[A, B](override val underlying: mutable.ConcurrentMap[A, B])
+  extends MutableMapWrapper[A, B](underlying) with juc.ConcurrentMap[A, B] {
 
     def putIfAbsent(k: A, v: B) = underlying.putIfAbsent(k, v) match {
       case Some(v) => v
       case None => null.asInstanceOf[B]
     }
 
-    def remove(k: AnyRef, v: AnyRef) = {
-      if (!m.erasure.isInstance(k) || !mv.erasure.isInstance(v))
+    def remove(k: AnyRef, v: AnyRef) = try {
+      underlying.remove(k.asInstanceOf[A], v.asInstanceOf[B])
+    } catch {
+      case ex: ClassCastException =>
         false
-      else {
-        val k1 = k.asInstanceOf[A]
-        val v1 = v.asInstanceOf[B]
-        underlying.remove(k1, v1)
-      }
     }
 
     def replace(k: A, v: B): B = underlying.replace(k, v) match {
@@ -712,7 +720,6 @@ de> view of the argument.
     }
 
     def replace(k: A, oldval: B, newval: B) = underlying.replace(k, oldval, newval)
-
   }
 
   case class JConcurrentMapWrapper[A, B](val underlying: juc.ConcurrentMap[A, B])
@@ -738,7 +745,64 @@ de> view of the argument.
     }
 
     def replace(k: A, oldvalue: B, newvalue: B): Boolean = underlying.replace(k, oldvalue, newvalue)
+  }
 
+  case class DictionaryWrapper[A, B](underlying: mutable.Map[A, B])
+  extends ju.Dictionary[A, B] {
+    def size: Int = underlying.size
+    def isEmpty: Boolean = underlying.isEmpty
+    def keys: ju.Enumeration[A] = asEnumeration(underlying.keysIterator)
+    def elements: ju.Enumeration[B] = asEnumeration(underlying.valuesIterator)
+    def get(key: AnyRef) = try {
+      underlying.get(key.asInstanceOf[A]) match {
+        case None => null.asInstanceOf[B]
+        case Some(v) => v
+      }
+    } catch {
+      case ex: ClassCastException => null.asInstanceOf[B]
+    }
+    def put(key: A, value: B): B = underlying.put(key, value) match {
+      case Some(v) => v
+      case None => null.asInstanceOf[B]
+    }
+    override def remove(key: AnyRef) = try {
+      underlying.remove(key.asInstanceOf[A]) match {
+        case None => null.asInstanceOf[B]
+        case Some(v) => v
+      }
+    } catch {
+      case ex: ClassCastException => null.asInstanceOf[B]
+    }
+  }
+
+  case class JDictionaryWrapper[A, B](underlying: ju.Dictionary[A, B])
+  extends mutable.Map[A, B] {
+
+    override def size: Int = underlying.size
+
+    def get(k : A) = {
+      val v = underlying.get(k)
+      if (v != null) Some(v) else None
+    }
+
+    def +=(kv: (A, B)): this.type = { underlying.put(kv._1, kv._2); this }
+    def -=(key: A): this.type = { underlying.remove(key); this }
+
+    override def put(k : A, v : B): Option[B] = {
+      val r = underlying.put(k, v)
+      if (r != null) Some(r) else None
+    }
+
+    override def update(k : A, v : B) { underlying.put(k, v) }
+
+    override def remove(k : A): Option[B] = {
+      val r = underlying.remove(k)
+      if (r != null) Some(r) else None
+    }
+
+    def iterator = asIterator(underlying.keys) map (k => (k, underlying get k))
+
+    override def clear() = underlying.clear()
   }
 
   case class JPropertiesWrapper(underlying: ju.Properties)
@@ -774,7 +838,7 @@ de> view of the argument.
       def next = { val e = ui.next ; (e.getKey.asInstanceOf[String], e.getValue.asInstanceOf[String]) }
     }
 
-    override def clear = underlying.clear
+    override def clear() = underlying.clear()
 
     override def empty = JPropertiesWrapper(new ju.Properties)
 
@@ -784,9 +848,5 @@ de> view of the argument.
 
     def setProperty(key: String, value: String) = underlying.setProperty(key, value)
   }
-
 }
-
-
-
 
