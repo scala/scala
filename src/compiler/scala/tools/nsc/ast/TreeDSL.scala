@@ -26,7 +26,7 @@ trait TreeDSL {
       tree => IF (tree MEMBER_== NULL) THEN ifNull ELSE f(tree)
 
     // Applies a function to a value and then returns the value.
-    def returning[T](f: T => Unit)(x: T): T = { f(x) ; x }
+    def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
     // strip bindings to find what lies beneath
     final def unbind(x: Tree): Tree = x match {

@@ -99,13 +99,13 @@ trait Unapplies extends ast.TreeDSL
   }
 
   def copyUntyped[T <: Tree](tree: T): T =
-    returning[T](UnTyper traverse _)(tree.duplicate)
+    returning[T](tree.duplicate)(UnTyper traverse _)
 
-  def copyUntypedInvariant(td: TypeDef): TypeDef =
-    returning[TypeDef](UnTyper traverse _)(
-      treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT), td.name,
-                       td.tparams, td.rhs).duplicate
-    )
+  def copyUntypedInvariant(td: TypeDef): TypeDef = {
+    val copy = treeCopy.TypeDef(td, td.mods &~ (COVARIANT | CONTRAVARIANT), td.name, td.tparams, td.rhs)
+
+    returning[TypeDef](copy.duplicate)(UnTyper traverse _)
+  }
 
   private def classType(cdef: ClassDef, tparams: List[TypeDef]): Tree = {
     val tycon = REF(cdef.symbol)

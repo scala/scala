@@ -135,7 +135,7 @@ trait MatrixAdditions extends ast.TreeDSL
         }
       }
 
-      returning[Tree](resetTraverser traverse _)(lxtt transform tree)
+      returning(lxtt transform tree)(resetTraverser traverse _)
     }
   }
 
