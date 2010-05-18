@@ -313,11 +313,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
   def specializedTypeVars(sym: Symbol): immutable.Set[Symbol] =
-    specializedTypeVars(atPhase(currentRun.typerPhase)(sym.info))
+    atPhase(currentRun.typerPhase)(specializedTypeVars(sym.info))
 
   /** Return the set of @specialized type variables mentioned by the given type.
-   *  It only counts type variables that appear naked or as arguments to Java
-   *  arrays (the only places where it makes sense to specialize).
+   *  It only counts type variables that appear:
+   *    - naked
+   *    - as arguments to type constructors in @specialized positions
+   *      (arrays ar considered as Array[@specialized T]
    */
   def specializedTypeVars(tpe: Type): immutable.Set[Symbol] = tpe match {
     case TypeRef(pre, sym, args) =>
@@ -326,7 +328,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         immutable.ListSet.empty + sym
       else if (sym == definitions.ArrayClass)
         specializedTypeVars(args)
-      else immutable.ListSet.empty[Symbol]
+      else {
+        val extra = for ((tp, arg) <- sym.typeParams.zip(args) if tp.hasAnnotation(SpecializedClass))
+          yield specializedTypeVars(arg).toList
+        immutable.ListSet.empty[Symbol] ++ extra.flatten
+      }
 
     case PolyType(tparams, resTpe) =>
       specializedTypeVars(tparams map (_.info)) ++ specializedTypeVars(resTpe)
@@ -842,7 +848,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
     val res = tpe match {
-      case PolyType(targs, ClassInfoType(base, decls, clazz)) =>
+      case PolyType(targs, ClassInfoType(base, decls, clazz)) if clazz != definitions.RepeatedParamClass && clazz != definitions.JavaRepeatedParamClass =>
         val parents = base map specializedType
         if (settings.debug.value) log("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
 //        if (clazz.name.toString == "$colon$colon")
@@ -1190,7 +1196,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val symbol = tree.symbol
       if (settings.debug.value) log("specializing body of" + symbol.fullName + ": " + symbol.info)
       val DefDef(mods, name, tparams, vparamss, tpt, _) = tree
-      val (_, origtparams) = splitParams(source.typeParams)
+//      val (_, origtparams) = splitParams(source.typeParams)
+      val boundTvars = typeEnv(symbol).keySet
+      val origtparams = source.typeParams.filter(!boundTvars(_))
       if (settings.debug.value) log("substituting " + origtparams + " for " + symbol.typeParams)
 
       // skolemize type parameters
