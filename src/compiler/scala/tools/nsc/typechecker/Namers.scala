@@ -875,6 +875,7 @@ trait Namers { self: Analyzer =>
           if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
         val overridden = overriddenSymbol
         if (overridden != NoSymbol && !(overridden hasFlag OVERLOADED)) {
+          overridden.cookJavaRawInfo() // #3404 xform java rawtypes into existentials
           resultPt = site.memberType(overridden) match {
             case PolyType(tparams, rt) => rt.substSym(tparams, tparamSyms)
             case mt => mt
