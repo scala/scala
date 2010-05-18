@@ -2618,6 +2618,7 @@ trait Typers { self: Analyzer =>
                   (nme.ERROR, None)
                 } else {
                   names -= sym
+                  if(isJava) sym.cookJavaRawInfo() // #3429
                   val annArg = tree2ConstArg(rhs, sym.tpe.resultType)
                   (sym.name, annArg)
                 }
