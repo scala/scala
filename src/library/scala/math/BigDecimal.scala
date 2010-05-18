@@ -13,6 +13,8 @@ import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
 
+import annotation.migration
+
 /**
  *  @author  Stephane Micheloud
  *  @version 1.0
@@ -247,7 +249,12 @@ extends ScalaNumber with ScalaNumericConversions
 
   /** Remainder after dividing this by that.
    */
+  @migration(2, 8, "As of 2.8, the prefered way to calculate division remainder is to use method `%`.")
   def remainder (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal, mc)
+
+  /** Remainder after dividing this by that.
+   */
+  def % (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal, mc)
 
   /** Returns a BigDecimal whose value is this ** n.
    */
