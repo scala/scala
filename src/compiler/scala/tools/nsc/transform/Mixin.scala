@@ -741,14 +741,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
            && !sym.accessed.hasFlag(PRESUPER)
            && !sym.isOuterAccessor)
 
-        if (settings.debug.value) {
-          log("needsInitFlag(" + sym.fullName + "): " + res)
-          log("\tsym.isGetter: " + sym.isGetter)
-          log("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasFlag(ACCESSOR) + sym.isTerm)
-          log("\t!sym.hasFlag(PARAMACCESSOR): " + !sym.hasFlag(PARAMACCESSOR))
-          //println("\t!sym.accessed.hasFlag(PRESUPER): " + !sym.accessed.hasFlag(PRESUPER))
-          log("\t!sym.isOuterAccessor: " + !sym.isOuterAccessor)
-        }
+//        if (settings.debug.value) {
+//          log("needsInitFlag(" + sym.fullName + "): " + res)
+//          log("\tsym.isGetter: " + sym.isGetter)
+//          log("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasFlag(ACCESSOR) + sym.isTerm)
+//          log("\t!sym.hasFlag(PARAMACCESSOR): " + !sym.hasFlag(PARAMACCESSOR))
+//          //println("\t!sym.accessed.hasFlag(PRESUPER): " + !sym.accessed.hasFlag(PRESUPER))
+//          log("\t!sym.isOuterAccessor: " + !sym.isOuterAccessor)
+//        }
 
         res
       }
