@@ -249,12 +249,11 @@ extends ScalaNumber with ScalaNumericConversions
 
   /** Remainder after dividing this by that.
    */
-  @deprecated("As of 2.8, the prefered way to calculate division remainder is to use method `%`.")
   def remainder (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal, mc)
 
   /** Remainder after dividing this by that.
    */
-  def % (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal, mc)
+  def % (that: BigDecimal): BigDecimal = this.remainder(that)
 
   /** Returns a BigDecimal whose value is this ** n.
    */
