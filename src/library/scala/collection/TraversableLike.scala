@@ -338,7 +338,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
       }
       bldr += elem
     }
-    m mapValues (_.result)
+    m map { case (k, b) => (k, b.result) }
   }
 
   /** Tests whether a predicate holds for all elements of this $coll.
