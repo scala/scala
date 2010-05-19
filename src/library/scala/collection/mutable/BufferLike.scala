@@ -268,10 +268,11 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     repr
   }
 
-  /** Adds a number of elements provided by a traversable object and returns
-   *  either the collection itself.
+  /** Creates a new collection containing both the elements of this collection and the provided
+   *  traversable object.
    *
    *  @param xs     the traversable object.
+   *  @return       a new collection consisting of all the elements of this collection and `xs`.
    */
   @migration(2, 8,
     "As of 2.8, ++ always creates a new collection, even on Buffers.\n"+
@@ -279,10 +280,10 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   )
   def ++(xs: TraversableOnce[A]): This = clone() ++= xs
 
-  /** Removes a single element from this collection and returns
-   *  the collection itself.
+  /** Creates a new collection with all the elements of this collection except `elem`.
    *
    *  @param elem  the element to remove.
+   *  @return      a new collection consisting of all the elements of this collection except `elem`.
    */
   @migration(2, 8,
     "As of 2.8, - always creates a new collection, even on Buffers.\n"+
@@ -290,12 +291,14 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   )
   override def -(elem: A): This = clone() -= elem
 
-  /** Removes two or more elements from this collection and returns
-   *  the collection itself.
+  /** Creates a new collection with all the elements of this collection except the two
+   *  or more specified elements.
    *
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
+   *  @return      a new collection consisting of all the elements of this collection except
+   *               `elem1`, `elem2` and those in `elems`.
    */
   @migration(2, 8,
     "As of 2.8, - always creates a new collection, even on Buffers.\n"+
@@ -303,10 +306,12 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
   )
   override def -(elem1: A, elem2: A, elems: A*): This = clone() -= elem1 -= elem2 --= elems
 
-  /** Removes a number of elements provided by a Traversable object and returns
-   *  the collection itself.
+  /** Creates a new collection with all the elements of this collection except those
+   *  provided by the specified traversable object.
    *
-   *  @param iter     the Traversable object.
+   *  @param xs       the traversable object.
+   *  @return         a new collection with all the elements of this collection except
+   *                  those in `xs`
    */
   @migration(2, 8,
     "As of 2.8, -- always creates a new collection, even on Buffers.\n"+
