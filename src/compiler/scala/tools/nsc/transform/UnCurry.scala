@@ -403,8 +403,15 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                     Select(predef, "wrap"+elemtp.typeSymbol.name+"Array")
                   else
                     TypeApply(Select(predef, "genericWrapArray"), List(TypeTree(elemtp)))
-                val adaptedTree = // need to cast to Array[elemtp], as arrays are not covariant
-                  gen.mkCast(tree, arrayType(elemtp))
+                val pt = arrayType(elemtp)
+                val adaptedTree = // might need to cast to Array[elemtp], as arrays are not covariant
+                  if (tree.tpe <:< pt) tree
+                  else gen.mkCast(
+                    if (elemtp.typeSymbol == AnyClass && isValueClass(tree.tpe.typeArgs.head.typeSymbol))
+                      gen.mkRuntimeCall("toObjectArray", List(tree))
+                    else
+                      tree,
+                    arrayType(elemtp))
                 Apply(meth, List(adaptedTree))
               }
             }
