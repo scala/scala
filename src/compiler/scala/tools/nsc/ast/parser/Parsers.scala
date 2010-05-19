@@ -1486,7 +1486,9 @@ self =>
     def pattern3(seqOK: Boolean): Tree = {
       val base = opstack
       var top = simplePattern(seqOK)
-      if (seqOK && isIdent && in.name == STAR)
+      // See ticket #3189 for the motivation for the null check.
+      // TODO: dredge out the remnants of regexp patterns.
+      if (seqOK && isIdent && in.name == STAR && in.prev.name != null)
         return atPos(top.pos.startOrPoint, in.skipToken())(Star(stripParens(top)))
 
       while (isIdent && in.name != BAR) {
