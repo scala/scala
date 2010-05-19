@@ -927,7 +927,20 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  type parameters later.
      */
     def typeParams: List[Symbol] =
-      if (isMonomorphicType) List() else { rawInfo.load(this); rawInfo.typeParams }
+      if (isMonomorphicType)
+        List()
+      else {
+        if (validTo == NoPeriod) {
+          val current = phase
+          try {
+            phase = phaseOf(infos.validFrom)
+            rawInfo.load(this)
+          } finally {
+            phase = current
+          }
+        }
+        rawInfo.typeParams
+      }
 
     /** The value parameter sections of this symbol.
      */
