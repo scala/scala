@@ -1117,8 +1117,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
               forwardCall(tree.pos, superRef, vparamss)
             }
-            val tree1 = atPos(symbol.pos)(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, Block(List(t), Literal(()))))
-            localTyper.typed(tree1)
+            if (symbol.isPrimaryConstructor) localTyper typed {
+                atPos(symbol.pos)(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, Block(List(t), Literal(()))))
+            } else {
+              // duplicate the original constructor
+              duplicateBody(ddef, info(symbol).target)
+            }
           } else info(symbol) match {
 
             case Implementation(target) =>
@@ -1294,19 +1298,21 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (info(m).target.isGetterOrSetter) hasSpecializedFields = true
           if (m.isClassConstructor) {
             val origParamss = parameters(info(m).target)
-            assert(origParamss.length == 1) // we are after uncurry
 
             val vparams =
               for ((tp, sym) <- m.info.paramTypes zip origParamss(0))
                 yield m.newValue(sym.pos, specializedName(sym, typeEnv(cls)))
                        .setInfo(tp)
                        .setFlag(sym.flags)
+
             // param accessors for private members (the others are inherited from the generic class)
-            for (param <- vparams if cls.info.nonPrivateMember(param.name) == NoSymbol;
-                 val acc = param.cloneSymbol(cls).setFlag(PARAMACCESSOR | PRIVATE)) {
-              cls.info.decls.enter(acc)
-              mbrs += ValDef(acc, EmptyTree).setType(NoType).setPos(m.pos)
-            }
+            if (m.isPrimaryConstructor)
+              for (param <- vparams if cls.info.nonPrivateMember(param.name) == NoSymbol;
+                   val acc = param.cloneSymbol(cls).setFlag(PARAMACCESSOR | PRIVATE)) {
+                cls.info.decls.enter(acc)
+                mbrs += ValDef(acc, EmptyTree).setType(NoType).setPos(m.pos)
+              }
+
             // ctor
             mbrs += atPos(m.pos)(DefDef(m, Modifiers(m.flags), List(vparams) map (_ map ValDef), EmptyTree))
           } else {
