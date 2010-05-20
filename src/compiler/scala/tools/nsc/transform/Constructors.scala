@@ -27,6 +27,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     import collection.mutable
 
     private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = new mutable.HashMap[Symbol, List[Tree]]
+    private val ctorParams: mutable.Map[Symbol, List[Symbol]] = new mutable.HashMap[Symbol, List[Symbol]]
 
     def transformClassTemplate(impl: Template): Template = {
       val clazz = impl.symbol.owner  // the transformed class
@@ -300,7 +301,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             case _ => false
           }
 
-        log("merging: " + originalStats.mkString("\n") + " : " + specializedStats.mkString("\n"))
+        log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
         val res = for (s <- originalStats; val stat = s.duplicate) yield {
           log("merge: looking at " + stat)
           val stat1 = stat match {
@@ -314,8 +315,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
 
           if (stat1 eq stat) {
+            assert(ctorParams(genericClazz).length == constrParams.length)
+            // this is just to make private fields public
+            (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), constrParams, null, true))(stat1)
+
             // statements coming from the original class need retyping in the current context
             if (settings.debug.value) log("retyping " + stat1)
+
             val d = new specializeTypes.Duplicator
             d.retyped(localTyper.context1.asInstanceOf[d.Context],
                       stat1,
@@ -350,6 +356,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         if (usesSpecializedField && shouldGuard && postfix.nonEmpty) {
           // save them for duplication in the specialized subclass
           guardedCtorStats(clazz) = postfix
+          ctorParams(clazz) = constrParams
 
           val tree =
             If(

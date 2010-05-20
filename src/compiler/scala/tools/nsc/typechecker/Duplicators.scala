@@ -189,6 +189,7 @@ abstract class Duplicators extends Analyzer {
       if (tree.hasSymbol && tree.symbol != NoSymbol
           && !tree.symbol.isLabel  // labels cannot be retyped by the type checker as LabelDef has no ValDef/return type trees
           && invalidSyms.isDefinedAt(tree.symbol)) {
+        if (settings.debug.value) log("removed symbol " + tree.symbol)
         tree.symbol = NoSymbol
       }
 
@@ -240,7 +241,9 @@ abstract class Duplicators extends Analyzer {
 
         case Select(th @ This(_), sel) if (oldClassOwner ne null) && (th.symbol == oldClassOwner) =>
           log("selection on this, no type ascription required")
-          super.typed(atPos(tree.pos)(Select(This(newClassOwner), sel)), mode, pt)
+          // we use the symbol name instead of the tree name because the symbol may have been
+          // name mangled, rendering the tree name obsolete
+          super.typed(atPos(tree.pos)(Select(This(newClassOwner), tree.symbol.name)), mode, pt)
 
         case This(_) if (oldClassOwner ne null) && (tree.symbol == oldClassOwner) =>
 //          val tree1 = Typed(This(newClassOwner), TypeTree(fixType(tree.tpe.widen)))

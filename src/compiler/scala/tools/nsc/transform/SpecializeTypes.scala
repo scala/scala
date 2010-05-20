@@ -933,6 +933,52 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val global: SpecializeTypes.this.global.type = SpecializeTypes.this.global
   } with typechecker.Duplicators
 
+  /** A tree symbol substituter that substitutes on type skolems.
+   *  If a type parameter is a skolem, it looks for the original
+   *  symbol in the 'from' and maps it to the corresponding new
+   *  symbol. The new symbol should probably be a type skolem as
+   *  well (not enforced).
+   *
+   *  All private members are made protected in order to be accessible from
+   *  specialized classes.
+   */
+  class ImplementationAdapter(from: List[Symbol],
+                              to: List[Symbol],
+                              targetClass: Symbol,
+                              addressFields: Boolean) extends TreeSymSubstituter(from, to) {
+    override val symSubst = new SubstSymMap(from, to) {
+      override def matches(sym1: Symbol, sym2: Symbol) =
+        if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
+        else sym1 eq sym2
+    }
+
+    private def isAccessible(sym: Symbol): Boolean =
+      (currentClass == sym.owner.enclClass) && (currentClass != targetClass)
+
+    private def shouldMakePublic(sym: Symbol): Boolean =
+      sym.hasFlag(PRIVATE | PROTECTED) && (addressFields || !nme.isLocalName(sym.name))
+
+    /** All private members that are referenced are made protected,
+     *  in order to be accessible from specialized subclasses.
+     */
+    override def transform(tree: Tree): Tree = tree match {
+      case Select(qual, name) =>
+        val sym = tree.symbol
+        if (sym.hasFlag(PRIVATE))
+          if (settings.debug.value)
+            log("seeing private member %s, currentClass: %s, owner: %s, isAccessible: %b, isLocalName: %b"
+                    .format(sym, currentClass, sym.owner.enclClass, isAccessible(sym), nme.isLocalName(sym.name)))
+        if (shouldMakePublic(sym) && !isAccessible(sym)) {
+          if (settings.debug.value) log("changing private flag of " + sym)
+          sym.makeNotPrivate(sym.owner)
+        }
+        super.transform(tree)
+
+      case _ =>
+        super.transform(tree)
+    }
+  }
+
   def specializeCalls(unit: CompilationUnit) = new TypingTransformer(unit) {
     /** Map a specializable method to it's rhs, when not deferred. */
     val body: mutable.Map[Symbol, Tree] = new mutable.HashMap
@@ -1217,52 +1263,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val symSubstituter = new ImplementationAdapter(
         parameters(source).flatten ::: origtparams,
         vparamss1.flatten.map(_.symbol) ::: newtparams,
-        source.enclClass)
+        source.enclClass,
+        false) // don't make private fields public
       val tmp = symSubstituter(body(source).duplicate)
       tpt.tpe = tpt.tpe.substSym(oldtparams, newtparams)
 
       treeCopy.DefDef(tree, mods, name, tparams, vparamss1, tpt, tmp)
-    }
-
-    /** A tree symbol substituter that substitutes on type skolems.
-     *  If a type parameter is a skolem, it looks for the original
-     *  symbol in the 'from' and maps it to the corresponding new
-     *  symbol. The new symbol should probably be a type skolem as
-     *  well (not enforced).
-     *
-     *  All private members are made protected in order to be accessible from
-     *  specialized classes.
-     */
-    class ImplementationAdapter(from: List[Symbol], to: List[Symbol], targetClass: Symbol) extends TreeSymSubstituter(from, to) {
-      override val symSubst = new SubstSymMap(from, to) {
-        override def matches(sym1: Symbol, sym2: Symbol) =
-          if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
-          else sym1 eq sym2
-      }
-
-      private def isAccessible(sym: Symbol): Boolean =
-        (currentClass == sym.owner.enclClass) && (currentClass != targetClass)
-
-      /** All private members that are referenced are made protected,
-       *  in order to be accessible from specialized subclasses.
-       */
-      override def transform(tree: Tree): Tree = tree match {
-        case Select(qual, name) =>
-          val sym = tree.symbol
-          if (sym.hasFlag(PRIVATE))
-            if (settings.debug.value) log("seeing private member " + sym + " targetClass: " + currentClass + " owner: " + sym.owner.enclClass)
-          if (sym.hasFlag(PRIVATE | PROTECTED) && !nme.isLocalName(sym.name) && !isAccessible(sym)) {
-            if (settings.debug.value) log("changing private flag of " + sym)
-//            tree.symbol.resetFlag(PRIVATE).setFlag(PROTECTED)
-            sym.makeNotPrivate(sym.owner)
-//            tree.symbol.resetFlag(PRIVATE | PROTECTED)
-//            tree.symbol.privateWithin = NoSymbol
-          }
-          super.transform(tree)
-
-        case _ =>
-          super.transform(tree)
-      }
     }
 
     def warn(clazz: Symbol)(pos: Position, err: String) =
