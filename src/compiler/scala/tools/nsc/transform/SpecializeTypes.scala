@@ -570,6 +570,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         normalizeMember(m.owner, m, outerEnv) flatMap { normalizedMember =>
           val ms = specializeMember(m.owner, normalizedMember, outerEnv, clazz.info.typeParams)
 //          atPhase(currentRun.typerPhase)(println("normalizedMember.info: " + normalizedMember.info)) // bring the info to the typer phase
+          // interface traits have concrete members now
+          if (ms.nonEmpty && clazz.isTrait && clazz.isInterface)
+            clazz.resetFlag(INTERFACE)
+
           if (normalizedMember.isMethod) {
             val newTpe = subst(outerEnv, normalizedMember.info)
             if (newTpe != normalizedMember.info) // only do it when necessary, otherwise the method type might be at a later phase already
