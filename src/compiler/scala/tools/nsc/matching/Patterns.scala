@@ -314,13 +314,20 @@ trait Patterns extends ast.TreeDSL {
 
   object UnapplyPattern {
     private object UnapplySeq {
+      /** This is as far as I can tell an elaborate attempt to spot case List(...) and
+       *  avoid the extractor penalty.  It has led to some bugs (e.g. 2800, 3050) which
+       *  I attempt to address below.
+       */
       private object TypeApp {
         def unapply(x: Any) = condOpt(x) {
           case TypeApply(sel @ Select(stor, nme.unapplySeq), List(tpe)) if stor.symbol eq ListModule => tpe
         }
       }
       def unapply(x: UnApply) = condOpt(x) {
-        case UnApply(Apply(TypeApp(tptArg), _), List(ArrayValue(_, xs))) => (tptArg, xs)
+        case UnApply(Apply(TypeApp(tptArg), _), List(ArrayValue(_, xs)))
+          // make sure it's not empty or only _*, as otherwise the rewrite
+          // also removes the instance check.
+          if xs takeWhile (x => !isStar(x)) nonEmpty => (tptArg, xs)
       }
     }
 
