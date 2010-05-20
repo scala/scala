@@ -34,5 +34,7 @@ object Test
     // negatives
     val bigLong = new java.util.concurrent.atomic.AtomicLong(Long.MaxValue)
     assert(-1 != bigLong && bigLong != -1)  // bigLong.intValue() == -1
+    assert(BigDecimal(1.1) != 1L)
+    assert(1L != BigDecimal(1.1))
   }
 }

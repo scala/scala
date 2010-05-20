@@ -178,9 +178,10 @@ extends ScalaNumber with ScalaNumericConversions
   /** Compares this BigDecimal with the specified value for equality.
    */
   override def equals (that: Any): Boolean = that match {
-    case that: BigDecimal => this equals that
-    case that: BigInt     => this.toBigIntExact exists (that equals _)
-    case x                => (this <= BigDecimal.MaxLong && this >= BigDecimal.MinLong) && unifiedPrimitiveEquals(x)
+    case that: BigDecimal     => this equals that
+    case that: BigInt         => this.toBigIntExact exists (that equals _)
+    case _: Float | _: Double => unifiedPrimitiveEquals(that)
+    case x                    => isWhole && this <= BigDecimal.MaxLong && this >= BigDecimal.MinLong && unifiedPrimitiveEquals(x)
   }
 
   protected[math] def isWhole = (this remainder 1) == BigDecimal(0)
