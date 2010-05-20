@@ -508,7 +508,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *  @return  the last index such that the elements of this $coll starting a this index
    *           match the elements of sequence `that`, or `-1` of no such subsequence exists.
    */
-  def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, that.length)
+  def lastIndexOfSlice[B >: A](that: Seq[B]): Int = lastIndexOfSlice(that, length)
 
   /** Finds last index before or at a given end index where this $coll contains a given sequence as a slice.
    *  @param  that    the sequence to test
