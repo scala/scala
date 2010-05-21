@@ -69,9 +69,12 @@ trait AbsSettings {
      *  In immutable, of course they will return a new object, which means
      *  we can't use "this.type", at least not in a non-casty manner, which
      *  is unfortunate because we lose type information without it.
+     *
+     *  ...but now they're this.type because of #3462.  The immutable
+     *  side doesn't exist yet anyway.
      */
-    def withAbbreviation(name: String): Setting
-    def withHelpSyntax(help: String): Setting
+    def withAbbreviation(name: String): this.type
+    def withHelpSyntax(help: String): this.type
 
     def helpSyntax: String = name
     def abbreviations: List[String] = Nil
