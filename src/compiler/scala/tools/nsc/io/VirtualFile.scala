@@ -31,7 +31,7 @@ class VirtualFile(val name: String, _path: String) extends AbstractFile
    */
   def this(name: String) = this(name, name)
 
-  override def hashCode = name.hashCode
+  override def hashCode = name.##
   override def equals(that: Any) = cond(that) { case x: VirtualFile => x.name == name }
 
   //########################################################################

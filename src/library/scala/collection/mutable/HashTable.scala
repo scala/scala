@@ -228,7 +228,7 @@ trait HashTable[A] {
 
   protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
 
-  protected def elemHashCode(key: A) = if (key == null) 0 else key.hashCode()
+  protected def elemHashCode(key: A) = if (key == null) 0 else key.##
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)

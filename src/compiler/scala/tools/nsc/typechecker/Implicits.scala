@@ -126,8 +126,7 @@ self: Analyzer =>
       case _ => false
     }
 
-    override def hashCode =
-      name.hashCode + pre.hashCode + sym.hashCode
+    override def hashCode = name.## + pre.## + sym.##
 
     override def toString = "ImplicitInfo(" + name + "," + pre + "," + sym + ")"
   }

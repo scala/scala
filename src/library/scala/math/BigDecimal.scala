@@ -173,7 +173,7 @@ extends ScalaNumber with ScalaNumericConversions
    */
   override def hashCode(): Int =
     if (isWhole) unifiedPrimitiveHashcode
-    else doubleValue.hashCode()
+    else doubleValue.##
 
   /** Compares this BigDecimal with the specified value for equality.
    */

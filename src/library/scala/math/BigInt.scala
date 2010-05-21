@@ -116,7 +116,7 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
     if (this >= BigInt.MinLong && this <= BigInt.MaxLong) unifiedPrimitiveHashcode
-    else bigInteger.hashCode
+    else bigInteger.##
 
   /** Compares this BigInt with the specified value for equality.
    */

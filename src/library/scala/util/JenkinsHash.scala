@@ -124,7 +124,7 @@ object JenkinsHash {
    */
   def hashSeq(xs: Seq[Any]): Int = {
     val (values, refs) = partitionValuesAndRefs(xs)
-    val refsSum = refs map (x => if (x == null) 0 else x.hashCode) sum
+    val refsSum = refs map (x => if (x == null) 0 else x.##) sum
 
     hashAnyValSeq(values) + refsSum
   }

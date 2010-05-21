@@ -261,14 +261,14 @@ object Utility extends AnyRef with parsing.TokenTests
    * @param children
    */
   def hashCode(pre: String, label: String, attribHashCode: Int, scpeHash: Int, children: Seq[Node]) = (
-    ( if(pre ne null) {41 * pre.hashCode() % 7} else {0})
-    + label.hashCode() * 53
+    ( if(pre ne null) {41 * pre.## % 7} else {0})
+    + label.## * 53
     + attribHashCode * 7
     + scpeHash * 31
     + {
       var c = 0
       val i = children.iterator
-      while(i.hasNext) c = c * 41 + i.next.hashCode
+      while(i.hasNext) c = c * 41 + i.next.##
       c
     }
   )

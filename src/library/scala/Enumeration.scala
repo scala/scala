@@ -230,7 +230,7 @@ abstract class Enumeration(initial: Int, names: String*) { thisenum =>
         case that: thisenum.Value => compare(that) == 0
         case _ => false
       }
-    override def hashCode: Int = id.hashCode
+    override def hashCode: Int = id.##
 
     /** this enumeration value as an <code>Int</code> bit mask.
      *  @throws IllegalArgumentException if <code>id</code> is greater than 31

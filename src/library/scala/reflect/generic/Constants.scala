@@ -230,6 +230,6 @@ trait Constants { self: Universe =>
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
     override def hashCode: Int =
-      if (value == null) 0 else value.hashCode() * 41 + 17
+      if (value == null) 0 else value.## * 41 + 17
   }
 }

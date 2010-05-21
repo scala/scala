@@ -857,7 +857,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
   /** Hashcodes for $Coll produce a value from the hashcodes of all the
    *  elements of the $coll.
    */
-  override def hashCode() = (Seq.hashSeed /: this)(_ * 41 + _.hashCode)
+  override def hashCode() = (Seq.hashSeed /: this)(_ * 41 + _.##)
 
   override def equals(that: Any): Boolean = that match {
     case that: Seq[_] => (that canEqual this) && (this sameElements that)

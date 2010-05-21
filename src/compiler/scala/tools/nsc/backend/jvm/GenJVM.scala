@@ -1700,7 +1700,7 @@ abstract class GenJVM extends SubComponent {
 
     def indexOf(local: Local): Int = {
       assert(local.index >= 0,
-             "Invalid index for: " + local + "{" + local.hashCode + "}: ")
+             "Invalid index for: " + local + "{" + local.## + "}: ")
       local.index
     }
 
@@ -1715,7 +1715,7 @@ abstract class GenJVM extends SubComponent {
 
       for (l <- m.locals) {
         if (settings.debug.value)
-          log("Index value for " + l + "{" + l.hashCode + "}: " + idx)
+          log("Index value for " + l + "{" + l.## + "}: " + idx)
         l.index = idx
         idx += sizeOf(l.kind)
       }

@@ -91,7 +91,7 @@ extends Map[Key, Value]
 
   /** Returns a mangled hash code of the provided key. */
   protected def hashOf(key : Key) = {
-    var h = key.hashCode;
+    var h = key.##
     h ^= ((h >>> 20) ^ (h >>> 12));
     h ^ (h >>> 7) ^ (h >>> 4);
   }

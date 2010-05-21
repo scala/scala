@@ -40,7 +40,7 @@ trait Manifest[T] extends ClassManifest[T] with Equals {
     case m: Manifest[_] if m canEqual this  => (this <:< m) && (m <:< this)
     case _                                  => false
   }
-  override def hashCode = this.erasure.hashCode
+  override def hashCode = this.erasure.##
 }
 
 @serializable

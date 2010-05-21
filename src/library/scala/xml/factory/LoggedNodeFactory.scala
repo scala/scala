@@ -58,7 +58,7 @@ with scala.util.logging.Logged {
     if (logNode)
       log("[makeNode for "+label+"]");
 
-    val hash = Utility.hashCode(pre, label, attrSeq.hashCode(), scope.hashCode(), children)
+    val hash = Utility.hashCode(pre, label, attrSeq.##, scope.##, children)
 
     /*
     if(logCompressLevel >= FULL) {

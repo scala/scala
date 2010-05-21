@@ -30,7 +30,7 @@ trait ScalaNumericConversions extends ScalaNumber {
   protected def unifiedPrimitiveHashcode() = {
     val lv = toLong
     if (lv >= Int.MinValue && lv <= Int.MaxValue) lv.toInt
-    else lv.hashCode
+    else lv.##
   }
 
   /** Should only be called after all known non-primitive

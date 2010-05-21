@@ -297,7 +297,7 @@ trait Namers { self: Analyzer =>
 
     private def enterSymFinishWith(tree: Tree, tparams: List[TypeDef]) {
       val sym = tree.symbol
-      if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.hashCode());
+      if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.## )
       var ltype = namerOf(sym).typeCompleter(tree)
       if (!tparams.isEmpty) {
         //@M! TypeDef's type params are handled differently

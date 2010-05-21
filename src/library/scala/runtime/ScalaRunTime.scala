@@ -154,7 +154,7 @@ object ScalaRunTime {
     var i = 0
     while (i < arr) {
       val elem = x.productElement(i)
-      code = code * 41 + (if (elem == null) 0 else elem.hashCode())
+      code = code * 41 + (if (elem == null) 0 else elem.##)
       i += 1
     }
     code
@@ -175,6 +175,9 @@ object ScalaRunTime {
   }
 
   // hashcode -----------------------------------------------------------
+  //
+  // Note that these are the implementations called by ##, so they
+  // must not call ## themselves.
 
   @inline def hash(x: Any): Int =
     if (x.isInstanceOf[java.lang.Number]) BoxesRunTime.hashFromNumber(x.asInstanceOf[java.lang.Number])

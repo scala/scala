@@ -55,7 +55,7 @@ class HashSet[A] extends Set[A]
   def - (e: A): HashSet[A] =
     removed0(e, computeHash(e), 0)
 
-  protected def elemHashCode(key: A) = if (key == null) 0 else key.hashCode()
+  protected def elemHashCode(key: A) = if (key == null) 0 else key.##
 
   protected final def improve(hcode: Int) = {
     var h: Int = hcode + ~(hcode << 9)
