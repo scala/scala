@@ -55,6 +55,13 @@ class MutableList[A] extends LinearSeq[A]
     tl
   }
 
+  /** Prepends a single element to this list. This operation takes constant
+   *  time.
+   *  @param elem  the element to prepend.
+   *  @return   this $coll.
+   */
+  def +=: (elem: A): this.type = { prependElem(elem); this }
+
   /** Returns the length of this list.
    */
   override def length: Int = len
