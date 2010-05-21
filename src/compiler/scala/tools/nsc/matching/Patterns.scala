@@ -325,9 +325,9 @@ trait Patterns extends ast.TreeDSL {
       }
       def unapply(x: UnApply) = condOpt(x) {
         case UnApply(Apply(TypeApp(tptArg), _), List(ArrayValue(_, xs)))
-          // make sure it's not empty or only _*, as otherwise the rewrite
+          // make sure it's not only _*, as otherwise the rewrite
           // also removes the instance check.
-          if xs takeWhile (x => !isStar(x)) nonEmpty => (tptArg, xs)
+          if (xs.isEmpty || xs.size > 1 || !isStar(xs.head))  => (tptArg, xs)
       }
     }
 
