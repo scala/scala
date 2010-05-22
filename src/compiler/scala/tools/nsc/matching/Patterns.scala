@@ -139,10 +139,7 @@ trait Patterns extends ast.TreeDSL {
 
     private def isColonColon = cleanName == "::"
 
-    override def expandToArity(newArity: Int): List[Pattern] = {
-      assert(newArity == args.length)
-      toPats(args)
-    }
+    override def expandToArity(newArity: Int): List[Pattern] = toPats(args)
 
     override def simplify(pv: PatternVar) =
       if (args.isEmpty) this rebindToEmpty tree.tpe

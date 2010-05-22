@@ -566,11 +566,13 @@ trait ParallelMatching extends ast.TreeDSL
         def isEquivalent    = head.tpe =:= pattern.tpe
         def isObjectTest    = pattern.isObject && (head.tpe =:= pattern.tpe)
 
+        def whichSubs = if (head.isCaseClass) (pattern expandToArity head.arity) else Nil
+
         def ifElsePattern(yes: Pattern) = if (isEquivalent) yes else pattern
 
         def succDummy = succRows += ((j, NoPattern :: pmatch.dummies))
         def succTyped(pp: Pattern) = succRows += ((j, ifElsePattern(pp) :: pmatch.dummies))
-        def succSubs  = succRows += ((j, ifElsePattern(NoPattern) :: (pattern expandToArity head.arity)))
+        def succSubs  = succRows += ((j, ifElsePattern(NoPattern) :: whichSubs))
         def failOnly  = failRows += ((j, pattern))
 
         pattern match {
