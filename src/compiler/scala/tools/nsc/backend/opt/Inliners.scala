@@ -444,7 +444,13 @@ abstract class Inliners extends SubComponent {
           callsNonPublic = b
         case None =>
           // Avoiding crashing the compiler if there are open blocks.
-          if (callee.code.blocks exists (x => !x.closed)) return false
+          callee.code.blocks filterNot (_.closed) foreach { b =>
+            currentIClazz.cunit.warning(callee.symbol.pos,
+              "Encountered open block in isSafeToInline: this indicates a bug in the optimizer!\n" +
+              "  caller = " + caller + ", callee = " + callee
+            )
+            return false
+          }
 
           breakable {
             for (b <- callee.code.blocks; i <- b)
