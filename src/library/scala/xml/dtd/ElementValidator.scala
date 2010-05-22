@@ -47,7 +47,7 @@ class ElementValidator() extends Function1[Node,Boolean] {
   def setMetaData(adecls: List[AttrDecl]) { this.adecls = adecls }
 
   def getIterable(nodes: Seq[Node], skipPCDATA: Boolean): Iterable[ElemName] = {
-    def isAllWhitespace(a: Atom[_]) = cond(a.data) { case s: String if s.trim.isEmpty  => true }
+    def isAllWhitespace(a: Atom[_]) = cond(a.data) { case s: String if s.trim == "" => true }
 
     nodes.filter {
       case y: SpecialNode => y match {

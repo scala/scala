@@ -246,7 +246,7 @@ abstract class ClassPath[T] {
   /** Filters for assessing validity of various entities.
    */
   def validClassFile(name: String)  = (name endsWith ".class") && context.isValidName(name)
-  def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name.head != '.')
+  def validPackage(name: String)    = (name != "META-INF") && (name != "") && (name(0) != '.')
   def validSourceFile(name: String) = validSourceExtensions exists (name endsWith _)
   def validSourceExtensions         = List(".scala", ".java")
 
@@ -320,8 +320,7 @@ class DirectoryClassPath(val dir: AbstractFile, val context: ClassPathContext[Ab
     case f if f.isDirectory && validPackage(f.name) => new DirectoryClassPath(f, context)
   } toList
 
-
-  override def toString() = "directory classpath: "+ dir.toString()
+  override def toString() = "directory classpath: "+ dir
 }
 
 /**
