@@ -166,7 +166,19 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     override def follow(id: String) =
       if (completions(0) contains id) {
         for (clazz <- repl clazzForIdent id) yield {
-          (typeOf(clazz.getName) map TypeMemberCompletion.apply) getOrElse new InstanceCompletion(clazz)
+          // XXX The isMemberClass check is a workaround for the crasher described
+          // in the comments of #3431.  The issue as described by iulian is:
+          //
+          // Inner classes exist as symbols
+          // inside their enclosing class, but also inside their package, with a mangled
+          // name (A$B). The mangled names should never be loaded, and exist only for the
+          // optimizer, which sometimes cannot get the right symbol, but it doesn't care
+          // and loads the bytecode anyway.
+          //
+          // So this solution is incorrect, but in the short term the simple fix is
+          // to skip the compiler any time completion is requested on a nested class.
+          if (clazz.isMemberClass) new InstanceCompletion(clazz)
+          else (typeOf(clazz.getName) map TypeMemberCompletion.apply) getOrElse new InstanceCompletion(clazz)
         }
       }
       else None
