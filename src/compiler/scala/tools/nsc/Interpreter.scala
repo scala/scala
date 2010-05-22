@@ -173,16 +173,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** interpreter settings */
   lazy val isettings = new InterpreterSettings(this)
 
-  /** Heuristically strip interpreter wrapper prefixes
-   *  from an interpreter output string.
-   */
-  def stripWrapperGunk(str: String): String =
-    if (isettings.unwrapStrings) {
-      val wrapregex = """(line[0-9]+\$object[$.])?(\$iw[$.])*"""
-      str.replaceAll(wrapregex, "")
-    }
-    else str
-
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
   protected def newCompiler(settings: Settings, reporter: Reporter) = {
@@ -341,7 +331,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** Clean up a string for output */
-  private def clean(str: String) = truncPrintString(stripWrapperGunk(str))
+  private def clean(str: String) = truncPrintString(
+    if (isettings.unwrapStrings) stripWrapperGunk(str)
+    else str
+  )
 
   /** Indent some code by the width of the scala> prompt.
    *  This way, compiler error messages read better.

@@ -18,6 +18,14 @@ package object interpreter {
   /** null becomes "", otherwise identity */
   def onull(s: String) = if (s == null) "" else s
 
+  /** Heuristically strip interpreter wrapper prefixes
+   *  from an interpreter output string.
+   */
+  def stripWrapperGunk(str: String): String = {
+    val wrapregex = """(line[0-9]+\$object[$.])?(\$iw[$.])*"""
+    str.replaceAll(wrapregex, "")
+  }
+
   /** Class objects */
   def classForName(name: String): Option[Class[_]] =
     try Some(Class forName name)
