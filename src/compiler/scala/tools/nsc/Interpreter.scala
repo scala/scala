@@ -26,7 +26,7 @@ import scala.util.control.Exception.{ Catcher, catching, ultimately, unwrapping 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
-import util.{ SourceFile, BatchSourceFile, ClassPath, Chars }
+import util.{ SourceFile, BatchSourceFile, ScriptSourceFile, ClassPath, Chars, stringFromWriter }
 import scala.reflect.NameTransformer
 import scala.tools.nsc.{ InterpreterResults => IR }
 import interpreter._
@@ -312,15 +312,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def getVarName = varNameCreator()
   def getSynthVarName = synthVarNameCreator()
 
-  /** generate a string using a routine that wants to write on a stream */
-  private def stringFrom(writer: PrintWriter => Unit): String = {
-    val stringWriter = new StringWriter()
-    val stream = new NewLinePrintWriter(stringWriter)
-    writer(stream)
-    stream.close
-    stringWriter.toString
-  }
-
   /** Truncate a string if it is longer than isettings.maxPrintString */
   private def truncPrintString(str: String): String = {
     val maxpr = isettings.maxPrintString
@@ -343,7 +334,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def indentCode(code: String) = {
     /** Heuristic to avoid indenting and thereby corrupting """-strings and XML literals. */
     val noIndent = (code contains "\n") && (List("\"\"\"", "</", "/>") exists (code contains _))
-    stringFrom(str =>
+    stringFromWriter(str =>
       for (line <- code.lines) {
         if (!noIndent)
           str.print(spaces)
@@ -831,7 +822,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def toCompute = line
 
     /** generate the source code for the object that computes this request */
-    def objectSourceCode: String = stringFrom { code =>
+    def objectSourceCode: String = stringFromWriter { code =>
       val preamble = """
         |object %s {
         |  %s%s
@@ -845,7 +836,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** generate source code for the object that retrieves the result
         from objectSourceCode */
-    def resultObjectSourceCode: String = stringFrom { code =>
+    def resultObjectSourceCode: String = stringFromWriter { code =>
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
@@ -966,7 +957,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         case t: Throwable if bindLastException =>
           withoutBindingLastException {
             quietBind("lastException", "java.lang.Throwable", t)
-            (stringFrom(t.printStackTrace(_)), false)
+            (stringFromWriter(t.printStackTrace(_)), false)
           }
       }
 

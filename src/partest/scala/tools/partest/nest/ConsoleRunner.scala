@@ -15,7 +15,6 @@ import RunnerUtils._
 import scala.tools.nsc.Properties.{ versionMsg, setProp }
 import scala.tools.nsc.util.CommandLineParser
 import scala.tools.nsc.io
-import scala.tools.nsc.interpreter.returning
 import io.{ Path, Process }
 
 class ConsoleRunner extends DirectRunner {

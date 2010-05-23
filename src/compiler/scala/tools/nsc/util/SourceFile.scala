@@ -7,9 +7,11 @@
 package scala.tools.nsc
 package util
 
-import scala.tools.nsc.io.{AbstractFile, VirtualFile}
+import io.{ AbstractFile, VirtualFile }
 import scala.collection.mutable.ArrayBuffer
-import annotation.{ tailrec, switch }
+import annotation.tailrec
+import java.util.regex.Pattern
+import java.io.IOException
 import Chars._
 
 /** abstract base class of a source file used in the compiler */
@@ -17,6 +19,7 @@ abstract class SourceFile {
   def content : Array[Char]         // normalized, must end in SU
   def file    : AbstractFile
   def isLineBreak(idx : Int) : Boolean
+  def isSelfContained: Boolean
   def length : Int
   def position(offset: Int) : Position = {
     assert(offset < length)
@@ -46,6 +49,42 @@ abstract class SourceFile {
   def identifier(pos: Position, compiler: Global): Option[String] = None
 }
 
+object ScriptSourceFile {
+  /** Length of the script header from the given content, if there is one.
+   *  The header begins with "#!" or "::#!" and ends with a line starting
+   *  with "!#" or "::!#".
+   */
+  def headerLength(cs: Array[Char]): Int = {
+    val headerPattern = Pattern.compile("""^(::)?!#.*(\r|\n|\r\n)""", Pattern.MULTILINE)
+    val headerStarts  = List("#!", "::#!")
+
+    if (headerStarts exists (cs startsWith _)) {
+      val matcher = headerPattern matcher cs.mkString
+      if (matcher.find) matcher.end
+      else throw new IOException("script file does not close its header with !# or ::!#")
+    }
+    else 0
+  }
+  def stripHeader(cs: Array[Char]): Array[Char] = cs drop headerLength(cs)
+
+  def apply(file: AbstractFile, content: Array[Char]) = {
+    val underlying = new BatchSourceFile(file, content)
+    val headerLen = headerLength(content)
+    val stripped = new ScriptSourceFile(underlying, content drop headerLen, headerLen)
+
+    stripped
+  }
+}
+import ScriptSourceFile._
+
+class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], override val start: Int) extends BatchSourceFile(underlying.file, content) {
+  override def isSelfContained = false
+
+  override def positionInUltimateSource(pos: Position) =
+    if (!pos.isDefined) super.positionInUltimateSource(pos)
+    else new OffsetPosition(underlying, pos.point + start)
+}
+
 /** a file whose contents do not change over time */
 class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends SourceFile {
 
@@ -54,16 +93,13 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
   def this(file: AbstractFile, cs: Seq[Char])   = this(file, cs.toArray)
 
   override def equals(that : Any) = that match {
-    case that : BatchSourceFile => file.path == that.file.path
+    case that : BatchSourceFile => file.path == that.file.path && start == that.start
     case _ => false
   }
-  override def hashCode = file.path.hashCode
+  override def hashCode = file.path.## + start.##
   val length = content.length
-
-  // in SourceFileFragments, these are overridden to compensate during offset calculation
-  // Invariant: length + start = underlyingLength
-  def underlyingLength = length
   def start = 0
+  def isSelfContained = true
 
   override def identifier(pos: Position, compiler: Global) =
     if (pos.isDefined && pos.source == this && pos.point != -1) {
@@ -81,13 +117,14 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
       else isLineBreakChar(ch)
     }
 
-  private lazy val lineIndices: Array[Int] = {
+  def calculateLineIndices(cs: Array[Char]) = {
     val buf = new ArrayBuffer[Int]
     buf += 0
-    for (i <- 0 until content.length) if (isLineBreak(i)) buf += i + 1
-    buf += content.length // sentinel, so that findLine below works smoother
+    for (i <- 0 until cs.length) if (isLineBreak(i)) buf += i + 1
+    buf += cs.length // sentinel, so that findLine below works smoother
     buf.toArray
   }
+  private lazy val lineIndices: Array[Int] = calculateLineIndices(content)
 
   def lineToOffset(index : Int): Int = lineIndices(index)
 
@@ -105,125 +142,4 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
     lastLine = findLine(0, lines.length, lastLine)
     lastLine
   }
-
-/**
-
-  // An array which maps line numbers (counting from 0) to char offset into content
-  private lazy val lineIndices: Array[Int] = {
-
-    val xs = content.indices filter isLineBreak map (_ + 1) toArray
-    val arr = new Array[Int](xs.length + 1)
-    arr(0) = 0
-    System.arraycopy(xs, 0, arr, 1, xs.length)
-
-    arr
-  }
-  // A reverse map which also hunts down the right answer on non-exact lookups
-  private class SparseReverser() {
-    val revMap = Map(lineIndices.zipWithIndex: _*)
-
-    def apply(x: Int): Int = revMap.get(x) match {
-      case Some(res)  => res
-      case _          =>
-        var candidate = x - 1
-        while (!revMap.contains(candidate))
-          candidate -= 1
-
-        revMap(candidate)
-    }
-  }
-  private lazy val lineIndicesRev = new SparseReverser()
-
-  def lineToOffset(index : Int): Int = lineIndices(index)
-  def offsetToLine(offset: Int): Int = lineIndicesRev(offset)
-
-  */
-}
-
-/** A source file composed of multiple other source files.
- *
- *  @version 1.0
- */
-class CompoundSourceFile(
-    name: String,
-    components: List[BatchSourceFile],
-    contents: Array[Char])
-extends BatchSourceFile(name, contents)
-{
-  /** The usual constructor.  Specify a name for the compound file and
-   *  a list of component sources.
-   */
-  def this(name: String, components: BatchSourceFile*) =
-    this(name, components.toList, components flatMap (CompoundSourceFile stripSU _.content) toArray)
-
-  /** Create an instance with the specified components and a generic name. */
-  def this(components: BatchSourceFile*) = this("(virtual file)", components: _*)
-
-  override def positionInUltimateSource(position: Position) = {
-    if (!position.isDefined) super.positionInUltimateSource(position)
-    else {
-      var off = position.point
-      var compsLeft = components
-      // the search here has to be against the length of the files underlying the
-      // components, not their advertised length (which in the case of a fragment is
-      // less than the underlying length.) Otherwise we can and will overshoot the
-      // correct component and return a garbage position.
-      while (compsLeft.head.underlyingLength-1 <= off && !compsLeft.tail.isEmpty) {
-        off = off - compsLeft.head.underlyingLength + 1
-        compsLeft = compsLeft.tail
-      }
-      // now that we've identified the correct component, we have to adjust the
-      // position we report since it is expected relative to the fragment, not the
-      // underlying file.  Thus, off - comp.start.
-      val comp = compsLeft.head
-      comp.positionInUltimateSource(new OffsetPosition(this, off - comp.start))
-    }
-  }
-}
-
-object CompoundSourceFile {
-  private[util] def stripSU(chars: Array[Char]) =
-    if (chars.length > 0 && chars.last == SU)
-      chars dropRight 1
-    else
-      chars
-}
-
-
-/** One portion of an underlying file.  The fragment includes
-  * the indices from the specified start (inclusively) to stop
-  * (not inclusively).
-  */
-class SourceFileFragment private (
-    name: String,
-    underlyingFile: BatchSourceFile,
-    override val start: Int,
-    stop: Int,
-    contents: Array[Char])
-extends BatchSourceFile(name, contents) {
-  override def underlyingLength = underlyingFile.length
-  def this(name: String, underlyingFile: BatchSourceFile, start: Int, stop: Int) =
-    this(
-      name,
-      underlyingFile,
-      start,
-      stop,
-      { assert(start >= 0)
-        assert(start <= stop)
-        assert(start <= underlyingFile.length)
-        assert(stop <= underlyingFile.length)
-        underlyingFile.content.slice(start, stop).toArray })
-
-  def this(underlyingFile: BatchSourceFile, start: Int, stop: Int) =
-    this(
-      "(fragment of " + underlyingFile.file.name + ")",
-      underlyingFile,
-      start,
-      stop)
-
-  override def positionInUltimateSource(position: Position) =
-    super.positionInUltimateSource(
-      if (position.isDefined) new OffsetPosition(this, position.point)
-      else position
-    )
 }

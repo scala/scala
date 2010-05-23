@@ -9,6 +9,7 @@ package interpreter
 
 import jline._
 import java.util.{ List => JList }
+import util.returning
 
 object Completion {
   def looksLikeInvocation(code: String) = (
