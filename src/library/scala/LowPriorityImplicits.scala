@@ -48,6 +48,7 @@ class LowPriorityImplicits {
     }
 
   /** Can go away after next newstarr */
+  /** Caution - not yet.  pos/t1459, pos/t2569, jvm/t1342 all fail without the next line. */
   def wrapArray[T <: AnyRef](xs: Array[T]): WrappedArray[T] = new WrappedArray.ofRef[T](xs)
   def wrapArray(xs: Array[Int]): WrappedArray[Int] = new WrappedArray.ofInt(xs)
   def wrapArray(xs: Array[Double]): WrappedArray[Double] = new WrappedArray.ofDouble(xs)

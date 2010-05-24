@@ -7,20 +7,15 @@ package scala.tools.nsc
 package symtab
 
 import scala.collection.mutable.{HashMap, HashSet}
-import scala.tools.nsc.util.{Position, NoPosition}
+import scala.tools.nsc.util.NoPosition
 import Flags._
+import PartialFunction._
 
 trait Definitions extends reflect.generic.StandardDefinitions {
   self: SymbolTable =>
 
   object definitions extends AbsDefinitions {
     def isDefinitionsInitialized = isInitialized
-
-    // Working around bug #2133
-    private object definitionHelpers {
-      def cond[T](x: T)(f: PartialFunction[T, Boolean]) = (f isDefinedAt x) && f(x)
-    }
-    import definitionHelpers._
 
     // symbols related to packages
     var emptypackagescope: Scope = null //debug

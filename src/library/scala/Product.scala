@@ -28,21 +28,6 @@ trait Product extends Equals {
    */
   def productElement(n: Int): Any
 
-  // !!! This will be disabled pending reimplementation, but it can't be removed
-  // until starr forgets about it.
-
-  /** Returns the name of the field at the given index from the definition
-   *  of the class.
-   *
-   *  @param  n   the index of the element name to return
-   *  @throws     NoSuchElementException      if the name data is unavailable for any reason
-   *  @throws     IndexOutOfBoundsException   if the index is out of range
-   *  @return     a String representing the field name
-   */
-  def productElementName(n: Int): String =
-    // the method implementation is synthetic - if it is not generated we always throw.
-    throw new NoSuchElementException()
-
   /** return k for a product <code>A(x_1,...,x_k)</code>
    */
   def productArity: Int

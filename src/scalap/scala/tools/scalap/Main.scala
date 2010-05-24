@@ -126,9 +126,6 @@ object Main {
     }
   }
 
-
-
-
   /**Executes scalap with the given arguments and classpath for the
    *  class denoted by <code>classname</code>.
    *
@@ -157,18 +154,6 @@ object Main {
         val clazz = new Classfile(reader)
         processJavaClassFile(clazz)
       }
-      // if the class corresponds to the artificial class scala.All.
-      // (to be removed after update of the STARR libraries)
-    } else if (classname == "scala.All") {
-      Console.println("package scala")
-      Console.println("/* Deprecated. Use scala.Nothing instead. */")
-      Console.println("sealed abstract class All")
-      // if the class corresponds to the artificial class scala.AllRef.
-      // (to be removed after update of the STARR libraries)
-    } else if (classname == "scala.AllRef") {
-      Console.println("package scala")
-      Console.println("/* Deprecated. Use scala.Null instead. */")
-      Console.println("sealed abstract class AllRef")
       // if the class corresponds to the artificial class scala.Any.
       // (see member list in class scala.tool.nsc.symtab.Definitions)
     } else if (classname == "scala.Any") {
