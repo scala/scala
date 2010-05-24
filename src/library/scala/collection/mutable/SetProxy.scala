@@ -19,8 +19,7 @@ package mutable
  *  @version 1.1, 09/05/2004
  *  @since   1
  */
-trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]]
-{
+trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]] {
   override def repr = this
   override def empty = new SetProxy[A] { val self = SetProxy.this.self.empty }
   override def + (elem: A) = { self += elem ; this }

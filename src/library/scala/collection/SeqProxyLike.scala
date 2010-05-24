@@ -23,6 +23,8 @@ import generic._
  *  @since   2.8
  */
 trait SeqProxyLike[+A, +Repr <: SeqLike[A, Repr] with Seq[A]] extends SeqLike[A, Repr] with IterableProxyLike[A, Repr] {
+  override def size = self.size
+  override def toSeq: Seq[A] = self.toSeq
   override def length: Int = self.length
   override def apply(idx: Int): A = self.apply(idx)
   override def lengthCompare(len: Int): Int = self.lengthCompare(len)

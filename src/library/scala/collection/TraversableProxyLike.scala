@@ -15,9 +15,8 @@ import mutable.{Buffer, StringBuilder}
 
 // Methods could be printed by  cat TraversableLike.scala | egrep '^  (override )?def'
 
-
-/** This trait implements a proxy for traversable objects. It forwards
- *  all calls to a different traversable object.
+/** This trait implements a proxy for Traversable objects. It forwards
+ *  all calls to a different Traversable object.
  *
  *  @author  Martin Odersky
  *  @version 2.8
@@ -82,6 +81,8 @@ trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversabl
   override def toStream: Stream[A] = self.toStream
   override def toSet[B >: A]: immutable.Set[B] = self.toSet
   override def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = self.toMap(ev)
+  override def toTraversable: Traversable[A] = self.toTraversable
+  override def toIterator: Iterator[A] = self.toIterator
   override def mkString(start: String, sep: String, end: String): String = self.mkString(start, sep, end)
   override def mkString(sep: String): String = self.mkString(sep)
   override def mkString: String = self.mkString
@@ -91,17 +92,6 @@ trait TraversableProxyLike[+A, +Repr <: TraversableLike[A, Repr] with Traversabl
   override def stringPrefix : String = self.stringPrefix
   override def view = self.view
   override def view(from: Int, until: Int): TraversableView[A, Repr] = self.view(from, until)
+  // This appears difficult to override due to the type of WithFilter.
+  // override def withFilter(p: A => Boolean): WithFilter = self.withFilter(p)
 }
-
-/** Martin to Paul: I'm not sure what the purpose of this class is? I assume it was to make
- *  sure that TraversableProxyLike has all Traversable methods, but it fails at that
- *
-private class TraversableProxyLikeConfirmation[+A, +Repr <: TraversableLike[A, Repr] with Traversable[A]]
-  extends TraversableProxyLike[A, Traversable[A]]
-  with interfaces.TraversableMethods[A, Traversable[A]]
-{
-  def self: Repr = repr.asInstanceOf[Repr]
-  protected[this] def newBuilder = scala.collection.Traversable.newBuilder[A]
-  // : Builder[A, Repr]
-}
-*/

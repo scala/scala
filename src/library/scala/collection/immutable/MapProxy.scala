@@ -22,8 +22,7 @@ package immutable
  *  @version 2.0, 31/12/2006
  *  @since   2.8
  */
-trait MapProxy[A, +B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]]
-{
+trait MapProxy[A, +B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]] {
   override def repr = this
   private def newProxy[B1 >: B](newSelf: Map[A, B1]): MapProxy[A, B1] =
     new MapProxy[A, B1] { val self = newSelf }
@@ -31,11 +30,10 @@ trait MapProxy[A, +B] extends Map[A, B] with MapProxyLike[A, B, Map[A, B]]
   override def empty = newProxy(self.empty)
   override def updated [B1 >: B](key: A, value: B1) = newProxy(self.updated(key, value))
 
-  override def + [B1 >: B](kv: (A, B1)): Map[A, B1] = newProxy(self + kv)
-  override def + [B1 >: B](elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) =
-    newProxy(self.+(elem1, elem2, elems: _*))
-
   override def -(key: A) = newProxy(self - key)
+  override def + [B1 >: B](kv: (A, B1)): Map[A, B1] = newProxy(self + kv)
+  override def + [B1 >: B](elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) = newProxy(self.+(elem1, elem2, elems: _*))
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]) = newProxy(self ++ xs)
 
   override def filterKeys(p: A => Boolean) = self.filterKeys(p)
   override def mapValues[C](f: B => C) = self.mapValues(f)
