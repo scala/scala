@@ -78,18 +78,22 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // A transformer for expressions that go into the constructor
       val intoConstructorTransformer = new Transformer {
+        def isParamRef(sym: Symbol) =
+          (sym hasFlag PARAMACCESSOR) &&
+          sym.owner == clazz &&
+          !(sym.isGetter && sym.accessed.isVariable) &&
+          !sym.isSetter
         override def transform(tree: Tree): Tree = tree match {
           case Apply(Select(This(_), _), List()) =>
             // references to parameter accessor methods of own class become references to parameters
             // outer accessors become references to $outer parameter
-            if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz)
+            if (isParamRef(tree.symbol))
               gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
             else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
               gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
             else
               super.transform(tree)
-          case Select(This(_), _)
-          if ((tree.symbol hasFlag PARAMACCESSOR) && !tree.symbol.isSetter && tree.symbol.owner == clazz) =>
+          case Select(This(_), _) if (isParamRef(tree.symbol)) =>
             // references to parameter accessor field of own class become references to parameters
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
