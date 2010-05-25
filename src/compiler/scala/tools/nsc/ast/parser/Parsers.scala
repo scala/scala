@@ -1465,7 +1465,7 @@ self =>
       else accept(LARROW)
       val rhs = expr()
       enums += makeGenerator(r2p(start, point, in.lastOffset), pat, tok == EQUALS, rhs)
-      if (in.token == IF) enums += makeFilter(in.offset, guard())
+      while (in.token == IF) enums += makeFilter(in.offset, guard())
     }
 
     def makeFilter(start: Int, tree: Tree) = Filter(r2p(start, tree.pos.point, tree.pos.endOrPoint), tree)
@@ -1788,6 +1788,7 @@ self =>
             mods |= Flags.MUTABLE
             in.nextToken()
           } else if (!caseParam) {
+            if (mods.flags == Flags.PARAMACCESSOR) accept(VAL)
             mods |= Flags.PRIVATE | Flags.LOCAL
           }
           if (caseParam) {
