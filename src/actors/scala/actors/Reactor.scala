@@ -215,17 +215,32 @@ trait Reactor[Msg >: Null] extends OutputChannel[Msg] with Combinators {
     scheduler executeFromActor makeReaction(null, handler, msg)
   }
 
+  // guarded by this
+  private[actors] def dostart() {
+    _state = Actor.State.Runnable
+    scheduler newActor this
+    scheduler execute makeReaction(() => act(), null, null)
+  }
+
   /**
-   * Starts this $actor.
+   * Starts this $actor. This method is idempotent.
    */
   def start(): Reactor[Msg] = synchronized {
-    if (_state == Actor.State.New) {
-      _state = Actor.State.Runnable
-      scheduler newActor this
-      scheduler execute makeReaction(() => act())
-      this
-    } else
-      this
+    if (_state == Actor.State.New)
+      dostart()
+    this
+  }
+
+  /**
+   * Restarts this $actor.
+   *
+   * @throws java.lang.IllegalStateException  if the $actor is not in state `Actor.State.Terminated`
+   */
+  def restart(): Unit = synchronized {
+    if (_state == Actor.State.Terminated)
+      dostart()
+    else
+      throw new IllegalStateException("restart only in state "+Actor.State.Terminated)
   }
 
   /** Returns the execution state of this $actor.

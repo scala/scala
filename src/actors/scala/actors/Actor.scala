@@ -622,24 +622,22 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
     _state == Actor.State.Terminated
   }
 
+  // guarded by this
+  private[actors] override def dostart() {
+    // Reset various flags.
+    //
+    // Note that we do *not* reset `trapExit`. The reason is that
+    // users should be able to set the field in the constructor
+    // and before `act` is called.
+    exitReason = 'normal
+    shouldExit = false
+
+    super.dostart()
+  }
+
   override def start(): Actor = synchronized {
-    if (_state == Actor.State.New) {
-      _state = Actor.State.Runnable
-
-      // Reset various flags.
-      //
-      // Note that we do *not* reset `trapExit`. The reason is that
-      // users should be able to set the field in the constructor
-      // and before `act` is called.
-      exitReason = 'normal
-      shouldExit = false
-
-      scheduler newActor this
-      scheduler execute (new Reaction(this))
-
-      this
-    } else
-      this
+    super.start()
+    this
   }
 
   override def getState: Actor.State.Value = synchronized {
