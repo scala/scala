@@ -1788,7 +1788,7 @@ self =>
             mods |= Flags.MUTABLE
             in.nextToken()
           } else if (!caseParam) {
-            if (mods.flags == Flags.PARAMACCESSOR) accept(VAL)
+            if (mods.flags != Flags.PARAMACCESSOR) accept(VAL)
             mods |= Flags.PRIVATE | Flags.LOCAL
           }
           if (caseParam) {
