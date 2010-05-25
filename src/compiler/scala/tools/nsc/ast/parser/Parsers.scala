@@ -1787,9 +1787,11 @@ self =>
             mods = mods withPosition (in.token, tokenRange(in))
             mods |= Flags.MUTABLE
             in.nextToken()
-          } else if (!caseParam) {
+          } else {
             if (mods.flags != Flags.PARAMACCESSOR) accept(VAL)
-            mods |= Flags.PRIVATE | Flags.LOCAL
+            if (!caseParam) {
+              mods |= Flags.PRIVATE | Flags.LOCAL
+            }
           }
           if (caseParam) {
             mods |= Flags.CASEACCESSOR
