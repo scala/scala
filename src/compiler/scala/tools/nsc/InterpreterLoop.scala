@@ -355,8 +355,11 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     def ambiguous(cmds: List[Command]) = "Ambiguous: did you mean " + cmds.map(":" + _.name).mkString(" or ") + "?"
 
     // not a command
-    if (!line.startsWith(":"))
-      return Result(true, interpretStartingWith(line))
+    if (!line.startsWith(":")) {
+      // Notice failure to create compiler
+      if (interpreter.compiler == null) return Result(false, None)
+      else return Result(true, interpretStartingWith(line))
+    }
 
     val tokens = (line drop 1 split """\s+""").toList
     if (tokens.isEmpty)

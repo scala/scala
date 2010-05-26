@@ -75,6 +75,11 @@ import Interpreter._
 class Interpreter(val settings: Settings, out: PrintWriter) {
   repl =>
 
+  def println(x: Any) = {
+    out.println(x)
+    out.flush()
+  }
+
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
   def this() = this(new Settings())
@@ -108,28 +113,37 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       |}
       |""".stripMargin
 
-    val run = new _compiler.Run()
-    run compileSources List(new BatchSourceFile("<init>", source))
-    if (settings.debug.value) {
-      out println "Repl compiler initialized."
-      out.flush()
+    try {
+      new _compiler.Run() compileSources List(new BatchSourceFile("<init>", source))
+      if (isReplDebug || settings.debug.value)
+        println("Repl compiler initialized.")
+      true
     }
-    true
+    catch {
+      case MissingRequirementError(msg) => println("""
+        |Failed to initialize compiler: %s not found.
+        |** Note that as of 2.8 scala does not assume use of the java classpath.
+        |** For the old behavior pass -usejavacp to scala, or if using a Settings
+        |** object programatically, settings.usejavacp.value = true.""".stripMargin.format(msg)
+      )
+      false
+    }
   }
 
   // set up initialization future
-  private var _isInitialized: () => Boolean = () => false
+  private var _isInitialized: () => Boolean = null
   def initialize() = synchronized {
-    if (!_isInitialized())
+    if (_isInitialized == null)
       _isInitialized = scala.concurrent.ops future _initialize()
   }
 
   /** the public, go through the future compiler */
   lazy val compiler: Global = {
     initialize()
-    _isInitialized()   // blocks until it is
 
-    _compiler
+    // blocks until it is ; false means catastrophic failure
+    if (_isInitialized()) _compiler
+    else null
   }
 
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
@@ -573,7 +587,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       else IR.Error
     }
 
-    requestFromLine(line, synthetic) match {
+    if (compiler == null) IR.Error
+    else requestFromLine(line, synthetic) match {
       case Left(result) => result
       case Right(req)   =>
         // null indicates a disallowed statement type; otherwise compile and
