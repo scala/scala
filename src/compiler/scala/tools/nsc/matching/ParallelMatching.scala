@@ -7,7 +7,6 @@
 package scala.tools.nsc
 package matching
 
-import util.Position
 import transform.ExplicitOuter
 import symtab.Flags
 import collection._
@@ -185,6 +184,13 @@ trait ParallelMatching extends ast.TreeDSL
       object AnyUnapply {
         def unapply(x: Pattern): Option[Boolean] = condOpt(x.tree) {
           case UnapplyParamType(tpe) => !(scrut.tpe <:< tpe)
+        }
+      }
+
+      if (settings.Xmigration28.value) {
+        for (p <- ps ; if isArraySeqTest(scrut.tpe, p.tpe)) {
+          val reportPos = if (p.tree.pos.isDefined) p.tree.pos else scrut.pos
+          cunit.warning(reportPos, "An Array will no longer match as Seq[_].")
         }
       }
 
