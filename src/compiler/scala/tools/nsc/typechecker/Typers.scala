@@ -3476,14 +3476,14 @@ trait Typers { self: Analyzer =>
           //if (name.toString == "Elem") println("typedSelect "+qual+":"+qual.tpe+" "+sym+"/"+tree1+":"+tree1.tpe)
           val (tree2, pre2) = makeAccessible(tree1, sym, qual.tpe, qual)
           val result = stabilize(tree2, pre2, mode, pt)
-          def isPotentialNullDereference() = {
+          def isPotentialNullDeference() = {
             phase.id <= currentRun.typerPhase.id &&
             !sym.isConstructor &&
             !(qual.tpe <:< NotNullClass.tpe) && !qual.tpe.isNotNull &&
             !(List(Any_isInstanceOf, Any_asInstanceOf) contains result.symbol)  // null.is/as is not a dereference
           }
           // unit is null here sometimes; how are we to know when unit might be null? (See bug #2467.)
-          if (settings.Xchecknull.value && isPotentialNullDereference && unit != null)
+          if (settings.Xchecknull.value && isPotentialNullDeference && unit != null)
             unit.warning(tree.pos, "potential null pointer dereference: "+tree)
 
           result
