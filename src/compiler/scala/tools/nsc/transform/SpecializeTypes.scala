@@ -10,6 +10,7 @@ import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.util.FreshNameCreator
 
 import scala.collection.{mutable, immutable}
+import immutable.Set
 
 /** Specialize code on types.
  */
@@ -701,6 +702,22 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *    * there is a valid specialization environment that maps the overridden method type to m's type.
      */
     def needsSpecialOverride(overriding: Symbol, syms: List[Symbol]): (Symbol, TypeEnv) = {
+      def missingSpecializations(baseTvar: Symbol, derivedTvar: Symbol): Set[Type] = {
+        val baseSet = concreteTypes(baseTvar).toSet
+        val derivedSet = concreteTypes(derivedTvar).toSet
+        baseSet diff derivedSet
+      }
+
+      def checkOverriddenTParams(overridden: Symbol) {
+        if (currentRun.compiles(overriding))
+          for (val (baseTvar, derivedTvar) <- overridden.info.typeParams.zip(overriding.info.typeParams);
+               val missing = missingSpecializations(baseTvar, derivedTvar)
+               if missing.nonEmpty)
+          reporter.error(derivedTvar.pos,
+            "Type parameter has to be specialized at least for the same types as in the overridden method. Missing " +
+                    "types: " + missing.mkString("", ", ", ""))
+      }
+
       for (overridden <- syms) {
         if (settings.debug.value)
           log("Overridden: " + overridden.fullName + ": " + overridden.info
@@ -708,6 +725,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         val stvars = specializedTypeVars(overridden.info)
         if (!stvars.isEmpty) {
           if (settings.debug.value) log("\t\tspecializedTVars: " + stvars)
+          checkOverriddenTParams(overridden)
+
           val env = unify(overridden.info, overriding.info, emptyEnv)
           if (settings.debug.value)
             log("\t\tenv: " + env + "isValid: " + TypeEnv.isValid(env, overridden)
@@ -1012,11 +1031,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       /** The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
       def specSym(qual: Tree): Option[Symbol] = {
         val env = unify(symbol.tpe, tree.tpe, emptyEnv)
-        log("checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
+        log("[specSym] checking for rerouting: %s with \n\tsym.tpe: %s, \n\ttree.tpe: %s \n\tenv: %s \n\tname: %s"
                 .format(tree, symbol.tpe, tree.tpe, env, specializedName(symbol, env)))
         if (!env.isEmpty) {  // a method?
           val specMember = qual.tpe.member(specializedName(symbol, env))
-          if (specMember ne NoSymbol) Some(specMember)
+          if (specMember ne NoSymbol)
+            if (typeEnv(specMember) == env) Some(specMember)
+            else {
+              log("wrong environments for specialized member: \n\ttypeEnv(%s) = %s\n\tenv = %s".format(specMember, typeEnv(specMember), env))
+              None
+            }
           else None
         } else None
       }
@@ -1046,9 +1070,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               assert(symbol.info.typeParams.length == targs.length)
               val env = typeEnv(specMember)
               val residualTargs =
-                for ((tvar, targ) <-symbol.info.typeParams.zip(targs) if !env.isDefinedAt(tvar))
+                for ((tvar, targ) <- symbol.info.typeParams.zip(targs) if !env.isDefinedAt(tvar))
                   yield targ
-              assert(residualTargs.length == specMember.info.typeParams.length, env)
+              assert(residualTargs.length == specMember.info.typeParams.length,
+                "residual: %s, tparams: %s, env: %s".format(residualTargs, symbol.info.typeParams, env))
               val tree1 = maybeTypeApply(Select(qual1, specMember), residualTargs)
               log("rewrote " + tree + " to " + tree1)
               localTyper.typedOperator(atPos(tree.pos)(tree1)) // being polymorphic, it must be a method
