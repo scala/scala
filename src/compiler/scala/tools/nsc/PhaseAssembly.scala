@@ -3,7 +3,6 @@
  * @author Anders Bach Nielsen
  * @version 1.0
  */
-// $Id$
 
 package scala.tools.nsc
 

@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala
@@ -22,7 +21,7 @@ package scala
  */
 trait Proxy {
   def self: Any
-  override def hashCode: Int = self.hashCode
+  override def hashCode: Int = self.##
   override def equals(that: Any): Boolean =
     if(that == null) false
     else that equals self

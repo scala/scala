@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  * @author  Geoffrey Washburn
  */
-// $Id$
 
 package scala.tools.nsc
 

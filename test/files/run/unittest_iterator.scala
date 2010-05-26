@@ -1,6 +1,5 @@
 // Some iterator grouped/sliding unit tests
-object Test
-{
+object Test {
   def it = (1 to 10).iterator
   def assertThat[T](expectedLength: Int, expectedLast: Seq[T])(it: Iterator[Seq[T]]) {
     val xs = it.toList
@@ -34,7 +33,11 @@ object Test
     assertThat(2, List(9, 10, -1, -1, -1)) { it.sliding(5, 8) withPadding -1 }
     assertThat(1, (1 to 5).toList) { it.sliding(5, 8) withPartial false }
 
-    // make sure it throws past th end
+    // larger step than window
+    assertThat(5, List(9)) { it.sliding(1, 2) }
+    assertThat(3, List(9, 10)) { it.sliding(2, 4) }
+
+    // make sure it throws past the end
     val thrown = try {
       val it = List(1,2,3).sliding(2)
       it.next

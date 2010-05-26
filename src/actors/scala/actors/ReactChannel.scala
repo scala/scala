@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: InputChannel.scala 18844 2009-09-30 20:28:49Z phaller $
 
 package scala.actors
 

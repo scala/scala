@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 package scala.collection
 package mutable
@@ -69,7 +68,7 @@ class LinkedHashSet[A] extends Set[A]
     clearTable()
   }
 
-  override def iterator = ordered.iterator
+  override def iterator: Iterator[A] = ordered.iterator
 
   override def foreach[U](f: A => U) = ordered foreach f
 

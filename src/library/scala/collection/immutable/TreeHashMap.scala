@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 package scala.collection
 package immutable
@@ -55,7 +54,7 @@ class TreeHashMap[Key, +Value] private (private val underlying : IntMap[AssocMap
   def empty[V] = TreeHashMap.empty[Key, V]
 
   private def hash(key : Key) = {
-    var h = key.hashCode;
+    var h = key.##
     h ^= ((h >>> 20) ^ (h >>> 12));
     h ^ (h >>> 7) ^ (h >>> 4);
   }

@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.collection
@@ -22,8 +21,7 @@ package immutable
  *
  *  @since 2.8
  */
-trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]]
-{
+trait SetProxy[A] extends Set[A] with SetProxyLike[A, Set[A]] {
   override def repr = this
   private def newProxy[B >: A](newSelf: Set[B]): SetProxy[B] =
     new SetProxy[B] { val self = newSelf }

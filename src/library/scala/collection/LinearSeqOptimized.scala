@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: LinearSeqOptimized.scala 20608 2010-01-20 00:28:09Z extempore $
 
 
 package scala.collection

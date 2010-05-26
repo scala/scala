@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id: DefaultMap.scala 20028 2009-12-07 11:49:19Z cunei $
 
 
 package scala.collection

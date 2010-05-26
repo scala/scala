@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: Constants.scala 20028 2009-12-07 11:49:19Z cunei $
 
 package scala.reflect
 package generic
@@ -231,6 +230,6 @@ trait Constants { self: Universe =>
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
     override def hashCode: Int =
-      if (value == null) 0 else value.hashCode() * 41 + 17
+      if (value == null) 0 else value.## * 41 + 17
   }
 }

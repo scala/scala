@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.collection
@@ -47,6 +46,10 @@ import scala.annotation.migration
  *    }}}
  *    It is also good idea to override methods `foreach` and
  *    `size` for efficiency.
+ *  @define addDuplicates
+ *    Note that duplicates (elements for which `equals` yields true) will be
+ *    removed, but it is not specified whether it will be an element of this
+ *    set or a newly added element.
  *  @define coll mutable set
  *  @define Coll mutable.Set
  */
@@ -132,10 +135,12 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    */
   def result: This = repr
 
-  /** Adds a single element to this collection and returns
-   *  the collection itself.
+  /** Creates a new set consisting of all the elements of this set and `elem`.
+   *
+   *  $addDuplicates
    *
    *  @param elem  the element to add.
+   *  @return      a new set consisting of elements of this set and `elem`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new set.  To add an element as a\n"+
@@ -143,12 +148,16 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   )
   override def + (elem: A): This = clone() += elem
 
-  /** Adds two or more elements to this collection and returns
-   *  the collection itself.
+  /** Creates a new set consisting of all the elements of this set and two or more
+   *  specified elements.
+   *
+   *  $addDuplicates
    *
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
+   *  @return      a new set consisting of all the elements of this set, `elem1`,
+   *               `elem2` and those in `elems`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new set.  To add the elements as a\n"+
@@ -157,10 +166,13 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   override def + (elem1: A, elem2: A, elems: A*): This =
     clone() += elem1 += elem2 ++= elems
 
-  /** Adds a number of elements provided by a traversable object and returns
-   *  either the collection itself.
+  /** Creates a new set consisting of all the elements of this set and those
+   *  provided by the specified traversable object.
    *
-   *  @param iter     the iterable object.
+   *  $addDuplicates
+   *
+   *  @param xs        the traversable object.
+   *  @return          a new set cconsisting of elements of this set and those in `xs`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new set.  To add the elements as a\n"+
@@ -168,10 +180,10 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   )
   override def ++(xs: TraversableOnce[A]): This = clone() ++= xs
 
-  /** Removes a single element from this collection and returns
-   *  the collection itself.
+  /** Creates a new set consisting of all the elements of this set except `elem`.
    *
    *  @param elem  the element to remove.
+   *  @return      a new set consisting of all the elements of this set except `elem`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new set.  To remove the element as a\n"+
@@ -179,12 +191,14 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   )
   override def -(elem: A): This = clone() -= elem
 
-  /** Removes two or more elements from this collection and returns
-   *  the collection itself.
+  /** Creates a new set consisting of all the elements of this set except the two
+   *  or more specified elements.
    *
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
+   *  @return      a new set consisting of all the elements of this set except
+   *               `elem1`, `elem2` and `elems`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new set.  To remove the elements as a\n"+
@@ -193,10 +207,12 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   override def -(elem1: A, elem2: A, elems: A*): This =
     clone() -= elem1 -= elem2 --= elems
 
-  /** Removes a number of elements provided by a Traversable object and returns
-   *  the collection itself.
+  /** Creates a new set consisting of all the elements of this set except those
+   *  provided by the specified traversable object.
    *
-   *  @param iter     the Traversable object.
+   *  @param xs       the traversable object.
+   *  @return         a new set consisting of all the elements of this set except
+   *                  elements from `xs`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new set.  To remove the elements as a\n"+

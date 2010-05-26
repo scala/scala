@@ -3,7 +3,6 @@
  * @author  Iulian Dragos
  */
 
-// $Id$
 
 package scala.tools.nsc
 package backend.opt
@@ -444,6 +443,15 @@ abstract class Inliners extends SubComponent {
         case Some(b) =>
           callsNonPublic = b
         case None =>
+          // Avoiding crashing the compiler if there are open blocks.
+          callee.code.blocks filterNot (_.closed) foreach { b =>
+            currentIClazz.cunit.warning(callee.symbol.pos,
+              "Encountered open block in isSafeToInline: this indicates a bug in the optimizer!\n" +
+              "  caller = " + caller + ", callee = " + callee
+            )
+            return false
+          }
+
           breakable {
             for (b <- callee.code.blocks; i <- b)
               i match {

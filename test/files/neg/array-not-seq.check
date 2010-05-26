@@ -1,0 +1,16 @@
+array-not-seq.scala:2: error: An Array will no longer match as Seq[_].
+  def f1(x: Any) = x.isInstanceOf[Seq[_]]
+                                 ^
+array-not-seq.scala:4: error: An Array will no longer match as Seq[_].
+    case _: Seq[_]  => true
+          ^
+error: An Array will no longer match as Seq[_].
+array-not-seq.scala:16: error: An Array will no longer match as Seq[_].
+    case (Some(_: Seq[_]), Nil, _)        => 1
+                ^
+error: An Array will no longer match as Seq[_].
+array-not-seq.scala:15: error: An Array will no longer match as Seq[_].
+  def f5(x1: Any, x2: Any, x3: AnyRef) = (x1, x2, x3) match {
+                                              ^
+error: An Array will no longer match as Seq[_].
+7 errors found

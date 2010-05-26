@@ -1,0 +1,21 @@
+t3453.scala:18: error: type mismatch;
+ found   : A
+ required: B
+        new A
+        ^
+t3453.scala:36: error: type mismatch;
+ found   : A
+ required: B
+        new A
+        ^
+t3453.scala:50: error: type mismatch;
+ found   : A
+ required: B
+        new A
+        ^
+t3453.scala:64: error: type mismatch;
+ found   : A
+ required: B
+        new A
+        ^
+four errors found

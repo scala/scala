@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.runtime;
@@ -17,5 +16,5 @@ public class ByteRef implements java.io.Serializable {
 
     public byte elem;
     public ByteRef(byte elem) { this.elem = elem; }
-    public String toString() { return Byte.toString(elem); }
+    public String toString() { return java.lang.Byte.toString(elem); }
 }

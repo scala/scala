@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author Martin Odersky
  */
-// $Id$
 
 package scala.tools.nsc
 package transform
@@ -336,9 +335,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
   def erasedTypeRef(sym: Symbol): Type =
     typeRef(erasure(sym.owner.tpe), sym, List())
 
-  /** Remove duplicate references to class Object in a list of parent classes
-   * todo: needed?
-   */
+  /** Remove duplicate references to class Object in a list of parent classes */
   private def removeDoubleObject(tps: List[Type]): List[Type] = tps match {
     case List() => List()
     case tp :: tps1 =>

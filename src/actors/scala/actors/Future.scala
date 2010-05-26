@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 package scala.actors
 
@@ -30,7 +29,7 @@ abstract class Future[+T] extends Responder[T] with Function0[T] {
   private[actors] def fvalueTyped = fvalue.get.asInstanceOf[T]
 
   @deprecated("this member is going to be removed in a future release")
-  val ch: InputChannel[Any] = inputChannel
+  def ch: InputChannel[Any] = inputChannel
 
   @deprecated("this member is going to be removed in a future release")
   protected def value: Option[Any] = fvalue

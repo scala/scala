@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 package scala.tools.nsc
 
@@ -17,11 +16,9 @@ import io.{ Directory, File, Path, PlainFile }
 import java.lang.reflect.InvocationTargetException
 import java.net.URL
 import java.util.jar.{ JarEntry, JarOutputStream }
-import java.util.regex.Pattern
 
 import scala.tools.util.PathResolver
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
-import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, BatchSourceFile, SourceFile, SourceFileFragment}
 
 /** An object that runs Scala code in script files.
  *
@@ -49,8 +46,7 @@ import scala.tools.nsc.util.{ClassPath, CompoundSourceFile, BatchSourceFile, Sou
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */
-object ScriptRunner
-{
+object ScriptRunner {
   /* While I'm chasing down the fsc and script bugs. */
   def DBG(msg: Any) {
     System.err.println(msg.toString)
@@ -68,6 +64,8 @@ object ScriptRunner
     case "" => defaultScriptMain
     case x  => x
   }
+
+  def isScript(settings: Settings) = settings.script.value != ""
 
   /** Choose a jar filename to hold the compiled version of a script. */
   private def jarFileFor(scriptFile: String): File = {
@@ -119,22 +117,6 @@ object ScriptRunner
   /** Read the entire contents of a file as a String. */
   private def contentsOfFile(filename: String) = File(filename).slurp()
 
-  /** Find the length of the header in the specified file, if
-    * there is one.  The header part starts with "#!" or "::#!"
-    * and ends with a line that begins with "!#" or "::!#".
-    */
-  private def headerLength(filename: String): Int = {
-    val headerPattern = Pattern.compile("""^(::)?!#.*(\r|\n|\r\n)""", Pattern.MULTILINE)
-    val fileContents = contentsOfFile(filename)
-    def isValid = List("#!", "::#!") exists (fileContents startsWith _)
-
-    if (!isValid) 0 else {
-      val matcher = headerPattern matcher fileContents
-      if (matcher.find) matcher.end
-      else throw new IOException("script file does not close its header with !# or ::!#")
-    }
-  }
-
   /** Split a fully qualified object name into a
    *  package and an unqualified object name */
   private def splitObjectName(fullname: String): (Option[String], String) =
@@ -142,48 +124,6 @@ object ScriptRunner
       case -1   => (None, fullname)
       case idx  => (Some(fullname take idx), fullname drop (idx + 1))
     }
-
-  /** Code that is added to the beginning of a script file to make
-   *  it a complete Scala compilation unit.
-   */
-  protected def preambleCode(objectName: String): String = {
-    val (maybePack, objName)  = splitObjectName(objectName)
-    val packageDecl           = maybePack map ("package %s\n" format _) getOrElse ("")
-
-    return """|
-    |  object %s {
-    |    def main(argv: Array[String]): Unit = {
-    |      val args = argv
-    |      new AnyRef {
-    |""".stripMargin.format(objName)
-  }
-
-  /** Code that is added to the end of a script file to make
-   *  it a complete Scala compilation unit.
-   */
-  val endCode = """
-    |      }
-    |    }
-    |  }
-    |""".stripMargin
-
-  /** Wrap a script file into a runnable object named
-   *  <code>scala.scripting.Main</code>.
-   */
-  def wrappedScript(
-    objectName: String,
-    filename: String,
-    getSourceFile: PlainFile => BatchSourceFile): SourceFile =
-  {
-    val preamble = new BatchSourceFile("<script preamble>", preambleCode(objectName).toCharArray)
-    val middle = {
-      val bsf = getSourceFile(PlainFile fromPath filename)
-      new SourceFileFragment(bsf, headerLength(filename), bsf.length)
-    }
-    val end = new BatchSourceFile("<script trailer>", endCode.toCharArray)
-
-    new CompoundSourceFile(preamble, middle, end)
-  }
 
   /** Compile a script using the fsc compilation daemon.
    *
@@ -243,12 +183,15 @@ object ScriptRunner
       settings.outdir.value = compiledPath.path
 
       if (settings.nocompdaemon.value) {
+        /** Setting settings.script.value informs the compiler this is not a
+         *  self contained compilation unit.
+         */
+        settings.script.value = scriptMain(settings)
         val reporter = new ConsoleReporter(settings)
         val compiler = newGlobal(settings, reporter)
         val cr = new compiler.Run
-        val wrapped = wrappedScript(scriptMain(settings), scriptFile, compiler getSourceFile _)
 
-        cr compileSources List(wrapped)
+        cr compile List(scriptFile)
         if (reporter.hasErrors) None else Some(compiledPath)
       }
       else if (compileWithDaemon(settings, scriptFile)) Some(compiledPath)
@@ -295,10 +238,7 @@ object ScriptRunner
 	  val classpath = pr.asURLs :+ File(compiledLocation).toURL
 
     try {
-      ObjectRunner.run(
-        classpath,
-        scriptMain(settings),
-        scriptArgs)
+      ObjectRunner.run(classpath, scriptMain(settings), scriptArgs)
       true
     }
     catch {

@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author Stepan Koltsov
  */
-// $Id$
 
 package scala.tools.nsc
 package interpreter

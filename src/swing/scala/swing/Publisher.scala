@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.swing
@@ -81,7 +80,7 @@ private[swing] trait SingleRefCollection[+A <: AnyRef] extends Iterable[A] { sel
   trait Ref[+A <: AnyRef] extends Reference[A] {
     override def hashCode() = {
       val v = get
-      if (v == None) 0 else v.get.hashCode
+      if (v == None) 0 else v.get.##
     }
     override def equals(that: Any) = that match {
       case that: ReferenceWrapper[_] =>

@@ -6,13 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 package scala.math
 
 import java.{ lang => jl }
 import java.math.{ MathContext, BigDecimal => BigDec }
 import scala.collection.immutable.NumericRange
+
+import annotation.migration
 
 /**
  *  @author  Stephane Micheloud
@@ -172,14 +173,15 @@ extends ScalaNumber with ScalaNumericConversions
    */
   override def hashCode(): Int =
     if (isWhole) unifiedPrimitiveHashcode
-    else doubleValue.hashCode()
+    else doubleValue.##
 
   /** Compares this BigDecimal with the specified value for equality.
    */
   override def equals (that: Any): Boolean = that match {
-    case that: BigDecimal => this equals that
-    case that: BigInt     => this.toBigIntExact exists (that equals _)
-    case x                => (this <= BigDecimal.MaxLong && this >= BigDecimal.MinLong) && unifiedPrimitiveEquals(x)
+    case that: BigDecimal     => this equals that
+    case that: BigInt         => this.toBigIntExact exists (that equals _)
+    case _: Float | _: Double => unifiedPrimitiveEquals(that)
+    case x                    => isWhole && this <= BigDecimal.MaxLong && this >= BigDecimal.MinLong && unifiedPrimitiveEquals(x)
   }
 
   protected[math] def isWhole = (this remainder 1) == BigDecimal(0)
@@ -249,6 +251,10 @@ extends ScalaNumber with ScalaNumericConversions
   /** Remainder after dividing this by that.
    */
   def remainder (that: BigDecimal): BigDecimal = this.bigDecimal.remainder(that.bigDecimal, mc)
+
+  /** Remainder after dividing this by that.
+   */
+  def % (that: BigDecimal): BigDecimal = this.remainder(that)
 
   /** Returns a BigDecimal whose value is this ** n.
    */

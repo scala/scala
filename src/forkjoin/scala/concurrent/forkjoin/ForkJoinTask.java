@@ -1031,9 +1031,10 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
         return (Unsafe) f.get(null);
     }
 
-    private static long fieldOffset(String fieldName)
+    private static long fieldOffset(String fieldName, Unsafe unsafe)
             throws NoSuchFieldException {
-        return _unsafe.objectFieldOffset
+        // do not use _unsafe to avoid NPE
+        return unsafe.objectFieldOffset
             (ForkJoinTask.class.getDeclaredField(fieldName));
     }
 
@@ -1041,12 +1042,22 @@ public abstract class ForkJoinTask<V> implements Future<V>, Serializable {
     static final long statusOffset;
 
     static {
+        Unsafe tmpUnsafe = null;
+        long tmpStatusOffset = 0;
         try {
-            _unsafe = getUnsafe();
-            statusOffset = fieldOffset("status");
+            tmpUnsafe = getUnsafe();
+            tmpStatusOffset = fieldOffset("status", tmpUnsafe);
         } catch (Throwable e) {
-            throw new RuntimeException("Could not initialize intrinsics", e);
+            // Ignore the failure to load sun.misc.Unsafe on Android so
+            // that platform can use the actor library without the
+            // fork/join scheduler.
+            String vmVendor = System.getProperty("java.vm.vendor");
+            if (!vmVendor.contains("Android")) {
+	        throw new RuntimeException("Could not initialize intrinsics", e);
+            }
         }
+        _unsafe = tmpUnsafe;
+	statusOffset = tmpStatusOffset;
     }
 
 }

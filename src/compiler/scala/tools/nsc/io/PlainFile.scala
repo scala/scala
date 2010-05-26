@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 
 package scala.tools.nsc
@@ -11,8 +10,7 @@ package io
 import java.io.{ File => JFile, FileInputStream, FileOutputStream, IOException }
 import PartialFunction._
 
-object PlainFile
-{
+object PlainFile {
   /**
    * If the specified File exists, returns an abstract file backed
    * by it. Otherwise, returns null.

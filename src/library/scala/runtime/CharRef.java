@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.runtime;
@@ -17,5 +16,5 @@ public class CharRef implements java.io.Serializable {
 
     public char elem;
     public CharRef(char elem) { this.elem = elem; }
-    public String toString() { return Character.toString(elem); }
+    public String toString() { return java.lang.Character.toString(elem); }
 }

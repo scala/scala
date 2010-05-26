@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 
 package scala.tools.nsc
@@ -231,7 +230,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    * creating an empty file if it does not already existing.
    */
   def fileNamed(name: String): AbstractFile = {
-    assert(isDirectory)
+    assert(isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
     Option(lookupName(name, false)) getOrElse new PlainFile((sfile.get / name).createFile())
   }
 
@@ -240,7 +239,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
    * does not already exist.
    */
   def subdirectoryNamed(name: String): AbstractFile = {
-    assert (isDirectory)
+    assert (isDirectory, "Tried to find '%s' in '%s' but it is not a directory".format(name, path))
     Option(lookupName(name, true)) getOrElse new PlainFile((sfile.get / name).createDirectory())
   }
 

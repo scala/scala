@@ -72,7 +72,7 @@ object Decode {
     }
     yield {
       val f: PartialFunction[Symbol, List[String]] =
-        if (inner.isEmpty) {
+        if (inner == "") {
           case x: MethodSymbol if x.isCaseAccessor && (x.name endsWith " ") => List(x.name dropRight 1)
         }
         else {

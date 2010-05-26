@@ -3,7 +3,7 @@ package interactive
 
 import ast.Trees
 import symtab.Positions
-import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
+import scala.tools.nsc.util.{SourceFile, Position, RangePosition, NoPosition, WorkScheduler}
 import scala.collection.mutable.ListBuffer
 
 /** Handling range positions

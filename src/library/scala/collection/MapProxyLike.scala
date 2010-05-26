@@ -12,8 +12,8 @@ import generic._
 
 // Methods could be printed by  cat MapLike.scala | egrep '^  (override )?def'
 
-/** This trait implements a proxy for iterable objects. It forwards
- *  all calls to a different iterable object
+/** This trait implements a proxy for Map objects. It forwards
+ *  all calls to a different Map object.
  *
  *  @author  Martin Odersky
  *  @version 2.8
@@ -23,12 +23,10 @@ trait MapProxyLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
       extends MapLike[A, B, This]
       with IterableProxyLike[(A, B), This]
 {
-  // def empty: This
-  // def + [B1 >: B] (kv: (A, B1)): Map[A, B1]
-  // def - (key: A): This
-
   override def get(key: A): Option[B] = self.get(key)
   override def iterator: Iterator[(A, B)] = self.iterator
+  override def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = self.+(kv)
+  override def - (key: A): This = self.-(key)
   override def isEmpty: Boolean = self.isEmpty
   override def getOrElse[B1 >: B](key: A, default: => B1): B1 = self.getOrElse(key, default)
   override def apply(key: A): B = self.apply(key)
@@ -42,11 +40,10 @@ trait MapProxyLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   override def default(key: A): B = self.default(key)
   override def filterKeys(p: A => Boolean) = self.filterKeys(p)
   override def mapValues[C](f: B => C) = self.mapValues(f)
-
-  // override def updated [B1 >: B](key: A, value: B1) = self + ((key, value))
-  // override def + [B1 >: B](elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *) = self.+(elem1, elem2, elems: _*)
-  // override def ++[B1 >: B](elems: Traversable[(A, B1)]) = self.++(elems)
-  // override def ++[B1 >: B](iter: Iterator[(A, B1)]) = self.++(iter)
+  override def updated [B1 >: B](key: A, value: B1): Map[A, B1] = self.updated(key, value)
+  override def + [B1 >: B] (kv1: (A, B1), kv2: (A, B1), kvs: (A, B1) *): Map[A, B1] = self.+(kv1, kv2, kvs: _*)
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] =  self.++(xs)
+  override def filterNot(p: ((A, B)) => Boolean) = self filterNot p
 
   override def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder =
     self.addString(b, start, sep, end)

@@ -2,7 +2,6 @@
  * System.Reflection-like API for acces to .NET assemblies (DLL & EXE)
  */
 
-// $Id$
 
 package ch.epfl.lamp.compiler.msil.util;
 

@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.collection
@@ -69,14 +68,14 @@ trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
      *  '''Note:''' `drop` is overridden to enable fast searching in the middle of indexed sequences.
      */
     override def drop(n: Int): Iterator[A] =
-      if (n > 0) new Elements(start + n, end) else this
+      if (n > 0) new Elements(i + n, end) else this
 
     /** $super
      *  '''Note:''' `take` is overridden to be symmetric to `drop`.
      */
     override def take(n: Int): Iterator[A] =
       if (n <= 0) Iterator.empty.buffered
-      else if (start + n < end) new Elements(start, start + n)
+      else if (i + n < end) new Elements(i, i + n)
       else this
   }
 

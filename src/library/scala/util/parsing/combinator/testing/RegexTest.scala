@@ -1,4 +1,3 @@
-// $Id$
 
 package scala.util.parsing.combinator.testing
 

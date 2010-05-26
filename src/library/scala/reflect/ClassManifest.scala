@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.reflect
@@ -86,7 +85,7 @@ trait ClassManifest[T] extends OptManifest[T] with Equals {
     case m: ClassManifest[_] if m canEqual this => this.erasure == m.erasure
     case _ => false
   }
-  override def hashCode = this.erasure.hashCode
+  override def hashCode = this.erasure.##
 
   protected def arrayClass[T](tp: Predef.Class[_]): Predef.Class[Array[T]] =
     java.lang.reflect.Array.newInstance(tp, 0).getClass.asInstanceOf[Predef.Class[Array[T]]]

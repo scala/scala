@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 //todo: allow infix type patterns
 
 
@@ -10,7 +9,7 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.util.{OffsetPosition, BatchSourceFile}
+import util.{ OffsetPosition, BatchSourceFile }
 import symtab.Flags
 import Tokens._
 
@@ -63,6 +62,13 @@ self =>
   class UnitParser(val unit: global.CompilationUnit, patches: List[BracePatch]) extends Parser {
 
     def this(unit: global.CompilationUnit) = this(unit, List())
+
+    /** The parse starting point depends on whether the source file is self-contained:
+     *  if not, the AST will be supplemented.
+     */
+    def parseStartRule =
+      if (unit.source.isSelfContained) () => compilationUnit()
+      else () => scriptBody()
 
     val in = new UnitScanner(unit, patches)
     in.init()
@@ -170,12 +176,64 @@ self =>
      */
     var classContextBounds: List[Tree] = Nil
 
-    /** this is the general parse method
+    def parseStartRule: () => Tree
+
+    /** This is the general parse entry point.
      */
     def parse(): Tree = {
-      val t = compilationUnit()
+      val t = parseStartRule()
       accept(EOF)
       t
+    }
+
+    /** This is the parse entry point for code which is not self-contained, e.g.
+     *  a script which is a series of template statements.  They will be
+     *  swaddled in Trees until the AST is equivalent to the one returned
+     *  by compilationUnit().
+     */
+    def scriptBody(): Tree = {
+      val stmts = templateStatSeq(false)._2
+      accept(EOF)
+
+      /** Here we are building an AST representing the following source fiction,
+       *  where <moduleName> is from -Xscript (defaults to "Main") and <stmts> are
+       *  the result of parsing the script file.
+       *
+       *  object <moduleName> {
+       *    def main(argv: Array[String]): Unit = {
+       *      val args = argv
+       *      new AnyRef {
+       *        <stmts>
+       *      }
+       *    }
+       *  }
+       */
+      import definitions._
+
+      def emptyPkg    = atPos(0, 0, 0) { Ident(nme.EMPTY_PACKAGE_NAME) }
+      def emptyInit   = DefDef(
+        NoMods,
+        nme.CONSTRUCTOR,
+        Nil,
+        List(Nil),
+        TypeTree(),
+        Block(List(Apply(Select(Super("", ""), nme.CONSTRUCTOR), Nil)), Literal(Constant(())))
+      )
+
+      // def main
+      def mainParamType = AppliedTypeTree(Ident("Array".toTypeName), List(Ident("String".toTypeName)))
+      def mainParameter = List(ValDef(Modifiers(Flags.PARAM), "argv", mainParamType, EmptyTree))
+      def mainSetArgv   = List(ValDef(NoMods, "args", TypeTree(), Ident("argv")))
+      def mainNew       = makeNew(Nil, emptyValDef, stmts, List(Nil), NoPosition, NoPosition)
+      def mainDef       = DefDef(NoMods, "main", Nil, List(mainParameter), scalaDot(nme.Unit.toTypeName), Block(mainSetArgv, mainNew))
+
+      // object Main
+      def moduleName  = ScriptRunner scriptMain settings
+      def moduleBody  = Template(List(scalaScalaObjectConstr), emptyValDef, List(emptyInit, mainDef))
+      def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
+
+      // package <empty> { ... }
+      makePackaging(0, emptyPkg, List(moduleDef))
     }
 
 /* --------------- PLACEHOLDERS ------------------------------------------- */
@@ -1407,7 +1465,7 @@ self =>
       else accept(LARROW)
       val rhs = expr()
       enums += makeGenerator(r2p(start, point, in.lastOffset), pat, tok == EQUALS, rhs)
-      if (in.token == IF) enums += makeFilter(in.offset, guard())
+      while (in.token == IF) enums += makeFilter(in.offset, guard())
     }
 
     def makeFilter(start: Int, tree: Tree) = Filter(r2p(start, tree.pos.point, tree.pos.endOrPoint), tree)
@@ -1487,7 +1545,9 @@ self =>
     def pattern3(seqOK: Boolean): Tree = {
       val base = opstack
       var top = simplePattern(seqOK)
-      if (seqOK && isIdent && in.name == STAR)
+      // See ticket #3189 for the motivation for the null check.
+      // TODO: dredge out the remnants of regexp patterns.
+      if (seqOK && isIdent && in.name == STAR && in.prev.name != null)
         return atPos(top.pos.startOrPoint, in.skipToken())(Star(stripParens(top)))
 
       while (isIdent && in.name != BAR) {
@@ -1727,8 +1787,11 @@ self =>
             mods = mods withPosition (in.token, tokenRange(in))
             mods |= Flags.MUTABLE
             in.nextToken()
-          } else if (!caseParam) {
-            mods |= Flags.PRIVATE | Flags.LOCAL
+          } else {
+            if (mods.flags != Flags.PARAMACCESSOR) accept(VAL)
+            if (!caseParam) {
+              mods |= Flags.PRIVATE | Flags.LOCAL
+            }
           }
           if (caseParam) {
             mods |= Flags.CASEACCESSOR

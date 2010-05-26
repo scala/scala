@@ -2,8 +2,7 @@ import collection._
 
 object Test extends Application {
 
-  def orderedTraversableTest(empty: Traversable[Int])
-  {
+  def orderedTraversableTest(empty: Traversable[Int]) {
     println("new test starting with "+empty)
     assert(empty.isEmpty)
     val ten = empty ++ List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
@@ -113,6 +112,9 @@ object Test extends Application {
     assert(ten.endsWith(List(9, 10)))
     assert(ten.endsWith(List()))
     assert(ten.indexOfSlice(List(3, 4, 5)) == 2, ten.indexOfSlice(List(3, 4, 5)))
+    assert(ten.lastIndexOfSlice(List(8, 9, 10)) == 7)
+    assert(ten.lastIndexOfSlice(List(1, 2, 3)) == 0)
+    assert(ten.lastIndexOfSlice(List(9, 10, 11)) == -1)
     assert(ten contains 1)
     assert(ten contains 10)
     assert(!(ten contains 0))

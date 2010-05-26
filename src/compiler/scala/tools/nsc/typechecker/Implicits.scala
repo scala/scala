@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 //todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
 //todo: use inherited type info also for vars and values
@@ -127,8 +126,7 @@ self: Analyzer =>
       case _ => false
     }
 
-    override def hashCode =
-      name.hashCode + pre.hashCode + sym.hashCode
+    override def hashCode = name.## + pre.## + sym.##
 
     override def toString = "ImplicitInfo(" + name + "," + pre + "," + sym + ")"
   }
@@ -573,6 +571,19 @@ self: Analyzer =>
       /** A set containing names that are shadowed by implicit infos */
       lazy val shadowed = new HashSet[Name]("shadowed", 512)
 
+      // #3453
+      // in addition to the implicit symbols that may shadow the implicit with name `name`,
+      // this method tests whether there's a non-implicit symbol with name `name` in scope
+      // inspired by logic in typedIdent
+      def nonImplicitSynonymInScope(name: Name) = {
+        val defEntry = context.scope.lookupEntry(name)
+        (defEntry ne null) &&
+        reallyExists(defEntry.sym) &&
+        !defEntry.sym.isImplicit // the implicit ones are handled by the `shadowed` set above
+        // also, subsumes the test that defEntry.sym ne info.sym
+        // (the `info` that's in scope at the call to nonImplicitSynonymInScope in tryImplicit)
+      }
+
       /** Is `sym' the standard conforms method in Predef?
        *  Note: DON't replace this by sym == Predef_conforms, as Predef_conforms is a `def'
        *  which does a member lookup (it can't be a lazy val because we might reload Predef
@@ -594,7 +605,7 @@ self: Analyzer =>
       def tryImplicit(info: ImplicitInfo): SearchResult = {
         incCounter(triedImplicits)
         if (info.isCyclicOrErroneous ||
-            (isLocal && shadowed.contains(info.name)) ||
+            (isLocal && (shadowed.contains(info.name) || nonImplicitSynonymInScope(info.name))) ||
             (isView && isConformsMethod(info.sym)) ||
             //@M this condition prevents no-op conversions, which are a problem (besides efficiency),
             // one example is removeNames in NamesDefaults, which relies on the type checker failing in case of ambiguity between an assignment/named arg
@@ -616,6 +627,11 @@ self: Analyzer =>
           for (i <- is) shadowed addEntry i.name
         applicable
       }
+
+      // #3453 -- alternative fix, seems not to be faster than encoding the set as the boolean predicate nonImplicitSynonymInScope
+      // in addition to the *implicit* symbols that may shadow the implicit with name `name` (added to shadowed by addAppInfos)
+      // add names of non-implicit symbols that are in scope (accessible without prefix)
+      // for(sym <- context.scope; if !sym.isImplicit) shadowed addEntry sym.name
 
       var applicable = Map[ImplicitInfo, SearchResult]()
       for (is <- iss) applicable = addAppInfos(is, applicable)

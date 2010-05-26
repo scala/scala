@@ -3,7 +3,6 @@
  * @author  Iulian Dragos
  */
 
-// $Id$
 
 package scala.tools.nsc
 package backend.jvm
@@ -815,7 +814,10 @@ abstract class GenJVM extends SubComponent {
       import JAccessFlags._
       val moduleName = javaName(module) // + "$"
       val mirrorName = moduleName.substring(0, moduleName.length() - 1)
-      val paramJavaTypes = m.info.paramTypes map toTypeKind
+
+      val methodInfo = module.thisType.memberInfo(m)
+
+      val paramJavaTypes = methodInfo.paramTypes map toTypeKind
       val paramNames: Array[String] = new Array[String](paramJavaTypes.length);
 
       for (i <- 0 until paramJavaTypes.length)
@@ -823,7 +825,7 @@ abstract class GenJVM extends SubComponent {
 
       val mirrorMethod = jclass.addNewMethod(ACC_PUBLIC | ACC_FINAL | ACC_STATIC,
         javaName(m),
-        javaType(m.info.resultType),
+        javaType(methodInfo.resultType),
         javaTypes(paramJavaTypes),
         paramNames);
       val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode];
@@ -839,7 +841,7 @@ abstract class GenJVM extends SubComponent {
         i += 1
       }
 
-      mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), mirrorMethod.getType().asInstanceOf[JMethodType])
+      mirrorCode.emitINVOKEVIRTUAL(moduleName, mirrorMethod.getName(), javaType(m).asInstanceOf[JMethodType])
       mirrorCode.emitRETURN(mirrorMethod.getReturnType())
 
       addRemoteException(mirrorMethod, m)
@@ -1701,7 +1703,7 @@ abstract class GenJVM extends SubComponent {
 
     def indexOf(local: Local): Int = {
       assert(local.index >= 0,
-             "Invalid index for: " + local + "{" + local.hashCode + "}: ")
+             "Invalid index for: " + local + "{" + local.## + "}: ")
       local.index
     }
 
@@ -1716,7 +1718,7 @@ abstract class GenJVM extends SubComponent {
 
       for (l <- m.locals) {
         if (settings.debug.value)
-          log("Index value for " + l + "{" + l.hashCode + "}: " + idx)
+          log("Index value for " + l + "{" + l.## + "}: " + idx)
         l.index = idx
         idx += sizeOf(l.kind)
       }

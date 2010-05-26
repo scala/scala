@@ -2,13 +2,11 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 package scala.tools.nsc
 
-import scala.tools.nsc.util.{FreshNameCreator,OffsetPosition,Position,NoPosition,SourceFile}
-import scala.tools.nsc.io.AbstractFile
-import scala.collection.mutable.{LinkedHashSet, HashSet, HashMap, ListBuffer}
+import util.{ FreshNameCreator,Position,NoPosition,SourceFile }
+import scala.collection.mutable.{ LinkedHashSet, HashSet, HashMap, ListBuffer }
 
 trait CompilationUnits { self: Global =>
 

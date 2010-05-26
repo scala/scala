@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 package scala.util.parsing.combinator.testing
 import scala.util.parsing.combinator._

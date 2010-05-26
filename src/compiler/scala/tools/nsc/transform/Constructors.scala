@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author
  */
-// $Id$
 
 package scala.tools.nsc
 package transform
@@ -28,6 +27,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
     import collection.mutable
 
     private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = new mutable.HashMap[Symbol, List[Tree]]
+    private val ctorParams: mutable.Map[Symbol, List[Symbol]] = new mutable.HashMap[Symbol, List[Symbol]]
 
     def transformClassTemplate(impl: Template): Template = {
       val clazz = impl.symbol.owner  // the transformed class
@@ -78,18 +78,22 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // A transformer for expressions that go into the constructor
       val intoConstructorTransformer = new Transformer {
+        def isParamRef(sym: Symbol) =
+          (sym hasFlag PARAMACCESSOR) &&
+          sym.owner == clazz &&
+          !(sym.isGetter && sym.accessed.isVariable) &&
+          !sym.isSetter
         override def transform(tree: Tree): Tree = tree match {
           case Apply(Select(This(_), _), List()) =>
             // references to parameter accessor methods of own class become references to parameters
             // outer accessors become references to $outer parameter
-            if ((tree.symbol hasFlag PARAMACCESSOR) && tree.symbol.owner == clazz)
+            if (isParamRef(tree.symbol))
               gen.mkAttributedIdent(parameter(tree.symbol.accessed)) setPos tree.pos
             else if (tree.symbol.outerSource == clazz && !clazz.isImplClass)
               gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
             else
               super.transform(tree)
-          case Select(This(_), _)
-          if ((tree.symbol hasFlag PARAMACCESSOR) && !tree.symbol.isSetter && tree.symbol.owner == clazz) =>
+          case Select(This(_), _) if (isParamRef(tree.symbol)) =>
             // references to parameter accessor field of own class become references to parameters
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           case Select(_, _) =>
@@ -301,7 +305,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             case _ => false
           }
 
-        log("merging: " + originalStats.mkString("\n") + " : " + specializedStats.mkString("\n"))
+        log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
         val res = for (s <- originalStats; val stat = s.duplicate) yield {
           log("merge: looking at " + stat)
           val stat1 = stat match {
@@ -315,8 +319,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
 
           if (stat1 eq stat) {
+            assert(ctorParams(genericClazz).length == constrParams.length)
+            // this is just to make private fields public
+            (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), constrParams, null, true))(stat1)
+
             // statements coming from the original class need retyping in the current context
             if (settings.debug.value) log("retyping " + stat1)
+
             val d = new specializeTypes.Duplicator
             d.retyped(localTyper.context1.asInstanceOf[d.Context],
                       stat1,
@@ -351,6 +360,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         if (usesSpecializedField && shouldGuard && postfix.nonEmpty) {
           // save them for duplication in the specialized subclass
           guardedCtorStats(clazz) = postfix
+          ctorParams(clazz) = constrParams
 
           val tree =
             If(

@@ -1,4 +1,3 @@
-// $Id$
 
 package ch.epfl.lamp.util;
 

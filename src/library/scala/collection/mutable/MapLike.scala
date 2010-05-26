@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.collection
@@ -80,9 +79,13 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   override def updated[B1 >: B](key: A, value: B1): Map[A, B1] = this + ((key, value))
 
-  /** Add a new key/value mapping and return the map itself.
+  /** Creates a new map containing a new key/value mapping and all the key/value mappings
+   *  of this map.
+   *
+   *  Mapping `kv` will override existing mappings from this map with the same key.
    *
    *  @param kv    the key/value mapping to be added
+   *  @return      a new map containing mappings of this map and the mapping `kv`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new map.  To add an element as a\n"+
@@ -90,12 +93,15 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   )
   def + [B1 >: B] (kv: (A, B1)): Map[A, B1] = clone().asInstanceOf[Map[A, B1]] += kv
 
-  /** Adds two or more key/value mappings and return the map itself.
-   *  with the added elements.
+  /** Creates a new map containing two or more key/value mappings and all the key/value
+   *  mappings of this map.
+   *
+   *  Specified mappings will override existing mappings from this map with the same keys.
    *
    *  @param elem1 the first element to add.
    *  @param elem2 the second element to add.
    *  @param elems the remaining elements to add.
+   *  @return      a new map containing mappings of this map and two or more specified mappings.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new map.  To add an element as a\n"+
@@ -104,12 +110,13 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): Map[A, B1] =
     clone().asInstanceOf[Map[A, B1]] += elem1 += elem2 ++= elems
 
-  /** Adds a number of elements provided by a traversable object
-   *  via its `iterator` method and returns
-   *  either the collection itself (if it is mutable), or a new collection
-   *  with the added elements.
+  /** Creates a new map containing the key/value mappings provided by the specified traversable object
+   *  and all the key/value mappings of this map.
    *
-   *  @param iter     the traversable object.
+   *  Note that existing mappings from this map with the same key as those in `xs` will be overriden.
+   *
+   *  @param xs     the traversable object.
+   *  @return       a new map containing mappings of this map and those provided by `xs`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new map.  To add the elements as a\n"+
@@ -136,8 +143,11 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   def -= (key: A): this.type
 
-  /** Delete a key from this map if it is present and return the map itself.
+  /** Creates a new map with all the key/value mappings of this map except the key/value mapping
+   *  with the specified key.
+   *
    *  @param    key the key to be removed
+   *  @return   a new map with all the mappings of this map except that with a key `key`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new map.  To remove an element as a\n"+
@@ -205,12 +215,14 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
    */
   def result: This = repr
 
-  /** Removes two or more elements from this collection and returns
-   *  the collection itself.
+  /** Creates a new map with all the key/value mappings of this map except mappings with keys
+   *  equal to any of the two or more specified keys.
    *
    *  @param elem1 the first element to remove.
    *  @param elem2 the second element to remove.
    *  @param elems the remaining elements to remove.
+   *  @return      a new map containing all the mappings of this map except mappings
+   *               with a key equal to `elem1`, `elem2` or any of `elems`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new map.  To remove an element as a\n"+
@@ -219,10 +231,12 @@ trait MapLike[A, B, +This <: MapLike[A, B, This] with Map[A, B]]
   override def -(elem1: A, elem2: A, elems: A*): This =
     clone() -= elem1 -= elem2 --= elems
 
-  /** Removes a number of elements provided by a Traversable object and returns
-   *  the collection itself.
+  /** Creates a new map with all the key/value mappings of this map except mappings with keys
+   *  equal to any of those provided by the specified traversable object.
    *
-   *  @param iter     the Traversable object.
+   *  @param xs       the traversable object.
+   *  @return         a new map with all the key/value mappings of this map except mappings
+   *                  with a key equal to a key from `xs`.
    */
   @migration(2, 8,
     "As of 2.8, this operation creates a new map.  To remove the elements as a\n"+

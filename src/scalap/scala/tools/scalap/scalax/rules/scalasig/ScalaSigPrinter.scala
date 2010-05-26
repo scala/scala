@@ -5,7 +5,6 @@
 **
 */
 
-// $Id$
 
 package scala.tools.scalap
 package scalax

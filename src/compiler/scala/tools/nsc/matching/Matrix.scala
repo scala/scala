@@ -16,7 +16,7 @@ trait Matrix extends MatrixAdditions {
   import analyzer.Typer
   import CODE._
   import Debug._
-  import Flags.{ TRANS_FLAG }
+  import Flags.{ TRANS_FLAG, SYNTHETIC }
 
   /** Translation of match expressions.
    *
@@ -201,7 +201,7 @@ trait Matrix extends MatrixAdditions {
     {
       val n: Name = if (name == null) newName(pos, "temp") else name
       // careful: pos has special meaning
-      owner.newVariable(pos, n) setInfo tpe setFlag (0L /: flags)(_|_)
+      owner.newVariable(pos, n) setInfo tpe setFlag (SYNTHETIC.toLong /: flags)(_|_)
     }
 
     def typedValDef(x: Symbol, rhs: Tree) =

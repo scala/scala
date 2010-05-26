@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.collection
@@ -828,7 +827,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
       // if 0 elements are requested, or if the number of newly obtained
       // elements is less than the gap between sequences, we are done.
       def deliver(howMany: Int) = {
-        (howMany > 0 && len > gap) && {
+        (howMany > 0 && (isFirst || len > gap)) && {
           if (!isFirst)
             buffer trimStart (step min prevSize)
 

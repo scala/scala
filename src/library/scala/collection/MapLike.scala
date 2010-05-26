@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 package scala.collection
 
@@ -330,7 +329,7 @@ self =>
   override /*PartialFunction*/
   def toString = super[IterableLike].toString
 
-  override def hashCode() = this map (_.hashCode) sum
+  override def hashCode() = this map (_.##) sum
 
   /** Compares two maps structurally; i.e. checks if all mappings
    *  contained in this map are also contained in the other map,

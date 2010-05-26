@@ -408,7 +408,13 @@ trait TraversableOnce[+A] {
    *  $willNotTerminateInf
    *  @return an indexed sequence containing all elements of this $coll.
    */
-  def toIndexedSeq[B >: A]: mutable.IndexedSeq[B] = new ArrayBuffer[B] ++= self
+  def toIndexedSeq[B >: A]: immutable.IndexedSeq[B] = immutable.IndexedSeq() ++ self
+
+  /** Converts this $coll to a mutable buffer.
+   *  $willNotTerminateInf
+   *  @return a buffer containing all elements of this $coll.
+   */
+  def toBuffer[B >: A]: mutable.Buffer[B] = new ArrayBuffer[B] ++= self
 
   /** Converts this $coll to a stream.
    *  $willNotTerminateInf

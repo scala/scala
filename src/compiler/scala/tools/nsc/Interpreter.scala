@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 package scala.tools.nsc
 
@@ -27,7 +26,7 @@ import scala.util.control.Exception.{ Catcher, catching, ultimately, unwrapping 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
-import util.{ SourceFile, BatchSourceFile, ClassPath, Chars }
+import util.{ SourceFile, BatchSourceFile, ScriptSourceFile, ClassPath, Chars, stringFromWriter }
 import scala.reflect.NameTransformer
 import scala.tools.nsc.{ InterpreterResults => IR }
 import interpreter._
@@ -76,6 +75,11 @@ import Interpreter._
 class Interpreter(val settings: Settings, out: PrintWriter) {
   repl =>
 
+  def println(x: Any) = {
+    out.println(x)
+    out.flush()
+  }
+
   /** construct an interpreter that reports to Console */
   def this(settings: Settings) = this(settings, new NewLinePrintWriter(new ConsoleWriter, true))
   def this() = this(new Settings())
@@ -109,28 +113,37 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       |}
       |""".stripMargin
 
-    val run = new _compiler.Run()
-    run compileSources List(new BatchSourceFile("<init>", source))
-    if (settings.debug.value) {
-      out println "Repl compiler initialized."
-      out.flush()
+    try {
+      new _compiler.Run() compileSources List(new BatchSourceFile("<init>", source))
+      if (isReplDebug || settings.debug.value)
+        println("Repl compiler initialized.")
+      true
     }
-    true
+    catch {
+      case MissingRequirementError(msg) => println("""
+        |Failed to initialize compiler: %s not found.
+        |** Note that as of 2.8 scala does not assume use of the java classpath.
+        |** For the old behavior pass -usejavacp to scala, or if using a Settings
+        |** object programatically, settings.usejavacp.value = true.""".stripMargin.format(msg)
+      )
+      false
+    }
   }
 
   // set up initialization future
-  private var _isInitialized: () => Boolean = () => false
+  private var _isInitialized: () => Boolean = null
   def initialize() = synchronized {
-    if (!_isInitialized())
+    if (_isInitialized == null)
       _isInitialized = scala.concurrent.ops future _initialize()
   }
 
   /** the public, go through the future compiler */
   lazy val compiler: Global = {
     initialize()
-    _isInitialized()   // blocks until it is
 
-    _compiler
+    // blocks until it is ; false means catastrophic failure
+    if (_isInitialized()) _compiler
+    else null
   }
 
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
@@ -173,16 +186,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** interpreter settings */
   lazy val isettings = new InterpreterSettings(this)
-
-  /** Heuristically strip interpreter wrapper prefixes
-   *  from an interpreter output string.
-   */
-  def stripWrapperGunk(str: String): String =
-    if (isettings.unwrapStrings) {
-      val wrapregex = """(line[0-9]+\$object[$.])?(\$iw[$.])*"""
-      str.replaceAll(wrapregex, "")
-    }
-    else str
 
   /** Instantiate a compiler.  Subclasses can override this to
    *  change the compiler class used by this interpreter. */
@@ -237,6 +240,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private val usedNameMap = new HashMap[Name, Request]()
   private val boundNameMap = new HashMap[Name, Request]()
   private def allHandlers = prevRequests.toList flatMap (_.handlers)
+  private def allReqAndHandlers = prevRequests.toList flatMap (req => req.handlers map (req -> _))
 
   def printAllTypeOf = {
     prevRequests foreach { req =>
@@ -322,15 +326,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def getVarName = varNameCreator()
   def getSynthVarName = synthVarNameCreator()
 
-  /** generate a string using a routine that wants to write on a stream */
-  private def stringFrom(writer: PrintWriter => Unit): String = {
-    val stringWriter = new StringWriter()
-    val stream = new NewLinePrintWriter(stringWriter)
-    writer(stream)
-    stream.close
-    stringWriter.toString
-  }
-
   /** Truncate a string if it is longer than isettings.maxPrintString */
   private def truncPrintString(str: String): String = {
     val maxpr = isettings.maxPrintString
@@ -341,7 +336,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** Clean up a string for output */
-  private def clean(str: String) = truncPrintString(stripWrapperGunk(str))
+  private def clean(str: String) = truncPrintString(
+    if (isettings.unwrapStrings) stripWrapperGunk(str)
+    else str
+  )
 
   /** Indent some code by the width of the scala> prompt.
    *  This way, compiler error messages read better.
@@ -350,7 +348,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def indentCode(code: String) = {
     /** Heuristic to avoid indenting and thereby corrupting """-strings and XML literals. */
     val noIndent = (code contains "\n") && (List("\"\"\"", "</", "/>") exists (code contains _))
-    stringFrom(str =>
+    stringFromWriter(str =>
       for (line <- code.lines) {
         if (!noIndent)
           str.print(spaces)
@@ -419,10 +417,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       }
 
       /** Flatten the handlers out and pair each with the original request */
-      val rhpairs = prevRequests.reverse.toList flatMap { req =>
-        req.handlers map (ReqAndHandler(req, _))
-      }
-      select(rhpairs, wanted).reverse
+      select(allReqAndHandlers reverseMap  { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
     }
 
     val code, trailingBraces, accessPath = new StringBuffer
@@ -579,26 +574,28 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    */
   def interpret(line: String): IR.Result = interpret(line, false)
   def interpret(line: String, synthetic: Boolean): IR.Result = {
-    val req = requestFromLine(line, synthetic) match {
-      case Left(result) => return result
-      case Right(req)   => req
+    def loadAndRunReq(req: Request) = {
+      val (result, succeeded) = req.loadAndRun
+      if (printResults || !succeeded)
+        out print clean(result)
+
+      // book-keeping
+      if (succeeded && !synthetic)
+        recordRequest(req)
+
+      if (succeeded) IR.Success
+      else IR.Error
     }
-    // null indicates a disallowed statement type; otherwise compile and
-    // fail if false (implying e.g. a type error)
-    if (req == null || !req.compile)
-      return IR.Error
 
-    val (result, succeeded) = req.loadAndRun
-    if (printResults || !succeeded)
-      out print clean(result)
-
-    if (succeeded) {
-      if (!synthetic)
-        recordRequest(req)    // book-keeping
-
-      IR.Success
+    if (compiler == null) IR.Error
+    else requestFromLine(line, synthetic) match {
+      case Left(result) => result
+      case Right(req)   =>
+        // null indicates a disallowed statement type; otherwise compile and
+        // fail if false (implying e.g. a type error)
+        if (req == null || !req.compile) IR.Error
+        else loadAndRunReq(req)
     }
-    else IR.Error
   }
 
   /** A name creator used for objects created by <code>bind()</code>. */
@@ -682,7 +679,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
     def resultExtractionCode(req: Request, code: PrintWriter) { }
 
-    override def toString = "%s(usedNames = %s)".format(this.getClass, usedNames)
+    override def toString = "%s(used = %s)".format(this.getClass.toString split '.' last, usedNames)
   }
 
   private class GenericHandler(member: Tree) extends MemberHandler(member)
@@ -840,7 +837,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def toCompute = line
 
     /** generate the source code for the object that computes this request */
-    def objectSourceCode: String = stringFrom { code =>
+    def objectSourceCode: String = stringFromWriter { code =>
       val preamble = """
         |object %s {
         |  %s%s
@@ -854,7 +851,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** generate source code for the object that retrieves the result
         from objectSourceCode */
-    def resultObjectSourceCode: String = stringFrom { code =>
+    def resultObjectSourceCode: String = stringFromWriter { code =>
       /** We only want to generate this code when the result
        *  is a value which can be referred to as-is.
        */
@@ -975,7 +972,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         case t: Throwable if bindLastException =>
           withoutBindingLastException {
             quietBind("lastException", "java.lang.Throwable", t)
-            (stringFrom(t.printStackTrace(_)), false)
+            (stringFromWriter(t.printStackTrace(_)), false)
           }
       }
 
@@ -985,6 +982,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         }
       }
     }
+
+    override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
   }
 
   /** A container class for methods to be injected into the repl

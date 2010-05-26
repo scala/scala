@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 package scala.tools.nsc
 package util
@@ -27,7 +26,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   private def index(x: Int): Int = math.abs(x % capacity)
 
   def findEntryOrUpdate(x: T): T = {
-    var h = index(x.hashCode())
+    var h = index(x.##)
     var entry = table(h)
     while (entry ne null) {
       if (x == entry)
@@ -43,7 +42,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   }
 
   def findEntry(x: T): T = {
-    var h = index(x.hashCode())
+    var h = index(x.##)
     var entry = table(h)
     while ((entry ne null) && entry != x) {
       h = index(h + 1)
@@ -53,7 +52,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   }
 
   def addEntry(x: T) {
-    var h = index(x.hashCode())
+    var h = index(x.##)
     var entry = table(h)
     while (entry ne null) {
       if (entry == x) return
@@ -77,7 +76,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   }
 
   private def addOldEntry(x: T) {
-    var h = index(x.hashCode())
+    var h = index(x.##)
     var entry = table(h)
     while (entry ne null) {
       h = index(h + 1)

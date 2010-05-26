@@ -3,7 +3,6 @@
  * @author  Stephane Micheloud
  */
 
-// $Id$
 
 package scala.tools.nsc
 

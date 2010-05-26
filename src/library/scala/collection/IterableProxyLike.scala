@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 
 package scala.collection
@@ -16,9 +15,8 @@ import mutable.Buffer
 
 // Methods could be printed by  cat IterableLike.scala | egrep '^  (override )?def'
 
-
-/** This trait implements a proxy for iterable objects. It forwards
- *  all calls to a different iterable object
+/** This trait implements a proxy for Iterable objects. It forwards
+ *  all calls to a different Iterable object.
  *
  *  @author  Martin Odersky
  *  @version 2.8
@@ -26,8 +24,7 @@ import mutable.Buffer
  */
 trait IterableProxyLike[+A, +Repr <: IterableLike[A, Repr] with Iterable[A]]
     extends IterableLike[A, Repr]
-    with TraversableProxyLike[A, Repr]
-{
+    with TraversableProxyLike[A, Repr] {
   override def iterator: Iterator[A] = self.iterator
   override def grouped(size: Int): Iterator[Repr] = self.grouped(size)
   override def sliding[B >: A](size: Int): Iterator[Repr] = self.sliding(size)

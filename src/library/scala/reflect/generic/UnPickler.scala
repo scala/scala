@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id: UnPickler.scala 20716 2010-01-28 14:14:20Z rytz $
 
 package scala.reflect
 package generic

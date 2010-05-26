@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-// $Id$
 
 package scala.xml
 package factory
@@ -41,7 +40,7 @@ trait NodeFactory[A <: Node]
     eqElements(n.child, children)
 
   def makeNode(pre: String, name: String, attrSeq: MetaData, scope: NamespaceBinding, children: Seq[Node]): A = {
-    val hash = Utility.hashCode( pre, name, attrSeq.hashCode(), scope.hashCode(), children)
+    val hash = Utility.hashCode( pre, name, attrSeq.##, scope.##, children)
     def cons(old: List[A]) = construct(hash, old, pre, name, attrSeq, scope, children)
 
     (cache get hash) match {

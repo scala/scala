@@ -41,7 +41,8 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This] with Traversable[
   def toSeq: Seq[A]
   def toSet[B >: A]: immutable.Set[B]
   def toStream: Stream[A]
-  def toIndexedSeq[B >: A]: mutable.IndexedSeq[B]
+  def toIndexedSeq[B >: A]: immutable.IndexedSeq[B]
+  def toBuffer[B >: A]: mutable.Buffer[B]
 
   // strings
   def addString(b: StringBuilder): StringBuilder

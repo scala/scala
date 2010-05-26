@@ -2,7 +2,6 @@
  * System.Reflection-like API for access to .NET assemblies (DLL & EXE)
  */
 
-// $Id$
 
 package ch.epfl.lamp.compiler.msil;
 
@@ -813,7 +812,7 @@ public abstract class Type extends MemberInfo {
 	if (k >= 0)
 	    cname = cname.substring(k + 1);
 	return  "[" + t.Assembly().GetName() + "]" + t +
-	    "(" + cname + "#" + Integer.toHexString(t.hashCode()) + ")";
+	    "(" + cname + "#" + Integer.toHexString(t.##) + ")";
     }
     private static String dumpType(Type t) {
 	StringBuffer str = new StringBuffer();

@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-// $Id$
 
 package scala.tools.nsc
 package typechecker
@@ -317,7 +316,7 @@ trait Contexts { self: Analyzer =>
     override def toString(): String = {
       if (this == NoContext) "NoContext"
       else owner.toString() + " @ " + tree.getClass() +
-           " " + tree.toString() + ", scope = " + scope.hashCode() +
+           " " + tree.toString() + ", scope = " + scope.## +
            " " + scope.toList + "\n:: " + outer.toString()
     }
 

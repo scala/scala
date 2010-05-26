@@ -2,7 +2,6 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author Gilles Dubochet
  */
-// $Id$
 
 package scala.tools.nsc
 package transform
