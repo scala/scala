@@ -8,7 +8,7 @@ object Test extends Application {
   printJSON("{\"name\": \"va1ue\"}")  // ticket #136
   printJSON("{\"name\": { \"name1\": \"va1ue1\", \"name2\": \"va1ue2\" } }")
   printJSON("{\"name\": \"\\u0022\"}")
-  printJSON("{\"age\": 0}") 
+  printJSON("{\"age\": 0}")
   println
 
   // from http://en.wikipedia.org/wiki/JSON
@@ -63,7 +63,7 @@ object Test extends Application {
   // from http://json.org/example.html
   val sample3 = """
 {"web-app": {
-  "servlet": [   
+  "servlet": [
     {
       "servlet-name": "cofaxCDS",
       "servlet-class": "org.cofax.cds.CDSServlet",
@@ -119,7 +119,7 @@ object Test extends Application {
     {
       "servlet-name": "cofaxAdmin",
       "servlet-class": "org.cofax.cds.AdminServlet"},
- 
+
     {
       "servlet-name": "fileServlet",
       "servlet-class": "org.cofax.cds.FileServlet"},
@@ -146,7 +146,7 @@ object Test extends Application {
     "cofaxAdmin": "/admin/*",
     "fileServlet": "/static/*",
     "cofaxTools": "/tools/*"},
- 
+
   "taglib": {
     "taglib-uri": "cofax.tld",
     "taglib-location": "/WEB-INF/tlds/cofax.tld"}
