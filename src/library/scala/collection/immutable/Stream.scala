@@ -609,8 +609,8 @@ object Stream extends SeqFactory[Stream] {
     if (n <= 0) Empty else new Cons(elem, fill(n-1)(elem))
 
   override def tabulate[A](n: Int)(f: Int => A): Stream[A] = {
-    def loop(i: Int) =
-      if (i >= n) Empty else new Cons(f(i), tabulate(i+1)(f))
+    def loop(i: Int): Stream[A] =
+      if (i >= n) Empty else new Cons(f(i), loop(i+1))
     loop(0)
   }
 
