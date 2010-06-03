@@ -17,7 +17,7 @@ import scala.io.{ Source, Codec }
 
 object ConstructingParser {
   def fromFile(inp: File, preserveWS: Boolean) =
-    new ConstructingParser(Source.fromFile(inp)(), preserveWS) initialize
+    new ConstructingParser(Source.fromFile(inp), preserveWS) initialize
 
   def fromSource(inp: Source, preserveWS: Boolean) =
     new ConstructingParser(inp, preserveWS) initialize

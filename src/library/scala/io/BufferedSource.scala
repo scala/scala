@@ -18,10 +18,10 @@ import Source.DefaultBufSize
  *
  *  @author  Burak Emir, Paul Phillips
  */
-class BufferedSource(inputStream: InputStream)(implicit codec: Codec = Codec.default) extends Source
-{
+class BufferedSource(inputStream: InputStream, bufferSize: Int)(implicit val codec: Codec) extends Source {
+  def this(inputStream: InputStream)(implicit codec: Codec) = this(inputStream, DefaultBufSize)(codec)
   def reader() = new InputStreamReader(inputStream, codec.decoder)
-  def bufferedReader() = new BufferedReader(reader(), DefaultBufSize)
+  def bufferedReader() = new BufferedReader(reader(), bufferSize)
 
   override val iter = {
     val reader = bufferedReader()
