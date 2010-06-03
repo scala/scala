@@ -212,11 +212,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   private def specializedName(sym: Symbol, env: TypeEnv): Name = {
     val tvars = if (sym.isClass) env.keySet
-                else specializedTypeVars(sym.info).intersect(env.keySet)
+                else specializedTypeVars(sym).intersect(env.keySet)
     val (methparams, others) = tvars.toList.partition(_.owner.isMethod)
     val tvars1 = methparams sortBy (_.name.toString)
     val tvars2 = others sortBy (_.name.toString)
-    if (settings.debug.value) log("specName(" + sym + ") env " + env)
+    if (settings.debug.value) log("specName(%s) env: %s tvars: %s ".format(sym, env, (tvars1, tvars2)))
     specializedName(sym.name, tvars1 map env, tvars2 map env)
   }
 
@@ -324,8 +324,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def specializedTypeVars(tpe: Type): immutable.Set[Symbol] = tpe match {
     case TypeRef(pre, sym, args) =>
-      if (   sym.isTypeParameter && sym.hasAnnotation(SpecializedClass)
-         || (sym.isTypeSkolem && sym.deSkolemize.hasAnnotation(SpecializedClass)))
+      if (sym.isAliasType)
+        specializedTypeVars(tpe.normalize)
+      else if (   sym.isTypeParameter && sym.hasAnnotation(SpecializedClass)
+               || (sym.isTypeSkolem && sym.deSkolemize.hasAnnotation(SpecializedClass)))
         immutable.ListSet.empty + sym
       else if (sym == definitions.ArrayClass)
         specializedTypeVars(args)
@@ -655,12 +657,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         if (sym.hasFlag(PRIVATE)) sym.resetFlag(PRIVATE).setFlag(PROTECTED)
         val specMember = subst(outerEnv)(specializedOverload(owner, sym, spec))
         typeEnv(specMember) = typeEnv(sym) ++ outerEnv ++ spec
+        if (settings.debug.value) log("added specialized overload: %s in env: %s".format(specMember, typeEnv(specMember)))
         overloads(sym) = Overload(specMember, spec) :: overloads(sym)
         specMember
       }
 
     if (sym.isMethod) {
-//      log("specializeMember " + sym + " with own stps: " + specializedTypes(sym.info.typeParams))
+      if (settings.debug.value) log("specializeMember %s with tps: %s stvars(sym): %s".format(sym, tps, specializedTypeVars(sym)))
       val tps1 = if (sym.isConstructor) tps filter (tp => sym.info.paramTypes.contains(tp)) else tps
       val tps2 = tps1 intersect specializedTypeVars(sym).toList
       if (!sym.isDeferred) concreteSpecMethods += sym
