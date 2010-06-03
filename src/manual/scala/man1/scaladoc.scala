@@ -50,11 +50,20 @@ object scaladoc extends Command {
 
   val options = Section("OPTIONS",
 
-    Section("Documentation Options",
+    Section("Standard Options",
       DefinitionList(
         Definition(
           CmdOption("d", Argument("directory")),
           "Specify where to generate documentation."),
+        Definition(
+          CmdOption("version"),
+          "Print product version and exit."),
+        Definition(
+          /*CmdOption("?") & "| " &*/ CmdOption("help"),
+          "Print a synopsis of available options."))),
+
+    Section("Documentation Options",
+      DefinitionList(
         Definition(
           CmdOption("doc-title", Argument("title")),
           "Define the overall title of the documentation, typically the name of the library being documented."),
@@ -63,15 +72,9 @@ object scaladoc extends Command {
           "Define the overall version number of the documentation, typically the version of the library being documented."),
         Definition(
           CmdOption("doc-source-url", Argument("url")),
-          "Define a URL to be concatenated with source locations for link to source files."),
-        Definition(
-          CmdOption("version"),
-          "Print product version and exit."),
-        Definition(
-          /*CmdOption("?") & "| " &*/ CmdOption("help"),
-          "Print a synopsis of standard options."))),
+          "Define a URL to be concatenated with source locations for link to source files."))),
 
-    Section("Compier Options",
+    Section("Compiler Options",
       DefinitionList(
         Definition(
           CmdOption("verbose"),
