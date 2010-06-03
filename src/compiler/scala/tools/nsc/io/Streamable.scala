@@ -8,7 +8,7 @@ package io
 import java.net.{ URI, URL }
 import java.io.{ BufferedInputStream, InputStream, PrintStream, File => JFile }
 import java.io.{ BufferedReader, InputStreamReader }
-import scala.io.{ Codec, Source }
+import scala.io.{ Codec, BufferedSource, Source }
 
 import collection.mutable.ArrayBuffer
 import Path.fail
@@ -66,40 +66,32 @@ object Streamable
     }
   }
 
-  /** For objects which can be viewed as Chars.  The abstract creationCodec
-   *  can safely be defined as null and will subsequently be ignored.
+  /** For objects which can be viewed as Chars.
    */
   trait Chars extends Bytes {
-    def creationCodec: Codec
-    private def failNoCodec() = fail("This method requires a Codec to be chosen explicitly.")
-
-    /** The general algorithm for any call to a method involving byte<->char
-     *  transformations is: if a codec is supplied (explicitly or implicitly),
-     *  use that; otherwise if a codec was defined when the object was created,
-     *  use that; otherwise, use Codec.default.
-     *
-     *  Note that getCodec takes a codec argument rather than having methods
-     *  always default to getCodec() and use the argument otherwise, so that
-     *  method implementations can, where desired, identify the case where no
-     *  codec was ever explicitly supplied.  If allowDefault = false, an
-     *  exception will be thrown rather than falling back on Codec.default.
+    /** Calls to methods requiring byte<->char transformations should be offered
+     *  in a form which allows specifying the codec.  When it is not specified,
+     *  the one discovered at creation time will be used, which will always find the
+     *  one in scala.io.Codec if no other is available.  This can be overridden
+     *  to use a different default.
      */
-    def getCodec(givenCodec: Codec = null, allowDefault: Boolean = true) =
-      if (givenCodec != null) givenCodec
-      else if (creationCodec != null) creationCodec
-      else if (allowDefault) Codec.default
-      else failNoCodec()
+    def creationCodec: Codec = implicitly[Codec]
 
-    def chars(codec: Codec = getCodec()): Source = (Source fromInputStream inputStream())(codec)
-    def lines(codec: Codec = getCodec()): Iterator[String] = chars(codec).getLines()
+    def chars(): BufferedSource = chars(creationCodec)
+    def chars(codec: Codec): BufferedSource = Source.fromInputStream(inputStream())(codec)
+
+    def lines(): Iterator[String] = lines(creationCodec)
+    def lines(codec: Codec): Iterator[String] = chars(codec).getLines()
 
     /** Obtains an InputStreamReader wrapped around a FileInputStream.
      */
-    def reader(codec: Codec = getCodec()) = new InputStreamReader(inputStream, codec.charSet)
+    def reader(): InputStreamReader = reader(creationCodec)
+    def reader(codec: Codec): InputStreamReader = new InputStreamReader(inputStream, codec.charSet)
 
     /** Wraps a BufferedReader around the result of reader().
      */
-    def bufferedReader(codec: Codec = getCodec()) = new BufferedReader(reader(codec))
+    def bufferedReader(): BufferedReader = bufferedReader(creationCodec)
+    def bufferedReader(codec: Codec) = new BufferedReader(reader(codec))
 
     /** Creates a BufferedReader and applies the closure, automatically closing it on completion.
      */
@@ -111,6 +103,7 @@ object Streamable
 
     /** Convenience function to import entire file into a String.
      */
-    def slurp(codec: Codec = getCodec()) = chars(codec).mkString
+    def slurp(): String = slurp(creationCodec)
+    def slurp(codec: Codec) = chars(codec).mkString
   }
 }
