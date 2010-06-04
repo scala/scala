@@ -120,7 +120,10 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
    *  @return   a new range consisting of all the elements of this range except `n` first elements.
    */
   final override def drop(n: Int): Range =
-    if (n >= length) copy(end + 1, end, step)
+    if (n >= length) {
+      if (step > 0) copy(end + 1, end, step)
+      else copy(end - 1, end, step)
+    }
     else copy(locationAfterN(n), end, step)
 
   /** Creates a new range containing all the elements of this range except the last one.
