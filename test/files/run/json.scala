@@ -1,14 +1,80 @@
 import scala.util.parsing.json._
+import scala.collection.immutable.TreeMap
 
 object Test extends Application {
-  def printJSON(s: String) {
-    println(JSON parse s)
+  /* This method converts parsed JSON back into real JSON notation with objects in
+   * sorted-key order. Not required by the spec, but it allows us to to a stable
+   * toString comparison. */
+  def jsonToString(in : Any) : String = in match {
+    case l : List[_] => "[" + l.map(jsonToString).mkString(", ") + "]"
+    case m : Map[String,_] => "{" + m.elements.toList
+         .sort({ (x,y) => x._1 < y._1 })
+         .map({ case (k,v) => "\"" + k + "\": " + jsonToString(v) })
+         .mkString(", ") + "}"
+    case s : String => "\"" + s + "\""
+    case x => x.toString
   }
-  printJSON("{\"name\": \"value\"}")
-  printJSON("{\"name\": \"va1ue\"}")  // ticket #136
-  printJSON("{\"name\": { \"name1\": \"va1ue1\", \"name2\": \"va1ue2\" } }")
+
+  def sortJSON(in : Any) : Any = in match {
+    case l : List[_] => l.map(sortJSON)
+    case m : Map[String,_] => TreeMap(m.mapElements(sortJSON).elements.toSeq : _*)
+    case x => x
+  }
+
+  // For this one, just parsing should be considered a pass
+  def printJSON(given : String) {
+    JSON parseFull given match {
+      case None => println("Parse failed for \"%s\"".format(given))
+      case Some(parsed) => println("Passed: " + sortJSON(parsed))
+    }
+  }
+
+  def printJSON(given : String, expected : Any) {
+    JSON parseFull given match {
+      case None => println("Parse failed for \"%s\"".format(given))
+      case Some(parsed) => if (parsed == expected) {
+        println("Passed: " + parsed)
+      } else {
+        val eStr = sortJSON(expected).toString
+        val pStr = sortJSON(parsed).toString
+
+        // Figure out where the Strings differ and generate a marker
+        val mismatchPosition = eStr.toList.zip(pStr.toList).findIndexOf({case (a,b) => a != b}) match {
+          case -1 => Math.min(eStr.length, pStr.length)
+          case x => x
+        }
+        val reason = (" " * mismatchPosition) + "^"
+        println("Expected, got:\n  %s\n  %s (from \"%s\")\n  %s".format(eStr, pStr, given, reason))
+      }
+    }
+  }
+
+  // The library should differentiate between lower case "l" and number "1" (ticket #136)
+  printJSON("{\"name\": \"value\"}", Map("name" -> "value"))
+  printJSON("{\"name\": \"va1ue\"}", Map("name" -> "va1ue"))
+  printJSON("{\"name\": { \"name1\": \"va1ue1\", \"name2\": \"va1ue2\" } }",
+            Map("name" -> Map("name1" -> "va1ue1", "name2" -> "va1ue2")))
+
+  // Unicode escapes should be handled properly
   printJSON("{\"name\": \"\\u0022\"}")
+
+  // The library should return a map for JSON objects (ticket #873)
+  printJSON("""{"function":"add_symbol"}""", Map("function" -> "add_symbol"))
+
+  // The library should recurse into arrays to find objects (ticket #2207)
+  printJSON("""[{"a": "team"},{"b": 52}]""", List(Map("a" -> "team"), Map("b" -> 52.0)))
+
+  // The library should differentiate between empty maps and lists (ticket #3284)
+  printJSON("{}", Map())
+  printJSON("[]", List())
+
+  // Lists should be returned in the same order as specified
+  printJSON("[4,1,3,2,6,5,8,7]", List[Double](4,1,3,2,6,5,8,7))
+
+  // Additional tests
   printJSON("{\"age\": 0}")
+
+
   println
 
   // from http://en.wikipedia.org/wiki/JSON
@@ -27,8 +93,25 @@ object Test extends Application {
         "646 123-4567"
     ]
 }"""
-  //println(sample1)
-  printJSON(sample1)
+
+  // Should be equivalent to:
+  val sample1Obj = Map(
+    "firstName" -> "John",
+    "lastName" -> "Smith",
+    "address" -> Map(
+      "streetAddress" -> "21 2nd Street",
+      "city" -> "New York",
+      "state" -> "NY",
+      "postalCode" -> 10021
+    ),
+    "phoneNumbers"-> List(
+        "212 732-1234",
+        "646 123-4567"
+    )
+  )
+
+
+  printJSON(sample1, sample1Obj)
   println
 
   // from http://www.developer.com/lang/jscript/article.php/3596836
