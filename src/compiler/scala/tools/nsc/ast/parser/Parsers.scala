@@ -1547,7 +1547,8 @@ self =>
       var top = simplePattern(seqOK)
       // See ticket #3189 for the motivation for the null check.
       // TODO: dredge out the remnants of regexp patterns.
-      if (seqOK && isIdent && in.name == STAR && in.prev.name != null)
+      // ... and now this is back the way it was because it caused #3480.
+      if (seqOK && isIdent && in.name == STAR)
         return atPos(top.pos.startOrPoint, in.skipToken())(Star(stripParens(top)))
 
       while (isIdent && in.name != BAR) {

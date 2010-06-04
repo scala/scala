@@ -244,7 +244,6 @@ sealed abstract class List[+A] extends LinearSeq[A]
     if (isEmpty) Stream.Empty
     else new Stream.Cons(head, tail.toStream)
 
-
   /** Like <code>span</code> but with the predicate inverted.
    */
   @deprecated("use `span { x => !p(x) }` instead")

@@ -25,8 +25,7 @@ import java.nio.charset.{ Charset, CharsetDecoder, CharsetEncoder, CharacterCodi
 /** A class for character encoding/decoding preferences.
  *
  */
-class Codec(val charSet: Charset)
-{
+class Codec(val charSet: Charset) {
   type Configure[T] = (T => T, Boolean)
   type Handler      = CharacterCodingException => Int
 
@@ -70,11 +69,26 @@ class Codec(val charSet: Charset)
     })
 }
 
-object Codec {
+trait LowPriorityCodecImplicits {
+  self: Codec.type =>
+
+  /** The Codec of Last Resort. */
+  implicit def fallbackSystemCodec: Codec = defaultCharsetCodec
+}
+
+object Codec extends LowPriorityCodecImplicits {
   final val ISO8859 = Charset forName "ISO-8859-1"
   final val UTF8    = Charset forName "UTF-8"
 
-  def default                               = apply(Charset.defaultCharset)
+  /** Optimistically these two possible defaults will be the same thing.
+   *  In practice this is not necessarily true, and in fact Sun classifies
+   *  the fact that you can influence anything at all via -Dfile.encoding
+   *  as an accident, with any anomalies considered "not a bug".
+   */
+  def defaultCharsetCodec                   = apply(Charset.defaultCharset)
+  def fileEncodingCodec                     = apply(util.Properties.encodingString)
+  def default                               = defaultCharsetCodec
+
   def apply(encoding: String): Codec        = new Codec(Charset forName encoding)
   def apply(charSet: Charset): Codec        = new Codec(charSet)
   def apply(decoder: CharsetDecoder): Codec = {

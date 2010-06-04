@@ -20,9 +20,7 @@ object File {
   def pathSeparator = JFile.pathSeparator
   def separator = JFile.separator
 
-  def apply(path: Path)(implicit codec: Codec = null) =
-    if (codec != null) new File(path.jfile)(codec)
-    else path.toFile
+  def apply(path: Path)(implicit codec: Codec) = new File(path.jfile)(codec)
 
   // Create a temporary file
   def makeTemp(prefix: String = Path.randomPrefix, suffix: String = null, dir: JFile = null) =
@@ -56,10 +54,10 @@ import Path._
  *  @author  Paul Phillips
  *  @since   2.8
  */
-class File(jfile: JFile)(implicit val creationCodec: Codec = null)
-extends Path(jfile)
-with Streamable.Chars {
+class File(jfile: JFile)(implicit constructorCodec: Codec) extends Path(jfile) with Streamable.Chars {
+  override val creationCodec = constructorCodec
   def withCodec(codec: Codec): File = new File(jfile)(codec)
+
   override def addExtension(ext: String): File = super.addExtension(ext).toFile
   override def toAbsolute: File = if (isAbsolute) this else super.toAbsolute.toFile
   override def toDirectory: Directory = new Directory(jfile)
@@ -82,12 +80,16 @@ with Streamable.Chars {
    *  This should behave like a less broken version of java.io.FileWriter,
    *  in that unlike the java version you can specify the encoding.
    */
-  def writer(append: Boolean = false, codec: Codec = getCodec()) =
+  def writer(): OutputStreamWriter = writer(false)
+  def writer(append: Boolean): OutputStreamWriter = writer(append, creationCodec)
+  def writer(append: Boolean, codec: Codec): OutputStreamWriter =
     new OutputStreamWriter(outputStream(append), codec.charSet)
 
   /** Wraps a BufferedWriter around the result of writer().
    */
-  def bufferedWriter(append: Boolean = false, codec: Codec = getCodec()) =
+  def bufferedWriter(): BufferedWriter = bufferedWriter(false)
+  def bufferedWriter(append: Boolean): BufferedWriter = bufferedWriter(append, creationCodec)
+  def bufferedWriter(append: Boolean, codec: Codec): BufferedWriter =
     new BufferedWriter(writer(append, codec))
 
   /** Creates a new file and writes all the Strings to it. */

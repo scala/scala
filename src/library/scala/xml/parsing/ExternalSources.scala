@@ -20,8 +20,7 @@ import scala.io.Source
  *  @author  Burak Emir
  *  @version 1.0
  */
-trait ExternalSources
-{
+trait ExternalSources {
   self: ExternalSources with MarkupParser with MarkupHandler =>
 
   /** ...
@@ -38,6 +37,6 @@ trait ExternalSources
       case x                          => x take ((x lastIndexOf separator) + 1)
     }
 
-    Source.fromPath(fileStr + systemId)()
+    Source.fromFile(fileStr + systemId)
   }
 }

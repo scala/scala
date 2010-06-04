@@ -15,7 +15,7 @@ it is split on several lines.
 
 isn't it?
 """)
-    def runTest() = assertEquals("wrong number of lines",src.getLines("\n").toList.length,5) // five new lines in there
+    def runTest() = assertEquals("wrong number of lines",src.getLines.toList.length,5) // five new lines in there
     //for (line <- src.getLines) {
     //  Console.print(line)
     //}
