@@ -87,6 +87,9 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
   }
 
   // take and drop have to be tolerant of large values without overflowing
+  // warning! this is buggy, and gives wrong answers on boundary cases.
+  // The known bugs are avoided by drop not calling it in those cases.
+  // See ticket #3529.  It should be revised.
   private def locationAfterN(n: Int) = if (n > 0) {
     if (step > 0)
       ((start.toLong + step.toLong * n.toLong) min last.toLong).toInt
@@ -103,11 +106,11 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
    *  @param n  the number of elements to take.
    *  @return   a new range consisting of `n` first elements.
    */
-  final override def take(n: Int): Range = if (n > 0 && length > 0) {
-    Range(start, locationAfterN(n - 1), step).inclusive
-  } else {
-    Range(start, start, step)
-  }
+  final override def take(n: Int): Range =
+    if (n > 0 && length > 0)
+      Range(start, locationAfterN(n - 1), step).inclusive
+    else
+      Range(start, start, step)
 
   /** Creates a new range containing all the elements of this range except the first `n` elements.
    *
@@ -117,7 +120,8 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
    *  @return   a new range consisting of all the elements of this range except `n` first elements.
    */
   final override def drop(n: Int): Range =
-    copy(locationAfterN(n), end, step)
+    if (n >= length) copy(end + 1, end, step)
+    else copy(locationAfterN(n), end, step)
 
   /** Creates a new range containing all the elements of this range except the last one.
    *
