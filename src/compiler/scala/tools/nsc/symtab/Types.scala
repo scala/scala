@@ -4347,7 +4347,7 @@ A type's typeSymbol should never be inspected directly.
           if (sym2 == NotNullClass)
             tp1.isNotNull
           else if (sym2 == SingletonClass)
-            tp1.isStable
+            tp1.isStable || fourthTry
           else if (isRaw(sym2, tp2.args))
             isSubType(tp1, rawToExistential(tp2), depth)
           else if (sym2.name == nme.REFINE_CLASS_NAME.toTypeName)
