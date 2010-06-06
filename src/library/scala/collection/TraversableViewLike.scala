@@ -199,6 +199,7 @@ self =>
   }
 
   override def filter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
+  override def withFilter(p: A => Boolean): This = newFiltered(p).asInstanceOf[This]
   override def partition(p: A => Boolean): (This, This) = (filter(p), filter(!p(_)))
   override def init: This = newSliced(0, size - 1).asInstanceOf[This]
   override def drop(n: Int): This = newSliced(n max 0, Int.MaxValue).asInstanceOf[This]
