@@ -86,7 +86,9 @@ import immutable.{List, Stream, Nil, ::}
  *
  *    Note: will not terminate for infinite-sized collections.
  */
-trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with TraversableOnce[A] {
+trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
+                                    with FilterMonadic[A, Repr]
+                                    with TraversableOnce[A] {
   self =>
 
   import Traversable.breaks._
@@ -754,12 +756,12 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr] with Traversable
    *             All these operations apply to those elements of this $coll which
    *             satisfy the predicate `p`.
    */
-  def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
+  def withFilter(p: A => Boolean): FilterMonadic[A, Repr] = new WithFilter(p)
 
   /** A class supporting filtered operations. Instances of this class are returned by
    *  method `withFilter`.
    */
-  class WithFilter(p: A => Boolean) {
+  class WithFilter(p: A => Boolean) extends FilterMonadic[A, Repr] {
 
     /** Builds a new collection by applying a function to all elements of the
      *  outer $coll containing this `WithFilter` instance that satisfy predicate `p`.
