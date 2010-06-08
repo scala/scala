@@ -214,7 +214,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def Array_length  = getMember(ArrayClass, nme.length)
       lazy val Array_clone   = getMember(ArrayClass, nme.clone_)
     lazy val ArrayModule  = getModule("scala.Array")
-      def ArrayModule_apply = getMember(ArrayModule, nme.apply)
 
     // reflection / structural types
     lazy val SoftReferenceClass     = getClass("java.lang.ref.SoftReference")

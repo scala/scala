@@ -2522,7 +2522,10 @@ trait Typers { self: Analyzer =>
         annotationError
       }
 
-      def tryConst(tr: Tree, pt: Type) = typed(tr, EXPRmode, pt) match {
+      /** Calling constfold right here is necessary because some trees (negated
+       *  floats and literals in particular) are not yet folded.
+       */
+      def tryConst(tr: Tree, pt: Type) = typed(constfold(tr), EXPRmode, pt) match {
         // null cannot be used as constant value for classfile annotations
         case l @ Literal(c) if !(l.isErroneous || c.value == null) =>
           Some(LiteralAnnotArg(c))
@@ -2547,11 +2550,10 @@ trait Typers { self: Analyzer =>
         // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
         case Apply(fun, args) =>
           val typedFun = typed(fun, funMode(mode), WildcardType)
-          if (typedFun.symbol.owner == ArrayModule.moduleClass &&
-              typedFun.symbol.name == nme.apply)
+          if (typedFun.symbol.owner == ArrayModule.moduleClass && typedFun.symbol.name == nme.apply)
             pt match {
-              case TypeRef(_, sym, argts) if (sym == ArrayClass && !argts.isEmpty) =>
-                trees2ConstArg(args, argts.head)
+              case TypeRef(_, ArrayClass, targ :: _) =>
+                trees2ConstArg(args, targ)
               case _ =>
                 // For classfile annotations, pt can only be T:
                 //   BT = Int, .., String, Class[_], JavaAnnotClass
