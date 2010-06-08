@@ -161,7 +161,11 @@ abstract class LambdaLift extends InfoTransform {
             val symClass = sym.tpe.typeSymbol;
             atPhase(phase.next) {
               sym updateInfo (
-                if (isValueClass(symClass)) refClass(symClass).tpe else ObjectRefClass.tpe)
+                if (sym.hasAnnotation(VolatileAttr))
+                  if (isValueClass(symClass)) volatileRefClass(symClass).tpe else VolatileObjectRefClass.tpe
+                else
+                  if (isValueClass(symClass)) refClass(symClass).tpe else ObjectRefClass.tpe
+              )
             }
           }
         }

@@ -419,6 +419,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     // boxed classes
     lazy val ObjectRefClass         = getClass("scala.runtime.ObjectRef")
+    lazy val VolatileObjectRefClass = getClass("scala.runtime.VolatileObjectRef")
     lazy val BoxesRunTimeClass      = getModule("scala.runtime.BoxesRunTime")
     lazy val BoxedNumberClass       = getClass(sn.BoxedNumber)
     lazy val BoxedCharacterClass    = getClass(sn.BoxedCharacter)
@@ -583,6 +584,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     def isBox(m: Symbol) = boxMethod.valuesIterator contains m
 
     val refClass = new HashMap[Symbol, Symbol]
+    val volatileRefClass = new HashMap[Symbol, Symbol]
     val abbrvTag = new HashMap[Symbol, Char]
     private val numericWeight = new HashMap[Symbol, Int]
 
@@ -614,6 +616,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       boxedClass(clazz) = getClass(boxedName)
       boxedModule(clazz) = getModule(boxedName)
       refClass(clazz) = getClass("scala.runtime." + name + "Ref")
+      volatileRefClass(clazz) = getClass("scala.runtime.Volatile" + name + "Ref")
       abbrvTag(clazz) = tag
       if (weight > 0) numericWeight(clazz) = weight
 
