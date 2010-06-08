@@ -309,7 +309,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     override def complete(_buf: String, cursor: Int, candidates: JList[String]): Int = {
       val buf = onull(_buf)
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
-      DBG("complete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
+      DBG("\ncomplete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
 
       // we don't try lower priority completions unless higher ones return no results.
       def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Int] = {
@@ -343,7 +343,21 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
       def regularCompletion = tryCompletion(mkDotted, topLevelFor)
       def fileCompletion    = tryCompletion(mkUndelimited, FileCompletion completionsFor _.buffer)
 
-      (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse cursor
+      /** This is the kickoff point for all manner of theoretically possible compiler
+       *  unhappiness - fault may be here or elsewhere, but we don't want to crash the
+       *  repl regardless.  Hopefully catching Exception is enough, but because the
+       *  compiler still throws some Errors it may not be.
+       */
+      try {
+        (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse cursor
+      }
+      catch {
+        case ex: Exception =>
+          DBG("Error: complete(%s, %s, _) provoked %s".format(_buf, cursor, ex))
+          candidates add " "
+          candidates add "<completion error>"
+          cursor
+      }
     }
   }
 }
