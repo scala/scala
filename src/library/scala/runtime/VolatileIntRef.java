@@ -10,11 +10,10 @@
 
 package scala.runtime;
 
+public class VolatileIntRef implements java.io.Serializable {
+    private static final long serialVersionUID = 1488197132022872888L;
 
-public class ShortRef implements java.io.Serializable {
-    private static final long serialVersionUID = 4218441291229072313L;
-
-    public short elem;
-    public ShortRef(short elem) { this.elem = elem; }
-    public String toString() { return java.lang.Short.toString(elem); }
+    volatile public int elem;
+    public VolatileIntRef(int elem) { this.elem = elem; }
+    public String toString() { return java.lang.Integer.toString(elem); }
 }
