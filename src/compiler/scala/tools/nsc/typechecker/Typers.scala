@@ -1831,6 +1831,13 @@ trait Typers { self: Analyzer =>
         enterLabelDef(stat)
       }
       if (phaseId(currentPeriod) <= currentRun.typerPhase.id) {
+        // One reason for this code is that structural refinements
+        // come with strings attached; for instance the inferred type
+        // may not refer to enclosing type parameters.
+        // So abstracting out an anonymous class might lead to type errors.
+        // The setPrivateWithin below is is a quick hack to avoid escaping privates checks
+        // we need to go back and address the problem of escaping
+        // idents form ths ground up.
         block match {
           case block @ Block(List(classDef @ ClassDef(_, _, _, _)), newInst @ Apply(Select(New(_), _), _)) =>
             // The block is an anonymous class definitions/instantiation pair
@@ -1851,8 +1858,7 @@ trait Typers { self: Analyzer =>
             ) {
               member.resetFlag(PROTECTED)
               member.resetFlag(LOCAL)
-              member.setFlag(PRIVATE)
-              member.privateWithin = NoSymbol
+              member.privateWithin = classDef.symbol
             }
           case _ =>
         }
