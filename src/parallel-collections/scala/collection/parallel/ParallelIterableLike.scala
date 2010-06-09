@@ -120,6 +120,7 @@ extends IterableLike[T, Repr]
    with Parallelizable[T, Repr]
    with Sequentializable[T, SequentialView]
    with Parallel
+   with HasNewCombiner[T, Repr]
    with TaskSupport {
   self =>
 
@@ -162,11 +163,6 @@ extends IterableLike[T, Repr]
   /** Convenience for signal context passing iterator.
    */
   type SCPI <: SignalContextPassingIterator[ParallelIterator]
-
-  /** Creates a new parallel builder working on the given pool.
-   *  @return         a new parallel builder.
-   */
-  protected[this] def newCombiner: Combiner[T, Repr]
 
   /** Creates a new parallel iterator used to traverse the elements of this parallel collection.
    *  This iterator is more specific than the iterator of the returned by `iterator`, and augmented

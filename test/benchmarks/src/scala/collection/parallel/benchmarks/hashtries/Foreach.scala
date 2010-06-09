@@ -14,7 +14,7 @@ import collection.mutable.HashMap
 
 class Foreach(val size: Int, val parallelism: Int, val runWhat: String) extends Bench with IntInit {
   def runpar = throw new UnsupportedOperationException
-  def runseq = throw new UnsupportedOperationException
+  def runseq = runhashtrie
   def runhashmap = hashmap.foreach(n => ())
   def runhashtrie = hashtrie.foreach(n => ())
   def companion = Foreach

@@ -92,6 +92,7 @@ trait BenchmarkRegister {
   register(hashtries.Iterate)
   register(hashtries.Construct)
   register(hashtries.Lookup)
+  register(hashtries.Combine)
 }
 
 

@@ -17,6 +17,7 @@ trait IntInit extends Bench {
   def reset = runWhat match {
     case "hashmap" => initHashMap
     case "hashtrie" => initHashTrie
+    case "seq" => initHashTrie
   }
   def initHashTrie = {
     hashtrie = new HashTrie

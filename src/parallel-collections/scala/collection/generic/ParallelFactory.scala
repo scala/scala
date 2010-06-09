@@ -6,12 +6,11 @@ import scala.collection.parallel.Combiner
 
 
 
-/**
- * A template class for companion objects of `ParallelIterable` and subclasses thereof.
- * This class extends `TraversableFactory` and provides a set of operations to create `$Coll` objects.
+/** A template class for companion objects of `ParallelIterable` and subclasses thereof.
+ *  This class extends `TraversableFactory` and provides a set of operations to create `$Coll` objects.
  *
- * @define $coll collection
- * @define $Coll Parallel
+ *  @define $coll parallel collection
+ *  @define $Coll ParallelIterable
  */
 abstract class ParallelFactory[CC[X] <: ParallelIterable[X] with GenericParallelTemplate[X, CC]]
 extends TraversableFactory[CC]
