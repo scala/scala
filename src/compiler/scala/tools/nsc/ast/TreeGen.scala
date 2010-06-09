@@ -13,8 +13,7 @@ import symtab.SymbolTable
 /** XXX to resolve: TreeGen only assumes global is a SymbolTable, but
  *  TreeDSL at the moment expects a Global.  Can we get by with SymbolTable?
  */
-abstract class TreeGen
-{
+abstract class TreeGen {
   val global: SymbolTable
 
   import global._
@@ -396,5 +395,22 @@ abstract class TreeGen
     ensureNonOverlapping(containing, exprs)
     if (prefix.isEmpty) containing
     else Block(prefix, containing) setPos (prefix.head.pos union containing.pos)
+  }
+
+  /** Return a double-checked locking idiom around the syncBody tree. It guards with 'cond' and
+   *  synchronizez on 'clazz.this'. Additional statements can be included after initialization,
+   *  (outside the synchronized block).
+   *
+   *  The idiom works only if the condition is using a volatile field.
+   *  @see http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
+   */
+  def mkDoubleCheckedLocking(clazz: Symbol, cond: Tree, syncBody: List[Tree], stats: List[Tree]): Tree = {
+    If(cond,
+       Block(
+         mkSynchronized(
+           mkAttributedThis(clazz),
+           If(cond, Block(syncBody: _*), EmptyTree)) ::
+         stats: _*),
+       EmptyTree)
   }
 }

@@ -636,7 +636,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         else              lhs INT_!= ZERO
       }
 
-      /** return a 'lazified' version of rhs.
+      /** return a 'lazified' version of rhs. It uses double-checked locking to ensure
+       *  initialization is performed at most once. Private fields used only in this
+       *  initializer are subsequently set to null.
+       *
        *  @param clazz The class symbol
        *  @param init The tree which initializes the field ( f = <rhs> )
        *  @param fieldSym The symbol of this lazy field
@@ -647,11 +650,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *    if ((bitmap$n & MASK) == 0) {
        *       synchronized(this) {
        *         if ((bitmap$n & MASK) == 0) {
-       *           synchronized(this) {
-       *             init // l$ = <rhs>
-       *           }
+       *           init // l$ = <rhs>
        *           bitmap$n = bimap$n | MASK
-       *         }}}
+       *         }
+       *       }
+       *       this.f1 = null
+       *       ... this.fn = null
+       *    }
        *    l$
        *  }
        *  where bitmap$n is an int value acting as a bitmap of initialized values. It is
@@ -671,14 +676,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         def syncBody  = init ::: List(mkSetFlag(clazz, offset), UNIT)
 
         log("nulling fields inside " + lzyVal + ": " + nulls)
-        val result    =
-          IF (cond) THEN BLOCK(
-            (gen.mkSynchronized(
-              gen mkAttributedThis clazz,
-              IF (cond) THEN BLOCK(syncBody: _*) ENDIF
-            )
-            :: nulls): _*) ENDIF
-
+        val result    = gen.mkDoubleCheckedLocking(clazz, cond, syncBody, nulls)
         typedPos(init.head.pos)(BLOCK(result, retVal))
       }
 

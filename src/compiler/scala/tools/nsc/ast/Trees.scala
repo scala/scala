@@ -291,6 +291,14 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   def Ident(sym: Symbol): Ident =
     Ident(sym.name) setSymbol sym
 
+  /** Block factory that flattens directly nested blocks.
+   */
+  def Block(stats: Tree*): Block = stats match {
+    case Seq(b @ Block(_, _)) => b
+    case Seq(stat) => Block(stats.toList, Literal(Constant(())))
+    case Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
+  }
+
   /** A synthetic term holding an arbitrary type.  Not to be confused with
     * with TypTree, the trait for trees that are only used for type trees.
     * TypeTree's are inserted in several places, but most notably in
