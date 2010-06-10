@@ -372,16 +372,6 @@ time { mNew.iterator.foreach( p => ()) }
       println
     }
 
-    private def subtreeCount(bm: Int) = {
-      var c = 0
-      var b = bm
-      while (b != 0) {
-	if ((b & 1) != 0) c += 1
-	b = b >>> 1
-      }
-      c
-    }
-
     private def posOf(n: Int, bm: Int) = {
       var left = n
       var i = -1
@@ -398,9 +388,9 @@ time { mNew.iterator.foreach( p => ()) }
       // printBitmap(bitmap)
       // println(elems.toList)
 
-      // println("subtrees: " + subtreeCount(bitmap))
-      // println("will split at: " + posOf(subtreeCount(bitmap) / 2, bitmap))
-      val splitpoint = posOf(subtreeCount(bitmap) / 2, bitmap)
+      // println("subtrees: " + Integer.bitCount(bitmap))
+      // println("will split at: " + posOf(Integer.bitCount(bitmap) / 2, bitmap))
+      val splitpoint = posOf(Integer.bitCount(bitmap) / 2, bitmap)
       val bm1 = bitmap & (-1 << splitpoint)
       val bm2 = bitmap & (-1 >>> (32 - splitpoint))
       // printBitmap(bm1)
@@ -427,7 +417,7 @@ time { mNew.iterator.foreach( p => ()) }
         val bothbitmap = thisbm & thatbm
 
         // determine the necessary size for the array
-	val subcount = subtreeCount(combinedbitmap)
+	val subcount = Integer.bitCount(combinedbitmap)
         //printBitmap(combinedbitmap)
         //println(subcount)
 
@@ -439,10 +429,9 @@ time { mNew.iterator.foreach( p => ()) }
         var i = 0
         var thisi = 0
         var thati = 0
-        while (pos != 0) {
+        while (i < subcount) {
           if ((bothbitmap & pos) != 0) {
             combined(i) = thiselems(thisi) combine thatelems(thati)
-            dives += 1
             i += 1
             thisi += 1
             thati += 1
@@ -459,7 +448,7 @@ time { mNew.iterator.foreach( p => ()) }
         }
         //println(combined.toList)
 
-	new HashTrieMap[A, B1](combinedbitmap, combined, this.size + that.size)
+	new HashTrieMap[A, B1](combinedbitmap, combined, combined.foldLeft(0)(_ + _.size))
       case empty: HashMap[_, _] => this
       case _ => error("section supposed to be unreachable.")
     }
