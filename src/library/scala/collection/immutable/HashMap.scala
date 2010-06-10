@@ -80,7 +80,9 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] {
 
   def split: Seq[HashMap[A, B]] = Seq(this)
 
-  def combine[B1 >: B](that: HashMap[A, B1]): HashMap[A, B1] = that
+  def combine[B1 >: B](that: HashMap[A, B1]): HashMap[A, B1] = combine0(that, 0)
+
+  protected def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = that
 
 }
 
@@ -102,7 +104,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
 
   // TODO: add HashMap2, HashMap3, ...
 
-  class HashMap1[A,+B](private var key: A, private[HashMap] var hash: Int, private var value: (B @uncheckedVariance), private var kv: (A,B @uncheckedVariance)) extends HashMap[A,B] {
+  class HashMap1[A,+B](private[HashMap] var key: A, private[HashMap] var hash: Int, private[HashMap] var value: (B @uncheckedVariance), private[HashMap] var kv: (A,B @uncheckedVariance)) extends HashMap[A,B] {
     override def size = 1
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
@@ -114,7 +116,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
         if (hash != this.hash) {
           //new HashTrieMap[A,B1](level+5, this, new HashMap1(key, hash, value, kv))
           val m = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0) // TODO: could save array alloc
-          m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv)
+          m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv) // TODO and it will
         } else {
           // 32-bit hash collision (rare, but not impossible)
           new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
@@ -127,7 +129,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
-    override def combine[B1 >: B](that: HashMap[A, B1]): HashMap[A, B1] = that + (ensurePair)
+    protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = that.updated0(key, hash, level, value, kv)
   }
 
   private class HashMapCollision1[A,+B](private[HashMap] var hash: Int, var kvs: ListMap[A,B @uncheckedVariance]) extends HashMap[A,B] {
@@ -162,15 +164,16 @@ object HashMap extends ImmutableMapFactory[HashMap] {
       def newhm(lm: ListMap[A, B @uncheckedVariance]) = new HashMapCollision1(hash, lm)
       List(newhm(x), newhm(y))
     }
-    override def combine[B1 >: B](that: HashMap[A, B1]): HashMap[A, B1] = {
+    protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = {
       // TODO this can be made more efficient by passing the entire ListMap at once
       var m = that
-      for ((k, v) <- kvs) m = m.updated0(k, this.hash, 0, v, null)
+      for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p)
       m
     }
   }
 
   var dives = 0
+  var colls = 0
   class HashTrieMap[A,+B](private[HashMap] var bitmap: Int, private[HashMap] var elems: Array[HashMap[A,B @uncheckedVariance]],
       private[HashMap] var size0: Int) extends HashMap[A,B] {
 /*
@@ -404,51 +407,72 @@ time { mNew.iterator.foreach( p => ()) }
       List(hm1, hm2)
     }
 
-    override def combine[B1 >: B](that: HashMap[A, B1]): HashMap[A, B1] = that match {
-      case hm: HashMap1[_, _] => this ++ hm.asInstanceOf[HashMap[A, B1]]
-      case hm: HashMapCollision1[_, _] => this ++ hm.asInstanceOf[HashMap[A, B1]]
+    protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = that match {
+      case hm: HashMap1[_, _] =>
+        this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.kv)
+      case hm: HashMapCollision1[_, _] =>
+        this ++ hm.asInstanceOf[HashMap[A, B1]]
       case hm: HashTrieMap[_, _] =>
         val that = hm.asInstanceOf[HashTrieMap[A, B1]]
         val thiselems = this.elems
         val thatelems = that.elems
-        val thisbm = this.bitmap
-        val thatbm = that.bitmap
-        val combinedbitmap = thisbm | thatbm
-        val bothbitmap = thisbm & thatbm
+        var thisbm = this.bitmap
+        var thatbm = that.bitmap
 
         // determine the necessary size for the array
-	val subcount = Integer.bitCount(combinedbitmap)
+	val subcount = Integer.bitCount(thisbm | thatbm)
         //printBitmap(combinedbitmap)
         //println(subcount)
 
-	// construct a new array of appropriate size
+        // construct a new array of appropriate size
         val combined = new Array[HashMap[A, B1 @uncheckedVariance]](subcount)
 
 	// run through both bitmaps and add elements to it
-        var pos = 1
         var i = 0
         var thisi = 0
         var thati = 0
+        var totalelems = 0
+        // println("merging: ")
+        // printBitmap(thisbm)
+        // printBitmap(thatbm)
         while (i < subcount) {
-          if ((bothbitmap & pos) != 0) {
-            combined(i) = thiselems(thisi) combine thatelems(thati)
-            i += 1
-            thisi += 1
+          val thislsb = thisbm ^ (thisbm & (thisbm - 1))
+          val thatlsb = thatbm ^ (thatbm & (thatbm - 1))
+          // println("-------------")
+          // printBitmap(thislsb)
+          // printBitmap(thatlsb)
+          // TODO - offset = Integer.bitCount(bitmap & (mask-1))
+          if (thislsb == thatlsb) {
+            // println("a collision")
+            // inefficient - val m = thiselems(Integer.bitCount((thislsb - 1) & thisorig)) combine thatelems(Integer.bitCount((thatlsb - 1) & thatorig))
+            val m = thiselems(thisi).combine0(thatelems(thati), level + 5)
+            totalelems += m.size
+            combined(i) = m
+            thisbm = thisbm & ~thislsb
+            thatbm = thatbm & ~thatlsb
             thati += 1
-          } else if ((thisbm & pos) != 0) {
-            combined(i) = thiselems(thisi)
-            i += 1
             thisi += 1
-          } else if ((thatbm & pos) != 0) {
-            combined(i) = thatelems(thati)
-            i += 1
+          } else if ((thislsb < thatlsb && thislsb != 0) || thatlsb == 0) {
+            // println("an element from this trie")
+            // inefficient - val m = thiselems(Integer.bitCount((thislsb - 1) & thisorig))
+            val m = thiselems(thisi)
+            totalelems += m.size
+            combined(i) = m
+            thisbm = thisbm & ~thislsb
+            thisi += 1
+          } else {
+            // println("an element from that trie")
+            // inefficient - val m = thatelems(Integer.bitCount((thatlsb - 1) & thatorig))
+            val m = thatelems(thati)
+            totalelems += m.size
+            combined(i) = m
+            thatbm = thatbm & ~thatlsb
             thati += 1
           }
-          pos = pos << 1
+          i += 1
         }
-        //println(combined.toList)
 
-	new HashTrieMap[A, B1](combinedbitmap, combined, combined.foldLeft(0)(_ + _.size))
+	new HashTrieMap[A, B1](this.bitmap | that.bitmap, combined, totalelems)
       case empty: HashMap[_, _] => this
       case _ => error("section supposed to be unreachable.")
     }
