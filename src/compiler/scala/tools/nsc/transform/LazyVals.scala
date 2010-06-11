@@ -4,7 +4,7 @@ package transform;
 import scala.tools.nsc._
 import scala.collection.mutable.HashMap
 
-abstract class LazyVals extends Transform with ast.TreeDSL {
+abstract class LazyVals extends Transform with TypingTransformers with ast.TreeDSL {
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._                  // the global environment
@@ -17,18 +17,10 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
   def newTransformer(unit: CompilationUnit): Transformer =
     new LazyValues(unit)
 
-  /** Create a new phase which applies transformer */
-  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new Phase(prev)
-
-  /** The phase defined by this transform */
-  class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
-    def apply(unit: global.CompilationUnit): Unit = newTransformer(unit) transformUnit unit
-  }
-
   /**
    * Transform local lazy accessors to check for the initialized bit.
    */
-  class LazyValues(unit: CompilationUnit) extends Transformer {
+  class LazyValues(unit: CompilationUnit) extends TypingTransformer(unit) {
     /** map from method symbols to the number of lazy values it defines. */
     private val lazyVals = new HashMap[Symbol, Int] {
       override def default(meth: Symbol) = 0
@@ -47,8 +39,10 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
      */
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
+      curTree = tree
+
       tree match {
-        case DefDef(mods, name, tparams, vparams, tpt, rhs) =>
+        case DefDef(mods, name, tparams, vparams, tpt, rhs) => atOwner(tree.symbol) {
           val res = if (!sym.owner.isClass && sym.hasFlag(LAZY)) {
             val enclosingDummyOrMethod =
               if (sym.enclMethod == NoSymbol) sym.owner else sym.enclMethod
@@ -61,8 +55,9 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
             super.transform(rhs)
           treeCopy.DefDef(tree, mods, name, tparams, vparams, tpt,
                           typed(addBitmapDefs(sym, res)))
+        }
 
-        case Template(parents, self, body) =>
+        case Template(parents, self, body) => atOwner(currentOwner) {
           val body1 = super.transformTrees(body)
           var added = false
           val stats =
@@ -76,6 +71,7 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
                 stat
             }
           treeCopy.Template(tree, parents, self, stats)
+        }
 
         case _ => super.transform(tree)
       }
@@ -95,7 +91,7 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
 
       val bmps = bitmaps(methSym) map (ValDef(_, ZERO))
 
-      def isMatch(params: List[Ident]) = (params.tail corresponds methSym.tpe.params)(_.tpe == _.tpe) // @PP: corresponds
+      def isMatch(params: List[Ident]) = (params.tail corresponds methSym.tpe.params)(_.tpe == _.tpe)
 
       if (bmps.isEmpty) rhs else rhs match {
         case Block(assign, l @ LabelDef(name, params, rhs1))
@@ -145,8 +141,10 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
       }
       assert(res != UNIT || meth.tpe.finalResultType.typeSymbol == UnitClass)
 
-      atPos(tree.pos)(typed {
-        def body = { IF ((Ident(bitmapSym) INT_& mask) INT_== ZERO) THEN block ENDIF }
+      val cond = (Ident(bitmapSym) INT_& mask) INT_== ZERO
+
+      atPos(tree.pos)(localTyper.typed {
+        def body = gen.mkDoubleCheckedLocking(meth.enclClass, cond, List(block), Nil)
         BLOCK(body, res)
       })
     }
@@ -169,6 +167,10 @@ abstract class LazyVals extends Transform with ast.TreeDSL {
         bmps(n)
       else {
         val sym = meth.newVariable(meth.pos, nme.bitmapName(n)).setInfo(IntClass.tpe)
+        atPhase(currentRun.typerPhase) {
+          sym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
+        }
+
         bitmaps(meth) = (sym :: bmps).reverse
         sym
       }
