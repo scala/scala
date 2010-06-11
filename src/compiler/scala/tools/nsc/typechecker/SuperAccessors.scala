@@ -432,7 +432,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           if (host.thisSym.tpe.typeSymbol.hasFlag(JAVA))
             errorRestriction("%s accesses protected %s from self type %s.".format(currentOwner.enclClass, sym, host.thisSym.tpe))
           false
-        } else if (host.isTrait && sym.hasFlag(JAVA)) {                   vm
+        } else if (host.isTrait && sym.hasFlag(JAVA)) {
             errorRestriction(("%s accesses protected %s inside a concrete trait method. " +
                     "Add an accessor in a class extending %s to work around this bug.").format(currentOwner.enclClass, sym, sym.enclClass))
             false
