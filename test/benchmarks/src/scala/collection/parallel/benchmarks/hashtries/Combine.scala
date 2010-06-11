@@ -20,7 +20,9 @@ class Combine(val size: Int, val parallelism: Int, val runWhat: String) extends 
 
   def runpar = throw new UnsupportedOperationException
   def runseq = runhashtrie
-  def runhashtrie = hashtrie combine thattrie
+  def runhashtrie = {
+    hashtrie combine thattrie
+  }
   def runappendtrie = hashtrie ++ thattrie
   def runhashmap = hashmap ++ thatmap
   def companion = Combine

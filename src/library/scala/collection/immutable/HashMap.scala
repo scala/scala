@@ -104,19 +104,61 @@ object HashMap extends ImmutableMapFactory[HashMap] {
 
   // TODO: add HashMap2, HashMap3, ...
 
+  // statistics - will remove in future
+  var dives = 0
+  var colls = 0
+  var two_colls = 0
+  var two_nocolls = 0
+
+
   class HashMap1[A,+B](private[HashMap] var key: A, private[HashMap] var hash: Int, private[HashMap] var value: (B @uncheckedVariance), private[HashMap] var kv: (A,B @uncheckedVariance)) extends HashMap[A,B] {
     override def size = 1
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash && key == this.key) Some(value) else None
 
+    // override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1)): HashMap[A, B1] =
+    //   if (hash == this.hash && key == this.key) new HashMap1(key, hash, value, kv)
+    //   else {
+    //     var thatindex = (hash >>> level) & 0x1f
+    //     var thisindex = (this.hash >>> level) & 0x1f
+    //     if (hash != this.hash) {
+    //       //new HashTrieMap[A,B1](level+5, this, new HashMap1(key, hash, value, kv))
+    //       val m = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0) // TODO: could save array alloc
+    //       m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv) // TODO and it will
+    //     } else {
+    //       // 32-bit hash collision (rare, but not impossible)
+    //       new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
+    //     }
+    //   }
+
     override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1)): HashMap[A, B1] =
       if (hash == this.hash && key == this.key) new HashMap1(key, hash, value, kv)
       else {
+        var thatindex = (hash >>> level) & 0x1f
+        var thisindex = (this.hash >>> level) & 0x1f
         if (hash != this.hash) {
-          //new HashTrieMap[A,B1](level+5, this, new HashMap1(key, hash, value, kv))
-          val m = new HashTrieMap[A,B1](0,new Array[HashMap[A,B1]](0),0) // TODO: could save array alloc
-          m.updated0(this.key, this.hash, level, this.value, this.kv).updated0(key, hash, level, value, kv) // TODO and it will
+          // they have different hashes, but may collide at this level - find a level at which they don't
+          var lvl = level
+          var top: HashTrieMap[A, B1] = null
+          var prev: HashTrieMap[A, B1] = null
+          while (thisindex == thatindex) {
+            val newlevel = new HashTrieMap[A, B1](1 << thisindex, new Array[HashMap[A, B1]](1), 2)
+            if (prev ne null) prev.elems(0) = newlevel else top = newlevel
+            prev = newlevel
+            lvl += 5
+            thatindex = (hash >>> lvl) & 0x1f
+            thisindex = (this.hash >>> lvl) & 0x1f
+          }
+          val bottelems = new Array[HashMap[A,B1]](2)
+          val ind = if (thisindex < thatindex) 1 else 0
+          bottelems(1 - ind) = this
+          bottelems(ind) = new HashMap1[A, B1](key, hash, value, kv)
+          val bottom = new HashTrieMap[A,B1]((1 << thisindex) | (1 << thatindex), bottelems, 2)
+          if (prev ne null) {
+            prev.elems(0) = bottom
+            top
+          } else bottom
         } else {
           // 32-bit hash collision (rare, but not impossible)
           new HashMapCollision1(hash, ListMap.empty.updated(this.key,this.value).updated(key,value))
@@ -165,15 +207,13 @@ object HashMap extends ImmutableMapFactory[HashMap] {
       List(newhm(x), newhm(y))
     }
     protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = {
-      // TODO this can be made more efficient by passing the entire ListMap at once
+      // this can be made more efficient by passing the entire ListMap at once
       var m = that
       for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p)
       m
     }
   }
 
-  var dives = 0
-  var colls = 0
   class HashTrieMap[A,+B](private[HashMap] var bitmap: Int, private[HashMap] var elems: Array[HashMap[A,B @uncheckedVariance]],
       private[HashMap] var size0: Int) extends HashMap[A,B] {
 /*
@@ -365,7 +405,7 @@ time { mNew.iterator.foreach( p => ()) }
     }
 
     private def printBitmap(bm: Int) {
-      var i = 31
+      var i = 32
       var b = bm
       while (i != 0) {
 	print((b & 1) + " ")
@@ -411,7 +451,9 @@ time { mNew.iterator.foreach( p => ()) }
       case hm: HashMap1[_, _] =>
         this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.kv)
       case hm: HashMapCollision1[_, _] =>
-        this ++ hm.asInstanceOf[HashMap[A, B1]]
+        var m: HashMap[A, B1] = this
+        for (p <- that) m = m.updated0(p._1, computeHash(p._1), level, p._2, p)
+        m
       case hm: HashTrieMap[_, _] =>
         val that = hm.asInstanceOf[HashTrieMap[A, B1]]
         val thiselems = this.elems
@@ -421,8 +463,6 @@ time { mNew.iterator.foreach( p => ()) }
 
         // determine the necessary size for the array
 	val subcount = Integer.bitCount(thisbm | thatbm)
-        //printBitmap(combinedbitmap)
-        //println(subcount)
 
         // construct a new array of appropriate size
         val combined = new Array[HashMap[A, B1 @uncheckedVariance]](subcount)
@@ -432,19 +472,16 @@ time { mNew.iterator.foreach( p => ()) }
         var thisi = 0
         var thati = 0
         var totalelems = 0
-        // println("merging: ")
-        // printBitmap(thisbm)
-        // printBitmap(thatbm)
         while (i < subcount) {
           val thislsb = thisbm ^ (thisbm & (thisbm - 1))
           val thatlsb = thatbm ^ (thatbm & (thatbm - 1))
-          // println("-------------")
-          // printBitmap(thislsb)
-          // printBitmap(thatlsb)
-          // TODO - offset = Integer.bitCount(bitmap & (mask-1))
+          // if (this.bitmap == -1660585213) { TODO remove
+          //   printBitmap(thislsb)
+          //   printBitmap(thatlsb)
+          //   println("------------------")
+          // }
           if (thislsb == thatlsb) {
             // println("a collision")
-            // inefficient - val m = thiselems(Integer.bitCount((thislsb - 1) & thisorig)) combine thatelems(Integer.bitCount((thatlsb - 1) & thatorig))
             val m = thiselems(thisi).combine0(thatelems(thati), level + 5)
             totalelems += m.size
             combined(i) = m
@@ -452,31 +489,67 @@ time { mNew.iterator.foreach( p => ()) }
             thatbm = thatbm & ~thatlsb
             thati += 1
             thisi += 1
-          } else if ((thislsb < thatlsb && thislsb != 0) || thatlsb == 0) {
-            // println("an element from this trie")
-            // inefficient - val m = thiselems(Integer.bitCount((thislsb - 1) & thisorig))
-            val m = thiselems(thisi)
-            totalelems += m.size
-            combined(i) = m
-            thisbm = thisbm & ~thislsb
-            thisi += 1
           } else {
-            // println("an element from that trie")
-            // inefficient - val m = thatelems(Integer.bitCount((thatlsb - 1) & thatorig))
-            val m = thatelems(thati)
-            totalelems += m.size
-            combined(i) = m
-            thatbm = thatbm & ~thatlsb
-            thati += 1
+            // condition below is due to 2 things:
+            // 1) no unsigned int compare on JVM
+            // 2) 0 (no lsb) should always be greater in comparison
+            // also, search for unsigned compare Scala to find Dave's solution
+            // and compare a and b defined as below:
+            val a = thislsb - 1
+            val b = thatlsb - 1
+            //  ! our case indeed is more specific, but this didn't help:
+            // if ((thislsb > 0 && thislsb < thatlsb) || thatlsb == 0 || (thatlsb < 0 && thislsb != 0)) {
+            if ((a < b) ^ (a < 0) ^ (b < 0)) {
+              // println("an element from this trie")
+              val m = thiselems(thisi)
+              totalelems += m.size
+              combined(i) = m
+              thisbm = thisbm & ~thislsb
+              thisi += 1
+            } else {
+              // println("an element from that trie")
+              val m = thatelems(thati)
+              totalelems += m.size
+              combined(i) = m
+              thatbm = thatbm & ~thatlsb
+              thati += 1
+            }
           }
           i += 1
         }
 
-	new HashTrieMap[A, B1](this.bitmap | that.bitmap, combined, totalelems)
+        val res = new HashTrieMap[A, B1](this.bitmap | that.bitmap, combined, totalelems)
+        // if (!check(this, that, res)) { TODO remove
+        //   printBitmap(this.bitmap)
+        //   printBitmap(that.bitmap)
+        //   printBitmap(res.bitmap)
+        //   println(this.bitmap)
+        //   System.exit(1)
+        // }
+        res
       case empty: HashMap[_, _] => this
       case _ => error("section supposed to be unreachable.")
     }
 
+  }
+
+  private def check[K](x: HashMap[K, _], y: HashMap[K, _], xy: HashMap[K, _]) = { // TODO remove this debugging helper
+    var xs = Set[K]()
+    for (elem <- x) xs += elem._1
+    var ys = Set[K]()
+    for (elem <- y) ys += elem._1
+    var union = Set[K]()
+    for (elem <- xy) union += elem._1
+    if ((xs ++ ys) != union) {
+      println("Error.")
+      println(x.getClass)
+      println(y.getClass)
+      println(xs)
+      println(ys)
+      println(xs ++ ys)
+      println(union)
+      false
+    } else true
   }
 
   @serializable  @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashMap[A, B]) {
