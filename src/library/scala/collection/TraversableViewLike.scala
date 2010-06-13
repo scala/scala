@@ -216,7 +216,7 @@ self =>
   override def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CanBuildFrom[This, B, That]): That =
     newForced(thisSeq.scanRight(z)(op)).asInstanceOf[That]
 
-  override def groupBy[K](f: A => K): Map[K, This] =
+  override def groupBy[K](f: A => K): immutable.Map[K, This] =
     thisSeq.groupBy(f).mapValues(xs => newForced(xs).asInstanceOf[This])
 
   override def stringPrefix = "TraversableView"
