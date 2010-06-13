@@ -51,6 +51,10 @@ abstract class Inliners extends SubComponent {
     }
   }
 
+  /** Is the given class a closure? */
+  def isClosureClass(cls: Symbol): Boolean =
+    cls.isFinal && cls.isSynthetic && !cls.isModuleClass && cls.isAnonymousFunction
+
   /**
    * Simple inliner.
    *
@@ -71,8 +75,8 @@ abstract class Inliners extends SubComponent {
         s + "0"
     }
 
-    lazy val ScalaInlineAttr   = definitions.getClass("scala.inline")
-    lazy val ScalaNoInlineAttr = definitions.getClass("scala.noinline")
+    private def hasInline(sym: Symbol)    = sym hasAnnotation definitions.ScalaInlineClass
+    private def hasNoInline(sym: Symbol)  = sym hasAnnotation definitions.ScalaNoInlineClass
 
     /** Inline the 'callee' method inside the 'caller' in the given
      *  basic block, at the given instruction (which has to be a CALL_METHOD).
@@ -300,6 +304,7 @@ abstract class Inliners extends SubComponent {
       var count = 0
       fresh.clear
       inlinedMethods.clear
+      val caller = new IMethodInfo(m)
 
       do {
         retry = false;
@@ -313,8 +318,10 @@ abstract class Inliners extends SubComponent {
               if (!retry) {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
+                    val inc = new SymMethodInfo(msym)
+
                     def warnNoInline(reason: String) = {
-                      if (msym.hasAnnotation(ScalaInlineAttr) && !m.symbol.hasFlag(Flags.BRIDGE))
+                      if (caller.inline && !inc.isBridge && !inc.hasBlocker)
                         currentIClazz.cunit.warning(i.pos,
                           "Could not inline required method %s because %s.".format(msym.originalName.decode, reason))
                     }
@@ -357,12 +364,13 @@ abstract class Inliners extends SubComponent {
                             if (!(isClosureClass(receiver) && (concreteMethod.name == nme.apply))) // only count non-closures
                                 count = count + 1;
                             inline(m, bb, i, inc);
-                            inlinedMethods(inc.symbol) = inlinedMethods(inc.symbol) + 1
+                            inlinedMethods(inc.symbol) += 1
 
                             /* Remove this method from the cache, as the calls-private relation
                                might have changed after the inlining. */
                             usesNonPublics -= m;
-                          } else {
+                          }
+                          else {
                             if (settings.debug.value)
                               log("inline failed for " + inc + " because:\n\tinc.symbol != m.symbol: " + (inc.symbol != m.symbol)
                                   + "\n\t(inlinedMethods(inc.symbol) < 2): " + (inlinedMethods(inc.symbol) < 2)
@@ -372,7 +380,7 @@ abstract class Inliners extends SubComponent {
                             warnNoInline(
                               if (inc.code eq null) "bytecode was unavailable"
                               else if (!isSafeToInline(m, inc, info.stack)) "it is unsafe (target may reference private fields)"
-                              else "a bug (run with -Ylog:inline -Ydebug for more information)")
+                              else "of a bug (run with -Ylog:inline -Ydebug for more information)")
                           }
                         case None =>
                           warnNoInline("bytecode was not available")
@@ -391,20 +399,58 @@ abstract class Inliners extends SubComponent {
       m.normalize
 		}
 
+    /** small method size (in blocks) */
+    val SMALL_METHOD_SIZE = 1
 
-    def isMonadMethod(method: Symbol): Boolean =
-      (method.name == nme.foreach
-      	|| method.name == nme.filter
-      	|| method.name == nme.map
-      	|| method.name == nme.flatMap)
+    class SymMethodInfo(val sym: Symbol) {
+      val name        = sym.name
+      val owner       = sym.owner
+
+      def inline      = hasInline(sym)
+      def noinline    = hasNoInline(sym)
+      def numInlined  = inlinedMethods(sym)
+
+      def isBridge        = sym.isBridge
+      def isInClosure     = isClosureClass(owner)
+      def isHigherOrder   = sym.isMethod && atPhase(currentRun.erasurePhase.prev)(sym.info.paramTypes exists definitions.isFunctionType)
+      def isMonadic       = name match {
+        case nme.foreach | nme.filter | nme.map | nme.flatMap => true
+        case _                                                => false
+      }
+      def isEffectivelyFinal = sym.isEffectivelyFinal
+      def coMembers   = sym.owner.tpe.members
+      def coPrivates  = coMembers filter (_.isPrivate)
+      def coGetters   = coMembers filter (_.isGetter)
+
+      /** Does this method have a quality which blocks us from inlining it
+       *  until later? At present that means private members or getters exist
+       *  in the class alongside it.
+       */
+      def hasBlocker  = coPrivates.nonEmpty || coGetters.nonEmpty
+    }
+
+    class IMethodInfo(m: IMethod) extends SymMethodInfo(m.symbol) {
+      def length      = m.code.blocks.length
+      def isRecursive = m.recursive
+
+      def isSmall                         = length <= SMALL_METHOD_SIZE
+      def isLarge                         = length > MAX_INLINE_SIZE
+      def isLargeSum(other: IMethodInfo)  = length + other.length - 1 > SMALL_METHOD_SIZE
+    }
 
     /** Should the given method be loaded from disk? */
     def shouldLoad(receiver: Symbol, method: Symbol): Boolean = {
-      if (settings.debug.value) log("shouldLoad: " + receiver + "." + method)
-      ((method.isEffectivelyFinal && isMonadMethod(method) && isHigherOrderMethod(method))
-        || (receiver.enclosingPackage == definitions.ScalaRunTimeModule.enclosingPackage)
-        || (receiver == definitions.PredefModule.moduleClass)
-        || (method.hasAnnotation(ScalaInlineAttr)))
+      if (settings.debug.value)
+        log("shouldLoad: " + receiver + "." + method)
+
+      val caller = new SymMethodInfo(method)
+      def alwaysLoad = (
+        (receiver.enclosingPackage == definitions.RuntimePackage) ||
+        (receiver == definitions.PredefModule.moduleClass) ||
+        caller.inline
+      )
+
+      (caller.isEffectivelyFinal && caller.isMonadic && caller.isHigherOrder) || alwaysLoad
     }
 
     /** Cache whether a method calls private members. */
@@ -413,8 +459,6 @@ abstract class Inliners extends SubComponent {
     object NonPublicRefs extends Enumeration {
       val Public, Protected, Private = Value
     }
-
-    def isRecursive(m: IMethod): Boolean = m.recursive
 
     /** A method is safe to inline when:
      *    - it does not contain calls to private methods when
@@ -511,9 +555,6 @@ abstract class Inliners extends SubComponent {
       }
     }
 
-    /** small method size (in blocks) */
-    val SMALL_METHOD_SIZE = 1
-
     /** Decide whether to inline or not. Heuristics:
      *   - it's bad to make the caller larger (> SMALL_METHOD_SIZE)
      *        if it was small
@@ -522,46 +563,43 @@ abstract class Inliners extends SubComponent {
      *   - it's good to inline closures functions.
      *   - it's bad (useless) to inline inside bridge methods
      */
-    def shouldInline(caller: IMethod, callee: IMethod): Boolean = {
-       if (caller.symbol.hasFlag(Flags.BRIDGE)) return false;
-       if (callee.symbol.hasAnnotation(ScalaNoInlineAttr)) return false
-       if (callee.symbol.hasAnnotation(ScalaInlineAttr)) return true
-       if (settings.debug.value)
-         log("shouldInline: " + caller + " with " + callee)
-       var score = 0
-       if (callee.code.blocks.length <= SMALL_METHOD_SIZE) score = score + 1
-       if (caller.code.blocks.length <= SMALL_METHOD_SIZE
-           && ((caller.code.blocks.length + callee.code.blocks.length - 1) > SMALL_METHOD_SIZE)) {
-         score -= 1
-         if (settings.debug.value)
-           log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
-       }
-       if (callee.code.blocks.length > MAX_INLINE_SIZE)
-         score -= 1
+    def shouldInline(mcaller: IMethod, mcallee: IMethod): Boolean = {
+      val caller  = new IMethodInfo(mcaller)
+      val inc     = new IMethodInfo(mcallee)
 
-       if (isMonadMethod(callee.symbol))
-         score += 2
-       else if (isHigherOrderMethod(callee.symbol))
-         score += 1
-       if (isClosureClass(callee.symbol.owner))
-         score += 2
+      if (caller.isBridge || inc.noinline || inc.hasBlocker)
+        return false
 
-       if (inlinedMethods(callee.symbol) > 2) score -= 2
-       if (settings.debug.value) log("shouldInline(" + callee + ") score: " + score)
-       score > 0
-     }
+      if (inc.inline)
+        return true
+
+      if (settings.debug.value)
+        log("shouldInline: " + mcaller + " with " + mcallee)
+
+      var score = 0
+      if (inc.isSmall)
+        score += 1
+      if (caller.isSmall && (caller isLargeSum inc)) {
+        score -= 1
+        if (settings.debug.value)
+          log("shouldInline: score decreased to " + score + " because small " + caller + " would become large")
+      }
+      if (inc.isLarge)
+        score -= 1
+
+      if (inc.isMonadic)
+        score += 2
+      else if (inc.isHigherOrder)
+        score += 1
+      if (inc.isInClosure)
+        score += 2
+      if (inc.numInlined > 2)
+        score -= 2
+
+      if (settings.debug.value)
+        log("shouldInline(" + mcallee + ") score: " + score)
+
+      score > 0
+    }
   } /* class Inliner */
-
-  /** Is the given class a closure? */
-  def isClosureClass(cls: Symbol): Boolean = {
-    val res = (cls.isFinal && cls.hasFlag(Flags.SYNTHETIC)
-      && !cls.isModuleClass && cls.isAnonymousFunction)
-    res
-  }
-
-  /** Does 'sym' denote a higher order method? */
-  def isHigherOrderMethod(sym: Symbol): Boolean =
-    (sym.isMethod
-     && atPhase(currentRun.erasurePhase.prev)(sym.info.paramTypes exists definitions.isFunctionType))
-
 } /* class Inliners */
