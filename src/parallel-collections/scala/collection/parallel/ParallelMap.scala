@@ -20,16 +20,19 @@ extends Map[K, V]
    with ParallelMapLike[K, V, ParallelMap[K, V], Map[K, V]]
 { self =>
 
-  override def empty: ParallelMap[K, V] = null // TODO
+  override def empty: ParallelMap[K, V] = new immutable.ParallelHashTrie[K, V]
+
+  override def stringPrefix = "ParallelMap"
 
 }
 
 
 
 object ParallelMap extends ParallelMapFactory[ParallelMap] {
-  def empty[A, B]: ParallelMap[A, B] = null // TODO
+  def empty[K, V]: ParallelMap[K, V] = new immutable.ParallelHashTrie[K, V]
 
-  implicit def canBuildFrom[A, B]: CanBuildFromParallel[Coll, (A, B), Map[A, B]] = null // TODO
+  implicit def canBuildFrom[K, V]: CanBuildFromParallel[Coll, (K, V), ParallelMap[K, V]] = new ParallelMapCanBuildFrom[K, V]
+
 }
 
 

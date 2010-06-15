@@ -105,10 +105,9 @@ object HashMap extends ImmutableMapFactory[HashMap] {
   // TODO: add HashMap2, HashMap3, ...
 
   // statistics - will remove in future
-  var dives = 0
-  var colls = 0
-  var two_colls = 0
-  var two_nocolls = 0
+  var bothsingle = 0
+  var bothtries = 0
+  var onetrie = 0
 
 
   class HashMap1[A,+B](private[HashMap] var key: A, private[HashMap] var hash: Int, private[HashMap] var value: (B @uncheckedVariance), private[HashMap] var kv: (A,B @uncheckedVariance)) extends HashMap[A,B] {
@@ -171,7 +170,11 @@ object HashMap extends ImmutableMapFactory[HashMap] {
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
-    protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = that.updated0(key, hash, level, value, kv)
+    protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = {
+      // if (that.isInstanceOf[HashMap1[_, _]]) bothsingle += 1
+      // else onetrie += 1
+      that.updated0(key, hash, level, value, kv)
+    }
   }
 
   private class HashMapCollision1[A,+B](private[HashMap] var hash: Int, var kvs: ListMap[A,B @uncheckedVariance]) extends HashMap[A,B] {
@@ -266,8 +269,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
         Array.copy(elems, 0, elemsNew, 0, offset)
         elemsNew(offset) = new HashMap1(key, hash, value, kv)
         Array.copy(elems, offset, elemsNew, offset + 1, elems.length - offset)
-        val bitmapNew = bitmap | mask
-        new HashTrieMap(bitmapNew, elemsNew, size + 1)
+        new HashTrieMap(bitmap | mask, elemsNew, size + 1)
       }
     }
 
@@ -427,7 +429,7 @@ time { mNew.iterator.foreach( p => ()) }
       i
     }
 
-    override def split: Seq[HashMap[A, B]] = {
+    override def split: Seq[HashMap[A, B]] = if (size == 1) Seq(this) else {
       // printBitmap(bitmap)
       // println(elems.toList)
 
@@ -449,12 +451,10 @@ time { mNew.iterator.foreach( p => ()) }
 
     protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = that match {
       case hm: HashMap1[_, _] =>
+        // onetrie += 1
         this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.kv)
-      case hm: HashMapCollision1[_, _] =>
-        var m: HashMap[A, B1] = this
-        for (p <- that) m = m.updated0(p._1, computeHash(p._1), level, p._2, p)
-        m
       case hm: HashTrieMap[_, _] =>
+        // bothtries += 1
         val that = hm.asInstanceOf[HashTrieMap[A, B1]]
         val thiselems = this.elems
         val thatelems = that.elems
@@ -465,7 +465,7 @@ time { mNew.iterator.foreach( p => ()) }
 	val subcount = Integer.bitCount(thisbm | thatbm)
 
         // construct a new array of appropriate size
-        val combined = new Array[HashMap[A, B1 @uncheckedVariance]](subcount)
+        val combined = new Array[HashMap[A, B1]](subcount)
 
 	// run through both bitmaps and add elements to it
         var i = 0
@@ -497,7 +497,7 @@ time { mNew.iterator.foreach( p => ()) }
             // and compare a and b defined as below:
             val a = thislsb - 1
             val b = thatlsb - 1
-            //  ! our case indeed is more specific, but this didn't help:
+            // ! our case indeed is more specific, but this didn't help:
             // if ((thislsb > 0 && thislsb < thatlsb) || thatlsb == 0 || (thatlsb < 0 && thislsb != 0)) {
             if ((a < b) ^ (a < 0) ^ (b < 0)) {
               // println("an element from this trie")
@@ -518,16 +518,8 @@ time { mNew.iterator.foreach( p => ()) }
           i += 1
         }
 
-        val res = new HashTrieMap[A, B1](this.bitmap | that.bitmap, combined, totalelems)
-        // if (!check(this, that, res)) { TODO remove
-        //   printBitmap(this.bitmap)
-        //   printBitmap(that.bitmap)
-        //   printBitmap(res.bitmap)
-        //   println(this.bitmap)
-        //   System.exit(1)
-        // }
-        res
-      case empty: HashMap[_, _] => this
+        new HashTrieMap[A, B1](this.bitmap | that.bitmap, combined, totalelems)
+      case hm: HashMapCollision1[_, _] => that.combine0(this, level)
       case _ => error("section supposed to be unreachable.")
     }
 

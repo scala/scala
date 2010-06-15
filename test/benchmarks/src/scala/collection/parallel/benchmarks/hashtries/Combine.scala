@@ -22,13 +22,22 @@ class Combine(val size: Int, val parallelism: Int, val runWhat: String) extends 
   def runseq = runhashtrie
   def runhashtrie = {
     hashtrie combine thattrie
+    // println
+    // println("both tries:         " + HashTrie.bothtries)
+    // println("one trie, one item: " + HashTrie.onetrie)
+    // println("both single:        " + HashTrie.bothsingle)
+    // System exit 1
+  }
+  def rundestructive = {
+    hashtrie combine thattrie
   }
   def runappendtrie = hashtrie ++ thattrie
   def runhashmap = hashmap ++ thatmap
   def companion = Combine
-  def comparisonMap = Map("hashtrie" -> runhashtrie _, "hashmap" -> runhashmap _, "appendtrie" -> runappendtrie _)
+  def comparisonMap = Map("hashtrie" -> runhashtrie _, "hashmap" -> runhashmap _, "destruct" -> rundestructive _, "appendtrie" -> runappendtrie _)
   override def reset = runWhat match {
     case "appendtrie" => initHashTrie
+    case "destruct" => initHashTrie
     case _ => super.reset
   }
 }
