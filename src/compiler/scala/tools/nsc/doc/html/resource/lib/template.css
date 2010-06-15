@@ -85,7 +85,7 @@ a:hover {
   padding-left: 8px;
 }
 
-#values > h3 {
+#template .values > h3 {
   color: white;
   padding: 4px;
   background-color: #7996AC;
@@ -93,7 +93,7 @@ a:hover {
   font-weight: bold;
 }
 
-#types > h3 {
+#template .types > h3 {
   padding: 4px;
   color: white;
   font-weight: bold;
@@ -107,6 +107,18 @@ a:hover {
   font-weight: bold;
   font-size: 12pt;
   background-color: #333;
+}
+
+#template > div.parent > h3 {
+  color: white;
+  padding: 4px;
+  background-color: #385E1A;
+  font-size: 12pt;
+  font-weight: bold;
+}
+
+#template > div.parent > h3 > a {
+  color: white;
 }
 
 /* Member cells */
@@ -181,11 +193,11 @@ div.members > ol > li {
   font-style: italic;
 }
 
-#values .signature .name {
+#template .values .signature .name {
   color: blue;
 }
 
-#types .signature .name {
+#template .types .signature .name {
   color: green;
 }
 

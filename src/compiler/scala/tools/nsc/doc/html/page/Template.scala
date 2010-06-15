@@ -23,8 +23,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   val headers =
     <xml:group>
       <link href={ relativeLinkTo(List("template.css", "lib")) }   media="screen" type="text/css" rel="stylesheet"/>
-      <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
+		  <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
     </xml:group>
 
   val valueMembers =
@@ -59,16 +60,24 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
         <div id="mbrsel">
           { if (tpl.linearization.isEmpty) NodeSeq.Empty else
+              <div id="order">
+                <span class="filtertype">Ordering</span>
+                <ol><li class="alpha in">Alphabetic</li><li class="inherit out">By inheritance</li></ol>
+              </div>
+          }
+          { if (tpl.linearization.isEmpty) NodeSeq.Empty else
               <div id="ancestors">
                 <span class="filtertype">Inherited</span>
                 <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
-                <ol id="linearization">{ tpl.linearization map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
+                <ol id="linearization">{ (tpl :: tpl.linearization) map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
               </div>
           }
-          <div id="visbl">
-            <span class="filtertype">Visibility</span>
-            <ol><li class="public in">Public</li><li class="all out">All</li></ol>
-          </div>
+          {
+            <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in">Public</li><li class="all out">All</li></ol>
+            </div>
+          }
         </div>
 
         { if (constructors.isEmpty) NodeSeq.Empty else
@@ -79,17 +88,25 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }
 
         { if (typeMembers.isEmpty) NodeSeq.Empty else
-            <div id="types" class="members">
+            <div id="types" class="types members">
               <h3>Type Members</h3>
               <ol>{ typeMembers map (memberToHtml(_)) }</ol>
             </div>
         }
 
         { if (valueMembers.isEmpty) NodeSeq.Empty else
-            <div id="values" class="members">
+            <div id="values" class="values members">
               <h3>Value Members</h3>
               <ol>{ valueMembers map (memberToHtml(_)) }</ol>
             </div>
+        }
+
+        {
+          NodeSeq fromSeq (for (parent <- tpl.linearization) yield
+            <div class="parent" name={ parent.qualifiedName }>
+              <h3>Inherited from { templateToHtml(parent) }</h3>
+            </div>
+          )
         }
 
       </div>
@@ -97,6 +114,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       <div id="tooltip" ></div>
 
     </body>
+
 
   def memberToHtml(mbr: MemberEntity): NodeSeq = {
     val attributes: List[comment.Body] = Nil

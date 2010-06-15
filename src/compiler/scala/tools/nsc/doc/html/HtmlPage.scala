@@ -47,7 +47,6 @@ abstract class HtmlPage { thisPage =>
         <head>
           <title>{ title }</title>
           <meta http-equiv="content-type" content={ "text/html; charset=" + site.encoding }/>
-		      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
           { headers }
         </head>
         { body }

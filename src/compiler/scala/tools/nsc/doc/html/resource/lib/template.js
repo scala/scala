@@ -47,6 +47,20 @@ $(document).ready(function(){
             filter();
         };
     });
+    $("#order > ol > li.alpha").click(function() {
+        if ($(this).hasClass("out")) {
+            $(this).removeClass("out").addClass("in");
+            $("#order > ol > li.inherit").removeClass("in").addClass("out");
+            orderAlpha();
+        };
+    })
+    $("#order > ol > li.inherit").click(function() {
+        if ($(this).hasClass("out")) {
+            $(this).removeClass("out").addClass("in");
+            $("#order > ol > li.alpha").removeClass("in").addClass("out");
+            orderInherit();
+        };
+    });
     //http://flowplayer.org/tools/tooltip.html
     $(".extype").tooltip({
         tip: "#tooltip",
@@ -95,11 +109,80 @@ $(document).ready(function(){
     $("p.shortcomment").click(function(){
         commentToggleFct($(this));
     });
+    initInherit();
 });
 
+function orderAlpha() {
+    $("#template > div.parent").hide();
+    $("#ancestors").show();
+    filter();
+};
+
+function orderInherit() {
+    $("#template > div.parent").show();
+    $("#ancestors").hide();
+    filter();
+};
+
+/** Prepares the DOM for inheritance-based display. To do so it will:
+  *  - hide all statically-generated parents headings;
+  *  - copy all members from the value and type members lists (flat members) to corresponding lists nested below the
+  *    parent headings (inheritance-grouped members);
+  *  - initialises a control variable used by the filter method to control whether filtering happens on flat members
+  *    or on inheritance-grouped members. */
+function initInherit() {
+    // parents is a map from fully-qualified names to the DOM node of parent headings.
+    var parents = new Object();
+    $("#template > div.parent").each(function(){
+        parents[$(this).attr("name")] = $(this);
+    });
+    // 
+    $("#types > ol > li").each(function(){
+        var qualName = $(this).attr("name");
+        var owner = qualName.slice(0, qualName.indexOf("#"));
+        var name = qualName.slice(qualName.indexOf("#") + 1);
+        var parent = parents[owner];
+        if (parent != undefined) {
+            var types = $("> .types > ol", parent);
+            if (types.length == 0) {
+                parent.append("<div class='types members'><h3>Type Members</h3><ol></ol></div>");
+                types = $("> .types > ol", parent);
+            }
+            types.append($(this).clone());
+        }
+    });
+    $("#values > ol > li").each(function(){
+        var qualName = $(this).attr("name");
+        var owner = qualName.slice(0, qualName.indexOf("#"));
+        var name = qualName.slice(qualName.indexOf("#") + 1);
+        var parent = parents[owner];
+        if (parent != undefined) {
+            var values = $("> .values > ol", parent);
+            if (values.length == 0) {
+                parent.append("<div class='values members'><h3>Value Members</h3><ol></ol></div>");
+                values = $("> .values > ol", parent);
+            }
+            values.append($(this).clone());
+        }
+    });
+    $("#template > div.parent").each(function(){
+        if ($("> div.members", this).length == 0) { $(this).remove(); };
+    });
+    $("#template > div.parent").each(function(){
+        $(this).hide();
+    });
+};
+
 function filter() {
+    var inheritHides = null
+    if ($("#order > ol > li.inherit").hasClass("in")) {
+        inheritHides = $("#linearization > li:gt(0)");
+    }
+    else {
+        inheritHides = $("#linearization > li.out");
+    }
     var outOwners =
-        $("#mbrsel ol#linearization > li.out").map(function(){
+        inheritHides.map(function(){
             var r = $(this).attr("name");
             return r
         }).get();
@@ -107,12 +190,15 @@ function filter() {
     $(".members > ol > li").each(function(){
         var vis1 = $(this).attr("visbl");
         var qualName1 = $(this).attr("name");
-        var owner1 = qualName1.slice(0, qualName1.indexOf("#"));
         //var name1 = qualName1.slice(qualName1.indexOf("#") + 1);
         var showByOwned = true;
-        for (out in outOwners) {
-            if (outOwners[out] == owner1) {
-                showByOwned = false;
+        if ($(this).parents(".parent").length == 0) {
+           // owner filtering must not happen in "inherited from" member lists
+            var owner1 = qualName1.slice(0, qualName1.indexOf("#"));
+            for (out in outOwners) {
+                if (outOwners[out] == owner1) {
+                    showByOwned = false;
+                };
             };
         };
         var showByVis = true
@@ -125,6 +211,10 @@ function filter() {
         else {
           $(this).hide();
         };
+    });
+    $(".members").each(function(){
+        $(this).show();
+        if ($(" > ol > li:visible", this).length == 0) { $(this).hide(); }
     });
     return false
 };
