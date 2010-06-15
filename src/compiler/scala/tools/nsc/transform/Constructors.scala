@@ -16,6 +16,7 @@ import util.TreeSet
 abstract class Constructors extends Transform with ast.TreeDSL {
   import global._
   import definitions._
+  import collection.mutable
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "constructors"
@@ -23,11 +24,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ConstructorTransformer(unit)
 
-  class ConstructorTransformer(unit: CompilationUnit) extends Transformer {
-    import collection.mutable
+  private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = new mutable.HashMap[Symbol, List[Tree]]
+  private val ctorParams: mutable.Map[Symbol, List[Symbol]] = new mutable.HashMap[Symbol, List[Symbol]]
 
-    private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = new mutable.HashMap[Symbol, List[Tree]]
-    private val ctorParams: mutable.Map[Symbol, List[Symbol]] = new mutable.HashMap[Symbol, List[Symbol]]
+  class ConstructorTransformer(unit: CompilationUnit) extends Transformer {
 
     def transformClassTemplate(impl: Template): Template = {
       val clazz = impl.symbol.owner  // the transformed class
