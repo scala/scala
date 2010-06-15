@@ -385,9 +385,12 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *  the empty list for all other types */
     def boundSyms: List[Symbol] = List()
 
-    /** Mixin a NotNull trait unless type already has one */
+    /** Mixin a NotNull trait unless type already has one
+     *  ...if the option is given, since it is causing typing bugs.
+     */
     def notNull: Type =
-      if (isNotNull || phase.erasedTypes) this else NotNullType(this)
+      if (!settings.Ynotnull.value || isNotNull || phase.erasedTypes) this
+      else NotNullType(this)
 
     /** Replace formal type parameter symbols with actual type arguments.
      *
