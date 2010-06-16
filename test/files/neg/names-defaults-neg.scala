@@ -106,3 +106,16 @@ case class Fact(a: Int, b: String)(c: Int*)
 case class A1(x: Int = 1, y: String = "2")
 
 class A2[T](a: T = 1)
+
+
+// anonymous functions
+object anfun {
+  var var2 = 0
+  def delay(var2: => Unit) { var2 }
+  delay(var2 = 40)
+
+  def testAnnFun(a: Int, b: String) = println(a +": "+ b)
+  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
+  val taf3 = testAnnFun(b = _: String, a = get(8))
+  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
+}

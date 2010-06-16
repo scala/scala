@@ -20,16 +20,20 @@ object Test extends Application {
 
 
   // anonymous functions
+  {
+    def doMod(f: Int => Unit) { f(20) }
+    var var1 = 0
+    doMod(var1 = _)
+    println(var1)
+
+    synchronized(var1 = 30)
+    println(var1)
+
+    var var2 = 0
+    def delay(var2: => Int) = { var2 }
+    println(delay(var2 = 40))
+  }
   val f1: (Int, String) => Unit = test1(_, _); f1(6, "~")
-  val f2: Int => Unit = test1(a = _, b = get("+")); f2(get(7))
-  val f3 = test1(b = _: String, a = get(8)); f3(get("+"))
-  val f4: (Int, String) => Unit = test1(_, b = _); f4(9, "?")
-
-  val f5: Int => (String, Int) => Unit = test2(v = get(38), u = _)_
-  f5(get(39))(get("|"), 10)
-
-  val f6: (Double, String) => Unit = test3(get(13), _)(d = _, c = get("x"))
-  f6(get(2.233), get("<"))
 
 
   test4(14)
@@ -151,10 +155,6 @@ object Test extends Application {
   println(c1.print)
   val c2 = C("dflkj", c = Some(209): Option[Int])(None, "!!")
   println(c2.print)
-  val a_f: String => A[String, Nothing] = new A[String, Nothing](b = _)(d = 100)
-  println(a_f("20").print)
-  val c_f: Int => C[Int] = C("dlfkj", c = 10, b = _)(35, e = "dlkf")
-  println(c_f(11).print)
 
 
   // "super" qualifier

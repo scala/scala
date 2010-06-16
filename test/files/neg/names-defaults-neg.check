@@ -37,8 +37,8 @@ names-defaults-neg.scala:23: error: parameter specified twice: b
   test1(b = 1, b = "2")
                  ^
 names-defaults-neg.scala:26: error: {
-  val x$1: Int(3) = 3;
-  val x$2: Int(1) = 1;
+  val x$5: Int(3) = 3;
+  val x$6: Int(1) = 1;
   Test.this.test3(1, 3)
 } of type Int does not take parameters
   test3(b = 3, a = 1)(3)
@@ -104,4 +104,17 @@ names-defaults-neg.scala:82: error: type mismatch;
 Error occurred in an application involving default arguments.
   new A2[String]()
   ^
-24 errors found
+names-defaults-neg.scala:115: error: reference to var2 is ambiguous; it is both, a parameter
+name of the method and the name of a variable currently in scope.
+  delay(var2 = 40)
+             ^
+names-defaults-neg.scala:118: error: missing parameter type for expanded function ((x$1) => a = x$1)
+  val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
+                                         ^
+names-defaults-neg.scala:119: error: parameter specified twice: a
+  val taf3 = testAnnFun(b = _: String, a = get(8))
+                                         ^
+names-defaults-neg.scala:120: error: wrong number of parameters; expected = 2
+  val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
+                                              ^
+28 errors found
