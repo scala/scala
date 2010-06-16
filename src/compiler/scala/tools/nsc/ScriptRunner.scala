@@ -241,7 +241,7 @@ object ScriptRunner {
 		scriptArgs: List[String]): Boolean =
 	{
 	  val pr = new PathResolver(settings)
-	  val classpath = pr.asURLs :+ File(compiledLocation).toURL
+	  val classpath = File(compiledLocation).toURL +: pr.asURLs
 
     try {
       ObjectRunner.run(classpath, scriptMain(settings), scriptArgs)
