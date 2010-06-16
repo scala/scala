@@ -1880,6 +1880,7 @@ trait Typers { self: Analyzer =>
                 member.resetFlag(PROTECTED)
                 member.resetFlag(LOCAL)
                 member.setFlag(PRIVATE | SYNTHETIC_PRIVATE)
+                syntheticPrivates += member
                 member.privateWithin = NoSymbol
               }
             case _ =>
