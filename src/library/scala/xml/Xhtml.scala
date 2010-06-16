@@ -13,7 +13,7 @@ object Xhtml
    *
    * @param node      the node
    */
-  def toXhtml(node: Node): String = sbToString(toXhtml(x = node, sb = _))
+  def toXhtml(node: Node): String = sbToString(sb => toXhtml(x = node, sb = sb))
 
   /**
    * Convenience function: amounts to calling toXhtml(node) on each
@@ -21,7 +21,7 @@ object Xhtml
    *
    * @param nodeSeq   the node sequence
    */
-  def toXhtml(nodeSeq: NodeSeq): String = sbToString(sequenceToXML(nodeSeq: Seq[Node], sb = _))
+  def toXhtml(nodeSeq: NodeSeq): String = sbToString(sb => sequenceToXML(nodeSeq: Seq[Node], sb = sb))
 
   /** Elements which we believe are safe to minimize if minimizeTags is true.
    *  See http://www.w3.org/TR/xhtml1/guidelines.html#C_3
