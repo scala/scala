@@ -17,10 +17,9 @@ object Analyzer
 {
 	def name = "xsbt-analyzer"
 }
-final class Analyzer(val global: Global, val callback: AnalysisCallback) extends NotNull
+final class Analyzer(val global: Global, val callback: AnalysisCallback) extends Compat
 {
 	import global._
-	import Compat.{archive, hasAnnotation, linkedClass, nameString}
 
 	def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
 	private class AnalyzerPhase(prev: Phase) extends Phase(prev)
@@ -216,35 +215,42 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 			if(entry eq null) None else Some(entry.classFile)
 		}
 	}
-	private object Compat
+}
+abstract class Compat
+{
+	val global: Global
+	import global._
+	def archive(s: ZipArchive#Entry): ZipFile = s.getArchive
+	def nameString(s: Symbol): String = s.fullNameString
+	def nameString(s: Symbol, sep: Char): String = s.fullNameString(sep)
+	def isExistential(s: Symbol): Boolean = s.isExistential
+	def isNonClassType(s: Symbol): Boolean = s.isTypeMember
+
+	def linkedClass(s: Symbol): Symbol = s.linkedClassOfModule
+
+	/** After 2.8.0.Beta1, fullNameString was renamed fullName.
+	* linkedClassOfModule was renamed companionClass. */
+	private implicit def symCompat(sym: Symbol): SymCompat = new SymCompat(sym)
+	private final class SymCompat(s: Symbol)
 	{
-		def archive(s: ZipArchive#Entry): ZipFile = s.getArchive
-		def nameString(s: Symbol): String = s.fullNameString
-		def nameString(s: Symbol, sep: Char): String = s.fullNameString(sep)
-
-		def linkedClass(s: Symbol): Symbol = s.linkedClassOfModule
-
-		/** After 2.8.0.Beta1, fullNameString was renamed fullName.
-		* linkedClassOfModule was renamed companionClass. */
-		private implicit def symCompat(sym: Symbol): SymCompat = new SymCompat(sym)
-		private final class SymCompat(s: Symbol)
-		{
-			def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
-			def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
-			
-			def linkedClassOfModule = s.companionClass; def companionClass = sourceCompatibilityOnly
-		// In 2.8, hasAttribute is renamed to hasAnnotation
-			def hasAnnotation(a: Symbol) = s.hasAttribute(a); def hasAttribute(a: Symbol) = sourceCompatibilityOnly
-		}
-
-		def hasAnnotation(s: Symbol)(ann: Symbol) = atPhase(currentRun.typerPhase) { s.hasAnnotation(ann) }
-
-		/** After 2.8.0.Beta1, getArchive was renamed archive.*/
-		private implicit def zipCompat(z: ZipArchive#Entry): ZipCompat = new ZipCompat(z)
-		private final class ZipCompat(z: ZipArchive#Entry)
-		{
-			def getArchive = z.archive; def archive = sourceCompatibilityOnly
-		}
-		private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
+		def fullNameString = s.fullName; def fullName = sourceCompatibilityOnly
+		def fullNameString(sep: Char) = s.fullName(sep); def fullName(sep: Char) = sourceCompatibilityOnly
+		
+		def isExistential: Boolean = s.isExistentiallyBound; def isExistentiallyBound = sourceCompatibilityOnly
+		def isTypeMember: Boolean = s.isNonClassType; def isNonClassType = sourceCompatibilityOnly
+		
+		def linkedClassOfModule = s.companionClass; def companionClass = sourceCompatibilityOnly
+	// In 2.8, hasAttribute is renamed to hasAnnotation
+		def hasAnnotation(a: Symbol) = s.hasAttribute(a); def hasAttribute(a: Symbol) = sourceCompatibilityOnly
 	}
+
+	def hasAnnotation(s: Symbol)(ann: Symbol) = atPhase(currentRun.typerPhase) { s.hasAnnotation(ann) }
+
+	/** After 2.8.0.Beta1, getArchive was renamed archive.*/
+	private implicit def zipCompat(z: ZipArchive#Entry): ZipCompat = new ZipCompat(z)
+	private final class ZipCompat(z: ZipArchive#Entry)
+	{
+		def getArchive = z.archive; def archive = sourceCompatibilityOnly
+	}
+	private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
 }

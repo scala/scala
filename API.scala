@@ -9,13 +9,16 @@ import io.{AbstractFile, PlainFile, ZipArchive}
 import plugins.{Plugin, PluginComponent}
 import symtab.Flags
 import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
-//import xsbti.api.{ClassLike, DefinitionType, PathComponent, SimpleType}
+import xsbti.api.{ClassLike, DefinitionType, PathComponent, SimpleType}
 
 object API
 {
 	val name = "xsbt-api"
+	// for 2.7 compatibility: this class was removed in 2.8
+	type ImplicitMethodType = AnyRef
 }
-final class API(val global: Global, val callback: xsbti.AnalysisCallback) extends NotNull
+import API._ // imports ImplicitMethodType, which will preserve source compatibility in 2.7 for defDef
+final class API(val global: Global, val callback: xsbti.AnalysisCallback) extends Compat
 {
 	import global._
 	def error(msg: String) = throw new RuntimeException(msg)
@@ -35,7 +38,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				println("API phase took : " + ((stop - start)/1000.0) + " s")
 			}
 		}
-		/*def processUnit(unit: CompilationUnit)
+		def processUnit(unit: CompilationUnit)
 		{
 			val sourceFile = unit.source.file.file
 			val traverser = new TopLevelHandler(sourceFile)
@@ -43,9 +46,9 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
 			val source = new xsbti.api.Source(packages, traverser.definitions.toArray[xsbti.api.Definition])
 			callback.api(sourceFile, source)
-		}*/
+		}
 	}
-	/*private def thisPath(sym: Symbol) = path(pathComponents(sym, Constants.thisPath :: Nil))
+	private def thisPath(sym: Symbol) = path(pathComponents(sym, Constants.thisPath :: Nil))
 	private def path(components: List[PathComponent]) = new xsbti.api.Path(components.toArray[PathComponent])
 	private def pathComponents(sym: Symbol, postfix: List[PathComponent]): List[PathComponent] =
 	{
@@ -64,7 +67,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(pre == NoPrefix)
 		{
 			if(sym.isLocalClass) Constants.emptyType
-			else if(sym.isTypeParameterOrSkolem || sym.isExistential) new xsbti.api.ParameterRef(sym.id)
+			else if(sym.isTypeParameterOrSkolem || isExistential(sym)) new xsbti.api.ParameterRef(sym.id)
 			else error("Unknown prefixless type: " + sym)
 		}
 		else if(sym.isRoot || sym.isRootPackage) Constants.emptyType
@@ -178,7 +181,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	{
 		if(sym.isClass) classLike(sym)
 		else if(sym.isMethod) defDef(sym)
-		else if(sym.isTypeMember) typeDef(sym)
+		else if(isNonClassType(sym)) typeDef(sym)
 		else if(sym.isVariable) fieldDef(sym, new xsbti.api.Var(_,_,_,_,_))
 		else fieldDef(sym, new xsbti.api.Val(_,_,_,_,_))
 	}
@@ -316,6 +319,6 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		val annots = at.attributes
 		if(annots.isEmpty) processType(at.underlying) else annotated(annots, at.underlying)
 	}
-	private def fullName(s: Symbol): String = s.fullNameString
-	private def simpleName(s: Symbol): String = s.simpleName.toString.trim*/
+	private def fullName(s: Symbol): String = nameString(s)
+	private def simpleName(s: Symbol): String = s.simpleName.toString.trim
 }
