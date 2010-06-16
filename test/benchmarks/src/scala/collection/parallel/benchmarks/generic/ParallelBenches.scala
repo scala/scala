@@ -110,6 +110,20 @@ trait StandardParallelIterableBench[T, Coll <: ParallelIterable[T]] extends Para
     def companion = ReduceMedium
   }
 
+  object Map extends IterableBenchCompanion {
+    override def defaultSize = 5000
+    def benchName = "map";
+    def apply(sz: Int, p: Int, w: String) = new Map(sz, p, w)
+  }
+
+  class Map(val size: Int, val parallelism: Int, val runWhat: String)
+  extends IterableBench with StandardParallelIterableBench[T, Coll] {
+    def comparisonMap = collection.Map()
+    def runseq = this.seqcoll.map(operators.mapper)
+    def runpar = this.parcoll.map(operators.mapper)
+    def companion = Map
+  }
+
 }
 
 

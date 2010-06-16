@@ -98,6 +98,8 @@ trait BenchmarkRegister {
   // parallel hash trie benchmarks
   register(hashtries.RefParallelHashTrieBenches.Reduce)
   register(hashtries.RefParallelHashTrieBenches.ReduceMedium)
+  register(hashtries.RefParallelHashTrieBenches.Map)
+  register(hashtries.RefParallelHashTrieBenches.Map2)
 }
 
 

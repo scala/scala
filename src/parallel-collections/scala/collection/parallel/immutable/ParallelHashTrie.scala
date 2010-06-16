@@ -70,7 +70,7 @@ extends ParallelMap[K, V]
 object ParallelHashTrie extends ParallelMapFactory[ParallelHashTrie] {
   def empty[K, V]: ParallelHashTrie[K, V] = new ParallelHashTrie[K, V]
 
-  implicit def canBuildFrom[K, V]: CanBuildFromParallel[ParallelHashTrie[K, V], (K, V), ParallelMap[K, V]] = new ParallelMapCanBuildFrom[K, V]
+  implicit def canBuildFrom[K, V]: CanBuildFromParallel[Coll, (K, V), ParallelHashTrie[K, V]] = new ParallelMapCanBuildFrom[K, V]
 }
 
 

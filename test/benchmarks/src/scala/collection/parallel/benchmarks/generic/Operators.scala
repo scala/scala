@@ -11,6 +11,7 @@ trait Operators[T] {
   def mediumreducer: (T, T) => T
   def filterer: T => Boolean
   def mapper: T => T
+  def mapper2: T => T = error("unsupported")
   def heavymapper: T => T
   def taker: T => Boolean
 
