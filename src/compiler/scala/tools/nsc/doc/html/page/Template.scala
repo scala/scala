@@ -231,6 +231,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     } ++
     { mbr match {
+        case dtpl: DocTemplateEntity if (isSelf && !dtpl.selfType.isEmpty) =>
+          <div class="block">
+            self type: { typeToHtml(dtpl.selfType.get, hasLinks = true) }
+          </div>
+        case _ => NodeSeq.Empty
+      }
+    } ++
+    { mbr match {
         case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined) =>
           val sourceUrl = tpl.sourceUrl.get
           <div class="block">

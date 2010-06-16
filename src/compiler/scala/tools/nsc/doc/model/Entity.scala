@@ -31,6 +31,7 @@ trait TemplateEntity extends Entity {
   def isClass: Boolean
   def isObject: Boolean
   def isDocTemplate: Boolean
+  def selfType : Option[TypeEntity]
 }
 trait NoDocTemplate extends TemplateEntity
 

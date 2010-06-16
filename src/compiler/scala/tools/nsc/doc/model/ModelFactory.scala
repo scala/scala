@@ -63,6 +63,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isClass = sym.isClass && !sym.isTrait
     def isObject = sym.isModule && !sym.isPackage
     def isRootPackage = false
+    def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis))
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
