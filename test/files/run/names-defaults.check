@@ -28,23 +28,10 @@ get: 5
 5: %, 17
 12: ', 13, 16
 1: bird, swine, 10
+20
+30
+40
 6: ~
-get: 7
-get: +
-7: +
-get: +
-get: 8
-8: +
-9: ?
-get: 39
-get: 38
-get: |
-10: |, 77
-get: 2.233
-get: <
-get: 13
-get: x
-13: x, 2.233, <
 14: /
 100: 100: nix, nix, 982, 982, 0
 100: overridden, bla, 0, 0, 555
@@ -87,8 +74,6 @@ lskf2dkflj2
 dlkd5nixda10nixdadklfj1dklfj
 C(dlkf,234,struct)struct???
 C(dflkj,234,Some(209))None!!
-20020100
-C(dlfkj,11,10)35dlkf
 dflk10
 1-1jupee
 12.39
