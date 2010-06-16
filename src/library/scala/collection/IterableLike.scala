@@ -352,6 +352,13 @@ self =>
 
   override /*TraversableLike*/ def toStream: Stream[A] = iterator.toStream
 
+  /** Converts this $coll to a sequence.
+   *
+   *  $willNotTerminateInf
+   *  @return a sequence containing all the elements of this $coll.
+   */
+  override /*TraversableOnce*/ def toSeq: Seq[A] = toList
+
   /** Method called from equality methods, so that user-defined subclasses can
    *  refuse to be equal to other collections of the same kind.
    *  @param   that   The object with which this $coll should be compared

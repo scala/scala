@@ -399,15 +399,19 @@ trait TraversableOnce[+A] {
   def toList: List[A] = new ListBuffer[A] ++= self toList
 
   /** Converts this $coll to an iterable collection.  Note that
-   *  the choice of target Iterable must be lazy as this TraversableOnce
-   *  may be lazy and unevaluated.
+   *  the choice of target `Iterable` is lazy in this default implementation
+   *  as this `TraversableOnce` may be lazy and unevaluated (i.e. it may
+   *  be an iterator which is only traversable once).
    *
    *  $willNotTerminateInf
    *  @return an `Iterable` containing all elements of this $coll.
    */
   def toIterable: Iterable[A] = toStream
 
-  /** Converts this $coll to a sequence.  As with toIterable, it must be lazy.
+  /** Converts this $coll to a sequence. As with `toIterable`, it's lazy
+   *  in this default implementation, as this `TraversableOnce` may be
+   *  lazy and unevaluated.
+   *
    *  $willNotTerminateInf
    *  @return a sequence containing all elements of this $coll.
    */
