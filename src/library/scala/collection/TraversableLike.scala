@@ -330,18 +330,17 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *               for which `f(x)` equals `k`.
    *
    */
-  def groupBy[K](f: A => K): immutable.Map[K, Repr] = {
-    val m = mutable.Map.empty[K, Builder[A, Repr]]
+  def groupBy[K](f: A => K): Map[K, Repr] = {
+    var m = Map[K, Builder[A, Repr]]()
     for (elem <- this) {
       val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, newBuilder)
+      val bldr = m get key match {
+        case None => val b = newBuilder; m = m updated (key, b); b
+        case Some(b) => b
+      }
       bldr += elem
     }
-    val b = immutable.Map.newBuilder[K, Repr]
-    for ((k, v) <- m)
-      b += ((k, v.result))
-
-    b.result
+    m map { case (k, b) => (k, b.result) }
   }
 
   /** Tests whether a predicate holds for all elements of this $coll.
