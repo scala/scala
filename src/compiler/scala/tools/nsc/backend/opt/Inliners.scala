@@ -126,19 +126,19 @@ abstract class Inliners extends SubComponent {
       var info: tfa.lattice.Elem = null
 
       def analyzeInc(msym: Symbol, i: Instruction, bb: BasicBlock) = {
-        val inc       = new SymMethodInfo(msym)
-        val receiver  = (info.stack.types drop inc.paramTypes.length).head match {
+        def paramTypes  = msym.info.paramTypes
+        val receiver    = (info.stack.types drop paramTypes.length).head match {
           case REFERENCE(s) => s
           case _            => NoSymbol
         }
-        val concreteMethod  = inc lookupImplFor receiver
+        val concreteMethod  = lookupImplFor(msym, receiver)
 
         def warnNoInline(reason: String) = {
-          if (inc.inline && !caller.isBridge)
+          if (hasInline(msym) && !caller.isBridge)
             warn(i.pos, "Could not inline required method %s because %s.".format(msym.originalName.decode, reason))
         }
 
-        if (shouldLoad(receiver, concreteMethod))
+        if (shouldLoadImplFor(concreteMethod, receiver))
           icodes.icode(receiver, true)
 
         def isAvailable = icodes available receiver
@@ -221,7 +221,50 @@ abstract class Inliners extends SubComponent {
       m.normalize
 		}
 
-    class SymMethodInfo(val sym: Symbol) {
+		private def isMonadicMethod(sym: Symbol) = sym.name match {
+      case nme.foreach | nme.filter | nme.map | nme.flatMap => true
+      case _                                                => false
+    }
+    private def isHigherOrderMethod(sym: Symbol) =
+      sym.isMethod && atPhase(currentRun.erasurePhase.prev)(sym.info.paramTypes exists isFunctionType)
+
+    /** Should method 'sym' being called in 'receiver' be loaded from disk? */
+    def shouldLoadImplFor(sym: Symbol, receiver: Symbol): Boolean = {
+      if (settings.debug.value)
+        log("shouldLoadImplFor: " + receiver + "." + sym)
+
+      def alwaysLoad    = (receiver.enclosingPackage == RuntimePackage) || (receiver == PredefModule.moduleClass)
+      def loadCondition = sym.isEffectivelyFinal && isMonadicMethod(sym) && isHigherOrderMethod(sym)
+
+      hasInline(sym) || alwaysLoad || loadCondition
+    }
+
+		/** Look up implementation of method 'sym in 'clazz'.
+		 */
+    def lookupImplFor(sym: Symbol, clazz: Symbol): Symbol = {
+      // TODO: verify that clazz.superClass is equivalent here to clazz.tpe.parents(0).typeSymbol (.tpe vs .info)
+      def needsLookup = (clazz != NoSymbol) && (clazz != sym.owner) && !sym.isEffectivelyFinal && clazz.isFinal
+
+      def lookup(clazz: Symbol): Symbol = {
+        // println("\t\tlooking up " + meth + " in " + clazz.fullName + " meth.owner = " + meth.owner)
+        if (sym.owner == clazz || isBottomType(clazz)) sym
+        else sym.overridingSymbol(clazz) match {
+          case NoSymbol  => if (sym.owner.isTrait) sym else lookup(clazz.superClass)
+          case imp       => imp
+        }
+      }
+      if (needsLookup) {
+        val concreteMethod = lookup(clazz)
+        if (settings.debug.value)
+          log("\tlooked up method: " + concreteMethod.fullName)
+
+        concreteMethod
+      }
+      else sym
+    }
+
+    class IMethodInfo(val m: IMethod) {
+      val sym           = m.symbol
       val name          = sym.name
       def owner         = sym.owner
       def paramTypes    = sym.info.paramTypes
@@ -231,40 +274,11 @@ abstract class Inliners extends SubComponent {
       def noinline      = hasNoInline(sym)
       def numInlined    = inlinedMethodCount(sym)
 
-      def lookupImplFor(clazz: Symbol): Symbol = {
-        // TODO: verify that clazz.superClass is equivalent here to clazz.tpe.parents(0).typeSymbol (.tpe vs .info)
-        def needsLookup = (clazz != NoSymbol) && (clazz != owner) && !isEffectivelyFinal && clazz.isFinal
+      def isBridge      = sym.isBridge
+      def isInClosure   = isClosureClass(owner)
+      def isHigherOrder = isHigherOrderMethod(sym)
+      def isMonadic     = isMonadicMethod(sym)
 
-        def lookup(clazz: Symbol): Symbol = {
-          // println("\t\tlooking up " + meth + " in " + clazz.fullName + " meth.owner = " + meth.owner)
-          if (owner == clazz || isBottomType(clazz)) sym
-          else sym.overridingSymbol(clazz) match {
-            case NoSymbol  => if (owner.isTrait) sym else lookup(clazz.superClass)
-            case imp       => imp
-          }
-        }
-        if (needsLookup) {
-          val concreteMethod = lookup(clazz)
-          if (settings.debug.value)
-            log("\tlooked up method: " + concreteMethod.fullName)
-
-          concreteMethod
-        }
-        else sym
-      }
-
-      def isBridge        = sym.isBridge
-      def isInClosure     = isClosureClass(owner)
-      def isHigherOrder   = sym.isMethod && atPhase(currentRun.erasurePhase.prev)(paramTypes exists isFunctionType)
-      def isMonadic       = name match {
-        case nme.foreach | nme.filter | nme.map | nme.flatMap => true
-        case _                                                => false
-      }
-      def isEffectivelyFinal  = sym.isEffectivelyFinal
-      def shouldBeLoaded      = inline || (isEffectivelyFinal && isMonadic && isHigherOrder)
-    }
-
-    class IMethodInfo(val m: IMethod) extends SymMethodInfo(m.symbol) {
       def handlers      = m.exh
       def blocks        = m.code.blocks
       def locals        = m.locals
@@ -288,6 +302,7 @@ abstract class Inliners extends SubComponent {
     class CallerCalleeInfo(val caller: IMethodInfo, val inc: IMethodInfo) {
       def isLargeSum  = caller.length + inc.length - 1 > SMALL_METHOD_SIZE
 
+
       /** Inline 'inc' into 'caller' at the given block and instruction.
        *  The instruction must be a CALL_METHOD.
        */
@@ -309,14 +324,14 @@ abstract class Inliners extends SubComponent {
 
         val varsInScope: mutable.Set[Local] = HashSet() ++= block.varsInScope
 
-        val instrBefore = block.toList.takeWhile {
-          case i @ SCOPE_ENTER(l) => varsInScope += l
-            i ne instr
-          case i =>
-            i ne instr
+        /** Side effects varsInScope when it sees SCOPE_ENTERs. */
+        def instrBeforeFilter(i: Instruction): Boolean = {
+          i match { case SCOPE_ENTER(l) => varsInScope += l ; case _ => () }
+          i ne instr
         }
+        val instrBefore = block.toList takeWhile instrBeforeFilter
+        val instrAfter  = block.toList drop (instrBefore.length + 1)
 
-        val instrAfter  = block.toList.drop(instrBefore.length + 1)
         assert(!instrAfter.isEmpty, "CALL_METHOD cannot be the last instruction in block!")
 
         // store the '$this' into the special local
@@ -438,7 +453,7 @@ abstract class Inliners extends SubComponent {
         // re-emit the instructions before the call
         block.open
         block.clear
-        instrBefore foreach (i => block.emit(i, i.pos))
+        block emit instrBefore
 
         // store the arguments into special locals
         inc.m.params.reverse foreach (p => blockEmit(STORE_LOCAL(inlinedLocals(p))))
@@ -471,7 +486,7 @@ abstract class Inliners extends SubComponent {
           inlinedBlock(bb).close
         }
 
-        instrAfter foreach (i => afterBlock.emit(i, i.pos))
+        afterBlock emit instrAfter
         afterBlock.close
         count += 1
 
@@ -621,18 +636,10 @@ abstract class Inliners extends SubComponent {
       })
     }
 
-    /** Should the given method be loaded from disk? */
-    def shouldLoad(receiver: Symbol, method: Symbol): Boolean = {
-      if (settings.debug.value)
-        log("shouldLoad: " + receiver + "." + method)
+    def lookupIMethod(meth: Symbol, receiver: Symbol): Option[IMethod] = {
+      def tryParent(sym: Symbol) = icodes icode sym flatMap (_ lookupMethod meth)
 
-      val caller = new SymMethodInfo(method)
-      def alwaysLoad = (receiver.enclosingPackage == RuntimePackage) || (receiver == PredefModule.moduleClass)
-
-      caller.shouldBeLoaded || alwaysLoad
+      receiver.info.baseClasses.iterator map tryParent find (_.isDefined) getOrElse None
     }
-
-    def lookupIMethod(meth: Symbol, receiver: Symbol): Option[IMethod] =
-      icodes.icode(receiver).get lookupMethod meth
   } /* class Inliner */
 } /* class Inliners */
