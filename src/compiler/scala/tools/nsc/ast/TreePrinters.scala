@@ -117,7 +117,7 @@ trait TreePrinters { trees: SymbolTable =>
       def pw = tree.symbol.privateWithin
       val args =
         if (tree.symbol == NoSymbol) (mods.flags, mods.privateWithin)
-        else if (pw == NoSymbol || pw == tree.symbol.owner) (tree.symbol.flags, "")
+        else if (pw == NoSymbol) (tree.symbol.flags, "")
         else (tree.symbol.flags, pw.name)
 
       printFlags(args._1, args._2.toString)
