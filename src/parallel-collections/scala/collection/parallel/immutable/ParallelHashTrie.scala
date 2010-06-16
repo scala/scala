@@ -42,23 +42,26 @@ extends ParallelMap[K, V]
 
   type SCPI = SignalContextPassingIterator[ParallelHashTrieIterator]
 
-  class ParallelHashTrieIterator(trie: HashMap[K, V])
+  class ParallelHashTrieIterator(val ht: HashMap[K, V])
   extends super.ParallelIterator {
   self: SignalContextPassingIterator[ParallelHashTrieIterator] =>
-    println("created iterator")
+    // println("created iterator " + ht)
     var i = 0
-    lazy val triter = trie.iterator
+    lazy val triter = ht.iterator
     def split: Seq[ParallelIterator] = {
-      println("splitting " + trie + " into " + (trie.split.map(_.size)))
-      trie.split.map(new ParallelHashTrieIterator(_) with SCPI)
+      // println("splitting " + ht + " into " + ht.split.map(new ParallelHashTrieIterator(_) with SCPI).map(_.toList))
+      ht.split.map(new ParallelHashTrieIterator(_) with SCPI)
     }
     def next: (K, V) = {
-      println("taking next after " + i)
+      // println("taking next after " + i + ", in " + ht)
       i += 1
       triter.next
     }
-    def hasNext: Boolean = i < trie.size
-    def remaining = trie.size - i
+    def hasNext: Boolean = {
+      // println("hasNext: " + i + ", " + ht.size + ", " + ht)
+      i < ht.size
+    }
+    def remaining = ht.size - i
   }
 
 }

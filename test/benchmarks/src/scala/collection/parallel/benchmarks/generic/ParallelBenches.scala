@@ -9,7 +9,7 @@ package generic
 
 
 trait ParallelIterableBench[T, Coll <: ParallelIterable[T]] extends collection.parallel.benchmarks.Bench {
-  self =>
+self =>
 
   protected var seqcoll: Iterable[T] = null
   protected var parcoll: Coll = null.asInstanceOf[Coll]

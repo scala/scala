@@ -430,23 +430,27 @@ time { mNew.iterator.foreach( p => ()) }
     }
 
     override def split: Seq[HashMap[A, B]] = if (size == 1) Seq(this) else {
-      // printBitmap(bitmap)
-      // println(elems.toList)
+      val nodesize = Integer.bitCount(bitmap)
+      if (nodesize > 1) {
+        // printBitmap(bitmap)
+        // println(elems.toList)
 
-      // println("subtrees: " + Integer.bitCount(bitmap))
-      // println("will split at: " + posOf(Integer.bitCount(bitmap) / 2, bitmap))
-      val splitpoint = posOf(Integer.bitCount(bitmap) / 2, bitmap)
-      val bm1 = bitmap & (-1 << splitpoint)
-      val bm2 = bitmap & (-1 >>> (32 - splitpoint))
-      // printBitmap(bm1)
-      // printBitmap(bm2)
-      val (e1, e2) = elems.splitAt(splitpoint)
-      // println(e1.toList)
-      // println(e2.toList)
-      val hm1 = new HashTrieMap(bm1, e1, e1.foldLeft(0)(_ + _.size))
-      val hm2 = new HashTrieMap(bm2, e2, e2.foldLeft(0)(_ + _.size))
+        // println("subtrees: " + nodesize)
+        // println("will split at: " + (nodesize / 2))
+        val splitpoint = nodesize / 2
+        val bitsplitpoint = posOf(nodesize / 2, bitmap)
+        val bm1 = bitmap & (-1 << bitsplitpoint)
+        val bm2 = bitmap & (-1 >>> (32 - bitsplitpoint))
+        // printBitmap(bm1)
+        // printBitmap(bm2)
+        val (e1, e2) = elems.splitAt(splitpoint)
+        // println(e1.toList)
+        // println(e2.toList)
+        val hm1 = new HashTrieMap(bm1, e1, e1.foldLeft(0)(_ + _.size))
+        val hm2 = new HashTrieMap(bm2, e2, e2.foldLeft(0)(_ + _.size))
 
-      List(hm1, hm2)
+        List(hm1, hm2)
+      } else elems(0).split
     }
 
     protected override def combine0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = that match {
