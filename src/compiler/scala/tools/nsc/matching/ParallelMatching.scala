@@ -7,6 +7,7 @@
 package scala.tools.nsc
 package matching
 
+import util.Position
 import transform.ExplicitOuter
 import symtab.Flags
 import collection._
@@ -170,7 +171,7 @@ trait ParallelMatching extends ast.TreeDSL
       def tail = ps.tail
       def size = ps.length
 
-      def headType = head.tpe
+      def headType = head.necessaryType
       def isCaseHead = head.isCaseClass
       private val dummyCount = if (isCaseHead) headType.typeSymbol.caseFieldAccessors.length else 0
       def dummies = emptyPatterns(dummyCount)
@@ -190,10 +191,9 @@ trait ParallelMatching extends ast.TreeDSL
         }
       }
 
-      if (settings.Xmigration28.value) {
-        for (p <- ps ; if isArraySeqTest(scrut.tpe, p.tpe)) {
-          val reportPos = if (p.tree.pos.isDefined) p.tree.pos else scrut.pos
-          cunit.warning(reportPos, "An Array will no longer match as Seq[_].")
+      object TypedUnapply {
+        def unapply(x: Tree): Option[Boolean] = condOpt(x) {
+          case Typed(UnapplyParamType(tpe), tpt) => !(tpt.tpe <:< tpe)
         }
       }
 
@@ -575,10 +575,10 @@ trait ParallelMatching extends ast.TreeDSL
 
         for ((pattern, j) <- pmatch.pzip()) {
           // scrutinee, head of pattern group
-          val (s, p) = (pattern.tpe, head.tpe)
+          val (s, p) = (pattern.tpe, head.necessaryType)
 
-          def isEquivalent  = head.tpe =:= pattern.tpe
-          def isObjectTest  = pattern.isObject && (p =:= pattern.tpe)
+          def isEquivalent  = head.necessaryType =:= pattern.tpe
+          def isObjectTest  = pattern.isObject && (p =:= pattern.necessaryType)
 
           def sMatchesP = matches(s, p)
           def pMatchesS = matches(p, s)
@@ -589,7 +589,7 @@ trait ParallelMatching extends ast.TreeDSL
           def passr()                                                           = Some( No(j, pattern))
 
           def typed(pp: Tree) = passl(ifEquiv(Pattern(pp)))
-          def subs()          = passl(ifEquiv(NoPattern), pattern expandToArity head.arity)
+          def subs()          = passl(ifEquiv(NoPattern), pattern subpatterns pmatch)
 
           val (oneY, oneN) = pattern match {
             case Pattern(LIT(null), _) if !(p =:= s)        => (None, passr)      // (1)
