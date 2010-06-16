@@ -138,6 +138,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ycompletion   = BooleanSetting    ("-Ycompletion-debug", "Trace all tab completion activity.")
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible..")
   val Yjenkins      = BooleanSetting    ("-Yjenkins-hashCodes", "Use jenkins hash algorithm for case class generated hashCodes.")
+  val Ynotnull      = BooleanSetting    ("-Ynotnull", "Enable the experimental and incomplete scala.NotNull")
 
   // Warnings
   val Ywarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
