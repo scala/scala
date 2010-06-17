@@ -89,7 +89,7 @@ trait Patterns extends ast.TreeDSL {
     // require (!isVarPattern(fn) && args.isEmpty)
     val ident @ Ident(name) = fn
 
-    override def atomicTpe = Pattern(ident).equalsCheck
+    override def sufficientType = Pattern(ident).equalsCheck
     override def simplify(pv: PatternVar) = this.rebindToObjectCheck()
     override def description = "Id(%s)".format(name)
   }
@@ -98,7 +98,7 @@ trait Patterns extends ast.TreeDSL {
     require (args.isEmpty)
     val Apply(select: Select, _) = tree
 
-    override def atomicTpe = mkSingletonFromQualifier
+    override def sufficientType = mkSingletonFromQualifier
     override def simplify(pv: PatternVar) = this.rebindToObjectCheck()
     override def description = backticked match {
       case Some(s)  => "this." + s
@@ -117,7 +117,7 @@ trait Patterns extends ast.TreeDSL {
   case class ObjectPattern(tree: Apply) extends ApplyPattern {  // NamePattern?
     require(!fn.isType && isModule)
 
-    override def atomicTpe = tpe.narrow
+    override def sufficientType = tpe.narrow
     override def simplify(pv: PatternVar) = this.rebindToObjectCheck()
     override def description = "Obj(%s)".format(fn)
   }
@@ -139,7 +139,9 @@ trait Patterns extends ast.TreeDSL {
 
     private def isColonColon = cleanName == "::"
 
-    override def expandToArity(newArity: Int): List[Pattern] = toPats(args)
+    override def subpatterns(pm: MatchMatrix#PatternMatch) =
+      if (pm.head.isCaseClass) toPats(args)
+      else super.subpatterns(pm)
 
     override def simplify(pv: PatternVar) =
       if (args.isEmpty) this rebindToEmpty tree.tpe
@@ -166,14 +168,13 @@ trait Patterns extends ast.TreeDSL {
     private val MethodType(List(arg, _*), _) = fn.tpe
     private def uaTyped = Typed(tree, TypeTree(arg.tpe)) setType arg.tpe
 
-    // to match an extractor, the arg type must be matched.
-    override def tpe = arg.tpe
+    override def necessaryType = arg.tpe
 
     override def simplify(pv: PatternVar) =
       if (pv.sym.tpe <:< arg.tpe) this
       else this rebindTo uaTyped
 
-    override def description = "UnApp(%s => %s)".format(tpe, resTypesString)
+    override def description = "UnApp(%s => %s)".format(necessaryType, resTypesString)
   }
 
   // 8.1.8 (unapplySeq calls)
@@ -311,20 +312,13 @@ trait Patterns extends ast.TreeDSL {
 
   object UnapplyPattern {
     private object UnapplySeq {
-      /** This is as far as I can tell an elaborate attempt to spot case List(...) and
-       *  avoid the extractor penalty.  It has led to some bugs (e.g. 2800, 3050) which
-       *  I attempt to address below.
-       */
       private object TypeApp {
         def unapply(x: Any) = condOpt(x) {
           case TypeApply(sel @ Select(stor, nme.unapplySeq), List(tpe)) if stor.symbol eq ListModule => tpe
         }
       }
       def unapply(x: UnApply) = condOpt(x) {
-        case UnApply(Apply(TypeApp(tptArg), _), List(ArrayValue(_, xs)))
-          // make sure it's not only _*, as otherwise the rewrite
-          // also removes the instance check.
-          if (xs.isEmpty || xs.size > 1 || !isStar(xs.head))  => (tptArg, xs)
+        case UnApply(Apply(TypeApp(tptArg), _), List(ArrayValue(_, xs))) => (tptArg, xs)
       }
     }
 
@@ -390,7 +384,7 @@ trait Patterns extends ast.TreeDSL {
     protected def mkSingletonFromQualifier = {
       def pType = qualifier match {
         case _: Apply => PseudoType(tree)
-        case _        => singleType(Pattern(qualifier).tpe, sym)
+        case _        => singleType(Pattern(qualifier).necessaryType, sym)
       }
       qualifier.tpe match {
         case t: ThisType  => singleType(t, sym) // this.X
@@ -401,7 +395,7 @@ trait Patterns extends ast.TreeDSL {
 
   sealed trait NamePattern extends Pattern {
     def name: Name
-    override def atomicTpe = tpe.narrow
+    override def sufficientType = tpe.narrow
     override def simplify(pv: PatternVar) = this.rebindToEqualsCheck()
     override def description = name.toString()
   }
@@ -428,31 +422,22 @@ trait Patterns extends ast.TreeDSL {
     protected lazy val Apply(fn, args) = tree
     override def subpatternsForVars: List[Pattern] = toPats(args)
 
+    override def dummies =
+      if (!this.isCaseClass) Nil
+      else emptyPatterns(sufficientType.typeSymbol.caseFieldAccessors.size)
+
     def isConstructorPattern = fn.isType
   }
 
   sealed abstract class Pattern extends PatternBindingLogic {
     val tree: Tree
 
-    // The type of a pattern says: in order for something to match this
-    // pattern, it must conform to this type.  It does NOT say that if
-    // something does conform to this type, it definitely matches the pattern:
-    // see atomic type for that.
-    def tpe = tree.tpe
-
-    // The atomic type of a pattern says: if something matches this, it
-    // definitely matches the pattern (but this is independent of nullness
-    // and guards, which are checked independently.)
-    def atomicTpe = tpe
-
     // returns either a simplification of this pattern or identity.
     def simplify(pv: PatternVar): Pattern = this
-
-    // the arity of this pattern
-    def arity = if (isCaseClass) caseAccessors.length else 0
+    def simplify(): Pattern = this simplify null
 
     // the right number of dummies for this pattern
-    def dummies: List[Pattern] = emptyPatterns(arity)
+    def dummies: List[Pattern] = Nil
 
     // 8.1.13
     // A pattern p is irrefutable for type T if any of the following applies:
@@ -463,26 +448,33 @@ trait Patterns extends ast.TreeDSL {
     //      pi is irrefutable for Ti.
     def irrefutableFor(tpe: Type) = false
 
+    // does this pattern completely cover that pattern (i.e. latter cannot be matched)
+    def completelyCovers(second: Pattern) = false
+
     // Is this a default pattern (untyped "_" or an EmptyTree inserted by the matcher)
     def isDefault = false
+
+    // what type must a scrutinee have to have any chance of matching this pattern?
+    def necessaryType = tpe
+
+    // what type could a scrutinee have which would automatically indicate a match?
+    // (nullness and guards will still be checked.)
+    def sufficientType = tpe
 
     // XXX have to determine if this can be made useful beyond an extractor barrier.
     // Default sufficient type might be NothingClass.tpe, tpe.narrow, ...
 
     // the subpatterns for this pattern (at the moment, that means constructor arguments)
-    def expandToArity(newArity: Int): List[Pattern] =
-      if (isDefault) emptyPatterns(newArity)
-      else if (newArity == 0) Nil
-      else Predef.error("expandToArity(" + newArity + ") in " + this)
+    def subpatterns(pm: MatchMatrix#PatternMatch): List[Pattern] = pm.dummies
 
     def    sym  = tree.symbol
+    def    tpe  = tree.tpe
     def prefix  = tpe.prefix
     def isEmpty = tree.isEmpty
 
     def isSymValid = (sym != null) && (sym != NoSymbol)
     def isModule = sym.isModule || tpe.termSymbol.isModule
     def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
-    def caseAccessors = tpe.typeSymbol.caseFieldAccessors
     def isObject = isSymValid && prefix.isStable  // XXX not entire logic
 
     def unadorn(t: Tree): Tree = Pattern unadorn t
@@ -524,7 +516,7 @@ trait Patterns extends ast.TreeDSL {
       if (boundVariables.isEmpty) description
       else "%s%s".format(bindingsDescription, description)
     }
-    def toTypeString() = "%s <: x <: %s".format(tpe, atomicTpe)
+    def toTypeString() = "%s <: x <: %s".format(necessaryType, sufficientType)
   }
 
   /*** Extractors ***/
