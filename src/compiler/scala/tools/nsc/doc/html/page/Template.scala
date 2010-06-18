@@ -79,6 +79,12 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               <ol><li class="public in">Public</li><li class="all out">All</li></ol>
             </div>
           }
+          {
+            <div id="impl">
+              <span class="filtertype">Impl.</span>
+              <ol><li class="concrete in">Concrete</li><li class="abstract in">Abstract</li></ol>
+            </div>
+          }
         </div>
 
         { if (constructors.isEmpty) NodeSeq.Empty else
@@ -116,10 +122,39 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
 
     </body>
 
+  def boundsToString(hi: Option[TypeEntity], lo: Option[TypeEntity]): String = {
+    def bound0(bnd: Option[TypeEntity], pre: String): String = bnd match {
+      case None => ""
+      case Some(tpe) => pre ++ tpe.toString
+    }
+    bound0(hi, "<:") ++ bound0(lo, ">:")
+  }
+
+  def tparamsToString(tpss: List[TypeParam]): String =
+    if (tpss.isEmpty) "" else {
+      def tparam0(tp: TypeParam): String =
+         tp.variance + tp.name + boundsToString(tp.hi, tp.lo)
+      def tparams0(tpss: List[TypeParam]): String = (tpss: @unchecked) match {
+        case tp :: Nil => tparam0(tp)
+        case tp :: tps => tparam0(tp) ++ ", " ++ tparams0(tps)
+      }
+      "[" + tparams0(tpss) + "]"
+    }
+
+  def defParamsToString(d: MemberEntity with Def):String = {
+    val namess = for( ps <- d.valueParams ) yield
+      for( p <- ps ) yield p.resultType.name
+    tparamsToString(d.typeParams) + namess.foldLeft("") { (s,names) => s + (names mkString("(",",",")")) }
+  }
 
   def memberToHtml(mbr: MemberEntity): NodeSeq = {
-    val attributes: List[comment.Body] = Nil
-    <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }>
+    val defParamsString = mbr match {
+      case d:MemberEntity with Def => defParamsToString(d)
+      case _ => ""
+    }
+    <li name={ mbr.definitionName } visbl={ if (mbr.visibility.isProtected) "prt" else "pub" }
+      data-isabs={ mbr.isAbstract.toString }>
+      <a id={ mbr.name +defParamsString +":"+ mbr.resultType.name}/>
       { signature(mbr, false) }
       { memberToCommentHtml(mbr, false) }
     </li>

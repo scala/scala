@@ -52,6 +52,7 @@ trait MemberEntity extends Entity {
   def isLazyVal: Boolean
   def isVar: Boolean
   def isImplicit: Boolean
+  def isAbstract: Boolean
   def isConstructor: Boolean
   def isAliasType: Boolean
   def isAbstractType: Boolean

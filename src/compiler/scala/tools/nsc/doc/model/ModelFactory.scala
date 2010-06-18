@@ -127,6 +127,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isConstructor = false
     def isAliasType = false
     def isAbstractType = false
+    def isAbstract =
+      ((!sym.isTrait && ((sym hasFlag Flags.ABSTRACT) || (sym hasFlag Flags.DEFERRED))) ||
+      sym.isAbstractClass || sym.isAbstractType) && !sym.isSynthetic
     def isTemplate = false
   }
 

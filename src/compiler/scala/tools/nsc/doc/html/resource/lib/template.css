@@ -15,7 +15,6 @@ body {
 }
 
 a {
-  cursor: pointer;
   text-decoration: underline;
   color: #69481D; /* brown */
 }
@@ -311,7 +310,7 @@ p.comment {
 p.shortcomment {
   display: block;
   margin-left: 8.7em;
-  cursor: help;
+  cursor: pointer;
 }
 
 div.fullcomment {
@@ -444,7 +443,7 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
   padding: 4px 8px 4px 8px;
   background-color: white;
   display: inline-block;
-  cursor: crosshair;
+  cursor: pointer;
 }
 
 #mbrsel > div > ol > li.in {
