@@ -9,6 +9,20 @@ $(document).ready(function(){
     prefilters.removeClass("in");
     prefilters.addClass("out");
     filter();
+
+    var input = $("#textfilter > input");
+    input.bind("keyup", function(event) {
+        if (event.keyCode == 27) { // escape
+            input.attr("value", "");
+        }
+        filter();
+    });
+    input.focus(function(event) { input.select(); });
+    $("#textfilter > .post").click(function(){
+        $("#textfilter > input").attr("value", "");
+        filter();
+    });
+
     $("#ancestors > ol > li").click(function(){
         if ($(this).hasClass("in")) {
             $(this).removeClass("in");
@@ -174,6 +188,8 @@ function initInherit() {
 };
 
 function filter() {
+    var query = $("#textfilter > input").attr("value").toLowerCase();
+    var queryRegExp = new RegExp(query, "i");
     var inheritHides = null
     if ($("#order > ol > li.inherit").hasClass("in")) {
         inheritHides = $("#linearization > li:gt(0)");
@@ -201,11 +217,16 @@ function filter() {
                 };
             };
         };
-        var showByVis = true
+        var showByVis = true;
         if (vis1 == "prt") {
             showByVis = prtVisbl;
         };
-        if (showByOwned && showByVis) {
+        var showByName = true;
+        if (query != "") {
+            var content = $(this).attr("name") + $("> .fullcomment .cmt", this).text();
+            showByName = queryRegExp.test(content);
+        };
+        if (showByOwned && showByVis && showByName) {
           $(this).show();
         }
         else {

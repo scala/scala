@@ -95,7 +95,7 @@ function prepareEntityList() {
 /* Configures the text filter  */
 function configureTextFilter() {
     scheduler.add("init", function() {
-        $("#filter").append("<div id='textfilter'><input type='text' accesskey='/'/></div>");
+        $("#filter").append("<div id='textfilter'><span class='pre'/><input type='text' accesskey='/'/><span class='post'/></div>");
         var input = $("#textfilter > input");
         resizeFilterBlock();
         input.bind("keyup", function(event) {
@@ -105,6 +105,12 @@ function configureTextFilter() {
             textFilter();
         });
         input.focus(function(event) { input.select(); });
+    });
+    scheduler.add("init", function() {
+        $("#textfilter > .post").click(function(){
+            $("#textfilter > input").attr("value", "");
+            textFilter();
+        });
     });
 }
 

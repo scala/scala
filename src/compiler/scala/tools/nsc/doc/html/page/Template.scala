@@ -59,6 +59,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       <div id="template">
 
         <div id="mbrsel">
+          <div id='textfilter'><span class='pre'/><input type='text' accesskey='/'/><span class='post'/></div>
           { if (tpl.linearization.isEmpty) NodeSeq.Empty else
               <div id="order">
                 <span class="filtertype">Ordering</span>
