@@ -37,7 +37,7 @@ class MultipleCombine(val size: Int, val parallelism: Int, val runWhat: String) 
   def runhashtrie = {
     initHashTrie
     var trie = hashtrie
-    for (r <- 0 until combines) trie = trie combine thattries(r)
+    for (r <- 0 until combines) trie = trie merge thattries(r)
   }
   def runappendtrie = {
     initHashTrie
@@ -52,7 +52,7 @@ class MultipleCombine(val size: Int, val parallelism: Int, val runWhat: String) 
   def rundestructive = {
     initHashTrie
     var trie = hashtrie
-    for (r <- 0 until combines) trie = trie combine thattries(r)
+    for (r <- 0 until combines) trie = trie merge thattries(r)
   }
   def companion = MultipleCombine
   def comparisonMap = Map("hashtrie" -> runhashtrie _, "hashmap" -> runhashmap _, "appendtrie" -> runappendtrie _, "destruct" -> rundestructive _)

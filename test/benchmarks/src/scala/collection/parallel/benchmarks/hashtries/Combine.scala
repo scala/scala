@@ -21,7 +21,7 @@ class Combine(val size: Int, val parallelism: Int, val runWhat: String) extends 
   def runpar = throw new UnsupportedOperationException
   def runseq = runhashtrie
   def runhashtrie = {
-    hashtrie combine thattrie
+    hashtrie merge thattrie
     // println
     // println("both tries:         " + HashTrie.bothtries)
     // println("one trie, one item: " + HashTrie.onetrie)
@@ -29,7 +29,7 @@ class Combine(val size: Int, val parallelism: Int, val runWhat: String) extends 
     // System exit 1
   }
   def rundestructive = {
-    hashtrie combine thattrie
+    hashtrie merge thattrie
   }
   def runappendtrie = hashtrie ++ thattrie
   def runhashmap = hashmap ++ thatmap
