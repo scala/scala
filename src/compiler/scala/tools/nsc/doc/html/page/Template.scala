@@ -223,6 +223,14 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     } ++
     { mbr match {
+        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearizationTypes.isEmpty) =>
+          <div class="block">
+            linear super types: { typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }
+          </div>
+        case _ => NodeSeq.Empty
+      }
+    } ++
+    { mbr match {
         case dtpl: DocTemplateEntity if (isSelf && !dtpl.subClasses.isEmpty) =>
           <div class="block">
             known subclasses: { templatesToHtml(dtpl.subClasses, xml.Text(", ")) }

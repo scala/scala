@@ -63,7 +63,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isClass = sym.isClass && !sym.isTrait
     def isObject = sym.isModule && !sym.isPackage
     def isRootPackage = false
-    def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis))
+    def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -160,18 +160,20 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def parentTemplates = sym.info.parents map { x: Type => makeTemplate(x.typeSymbol) }
     def parentType =
       if (sym.isPackage) None else
-        Some(makeType(RefinedType(sym.tpe.parents filter (_ != ScalaObjectClass.tpe), EmptyScope)))
+        Some(makeType(RefinedType(sym.tpe.parents filter (_ != ScalaObjectClass.tpe), EmptyScope), inTpl))
     val linearization = {
-      sym.info.parents map { prt =>
-        makeTemplate(prt.typeSymbol) match {
+      val tpls = sym.ancestors filter { _ != ScalaObjectClass } map { makeTemplate(_) }
+      tpls map {
           case dtpl: DocTemplateImpl => dtpl.registerSubClass(this)
           case _ =>
-        }
       }
-      sym.ancestors filter (_ != ScalaObjectClass) map { makeTemplate(_) }
+      tpls
+    }
+    def linearizationTypes = {
+      ((sym.info.baseClasses filter (_ != ScalaObjectClass)) map { cls => makeType(sym.info.baseType(cls), this) }).tail
     }
     private lazy val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
-    def registerSubClass(sc: DocTemplateEntity) = {
+    def registerSubClass(sc: DocTemplateEntity): Unit = {
       assert(subClassesCache != null)
       subClassesCache += sc
     }
@@ -427,14 +429,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     }
 
   /** */
-  def makeType(aType: Type, seeInTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {
+  def makeType(aType: Type, inTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {
     def ownerTpl(sym: Symbol): Symbol =
       if (sym.isClass || sym.isModule || sym == NoSymbol) sym else ownerTpl(sym.owner)
-    makeType(aType.asSeenFrom(seeInTpl.sym.thisType, ownerTpl(dclSym)))
+    makeType(aType.asSeenFrom(inTpl.sym.thisType, ownerTpl(dclSym)), inTpl)
   }
 
   /** */
-  def makeType(aType: Type): TypeEntity =
+  def makeType(aType: Type, inTpl: => TemplateImpl): TypeEntity =
     new TypeEntity {
       private val nameBuffer = new StringBuilder
       private var refBuffer = new immutable.TreeMap[Int, (TemplateEntity, Int)]

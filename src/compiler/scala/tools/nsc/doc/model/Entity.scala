@@ -68,6 +68,7 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def parentType: Option[TypeEntity]
   def parentTemplates: List[TemplateEntity]
   def linearization: List[TemplateEntity]
+  def linearizationTypes: List[TypeEntity]
   def subClasses: List[DocTemplateEntity]
   def members: List[MemberEntity]
   def templates: List[DocTemplateEntity]

@@ -200,6 +200,12 @@ abstract class HtmlPage { thisPage =>
       xml.Text(string)
   }
 
+  def typesToHtml(tpess: List[model.TypeEntity], hasLinks: Boolean, sep: NodeSeq): NodeSeq = tpess match {
+    case Nil         => NodeSeq.Empty
+    case tpe :: Nil  => typeToHtml(tpe, hasLinks)
+    case tpe :: tpes => typeToHtml(tpe, hasLinks) ++ sep ++ typesToHtml(tpes, hasLinks, sep)
+  }
+
   /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */
   def templateToHtml(tpl: TemplateEntity) = tpl match {
     case dTpl: DocTemplateEntity =>
