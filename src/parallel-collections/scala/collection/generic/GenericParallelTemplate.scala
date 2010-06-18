@@ -4,6 +4,7 @@ package scala.collection.generic
 
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParallelIterable
+import scala.collection.parallel.ParallelMap
 import scala.collection.parallel.TaskSupport
 
 
@@ -47,7 +48,17 @@ extends GenericTraversableTemplate[A, CC]
 }
 
 
+trait GenericParallelMapTemplate[K, +V, +CC[X, Y] <: ParallelMap[X, Y]]
+extends TaskSupport
+{
+  def mapCompanion: GenericParallelMapCompanion[CC]
 
+  def genericMapCombiner[P, Q]: Combiner[(P, Q), CC[P, Q]] = {
+    val cb = mapCompanion.newCombiner[P, Q]
+    cb.environment = environment
+    cb
+  }
+}
 
 
 

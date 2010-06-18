@@ -4,7 +4,7 @@ package scala.collection.parallel.immutable
 import scala.collection.generic.GenericParallelTemplate
 import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParallelCompanion
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.ParallelFactory
 import scala.collection.parallel.ParallelSeqLike
 import scala.collection.parallel.Combiner

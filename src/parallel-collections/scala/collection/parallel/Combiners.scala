@@ -34,6 +34,9 @@ trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel w
    *  after the invocation of this method, and should be cleared (see `clear`)
    *  if they are to be used again.
    *
+   *  Also, combining two combiners `c1` and `c2` for which `c1 eq c2` is `true`, that is,
+   *  they are the same objects in memories, always does nothing and returns the first combiner.
+   *
    *  @tparam N      the type of elements contained by the `other` builder
    *  @tparam NewTo  the type of collection produced by the `other` builder
    *  @param other   the other builder

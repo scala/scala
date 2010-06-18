@@ -28,8 +28,8 @@ trait ParallelIterable[T] extends collection.mutable.Iterable[T]
 /** $factoryinfo
  */
 object ParallelIterable extends ParallelFactory[ParallelIterable] {
-  implicit def canBuildFrom[T]: CanBuildFromParallel[Coll, T, ParallelIterable[T]] =
-    new GenericCanBuildFromParallel[T]
+  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParallelIterable[T]] =
+    new GenericCanCombineFrom[T]
 
   def newBuilder[T]: Combiner[T, ParallelIterable[T]] = ParallelArrayCombiner[T]
 

@@ -6,7 +6,7 @@ import scala.collection.immutable.Range
 import scala.collection.immutable.RangeUtils
 import scala.collection.parallel.ParallelSeq
 import scala.collection.parallel.Combiner
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 
 
 
@@ -62,8 +62,8 @@ extends ParallelSeq[Int]
 
     /* transformers */
 
-    override def map2combiner[S, That](f: Int => S, pbf: CanBuildFromParallel[ParallelSeq[Int], S, That]): Combiner[S, That] = {
-      val cb = pbf(self.repr)
+    override def map2combiner[S, That](f: Int => S, cb: Combiner[S, That]): Combiner[S, That] = {
+      //val cb = pbf(self.repr)
       val sz = remaining
       cb.sizeHint(sz)
       if (sz > 0) {

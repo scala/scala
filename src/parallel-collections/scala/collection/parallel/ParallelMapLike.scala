@@ -22,9 +22,9 @@ extends MapLike[K, V, Repr]
    with ParallelIterableLike[(K, V), Repr, SequentialView]
 { self =>
 
-  protected[this] override def newBuilder: Builder[(K, V), Repr] = null // TODO
+  protected[this] override def newBuilder: Builder[(K, V), Repr] = newCombiner
 
-  protected[this] override def newCombiner: Combiner[(K, V), Repr] = null // TODO
+  protected[this] override def newCombiner: Combiner[(K, V), Repr] = error("Must be implemented in concrete classes.")
 
   override def empty: Repr
 

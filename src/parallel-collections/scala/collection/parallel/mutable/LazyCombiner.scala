@@ -27,12 +27,12 @@ trait LazyCombiner[Elem, +To, Buff <: Growable[Elem] with Sizing] extends Combin
   def +=(elem: Elem) = { lastbuff += elem; this }
   def result: To = allocateAndCopy
   def clear = { chain.clear }
-  def combine[N <: Elem, NewTo >: To](other: Combiner[N, NewTo]): Combiner[N, NewTo] = {
+  def combine[N <: Elem, NewTo >: To](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
     if (other.isInstanceOf[LazyCombiner[_, _, _]]) {
       val that = other.asInstanceOf[LazyCombiner[Elem, To, Buff]]
       newLazyCombiner(chain ++= that.chain)
     } else throw new UnsupportedOperationException("Cannot combine with combiner of different type.")
-  }
+  } else this
   def size = chain.foldLeft(0)(_ + _.size)
 
   /** Method that allocates the data structure and copies elements into it using

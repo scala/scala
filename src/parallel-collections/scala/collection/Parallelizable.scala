@@ -11,12 +11,12 @@ import parallel.ParallelIterableLike
  * by invoking the method `par`. Parallelizable collections may be parametrized with
  * a target type different than their own.
  */
-trait Parallelizable[+T, +Repr <: Parallel] {
+trait Parallelizable[+T, +ParRepr <: Parallel] {
 
   /**
    * Returns a parallel implementation of a collection.
    */
-  def par: Repr
+  def par: ParRepr
 
 }
 

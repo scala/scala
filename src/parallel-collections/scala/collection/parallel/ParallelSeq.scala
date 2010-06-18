@@ -6,7 +6,7 @@ import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParallelCompanion
 import scala.collection.generic.GenericParallelTemplate
 import scala.collection.generic.ParallelFactory
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 import scala.collection.parallel.mutable.ParallelArrayCombiner
 import scala.collection.parallel.mutable.ParallelArray
 
@@ -30,7 +30,7 @@ trait ParallelSeq[+T] extends Seq[T]
 
 
 object ParallelSeq extends ParallelFactory[ParallelSeq] {
-  implicit def canBuildFrom[T]: CanBuildFromParallel[Coll, T, ParallelSeq[T]] = new GenericCanBuildFromParallel[T]
+  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParallelSeq[T]] = new GenericCanCombineFrom[T]
 
   def newBuilder[T]: Combiner[T, ParallelSeq[T]] = ParallelArrayCombiner[T]
 

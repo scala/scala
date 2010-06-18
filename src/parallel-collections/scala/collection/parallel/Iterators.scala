@@ -5,7 +5,7 @@ package scala.collection.parallel
 import scala.collection.Parallel
 import scala.collection.generic.Signalling
 import scala.collection.generic.DelegatedSignalling
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 import scala.collection.mutable.Builder
 import scala.collection.Iterator.empty
 
@@ -93,14 +93,14 @@ trait AugmentedIterableIterator[+T, +Repr <: Parallel] extends RemainsIterator[T
 
   /* transformers to combiners */
 
-  def map2combiner[S, That](f: T => S, pbf: CanBuildFromParallel[Repr, S, That]): Combiner[S, That] = {
-    val cb = pbf(repr)
+  def map2combiner[S, That](f: T => S, cb: Combiner[S, That]): Combiner[S, That] = {
+    //val cb = pbf(repr)
     cb.sizeHint(remaining)
     while (hasNext) cb += f(next)
     cb
   }
 
-  def collect2combiner[S, That](pf: PartialFunction[T, S], pbf: CanBuildFromParallel[Repr, S, That]): Combiner[S, That] = {
+  def collect2combiner[S, That](pf: PartialFunction[T, S], pbf: CanCombineFrom[Repr, S, That]): Combiner[S, That] = {
     val cb = pbf(repr)
     while (hasNext) {
       val curr = next
@@ -109,7 +109,7 @@ trait AugmentedIterableIterator[+T, +Repr <: Parallel] extends RemainsIterator[T
     cb
   }
 
-  def flatmap2combiner[S, That](f: T => Traversable[S], pbf: CanBuildFromParallel[Repr, S, That]): Combiner[S, That] = {
+  def flatmap2combiner[S, That](f: T => Traversable[S], pbf: CanCombineFrom[Repr, S, That]): Combiner[S, That] = {
     val cb = pbf(repr)
     while (hasNext) {
       val traversable = f(next)
@@ -276,7 +276,7 @@ trait AugmentedSeqIterator[+T, +Repr <: Parallel] extends AugmentedIterableItera
     cb
   }
 
-  def reverseMap2combiner[S, That](f: T => S, cbf: CanBuildFromParallel[Repr, S, That]): Combiner[S, That] = {
+  def reverseMap2combiner[S, That](f: T => S, cbf: CanCombineFrom[Repr, S, That]): Combiner[S, That] = {
     val cb = cbf(repr)
     cb.sizeHint(remaining)
     var lst = List[S]()
@@ -288,7 +288,7 @@ trait AugmentedSeqIterator[+T, +Repr <: Parallel] extends AugmentedIterableItera
     cb
   }
 
-  def updated2combiner[U >: T, That](index: Int, elem: U, cbf: CanBuildFromParallel[Repr, U, That]): Combiner[U, That] = {
+  def updated2combiner[U >: T, That](index: Int, elem: U, cbf: CanCombineFrom[Repr, U, That]): Combiner[U, That] = {
     val cb = cbf(repr)
     cb.sizeHint(remaining)
     var j = 0

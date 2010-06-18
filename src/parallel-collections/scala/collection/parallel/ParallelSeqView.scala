@@ -6,7 +6,7 @@ package scala.collection.parallel
 import scala.collection.TraversableView
 import scala.collection.SeqView
 import scala.collection.Parallel
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 
 
 
@@ -38,8 +38,8 @@ object ParallelSeqView {
 
   type Coll = ParallelSeqView[_, C, _] forSome { type C <: ParallelSeq[_] }
 
-  implicit def canBuildFrom[T]: CanBuildFromParallel[Coll, T, ParallelSeqView[T, ParallelSeq[T], Seq[T]]] =
-    new CanBuildFromParallel[Coll, T, ParallelSeqView[T, ParallelSeq[T], Seq[T]]] {
+  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParallelSeqView[T, ParallelSeq[T], Seq[T]]] =
+    new CanCombineFrom[Coll, T, ParallelSeqView[T, ParallelSeq[T], Seq[T]]] {
       def apply(from: Coll) = new NoCombiner[T] with EnvironmentPassingCombiner[T, Nothing]
       def apply() = new NoCombiner[T] with EnvironmentPassingCombiner[T, Nothing]
     }

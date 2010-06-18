@@ -5,7 +5,7 @@ package scala.collection.parallel.mutable
 import scala.collection.generic.GenericParallelTemplate
 import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParallelCompanion
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.ParallelFactory
 import scala.collection.generic.Sizing
 import scala.collection.parallel.Combiner
@@ -357,8 +357,8 @@ extends ParallelSeq[T]
 
     /* transformers */
 
-    override def map2combiner[S, That](f: T => S, cbf: CanBuildFromParallel[ParallelArray[T], S, That]): Combiner[S, That] = {
-      val cb = cbf(self.repr)
+    override def map2combiner[S, That](f: T => S, cb: Combiner[S, That]): Combiner[S, That] = {
+      //val cb = cbf(self.repr)
       cb.sizeHint(remaining)
       map2combiner_quick(f, arr, cb, until, i)
       i = until
@@ -373,7 +373,7 @@ extends ParallelSeq[T]
       }
     }
 
-    override def collect2combiner[S, That](pf: PartialFunction[T, S], pbf: CanBuildFromParallel[ParallelArray[T], S, That]): Combiner[S, That] = {
+    override def collect2combiner[S, That](pf: PartialFunction[T, S], pbf: CanCombineFrom[ParallelArray[T], S, That]): Combiner[S, That] = {
       val cb = pbf(self.repr)
       collect2combiner_quick(pf, arr, cb, until, i)
       i = until
@@ -389,7 +389,7 @@ extends ParallelSeq[T]
       }
     }
 
-    override def flatmap2combiner[S, That](f: T => Traversable[S], pbf: CanBuildFromParallel[ParallelArray[T], S, That]): Combiner[S, That] = {
+    override def flatmap2combiner[S, That](f: T => Traversable[S], pbf: CanCombineFrom[ParallelArray[T], S, That]): Combiner[S, That] = {
       val cb = pbf(self.repr)
       while (i < until) {
         val traversable = f(arr(i).asInstanceOf[T])
@@ -518,7 +518,7 @@ extends ParallelSeq[T]
 
 
 object ParallelArray extends ParallelFactory[ParallelArray] {
-  implicit def canBuildFrom[T]: CanBuildFromParallel[Coll, T, ParallelArray[T]] = new GenericCanBuildFromParallel[T]
+  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParallelArray[T]] = new GenericCanCombineFrom[T]
   def newBuilder[T]: Combiner[T, ParallelArray[T]] = newCombiner
   def newCombiner[T]: Combiner[T, ParallelArray[T]] = ParallelArrayCombiner[T]
 

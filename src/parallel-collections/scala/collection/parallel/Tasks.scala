@@ -38,8 +38,10 @@ trait Tasks {
     def repr = this.asInstanceOf[Tp]
     /** Code that gets called after the task gets started - it may spawn other tasks instead of calling `leaf`. */
     def compute
-    /** Body of the task - non-divisible unit of work done by this task. */
-    def leaf
+    /** Body of the task - non-divisible unit of work done by this task. Optionally is provided with the result from the previous task
+     *  or `None` if there was no previous task.
+     */
+    def leaf(result: Option[R])
     /** Start task. */
     def start
     /** Wait for task to finish. */
@@ -88,19 +90,20 @@ trait AdaptiveWorkStealingTasks extends Tasks {
     def split: Seq[Task[R, Tp]]
 
     /** The actual leaf computation. */
-    def leaf: Unit
+    def leaf(result: Option[R]): Unit
 
-    def compute = if (shouldSplitFurther) internal else leaf
+    def compute = if (shouldSplitFurther) internal else leaf(None)
 
     def internal = {
       var last = spawnSubtasks
 
-      last.leaf
+      last.leaf(None)
       result = last.result
 
       while (last.next != null) {
+        val lastresult = Option(last.result)
         last = last.next
-        if (last.tryCancel) last.leaf else last.sync
+        if (last.tryCancel) last.leaf(lastresult) else last.sync
         merge(last.repr)
       }
     }

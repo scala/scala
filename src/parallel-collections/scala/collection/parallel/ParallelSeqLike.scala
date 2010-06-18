@@ -6,7 +6,7 @@ import scala.collection.SeqLike
 import scala.collection.generic.DefaultSignalling
 import scala.collection.generic.AtomicIndexFlag
 import scala.collection.generic.CanBuildFrom
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.VolatileAbort
 
 
@@ -320,7 +320,7 @@ extends scala.collection.SeqLike[T, Repr]
   protected[this] class SegmentLength(pred: T => Boolean, from: Int, val pit: ParallelIterator)
   extends Accessor[(Int, Boolean), SegmentLength] {
     var result: (Int, Boolean) = null
-    def leaf = if (from < pit.indexFlag) {
+    def leaf(prev: Option[(Int, Boolean)]) = if (from < pit.indexFlag) {
       val itsize = pit.remaining
       val seglen = pit.prefixLength(pred)
       result = (seglen, itsize == seglen)
@@ -337,7 +337,7 @@ extends scala.collection.SeqLike[T, Repr]
   protected[this] class IndexWhere(pred: T => Boolean, from: Int, val pit: ParallelIterator)
   extends Accessor[Int, IndexWhere] {
     var result: Int = -1
-    def leaf = if (from < pit.indexFlag) {
+    def leaf(prev: Option[Int]) = if (from < pit.indexFlag) {
       val r = pit.indexWhere(pred)
       if (r != -1) {
         result = from + r
@@ -357,7 +357,7 @@ extends scala.collection.SeqLike[T, Repr]
   protected[this] class LastIndexWhere(pred: T => Boolean, pos: Int, val pit: ParallelIterator)
   extends Accessor[Int, LastIndexWhere] {
     var result: Int = -1
-    def leaf = if (pos > pit.indexFlag) {
+    def leaf(prev: Option[Int]) = if (pos > pit.indexFlag) {
       val r = pit.lastIndexWhere(pred)
       if (r != -1) {
         result = pos + r
@@ -377,15 +377,15 @@ extends scala.collection.SeqLike[T, Repr]
   protected[this] class Reverse[U >: T, This >: Repr](cbf: () => Combiner[U, This], val pit: ParallelIterator)
   extends Transformer[Combiner[U, This], Reverse[U, This]] {
     var result: Combiner[U, This] = null
-    def leaf = result = pit.reverse2combiner(cbf())
+    def leaf(prev: Option[Combiner[U, This]]) = result = pit.reverse2combiner(reuse(prev, cbf()))
     def newSubtask(p: SuperParallelIterator) = new Reverse(cbf, down(p))
     override def merge(that: Reverse[U, This]) = result = that.result combine result
   }
 
-  protected[this] class ReverseMap[S, That](f: T => S, pbf: CanBuildFromParallel[Repr, S, That], val pit: ParallelIterator)
+  protected[this] class ReverseMap[S, That](f: T => S, pbf: CanCombineFrom[Repr, S, That], val pit: ParallelIterator)
   extends Transformer[Combiner[S, That], ReverseMap[S, That]] {
     var result: Combiner[S, That] = null
-    def leaf = result = pit.reverseMap2combiner(f, pbf)
+    def leaf(prev: Option[Combiner[S, That]]) = result = pit.reverseMap2combiner(f, pbf) // TODO
     def newSubtask(p: SuperParallelIterator) = new ReverseMap(f, pbf, down(p))
     override def merge(that: ReverseMap[S, That]) = result = that.result combine result
   }
@@ -393,7 +393,7 @@ extends scala.collection.SeqLike[T, Repr]
   protected[this] class SameElements[U >: T](val pit: ParallelIterator, val otherpit: PreciseSplitter[U])
   extends Accessor[Boolean, SameElements[U]] {
     var result: Boolean = true
-    def leaf = if (!pit.isAborted) {
+    def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.sameElements(otherpit)
       if (!result) pit.abort
     }
@@ -406,10 +406,10 @@ extends scala.collection.SeqLike[T, Repr]
     override def merge(that: SameElements[U]) = result = result && that.result
   }
 
-  protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: CanBuildFromParallel[Repr, U, That], val pit: ParallelIterator)
+  protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: CanCombineFrom[Repr, U, That], val pit: ParallelIterator)
   extends Transformer[Combiner[U, That], Updated[U, That]] {
     var result: Combiner[U, That] = null
-    def leaf = result = pit.updated2combiner(pos, elem, pbf)
+    def leaf(prev: Option[Combiner[U, That]]) = result = pit.updated2combiner(pos, elem, pbf) // TODO
     def newSubtask(p: SuperParallelIterator) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.split
@@ -421,7 +421,7 @@ extends scala.collection.SeqLike[T, Repr]
   protected[this] class Corresponds[S](corr: (T, S) => Boolean, val pit: ParallelIterator, val otherpit: PreciseSplitter[S])
   extends Accessor[Boolean, Corresponds[S]] {
     var result: Boolean = true
-    def leaf = if (!pit.isAborted) {
+    def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.corresponds(corr)(otherpit)
       if (!result) pit.abort
     }

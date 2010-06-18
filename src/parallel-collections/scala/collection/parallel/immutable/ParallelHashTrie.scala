@@ -11,7 +11,9 @@ import scala.collection.parallel.ParallelMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.EnvironmentPassingCombiner
 import scala.collection.generic.ParallelMapFactory
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
+import scala.collection.generic.GenericParallelMapTemplate
+import scala.collection.generic.GenericParallelMapCompanion
 import scala.collection.immutable.HashMap
 
 
@@ -21,10 +23,14 @@ import scala.collection.immutable.HashMap
 
 class ParallelHashTrie[K, +V] private[immutable] (private[this] val trie: HashMap[K, V])
 extends ParallelMap[K, V]
+   with GenericParallelMapTemplate[K, V, ParallelHashTrie]
    with ParallelMapLike[K, V, ParallelHashTrie[K, V], HashMap[K, V]]
-{ self =>
+{
+self =>
 
   def this() = this(HashMap.empty[K, V])
+
+  override def mapCompanion: GenericParallelMapCompanion[ParallelHashTrie] = ParallelHashTrie
 
   override def empty: ParallelHashTrie[K, V] = new ParallelHashTrie[K, V]
 
@@ -39,6 +45,11 @@ extends ParallelMap[K, V]
   def get(k: K) = trie.get(k)
 
   override def size = trie.size
+
+  protected override def reuse[S, That](oldc: Option[Combiner[S, That]], newc: Combiner[S, That]) = oldc match {
+    case Some(old) => old
+    case None => newc
+  }
 
   type SCPI = SignalContextPassingIterator[ParallelHashTrieIterator]
 
@@ -70,7 +81,13 @@ extends ParallelMap[K, V]
 object ParallelHashTrie extends ParallelMapFactory[ParallelHashTrie] {
   def empty[K, V]: ParallelHashTrie[K, V] = new ParallelHashTrie[K, V]
 
-  implicit def canBuildFrom[K, V]: CanBuildFromParallel[Coll, (K, V), ParallelHashTrie[K, V]] = new ParallelMapCanBuildFrom[K, V]
+  def newCombiner[K, V]: Combiner[(K, V), ParallelHashTrie[K, V]] = HashTrieCombiner[K, V]
+
+  implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParallelHashTrie[K, V]] = {
+    new CanCombineFromMap[K, V]
+  }
+
+  var totalcombines = new java.util.concurrent.atomic.AtomicInteger(0)
 }
 
 
@@ -85,16 +102,17 @@ self: EnvironmentPassingCombiner[(K, V), ParallelHashTrie[K, V]] =>
 
   def +=(elem: (K, V)) = { trie += elem; this }
 
-  def result = new ParallelHashTrie[K, V](trie)
-
-  def combine[N <: (K, V), NewTo >: ParallelHashTrie[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = {
+  def combine[N <: (K, V), NewTo >: ParallelHashTrie[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
+    // ParallelHashTrie.totalcombines.incrementAndGet
     if (other.isInstanceOf[HashTrieCombiner[_, _]]) {
       val that = other.asInstanceOf[HashTrieCombiner[K, V]]
       val ncombiner = HashTrieCombiner[K, V]
       ncombiner.trie = this.trie combine that.trie
       ncombiner
     } else error("Unexpected combiner type.")
-  }
+  } else this
+
+  def result = new ParallelHashTrie[K, V](trie)
 
 }
 

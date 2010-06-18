@@ -23,7 +23,7 @@ extends TraversableFactory[CC]
    * `apply(from)` to the `genericParallelBuilder` method of the $coll `from`, and calls to `apply()`
    * to this factory.
    */
-  class GenericCanBuildFromParallel[A] extends GenericCanBuildFrom[A] with CanBuildFromParallel[CC[_], A, CC[A]] {
+  class GenericCanCombineFrom[A] extends GenericCanBuildFrom[A] with CanCombineFrom[CC[_], A, CC[A]] {
     override def apply(from: Coll) = from.genericCombiner
     override def apply() = newBuilder[A]
   }

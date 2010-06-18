@@ -4,7 +4,7 @@ package scala.collection
 import java.lang.Thread._
 
 import scala.collection.generic.CanBuildFrom
-import scala.collection.generic.CanBuildFromParallel
+import scala.collection.generic.CanCombineFrom
 
 
 /** Package object for parallel collections.
@@ -34,8 +34,8 @@ package object parallel {
 
   implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new {
     def isParallel = bf.isInstanceOf[Parallel]
-    def asParallel = bf.asInstanceOf[CanBuildFromParallel[From, Elem, To]]
-    def ifParallel[R](isbody: CanBuildFromParallel[From, Elem, To] => R) = new {
+    def asParallel = bf.asInstanceOf[CanCombineFrom[From, Elem, To]]
+    def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R) = new {
       def otherwise(notbody: => R) = if (isParallel) isbody(asParallel) else notbody
     }
   }

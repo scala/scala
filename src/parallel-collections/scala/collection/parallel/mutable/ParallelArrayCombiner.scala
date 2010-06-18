@@ -43,7 +43,7 @@ extends LazyCombiner[T, ParallelArray[T], ExposedArrayBuffer[T]]
 
   class CopyChainToArray(array: Array[Any], offset: Int, howmany: Int) extends super.Task[Unit, CopyChainToArray] {
     var result = ()
-    def leaf = if (howmany > 0) {
+    def leaf(prev: Option[Unit]) = if (howmany > 0) {
       var totalleft = howmany
       val (stbuff, stind) = findStart(offset)
       var buffind = stbuff

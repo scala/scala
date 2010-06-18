@@ -17,7 +17,10 @@ import scala.collection.mutable.Builder
  *  @define $Coll ParallelMap
  */
 abstract class ParallelMapFactory[CC[X, Y] <: ParallelMap[X, Y] with ParallelMapLike[X, Y, CC[X, Y], _]]
-extends MapFactory[CC] {
+extends MapFactory[CC]
+   with GenericParallelMapCompanion[CC] {
+
+  type MapColl = CC[_, _]
 
   /** The default builder for $Coll objects.
    *  @tparam K      the type of the keys
@@ -29,10 +32,10 @@ extends MapFactory[CC] {
    *  @tparam K     the type of the keys
    *  @tparam V     the type of the associated values
    */
-  def newCombiner[K, V]: Combiner[(K, V), CC[K, V]] = null // TODO
+  def newCombiner[K, V]: Combiner[(K, V), CC[K, V]]
 
-  class ParallelMapCanBuildFrom[K, V] extends CanBuildFromParallel[CC[_, _], (K, V), CC[K, V]] {
-    def apply(from: CC[_, _]) = newCombiner[K, V]
+  class CanCombineFromMap[K, V] extends CanCombineFrom[CC[_, _], (K, V), CC[K, V]] {
+    def apply(from: MapColl) = from.genericMapCombiner[K, V].asInstanceOf[Combiner[(K, V), CC[K, V]]]
     def apply() = newCombiner[K, V]
   }
 
