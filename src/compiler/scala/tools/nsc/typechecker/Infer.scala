@@ -344,7 +344,7 @@ trait Infer {
 
     def isCompatible(tp: Type, pt: Type): Boolean = {
       val tp1 = normalize(tp)
-      (tp1 <:< pt) || isCoercible(tp1, pt)
+      (tp1 weak_<:< pt) || isCoercible(tp1, pt)
     }
 
     final def normSubType(tp: Type, pt: Type): Boolean = tp match {
@@ -1594,6 +1594,8 @@ trait Infer {
 
           var allApplicable = alts filter (alt =>
             isApplicable(undetparams, followApply(pre.memberType(alt)), argtpes, pt))
+
+          //log("applicable: "+ (allApplicable map pre.memberType))
 
           if (varArgsOnly)
             allApplicable = allApplicable filter (alt => isVarArgs(alt.tpe.params))
