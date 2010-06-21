@@ -542,7 +542,7 @@ de> view of the argument.
       def next = { val e = ui.next ; prev = Some(e) ; e }
       def remove = prev match {
         case Some(e) =>
-          self match {
+          underlying match {
             case ms: mutable.Set[a] =>
               ms.remove(e.asInstanceOf[a])
               prev = None
@@ -618,7 +618,7 @@ de> view of the argument.
 
         def remove = prev match {
           case Some(k) =>
-            self match {
+            underlying match {
               case mm: mutable.Map[a, _] =>
                 val v = mm.remove(k.asInstanceOf[a])
                 prev = None

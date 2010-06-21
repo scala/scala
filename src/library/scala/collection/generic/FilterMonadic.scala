@@ -1,7 +1,7 @@
 package scala.collection.generic
 
 /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
- *  of trait `TraverableLike`.
+ *  of trait `TraversableLike`.
  */
 trait FilterMonadic[+A, +Repr] {
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
