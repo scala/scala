@@ -2564,6 +2564,10 @@ trait Typers { self: Analyzer =>
        *  an error message is reported and None is returned.
        */
       def tree2ConstArg(tree: Tree, pt: Type): Option[ClassfileAnnotArg] = tree match {
+        case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) if (pt.typeSymbol == ArrayClass) =>
+          error(tree.pos, "Array constants have to be specified using the `Array(...)' factory method")
+          None
+
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val annInfo = typedAnnotation(ann, mode, NoSymbol, pt.typeSymbol, true)
           if (annInfo.atp.isErroneous) {
