@@ -129,8 +129,8 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     }
 
-    def hashCodeTarget: Name =
-      if (settings.Yjenkins.value) "hashCodeJenkins" else nme.hashCode_
+    def hashCodeTarget: Name = nme.hashCode_
+      // if (settings.Yjenkins.value) "hashCodeJenkins" else nme.hashCode_
 
     def equalsSym = syntheticMethod(
       nme.equals_, 0, makeTypeConstructor(List(AnyClass.tpe), BooleanClass.tpe)
