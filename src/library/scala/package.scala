@@ -60,7 +60,6 @@ package object scala {
   val Vector = scala.collection.immutable.Vector
 
   type StringBuilder = scala.collection.mutable.StringBuilder
-  val StringBuilder = scala.collection.mutable.StringBuilder
 
   type Range = scala.collection.immutable.Range
   val Range = scala.collection.immutable.Range
