@@ -357,9 +357,45 @@ object Actor extends Combinators {
 
 /**
  * <p>
- *   This class provides an implementation of event-based actors.
- *   The main ideas of our approach are explained in the two papers
+ *   This trait provides lightweight, concurrent actors. Actors are
+ *   created by extending the `Actor` trait (alternatively, one of the
+ *   factory methods in its companion object can be used).  The
+ *   behavior of an `Actor` subclass is defined by implementing its
+ *   `act` method:
+ *
+ *   {{{
+ *   class MyActor extends Actor {
+ *     def act() {
+ *       // actor behavior goes here
+ *     }
+ *   }
+ *   }}}
+ *
+ *   A new `Actor` instance is started by invoking its `start` method.
+ *
+ *   '''Note:''' care must be taken when invoking thread-blocking methods
+ *   other than those provided by the `Actor` trait or its companion
+ *   object (such as `receive`). Blocking the underlying thread inside
+ *   an actor may lead to starvation of other actors. This also
+ *   applies to actors hogging their thread for a long time between
+ *   invoking `receive`/`react`.
+ *
+ *   If actors use blocking operations (for example, methods for
+ *   blocking I/O), there are several options:
+ *   <ul>
+ *     <li>The run-time system can be configured to use a larger thread pool size
+ *     (for example, by setting the `actors.corePoolSize` JVM property).</li>
+ *
+ *     <li>The `scheduler` method of the `Actor` trait can be overridden to return a
+ *     `ResizableThreadPoolScheduler`, which resizes its thread pool to
+ *     avoid starvation caused by actors that invoke arbitrary blocking methods.</li>
+ *
+ *     <li>The `actors.enableForkJoin` JVM property can be set to `false`, in which
+ *     case a `ResizableThreadPoolScheduler` is used by default to execute actors.</li>
+ *   </ul>
  * </p>
+ * <p>
+ * The main ideas of the implementation are explained in the two papers
  * <ul>
  *   <li>
  *     <a href="http://lampwww.epfl.ch/~odersky/papers/jmlc06.pdf">
@@ -374,6 +410,7 @@ object Actor extends Combinators {
  *     Philipp Haller and Martin Odersky, <i>Proc. COORDINATION 2007</i>.
  *   </li>
  * </ul>
+ * </p>
  *
  * @author Philipp Haller
  *
