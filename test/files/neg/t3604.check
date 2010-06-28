@@ -1,0 +1,7 @@
+t3604.scala:3: error: in XML literal: expected closing tag of abbr
+    <abbr></div>
+               ^
+t3604.scala:3: error: start tag was here: abbr>
+    <abbr></div>
+     ^
+two errors found

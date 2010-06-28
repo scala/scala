@@ -1312,6 +1312,9 @@ self =>
     }
 
     def simpleExprRest(t: Tree, canApply: Boolean): Tree = {
+      // Various errors in XML literals can cause xmlLiteral to propagate
+      // EmptyTree's. Watch out for them here (see also postfixExpr).
+      if (EmptyTree == t) return EmptyTree   // #3604 (mics)
       if (canApply) newLineOptWhenFollowedBy(LBRACE)
       in.token match {
         case DOT =>
