@@ -52,7 +52,7 @@ private object Enumeration {
  *
  *    <b>def</b> isWorkingDay(d: WeekDay) = ! (d == Sat || d == Sun)
  *
- *    WeekDay.iterator filter isWorkingDay foreach println
+ *    WeekDay.values filter isWorkingDay foreach println
  *  }</pre>
  *
  *  @param initial The initial value from which to count the integers that
