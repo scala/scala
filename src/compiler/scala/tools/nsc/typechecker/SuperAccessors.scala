@@ -272,12 +272,22 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         case _ => Nil
       }
 
+      // fix for #2413
+      object javaToScalaRepeated extends TypeMap {
+        def apply(tp: Type): Type = tp match {
+          case tp @ TypeRef(_, _, List(arg)) if tp.typeSymbol == definitions.JavaRepeatedParamClass =>
+            appliedType(definitions.RepeatedParamClass.typeConstructor, List(arg))
+          case _ =>
+            mapOver(tp)
+        }
+      }
+
       assert(clazz != NoSymbol, sym)
       if (settings.debug.value)  log("Decided for host class: " + clazz)
 
       val accName = nme.protName(sym.originalName)
       val hasArgs = sym.tpe.paramTypes != Nil
-      val memberType = sym.tpe // transform(sym.tpe)
+      val memberType = javaToScalaRepeated(sym.tpe) // transform(sym.tpe)
 
       // if the result type depends on the this type of an enclosing class, the accessor
       // has to take an object of exactly this type, otherwise it's more general
