@@ -29,7 +29,10 @@ trait ParallelHashTrieBenches[K, V] extends StandardParallelIterableBench[(K, V)
   extends IterableBench with StandardParallelIterableBench[(K, V), ParallelHashTrie[K, V]] {
     var result: Int = 0
     def comparisonMap = collection.Map()
-    def runseq = result = this.seqcoll.map(operators.mapper2).size
+    def runseq = {
+      val r = this.seqcoll.asInstanceOf[collection.immutable.HashMap[K, V]].map(operators.mapper2)
+      result = r.size
+    }
     def runpar = {
       result = this.parcoll.map(operators.mapper2).size
       //println(collection.parallel.immutable.ParallelHashTrie.totalcombines)
