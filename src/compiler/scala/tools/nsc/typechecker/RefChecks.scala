@@ -66,6 +66,15 @@ abstract class RefChecks extends InfoTransform {
     }
   }
 
+  val toScalaRepeatedParam = new TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case tp @ TypeRef(pre, JavaRepeatedParamClass, args) =>
+        typeRef(pre, RepeatedParamClass, args)
+      case _ =>
+        mapOver(tp)
+    }
+  }
+
   class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
 
     var localTyper: analyzer.Typer = typer;
