@@ -6,6 +6,7 @@ import scala.collection.generic.GenericParallelTemplate
 import scala.collection.generic.GenericCompanion
 import scala.collection.generic.GenericParallelCompanion
 import scala.collection.generic.CanCombineFrom
+import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.ParallelFactory
 import scala.collection.generic.Sizing
 import scala.collection.parallel.Combiner
@@ -509,6 +510,42 @@ extends ParallelSeq[T]
       }
     }
 
+  }
+
+  /* operations */
+
+  private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParallelArrayCombiner[_]]
+
+  override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParallelArray[T], S, That]) = if (buildsArray(bf(repr))) {
+    // reserve array
+    val targetarr = new Array[Any](length)
+
+    // fill it in parallel
+    executeAndWait(new Map[S](f, targetarr, 0, length))
+
+    // wrap it into a parallel array
+    (new ParallelArray[S](new ExposedArraySeq[S](targetarr.asInstanceOf[Array[AnyRef]], length))).asInstanceOf[That]
+  } else super.map(f)(bf)
+
+  /* tasks */
+
+  class Map[S](f: T => S, targetarr: Array[Any], offset: Int, howmany: Int) extends super.Task[Unit, Map[S]] {
+    var result = ();
+    def leaf(prev: Option[Unit]) = {
+      val tarr = targetarr
+      val sarr = array
+      var i = offset
+      val until = offset + howmany
+      while (i < until) {
+        tarr(i) = f(sarr(i).asInstanceOf[T])
+        i += 1
+      }
+    }
+    def split = {
+      val fp = howmany / 2
+      List(new Map(f, targetarr, offset, fp), new Map(f, targetarr, offset + fp, howmany - fp))
+    }
+    def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(length, parallelismLevel)
   }
 
 }

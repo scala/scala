@@ -73,7 +73,7 @@ object RefParallelHashTrieBenches extends ParallelHashTrieBenches[Dummy, Dummy] 
       sum
     }
     val reducer = (x: DPair, y: DPair) => {
-      y._2.num = x._2.in + y._2.in
+      //y._2.num = x._2.in + y._2.in
       y
     }
     val mediumreducer = (x: DPair, y: DPair) => {
