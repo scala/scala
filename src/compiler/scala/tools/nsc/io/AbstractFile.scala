@@ -17,8 +17,7 @@ import scala.collection.mutable.ArrayBuffer
  * @author Philippe Altherr
  * @version 1.0, 23/03/2004
  */
-object AbstractFile
-{
+object AbstractFile {
   /** Returns "getFile(new File(path))". */
   def getFile(path: String): AbstractFile = getFile(Path(path))
   def getFile(path: Path): AbstractFile = getFile(path.toFile)
