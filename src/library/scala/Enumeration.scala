@@ -11,7 +11,6 @@ package scala
 import scala.collection.SetLike
 import scala.collection.{ mutable, immutable, generic }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
-import java.util.NoSuchElementException
 
 /** <p>
  *    Defines a finite set of values specific to the enumeration. Typically
