@@ -11,7 +11,6 @@ package scala.collection
 
 import generic._
 import mutable.{Builder, AddingBuilder}
-import PartialFunction._
 
 /** A template trait for sets.
  *

@@ -64,16 +64,13 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
                    with Shrinkable[A]
                    with Scriptable[A]
                    with Subtractable[A, This]
-                   with Cloneable[This]
                    with SeqLike[A, This]
 { self : This =>
 
   // Note this does not extend Addable because `+` is being phased out of
   // all Seq-derived classes.
 
-  import scala.collection.{Iterable, Traversable}
-
-  // Abstract methods from IndexedSeq:
+  // Abstract methods from Seq:
 
   def apply(n: Int): A
   def update(n: Int, newelem: A)
@@ -99,7 +96,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @throws   IndexOutofBoundsException if the index `n` is not in the valid range
    *            `0 <= n <= length`.
    */
-  def insertAll(n: Int, elems: Traversable[A])
+  def insertAll(n: Int, elems: collection.Traversable[A])
 
    /** Removes the element at a given index from this buffer.
     *

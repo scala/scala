@@ -37,7 +37,6 @@ class PriorityQueue[A](implicit ord: Ordering[A])
       extends Seq[A]
       with SeqLike[A, PriorityQueue[A]]
       with Growable[A]
-      with Cloneable[PriorityQueue[A]]
       with Builder[A, PriorityQueue[A]]
 {
   import ord._
