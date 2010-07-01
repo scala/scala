@@ -19,7 +19,7 @@ extends TraversableFactory[CC]
   type EPC[T, C] = collection.parallel.EnvironmentPassingCombiner[T, C]
 
   /**
-   * A generic implementation of the `CanBuildFromParallel` trait, which forwards all calls to
+   * A generic implementation of the `CanCombineFrom` trait, which forwards all calls to
    * `apply(from)` to the `genericParallelBuilder` method of the $coll `from`, and calls to `apply()`
    * to this factory.
    */

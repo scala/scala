@@ -11,13 +11,10 @@ import scala.collection.parallel.Combiner
 
 
 
-
-
-
 // TODO uncomment when we add parallel vectors
 
 ///** An immutable variant of `ParallelSeq`.
-// *
+// *  
 // *  @define Coll mutable.ParallelSeq
 // *  @define coll mutable parallel sequence
 // */
@@ -27,7 +24,7 @@ import scala.collection.parallel.Combiner
 //                        with GenericParallelTemplate[A, ParallelSeq]
 //                        with ParallelSeqLike[A, ParallelSeq[A], Seq[A]] {
 //  override def companion: GenericCompanion[ParallelSeq] with GenericParallelCompanion[ParallelSeq] = ParallelSeq
-//
+//  
 //}
 //
 //
@@ -37,9 +34,9 @@ import scala.collection.parallel.Combiner
 // */
 //object ParallelSeq extends ParallelFactory[ParallelSeq] {
 //  implicit def canBuildFrom[T]: CanBuildFromParallel[Coll, T, ParallelSeq[T]] = new GenericCanBuildFromParallel[T]
-//
+//  
 //  def newBuilder[A]: Combiner[A, ParallelSeq[A]] = null // TODO
-//
+//  
 //  def newCombiner[A]: Combiner[A, ParallelSeq[A]] = null // TODO
 //}
 

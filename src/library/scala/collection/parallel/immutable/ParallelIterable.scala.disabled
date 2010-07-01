@@ -7,19 +7,16 @@ import scala.collection.parallel.ParallelIterableLike
 import scala.collection.parallel.Combiner
 
 
-
-
-
 // TODO uncomment when we add parallel vectors
 
 ///** A template trait for immutable parallel iterable collections.
-// *
+// *  
 // *  $paralleliterableinfo
-// *
+// *  
 // *  $sideeffects
-// *
+// *  
 // *  @tparam A    the element type of the collection
-// *
+// *  
 // *  @author prokopec
 // *  @since 2.8
 // */
@@ -35,9 +32,9 @@ import scala.collection.parallel.Combiner
 //object ParallelIterable extends ParallelFactory[ParallelIterable] {
 //  implicit def canBuildFrom[A]: CanBuildFromParallel[Coll, A, ParallelIterable[A]] =
 //    new GenericCanBuildFromParallel[A]
-//
+//  
 //  def newBuilder[A]: Combiner[A, ParallelIterable[A]] = null // TODO
-//
+//    
 //  def newCombiner[A]: Combiner[A, ParallelIterable[A]] = null // TODO
 //}
 

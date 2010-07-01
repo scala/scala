@@ -9,11 +9,6 @@ import scala.collection.generic.CanCombineFrom
 import scala.collection.mutable.Builder
 import scala.collection.Iterator.empty
 
-
-
-
-
-
 trait RemainsIterator[+T] extends Iterator[T] {
   /** The number of elements this iterator has yet to iterate.
    *  This method doesn't change the state of the iterator.

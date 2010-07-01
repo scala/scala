@@ -1,12 +1,7 @@
 package scala.collection
 package generic
 
-
-
 import scala.collection.parallel._
-
-
-
 
 /**
  * A base trait for parallel builder factories.
