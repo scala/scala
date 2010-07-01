@@ -6,22 +6,12 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
 import scala.collection.SetLike
 import scala.collection.{ mutable, immutable, generic }
 import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
-
-private object Enumeration {
-
-  /* This map is used to cache enumeration instances for
-     resolving enumeration _values_ to equal objects (by-reference)
-     when values are deserialized. */
-  private val emap: mutable.Map[Class[_], Enumeration] = new mutable.HashMap
-
-}
+import java.util.NoSuchElementException
 
 /** <p>
  *    Defines a finite set of values specific to the enumeration. Typically
@@ -69,14 +59,9 @@ abstract class Enumeration(initial: Int, names: String*) {
   def this() = this(0, null)
   def this(names: String*) = this(0, names: _*)
 
-  /* Populates emap with this instance */
-  readResolve()
-
   /* Note that `readResolve` cannot be private, since otherwise
      the JVM does not invoke it when deserializing subclasses. */
-  protected def readResolve(): AnyRef = Enumeration.synchronized {
-    Enumeration.emap.getOrElseUpdate(getClass, this)
-  }
+  protected def readResolve(): AnyRef = thisenum.getClass.getField("MODULE$").get()
 
   /** The name of this enumeration.
    */
@@ -246,12 +231,12 @@ abstract class Enumeration(initial: Int, names: String*) {
     if (nextId > topId) topId = nextId
     def id = i
     override def toString() =
-      if (name == null) thisenum.nameOf(i)
-      else name
+      if (name != null) name
+      else try thisenum.nameOf(i)
+      catch { case _: NoSuchElementException => "<Invalid enum: no field for #" + i + ">" }
+
     protected def readResolve(): AnyRef = {
-      val enum = Enumeration.synchronized {
-        Enumeration.emap.getOrElse(thisenum.getClass, thisenum)
-      }
+      val enum = thisenum.readResolve().asInstanceOf[Enumeration]
       if (enum.vmap == null) this
       else enum.vmap(i)
     }
