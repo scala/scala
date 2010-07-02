@@ -30,13 +30,10 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		def name = API.name
 		def run: Unit =
 		{
-			if(java.lang.Boolean.getBoolean("sbt.api.enable"))
-			{
-				val start = System.currentTimeMillis
-				//currentRun.units.foreach(processUnit)
-				val stop = System.currentTimeMillis
-				println("API phase took : " + ((stop - start)/1000.0) + " s")
-			}
+			val start = System.currentTimeMillis
+			currentRun.units.foreach(processUnit)
+			val stop = System.currentTimeMillis
+			println("API phase took : " + ((stop - start)/1000.0) + " s")
 		}
 		def processUnit(unit: CompilationUnit)
 		{
@@ -52,7 +49,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def path(components: List[PathComponent]) = new xsbti.api.Path(components.toArray[PathComponent])
 	private def pathComponents(sym: Symbol, postfix: List[PathComponent]): List[PathComponent] =
 	{
-		if(sym == NoSymbol || sym.isRoot || sym.isRootPackage) postfix
+		if(sym == NoSymbol || sym.isRoot || sym.isEmptyPackageClass || sym.isRootPackage) postfix
 		else pathComponents(sym.owner, new xsbti.api.Id(simpleName(sym)) :: postfix)
 	}
 	private def simpleType(t: Type): SimpleType =
@@ -135,7 +132,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		s.hasFlag(Flags.DEFAULTPARAM)
 	}
 	private def fieldDef[T](s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
-		create(processType(s.tpe), simpleName(s), getAccess(s), getModifiers(s), annotations(s))
+		create(processType(s.tpeHK), simpleName(s), getAccess(s), getModifiers(s), annotations(s))
 		
 	private def typeDef(s: Symbol): xsbti.api.TypeMember =
 	{
@@ -209,7 +206,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	
 	private def processType(t: Type): xsbti.api.Type =
 	{
-		t match
+		t.dealias match
 		{
 			case NoPrefix => Constants.emptyType
 			case ThisType(sym) => new xsbti.api.Singleton(thisPath(sym))

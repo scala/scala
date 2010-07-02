@@ -252,5 +252,5 @@ abstract class Compat
 	{
 		def getArchive = z.archive; def archive = sourceCompatibilityOnly
 	}
-	private def sourceCompatibilityOnly = error("For source compatibility only: should not get here.")
+	private def sourceCompatibilityOnly: Nothing = throw new RuntimeException("For source compatibility only: should not get here.")
 }
