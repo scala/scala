@@ -102,7 +102,7 @@ abstract class TailCalls extends Transform
       var tailPos = false
 
       /** The reason this method could not be optimized. */
-      var tailrecFailReason = "it contains a recursive call not in tail position"
+      var tailrecFailReason = "reason indeterminate"
 
       /** Is the label accessed? */
       var accessed = false
@@ -153,15 +153,19 @@ abstract class TailCalls extends Transform
       /** A possibly polymorphic apply to be considered for tail call transformation.
        */
       def rewriteApply(target: Tree, fun: Tree, targs: List[Tree], args: List[Tree]) = {
+        def receiver = fun match {
+          case Select(qual, _)  => Some(qual)
+          case _                => None
+        }
+
+        def receiverIsSame    = receiver exists (enclosingType.widen =:= _.tpe.widen)
+        def receiverIsSuper   = receiver exists (enclosingType.widen <:< _.tpe.widen)
         def isRecursiveCall   = ctx.currentMethod eq fun.symbol
         def isMandatory       = ctx.currentMethod hasAnnotation TailrecClass
         def isEligible        = ctx.currentMethod.isEffectivelyFinal
         def transformArgs     = transformTrees(args, mkContext(ctx, false))
         def matchesTypeArgs   = ctx.tparams sameElements (targs map (_.tpe.typeSymbol))
         def defaultTree       = treeCopy.Apply(tree, target, transformArgs)
-
-        def sameTypeOfThis(receiver: Tree) =
-          receiver.tpe.widen =:= enclosingType.widen
 
         /** Records failure reason in Context for reporting.
          */
@@ -171,6 +175,10 @@ abstract class TailCalls extends Transform
 
           defaultTree
         }
+        def notRecursiveReason() =
+          if (receiverIsSuper) "it contains a recursive call targetting a supertype"
+          else "it contains a recursive call not in tail position"
+
         def rewriteTailCall(receiver: Tree, otherArgs: List[Tree]): Tree = {
           log("Rewriting tail recursive method call at: " + fun.pos)
 
@@ -178,15 +186,16 @@ abstract class TailCalls extends Transform
           typed { atPos(fun.pos)(Apply(Ident(ctx.label), receiver :: otherArgs)) }
         }
 
-        if (!isRecursiveCall)           defaultTree
+        if (!isRecursiveCall)           cannotRewrite(notRecursiveReason())
         else if (!isEligible)           cannotRewrite("it is neither private nor final so can be overridden")
         else if (!ctx.tailPos)          cannotRewrite("it contains a recursive call not in tail position")
         else if (!matchesTypeArgs)      cannotRewrite("it is called recursively with different type arguments")
-        else fun match {
-          case Select(_, _) if forMSIL                  => cannotRewrite("it cannot be optimized on MSIL")
-          case Select(qual, _) if !sameTypeOfThis(qual) => cannotRewrite("it changes type of 'this' on a polymorphic recursive call")
-          case Select(qual, _)                          => rewriteTailCall(qual, transformArgs)
-          case _                                        => rewriteTailCall(This(currentClass), transformArgs)
+        else receiver match {
+          case Some(qual) =>
+            if (forMSIL)                cannotRewrite("it cannot be optimized on MSIL")
+            else if (!receiverIsSame)   cannotRewrite("it changes type of 'this' on a polymorphic recursive call")
+            else                        rewriteTailCall(qual, transformArgs)
+          case _          =>            rewriteTailCall(This(currentClass), transformArgs)
         }
       }
 
