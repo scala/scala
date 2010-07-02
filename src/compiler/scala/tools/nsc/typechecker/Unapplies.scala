@@ -133,8 +133,11 @@ trait Unapplies extends ast.TreeDSL
   /** The module corresponding to a case class; overrides toString to show the module's name
    */
   def caseModuleDef(cdef: ClassDef): ModuleDef = {
-    def inheritFromFun = !(cdef.mods hasFlag ABSTRACT) && cdef.tparams.isEmpty && constrParamss(cdef).length == 1
-    def createFun      = gen.scalaFunctionConstr(constrParamss(cdef).head map (_.tpt), toIdent(cdef), abstractFun = true)
+    // > MaxFunctionArity is caught in Namers, but for nice error reporting instead of
+    // an abrupt crash we trim the list here.
+    def primaries      = constrParamss(cdef).head take MaxFunctionArity map (_.tpt)
+    def inheritFromFun = !cdef.mods.isAbstract && cdef.tparams.isEmpty && constrParamss(cdef).length == 1
+    def createFun      = gen.scalaFunctionConstr(primaries, toIdent(cdef), abstractFun = true)
     def parents        = if (inheritFromFun) List(createFun) else Nil
     def toString       = DefDef(
       Modifiers(OVERRIDE | FINAL),
