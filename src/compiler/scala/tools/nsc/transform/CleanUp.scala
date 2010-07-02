@@ -216,13 +216,12 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
             case POLY_CACHE =>
 
               /* Implementation of the cache is as follows for method "def xyz(a: A, b: B)"
-                 (but with the addition of a SoftReference wrapped around the MethodCache holder
-                 so that it does not interfere with classloader garbage collection, see ticket
+                 (SoftReference so that it does not interfere with classloader garbage collection, see ticket
                  #2365 for details):
 
                 var reflParams$Cache: Array[Class[_]] = Array[JClass](classOf[A], classOf[B])
 
-                var reflPoly$Cache: scala.runtime.MethodCache = new EmptyMethodCache()
+                var reflPoly$Cache: SoftReference[scala.runtime.MethodCache] = new SoftReference(new EmptyMethodCache())
 
                 def reflMethod$Method(forReceiver: JClass[_]): JMethod = {
                   var method: JMethod = reflPoly$Cache.find(forReceiver)
@@ -230,7 +229,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                     return method
                   else {
                     method = forReceiver.getMethod("xyz", reflParams$Cache)
-                    reflPoly$Cache = reflPoly$Cache.add(forReceiver, method)
+                    method.setAccessible(true) // issue #2381
+                    reflPoly$Cache = new SoftReference(reflPoly$Cache.get.add(forReceiver, method))
                     return method
                   }
                 }
@@ -258,6 +258,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                       def cacheRHS      = ((getPolyCache DOT methodCache_add)(REF(forReceiverSym), REF(methodSym)))
                       BLOCK(
                         REF(methodSym)        === methodSymRHS,
+                        (REF(methodSym) DOT methodClass_setAccessible)(LIT(true)),
                         REF(reflPolyCacheSym) === gen.mkSoftRef(cacheRHS),
                         Return(REF(methodSym))
                       )
