@@ -946,7 +946,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     lazy val typeOf: Map[Name, String] = {
       def getTypes(names: List[Name], nameMap: Name => Name): Map[Name, String] = {
         names.foldLeft(Map.empty[Name, String]) { (map, name) =>
-          val tp1 = atNextPhase(resObjSym.info.member(name).tpe)
+          val tp1 = atNextPhase(resObjSym.info.nonPrivateDecl(name).tpe)
           // the types are all =>T; remove the =>
           val tp2 = tp1 match {
             case PolyType(Nil, tp)  => tp
