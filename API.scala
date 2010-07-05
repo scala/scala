@@ -300,7 +300,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		}
 		def isTopLevel(sym: Symbol): Boolean =
 			(sym ne null) && (sym != NoSymbol) && !sym.isImplClass && !sym.isNestedClass && sym.isStatic &&
-			!sym.hasFlag(Flags.SYNTHETIC) && !sym.hasFlag(Flags.JAVA)
+			!sym.hasFlag(Flags.SYNTHETIC)// && !sym.hasFlag(Flags.JAVA)
 	}
 	
 		// In 2.8, attributes is renamed to annotations
