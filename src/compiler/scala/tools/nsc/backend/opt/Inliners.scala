@@ -542,7 +542,7 @@ abstract class Inliners extends SubComponent {
             true
           }
 
-        if (inc.isRecursive)
+        if (!inc.hasCode || inc.isRecursive)
           return false
 
         val accessNeeded = usesNonPublics.getOrElseUpdate(inc.m, {
@@ -602,7 +602,7 @@ abstract class Inliners extends SubComponent {
        *   - it's good to inline closures functions.
        *   - it's bad (useless) to inline inside bridge methods
        */
-      private def neverInline   = caller.isBridge || inc.noinline
+      private def neverInline   = caller.isBridge || !inc.hasCode || inc.noinline
       private def alwaysInline  = inc.inline
 
       def shouldInline: Boolean = !neverInline && (alwaysInline || {
