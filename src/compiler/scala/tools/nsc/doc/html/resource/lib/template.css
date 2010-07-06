@@ -314,8 +314,11 @@ p.shortcomment {
 }
 
 div.fullcomment {
-  display: block;
   margin: 10px 0 10px 0;
+}
+
+#types div.fullcomment, #values div.fullcomment {
+  display:none
 }
 
 #template div.fullcomment {

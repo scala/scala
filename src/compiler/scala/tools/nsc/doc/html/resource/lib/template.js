@@ -101,7 +101,6 @@ $(document).ready(function(){
             $(this.getTip()).text(this.getTrigger().attr("name"));
         }        
     });
-    $("#template div.fullcomment").hide();
     var docAllSigs = $("#template .signature");
     function commentShowFct(fullComment){
         var vis = $(":visible", fullComment);
