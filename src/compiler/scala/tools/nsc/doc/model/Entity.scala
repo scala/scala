@@ -19,7 +19,6 @@ trait Entity {
   override def toString = qualifiedName
 }
 
-
 /** A class, trait, object or package. A package is represented as an instance
   * of the `Package` subclass. A class, trait, object or package may be
   * directly an instance of `WeakTemplateEntity` if it is not ''documentable''
@@ -61,13 +60,16 @@ trait MemberEntity extends Entity {
   def isTemplate: Boolean
 }
 
+trait HigherKinded extends Entity {
+  def typeParams: List[TypeParam]
+}
+
 /** A ''documentable'' class, trait or object (that is, a documentation page
   * will be generated for it in the current site). */
 trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def toRoot: List[DocTemplateEntity]
   def inSource: Option[(io.AbstractFile, Int)]
   def sourceUrl: Option[java.net.URL]
-  def typeParams: List[TypeParam]
   def parentType: Option[TypeEntity]
   def parentTemplates: List[TemplateEntity]
   def linearization: List[TemplateEntity]
@@ -98,12 +100,12 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
 }
 
 /** A ''documentable'' trait. */
-trait Trait extends DocTemplateEntity {
+trait Trait extends DocTemplateEntity with HigherKinded {
   def valueParams : List[List[ValueParam]]
 }
 
 /** A ''documentable'' class. */
-trait Class extends Trait {
+trait Class extends Trait with HigherKinded {
   def primaryConstructor: Option[Constructor]
   def constructors: List[Constructor]
   def isCaseClass: Boolean
@@ -128,8 +130,7 @@ trait NonTemplateMemberEntity extends MemberEntity {
 }
 
 /** A method (`def`) of a ''documentable'' class, trait or object. */
-trait Def extends NonTemplateMemberEntity {
-  def typeParams: List[TypeParam]
+trait Def extends NonTemplateMemberEntity with HigherKinded {
   def valueParams : List[List[ValueParam]]
 }
 
@@ -143,26 +144,23 @@ trait Constructor extends NonTemplateMemberEntity {
 trait Val extends NonTemplateMemberEntity
 
 /** An abstract type of a ''documentable'' class, trait or object. */
-trait AbstractType extends NonTemplateMemberEntity {
-  // TODO: typeParams
+trait AbstractType extends NonTemplateMemberEntity with HigherKinded {
   def lo: Option[TypeEntity]
   def hi: Option[TypeEntity]
 }
 
 /** An abstract type of a ''documentable'' class, trait or object. */
-trait AliasType extends NonTemplateMemberEntity {
-  // TODO: typeParams
+trait AliasType extends NonTemplateMemberEntity with HigherKinded {
   def alias: TypeEntity
 }
 
 trait ParameterEntity extends Entity {
-  def inTemplate: DocTemplateEntity
   def isTypeParam: Boolean
   def isValueParam: Boolean
 }
 
 /** A type parameter to a class or trait or to a method. */
-trait TypeParam extends ParameterEntity {
+trait TypeParam extends ParameterEntity with HigherKinded {
   def variance: String
   def lo: Option[TypeEntity]
   def hi: Option[TypeEntity]

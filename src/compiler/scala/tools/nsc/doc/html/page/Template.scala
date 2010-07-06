@@ -349,7 +349,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case None => NodeSeq.Empty
       case Some(tpe) => xml.Text(pre) ++ typeToHtml(tpe, hasLinks)
     }
-    bound0(hi, " <: ") ++ bound0(lo, " >: ")
+    bound0(lo, " >: ") ++ bound0(hi, " <: ")
   }
 
   def visibility(mbr: MemberEntity): Option[comment.Paragraph] = {
@@ -379,23 +379,25 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       <xml:group>
       <span class="kind">{ kindToString(mbr) }</span>
       <span class="symbol">
-        <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>{
-          def tparamsToHtml(tpss: List[TypeParam]): NodeSeq =
-            if (tpss.isEmpty) NodeSeq.Empty else {
-              def tparam0(tp: TypeParam): NodeSeq =
-                <span name={ tp.name }>{ tp.variance + tp.name }{ boundsToHtml(tp.hi, tp.lo, hasLinks)}</span>
-              def tparams0(tpss: List[TypeParam]): NodeSeq = (tpss: @unchecked) match {
-                case tp :: Nil => tparam0(tp)
-                case tp :: tps => tparam0(tp) ++ Text(", ") ++ tparams0(tps)
+        <span class={"name" + (if (mbr.deprecation.isDefined) " deprecated" else "") }>{ if (mbr.isConstructor) tpl.name else mbr.name }</span>
+        {
+          def tparamsToHtml(mbr: Entity): NodeSeq = mbr match {
+            case hk: HigherKinded =>
+              val tpss = hk.typeParams
+              if (tpss.isEmpty) NodeSeq.Empty else {
+                def tparam0(tp: TypeParam): NodeSeq =
+                  <span name={ tp.name }>{ tp.variance + tp.name }{ tparamsToHtml(tp) }{ boundsToHtml(tp.hi, tp.lo, hasLinks)}</span>
+                def tparams0(tpss: List[TypeParam]): NodeSeq = (tpss: @unchecked) match {
+                  case tp :: Nil => tparam0(tp)
+                  case tp :: tps => tparam0(tp) ++ Text(", ") ++ tparams0(tps)
+                }
+                <span class="tparams">[{ tparams0(tpss) }]</span>
               }
-              <span class="tparams">[{ tparams0(tpss) }]</span>
-            }
-          mbr match {
-            case trt: Trait => tparamsToHtml(trt.typeParams)
-            case dfe: Def => tparamsToHtml(dfe.typeParams)
-            case _ => NodeSeq.Empty
+              case _ => NodeSeq.Empty
           }
-        }{
+          tparamsToHtml(mbr)
+        }
+        {
           def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
             def param0(vl: ValueParam): NodeSeq =
               // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
@@ -423,7 +425,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             case dfe: Def => paramsToHtml(dfe.valueParams)
             case _ => NodeSeq.Empty
           }
-        }{
+        }
+        {
           mbr match {
             case tpl: DocTemplateEntity if (!tpl.isPackage) =>
               tpl.parentType match {

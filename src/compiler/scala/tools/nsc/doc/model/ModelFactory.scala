@@ -49,7 +49,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   /** Provides a default implementation for instances of the `Entity` type. */
   abstract class EntityImpl(val sym: Symbol, inTpl: => TemplateImpl) extends Entity {
     val name = optimize(sym.nameString)
-    def inTemplate = inTpl
+    def inTemplate: TemplateImpl = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
   }
@@ -57,7 +57,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
     * `SymbolicEntity` to access the compiler symbol that underlies the entity. */
   trait TemplateImpl extends EntityImpl with TemplateEntity {
-    override def qualifiedName = if (inTemplate.isRootPackage) name else optimize(inTemplate.qualifiedName + "." + name)
+    override def qualifiedName: String =
+      if (inTemplate.isRootPackage) name else optimize(inTemplate.qualifiedName + "." + name)
     def isPackage = sym.isPackage
     def isTrait = sym.isTrait
     def isClass = sym.isClass && !sym.isTrait
@@ -141,7 +142,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     * * The owner of the template (as a full template);
     * * All ancestors of the template (as weak templates);
     * * All non-package members (including other templates, as full templates). */
-  abstract class DocTemplateImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with TemplateImpl with DocTemplateEntity {
+  abstract class DocTemplateImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends MemberImpl(sym, inTpl) with TemplateImpl with HigherKindedImpl with DocTemplateEntity {
     //if (inTpl != null) println("mbr " + sym + " in " + (inTpl.toRoot map (_.sym)).mkString(" > "))
     templatesCache += (sym -> this)
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
@@ -159,11 +160,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         }
       else None
     }
-    def typeParams = if (sym.isClass) sym.typeParams map (makeTypeParam(_, this)) else Nil
     def parentTemplates = sym.info.parents map { x: Type => makeTemplate(x.typeSymbol) }
-    def parentType =
+    def parentType = {
       if (sym.isPackage) None else
-        Some(makeType(RefinedType(sym.tpe.parents filter (_ != ScalaObjectClass.tpe), EmptyScope), inTpl))
+        Some(makeType(RefinedType((sym.tpe.parents filter (_ != ScalaObjectClass.tpe)) map { _.asSeenFrom(sym.thisType, sym) }, EmptyScope), inTpl))
+    }
     val linearization = {
       val tpls = sym.ancestors filter { _ != ScalaObjectClass } map { makeTemplate(_) }
       tpls map {
@@ -219,19 +220,26 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       }}
   }
 
-  abstract class ParameterImpl(sym: Symbol, inTpl: => DocTemplateImpl) extends EntityImpl(sym, inTpl) with ParameterEntity {
+  abstract class ParameterImpl(sym: Symbol, inTpl: => TemplateImpl) extends EntityImpl(sym, inTpl) with ParameterEntity {
     override def inTemplate = inTpl
   }
 
   private trait TypeBoundsImpl extends EntityImpl {
-    def lo = sym.info.normalize match {
-      case TypeBounds(lo, hi) if lo.typeSymbol != NothingClass => Some(makeType(lo, inTemplate, sym))
+    def lo = sym.info.bounds match {
+      case TypeBounds(lo, hi) if lo.typeSymbol != NothingClass =>
+        Some(makeType(appliedType(lo, sym.info.typeParams map {_.tpe}), inTemplate))
       case _ => None
     }
-    def hi = sym.info.normalize match {
-      case TypeBounds(lo, hi) if hi.typeSymbol != AnyClass => Some(makeType(hi, inTemplate, sym))
+    def hi = sym.info.bounds match {
+      case TypeBounds(lo, hi) if hi.typeSymbol != AnyClass =>
+        Some(makeType(appliedType(hi, sym.info.typeParams map {_.tpe}), inTemplate))
       case _ => None
     }
+  }
+
+  trait HigherKindedImpl extends EntityImpl with HigherKinded {
+    def typeParams =
+      sym.typeParams map (makeTypeParam(_, inTemplate))
   }
 
   /* ============== MAKER METHODS ============== */
@@ -348,10 +356,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           override def isVar = true
         })
       else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor && !bSym.isModule)
-        Some(new NonTemplateParamMemberImpl(bSym, inTpl) with Def {
+        Some(new NonTemplateParamMemberImpl(bSym, inTpl) with HigherKindedImpl with Def {
           override def isDef = true
-          def typeParams =
-            sym.tpe.typeParams map (makeTypeParam(_, inTpl))
         })
       else if (bSym.isConstructor)
         Some(new NonTemplateParamMemberImpl(bSym, inTpl) with Constructor {
@@ -363,13 +369,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           override def isVal = true
         })
       else if (bSym.isAbstractType)
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with TypeBoundsImpl with AbstractType {
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with TypeBoundsImpl with HigherKindedImpl with AbstractType {
           override def isAbstractType = true
         })
       else if (bSym.isAliasType)
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with AliasType {
+        Some(new NonTemplateMemberImpl(bSym, inTpl) with HigherKindedImpl with AliasType {
           override def isAliasType = true
-          def alias = makeType(sym.tpe, inTpl, sym)
+          def alias = makeType(appliedType(sym.tpe, sym.info.typeParams map {_.tpe}).normalize, inTpl, sym)
         })
       else if (bSym.isPackage)
         inTpl match { case inPkg: PackageImpl =>  makePackage(bSym, inPkg) }
@@ -391,8 +397,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   }
 
   /** */
-  def makeTypeParam(aSym: Symbol, inTpl: => DocTemplateImpl): TypeParam = {
-    new ParameterImpl(aSym, inTpl) with TypeBoundsImpl with TypeParam {
+  def makeTypeParam(aSym: Symbol, inTpl: => TemplateImpl): TypeParam =
+    new ParameterImpl(aSym, inTpl) with TypeBoundsImpl with HigherKindedImpl with TypeParam {
       def isTypeParam = true
       def isValueParam = false
       def variance: String = {
@@ -401,7 +407,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         else ""
       }
     }
-  }
 
   /** */
   def makeValueParam(aSym: Symbol, inTpl: => DocTemplateImpl): ValueParam = {
@@ -452,9 +457,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           nameBuffer append sep
           appendTypes0(tps, sep)
       }
-      private def appendType0(tpe: Type): Unit = tpe.normalize match {
+      private def checkFunctionType(tpe: TypeRef): Boolean = {
+        val TypeRef(_, sym, args) = tpe
+        (args.length > 0) && (args.length - 1 <= definitions.MaxFunctionArity) &&
+        (sym == definitions.FunctionClass(args.length - 1))
+      }
+      private def appendType0(tpe: Type): Unit = tpe match {
         /* Type refs */
-        case tp: TypeRef if (definitions.isFunctionType(tp)) =>
+        case tp: TypeRef if (checkFunctionType(tp)) =>
           nameBuffer append '('
           appendTypes0(tp.args.init, ", ")
           nameBuffer append ") ⇒ "
@@ -492,11 +502,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           }
         /* Polymorphic types */
         case PolyType(tparams, result) if (!tparams.isEmpty) =>
-          appendType0(result)
-          nameBuffer append '['
-          appendTypes0(tparams map (_.tpe), ", ") // TODO: actually print the polytype's symbols (not just types)
-          nameBuffer append ']'
-        /* Eval-by-name types */
+          throw new Error("Polymorphic type '" + tpe + "' cannot be printed as a type")
         case PolyType(tparams, result) if (tparams.isEmpty) =>
           nameBuffer append '⇒'
           appendType0(result)
