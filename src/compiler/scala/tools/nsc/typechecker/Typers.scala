@@ -3764,9 +3764,9 @@ trait Typers { self: Analyzer =>
                   unit.warning(useCase.pos, ex.msg)
                 case _ =>
               }
-              useCase.defined foreach { symbol =>
-                if (sym.name.toString != symbol.name.toString)
-                  unit.warning(useCase.pos, "@usecase "+symbol.name+" does not match commented symbol: "+sym.name)
+              for (useCaseSym <- useCase.defined) {
+                if (sym.name != useCaseSym.name)
+                  unit.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
               }
             }
           }
