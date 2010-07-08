@@ -5087,37 +5087,41 @@ A type's typeSymbol should never be inspected directly.
     case List(tp) =>
       Some(tp)
     case TypeRef(_, sym, _) :: rest =>
-      val pres = tps map (_.prefix)
+      val pres = tps map (_.prefix) // prefix normalizes automatically
       val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
-      val argss = tps map (_.typeArgs)
+      val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
       val capturedParams = new ListBuffer[Symbol]
-      val args = (sym.typeParams, argss.transpose).zipped map {
-        (tparam, as) =>
-          if (depth == 0)
-            if (tparam.variance == variance) AnyClass.tpe
-            else if (tparam.variance == -variance) NothingClass.tpe
-            else NoType
-          else
-            if (tparam.variance == variance) lub(as, decr(depth))
-            else if (tparam.variance == -variance) glb(as, decr(depth))
-            else {
-              val l = lub(as, decr(depth))
-              val g = glb(as, decr(depth))
-              if (l <:< g) l
-              else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
-                     // just err on the conservative side, i.e. with a bound that is too high.
-                     // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
-                val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
-                capturedParams += qvar
-                qvar.tpe
-              }
-            }
-      }
       try {
+        val args = (sym.typeParams, argss.transpose).zipped map {
+          (tparam, as) =>
+            if (depth == 0)
+              if (tparam.variance == variance) AnyClass.tpe
+              else if (tparam.variance == -variance) NothingClass.tpe
+              else NoType
+            else
+              if (tparam.variance == variance) lub(as, decr(depth))
+              else if (tparam.variance == -variance) glb(as, decr(depth))
+              else {
+                val l = lub(as, decr(depth))
+                val g = glb(as, decr(depth))
+                if (l <:< g) l
+                else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                       // just err on the conservative side, i.e. with a bound that is too high.
+                       // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
+                  val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
+                  capturedParams += qvar
+                  qvar.tpe
+                }
+              }
+        }
         if (args contains NoType) None
         else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
       } catch {
         case ex: MalformedType => None
+        case ex: IndexOutOfBoundsException =>  // transpose freaked out because of irregular argss
+        // catching just in case (shouldn't happen, but also doesn't cost us)
+        if (settings.debug.value) log("transposed irregular matrix!?"+ (tps, argss))
+        None
       }
     case SingleType(_, sym) :: rest =>
       val pres = tps map (_.prefix)
