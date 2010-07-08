@@ -2789,16 +2789,6 @@ trait Typers { self: Analyzer =>
         res
       }
 
-    class SymInstance(val sym: Symbol, val tp: Type) {
-      override def equals(other: Any): Boolean = other match {
-        case that: SymInstance =>
-          this.sym == that.sym && this.tp =:= that.tp
-        case _ =>
-          false
-      }
-      override def hashCode: Int = sym.hashCode * 41 + tp.hashCode
-    }
-
     /** convert skolems to existentials */
     def packedType(tree: Tree, owner: Symbol): Type = {
       def defines(tree: Tree, sym: Symbol) =
@@ -2834,7 +2824,7 @@ trait Typers { self: Analyzer =>
         }
       }
       // add all local symbols of `tp' to `localSyms'
-      // expanding higher-kinded types into individual copies for each instance.
+      // TODO: expand higher-kinded types into individual copies for each instance.
       def addLocals(tp: Type) {
         val remainingSyms = new ListBuffer[Symbol]
         def addIfLocal(sym: Symbol, tp: Type) {

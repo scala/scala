@@ -1327,7 +1327,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      * to take the intersection of their bounds
      */
     override def normalize = {
-      if (isHigherKinded)
+      if (isHigherKinded) {
         PolyType(
           typeParams,
           RefinedType(
@@ -1337,6 +1337,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
             },
             decls,
             typeSymbol))
+      }
       else super.normalize
     }
 

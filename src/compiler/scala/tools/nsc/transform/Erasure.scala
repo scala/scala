@@ -495,6 +495,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     }
 
     /**   Generate a synthetic cast operation from <code>tree.tpe</code> to <code>pt</code>.
+     * @pre pt eq pt.normalize
      */
     private def cast(tree: Tree, pt: Type): Tree =
       tree AS_ATTR pt
@@ -505,7 +506,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     /** Adapt <code>tree</code> to expected type <code>pt</code>.
      *
      *  @param tree the given tree
-     *  @param pt   the expected type.
+     *  @param pt   the expected type
      *  @return     the adapted tree
      */
     private def adaptToType(tree: Tree, pt: Type): Tree = {
@@ -921,154 +922,154 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
      *  </ul>
      */
     private val preTransformer = new Transformer {
-      override def transform(tree: Tree): Tree = {
-        if (tree.symbol == ArrayClass && !tree.isType) return tree // !!! needed?
-        val tree1 = tree match {
-          case ClassDef(mods, name, tparams, impl) =>
-            if (settings.debug.value)
-              log("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
-            treeCopy.ClassDef(tree, mods, name, List(), impl)
-          case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-            treeCopy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
-          case TypeDef(_, _, _, _) =>
-            EmptyTree
-          case Apply(instanceOf @ TypeApply(fun @ Select(qual, name), args @ List(arg)), List()) // !!! todo: simplify by having GenericArray also extract trees
-          if ((fun.symbol == Any_isInstanceOf || fun.symbol == Object_isInstanceOf) &&
-              unboundedGenericArrayLevel(arg.tpe) > 0) =>
-            val level = unboundedGenericArrayLevel(arg.tpe)
-            def isArrayTest(arg: Tree) =
-              gen.mkRuntimeCall("isArray", List(arg, Literal(Constant(level))))
-            typedPos(tree.pos) {
-              if (level == 1) isArrayTest(qual)
-              else
-                gen.evalOnce(qual, currentOwner, unit) { qual1 =>
-                  gen.mkAnd(
-                    Apply(TypeApply(Select(qual1(), fun.symbol),
-                                    List(TypeTree(erasure(arg.tpe)))),
-                          List()),
-                    isArrayTest(qual1()))
-                }
-            }
-          case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
-                                        fun.symbol != Object_asInstanceOf &&
-                                        fun.symbol != Object_isInstanceOf) =>
-            // leave all other type tests/type casts, remove all other type applications
-            fun
-          case Apply(fn @ Select(qual, name), args) if (fn.symbol.owner == ArrayClass) =>
-            if (unboundedGenericArrayLevel(qual.tpe.widen) == 1)
-              // convert calls to apply/update/length on generic arrays to
-              // calls of ScalaRunTime.array_xxx method calls
-              typedPos(tree.pos) { gen.mkRuntimeCall("array_"+name, qual :: args) }
+      def preErase(tree: Tree): Tree = tree match {
+        case ClassDef(mods, name, tparams, impl) =>
+          if (settings.debug.value)
+            log("defs of " + tree.symbol + " = " + tree.symbol.info.decls)
+          treeCopy.ClassDef(tree, mods, name, List(), impl)
+        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+          treeCopy.DefDef(tree, mods, name, List(), vparamss, tpt, rhs)
+        case TypeDef(_, _, _, _) =>
+          EmptyTree
+        case Apply(instanceOf @ TypeApply(fun @ Select(qual, name), args @ List(arg)), List()) // !!! todo: simplify by having GenericArray also extract trees
+              if ((fun.symbol == Any_isInstanceOf || fun.symbol == Object_isInstanceOf) &&
+                  unboundedGenericArrayLevel(arg.tpe) > 0) =>
+          val level = unboundedGenericArrayLevel(arg.tpe)
+          def isArrayTest(arg: Tree) =
+            gen.mkRuntimeCall("isArray", List(arg, Literal(Constant(level))))
+          typedPos(tree.pos) {
+            if (level == 1) isArrayTest(qual)
             else
-              // store exact array erasure in map to be retrieved later when we might
-              // need to do the cast in adaptMember
-              treeCopy.Apply(
-                tree,
-                SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
-                args)
+              gen.evalOnce(qual, currentOwner, unit) { qual1 =>
+                gen.mkAnd(
+                  Apply(TypeApply(Select(qual1(), fun.symbol),
+                                  List(TypeTree(erasure(arg.tpe)))),
+                        List()),
+                  isArrayTest(qual1()))
+              }
+          }
+        case TypeApply(fun, args) if (fun.symbol.owner != AnyClass &&
+                                      fun.symbol != Object_asInstanceOf &&
+                                      fun.symbol != Object_isInstanceOf) =>
+          // leave all other type tests/type casts, remove all other type applications
+          preErase(fun)
+        case Apply(fn @ Select(qual, name), args) if (fn.symbol.owner == ArrayClass) =>
+          if (unboundedGenericArrayLevel(qual.tpe.widen) == 1)
+            // convert calls to apply/update/length on generic arrays to
+            // calls of ScalaRunTime.array_xxx method calls
+            typedPos(tree.pos) { gen.mkRuntimeCall("array_"+name, qual :: args) }
+          else
+            // store exact array erasure in map to be retrieved later when we might
+            // need to do the cast in adaptMember
+            treeCopy.Apply(
+              tree,
+              SelectFromArray(qual, name, erasure(qual.tpe)).copyAttrs(fn),
+              args)
 
-          case Apply(fn @ Select(qual, _), Nil) if (fn.symbol == Any_## || fn.symbol == Object_##) =>
-            Apply(gen.mkAttributedRef(scalaRuntimeHash), List(qual))
+        case Apply(fn @ Select(qual, _), Nil) if (fn.symbol == Any_## || fn.symbol == Object_##) =>
+          Apply(gen.mkAttributedRef(scalaRuntimeHash), List(qual))
 
-          case Apply(fn, args) =>
-            if (fn.symbol == Any_asInstanceOf)
-              fn match {
-                case TypeApply(Select(qual, _), List(targ)) =>
-                  if (qual.tpe <:< targ.tpe) {
-                    atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
-                  } else if (isNumericValueClass(qual.tpe.typeSymbol) &&
-                             isNumericValueClass(targ.tpe.typeSymbol)) {
-                    // convert numeric type casts
-                    val cname = newTermName("to" + targ.tpe.typeSymbol.name)
-                    val csym = qual.tpe.member(cname)
-                    assert(csym != NoSymbol)
-                    atPos(tree.pos) { Apply(Select(qual, csym), List()) }
-                  } else
-                    tree
-              }
-              // todo: also handle the case where the singleton type is buried in a compound
-            else if (fn.symbol == Any_isInstanceOf)
-              fn match {
-                case TypeApply(sel @ Select(qual, name), List(targ)) =>
-                  def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =
-                    Apply(
-                      TypeApply(
-                        Select(q(), Object_isInstanceOf) setPos sel.pos,
-                        List(TypeTree(tp) setPos targ.pos)) setPos fn.pos,
-                      List()) setPos tree.pos
-                  targ.tpe match {
-                    case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
-                      val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
-                      atPos(tree.pos) {
-                        Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
-                      }
-                    case RefinedType(parents, decls) if (parents.length >= 2) =>
-                      gen.evalOnce(qual, currentOwner, unit) { q =>
-                        atPos(tree.pos) {
-                          parents map mkIsInstanceOf(q) reduceRight gen.mkAnd
-                        }
-                      }
-                    case _ =>
-                      tree
-                  }
-                case _ => tree
-              }
-            else {
-              def doDynamic(fn: Tree, qual: Tree): Tree = {
-                if (fn.symbol.owner.isRefinementClass && fn.symbol.allOverriddenSymbols.isEmpty)
-                  ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
-                else tree
-              }
-              fn match {
-                case Select(qual, _) => doDynamic(fn, qual)
-                case TypeApply(fni@Select(qual, _), _) => doDynamic(fni, qual)// type parameters are irrelevant in case of dynamic call
-                case _ =>
+        case Apply(fn, args) =>
+          if (fn.symbol == Any_asInstanceOf)
+            fn match {
+              case TypeApply(Select(qual, _), List(targ)) =>
+                if (qual.tpe <:< targ.tpe) {
+                  atPos(tree.pos) { Typed(qual, TypeTree(targ.tpe)) }
+                } else if (isNumericValueClass(qual.tpe.typeSymbol) &&
+                           isNumericValueClass(targ.tpe.typeSymbol)) {
+                  // convert numeric type casts
+                  val cname = newTermName("to" + targ.tpe.typeSymbol.name)
+                  val csym = qual.tpe.member(cname)
+                  assert(csym != NoSymbol)
+                  atPos(tree.pos) { Apply(Select(qual, csym), List()) }
+                } else
                   tree
-              }
             }
-
-          case Select(_, _) =>
-            if (tree.symbol.owner.isRefinementClass) {
-              val overridden = tree.symbol.allOverriddenSymbols
-              assert(!overridden.isEmpty, tree.symbol)
-              tree.symbol = overridden.head
+            // todo: also handle the case where the singleton type is buried in a compound
+          else if (fn.symbol == Any_isInstanceOf)
+            fn match {
+              case TypeApply(sel @ Select(qual, name), List(targ)) =>
+                def mkIsInstanceOf(q: () => Tree)(tp: Type): Tree =
+                  Apply(
+                    TypeApply(
+                      Select(q(), Object_isInstanceOf) setPos sel.pos,
+                      List(TypeTree(tp) setPos targ.pos)) setPos fn.pos,
+                    List()) setPos tree.pos
+                targ.tpe match {
+                  case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
+                    val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
+                    atPos(tree.pos) {
+                      Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+                    }
+                  case RefinedType(parents, decls) if (parents.length >= 2) =>
+                    gen.evalOnce(qual, currentOwner, unit) { q =>
+                      atPos(tree.pos) {
+                        parents map mkIsInstanceOf(q) reduceRight gen.mkAnd
+                      }
+                    }
+                  case _ =>
+                    tree
+                }
+              case _ => tree
             }
-            tree
-
-          case Template(parents, self, body) =>
-            assert(!currentOwner.isImplClass)
-            //Console.println("checking no dble defs " + tree)//DEBUG
-            checkNoDoubleDefs(tree.symbol.owner)
-            treeCopy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
-
-          case Match(selector, cases) =>
-            Match(Typed(selector, TypeTree(selector.tpe)), cases)
-
-          case Literal(ct) if ct.tag == ClassTag
-                           && ct.typeValue.typeSymbol != definitions.UnitClass =>
-            treeCopy.Literal(tree, Constant(erasure(ct.typeValue)))
-
-          case _ =>
-            tree
-        }
-        tree1 match {
-          case EmptyTree | TypeTree() =>
-            tree1 setType erasure(tree1.tpe)
-          case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
-            val result = super.transform(tree1) setType null
-            tpt.tpe = erasure(tree.symbol.tpe).resultType
-            result
-          case _ =>
-            case class LoopControl(count: Int, ex : AssertionError) extends Throwable(ex.getMessage) with ControlThrowable
-
-            try super.transform(tree1) setType null
-            catch {
-              case LoopControl(n, ex) if n <= 5 =>
-                Console.println(tree1)
-                throw LoopControl(n + 1, ex)
+          else {
+            def doDynamic(fn: Tree, qual: Tree): Tree = {
+              if (fn.symbol.owner.isRefinementClass && fn.symbol.allOverriddenSymbols.isEmpty)
+                ApplyDynamic(qual, args) setSymbol fn.symbol setPos tree.pos
+              else tree
             }
-        }
+            fn match {
+              case Select(qual, _) => doDynamic(fn, qual)
+              case TypeApply(fni@Select(qual, _), _) => doDynamic(fni, qual)// type parameters are irrelevant in case of dynamic call
+              case _ =>
+                tree
+            }
+          }
+
+        case Select(_, _) =>
+          // println("preXform: "+ (tree, tree.symbol, tree.symbol.owner, tree.symbol.owner.isRefinementClass))
+          if (tree.symbol.owner.isRefinementClass) {
+            val overridden = tree.symbol.allOverriddenSymbols
+            assert(!overridden.isEmpty, tree.symbol)
+            tree.symbol = overridden.head
+          }
+          tree
+
+        case Template(parents, self, body) =>
+          assert(!currentOwner.isImplClass)
+          //Console.println("checking no dble defs " + tree)//DEBUG
+          checkNoDoubleDefs(tree.symbol.owner)
+          treeCopy.Template(tree, parents, emptyValDef, addBridges(body, currentOwner))
+
+        case Match(selector, cases) =>
+          Match(Typed(selector, TypeTree(selector.tpe)), cases)
+
+        case Literal(ct) if ct.tag == ClassTag
+                         && ct.typeValue.typeSymbol != definitions.UnitClass =>
+          treeCopy.Literal(tree, Constant(erasure(ct.typeValue)))
+
+        case _ =>
+          tree
       }
+
+      override def transform(tree: Tree): Tree =
+        if (tree.symbol == ArrayClass && !tree.isType) tree // !!! needed?
+        else {
+          val tree1 = preErase(tree)
+          // println("preErase: "+ tree +" = "+ tree1)
+          val res = tree1 match {
+            case EmptyTree | TypeTree() =>
+              tree1 setType erasure(tree1.tpe)
+            case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+              val result = super.transform(tree1) setType null
+              tpt.tpe = erasure(tree1.symbol.tpe).resultType
+              result
+            case _ =>
+              super.transform(tree1) setType null
+          }
+          // println("xform: "+ res)
+          res
+        }
     }
 
     /** The main transform function: Pretransfom the tree, and then
