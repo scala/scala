@@ -228,7 +228,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
-  def javaSig(sym: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
+  def javaSig(sym0: Symbol, info: Type): Option[String] = atPhase(currentRun.erasurePhase) {
 
     def jsig(tp: Type): String = jsig2(false, List(), tp)
 
@@ -260,7 +260,11 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             "."+sym.name
           if (sym == ArrayClass)
             ARRAY_TAG.toString+(args map jsig).mkString
-          else if (sym.isTypeParameterOrSkolem && !sym.owner.isTypeParameterOrSkolem /*not a higher-order type parameter, as these are suppressed*/)
+          else if (sym.isTypeParameterOrSkolem &&
+                  // only refer to type params that will actually make it into the sig, this excludes:
+                  !sym.owner.isTypeParameterOrSkolem && // higher-order type parameters (!sym.owner.isTypeParameterOrSkolem), and parameters of methods
+                  (!sym0.isClass || sym.owner.isClass) // if we're generating the sig for a class, type params must be owned by a class (not a method -- #3249)
+                  )
             TVAR_TAG.toString+sym.name+";"
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
             jsig(ObjectClass.tpe)
@@ -302,7 +306,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           (if (toplevel) "<"+(tparams map paramSig).mkString+">" else "")+jsig(restpe)
         case MethodType(params, restpe) =>
           "("+(params map (_.tpe) map jsig).mkString+")"+
-          (if (restpe.typeSymbol == UnitClass || sym.isConstructor) VOID_TAG.toString else jsig(restpe))
+          (if (restpe.typeSymbol == UnitClass || sym0.isConstructor) VOID_TAG.toString else jsig(restpe))
         case RefinedType(parents, decls) if (!parents.isEmpty) =>
           jsig(parents.head)
         case ClassInfoType(parents, _, _) =>
@@ -310,7 +314,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         case AnnotatedType(_, atp, _) =>
           jsig(atp)
         case BoundedWildcardType(bounds) =>
-          println("something's wrong: "+sym+":"+sym.tpe+" has a bounded wildcard type")
+          println("something's wrong: "+sym0+":"+sym0.tpe+" has a bounded wildcard type")
           jsig(bounds.hi)
         case _ =>
           val etp = erasure(tp)
@@ -320,7 +324,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
     }
     if (needsJavaSig(info)) {
       try {
-        //println("Java sig of "+sym+" is "+jsig2(true, List(), sym.info))//DEBUG
+        //println("Java sig of "+sym0+" is "+jsig2(true, List(), sym0.info))//DEBUG
         Some(jsig2(true, List(), info))
       } catch {
         case ex: UnknownSig => None
