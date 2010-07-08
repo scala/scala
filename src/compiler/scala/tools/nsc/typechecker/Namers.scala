@@ -1065,24 +1065,7 @@ trait Namers { self: Analyzer =>
         case tp =>
           tp
       }
-
-      def verifyOverriding(other: Symbol): Boolean = {
-        if(other.unsafeTypeParams.length != tparamSyms.length) {
-          context.error(tpsym.pos,
-              "The kind of "+tpsym.keyString+" "+tpsym.varianceString + tpsym.nameString+
-              " does not conform to the expected kind of " + other.defString + other.locationString + ".")
-          false
-        } else true
-      }
-
-      // @M: make sure overriding in refinements respects rudimentary kinding
-      // have to do this early, as otherwise we might get crashes: (see neg/bug1275.scala)
-      //   suppose some parameterized type member is overridden by a type member w/o params,
-      //   then appliedType will be called on a type that does not expect type args --> crash
-      if (tpsym.owner.isRefinementClass &&  // only needed in refinements
-          !tpsym.allOverriddenSymbols.forall{verifyOverriding(_)})
-	      ErrorType
-      else polyType(tparamSyms, tp)
+      polyType(tparamSyms, tp)
     }
 
     /** Given a case class

@@ -1040,11 +1040,19 @@ trait Infer {
      */
     def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
       def transform(tp: Type, clazz: Symbol): Type = tp.asSeenFrom(pre, clazz) // instantiate type params that come from outside the abstract type we're currently checking
+      def transformedBounds(p: Symbol, o: Symbol) = transform(p.info.instantiateTypeParams(tparams, targs).bounds, o)
 
       // check that the type parameters <arg>hkargs</arg> to a higher-kinded type conform to the expected params <arg>hkparams</arg>
-      def checkKindBoundsHK(hkargs: List[Symbol], arg: Symbol, param: Symbol, paramowner: Symbol): (List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
+      def checkKindBoundsHK(hkargs: List[Symbol], arg: Symbol, param: Symbol, paramowner: Symbol, underHKParams: List[Symbol], withHKArgs: List[Symbol]): (List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
+        def bindHKParams(tp: Type) = tp.substSym(underHKParams, withHKArgs)
         // @M sometimes hkargs != arg.typeParams, the symbol and the type may have very different type parameters
         val hkparams = param.typeParams
+
+        if(printTypings) {
+          println("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramowner)
+          println("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ owner)
+          println("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
+        }
 
         if(hkargs.length != hkparams.length) {
           if(arg == AnyClass || arg == NothingClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
@@ -1068,10 +1076,16 @@ trait Infer {
               // substSym(hkparams, hkargs) --> these types are going to be compared as types of kind *
               //    --> their arguments use different symbols, but are conceptually the same
               //        (could also replace the types by polytypes, but can't just strip the symbols, as ordering is lost then)
-              if (!(transform(hkparam.info.instantiateTypeParams(tparams, targs).bounds.substSym(hkparams, hkargs), paramowner) <:< transform(hkarg.info.bounds, owner)))
+              if (!(bindHKParams(transformedBounds(hkparam, paramowner)) <:< transform(hkarg.info.bounds, owner)))
                 stricterBound(hkarg, hkparam)
+
+              if(printTypings) {
+                println("checkKindBoundsHK base case: "+ hkparam +" declared bounds: "+ transformedBounds(hkparam, paramowner) +" after instantiating earlier hkparams: "+ bindHKParams(transformedBounds(hkparam, paramowner)))
+                println("checkKindBoundsHK base case: "+ hkarg +" has bounds: "+ transform(hkarg.info.bounds, owner))
+              }
             } else {
-              val (am, vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkarg, hkparam, paramowner)
+              if(printTypings) println("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
+              val (am, vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkarg, hkparam, paramowner, underHKParams ++ hkparam.typeParams, withHKArgs ++ hkarg.typeParams)
               arityMismatches(am)
               varianceMismatches(vm)
               stricterBounds(sb)
@@ -1099,11 +1113,11 @@ trait Infer {
 
       val errors = new ListBuffer[String]
       (tparams zip targs).foreach{ case (tparam, targ) if (targ.isHigherKinded || !tparam.typeParams.isEmpty) =>
-			  // @M must use the typeParams of the type targ, not the typeParams of the symbol of targ!!
-			  val tparamsHO =  targ.typeParams
+        // @M must use the typeParams of the type targ, not the typeParams of the symbol of targ!!
+        val tparamsHO =  targ.typeParams
 
         val (arityMismatches, varianceMismatches, stricterBounds) =
-          checkKindBoundsHK(tparamsHO, targ.typeSymbolDirect, tparam, tparam.owner) // NOTE: *not* targ.typeSymbol, which normalizes
+          checkKindBoundsHK(tparamsHO, targ.typeSymbolDirect, tparam, tparam.owner, tparam.typeParams, tparamsHO) // NOTE: *not* targ.typeSymbol, which normalizes
         if (!(arityMismatches.isEmpty && varianceMismatches.isEmpty && stricterBounds.isEmpty)){
           errors += (targ+"'s type parameters do not match "+tparam+"'s expected parameters: "+
             (for ((a, p) <- arityMismatches)

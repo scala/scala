@@ -1,4 +1,6 @@
-bug1275.scala:13: error: The kind of type MyType does not conform to the expected kind of type MyType[+t] <: TestCovariance.Seq[t] in trait Seq.
-    def span[a, s <: Seq[a] { type MyType <: s } ](xs: s): s = xs f
-                                   ^
+bug1275.scala:8: error: type mismatch;
+ found   : xs.MyType[a]
+ required: s
+    = xs f // xs: s <: Seq[a]{type MyType <: s }
+         ^
 one error found
