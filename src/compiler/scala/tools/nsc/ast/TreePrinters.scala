@@ -379,6 +379,9 @@ trait TreePrinters { trees: SymbolTable =>
         case SelectFromArray(qualifier, name, _) =>
           print(qualifier); print(".<arr>"); print(symName(tree, name))
 
+        case TypeTreeWithDeferredRefCheck() =>
+          print("<tree with deferred refcheck>")
+
         case tree =>
           print("<unknown tree of class "+tree.getClass+">")
       }
@@ -575,6 +578,7 @@ trait TreePrinters { trees: SymbolTable =>
 
       // eliminated by refchecks
       case ModuleDef(mods, name, impl) =>
+      case TypeTreeWithDeferredRefCheck() =>
 
       // eliminated by erasure
       case TypeDef(mods, name, tparams, rhs) =>

@@ -246,6 +246,9 @@ trait Infer {
 
     /** Check that <code>sym</code> is defined and accessible as a member of
      *  tree <code>site</code> with type <code>pre</code> in current context.
+     *
+     * Note: pre is not refchecked -- moreover, refchecking the resulting tree may not refcheck pre,
+     *       since pre may not occur in its type (callers should wrap the result in a TypeTreeWithDeferredRefCheck)
      */
     def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Tree =
       if (sym.isError) {
