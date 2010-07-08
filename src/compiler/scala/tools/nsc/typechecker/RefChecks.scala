@@ -421,8 +421,9 @@ abstract class RefChecks extends InfoTransform {
         def javaErasedOverridingSym(sym: Symbol): Symbol =
           clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
             !other.isDeferred && other.isJavaDefined && {
-              val tp1 = erasure.erasure(clazz.thisType.memberType(sym))
-              val tp2 = erasure.erasure(clazz.thisType.memberType(other))
+              def uncurryAndErase(tp: Type) = erasure.erasure(uncurry.transformInfo(sym, tp)) // #3622: erasure operates on uncurried types -- note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
+              val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
+              val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
             })
 
