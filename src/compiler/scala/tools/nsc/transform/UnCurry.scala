@@ -398,7 +398,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                 val predef = gen.mkAttributedRef(PredefModule)
                 val meth =
                   if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol))
-                    Select(predef, "wrapRefArray")
+                    TypeApply(Select(predef, "wrapRefArray"), List(TypeTree(elemtp)))
                   else if (isValueClass(elemtp.typeSymbol))
                     Select(predef, "wrap"+elemtp.typeSymbol.name+"Array")
                   else
