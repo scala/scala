@@ -776,6 +776,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       assert(phaseId(infos.validFrom) <= phase.id)
       if (phaseId(infos.validFrom) == phase.id) infos = infos.prev
       infos = TypeHistory(currentPeriod, info, infos)
+      validTo = if (info.isComplete) currentPeriod else NoPeriod
       this
     }
 
