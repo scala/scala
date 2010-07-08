@@ -590,7 +590,7 @@ trait Infer {
     *  @throws                  NoInstance
     */
     def methTypeArgs(tparams: List[Symbol], formals: List[Type], restpe: Type,
-                     argtpes: List[Type], pt: Type): (List[Symbol], List[Type], List[Symbol]) = {
+                     argtpes: List[Type], pt: Type): (List[Type], (List[Symbol], List[Type], List[Symbol])) = { // AM: yes, this result type is evil
       val tvars = tparams map freshVar
       if (inferInfo)
         println("methTypeArgs tparams = "+tparams+
@@ -642,7 +642,7 @@ trait Infer {
       val targs = solvedTypes(tvars, tparams, tparams map varianceInTypes(formals),
                               false, lubDepth(formals) max lubDepth(argtpes))
 //      val res =
-      adjustTypeArgs(tparams, targs, restpe)
+      (targs, adjustTypeArgs(tparams, targs, restpe))
 //      println("meth type args "+", tparams = "+tparams+", formals = "+formals+", restpe = "+restpe+", argtpes = "+argtpes+", underlying = "+(argtpes map (_.widen))+", pt = "+pt+", uninstantiated = "+uninstantiated.toList+", result = "+res) //DEBUG
 //      res
     }
@@ -764,7 +764,7 @@ trait Infer {
               isCompatibleArgs(argtpes, formals) && isWeaklyCompatible(restpe, pt)
             } else {
               try {
-                val (okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
+                val (_, (okparams, okargs, leftUndet)) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
                 // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
                 (exprTypeArgs(leftUndet, restpe.instantiateTypeParams(okparams, okargs), pt, isWeaklyCompatible) ne null) &&
                 isWithinBounds(NoPrefix, NoSymbol, okparams, okargs)
@@ -1201,14 +1201,15 @@ trait Infer {
       }
     }
 
-    /** Substitite free type variables <code>undetparams</code> of application
+    /** Substitute free type variables <code>undetparams</code> of application
      *  <code>fn(args)</code>, given prototype <code>pt</code>.
      *
      *  @param fn          ...
      *  @param undetparams ...
      *  @param args        ...
      *  @param pt          ...
-     *  @return            Return the list of type parameters that remain uninstantiated.
+     *  @return            The type parameters that remain uninstantiated,
+     *                     and that thus have not been substituted.
      */
     def inferMethodInstance(fn: Tree, undetparams: List[Symbol],
                             args: List[Tree], pt0: Type): List[Symbol] = fn.tpe match {
@@ -1223,8 +1224,8 @@ trait Infer {
           val formals = formalTypes(params0 map (_.tpe), args.length)
           val argtpes = actualTypes(args map (_.tpe.deconst), formals.length)
           val restpe = fn.tpe.resultType(argtpes)
-          val (okparams, okargs, leftUndet) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
-          checkBounds(fn.pos, NoPrefix, NoSymbol, okparams, okargs, "inferred ")
+          val (allargs, (okparams, okargs, leftUndet)) = methTypeArgs(undetparams, formals, restpe, argtpes, pt)
+          checkBounds(fn.pos, NoPrefix, NoSymbol, undetparams, allargs, "inferred ")
           val treeSubst = new TreeTypeSubstituter(okparams, okargs)
           treeSubst.traverse(fn)
           treeSubst.traverseTrees(args)
