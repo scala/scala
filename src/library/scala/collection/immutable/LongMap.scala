@@ -1,5 +1,22 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+
+
 package scala.collection
 package immutable
+
+
+import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.Builder
+import scala.collection.mutable.MapBuilder
+
+
 
 /** Utility class for long maps.
  *  @author David MacIver
@@ -44,6 +61,12 @@ import LongMapUtils._
  *  @since 2.7
  */
 object LongMap{
+  /** $mapCanBuildFromInfo */
+  implicit def canBuildFrom[A, B] = new CanBuildFrom[LongMap[A], (Long, B), LongMap[B]] {
+    def apply(from: LongMap[A]): Builder[(Long, B), LongMap[B]] = apply()
+    def apply(): Builder[(Long, B), LongMap[B]] = new MapBuilder[Long, B, LongMap[B]](empty[B])
+  }
+
   def empty[T] : LongMap[T]  = LongMap.Nil;
   def singleton[T](key : Long, value : T) : LongMap[T] = LongMap.Tip(key, value);
   def apply[T](elems : (Long, T)*) : LongMap[T] =
@@ -136,7 +159,7 @@ import LongMap._;
 /**
  *  Specialised immutable map structure for long keys, based on
  *  <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Long Maps</a>
- *  by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
+ *  by Okasaki and Gill. Essentially a trie based on binary digits of the integers.
  *
  *  Note: This class is as of 2.8 largely superseded by HashMap.
  *
