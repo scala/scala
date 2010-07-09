@@ -478,7 +478,7 @@ self: Analyzer =>
 
               // filter out failures from type inference, don't want to remove them from undetParams!
               // we must be conservative in leaving type params in undetparams
-              val (okParams, okArgs, _) = adjustTypeArgs(undetParams, targs)  // prototype == WildcardType: want to remove all inferred Nothing's
+              val AdjustedTypeArgs(okParams, okArgs) = adjustTypeArgs(undetParams, targs)  // prototype == WildcardType: want to remove all inferred Nothing's
               val subst = new TreeTypeSubstituter(okParams, okArgs)
               subst traverse itree2
 
