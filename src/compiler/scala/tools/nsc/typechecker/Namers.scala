@@ -990,6 +990,8 @@ trait Namers { self: Analyzer =>
                 val module = companionModuleOf(meth.owner, context)
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
+                if (!classAndNamerOfModule.contains(module))
+                  return // fix #3649 (prevent crash in erroneous source code)
                 val (cdef, nmr) = classAndNamerOfModule(module)
                 moduleNamer = Some(cdef, nmr)
                 (cdef, nmr)
