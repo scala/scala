@@ -1035,9 +1035,11 @@ trait Namers { self: Analyzer =>
             }))
             val defRhs = copyUntyped(vparam.rhs)
 
+            val staticFlag = if (isConstr) STATIC else 0
+
             val defaultTree = atPos(vparam.pos.focus) {
               DefDef(
-                Modifiers(meth.flags & (PRIVATE | PROTECTED | FINAL)) | SYNTHETIC | DEFAULTPARAM | oflag,
+                Modifiers(meth.flags & (PRIVATE | PROTECTED | FINAL)) | SYNTHETIC | DEFAULTPARAM | oflag | staticFlag,
                 name, deftParams, defvParamss, defTpt, defRhs)
             }
             if (!isConstr)
