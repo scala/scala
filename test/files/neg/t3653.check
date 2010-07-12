@@ -1,0 +1,7 @@
+t3653.scala:3: error: double definition:
+method x:(implicit x: Int)Int and
+method x:(i: Int)Int at line 2
+have same type after erasure: (x: Int)Int
+   def x(implicit x: Int) = 5
+       ^
+one error found
