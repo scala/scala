@@ -151,6 +151,12 @@ abstract class TreeInfo {
     case _ :: stats1 => firstConstructor(stats1)
   }
 
+  /** The arguments to the first constructor in `stats'. */
+  def firstConstructorArgs(stats: List[Tree]): List[Tree] = firstConstructor(stats) match {
+    case DefDef(_, _, _, args :: _, _, _) => args
+    case _                                => Nil
+  }
+
   /** The value definitions marked PRESUPER in this statement sequence */
   def preSuperFields(stats: List[Tree]): List[ValDef] =
     for (vdef @ ValDef(mods, _, _, _) <- stats if mods hasFlag PRESUPER) yield vdef

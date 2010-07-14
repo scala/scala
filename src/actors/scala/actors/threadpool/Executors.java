@@ -605,12 +605,12 @@ public class Executors {
         public Future submit(Runnable task, Object result) {
             return e.submit(task, result);
         }
-        public List invokeAll(Collection tasks)
+        public List<Future> invokeAll(Collection tasks)
             throws InterruptedException {
             return e.invokeAll(tasks);
         }
-        public List invokeAll(Collection tasks,
-                                             long timeout, TimeUnit unit)
+        public List<Future> invokeAll(Collection tasks,
+                                      long timeout, TimeUnit unit)
             throws InterruptedException {
             return e.invokeAll(tasks, timeout, unit);
         }

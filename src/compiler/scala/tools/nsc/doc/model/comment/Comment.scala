@@ -69,4 +69,3 @@ abstract class Comment {
     (version map ("@version " + _.toString)).mkString
 
 }
-

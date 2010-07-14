@@ -41,9 +41,9 @@ public final class Utils {
     static {
         NanoTimer timer = null;
         try {
-            String nanoTimerClassName = (String)
-                AccessController.doPrivileged(new PrivilegedAction() {
-                    public Object run() {
+            String nanoTimerClassName =
+                AccessController.doPrivileged(new PrivilegedAction<String>() {
+                    public String run() {
                         return System.getProperty(providerProp);
                     }
                 });
@@ -206,9 +206,9 @@ public final class Utils {
         final Perf perf;
         final long multiplier, divisor;
         SunPerfProvider() {
-            perf = (Perf)
-                AccessController.doPrivileged(new PrivilegedAction() {
-                    public Object run() {
+            perf =
+                AccessController.doPrivileged(new PrivilegedAction<Perf>() {
+                    public Perf run() {
                         return Perf.getPerf();
                     }
                 });

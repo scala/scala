@@ -6,6 +6,7 @@ package scala.collection.parallel.benchmarks.generic
 class Dummy(val in: Int) {
   var num = in
   override def toString = in.toString
+  override def hashCode = in
 }
 
 

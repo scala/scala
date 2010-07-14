@@ -137,7 +137,7 @@ abstract class TreeGen {
     assert(!tree.tpe.isInstanceOf[MethodType], tree)
     assert(!pt.typeSymbol.isPackageClass)
     assert(!pt.typeSymbol.isPackageObjectClass)
-    assert(pt eq pt.normalize) //@MAT only called during erasure, which already takes care of that
+    assert(pt eq pt.normalize, tree +" : "+ debugString(pt) +" ~>"+ debugString(pt.normalize)) //@MAT only called during erasure, which already takes care of that
     atPos(tree.pos)(mkAsInstanceOf(tree, pt, false))
   }
 

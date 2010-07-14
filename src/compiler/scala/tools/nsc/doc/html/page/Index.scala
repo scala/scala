@@ -26,17 +26,18 @@ class Index(universe: Universe) extends HtmlPage {
   def headers =
     <xml:group>
       <link href={ relativeLinkTo(List("index.css", "lib")) }  media="screen" type="text/css" rel="stylesheet"/>
-      <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
+		  <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
     </xml:group>
 
   def body =
     <body>
       <div id="library">
-        <img class='class icon' src='lib/class.png'/>
-        <img class='trait icon' src='lib/trait.png'/>
-        <img class='object icon' src='lib/object.png'/>
-        <img class='package icon' src='lib/package.png'/>
+        <img class='class icon' width="13" height="13" src='lib/class.png'/>
+        <img class='trait icon' width="13" height="13" src='lib/trait.png'/>
+        <img class='object icon' width="13" height="13" src='lib/object.png'/>
+        <img class='package icon' width="13" height="13" src='lib/package.png'/>
       </div>
       <div id="browser">
         <div id="filter"></div>

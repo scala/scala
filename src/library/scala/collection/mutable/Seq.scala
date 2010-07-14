@@ -29,14 +29,6 @@ trait Seq[A] extends Iterable[A]
                      with GenericTraversableTemplate[A, Seq]
                      with SeqLike[A, Seq[A]] {
   override def companion: GenericCompanion[Seq] = Seq
-
-  /** Replaces element at given index with a new value.
-   *
-   *  @param n       the index of the element to replace.
-   *  @param lem     the new value.
-   *  @throws   IndexOutofBoundsException if the index is not valid.
-   */
-  def update(idx: Int, elem: A)
 }
 
 /** $factoryInfo

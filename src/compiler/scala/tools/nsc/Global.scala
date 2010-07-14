@@ -216,8 +216,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         }
     }
 
-  if (settings.verbose.value || settings.Ylogcp.value)
-    inform("[Classpath = " + classPath.asClasspathString + "]")
+  if (settings.verbose.value || settings.Ylogcp.value) {
+    inform("[search path for source files: " + classPath.sourcepaths.mkString(",") + "]")
+    inform("[search path for class files: " + classPath.asClasspathString + "]")
+  }
 
   /** True if -Xscript has been set, indicating a script run.
    */

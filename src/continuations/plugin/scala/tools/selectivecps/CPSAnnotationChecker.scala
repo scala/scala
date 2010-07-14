@@ -14,6 +14,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
   import definitions._
 
   //override val verbose = true
+  @inline override final def vprintln(x: =>Any): Unit = if (verbose) println(x)
 
   /**
    *  Checks whether @cps annotations conform

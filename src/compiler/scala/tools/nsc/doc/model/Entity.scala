@@ -19,11 +19,12 @@ trait Entity {
   override def toString = qualifiedName
 }
 
-
-/** A class, trait, object or package. A package is represented as an instance of the `Package` subclass. A class,
-  * trait, object or package may be directly an instance of `WeakTemplateEntity` if it is not ''documentable'' (that
-  * is, if there is no documentation page for it in the current site), otherwise, it will be represented as an instance
-  * of the `TemplateEntity` subclass. */
+/** A class, trait, object or package. A package is represented as an instance
+  * of the `Package` subclass. A class, trait, object or package may be
+  * directly an instance of `WeakTemplateEntity` if it is not ''documentable''
+  * (that is, if there is no documentation page for it in the current site),
+  * otherwise, it will be represented as an instance of the `TemplateEntity`
+  * subclass. */
 trait TemplateEntity extends Entity {
   def isPackage: Boolean
   def isRootPackage: Boolean
@@ -31,6 +32,7 @@ trait TemplateEntity extends Entity {
   def isClass: Boolean
   def isObject: Boolean
   def isDocTemplate: Boolean
+  def selfType : Option[TypeEntity]
 }
 trait NoDocTemplate extends TemplateEntity
 
@@ -51,22 +53,27 @@ trait MemberEntity extends Entity {
   def isLazyVal: Boolean
   def isVar: Boolean
   def isImplicit: Boolean
+  def isAbstract: Boolean
   def isConstructor: Boolean
   def isAliasType: Boolean
   def isAbstractType: Boolean
   def isTemplate: Boolean
 }
 
-/** A ''documentable'' class, trait or object (that is, a documentation page will be generated for it in the current
-  * site). */
+trait HigherKinded extends Entity {
+  def typeParams: List[TypeParam]
+}
+
+/** A ''documentable'' class, trait or object (that is, a documentation page
+  * will be generated for it in the current site). */
 trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def toRoot: List[DocTemplateEntity]
   def inSource: Option[(io.AbstractFile, Int)]
   def sourceUrl: Option[java.net.URL]
-  def typeParams: List[TypeParam]
   def parentType: Option[TypeEntity]
   def parentTemplates: List[TemplateEntity]
   def linearization: List[TemplateEntity]
+  def linearizationTypes: List[TypeEntity]
   def subClasses: List[DocTemplateEntity]
   def members: List[MemberEntity]
   def templates: List[DocTemplateEntity]
@@ -93,12 +100,12 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
 }
 
 /** A ''documentable'' trait. */
-trait Trait extends DocTemplateEntity {
+trait Trait extends DocTemplateEntity with HigherKinded {
   def valueParams : List[List[ValueParam]]
 }
 
 /** A ''documentable'' class. */
-trait Class extends Trait {
+trait Class extends Trait with HigherKinded {
   def primaryConstructor: Option[Constructor]
   def constructors: List[Constructor]
   def isCaseClass: Boolean
@@ -107,7 +114,8 @@ trait Class extends Trait {
 /** A ''documentable'' object. */
 trait Object extends DocTemplateEntity
 
-/** A package that contains at least one ''documentable'' class, trait, object or package. */
+/** A package that contains at least one ''documentable'' class, trait,
+  * object or package. */
 trait Package extends Object {
   def inTemplate: Package
   def toRoot: List[Package]
@@ -122,8 +130,7 @@ trait NonTemplateMemberEntity extends MemberEntity {
 }
 
 /** A method (`def`) of a ''documentable'' class, trait or object. */
-trait Def extends NonTemplateMemberEntity {
-  def typeParams: List[TypeParam]
+trait Def extends NonTemplateMemberEntity with HigherKinded {
   def valueParams : List[List[ValueParam]]
 }
 
@@ -132,30 +139,28 @@ trait Constructor extends NonTemplateMemberEntity {
   def valueParams : List[List[ValueParam]]
 }
 
-/** A value (`val`), lazy val (`lazy val`) or variable (`var`) of a ''documentable'' class, trait or object. */
+/** A value (`val`), lazy val (`lazy val`) or variable (`var`) of a
+  * ''documentable'' class, trait or object. */
 trait Val extends NonTemplateMemberEntity
 
 /** An abstract type of a ''documentable'' class, trait or object. */
-trait AbstractType extends NonTemplateMemberEntity {
-  // TODO: typeParams
+trait AbstractType extends NonTemplateMemberEntity with HigherKinded {
   def lo: Option[TypeEntity]
   def hi: Option[TypeEntity]
 }
 
 /** An abstract type of a ''documentable'' class, trait or object. */
-trait AliasType extends NonTemplateMemberEntity {
-  // TODO: typeParams
+trait AliasType extends NonTemplateMemberEntity with HigherKinded {
   def alias: TypeEntity
 }
 
 trait ParameterEntity extends Entity {
-  def inTemplate: DocTemplateEntity
   def isTypeParam: Boolean
   def isValueParam: Boolean
 }
 
 /** A type parameter to a class or trait or to a method. */
-trait TypeParam extends ParameterEntity {
+trait TypeParam extends ParameterEntity with HigherKinded {
   def variance: String
   def lo: Option[TypeEntity]
   def hi: Option[TypeEntity]
@@ -175,26 +180,26 @@ sealed trait Visibility {
 }
 
 /** The visibility of `private[this]` members. */
-case class PrivateInInstance extends Visibility
+case class PrivateInInstance() extends Visibility
 
 /** The visibility of `protected[this]` members. */
-case class ProtectedInInstance extends Visibility {
+case class ProtectedInInstance() extends Visibility {
   override def isProtected = true
 }
 
-/** The visibility of `private[owner]` members. An unqualified private members is encoded with `owner` equal to the
-  * members's `inTemplate`. */
+/** The visibility of `private[owner]` members. An unqualified private members
+  * is encoded with `owner` equal to the members's `inTemplate`. */
 case class PrivateInTemplate(owner: TemplateEntity) extends Visibility
 
-/** The visibility of `protected[owner]` members. An unqualified protected members is encoded with `owner` equal to the
-  * members's `inTemplate`.
-  * Note that whilst the member is visible in any template owned by `owner`, it is only visible in subclasses of the
-  * member's `inTemplate`. */
+/** The visibility of `protected[owner]` members. An unqualified protected
+  * members is encoded with `owner` equal to the members's `inTemplate`.
+  * Note that whilst the member is visible in any template owned by `owner`,
+  * it is only visible in subclasses of the member's `inTemplate`. */
 case class ProtectedInTemplate(owner: TemplateEntity) extends Visibility {
   override def isProtected = true
 }
 
 /** The visibility of public members. */
-case class Public extends Visibility {
+case class Public() extends Visibility {
   override def isPublic = true
 }

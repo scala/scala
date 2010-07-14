@@ -71,14 +71,13 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     case "/h3" => " ===\n"
     case "h4" | "h5" | "h6" => "\n==== "
     case "/h4" | "/h5" | "/h6" => " ====\n"
-    case "code" | "/code" => "`"
     case "li" => "\n *  - "
     case _ => ""
   }
 
   /** Safe HTML tags that can be kept. */
   protected val SafeTags =
-    new Regex("""(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|code|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>)""")
+    new Regex("""((<code( [^>]*)?>.*</code>)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
 
   protected val safeTagMarker = '\u000E'
 

@@ -76,20 +76,24 @@ trait TreeDSL {
         else gen.mkAnd(target, other)
 
       /** Note - calling ANY_== in the matcher caused primitives to get boxed
-       *  for the comparison, whereas looking up nme.EQ does not.
+       *  for the comparison, whereas looking up nme.EQ does not.  See #3570 for
+       *  an example of how target.tpe can be non-null, yet it claims not to have
+       *  a mmeber called nme.EQ.  Not sure if that should happen, but we can be
+       *  robust by dragging in Any regardless.
        */
       def MEMBER_== (other: Tree)   = {
-        if (target.tpe == null) ANY_==(other)
-        else fn(target, target.tpe member nme.EQ, other)
+        val opSym = if (target.tpe == null) NoSymbol else target.tpe member nme.EQ
+        if (opSym == NoSymbol) ANY_==(other)
+        else fn(target, opSym, other)
       }
-      def ANY_NE  (other: Tree)     = fn(target, nme.ne, toAnyRef(other))
       def ANY_EQ  (other: Tree)     = fn(target, nme.eq, toAnyRef(other))
+      def ANY_NE  (other: Tree)     = fn(target, nme.ne, toAnyRef(other))
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
-      def ANY_>=  (other: Tree)     = fn(target, nme.GE, other)
-      def ANY_<=  (other: Tree)     = fn(target, nme.LE, other)
-      def OBJ_!=  (other: Tree)     = fn(target, Object_ne, other)
-      def OBJ_EQ  (other: Tree)     = fn(target, nme.eq, other)
-      def OBJ_NE  (other: Tree)     = fn(target, nme.ne, other)
+      def ANY_!=  (other: Tree)     = fn(target, Any_!=, other)
+      def OBJ_==  (other: Tree)     = fn(target, Object_==, other)
+      def OBJ_!=  (other: Tree)     = fn(target, Object_!=, other)
+      def OBJ_EQ  (other: Tree)     = fn(target, Object_eq, other)
+      def OBJ_NE  (other: Tree)     = fn(target, Object_ne, other)
 
       def INT_|   (other: Tree)     = fn(target, getMember(IntClass, nme.OR), other)
       def INT_&   (other: Tree)     = fn(target, getMember(IntClass, nme.AND), other)

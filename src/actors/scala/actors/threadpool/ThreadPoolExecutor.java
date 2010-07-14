@@ -791,7 +791,7 @@ public class ThreadPoolExecutor extends AbstractExecutorService {
      */
     private List drainQueue() {
         BlockingQueue q = workQueue;
-        List taskList = new ArrayList();
+        List<Runnable> taskList = new ArrayList<Runnable>();
         q.drainTo(taskList);
         if (!q.isEmpty()) {
             Runnable[] arr = (Runnable[])q.toArray(new Runnable[0]);

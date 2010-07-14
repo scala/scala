@@ -47,7 +47,6 @@ abstract class HtmlPage { thisPage =>
         <head>
           <title>{ title }</title>
           <meta http-equiv="content-type" content={ "text/html; charset=" + site.encoding }/>
-		      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
           { headers }
         </head>
         { body }
@@ -199,6 +198,12 @@ abstract class HtmlPage { thisPage =>
       toLinksOut(0, tpe.refEntity.keySet.toList)
     else
       xml.Text(string)
+  }
+
+  def typesToHtml(tpess: List[model.TypeEntity], hasLinks: Boolean, sep: NodeSeq): NodeSeq = tpess match {
+    case Nil         => NodeSeq.Empty
+    case tpe :: Nil  => typeToHtml(tpe, hasLinks)
+    case tpe :: tpes => typeToHtml(tpe, hasLinks) ++ sep ++ typesToHtml(tpes, hasLinks, sep)
   }
 
   /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */

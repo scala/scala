@@ -1,0 +1,5 @@
+t742.scala:5: error: kinds of the type arguments (Crash._1,Crash._2,Any) do not conform to the expected kinds of the type parameters (type m,type n,type z).
+Crash._1's type parameters do not match type m's expected parameters: type s1 has one type parameter, but type n has two
+    type p = mul[_1, _2, Any]  // mul[_1, _1, Any] needs -Yrecursion
+             ^
+one error found

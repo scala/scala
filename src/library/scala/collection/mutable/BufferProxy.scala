@@ -125,16 +125,20 @@ trait BufferProxy[A] extends Buffer[A] with Proxy {
    *  @param n     the index where a new element will be inserted.
    *  @param iter  the iterable object providing all elements to insert.
    */
-  def insertAll(n: Int, iter: scala.collection.Iterable[A]): Unit = self.insertAll(n, iter)
+  def insertAll(n: Int, iter: scala.collection.Iterable[A]) {
+    self.insertAll(n, iter)
+  }
 
-  override def insertAll(n: Int, iter: scala.collection.Traversable[A]): Unit = self.insertAll(n, iter)
+  override def insertAll(n: Int, iter: scala.collection.Traversable[A]) {
+    self.insertAll(n, iter)
+  }
 
   /** Replace element at index `n` with the new element `newelem`.
    *
    *  @param n       the index of the element to replace.
    *  @param newelem the new element.
    */
-  def update(n: Int, newelem: A): Unit = self.update(n, newelem)
+  def update(n: Int, newelem: A) { self.update(n, newelem) }
 
   /** Removes the element on a given index position.
    *

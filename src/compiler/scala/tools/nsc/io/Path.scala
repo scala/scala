@@ -26,15 +26,14 @@ import scala.util.Random.alphanumeric
  *  @since   2.8
  */
 
-object Path
-{
+object Path {
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
+  private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
 
   /** If examineFile is true, it will look at the first four bytes of the file
    *  and see if the magic number indicates it may be a jar or zip.
    */
-  private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
-  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, false)
+  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, true)
   def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
     f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
 

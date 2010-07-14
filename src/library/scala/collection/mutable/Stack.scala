@@ -62,7 +62,8 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
    *  @param   elems      the element sequence.
    *  @return the stack with the new elements on top.
    */
-  def push(elem1: A, elem2: A, elems: A*): this.type = this.push(elem1).push(elem2).pushAll(elems)
+  def push(elem1: A, elem2: A, elems: A*): this.type =
+    this.push(elem1).push(elem2).pushAll(elems)
 
   /** Push all elements in the given traversable object onto
    *  the stack. The last element in the traversable object
@@ -134,5 +135,5 @@ class Stack[A] private (var elems: List[A]) extends scala.collection.Seq[A] with
 
 // !!! TODO - integrate
 object Stack {
-  def apply[A](xs: A*): Stack[A] = new Stack[A] ++= xs
+  def apply[A](xs: A*): Stack[A] = new Stack[A] pushAll xs
 }

@@ -24,7 +24,7 @@ trait StandardScalaSettings {
   val extdirs =           PathSetting ("-extdirs", "dirs", "Override location of installed extensions", Defaults.scalaExtDirs)
   val javabootclasspath = PathSetting ("-javabootclasspath", "path", "Override java boot classpath.", Defaults.javaBootClassPath)
   val javaextdirs =       PathSetting ("-javaextdirs", "path", "Override java extdirs classpath.", Defaults.javaExtDirs)
-  val sourcepath =      StringSetting ("-sourcepath", "path", "Specify where to find input source files", "")
+  val sourcepath =        PathSetting ("-sourcepath", "path", "Specify where to find input source files", "") // Defaults.scalaSourcePath
 
   /** Other settings.
    */

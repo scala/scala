@@ -287,13 +287,11 @@ trait Namers { self: Analyzer =>
      *  class definition tree.
      *  @return the companion object symbol.
      */
-    def ensureCompanionObject(tree: ClassDef, creator: => Tree): Symbol = {
-      val m: Symbol = context.scope.lookup(tree.name.toTermName).filter(! _.isSourceMethod)
-      if (m.isModule && inCurrentScope(m) && currentRun.compiles(m)) m
-      else
-        /*util.trace("enter synthetic companion object for "+currentRun.compiles(m)+":")*/(
-        enterSyntheticSym(creator))
-    }
+     def ensureCompanionObject(tree: ClassDef, creator: => Tree): Symbol = {
+       val m: Symbol = context.scope.lookup(tree.name.toTermName).filter(! _.isSourceMethod)
+       if (m.isModule && inCurrentScope(m) && currentRun.compiles(m)) m
+       else enterSyntheticSym(creator)
+     }
 
     private def enterSymFinishWith(tree: Tree, tparams: List[TypeDef]) {
       val sym = tree.symbol
@@ -350,6 +348,9 @@ trait Namers { self: Analyzer =>
             tree.symbol = enterClassSymbol(tree)
             finishWith(tparams)
             if (mods.isCase) {
+              if (treeInfo.firstConstructorArgs(impl.body).size > MaxFunctionArity)
+                context.error(tree.pos, "Implementation restriction: case classes cannot have more than " + MaxFunctionArity + " parameters.")
+
               val m = ensureCompanionObject(tree, caseModuleDef(tree))
               caseClassOfModuleClass(m.moduleClass) = tree
             }
@@ -989,6 +990,8 @@ trait Namers { self: Analyzer =>
                 val module = companionModuleOf(meth.owner, context)
                 module.initialize // call type completer (typedTemplate), adds the
                                   // module's templateNamer to classAndNamerOfModule
+                if (!classAndNamerOfModule.contains(module))
+                  return // fix #3649 (prevent crash in erroneous source code)
                 val (cdef, nmr) = classAndNamerOfModule(module)
                 moduleNamer = Some(cdef, nmr)
                 (cdef, nmr)
@@ -1064,24 +1067,7 @@ trait Namers { self: Analyzer =>
         case tp =>
           tp
       }
-
-      def verifyOverriding(other: Symbol): Boolean = {
-        if(other.unsafeTypeParams.length != tparamSyms.length) {
-          context.error(tpsym.pos,
-              "The kind of "+tpsym.keyString+" "+tpsym.varianceString + tpsym.nameString+
-              " does not conform to the expected kind of " + other.defString + other.locationString + ".")
-          false
-        } else true
-      }
-
-      // @M: make sure overriding in refinements respects rudimentary kinding
-      // have to do this early, as otherwise we might get crashes: (see neg/bug1275.scala)
-      //   suppose some parameterized type member is overridden by a type member w/o params,
-      //   then appliedType will be called on a type that does not expect type args --> crash
-      if (tpsym.owner.isRefinementClass &&  // only needed in refinements
-          !tpsym.allOverriddenSymbols.forall{verifyOverriding(_)})
-	      ErrorType
-      else polyType(tparamSyms, tp)
+      polyType(tparamSyms, tp)
     }
 
     /** Given a case class
