@@ -303,10 +303,7 @@ abstract class Inliners extends SubComponent {
 
       do {
         retry = false;
-        if (m.symbol.hasAnnotation(ScalaInlineAttr)) {
-          log("Not inlining into " + m.symbol.originalName.decode + " because it is marked @inline.")
-        }
-        else if (m.code ne null) {
+        if (m.code ne null) {
           log("Analyzing " + m + " count " + count + " with " + m.code.blocks.length + " blocks");
           tfa.init(m)
           tfa.run
