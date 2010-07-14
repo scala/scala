@@ -37,6 +37,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ScalaPackage       = getModule("scala")
     lazy val ScalaPackageClass  = ScalaPackage.tpe.typeSymbol
 
+    lazy val RuntimePackage       = getModule("scala.runtime")
+    lazy val RuntimePackageClass  = RuntimePackage.tpe.typeSymbol
+
     lazy val ScalaCollectionImmutablePackage: Symbol = getModule("scala.collection.immutable")
     lazy val ScalaCollectionImmutablePackageClass: Symbol = ScalaCollectionImmutablePackage.tpe.typeSymbol
 
@@ -126,6 +129,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val BeanGetterTargetClass      = getClass("scala.annotation.target.beanGetter")
     lazy val BeanSetterTargetClass      = getClass("scala.annotation.target.beanSetter")
     lazy val ParamTargetClass           = getClass("scala.annotation.target.param")
+    lazy val ScalaInlineClass           = getClass("scala.inline")
+    lazy val ScalaNoInlineClass         = getClass("scala.noinline")
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
@@ -214,7 +219,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def Array_length  = getMember(ArrayClass, nme.length)
       lazy val Array_clone   = getMember(ArrayClass, nme.clone_)
     lazy val ArrayModule  = getModule("scala.Array")
-      def ArrayModule_apply = getMember(ArrayModule, nme.apply)
 
     // reflection / structural types
     lazy val SoftReferenceClass     = getClass("java.lang.ref.SoftReference")
@@ -445,7 +449,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val BooleanBeanPropertyAttr: Symbol = getClass(sn.BooleanBeanProperty)
 
     lazy val AnnotationDefaultAttr: Symbol = {
-      val RuntimePackageClass = getModule("scala.runtime").tpe.typeSymbol
       val attr = newClass(RuntimePackageClass, nme.AnnotationDefaultATTR, List(AnnotationClass.typeConstructor))
       // This attribute needs a constructor so that modifiers in parsed Java code make sense
       attr.info.decls enter (attr newConstructor NoPosition setInfo MethodType(Nil, attr.tpe))

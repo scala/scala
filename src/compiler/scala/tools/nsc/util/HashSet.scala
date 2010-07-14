@@ -11,19 +11,17 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   def this(label: String) = this(label, 16)
   def this() = this(16)
 
-  private var capacity = initialCapacity
   private var used = 0
-  private var table = new Array[AnyRef](capacity)
+  private var table = new Array[AnyRef](initialCapacity)
   // System.err.println("Created: " + this)
 
   def size: Int = used
   def clear() {
-    capacity = initialCapacity
     used = 0
-    table = new Array[AnyRef](capacity)
+    table = new Array[AnyRef](initialCapacity)
   }
 
-  private def index(x: Int): Int = math.abs(x % capacity)
+  private def index(x: Int): Int = math.abs(x % table.length)
 
   def findEntryOrUpdate(x: T): T = {
     var h = index(x.##)
@@ -37,7 +35,7 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     }
     table(h) = x
     used += 1
-    if (used > (capacity >> 2)) growTable()
+    if (used > (table.length >> 2)) growTable()
     x
   }
 
@@ -61,14 +59,14 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
     }
     table(h) = x
     used += 1
-    if (used > (capacity >> 2)) growTable()
+    if (used > (table.length >> 2)) growTable()
   }
 
   def iterator = new Iterator[T] {
     private var i = 0
     def hasNext: Boolean = {
-      while (i < capacity && (table(i) eq null)) i += 1
-      i < capacity
+      while (i < table.length && (table(i) eq null)) i += 1
+      i < table.length
     }
     def next: T =
       if (hasNext) { i += 1; table(i - 1).asInstanceOf[T] }
@@ -88,12 +86,11 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
   private def growTable() {
     val oldtable = table
     val growthFactor =
-      if (capacity <= initialCapacity) 8
-      else if (capacity <= (initialCapacity * 8)) 4
+      if (table.length <= initialCapacity) 8
+      else if (table.length <= (initialCapacity * 8)) 4
       else 2
 
-    capacity *= growthFactor
-    table = new Array[AnyRef](capacity)
+    table = new Array[AnyRef](table.length * growthFactor)
     var i = 0
     while (i < oldtable.length) {
       val entry = oldtable(i)
@@ -101,5 +98,5 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
       i += 1
     }
   }
-  override def toString() = "HashSet %s(%d / %d)".format(label, used, capacity)
+  override def toString() = "HashSet %s(%d / %d)".format(label, used, table.length)
 }

@@ -444,6 +444,7 @@ QUICK BUILD (QUICK)
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
+	<include name="parallel-collections/**"/>
         <include name="continuations/**"/>
         <include name="swing/**"/>
       </srcfiles>
@@ -486,6 +487,18 @@ QUICK BUILD (QUICK)
       compilerpathref="locker.classpath"
       params="${scalac.args.quick}"
       srcdir="${src.dir}/actors"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${lib.dir}/forkjoin.jar"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/library"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/parallel-collections"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
@@ -1016,6 +1029,18 @@ BOOTSTRAPPING BUILD (STRAP)
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
       params="${scalac.args.all}"
+      srcdir="${src.dir}/parallel-collections"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-strap.dir}/classes/library"/>
+        <pathelement location="${forkjoin.jar}"/>
+      </compilationpath>
+    </scalacfork>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/library"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
       srcdir="${src.dir}/dbc"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
@@ -1368,6 +1393,7 @@ DOCUMENTATION
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
+	<include name="parallel-collections/**"/>
         <include name="swing/**"/>
       </srcfiles>
     </uptodate>
@@ -1385,6 +1411,7 @@ DOCUMENTATION
       classpathref="pack.classpath">
       <src>
         <files includes="${src.dir}/actors"/>
+	<files includes="${src.dir}/parallel-collections"/>
         <files includes="${src.dir}/library/scala"/>
         <files includes="${src.dir}/swing"/>
         <files includes="${src.dir}/continuations/library"/>
@@ -1623,6 +1650,7 @@ DISTRIBUTION
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/actors"/>
+      <fileset dir="${src.dir}/parallel-collections"/>
       <fileset dir="${src.dir}/continuations/library"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
@@ -1711,6 +1739,7 @@ STABLE REFERENCE (STARR)
     <jar destfile="${basedir}/lib/scala-library-src.jar">
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/actors"/>
+      <fileset dir="${basedir}/src/parallel-collections"/>
       <fileset dir="${basedir}/src/swing"/>
       <fileset dir="${basedir}/src/dbc"/>
     </jar>

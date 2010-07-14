@@ -37,7 +37,7 @@ JAVAH_OPTIONS="-jni -force -classpath ${CLASS_DIR} -o ${OBJ_NAME}.h"
 CC=gcc
 
 if $darwin; then
-  CC_OPTIONS="-c -arch ppc -arch i386"
+  CC_OPTIONS="-c -arch ppc -arch i386 -arch x86_64"
   CC_INCLUDES="-I/System/Library/Frameworks/JavaVM.framework/Headers"
   LNK_OPTIONS="-dynamiclib -framework JavaVM"
   FULL_LIB_NAME=${LIB_NAME}.jnilib

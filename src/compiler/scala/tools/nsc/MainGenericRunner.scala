@@ -13,7 +13,7 @@ import java.net.{ URL, MalformedURLException }
 import scala.tools.util.PathResolver
 
 import io.{ File, Process }
-import util.{ ClassPath, ScalaClassLoader }
+import util.{ ClassPath, ScalaClassLoader, waitingForThreads }
 import Properties.{ versionString, copyrightString }
 
 /** An object that runs Scala code.  It has three possible

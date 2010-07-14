@@ -33,13 +33,18 @@ object File {
 
   // this is a workaround for http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6503430
   // we are using a static initializer to statically initialize a java class so we don't
-  // trigger java.lang.InternalErrors later when using it concurrently.
-  {
+  // trigger java.lang.InternalErrors later when using it concurrently.  We ignore all
+  // the exceptions so as not to cause spurious failures when no write access is available,
+  // e.g. google app engine.
+  try {
     val tmp = JFile.createTempFile("bug6503430", null, null)
     val in = new FileInputStream(tmp).getChannel()
     val out = new FileOutputStream(tmp, true).getChannel()
     out.transferFrom(in, 0, 0)
-    ()
+    tmp.delete()
+  }
+  catch {
+    case _: IllegalArgumentException | _: IllegalStateException | _: IOException | _: SecurityException => ()
   }
 }
 import File._
