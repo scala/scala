@@ -317,11 +317,8 @@ div.fullcomment {
   margin: 10px 0 10px 0;
 }
 
-#types div.fullcomment, #values div.fullcomment {
-  display:none
-}
-
 #template div.fullcomment {
+  display:none;
   margin: 6px 0 6px 8.7em;
 }
 
