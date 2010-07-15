@@ -93,6 +93,7 @@ $(document).ready(function(){
             orderInherit();
         };
     });
+    initInherit();
     //http://flowplayer.org/tools/tooltip.html
     $(".extype").tooltip({
         tip: "#tooltip",
@@ -114,7 +115,7 @@ $(document).ready(function(){
     var docShowSigs = docAllSigs.filter(function(){
         return $("+ div.fullcomment", $(this)).length > 0;
     });
-   docShowSigs.css("cursor", "pointer");
+    docShowSigs.css("cursor", "pointer");
     docShowSigs.click(function(){
         commentShowFct($("+ div.fullcomment", $(this)));
     });
@@ -140,7 +141,6 @@ $(document).ready(function(){
     $("p.shortcomment").click(function(){
         commentToggleFct($(this));
     });
-    initInherit();
 });
 
 function orderAlpha() {

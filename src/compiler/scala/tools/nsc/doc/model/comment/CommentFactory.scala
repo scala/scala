@@ -75,6 +75,22 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     case _ => ""
   }
 
+  /** Javadoc tags that should be replaced by something useful, such as wiki syntax, or that should be dropped. */
+  protected val JavadocTags =
+    new Regex("""\{\@(code|docRoot|inheritDoc|link|linkplain|literal|value)([^}]*)\}""")
+
+  /** Maps a javadoc tag to a useful wiki replacement, or an empty string if it cannot be salvaged. */
+  protected def javadocReplacement(mtch: Regex.Match): String = mtch.group(1) match {
+    case "code" => "`" + mtch.group(2) + "`"
+    case "docRoot"  => ""
+    case "inheritDoc" => ""
+    case "link"  => "`" + mtch.group(2) + "`"
+    case "linkplain" => "`" + mtch.group(2) + "`"
+    case "literal"  => mtch.group(2)
+    case "value" => "`" + mtch.group(2) + "`"
+    case _ => ""
+  }
+
   /** Safe HTML tags that can be kept. */
   protected val SafeTags =
     new Regex("""((<code( [^>]*)?>.*</code>)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
@@ -124,8 +140,9 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       }
       val strippedComment = comment.trim.stripPrefix("/*").stripSuffix("*/")
       val safeComment = DangerousTags.replaceAllIn(strippedComment, { htmlReplacement(_) })
+      val javadoclessComment = JavadocTags.replaceAllIn(safeComment, { javadocReplacement(_) })
       val markedTagComment =
-        SafeTags.replaceAllIn(safeComment, { mtch =>
+        SafeTags.replaceAllIn(javadoclessComment, { mtch =>
           java.util.regex.Matcher.quoteReplacement(safeTagMarker + mtch.matched + safeTagMarker)
         })
       markedTagComment.lines.toList map (cleanLine(_))
