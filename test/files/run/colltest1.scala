@@ -29,8 +29,8 @@ object Test extends Application {
     val (o, e) = ten.partition(_ % 2 == 0)
     assert(o.size == e.size)
     val gs = ten groupBy (x => x / 4)
-    val vs1 = (for (k <- gs.keysIterator; v <- gs(k).toIterable.iterator) yield v).toList
-    val vs2 = gs.values.toList.flatten
+    val vs1 = (for (k <- gs.keysIterator; v <- gs(k).toIterable.iterator) yield v).toList.sorted
+    val vs2 = gs.values.toList.flatten.sorted
 //    val vs2 = gs.values.toList flatMap (xs => xs)
     assert(ten.head == 1)
     assert(ten.tail.head == 2)
