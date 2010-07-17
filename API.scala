@@ -206,6 +206,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	
 	private def processType(t: Type): xsbti.api.Type =
 	{
+		class TypeCompat { def dealias = t } // 2.7.7 compatibility: don't bother dealiasing
+		implicit def compat(t: Type): TypeCompat = new TypeCompat
 		t.dealias match
 		{
 			case NoPrefix => Constants.emptyType
