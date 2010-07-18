@@ -70,7 +70,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               <div id="ancestors">
                 <span class="filtertype">Inherited</span>
                 <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
-                <ol id="linearization">{ (tpl :: tpl.linearization) map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
+                <ol id="linearization">{ (tpl :: tpl.linearizationTemplates) map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
               </div>
           }
           {
@@ -109,9 +109,9 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }
 
         {
-          NodeSeq fromSeq (for (parent <- tpl.linearization) yield
-            <div class="parent" name={ parent.qualifiedName }>
-              <h3>Inherited from { templateToHtml(parent) }</h3>
+          NodeSeq fromSeq (for ((superTpl, superType) <- tpl.linearization) yield
+            <div class="parent" name={ superTpl.qualifiedName }>
+              <h3>Inherited from { typeToHtml(superType, true) }</h3>
             </div>
           )
         }
@@ -259,7 +259,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     } ++
     { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearizationTypes.isEmpty) =>
+        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearization.isEmpty) =>
           <div class="block">
             linear super types: { typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }
           </div>
