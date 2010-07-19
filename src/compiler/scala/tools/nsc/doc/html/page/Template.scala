@@ -70,7 +70,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               <div id="ancestors">
                 <span class="filtertype">Inherited</span>
                 <ol><li class="hideall">Hide All</li><li class="showall">Show all</li></ol>
-                <ol id="linearization">{ (tpl :: tpl.linearization) map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
+                <ol id="linearization">{ (tpl :: tpl.linearizationTemplates) map { wte => <li class="in" name={ wte.qualifiedName }>{ wte.name }</li> } }</ol>
               </div>
           }
           {
@@ -109,9 +109,20 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         }
 
         {
-          NodeSeq fromSeq (for (parent <- tpl.linearization) yield
-            <div class="parent" name={ parent.qualifiedName }>
-              <h3>Inherited from { templateToHtml(parent) }</h3>
+          NodeSeq fromSeq (for ((superTpl, superType) <- tpl.linearization) yield
+            <div class="parent" name={ superTpl.qualifiedName }>
+              <h3>Inherited from {
+                if (tpl.universe.settings.useStupidTypes.value)
+                  superTpl match {
+                    case dtpl: DocTemplateEntity =>
+                      val sig = signature(dtpl, false, true) \ "_"
+                      sig
+                    case tpl: TemplateEntity =>
+                      tpl.name
+                  }
+                else
+                  typeToHtml(superType, true)
+              }</h3>
             </div>
           )
         }
@@ -259,7 +270,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     } ++
     { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearizationTypes.isEmpty) =>
+        case dtpl: DocTemplateEntity if (isSelf && !dtpl.linearization.isEmpty) =>
           <div class="block">
             linear super types: { typesToHtml(dtpl.linearizationTypes, hasLinks = true, sep = xml.Text(", ")) }
           </div>
@@ -374,7 +385,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   }
 
   /** name, tparams, params, result */
-  def signature(mbr: MemberEntity, isSelf: Boolean): NodeSeq = {
+  def signature(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
     def inside(hasLinks: Boolean): NodeSeq =
       <xml:group>
       <span class="kind">{ kindToString(mbr) }</span>
@@ -397,7 +408,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           }
           tparamsToHtml(mbr)
         }
-        {
+        { if (isReduced) NodeSeq.Empty else {
           def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
             def param0(vl: ValueParam): NodeSeq =
               // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
@@ -425,8 +436,8 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             case dfe: Def => paramsToHtml(dfe.valueParams)
             case _ => NodeSeq.Empty
           }
-        }
-        {
+        }}
+        { if (isReduced) NodeSeq.Empty else {
           mbr match {
             case tpl: DocTemplateEntity if (!tpl.isPackage) =>
               tpl.parentType match {
@@ -444,7 +455,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               <span class="result"> = { typeToHtml(alt.alias, hasLinks) }</span>
             case _ => NodeSeq.Empty
           }
-        }
+        }}
       </span>
       </xml:group>
     mbr match {

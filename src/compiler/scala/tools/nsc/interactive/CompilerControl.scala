@@ -134,6 +134,9 @@ trait CompilerControl { self: Global =>
   /** Tell the compile server to shutdown, and do not restart again */
   def askShutdown() = scheduler raise ShutdownReq
 
+  /** Ask for a computation to be done quickly on the presentation compiler thread */
+  def ask[A](op: () => A): A = scheduler doQuickly op
+
   // ---------------- Interpreted exceptions -------------------
 
   object CancelActionReq extends ControlThrowable

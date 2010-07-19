@@ -22,13 +22,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   def templatesCount = templatesCache.size - droppedPackages
 
   private var modelFinished = false
+  private var universe: Universe = null
 
   /**  */
   def makeModel: Universe = {
-    val rootPackage =
-      makeRootPackage getOrElse { throw new Error("no documentable class found in compilation units") }
-    val universe = new Universe(settings, rootPackage)
+    val universe = new Universe { thisUniverse =>
+      thisFactory.universe = thisUniverse
+      val settings = thisFactory.settings
+      val rootPackage =
+        makeRootPackage getOrElse { throw new Error("no documentable class found in compilation units") }
+    }
     modelFinished = true
+    thisFactory.universe = null
     universe
   }
 
@@ -52,6 +57,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def inTemplate: TemplateImpl = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
+    val universe = thisFactory.universe
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -160,22 +166,25 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         }
       else None
     }
-    def parentTemplates = sym.info.parents map { x: Type => makeTemplate(x.typeSymbol) }
     def parentType = {
-      if (sym.isPackage) None else
-        Some(makeType(RefinedType((sym.tpe.parents filter (_ != ScalaObjectClass.tpe)) map { _.asSeenFrom(sym.thisType, sym) }, EmptyScope), inTpl))
+      if (sym.isPackage) None else {
+        val tps =
+          (sym.tpe.parents filter (_ != ScalaObjectClass.tpe)) map { _.asSeenFrom(sym.thisType, sym) }
+        Some(makeType(RefinedType(tps, EmptyScope), inTpl))
+      }
     }
-    val linearization = {
-      val tpls = sym.ancestors filter { _ != ScalaObjectClass } map { makeTemplate(_) }
+    val linearization: List[(TemplateEntity, TypeEntity)] = {
+      val acs = sym.ancestors filter { _ != ScalaObjectClass }
+      val tps = acs map { cls => makeType(sym.info.baseType(cls), this) }
+      val tpls = acs map { makeTemplate(_) }
       tpls map {
           case dtpl: DocTemplateImpl => dtpl.registerSubClass(this)
           case _ =>
       }
-      tpls
+      tpls zip tps
     }
-    def linearizationTypes = {
-      ((sym.info.baseClasses filter (_ != ScalaObjectClass)) map { cls => makeType(sym.info.baseType(cls), this) }).tail
-    }
+    def linearizationTemplates = linearization map { _._1 }
+    def linearizationTypes = linearization map { _._2 }
     private lazy val subClassesCache = mutable.Buffer.empty[DocTemplateEntity]
     def registerSubClass(sc: DocTemplateEntity): Unit = {
       assert(subClassesCache != null)
@@ -440,7 +449,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   def makeType(aType: Type, inTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {
     def ownerTpl(sym: Symbol): Symbol =
       if (sym.isClass || sym.isModule || sym == NoSymbol) sym else ownerTpl(sym.owner)
-    makeType(aType.asSeenFrom(inTpl.sym.thisType, ownerTpl(dclSym)), inTpl)
+    val tpe =
+      if (thisFactory.settings.useStupidTypes.value) aType else {
+        val fixedSym = if (inTpl.sym.isModule) inTpl.sym.moduleClass else inTpl.sym
+        aType.asSeenFrom(fixedSym.thisType, ownerTpl(dclSym))
+      }
+    makeType(tpe, inTpl)
   }
 
   /** */

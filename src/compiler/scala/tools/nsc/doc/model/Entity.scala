@@ -17,6 +17,7 @@ trait Entity {
   def toRoot: List[Entity]
   def qualifiedName: String
   override def toString = qualifiedName
+  def universe: Universe
 }
 
 /** A class, trait, object or package. A package is represented as an instance
@@ -71,8 +72,8 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def inSource: Option[(io.AbstractFile, Int)]
   def sourceUrl: Option[java.net.URL]
   def parentType: Option[TypeEntity]
-  def parentTemplates: List[TemplateEntity]
-  def linearization: List[TemplateEntity]
+  def linearization: List[(TemplateEntity, TypeEntity)]
+  def linearizationTemplates: List[TemplateEntity]
   def linearizationTypes: List[TypeEntity]
   def subClasses: List[DocTemplateEntity]
   def members: List[MemberEntity]

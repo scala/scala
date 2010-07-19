@@ -5,4 +5,7 @@ package scala.tools.nsc.doc
  * @author Pedro Furlanetto
  * @author Gilles Dubochet
  */
-class Universe(val settings: Settings, val rootPackage: model.Package)
+trait Universe {
+  def settings: Settings
+  def rootPackage: model.Package
+}

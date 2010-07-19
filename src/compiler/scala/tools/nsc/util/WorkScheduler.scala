@@ -9,22 +9,21 @@ class WorkScheduler {
 
   private var todo = new Queue[Action]
   private var throwables = new Queue[Throwable]
+  private var interruptReqs = new Queue[InterruptReq]
 
-  /** Called from server: block until todo list is nonempty */
+  /** Called from server: block until one of todo list, throwables or interruptReqs is nonempty */
   def waitForMoreWork() = synchronized {
-    while (todo.isEmpty) { wait() }
+    while (todo.isEmpty && throwables.isEmpty && interruptReqs.isEmpty) { wait() }
   }
 
-  /** called from Server: test whether todo list is nonempty */
+  /** called from Server: test whether one of todo list, throwables, or InterruptReqs is nonempty */
   def moreWork(): Boolean = synchronized {
-    todo.nonEmpty
+    todo.nonEmpty || throwables.nonEmpty || interruptReqs.nonEmpty
   }
 
   /** Called from server: get first action in todo list, and pop it off */
   def nextWorkItem(): Option[Action] = synchronized {
-    if (!todo.isEmpty) {
-      Some(todo.dequeue())
-    } else None
+    if (todo.isEmpty) None else Some(todo.dequeue())
   }
 
   /** Called from server: return optional exception posted by client
@@ -39,6 +38,22 @@ class WorkScheduler {
         postWorkItem { () => }
       result
     }
+  }
+
+  def pollInterrupt(): Option[InterruptReq] = synchronized {
+    if (interruptReqs.isEmpty) None else Some(interruptReqs.dequeue())
+  }
+
+  /** Called from client: have interrupt executed by server and return result */
+  def doQuickly[A](op: () => A): A = {
+    val ir = new InterruptReq {
+      type R = A
+      val todo = op
+    }
+    synchronized {
+      interruptReqs enqueue ir
+    }
+    ir.getResult()
   }
 
   /** Called from client: have action executed by server */
@@ -60,3 +75,4 @@ class WorkScheduler {
     postWorkItem { () => }
   }
 }
+

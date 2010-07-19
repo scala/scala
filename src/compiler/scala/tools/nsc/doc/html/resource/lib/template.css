@@ -116,7 +116,7 @@ a:hover {
   font-weight: bold;
 }
 
-#template > div.parent > h3 > a {
+#template > div.parent > h3 * {
   color: white;
 }
 
