@@ -449,7 +449,11 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   def makeType(aType: Type, inTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {
     def ownerTpl(sym: Symbol): Symbol =
       if (sym.isClass || sym.isModule || sym == NoSymbol) sym else ownerTpl(sym.owner)
-    val tpe = if (thisFactory.settings.useStupidTypes.value) aType else aType.asSeenFrom(inTpl.sym.thisType, ownerTpl(dclSym))
+    val tpe =
+      if (thisFactory.settings.useStupidTypes.value) aType else {
+        val fixedSym = if (inTpl.sym.isModule) inTpl.sym.moduleClass else inTpl.sym
+        aType.asSeenFrom(fixedSym.thisType, ownerTpl(dclSym))
+      }
     makeType(tpe, inTpl)
   }
 
