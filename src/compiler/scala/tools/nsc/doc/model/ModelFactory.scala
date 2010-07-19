@@ -22,13 +22,18 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   def templatesCount = templatesCache.size - droppedPackages
 
   private var modelFinished = false
+  private var universe: Universe = null
 
   /**  */
   def makeModel: Universe = {
-    val rootPackage =
-      makeRootPackage getOrElse { throw new Error("no documentable class found in compilation units") }
-    val universe = new Universe(settings, rootPackage)
+    val universe = new Universe { thisUniverse =>
+      thisFactory.universe = thisUniverse
+      val settings = thisFactory.settings
+      val rootPackage =
+        makeRootPackage getOrElse { throw new Error("no documentable class found in compilation units") }
+    }
     modelFinished = true
+    thisFactory.universe = null
     universe
   }
 
@@ -52,6 +57,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def inTemplate: TemplateImpl = inTpl
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
+    val universe = thisFactory.universe
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -443,7 +449,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   def makeType(aType: Type, inTpl: => TemplateImpl, dclSym: Symbol): TypeEntity = {
     def ownerTpl(sym: Symbol): Symbol =
       if (sym.isClass || sym.isModule || sym == NoSymbol) sym else ownerTpl(sym.owner)
-    makeType(aType.asSeenFrom(inTpl.sym.thisType, ownerTpl(dclSym)), inTpl)
+    val tpe = if (thisFactory.settings.useStupidTypes.value) aType else aType.asSeenFrom(inTpl.sym.thisType, ownerTpl(dclSym))
+    makeType(tpe, inTpl)
   }
 
   /** */

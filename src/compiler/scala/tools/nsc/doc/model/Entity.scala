@@ -17,6 +17,7 @@ trait Entity {
   def toRoot: List[Entity]
   def qualifiedName: String
   override def toString = qualifiedName
+  def universe: Universe
 }
 
 /** A class, trait, object or package. A package is represented as an instance
