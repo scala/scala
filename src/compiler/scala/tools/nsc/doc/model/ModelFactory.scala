@@ -211,7 +211,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isDocTemplate = true
     def companion = sym.companionSymbol match {
       case NoSymbol => None
-      case comSym => Some(makeDocTemplate(comSym, inTpl))
+      case comSym if !isEmptyJavaObject(comSym) => Some(makeDocTemplate(comSym, inTpl))
+      case _ => None
     }
   }
 
@@ -540,10 +541,15 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   def templateShouldDocument(aSym: Symbol): Boolean = {
   	// TODO: document sourceless entities (e.g., Any, etc), based on a new Setting to be added
   	(aSym.isPackageClass || (aSym.sourceFile != null)) && localShouldDocument(aSym) &&
-    ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) )
+    ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) ) && !isEmptyJavaObject(aSym)
   }
 
-  def localShouldDocument(aSym: Symbol): Boolean =
-    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
+  def isEmptyJavaObject(aSym: Symbol): Boolean = {
+    val hasMembers = aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
+    aSym.isModule && aSym.hasFlag(Flags.JAVA) && !hasMembers
+  }
 
+  def localShouldDocument(aSym: Symbol): Boolean = {
+    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
+  }
 }
