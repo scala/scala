@@ -1105,6 +1105,7 @@ BOOTSTRAPPING BUILD (STRAP)
         <include name="**/*.xml"/>
         <include name="**/*.js"/>
         <include name="**/*.css"/>
+        <include name="**/*.html"/>
         <include name="**/*.properties"/>
         <include name="**/*.swf"/>
         <include name="**/*.png"/>
