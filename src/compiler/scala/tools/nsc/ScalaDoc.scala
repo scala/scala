@@ -34,7 +34,9 @@ object ScalaDoc {
     val docSettings: doc.Settings =
       new doc.Settings(error)
 
-    reporter = new ConsoleReporter(docSettings)
+    reporter = new ConsoleReporter(docSettings) {
+      override def hasErrors = false // need to do this so that the Global instance doesn't trash all the symbols just because there was an error
+    }
 
     val command =
       new CompilerCommand(args.toList, docSettings)
