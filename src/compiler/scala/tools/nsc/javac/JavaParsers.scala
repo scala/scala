@@ -518,6 +518,7 @@ trait JavaParsers extends JavaScanners {
         // constructor declaration
         val vparams = formalParams()
         optThrows()
+        in.flushDoc
         List {
           atPos(pos) {
             DefDef(mods, nme.CONSTRUCTOR, tparams, List(vparams), TypeTree(), methodBody())
@@ -533,7 +534,7 @@ trait JavaParsers extends JavaScanners {
           val vparams = formalParams()
           if (!isVoid) rtpt = optArrayBrackets(rtpt)
           optThrows()
-          val body =
+          lazy val body = // must be lazy so that the next comment is not consumed before joinComment is called
             if (!inInterface && in.token == LBRACE) {
               methodBody()
             } else {
@@ -552,14 +553,14 @@ trait JavaParsers extends JavaScanners {
               }
             }
           if (inInterface) mods1 |= Flags.DEFERRED
-          List {
+          joinComment(List {
             atPos(pos) {
               DefDef(mods1, name, tparams, List(vparams), rtpt, body)
             }
-          }
+          })
         } else {
           if (inInterface) mods1 |= Flags.FINAL | Flags.STATIC
-          val result = fieldDecls(pos, mods1, rtpt, name)
+          val result = joinComment(fieldDecls(pos, mods1, rtpt, name))
           accept(SEMI)
           result
         }
@@ -906,6 +907,16 @@ trait JavaParsers extends JavaScanners {
       atPos(pos) {
         makePackaging(pkg, buf.toList)
       }
+    }
+
+    /** Combine comment associated with a definition with the definition itself
+    */
+    def joinComment(trees: => List[Tree]): List[Tree] = {
+      val doc = in.flushDoc
+
+      if ((doc ne null) && doc.raw.length > 0) {
+        trees map { t => DocDef(doc, t) }
+      } else trees
     }
   }
 }
