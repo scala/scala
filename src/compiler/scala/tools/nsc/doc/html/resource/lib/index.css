@@ -28,7 +28,7 @@ h1 {
 	top: 0px;
 	left: 0px;
 	bottom: 0px;
-	width: 300px;
+	width: 100%;
 	display: block;
 	position: fixed;
 }
@@ -37,7 +37,7 @@ h1 {
 	position: fixed;
 	display: block;
 	padding: 5px;
-	width: 290px;
+	width: 95%;
 	right: 0;
 	left: 0;
 	top: 0;
@@ -78,7 +78,7 @@ h1 {
     right: 20px;
     left: 20px;
 	height: 16px;
-	width: 246px;
+	width: 90%;
 	padding: 2px;
 	font-weight: bold;
 	color: #993300;

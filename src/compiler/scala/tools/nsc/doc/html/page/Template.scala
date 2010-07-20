@@ -18,7 +18,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   val path =
     templateToPath(tpl)
 
-  val title = "Scaladoc for " + tpl.qualifiedName
+  val title = tpl.name + " (Scaladoc for " + tpl.qualifiedName + ")"
 
   val headers =
     <xml:group>
@@ -40,7 +40,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   }) sortBy (_.name)
 
   val body =
-    <body class={ if (tpl.isTrait || tpl.isClass) "type" else "value" }>
+    <body class={ if (tpl.isTrait || tpl.isClass) "type" else "value" } onload="windowTitle();">
 
       { if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
           NodeSeq.Empty

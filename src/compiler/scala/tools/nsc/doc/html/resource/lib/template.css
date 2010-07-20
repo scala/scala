@@ -111,7 +111,8 @@ a:hover {
 #template > div.parent > h3 {
   color: white;
   padding: 4px;
-  background-color: #385E1A;
+  margin-top: 10px;
+  background-color: #47166D;
   font-size: 12pt;
   font-weight: bold;
 }

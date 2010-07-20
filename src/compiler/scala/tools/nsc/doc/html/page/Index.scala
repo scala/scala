@@ -15,7 +15,7 @@ import scala.xml._
 
 class Index(universe: Universe) extends HtmlPage {
 
-  def path = List("index.html")
+  def path = List("allclasses.html")
 
   def title = {
     val s = universe.settings
@@ -111,9 +111,6 @@ class Index(universe: Universe) extends HtmlPage {
           packageElem(universe.rootPackage)
         }</div>
       </div>
-		  <div id="content">
-		  	<iframe name="template" src={ relativeLinkTo{List("package.html")} }/>
-		  </div>
     </body>
 
 

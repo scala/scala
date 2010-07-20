@@ -256,3 +256,8 @@ function filter() {
     });
     return false
 };
+
+function windowTitle()
+{
+    parent.document.title=document.title;
+};
