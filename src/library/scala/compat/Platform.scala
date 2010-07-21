@@ -48,6 +48,11 @@ object Platform {
 
   val EOL = util.Properties.lineSeparator
 
+  /** The current time in milliseconds. The time is counted since 1 January 1970
+    * UTC.
+    *
+    * Note that the operating system timer used to obtain this value may be less
+    * precise than a millisecond. */
   @inline
   def currentTime: Long = System.currentTimeMillis()
 
