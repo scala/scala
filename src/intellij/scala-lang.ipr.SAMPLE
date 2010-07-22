@@ -47,13 +47,6 @@
       </value>
     </option>
   </component>
-  <component name="CompilerAPISettings">
-    <option name="DEBUGGING_INFO" value="true" />
-    <option name="GENERATE_NO_WARNINGS" value="false" />
-    <option name="DEPRECATION" value="true" />
-    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
-    <option name="MAXIMUM_HEAP_SIZE" value="128" />
-  </component>
   <component name="CompilerConfiguration">
     <option name="DEFAULT_COMPILER" value="Javac" />
     <resourceExtensions>
@@ -81,11 +74,8 @@
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
   <component name="EclipseCompilerSettings">
-    <option name="DEBUGGING_INFO" value="true" />
     <option name="GENERATE_NO_WARNINGS" value="true" />
     <option name="DEPRECATION" value="false" />
-    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
-    <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="EclipseEmbeddedCompilerSettings">
     <option name="DEBUGGING_INFO" value="true" />
@@ -95,1072 +85,22 @@
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
-  <component name="FacetAutodetectingManager">
-    <autodetection-disabled>
-      <facet-type id="Scala">
-        <modules>
-          <module name="files">
-            <files>
-              <file url="file://$PROJECT_DIR$/../../test/files/android/HelloAndroid.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/ant/fsc.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/ant/scalac.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/ant/scaladoc.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/cldc/randoms.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/cli/test1/Main.check.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/cli/test1/Main.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/cli/test2/Main.check.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/cli/test2/Main.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/cli/test3/Main.check.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/cli/test3/Main.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/JavaInteraction.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/bigints.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/bug560bis.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/inner.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/manifests.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/methvsfield.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/natives.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/nest.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/protectedacc.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/serialization.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/t0632.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/t1116.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/t1143-2/t1143-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/t1143.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/typerep.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/unittest_io.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/unittest_xml.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xml01.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xml02.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xml03syntax.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xml04embed.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xmlattr.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xmlmore.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xmlpull.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm/xmlstuff.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/annotations.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/bug676.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/bug680.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/console.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/genericNest.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/interpreter.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/outerEnum.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/stringbuilder.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/sync-var.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/t0014.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/t1461.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/t1464/MyTrait.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/throws-annot.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/jvm5/typerep.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/abstract.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/accesses.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/annot-nonconst.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/badtok-1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/badtok-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/badtok-3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1010.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1011.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1017.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1041.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1106.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1112.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug112706A.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1181.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1183.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1224.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1241.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1275.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1392.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1523.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1623.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug1838.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug200.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug276.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug278.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug284.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug343.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug391.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug409.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug412.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug414.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug418.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug421.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug452.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug473.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug500.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug501.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug510.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug512.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug515.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug520.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug521.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug545.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug550.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug555.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug556.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug558.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug562.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug563.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug565.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug576.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug585.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug588.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug591.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug593.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug608.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug630.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug631.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug633.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug639.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug649.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug650.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug663.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug664.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug667.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug668.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug677.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug691.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug692.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug693.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug696.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug700.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug708.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug712.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug715.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug729.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug752.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug765.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug766.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug779.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug783.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug798.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug800.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug835.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug836.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug845.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug846.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug856.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug875.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug876.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug877.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug882.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug900.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug908.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug909.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug910.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug935.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug944.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug960.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug961.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug987.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/bug997.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/checksensible.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/constrs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/cyclics.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/divergent-implicit.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/faculty.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/forward.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/gadts1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/higherkind_novalue.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/imp2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/implicits.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/lazy-override.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/lazyvals.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/lubs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/mixins.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/multi-array.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/nopredefs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/null-unsoundness.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/overload.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/parstar.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/patmatexhaust.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/patternalts.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-after-terminal/src/ThePlugin.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-after-terminal/testsource.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-before-parser/src/ThePlugin.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-before-parser/testsource.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-cyclic-dependency/src/ThePlugin.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-cyclic-dependency/testsource.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-multiple-rafter/src/ThePlugin.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-multiple-rafter/testsource.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-rafter-before-1/src/ThePlugin.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-rafter-before-1/testsource.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-rightafter-terminal/src/ThePlugin.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/plugin-rightafter-terminal/testsource.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/sabin2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/saito.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/sensitive.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/structural.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/switch.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0003.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0015.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0117.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0152.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0204.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0207.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0209.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0214.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0218.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0226.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0259.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0345.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0351.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0503.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0528neg.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0590.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0606.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0673/Test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0699/A.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0699/B.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0764.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0842.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0899.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t0903.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1009.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1033.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1049.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1163.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1168.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1215.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1371.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/t1659.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/tailrec.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/tcpoly_bounds.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/tcpoly_override.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/tcpoly_typealias.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/tcpoly_variance.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/tcpoly_variance_enforce.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/typeerror.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/unreachablechar.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/variances.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/viewtest.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/volatile-intersection.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/volatile.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/wellkinded_app.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/wellkinded_app2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/wellkinded_bounds.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/wellkinded_wrongarity.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/wellkinded_wrongarity2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/xmlcorner.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/xmltruncated1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/xmltruncated2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/xmltruncated3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/xmltruncated4.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/xmltruncated5.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/neg/xmltruncated6.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/A.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/List1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/MailBox.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/NoCyclicReference.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/S1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/S3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/S5.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/S8.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/Transactions.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/X.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/Z.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/abstract.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/aliases.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/annot-inner.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/annotations.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/arrays2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/attributes.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bounds.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0002.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0017.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0020.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0029.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0030.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0031.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0032.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0036.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0039.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0049.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0053.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0054.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0061.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0064.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0066.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0068.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0069.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0076.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0081.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0082.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0085.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0091.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0093.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0123.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0204.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0304.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0325.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0422.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0599.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug0646.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1000.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1001.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1006.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1014.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1034.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1049.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1050.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1056.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1070.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1075.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1085.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1087.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1090.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1107.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1119.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1123.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug112606A.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1136.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug115.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug116.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1168.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1185.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug119.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1203.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug121.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1210.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1210a.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug122.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1237.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug124.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1241.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1279a.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1292.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1385.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug151.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1565.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug159.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug160.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug175.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug177.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug183.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug1858.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug201.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug210.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug211.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug229.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug245.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug247.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug262.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug267.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug284.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug287.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug289.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug295.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug296.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug304.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug318.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug319.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug342.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug344.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug348plus.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug359.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug360.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug361.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug372.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug374.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug389.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug397.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug402.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug404.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug415.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug419.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug422.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug430-feb09.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug430.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug432.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug439.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug443.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug460.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug514.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug516.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug522.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug530.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug531.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug532.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug533.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug566.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug577.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug592.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug595.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug596.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug599.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug602.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug604.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug607.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug611.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug613.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug615.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug616.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug628.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug640.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug651.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug661.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug675.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug684.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug690.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug694.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug697.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug698.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug703.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug704.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug711.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug720.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug756.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug757.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug757a.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug758.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug759.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug762.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug767.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug780.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug788.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug789.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug796.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug802.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug803.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug805.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug807.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug812.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug839.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug851.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug873.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug880.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug892.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug911.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug927.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/bug946.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/builders.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/caseaccs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/cfcrash.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/channels.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/cls.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/cls1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/clsrefine.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/code.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/collections.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/comp-rec-test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/compile.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/compile1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/compound.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/constfold.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/contrib467.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/contrib701.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/cyclics.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/escapes2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/eta.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/exceptions.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/functions.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/gadt-gilles.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/gadts2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/gosh.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/gui.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/homonym.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/imp2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/imports.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/infer.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/infer2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/inferbroadtype.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/init.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/itay.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/jesper.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/kinzer.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/ksbug1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/lambda.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/lambdalift.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/lambdalift1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/largecasetest.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/listpattern.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/localmodules.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/looping-jsig.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/manifest1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/matchStarlift.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/matthias1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/matthias3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/matthias4.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/matthias5.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/maxim1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/michel1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/michel2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/michel3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/michel4.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/michel5.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/michel6.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/mixins.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/modules.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/modules1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/moduletrans.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/needstypeearly.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/nested.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/nested2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/null.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/nullary.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/nullary_poly.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/override.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/partialfun.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/pat_gilles.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/pat_iuli.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/patterns.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/patterns1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/patterns1213.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/patterns2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/patterns3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/philippe1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/philippe2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/philippe3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/philippe4.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/pmbug.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/proj-rec-test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/propagate.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/protected-t1010.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/rebind.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/return_thistype.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/scoping1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/scoping2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/scoping3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/seqtest2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/simplelists.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/stable.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/strings.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/sudoku.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0055.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0154.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0165.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0227.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0231.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0273.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0288/Foo.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0301.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0438.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0453.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0504.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0586.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0591.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0651.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0654.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0674.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0710.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0770.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0774/deathname.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0774/unrelated.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0786.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0851.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0872.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0904.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0905.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t0999.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1001.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1027.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1049.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1059.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1087.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1107/O.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1107/T.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1131.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1146.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1147.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1159.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1164.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1280.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1380/hallo.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1391.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1409/ConcreteImpl.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1438.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1439.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1480.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1648.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1675.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1761.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1789.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/t1840/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_boundedmonad.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_bounds1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_checkkinds_mix.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_gm.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_higherorder_bound_method.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_late_method_params.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_method.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_overloaded.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_param_scoping.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_poly.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_return_overriding.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_seq.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_seq_typealias.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_subst.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_typeapp.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_typesub.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_variance.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tcpoly_wildcards.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/ted.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/test1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/test2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/test4.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/test4a.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/test4refine.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/test5.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/test5refine.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/testcast.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/thistype.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/thistypes.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/ticket0137.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tinondefcons.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/traits.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/tryexpr.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/typealias_dubious.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/typealiases.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/typerep-stephane.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/typerep.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/typesafecons.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unapply.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unapplyComplex.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unapplyContexts2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unapplyGeneric.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unapplyNeedsMemberType.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unapplySeq.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unapplyVal.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/unicode-decode.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/valdefs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/variances.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/viewtest1.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos/viewtest2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/chang/Test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/ilya/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/ilya2/A.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/signatures/sig.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t0695/Test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1101/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1102/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1150/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1152/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1176/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1196/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1197/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1203/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1230/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1231/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1232/S.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1263/test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/pos5/t1711/Seq.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug597/Main.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug597/Test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug687/QueryA.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug687/QueryB.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug722/IfElse.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug722/Parser.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug722/ScanBased.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug735/ScalaExpressions.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug735/ScalaTyper.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug743/BracesXXX.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug743/ParserXXX.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug785/ScalaNewTyper.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug785/ScalaTrees.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug831/NewScalaParserXXX.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/res/bug831/NewScalaTestXXX.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-01.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-02.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-03.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-04.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-05.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-06.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-07.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-08.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-09.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-10.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/Course-2002-13.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/NestedClasses.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/absoverride.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/amp.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/arrays.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/arybufgrow.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bitsets.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/boolexprs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/boolord.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bridges.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug0325.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug1074.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug1192.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug1220.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug216.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug405.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug428.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug429.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug594.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug601.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug603.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug627.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug629.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug657.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug744.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug889.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug920.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug949.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bug978.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/bugs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/byname.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/caseclasses.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/checked.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/classof.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/collection-stacks.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/collections.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/colltest.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/complicatedmatch.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/constrained-types.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/constructors.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/contrib674.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/ctor-order.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/deeps.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/docgenerator.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/enums.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/exceptions-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/exceptions.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/existentials.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/exoticnames.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/fors.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/forvaleq.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/gadts.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/impconvtimes.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/implicits.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/imports.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/infiniteloop.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/infix.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/intmap.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/iq.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/issue192.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/iterables.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/iterators.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/json.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/jtptest.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/lazy-exprs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/lazy-locals.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/lazy-override.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/lazy-traits.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/lisp.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/lists.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/literals.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/map_test.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/matcharraytail.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/matchbytes.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/matchemptyarray.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/matchintasany.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/matchonstream.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/misc.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/missingparams.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/mixins.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/multi-array.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/overloads.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/patmatnew.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/promotion.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/randomAccessSeq-apply.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/range.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/retclosure.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/retsynch.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/richs.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/runtime-richChar.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/runtime.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/slices.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/sort.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/streams.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/structural.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/syncchannel.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0005.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0017.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0042.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0091.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0412.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0421.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0485.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0486.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0508.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0528.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0607.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0631.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0663.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0668.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0677.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0700.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0807.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0883.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0911.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t0936.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1323.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1368.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1423.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1500.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1501.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1505.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1524.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1535.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1618.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1620.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1718.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1747.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/t1829.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/tailcalls.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/tcpoly_monads.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/tcpoly_overriding.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/tcpoly_parseridioms.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/try-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/try.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/tuples.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/typealias_overriding.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/unapply.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/unapplyArray.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/unboxingBug.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/unittest_collection.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/unittest_io.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/verify-ctor.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/run/withIndex.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/scalacheck/list.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/script/fact.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/script/second.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/script/t1015.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/script/t1017.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/script/utf8.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/ackermann.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/ary.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/binarytrees.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/binarytrees.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/binarytrees.scala-3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/chameneos.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/except.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/fannkuch.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/fannkuch.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/fibo.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/harmonic.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/hash.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/hash2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/hello.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/knucleotide.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/knucleotide.scala-3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/lists.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/message.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/nbody.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/nestedloop.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/nsieve.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/nsieve.scala-3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/nsievebits.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/nsievebits.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/nsievebits.scala-3.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/objinst.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/partialsums.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/partialsums.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/recursive.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/regexdna.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/spectralnorm.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/strcat.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/sumcol.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/sumcol.scala-2.scala" />
-              <file url="file://$PROJECT_DIR$/../../test/files/shootout/takfp.scala" />
-            </files>
-          </module>
-          <module name="library">
-            <files>
-              <file url="file://$PROJECT_DIR$/../android-library/scala/ScalaObject.scala" />
-              <file url="file://$PROJECT_DIR$/../android-library/scala/reflect/ScalaBeanInfo.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Application.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/BigDecimal.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/BigInt.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Console.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Math.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Numeric.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Ordering.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Predef.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Range.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/Symbol.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/collection/JavaConversions.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/collection/immutable/List.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/collection/immutable/PagedSeq.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/collection/mutable/OpenHashMap.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/collection/mutable/StringBuilder.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/collection/mutable/WeakHashMap.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/compat/Platform.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/concurrent/DelayedLazyVal.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/concurrent/jolib.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/concurrent/ops.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/concurrent/pilib.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/io/BufferedSource.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/io/BytePickle.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/io/Codec.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/io/File.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/io/Position.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/io/Source.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/io/UTF8Codec.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/mobile/Code.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/mobile/Location.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/net/Utility.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/ref/PhantomReference.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/ref/ReferenceQueue.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/ref/ReferenceWrapper.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/ref/SoftReference.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/ref/WeakReference.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/reflect/Invocation.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/reflect/Manifest.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/reflect/ScalaBeanInfo.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/MethodCache.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/NonLocalReturnControl.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichChar.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichClass.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichDouble.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichException.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichFloat.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichInt.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichLong.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/RichString.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/runtime/StringAdd.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/testing/Benchmark.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/testing/SUnit.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/testing/Show.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/text/Document.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/ClassLoader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/DynamicVariable.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/Marshal.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/NameTransformer.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/Properties.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/Random.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/automata/BaseBerrySethi.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/automata/DetWordAutom.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/automata/Inclusion.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/automata/NondetWordAutom.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/automata/SubsetConstruction.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/automata/WordBerrySethi.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/control/Exception.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/grammar/HedgeRHS.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/grammar/TreeRHS.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/logging/ConsoleLogger.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/logging/Logged.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/matching/Regex.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/ast/AbstractSyntax.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/ast/Binders.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/ImplicitConversions.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/JavaTokenParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/PackratParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/Parsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/RegexParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/lexical/Lexical.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/lexical/Scanners.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/lexical/StdLexical.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/syntactical/StandardTokenParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/syntactical/StdTokenParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/syntactical/TokenParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/testing/RegexTest.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinator/testing/Tester.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/$tilde.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/ImplicitConversions.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/Parsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/lexical/Lexical.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/lexical/Scanners.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/lexical/StdLexical.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/syntactical/BindingParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/syntactical/StdTokenParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/syntactical/TokenParsers.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/combinatorold/testing/Tester.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/CharArrayPosition.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/CharArrayReader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/CharSequenceReader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/NoPosition.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/OffsetPosition.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/PagedSeqReader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/Position.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/Positional.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/Reader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/input/StreamReader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/json/JSON.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/json/Lexer.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/json/Parser.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/syntax/StdTokens.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/parsing/syntax/Tokens.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/regexp/Base.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/regexp/PointedHedgeExp.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/regexp/SyntaxError.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/util/regexp/WordExp.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Atom.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Attribute.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Comment.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Document.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Elem.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/EntityRef.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Group.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/HasKeyValue.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/MalformedAttributeException.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/MetaData.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/NamespaceBinding.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Node.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/NodeBuffer.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/NodeSeq.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/NodeTraverser.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Null.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/PCData.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Parsing.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/PrefixedAttribute.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/PrettyPrinter.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/ProcInstr.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/QNode.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/SpecialNode.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Text.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/TextBuffer.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/TopScope.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/TypeSymbol.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Unparsed.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/UnprefixedAttribute.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Utility.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/XML.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/Xhtml.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/ContentModel.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/ContentModelParser.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/DTD.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/Decl.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/DocType.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/DtdTypeSymbol.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/ElementValidator.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/ExternalID.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/Scanner.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/Tokens.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/dtd/ValidationException.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/factory/Binder.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/factory/LoggedNodeFactory.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/factory/NodeFactory.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/factory/XMLLoader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/include/CircularIncludeException.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/include/UnavailableResourceException.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/include/XIncludeException.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/include/sax/EncodingHeuristics.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/include/sax/Main.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/include/sax/XIncludeFilter.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/include/sax/XIncluder.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/ConstructingHandler.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/ConstructingParser.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/DefaultMarkupHandler.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/ExternalSources.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/FactoryAdapter.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/FatalError.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/MarkupHandler.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/MarkupParser.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/NoBindingFactoryAdapter.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/TokenTests.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/ValidatingMarkupHandler.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/XhtmlEntities.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/parsing/XhtmlParser.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/path/Expression.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/persistent/CachedFileStorage.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/persistent/Index.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/persistent/IndexedStorage.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/persistent/SetStorage.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/pull/XMLEvent.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/pull/XMLEventReader.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/transform/BasicTransformer.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/transform/RewriteRule.scala" />
-              <file url="file://$PROJECT_DIR$/../dotnet-library/scala/xml/transform/RuleTransformer.scala" />
-              <file url="file://$PROJECT_DIR$/../scalap/scala/tools/scalap/scalax/rules/scalasig/ScalaSigPrinter.scala" />
-            </files>
-          </module>
-        </modules>
-      </facet-type>
-    </autodetection-disabled>
-  </component>
   <component name="IdProvider" IDEtalkID="522B472C2EA573563CC2BA93160270BE" />
   <component name="InspectionProjectProfileManager">
+    <profiles>
+      <profile version="1.0" is_locked="false">
+        <option name="myName" value="Project Default" />
+        <option name="myLocal" value="false" />
+        <inspection_tool class="SpellCheckingInspection" enabled="false" level="TYPO" enabled_by_default="false">
+          <option name="processCode" value="true" />
+          <option name="processLiterals" value="true" />
+          <option name="processComments" value="true" />
+        </inspection_tool>
+      </profile>
+    </profiles>
+    <option name="PROJECT_PROFILE" value="Project Default" />
+    <option name="USE_PROJECT_PROFILE" value="true" />
+    <version value="1.0" />
     <list size="5">
       <item index="0" class="java.lang.String" itemvalue="TYPO" />
       <item index="1" class="java.lang.String" itemvalue="SERVER PROBLEM" />
@@ -1168,13 +108,6 @@
       <item index="3" class="java.lang.String" itemvalue="WARNING" />
       <item index="4" class="java.lang.String" itemvalue="ERROR" />
     </list>
-  </component>
-  <component name="JavacSettings">
-    <option name="DEBUGGING_INFO" value="true" />
-    <option name="GENERATE_NO_WARNINGS" value="false" />
-    <option name="DEPRECATION" value="true" />
-    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
-    <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="JavadocGenerationManager">
     <option name="OUTPUT_DIRECTORY" />
@@ -1192,14 +125,6 @@
     <option name="HEAP_SIZE" />
     <option name="LOCALE" />
     <option name="OPEN_IN_BROWSER" value="true" />
-  </component>
-  <component name="JikesSettings">
-    <option name="JIKES_PATH" value="" />
-    <option name="DEBUGGING_INFO" value="true" />
-    <option name="DEPRECATION" value="true" />
-    <option name="GENERATE_NO_WARNINGS" value="false" />
-    <option name="IS_EMACS_ERRORS_MODE" value="true" />
-    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
   </component>
   <component name="Palette2">
     <group name="Swing">
@@ -1328,6 +253,7 @@
   <component name="ProjectDictionaryState">
     <dictionary name="dragos" />
     <dictionary name="odersky" />
+    <dictionary name="luc" />
   </component>
   <component name="ProjectKey">
     <option name="state" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk/scala-lang.ipr" />
@@ -1354,22 +280,342 @@
       </value>
     </option>
   </component>
-  <component name="RmicSettings">
-    <option name="IS_EANABLED" value="false" />
-    <option name="DEBUGGING_INFO" value="true" />
-    <option name="GENERATE_NO_WARNINGS" value="false" />
-    <option name="GENERATE_IIOP_STUBS" value="false" />
-    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
-  </component>
   <component name="ScalaSettings">
     <option name="MAXIMUM_HEAP_SIZE" value="1024" />
     <option name="DEPRECATION" value="false" />
     <option name="UNCHECKED" value="false" />
   </component>
+  <component name="ScalacSettings">
+    <option name="MAXIMUM_HEAP_SIZE" value="1024" />
+  </component>
   <component name="SvnBranchConfigurationManager">
     <option name="myConfigurationMap">
       <map>
         <entry key="$PROJECT_DIR$/../..">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../../META-INF">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../../lib">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../actors">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../compiler">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../dbc">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../library">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../manual">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../partest">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../scalap">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../swing">
+          <value>
+            <SvnBranchConfiguration>
+              <option name="branchMap">
+                <map>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
+                    <value>
+                      <list />
+                    </value>
+                  </entry>
+                </map>
+              </option>
+              <option name="branchUrls">
+                <list>
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
+                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
+                </list>
+              </option>
+              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
+            </SvnBranchConfiguration>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/../../test">
           <value>
             <SvnBranchConfiguration>
               <option name="branchMap">
@@ -1403,40 +649,23 @@
   </component>
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="svn" />
+    <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
   </component>
   <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
-    <library name="Project ant library">
+    <library name="lib">
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../lib/ant/ant-contrib.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/ant/vizant.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/ant/maven-ant-tasks-2.0.9.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/ant/ant-dotnet-1.0.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="Project Scala SDK">
-      <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../lib/jline.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/ScalaCheck.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/jline.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/forkjoin.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="ant">
+    <library name="quicklib">
       <CLASSES>
-        <root url="jar:///../share/ant/lib/ant.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="locker">
-      <CLASSES>
-        <root url="file://$PROJECT_DIR$/../../build/locker/classes/library" />
-        <root url="file://$PROJECT_DIR$/../../build/locker/classes/compiler" />
+        <root url="file://$PROJECT_DIR$/../../build/quick/classes/library" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />

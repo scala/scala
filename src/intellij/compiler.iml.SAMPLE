@@ -4,24 +4,31 @@
     <facet type="Scala" name="Scala">
       <configuration>
         <option name="takeFromSettings" value="true" />
-        <option name="myScalaCompilerJarPath" value="build/locker/classes/compiler lib/fjbg.jar lib/msil.jar" />
-        <option name="myScalaSdkJarPath" value="build/locker/classes/library" />
+        <option name="myScalaCompilerJarPaths">
+          <array>
+            <option value="$MODULE_DIR$/../../build/locker/classes/compiler" />
+            <option value="$MODULE_DIR$/../../lib/fjbg.jar" />
+            <option value="$MODULE_DIR$/../../lib/msil.jar" />
+          </array>
+        </option>
+        <option name="myScalaSdkJarPaths">
+          <array>
+            <option value="$MODULE_DIR$/../../build/locker/classes/library" />
+          </array>
+        </option>
       </configuration>
     </facet>
   </component>
-  <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/../../build/quick/classes/compiler" />
-    <output-test url="file://$MODULE_DIR$/../../out/test/compiler" />
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$/../compiler">
       <sourceFolder url="file://$MODULE_DIR$/../compiler" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Project ant library" level="project" />
-    <orderEntry type="library" name="Project Scala SDK" level="project" />
-    <orderEntry type="library" name="ant" level="project" />
-    <orderEntry type="library" name="locker" level="project" />
+    <orderEntry type="library" name="quicklib" level="project" />
+    <orderEntry type="library" name="lib" level="project" />
+    <orderEntry type="library" name="ant" level="application" />
   </component>
 </module>
 

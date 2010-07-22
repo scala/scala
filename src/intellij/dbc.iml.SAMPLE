@@ -2,7 +2,18 @@
 <module relativePaths="true" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Scala" name="Scala">
-      <configuration />
+      <configuration>
+        <option name="myScalaCompilerJarPaths">
+          <array>
+            <option value="$MODULE_DIR$/../../../../Library/Application Support/IntelliJIdea90CE/Scala/lib/scala-compiler.jar" />
+          </array>
+        </option>
+        <option name="myScalaSdkJarPaths">
+          <array>
+            <option value="$MODULE_DIR$/../../../../Library/Application Support/IntelliJIdea90CE/Scala/lib/scala-library.jar" />
+          </array>
+        </option>
+      </configuration>
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
@@ -14,9 +25,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="compiler" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="actors" />
-    <orderEntry type="library" name="Project ant library" level="project" />
-    <orderEntry type="library" name="Project Scala SDK" level="project" />
+    <orderEntry type="library" name="lib" level="project" />
   </component>
 </module>
 
