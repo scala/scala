@@ -545,7 +545,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   }
 
   def isEmptyJavaObject(aSym: Symbol): Boolean = {
-    val hasMembers = aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
+    def hasMembers = aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
     aSym.isModule && aSym.hasFlag(Flags.JAVA) && !hasMembers
   }
 
