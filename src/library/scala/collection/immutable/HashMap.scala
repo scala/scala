@@ -15,7 +15,7 @@ import generic._
 import annotation.unchecked.uncheckedVariance
 
 
-import parallel.immutable.ParallelHashTrie
+import parallel.immutable.ParHashTrie
 
 
 /** This class implements immutable maps using a hash trie.
@@ -36,7 +36,7 @@ import parallel.immutable.ParallelHashTrie
  *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(2L)
-class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Parallelizable[ParallelHashTrie[A, B]] {
+class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Parallelizable[ParHashTrie[A, B]] {
 
   override def size: Int = 0
 
@@ -88,7 +88,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
 
   protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int): HashMap[A, B1] = that
 
-  def par = ParallelHashTrie.fromTrie(this)
+  def par = ParHashTrie.fromTrie(this)
 
 }
 
