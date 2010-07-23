@@ -2,7 +2,7 @@ package scala.collection
 
 
 
-import parallel.ParallelIterableLike
+import parallel.ParIterableLike
 
 
 
