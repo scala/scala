@@ -2,23 +2,23 @@ package scala.collection.generic
 
 
 
-import scala.collection.parallel.ParallelMap
-import scala.collection.parallel.ParallelMapLike
+import scala.collection.parallel.ParMap
+import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.mutable.Builder
 
 
 
 
-/** A template class for companion objects of `ParallelMap` and subclasses thereof.
+/** A template class for companion objects of `ParMap` and subclasses thereof.
  *  This class extends `TraversableFactory` and provides a set of operations to create `$Coll` objects.
  *
  *  @define $coll parallel map
- *  @define $Coll ParallelMap
+ *  @define $Coll ParMap
  */
-abstract class ParallelMapFactory[CC[X, Y] <: ParallelMap[X, Y] with ParallelMapLike[X, Y, CC[X, Y], _]]
+abstract class ParMapFactory[CC[X, Y] <: ParMap[X, Y] with ParMapLike[X, Y, CC[X, Y], _]]
 extends MapFactory[CC]
-   with GenericParallelMapCompanion[CC] {
+   with GenericParMapCompanion[CC] {
 
   type MapColl = CC[_, _]
 

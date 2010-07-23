@@ -35,6 +35,7 @@ trait Tasks {
    *  Finally, it defines the task result of type `U`.
    */
   trait Task[R, +Tp] {
+    type Result = R
     def repr = this.asInstanceOf[Tp]
     /** Code that gets called after the task gets started - it may spawn other tasks instead of calling `leaf`. */
     def compute

@@ -27,24 +27,23 @@ import scala.collection.IterableViewLike
  *
  *  @since 2.8
  */
-trait ParallelIterableViewLike[+T,
-                               +Coll <: Parallel,
-                               +CollSeq,
-                               +This <: ParallelIterableView[T, Coll, CollSeq] with ParallelIterableViewLike[T, Coll, CollSeq, This, ThisSeq],
-                               +ThisSeq <: IterableView[T, CollSeq] with IterableViewLike[T, CollSeq, ThisSeq]]
+trait ParIterableViewLike[+T,
+                          +Coll <: Parallel,
+                          +CollSeq,
+                          +This <: ParIterableView[T, Coll, CollSeq] with ParIterableViewLike[T, Coll, CollSeq, This, ThisSeq],
+                          +ThisSeq <: IterableView[T, CollSeq] with IterableViewLike[T, CollSeq, ThisSeq]]
 extends IterableView[T, Coll]
    with IterableViewLike[T, Coll, This]
-   with ParallelIterable[T]
-   with ParallelIterableLike[T, This, ThisSeq]
+   with ParIterable[T]
+   with ParIterableLike[T, This, ThisSeq]
 {
   self =>
 
   override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner");
 
-  //type SCPI = SignalContextPassingIterator[ParallelIterator] // complains when overriden further in inh. hier., TODO check it out
-  type CPI = SignalContextPassingIterator[ParallelIterator]
+  type CPI = SignalContextPassingIterator[ParIterator]
 
-  trait Transformed[+S] extends ParallelIterableView[S, Coll, CollSeq] with super.Transformed[S]
+  trait Transformed[+S] extends ParIterableView[S, Coll, CollSeq] with super.Transformed[S]
 
 }
 

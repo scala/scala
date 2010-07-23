@@ -13,7 +13,7 @@ import scala.collection.generic.VolatileAbort
 
 
 // TODO update docs!!
-/** A template trait for sequences of type `ParallelSeq[T]`, representing
+/** A template trait for sequences of type `ParSeq[T]`, representing
  *  parallel sequences with element type `T`.
  *
  *  $parallelseqinfo
@@ -36,12 +36,12 @@ import scala.collection.generic.VolatileAbort
  *  @author prokopec
  *  @since 2.8
  */
-trait ParallelSeqLike[+T, +Repr <: Parallel, +Sequential <: Seq[T] with SeqLike[T, Sequential]]
+trait ParSeqLike[+T, +Repr <: Parallel, +Sequential <: Seq[T] with SeqLike[T, Sequential]]
 extends scala.collection.SeqLike[T, Repr]
-   with ParallelIterableLike[T, Repr, Sequential] {
-  self =>
+   with ParIterableLike[T, Repr, Sequential] {
+self =>
 
-  type SuperParallelIterator = super.ParallelIterator
+  type SuperParIterator = super.ParIterator
 
   /** An iterator that can be split into arbitrary subsets of iterators.
    *  The self-type requirement ensures that the signal context passing behaviour gets mixed in
@@ -50,18 +50,18 @@ extends scala.collection.SeqLike[T, Repr]
    *  '''Note:''' In concrete collection classes, collection implementers might want to override the iterator
    *  `reverse2builder` method to ensure higher efficiency.
    */
-  trait ParallelIterator extends ParallelSeqIterator[T, Repr] with super.ParallelIterator {
-    me: SignalContextPassingIterator[ParallelIterator] =>
-    def split: Seq[ParallelIterator]
-    def psplit(sizes: Int*): Seq[ParallelIterator]
+  trait ParIterator extends ParSeqIterator[T, Repr] with super.ParIterator {
+  me: SignalContextPassingIterator[ParIterator] =>
+    def split: Seq[ParIterator]
+    def psplit(sizes: Int*): Seq[ParIterator]
   }
 
   /** A stackable modification that ensures signal contexts get passed along the iterators.
    *  A self-type requirement in `ParallelIterator` ensures that this trait gets mixed into
    *  concrete iterators.
    */
-  trait SignalContextPassingIterator[+IterRepr <: ParallelIterator]
-  extends ParallelIterator with super.SignalContextPassingIterator[IterRepr] {
+  trait SignalContextPassingIterator[+IterRepr <: ParIterator]
+  extends ParIterator with super.SignalContextPassingIterator[IterRepr] {
     // Note: See explanation in `ParallelIterableLike.this.SignalContextPassingIterator`
     // to understand why we do the cast here, and have a type parameter.
     // Bottomline: avoiding boilerplate and fighting against inability to override stackable modifications.
@@ -74,22 +74,22 @@ extends scala.collection.SeqLike[T, Repr]
 
   /** A convenient shorthand for the signal context passing stackable modification.
    */
-  type SCPI <: SignalContextPassingIterator[ParallelIterator]
+  type SCPI <: SignalContextPassingIterator[ParIterator]
 
   /** A more refined version of the iterator found in the `ParallelIterable` trait,
    *  this iterator can be split into arbitrary subsets of iterators.
    *
    *  @return       an iterator that can be split into subsets of precise size
    */
-  protected def parallelIterator: ParallelIterator
+  protected def parallelIterator: ParIterator
 
   override def iterator: PreciseSplitter[T] = parallelIterator
 
   override def size = length
 
   /** Used to iterate elements using indices */
-  protected abstract class Elements(start: Int, val end: Int) extends ParallelIterator with BufferedIterator[T] {
-    me: SignalContextPassingIterator[ParallelIterator] =>
+  protected abstract class Elements(start: Int, val end: Int) extends ParIterator with BufferedIterator[T] {
+    me: SignalContextPassingIterator[ParIterator] =>
 
     private var i = start
 
@@ -110,7 +110,7 @@ extends scala.collection.SeqLike[T, Repr]
     def psplit(sizes: Int*) = {
       val incr = sizes.scanLeft(0)(_ + _)
       for ((from, until) <- incr.init zip incr.tail) yield {
-        new Elements(start + from, (start + until) min end) with SignalContextPassingIterator[ParallelIterator]
+        new Elements(start + from, (start + until) min end) with SignalContextPassingIterator[ParIterator]
       }
     }
 
@@ -203,7 +203,7 @@ extends scala.collection.SeqLike[T, Repr]
    *  @param offset  the starting offset for the search
    *  @return        `true` if there is a sequence `that` starting at `offset` in this sequence, `false` otherwise
    */
-  override def startsWith[S](that: Seq[S], offset: Int): Boolean = that ifParallelSeq { pthat =>
+  override def startsWith[S](that: Seq[S], offset: Int): Boolean = that ifParSeq { pthat =>
     if (offset < 0 || offset >= length) offset == length && pthat.length == 0
     else if (pthat.length == 0) true
     else if (pthat.length > length - offset) false
@@ -213,7 +213,7 @@ extends scala.collection.SeqLike[T, Repr]
     }
   } otherwise super.startsWith(that, offset)
 
-  override def sameElements[U >: T](that: Iterable[U]): Boolean = that ifParallelSeq { pthat =>
+  override def sameElements[U >: T](that: Iterable[U]): Boolean = that ifParSeq { pthat =>
     val ctx = new DefaultSignalling with VolatileAbort
     length == pthat.length && executeAndWaitResult(new SameElements(parallelIterator assign ctx, pthat.parallelIterator))
   } otherwise super.sameElements(that)
@@ -226,7 +226,7 @@ extends scala.collection.SeqLike[T, Repr]
    *  @param that     the sequence to test
    *  @return         `true` if this $coll has `that` as a suffix, `false` otherwise
    */
-  override def endsWith[S](that: Seq[S]): Boolean = that ifParallelSeq { pthat =>
+  override def endsWith[S](that: Seq[S]): Boolean = that ifParSeq { pthat =>
     if (that.length == 0) true
     else if (that.length > length) false
     else {
@@ -237,8 +237,8 @@ extends scala.collection.SeqLike[T, Repr]
   } otherwise super.endsWith(that)
 
   override def patch[U >: T, That](from: Int, patch: Seq[U], replaced: Int)
-  (implicit bf: CanBuildFrom[Repr, U, That]): That = if (patch.isParallelSeq && bf.isParallel) {
-    val that = patch.asParallelSeq
+  (implicit bf: CanBuildFrom[Repr, U, That]): That = if (patch.isParSeq && bf.isParallel) {
+    val that = patch.asParSeq
     val pbf = bf.asParallel
     val realreplaced = replaced min (length - from)
     val pits = parallelIterator.psplit(from, replaced, length - from - realreplaced)
@@ -267,16 +267,22 @@ extends scala.collection.SeqLike[T, Repr]
   } otherwise super.updated(index, elem)
 
   override def +:[U >: T, That](elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
-    patch(0, mutable.ParallelArray(elem), 0)
+    patch(0, mutable.ParArray(elem), 0)
   }
 
   override def :+[U >: T, That](elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = {
-    patch(length, mutable.ParallelArray(elem), 0)
+    patch(length, mutable.ParArray(elem), 0)
   }
 
   override def padTo[U >: T, That](len: Int, elem: U)(implicit bf: CanBuildFrom[Repr, U, That]): That = if (length < len) {
     patch(length, new immutable.Repetition(elem, len - length), 0)
-  } else patch(length, Nil, 0)
+  } else patch(length, Nil, 0);
+
+  override def zip[U >: T, S, That](that: Iterable[S])(implicit bf: CanBuildFrom[Repr, (U, S), That]): That = if (bf.isParallel && that.isParSeq) {
+    val pbf = bf.asParallel
+    val thatseq = that.asParSeq
+    executeAndWaitResult(new Zip(length min thatseq.length, pbf, parallelIterator, thatseq.parallelIterator) mapResult { _.result });
+  } else super.zip(that)(bf)
 
   /** Tests whether every element of this $coll relates to the
    *  corresponding element of another parallel sequence by satisfying a test predicate.
@@ -290,14 +296,14 @@ extends scala.collection.SeqLike[T, Repr]
    *                   `p(x, y)` is `true` for all corresponding elements `x` of this $coll
    *                   and `y` of `that`, otherwise `false`
    */
-  override def corresponds[S](that: Seq[S])(p: (T, S) => Boolean): Boolean = that ifParallelSeq { pthat =>
+  override def corresponds[S](that: Seq[S])(p: (T, S) => Boolean): Boolean = that ifParSeq { pthat =>
     val ctx = new DefaultSignalling with VolatileAbort
     length == pthat.length && executeAndWaitResult(new Corresponds(p, parallelIterator assign ctx, pthat.parallelIterator))
   } otherwise super.corresponds(that)(p)
 
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
 
-  override def view = new ParallelSeqView[T, Repr, Sequential] {
+  override def view = new ParSeqView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr
     def length = self.length
     def apply(idx: Int) = self(idx)
@@ -309,15 +315,15 @@ extends scala.collection.SeqLike[T, Repr]
 
   /* tasks */
 
-  protected def down(p: SuperParallelIterator) = p.asInstanceOf[ParallelIterator]
+  protected def down(p: SuperParIterator) = p.asInstanceOf[ParIterator]
 
   protected trait Accessor[R, Tp] extends super.Accessor[R, Tp] {
-    val pit: ParallelIterator
+    val pit: ParIterator
   }
 
   protected trait Transformer[R, Tp] extends Accessor[R, Tp] with super.Transformer[R, Tp]
 
-  protected[this] class SegmentLength(pred: T => Boolean, from: Int, val pit: ParallelIterator)
+  protected[this] class SegmentLength(pred: T => Boolean, from: Int, val pit: ParIterator)
   extends Accessor[(Int, Boolean), SegmentLength] {
     var result: (Int, Boolean) = null
     def leaf(prev: Option[(Int, Boolean)]) = if (from < pit.indexFlag) {
@@ -326,7 +332,7 @@ extends scala.collection.SeqLike[T, Repr]
       result = (seglen, itsize == seglen)
       if (!result._2) pit.setIndexFlagIfLesser(from)
     } else result = (0, false)
-    def newSubtask(p: SuperParallelIterator) = throw new UnsupportedOperationException
+    def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining)) yield new SegmentLength(pred, from + untilp, p)
@@ -334,7 +340,7 @@ extends scala.collection.SeqLike[T, Repr]
     override def merge(that: SegmentLength) = if (result._2) result = (result._1 + that.result._1, that.result._2)
   }
 
-  protected[this] class IndexWhere(pred: T => Boolean, from: Int, val pit: ParallelIterator)
+  protected[this] class IndexWhere(pred: T => Boolean, from: Int, val pit: ParIterator)
   extends Accessor[Int, IndexWhere] {
     var result: Int = -1
     def leaf(prev: Option[Int]) = if (from < pit.indexFlag) {
@@ -344,7 +350,7 @@ extends scala.collection.SeqLike[T, Repr]
         pit.setIndexFlagIfLesser(from)
       }
     }
-    def newSubtask(p: SuperParallelIterator) = throw new UnsupportedOperationException
+    def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(from)(_ + _.remaining)) yield new IndexWhere(pred, untilp, p)
@@ -354,7 +360,7 @@ extends scala.collection.SeqLike[T, Repr]
     }
   }
 
-  protected[this] class LastIndexWhere(pred: T => Boolean, pos: Int, val pit: ParallelIterator)
+  protected[this] class LastIndexWhere(pred: T => Boolean, pos: Int, val pit: ParIterator)
   extends Accessor[Int, LastIndexWhere] {
     var result: Int = -1
     def leaf(prev: Option[Int]) = if (pos > pit.indexFlag) {
@@ -364,7 +370,7 @@ extends scala.collection.SeqLike[T, Repr]
         pit.setIndexFlagIfGreater(pos)
       }
     }
-    def newSubtask(p: SuperParallelIterator) = throw new UnsupportedOperationException
+    def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(pos)(_ + _.remaining)) yield new LastIndexWhere(pred, untilp, p)
@@ -374,30 +380,30 @@ extends scala.collection.SeqLike[T, Repr]
     }
   }
 
-  protected[this] class Reverse[U >: T, This >: Repr](cbf: () => Combiner[U, This], val pit: ParallelIterator)
+  protected[this] class Reverse[U >: T, This >: Repr](cbf: () => Combiner[U, This], val pit: ParIterator)
   extends Transformer[Combiner[U, This], Reverse[U, This]] {
     var result: Combiner[U, This] = null
     def leaf(prev: Option[Combiner[U, This]]) = result = pit.reverse2combiner(reuse(prev, cbf()))
-    def newSubtask(p: SuperParallelIterator) = new Reverse(cbf, down(p))
+    def newSubtask(p: SuperParIterator) = new Reverse(cbf, down(p))
     override def merge(that: Reverse[U, This]) = result = that.result combine result
   }
 
-  protected[this] class ReverseMap[S, That](f: T => S, pbf: CanCombineFrom[Repr, S, That], val pit: ParallelIterator)
+  protected[this] class ReverseMap[S, That](f: T => S, pbf: CanCombineFrom[Repr, S, That], val pit: ParIterator)
   extends Transformer[Combiner[S, That], ReverseMap[S, That]] {
     var result: Combiner[S, That] = null
     def leaf(prev: Option[Combiner[S, That]]) = result = pit.reverseMap2combiner(f, pbf) // TODO
-    def newSubtask(p: SuperParallelIterator) = new ReverseMap(f, pbf, down(p))
+    def newSubtask(p: SuperParIterator) = new ReverseMap(f, pbf, down(p))
     override def merge(that: ReverseMap[S, That]) = result = that.result combine result
   }
 
-  protected[this] class SameElements[U >: T](val pit: ParallelIterator, val otherpit: PreciseSplitter[U])
+  protected[this] class SameElements[U >: T](val pit: ParIterator, val otherpit: PreciseSplitter[U])
   extends Accessor[Boolean, SameElements[U]] {
     var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.sameElements(otherpit)
       if (!result) pit.abort
     }
-    def newSubtask(p: SuperParallelIterator) = throw new UnsupportedOperationException
+    def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
       val fp = pit.remaining / 2
       val sp = pit.remaining - fp
@@ -406,11 +412,11 @@ extends scala.collection.SeqLike[T, Repr]
     override def merge(that: SameElements[U]) = result = result && that.result
   }
 
-  protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: CanCombineFrom[Repr, U, That], val pit: ParallelIterator)
+  protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: CanCombineFrom[Repr, U, That], val pit: ParIterator)
   extends Transformer[Combiner[U, That], Updated[U, That]] {
     var result: Combiner[U, That] = null
     def leaf(prev: Option[Combiner[U, That]]) = result = pit.updated2combiner(pos, elem, pbf) // TODO
-    def newSubtask(p: SuperParallelIterator) = throw new UnsupportedOperationException
+    def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining)) yield new Updated(pos - untilp, elem, pbf, p)
@@ -418,14 +424,32 @@ extends scala.collection.SeqLike[T, Repr]
     override def merge(that: Updated[U, That]) = result = result combine that.result
   }
 
-  protected[this] class Corresponds[S](corr: (T, S) => Boolean, val pit: ParallelIterator, val otherpit: PreciseSplitter[S])
+  protected[this] class Zip[U >: T, S, That](len: Int, pbf: CanCombineFrom[Repr, (U, S), That], val pit: ParIterator, val otherpit: PreciseSplitter[S])
+  extends Transformer[Combiner[(U, S), That], Zip[U, S, That]] {
+    var result: Result = null
+    def leaf(prev: Option[Result]) = result = pit.zip2combiner[U, S, That](otherpit)(pbf)
+    def newSubtask(p: SuperParIterator) = unsupported
+    override def split = {
+      val fp = len / 2
+      val sp = len - len / 2
+      val pits = pit.psplit(fp, sp)
+      val opits = otherpit.psplit(fp, sp)
+      Seq(
+        new Zip(fp, pbf, pits(0), opits(0)),
+        new Zip(sp, pbf, pits(1), opits(1))
+      )
+    }
+    override def merge(that: Zip[U, S, That]) = result = result combine that.result
+  }
+
+  protected[this] class Corresponds[S](corr: (T, S) => Boolean, val pit: ParIterator, val otherpit: PreciseSplitter[S])
   extends Accessor[Boolean, Corresponds[S]] {
     var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.corresponds(corr)(otherpit)
       if (!result) pit.abort
     }
-    def newSubtask(p: SuperParallelIterator) = throw new UnsupportedOperationException
+    def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
       val fp = pit.remaining / 2
       val sp = pit.remaining - fp

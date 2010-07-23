@@ -1,12 +1,12 @@
 package scala.collection.parallel.immutable
 
 
-import scala.collection.generic.GenericParallelTemplate
+import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericCompanion
-import scala.collection.generic.GenericParallelCompanion
+import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.CanCombineFrom
-import scala.collection.generic.ParallelFactory
-import scala.collection.parallel.ParallelSeqLike
+import scala.collection.generic.ParFactory
+import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.Combiner
 
 

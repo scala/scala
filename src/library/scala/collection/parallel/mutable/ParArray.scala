@@ -2,15 +2,15 @@ package scala.collection.parallel.mutable
 
 
 
-import scala.collection.generic.GenericParallelTemplate
+import scala.collection.generic.GenericParTemplate
 import scala.collection.generic.GenericCompanion
-import scala.collection.generic.GenericParallelCompanion
+import scala.collection.generic.GenericParCompanion
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.CanBuildFrom
-import scala.collection.generic.ParallelFactory
+import scala.collection.generic.ParFactory
 import scala.collection.generic.Sizing
 import scala.collection.parallel.Combiner
-import scala.collection.parallel.ParallelSeqLike
+import scala.collection.parallel.ParSeqLike
 import scala.collection.parallel.CHECK_RATE
 import scala.collection.mutable.ArraySeq
 import scala.collection.mutable.Builder
@@ -21,12 +21,12 @@ import scala.collection.Sequentializable
 
 /** Parallel sequence holding elements in a linear array.
  *
- *  `ParallelArray` is a parallel sequence with a predefined size. The size of the array
+ *  `ParArray` is a parallel sequence with a predefined size. The size of the array
  *  cannot be changed after it's been created.
  *
- *  `ParallelArray` internally keeps an array containing the elements. This means that
+ *  `ParArray` internally keeps an array containing the elements. This means that
  *  bulk operations based on traversal are fast, but those returning a parallel array as a result
- *  are slightly slower. The reason for this is that `ParallelArray` uses lazy builders that
+ *  are slightly slower. The reason for this is that `ParArray` uses lazy builders that
  *  create the internal data array only after the size of the array is known. The fragments
  *  are then copied into the resulting data array in parallel using fast array copy operations.
  *  Operations for which the resulting array size is known in advance are optimised to use this
@@ -34,19 +34,19 @@ import scala.collection.Sequentializable
  *
  *  @tparam T        type of the elements in the array
  *
- *  @define Coll ParallelArray
+ *  @define Coll ParArray
  *  @define coll parallel array
  */
-class ParallelArray[T] private[mutable] (val arrayseq: ArraySeq[T])
-extends ParallelSeq[T]
-   with GenericParallelTemplate[T, ParallelArray]
-   with ParallelSeqLike[T, ParallelArray[T], ArraySeq[T]]
+class ParArray[T] private[mutable] (val arrayseq: ArraySeq[T])
+extends ParSeq[T]
+   with GenericParTemplate[T, ParArray]
+   with ParSeqLike[T, ParArray[T], ArraySeq[T]]
 {
   self =>
 
   private val array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
 
-  override def companion: GenericCompanion[ParallelArray] with GenericParallelCompanion[ParallelArray] = ParallelArray
+  override def companion: GenericCompanion[ParArray] with GenericParCompanion[ParArray] = ParArray
 
   def this(sz: Int) = this {
     require(sz >= 0)
@@ -61,16 +61,16 @@ extends ParallelSeq[T]
 
   def seq = arrayseq
 
-  type SCPI = SignalContextPassingIterator[ParallelArrayIterator]
+  type SCPI = SignalContextPassingIterator[ParArrayIterator]
 
-  def parallelIterator: ParallelArrayIterator = {
-    val pit = new ParallelArrayIterator with SCPI
+  def parallelIterator: ParArrayIterator = {
+    val pit = new ParArrayIterator with SCPI
     pit
   }
 
-  class ParallelArrayIterator(var i: Int = 0, val until: Int = length, val arr: Array[Any] = array)
-  extends super.ParallelIterator {
-    me: SignalContextPassingIterator[ParallelArrayIterator] =>
+  class ParArrayIterator(var i: Int = 0, val until: Int = length, val arr: Array[Any] = array)
+  extends super.ParIterator {
+    me: SignalContextPassingIterator[ParArrayIterator] =>
 
     def hasNext = i < until
 
@@ -82,7 +82,7 @@ extends ParallelSeq[T]
 
     def remaining = until - i
 
-    def psplit(sizesIncomplete: Int*): Seq[ParallelIterator] = {
+    def psplit(sizesIncomplete: Int*): Seq[ParIterator] = {
       var traversed = i
       val total = sizesIncomplete.reduceLeft(_ + _)
       val left = remaining
@@ -91,24 +91,24 @@ extends ParallelSeq[T]
         val start = traversed
         val end = (traversed + sz) min until
         traversed = end
-        new ParallelArrayIterator(start, end, arr) with SCPI
+        new ParArrayIterator(start, end, arr) with SCPI
       } else {
-        new ParallelArrayIterator(traversed, traversed, arr) with SCPI
+        new ParArrayIterator(traversed, traversed, arr) with SCPI
       }
     }
 
-    override def split: Seq[ParallelIterator] = {
+    override def split: Seq[ParIterator] = {
       val left = remaining
       if (left >= 2) {
         val splitpoint = left / 2
-        Seq(new ParallelArrayIterator(i, i + splitpoint, arr) with SCPI,
-            new ParallelArrayIterator(i + splitpoint, until, arr) with SCPI)
+        Seq(new ParArrayIterator(i, i + splitpoint, arr) with SCPI,
+            new ParArrayIterator(i + splitpoint, until, arr) with SCPI)
       } else {
         Seq(this)
       }
     }
 
-    override def toString = "ParallelArrayIterator(" + i + ", " + until + ")"
+    override def toString = "ParArrayIterator(" + i + ", " + until + ")"
 
     /* overrides for efficiency */
 
@@ -279,7 +279,7 @@ extends ParallelSeq[T]
       return None
     }
 
-    override def drop(n: Int): ParallelArrayIterator = {
+    override def drop(n: Int): ParArrayIterator = {
       i += n
       this
     }
@@ -374,7 +374,7 @@ extends ParallelSeq[T]
       }
     }
 
-    override def collect2combiner[S, That](pf: PartialFunction[T, S], pbf: CanCombineFrom[ParallelArray[T], S, That]): Combiner[S, That] = {
+    override def collect2combiner[S, That](pf: PartialFunction[T, S], pbf: CanCombineFrom[ParArray[T], S, That]): Combiner[S, That] = {
       val cb = pbf(self.repr)
       collect2combiner_quick(pf, arr, cb, until, i)
       i = until
@@ -390,7 +390,7 @@ extends ParallelSeq[T]
       }
     }
 
-    override def flatmap2combiner[S, That](f: T => Traversable[S], pbf: CanCombineFrom[ParallelArray[T], S, That]): Combiner[S, That] = {
+    override def flatmap2combiner[S, That](f: T => Traversable[S], pbf: CanCombineFrom[ParArray[T], S, That]): Combiner[S, That] = {
       val cb = pbf(self.repr)
       while (i < until) {
         val traversable = f(arr(i).asInstanceOf[T])
@@ -401,13 +401,13 @@ extends ParallelSeq[T]
       cb
     }
 
-    override def filter2combiner[U >: T, This >: ParallelArray[T]](pred: T => Boolean, cb: Combiner[U, This]) = {
+    override def filter2combiner[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Combiner[U, This]) = {
       filter2combiner_quick(pred, cb, arr, until, i)
       i = until
       cb
     }
 
-    private def filter2combiner_quick[U >: T, This >: ParallelArray[T]](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
+    private def filter2combiner_quick[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
         var curr = a(j).asInstanceOf[T]
@@ -416,13 +416,13 @@ extends ParallelSeq[T]
       }
     }
 
-    override def filterNot2combiner[U >: T, This >: ParallelArray[T]](pred: T => Boolean, cb: Combiner[U, This]) = {
+    override def filterNot2combiner[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Combiner[U, This]) = {
       filterNot2combiner_quick(pred, cb, arr, until, i)
       i = until
       cb
     }
 
-    private def filterNot2combiner_quick[U >: T, This >: ParallelArray[T]](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
+    private def filterNot2combiner_quick[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
         var curr = a(j).asInstanceOf[T]
@@ -433,7 +433,7 @@ extends ParallelSeq[T]
 
     override def copy2builder[U >: T, Coll, Bld <: Builder[U, Coll]](cb: Bld): Bld = {
       cb.sizeHint(remaining)
-      cb.ifIs[ParallelArrayCombiner[T]] { pac =>
+      cb.ifIs[ParArrayCombiner[T]] { pac =>
         val targetarr: Array[Any] = pac.lastbuff.internalArray.asInstanceOf[Array[Any]]
         Array.copy(arr, i, targetarr, pac.lastbuff.size, until - i)
         pac.lastbuff.setInternalSize(remaining)
@@ -452,13 +452,13 @@ extends ParallelSeq[T]
       }
     }
 
-    override def partition2combiners[U >: T, This >: ParallelArray[T]](pred: T => Boolean, btrue: Combiner[U, This], bfalse: Combiner[U, This]) = {
+    override def partition2combiners[U >: T, This >: ParArray[T]](pred: T => Boolean, btrue: Combiner[U, This], bfalse: Combiner[U, This]) = {
       partition2combiners_quick(pred, btrue, bfalse, arr, until, i)
       i = until
       (btrue, bfalse)
     }
 
-    private def partition2combiners_quick[U >: T, This >: ParallelArray[T]](p: T => Boolean, btrue: Builder[U, This], bfalse: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
+    private def partition2combiners_quick[U >: T, This >: ParArray[T]](p: T => Boolean, btrue: Builder[U, This], bfalse: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = from
       while (j < ntil) {
         val curr = a(j).asInstanceOf[T]
@@ -467,7 +467,7 @@ extends ParallelSeq[T]
       }
     }
 
-    override def take2combiner[U >: T, This >: ParallelArray[T]](n: Int, cb: Combiner[U, This]) = {
+    override def take2combiner[U >: T, This >: ParArray[T]](n: Int, cb: Combiner[U, This]) = {
       cb.sizeHint(n)
       val ntil = i + n
       val a = arr
@@ -478,7 +478,7 @@ extends ParallelSeq[T]
       cb
     }
 
-    override def drop2combiner[U >: T, This >: ParallelArray[T]](n: Int, cb: Combiner[U, This]) = {
+    override def drop2combiner[U >: T, This >: ParArray[T]](n: Int, cb: Combiner[U, This]) = {
       drop(n)
       cb.sizeHint(remaining)
       while (i < until) {
@@ -488,8 +488,8 @@ extends ParallelSeq[T]
       cb
     }
 
-    override def reverse2combiner[U >: T, This >: ParallelArray[T]](cb: Combiner[U, This]): Combiner[U, This] = {
-      cb.ifIs[ParallelArrayCombiner[T]] { pac =>
+    override def reverse2combiner[U >: T, This >: ParArray[T]](cb: Combiner[U, This]): Combiner[U, This] = {
+      cb.ifIs[ParArrayCombiner[T]] { pac =>
         val sz = remaining
         pac.sizeHint(sz)
         val targetarr: Array[Any] = pac.lastbuff.internalArray.asInstanceOf[Array[Any]]
@@ -514,9 +514,9 @@ extends ParallelSeq[T]
 
   /* operations */
 
-  private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParallelArrayCombiner[_]]
+  private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParArrayCombiner[_]]
 
-  override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParallelArray[T], S, That]) = if (buildsArray(bf(repr))) {
+  override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParArray[T], S, That]) = if (buildsArray(bf(repr))) {
     // reserve array
     val targetarr = new Array[Any](length)
 
@@ -524,7 +524,7 @@ extends ParallelSeq[T]
     executeAndWait(new Map[S](f, targetarr, 0, length))
 
     // wrap it into a parallel array
-    (new ParallelArray[S](new ExposedArraySeq[S](targetarr.asInstanceOf[Array[AnyRef]], length))).asInstanceOf[That]
+    (new ParArray[S](new ExposedArraySeq[S](targetarr.asInstanceOf[Array[AnyRef]], length))).asInstanceOf[That]
   } else super.map(f)(bf)
 
   /* tasks */
@@ -554,25 +554,25 @@ extends ParallelSeq[T]
 
 
 
-object ParallelArray extends ParallelFactory[ParallelArray] {
-  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParallelArray[T]] = new GenericCanCombineFrom[T]
-  def newBuilder[T]: Combiner[T, ParallelArray[T]] = newCombiner
-  def newCombiner[T]: Combiner[T, ParallelArray[T]] = ParallelArrayCombiner[T]
+object ParArray extends ParFactory[ParArray] {
+  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParArray[T]] = new GenericCanCombineFrom[T]
+  def newBuilder[T]: Combiner[T, ParArray[T]] = newCombiner
+  def newCombiner[T]: Combiner[T, ParArray[T]] = ParArrayCombiner[T]
 
   /** Creates a new parallel array by wrapping the specified array.
    */
-  def handoff[T](arr: Array[T]): ParallelArray[T] = wrapOrRebuild(arr, arr.length)
+  def handoff[T](arr: Array[T]): ParArray[T] = wrapOrRebuild(arr, arr.length)
 
   /** Creates a new parallel array by wrapping a part of the specified array.
    */
-  def handoff[T](arr: Array[T], sz: Int): ParallelArray[T] = wrapOrRebuild(arr, sz)
+  def handoff[T](arr: Array[T], sz: Int): ParArray[T] = wrapOrRebuild(arr, sz)
 
   private def wrapOrRebuild[T](arr: AnyRef, sz: Int) = arr match {
-    case arr: Array[AnyRef] => new ParallelArray[T](new ExposedArraySeq[T](arr, sz))
-    case _ => new ParallelArray[T](new ExposedArraySeq[T](runtime.ScalaRunTime.toObjectArray(arr), sz))
+    case arr: Array[AnyRef] => new ParArray[T](new ExposedArraySeq[T](arr, sz))
+    case _ => new ParArray[T](new ExposedArraySeq[T](runtime.ScalaRunTime.toObjectArray(arr), sz))
   }
 
-  def createFromCopy[T <: AnyRef : ClassManifest](arr: Array[T]): ParallelArray[T] = {
+  def createFromCopy[T <: AnyRef : ClassManifest](arr: Array[T]): ParArray[T] = {
     val newarr = new Array[T](arr.length)
     Array.copy(arr, 0, newarr, 0, arr.length)
     handoff(newarr)

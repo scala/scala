@@ -297,17 +297,28 @@ trait AugmentedSeqIterator[+T, +Repr <: Parallel] extends AugmentedIterableItera
     cb
   }
 
+  /** Iterator `otherpit` must have equal or more elements.
+   */
+  def zip2combiner[U >: T, S, That](otherpit: Iterator[S])(implicit cbf: CanCombineFrom[Repr, (U, S), That]): Combiner[(U, S), That] = {
+    val cb = cbf(repr)
+    cb.sizeHint(remaining)
+    while (hasNext) {
+      cb += ((next, otherpit.next))
+    }
+    cb
+  }
+
 }
 
 
 
-trait ParallelIterableIterator[+T, +Repr <: Parallel]
+trait ParIterableIterator[+T, +Repr <: Parallel]
 extends AugmentedIterableIterator[T, Repr]
    with Splitter[T]
    with Signalling
    with DelegatedSignalling
 {
-  def split: Seq[ParallelIterableIterator[T, Repr]]
+  def split: Seq[ParIterableIterator[T, Repr]]
 
   /** The number of elements this iterator has yet to traverse. This method
    *  doesn't change the state of the iterator.
@@ -320,7 +331,7 @@ extends AugmentedIterableIterator[T, Repr]
    *
    *  In that case, 2 considerations must be taken into account:
    *
-   *    1) classes that inherit `ParallelIterable` must reimplement methods `take`, `drop`, `slice`, `splitAt` and `copyToArray`.
+   *    1) classes that inherit `ParIterable` must reimplement methods `take`, `drop`, `slice`, `splitAt` and `copyToArray`.
    *
    *    2) if an iterator provides an upper bound on the number of elements, then after splitting the sum
    *       of `remaining` values of split iterators must be less than or equal to this upper bound.
@@ -329,17 +340,17 @@ extends AugmentedIterableIterator[T, Repr]
 }
 
 
-trait ParallelSeqIterator[+T, +Repr <: Parallel]
-extends ParallelIterableIterator[T, Repr]
+trait ParSeqIterator[+T, +Repr <: Parallel]
+extends ParIterableIterator[T, Repr]
    with AugmentedSeqIterator[T, Repr]
    with PreciseSplitter[T]
 {
-  def split: Seq[ParallelSeqIterator[T, Repr]]
-  def psplit(sizes: Int*): Seq[ParallelSeqIterator[T, Repr]]
+  def split: Seq[ParSeqIterator[T, Repr]]
+  def psplit(sizes: Int*): Seq[ParSeqIterator[T, Repr]]
 
   /** The number of elements this iterator has yet to traverse. This method
    *  doesn't change the state of the iterator. Unlike the version of this method in the supertrait,
-   *  method `remaining` in `ParallelSeqLike.this.ParallelIterator` must return an exact number
+   *  method `remaining` in `ParSeqLike.this.ParIterator` must return an exact number
    *  of elements remaining in the iterator.
    *
    *  @return   an exact number of elements this iterator has yet to iterate

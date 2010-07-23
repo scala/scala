@@ -2,8 +2,8 @@ package scala.collection.generic
 
 
 import scala.collection.parallel.Combiner
-import scala.collection.parallel.ParallelIterable
-import scala.collection.parallel.ParallelMap
+import scala.collection.parallel.ParIterable
+import scala.collection.parallel.ParMap
 
 
 
@@ -12,7 +12,7 @@ import scala.collection.parallel.ParallelMap
  *  @tparam CC   the type constructor representing the collection class
  *  @since 2.8
  */
-trait GenericParallelCompanion[+CC[X] <: ParallelIterable[X]] {
+trait GenericParCompanion[+CC[X] <: ParIterable[X]] {
   /** The default builder for $Coll objects.
    */
   def newBuilder[A]: Combiner[A, CC[A]]
@@ -22,7 +22,7 @@ trait GenericParallelCompanion[+CC[X] <: ParallelIterable[X]] {
   def newCombiner[A]: Combiner[A, CC[A]]
 }
 
-trait GenericParallelMapCompanion[+CC[P, Q] <: ParallelMap[P, Q]] {
+trait GenericParMapCompanion[+CC[P, Q] <: ParMap[P, Q]] {
   def newCombiner[P, Q]: Combiner[(P, Q), CC[P, Q]]
 }
 

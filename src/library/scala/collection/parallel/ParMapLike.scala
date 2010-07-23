@@ -14,12 +14,12 @@ import scala.collection.mutable.Builder
 
 
 
-trait ParallelMapLike[K,
-		      +V,
-		      +Repr <: ParallelMapLike[K, V, Repr, SequentialView] with ParallelMap[K, V],
-		      +SequentialView <: Map[K, V]]
+trait ParMapLike[K,
+                 +V,
+                 +Repr <: ParMapLike[K, V, Repr, SequentialView] with ParMap[K, V],
+                 +SequentialView <: Map[K, V]]
 extends MapLike[K, V, Repr]
-   with ParallelIterableLike[(K, V), Repr, SequentialView]
+   with ParIterableLike[(K, V), Repr, SequentialView]
 { self =>
 
   protected[this] override def newBuilder: Builder[(K, V), Repr] = newCombiner

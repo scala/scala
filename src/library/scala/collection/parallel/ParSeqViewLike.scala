@@ -26,24 +26,24 @@ import scala.collection.generic.CanCombineFrom
  *
  *  @since 2.8
  */
-trait ParallelSeqViewLike[+T,
-                          +Coll <: Parallel,
-                          +CollSeq,
-                          +This <: ParallelSeqView[T, Coll, CollSeq] with ParallelSeqViewLike[T, Coll, CollSeq, This, ThisSeq],
-                          +ThisSeq <: SeqView[T, CollSeq] with SeqViewLike[T, CollSeq, ThisSeq]]
+trait ParSeqViewLike[+T,
+                     +Coll <: Parallel,
+                     +CollSeq,
+                     +This <: ParSeqView[T, Coll, CollSeq] with ParSeqViewLike[T, Coll, CollSeq, This, ThisSeq],
+                     +ThisSeq <: SeqView[T, CollSeq] with SeqViewLike[T, CollSeq, ThisSeq]]
 extends SeqView[T, Coll]
    with SeqViewLike[T, Coll, This]
-   with ParallelIterableView[T, Coll, CollSeq]
-   with ParallelIterableViewLike[T, Coll, CollSeq, This, ThisSeq]
-   with ParallelSeq[T]
-   with ParallelSeqLike[T, This, ThisSeq]
+   with ParIterableView[T, Coll, CollSeq]
+   with ParIterableViewLike[T, Coll, CollSeq, This, ThisSeq]
+   with ParSeq[T]
+   with ParSeqLike[T, This, ThisSeq]
 {
   self =>
 
-  type SCPI = SignalContextPassingIterator[ParallelIterator]
+  type SCPI = SignalContextPassingIterator[ParIterator]
 
-  trait Transformed[+S] extends ParallelSeqView[S, Coll, CollSeq]
-  with super[ParallelIterableView].Transformed[S] with super[SeqView].Transformed[S] {
+  trait Transformed[+S] extends ParSeqView[S, Coll, CollSeq]
+  with super[ParIterableView].Transformed[S] with super[SeqView].Transformed[S] {
     override def parallelIterator = new Elements(0, length) with SCPI {}
     override def iterator = parallelIterator
     environment = self.environment
@@ -161,11 +161,11 @@ extends SeqView[T, Coll]
 
   /* tasks */
 
-  protected[this] class Force[U >: T, That](cbf: CanCombineFrom[Coll, U, That], val pit: ParallelIterator)
+  protected[this] class Force[U >: T, That](cbf: CanCombineFrom[Coll, U, That], val pit: ParIterator)
   extends Transformer[Combiner[U, That], Force[U, That]] {
     var result: Combiner[U, That] = null
     def leaf(prev: Option[Combiner[U, That]]) = result = pit.copy2builder[U, That, Combiner[U, That]](reuse(prev, cbf(self.underlying)))
-    def newSubtask(p: SuperParallelIterator) = new Force(cbf, down(p))
+    def newSubtask(p: SuperParIterator) = new Force(cbf, down(p))
     override def merge(that: Force[U, That]) = result = result combine that.result
   }
 

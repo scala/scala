@@ -17,8 +17,8 @@ import scala.collection.IterableView
  *
  *  @since 2.8
  */
-trait ParallelIterableView[+T, +Coll <: Parallel, +CollSeq]
-extends ParallelIterableViewLike[T, Coll, CollSeq, ParallelIterableView[T, Coll, CollSeq], IterableView[T, CollSeq]]
+trait ParIterableView[+T, +Coll <: Parallel, +CollSeq]
+extends ParIterableViewLike[T, Coll, CollSeq, ParIterableView[T, Coll, CollSeq], IterableView[T, CollSeq]]
 
 
 

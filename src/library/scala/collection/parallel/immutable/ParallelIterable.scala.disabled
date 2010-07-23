@@ -3,7 +3,7 @@ package scala.collection.parallel.immutable
 
 import scala.collection.generic._
 
-import scala.collection.parallel.ParallelIterableLike
+import scala.collection.parallel.ParIterableLike
 import scala.collection.parallel.Combiner
 
 

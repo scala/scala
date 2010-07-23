@@ -4,15 +4,15 @@ package scala.collection.parallel.immutable
 
 import scala.collection.immutable.Range
 import scala.collection.immutable.RangeUtils
-import scala.collection.parallel.ParallelSeq
+import scala.collection.parallel.ParSeq
 import scala.collection.parallel.Combiner
 import scala.collection.generic.CanCombineFrom
 
 
 
-class ParallelRange(val start: Int, val end: Int, val step: Int, val inclusive: Boolean)
-extends ParallelSeq[Int]
-   with RangeUtils[ParallelRange] {
+class ParRange(val start: Int, val end: Int, val step: Int, val inclusive: Boolean)
+extends ParSeq[Int]
+   with RangeUtils[ParRange] {
   self =>
 
   def seq = new Range(start, end, step)
@@ -21,31 +21,31 @@ extends ParallelSeq[Int]
 
   def apply(idx: Int) = _apply(idx)
 
-  def create(_start: Int, _end: Int, _step: Int, _inclusive: Boolean) = new ParallelRange(_start, _end, _step, _inclusive)
+  def create(_start: Int, _end: Int, _step: Int, _inclusive: Boolean) = new ParRange(_start, _end, _step, _inclusive)
 
-  def parallelIterator = new ParallelRangeIterator with SCPI
+  def parallelIterator = new ParRangeIterator with SCPI
 
   override def toString = seq.toString // TODO
 
-  type SCPI = SignalContextPassingIterator[ParallelRangeIterator]
+  type SCPI = SignalContextPassingIterator[ParRangeIterator]
 
-  class ParallelRangeIterator
+  class ParRangeIterator
   (var start: Int = self.start, val end: Int = self.end, val step: Int = self.step, val inclusive: Boolean = self.inclusive)
-  extends ParallelIterator with RangeUtils[ParallelRangeIterator] {
-    me: SignalContextPassingIterator[ParallelRangeIterator] =>
+  extends ParIterator with RangeUtils[ParRangeIterator] {
+    me: SignalContextPassingIterator[ParRangeIterator] =>
     def remaining = _length
     def next = { val r = start; start += step; r }
     def hasNext = remaining > 0
-    def split: Seq[ParallelIterator] = psplit(remaining / 2, remaining - remaining / 2)
-    def psplit(sizes: Int*): Seq[ParallelIterator] = {
+    def split: Seq[ParIterator] = psplit(remaining / 2, remaining - remaining / 2)
+    def psplit(sizes: Int*): Seq[ParIterator] = {
       val incr = sizes.scanLeft(0)(_ + _)
       for ((from, until) <- incr.init zip incr.tail) yield _slice(from, until)
     }
     def create(_start: Int, _end: Int, _step: Int, _inclusive: Boolean) = {
-      new ParallelRangeIterator(_start, _end, _step, _inclusive) with SCPI
+      new ParRangeIterator(_start, _end, _step, _inclusive) with SCPI
     }
 
-    override def toString = "ParallelRangeIterator(" + start + ", " + end + ", " + step + ", incl: " + inclusive + ")"
+    override def toString = "ParRangeIterator(" + start + ", " + end + ", " + step + ", incl: " + inclusive + ")"
 
     /* accessors */
 

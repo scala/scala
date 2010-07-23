@@ -3,8 +3,8 @@ package scala.collection.generic
 
 
 import scala.collection.parallel.Combiner
-import scala.collection.parallel.ParallelIterable
-import scala.collection.parallel.ParallelMap
+import scala.collection.parallel.ParIterable
+import scala.collection.parallel.ParMap
 import scala.collection.parallel.TaskSupport
 
 
@@ -22,12 +22,12 @@ import annotation.unchecked.uncheckedVariance
  *  @since 2.8
  *  @author prokopec
  */
-trait GenericParallelTemplate[+A, +CC[X] <: ParallelIterable[X]]
+trait GenericParTemplate[+A, +CC[X] <: ParIterable[X]]
 extends GenericTraversableTemplate[A, CC]
    with HasNewCombiner[A, CC[A] @uncheckedVariance]
    with TaskSupport
 {
-  def companion: GenericCompanion[CC] with GenericParallelCompanion[CC]
+  def companion: GenericCompanion[CC] with GenericParCompanion[CC]
 
   protected[this] override def newBuilder: collection.mutable.Builder[A, CC[A]] = newCombiner
 
@@ -48,10 +48,10 @@ extends GenericTraversableTemplate[A, CC]
 }
 
 
-trait GenericParallelMapTemplate[K, +V, +CC[X, Y] <: ParallelMap[X, Y]]
+trait GenericParMapTemplate[K, +V, +CC[X, Y] <: ParMap[X, Y]]
 extends TaskSupport
 {
-  def mapCompanion: GenericParallelMapCompanion[CC]
+  def mapCompanion: GenericParMapCompanion[CC]
 
   def genericMapCombiner[P, Q]: Combiner[(P, Q), CC[P, Q]] = {
     val cb = mapCompanion.newCombiner[P, Q]

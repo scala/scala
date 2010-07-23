@@ -6,14 +6,14 @@ package scala.collection.parallel.immutable
 
 
 
-import scala.collection.parallel.ParallelMap
-import scala.collection.parallel.ParallelMapLike
+import scala.collection.parallel.ParMap
+import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.EnvironmentPassingCombiner
-import scala.collection.generic.ParallelMapFactory
+import scala.collection.generic.ParMapFactory
 import scala.collection.generic.CanCombineFrom
-import scala.collection.generic.GenericParallelMapTemplate
-import scala.collection.generic.GenericParallelMapCompanion
+import scala.collection.generic.GenericParMapTemplate
+import scala.collection.generic.GenericParMapCompanion
 import scala.collection.immutable.HashMap
 
 
@@ -25,26 +25,26 @@ import scala.collection.immutable.HashMap
  *
  *  @author prokopec
  */
-class ParallelHashTrie[K, +V] private[immutable] (private[this] val trie: HashMap[K, V])
-extends ParallelMap[K, V]
-   with GenericParallelMapTemplate[K, V, ParallelHashTrie]
-   with ParallelMapLike[K, V, ParallelHashTrie[K, V], HashMap[K, V]]
+class ParHashTrie[K, +V] private[immutable] (private[this] val trie: HashMap[K, V])
+extends ParMap[K, V]
+   with GenericParMapTemplate[K, V, ParHashTrie]
+   with ParMapLike[K, V, ParHashTrie[K, V], HashMap[K, V]]
 {
 self =>
 
   def this() = this(HashMap.empty[K, V])
 
-  override def mapCompanion: GenericParallelMapCompanion[ParallelHashTrie] = ParallelHashTrie
+  override def mapCompanion: GenericParMapCompanion[ParHashTrie] = ParHashTrie
 
-  override def empty: ParallelHashTrie[K, V] = new ParallelHashTrie[K, V]
+  override def empty: ParHashTrie[K, V] = new ParHashTrie[K, V]
 
-  def parallelIterator = new ParallelHashTrieIterator(trie) with SCPI
+  def parallelIterator = new ParHashTrieIterator(trie) with SCPI
 
   def seq = trie
 
-  def -(k: K) = new ParallelHashTrie(trie - k)
+  def -(k: K) = new ParHashTrie(trie - k)
 
-  def +[U >: V](kv: (K, U)) = new ParallelHashTrie(trie + kv)
+  def +[U >: V](kv: (K, U)) = new ParHashTrie(trie + kv)
 
   def get(k: K) = trie.get(k)
 
@@ -55,17 +55,17 @@ self =>
     case None => newc
   }
 
-  type SCPI = SignalContextPassingIterator[ParallelHashTrieIterator]
+  type SCPI = SignalContextPassingIterator[ParHashTrieIterator]
 
-  class ParallelHashTrieIterator(val ht: HashMap[K, V])
-  extends super.ParallelIterator {
-  self: SignalContextPassingIterator[ParallelHashTrieIterator] =>
+  class ParHashTrieIterator(val ht: HashMap[K, V])
+  extends super.ParIterator {
+  self: SignalContextPassingIterator[ParHashTrieIterator] =>
     // println("created iterator " + ht)
     var i = 0
     lazy val triter = ht.iterator
-    def split: Seq[ParallelIterator] = {
-      // println("splitting " + ht + " into " + ht.split.map(new ParallelHashTrieIterator(_) with SCPI).map(_.toList))
-      ht.split.map(new ParallelHashTrieIterator(_) with SCPI)
+    def split: Seq[ParIterator] = {
+      // println("splitting " + ht + " into " + ht.split.map(new ParHashTrieIterator(_) with SCPI).map(_.toList))
+      ht.split.map(new ParHashTrieIterator(_) with SCPI)
     }
     def next: (K, V) = {
       // println("taking next after " + i + ", in " + ht)
@@ -82,24 +82,24 @@ self =>
 }
 
 
-object ParallelHashTrie extends ParallelMapFactory[ParallelHashTrie] {
-  def empty[K, V]: ParallelHashTrie[K, V] = new ParallelHashTrie[K, V]
+object ParHashTrie extends ParMapFactory[ParHashTrie] {
+  def empty[K, V]: ParHashTrie[K, V] = new ParHashTrie[K, V]
 
-  def newCombiner[K, V]: Combiner[(K, V), ParallelHashTrie[K, V]] = HashTrieCombiner[K, V]
+  def newCombiner[K, V]: Combiner[(K, V), ParHashTrie[K, V]] = HashTrieCombiner[K, V]
 
-  implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParallelHashTrie[K, V]] = {
+  implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParHashTrie[K, V]] = {
     new CanCombineFromMap[K, V]
   }
 
-  def fromTrie[K, V](t: HashMap[K, V]) = new ParallelHashTrie(t)
+  def fromTrie[K, V](t: HashMap[K, V]) = new ParHashTrie(t)
 
   var totalcombines = new java.util.concurrent.atomic.AtomicInteger(0)
 }
 
 
 trait HashTrieCombiner[K, V]
-extends Combiner[(K, V), ParallelHashTrie[K, V]] {
-self: EnvironmentPassingCombiner[(K, V), ParallelHashTrie[K, V]] =>
+extends Combiner[(K, V), ParHashTrie[K, V]] {
+self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
   import HashTrieCombiner._
   var heads = new Array[Unrolled[K, V]](rootsize)
   var lasts = new Array[Unrolled[K, V]](rootsize)
@@ -124,8 +124,8 @@ self: EnvironmentPassingCombiner[(K, V), ParallelHashTrie[K, V]] =>
     this
   }
 
-  def combine[N <: (K, V), NewTo >: ParallelHashTrie[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
-    // ParallelHashTrie.totalcombines.incrementAndGet
+  def combine[N <: (K, V), NewTo >: ParHashTrie[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
+    // ParHashTrie.totalcombines.incrementAndGet
     if (other.isInstanceOf[HashTrieCombiner[_, _]]) {
       val that = other.asInstanceOf[HashTrieCombiner[K, V]]
       var i = 0
@@ -158,11 +158,11 @@ self: EnvironmentPassingCombiner[(K, V), ParallelHashTrie[K, V]] =>
     }
     val sz = root.foldLeft(0)(_ + _.size)
 
-    if (sz == 0) new ParallelHashTrie[K, V]
-    else if (sz == 1) new ParallelHashTrie[K, V](root(0))
+    if (sz == 0) new ParHashTrie[K, V]
+    else if (sz == 1) new ParHashTrie[K, V](root(0))
     else {
       val trie = new HashMap.HashTrieMap(bitmap, root, sz)
-      new ParallelHashTrie[K, V](trie)
+      new ParHashTrie[K, V](trie)
     }
   }
 
@@ -209,7 +209,7 @@ self: EnvironmentPassingCombiner[(K, V), ParallelHashTrie[K, V]] =>
 
 
 object HashTrieCombiner {
-  def apply[K, V] = new HashTrieCombiner[K, V] with EnvironmentPassingCombiner[(K, V), ParallelHashTrie[K, V]] {}
+  def apply[K, V] = new HashTrieCombiner[K, V] with EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] {}
 
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5

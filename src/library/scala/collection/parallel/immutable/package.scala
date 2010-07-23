@@ -18,28 +18,28 @@ package object immutable {
    *  @param elem      the element in the repetition
    *  @param length    the length of the collection
    */
-  private[parallel] class Repetition[T](elem: T, val length: Int) extends ParallelSeq[T] {
+  private[parallel] class Repetition[T](elem: T, val length: Int) extends ParSeq[T] {
     self =>
 
     def apply(idx: Int) = if (0 <= idx && idx < length) elem else throw new IndexOutOfBoundsException
     def seq = throw new UnsupportedOperationException
     def update(idx: Int, elem: T) = throw new UnsupportedOperationException
 
-    type SCPI = SignalContextPassingIterator[ParallelIterator]
+    type SCPI = SignalContextPassingIterator[ParIterator]
 
-    class ParallelIterator(var i: Int = 0, val until: Int = length, elem: T = self.elem) extends super.ParallelIterator {
-      me: SignalContextPassingIterator[ParallelIterator] =>
+    class ParIterator(var i: Int = 0, val until: Int = length, elem: T = self.elem) extends super.ParIterator {
+      me: SignalContextPassingIterator[ParIterator] =>
       def remaining = until - i
       def hasNext = i < until
       def next = { i += 1; elem }
       def psplit(sizes: Int*) = {
         val incr = sizes.scanLeft(0)(_ + _)
-        for ((start, end) <- incr.init zip incr.tail) yield new ParallelIterator(i + start, (i + end) min until, elem) with SCPI
+        for ((start, end) <- incr.init zip incr.tail) yield new ParIterator(i + start, (i + end) min until, elem) with SCPI
       }
       def split = psplit(remaining / 2, remaining - remaining / 2)
     }
 
-    def parallelIterator = new ParallelIterator with SCPI
+    def parallelIterator = new ParIterator with SCPI
 
   }
 

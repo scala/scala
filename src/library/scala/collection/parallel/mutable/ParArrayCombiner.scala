@@ -16,14 +16,14 @@ import scala.collection.parallel.EnvironmentPassingCombiner
 
 
 
-trait ParallelArrayCombiner[T]
-extends LazyCombiner[T, ParallelArray[T], ExposedArrayBuffer[T]]
+trait ParArrayCombiner[T]
+extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]]
    with TaskSupport {
-  self: EnvironmentPassingCombiner[T, ParallelArray[T]] =>
+  self: EnvironmentPassingCombiner[T, ParArray[T]] =>
 
   override def sizeHint(sz: Int) = if (chain.length == 1) chain(0).sizeHint(sz)
 
-  def newLazyCombiner(c: ArrayBuffer[ExposedArrayBuffer[T]]) = ParallelArrayCombiner(c)
+  def newLazyCombiner(c: ArrayBuffer[ExposedArrayBuffer[T]]) = ParArrayCombiner(c)
 
   def allocateAndCopy = if (chain.size > 1) {
     val arrayseq = new ArraySeq[T](size)
@@ -31,13 +31,13 @@ extends LazyCombiner[T, ParallelArray[T], ExposedArrayBuffer[T]]
 
     executeAndWait(new CopyChainToArray(array, 0, size))
 
-    new ParallelArray(arrayseq)
+    new ParArray(arrayseq)
   } else { // optimisation if there is only 1 array
-    val pa = new ParallelArray(new ExposedArraySeq[T](chain(0).internalArray, size))
+    val pa = new ParArray(new ExposedArraySeq[T](chain(0).internalArray, size))
     pa
   }
 
-  override def toString = "ParallelArrayCombiner(" + size + "): " + chain
+  override def toString = "ParArrayCombiner(" + size + "): " + chain
 
   /* tasks */
 
@@ -85,11 +85,11 @@ extends LazyCombiner[T, ParallelArray[T], ExposedArrayBuffer[T]]
 }
 
 
-object ParallelArrayCombiner {
-  def apply[T](c: ArrayBuffer[ExposedArrayBuffer[T]]): ParallelArrayCombiner[T] = {
-    new { val chain = c } with ParallelArrayCombiner[T] with EnvironmentPassingCombiner[T, ParallelArray[T]]
+object ParArrayCombiner {
+  def apply[T](c: ArrayBuffer[ExposedArrayBuffer[T]]): ParArrayCombiner[T] = {
+    new { val chain = c } with ParArrayCombiner[T] with EnvironmentPassingCombiner[T, ParArray[T]]
   }
-  def apply[T]: ParallelArrayCombiner[T] = apply(new ArrayBuffer[ExposedArrayBuffer[T]] += new ExposedArrayBuffer[T])
+  def apply[T]: ParArrayCombiner[T] = apply(new ArrayBuffer[ExposedArrayBuffer[T]] += new ExposedArrayBuffer[T])
 }
 
 
