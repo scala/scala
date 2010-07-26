@@ -510,6 +510,34 @@ extends ParSeq[T]
       }
     }
 
+    override def scanToArray[U >: T, A >: U](z: U, op: (U, U) => U, destarr: Array[A], from: Int) {
+      // var last = z
+      // var j = from
+      // var k = i
+      // val ntil = until
+      // val a = arr
+      // while (k < ntil) {
+      //   last = op(last, a(k).asInstanceOf[U])
+      //   destarr(j) = last
+      //   k += 1
+      // }
+      // i = k
+      scanToArray_quick[U](array, destarr.asInstanceOf[Array[Any]], op, z, i, until, from)
+      i = until
+    }
+
+    protected def scanToArray_quick[U](srcarr: Array[Any], destarr: Array[Any], op: (U, U) => U, z: U, srcfrom: Int, srcntil: Int, destfrom: Int) {
+      var last = z
+      var j = srcfrom
+      var k = destfrom
+      while (j < srcntil) {
+        last = op(last, srcarr(j).asInstanceOf[U])
+        destarr(k) = last
+        j += 1
+        k += 1
+      }
+    }
+
   }
 
   /* operations */
@@ -517,7 +545,7 @@ extends ParSeq[T]
   private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParArrayCombiner[_]]
 
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParArray[T], S, That]) = if (buildsArray(bf(repr))) {
-    // reserve array
+    // reserve an array
     val targetarr = new Array[Any](length)
 
     // fill it in parallel
@@ -526,6 +554,18 @@ extends ParSeq[T]
     // wrap it into a parallel array
     (new ParArray[S](new ExposedArraySeq[S](targetarr.asInstanceOf[Array[AnyRef]], length))).asInstanceOf[That]
   } else super.map(f)(bf)
+
+  override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanCombineFrom[ParArray[T], U, That]): That = if (buildsArray(cbf(repr))) {
+    // reserve an array
+    val targetarr = new Array[Any](length + 1)
+    targetarr(0) = z
+
+    // do a parallel prefix scan
+    executeAndWait(new ScanToArray[U, Any](z, op, 1, size, targetarr, parallelIterator))
+
+    // wrap the array into a parallel array
+    (new ParArray[U](new ExposedArraySeq[U](targetarr.asInstanceOf[Array[AnyRef]], length + 1))).asInstanceOf[That]
+  } else super.scan(z)(op)(cbf)
 
   /* tasks */
 

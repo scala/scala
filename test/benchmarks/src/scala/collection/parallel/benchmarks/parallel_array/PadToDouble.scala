@@ -14,7 +14,7 @@ with HavingResult[Int] {
   override def repetitionsPerRun = 400
 
   val similar = {
-    val p = new collection.parallel.mutable.ParallelArray[Cont](sz)
+    val p = new collection.parallel.mutable.ParArray[Cont](sz)
     for (i <- 0 until sz) p(i) = what match {
       case "seq" => arr(i).asInstanceOf[Cont]
       case "par" => pa(i)

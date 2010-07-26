@@ -518,6 +518,29 @@ extends IterableLike[T, Repr]
     executeAndWaitResult(new SplitAt(n, cbfactory, parallelIterator) mapResult { p => (p._1.result, p._2.result) })
   }
 
+  /** Computes a prefix scan of the elements of the collection.
+   *
+   *  Note: The neutral element `z` may be applied more than once.
+   *
+   *  @tparam U         element type of the resulting collection
+   *  @tparam That      type of the resulting collection
+   *  @param z          neutral element for the operator `op`
+   *  @param op         the associative operator for the scan
+   *  @param cbf        combiner factory which provides a combiner
+   *  @return           a collection containing the prefix scan of the elements in the original collection
+   *
+   *  @usecase def scan(z: T)(op: (T, T) => T): $Coll[T]
+   *
+   *  @return           a new $coll containing the prefix scan of the elements in this $coll
+   */
+  def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanCombineFrom[Repr, U, That]): That = {
+    val array = new Array[Any](size + 1)
+    array(0) = z
+    executeAndWaitResult(new ScanToArray[U, Any](z, op, 1, size, array, parallelIterator) mapResult { u =>
+      executeAndWaitResult(new FromArray(array, 0, size + 1, cbf) mapResult { _.result })
+    })
+  }
+
   /** Takes the longest prefix of elements that satisfy the predicate.
    *
    *  $indexsignalling
@@ -899,7 +922,7 @@ extends IterableLike[T, Repr]
   extends Accessor[Unit, CopyToArray[U, This]] {
     var result: Unit = ()
     def leaf(prev: Option[Unit]) = pit.copyToArray(array, from, len)
-    def newSubtask(p: ParIterator) = throw new UnsupportedOperationException
+    def newSubtask(p: ParIterator) = unsupported
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining); if untilp < len) yield {
@@ -907,6 +930,76 @@ extends IterableLike[T, Repr]
         new CopyToArray[U, This](from + untilp, plen, array, p)
       }
     }
+  }
+
+  protected[this] class ScanToArray[U >: T, A >: U](z: U, op: (U, U) => U, val from: Int, val len: Int, array: Array[A], val pit: ParIterator)
+  extends Accessor[Boolean, ScanToArray[U, A]] {
+    var result: Boolean = false // whether it was prefix-scanned, because previous result was already available
+    def leaf(prev: Option[Boolean]) = if (prev.isDefined) { // use prev result as an optimisation
+      val lastelem = array(from - 1)
+      pit.scanToArray(lastelem.asInstanceOf[U], op, array, from)
+      result = true
+    } else pit.scanToArray(z, op, array, from)
+    def newSubtask(p: ParIterator) = unsupported
+    override def shouldSplitFurther = len > size / 2
+    override def split = {
+      val pits = pit.split
+      for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining); if untilp < len) yield {
+        val plen = p.remaining min (len - untilp)
+        new ScanToArray[U, A](z, op, from + untilp, plen, array, p)
+      }
+    }
+    override def merge(that: ScanToArray[U, A]) = if (!that.result) { // if previous result wasn't available when task was initiated
+      // apply the rightmost element of this array part to all the elements of `that`
+      executeAndWait(new ApplyToArray(array(that.from - 1).asInstanceOf[U], op, that.from, that.len, array))
+    }
+  }
+
+  protected[this] class ApplyToArray[U >: T, A >: U](elem: U, op: (U, U) => U, from: Int, len: Int, array: Array[A])
+  extends super.Task[Unit, ApplyToArray[U, A]] {
+    var result: Unit = ()
+    def leaf(prev: Option[Unit]) = {
+      var i = from
+      val until = from + len
+      while (i < until) {
+        array(i) = op(elem, array(i).asInstanceOf[U])
+        i += 1
+      }
+    }
+    def shouldSplitFurther = len > threshold(size, parallelismLevel)
+    def split = {
+      val fp = len / 2
+      val sp = len - fp
+      Seq(
+        new ApplyToArray(elem, op, from, fp, array),
+        new ApplyToArray(elem, op, from + fp, sp, array)
+      )
+    }
+  }
+
+  protected[this] class FromArray[S, A, That](array: Array[A], from: Int, len: Int, cbf: CanCombineFrom[Repr, S, That])
+  extends super.Task[Combiner[S, That], FromArray[S, A, That]] {
+    var result: Result = null
+    def leaf(prev: Option[Result]) = {
+      val cb = prev getOrElse cbf(self.repr)
+      var i = from
+      val until = from + len
+      while (i < until) {
+        cb += array(i).asInstanceOf[S]
+        i += 1
+      }
+      result = cb
+    }
+    def shouldSplitFurther = len > threshold(size, parallelismLevel)
+    def split = {
+      val fp = len / 2
+      val sp = len - fp
+      Seq(
+        new FromArray(array, from, fp, cbf),
+        new FromArray(array, from + fp, sp, cbf)
+      )
+    }
+    override def merge(that: FromArray[S, A, That]) = result = result combine that.result
   }
 
 }

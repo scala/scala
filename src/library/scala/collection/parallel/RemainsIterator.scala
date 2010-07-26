@@ -209,6 +209,17 @@ trait AugmentedIterableIterator[+T, +Repr <: Parallel] extends RemainsIterator[T
     while (hasNext) after += next
     (before, after)
   }
+
+  def scanToArray[U >: T, A >: U](z: U, op: (U, U) => U, array: Array[A], from: Int) {
+    var last = z
+    var i = from
+    while (hasNext) {
+      last = op(last, next)
+      array(i) = last
+      i += 1
+    }
+  }
+
 }
 
 

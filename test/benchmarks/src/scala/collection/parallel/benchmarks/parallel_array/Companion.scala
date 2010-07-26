@@ -5,5 +5,5 @@ import scala.collection.parallel.benchmarks._
 
 
 trait Companion extends BenchCompanion {
-  def collectionName = "ParallelArray"
+  def collectionName = "ParArray"
 }

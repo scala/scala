@@ -2,7 +2,7 @@ package scala.collection.parallel.benchmarks.parallel_array
 
 
 import scala.collection.parallel.benchmarks._
-import scala.collection.parallel.mutable.ParallelArray
+import scala.collection.parallel.mutable.ParArray
 import extra166y.{ParallelArray => JSR166Array}
 
 

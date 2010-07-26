@@ -3,19 +3,19 @@ package scala.collection.parallel.benchmarks.hashtries
 
 
 
-import scala.collection.parallel.benchmarks.generic.StandardParallelIterableBench
+import scala.collection.parallel.benchmarks.generic.StandardParIterableBench
 import scala.collection.parallel.benchmarks.generic.NotBenchmark
 import scala.collection.parallel.benchmarks.generic.Dummy
 import scala.collection.parallel.benchmarks.generic.Operators
-import scala.collection.parallel.immutable.ParallelHashTrie
+import scala.collection.parallel.immutable.ParHashTrie
 
 
 
 
 
-trait ParallelHashTrieBenches[K, V] extends StandardParallelIterableBench[(K, V), ParallelHashTrie[K, V]] {
+trait ParHashTrieBenches[K, V] extends StandardParIterableBench[(K, V), ParHashTrie[K, V]] {
 
-  def nameOfCollection = "ParallelHashTrie"
+  def nameOfCollection = "ParHashTrie"
   def comparisonMap = collection.Map()
   val forkJoinPool = new scala.concurrent.forkjoin.ForkJoinPool
 
@@ -26,7 +26,7 @@ trait ParallelHashTrieBenches[K, V] extends StandardParallelIterableBench[(K, V)
   }
 
   class Map2(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[(K, V), ParallelHashTrie[K, V]] {
+  extends IterableBench with StandardParIterableBench[(K, V), ParHashTrie[K, V]] {
     var result: Int = 0
     def comparisonMap = collection.Map()
     def runseq = {
@@ -35,13 +35,13 @@ trait ParallelHashTrieBenches[K, V] extends StandardParallelIterableBench[(K, V)
     }
     def runpar = {
       result = this.parcoll.map(operators.mapper2).size
-      //println(collection.parallel.immutable.ParallelHashTrie.totalcombines)
+      //println(collection.parallel.immutable.ParHashTrie.totalcombines)
       //System.exit(1)
     }
     def companion = Map2
     override def repetitionsPerRun = 50
     override def printResults {
-      println("Total combines: " + collection.parallel.immutable.ParallelHashTrie.totalcombines)
+      println("Total combines: " + collection.parallel.immutable.ParHashTrie.totalcombines)
       println("Size of last result: " + result)
     }
   }
@@ -52,7 +52,7 @@ trait ParallelHashTrieBenches[K, V] extends StandardParallelIterableBench[(K, V)
 
 
 
-object RefParallelHashTrieBenches extends ParallelHashTrieBenches[Dummy, Dummy] with NotBenchmark {
+object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] with NotBenchmark {
 
   type DPair = (Dummy, Dummy)
 
@@ -111,7 +111,7 @@ object RefParallelHashTrieBenches extends ParallelHashTrieBenches[Dummy, Dummy] 
   }
 
   def createParallel(sz: Int, p: Int) = {
-    var pht = new ParallelHashTrie[Dummy, Dummy]
+    var pht = new ParHashTrie[Dummy, Dummy]
     for (i <- 0 until sz) pht += ((new Dummy(i), new Dummy(i)))
     forkJoinPool.setParallelism(p)
     pht.environment = forkJoinPool

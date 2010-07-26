@@ -1,7 +1,7 @@
 package scala.collection.parallel.benchmarks.parallel_array
 
 
-import scala.collection.parallel.mutable.ParallelArray
+import scala.collection.parallel.mutable.ParArray
 
 
 object PlusPlus extends Companion {
@@ -16,7 +16,7 @@ extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
   def companion = PlusPlus
 
   val thatarr = new Array[Cont](sz)
-  val thatpa = new ParallelArray[Cont](sz)
+  val thatpa = new ParArray[Cont](sz)
 
   def runpar = pa ++ thatpa
   def runseq = arr ++ thatarr

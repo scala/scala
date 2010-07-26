@@ -17,6 +17,21 @@ trait SequentialOps[T] {
     sum
   }
 
+  def sequentialScan(z: T, op: (T, T) => T, sz: Int) = {
+    var outarr = new Array[Any](sz + 1)
+    outarr(0) = z
+    var last = z
+    var i = 0
+    var j = 1
+    val until = sz
+    while (i < until) {
+      last = op(last, arr(i).asInstanceOf[T])
+      outarr(j) = last
+      i += 1
+      j += 1
+    }
+  }
+
   def sequentialCount(pred: T => Boolean, sz: Int) = {
     var i = 0
     val until = sz

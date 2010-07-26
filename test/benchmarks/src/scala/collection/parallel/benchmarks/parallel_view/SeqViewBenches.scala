@@ -16,7 +16,7 @@ import scala.collection.SeqView
 
 
 trait DummyViewBenches
-extends ParallelSeqViewBench[Dummy, ParallelSeqView[Dummy, ParallelSeq[Dummy], Seq[Dummy]], Seq[Dummy]] {
+extends ParSeqViewBench[Dummy, ParSeqView[Dummy, ParSeq[Dummy], Seq[Dummy]], Seq[Dummy]] {
   def nameOfCollection = "ParallelView"
   def operators = DummyOperators
   def comparisonMap = collection.Map()
@@ -27,7 +27,7 @@ extends ParallelSeqViewBench[Dummy, ParallelSeqView[Dummy, ParallelSeq[Dummy], S
     s
   }
   def createParallel(sz: Int, p: Int) = {
-    val pa = new collection.parallel.mutable.ParallelArray[Dummy](sz)
+    val pa = new collection.parallel.mutable.ParArray[Dummy](sz)
     forkJoinPool.setParallelism(p)
     for (i <- 0 until sz) pa(i) = new Dummy(i)
     val v = pa.view

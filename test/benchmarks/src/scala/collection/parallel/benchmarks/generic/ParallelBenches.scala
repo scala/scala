@@ -8,7 +8,7 @@ package generic
 
 
 
-trait ParallelIterableBench[T, Coll <: ParallelIterable[T]] extends collection.parallel.benchmarks.Bench {
+trait ParIterableBench[T, Coll <: ParIterable[T]] extends collection.parallel.benchmarks.Bench {
 self =>
 
   protected var seqcoll: Iterable[T] = null
@@ -31,7 +31,7 @@ self =>
     def collectionName = self.nameOfCollection
   }
 
-  trait IterableBench extends ParallelIterableBench[T, Coll] {
+  trait IterableBench extends ParIterableBench[T, Coll] {
     def nameOfCollection = self.nameOfCollection
     def operators = self.operators
     def createSequential(sz: Int, p: Int) = self.createSequential(size, parallelism)
@@ -51,7 +51,7 @@ self =>
 }
 
 
-trait ParallelSeqBench[T, Coll <: ParallelSeq[T]] extends ParallelIterableBench[T, Coll] {
+trait ParSeqBench[T, Coll <: ParSeq[T]] extends ParIterableBench[T, Coll] {
   self =>
 
   def createSequential(sz: Int, p: Int): Seq[T]
@@ -60,7 +60,7 @@ trait ParallelSeqBench[T, Coll <: ParallelSeq[T]] extends ParallelIterableBench[
     def collectionName = self.nameOfCollection
   }
 
-  trait SeqBench extends IterableBench with ParallelSeqBench[T, Coll] {
+  trait SeqBench extends IterableBench with ParSeqBench[T, Coll] {
     override def createSequential(sz: Int, p: Int) = self.createSequential(size, parallelism)
   }
 
@@ -80,7 +80,7 @@ trait NotBenchmark {
 /**
  * Standard benchmarks for collections.
  */
-trait StandardParallelIterableBench[T, Coll <: ParallelIterable[T]] extends ParallelIterableBench[T, Coll] {
+trait StandardParIterableBench[T, Coll <: ParIterable[T]] extends ParIterableBench[T, Coll] {
 
   object Reduce extends IterableBenchCompanion {
     override def defaultSize = 50000
@@ -89,7 +89,7 @@ trait StandardParallelIterableBench[T, Coll <: ParallelIterable[T]] extends Para
   }
 
   class Reduce(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[T, Coll] {
+  extends IterableBench with StandardParIterableBench[T, Coll] {
     def comparisonMap = collection.Map()
     def runseq = this.seqcoll.reduceLeft(operators.reducer)
     def runpar = this.parcoll.reduce(operators.reducer)
@@ -103,7 +103,7 @@ trait StandardParallelIterableBench[T, Coll <: ParallelIterable[T]] extends Para
   }
 
   class ReduceMedium(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[T, Coll] {
+  extends IterableBench with StandardParIterableBench[T, Coll] {
     def comparisonMap = collection.Map()
     def runseq = this.seqcoll.reduceLeft(operators.mediumreducer)
     def runpar = this.parcoll.reduce(operators.mediumreducer)
@@ -117,7 +117,7 @@ trait StandardParallelIterableBench[T, Coll <: ParallelIterable[T]] extends Para
   }
 
   class Map(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[T, Coll] {
+  extends IterableBench with StandardParIterableBench[T, Coll] {
     def comparisonMap = collection.Map()
     def runseq = this.seqcoll.map(operators.mapper)
     def runpar = this.parcoll.map(operators.mapper)
@@ -131,7 +131,7 @@ trait StandardParallelIterableBench[T, Coll <: ParallelIterable[T]] extends Para
 /**
  * Benchmarks for sequence views.
  */
-trait ParallelSeqViewBench[T, Coll <: ParallelSeqView[T, ParallelSeq[T], CollSeq], CollSeq] extends ParallelSeqBench[T, Coll] {
+trait ParSeqViewBench[T, Coll <: ParSeqView[T, ParSeq[T], CollSeq], CollSeq] extends ParSeqBench[T, Coll] {
 
   object Reduce extends IterableBenchCompanion {
     override def defaultSize = 50000
@@ -140,7 +140,7 @@ trait ParallelSeqViewBench[T, Coll <: ParallelSeqView[T, ParallelSeq[T], CollSeq
   }
 
   class Reduce(val size: Int, val parallelism: Int, val runWhat: String)
-  extends SeqBench with ParallelSeqViewBench[T, Coll, CollSeq] {
+  extends SeqBench with ParSeqViewBench[T, Coll, CollSeq] {
     def comparisonMap = collection.Map()
     def runseq = this.seqcoll.reduceLeft(operators.reducer)
     def runpar = this.parcoll.reduce(operators.reducer)
@@ -154,7 +154,7 @@ trait ParallelSeqViewBench[T, Coll <: ParallelSeqView[T, ParallelSeq[T], CollSeq
   }
 
   class MediumReduce(val size: Int, val parallelism: Int, val runWhat: String)
-  extends SeqBench with ParallelSeqViewBench[T, Coll, CollSeq] {
+  extends SeqBench with ParSeqViewBench[T, Coll, CollSeq] {
     def comparisonMap = collection.Map()
     def runseq = this.seqcoll.reduceLeft(operators.mediumreducer)
     def runpar = this.parcoll.reduce(operators.mediumreducer)
@@ -168,7 +168,7 @@ trait ParallelSeqViewBench[T, Coll <: ParallelSeqView[T, ParallelSeq[T], CollSeq
   }
 
   class ModifyThenReduce(val size: Int, val parallelism: Int, val runWhat: String)
-  extends SeqBench with ParallelSeqViewBench[T, Coll, CollSeq] {
+  extends SeqBench with ParSeqViewBench[T, Coll, CollSeq] {
     val toadd = createSequential(size, parallelism)
     def comparisonMap = collection.Map()
     def runseq = {
@@ -189,12 +189,12 @@ trait ParallelSeqViewBench[T, Coll <: ParallelSeqView[T, ParallelSeq[T], CollSeq
   }
 
   class ModifyThenForce(val size: Int, val parallelism: Int, val runWhat: String)
-  extends SeqBench with ParallelSeqViewBench[T, Coll, CollSeq] {
+  extends SeqBench with ParSeqViewBench[T, Coll, CollSeq] {
     val toadd = createSequential(size, parallelism)
     def comparisonMap = collection.Map()
     def runseq = (seqcoll ++ toadd).drop(size).map(operators.mapper).++(toadd).take(size)
     def runpar = {
-      val r: ParallelSeqView[T, ParallelSeq[T], Seq[T]] = (parcoll ++ toadd).drop(size).map(operators.mapper).++(toadd).take(size)
+      val r: ParSeqView[T, ParSeq[T], Seq[T]] = (parcoll ++ toadd).drop(size).map(operators.mapper).++(toadd).take(size)
       r.force
     }
     def companion = ModifyThenForce

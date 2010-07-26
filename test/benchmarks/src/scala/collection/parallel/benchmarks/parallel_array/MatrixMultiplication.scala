@@ -2,7 +2,7 @@ package scala.collection.parallel.benchmarks.parallel_array
 
 
 
-import collection.parallel.immutable.ParallelRange
+import collection.parallel.immutable.ParRange
 
 
 object MatrixMultiplication extends Companion {
@@ -38,7 +38,7 @@ extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
     }
 
     def assignProduct(a: Matrix[T], b: Matrix[T]) = {
-      val range = new ParallelRange(0, n * n, 1, false)
+      val range = new ParRange(0, n * n, 1, false)
       range.environment = forkjoinpool
       for (i <- range) this(i / n, i % n) = calcProduct(a, b, i / n, i % n);
     }

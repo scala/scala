@@ -5,22 +5,22 @@ package scala.collection.parallel.benchmarks.parallel_range
 
 
 import scala.collection.parallel.benchmarks.generic._
-import scala.collection.parallel.immutable.ParallelRange
+import scala.collection.parallel.immutable.ParRange
 
 
 
 
 
 
-object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] with NotBenchmark {
+object RangeBenches extends StandardParIterableBench[Int, ParRange] with NotBenchmark {
 
-  def nameOfCollection = "ParallelRange"
+  def nameOfCollection = "ParRange"
   def operators = new IntOperators {}
   def comparisonMap = collection.Map()
   val forkJoinPool = new scala.concurrent.forkjoin.ForkJoinPool
   def createSequential(sz: Int, p: Int) = new collection.immutable.Range(0, sz, 1)
   def createParallel(sz: Int, p: Int) = {
-    val pr = new collection.parallel.immutable.ParallelRange(0, sz, 1, false)
+    val pr = new collection.parallel.immutable.ParRange(0, sz, 1, false)
     forkJoinPool.setParallelism(p)
     pr.environment = forkJoinPool
     pr
@@ -33,7 +33,7 @@ object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] wi
   }
 
   class MapLight(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[Int, ParallelRange] {
+  extends IterableBench with StandardParIterableBench[Int, ParRange] {
     def calc(n: Int) = n % 2 + 1
 
     def comparisonMap = collection.Map()
@@ -49,7 +49,7 @@ object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] wi
   }
 
   class MapMedium(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[Int, ParallelRange] {
+  extends IterableBench with StandardParIterableBench[Int, ParRange] {
     def calc(n: Int) = {
       var i = 0
       var sum = n
@@ -73,7 +73,7 @@ object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] wi
   }
 
   class ForeachModify(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[Int, ParallelRange] {
+  extends IterableBench with StandardParIterableBench[Int, ParRange] {
     val array = new Array[Int](size)
     def modify(n: Int) = array(n) += 1
 
@@ -90,7 +90,7 @@ object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] wi
   }
 
   class ForeachModifyMedium(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[Int, ParallelRange] {
+  extends IterableBench with StandardParIterableBench[Int, ParRange] {
     val array = new Array[Int](size)
     def modify(n: Int) = array(n) = {
       var i = 0
@@ -115,7 +115,7 @@ object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] wi
   }
 
   class ForeachModifyHeavy(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[Int, ParallelRange] {
+  extends IterableBench with StandardParIterableBench[Int, ParRange] {
     val array = new Array[Int](size)
     def modify(n: Int) = array(n) = collatz(10000 + array(n))
 
@@ -133,7 +133,7 @@ object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] wi
   }
 
   class ForeachAdd(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[Int, ParallelRange] {
+  extends IterableBench with StandardParIterableBench[Int, ParRange] {
     val cmap = new java.util.concurrent.ConcurrentHashMap[Int, Int]
     val hmap = new java.util.HashMap[Int, Int]
 
@@ -157,7 +157,7 @@ object RangeBenches extends StandardParallelIterableBench[Int, ParallelRange] wi
   }
 
   class ForeachAddCollatz(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParallelIterableBench[Int, ParallelRange] {
+  extends IterableBench with StandardParIterableBench[Int, ParRange] {
     val cmap = new java.util.concurrent.ConcurrentHashMap[Int, Int]
     val hmap = new java.util.HashMap[Int, Int]
 
