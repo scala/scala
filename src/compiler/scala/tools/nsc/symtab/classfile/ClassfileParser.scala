@@ -427,14 +427,48 @@ abstract class ClassfileParser {
     sym
   }
 
-
   /** Return the class symbol of the given name. */
   def classNameToSymbol(name: Name): Symbol = {
+    def loadClassSymbol(name: Name) = {
+      val s = name.toString
+      val file = global.classPath findSourceFile s getOrElse {
+        throw new MissingRequirementError("class " + s)
+      }
+      val completer = new global.loaders.ClassfileLoader(file)
+      var owner: Symbol = definitions.RootClass
+      var sym: Symbol = NoSymbol
+      var ss: String = null
+      var start = 0
+      var end = s indexOf '.'
+      while (end > 0) {
+        ss = s.substring(start, end)
+        sym = owner.info.decls lookup ss
+        if (sym == NoSymbol) {
+          sym = owner.newPackage(NoPosition, ss) setInfo completer
+          sym.moduleClass setInfo completer
+          owner.info.decls enter sym
+        }
+        owner = sym.moduleClass
+        start = end + 1
+        end = s.indexOf('.', start)
+      }
+      ss = s substring start
+      sym = owner.info.decls lookup ss
+      if (sym == NoSymbol) {
+        sym = owner.newClass(NoPosition, ss) setInfo completer
+        owner.info.decls enter sym
+        if (settings.debug.value && settings.verbose.value)
+          println("loaded "+sym+" from file "+file)
+      }
+      sym
+    }
     def lookupClass(name: Name) =
       if (name.pos('.') == name.length)
         definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
       else
-        definitions.getClass(name)
+        //definitions.getClass(name) // see ticket #2464
+        try { definitions.getClass(name) }
+        catch { case _: FatalError => loadClassSymbol(name) }
 
     innerClasses.get(name) match {
       case Some(entry) =>
@@ -709,7 +743,8 @@ abstract class ClassfileParser {
                 val eparams = typeParamsToExistentials(classSym, classSym.unsafeTypeParams)
                 val t = TypeRef(pre, classSym, eparams.map(_.tpe))
                 val res = existentialType(eparams, t)
-                if (settings.debug.value && settings.verbose.value) println("raw type " + classSym + " -> " + res)
+                if (settings.debug.value && settings.verbose.value)
+                  println("raw type " + classSym + " -> " + res)
                 res
               }
             case tp =>
