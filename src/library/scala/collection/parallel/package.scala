@@ -12,6 +12,7 @@ import scala.collection.generic.CanCombineFrom
 package object parallel {
   val MIN_FOR_COPY = -1 // TODO: set to 5000
   val CHECK_RATE = 512
+  val SQRT2 = math.sqrt(2)
 
   /** Computes threshold from the size of the collection and the parallelism level.
    */
@@ -20,6 +21,8 @@ package object parallel {
     if (p > 1) 1 + sz / (8 * p)
     else sz
   }
+
+  val availableProcessors = java.lang.Runtime.getRuntime.availableProcessors
 
   def unsupported(msg: String) = throw new UnsupportedOperationException(msg)
 
@@ -30,7 +33,7 @@ package object parallel {
    *
    *  @tparam T      type of the elements in the array, which is a subtype of AnyRef
    *  @param array   the array to be parallelized
-   *  @return        a `Parallelizable` object with a `par` method
+   *  @return        a `Parallelizable` object with a `par` method=
    */
   implicit def array2ParArray[T <: AnyRef](array: Array[T]) = new Parallelizable[mutable.ParArray[T]] {
     def par = mutable.ParArray.handoff[T](array)

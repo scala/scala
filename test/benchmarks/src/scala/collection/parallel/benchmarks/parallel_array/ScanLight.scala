@@ -20,7 +20,7 @@ object ScanLight extends Companion {
 
 class ScanLight(sz: Int, p: Int, what: String)
 extends Resettable[Cont](sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
-  def companion = AggregateLight
+  def companion = ScanLight
   override def repetitionsPerRun = 10
   override val runs = 10
 
