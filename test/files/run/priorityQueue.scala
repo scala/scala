@@ -23,6 +23,8 @@ object Test {
     testEquality
     testMisc
     testReverse
+    testToList
+    testForeach
   }
 
   def testInsertionsAndEqualities {
@@ -323,6 +325,40 @@ object Test {
     assert(iq.reverse.reverse == iq)
     assert(iq.reverse.lastIndexWhere(_ == 10) == 11)
     assertPriorityDestructive(iq.reverse.reverse)
+  }
+
+  def testToList {
+    val pq = new PriorityQueue[Int]
+
+    pq += 1
+    pq += 4
+    pq += 0
+    pq += 5
+    pq += 3
+    pq += 2
+    assert(pq.toList == pq)
+    assert(pq == List(5, 4, 3, 2, 1, 0))
+    assert(pq.reverse == List(0, 1, 2, 3, 4, 5))
+
+    pq.clear
+    for (i <- -50 until 50) pq += i
+    assert(pq.toList == pq)
+    assert(pq.toList == (-50 until 50).reverse)
+  }
+
+  def testForeach {
+    val pq = new PriorityQueue[Char]
+
+    pq += 't'
+    pq += 'o'
+    pq += 'b'
+    pq += 'y'
+    val sbf = new StringBuilder
+    val sbi = new StringBuilder
+    pq.foreach(sbf += _)
+    pq.iterator.foreach(sbi += _)
+    assert(sbf.toString == sbi.toString)
+    assert(sbf.toString == "ytob")
   }
 
 }
