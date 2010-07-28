@@ -73,8 +73,8 @@ import scala.compat.Platform.currentTime
 
 trait Application {
 
-  /** The time when execution of this program started.
-   */
+  /** The time when the execution of this program started, in milliseconds since 1
+    * January 1970 UTC. */
   val executionStart: Long = currentTime
 
   /** The default main method.

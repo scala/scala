@@ -17,13 +17,23 @@ object Platform {
   type StackOverflowError = java.lang.StackOverflowError
   type ConcurrentModificationException = java.util.ConcurrentModificationException
 
-  /**
-   *  @param src     ..
-   *  @param srcPos  ..
-   *  @param dest    ..
-   *  @param destPos ..
-   *  @param length  ..
-   */
+  /** Copies `length` elements of array `src` starting at position `srcPos` to the
+    * array `dest` starting at position `destPos`. If `src eq dest`, the copying will
+    * behave as if the elements copied from `src` were first copied to a temporary
+    * array before being copied back into the array at the destination positions.
+    * @param src     A non-null array as source for the copy.
+    * @param srcPos  The starting index in the source array.
+    * @param dest    A non-null array as destination for the copy.
+    * @param destPos The starting index in the destination array.
+    * @param length  The number of elements to be copied.
+    * @throws java.lang.NullPointerException If either `src` or `dest` are `null`.
+    * @throws java.lang.ArrayStoreException If either `src` or `dest` are not of type
+    *                [java.lang.Array]; or if the element type of `src` is not
+    *                compatible with that of `dest`.
+    * @throws java.lang.IndexOutOfBoundsException If either srcPos` or `destPos` are
+    *                outside of the bounds of their respective arrays; or if `length`
+    *                is negative; or if there are less than `length` elements available
+    *                after `srcPos` or `destPos` in `src` and `dest` respectively. */
   @inline
   def arraycopy(src: AnyRef, srcPos: Int, dest: AnyRef, destPos: Int, length: Int) {
     System.arraycopy(src, srcPos, dest, destPos, length)
