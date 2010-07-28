@@ -189,7 +189,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
         while (i < chunksz) {
           val kv = chunkarr(i)
           val hc = kv._1.##
-          trie = trie.updated0(kv._1, hc, rootbits, kv._2, kv)
+          trie = trie.updated0(kv._1, hc, rootbits, kv._2, kv, null)
           i += 1
         }
         i = 0

@@ -511,17 +511,6 @@ extends ParSeq[T]
     }
 
     override def scanToArray[U >: T, A >: U](z: U, op: (U, U) => U, destarr: Array[A], from: Int) {
-      // var last = z
-      // var j = from
-      // var k = i
-      // val ntil = until
-      // val a = arr
-      // while (k < ntil) {
-      //   last = op(last, a(k).asInstanceOf[U])
-      //   destarr(j) = last
-      //   k += 1
-      // }
-      // i = k
       scanToArray_quick[U](array, destarr.asInstanceOf[Array[Any]], op, z, i, until, from)
       i = until
     }

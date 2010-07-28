@@ -946,9 +946,9 @@ extends IterableLike[T, Repr]
       // and keep processors busier with merging
       // (work stealing while prefix scanning means more work later)
       val processors = parallelismLevel min availableProcessors
-      len > ((size / tweak(processors)) max 1)
+      len > (((size + 1) / tweak(processors)) max 1)
     }
-    private def tweak(p: Int) = if (p < 4) 2 else p / 2
+    private def tweak(p: Int) = 2 // if (p < 4) p else p / 2
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining); if untilp < len) yield {
@@ -973,7 +973,7 @@ extends IterableLike[T, Repr]
         i += 1
       }
     }
-    def shouldSplitFurther = len > threshold(size, parallelismLevel)
+    def shouldSplitFurther = len > (parallelismLevel min availableProcessors) // threshold(size, parallelismLevel)
     def split = {
       val fp = len / 2
       val sp = len - fp
