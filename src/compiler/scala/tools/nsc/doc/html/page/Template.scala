@@ -18,7 +18,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   val path =
     templateToPath(tpl)
 
-  val title = tpl.name + " (Scaladoc for " + tpl.qualifiedName + ")"
+  val title = tpl.universe.settings.doctitle.value + " (" + tpl.universe.settings.docversion.value + ") — " + tpl.qualifiedName
 
   val headers =
     <xml:group>
@@ -294,10 +294,10 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
     } ++
     { mbr match {
-        case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined) =>
-          val sourceUrl = tpl.sourceUrl.get
+        case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined && dtpl.inSource.isDefined) =>
+          val (absFile, line) = dtpl.inSource.get
           <div class="block">
-            source: { <a href={ sourceUrl.toString }>{ Text(new java.io.File(sourceUrl.getPath).getName) }</a> }
+            source: { <a href={ dtpl.sourceUrl.get.toString }>{ Text(absFile.file.getName) }</a> }
           </div>
         case _ => NodeSeq.Empty
       }
@@ -326,14 +326,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
                 <div class="block"><ol>see also:
                   { val seeXml:List[scala.xml.NodeSeq]=(for(see <- comment.see ) yield <li>{bodyToHtml(see)}</li> )
                     seeXml.reduceLeft(_ ++ Text(", ") ++ _)
-                  }
-                </ol></div>
-              else NodeSeq.Empty
-            }
-            { if(!comment.authors.isEmpty)
-                <div class="block"><ol>authors:
-                  { val authorsXml:List[scala.xml.NodeSeq]=(for(author <- comment.authors ) yield <li>{bodyToHtml(author)}</li> )
-                    authorsXml.reduceLeft(_ ++ Text(", ") ++ _)
                   }
                 </ol></div>
               else NodeSeq.Empty
