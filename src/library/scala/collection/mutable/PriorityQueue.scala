@@ -59,8 +59,16 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   override def isEmpty: Boolean = resarr.p_size0 < 2
   override def repr = this
 
-  // hey foreach, our 0th element doesn't exist
-  override def foreach[U](f: A => U) {
+  /** A version of `foreach` that traverses elements in an unspecified order.
+   *
+   *  This method is faster than `foreach` as it does not copy the heap to
+   *  traverse it.
+   *
+   *  @tparam U      the return type of `f`
+   *  @param f       the function to be applied at each element, return value ignored
+   */
+  def foreachUnordered[U](f: A => U) {
+    // hey foreach, our 0th element doesn't exist
     var i = 1
     while (i < resarr.p_size0) {
       f(toA(resarr.p_array(i)))
