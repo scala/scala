@@ -33,9 +33,10 @@ import annotation.migration
  *  @define willNotTerminateInf
  */
 @serializable @cloneable
-class PriorityQueue[A](implicit ord: Ordering[A])
-      extends Seq[A]
-      with SeqLike[A, PriorityQueue[A]]
+class PriorityQueue[A](implicit val ord: Ordering[A])
+      extends Iterable[A]
+      with GenericOrderedTraversableTemplate[A, PriorityQueue]
+      with IterableLike[A, PriorityQueue[A]]
       with Growable[A]
       with Builder[A, PriorityQueue[A]]
 {
@@ -53,57 +54,15 @@ class PriorityQueue[A](implicit ord: Ordering[A])
 
   private val resarr = new ResizableArrayAccess[A]
 
-  resarr.p_size0 += 1                           // we do not use array(0)
-  override def length: Int = resarr.length - 1  // adjust length accordingly
+  resarr.p_size0 += 1                  // we do not use array(0)
+  def length: Int = resarr.length - 1  // adjust length accordingly
   override def size: Int = length
   override def isEmpty: Boolean = resarr.p_size0 < 2
   override def repr = this
 
-  /** A version of `foreach` that traverses elements in an unspecified order.
-   *
-   *  This method is faster than `foreach` as it does not copy the heap to
-   *  traverse it.
-   *
-   *  @tparam U      the return type of `f`
-   *  @param f       the function to be applied at each element, return value ignored
-   */
-  def foreachUnordered[U](f: A => U) {
-    // hey foreach, our 0th element doesn't exist
-    var i = 1
-    while (i < resarr.p_size0) {
-      f(toA(resarr.p_array(i)))
-      i += 1
-    }
-  }
+  def result = this
 
-  def update(idx: Int, elem: A) {
-    if (idx < 0 || idx >= size) throw new IndexOutOfBoundsException("Indices must be nonnegative and lesser than the size.")
-
-    var i = 0
-    val iter = iterator
-    clear
-    while (iter.hasNext) {
-      val curr = iter.next
-      if (i == idx) this += elem
-      else this += curr
-      i += 1
-    }
-  }
-
-  def apply(idx: Int) = {
-    if (idx < 0 || idx >= size) throw new IndexOutOfBoundsException("Indices must be nonnegative and lesser than the size.")
-
-    var left = idx
-    val iter = iterator
-    var curr = iter.next
-    while (left > 0) {
-      curr = iter.next
-      left -= 1
-    }
-    curr
-  }
-
-  def result = clone
+  override def orderedCompanion = PriorityQueue
 
   private def toA(x: AnyRef): A = x.asInstanceOf[A]
   protected def fixUp(as: Array[AnyRef], m: Int): Unit = {
@@ -190,6 +149,14 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     } else
       throw new NoSuchElementException("no element to remove from heap")
 
+  def dequeueAll[A1 >: A, That](implicit bf: CanBuildFrom[_, A1, That]): That = {
+    val b = bf.apply
+    while (nonEmpty) {
+      b += dequeue()
+    }
+    b.result
+  }
+
   /** Returns the element with the highest priority in the queue,
    *  or throws an error if there is no element contained in the queue.
    *
@@ -208,16 +175,12 @@ class PriorityQueue[A](implicit ord: Ordering[A])
    *  @return  an iterator over all elements sorted in descending order.
    */
   override def iterator: Iterator[A] = new Iterator[A] {
-    val as: Array[AnyRef] = new Array[AnyRef](resarr.p_size0)
-    Array.copy(resarr.p_array, 0, as, 0, resarr.p_size0)
-    var i = resarr.p_size0 - 1
-    def hasNext: Boolean = i > 0
+    private var i = 1
+    def hasNext: Boolean = i < resarr.p_size0
     def next(): A = {
-      val res = toA(as(1))
-      as(1) = as(i)
-      i = i - 1
-      fixDown(as, 1, i)
-      res
+      val n = resarr.p_array(i)
+      i += 1
+      toA(n)
     }
   }
 
@@ -235,7 +198,7 @@ class PriorityQueue[A](implicit ord: Ordering[A])
    *
    *  @return   A reversed priority queue.
    */
-  override def reverse = {
+  def reverse = {
     val revq = new PriorityQueue[A]()(new math.Ordering[A] {
       def compare(x: A, y: A) = ord.compare(y, x)
     })
@@ -243,15 +206,13 @@ class PriorityQueue[A](implicit ord: Ordering[A])
     revq
   }
 
-  override def reverseIterator = new Iterator[A] {
-    val arr = new Array[Any](PriorityQueue.this.size)
-    iterator.copyToArray(arr)
-    var i = arr.size - 1
-    def hasNext: Boolean = i >= 0
+  def reverseIterator = new Iterator[A] {
+    private var i = resarr.p_size0 - 1
+    def hasNext: Boolean = i >= 1
     def next(): A = {
-      val curr = arr(i)
+      val n = resarr.p_array(i)
       i -= 1
-      curr.asInstanceOf[A]
+      toA(n)
     }
   }
 
@@ -288,9 +249,9 @@ class PriorityQueue[A](implicit ord: Ordering[A])
   // }
 }
 
-// !!! TODO - but no SortedSeqFactory (yet?)
-// object PriorityQueue extends SeqFactory[PriorityQueue] {
-//   def empty[A](implicit ord: Ordering[A]): PriorityQueue[A] = new PriorityQueue[A](ord)
-//   implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, PriorityQueue] =
-// }
-//
+
+object PriorityQueue extends OrderedTraversableFactory[PriorityQueue] {
+  def newBuilder[A](implicit ord: Ordering[A]) = new PriorityQueue[A]
+  implicit def canBuildFrom[A](implicit ord: Ordering[A]): CanBuildFrom[Coll, A, PriorityQueue[A]] = new GenericCanBuildFrom[A]
+}
+

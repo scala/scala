@@ -48,3 +48,4 @@ abstract class GenericCompanion[+CC[X] <: Traversable[X]] {
     b.result
   }
 }
+
