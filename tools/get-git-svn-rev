@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+
+GIT_PAGER=cat
+git log -10 | grep git-svn-id | head -1 | sed 's/[^@]*@\([0-9]*\).*/\1/'

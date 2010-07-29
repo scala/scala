@@ -231,11 +231,7 @@ INITIALISATION
       <equals arg1="${svn.number.svn}" arg2="0" />
       <then>
         <!-- Finding SVN revision, git style -->
-        <exec osfamily="unix" executable="tools/git-get-rev" outputproperty="svn.number.git" failifexecutionfails="false" />
-        <propertyregex
-          property="svn.number" input="${svn.number.git}" select="\1"
-          regexp="\D*?(\d+)"
-          defaultValue="0"/>
+        <exec osfamily="unix" executable="tools/get-git-svn-rev" outputproperty="svn.number" failifexecutionfails="false" />
       </then>
       <else>
         <property name="svn.number" value="${svn.number.svn}" />

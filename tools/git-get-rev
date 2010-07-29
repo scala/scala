@@ -1,5 +1,0 @@
-#!/bin/sh
-#
-
-GIT_PAGER=cat
-git log -10 | grep git-svn-id | head -1
