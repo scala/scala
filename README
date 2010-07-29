@@ -36,6 +36,10 @@ scala/
           ant/                  Support libraries for the build tool.
               ant-contrib.jar   Provides additional features for Ant
               vizant.jar        Provides DOT graph generation for Ant
+      project/                  All that is needed to use SBT for building
+          boot/ †               SBT storage (for download,...)
+          build/                The class files that defines the build project
+          build.properties      Various SBT project variables
       README                    The file you are currently reading.
       sandbox/ †                A folder to test code etc.
       src/                      All the source files of Scala.
@@ -43,6 +47,7 @@ scala/
           compiler/             The sources of the Scala compiler.
           library/              The sources of the core Scala library.
           swing/                The sources of the Swing library.
+      target/ †                 Temporary staging area for build products from the SBT script.
       test/                     The Scala test suite.
 
 Part II. Building Scala with SABBUS
@@ -82,8 +87,7 @@ compiler without an intermediate build. On the other hand, if building the
 library requires changes in the compiler, a new locker must be built if
 bootstrapping is still possible, or a new starr if it is not.
 
-Part III. Requirements for SABBUS
---------------------------------------------------------------------------------
+REQUIREMENTS FOR SABBUS:
 
 The Scala build system is based on Apache Ant. Most required pre-compiled
 libraries are part of the repository (in 'lib/'). The following however is
@@ -91,7 +95,13 @@ assumed to be installed on the build machine:
   - A Java runtime environment (JRE) or SDK 1.6 or above.
   - Apache Ant version 1.7.0 or above.
 
-Part IV. Common use cases
+
+Part III. Using SBT as an alternative
+--------------------------------------------------------------------------------
+It is now possible to use SBT as an alternative to build Scala. This is still in beta stage.
+More informations and usage instruction at http://lampsvn.epfl.ch/trac/scala/wiki/SBT 
+
+Part IV. Common use-cases
 --------------------------------------------------------------------------------
 
 'ant -p'
