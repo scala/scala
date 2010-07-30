@@ -428,8 +428,10 @@ abstract class RefChecks extends InfoTransform {
             })
 
         def ignoreDeferred(member: Symbol) =
-          isAbstractTypeWithoutFBound(member) ||
-          (member.isJavaDefined && javaErasedOverridingSym(member) != NoSymbol)
+          (currentRun.erasurePhase != NoPhase) && ( // the test requires atPhase(erasurePhase.next) so shouldn't be done if the compiler has no erasure phase available
+            isAbstractTypeWithoutFBound(member) ||
+            (member.isJavaDefined && javaErasedOverridingSym(member) != NoSymbol)
+          )
 
         // 2. Check that only abstract classes have deferred members
         def checkNoAbstractMembers() = {
