@@ -143,11 +143,11 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
         //
         // Internally we use Option[List[String]] to discover error,
         // but the outside expects our arguments back unchanged on failure
-        if (arg contains ":") parseColonArg(arg) match {
+        if (isPropertyArg(arg)) parsePropertyArg(arg) match {
           case Some(_)  => rest
           case None     => args
         }
-        else if (isPropertyArg(arg)) parsePropertyArg(arg) match {
+        else if (arg contains ":") parseColonArg(arg) match {
           case Some(_)  => rest
           case None     => args
         }
