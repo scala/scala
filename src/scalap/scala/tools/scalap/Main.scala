@@ -10,12 +10,10 @@ package scala.tools.scalap
 
 import java.io.{PrintStream, OutputStreamWriter, ByteArrayOutputStream}
 import scalax.rules.scalasig._
-import scalax.rules.scalasig.ClassFileParser.{ConstValueIndex, Annotation}
 import tools.nsc.util.{ ClassPath }
 import tools.util.PathResolver
 import ClassPath.DefaultJavaContext
 import tools.nsc.io.{PlainFile, AbstractFile}
-import scala.reflect.generic.ByteCodecs
 
 /**The main object used to execute scalap on the command-line.
  *
@@ -104,25 +102,10 @@ object Main {
   def decompileScala(bytes: Array[Byte], isPackageObject: Boolean): String = {
     val byteCode = ByteCode(bytes)
     val classFile = ClassFileParser.parse(byteCode)
-    classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse) match {
-      // No entries in ScalaSig attribute implies that the signature is stored in the annotation
-      case Some(ScalaSig(_, _, entries)) if entries.length == 0 => unpickleFromAnnotation(classFile, isPackageObject)
-      case Some(scalaSig) => parseScalaSignature(scalaSig, isPackageObject)
-      case None => ""
-    }
-  }
 
-  def unpickleFromAnnotation(classFile: ClassFile, isPackageObject: Boolean): String = {
-    import classFile._
-    classFile.annotation(SCALA_SIG_ANNOTATION) match {
-      case None => ""
-      case Some(Annotation(_, elements)) =>
-        val bytesElem = elements.find(elem => constant(elem.elementNameIndex) == BYTES_VALUE).get
-        val bytes = ((bytesElem.elementValue match {case ConstValueIndex(index) => constantWrapped(index)})
-                .asInstanceOf[StringBytesPair].bytes)
-        val length = ByteCodecs.decode(bytes)
-        val scalaSig = ScalaSigAttributeParsers.parse(ByteCode(bytes.take(length)))
-        parseScalaSignature(scalaSig, isPackageObject)
+    ScalaSigParser.parse(classFile) match {
+      case Some(scalaSig) => parseScalaSignature(scalaSig, isPackageObject)
+      case None           => ""
     }
   }
 

@@ -11,27 +11,45 @@ package scalax
 package rules
 package scalasig
 
+import ClassFileParser.{ ConstValueIndex, Annotation }
+import scala.reflect.generic.ByteCodecs
+
 object ScalaSigParser {
+  import Main.{ SCALA_SIG, SCALA_SIG_ANNOTATION, BYTES_VALUE }
 
-  def getScalaSig(clazz : Class[_]) : Option[ByteCode] = {
-    val byteCode = ByteCode.forClass(clazz)
-    val classFile = ClassFileParser.parse(byteCode)
+  def scalaSigFromAnnotation(classFile: ClassFile): Option[ScalaSig] = {
+    import classFile._
 
-    /*
-    println("ClassFile version: " + classFile.majorVersion + "." + classFile.minorVersion)
-    println("Class: " + classFile.className)
-    println("Superclass: " + classFile.superClass)
-    println("Interfaces: " + classFile.interfaces.mkString(", "))
-    println("Constant pool:")
-    val constantPool = classFile.header.constants
-    for (i <- 1 to constantPool.size) println(i + "\t" + constantPool(i))
-    */
+    classFile.annotation(SCALA_SIG_ANNOTATION) map {
+      case Annotation(_, elements) =>
+        val bytesElem = elements.find(elem => constant(elem.elementNameIndex) == BYTES_VALUE).get
+        val bytes = ((bytesElem.elementValue match {case ConstValueIndex(index) => constantWrapped(index)})
+                .asInstanceOf[StringBytesPair].bytes)
+        val length = ByteCodecs.decode(bytes)
 
-    classFile.attribute("ScalaSig").map(_.byteCode)
+        ScalaSigAttributeParsers.parse(ByteCode(bytes.take(length)))
+    }
   }
 
-  def parse(clazz : Class[_]) : Option[ScalaSig] = {
-    getScalaSig(clazz).map(ScalaSigAttributeParsers.parse)
+  def scalaSigFromAttribute(classFile: ClassFile) : Option[ScalaSig] =
+    classFile.attribute(SCALA_SIG).map(_.byteCode).map(ScalaSigAttributeParsers.parse)
+
+  def parse(classFile: ClassFile): Option[ScalaSig] = {
+    val scalaSig  = scalaSigFromAttribute(classFile)
+
+    scalaSig match {
+      // No entries in ScalaSig attribute implies that the signature is stored in the annotation
+      case Some(ScalaSig(_, _, entries)) if entries.length == 0 =>
+        scalaSigFromAnnotation(classFile)
+      case x => x
+    }
+  }
+
+  def parse(clazz : Class[_]): Option[ScalaSig] = {
+    val byteCode  = ByteCode.forClass(clazz)
+    val classFile = ClassFileParser.parse(byteCode)
+
+    parse(classFile)
   }
 }
 
