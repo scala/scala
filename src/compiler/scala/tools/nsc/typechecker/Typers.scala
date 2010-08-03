@@ -1758,6 +1758,16 @@ trait Typers { self: Analyzer =>
           meth.paramss.exists(ps => ps.exists(_.hasFlag(DEFAULTPARAM)) && isRepeatedParamType(ps.last.tpe)))
         error(meth.pos, "a parameter section with a `*'-parameter is not allowed to have default arguments")
 
+      if (phase.id <= currentRun.typerPhase.id) {
+        val allParams = meth.paramss.flatten
+        for (p <- allParams) {
+          deprecatedName(p).foreach(n => {
+            if (allParams.exists(p1 => p1.name == n || (p != p1 && deprecatedName(p1) == Some(n))))
+              error(p.pos, "deprecated parameter name "+ n +" has to be distinct from any other parameter name (deprecated or not).")
+          })
+        }
+      }
+
       checkMethodStructuralCompatible(meth)
 
       treeCopy.DefDef(ddef, typedMods, ddef.name, tparams1, vparamss1, tpt1, rhs1) setType NoType

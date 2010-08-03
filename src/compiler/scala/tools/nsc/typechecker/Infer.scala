@@ -694,7 +694,7 @@ trait Infer {
       val argtpes1 = argtpes map {
         case NamedType(name, tp) => // a named argument
           var res = tp
-          val pos = params.indexWhere(p => p.name == name && !p.hasFlag(SYNTHETIC))
+          val pos = params.indexWhere(p => (p.name == name || deprecatedName(p) == Some(name)) && !p.hasFlag(SYNTHETIC))
           if (pos == -1) {
             if (positionalAllowed) { // treat assignment as positional argument
               argPos(index) = index

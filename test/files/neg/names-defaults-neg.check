@@ -107,17 +107,30 @@ Error occurred in an application involving default arguments.
 names-defaults-neg.scala:86: error: module extending its companion class cannot use default constructor arguments
     object C extends C()
              ^
-names-defaults-neg.scala:120: error: reference to var2 is ambiguous; it is both, a parameter
+names-defaults-neg.scala:90: error: deprecated parameter name x has to be distinct from any other parameter name (deprecated or not).
+  def deprNam1(x: Int, @deprecatedName('x) y: String) = 0
+                                           ^
+names-defaults-neg.scala:91: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
+  def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
+                                              ^
+names-defaults-neg.scala:93: warning: the parameter name y has been deprecated. Use b instead.
+  deprNam3(y = 10, b = 2)
+             ^
+names-defaults-neg.scala:93: error: parameter specified twice: b
+  deprNam3(y = 10, b = 2)
+                     ^
+names-defaults-neg.scala:127: error: reference to var2 is ambiguous; it is both, a parameter
 name of the method and the name of a variable currently in scope.
   delay(var2 = 40)
              ^
-names-defaults-neg.scala:123: error: missing parameter type for expanded function ((x$1) => a = x$1)
+names-defaults-neg.scala:130: error: missing parameter type for expanded function ((x$1) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
-names-defaults-neg.scala:124: error: parameter specified twice: a
+names-defaults-neg.scala:131: error: parameter specified twice: a
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:125: error: wrong number of parameters; expected = 2
+names-defaults-neg.scala:132: error: wrong number of parameters; expected = 2
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                               ^
-29 errors found
+one warning found
+32 errors found

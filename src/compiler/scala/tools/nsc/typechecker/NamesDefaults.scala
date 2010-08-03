@@ -410,7 +410,10 @@ trait NamesDefaults { self: Analyzer =>
     var positionalAllowed = true
     val namelessArgs = for ((arg, index) <- (args.zipWithIndex)) yield arg match {
       case a @ AssignOrNamedArg(Ident(name), rhs) =>
-        val pos = params.indexWhere(p => p.name == name && !p.hasFlag(SYNTHETIC))
+        val (pos, newName) = paramPos(params, name)
+        newName.foreach(n => {
+          typer.context.unit.deprecationWarning(arg.pos, "the parameter name "+ name +" has been deprecated. Use "+ n +" instead.")
+        })
         if (pos == -1) {
           if (positionalAllowed) {
             argPos(index) = index
@@ -482,4 +485,30 @@ trait NamesDefaults { self: Analyzer =>
       res = context.lookup(clazz.name.toTermName, clazz.owner)
     res
   }
+
+  /**
+   * Returns
+   *  - the position of the parameter named `name`
+   *  - optionally, if `name` is @deprecatedName, the new name
+   */
+  def paramPos(params: List[Symbol], name: Name): (Int, Option[Name]) = {
+    var i = 0
+    var rest = params
+    while (!rest.isEmpty) {
+      val p = rest.head
+      if (!p.hasFlag(SYNTHETIC)) {
+        if (p.name == name) return (i, None)
+        if (deprecatedName(p) == Some(name)) return (i, Some(p.name))
+      }
+      i += 1
+      rest = rest.tail
+    }
+    (-1, None)
+  }
+
+  def deprecatedName(sym: Symbol): Option[Name] =
+    sym.getAnnotation(DeprecatedNameAttr).map(ann => (ann.args(0): @unchecked) match {
+      case Apply(fun, Literal(str) :: Nil) if (fun.symbol == Symbol_apply) =>
+        newTermName(str.stringValue)
+    })
 }

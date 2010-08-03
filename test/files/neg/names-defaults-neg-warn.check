@@ -1,0 +1,7 @@
+names-defaults-neg-warn.scala:11: error: the parameter name s has been deprecated. Use x instead.
+  deprNam2.f(s = "dlfkj")
+               ^
+names-defaults-neg-warn.scala:12: error: the parameter name x has been deprecated. Use s instead.
+  deprNam2.g(x = "dlkjf")
+               ^
+two errors found

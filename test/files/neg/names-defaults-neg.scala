@@ -86,6 +86,13 @@ object Test extends Application {
     object C extends C()
   }
 
+  // deprecated names
+  def deprNam1(x: Int, @deprecatedName('x) y: String) = 0
+  def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
+  def deprNam3(@deprecatedName('x) a: Int, @deprecatedName('y) b: Int) = a + b
+  deprNam3(y = 10, b = 2)
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = a +": "+ b
   def test2(x: Unit) = println("test2")
