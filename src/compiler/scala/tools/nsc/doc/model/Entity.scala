@@ -170,7 +170,7 @@ trait TypeParam extends ParameterEntity with HigherKinded {
 /** A value parameter to a constructor or to a method. */
 trait ValueParam extends ParameterEntity {
   def resultType: TypeEntity
-  def defaultValue: Option[String]
+  def defaultValue: Option[TreeEntity]
   def isImplicit: Boolean
 }
 

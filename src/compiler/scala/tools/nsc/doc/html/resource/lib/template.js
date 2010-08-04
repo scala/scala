@@ -102,6 +102,13 @@ $(document).ready(function(){
             $(this.getTip()).text(this.getTrigger().attr("name"));
         }        
     });
+    $(".defval").tooltip({
+        tip: "#tooltip",
+        position:"top center",        
+        onBeforeShow: function(ev) {
+            $(this.getTip()).html(this.getTrigger().attr("name"))
+        }        
+    });   
     var docAllSigs = $("#template .signature");
     function commentShowFct(fullComment){
         var vis = $(":visible", fullComment);

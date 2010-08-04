@@ -39,8 +39,11 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     case _ => Nil
   }) sortBy (_.name)
 
+  /* for body, there is a special case for AnyRef, otherwise AnyRef appears like a package/object
+   * this problem should be fixed, this implementation is just a patch
+   */
   val body =
-    <body class={ if (tpl.isTrait || tpl.isClass) "type" else "value" } onload="windowTitle();">
+    <body class={ if (tpl.isTrait || tpl.isClass || tpl.qualifiedName == "scala.AnyRef") "type" else "value" } onload="windowTitle();">
 
       { if (tpl.isRootPackage || tpl.inTemplate.isRootPackage)
           NodeSeq.Empty
@@ -406,7 +409,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
               // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
               <span name={ vl.name }>{ Text(vl.name + ": ") }{ typeToHtml(vl.resultType, hasLinks) }{
                 if(!vl.defaultValue.isEmpty) {
-                  Text(" = ") ++ <span class="default">{vl.defaultValue.get}</span>
+                  defaultValueToHtml(vl.defaultValue.get);
                 }
                 else NodeSeq.Empty
               }</span>
@@ -458,6 +461,73 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       case _ =>
         <h4 class="signature">{ inside(hasLinks = true) }</h4>
     }
+  }
+
+  /** */
+  def defaultValueToHtml(defVal:TreeEntity):NodeSeq = {
+    var index = 0
+    val str = defVal.expression
+    val length = str.length
+    var myXml: NodeSeq = NodeSeq.Empty
+    for( x <- defVal.refs) {
+      val from = x._1
+      val to = x._2._2
+      if (index < from) {
+        myXml ++= stringToXml(str.substring(index,from))
+        index = from
+      }
+
+      if (index == from) {
+        val member:Entity = x._2._1
+        member match {
+          case mbr: DocTemplateEntity =>
+            val link = relativeLinkTo(mbr)
+            myXml ++= <span class="name"><a href={link}>{str.substring(from, to)}</a></span>
+          case mbr: MemberEntity =>
+            val anchor = "#" + mbr.name + defParamsString(mbr) + ":" + mbr.resultType.name
+            val link = relativeLinkTo(mbr.inTemplate)
+            myXml ++= <span class="name"><a href={link ++ anchor}>{str.substring(from, to)}</a></span>
+          case _ => assert(false, "unexpected case in defaultValueToHtml")
+        }
+        index = to
+      }
+    }
+    // function used in the MemberEntity case above
+    def defParamsString(mbr: Entity):String = mbr match {
+      case d:MemberEntity with Def => defParamsToString(d)
+      case _ => ""
+    }
+
+    if (index <= length-1) myXml ++= stringToXml(str.substring(index, length ))
+
+    Text(" =") ++
+    {
+      if(length< 7) <span class="symbol">{ myXml }</span>
+      else <span class="defval" name={ myXml }>{ " ..." }</span>
+    }
+  }
+
+  /** Makes text good looking in the html page : newlines and basic indentation,
+   * You must change this function if you want to improve pretty printing of default Values
+   */
+  def stringToXml(text: String): NodeSeq = {
+    var goodLookingXml: NodeSeq = NodeSeq.Empty
+    var indent = 0
+    for(c<-text) c match {
+      case '{' => indent+=1
+        goodLookingXml ++= Text("{")
+      case '}' => indent-=1
+        goodLookingXml ++= Text("}")
+      case '\n' =>
+        goodLookingXml++= <br/> ++ indentation
+      case _ => goodLookingXml ++= Text(c.toString)
+    }
+    def indentation:NodeSeq = {
+      var indentXml = NodeSeq.Empty
+      for (x<- 1 to indent) indentXml ++=  Text("&nbsp;&nbsp;")
+      indentXml
+    }
+    goodLookingXml
   }
 
 }

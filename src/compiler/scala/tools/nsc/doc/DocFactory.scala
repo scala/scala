@@ -26,7 +26,7 @@ import reporters.Reporter
 class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor =>
 
   /** The unique compiler instance used by this processor and constructed from its `settings`. */
-  object compiler extends Global(settings, reporter) {
+  object compiler extends Global(settings, reporter) with interactive.RangePositions{
     override protected def computeInternalPhases() {
       phasesSet += syntaxAnalyzer
       phasesSet += analyzer.namerFactory
@@ -51,7 +51,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     compiler.addSourceless
     assert(settings.docformat.value == "html")
     if (!reporter.hasErrors) {
-      val modelFactory = (new model.ModelFactory(compiler, settings) with model.comment.CommentFactory)
+      val modelFactory = (new model.ModelFactory(compiler, settings) with model.comment.CommentFactory with model.TreeFactory)
       val docModel = modelFactory.makeModel
       println("model contains " + modelFactory.templatesCount + " documentable templates")
       (new html.HtmlFactory(docModel)).generate

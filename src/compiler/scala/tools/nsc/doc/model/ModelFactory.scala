@@ -14,7 +14,7 @@ import symtab.Flags
 import model.{ RootPackage => RootPackageEntity }
 
 /** This trait extracts all required information for documentation from compilation units */
-class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory: ModelFactory with CommentFactory =>
+class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory: ModelFactory with CommentFactory with TreeFactory =>
 
   import global._
   import definitions.{ ObjectClass, ScalaObjectClass, RootPackage, EmptyPackage, NothingClass, AnyClass, AnyRefClass }
@@ -453,7 +453,8 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
               (unit.body find (_.symbol == aSym)) match {
-                case Some(ValDef(_,_,_,rhs)) => Some(rhs.toString)
+                case Some(ValDef(_,_,_,rhs)) =>
+                  Some(makeTree(rhs))
                 case _ => None
               }
             case _ => None
