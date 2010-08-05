@@ -367,6 +367,23 @@ object Test extends Application {
   println(deprNam2.g(x = "sljkfd"))
 
 
+  // #3697
+  object t3697 {
+    def a(x: Int*)(s: Int = 3) = s
+    def b(a: Int, b: Int, c: Int*) = a + b
+  }
+  println(t3697.a(Seq(3): _*)())
+  println(t3697.a(3)())
+  println(t3697.a()())
+  println(t3697.a(2,3,1)())
+  println(t3697.b(a = 1, b = 2))
+  println(t3697.b(a = 1, b = 2, 3))
+  println(t3697.b(b = 1, a = 2, c = 3))
+  println(t3697.b(a = 1, b = 2, 3, 4))
+  println(t3697.b(a = 1, b = 2, Seq(3, 4): _*))
+  println(t3697.b(b = 1, a = 2, c = Seq(3, 4): _*))
+
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l +": "+ k +", "+ (u + v))
