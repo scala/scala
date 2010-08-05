@@ -132,5 +132,31 @@ names-defaults-neg.scala:131: error: parameter specified twice: a
 names-defaults-neg.scala:132: error: wrong number of parameters; expected = 2
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                               ^
+names-defaults-neg.scala:140: error: variable definition needs type because the name is used as named argument the definition.
+  def t3 { var x = t.f(x = 1) }
+               ^
+names-defaults-neg.scala:143: error: variable definition needs type because the name is used as named argument the definition.
+  object t6 { var x = t.f(x = 1) }
+                  ^
+names-defaults-neg.scala:146: error: variable definition needs type because the name is used as named argument the definition.
+  class t9 { var x = t.f(x = 1) }
+                 ^
+names-defaults-neg.scala:160: error: variable definition needs type because the name is used as named argument the definition.
+  def u3 { var x = u.f(x = 1) }
+               ^
+names-defaults-neg.scala:163: error: variable definition needs type because the name is used as named argument the definition.
+  def u6 { var x = u.f(x = "32") }
+               ^
+names-defaults-neg.scala:166: error: reference to x is ambiguous; it is both, a parameter
+name of the method and the name of a variable currently in scope.
+  def u9 { var x: Int = u.f(x = 1) }
+                              ^
+names-defaults-neg.scala:173: error: variable definition needs type because the name is used as named argument the definition.
+  class u15 { var x = u.f(x = 1) }
+                  ^
+names-defaults-neg.scala:176: error: reference to x is ambiguous; it is both, a parameter
+name of the method and the name of a variable currently in scope.
+  class u18 { var x: Int = u.f(x = 1) }
+                                 ^
 one warning found
-32 errors found
+40 errors found

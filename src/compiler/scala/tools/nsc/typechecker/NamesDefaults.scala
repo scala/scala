@@ -444,7 +444,20 @@ trait NamesDefaults { self: Analyzer =>
           }
           val reportAmbiguousErrors = typer.context.reportAmbiguousErrors
           typer.context.reportAmbiguousErrors = false
-          val res = typer.silent(_.typed(arg, subst(paramtpe))) match {
+
+          val typedAssign = try {
+            typer.silent(_.typed(arg, subst(paramtpe)))
+          } catch {
+            // `silent` only catches and returns TypeErrors which are not CyclicReferences
+            // fix for #3685
+            case cr @ CyclicReference(sym, info) if (sym.name == param.name) =>
+              if (sym.isVariable || sym.isGetter && sym.accessed.isVariable) {
+                // named arg not allowed
+                typer.context.error(sym.pos, "variable definition needs type because the name is used as named argument the definition.")
+                typer.infer.setError(arg)
+              } else cr                                                            // named arg OK
+          }
+          val res = typedAssign match {
             case _: TypeError =>
               // if the named argument is on the original parameter
               // position, positional after named is allowed.
@@ -453,13 +466,15 @@ trait NamesDefaults { self: Analyzer =>
               argPos(index) = pos
               rhs
             case t: Tree =>
-            // this throws an exception that's caught in `tryTypedApply` (as it uses `silent`)
-            // unfortunately, tryTypedApply recovers from the exception if you use errorTree(arg, ...) and conforms is allowed as a view (see tryImplicit in Implicits)
-            // because it tries to produce a new qualifier (if the old one was P, the new one will be conforms.apply(P)), and if that works, it pretends nothing happened
-            // so, to make sure tryTypedApply fails, would like to pass EmptyTree instead of arg, but can't do that because eventually setType(ErrorType) is called, and EmptyTree only accepts NoType as its tpe
-            // thus, we need to disable conforms as a view...
+              if (!t.isErroneous) {
+              // this throws an exception that's caught in `tryTypedApply` (as it uses `silent`)
+              // unfortunately, tryTypedApply recovers from the exception if you use errorTree(arg, ...) and conforms is allowed as a view (see tryImplicit in Implicits)
+              // because it tries to produce a new qualifier (if the old one was P, the new one will be conforms.apply(P)), and if that works, it pretends nothing happened
+              // so, to make sure tryTypedApply fails, would like to pass EmptyTree instead of arg, but can't do that because eventually setType(ErrorType) is called, and EmptyTree only accepts NoType as its tpe
+              // thus, we need to disable conforms as a view...
                 errorTree(arg, "reference to "+ name +" is ambiguous; it is both, a parameter\n"+
                              "name of the method and the name of a variable currently in scope.")
+              } else t // error was reported above
           }
           typer.context.reportAmbiguousErrors = reportAmbiguousErrors
           //@M note that we don't get here when an ambiguity was detected (during the computation of res),
