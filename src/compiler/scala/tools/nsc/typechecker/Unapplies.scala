@@ -147,14 +147,15 @@ trait Unapplies extends ast.TreeDSL
       TypeTree(),
       Literal(Constant(cdef.name.decode)))
 
-    companionModuleDef(cdef, parents ::: List(gen.scalaScalaObjectConstr), List(toString))
+    companionModuleDef(cdef, parents, List(toString))
   }
 
-  def companionModuleDef(cdef: ClassDef, parents: List[Tree], body: List[Tree] = Nil): ModuleDef = atPos(cdef.pos.focus) {
+  def companionModuleDef(cdef: ClassDef, parents: List[Tree] = Nil, body: List[Tree] = Nil): ModuleDef = atPos(cdef.pos.focus) {
+    val allParents = parents ::: List( gen.scalaScalaObjectConstr)
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, List(Nil), body, cdef.impl.pos.focus))
+      Template(allParents, emptyValDef, NoMods, Nil, List(Nil), body, cdef.impl.pos.focus))
   }
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)

@@ -360,7 +360,7 @@ trait Namers { self: Analyzer =>
             } exists (_.mods hasFlag DEFAULTPARAM)
 
             if (hasDefault) {
-              val m = ensureCompanionObject(tree, companionModuleDef(tree, List(gen.scalaScalaObjectConstr)))
+              val m = ensureCompanionObject(tree, companionModuleDef(tree))
               classAndNamerOfModule(m) = (tree, null)
             }
           case tree @ ModuleDef(mods, name, _) =>

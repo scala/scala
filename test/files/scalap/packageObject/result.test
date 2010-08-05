@@ -2,4 +2,5 @@ package object PackageObject extends java.lang.Object with scala.ScalaObject {
   def this() = { /* compiled code */ }
   type A = scala.Predef.String
   def foo(i : scala.Int) : scala.Int = { /* compiled code */ }
+  protected def readResolve() : java.lang.Object = { /* compiled code */ }
 }
