@@ -1,0 +1,4 @@
+t3403.scala:2: error: implementation limitation: the BeanProperty annotation cannot be used in a type alias or renamed import
+class Foo { @bp var bar: Int = 1 }
+                    ^
+one error found
