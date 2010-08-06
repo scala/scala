@@ -1290,6 +1290,14 @@ trait Typers { self: Analyzer =>
           "implementation restriction: subclassing Classfile does not\n"+
           "make your annotation visible at runtime.  If that is what\n"+
           "you want, you must write the annotation class in Java.")
+      if (phase.id <= currentRun.typerPhase.id) {
+        for (ann <- clazz.getAnnotation(DeprecatedAttr)) {
+          val m = companionModuleOf(clazz, context)
+          if (m != NoSymbol) {
+            m.moduleClass.addAnnotation(AnnotationInfo(ann.atp, ann.args, List()))
+          }
+        }
+      }
       treeCopy.ClassDef(cdef, typedMods, cdef.name, tparams1, impl2)
         .setType(NoType)
     }
