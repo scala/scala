@@ -286,7 +286,7 @@
     <option name="UNCHECKED" value="false" />
   </component>
   <component name="ScalacSettings">
-    <option name="MAXIMUM_HEAP_SIZE" value="1024" />
+    <option name="MAXIMUM_HEAP_SIZE" value="1536" />
   </component>
   <component name="SvnBranchConfigurationManager">
     <option name="myConfigurationMap">
@@ -666,6 +666,23 @@
     <library name="quicklib">
       <CLASSES>
         <root url="file://$PROJECT_DIR$/../../build/quick/classes/library" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="quicklib_sbt">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../target/quick/ classes/library" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="compiler_palo">
+      <CLASSES>
+        <root url="jar://$PROJECT_DIR$/../../build/palo/lib/scala-library.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../build/palo/lib/scala-compiler.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />

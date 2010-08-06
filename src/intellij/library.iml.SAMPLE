@@ -1,21 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module relativePaths="true" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
-    <facet type="Scala" name="Scala">
+    <facet type="scala" name="Scala">
       <configuration>
-        <option name="takeFromSettings" value="true" />
-        <option name="myScalaCompilerJarPaths">
-          <array>
-            <option value="$MODULE_DIR$/../../build/locker/classes/compiler" />
-            <option value="$MODULE_DIR$/../../lib/fjbg.jar" />
-            <option value="$MODULE_DIR$/../../lib/msil.jar" />
-          </array>
-        </option>
-        <option name="myScalaSdkJarPaths">
-          <array>
-            <option value="$MODULE_DIR$/../../build/locker/classes/library" />
-          </array>
-        </option>
+        <option name="compilerLibraryLevel" value="Project" />
+        <option name="compilerLibraryName" value="compiler_palo" />
       </configuration>
     </facet>
   </component>
