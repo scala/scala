@@ -80,11 +80,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
 
     private def transformSuperSelect(tree: Tree): Tree = tree match {
-      // Intercept super.## and translate it to this.##
-      // which is fine since it's final.
-      case Select(sup @ Super(_, _), nme.HASHHASH)  =>
-        Select(gen.mkAttributedThis(sup.symbol), Object_##) setType IntClass.tpe
-
       case Select(sup @ Super(_, mix), name)  =>
         val sym = tree.symbol
         val clazz = sup.symbol
@@ -125,6 +120,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       case _ =>
         assert(tree.tpe.isError, tree)
         tree
+    }
+
+    // Disallow some super.XX calls targeting Any methods which would
+    // otherwise lead to either a compiler crash or runtime failure.
+    private def isDisallowed(name: Name) = name match {
+      case nme.HASHHASH | nme.EQ | nme.NE | nme.isInstanceOf_ => true
+      case _                                                  => false
     }
 
     override def transform(tree: Tree): Tree = {
@@ -202,6 +204,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           if (sym.isValue && !sym.isMethod || sym.hasFlag(ACCESSOR)) {
             unit.error(tree.pos, "super may be not be used on "+
                        (if (sym.hasFlag(ACCESSOR)) sym.accessed else sym))
+          }
+          else if (isDisallowed(name)) {
+            unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
           }
           transformSuperSelect(tree)
 

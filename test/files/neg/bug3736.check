@@ -1,0 +1,13 @@
+bug3736.scala:4: error: super not allowed here: use this.isInstanceOf instead
+    def f2 = super.isInstanceOf[String]
+                   ^
+bug3736.scala:6: error: super not allowed here: use this.== instead
+    def f4 = super.==(new AnyRef)
+                   ^
+bug3736.scala:7: error: super not allowed here: use this.!= instead
+    def f5 = super.!=(new AnyRef)
+                   ^
+bug3736.scala:8: error: super not allowed here: use this.## instead
+    def f6 = super.##
+                   ^
+four errors found
