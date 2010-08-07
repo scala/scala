@@ -25,7 +25,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   // inherits abstract value `global' and class `Phase' from Transform
 
   import global._
-  import definitions.{ IntClass, UnitClass, ByNameParamClass, Any_asInstanceOf, Object_## }
+  import definitions.{
+    IntClass, UnitClass, ByNameParamClass, Any_asInstanceOf,
+    Any_isInstanceOf, Object_isInstanceOf, Object_##, Object_==, Object_!=
+  }
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "superaccessors"
@@ -124,10 +127,13 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
     // Disallow some super.XX calls targeting Any methods which would
     // otherwise lead to either a compiler crash or runtime failure.
-    private def isDisallowed(name: Name) = name match {
-      case nme.HASHHASH | nme.EQ | nme.NE | nme.isInstanceOf_ => true
-      case _                                                  => false
-    }
+    private def isDisallowed(sym: Symbol) = (
+      (sym == Any_isInstanceOf) ||
+      (sym == Object_isInstanceOf) ||
+      (sym == Object_==) ||
+      (sym == Object_!=) ||
+      (sym == Object_##)
+    )
 
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
@@ -205,7 +211,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
             unit.error(tree.pos, "super may be not be used on "+
                        (if (sym.hasFlag(ACCESSOR)) sym.accessed else sym))
           }
-          else if (isDisallowed(name)) {
+          else if (isDisallowed(sym)) {
             unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
           }
           transformSuperSelect(tree)
