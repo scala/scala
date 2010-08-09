@@ -1788,8 +1788,18 @@ trait Typers { self: Analyzer =>
     }
 
     def typedTypeDef(tdef: TypeDef): TypeDef = {
-      reenterTypeParams(tdef.tparams) // @M!
-      val tparams1 = tdef.tparams mapConserve (typedTypeDef) // @M!
+      def typeDefTyper = {
+        if(tdef.tparams isEmpty) Typer.this
+        else newTyper(context.makeNewScope(tdef, tdef.symbol))
+      }
+      typeDefTyper.typedTypeDef0(tdef)
+    }
+
+    // call typedTypeDef instead
+    // a TypeDef with type parameters must always be type checked in a new scope
+    private def typedTypeDef0(tdef: TypeDef): TypeDef = {
+      reenterTypeParams(tdef.tparams)
+      val tparams1 = tdef.tparams mapConserve {typedTypeDef(_)}
       val typedMods = removeAnnotations(tdef.mods)
       // complete lazy annotations
       val annots = tdef.symbol.annotations
@@ -3803,7 +3813,7 @@ trait Typers { self: Analyzer =>
           newTyper(context.makeNewScope(tree, sym)).typedDefDef(ddef)
 
         case tdef @ TypeDef(_, _, _, _) =>
-          newTyper(context.makeNewScope(tree, sym)).typedTypeDef(tdef)
+          typedTypeDef(tdef)
 
         case ldef @ LabelDef(_, _, _) =>
           labelTyper(ldef).typedLabelDef(ldef)

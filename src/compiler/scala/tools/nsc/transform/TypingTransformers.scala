@@ -26,7 +26,7 @@ trait TypingTransformers {
     protected def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
 
     /** a typer for each enclosing class */
-    var typers: Map[Symbol, analyzer.Typer] = new HashMap
+    val typers: Map[Symbol, analyzer.Typer] = new HashMap
 
     override def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
 

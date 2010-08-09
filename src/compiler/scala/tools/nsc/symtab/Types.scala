@@ -137,7 +137,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  var intersectionWitness = new WeakHashMap[List[Type], Type]
+  val intersectionWitness = new WeakHashMap[List[Type], Type]
 
   private object gen extends {
     val global : Types.this.type = Types.this

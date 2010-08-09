@@ -297,7 +297,7 @@ trait Namers { self: Analyzer =>
       val sym = tree.symbol
       if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.## )
       var ltype = namerOf(sym).typeCompleter(tree)
-      if (!tparams.isEmpty) {
+      if (tparams nonEmpty) {
         //@M! TypeDef's type params are handled differently
         //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
         //@M x is only in scope in `A[x <: B]'
