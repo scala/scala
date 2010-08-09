@@ -13,7 +13,7 @@ object Option {
    */
   implicit def option2Iterable[A](xo: Option[A]): Iterable[A] = xo.toList
 
-  /** An Option factory which creates Some(value) if the argument is not null,
+  /** An Option factory which creates Some(x) if the argument is not null,
    *  and None if it is null.
    *
    *  @param  x the value
@@ -21,78 +21,136 @@ object Option {
    */
   def apply[A](x: A): Option[A] = if (x == null) None else Some(x)
 
-  /** An Option factory which returns None in a manner consistent with
+  /** An Option factory which returns $none in a manner consistent with
    *  the collections hierarchy.
    */
   def empty[A] : Option[A] = None
 }
 
-/** This class represents optional values. Instances of <code>Option</code>
- *  are either instances of case class <code>Some</code> or it is case
- *  object <code>None</code>.
+/** Represents optional values. Instances of `Option`
+ *  are either an instance of $some or the object $none.
+ *
+ *  The most idiomatic way to use an $option instance
+ *  is to treat it as a collection or monad and
+ *  use `map`,`flatMap`, `filter`,
+ *  or `foreach`:
+ *
+ *  {{{
+ *  val name:Option[String] = request.getParameter("name")
+ *  val upper = name map { _.trim } filter { _.length != 0 } map { _.toUpperCase }
+ *  println(upper.getOrElse(""))
+ *  }}}
+ *
+ *  Note that this is equivalent to {{{
+ *  val upper = for {
+ *    name <- request.getParameter("name")
+ *    trimmed <- Some(name.trim)
+ *    upper <- Some(trimmed.toUpperCase) if trimmed.length != 0
+ *  } yield upper
+ *  println(upper.getOrElse(""))
+ *  }}}
+ *
+ *  Because of how for comprehension works, if $none is returned
+ *  from `request.getParameter`, the entire expression results in
+ *  $none
+ *
+ *  This allows for sophisticated chaining of $option values without
+ *  having to check for the existence of a value.
+ *
+ *  A less-idiomatic way to use $option values is via pattern matching: {{{
+ *  val nameMaybe = request.getParameter("name")
+ *  nameMaybe match {
+ *    case Some(name) => {
+ *      println(name.trim.toUppercase)
+ *    }
+ *    case None => {
+ *      println("No name value")
+ *    }
+ *  }
+ *  }}}
  *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 1.1, 16/01/2007
+ *  @define none `None`
+ *  @define some [[scala.Some]]
+ *  @define option [[scala.Option]]
+ *  @define p `p`
+ *  @define f `f`
  */
 sealed abstract class Option[+A] extends Product {
   self =>
 
-  /** True if the option is the <code>None</code> value, false otherwise.
+  /** Returns true if the option is $none, false otherwise.
    */
   def isEmpty: Boolean
 
-  /** True if the option is a <code>Some</code>(...) false otherwise.
+  /** Returns true if the option is an instance of $some, false otherwise.
    */
   def isDefined: Boolean = !isEmpty
 
-  /** get the value of this option.
+  /** Returns the option's value.
    *  @note The option must be nonEmpty.
    *  @throws Predef.NoSuchElementException if the option is empty.
    */
   def get: A
 
-  /** If the option is nonempty return its value,
-   *  otherwise return the result of evaluating a default expression.
+  /** Returns the option's value if the option is nonempty, otherwise
+   * return the result of evaluating `default`.
    *
    *  @param default  the default expression.
    */
   def getOrElse[B >: A](default: => B): B =
     if (isEmpty) default else this.get
 
-  /** The option's value if it is nonempty, or <code>null</code> if it is empty.
-   *  The use of null of course is discouraged, but code written to use Options
-   *  often must interface with code which expects and returns nulls.
+  /** Returns the option's value if it is nonempty,
+   * or `null` if it is empty.
+   * Although the use of null is discouraged, code written to use
+   * $option must often interface with code that expects and returns nulls.
+   * @example {{{
+   * val initalText: Option[String] = getInitialText
+   * val textField = new JComponent(initalText.orNull,20)
+   * }}}
    */
   def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse null
 
-  /** If the option is nonempty, return a function applied to its value,
-   *  wrapped in a Some i.e. <code>Some(f(this.get))</code>.
-   *  Otherwise return <code>None</code>.
+  /** Returns a $some containing the result of applying $f to this $option's
+   * value if this $option is nonempty.
+   * Otherwise return $none.
+   *
+   *  @note This is similar to `flatMap` except here,
+   *  $f does not need to wrap its result in an $option.
    *
    *  @param  f   the function to apply
+   *  @see flatMap
+   *  @see foreach
    */
   def map[B](f: A => B): Option[B] =
     if (isEmpty) None else Some(f(this.get))
 
-  /** If the option is nonempty, return a function applied to its value.
-   *  Otherwise return None.
+  /** Returns the result of applying $f to this $option's value if
+   * this $option is nonempty.
+   * Returns $none if this $option is empty.
+   * Slightly different from `map` in that $f is expected to
+   * return an $option (which could be $none).
+   *
    *  @param  f   the function to apply
+   *  @see map
+   *  @see foreach
    */
   def flatMap[B](f: A => Option[B]): Option[B] =
     if (isEmpty) None else f(this.get)
 
-  /** If the option is nonempty and the given predicate <code>p</code>
-   *  yields <code>false</code> on its value, return <code>None</code>.
-   *  Otherwise return the option value itself.
+  /** Returns this $option if it is nonempty '''and''' applying the predicate $p to
+   * this $option's value returns true. Otherwise, return $none.
    *
    *  @param  p   the predicate used for testing.
    */
   def filter(p: A => Boolean): Option[A] =
     if (isEmpty || p(this.get)) this else None
 
-  /** Necessary to keep Option from being implicitly converted to
-   *  Iterable in for comprehensions.
+  /** Necessary to keep $option from being implicitly converted to
+   *  [[scala.collection.Iterable]] in `for` comprehensions.
    */
   def withFilter(p: A => Boolean): WithFilter = new WithFilter(p)
 
@@ -107,66 +165,83 @@ sealed abstract class Option[+A] extends Product {
     def withFilter(q: A => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
   }
 
-  /** If the option is nonempty, p(value), otherwise false.
+  /** Returns true if this option is nonempty '''and''' the predicate
+   * $p returns true when applied to this $option's value.
+   * Otherwise, returns false.
    *
    *  @param  p   the predicate to test
    */
   def exists(p: A => Boolean): Boolean =
     !isEmpty && p(this.get)
 
-  /** Apply the given procedure <code>f</code> to the option's value,
-   *  if it is nonempty. Do nothing if it is empty.
+  /** Apply the given procedure $f to the option's value,
+   *  if it is nonempty. Otherwise, do nothing.
    *
    *  @param  f   the procedure to apply.
+   *  @see map
+   *  @see flatMap
    */
   def foreach[U](f: A => U) {
     if (!isEmpty) f(this.get)
   }
 
-  /** If the given partial function <code>pf</code> is defined for the
-   *  option's value, apply it to the value.  Otherwise, None.
+  /** Returns a $some containing the result of
+   * applying `pf` to this $option's contained
+   * value, '''if''' this option is
+   * nonempty '''and''' `pf` is defined for that value.
+   * Returns $none otherwise.
    *
    *  @param  pf   the partial function.
+   *  @return the result of applying `pf` to this $option's
+   *  value (if possible), or $none.
    */
   def collect[B](pf: PartialFunction[A, B]): Option[B] =
     if (!isEmpty && pf.isDefinedAt(this.get)) Some(pf(this.get)) else None
 
-  /** If the option is nonempty return it,
-   *  otherwise return the result of evaluating an alternative expression.
-   *  @param alternative  the alternative expression.
+  /** Returns this $option if it is nonempty,
+   *  otherwise return the result of evaluating `alternative`.
+   *  @param alternative the alternative expression.
    */
   def orElse[B >: A](alternative: => Option[B]): Option[B] =
     if (isEmpty) alternative else this
 
-  /** An singleton iterator returning the option's value if it is nonempty
-   *  or the empty iterator if the option is empty.
+  /** Returns a singleton iterator returning the $option's value
+   * if it is nonempty, or an empty iterator if the option is empty.
    */
   def iterator: Iterator[A] =
     if (isEmpty) Iterator.empty else Iterator.single(this.get)
 
-  /** A singleton list containing the option's value if it is nonempty
-   *  or the empty list if the option is empty.
+  /** Returns a singleton list containing the $option's value
+   * if it is nonempty, or the empty list if the $option is empty.
    */
   def toList: List[A] =
     if (isEmpty) List() else List(this.get)
 
-  /** An <code>Either</code> that is a <code>Left</code> with the given argument
-   * <code>left</code> if this is empty, or a <code>Right</code> if this is nonempty with the
-   * option's value.
+  /** Returns a [[scala.Left]] containing the given
+   * argument `left` if this $option is empty, or
+   * a [[scala.Right]] containing this $option's value if
+   * this is nonempty.
+   *
+   * @param left the expression to evaluate and return if this is empty
+   * @see toLeft
    */
   def toRight[X](left: => X) =
     if (isEmpty) Left(left) else Right(this.get)
 
-  /** An <code>Either</code> that is a <code>Right</code> with the given argument
-   * <code>right</code> if this is empty, or a <code>Left</code> if this is nonempty with the
-   * option's value.
+  /** Returns a [[scala.Right]] containing the given
+   * argument `right` if this is empty, or
+   * a [[scala.Left]] containing this $option's value
+   * if this $option is nonempty.
+   *
+   * @param right the expression to evaluate and return if this is empty
+   * @see toRight
    */
   def toLeft[X](right: => X) =
     if (isEmpty) Right(right) else Left(this.get)
 }
 
-/** Class <code>Some[A]</code> represents existing values of type
- *  <code>A</code>.
+/** Class `Some[A]` represents existing values of type
+ *  `A`.
  *
  *  @author  Martin Odersky
  *  @version 1.0, 16/07/2003
