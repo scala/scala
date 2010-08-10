@@ -1,44 +1,91 @@
-checksensible.scala:1: error: class Test needs to be abstract, since method isabstract is not defined
-class Test {
-      ^
-checksensible.scala:3: warning: comparing values of types Unit and Int using `==' will always yield false
-  println((c = 1) == 0)
-                  ^
-checksensible.scala:5: warning: comparing values of types Int and java.lang.String using `==' will always yield false
-  println(1 == "abc")
-            ^
-checksensible.scala:6: warning: comparing values of types Int and Boolean using `!=' will always yield true
-  println(1 != true)
-            ^
-checksensible.scala:8: warning: comparing a fresh object using `==' will always yield false
-  println(((x: Int) => x + 1) == null)
-                              ^
-checksensible.scala:9: warning: comparing a fresh object using `==' will always yield false
-  println(new Object == new Object)
+checksensible.scala:13: error: comparing a fresh object using `eq' will always yield false
+  (new AnyRef) eq (new AnyRef)
+               ^
+checksensible.scala:14: error: comparing a fresh object using `ne' will always yield true
+  (new AnyRef) ne (new AnyRef)
+               ^
+checksensible.scala:15: error: comparing a fresh object using `eq' will always yield false
+  Shmoopie eq (new AnyRef)
+           ^
+checksensible.scala:16: error: comparing a fresh object using `eq' will always yield false
+  (Shmoopie: AnyRef) eq (new AnyRef)
                      ^
-checksensible.scala:10: warning: comparing a fresh object using `!=' will always yield true
-  println(new Exception() != new Exception())
-                          ^
-checksensible.scala:13: warning: comparing values of types Int and Null using `==' will always yield false
-  if (foo.length == null) //  == 0 makes more sense, but still
+checksensible.scala:17: error: comparing a fresh object using `eq' will always yield false
+  (new AnyRef) eq Shmoopie
+               ^
+checksensible.scala:18: error: comparing a fresh object using `eq' will always yield false
+  (new AnyRef) eq null
+               ^
+checksensible.scala:19: error: comparing a fresh object using `eq' will always yield false
+  null eq new AnyRef
+       ^
+checksensible.scala:26: error: comparing values of types Unit and Int using `==' will always yield false
+  (c = 1) == 0
+          ^
+checksensible.scala:27: error: comparing values of types Int and Unit using `==' will always yield false
+  0 == (c = 1)
+    ^
+checksensible.scala:29: error: comparing values of types Int and java.lang.String using `==' will always yield false
+  1 == "abc"
+    ^
+checksensible.scala:32: error: comparing a fresh object using `==' will always yield false
+  new AnyRef == 1
+             ^
+checksensible.scala:33: error: comparing values of types Int and java.lang.Object using `==' will always yield false
+  1 == new AnyRef
+    ^
+checksensible.scala:35: error: comparing values of types Int and Boolean using `!=' will always yield true
+  1 != true
+    ^
+checksensible.scala:36: error: comparing values of types Unit and Boolean using `==' will always yield false
+  () == true
+     ^
+checksensible.scala:37: error: comparing values of types Unit and Unit using `==' will always yield true
+  () == ()
+     ^
+checksensible.scala:38: error: comparing values of types Unit and Unit using `==' will always yield true
+  () == println
+     ^
+checksensible.scala:40: error: comparing values of types Int and Unit using `!=' will always yield true
+  (1 != println)
+     ^
+checksensible.scala:41: error: comparing values of types Int and Symbol using `!=' will always yield true
+  (1 != 'sym)
+     ^
+checksensible.scala:47: error: comparing a fresh object using `==' will always yield false
+  ((x: Int) => x + 1) == null
+                      ^
+checksensible.scala:48: error: comparing values of types object Bep and (Int) => Int using `==' will always yield false
+  Bep == ((_: Int) + 1)
+      ^
+checksensible.scala:50: error: comparing a fresh object using `==' will always yield false
+  new Object == new Object
+             ^
+checksensible.scala:51: error: comparing a fresh object using `==' will always yield false
+  new Object == "abc"
+             ^
+checksensible.scala:52: error: comparing a fresh object using `!=' will always yield true
+  new Exception() != new Exception()
+                  ^
+checksensible.scala:55: error: comparing values of types Int and Null using `==' will always yield false
+  if (foo.length == null) "plante" else "plante pas"
                  ^
-checksensible.scala:22: warning: comparing values of types Unit and Int using `!=' will always yield true
+checksensible.scala:60: error: comparing values of types Bip and Bop using `==' will always yield false
+  (x1 == x2)
+      ^
+checksensible.scala:71: error: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
+  c3 == z1
+     ^
+checksensible.scala:72: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
+  z1 == c3
+     ^
+checksensible.scala:73: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
+  z1 != c3
+     ^
+checksensible.scala:74: error: comparing values of types EqEqRefTest.this.C3 and java.lang.String using `!=' will always yield true
+  c3 != "abc"
+     ^
+checksensible.scala:83: error: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
-checksensible.scala:28: warning: comparing values of types Unit and Boolean using `==' will always yield false
-  println({} == true)
-             ^
-checksensible.scala:30: warning: comparing a fresh object using `==' will always yield false
-  println(new Object == 1)
-                     ^
-checksensible.scala:31: warning: comparing values of types Int and java.lang.Object using `==' will always yield false
-  println(1 == (new Object))
-            ^
-checksensible.scala:35: warning: comparing values of types Int and Unit using `!=' will always yield true
-  println(1 != println)
-            ^
-checksensible.scala:36: warning: comparing values of types Int and Symbol using `!=' will always yield true
-  println(1 != 'sym)
-            ^
-13 warnings found
-one error found
+30 errors found

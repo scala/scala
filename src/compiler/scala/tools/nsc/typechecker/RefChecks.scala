@@ -777,51 +777,59 @@ abstract class RefChecks extends InfoTransform {
     }
 
     def checkSensible(pos: Position, fn: Tree, args: List[Tree]) = fn match {
-      case Select(qual, name) if (args.length == 1) =>
+      case Select(qual, name @ (nme.EQ | nme.NE | nme.eq | nme.ne)) if args.length == 1 =>
+        def isReferenceOp = name == nme.eq || name == nme.ne
         def isNew(tree: Tree) = tree match {
           case Function(_, _)
              | Apply(Select(New(_), nme.CONSTRUCTOR), _) => true
           case _ => false
         }
-        name match {
-          case nme.EQ | nme.NE | nme.LT | nme.GT | nme.LE | nme.GE =>
-            def underlyingClass(tp: Type): Symbol = {
-              var sym = tp.widen.typeSymbol
-              while (sym.isAbstractType)
-                sym = sym.info.bounds.hi.widen.typeSymbol
-              sym
-            }
-            val formal = underlyingClass(fn.tpe.params.head.tpe)
-            val actual = underlyingClass(args.head.tpe)
-            val receiver = underlyingClass(qual.tpe)
-            def nonSensibleWarning(what: String, alwaysEqual: Boolean) =
-              unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield "+
-                           (alwaysEqual == (name == nme.EQ || name == nme.LE || name == nme.GE)))
-            def nonSensible(pre: String, alwaysEqual: Boolean) =
-              nonSensibleWarning(pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
-                                 alwaysEqual) // @MAT normalize for consistency in error message, otherwise part is normalized due to use of `typeSymbol', but the rest isn't
-            def hasObjectEquals = receiver.info.member(nme.equals_) == Object_equals
-            // see if it has any == methods beyond Any's and AnyRef's: ticket #2240
-            def hasOverloadedEqEq = receiver.info.member(nme.EQ).alternatives.length > 2
+        def underlyingClass(tp: Type): Symbol = {
+          var sym = tp.widen.typeSymbol
+          while (sym.isAbstractType)
+            sym = sym.info.bounds.hi.widen.typeSymbol
+          sym
+        }
+        val actual = underlyingClass(args.head.tpe)
+        val receiver = underlyingClass(qual.tpe)
 
-            if (formal == UnitClass && actual == UnitClass)
-              nonSensible("", true)
-            else if ((receiver == BooleanClass || receiver == UnitClass) &&
-                     !(receiver isSubClass actual))
-              nonSensible("", false)
-            else if (isNumericValueClass(receiver) &&
-                     !isNumericValueClass(actual) &&
-                     !(forMSIL || (actual isSubClass BoxedNumberClass)) &&
-                     !(receiver isSubClass actual))
-              nonSensible("", false)
-            else if ((receiver hasFlag FINAL) && hasObjectEquals && !isValueClass(receiver) &&
-                     !(receiver isSubClass actual) && receiver != NullClass && actual != NullClass &&
-                     (name == nme.EQ || name == nme.LE))
-              nonSensible("non-null ", false)
-            else if ((isNew(qual) || isNew(args.head)) && hasObjectEquals &&
-                     (name == nme.EQ || name == nme.NE) && !hasOverloadedEqEq)
-              nonSensibleWarning("a fresh object", false)
-          case _ =>
+        // Whether def equals(other: Any) is overridden
+        def isUsingDefaultEquals      = {
+          val m = receiver.info.member(nme.equals_)
+          (m == Object_equals) || (m == Any_equals)
+        }
+        // Whether this == or != is actually an overloaded version
+        def isUsingDefaultScalaOp = {
+          val s = fn.symbol
+          (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=) || (s == Object_eq) || (s == Object_ne)
+        }
+        // Whether the operands+operator represent a warnable combo (assuming anyrefs)
+        def isWarnable                = isReferenceOp || (isUsingDefaultEquals && isUsingDefaultScalaOp)
+        def isValueOrBoxed(s: Symbol) = isNumericValueClass(s) || (s isSubClass BoxedNumberClass)
+        def isEitherNull              = (receiver == NullClass) || (actual == NullClass)
+        def isEitherNullable          = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
+
+        def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
+          val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
+          unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield " + msg)
+        }
+
+        // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol'
+        def nonSensible(pre: String, alwaysEqual: Boolean) =
+          nonSensibleWarning(pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
+                             alwaysEqual)
+
+        if (receiver == BooleanClass && !(receiver isSubClass actual))  // true == 5
+          nonSensible("", false)
+        else if (receiver == UnitClass && actual == UnitClass)  // () == ()
+          nonSensible("", true)
+        else if (isNumericValueClass(receiver) && !isValueOrBoxed(actual) && !forMSIL) // 5 == "abc"
+          nonSensible("", false)
+        else if (isWarnable) {
+          if (receiver.isFinal && !isEitherNull && !(receiver isSubClass actual)) // object X, Y; X == Y
+            nonSensible((if (isEitherNullable) "non-null " else ""), false)
+          else if (isNew(qual) || (isNew(args.head) && (receiver.isFinal || isReferenceOp))) // new X == y or object X ; X == new Y
+            nonSensibleWarning("a fresh object", false)
         }
       case _ =>
     }
