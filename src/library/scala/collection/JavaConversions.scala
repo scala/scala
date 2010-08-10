@@ -55,16 +55,6 @@ object JavaConversions {
   import java.{ lang => jl, util => ju }
   import java.util.{ concurrent => juc }
 
-  // Conversion decorator classes
-
-  class AsJava[C](op: => C) {
-    def asJava: C = op
-  }
-
-  class AsScala[C](op: => C) {
-    def asScala: C = op
-  }
-
   // Scala => Java
 
   /**
