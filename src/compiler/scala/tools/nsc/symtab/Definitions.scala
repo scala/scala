@@ -448,6 +448,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val DeprecatedAttr: Symbol = getClass("scala.deprecated")
     lazy val DeprecatedNameAttr: Symbol = getClass("scala.deprecatedName")
     lazy val MigrationAnnotationClass: Symbol = getClass("scala.annotation.migration")
+    lazy val TraitSetterAnnotationClass: Symbol = getClass("scala.runtime.TraitSetter")
     lazy val BeanPropertyAttr: Symbol = getClass(sn.BeanProperty)
     lazy val BooleanBeanPropertyAttr: Symbol = getClass(sn.BooleanBeanProperty)
 
