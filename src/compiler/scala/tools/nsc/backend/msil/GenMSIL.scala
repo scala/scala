@@ -851,6 +851,10 @@ abstract class GenMSIL extends SubComponent {
         log("Generating code for block: " + block)
 
       for (handler <- beginCatchBlock.get(block)) {
+        if (!currentHandlers.isEmpty && currentHandlers.top.covered == handler.covered) {
+          currentHandlers.pop()
+          currentHandlers.push(handler)
+        }
         if (handler.cls == NoSymbol) {
           // `finally` blocks are represented the same as `catch`, but with no catch-type
           mcode.BeginFinallyBlock()
