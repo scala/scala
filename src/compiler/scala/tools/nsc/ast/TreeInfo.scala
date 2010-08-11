@@ -85,6 +85,13 @@ abstract class TreeInfo {
       tree.symbol.isStable && isPureExpr(qual)
     case TypeApply(fn, _) =>
       isPureExpr(fn)
+    case Apply(fn, List()) =>
+      /* Note: After uncurry, field accesses are represented as Apply(getter, Nil),
+       * so an Apply can also be pure.
+       * However, before typing, applications of nullary functional values are also
+       * Apply(function, Nil) trees. To prevent them from being treated as pure,
+       * we check that the callee is a method. */
+      fn.symbol.isMethod && isPureExpr(fn)
     case Typed(expr, _) =>
       isPureExpr(expr)
     case Block(stats, expr) =>
