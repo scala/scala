@@ -70,6 +70,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isTrait = sym.isTrait
     def isClass = sym.isClass && !sym.isTrait
     def isObject = sym.isModule && !sym.isPackage
+    def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
     def isRootPackage = false
     def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
   }
@@ -354,18 +355,16 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     else if (bSym.isModule || (bSym.isAliasType && bSym.tpe.typeSymbol.isModule))
       new DocTemplateImpl(bSym, minimumInTpl) with Object
     else if (bSym.isTrait || (bSym.isAliasType && bSym.tpe.typeSymbol.isTrait))
-      new DocTemplateImpl(bSym, minimumInTpl) with Trait {
-        def valueParams =
-          List(sym.constrParamAccessors map (makeValueParam(_, this)))
-      }
+      new DocTemplateImpl(bSym, minimumInTpl) with Trait
     else if (bSym.isClass || (bSym.isAliasType && bSym.tpe.typeSymbol.isClass))
       new DocTemplateImpl(bSym, minimumInTpl) with Class {
         def valueParams =
-          List(sym.constrParamAccessors map (makeValueParam(_, this)))
+          // we don't want params on a class (non case class) signature
+          if (isCaseClass) List(sym.constrParamAccessors map (makeValueParam(_, this)))
+          else List.empty
         val constructors =
           members collect { case d: Constructor => d }
         def primaryConstructor = constructors find { _.isPrimary }
-        def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
       }
     else
       throw new Error("'" + bSym + "' that isn't a class, trait or object cannot be built as a documentable template")

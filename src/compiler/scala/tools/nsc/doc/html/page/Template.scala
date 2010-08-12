@@ -52,7 +52,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
       }
 
       <div id="definition">
-        <img src={ relativeLinkTo(List(kindToString(tpl) + "_big.png", "lib")) }/>
+        <img src={ relativeLinkTo(List(docEntityKindToBigImage(tpl), "lib")) }/>
         <h1>{ if (tpl.isRootPackage) "root package" else tpl.name }</h1>
       </div>
 
@@ -210,8 +210,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
     } ++
     { val prs: List[ParameterEntity] = mbr match {
-        case cls: Class if cls.isCaseClass =>
-          cls.typeParams ::: (cls.primaryConstructor map (_.valueParams.flatten)).toList.flatten
+        case cls: Class => cls.typeParams ::: cls.valueParams.flatten
         case trt: Trait => trt.typeParams
         case dfe: Def => dfe.typeParams ::: dfe.valueParams.flatten
         case ctr: Constructor => ctr.valueParams.flatten
@@ -425,8 +424,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             vlsss map { vlss => <span class="params">({implicitCheck(vlss) ++ params0(vlss) })</span> }
           }
           mbr match {
-            case cls: Class if cls.isCaseClass && cls.primaryConstructor.isDefined =>
-              paramsToHtml(cls.primaryConstructor.get.valueParams)
+            case cls: Class => paramsToHtml(cls.valueParams)
             case ctr: Constructor => paramsToHtml(ctr.valueParams)
             case dfe: Def => paramsToHtml(dfe.valueParams)
             case _ => NodeSeq.Empty

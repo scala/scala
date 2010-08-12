@@ -33,6 +33,7 @@ trait TemplateEntity extends Entity {
   def isClass: Boolean
   def isObject: Boolean
   def isDocTemplate: Boolean
+  def isCaseClass: Boolean
   def selfType : Option[TypeEntity]
 }
 trait NoDocTemplate extends TemplateEntity
@@ -83,33 +84,16 @@ trait DocTemplateEntity extends TemplateEntity with MemberEntity {
   def abstractTypes: List[AbstractType]
   def aliasTypes: List[AliasType]
   def companion: Option[DocTemplateEntity]
-  // temporary implementation: to be removed
-  def findMember(str: String): Option[DocTemplateEntity] = {
-    val root = toRoot.last
-    val path = if (str.length > 0) str.split("\\.") else Array[String]()
-    var i = 0;
-    var found: DocTemplateEntity = root
-    while(i < path.length && found != null) {
-      found = found.members.find(_.name == path(i)) match {
-        case Some(doc:DocTemplateEntity) => doc
-        case _ => null
-      }
-      i += 1
-    }
-    Option(found)
-  }
 }
 
 /** A ''documentable'' trait. */
-trait Trait extends DocTemplateEntity with HigherKinded {
-  def valueParams : List[List[ValueParam]]
-}
+trait Trait extends DocTemplateEntity with HigherKinded
 
 /** A ''documentable'' class. */
 trait Class extends Trait with HigherKinded {
   def primaryConstructor: Option[Constructor]
   def constructors: List[Constructor]
-  def isCaseClass: Boolean
+  def valueParams: List[List[ValueParam]]
 }
 
 /** A ''documentable'' object. */

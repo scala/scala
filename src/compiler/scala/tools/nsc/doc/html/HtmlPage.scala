@@ -223,8 +223,17 @@ abstract class HtmlPage { thisPage =>
 
   def docEntityKindToString(ety: DocTemplateEntity) =
   	if (ety.isTrait) "trait"
+  	else if (ety.isCaseClass) "case class"
   	else if (ety.isClass) "class"
   	else if (ety.isObject) "object"
   	else if (ety.isPackage) "package"
   	else "class"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+
+  /** Returns the _big image name corresponding to the DocTemplate Entity (upper left icon) */
+  def docEntityKindToBigImage(ety: DocTemplateEntity) =
+    	if (ety.isTrait) "trait_big.png"
+    	else if (ety.isClass) "class_big.png"
+    	else if (ety.isObject) "object_big.png"
+    	else if (ety.isPackage) "package_big.png"
+    	else "class_big.png"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
 }

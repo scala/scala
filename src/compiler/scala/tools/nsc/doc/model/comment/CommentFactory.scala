@@ -36,13 +36,89 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     if (commentCache isDefinedAt key)
       Some(commentCache(key))
     else { // not reached for use-case comments
+      val c = defineComment(sym, inTpl)
+      if (c isDefined) commentCache += (sym, inTpl) -> c.get
+      c
+    }
+  }
+
+  /* A comment is usualy created by the parser, however for some special cases we have to give
+   * some inTpl comments (parent class for example) to the comment of the symbol
+   * This function manages some of those cases : Param accessor and Primary constructor
+   */
+  def defineComment(sym: global.Symbol, inTpl: => DocTemplateImpl):Option[Comment] =
+    //param accessor case
+    // We just need the @param argument, we put it into the body
+    if( sym.isParamAccessor &&
+        inTpl.comment.isDefined &&
+        inTpl.comment.get.valueParams.isDefinedAt(sym.encodedName)) {
+      val comContent = Some(inTpl.comment.get.valueParams(sym.encodedName))
+      Some(createComment(body0=comContent))
+    }
+
+    // Primary constructor case
+    // We need some content of the class definition : @constructor for the body,
+    // @param and @deprecated, we can add some more if necessary
+    else if (sym.isPrimaryConstructor && inTpl.comment.isDefined ) {
+      val tplComment = inTpl.comment.get
+      // If there is nothing to put into the comment there is no need to create it
+      if(tplComment.constructor.isDefined ||
+        tplComment.throws != Map.empty ||
+        tplComment.valueParams != Map.empty ||
+        tplComment.typeParams != Map.empty ||
+        tplComment.deprecated.isDefined
+        )
+        Some(createComment( body0 = tplComment.constructor,
+                            throws0 = tplComment.throws,
+                            valueParams0 = tplComment.valueParams,
+                            typeParams0 = tplComment.typeParams,
+                            deprecated0 = tplComment.deprecated
+                            ))
+      else None
+    }
+    //other comment cases
+    // parse function will make the comment
+    else {
       val rawComment = global.expandedDocComment(sym, inTpl.sym).trim
-      if (rawComment == "") None else {
+      if (rawComment != "") {
         val c = parse(rawComment, global.docCommentPos(sym))
-        commentCache += (sym, inTpl) -> c
         Some(c)
       }
+      else None
     }
+
+  /* Creates comments with necessary arguments */
+  def createComment(body0:        Option[Body]     = None,
+                    authors0:     List[Body]       = List.empty,
+                    see0:         List[Body]       = List.empty,
+                    result0:      Option[Body]     = None,
+                    throws0:      Map[String,Body] = Map.empty,
+                    valueParams0: Map[String,Body] = Map.empty,
+                    typeParams0:  Map[String,Body] = Map.empty,
+                    version0:     Option[Body]     = None,
+                    since0:       Option[Body]     = None,
+                    todo0:        List[Body]       = List.empty,
+                    deprecated0:  Option[Body]     = None,
+                    note0:        List[Body]       = List.empty,
+                    example0:     List[Body]       = List.empty,
+                    constructor0: Option[Body]     = None
+                    ):Comment =
+    new Comment{
+      val body        = if(body0 isDefined) body0.get else Body(Seq.empty)
+      val authors     = authors0
+      val see         = see0
+      val result      = result0
+      val throws      = throws0
+      val valueParams = valueParams0
+      val typeParams  = typeParams0
+      val version     = version0
+      val since       = since0
+      val todo        = todo0
+      val deprecated  = deprecated0
+      val note        = note0
+      val example     = example0
+      val constructor = constructor0
+
   }
 
   protected val endOfText = '\u0003'
@@ -235,22 +311,22 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
             Map.empty[String, Body] ++ pairs
           }
 
-          val com = new Comment {
-            val body        = parseWiki(docBody, pos)
-            val authors     = allTags(SimpleTagKey("author"))
-            val see         = allTags(SimpleTagKey("see"))
-            val result      = oneTag(SimpleTagKey("return"))
-            val throws      = allSymsOneTag(SimpleTagKey("throws"))
-            val valueParams = allSymsOneTag(SimpleTagKey("param"))
-            val typeParams  = allSymsOneTag(SimpleTagKey("tparam"))
-            val version     = oneTag(SimpleTagKey("version"))
-            val since       = oneTag(SimpleTagKey("since"))
-            val todo        = allTags(SimpleTagKey("todo"))
-            val deprecated  = oneTag(SimpleTagKey("deprecated"))
-            val note        = allTags(SimpleTagKey("note"))
-            val example     = allTags(SimpleTagKey("example"))
-            val short       = body.summary getOrElse Text("no summary matey")
-          }
+          val com = createComment (
+            body0        = Some(parseWiki(docBody, pos)),
+            authors0     = allTags(SimpleTagKey("author")),
+            see0         = allTags(SimpleTagKey("see")),
+            result0      = oneTag(SimpleTagKey("return")),
+            throws0      = allSymsOneTag(SimpleTagKey("throws")),
+            valueParams0 = allSymsOneTag(SimpleTagKey("param")),
+            typeParams0  = allSymsOneTag(SimpleTagKey("tparam")),
+            version0     = oneTag(SimpleTagKey("version")),
+            since0       = oneTag(SimpleTagKey("since")),
+            todo0        = allTags(SimpleTagKey("todo")),
+            deprecated0  = oneTag(SimpleTagKey("deprecated")),
+            note0        = allTags(SimpleTagKey("note")),
+            example0     = allTags(SimpleTagKey("example")),
+            constructor0 = oneTag(SimpleTagKey("constructor"))
+          )
 
           for ((key, _) <- bodyTags)
             reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
