@@ -106,9 +106,7 @@ abstract class AbstractFile extends AnyRef with Iterable[AbstractFile] {
   def underlyingSource: Option[AbstractFile] = None
 
   /** Does this abstract file denote an existing file? */
-  def exists: Boolean =
-    if (file ne null) file.exists
-    else true
+  def exists: Boolean = (file eq null) || file.exists
 
   /** Does this abstract file represent something which can contain classfiles? */
   def isClassContainer = isDirectory || (sfile exists (Path isJarOrZip _))

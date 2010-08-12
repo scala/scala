@@ -294,7 +294,7 @@ trait TraversableOnce[+A] {
    *   @tparam  B    the result type of the `*` operator.
    *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
    *
-   *   @usecase def product: Int
+   *   @usecase def product: A
    *
    *   @return       the product of all elements in this $coll of numbers of type `Int`.
    *   Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation
@@ -442,6 +442,9 @@ trait TraversableOnce[+A] {
    *  is undefined.
    *  $willNotTerminateInf
    *  @return      a map containing all elements of this $coll.
+   *  @usecase   def toMap: Map[K, V]
+   *  @return      a map of type `immutable.Map[K, V]`
+   *               containing all key/value pairs of type `(K, V)` of this $coll.
    */
   def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
     val b = immutable.Map.newBuilder[T, U]
