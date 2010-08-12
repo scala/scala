@@ -2,12 +2,12 @@ package scala.tools.nsc
 package doc
 package model
 
-/** The goal of this trait is , using makeDefaultValue,
-  * to browse the tree of default values to
-  * 1- have the String of the DefaultValue (tree.expression)
+/** The goal of this trait is , using makeTree,
+  * to browse a tree to
+  * 1- have the String of the complete tree (tree.expression)
   * 2- fill references to create hyperLinks later in html.pageTemplate
   *
-  * It is applied in ModelFactory => makeValueParam
+  * It is applied in ModelFactory => makeTree
   *
   */
 
@@ -62,9 +62,11 @@ trait TreeFactory {
           }
         }
       }
-      /** Goes through the tree of the rhs and makes links when a Select occurs,
-        * The cas of New(_) is ignored because the object we want to create a link on
+      /**
+        * Goes through the tree and makes links when a Select occurs,
+        * The case of New(_) is ignored because the object we want to create a link on
         * will be reached with recursivity and we don't want a link on the "new" string
+        * If a link is not created, its case is probably not defined in here
         */
       override def traverse(tree:Tree) = tree match {
         case Select(qualifier, name) =>
@@ -73,6 +75,7 @@ trait TreeFactory {
             case _ => makeLink(tree)
           }
           traverse(qualifier)
+        case Ident(_) => makeLink(tree)
         case _ =>
           super.traverse(tree)
       }
