@@ -1074,6 +1074,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** A clone of this symbol, but with given owner */
     final def cloneSymbol(owner: Symbol): Symbol = {
       val newSym = cloneSymbolImpl(owner)
+      // newSym.privateWithin = privateWithin // ?
       newSym.setInfo(info.cloneInfo(newSym))
         .setFlag(this.rawflags).setAnnotations(this.annotations)
     }

@@ -1,0 +1,4 @@
+main.scala:11: error: variable foo cannot be accessed in test.Test
+      println(t.foo)
+                ^
+one error found
