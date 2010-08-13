@@ -108,8 +108,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val IndexOutOfBoundsExceptionClass = getClass(sn.IOOBException)
     lazy val UninitializedErrorClass        = getClass("scala.UninitializedFieldError")
     lazy val MatchErrorClass                = getClass("scala.MatchError")
+    lazy val InvocationTargetExceptionClass = getClass(if   (forMSIL) "System.Reflection.TargetInvocationException"
+                                                       else           "java.lang.reflect.InvocationTargetException")
     // java is hard coded because only used by structural values
-    lazy val InvocationTargetExceptionClass = getClass("java.lang.reflect.InvocationTargetException")
     lazy val NoSuchMethodExceptionClass     = getClass("java.lang.NoSuchMethodException")
 
     // annotations

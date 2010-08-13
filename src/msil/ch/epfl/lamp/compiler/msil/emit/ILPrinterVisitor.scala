@@ -143,6 +143,54 @@ abstract class ILPrinterVisitor extends Visitor {
     def caseModuleBuilder(module: ModuleBuilder)
 
     protected var currentType: Type = null
+
+  def printTypeParams(sortedTVars : Array[GenericParamAndConstraints]) {
+
+    def constraintFlags(tVar : GenericParamAndConstraints) = {
+      val varianceDirective = (if (tVar.isCovariant) "+ " else (if (tVar.isContravariant) "- " else ""))
+      val typeKindDirective = (if (tVar.isReferenceType) "class " else (if (tVar.isValueType) "valuetype " else ""))
+      val dfltConstrDirective = (if (tVar.hasDefaultConstructor) ".ctor " else "")
+      varianceDirective + typeKindDirective + dfltConstrDirective
+    }
+
+    def tparamName(tVar : GenericParamAndConstraints) = {
+     /* TODO Type-params in referenced assemblies may lack a name (those in a TypeBuilder or MethodBuilder shouldn't).
+        Given that we need not list (in ilasm syntax) the original type-params' names when
+         providing type arguments to it, the only type-param-names we'll serialize into a .msil file
+         are those for type-params in a TypeBuilder or MethodBuilder. Still, more details on this
+         appear in Sec. 4.5 "Faulty metadata in XMLReaderFactory" of
+         http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/Libs4Lib.pdf
+
+        To avoid name clashes when choosing a param name,
+        first collect all existing tparam-names from a type (and its nested types).
+        Not that those names are needed (ordinal positions can be used instead)
+        but will look better when disassembling with ildasm. */
+      assert(tVar.Name != null)
+      tVar.Name
+    }
+
+    if(sortedTVars.length == 0) { return }
+    print('<')
+    val lastIdx = sortedTVars.length - 1
+    for (it <- 0 until sortedTVars.length) {
+      val tVar = sortedTVars(it)
+      print(constraintFlags(tVar))
+      if(tVar.Constraints.length > 0) {
+        print('(')
+        val lastCnstrtIdx = tVar.Constraints.length - 1
+        for (ic <- 0 until tVar.Constraints.length) {
+          val cnstrt = tVar.Constraints(ic)
+          printReference(cnstrt)
+          if (ic < lastIdx) { print(", ") }
+        }
+        print(')')
+      }
+      print(" " + tparamName(tVar))
+      if (it < lastIdx) { print(", ") }
+    }
+    print('>')
+  }
+
     /**
      * Visit a TypeBuilder
      */
@@ -160,6 +208,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	// [implements <typeReference> [, <typeReference>]*]
 	print(TypeAttributes.toString(`type`.Attributes))
 	print(" \'"); print(`type`.Name); print("\'")
+    printTypeParams(`type`.getSortedTVars())
 	if (`type`.BaseType() != null) {
 	    println()
 	    print("       extends    ")
@@ -263,14 +312,24 @@ abstract class ILPrinterVisitor extends Visitor {
 		val bits = java.lang.Float.floatToRawIntBits((value.asInstanceOf[Float]).floatValue())
 		// float32(float32(...)) != float32(...)
 		print("float32 (float32 (")
-		print(bits)
+        /* see p. 170 in Lidin's book Expert .NET 2.0 IL Assembler */
+        val valFlo = value.asInstanceOf[Float]
+        if (java.lang.Float.NaN == valFlo) print("0xFFC00000 /* NaN */ ") /* TODO this is 'quiet NaN, http://www.savrola.com/resources/NaN.html , what's the difference with a 'signaling NaN'?? */
+        else if (java.lang.Float.NEGATIVE_INFINITY == valFlo) print("0xFF800000 /* NEGATIVE_INFINITY */ ")
+        else if (java.lang.Float.POSITIVE_INFINITY == valFlo) print("0x7F800000 /* POSITIVE_INFINITY */ ")
+        else print(bits)
 		print("))")
 	    } else if (value.isInstanceOf[Double]) {
 		// !!! check if encoding is correct
 		var bits = java.lang.Double.doubleToRawLongBits((value.asInstanceOf[Double]).doubleValue())
 		// float64(float64(...)) != float64(...)
 		print("float64 (float64 (")
-		print(bits)
+        /* see p. 170 in Lidin's book Expert .NET 2.0 IL Assembler */
+        val valDou = value.asInstanceOf[Double]
+        if (java.lang.Double.NaN == valDou) print("0xffffffffffffffff /* NaN */ ") /* TODO this is 'quiet NaN, http://www.savrola.com/resources/NaN.html , what's the difference with a 'signaling NaN'?? */
+        else if (java.lang.Double.NEGATIVE_INFINITY == valDou) print("0xfff0000000000000 /* NEGATIVE_INFINITY */ ")
+        else if (java.lang.Double.POSITIVE_INFINITY == valDou) print("0x7ff0000000000000 /* POSITIVE_INFINITY */ ")
+        else print(bits)
 		print("))")
 	    } else {
 		throw new Error("ILPrinterVisitor: Illegal default value: "
@@ -417,13 +476,20 @@ abstract class ILPrinterVisitor extends Visitor {
 	    printSignature(argument.asInstanceOf[FieldInfo])
         } else if (opCode == OpCode.Castclass || opCode == OpCode.Isinst || opCode == OpCode.Ldobj || opCode == OpCode.Newarr) {
 	    printSignature(argument.asInstanceOf[Type])
-        } else if (opCode == OpCode.Box || opCode == OpCode.Unbox || opCode == OpCode.Ldtoken) {
+    } else if (opCode == OpCode.Box || opCode == OpCode.Unbox || opCode == OpCode.Ldtoken || opCode == OpCode.Initobj) {
 	    printReference(argument.asInstanceOf[Type])
         } else if (opCode == OpCode.Ldloc || opCode == OpCode.Ldloc_S || opCode == OpCode.Ldloca || opCode == OpCode.Ldloca_S || opCode == OpCode.Stloc || opCode == OpCode.Stloc_S) {
 	    val loc = argument.asInstanceOf[LocalBuilder]
 	    print(loc.slot); print("\t// "); printSignature(loc.LocalType)
 	    print(" \'"); print(loc.name); print("\'")
 	    //print("'") print(((LocalBuilder)argument).name) print("'")
+    } else if (opCode == OpCode.Readonly) {
+      println("readonly. ")
+    } else if (opCode == OpCode.Constrained) {
+      print("constrained. ")
+      printReference(argument.asInstanceOf[Type])
+    } else if (opCode == OpCode.Ldelema) {
+      printReference(argument.asInstanceOf[Type])
         } else {
 	    // by default print toString argument if any
 	    if (argument != null)
@@ -537,6 +603,10 @@ abstract class ILPrinterVisitor extends Visitor {
 	print(' '); printSignature(returnType)
 	//print(' ') print(marshal)
 	print(' '); printName(method.Name)
+    if(method.isInstanceOf[MethodInfo]) {
+      val mthdInfo = method.asInstanceOf[MethodInfo]
+      printTypeParams(mthdInfo.getSortedMVars())
+    }
 	val params = method.GetParameters()
 	print('(')
 	for (i <- 0 until params.length) {
@@ -607,7 +677,22 @@ abstract class ILPrinterVisitor extends Visitor {
     }
 
     def printTypeName(`type`: Type) {
-	if (`type`.DeclaringType != null) {
+    if (`type`.isInstanceOf[ConstructedType]) {
+      val ct = `type`.asInstanceOf[ConstructedType]
+      printSignature(ct.instantiatedType)
+      print("<")
+      var i = 0
+      while (i < ct.typeArgs.length) {
+        val ta = ct.typeArgs(i)
+        printTypeName(ta); /* should be printSignature, but don't want `class' or `valuetype'
+        appearing before a type param usage. */
+        i = i + 1;
+        if (i < ct.typeArgs.length) {
+          print(", ")
+        }
+      }
+      print(">")
+    } else if (`type`.DeclaringType != null) {
 	    printTypeName(`type`.DeclaringType)
 	    print('/')
 	    printName(`type`.Name)

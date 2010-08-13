@@ -55,8 +55,15 @@ public interface Signature {
     public static final int  ELEMENT_TYPE_VALUETYPE = 0x11;
     /** Followed by <type> token */
     public static final int  ELEMENT_TYPE_CLASS = 0x12;
-    /** <type> <rank> <boundsCount> <bound1> ... <loCount> <lo1> ... */
+
+    public static final int ELEMENT_TYPE_VAR = 0x13;
+
+    /**
+     * <type> <rank> <boundsCount> <bound1> ... <loCount> <lo1> ...
+     */
     public static final int  ELEMENT_TYPE_ARRAY = 0x14;
+
+    public static final int ELEMENT_TYPE_GENERICINST = 0x15;
     /***/
     public static final int  ELEMENT_TYPE_TYPEDBYREF = 0x16;
     /** System.IntPtr */
@@ -69,6 +76,9 @@ public interface Signature {
     public static final int  ELEMENT_TYPE_OBJECT = 0x1c;
     /** Single-dim array with 0 lower bound. */
     public static final int  ELEMENT_TYPE_SZARRAY = 0x1d;
+
+    public static final int ELEMENT_TYPE_MVAR = 0x1e;
+
     /** Required modifier : followed by a TypeDef or TypeRef token. */
     public static final int  ELEMENT_TYPE_CMOD_REQD = 0x1f;
     /** Optional modifier : followed by a TypeDef or TypeRef token. */
@@ -89,6 +99,7 @@ public interface Signature {
     public static final int EXPLICITTHIS = 0x40;
     public static final int DEFAULT = 0x00;
     public static final int VARARG = 0x05;
+    public static final int GENERIC = 0x10;
     public static final int SENTINEL = 0x41;
     public static final int C = 0x01;
     public static final int STDCALL = 0x02;

@@ -5,6 +5,8 @@
 
 package ch.epfl.lamp.compiler.msil;
 
+import java.util.Iterator;
+
 /**
  * Discovers the attributes of a method and provides access to method metadata.
  *
@@ -12,6 +14,32 @@ package ch.epfl.lamp.compiler.msil;
  * @version 1.0
  */
 public class MethodInfo extends MethodBase {
+
+    private java.util.List /* GenericParamAndConstraints */ mVars = new java.util.LinkedList();
+    private GenericParamAndConstraints[] sortedMVars = null;
+
+    public void addMVar(GenericParamAndConstraints tvarAndConstraints) {
+        sortedMVars = null;
+        mVars.add(tvarAndConstraints);
+    }
+
+    public GenericParamAndConstraints[] getSortedMVars() {
+        if(sortedMVars == null) {
+            sortedMVars = new GenericParamAndConstraints[mVars.size()];
+            for (int i = 0; i < sortedMVars.length; i ++){
+                Iterator iter = mVars.iterator();
+                while(iter.hasNext()) {
+                    GenericParamAndConstraints tvC = (GenericParamAndConstraints)iter.next();
+                    if(tvC.Number == i) {
+                        sortedMVars[i] = tvC;
+                    }
+                }
+            }
+        }
+        return sortedMVars;
+    }
+
+
 
     //##########################################################################
     // public members

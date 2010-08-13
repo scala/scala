@@ -107,7 +107,7 @@ public class PEFile {
     /** Ecma 335, 25.2.1 MS-DOS header:
      *
      *  "At offset 0x3c in the DOS header is a 4-byte unsigned integer offset, lfanew,
-     *  to the PE signature (shall be “PE\0\0”), immediately followed by the PE file header.
+         *  to the PE signature (shall be "PE\0\0"), immediately followed by the PE file header.
      */
 
 	seek(0x3c);
@@ -286,6 +286,27 @@ public class PEFile {
     public ParamDef ParamDef;
     public ParamDef ParamDef(int i) { ParamDef.readRow(i); return ParamDef; }
 
+    public GenericParam GenericParam;
+
+    public GenericParam GenericParam(int i) {
+        GenericParam.readRow(i);
+        return GenericParam;
+    }
+
+    public MethodSpec MethodSpec;
+
+    public MethodSpec MethodSpec(int i) {
+        MethodSpec.readRow(i);
+        return MethodSpec;
+    }
+
+    public GenericParamConstraint GenericParamConstraint;
+
+    public GenericParamConstraint GenericParamConstraint(int i) {
+        GenericParamConstraint.readRow(i);
+        return GenericParamConstraint;
+    }
+
     public InterfaceImpl InterfaceImpl;
     public MemberRef MemberRef;
     public Constant Constant;
@@ -348,6 +369,9 @@ public class PEFile {
 	NestedClass = (NestedClass) getTable(Table.NestedClass.ID);
 	ManifestResource =
 	    (ManifestResource) getTable(Table.ManifestResource.ID);
+        GenericParam = (GenericParam) getTable(Table.GenericParam.ID);
+        MethodSpec = (MethodSpec) getTable(Table.MethodSpec.ID);
+        GenericParamConstraint = (GenericParamConstraint) getTable(Table.GenericParamConstraint.ID);
     }
 
     public static String long2hex(long a) {
@@ -683,12 +707,14 @@ public class PEFile {
 
 	public String toString() {
 	    StringBuffer b = new StringBuffer("(");
+        int savedPos = buf.position();
 	    reset();
 	    for (int i = 0; i < length; i++) {
 		b.append(byte2hex(readByte()));
 		if (i < length - 1)
 		    b.append(" ");
 	    }
+        buf.position(savedPos);
 	    return b.append(")").toString();
 	}
 
@@ -725,7 +751,7 @@ public class PEFile {
 	}
 
 	/** @return - the type encoded at the current position in the signature
-	 *  according to 22.2.12
+         *         according to 23.2.12
 	 */
 	public Type decodeType() {
 	    try { return decodeType0(); }
@@ -761,10 +787,11 @@ public class PEFile {
 		    type = Type.mkPtr(Type.GetType("System.Void"));
 		} else type = Type.mkPtr(decodeType());
 		break;
-	    case ELEMENT_TYPE_BYREF:      // Followed by <type> token.
-	    case ELEMENT_TYPE_VALUETYPE:  // Followed by <type> token
-		//System.out.println("Signature.getType(): valuetype");
-		//type = pemodule.getTypeDefOrRef(decodeInt());
+        case ELEMENT_TYPE_BYREF:      /* although BYREF is not listed in 23.2.12. as possible alternative, this method is also called when parsing the signatures of a method param and a method return, which do allow for BYREF */
+            type = Type.mkByRef(decodeType());
+            break;
+        case ELEMENT_TYPE_VALUETYPE:  // Followed by TypeDefOrRefEncoded
+            assert true;
 	    case ELEMENT_TYPE_CLASS:
 		// Followed by <type> token
 		type = pemodule.getTypeDefOrRef(decodeInt());
@@ -777,19 +804,52 @@ public class PEFile {
 		break;
 	    case ELEMENT_TYPE_ARRAY:
 		// <type> <rank> <boundsCount> <bound1> ... <loCount> <lo1> ...
+                    // ArrayShape defined in 23.2.13 ArrayShape
 		Type elem = decodeType();
 		int rank = decodeInt();
 		int numSizes = decodeInt();
 		for (int i = 0; i < numSizes; i++)
-		    decodeInt();
+            decodeInt(); // TODO don't ignore
 		int numLoBounds = decodeInt();
 		for (int i = 0; i < numLoBounds; i++)
-		    decodeInt();
+            decodeInt(); // TODO don't ignore
 		type = Type.mkArray(elem, rank);
 		break;
 
+        // a grammar production from 23.2.12 Type
+        // GENERICINST (CLASS | VALUETYPE) TypeDefOrRefEncoded GenArgCount Type*
+        case ELEMENT_TYPE_GENERICINST:
+            int b = readByte();
+            /*- TODO don't ignore b as done above. Should .NET valuetypes be represented as Scala case classes? */
+            Type instantiatedType = pemodule.getTypeDefOrRef(decodeInt());
+            int numberOfTypeArgs = decodeInt();
+            Type[] typeArgs = new Type[numberOfTypeArgs];
+            for (int iarg = 0; iarg < numberOfTypeArgs; iarg++) {
+                typeArgs[iarg] = decodeType();
+            }
+            type = new ConstructedType(instantiatedType, typeArgs);
+            break;
+
+        // another grammar production from 23.2.12 Type
+        // ELEMENT_TYPE_VAR number The number non-terminal following MVAR
+        // or VAR is an unsigned integer value (compressed).
+        /* See also duplicate code in PEModule.java  */
+        case ELEMENT_TYPE_VAR:
+            int typeArgAsZeroBased = decodeInt();
+            type = new Type.TMVarUsage(typeArgAsZeroBased, true);
+            break;
+
+        // another grammar production from 23.2.12 Type
+        // ELEMENT_TYPE_MVAR number The number non-terminal following MVAR
+        // or VAR is an unsigned integer value (compressed).
+        /* See also duplicate code in PEModule.java  */
+        case ELEMENT_TYPE_MVAR:
+            typeArgAsZeroBased = decodeInt();
+            type = new Type.TMVarUsage(typeArgAsZeroBased, false);
+            break;
+
 	    case ELEMENT_TYPE_FNPTR:
-		// Followed by full method signature.
+             // Followed MethodDefSig or by MethodRefSig.
 	    case ELEMENT_TYPE_END:
 		// Marks end of a list
 	    case ELEMENT_TYPE_CMOD_REQD:
@@ -811,7 +871,7 @@ public class PEFile {
 	    }
 	    if (type == null) throw new RuntimeException();
 	    return type;
-	} // getType()
+    } // decodeType0()
 
 	public Type decodeFieldType() {
 	    skipByte(FIELD);
@@ -829,7 +889,6 @@ public class PEFile {
 	    case ELEMENT_TYPE_TYPEDBYREF:
 		return Type.GetType("System.TypedReference");
 	    case ELEMENT_TYPE_BYREF:
-		skipByte(ELEMENT_TYPE_BYREF);
 		return decodeType();
 	    default:
 		return decodeType();
@@ -840,12 +899,11 @@ public class PEFile {
 	    skipCustomMods();
 	    switch (getByte()) {
 	    case ELEMENT_TYPE_BYREF:
-		skipByte(ELEMENT_TYPE_BYREF);
-		return decodeType();
+		    return decodeType();
 	    case ELEMENT_TYPE_TYPEDBYREF:
-		return Type.GetType("System.TypedReference");
+		    return Type.GetType("System.TypedReference");
 	    default:
-		return decodeType();
+		    return decodeType();
 	    }
 	}
 

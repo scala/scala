@@ -349,6 +349,8 @@ object OpCode {
     final val CEE_VOLATILE        : Int = 0x0113
     final val CEE_TAILCALL        : Int = 0x0114
     final val CEE_INITOBJ         : Int = 0x0115
+    final val CEE_CONSTRAINED     : Int = 0xFE16
+    final val CEE_READONLY        : Int = 0xFE1E
     final val CEE_UNUSED68        : Int = 0x0116
     final val CEE_CPBLK           : Int = 0x0117
     final val CEE_INITBLK         : Int = 0x0118
@@ -798,6 +800,18 @@ object OpCode {
      */
     final val Call = new OpCode()
 	opcode(Call, CEE_CALL , "call"    , 0xFFFFFF28, POP_SPECIAL, PUSH_SPECIAL, INLINE_METHOD    , FLOW_CALL)
+
+    /**
+   * constrained prefix
+   */
+  final val Constrained = new OpCode()
+opcode(Constrained, CEE_CONSTRAINED , "constrained"    , 0xFFFFFE16, POP_NONE, PUSH_NONE, INLINE_NONE    , FLOW_NEXT)
+
+  /**
+   * readonly prefix
+   */
+  final val Readonly = new OpCode()
+opcode(Readonly, CEE_READONLY , "readonly"    , 0xFFFFFE1E, POP_NONE, PUSH_NONE, INLINE_NONE    , FLOW_NEXT)
 
     /**
      * Calls the method indicated on the evaluation stack (as a pointer to an entry point)

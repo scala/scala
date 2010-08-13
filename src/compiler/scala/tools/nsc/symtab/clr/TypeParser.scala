@@ -335,9 +335,80 @@ abstract class TypeParser {
   }
 
   private def getName(method: MethodBase): Name = {
+
+    def operatorOverload(name : String, paramsArity : Int) : Option[Name] = paramsArity match {
+      case 1 => name match {
+        // PartitionI.10.3.1
+        case "op_Decrement" => Some(encode("--"))
+        case "op_Increment" => Some(encode("++"))
+        case "op_UnaryNegation" => Some(nme.UNARY_-)
+        case "op_UnaryPlus" => Some(nme.UNARY_+)
+        case "op_LogicalNot" => Some(nme.UNARY_!)
+        case "op_OnesComplement" => Some(nme.UNARY_~)
+        /* op_True and op_False have no operator symbol assigned,
+           Other methods that will have to be written in full are:
+           op_AddressOf & (unary)
+           op_PointerDereference * (unary) */
+        case _ => None
+      }
+      case 2 => name match {
+        // PartitionI.10.3.2
+        case "op_Addition" => Some(nme.ADD)
+        case "op_Subtraction" => Some(nme.SUB)
+        case "op_Multiply" => Some(nme.MUL)
+        case "op_Division" => Some(nme.DIV)
+        case "op_Modulus" => Some(nme.MOD)
+        case "op_ExclusiveOr" => Some(nme.XOR)
+        case "op_BitwiseAnd" => Some(nme.AND)
+        case "op_BitwiseOr" => Some(nme.OR)
+        case "op_LogicalAnd" => Some(nme.ZAND)
+        case "op_LogicalOr" => Some(nme.ZOR)
+        case "op_LeftShift" => Some(nme.LSL)
+        case "op_RightShift" => Some(nme.ASR)
+        case "op_Equality" => Some(nme.EQ)
+        case "op_GreaterThan" => Some(nme.GT)
+        case "op_LessThan" => Some(nme.LT)
+        case "op_Inequality" => Some(nme.NE)
+        case "op_GreaterThanOrEqual" => Some(nme.GE)
+        case "op_LessThanOrEqual" => Some(nme.LE)
+
+        /* op_MemberSelection is reserved in Scala  */
+
+        /* The standard does not assign operator symbols to op_Assign , op_SignedRightShift , op_UnsignedRightShift ,
+         *   and op_UnsignedRightShiftAssignment so those names will be used instead to invoke those methods. */
+
+        /*
+          The remaining binary operators are not overloaded in C# and are therefore not in widespread use. They have to be written in full.
+
+          op_RightShiftAssignment      >>=
+          op_MultiplicationAssignment  *=
+          op_PointerToMemberSelection  ->*
+          op_SubtractionAssignment     -=
+          op_ExclusiveOrAssignment     ^=
+          op_LeftShiftAssignment       <<=
+          op_ModulusAssignment         %=
+          op_AdditionAssignment        +=
+          op_BitwiseAndAssignment      &=
+          op_BitwiseOrAssignment       |=
+          op_Comma                     ,
+          op_DivisionAssignment        /=
+        */
+        case _ => None
+      }
+      case _ => None
+    }
+
     if (method.IsConstructor()) return nme.CONSTRUCTOR;
     val name = method.Name;
-    if (method.IsStatic()) return newTermName(name);
+    if (method.IsStatic()) {
+      if(method.IsSpecialName) {
+        val paramsArity = method.GetParameters().size
+        // handle operator overload, otherwise handle as any static method
+        val operName = operatorOverload(name, paramsArity)
+        if (operName.isDefined) { return operName.get; }
+      }
+      return newTermName(name);
+    }
     val params = method.GetParameters();
     name match {
       case "GetHashCode" if (params.length == 0) => nme.hashCode_;
@@ -423,7 +494,10 @@ abstract class TypeParser {
     else if (typ.IsArray())
       appliedType(definitions.ArrayClass.tpe,
                   List(getCLRType(typ.GetElementType())));
-    else {
+    else if (typ.isInstanceOf[ConstructedType]) {
+      val ct = typ.asInstanceOf[ConstructedType]
+      getCLRType(ct.instantiatedType)
+    } else {
       val res = clrTypes.sym2type.get (typ) match {
         case Some(sym) => sym.tpe
         case None => getClassType(typ);

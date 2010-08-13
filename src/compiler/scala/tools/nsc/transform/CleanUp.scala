@@ -530,7 +530,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         newStaticInits.clear
         symbolsStoredAsStatic.clear
         val transformedTemplate: Template =
-          if (!forMSIL) {
+          if (!forMSIL || forMSIL) {
             var newBody =
               transformTrees(body)
             treeCopy.Template(tree, parents, self, transformTrees(newStaticMembers.toList) ::: newBody)

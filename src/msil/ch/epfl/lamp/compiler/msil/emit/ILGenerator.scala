@@ -495,6 +495,13 @@ import ILGenerator._
 	pc = pc + 1
     }
 
+   def Ldarg0WasJustEmitted() : Boolean = {
+     if(opcodeList.isEmpty)
+       return false
+     val lastEmitted = opcodeList.get(opcodeList.size - 1)
+     lastEmitted eq OpCode.Ldarg_0
+   }
+
     private def emitSpecialLabel(l: Label) {
         emitSpecialLabel(l, null)
     }

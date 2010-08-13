@@ -108,9 +108,11 @@ final class PEType extends Type implements Signature {
     }
 
     protected MethodBase[] methoddefs;
+
     protected MethodInfo getMethod(int n) {
         return (MethodInfo)methoddefs[n - methodListBeg];
     }
+
     protected void loadMethods() {
 	methoddefs = new MethodBase[methodListEnd - methodListBeg];
 
@@ -123,9 +125,18 @@ final class PEType extends Type implements Signature {
 	    int attrs = file.MethodDef(mrow).Flags;
 	    String name = file.MethodDef.getName();
 	    Sig sig = file.MethodDef.getSignature();
+            /* we're about to parse a MethodDefSig, defined in Sec. 23.2.1 of Partition II ()  */
+
 	    int callConv = sig.readByte();
+            // TODO decode HASTHIS from high byte of calling convention
+            // TODO decode EXPLICITTHIS from high byte of calling convention
+            // TODO handle VARARG calling convention (not CLS but may show up )
+            if((callConv & 0x1F) == Signature.GENERIC) {
+                int genParamCount = sig.decodeInt();
+                /* genParamCount is ignored because the method's type params will be obtained below
+                (see: file.GenericParam.getMVarIdxes(row) ) */
+            }
 	    int paramCount = sig.decodeInt();
-	    sig.skipByte(Signature.ELEMENT_TYPE_BYREF);
 	    Type retType = sig.decodeRetType();
 	    Type[] paramType = new Type[paramCount];
 	    for (int i = 0; i < paramCount; i++)
@@ -133,10 +144,11 @@ final class PEType extends Type implements Signature {
 
 	    ParameterInfo[] params = new ParameterInfo[paramCount];
 	    int paramListBeg = file.MethodDef.ParamList;
-	    int paramListEnd = file.ParamDef.rows + 1;
-	    // if not the last method
-	    if (file.MethodDef.currentRow() < file.MethodDef.rows) {
-		paramListEnd = file.MethodDef(mrow + 1).ParamList;
+            int paramListEnd = paramListBeg + paramCount;
+            if (paramListEnd > file.ParamDef.rows) {
+                /* don't try to read param names past ParamDef's row count
+                   Some assembly-writers don't bother to give names for all params. */
+                paramListEnd = file.ParamDef.rows + 1;
 	    }
 	    for (int i = paramListBeg; i < paramListEnd; i++) {
 		int pattr = file.ParamDef(i).Flags;
@@ -159,9 +171,19 @@ final class PEType extends Type implements Signature {
 		&& (attrs & MethodAttributes.RTSpecialName) != 0
 		&& (name.equals(ConstructorInfo.CTOR)
 		    || name.equals(ConstructorInfo.CCTOR)))
+            {
 		method = new PEConstructorInfo(row, attrs, params);
-	    else
+            }
+            else {
 		method = new PEMethodInfo(row, name, attrs, retType, params);
+                int[] mvarIdxes = file.GenericParam.getMVarIdxes(row);
+                // if(mvarIdxes.length > 0) { System.out.println("Method: " + method); }
+                for(int i = 0; i < mvarIdxes.length; i++) {
+                    GenericParamAndConstraints mvarAndConstraints = pemodule.getTypeConstraints(mvarIdxes[i]);
+                    // add mvarAndConstraints as i-th MVar in method
+                    ((PEMethodInfo)method).addMVar(mvarAndConstraints);
+                }
+            }
 	    (method.IsConstructor() ? constrs : methods).add(method);
 	    methoddefs[row - methodListBeg] = method;
 	}
@@ -274,7 +296,8 @@ final class PEType extends Type implements Signature {
                     add = getMethod(msem.Method);
                 else if (msem.isRemoveOn())
                     remove = getMethod(msem.Method);
-                else {}
+                else {
+                }
             }
             events.add(new PEEventInfo(i, edef.getName(),
                                        (short)edef.EventFlags,

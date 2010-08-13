@@ -29,7 +29,7 @@ public abstract class Table {
     //##########################################################################
     // fields and methods for handling predefined sets of tables
 
-    public static final int TABLE_SET_LENGTH = 12;
+    public static final int TABLE_SET_LENGTH = 13;
 
     public static final int _TypeDefOrRef = 0;
     public static final int _HasConstant = 1;
@@ -43,9 +43,11 @@ public abstract class Table {
     public static final int _Implementation = 9;
     public static final int _CustomAttributeType = 10;
     public static final int _ResolutionScope = 11;
+    public static final int _TypeOrMethodDef = 12;
 
 
     public static final int[][] TableSet = new int[TABLE_SET_LENGTH][];
+
     static {
 	TableSet[_TypeDefOrRef] =
 	    new int[] {TypeDef.ID, TypeRef.ID, TypeSpec.ID};
@@ -75,10 +77,12 @@ public abstract class Table {
 	    new int[] {-1, -1, MethodDef.ID, MemberRef.ID, -1};
 	TableSet[_ResolutionScope] =
 	    new int[] {ModuleDef.ID, ModuleRef.ID, AssemblyRef.ID, TypeRef.ID};
+        TableSet[_TypeOrMethodDef] =
+                new int[]{TypeDef.ID, MethodDef.ID};
     }
 
     public static final int[] NoBits =
-	new int[] {2, 2, 5, 1, 2, 3, 1, 1, 1, 2, 3, 2};
+            new int[]{2, 2, 5, 1, 2, 3, 1, 1, 1, 2, 3, 2, 1};
 
     public static int getMask(int tableSetId) {
 	return (1 << NoBits[tableSetId]) - 1;
@@ -115,8 +119,8 @@ public abstract class Table {
 	"ImplMap",             "FieldRVA",         "",            "",
 	"Assembly",            "AssemblyProcessor","AssemblyOS",  "AssemblyRef",
 	"AssemblyRefProcessor","AssemblyRefOS",    "File",        "ExportedType",
-	"ManifestResource",    "NestedClass",      "",            "",
-	"",                    "",                 "",            "",//0x28-0x2f
+            "ManifestResource", "NestedClass", "GenericParam", "MethodSpec",
+            "GenericParamConstraint", "", "", "",
 	"",                    "",                 "",            "",
 	"",                    "",                 "",            "",//0x30-0x37
 	"",                    "",                 "",            "",
@@ -166,6 +170,15 @@ public abstract class Table {
 	case ExportedType.ID:      table = new ExportedType(file, rows); break;
 	case ManifestResource.ID:  table = new ManifestResource(file, rows); break;
 	case NestedClass.ID:       table = new NestedClass(file, rows); break;
+    case GenericParam.ID:
+        table = new GenericParam(file, rows);
+        break;
+    case MethodSpec.ID:
+        table = new MethodSpec(file, rows);
+        break;
+    case GenericParamConstraint.ID:
+        table = new GenericParamConstraint(file, rows);
+        break;
 	default:
 	    table = new Empty(id);
 	}
@@ -1594,6 +1607,253 @@ public abstract class Table {
 
     } // class NestedClass
 
+    //##########################################################################
+    // table GenericParam; ID=0x2a; p137, 22.20
+
+    public static final class GenericParam extends Table {
+        public static final int ID = 0x2a;
+
+        public int Number;
+        public int Flags;
+        public int Owner;  // a TypeOrMethodDef (§24.2.6) coded index
+        public int Name; // a non-null index into the String heap
+
+        private java.util.Map /*<Integer, java.util.Set<Integer>>*/ GenericParamIdxesForMethodDefIdx =
+                new java.util.HashMap();
+        private java.util.Map /*<Integer, java.util.Set<Integer>>*/ GenericParamIdxesForTypeDefIdx  =
+                new java.util.HashMap();
+
+        private void addToMap(int key, int value, java.util.Map IdxesForIdx) {
+            java.util.Set /*<Integer>*/ bucket = (java.util.Set)IdxesForIdx.get(Integer.valueOf(key));
+            if(bucket == null) {
+                bucket = new java.util.HashSet();
+                IdxesForIdx.put(Integer.valueOf(key), bucket);
+            }
+            bucket.add(Integer.valueOf(value));
+        }
+
+        /** Indexes of rows in the GenericParam table representing type parameters defined by the type given by
+         * its row index TypeDefIdx (in the TypeDef table).
+         * No need to position the current record before invoking this method.  */
+        public int[] getTVarIdxes(int TypeDefIdx) {
+            if(!mapsPopulated) {
+                initMaps();
+            }
+            java.util.Set bucket = (java.util.Set)GenericParamIdxesForTypeDefIdx.get(Integer.valueOf(TypeDefIdx));
+            if(bucket == null) {
+                bucket = java.util.Collections.EMPTY_SET;
+            }
+            int[] res = new int[bucket.size()];
+            java.util.Iterator /*<Integer>*/ it = bucket.iterator();
+            for(int i = 0; i < bucket.size(); i++) {
+                res[i] = ((Integer)it.next()).intValue();
+            }
+            return res;
+        }
+
+        /** Indexes of rows in the GenericParam table representing type parameters defined by the method given by
+         * its row index MethodDefIdx (in the MethodDef table)
+         * No need to position the current record before invoking this method.  */
+        public int[] getMVarIdxes(int MethodDefIdx) {
+            if(!mapsPopulated) {
+                initMaps();
+            }
+            java.util.Set bucket = (java.util.Set)GenericParamIdxesForMethodDefIdx.get(Integer.valueOf(MethodDefIdx));
+            if(bucket == null) {
+                bucket = java.util.Collections.EMPTY_SET;
+            }
+            int[] res = new int[bucket.size()];
+            java.util.Iterator /*<Integer>*/ it = bucket.iterator();
+            for(int i = 0; i < bucket.size(); i++) {
+                res[i] = ((Integer)it.next()).intValue();
+            }
+            return res;
+        }
+
+        private boolean mapsPopulated = false;
+
+        private void initMaps() {
+            mapsPopulated = true;
+            for (int currentParamRow = 1; currentParamRow <= rows; currentParamRow++) {
+                int currentOwner = file.GenericParam(currentParamRow).Owner;
+                int targetTableId = Table.getTableId(Table._TypeOrMethodDef, currentOwner);
+                int targetRow = currentOwner >> Table.NoBits[Table._TypeOrMethodDef];
+                if(targetTableId == TypeDef.ID){
+                    addToMap(targetRow, currentParamRow, GenericParamIdxesForTypeDefIdx);
+                } else if(targetTableId == MethodDef.ID) {
+                    addToMap(targetRow, currentParamRow, GenericParamIdxesForMethodDefIdx);
+                } else {
+                    throw new RuntimeException();
+                }
+            }
+        }
+
+        public GenericParam(PEFile file, int rows) {
+            super(file, ID, rows);
+            this.newMapping = true;
+        }
+
+        protected void populateFields() {
+            Number = readShort();
+            Flags = readShort();
+            Owner = readTableSetIndex(_TypeOrMethodDef);
+            Name = readStringIndex();
+        }
+
+        /** This method assumes populateFields() has been just called to set Flags for the current record */
+        public boolean isInvariant() {
+            /* 23.1.7 Flags for Generic Parameters [GenericParamAttributes tributes] */
+            return (Flags & 0x0003) == 0;
+        }
+
+        /** This method assumes populateFields() has been just called to set Flags for the current record */
+        public boolean isCovariant() {
+            /* 23.1.7 Flags for Generic Parameters [GenericParamAttributes tributes] */
+            return (Flags & 0x0003) == 1;
+        }
+
+        /** This method assumes populateFields() has been just called to set Flags for the current record */
+        public boolean isContravariant() {
+            /* 23.1.7 Flags for Generic Parameters [GenericParamAttributes tributes] */
+            return (Flags & 0x0003) == 2;
+        }
+
+        /** This method assumes populateFields() has been just called to set Flags for the current record */
+        public boolean isReferenceType() {
+            /* 23.1.7 Flags for Generic Parameters [GenericParamAttributes tributes] */
+            return (Flags & 0x001C) == 4;
+        }
+
+        /** This method assumes populateFields() has been just called to set Flags for the current record */
+        public boolean isValueType() {
+            /* 23.1.7 Flags for Generic Parameters [GenericParamAttributes tributes] */
+            return (Flags & 0x001C) == 8;
+        }
+
+        /** This method assumes populateFields() has been just called to set Flags for the current record */
+        public boolean hasDefaultConstructor() {
+            /* 23.1.7 Flags for Generic Parameters [GenericParamAttributes tributes] */
+            return (Flags & 0x001C) == 0x0010;
+        }
+
+        protected int getRowSize() {
+            return 2 + 2 + file.getTableSetIndexSize(_TypeOrMethodDef) + file.getStringIndexSize();
+            /* Columns:
+                 Number (2 bytes),
+                 Flags (2 bytes),
+                 Owner (coded token of type TypeOrMethodDef),
+                 Name (offset in the #Strings stream).
+            */
+        }
+
+        public String getName() {
+            return file.getString(Name);
+        }
+
+    } // class GenericParam
+
+
+    //##########################################################################
+    // table GenericParamConstraint; ID=0x2c; p139, 22.20
+
+    public static final class GenericParamConstraint extends Table {
+        public static final int ID = 0x2c;
+
+        public int Owner; // an index into the GenericParam table
+        public int Constraint; // a TypeDefOrRef (§24.2.6) coded index
+
+        public GenericParamConstraint(PEFile file, int rows) {
+            super(file, ID, rows);
+            this.newMapping = true;
+        }
+
+        protected void populateFields() {
+            Owner = readTableIndex(GenericParam.ID);
+            Constraint = readTableSetIndex(_TypeDefOrRef);
+        }
+
+        protected int getRowSize() {
+            return file.getTableIndexSize(GenericParam.ID) + file.getTableSetIndexSize(_TypeDefOrRef);
+            /* Columns:
+                 Owner (RID in the GenericParam table),
+                 Constraint (coded token of type TypeDefOrRef).
+            */
+        }
+
+        private boolean mapPopulated = false;
+
+        /** Indexes of rows (in the TypeDef, TypeRef, or TypeSpec tables) denoting the base class (if any)
+         * and interfaces (if any) that the generic parameter (of TVar or MVar kind) should support,  where
+         * that generic parameter is represented by its index into the GenericParam table. */
+        public int[] getTypeDefOrRefIdxes(int genParamIdx) {
+            if(!mapPopulated) {
+                initMap();
+            }
+            java.util.Set bucket = (java.util.Set)TypeDefOrRefIdxesForGenParamIdx.get(Integer.valueOf(genParamIdx));
+            if(bucket == null) {
+                bucket = java.util.Collections.EMPTY_SET;
+            }
+            int[] res = new int[bucket.size()];
+            java.util.Iterator /*<Integer>*/ it = bucket.iterator();
+            for(int i = 0; i < bucket.size(); i++) {
+                res[i] = ((Integer)it.next()).intValue();
+            }
+            return res;
+        }
+
+
+        private void initMap() {
+            mapPopulated = true;
+            for (int currentConstraintRow = 1; currentConstraintRow <= rows; currentConstraintRow++) {
+                int targetGenericParam = file.GenericParamConstraint(currentConstraintRow).Owner;
+                int value = file.GenericParamConstraint.Constraint;
+                addToMap(targetGenericParam, value);
+            }
+        }
+
+        private java.util.Map /*<Integer, java.util.Set<Integer>>*/ TypeDefOrRefIdxesForGenParamIdx  =
+                new java.util.HashMap();
+
+        private void addToMap(int key, int value) {
+            java.util.Set /*<Integer>*/ bucket = (java.util.Set)TypeDefOrRefIdxesForGenParamIdx.get(Integer.valueOf(key));
+            if(bucket == null) {
+                bucket = new java.util.HashSet();
+                TypeDefOrRefIdxesForGenParamIdx.put(Integer.valueOf(key), bucket);
+            }
+            bucket.add(Integer.valueOf(value));
+        }
+
+    } // class GenericParamConstraint
+
+    //##########################################################################
+    // table MethodSpec; ID=0x2b; p149, in Sec. 22.29 of Partition II
+
+    public static final class MethodSpec extends Table {
+        public static final int ID = 0x2b;
+
+        /* an index into the MethodDef or MemberRef table, specifying which generic method this row is an instantiation of.
+           A MethodDefOrRef (Sec. 24.2.6) coded index  */
+        public int Method;
+
+        /* an index into the Blob heap (Sec. 23.2.15), holding the signature of this instantiation */
+        public int Instantiation;
+
+        public MethodSpec(PEFile file, int rows) {
+            super(file, ID, rows);
+            this.newMapping = true;
+        }
+
+        protected void populateFields() {
+            Method = readTableSetIndex(_MethodDefOrRef);
+            Instantiation = readBlobIndex();
+        }
+
+        protected int getRowSize() {
+            return file.getTableSetIndexSize(_MethodDefOrRef) + file.getBlobIndexSize();
+        }
+
+
+    } // class MethodSpec
     //##########################################################################
 
 }  // class Table
