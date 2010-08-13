@@ -1,12 +1,15 @@
 object Test {
   trait Seq[+t] {
     type MyType[+t] <: Seq[t]
+
     def f: MyType[t]
   }
 
-  def span[a, s <: Seq[a] { type MyType <: s } ](xs: s): s
-    = xs f // xs: s <: Seq[a]{type MyType <: s }
-    // xs.f : xs.MyType[a] <: Seq[a]
-    // ill-formed type in bound for s: Seq[a] { type MyType <: s }
-    // refinements aren't checked -- should they?
+  // illegal abstract type member refinement: changes the arity of MyType
+  // the error is pretty strange, since the compiler forms the illegal type xs.MyType[a] anyway
+  def span[a, s <: Seq[a] { type MyType/*look ma, no type parameters!*/ <: s } ](xs: s): s
+     = xs f
+//        ^
+// found   : xs.MyType[a]
+// required: s
 }

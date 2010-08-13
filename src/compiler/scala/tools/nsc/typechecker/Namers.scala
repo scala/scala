@@ -1067,6 +1067,17 @@ trait Namers { self: Analyzer =>
         case tp =>
           tp
       }
+
+      // see neg/bug1275, #3419
+      // used to do a rudimentary kind check here to ensure overriding in refinements
+      // doesn't change a type member's arity (number of type parameters),
+      // e.g. trait T { type X[A] }; type S = T{type X}; val x: S
+      // X in x.X[A] will get rebound to the X in the refinement, which does not take any type parameters
+      // this mismatch does not crash the compiler (anymore), but leads to weird type errors,
+      // as x.X[A] will become NoType internally
+      // it's not obvious the errror refers to the X in the refinement and not the original X
+      // however, separate compilation requires the symbol info to be loaded to do this check,
+      // but loading the info will probably lead to spurious cyclic errors --> omit the check
       polyType(tparamSyms, tp)
     }
 
