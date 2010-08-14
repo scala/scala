@@ -1,0 +1,4 @@
+B.scala:3: error: method foo overrides nothing
+class B extends a.A { override def foo = "B" }
+                                   ^
+one error found
