@@ -1023,85 +1023,8 @@ trait Infer {
       }
     }
 
-    /** Check whether <arg>sym1</arg>'s variance conforms to <arg>sym2</arg>'s variance
-     *
-     * If <arg>sym2</arg> is invariant, <arg>sym1</arg>'s variance is irrelevant. Otherwise they must be equal.
-     */
-    def variancesMatch(sym1: Symbol, sym2: Symbol): Boolean = (sym2.variance==0 || sym1.variance==sym2.variance)
 
-    /** Check well-kindedness of type application (assumes arities are already checked) -- @M
-     *
-     * This check is also performed when abstract type members become concrete (aka a "type alias") -- then tparams.length==1
-     * (checked one type member at a time -- in that case, prefix is the name of the type alias)
-     *
-     * Type application is just like value application: it's "contravariant" in the sense that
-     * the type parameters of the supplied type arguments must conform to the type parameters of
-     * the required type parameters:
-     *   - their bounds must be less strict
-     *   - variances must match (here, variances are absolute, the variance of a type parameter does not influence the variance of its higher-order parameters)
-     *   - @M TODO: are these conditions correct,sufficient&necessary?
-     *
-     *  e.g. class Iterable[t, m[+x <: t]] --> the application Iterable[Int, List] is okay, since
-     *       List's type parameter is also covariant and its bounds are weaker than <: Int
-     */
     def checkKindBounds(tparams: List[Symbol], targs: List[Type], pre: Type, owner: Symbol): List[String] = {
-      def transform(tp: Type, clazz: Symbol): Type = tp.asSeenFrom(pre, clazz) // instantiate type params that come from outside the abstract type we're currently checking
-      def transformedBounds(p: Symbol, o: Symbol) = transform(p.info.instantiateTypeParams(tparams, targs).bounds, o)
-
-      // check that the type parameters <arg>hkargs</arg> to a higher-kinded type conform to the expected params <arg>hkparams</arg>
-      def checkKindBoundsHK(hkargs: List[Symbol], arg: Symbol, param: Symbol, paramowner: Symbol, underHKParams: List[Symbol], withHKArgs: List[Symbol]): (List[(Symbol, Symbol)], List[(Symbol, Symbol)], List[(Symbol, Symbol)]) = {
-        def bindHKParams(tp: Type) = tp.substSym(underHKParams, withHKArgs)
-        // @M sometimes hkargs != arg.typeParams, the symbol and the type may have very different type parameters
-        val hkparams = param.typeParams
-
-        if(printTypings) {
-          println("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramowner)
-          println("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ owner)
-          println("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
-        }
-
-        if(hkargs.length != hkparams.length) {
-          if(arg == AnyClass || arg == NothingClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
-          else (List((arg, param)), Nil, Nil)
-        } else {
-          val _arityMismatches = new ListBuffer[(Symbol, Symbol)]
-          val _varianceMismatches = new ListBuffer[(Symbol, Symbol)]
-          val _stricterBounds = new ListBuffer[(Symbol, Symbol)]
-          def varianceMismatch(a: Symbol, p: Symbol) { _varianceMismatches += ((a, p)) }
-          def stricterBound(a: Symbol, p: Symbol) { _stricterBounds += ((a, p)) }
-          def arityMismatches(as: Iterable[(Symbol, Symbol)]) { _arityMismatches ++= as }
-          def varianceMismatches(as: Iterable[(Symbol, Symbol)]) { _varianceMismatches ++= as }
-          def stricterBounds(as: Iterable[(Symbol, Symbol)]) { _stricterBounds ++= as }
-
-          for ((hkarg, hkparam) <- hkargs zip hkparams) {
-            if (hkparam.typeParams.isEmpty) { // base-case: kind *
-              if (!variancesMatch(hkarg, hkparam))
-                varianceMismatch(hkarg, hkparam)
-
-              // instantiateTypeParams(tparams, targs) --> higher-order bounds may contain references to type arguments
-              // substSym(hkparams, hkargs) --> these types are going to be compared as types of kind *
-              //    --> their arguments use different symbols, but are conceptually the same
-              //        (could also replace the types by polytypes, but can't just strip the symbols, as ordering is lost then)
-              if (!(bindHKParams(transformedBounds(hkparam, paramowner)) <:< transform(hkarg.info.bounds, owner)))
-                stricterBound(hkarg, hkparam)
-
-              if(printTypings) {
-                println("checkKindBoundsHK base case: "+ hkparam +" declared bounds: "+ transformedBounds(hkparam, paramowner) +" after instantiating earlier hkparams: "+ bindHKParams(transformedBounds(hkparam, paramowner)))
-                println("checkKindBoundsHK base case: "+ hkarg +" has bounds: "+ transform(hkarg.info.bounds, owner))
-              }
-            } else {
-              if(printTypings) println("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
-              val (am, vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkarg, hkparam, paramowner, underHKParams ++ hkparam.typeParams, withHKArgs ++ hkarg.typeParams)
-              arityMismatches(am)
-              varianceMismatches(vm)
-              stricterBounds(sb)
-            }
-          }
-
-          (_arityMismatches.toList, _varianceMismatches.toList, _stricterBounds.toList)
-        }
-      }
-
       // @M TODO this method is duplicated all over the place (varianceString)
       def varStr(s: Symbol): String =
         if (s.isCovariant) "covariant"
@@ -1117,32 +1040,22 @@ trait Infer {
         }
       }
 
-      val errors = new ListBuffer[String]
-      (tparams zip targs).foreach{ case (tparam, targ) if (targ.isHigherKinded || !tparam.typeParams.isEmpty) =>
-        // @M must use the typeParams of the type targ, not the typeParams of the symbol of targ!!
-        val tparamsHO =  targ.typeParams
-
-        val (arityMismatches, varianceMismatches, stricterBounds) =
-          checkKindBoundsHK(tparamsHO, targ.typeSymbolDirect, tparam, tparam.owner, tparam.typeParams, tparamsHO) // NOTE: *not* targ.typeSymbol, which normalizes
-        if (!(arityMismatches.isEmpty && varianceMismatches.isEmpty && stricterBounds.isEmpty)){
-          errors += (targ+"'s type parameters do not match "+tparam+"'s expected parameters: "+
-            (for ((a, p) <- arityMismatches)
-             yield a+qualify(a,p)+ " has "+reporter.countElementsAsString(a.typeParams.length, "type parameter")+", but "+
-              p+qualify(p,a)+" has "+reporter.countAsString(p.typeParams.length)).toList.mkString(", ") +
-            (for ((a, p) <- varianceMismatches)
-             yield a+qualify(a,p)+ " is "+varStr(a)+", but "+
-              p+qualify(p,a)+" is declared "+varStr(p)).toList.mkString(", ") +
-            (for ((a, p) <- stricterBounds)
-              yield a+qualify(a,p)+"'s bounds "+a.info+" are stricter than "+
-              p+qualify(p,a)+"'s declared bounds "+p.info).toList.mkString(", "))
-        }
-       // case (tparam, targ) => println("no check: "+(tparam, targ, tparam.typeParams.isEmpty))
-       case _ =>
+      val errors = checkKindBounds0(tparams, targs, pre, owner, true)
+      val errorMessages = new ListBuffer[String]
+      errors foreach {case (targ, tparam, arityMismatches, varianceMismatches, stricterBounds) => errorMessages +=
+        (targ+"'s type parameters do not match "+tparam+"'s expected parameters: "+
+        (for ((a, p) <- arityMismatches)
+          yield a+qualify(a,p)+ " has "+reporter.countElementsAsString(a.typeParams.length, "type parameter")+", but "+
+            p+qualify(p,a)+" has "+reporter.countAsString(p.typeParams.length)).toList.mkString(", ") +
+        (for ((a, p) <- varianceMismatches)
+          yield a+qualify(a,p)+ " is "+varStr(a)+", but "+
+            p+qualify(p,a)+" is declared "+varStr(p)).toList.mkString(", ") +
+        (for ((a, p) <- stricterBounds)
+          yield a+qualify(a,p)+"'s bounds "+a.info+" are stricter than "+
+            p+qualify(p,a)+"'s declared bounds "+p.info).toList.mkString(", "))
       }
-
-      errors.toList
+      errorMessages.toList
     }
-
     /** Substitite free type variables `undetparams' of polymorphic argument
      *  expression `tree', given two prototypes `strictPt', and `lenientPt'.
      *  `strictPt' is the first attempt prototype where type parameters
