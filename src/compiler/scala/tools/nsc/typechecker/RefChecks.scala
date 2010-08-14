@@ -302,25 +302,14 @@ abstract class RefChecks extends InfoTransform {
 
         if (typesOnly) checkOverrideTypes()
         else {
-          // todo: align accessibility implication checking with isAccessible in Contexts
           if (member hasFlag PRIVATE) { // (1.1)
             overrideError("has weaker access privileges; it should not be private")
           }
-          // o: public | protected        | package-protected
-          // ^-may be overridden by member with access privileges-v
-          // m: public | public/protected | public/protected/package-protected-in-same-package-as-o
           val mb = member.accessBoundary(member.owner)
           val ob = other.accessBoundary(member.owner)
-          // println("checking override in class "+ clazz +"\n  other: "+ infoString(other) +" ab: "+ ob.ownerChain)
-          // println("  overriding member: "+ infoString(member) +" ab: "+ mb.ownerChain)
-          // todo: change
-          if (mb != RootClass && // if mb is public, all is well (or is it? what if we're overriding something we can't access? -- see #3757 marker below)
-              mb != NoSymbol &&  // if mb's access is unqualified, all is well
-                (  ob == RootClass // if m is not public, but o is --> error
-                || ob == NoSymbol  // if m has qualified access, but o didn't --> error
-                || !ob.hasTransOwner(mb)  // if m has qualified access, but o's qualifier is not enclosed in m's --> error
-                || (other hasFlag PROTECTED) && !(member hasFlag PROTECTED) // m must not be package-protected unless o is
-                )) {
+          if (mb != RootClass && mb != NoSymbol && // todo: change
+              (ob == RootClass || ob == NoSymbol || !ob.hasTransOwner(mb) ||
+               (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
             overrideAccessError()
           }
           else if (other.isClass || other.isModule) {
@@ -390,7 +379,7 @@ abstract class RefChecks extends InfoTransform {
             // this overlaps somewhat with validateVariance
             if(member.isAliasType) {
               val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize), self, member.owner)
-
+2
               if(!kindErrors.isEmpty)
                 unit.error(member.pos,
                   "The kind of the right-hand side "+memberTp.normalize+" of "+member.keyString+" "+
@@ -547,11 +536,10 @@ abstract class RefChecks extends InfoTransform {
         inclazz != clazz && {
           val isVarargs = hasRepeatedParam(member.tpe)
           inclazz.info.nonPrivateDecl(member.name).filter { sym =>
-            localTyper.context.isAccessible(sym, clazz.thisType, false) && ( // #3757: it's not enough to only look at the non-private members: might also be package-protected in another package, for example
             !sym.isTerm || {
               val symtpe = clazz.thisType.memberType(sym)
               (member.tpe matches symtpe) || isVarargs && (toJavaRepeatedParam(member.tpe) matches symtpe)
-            })
+            }
           } != NoSymbol
         }
 
