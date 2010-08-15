@@ -14,6 +14,7 @@ import scala.reflect.ClassManifest
 import scala.collection.{ Seq, IndexedSeq, TraversableView }
 import scala.collection.mutable.WrappedArray
 import scala.collection.immutable.{ NumericRange, List, Stream, Nil, :: }
+import scala.collection.generic.{ Sorted }
 import scala.xml.{ Node, MetaData }
 import scala.util.control.ControlThrowable
 
@@ -235,33 +236,49 @@ object ScalaRunTime {
    *
    */
   def stringOf(arg: Any): String = {
-    import collection.{SortedSet, SortedMap}
-    def mapTraversable(x: Traversable[_], f: Any => String) = x match {
-      case ss: SortedSet[_] => ss.map(f)
-      case ss: SortedMap[_, _] => ss.map(f)
-      case _ => x.map(f)
+    // Purely a sanity check to prevent accidental infinity: the (default) repl
+    // maxPrintString limit will kick in way before this
+    val maxElements = 10000
+
+    def isScalaClass(x: AnyRef) = {
+      val pkg = x.getClass.getPackage
+      (pkg != null) && (pkg.getName startsWith "scala.")
     }
+
+    // When doing our own iteration is dangerous
+    def useOwnToString(x: Any) = x match {
+      // Node extends NodeSeq extends Seq[Node] and MetaData extends Iterable[MetaData]
+      case _: Node | _: MetaData => true
+      // Range/NumericRange have a custom toString to avoid walking a gazillion elements
+      case _: Range | _: NumericRange[_] => true
+      // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
+      case _: Sorted[_, _]  => true
+      // Don't want to evaluate any elements in a view
+      case _: TraversableView[_, _] => true
+      // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
+      // collections which may have useful toString methods - ticket #3710
+      case x: Traversable[_]  => !x.hasDefiniteSize || !isScalaClass(x)
+      // Otherwise, nothing could possibly go wrong
+      case _ => false
+    }
+
+    // The recursively applied attempt to prettify Array printing
     def inner(arg: Any): String = arg match {
       case null                     => "null"
-      // Node extends NodeSeq extends Seq[Node] strikes again
-      case x: Node                  => x toString
-      // Not to mention MetaData extends Iterable[MetaData]
-      case x: MetaData              => x toString
-      // Range/NumericRange have a custom toString to avoid walking a gazillion elements
-      case x: Range                 => x toString
-      case x: NumericRange[_]       => x toString
+      case x if useOwnToString(x)   => x.toString
       case x: AnyRef if isArray(x)  => WrappedArray make x map inner mkString ("Array(", ", ", ")")
-      case x: TraversableView[_, _] => x.toString
-      case x: Traversable[_] if !x.hasDefiniteSize => x.toString
-      case x: Traversable[_]        =>
-        // Some subclasses of AbstractFile implement Iterable, then throw an
-        // exception if you call iterator.  What a world.
-        // And they can't be infinite either.
-        if (x.getClass.getName startsWith "scala.tools.nsc.io") x.toString
-        else (mapTraversable(x, inner)) mkString (x.stringPrefix + "(", ", ", ")")
+      case x: Traversable[_]        => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x                        => x toString
     }
-    val s = inner(arg)
+
+    // The try/catch is defense against iterables which aren't actually designed
+    // to be iterated, such as some scala.tools.nsc.io.AbstractFile derived classes.
+    val s =
+      try inner(arg)
+      catch {
+        case _: StackOverflowError | _: UnsupportedOperationException => arg.toString
+      }
+
     val nl = if (s contains "\n") "\n" else ""
     nl + s + "\n"
   }
