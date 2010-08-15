@@ -192,6 +192,7 @@ class Process(processCreator: () => JProcess) extends Iterable[String] {
 
   private def createConsumer(in: InputStream) = {
     val t = new StreamedConsumer(in)
+    t setDaemon true
     t.start()
     t
   }
