@@ -18,7 +18,7 @@ abstract class PathConfig {
 
 class PathLayout(val projectRoot:Path, val outputDir:Path) {
   lazy val srcDir = projectRoot / "src"
-  lazy val classesOutput = outputDir / " classes"
+  lazy val classesOutput = outputDir / "classes"
   lazy val analysisOutput = outputDir / "analysis"
 
   /**
