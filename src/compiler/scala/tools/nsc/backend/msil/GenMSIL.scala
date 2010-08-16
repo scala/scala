@@ -1781,9 +1781,8 @@ abstract class GenMSIL extends SubComponent {
       }
 
       val sym = iclass.symbol
-      if (types contains sym)
-        if (types(sym).isInstanceOf[TypeBuilder])
-          return
+      if (types.contains(sym) && types(sym).isInstanceOf[TypeBuilder])
+        return
 
       def isInterface(s: Symbol) = s.isTrait && !s.isImplClass
       val parents: List[Type] =
