@@ -290,15 +290,18 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
 
       if (clazz.isModuleClass) {
-        if (!hasSerializableAnnotation(clazz))
-          clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
+        if (!hasSerializableAnnotation(clazz)) {
+          val comp = companionClassOf(clazz, context)
+          if (comp.hasFlag(Flags.CASE) || hasSerializableAnnotation(comp))
+            clazz addAnnotation AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
+        }
 
         /** If you serialize a singleton and then deserialize it twice,
          *  you will have two instances of your singleton, unless you implement
          *  the readResolve() method (see http://www.javaworld.com/javaworld/
          *  jw-04-2003/jw-0425-designpatterns_p.html)
          */
-        if (!hasImplementation(nme.readResolve))
+        if (hasSerializableAnnotation(clazz) && !hasImplementation(nme.readResolve))
           ts += readResolveMethod
       }
     } catch {
