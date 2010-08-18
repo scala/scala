@@ -462,13 +462,15 @@ abstract class ClassfileParser {
       }
       sym
     }
-    def lookupClass(name: Name) =
+
+    def lookupClass(name: Name) = try {
       if (name.pos('.') == name.length)
         definitions.getMember(definitions.EmptyPackageClass, name.toTypeName)
       else
-        //definitions.getClass(name) // see ticket #2464
-        try { definitions.getClass(name) }
-        catch { case _: FatalError => loadClassSymbol(name) }
+        definitions.getClass(name) // see tickets #2464, #3756
+    } catch {
+      case _: FatalError => loadClassSymbol(name)
+    }
 
     innerClasses.get(name) match {
       case Some(entry) =>
