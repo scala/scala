@@ -2244,14 +2244,17 @@ A type's typeSymbol should never be inspected directly.
         if(params.isEmpty) { // type var has kind *
           addBound(tp)
           true
-        } else // higher-kinded type var with same arity as tp
-          (typeArgs.length == tp.typeArgs.length) && {
-            // register type constructor (the type without its type arguments) as bound
-            addBound(tp.typeConstructor)
-            // check subtyping of higher-order type vars
-            // use variances as defined in the type parameter that we're trying to infer (the result is sanity-checked later)
-            checkArgs(tp.typeArgs, typeArgs, params)
-          }
+        } else { // higher-kinded type var with same arity as tp
+          def unifyHK(tp: Type) =
+            (typeArgs.length == tp.typeArgs.length) && {
+              // register type constructor (the type without its type arguments) as bound
+              addBound(tp.typeConstructor)
+              // check subtyping of higher-order type vars
+              // use variances as defined in the type parameter that we're trying to infer (the result is sanity-checked later)
+              checkArgs(tp.typeArgs, typeArgs, params)
+            }
+          unifyHK(tp) || unifyHK(tp.dealias)
+        }
       }
     }
 
