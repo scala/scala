@@ -34,10 +34,9 @@ h1 {
 }
 
 #filter {
-	position: fixed;
+	position: absolute;
 	display: block;
 	padding: 5px;
-	width: 95%;
 	right: 0;
 	left: 0;
 	top: 0;
@@ -61,6 +60,23 @@ h1 {
     background: url("filter_box_left.png");
 }
 
+#textfilter > .input {
+	display: block;
+    position: absolute;
+    top: 0;
+    right: 20px;
+    left: 20px;
+}
+
+#textfilter > .input > input {
+	height: 16px;
+	padding: 2px;
+	font-weight: bold;
+	color: #993300;
+	background-color: white;
+    width: 100%;
+}
+
 #textfilter > .post {
     display: block;
     position: absolute;
@@ -69,20 +85,6 @@ h1 {
     height: 20px;
     width: 20px;
     background: url("filter_box_right.png");
-}
-
-#textfilter input {
-	display: block;
-    position: absolute;
-    top: 0;
-    right: 20px;
-    left: 20px;
-	height: 16px;
-	width: 90%;
-	padding: 2px;
-	font-weight: bold;
-	color: #993300;
-	background-color: white;
 }
 
 #focusfilter {
@@ -162,7 +164,7 @@ h1 {
 #tpl .templates div.placeholder {
   padding-right: 5px;
   width: 13px;
-  display: inline-block;  
+  display: inline-block;
 }
 
 #tpl .templates span.tplLink {
@@ -186,4 +188,17 @@ h1 {
 	display: block;
 	height: 100%;
 	width: 100%;
+}
+
+.ui-layout-pane {
+    background: #FFF;
+    overflow: auto;
+}
+
+.ui-layout-resizer {
+    background: #DDD;
+}
+
+.ui-layout-toggler {
+    background: #AAA;
 }

@@ -62,6 +62,9 @@ abstract class Comment {
   /** A usage example related to the entity. */
   def example: List[Body]
 
+  /** The comment as it appears in the source text. */
+  def source: Option[String]
+
   /** A description for the primary constructor */
   def constructor: Option[Body]
 

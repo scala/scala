@@ -21,6 +21,11 @@ trait DocComments { self: SymbolTable =>
   /** The raw doc comment map */
   val docComments = new HashMap[Symbol, DocComment]
 
+  /** Associate comment with symbol `sym` at position `pos`. */
+  def docComment(sym: Symbol, docStr: String, pos: Position = NoPosition) =
+    if ((sym ne null) && (sym ne NoSymbol))
+      docComments += (sym -> DocComment(docStr, pos))
+
   /** The raw doc comment of symbol `sym`, as it appears in the source text, "" if missing.
    */
   def rawDocComment(sym: Symbol): String =
@@ -38,8 +43,9 @@ trait DocComments { self: SymbolTable =>
    *  If a symbol does not have a doc comment but some overridden version of it does,
    *  the doc comment of the overridden version is copied instead.
    */
-  def cookedDocComment(sym: Symbol): String = {
-    val ownComment = docComments get sym map (_.template) getOrElse ""
+  def cookedDocComment(sym: Symbol, docStr: String = ""): String = {
+    val ownComment = if (docStr.isEmpty) docComments get sym map (_.template) getOrElse ""
+                     else DocComment(docStr).template
     superComment(sym) match {
       case None =>
         ownComment
@@ -57,11 +63,11 @@ trait DocComments { self: SymbolTable =>
    *                                  of the same string are done, which is
    *                                  interpreted as a recursive variable definition.
    */
-  def expandedDocComment(sym: Symbol, site: Symbol): String = {
+  def expandedDocComment(sym: Symbol, site: Symbol, docStr: String = ""): String = {
     // when parsing a top level class or module, use the (module-)class itself to look up variable definitions
     val site1 = if ((sym.isModule || sym.isClass) && (site hasFlag Flags.PACKAGE)) sym
                 else site
-    expandVariables(cookedDocComment(sym), sym, site1)
+    expandVariables(cookedDocComment(sym, docStr), sym, site1)
   }
 
   /** The cooked doc comment of symbol `sym` after variable expansion, or "" if missing.
@@ -121,8 +127,8 @@ trait DocComments { self: SymbolTable =>
   }
 
   /** The cooked doc comment of an overridden symbol */
-  private def superComment(sym: Symbol): Option[String] =
-    sym.allOverriddenSymbols.view map cookedDocComment find ("" !=)
+  protected def superComment(sym: Symbol): Option[String] =
+    sym.allOverriddenSymbols.view map { cookedDocComment(_) } find ("" !=)
 
   private def mapFind[A, B](xs: Iterable[A])(f: A => Option[B]): Option[B] = {
     var res: Option[B] = None
@@ -230,7 +236,7 @@ trait DocComments { self: SymbolTable =>
    *  @param site  The class for which doc comments are generated
    *  @return      Expanded string
    */
-  private def expandVariables(str: String, sym: Symbol, site: Symbol): String =
+  protected def expandVariables(str: String, sym: Symbol, site: Symbol): String =
     if (expandCount < expandLimit) {
       try {
         val out = new StringBuilder

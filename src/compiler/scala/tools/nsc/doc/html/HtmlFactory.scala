@@ -40,8 +40,9 @@ class HtmlFactory(val universe: Universe) {
       finally out.close()
     }
 
-    copyResource("index.html")
     copyResource("lib/jquery.js")
+    copyResource("lib/jquery-ui.js")
+    copyResource("lib/jquery.layout.js")
     copyResource("lib/tools.tooltip.js")
     copyResource("lib/scheduler.js")
     copyResource("lib/index.css")

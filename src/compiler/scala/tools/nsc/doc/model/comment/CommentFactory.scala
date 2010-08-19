@@ -6,11 +6,10 @@ package model
 package comment
 
 import reporters.Reporter
-import util.Position
-
 import scala.collection._
 import scala.util.matching.Regex
 import scala.annotation.switch
+import util.{NoPosition, Position}
 
 /** The comment parser transforms raw comment strings into `Comment` objects. Call `parse` to run the parser. Note that
   * the parser is stateless and should only be built once for a given Scaladoc run.
@@ -24,10 +23,10 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
   val global: Global
   import global.reporter
 
-  private val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
+  protected val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
 
   def addCommentBody(sym: global.Symbol, inTpl: => TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
-    commentCache += (sym, inTpl) -> parse(docStr, docPos)
+    commentCache += (sym, inTpl) -> parse(docStr, docStr, docPos)
     sym
   }
 
@@ -42,10 +41,9 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     }
   }
 
-  /* A comment is usualy created by the parser, however for some special cases we have to give
-   * some inTpl comments (parent class for example) to the comment of the symbol
-   * This function manages some of those cases : Param accessor and Primary constructor
-   */
+  /** A comment is usualy created by the parser, however for some special cases we have to give
+    * some inTpl comments (parent class for example) to the comment of the symbol
+    * This function manages some of those cases : Param accessor and Primary constructor */
   def defineComment(sym: global.Symbol, inTpl: => DocTemplateImpl):Option[Comment] =
     //param accessor case
     // We just need the @param argument, we put it into the body
@@ -81,7 +79,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     else {
       val rawComment = global.expandedDocComment(sym, inTpl.sym).trim
       if (rawComment != "") {
-        val c = parse(rawComment, global.docCommentPos(sym))
+        val c = parse(rawComment, global.rawDocComment(sym), global.docCommentPos(sym))
         Some(c)
       }
       else None
@@ -101,7 +99,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
                     deprecated0:  Option[Body]     = None,
                     note0:        List[Body]       = List.empty,
                     example0:     List[Body]       = List.empty,
-                    constructor0: Option[Body]     = None
+                    constructor0: Option[Body]     = None,
+                    source0:      Option[String]   = None
                     ):Comment =
     new Comment{
       val body        = if(body0 isDefined) body0.get else Body(Seq.empty)
@@ -118,6 +117,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       val note        = note0
       val example     = example0
       val constructor = constructor0
+      val source      = source0
 
   }
 
@@ -200,13 +200,14 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
   protected final case class SymbolTagKey(name: String, symbol: String) extends TagKey
 
   /** Parses a raw comment string into a `Comment` object.
-    * @param comment The raw comment string (including start and end markers) to be parsed.
+    * @param comment The expanded comment string (including start and end markers) to be parsed.
+    * @param src     The raw comment source string.
     * @param pos     The position of the comment in source. */
-  protected def parse(comment: String, pos: Position): Comment = {
+  protected def parse(comment: String, src: String, pos: Position): Comment = {
 
     /** The cleaned raw comment as a list of lines. Cleaning removes comment start and end markers, line start markers
       * and unnecessary whitespace. */
-    val cleaned: List[String] = {
+    def clean(comment: String): List[String] = {
       def cleanLine(line: String): String = {
         //replaceAll removes trailing whitespaces
         line.replaceAll("""\s+$""", "") match {
@@ -325,7 +326,8 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
             deprecated0  = oneTag(SimpleTagKey("deprecated")),
             note0        = allTags(SimpleTagKey("note")),
             example0     = allTags(SimpleTagKey("example")),
-            constructor0 = oneTag(SimpleTagKey("constructor"))
+            constructor0 = oneTag(SimpleTagKey("constructor")),
+            source0      = Some(clean(src).mkString("\n"))
           )
 
           for ((key, _) <- bodyTags)
@@ -336,7 +338,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       }
     }
 
-    parse0("", Map.empty, None, cleaned, false)
+    parse0("", Map.empty, None, clean(comment), false)
 
   }
 

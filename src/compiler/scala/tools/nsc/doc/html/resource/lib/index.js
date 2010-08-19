@@ -10,7 +10,14 @@ var domCache = undefined;
 var kindFilterState = undefined;
 var focusFilterState = undefined;
 
+var title = $(document).attr('title')
+
 $(document).ready(function() {
+    $('body').layout({ west__size: '20%' });
+    $('iframe').bind("load", function(){
+        var subtitle = $(this).contents().find('title').text();
+        $(document).attr('title', (title ? title + " - " : "") + subtitle);
+    });
 
     // workaround for IE's iframe sizing lack of smartness
     if($.browser.msie) {
@@ -95,7 +102,7 @@ function prepareEntityList() {
 /* Configures the text filter  */
 function configureTextFilter() {
     scheduler.add("init", function() {
-        $("#filter").append("<div id='textfilter'><span class='pre'/><input type='text' accesskey='/'/><span class='post'/></div>");
+        $("#filter").append("<div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>");
         var input = $("#textfilter > input");
         resizeFilterBlock();
         input.bind("keyup", function(event) {
