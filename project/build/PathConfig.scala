@@ -12,15 +12,20 @@ abstract class PathConfig {
   def output:Path
 }
 
-/**
-  *
-  */
+object PathConfig {
+  val classes = "classes"
+  val analysis = "analysis"
+}
 
-class PathLayout(val projectRoot:Path, val outputDir:Path) {
+trait SimpleOutputLayout{
+  def outputDir:Path
+  lazy val classesOutput = outputDir / PathConfig.classes
+  lazy val analysisOutput = outputDir / PathConfig.analysis
+
+}
+
+class PathLayout(val projectRoot:Path, val outputDir:Path) extends SimpleOutputLayout {
   lazy val srcDir = projectRoot / "src"
-  lazy val classesOutput = outputDir / "classes"
-  lazy val analysisOutput = outputDir / "analysis"
-
   /**
     * An utility method to easily create StandardPathConfig from a given path layout
     */

@@ -1,26 +1,33 @@
 import sbt._
 import xsbt.{AnalyzingCompiler,ScalaInstance}
+import FileUtilities._
 
 /**
- * This trait define the compilation task. It is possible to configure what it actually compiles by
- * overriding the compilationSteps methods (useful because locker does not compile everything)
- * @author Grégory Moix
+ * This trait define the compilation task.
+* @author Grégory Moix
  */
-trait Compilation{
-  self : BasicLayer =>
+trait Compilation {
+  self : ScalaBuildProject with BuildInfoEnvironment =>
 
 
   def lastUsedCompilerVersion = layerEnvironment.lastCompilerVersion
 
-  def cleanCompilation:Option[String]= {
-    log.info("Cleaning the products of the compilation.")
-    FileUtilities.clean(layerOutput::Nil,true,log)
+  def instantiationCompilerJar:Path
+  def instantiationLibraryJar:Path
+
+
+  def instanceScope[A](action: ScalaInstance => A):A={
+    val instance = ScalaInstance(instantiationLibraryJar.asFile, instantiationCompilerJar.asFile, info.launcher, msilJar.asFile, fjbgJar.asFile)
+    log.debug("Compiler will be instantiated by :" +instance.compilerJar +" and :" +instance.libraryJar )
+    action(instance)
   }
 
+  def compile(stepList:Step,clean:()=>Option[String]):Option[String]=compile(stepList,Some(clean))
+  def compile(stepList:Step):Option[String]=compile(stepList,None)
   /**
    * Execute the different compilation parts one after the others.
    */
-  def compile:Option[String]={
+  def compile(stepsList:Step,clean:Option[()=>Option[String]]):Option[String]={
 
     instanceScope[Option[String]]{  scala =>
       lazy val analyzing = new AnalyzingCompiler(scala,componentManager,xsbt.ClasspathOptions.manual,log)
@@ -31,12 +38,12 @@ trait Compilation{
 
       }
 
-      def checkAndClean:Option[String]={
+      def checkAndClean(cleanFunction:()=>Option[String]):Option[String]={
         if (compilerVersionHasChanged){
-          log.info("The compiler version used to build this layer has changed since last time.")
+          log.info("The compiler version used to build this layer has changed since last time or this is a clean build.")
           lastUsedCompilerVersion.update(scala.actualVersion)
           layerEnvironment.saveEnvironment
-          cleanCompilation
+          cleanFunction()
         }else{
           log.debug("The compiler version is unchanged. No need for cleaning.")
           None
@@ -48,39 +55,59 @@ trait Compilation{
           case c:CompilationStep => {
             val conditional = new CompileConditional(c, analyzing)
             log.info("")
-            conditional.run orElse compile0(xs)
+            conditional.run orElse copy(c) orElse earlyPackaging(c) orElse compile0(xs)
           }
           case _ => compile0(xs)
         }
         case Nil => None
       }
 
+      /**
+       * When we finishe to compile a step we want to jar if necessary in order to
+       * be able to load plugins for the associated library
+       */
+      def earlyPackaging(step:CompilationStep):Option[String]= step match {
+        case s:EarlyPackaging => {
+          val c = s.earlyPackagingConfig
+          log.debug("Creating jar for plugin")
+          jar(c.content.flatMap(Packer.jarPattern(_)),c.jarDestination,c.manifest, false, log)
+        }
+        case _ => None
+      }
 
-      checkAndClean orElse compile0(allSteps.topologicalSort)
+      def copy(step:CompilationStep):Option[String]= step match {
+        case s:ResourcesToCopy => s.copy
+        case _ => None
+      }
+
+      def cleanIfNecessary:Option[String] = clean match{
+        case None => None
+        case Some(f) => checkAndClean(f)
+      }
+      cleanIfNecessary orElse compile0(stepsList.topologicalSort)
     }
+  }
+
+
+}
+
+trait LayerCompilation extends Compilation{
+  self : BasicLayer =>
+
+  protected def cleanCompilation:Option[String]= {
+    log.info("Cleaning the products of the compilation.")
+    FileUtilities.clean(layerOutput::Nil,true,log)
   }
 
   /**
    * Run the actual compilation. Should not be called directly because it is executed on the same jvm and that
    * it could lead to memory issues. It is used only when launching a new sbt process to do the compilation.
    */
-  lazy val compilation = task{compile}
+  lazy val compilation = task{compile(allSteps,cleanCompilation _)}
 
-  /**
-   * Runs the compilation in another process in order to circumvent memory issues that
-   * arises when compiling every layer on the same jvm.
-   */
-  lazy val externalCompilation:ManagedTask=task{
+  def externalCompilation:Option[String] = {
     val runner = new ExternalTaskRunner(projectRoot,this.name,compilation.name, log)
     runner.runTask
-  }.dependsOn(startLayer)
-
-  /**
-   * This method permits to specify what are the different steps of the compilation process,
-   * meaning that you can customize exactly what is compiled by overriding it. It is overriden by
-   * the locker layer that doesn't compile actors, sbc, scalap, partest
-   */
-  def compilationSteps:List[CompileConfiguration] =
-    libraryConfig::actorsConfig::dbcConfig::swingConfig::compilerConfig::scalapConfig::partestConfig::Nil
+  }
 
 }

@@ -4,22 +4,30 @@ import java.util.jar.Manifest
 import BasicLayer._
 import FileUtilities._
 
-/**
- * Create the jars of pack
- * @author Grégory Moix
- */
-trait Packer {
-  self: BasicLayer =>
 
-  def libraryToCopy:List[Path] = Nil
 
-  protected def jarPattern(path:PathFinder) = path.descendentsExcept(AllPassFilter, defaultExcludes || new ExactFilter("MANIFEST.MF")).get
+object Packer {
 
-  def createJar(j:Packaging):Option[String] = {
-    def pack0(content:Iterable[Path])=jar(content.flatMap(jarPattern(_)),j.jarDestination, j.manifest, false, log)
+  /**
+   * A filter that exclude files that musn't be in a jar file.
+   */
+  // We must exclude the manifest because we generate it automatically, and when we add multiples other jars, they could have
+  // also a manifest files each, resulting in conflicts for the FileUtilities.jar(..) method
+  def jarPattern(path:PathFinder) = path.descendentsExcept(AllPassFilter, (".*"  - ".") || HiddenFileFilter || new ExactFilter("MANIFEST.MF")).get
+
+  def createJar(j:Packaging,log:Logger):Option[String]=createJar(j.packagingConfig,log,jarPattern _,true)
+  def createJar(j:PackagingConfiguration,log:Logger):Option[String]=createJar(j,log,jarPattern _,true)
+
+
+  /**
+   * Create a jar from the packaging trait. Is able to add directly others jars to it
+   */
+  def createJar(j:PackagingConfiguration,log:Logger,filter:(PathFinder)=>Iterable[Path],addIncludedLibs:Boolean):Option[String] = {
+    def pack0(content:Iterable[Path])=jar(content.flatMap(filter(_)),j.jarDestination, j.manifest, false, log)
+
     j.jarsToInclude match {
-      case Nil => pack0(j.jarContent)
-      case list => {
+      case Nil => pack0(j.content)
+      case list if addIncludedLibs => {
         withTemporaryDirectory(log) { tmp: File =>
            val tmpPath = Path.fromFile(tmp)
            log.debug("List of jars to be added : " +list)
@@ -29,18 +37,34 @@ trait Packer {
            }
            unzip0(list)
            log.debug("Content of temp folder"+ tmpPath.##.**( GlobFilter("*")))
-           pack0(j.jarContent ++ Set(tmpPath ##))
+           pack0(j.content ++ Set(tmpPath ##))
        }
       }
+      case _ => pack0(j.content)
+
     }
   }
 
-  lazy val pack= task {
+}
 
+/**
+ * Create the jars of pack
+ * @author Grégory Moix
+ */
+trait Packer {
+  self: BasicLayer =>
+
+  def libraryToCopy:List[Path] = Nil
+
+  /**
+   * The actual pack task.
+   */
+  def packF=  {
+    import Packer._
     def iterate(steps:List[Step]):Option[String]= steps match{
         case x::xs => x match{
           case c:Packaging => {
-            createJar(c) orElse iterate(xs)
+            createJar(c,log) orElse iterate(xs)
           }
           case _ => iterate(xs)
         }
@@ -56,19 +80,28 @@ trait Packer {
        }
      }
      iterate(allSteps.topologicalSort) orElse copy0
-  }.dependsOn(finishLayer)
-
-
-
+  }
+  lazy val pack=task{packF}.dependsOn(finishLayer)
+}
+class PackagingConfiguration(val jarDestination:Path, val content:Iterable[Path],val manifest:Manifest,val jarsToInclude:List[Path]){
+  def this(jarDestination:Path,content:Iterable[Path])=this(jarDestination,content, new Manifest,Nil)
+  def this(jarDestination:Path,content:Iterable[Path],jarsToInclude:List[Path])=this(jarDestination,content,new Manifest, jarsToInclude)
+  //def this(jarName:String,destinationFunction:(String)=>Path,content:Iterable[Path],manifest:Manifest,jarsToInclude:List[Path]) =
+  //  this(destinationFunction(jarName),content,manifest,jarsToInclude)
+  //def this(jarName:String,destinationFunction:(String)=>Path,content:Iterable[Path]) =
+  //  this(jarName,destinationFunction,content, new Manifest, Nil)
 }
 
 trait Packaging extends Step{
-  def manifest = new Manifest
-  def jarDestination:Path = packagingDestination /"lib" / jarName
-  def packagingDestination:Path
-  def jarName:String
-  def jarsToInclude:List[Path] = Nil
-  def jarContent:Iterable[Path]
+  //def manifest = new Manifest
+  //final def simplePath = packagingDestination / jarName
+  //final def libPath = packagingDestination /"lib" / jarName
+  //def jarDestination:Path = libPath
+  //def packagingDestination:Path
+  //def jarName:String
+  //def jarsToInclude:List[Path] = Nil
+  //def jarContent:Iterable[Path]
+  def packagingConfig:PackagingConfiguration
 
 }
 
@@ -85,5 +118,16 @@ trait WrapperPackaging extends Packaging {
     }
     getContent(dependencies.toList,Nil)
   }
+}
 
+/**
+ * This trait is here to add the possiblity to have a different packing destination that is used right after the
+ * compilation of the step has finished. It permits to have use libraries that are build using a plugin. (The plugin must
+ * be a jar in order to be recognised by the compiler.
+ */
+trait EarlyPackaging extends Packaging{
+  self:CompilationStep  =>
+  //def earlyPackagingDestination:Path
+  //def earlyJarDestination = earlyPackagingDestination / jarName
+  def earlyPackagingConfig:PackagingConfiguration
 }

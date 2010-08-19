@@ -10,7 +10,7 @@ import AdditionalResources._
 trait AdditionalResources {
   self : BasicLayer  =>
 
-  lazy val copyAdditionalFiles = task {
+ /* lazy val copyAdditionalFiles = task {
       def copy0(steps:List[Step]):Option[String]= steps match{
         case x::xs => x match{
           case c:ResourcesToCopy => {
@@ -21,9 +21,9 @@ trait AdditionalResources {
         case Nil => None
       }
      copy0(allSteps.topologicalSort)
-  }.dependsOn(externalCompilation)
+  }.dependsOn(externalCompilation)*/
 
-  lazy val writeProperties = task {
+   def writeProperties: Option[String] = {
       def write0(steps:List[Step]):Option[String]= steps match{
         case x::xs => x match{
         case c:PropertiesToWrite => {
@@ -34,8 +34,7 @@ trait AdditionalResources {
         case Nil => None
       }
      write0(allSteps.topologicalSort)
-  }.dependsOn(externalCompilation)
-
+  }
 
 
 
@@ -59,6 +58,7 @@ trait ResourcesToCopy {
   def copyDestination:Path
   def filesToCopy:PathFinder
   def copy = {
+    log.info("Copying files for "+name)
     try{
       FileUtilities.copy(filesToCopy.get,copyDestination,log)
     }catch{

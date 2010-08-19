@@ -1,6 +1,7 @@
 import sbt._
 import xsbt.{ScalaInstance}
 import BasicLayer._
+import ScalaBuildProject._
 import scala.collection.immutable.{EmptyMap}
 
 /**
@@ -8,14 +9,30 @@ import scala.collection.immutable.{EmptyMap}
  * shared by all layers.
  * @author Grégory Moix
  */
-abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previousLayer:Option[BasicLayer]) extends Project with ReflectiveProject
-        with AdditionalResources with Compilation{
+abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previousLayer:Option[BasicLayer])
+    extends ScalaBuildProject with ReflectiveProject
+    with AdditionalResources with LayerCompilation with BuildInfoEnvironment{
+
+  layer =>
+
+  // All path values must be lazy in order to avoid initialization issues (sbt way of doing things)
+
+  def buildInfoEnvironmentLocation:Path=outputRootPath / ("build-"+name+".properties")
+
+
   override def dependencies = info.dependencies
-  lazy val projectRoot = info.projectPath
 
   lazy val copyright = property[String]
   lazy val partestVersionNumber = property[Version]
 
+  lazy val nextLayer:Option[BasicLayer]=None
+  lazy val libsDestination=packingDestination/"lib"
+  lazy val packedStarrOutput=outputRootPath / "pasta"
+  lazy val requiredPluginsDirForCompilation = layerOutput / "misc" / "scala-devel" / "plugins"
+
+
+
+  // TASKS
 
   /**
    * Before compiling the layer, we need to check that the previous layer
@@ -28,9 +45,15 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
     case None => task{None}
   }
 
+  def buildLayer:Option[String] = {
+    externalCompilation orElse
+    writeProperties
+  }
+
   lazy val build= task{
-    None
-  }.dependsOn(externalCompilation,copyAdditionalFiles,writeProperties)
+    buildLayer
+  }.dependsOn(startLayer)
+
 
   /**
    * Finish the compilation and ressources copy and generation
@@ -38,18 +61,21 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
    * it permit locker to override it in order to lock the layer when the compilation
    * is finished.
    */
-  lazy val finishLayer = task{None}.dependsOn(build)
+  lazy val finishLayer:ManagedTask = task{None}.dependsOn(build)
 
-  def instanceScope[A](action: ScalaInstance => A):A={
-    val instance = ScalaInstance(instantiationLibraryJar.asFile, instantiationCompilerJar.asFile, info.launcher, msilJar.asFile, fjbgJar.asFile)
-    log.debug("Compiler will be instantiated by :" +instance.compilerJar +" and :" +instance.libraryJar )
-    action(instance)
+
+  def cleaningList=layerOutput::layerEnvironment.envBackingPath::packingDestination::Nil
+
+  lazy val cleanFiles = FileUtilities.clean(cleaningList,true,log)
+
+  lazy val clean:Task = nextLayer match {
+    case None => super.task{ cleanFiles}// We use super.task, so cleaning is done in every case, even when locked
+    case Some(next) => super.task{cleanFiles}.dependsOn{next.clean}
+
   }
 
-  // All path values must be lazy in order to avoid initialization issues (sbt way of doing things)
-  lazy val layerOutput = outputRootPath / name
-  lazy val pathLayout = new PathLayout(projectRoot, layerOutput)
-  lazy val manifestPath = projectRoot/"META-INF"/"MANIFEST.MF"
+
+
 
   // Utility methods (for quick access)
   def libraryOutput = libraryConfig.outputDirectory
@@ -62,10 +88,10 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
   def compilerSrcDir = compilerConfig.srcDir
   def actorsSrcDir = actorsConfig.srcDir
   def swingSrcDir = swingConfig.srcDir
-  def outputLibraryJar = libraryWS.jarDestination
-  def outputCompilerJar = compilerConfig.jarDestination
-  def outputPartestJar = partestConfig.jarDestination
-  def outputScalapJar = scalapConfig.jarDestination
+  def outputLibraryJar = libraryWS.packagingConfig.jarDestination
+  def outputCompilerJar = compilerConfig.packagingConfig.jarDestination
+  def outputPartestJar = partestConfig.packagingConfig.jarDestination
+  def outputScalapJar = scalapConfig.packagingConfig.jarDestination
 
   // CONFIGURATION OF THE COMPILTATION STEPS
 
@@ -73,7 +99,7 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
    *  Configuration of the core library compilation
    */
   lazy val libraryConfig = new CompilationStep("library", pathLayout ,log) with ResourcesToCopy with PropertiesToWrite{
-    def label = "["+name+"] library"
+    def label = "["+layer.name+"] library"
     def options: Seq[String] = Seq("-sourcepath", pathConfig.sources.absolutePath.toString)
     def dependencies = Nil
     override def classpath = super.classpath +++ forkJoinJar
@@ -89,7 +115,7 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
    * Configuration of the compiler
    */
   lazy val compilerConfig = new CompilationStep("compiler", pathLayout, log) with ResourcesToCopy with PropertiesToWrite with Packaging{
-    def label = "["+name+"] compiler"
+    def label = "["+layer.name+"] compiler"
     private def bootClassPath : String = {
       System.getProperty("sun.boot.class.path")
     }
@@ -103,23 +129,23 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
     def propertyDestination = outputDirectory / "compiler.properties"
     def propertyList = ("version.number",versionNumber)::("copyright.string",copyright.value)::Nil
 
-    def packagingDestination:Path = packingDestination
-    def jarName:String = compilerJarName
-    override def jarsToInclude = compilerAdditionalJars
-    override def manifest = {
+    lazy val packagingConfig = {
       import java.util.jar.Manifest
       import java.io.FileInputStream
-      new Manifest(new FileInputStream(manifestPath.asFile))
+      val manifest = new Manifest(new FileInputStream(manifestPath.asFile))
+      new PackagingConfiguration(libsDestination / compilerJarName, List(outputDirectory ##),manifest ,compilerAdditionalJars)
     }
-    override def jarContent = List(outputDirectory ##)
+    lazy val starrPackagingConfig = new PackagingConfiguration(packedStarrOutput/compilerJarName, List(outputDirectory ##))
 
   }
+
+  //// ADDTIONNAL LIBRARIES ////
 
   /**
    * Config of the actors library
    */
   lazy val actorsConfig = new CompilationStep ("actors", pathLayout,log){
-    def label = "["+name+"] actors library"
+    def label = "["+layer.name+"] actors library"
     override def classpath: PathFinder = super.classpath +++ forkJoinJar
     def options: Seq[String] = Seq()
     def dependencies = libraryConfig::Nil
@@ -129,13 +155,11 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
    * Config of the dbc library
    */
   lazy val dbcConfig = new CompilationStep("dbc", pathLayout, log) with Packaging{
-    def label = "["+name+"] dbc library"
+    def label = "["+layer.name+"] dbc library"
     def options: Seq[String] = Seq()
     def dependencies = libraryConfig::Nil
 
-    def packagingDestination=packingDestination
-    def jarName = dbcJarName
-    def jarContent = List(outputDirectory ##)
+    lazy val packagingConfig = new PackagingConfiguration(libsDestination / dbcJarName,List(outputDirectory ##))
 
   }
 
@@ -143,39 +167,35 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
    * Config of the swing library
    */
   lazy val swingConfig = new CompilationStep("swing", pathLayout, log) with Packaging{
-    def label = "["+name+"] swing library"
+    def label = "["+layer.name+"] swing library"
     def options: Seq[String] = Seq()
     def dependencies = libraryConfig::actorsConfig::Nil
 
-    def packagingDestination=packingDestination
-    def jarName = swingJarName
-    def jarContent = List(outputDirectory ##)
+    lazy val packagingConfig = new PackagingConfiguration(libsDestination / swingJarName,List(outputDirectory ##))
+
 
   }
 
+  ///// TOOLS CONFIGURATION ////////
 
   /**
    *  Configuration of scalap tool
    */
   lazy val scalapConfig  = new CompilationStep("scalap", pathLayout,log) with Packaging{
-    def label = "["+name+"] scalap"
+    def label = "["+layer.name+"] scalap"
     def options: Seq[String] = Seq()
     def dependencies = libraryConfig::compilerConfig::Nil
 
-    def packagingDestination=packingDestination
-    def jarName = scalapJarName
-    def jarContent = {
-      val decoderProperties = (srcDir ## )/ "decoder.properties"
+    val decoderProperties = (srcDir ## )/ "decoder.properties"
 
-      List(outputDirectory ##, decoderProperties)
-   }
+    lazy val packagingConfig = new PackagingConfiguration(libsDestination / scalapJarName,List(outputDirectory ##,decoderProperties))
   }
 
   /**
    * Configuration of the partest tool
    */
   lazy val partestConfig = new CompilationStep("partest", pathLayout,log) with ResourcesToCopy with PropertiesToWrite with Packaging{
-    def label = "["+name+"] partest"
+    def label = "["+layer.name+"] partest"
     override def classpath: PathFinder = super.classpath +++ antJar +++ forkJoinJar
     def options: Seq[String] = Seq()
     def dependencies = libraryConfig::compilerConfig::scalapConfig::actorsConfig::Nil
@@ -186,19 +206,59 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
     def propertyDestination = outputDirectory / "partest.properties"
     def propertyList = ("version.number",partestVersionNumber.value.toString)::("copyright.string",copyright.value)::Nil
 
-    def packagingDestination=packingDestination
-    def jarName = partestJarName
-    def jarContent = List(outputDirectory ##)
+    lazy val packagingConfig = new PackagingConfiguration(libsDestination / partestJarName,List(outputDirectory ##))
+
   }
+
+  ///// PLUGINS CONFIGURATION ////////
+
+
+  lazy val continuationPluginConfig = new CompilationStep("continuation-plugin",
+     new PathConfig{
+       def projectRoot:Path = pathLayout.projectRoot
+       def sources:Path = pathLayout.srcDir / "continuations" / "plugin"
+       def analysis:Path = pathLayout.analysisOutput / "continuations" / "plugin"
+       def output:Path = pathLayout.classesOutput / "continuations" / "plugin"
+     } ,
+     log)with ResourcesToCopy with EarlyPackaging {
+    def label = "["+layer.name+"] continuation plugin"
+    def dependencies = libraryConfig::compilerConfig::Nil
+    override def classpath = super.classpath
+    def options = Seq()
+
+    def filesToCopy = (sourceRoots##) / "scalac-plugin.xml"
+    def copyDestination = outputDirectory
+    def jarContent = List(outputDirectory ##)
+    lazy val packagingConfig = new PackagingConfiguration(requiredPluginsDirForCompilation/"continuations.jar",List(outputDirectory ##))
+    lazy val earlyPackagingConfig= new PackagingConfiguration(pathLayout.outputDir / "misc" / "scala-devel" / "plugins"/"continuations.jar",List(outputDirectory ##))
+
+  }
+
+  lazy val continuationLibraryConfig = new CompilationStep("continuation-library",
+    new PathConfig{
+       def projectRoot:Path = pathLayout.projectRoot
+       def sources:Path = pathLayout.srcDir / "continuations" / "library"
+       def analysis:Path = pathLayout.analysisOutput / "continuations" / "library"
+       def output:Path = pathLayout.classesOutput / "continuations" / "library"
+     },
+     log) {
+    def label = "["+layer.name+"] continuation library"
+    def dependencies = libraryConfig::compilerConfig::continuationPluginConfig::Nil
+    def options = Seq("-Xpluginsdir",requiredPluginsDirForCompilation.absolutePath,"-Xplugin-require:continuations","-P:continuations:enable")
+
+  }
+
+
+
 
   // Grouping compilation steps
   def minimalCompilation = false // It must be true for locker because we do not nedd to compile everything
 
   def libraryWS:WrapperStep with Packaging
   def toolsWS:WrapperStep
+  lazy val pluginsWS = new WrapperStep(continuationPluginConfig::continuationLibraryConfig::Nil)
 
-
-  lazy val allSteps = new WrapperStep(libraryWS::compilerConfig::toolsWS::Nil)
+  lazy val allSteps = new WrapperStep(libraryWS::compilerConfig::pluginsWS::toolsWS::Nil)
 
 
 
@@ -206,12 +266,6 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
 
   //Needed Libraries
   //TODO Check if not possible to manage some of them with the sbt dependency management (ivy)
-  lazy val lib = projectRoot / "lib"
-  lazy val forkJoinJar = lib / forkJoinJarName
-  lazy val jlineJar = lib / jlineJarName
-  lazy val antJar = lib / "ant" / "ant.jar"
-  lazy val fjbgJar = lib / fjbgJarName
-  lazy val msilJar = lib /  msilJarName
 
 
 
@@ -221,45 +275,15 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
    * We must define which are the libraries used to instantiate the compiler
    * that will be used to compile this layer.
    */
-  def instantiationCompilerJar:Path
-  def instantiationLibraryJar:Path
   def packingDestination :Path = layerOutput / "pack"
   def compilerAdditionalJars: List[Path] = Nil
   def libraryAdditionalJars: List[Path] = Nil
 
 
-  /**
-   * Environment for storing properties that
-   * 1) need to be saved across sbt session
-   * 2) Are local to a layer
-   * Used to save the last version of the compiler used to build the layer (for discarding it's product if necessary)
-   */
-  lazy val layerEnvironment = new BasicEnvironment {
-    // use the project's Logger for any properties-related logging
-    def log = BasicLayer.this.log
-
-    // the properties file will be read from/stored to project/extra.properties
-    def envBackingPath = outputRootPath / ("build-"+name+".properties")
-
-    // define some properties that will go in project/extra.properties
-    lazy val lastCompilerVersion:Property[String] = propertyOptional[String]("")
   }
-}
 
 object BasicLayer{
-  // Some path definitions related strings
-  val compilerJarName = "scala-compiler.jar"
-  val libraryJarName = "scala-library.jar"
-  val scalapJarName = "scalap.jar"
-  val dbcJarName = "scala-dbc.jar"
-  val swingJarName = "scala-swing.jar"
-  val partestJarName = "scala-partest.jar"
-  val fjbgJarName = "fjbg.jar"
-  val msilJarName = "msil.jar"
-  val jlineJarName = "jline.jar"
-  val forkJoinJarName = "forkjoin.jar"
-
-  implicit def stringToGlob(s:String):NameFilter=GlobFilter(s)
+   implicit def stringToGlob(s:String):NameFilter=GlobFilter(s)
 
 
 
