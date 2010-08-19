@@ -44,7 +44,7 @@ trait DocComments { self: SymbolTable =>
    *  the doc comment of the overridden version is copied instead.
    */
   def cookedDocComment(sym: Symbol, docStr: String = ""): String = {
-    val ownComment = if (docStr.isEmpty) docComments get sym map (_.template) getOrElse ""
+    val ownComment = if (docStr.length == 0) docComments get sym map (_.template) getOrElse ""
                      else DocComment(docStr).template
     superComment(sym) match {
       case None =>
