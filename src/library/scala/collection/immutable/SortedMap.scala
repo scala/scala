@@ -40,8 +40,7 @@ trait SortedMap[A, +B] extends Map[A, B]
   override def updated [B1 >: B](key: A, value: B1): SortedMap[A, B1] = this + ((key, value))
 
   /** Add a key/value pair to this map.
-   *  @param    key the key
-   *  @param    value the value
+   *  @param    kv the key/value pair
    *  @return   A new map with the new binding added to this map
    *  @note     needs to be overridden in subclasses
    */
@@ -60,7 +59,7 @@ trait SortedMap[A, +B] extends Map[A, B]
   /** Adds a number of elements provided by a traversable object
    *  and returns a new collection with the added elements.
    *
-   *  @param elems     the traversable object.
+   *  @param xs     the traversable object.
    */
   override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): SortedMap[A, B1] =
     ((repr: SortedMap[A, B1]) /: xs) (_ + _)

@@ -89,6 +89,14 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
   override def + [B1 >: B] (elem1: (A, B1), elem2: (A, B1), elems: (A, B1) *): ListMap[A, B1] =
     this + elem1 + elem2 ++ elems
 
+  /** Adds a number of elements provided by a traversable object
+   *  and returns a new collection with the added elements.
+   *
+   *  @param xs     the traversable object.
+   */
+  override def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): ListMap[A, B1] =
+    ((repr: ListMap[A, B1]) /: xs) (_ + _)
+
   /** This creates a new mapping without the given <code>key</code>.
    *  If the map does not contain a mapping for the given key, the
    *  method returns the same map.
