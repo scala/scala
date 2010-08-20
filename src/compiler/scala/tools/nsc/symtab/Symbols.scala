@@ -132,14 +132,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     def getAnnotation(cls: Symbol): Option[AnnotationInfo] =
       annotations find (_.atp.typeSymbol == cls)
 
-    /** Finds the requested annotation and returns Some(Tree) containing
-     *  the argument at position 'index', or None if either the annotation
-     *  or the index does not exist.
-     */
-    private def getAnnotationArg(cls: Symbol, index: Int) =
-      for (AnnotationInfo(_, args, _) <- getAnnotation(cls) ; if args.size > index) yield
-        args(index)
-
     /** Remove all annotations matching the given class. */
     def removeAnnotation(cls: Symbol): Unit =
       setAnnotations(annotations filterNot (_.atp.typeSymbol == cls))
@@ -461,18 +453,16 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       }
 
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
-    def deprecationMessage  = getAnnotationArg(DeprecatedAttr, 0) collect { case Literal(const) => const.stringValue }
+    def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap { _.stringArg(0) }
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.  However nothing in the compiler
     // prevents someone from writing a @migration annotation with a calculated
     // string.  So this needs attention.  For now the fact that migration is
     // private[scala] ought to provide enough protection.
-    def migrationMessage    = getAnnotationArg(MigrationAnnotationClass, 2) collect {
-      case Literal(const) => const.stringValue
-      case x              => x.toString           // should not be necessary, but better than silently ignoring an issue
-    }
-    def elisionLevel        = getAnnotationArg(ElidableMethodClass, 0) collect { case Literal(Constant(x: Int)) => x }
+    def migrationMessage    = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(2) }
+    def elisionLevel        = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
+    def implicitNotFoundMsg = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
 
     /** Does this symbol denote a wrapper object of the interpreter or its class? */
     final def isInterpreterWrapper =

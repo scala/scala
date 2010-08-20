@@ -191,6 +191,15 @@ trait Typers { self: Analyzer =>
           argResultsBuff += inferImplicit(fun, paramTp, true, false, context)
         }
 
+        def errorMessage(paramName: Name, paramTp: Type) =
+          paramTp.typeSymbol match {
+            case ImplicitNotFoundMsg(msg) => msg.format(paramName, paramTp)
+            case _ =>
+              "could not find implicit value for "+
+                 (if (paramName startsWith nme.EVIDENCE_PARAM_PREFIX) "evidence parameter of type "
+                  else "parameter "+paramName+": ")+paramTp
+          }
+
         val argResults = argResultsBuff.toList
         val args = argResults.zip(params) flatMap {
           case (arg, param) =>
@@ -199,10 +208,7 @@ trait Typers { self: Analyzer =>
               else List(atPos(arg.tree.pos)(new AssignOrNamedArg(Ident(param.name), (arg.tree))))
             } else {
               if (!param.hasFlag(DEFAULTPARAM))
-                context.error(
-                  fun.pos, "could not find implicit value for "+
-                  (if (param.name startsWith nme.EVIDENCE_PARAM_PREFIX) "evidence parameter of type "
-                   else "parameter "+param.name+": ")+param.tpe)
+                context.error(fun.pos, errorMessage(param.name, param.tpe))
               positional = false
               Nil
             }

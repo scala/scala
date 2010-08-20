@@ -1081,7 +1081,13 @@ abstract class RefChecks extends InfoTransform {
       }
 
       tree match {
-        case m: MemberDef => applyChecks(m.symbol.annotations)
+        case m: MemberDef =>
+          val sym = m.symbol
+          applyChecks(sym.annotations)
+          // validate implicitNotFoundMessage
+          analyzer.ImplicitNotFoundMsg.check(sym) foreach { warn =>
+            unit.warning(tree.pos, "Invalid implicitNotFound message for %s%s:\n%s".format(sym, sym.locationString, warn))
+          }
         case tpt@TypeTree() =>
           if(tpt.original != null) {
             tpt.original foreach {
