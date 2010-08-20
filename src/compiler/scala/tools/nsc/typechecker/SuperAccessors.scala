@@ -433,8 +433,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
        && sym.hasFlag(JAVA)
        && !sym.owner.isPackageClass
        && !accessibleThroughSubclassing
-       && (enclPackage(sym.owner) != enclPackage(currentOwner))
-       && (enclPackage(sym.owner) == enclPackage(sym.accessBoundary(sym.owner))))
+       && (sym.owner.enclosingPackageClass != currentOwner.enclosingPackageClass)
+       && (sym.owner.enclosingPackageClass == sym.accessBoundary(sym.owner.enclosingPackageClass)))
 
       if (res) {
         val host = hostForAccessorOf(sym, currentOwner.enclClass)
@@ -452,10 +452,6 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       } else res
     }
 
-    /** Return the enclosing package of the given symbol. */
-    private def enclPackage(sym: Symbol): Symbol =
-      if ((sym == NoSymbol) || sym.isPackageClass) sym else enclPackage(sym.owner)
-
     /** Return the innermost enclosing class C of referencingClass for which either
      *  of the following holds:
      *     - C is a subclass of sym.owner or
@@ -464,7 +460,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private def hostForAccessorOf(sym: Symbol, referencingClass: Symbol): Symbol = {
       if (referencingClass.isSubClass(sym.owner.enclClass)
           || referencingClass.thisSym.isSubClass(sym.owner.enclClass)
-          || enclPackage(referencingClass) == enclPackage(sym.owner)) {
+          || referencingClass.enclosingPackageClass == sym.owner.enclosingPackageClass) {
         assert(referencingClass.isClass)
         referencingClass
       } else if(referencingClass.owner.enclClass != NoSymbol)

@@ -227,6 +227,7 @@ trait SyntheticMethods extends ast.TreeDSL {
         var newAcc = tree.symbol.cloneSymbol
         newAcc.name = context.unit.fresh.newName(tree.symbol.pos.focus, tree.symbol.name + "$")
         newAcc setFlag SYNTHETIC resetFlag (ACCESSOR | PARAMACCESSOR | PRIVATE)
+        newAcc.privateWithin = NoSymbol
         newAcc = newAcc.owner.info.decls enter newAcc
         val result = typer typed { DEF(newAcc) === rhs.duplicate }
         log("new accessor method " + result)
