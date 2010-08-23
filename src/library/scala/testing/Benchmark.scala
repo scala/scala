@@ -52,6 +52,7 @@ trait Benchmark {
    */
   def runBenchmark(noTimes: Int): List[Long] =
     for (i <- List.range(1, noTimes + 1)) yield {
+      setUp
       val startTime = Platform.currentTime
       var i = 0; while (i < multiplier) {
         run()
@@ -62,6 +63,12 @@ trait Benchmark {
 
       stopTime - startTime
     }
+
+  /** Prepare any data needed by the benchmark, but which should not
+   *  be measured.
+   */
+  def setUp {
+  }
 
   /** a string that is written at the beginning of the output line
    *   that contains the timings. By default, this is the class name.
