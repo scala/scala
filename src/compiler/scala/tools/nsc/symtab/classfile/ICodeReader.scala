@@ -110,7 +110,7 @@ abstract class ICodeReader extends ClassfileParser {
         if (sym == NoSymbol)
           sym = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
         if (sym == NoSymbol) {
-          log("Could not find symbol for " + name + ": " + tpe + " in " + owner.info.decls)
+          log("Could not find symbol for " + name + ": " + tpe)
           log(owner.info.member(name).tpe + " : " + tpe)
           if (name.toString() == "toMap")
             tpe = pool.getType(dummySym, ch)
@@ -159,7 +159,6 @@ abstract class ICodeReader extends ClassfileParser {
     var beginning = in.bp
     try {
       if (sym != NoSymbol) {
-        log("Parsing method " + sym.fullName + ": " + sym.tpe);
         this.method = new IMethod(sym);
         this.method.returnType = toTypeKind(sym.tpe.resultType)
         getCode(jflags).addMethod(this.method)
