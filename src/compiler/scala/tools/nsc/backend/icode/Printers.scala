@@ -120,7 +120,7 @@ trait Printers { self: ICodes =>
       print(": ");
       if (settings.debug.value) print("pred: " + bb.predecessors + " succs: " + bb.successors + " flags: " + bb.flagsString)
       indent; println
-      bb foreach printInstruction
+      bb.toList foreach printInstruction
       undent; println
     }
 

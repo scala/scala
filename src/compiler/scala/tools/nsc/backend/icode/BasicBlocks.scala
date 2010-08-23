@@ -93,7 +93,7 @@ trait BasicBlocks {
     override def toList: List[Instruction] = {
       if (closed)
         instrs.toList
-      else instructionList
+      else instructionList.reverse
     }
 
     /** Return an iterator over the instructions in this basic block. */
@@ -131,8 +131,8 @@ trait BasicBlocks {
     /** Apply a function to all the instructions of the block. */
     override def foreach[U](f: Instruction => U) = {
       if (!closed) {
-        dump
-        global.abort("Traversing an open block!: " + label)
+        method.dump
+        global.abort("Traversing an open block!: " + label + " in " + method)
       }
       instrs foreach f
     }
@@ -368,8 +368,24 @@ trait BasicBlocks {
       this.close
     }
 
+    /** do nothing if block is already closed */
+    def closeWith(instr: Instruction) {
+      if (closed) () else {
+        emit(instr)
+        close
+      }
+    }
+
+    def closeWith(instr: Instruction, pos: Position) {
+      if (closed) () else {
+        emit(instr, pos)
+        close
+      }
+    }
+
     /** Close the block */
     def close {
+      assert(!closed)
       assert(instructionList.length > 0, "Empty block.")
       closed = true
       setFlag(DIRTYSUCCS)

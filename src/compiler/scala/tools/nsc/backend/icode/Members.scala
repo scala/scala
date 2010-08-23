@@ -253,6 +253,7 @@ trait Members { self: ICodes =>
         } else
           bb = nextBlock.keysIterator.next
       }
+      checkValid(this)
     }
 
     def dump {

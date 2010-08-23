@@ -49,7 +49,7 @@ abstract class Liveness {
       gen.clear
       kill.clear
 
-      for (b <- m.code.blocks.toList;
+      for (b <- m.code.blocks;
            (g, k) = genAndKill(b)) {
         gen  += (b -> g)
         kill += (b -> k)

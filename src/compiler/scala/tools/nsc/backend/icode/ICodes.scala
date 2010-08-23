@@ -71,6 +71,14 @@ abstract class ICodes extends AnyRef
     classes.values foreach printer.printClass
   }
 
+  def checkValid(m: IMethod) {
+    for (b <- m.code.blocks)
+      if (!b.closed) {
+        m.dump
+        global.abort("Open block: " + b.flagsString)
+      }
+  }
+
   object liveness extends Liveness {
     val global: ICodes.this.global.type = ICodes.this.global
   }

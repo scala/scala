@@ -134,11 +134,11 @@ abstract class GenICode extends SubComponent  {
             case EmptyTree =>
               error("Concrete method has no definition: " + tree)
             case _ => if (ctx1.bb.isEmpty)
-              ctx1.bb.emit(RETURN(m.returnType), rhs.pos)
+              ctx1.bb.closeWith(RETURN(m.returnType), rhs.pos)
             else
-              ctx1.bb.emit(RETURN(m.returnType))
+              ctx1.bb.closeWith(RETURN(m.returnType))
           }
-          ctx1.bb.close
+          if (!ctx1.bb.closed) ctx1.bb.close
           prune(ctx1.method)
         } else
           ctx1.method.setCode(null)
@@ -373,11 +373,12 @@ abstract class GenICode extends SubComponent  {
       assert(!settings.debug.value || !(hasUnitBranch && expectedType != UNIT),
         "I produce UNIT in a context where " + expectedType + " is expected!")
 
-      thenCtx.bb.emitOnly(JUMP(contCtx.bb))
-      elseCtx.bb.emitOnly(
-        if (elsep == EmptyTree) JUMP(contCtx.bb)
-        else JUMP(contCtx.bb) setPos tree.pos
-      )
+      // alternatives may be already closed by a tail-recursive jump
+      thenCtx.bb.closeWith(JUMP(contCtx.bb))
+      elseCtx.bb.closeWith(
+          if (elsep == EmptyTree) JUMP(contCtx.bb)
+          else JUMP(contCtx.bb) setPos tree.pos
+        )
 
       (contCtx, resKind)
     }
@@ -489,8 +490,7 @@ abstract class GenICode extends SubComponent  {
                 log("Adding label " + tree.symbol);
           }
 
-          ctx.bb.emit(JUMP(ctx1.bb), tree.pos)
-          ctx.bb.close
+          ctx.bb.closeWith(JUMP(ctx1.bb), tree.pos)
           genLoad(rhs, ctx1, expectedType /*toTypeKind(tree.symbol.info.resultType)*/)
 
         case ValDef(_, nme.THIS, _, _) =>
@@ -719,7 +719,8 @@ abstract class GenICode extends SubComponent  {
             }
             val ctx1 = genLoadLabelArguments(args, label, ctx)
             ctx1.bb.emitOnly(if (label.anchored) JUMP(label.block) else PJUMP(label))
-            ctx1.newBlock
+            ctx1.bb.enterIgnoreMode
+            ctx1
           } else if (isPrimitive(sym)) { // primitive method call
             val (newCtx, resKind) = genPrimitiveOp(app, ctx, expectedType)
             generatedType = resKind
@@ -925,7 +926,7 @@ abstract class GenICode extends SubComponent  {
             }
 
             caseCtx = genLoad(body, tmpCtx, generatedType)
-            caseCtx.bb.emitOnly(JUMP(afterCtx.bb) setPos caze.pos)
+            caseCtx.bb.closeWith(JUMP(afterCtx.bb) setPos caze.pos)
           }
           ctx1.bb.emitOnly(
             SWITCH(tags.reverse map (x => List(x)), (default :: targets).reverse) setPos tree.pos
@@ -1291,7 +1292,7 @@ abstract class GenICode extends SubComponent  {
       // the default emission
       def default = {
         val ctx1 = genLoad(tree, ctx, BOOL)
-        ctx1.bb.emitOnly(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL) setPos tree.pos)
+        ctx1.bb.closeWith(CZJUMP(thenCtx.bb, elseCtx.bb, NE, BOOL) setPos tree.pos)
       }
 
       tree match {
@@ -1926,8 +1927,7 @@ abstract class GenICode extends SubComponent  {
 
         def emitFinalizer(ctx: Context): Context = if (!finalizer.isEmpty) {
           val ctx1 = finalizerCtx.dup.newBlock
-          ctx.bb.emit(JUMP(ctx1.bb))
-          ctx.bb.close
+          ctx.bb.closeWith(JUMP(ctx1.bb))
 
           if (guardResult) {
             ctx1.bb.emit(STORE_LOCAL(tmp))
@@ -1962,8 +1962,7 @@ abstract class GenICode extends SubComponent  {
             ctx1 = handler._3(ctx1)
             // emit finalizer
             val ctx2 = emitFinalizer(ctx1)
-            ctx2.bb.emit(JUMP(afterCtx.bb))
-            ctx2.bb.close
+            ctx2.bb.closeWith(JUMP(afterCtx.bb))
             outerCtx.endHandler()
             exh
           }
@@ -1974,11 +1973,9 @@ abstract class GenICode extends SubComponent  {
         var finalCtx = body(bodyCtx)
         finalCtx = emitFinalizer(finalCtx)
 
-        outerCtx.bb.emit(JUMP(bodyCtx.bb))
-        outerCtx.bb.close
+        outerCtx.bb.closeWith(JUMP(bodyCtx.bb))
 
-        finalCtx.bb.emit(JUMP(afterCtx.bb))
-        finalCtx.bb.close
+        finalCtx.bb.closeWith(JUMP(afterCtx.bb))
 
         afterCtx
       }
@@ -2018,8 +2015,7 @@ abstract class GenICode extends SubComponent  {
           if (settings.Xdce.value) ctx.bb.emit(LOAD_EXCEPTION())
           val ctx1 = genLoad(finalizer, ctx, UNIT)
           // need jump for the ICode to be valid. MSIL backend will emit `Endfinally` instead.
-          ctx1.bb.emit(JUMP(afterCtx.bb))
-          ctx1.bb.close
+          ctx1.bb.closeWith(JUMP(afterCtx.bb))
           finalizerCtx.endHandler()
         }
 
@@ -2029,8 +2025,7 @@ abstract class GenICode extends SubComponent  {
           if (settings.Xdce.value) ctx1.bb.emit(LOAD_EXCEPTION())
           ctx1 = handler._3(ctx1)
           // msil backend will emit `Leave` to jump out of a handler
-          ctx1.bb.emit(JUMP(afterCtx.bb))
-          ctx1.bb.close
+          ctx1.bb.closeWith(JUMP(afterCtx.bb))
           outerCtx.endHandler()
         }
 
@@ -2038,12 +2033,10 @@ abstract class GenICode extends SubComponent  {
 
         val finalCtx = body(bodyCtx)
 
-        outerCtx.bb.emit(JUMP(bodyCtx.bb))
-        outerCtx.bb.close
+        outerCtx.bb.closeWith(JUMP(bodyCtx.bb))
 
         // msil backend will emit `Leave` to jump out of a try-block
-        finalCtx.bb.emit(JUMP(afterCtx.bb))
-        finalCtx.bb.close
+        finalCtx.bb.closeWith(JUMP(afterCtx.bb))
 
         afterCtx
       }

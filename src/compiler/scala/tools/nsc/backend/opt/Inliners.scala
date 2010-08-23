@@ -125,7 +125,8 @@ abstract class Inliners extends SubComponent {
       val caller = new IMethodInfo(m)
       var info: tfa.lattice.Elem = null
 
-      def analyzeInc(msym: Symbol, i: Instruction, bb: BasicBlock) = {
+      def analyzeInc(msym: Symbol, i: Instruction, bb: BasicBlock): Boolean = {
+        var inlined = false
         def paramTypes  = msym.info.paramTypes
         val receiver    = (info.stack.types drop paramTypes.length).head match {
           case REFERENCE(s) => s
@@ -164,6 +165,7 @@ abstract class Inliners extends SubComponent {
 
               if (pair isStampedForInlining info.stack) {
                 retry = true
+                inlined = true
                 if (isCountable)
                   count += 1
 
@@ -191,8 +193,10 @@ abstract class Inliners extends SubComponent {
           if (!isAvailable) "bytecode was not available"
           else "it is not final"
         )
+        inlined
       }
 
+      import scala.util.control.Breaks._
       do {
         retry = false
         if (caller.inline) {
@@ -205,11 +209,13 @@ abstract class Inliners extends SubComponent {
           caller.linearized foreach { bb =>
             info = tfa in bb
 
-            for (i <- bb) {
-              if (!retry) {
+            breakable {
+              for (i <- bb) {
                 i match {
-                  case CALL_METHOD(msym, Dynamic) => analyzeInc(msym, i, bb)
-                  case _                          => ()
+                  case CALL_METHOD(msym, Dynamic) =>
+                    if (analyzeInc(msym, i, bb)) break
+
+                  case _ => ()
                 }
                 info = tfa.interpret(info, i)
               }
@@ -497,6 +503,7 @@ abstract class Inliners extends SubComponent {
         // add exception handlers of the callee
         caller addHandlers (inc.handlers map translateExh)
         assert(pending.isEmpty, "Pending NEW elements: " + pending)
+        if (settings.debug.value) icodes.checkValid(caller.m)
       }
 
       def isStampedForInlining(stack: TypeStack) =
@@ -595,8 +602,8 @@ abstract class Inliners extends SubComponent {
 
           false
         }
-        if (!canAccess(accessNeeded))
-          println("access needed and failed: " + accessNeeded)
+//        if (!canAccess(accessNeeded))
+//          println("access needed and failed: " + accessNeeded)
         canAccess(accessNeeded) && !isIllegalStack
       }
 
