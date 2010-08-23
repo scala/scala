@@ -69,15 +69,21 @@ object DoubleLinkedList extends SeqFactory[DoubleLinkedList] {
   def newBuilder[A]: Builder[A, DoubleLinkedList[A]] =
     new Builder[A, DoubleLinkedList[A]] {
       var current: DoubleLinkedList[A] = _
+      val emptyList = new DoubleLinkedList[A]()
+      if(null == current)
+        current = emptyList
+
       def +=(elem: A): this.type = {
-        val tmp = new DoubleLinkedList(elem, null)
-        if (current != null)
-          current.insert(tmp)
+        if (current.nonEmpty)
+          current.insert(new DoubleLinkedList(elem, emptyList))
         else
-          current = tmp
+          current = new DoubleLinkedList(elem, emptyList)
         this
       }
-      def clear() { current = null }
+
+      def clear() {
+        current = emptyList
+      }
       def result() = current
     }
 }
