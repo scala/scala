@@ -1124,7 +1124,7 @@ abstract class RefChecks extends InfoTransform {
         if ((pname startsWith nme.CHECK_IF_REFUTABLE_STRING) &&
             isIrrefutable(pat1, tpt.tpe) && (qual.tpe <:< tree.tpe)) =>
 
-          qual
+          transform(qual)
 
       case Apply(Select(New(tpt), name), args)
       if (tpt.tpe.typeSymbol == ArrayClass && args.length >= 2) =>
