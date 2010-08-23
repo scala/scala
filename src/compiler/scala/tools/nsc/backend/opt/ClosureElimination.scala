@@ -48,7 +48,7 @@ abstract class ClosureElimination extends SubComponent {
             idx -= 1
           }
           if (!liveOut(x)) {
-            println("removing dead store/load " + x)
+            log("removing dead store/load " + x)
             Some(Nil)
           } else None
         } else

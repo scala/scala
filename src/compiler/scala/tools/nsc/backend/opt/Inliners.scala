@@ -142,7 +142,7 @@ abstract class Inliners extends SubComponent {
         }
 
         if (shouldLoadImplFor(concreteMethod, receiver))
-          icodes.icode(concreteMethod.enclClass, true)
+          icodes.load(concreteMethod.enclClass)
 
         def isAvailable = icodes available concreteMethod.enclClass
         def isCandidate = isClosureClass(receiver) || concreteMethod.isEffectivelyFinal || receiver.isFinal

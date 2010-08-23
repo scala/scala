@@ -385,7 +385,7 @@ trait BasicBlocks {
 
     /** Close the block */
     def close {
-      assert(!closed)
+      assert(!closed || ignore)
       assert(instructionList.length > 0, "Empty block.")
       closed = true
       setFlag(DIRTYSUCCS)

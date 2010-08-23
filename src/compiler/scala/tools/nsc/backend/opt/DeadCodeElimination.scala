@@ -160,6 +160,15 @@ abstract class DeadCodeElimination extends SubComponent {
               if (inliner.isClosureClass(sym)) {
                 liveClosures += sym
               }
+
+            // it may be better to move static initializers from closures to
+            // the enclosing class, to allow the optimizer to remove more closures.
+            // right now, the only static fields in closures are created when caching
+            // 'symbol literals.
+            case LOAD_FIELD(sym, true) if inliner.isClosureClass(sym.owner) =>
+              log("added closure class for field " + sym)
+              liveClosures += sym.owner
+
             case LOAD_EXCEPTION() =>
               ()
 

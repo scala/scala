@@ -42,11 +42,18 @@ trait Repository {
     }
 
   /** Load bytecode for given symbol. */
-  private def load(sym: Symbol) {
-    val (c1, c2) = icodeReader.readClass(sym)
+  def load(sym: Symbol) {
+    try {
+      val (c1, c2) = icodeReader.readClass(sym)
 
-    assert(c1.symbol == sym || c2.symbol == sym)
-    loaded += (c1.symbol -> c1)
-    loaded += (c2.symbol -> c2)
+      assert(c1.symbol == sym || c2.symbol == sym, "c1.symbol = %s, c2.symbol = %s, sym = %s".format(c1.symbol, c2.symbol, sym))
+      loaded += (c1.symbol -> c1)
+      loaded += (c2.symbol -> c2)
+    } catch {
+      case e: MissingRequirementError =>
+        log("Failed to load %s. [%s]".format(sym.fullName, e.getMessage))
+        if (settings.debug.value)
+          e.printStackTrace
+    }
   }
 }
