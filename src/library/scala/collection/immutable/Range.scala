@@ -51,7 +51,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   def isInclusive = false
 
-  override def foreach[@specialized(Unit) U](f: Int => U) {
+  @inline final override def foreach[@specialized(Unit) U](f: Int => U) {
     if (fullLength > 0) {
       val last = this.last
       var i = start
@@ -73,7 +73,7 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 
   def length: Int = fullLength.toInt
 
-  protected def fullLength: Long = if (end > start == step > 0 && start != end)
+  def fullLength: Long = if (end > start == step > 0 && start != end)
     ((last.toLong - start.toLong) / step.toLong + 1)
   else
     0
@@ -249,7 +249,7 @@ object Range {
       end
     else
       ((end.toLong - start.toLong) / step.toLong * step.toLong + start.toLong).toInt
-    protected override def fullLength: Long = if (end > start == step > 0 || start == end)
+    override def fullLength: Long = if (end > start == step > 0 || start == end)
       ((last.toLong - start.toLong) / step.toLong + 1)
     else
       0
@@ -262,7 +262,7 @@ object Range {
 
   /** Make an range from `start` to `end` inclusive with step value 1.
    */
-  def apply(start: Int, end: Int): Range with ByOne = new Range(start, end, 1) with ByOne
+  def apply(start: Int, end: Int): Range = new Range(start, end, 1)
 
   /** Make an inclusive range from start to end with given step value.
    * @note step != 0
@@ -271,21 +271,7 @@ object Range {
 
   /** Make an inclusive range from start to end with step value 1.
    */
-  def inclusive(start: Int, end: Int): Range.Inclusive with ByOne = new Inclusive(start, end, 1) with ByOne
-
-  trait ByOne extends Range {
-    override final def foreach[@specialized(Unit) U](f: Int => U) {
-      if (length > 0) {
-        val last = this.last
-        var i = start
-        while (i != last) {
-          f(i)
-          i += 1
-        }
-        f(i)
-      }
-    }
-  }
+  def inclusive(start: Int, end: Int): Range.Inclusive = new Inclusive(start, end, 1)
 
   // BigInt and Long are straightforward generic ranges.
   object BigInt {
