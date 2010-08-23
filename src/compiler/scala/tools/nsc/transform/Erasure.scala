@@ -469,7 +469,14 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             else BLOCK(tree, REF(BoxedUnit_UNIT))
           case x          =>
             assert(x != ArrayClass)
-            (REF(boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectClass.tpe
+            tree match {
+              case Apply(boxFun, List(arg)) if (isUnbox(tree.symbol)) =>
+                log("boxing an unbox: " + tree)
+                log("replying with " + arg)
+                arg
+              case _ =>
+                (REF(boxMethod(x)) APPLY tree) setPos (tree.pos) setType ObjectClass.tpe
+            }
         })
     }
 
