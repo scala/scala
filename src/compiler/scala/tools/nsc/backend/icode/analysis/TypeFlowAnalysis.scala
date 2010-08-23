@@ -389,8 +389,8 @@ abstract class TypeFlowAnalysis {
       val stack = out.stack
 
       if (settings.debug.value) {
-        Console.println("[before] Stack: " + stack);
-        Console.println(i);
+//        Console.println("[before] Stack: " + stack);
+//        Console.println(i);
       }
       i match {
 

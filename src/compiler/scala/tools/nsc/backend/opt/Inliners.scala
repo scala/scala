@@ -144,7 +144,11 @@ abstract class Inliners extends SubComponent {
         def isAvailable = icodes available receiver
         def isCandidate = isClosureClass(receiver) || concreteMethod.isEffectivelyFinal || receiver.isFinal
         def isApply     = concreteMethod.name == nme.apply
-        def isCountable = !(isClosureClass(receiver) && isApply)   // only count non-closures
+        def isCountable = !(isClosureClass(receiver)
+                || isApply
+                || isMonadicMethod(concreteMethod)
+                || receiver.enclosingPackage == definitions.RuntimePackage
+                )   // only count non-closures
 
         if (settings.debug.value)
           log("Treating " + i
@@ -280,7 +284,7 @@ abstract class Inliners extends SubComponent {
       def isMonadic     = isMonadicMethod(sym)
 
       def handlers      = m.exh
-      def blocks        = m.code.blocks
+      def blocks        = if (m.code eq null) Predef.error("blocks = null + " + m) else m.code.blocks
       def locals        = m.locals
       def length        = blocks.length
       def openBlocks    = blocks filterNot (_.closed)
