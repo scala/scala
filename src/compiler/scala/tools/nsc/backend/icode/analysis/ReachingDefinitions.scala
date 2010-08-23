@@ -23,7 +23,7 @@ abstract class ReachingDefinitions {
   /** The lattice for reaching definitions. Elements are
    *  a triple (local variable, basic block, index of instruction of that basic block)
    */
-  object rdefLattice extends CompleteLattice {
+  object rdefLattice extends SemiLattice {
     type Definition = (Local, BasicBlock, Int)
     type Elem = IState[Set[Definition], Stack]
     type StackPos = Set[(BasicBlock, Int)]

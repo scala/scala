@@ -105,7 +105,7 @@ trait Benchmark {
       if (args.length > 1) multiplier = args(1).toInt
       logFile.write(prefix)
       for (t <- runBenchmark(args(0).toInt))
-        logFile.write("\t\t" + t)
+        logFile.write("\t" + t)
 
       logFile.write(Platform.EOL)
       logFile.flush()

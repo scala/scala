@@ -21,7 +21,7 @@ abstract class Liveness {
   import icodes._
 
   /** The lattice for this analysis.   */
-  object livenessLattice extends CompleteLattice {
+  object livenessLattice extends SemiLattice {
     type Elem = Set[Local]
 
     val top: Elem = new ListSet[Local]() {

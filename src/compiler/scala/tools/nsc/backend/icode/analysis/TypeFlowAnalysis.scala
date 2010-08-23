@@ -19,7 +19,7 @@ abstract class TypeFlowAnalysis {
 
   /** The lattice of ICode types.
    */
-  object typeLattice extends CompleteLattice {
+  object typeLattice extends SemiLattice {
     type Elem = icodes.TypeKind
 
     val Object = icodes.REFERENCE(global.definitions.ObjectClass)
@@ -37,7 +37,7 @@ abstract class TypeFlowAnalysis {
   /** The lattice of type stacks. It is a straight forward extension of
    *  the type lattice (lub is pairwise lub of the list elements).
    */
-  object typeStackLattice extends CompleteLattice {
+  object typeStackLattice extends SemiLattice {
     import icodes._
     type Elem = TypeStack
 
@@ -73,7 +73,7 @@ abstract class TypeFlowAnalysis {
   /** The type flow lattice contains a binding from local variable
    *  names to types and a type stack.
    */
-  object typeFlowLattice extends CompleteLattice {
+  object typeFlowLattice extends SemiLattice {
     import icodes._
     type Elem = IState[VarBinding, icodes.TypeStack]
 

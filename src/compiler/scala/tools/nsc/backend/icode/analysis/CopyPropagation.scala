@@ -50,7 +50,7 @@ abstract class CopyPropagation {
   object AllRecords extends Record(NoSymbol, new HashMap[Symbol, Value])
 
   /** The lattice for this analysis.   */
-  object copyLattice extends CompleteLattice {
+  object copyLattice extends SemiLattice {
     type Bindings = Map[Location, Value]
 
     def emptyBinding = new HashMap[Location, Value]()
