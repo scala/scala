@@ -950,8 +950,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     satisfiable(env, silent)
   }
 
-  /*************************** Term transformation ************************************/
-
   class Duplicator extends {
     val global: SpecializeTypes.this.global.type = SpecializeTypes.this.global
   } with typechecker.Duplicators
@@ -1144,7 +1142,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (symbol.isConstructor) {
             val t = atOwner(symbol) {
               val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
-              forwardCall(tree.pos, superRef, vparamss)
+              forwardCtorCall(tree.pos, superRef, vparamss)
             }
             if (symbol.isPrimaryConstructor) localTyper typed {
                 atPos(symbol.pos)(treeCopy.DefDef(tree, mods, name, tparams, vparamss, tpt, Block(List(t), Literal(()))))
@@ -1392,6 +1390,16 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   private def forwardCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
     val argss = paramss map (_ map (x => Ident(x.symbol)))
+    atPos(pos) { (receiver /: argss) (Apply) }
+  }
+
+  private def forwardCtorCall(pos: util.Position, receiver: Tree, paramss: List[List[ValDef]]): Tree = {
+    val argss = paramss map (_ map (x =>
+      if (x.name.endsWith("$sp"))
+        gen.mkAsInstanceOf(Literal(Constant(null)), x.symbol.tpe)
+      else
+        Ident(x.symbol))
+    )
     atPos(pos) { (receiver /: argss) (Apply) }
   }
 
