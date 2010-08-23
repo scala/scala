@@ -875,7 +875,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
     val res = tpe match {
-      case PolyType(targs, ClassInfoType(base, decls, clazz)) if clazz != definitions.RepeatedParamClass && clazz != definitions.JavaRepeatedParamClass =>
+      case PolyType(targs, ClassInfoType(base, decls, clazz))
+              if clazz != definitions.RepeatedParamClass
+              && clazz != definitions.JavaRepeatedParamClass
+              && !clazz.hasFlag(JAVA) =>
         val parents = base map specializedType
         if (settings.debug.value) log("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
 //        if (clazz.name.toString == "$colon$colon")
@@ -884,7 +887,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           new Scope(specializeClass(clazz, typeEnv(clazz)) ::: specialOverrides(clazz)),
           clazz))
 
-      case ClassInfoType(base, decls, clazz) if !clazz.isPackageClass =>
+      case ClassInfoType(base, decls, clazz) if !clazz.isPackageClass && !clazz.hasFlag(JAVA) =>
         atPhase(phase.next)(base.map(_.typeSymbol.info))
         val parents = base map specializedType
         if (settings.debug.value) log("transformInfo " + clazz + " with parents1: " + parents + " ph: " + phase)
