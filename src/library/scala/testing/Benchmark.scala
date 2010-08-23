@@ -38,7 +38,13 @@ import compat.Platform
  */
 trait Benchmark {
 
-  /** this method should be implemented by the concrete benchmark */
+  /** this method should be implemented by the concrete benchmark.
+   *  This method is called by the benchmarking code for a number of times.
+   *  The GC is called before each call to 'run'.
+   *
+   *  @see setUp
+   *  @see tearDown
+   */
   def run()
 
   var multiplier = 1
@@ -59,15 +65,26 @@ trait Benchmark {
         i += 1
       }
       val stopTime = Platform.currentTime
+      tearDown
       Platform.collectGarbage
 
       stopTime - startTime
     }
 
-  /** Prepare any data needed by the benchmark, but which should not
-   *  be measured.
+  /** Prepare any data needed by the benchmark, but whose execution time
+   *  should not be measured. This method is run before each call to the
+   *  benchmark payload, 'run'.
    */
   def setUp {
+  }
+
+  /** Perform cleanup operations after each 'run'. For micro benchmarks,
+   *  think about using the result of 'run' in a way that prevents the JVM
+   *  to dead-code eliminate the whole 'run' method. For instance, print or
+   *  write the results to a file. The execution time of this method is not
+   *  measured.
+   */
+  def tearDown {
   }
 
   /** a string that is written at the beginning of the output line
