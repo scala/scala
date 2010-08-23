@@ -118,6 +118,8 @@ abstract class Inliners extends SubComponent {
     }
 
     def analyzeMethod(m: IMethod): Unit = {
+      var sizeBeforeInlining = if (m.code ne null) m.code.blocks.length else 0
+      var instrBeforeInlining = if (m.code ne null) m.code.blocks.foldLeft(0)(_ + _.length)  else 0
       var retry = false
       var count = 0
       fresh.clear
@@ -170,6 +172,8 @@ abstract class Inliners extends SubComponent {
                   count += 1
 
                 pair.doInline(bb, i)
+                if (!inc.inline || inc.isMonadic)
+                  caller.inlinedCalls += 1
                 inlinedMethodCount(inc.sym) += 1
 
                 /* Remove this method from the cache, as the calls-private relation
@@ -229,6 +233,12 @@ abstract class Inliners extends SubComponent {
       while (retry && count < MAX_INLINE_RETRY)
 
       m.normalize
+      if (sizeBeforeInlining > 0) {
+        val instrAfterInlining = m.code.blocks.foldLeft(0)(_ + _.length)
+        val prefix = if ((instrAfterInlining > 2 * instrBeforeInlining) && (instrAfterInlining > 200)) " !! " else ""
+        log(prefix + " %s blocks before inlining: %d (%d) after: %d (%d)".format(
+          m.symbol.fullName, sizeBeforeInlining, instrBeforeInlining, m.code.blocks.length, instrAfterInlining))
+      }
     }
 
     private def isMonadicMethod(sym: Symbol) = sym.name match {
@@ -297,12 +307,15 @@ abstract class Inliners extends SubComponent {
       def instructions  = blocks.flatten
       def linearized    = linearizer linearize m
 
-      def isSmall       = length <= SMALL_METHOD_SIZE
+      def isSmall       = (length <= SMALL_METHOD_SIZE) && blocks(0).length < 10
       def isLarge       = length > MAX_INLINE_SIZE
       def isRecursive   = m.recursive
       def hasCode       = m.code != null
       def hasSourceFile = m.sourceFile != null
       def hasHandlers   = handlers.nonEmpty
+
+      // the number of inlined calls in 'm', used by 'shouldInline'
+      var inlinedCalls = 0
 
       def addLocals(ls: List[Local])  = m.locals ++= ls
       def addLocal(l: Local)          = addLocals(List(l))
@@ -622,6 +635,12 @@ abstract class Inliners extends SubComponent {
           log("shouldInline: " + caller.m + " with " + inc.m)
 
         var score = 0
+
+        // better not inline inside closures, but hope that the closure itself
+        // is repeatedly inlined
+        if (caller.isInClosure) score -= 2
+        else if (caller.inlinedCalls < 1) score -= 1 // only monadic methods can trigger the first inline
+
         if (inc.isSmall)
           score += 1
         if (caller.isSmall && isLargeSum) {
@@ -633,7 +652,7 @@ abstract class Inliners extends SubComponent {
           score -= 1
 
         if (inc.isMonadic)
-          score += 2
+          score += 3
         else if (inc.isHigherOrder)
           score += 1
         if (inc.isInClosure)
@@ -641,8 +660,7 @@ abstract class Inliners extends SubComponent {
         if (inc.numInlined > 2)
           score -= 2
 
-        if (settings.debug.value)
-          log("shouldInline(" + inc.m + ") score: " + score)
+        log("shouldInline(" + inc.m + ") score: " + score)
 
         score > 0
       })

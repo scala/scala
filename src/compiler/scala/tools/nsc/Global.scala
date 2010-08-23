@@ -149,7 +149,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def informTime(msg: String, start: Long) =
     informProgress(msg + " in " + (currentTime - start) + "ms")
 
-  def log(msg: AnyRef) {
+  /*@inline final*/ def log(msg: => AnyRef) {
     if (settings.log contains phase.name) inform("[log " + phase + "] " + msg)
   }
 

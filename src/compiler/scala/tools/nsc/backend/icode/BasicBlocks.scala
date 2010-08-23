@@ -338,10 +338,10 @@ trait BasicBlocks {
      *  is closed, which sets the DIRTYSUCCS flag.
      */
     def emit(instr: Instruction, pos: Position) {
-      if (closed) {
+/*      if (closed) {
         print()
         Console.println("trying to emit: " + instr)
-      }
+      } */
       assert(!closed || ignore, "BasicBlock closed")
 
       if (!ignore) {

@@ -179,9 +179,9 @@ abstract class ClosureElimination extends SubComponent {
                       ()
                   }
                 case Boxed(LocalVar(loc1)) :: _ =>
-                  val value = info.getBinding(loc1)
-                  bb.replaceInstruction(i, DROP(icodes.AnyRefReference) :: valueToInstruction(value) :: Nil)
-                  log("replaced " + i + " with " + value)
+                  val loc2 = info.getAlias(loc1)
+                  bb.replaceInstruction(i, DROP(icodes.AnyRefReference) :: valueToInstruction(Deref(LocalVar(loc2))) :: Nil)
+                  log("replaced " + i + " with " + LocalVar(loc2))
                 case _ =>
                   ()
               }
