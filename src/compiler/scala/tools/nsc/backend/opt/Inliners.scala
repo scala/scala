@@ -139,9 +139,9 @@ abstract class Inliners extends SubComponent {
         }
 
         if (shouldLoadImplFor(concreteMethod, receiver))
-          icodes.icode(receiver, true)
+          icodes.icode(concreteMethod.enclClass, true)
 
-        def isAvailable = icodes available receiver
+        def isAvailable = icodes available concreteMethod.enclClass
         def isCandidate = isClosureClass(receiver) || concreteMethod.isEffectivelyFinal || receiver.isFinal
         def isApply     = concreteMethod.name == nme.apply
         def isCountable = !(isClosureClass(receiver)
@@ -595,7 +595,8 @@ abstract class Inliners extends SubComponent {
 
           false
         }
-
+        if (!canAccess(accessNeeded))
+          println("access needed and failed: " + accessNeeded)
         canAccess(accessNeeded) && !isIllegalStack
       }
 
