@@ -47,6 +47,7 @@ abstract class DeadCodeElimination extends SubComponent {
       cls.methods.foreach { m =>
         this.method = m
         dieCodeDie(m)
+        global.closureElimination.peephole(m)
       }
     }
 
