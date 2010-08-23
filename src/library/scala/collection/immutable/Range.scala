@@ -267,11 +267,11 @@ object Range {
   /** Make an inclusive range from start to end with given step value.
    * @note step != 0
    */
-  def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
+  @inline def inclusive(start: Int, end: Int, step: Int): Range.Inclusive = new Inclusive(start, end, step)
 
   /** Make an inclusive range from start to end with step value 1.
    */
-  def inclusive(start: Int, end: Int): Range.Inclusive = new Inclusive(start, end, 1)
+  @inline def inclusive(start: Int, end: Int): Range.Inclusive = new Inclusive(start, end, 1)
 
   // BigInt and Long are straightforward generic ranges.
   object BigInt {
