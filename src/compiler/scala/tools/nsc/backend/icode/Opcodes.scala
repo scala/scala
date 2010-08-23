@@ -16,6 +16,7 @@ import scala.tools.nsc.util.{Position,NoPosition}
   A pattern match
 
   case THIS(clasz) =>
+  case STORE_THIS(kind) =>
   case CONSTANT(const) =>
   case LOAD_ARRAY_ITEM(kind) =>
   case LOAD_LOCAL(local) =>
@@ -40,6 +41,8 @@ import scala.tools.nsc.util.{Position,NoPosition}
   case DUP(kind) =>
   case MONITOR_ENTER() =>
   case MONITOR_EXIT() =>
+  case BOX(boxType) =>
+  case UNBOX(tpe) =>
   case SCOPE_ENTER(lv) =>
   case SCOPE_EXIT(lv) =>
   case LOAD_EXCEPTION() =>

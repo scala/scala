@@ -223,9 +223,9 @@ abstract class Inliners extends SubComponent {
       while (retry && count < MAX_INLINE_RETRY)
 
       m.normalize
-		}
+    }
 
-		private def isMonadicMethod(sym: Symbol) = sym.name match {
+    private def isMonadicMethod(sym: Symbol) = sym.name match {
       case nme.foreach | nme.filter | nme.map | nme.flatMap => true
       case _                                                => false
     }
@@ -234,17 +234,17 @@ abstract class Inliners extends SubComponent {
 
     /** Should method 'sym' being called in 'receiver' be loaded from disk? */
     def shouldLoadImplFor(sym: Symbol, receiver: Symbol): Boolean = {
-      if (settings.debug.value)
-        log("shouldLoadImplFor: " + receiver + "." + sym)
-
       def alwaysLoad    = (receiver.enclosingPackage == RuntimePackage) || (receiver == PredefModule.moduleClass)
       def loadCondition = sym.isEffectivelyFinal && isMonadicMethod(sym) && isHigherOrderMethod(sym)
 
-      hasInline(sym) || alwaysLoad || loadCondition
+      val res = hasInline(sym) || alwaysLoad || loadCondition
+      if (settings.debug.value)
+        log("shouldLoadImplFor: " + receiver + "." + sym + ": " + res)
+      res
     }
 
-		/** Look up implementation of method 'sym in 'clazz'.
-		 */
+    /** Look up implementation of method 'sym in 'clazz'.
+     */
     def lookupImplFor(sym: Symbol, clazz: Symbol): Symbol = {
       // TODO: verify that clazz.superClass is equivalent here to clazz.tpe.parents(0).typeSymbol (.tpe vs .info)
       def needsLookup = (clazz != NoSymbol) && (clazz != sym.owner) && !sym.isEffectivelyFinal && clazz.isFinal

@@ -24,7 +24,37 @@ abstract class ClosureElimination extends SubComponent {
   /** Create a new phase */
   override def newPhase(p: Phase) = new ClosureEliminationPhase(p)
 
-  /** The Inlining phase.
+  /** A simple peephole optimizer. */
+  val peephole = new PeepholeOpt( (i1, i2) =>
+    (i1, i2) match {
+      case (CONSTANT(c), DROP(_)) =>
+        if (c.tag == UnitTag)
+          Some(List(i2))
+        else
+          Some(Nil);
+
+      case (LOAD_LOCAL(x), STORE_LOCAL(y)) =>
+        if (x eq y) Some(Nil) else None
+
+      case (STORE_LOCAL(x), LOAD_LOCAL(y)) if (x == y) =>
+        Some(List(DUP(x.kind), STORE_LOCAL(x)))
+
+      case (LOAD_LOCAL(_), DROP(_)) | (DUP(_), DROP(_)) =>
+        Some(Nil)
+
+      case (BOX(t1), UNBOX(t2)) if (t1 == t2) =>
+        Some(Nil)
+
+      case (LOAD_FIELD(sym, isStatic), DROP(_)) if !sym.hasAnnotation(definitions.VolatileAttr) =>
+        if (isStatic)
+          Some(Nil)
+        else
+          Some(DROP(REFERENCE(definitions.ObjectClass)) :: Nil);
+
+      case _ => None
+    });
+
+  /** The closure elimination phase.
    */
   class ClosureEliminationPhase(prev: Phase) extends ICodePhase(prev) {
 
@@ -51,36 +81,6 @@ abstract class ClosureElimination extends SubComponent {
       this.count += 1
       ret
     }
-
-    /** A simple peephole optimizer. */
-    val peephole = new PeepholeOpt( (i1, i2) =>
-    	(i1, i2) match {
-        case (CONSTANT(c), DROP(_)) =>
-          if (c.tag == UnitTag)
-            Some(List(i2))
-          else
-            Some(Nil);
-
-        case (LOAD_LOCAL(x), STORE_LOCAL(y)) =>
-        	if (x eq y) Some(Nil) else None
-
-//        case (STORE_LOCAL(x), LOAD_LOCAL(y)) if (x == y) =>
-//          Some(List(DUP(x.kind), STORE_LOCAL(x)))
-
-        case (LOAD_LOCAL(_), DROP(_)) | (DUP(_), DROP(_)) =>
-          Some(Nil)
-
-        case (BOX(t1), UNBOX(t2)) if (t1 == t2) =>
-          Some(Nil)
-
-        case (LOAD_FIELD(sym, isStatic), DROP(_)) =>
-        	if (isStatic)
-            Some(Nil)
-          else
-            Some(DROP(REFERENCE(definitions.ObjectClass)) :: Nil);
-
-        case _ => None
-      });
 
     def analyzeClass(cls: IClass): Unit = if (settings.Xcloselim.value) {
       cls.methods.foreach { m =>
