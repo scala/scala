@@ -5,6 +5,8 @@
 
 package ch.epfl.lamp.compiler.msil;
 
+import java.util.Iterator;
+
 /**
  * The common superclass of MemberInfo and ConstructorInfo
  *
@@ -15,6 +17,34 @@ public abstract class MethodBase extends MemberInfo {
 
     //##########################################################################
     // public interface
+
+    private java.util.List /* GenericParamAndConstraints */ mVars = new java.util.LinkedList();
+    private GenericParamAndConstraints[] sortedMVars = null;
+
+    public void addMVar(GenericParamAndConstraints tvarAndConstraints) {
+        sortedMVars = null;
+        mVars.add(tvarAndConstraints);
+    }
+
+    public GenericParamAndConstraints[] getSortedMVars() {
+        if(sortedMVars == null) {
+            sortedMVars = new GenericParamAndConstraints[mVars.size()];
+            for (int i = 0; i < sortedMVars.length; i ++){
+                Iterator iter = mVars.iterator();
+                while(iter.hasNext()) {
+                    GenericParamAndConstraints tvC = (GenericParamAndConstraints)iter.next();
+                    if(tvC.Number == i) {
+                        sortedMVars[i] = tvC;
+                    }
+                }
+            }
+        }
+        return sortedMVars;
+    }
+
+    public final boolean IsGeneric() {
+        return mVars.size() > 0;
+    }
 
     /** The attributes associated with this method/constructor. */
     public final short Attributes;
@@ -34,6 +64,10 @@ public abstract class MethodBase extends MemberInfo {
 
     public final boolean IsVirtual() {
 	return (Attributes& MethodAttributes.Virtual)  != 0;
+    }
+
+    public final boolean IsInstance() {
+        return !IsStatic() && !IsVirtual();
     }
 
     public final boolean IsStatic() {
@@ -79,6 +113,26 @@ public abstract class MethodBase extends MemberInfo {
 	    == MethodAttributes.FamANDAssem;
     }
 
+    public boolean HasPtrParamOrRetType() {
+        // the override in MethodInfo checks the return type
+        ParameterInfo[] ps = GetParameters();
+        for (int i = 0; i < ps.length; i++) {
+            Type pT = ps[i].ParameterType;
+            if(pT.IsPointer()) {
+                // Type.mkPtr creates a msil.Type for a pointer type
+                return true;
+            }
+            if(pT.IsByRef() && !pT.GetElementType().CanBeTakenAddressOf()) {
+                /* TODO Cases where GenMSIL (so far) con't emit good bytecode:
+                   the type being taken address of IsArray(),  IsGeneric(), or IsTMVarUsage.
+                   For example, System.Enum declares
+                     public static bool TryParse<TEnum>(string value, out TEnum result) where TEnum : struct, new();
+                */
+                return true;
+            }
+        }
+        return false;
+    }
 
     /** Returns the parameters of the method/constructor. */
     public ParameterInfo[] GetParameters() {

@@ -61,7 +61,19 @@ abstract class CLRTypes {
   val methods: Map[Symbol,MethodInfo] = new HashMap
   val fields: Map[Symbol, FieldInfo] = new HashMap
   val sym2type: Map[Type,Symbol] = new HashMap
+  val addressOfViews: HashSet[Symbol] = new HashSet[Symbol]
+  val mdgptrcls4clssym: Map[ /*cls*/ Symbol, /*cls*/ Symbol] = new HashMap
 
+  def isAddressOf(msym : Symbol) = addressOfViews.contains(msym)
+
+  def isNonEnumValuetype(clssym : Symbol) = {
+    val msilTOpt = types.get(clssym)
+    val res = msilTOpt.isDefined && {
+      val msilT = msilTOpt.get
+      msilT.IsValueType && !msilT.IsEnum
+    }
+    res
+  }
 
   def init() = try { // initialize
     // the MsilClasspath (nsc/util/Classpath.scala) initializes the msil-library by calling

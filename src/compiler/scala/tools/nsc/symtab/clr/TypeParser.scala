@@ -13,6 +13,7 @@ import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute,
 
 import scala.collection.mutable.{HashMap, HashSet}
 import classfile.UnPickler
+import ch.epfl.lamp.compiler.msil.Type.TMVarUsage
 
 /**
  *  @author Nikolay Mihaylov
@@ -64,9 +65,61 @@ abstract class TypeParser {
     busy = false
   }
 
+  /* the names `classTParams' and `newTParams' stem from the forJVM version (ClassfileParser.sigToType())
+  *  but there are differences that should be kept in mind.
+  *  forMSIL, a nested class knows nothing about any type-params in the nesting class,
+  *  therefore newTParams is redundant (other than for recording lexical order),
+  *  it always contains the same elements as classTParams.value */
+  val classTParams = scala.collection.mutable.Map[Int,Symbol]() // TODO should this be a stack? (i.e., is it possible for >1 invocation to getCLRType on the same TypeParser instance be active )
+  val newTParams = new scala.collection.mutable.ListBuffer[Symbol]()
+  val methodTParams = scala.collection.mutable.Map[Int,Symbol]()
+
+  private def sig2typeBounds(tvarCILDef: GenericParamAndConstraints): Type = {
+    val ts = new scala.collection.mutable.ListBuffer[Type]
+    for (cnstrnt <- tvarCILDef.Constraints) {
+      ts += getCLRType(cnstrnt) // TODO we're definitely not at or after erasure, no need to call objToAny, right?
+    }
+    TypeBounds(definitions.NothingClass.tpe, intersectionType(ts.toList, clazz))
+    // TODO variance???
+  }
+
+  private def createViewFromTo(viewSuffix : String, fromTpe : Type, toTpe : Type,
+                               addToboxMethodMap : Boolean, isAddressOf : Boolean) : Symbol = {
+    val flags = Flags.JAVA | Flags.STATIC | Flags.IMPLICIT; // todo: static? shouldn't be final instead?
+    val viewMethodType = (msym: Symbol) => JavaMethodType(msym.newSyntheticValueParams(List(fromTpe)), toTpe)
+    val vmsym = createMethod(nme.view_ + viewSuffix, flags, viewMethodType, null, true);
+    if (addToboxMethodMap) definitions.boxMethod(clazz) = vmsym
+    if (isAddressOf) clrTypes.addressOfViews += vmsym
+    vmsym
+  }
+
+  private def createDefaultConstructor(typ: MSILType) {
+    val attrs = MethodAttributes.Public | MethodAttributes.RTSpecialName | MethodAttributes.SpecialName // TODO instance
+    val declType= typ
+    val method = new ConstructorInfo(declType, attrs, Array[MSILType]())
+    val flags = Flags.JAVA
+    val owner = clazz
+    val methodSym = owner.newMethod(NoPosition, nme.CONSTRUCTOR).setFlag(flags)
+    val rettype = clazz.tpe
+    val mtype = methodType(Array[MSILType](), rettype);
+    val mInfo = mtype(methodSym)
+    methodSym.setInfo(mInfo)
+    instanceDefs.enter(methodSym);
+    clrTypes.constructors(methodSym) = method
+  }
+
   private def parseClass(typ: MSILType) {
 
+    {
+      val t4c = clrTypes.types.get(clazz)
+      assert(t4c == None || t4c == Some(typ))
+    }
     clrTypes.types(clazz) = typ
+
+    {
+      val c4t = clrTypes.sym2type.get(typ)
+      assert(c4t == None || c4t == Some(clazz))
+    }
     clrTypes.sym2type(typ) = clazz
 
     if (typ.IsDefined(clrTypes.SCALA_SYMTAB_ATTR, false)) {
@@ -86,29 +139,115 @@ abstract class TypeParser {
       return
     }
     val flags = translateAttributes(typ)
-    val ifaces: Array[MSILType] = typ.getInterfaces()
-    val superType = if (typ.BaseType() != null) getCLRType(typ.BaseType())
-                    else  if (typ.IsInterface()) definitions.ObjectClass.tpe
-                    else definitions.AnyClass.tpe; // this is System.Object
-    val parents = superType :: ifaces.map(getCLRType).toList
+
+    var clazzBoxed : Symbol = NoSymbol
+    var clazzMgdPtr : Symbol = NoSymbol
+
+    val canBeTakenAddressOf = (typ.IsValueType || typ.IsEnum) && (typ.FullName != "System.Enum")
+
+    if(canBeTakenAddressOf) {
+      clazzBoxed = clazz.owner.newClass(clazz.name + "Boxed")
+      clazzMgdPtr = clazz.owner.newClass(clazz.name + "MgdPtr")
+      clrTypes.mdgptrcls4clssym(clazz) =  clazzMgdPtr
+      /* adding typMgdPtr to clrTypes.sym2type should happen early (before metadata for supertypes is parsed,
+         before metadata for members are parsed) so that clazzMgdPtr can be found by getClRType. */
+      val typMgdPtr = MSILType.mkByRef(typ)
+      clrTypes.types(clazzMgdPtr) = typMgdPtr
+      clrTypes.sym2type(typMgdPtr) = clazzMgdPtr
+      /* clazzMgdPtr but not clazzBoxed is mapped by clrTypes.types into an msil.Type instance,
+         because there's no metadata-level representation for a "boxed valuetype" */
+      val instanceDefsMgdPtr = new Scope
+      val classInfoMgdPtr = ClassInfoType(definitions.anyvalparam, instanceDefsMgdPtr, clazzMgdPtr)
+      clazzMgdPtr.setFlag(flags)
+      clazzMgdPtr.setInfo(classInfoMgdPtr)
+    }
+
+/* TODO CLR generics
+    // first pass
+    for (tvarCILDef <- typ.getSortedTVars() ) {
+      val tpname = newTypeName(tvarCILDef.Name.replaceAll("!", "")) // TODO are really all type-params named in all assemblies out there? (NO)
+      val tpsym = clazz.newTypeParameter(NoPosition, tpname)
+      classTParams.put(tvarCILDef.Number, tpsym)
+      newTParams += tpsym
+      // TODO wouldn't the following also be needed later, i.e. during getCLRType
+      tpsym.setInfo(definitions.AnyClass.tpe)
+    }
+    // second pass
+    for (tvarCILDef <- typ.getSortedTVars() ) {
+      val tpsym = classTParams(tvarCILDef.Number)
+      tpsym.setInfo(sig2typeBounds(tvarCILDef)) // we never skip bounds unlike in forJVM
+    }
+*/
+    val ownTypeParams = newTParams.toList
+/* TODO CLR generics
+    if (!ownTypeParams.isEmpty) {
+      clazz.setInfo(new TypeParamsType(ownTypeParams))
+      if(typ.IsValueType && !typ.IsEnum) {
+        clazzBoxed.setInfo(new TypeParamsType(ownTypeParams))
+      }
+    }
+*/
     instanceDefs = new Scope
     staticDefs = new Scope
 
-    val classInfo = ClassInfoType(parents, instanceDefs, clazz)
+    val classInfoAsInMetadata = {
+        val ifaces: Array[MSILType] = typ.getInterfaces()
+        val superType = if (typ.BaseType() != null) getCLRType(typ.BaseType())
+                        else if (typ.IsInterface()) definitions.ObjectClass.tpe
+                        else definitions.AnyClass.tpe; // this branch activates for System.Object only.
+        // parents (i.e., base type and interfaces)
+        val parents = new scala.collection.mutable.ListBuffer[Type]()
+        parents += superType
+        for (iface <- ifaces) {
+          parents += getCLRType(iface)  // here the variance doesn't matter
+        }
+        // methods, properties, events, fields are entered in a moment
+        if (canBeTakenAddressOf) {
+          val instanceDefsBoxed = new Scope
+          ClassInfoType(parents.toList, instanceDefsBoxed, clazzBoxed)
+        } else
+          ClassInfoType(parents.toList, instanceDefs, clazz)
+      }
+
     val staticInfo = ClassInfoType(List(), staticDefs, statics)
 
     clazz.setFlag(flags)
-    clazz.setInfo(classInfo)
+
+    if (canBeTakenAddressOf) {
+      clazzBoxed.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
+                          else polyType(ownTypeParams, classInfoAsInMetadata) )
+      clazzBoxed.setFlag(flags)
+      val rawValueInfoType = ClassInfoType(definitions.anyvalparam, instanceDefs, clazz)
+      clazz.setInfo( if (ownTypeParams.isEmpty) rawValueInfoType
+                     else polyType(ownTypeParams, rawValueInfoType) )
+    } else {
+      clazz.setInfo( if (ownTypeParams.isEmpty) classInfoAsInMetadata
+                     else polyType(ownTypeParams, classInfoAsInMetadata) )
+    }
+
+    // TODO I don't remember if statics.setInfo and staticModule.setInfo should also know about type params
     statics.setFlag(Flags.JAVA)
     statics.setInfo(staticInfo)
     staticModule.setFlag(Flags.JAVA)
     staticModule.setInfo(statics.tpe)
 
+
+    if (canBeTakenAddressOf) {
+      //  implicit conversions are owned by staticModule.moduleClass
+      createViewFromTo("2Boxed", clazz.tpe, clazzBoxed.tpe, addToboxMethodMap = true, isAddressOf = false)
+      // createViewFromTo("2Object", clazz.tpe, definitions.ObjectClass.tpe, addToboxMethodMap = true, isAddressOf = false)
+      createViewFromTo("2MgdPtr", clazz.tpe, clazzMgdPtr.tpe, addToboxMethodMap = false, isAddressOf = true)
+      // a return can't have type managed-pointer, thus a dereference-conversion is not needed
+      // similarly, a method can't declare as return type "boxed valuetype"
+      if (!typ.IsEnum) {
+        // a synthetic default constructor for raw-type allows `new X' syntax
+        createDefaultConstructor(typ)
+      }
+    }
+
     // import nested types
-    for (ntype <- typ.getNestedTypes() if !(ntype.IsNestedPrivate
-				            || ntype.IsNestedAssembly
-				            || ntype.IsNestedFamANDAssem)
-				          || ntype.IsInterface)
+    for (ntype <- typ.getNestedTypes() if !(ntype.IsNestedPrivate || ntype.IsNestedAssembly || ntype.IsNestedFamANDAssem)
+				                                 || ntype.IsInterface /* TODO why shouldn't nested ifaces be type-parsed too? */ )
       {
 	val loader = new loaders.MSILTypeLoader(ntype)
 	val nclazz = statics.newClass(NoPosition, ntype.Name.toTypeName)
@@ -123,13 +262,18 @@ abstract class TypeParser {
       }
 
     val fields = typ.getFields()
-    for (field <- fields if !(field.IsPrivate() || field.IsAssembly() || field.IsFamilyAndAssembly)) {
+    for (field <- fields
+         if !(field.IsPrivate() || field.IsAssembly() || field.IsFamilyAndAssembly)
+         if (getCLRType(field.FieldType) != null)
+         ) {
+      assert (!field.FieldType.IsPointer && !field.FieldType.IsByRef, "CLR requirement")
       val flags = translateAttributes(field);
       val name = newTermName(field.Name);
       val fieldType =
-        if (field.IsLiteral && !field.FieldType.IsEnum)
-	  ConstantType(getConstant(getCLRType(field.FieldType), field.getValue))
-	else getCLRType(field.FieldType);
+        if (field.IsLiteral && !field.FieldType.IsEnum && isDefinedAtgetConstant(getCLRType(field.FieldType)))
+	      ConstantType(getConstant(getCLRType(field.FieldType), field.getValue))
+	    else
+	      getCLRType(field.FieldType)
       val owner = if (field.IsStatic()) statics else clazz;
       val sym = owner.newValue(NoPosition, name).setFlag(flags).setInfo(fieldType);
         // TODO: set private within!!! -> look at typechecker/Namers.scala
@@ -138,10 +282,10 @@ abstract class TypeParser {
     }
 
     for (constr <- typ.getConstructors() if !constr.IsStatic() && !constr.IsPrivate() &&
-         !constr.IsAssembly() && !constr.IsFamilyAndAssembly())
+         !constr.IsAssembly() && !constr.IsFamilyAndAssembly() && !constr.HasPtrParamOrRetType())
       createMethod(constr);
 
-    // initially also contains getters an setters of properties.
+    // initially also contains getters and setters of properties.
     val methodsSet = new HashSet[MethodInfo]();
     methodsSet ++= typ.getMethods();
 
@@ -152,7 +296,7 @@ abstract class TypeParser {
 	val setter: MethodInfo = prop.GetSetMethod(true);
 	var gparamsLength: Int = -1;
 	if (!(getter == null || getter.IsPrivate || getter.IsAssembly
-	      || getter.IsFamilyAndAssembly))
+              || getter.IsFamilyAndAssembly || getter.HasPtrParamOrRetType))
 	  {
 	    assert(prop.PropertyType == getter.ReturnType);
 	    val gparams: Array[ParameterInfo] = getter.GetParameters();
@@ -161,7 +305,7 @@ abstract class TypeParser {
 	    val flags = translateAttributes(getter);
 	    val owner: Symbol = if (getter.IsStatic) statics else clazz;
 	    val methodSym = owner.newMethod(NoPosition, name).setFlag(flags)
-	    val mtype: Type = if (gparamsLength == 0) PolyType(List(), propType)
+            val mtype: Type = if (gparamsLength == 0) PolyType(List(), propType) // .NET properties can't be polymorphic
                               else methodType(getter, getter.ReturnType)(methodSym)
         methodSym.setInfo(mtype);
 	    methodSym.setFlag(Flags.ACCESSOR);
@@ -170,7 +314,7 @@ abstract class TypeParser {
 	    methodsSet -= getter;
 	  }
 	if (!(setter == null || setter.IsPrivate || setter.IsAssembly
-	     || setter.IsFamilyAndAssembly))
+             || setter.IsFamilyAndAssembly || setter.HasPtrParamOrRetType))
 	  {
 	    val sparams: Array[ParameterInfo] = setter.GetParameters()
 	    if(getter != null)
@@ -224,8 +368,35 @@ abstract class TypeParser {
 	}
     } */
 
+/* Adds view amounting to syntax sugar for a CLR implicit overload.
+   The long-form syntax can also be supported if "methodsSet -= method" (last statement) is removed.
+
+    /* remember, there's typ.getMethods and type.GetMethods  */
+    for (method <- typ.getMethods)
+      if(!method.HasPtrParamOrRetType &&
+              method.IsPublic && method.IsStatic && method.IsSpecialName &&
+              method.Name == "op_Implicit") {
+        // create a view: typ => method's return type
+        val viewRetType: Type = getCLRType(method.ReturnType)
+        val viewParamTypes: List[Type] = method.GetParameters().map(_.ParameterType).map(getCLSType).toList;
+        /* The spec says "The operator method shall be defined as a static method on either the operand or return type."
+         *  We don't consider the declaring type for the purposes of definitions.functionType,
+         * instead we regard op_Implicit's argument type and return type as defining the view's signature.
+         */
+        if (viewRetType != null && !viewParamTypes.contains(null)) {
+          /* The check above applies e.g. to System.Decimal that has a conversion from UInt16, a non-CLS type, whose CLS-mapping returns null */
+          val funType: Type = definitions.functionType(viewParamTypes, viewRetType);
+          val flags = Flags.JAVA | Flags.STATIC | Flags.IMPLICIT; // todo: static? shouldn't be final instead?
+          val viewMethodType = (msym: Symbol) => JavaMethodType(msym.newSyntheticValueParams(viewParamTypes), funType)
+          val vmsym = createMethod(nme.view_, flags, viewMethodType, method, true);
+          methodsSet -= method;
+        }
+      }
+*/
+
     for (method <- methodsSet.iterator)
-      if (!method.IsPrivate() && !method.IsAssembly() && !method.IsFamilyAndAssembly())
+      if (!method.IsPrivate() && !method.IsAssembly() && !method.IsFamilyAndAssembly()
+           && !method.HasPtrParamOrRetType)
         createMethod(method);
 
     // Create methods and views for delegate support
@@ -234,19 +405,8 @@ abstract class TypeParser {
       createDelegateChainers(typ)
     }
 
-    // create the box/unbox methods for value types
-    if (typ.IsValueType) {
-      val box = statics.newMethod(NoPosition, nme.box)
-      box.setInfo(MethodType(box.newSyntheticValueParams(List(clazz.tpe)), definitions.ObjectClass.tpe))
-      definitions.boxMethod(clazz) = box
-      val unbox = statics.newMethod(NoPosition, nme.unbox)
-      unbox.setInfo(MethodType(unbox.newSyntheticValueParams(List(definitions.ObjectClass.tpe)), clazz.tpe))
-      definitions.unboxMethod(clazz) = unbox
-      //Console.println(typ.FullName + " : " + parents)
-    }
-
     // for enumerations introduce comparison and bitwise logical operations;
-    // the backend should recognize and replace them with comparison or
+    // the backend will recognize them and replace them with comparison or
     // bitwise logical operations on the primitive underlying type
 
     if (typ.IsEnum) {
@@ -263,7 +423,7 @@ abstract class TypeParser {
 
       for (bitLogName <- ENUM_BIT_LOG_NAMES) {
         val enumBitLog = clazz.newMethod(NoPosition, bitLogName)
-        val enumBitLogType = JavaMethodType(enumBitLog.newSyntheticValueParams(List(clazz.tpe)), classInfo)
+        val enumBitLogType = JavaMethodType(enumBitLog.newSyntheticValueParams(List(clazz.tpe)), clazz.tpe /* was classInfo, infinite typer */)
         enumBitLog.setFlag(flags).setInfo(enumBitLogType)
         instanceDefs.enter(enumBitLog)
       }
@@ -271,16 +431,49 @@ abstract class TypeParser {
 
   } // parseClass
 
+  private def populateMethodTParams(method: MethodBase, methodSym: MethodSymbol) : List[Symbol] = {
+    if(!method.IsGeneric) Nil
+    else {
+      methodTParams.clear
+      val newMethodTParams = new scala.collection.mutable.ListBuffer[Symbol]()
+
+      // first pass
+      for (mvarCILDef <- method.getSortedMVars() ) {
+        val mtpname = newTypeName(mvarCILDef.Name.replaceAll("!", "")) // TODO are really all method-level-type-params named in all assemblies out there? (NO)
+        val mtpsym = methodSym.newTypeParameter(NoPosition, mtpname)
+        methodTParams.put(mvarCILDef.Number, mtpsym)
+        newMethodTParams += mtpsym
+        // TODO wouldn't the following also be needed later, i.e. during getCLRType
+        mtpsym.setInfo(definitions.AnyClass.tpe)
+      }
+      // second pass
+      for (mvarCILDef <- method.getSortedMVars() ) {
+        val mtpsym = methodTParams(mvarCILDef.Number)
+        mtpsym.setInfo(sig2typeBounds(mvarCILDef)) // we never skip bounds unlike in forJVM
+      }
+
+      newMethodTParams.toList
+    }
+  }
+
   private def createMethod(method: MethodBase) {
+
+    val flags = translateAttributes(method);
+    val owner = if (method.IsStatic()) statics else clazz;
+    val methodSym = owner.newMethod(NoPosition, getName(method)).setFlag(flags)
+    // TODO CLR generics val newMethodTParams = populateMethodTParams(method, methodSym)
+
     val rettype = if (method.IsConstructor()) clazz.tpe
                   else getCLSType(method.asInstanceOf[MethodInfo].ReturnType);
     if (rettype == null) return;
     val mtype = methodType(method, rettype);
     if (mtype == null) return;
-    val flags = translateAttributes(method);
-    val owner = if (method.IsStatic()) statics else clazz;
-    val methodSym = owner.newMethod(NoPosition, getName(method)).setFlag(flags)
-    methodSym.setInfo(mtype(methodSym))
+/* TODO CLR generics
+    val mInfo = if (method.IsGeneric) polyType(newMethodTParams, mtype(methodSym))
+                else mtype(methodSym)
+*/
+    val mInfo = mtype(methodSym)
+    methodSym.setInfo(mInfo)
     (if (method.IsStatic()) staticDefs else instanceDefs).enter(methodSym);
     if (method.IsConstructor())
       clrTypes.constructors(methodSym) = method.asInstanceOf[ConstructorInfo]
@@ -435,7 +628,7 @@ abstract class TypeParser {
   /** Return a method type for the provided argument types and return type. */
   private def methodType(argtypes: Array[MSILType], rettype: Type): Symbol => Type = {
     def paramType(typ: MSILType): Type =
-      if (typ eq clrTypes.OBJECT) definitions.AnyClass.tpe
+      if (typ eq clrTypes.OBJECT) definitions.AnyClass.tpe // TODO a hack to compile scalalib, should be definitions.AnyRefClass.tpe
       else getCLSType(typ);
     val ptypes = argtypes.map(paramType).toList;
     if (ptypes.contains(null)) null
@@ -452,21 +645,23 @@ abstract class TypeParser {
     res
   }
 
-  private def getCLSType(typ: MSILType): Type = {
-    if (/*type == clrTypes.BYTE ||*/ typ == clrTypes.USHORT
-	|| typ == clrTypes.UINT || typ == clrTypes.ULONG
-	|| typ.IsNotPublic() || typ.IsNestedPrivate()
-	|| typ.IsNestedAssembly() || typ.IsNestedFamANDAssem()
-	|| typ.IsPointer()
-	|| (typ.IsArray() && getCLSType(typ.GetElementType()) == null))
-      null;
-    //Symbol s = clrTypes.getSymbol(type);
-    //scalac.symtab.Type t = s != null ? make.classType(s) : getCLRType(type);
+  private def getCLSType(typ: MSILType): Type = { // getCLS returns non-null for types GenMSIL can handle, be they CLS-compliant or not
+    if (typ.IsTMVarUsage())
+      null // TODO after generics: getCLRType(typ)
+    else if ( /* TODO hack if UBYE, uncommented, "ambiguous reference to overloaded definition" ensues, for example for System.Math.Max(x, y) */
+              typ == clrTypes.USHORT || typ == clrTypes.UINT || typ == clrTypes.ULONG
+      /*  || typ == clrTypes.UBYTE    */
+          ||  typ.IsNotPublic()      || typ.IsNestedPrivate()
+          ||  typ.IsNestedAssembly() || typ.IsNestedFamANDAssem()
+          ||  typ.IsPointer()
+          || (typ.IsArray() && getCLRType(typ.GetElementType()) == null)  /* TODO hack: getCLR instead of getCLS */
+          || (typ.IsByRef() && !typ.GetElementType().CanBeTakenAddressOf()))
+      null
     else
       getCLRType(typ)
   }
 
-  private def getCLRType(typ: MSILType): Type =
+  private def getCLRTypeIfPrimitiveNullOtherwise(typ: MSILType): Type =
     if (typ == clrTypes.OBJECT)
       definitions.ObjectClass.tpe;
     else if (typ == clrTypes.VALUE_TYPE)
@@ -479,32 +674,67 @@ abstract class TypeParser {
       definitions.BooleanClass.tpe
     else if (typ == clrTypes.CHAR)
       definitions.CharClass.tpe
-    else if (typ == clrTypes.BYTE || typ == clrTypes.UBYTE)
+    else if ((typ == clrTypes.BYTE)  || (typ == clrTypes.UBYTE)) // TODO U... is a hack to compile scalalib
       definitions.ByteClass.tpe
-    else if (typ == clrTypes.SHORT || typ == clrTypes.USHORT)
+    else if ((typ == clrTypes.SHORT) || (typ == clrTypes.SHORT)) // TODO U... is a hack to compile scalalib
       definitions.ShortClass.tpe
-    else if (typ == clrTypes.INT || typ == clrTypes.UINT)
+    else if ((typ == clrTypes.INT)   || (typ == clrTypes.UINT))  // TODO U... is a hack to compile scalalib
       definitions.IntClass.tpe
-    else if (typ == clrTypes.LONG || typ == clrTypes.ULONG)
+    else if ((typ == clrTypes.LONG)  || (typ == clrTypes.LONG))  // TODO U... is a hack to compile scalalib
       definitions.LongClass.tpe
     else if (typ == clrTypes.FLOAT)
       definitions.FloatClass.tpe
     else if (typ == clrTypes.DOUBLE)
       definitions.DoubleClass.tpe
-    else if (typ.IsArray())
-      appliedType(definitions.ArrayClass.tpe,
-                  List(getCLRType(typ.GetElementType())));
-    else if (typ.isInstanceOf[ConstructedType]) {
-      val ct = typ.asInstanceOf[ConstructedType]
-      getCLRType(ct.instantiatedType)
-    } else {
-      val res = clrTypes.sym2type.get (typ) match {
-        case Some(sym) => sym.tpe
-        case None => getClassType(typ);
-      }
-      assert (res != null, typ)
-      res
-    }
+    else null
+
+
+  private def getCLRType(tMSIL: MSILType): Type = {
+     var res = getCLRTypeIfPrimitiveNullOtherwise(tMSIL)
+     if (res != null) res
+     else if (tMSIL.isInstanceOf[ConstructedType]) {
+       val ct = tMSIL.asInstanceOf[ConstructedType]
+       /* TODO CLR generics: uncomment next two lines and comment out the hack after them
+             val cttpArgs = ct.typeArgs.map(tmsil => getCLRType(tmsil)).toList
+             appliedType(getCLRType(ct.instantiatedType), cttpArgs)
+             */
+       getCLRType(ct.instantiatedType)
+     } else if (tMSIL.isInstanceOf[TMVarUsage]) {
+        /* TODO CLR generics: uncomment next lines and comment out the hack after them
+             val tVarUsage = tMSIL.asInstanceOf[TMVarUsage]
+             val tVarNumber = tVarUsage.Number
+             if (tVarUsage.isTVar) classTParams(tVarNumber).typeConstructor // shouldn't fail, just return definitions.AnyClass.tpe at worst
+             else methodTParams(tVarNumber).typeConstructor // shouldn't fail, just return definitions.AnyClass.tpe at worst
+             */
+        null // definitions.ObjectClass.tpe
+     } else if (tMSIL.IsArray()) {
+        var elemtp = getCLRType(tMSIL.GetElementType())
+        // cut&pasted from ClassfileParser
+        // make unbounded Array[T] where T is a type variable into Array[T with Object]
+        // (this is necessary because such arrays have a representation which is incompatible
+        // with arrays of primitive types).
+        // TODO does that incompatibility also apply to .NET?
+        if (elemtp.typeSymbol.isAbstractType && !(elemtp <:< definitions.ObjectClass.tpe))
+          elemtp = intersectionType(List(elemtp, definitions.ObjectClass.tpe))
+        appliedType(definitions.ArrayClass.tpe, List(elemtp))
+     } else {
+       res = clrTypes.sym2type.get(tMSIL) match {
+         case Some(sym) => sym.tpe
+         case None => if (tMSIL.IsByRef && tMSIL.GetElementType.IsValueType) {
+                        val addressed = getCLRType(tMSIL.GetElementType)
+                        val clasym = addressed.typeSymbolDirect // TODO should be .typeSymbol?
+                        clasym.info.load(clasym)
+                        val secondAttempt = clrTypes.sym2type.get(tMSIL)
+                        secondAttempt match { case Some(sym) => sym.tpe
+                                              case None => null
+                                            }
+                      } else getClassType(tMSIL)
+       }
+       if (res == null)
+         null // TODO new RuntimeException()
+       else res
+     }
+  }
 
   // the values are Java-Box-Classes (e.g. Integer, Boolean, Character)
   // java.lang.Number to get the value (if a number, not for boolean, character)
@@ -531,6 +761,23 @@ abstract class TypeParser {
       Constant(value.asInstanceOf[java.lang.String])
     else
       abort("illegal value: " + value + ", class-symbol: " + typeClass)
+  }
+
+  def isDefinedAtgetConstant(constType: Type): Boolean = {
+    val typeClass = constType.typeSymbol
+    if (    (typeClass == definitions.BooleanClass)
+         || (typeClass == definitions.ByteClass)
+         || (typeClass == definitions.ShortClass)
+         || (typeClass == definitions.CharClass)
+         || (typeClass == definitions.IntClass)
+         || (typeClass == definitions.LongClass)
+         || (typeClass == definitions.FloatClass)
+         || (typeClass == definitions.DoubleClass)
+         || (typeClass == definitions.StringClass)
+       )
+      true
+    else
+      false
   }
 
   private def translateAttributes(typ: MSILType): Long = {

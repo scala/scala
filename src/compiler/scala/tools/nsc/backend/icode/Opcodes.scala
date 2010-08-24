@@ -665,5 +665,65 @@ trait Opcodes { self: ICodes =>
     /** Call through super[mix]. */
     case class SuperCall(mix: Name) extends InvokeStyle
 
+
+    // CLR backend
+
+    case class CIL_LOAD_LOCAL_ADDRESS(local: Local) extends Instruction {
+      /** Returns a string representation of this instruction */
+      override def toString(): String = "CIL_LOAD_LOCAL_ADDRESS "+local.toString()  //+isArgument?" (argument)":"";
+
+      override def consumed = 0
+      override def produced = 1
+
+      override def producedTypes = List(msil_mgdptr(local.kind))
+  }
+
+    case class CIL_LOAD_FIELD_ADDRESS(field: Symbol, isStatic: Boolean) extends Instruction {
+      /** Returns a string representation of this instruction */
+      override def toString(): String =
+        "CIL_LOAD_FIELD_ADDRESS " + (if (isStatic) field.fullName else field.toString());
+
+      override def consumed = if (isStatic) 0 else 1
+      override def produced = 1
+
+      override def consumedTypes = if (isStatic) Nil else List(REFERENCE(field.owner));
+      override def producedTypes = List(msil_mgdptr(REFERENCE(field.owner)));
+}
+
+    case class CIL_LOAD_ARRAY_ITEM_ADDRESS(kind: TypeKind) extends Instruction {
+      /** Returns a string representation of this instruction */
+      override def toString(): String = "CIL_LOAD_ARRAY_ITEM_ADDRESS (" + kind + ")"
+
+      override def consumed = 2
+      override def produced = 1
+
+      override def consumedTypes = List(ARRAY(kind), INT)
+      override def producedTypes = List(msil_mgdptr(kind))
+    }
+
+    case class CIL_UNBOX(valueType: TypeKind) extends Instruction {
+      override def toString(): String = "CIL_UNBOX " + valueType
+      override def consumed = 1
+      override def consumedTypes = AnyRefReference :: Nil // actually consumes a 'boxed valueType'
+      override def produced = 1
+      override def producedTypes = List(msil_mgdptr(valueType))
+    }
+
+    case class CIL_INITOBJ(valueType: TypeKind) extends Instruction {
+      override def toString(): String = "CIL_INITOBJ " + valueType
+      override def consumed = 1
+      override def consumedTypes = AnyRefReference :: Nil // actually consumes a managed pointer
+      override def produced = 0
+    }
+
+    case class CIL_NEWOBJ(method: Symbol) extends Instruction {
+      override def toString(): String = "CIL_NEWOBJ " + hostClass.fullName + method.fullName
+      var hostClass: Symbol = method.owner;
+      override def consumed = method.tpe.paramTypes.length
+      override def consumedTypes = method.tpe.paramTypes map toTypeKind
+      override def produced = 1
+      override def producedTypes = List(toTypeKind(method.tpe.resultType))
+    }
+
   }
 }

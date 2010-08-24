@@ -461,8 +461,8 @@ abstract class GenMSIL extends SubComponent {
       if (settings.debug.value)
         log("Output path: " + filename)
       try {
-        massembly.Save(filename + "\\" + assemName + ".msil") /* use SingleFileILPrinterVisitor */
-        // massembly.Save(filename, srcPath.getPath())  /* use MultipleFilesILPrinterVisitor */
+        // massembly.Save(filename + "\\" + assemName + ".msil") /* use SingleFileILPrinterVisitor */
+        massembly.Save(filename, srcPath.getPath())  /* use MultipleFilesILPrinterVisitor */
       } catch {
         case e:IOException => abort("Could not write to " + filename + ": " + e.getMessage())
       }
@@ -822,6 +822,76 @@ abstract class GenMSIL extends SubComponent {
      *  @param next  the following BasicBlock, `null` if `block` is the last one
      */
     def genBlock(block: BasicBlock, prev: BasicBlock, next: BasicBlock) {
+
+      def loadLocalOrAddress(local: Local, msg : String , loadAddr : Boolean) {
+        if (settings.debug.value)
+          log(msg + " for " + local)
+        val isArg = local.arg
+        val i = local.index
+        if (isArg)
+          loadArg(mcode, loadAddr)(i)
+        else
+          loadLocal(i, local, mcode, loadAddr)
+      }
+
+      def loadFieldOrAddress(field: Symbol, isStatic: Boolean, msg: String, loadAddr : Boolean) {
+        if (settings.debug.value)
+          log(msg + " with owner: " + field.owner +
+              " flags: " + Flags.flagsToString(field.owner.flags))
+        var fieldInfo = fields.get(field) match {
+          case Some(fInfo) => fInfo
+          case None =>
+            val fInfo = getType(field.owner).GetField(msilName(field))
+            fields(field) = fInfo
+            fInfo
+        }
+        if (!fieldInfo.IsLiteral) {
+          if (loadAddr) {
+            mcode.Emit(if (isStatic) OpCodes.Ldsflda else OpCodes.Ldflda, fieldInfo)
+          } else {
+            mcode.Emit(if (isStatic) OpCodes.Ldsfld else OpCodes.Ldfld, fieldInfo)
+          }
+        } else {
+          assert(!loadAddr, "can't take AddressOf a literal field (not even with readonly. prefix) because no memory was allocated to such field ...")
+          // TODO the above can be overcome by loading the value, boxing, and finally unboxing. An address to a copy of the raw value will be on the stack.
+         /*  We perform `field inlining' as required by CLR.
+          *  Emit as for a CONSTANT ICode stmt, with the twist that the constant value is available
+          *  as a java.lang.Object and its .NET type allows constant initialization in CLR, i.e. that type
+          *  is one of I1, I2, I4, I8, R4, R8, CHAR, BOOLEAN, STRING, or CLASS (in this last case,
+          *  only accepting nullref as value). See Table 9-1 in Lidin's book on ILAsm. */
+          val value = fieldInfo.getValue()
+          if (value == null) {
+            mcode.Emit(OpCodes.Ldnull)
+          } else {
+            val typ = if (fieldInfo.FieldType.IsEnum) fieldInfo.FieldType.getUnderlyingType
+                      else fieldInfo.FieldType
+            if (typ == clrTypes.STRING) {
+              mcode.Emit(OpCodes.Ldstr, value.asInstanceOf[String])
+            } else if (typ == clrTypes.BOOLEAN) {
+                mcode.Emit(if (value.asInstanceOf[Boolean]) OpCodes.Ldc_I4_1
+                           else OpCodes.Ldc_I4_0)
+            } else if (typ == clrTypes.BYTE || typ == clrTypes.UBYTE) {
+              loadI4(value.asInstanceOf[Byte], mcode)
+            } else if (typ == clrTypes.SHORT || typ == clrTypes.USHORT) {
+              loadI4(value.asInstanceOf[Int], mcode)
+            } else if (typ == clrTypes.CHAR) {
+              loadI4(value.asInstanceOf[Char], mcode)
+            } else if (typ == clrTypes.INT || typ == clrTypes.UINT) {
+              loadI4(value.asInstanceOf[Int], mcode)
+            } else if (typ == clrTypes.LONG || typ == clrTypes.ULONG) {
+              mcode.Emit(OpCodes.Ldc_I8, value.asInstanceOf[Long])
+            } else if (typ == clrTypes.FLOAT) {
+              mcode.Emit(OpCodes.Ldc_R4, value.asInstanceOf[Float])
+            } else if (typ == clrTypes.DOUBLE) {
+              mcode.Emit(OpCodes.Ldc_R4, value.asInstanceOf[Double])
+            } else {
+              /* TODO one more case is described in Partition II, 16.2: bytearray(...) */
+              abort("Unknown type for static literal field: " + fieldInfo)
+            }
+          }
+        }
+      }
+
       /** Creating objects works differently on .NET. On the JVM
        *  - NEW(type) => reference on Stack
        *  - DUP, load arguments, CALL_METHOD(constructor)
@@ -927,66 +997,20 @@ abstract class GenMSIL extends SubComponent {
               //  Array[scala.runtime.BoxedUnit] (-> case REFERENCE)
             }
 
-          case LOAD_LOCAL(local) =>
-            if (settings.debug.value)
-              log("load_local for " + local)
-            val isArg = local.arg
-            val i = local.index
-            if (isArg)
-              loadArg(mcode)(i)
-            else
-              loadLocal(i, local, mcode)
+          case LOAD_LOCAL(local) => loadLocalOrAddress(local, "load_local", false)
 
-          case LOAD_FIELD(field, isStatic) =>
-            if (settings.debug.value)
-              log("LOAD_FIELD with owner: " + field.owner +
-                  " flags: " + Flags.flagsToString(field.owner.flags))
-            var fieldInfo = fields.get(field) match {
-              case Some(fInfo) => fInfo
-              case None =>
-                val fInfo = getType(field.owner).GetField(msilName(field))
-                fields(field) = fInfo
-                fInfo
-            }
-            if (!fieldInfo.IsLiteral) {
-            mcode.Emit(if (isStatic) OpCodes.Ldsfld else OpCodes.Ldfld, fieldInfo)
-            } else {
-             /*  We perform `field inlining' as required by CLR.
-              *  Emit as for a CONSTANT ICode stmt, with the twist that the constant value is available
-              *  as a java.lang.Object and its .NET type allows constant initialization in CLR, i.e. that type
-              *  is one of I1, I2, I4, I8, R4, R8, CHAR, BOOLEAN, STRING, or CLASS (in this last case,
-              *  only accepting nullref as value). See Table 9-1 in Lidin's book on ILAsm. */
-              val value = fieldInfo.getValue()
-              if (value == null) {
-                mcode.Emit(OpCodes.Ldnull)
-              } else {
-                val typ = if (fieldInfo.FieldType.IsEnum) fieldInfo.FieldType.getUnderlyingType
-                          else fieldInfo.FieldType
-                if (typ == clrTypes.STRING) {
-                  mcode.Emit(OpCodes.Ldstr, value.asInstanceOf[String])
-                } else if (typ == clrTypes.BOOLEAN) {
-                    mcode.Emit(if (value.asInstanceOf[Boolean]) OpCodes.Ldc_I4_1
-                               else OpCodes.Ldc_I4_0)
-                } else if (typ == clrTypes.BYTE || typ == clrTypes.UBYTE) {
-                  loadI4(value.asInstanceOf[Byte], mcode)
-                } else if (typ == clrTypes.SHORT || typ == clrTypes.USHORT) {
-                  loadI4(value.asInstanceOf[Int], mcode)
-                } else if (typ == clrTypes.CHAR) {
-                  loadI4(value.asInstanceOf[Char], mcode)
-                } else if (typ == clrTypes.INT || typ == clrTypes.UINT) {
-                  loadI4(value.asInstanceOf[Int], mcode)
-                } else if (typ == clrTypes.LONG || typ == clrTypes.ULONG) {
-                  mcode.Emit(OpCodes.Ldc_I8, value.asInstanceOf[Long])
-                } else if (typ == clrTypes.FLOAT) {
-                  mcode.Emit(OpCodes.Ldc_R4, value.asInstanceOf[Float])
-                } else if (typ == clrTypes.DOUBLE) {
-                  mcode.Emit(OpCodes.Ldc_R4, value.asInstanceOf[Double])
-                } else {
-                  /* TODO one more case is described in Partition II, 16.2: bytearray(...) */
-                  abort("Unknown type for static literal field: " + fieldInfo)
-                }
-              }
-            }
+          case CIL_LOAD_LOCAL_ADDRESS(local) => loadLocalOrAddress(local, "cil_load_local_address", true)
+
+          case LOAD_FIELD(field, isStatic) => loadFieldOrAddress(field, isStatic, "load_field", false)
+
+          case CIL_LOAD_FIELD_ADDRESS(field, isStatic) => loadFieldOrAddress(field, isStatic, "cil_load_field_address", true)
+
+          case CIL_LOAD_ARRAY_ITEM_ADDRESS(kind) => mcode.Emit(OpCodes.Ldelema, msilType(kind))
+
+          case CIL_NEWOBJ(msym) =>
+            assert(msym.isClassConstructor)
+            val constructorInfo: ConstructorInfo = getConstructor(msym)
+            mcode.Emit(OpCodes.Newobj, constructorInfo)
 
           case LOAD_MODULE(module) =>
             if (settings.debug.value)
@@ -1169,13 +1193,20 @@ abstract class GenMSIL extends SubComponent {
                   case SuperCall(_) =>
                     mcode.Emit(OpCodes.Call, methodInfo)
                   case Dynamic =>
+                    // methodInfo.DeclaringType is null for global methods
+                    val isValuetypeMethod = (methodInfo.DeclaringType ne null) && (methodInfo.DeclaringType.IsValueType)
+                    val isValuetypeVirtualMethod = isValuetypeMethod && (methodInfo.IsVirtual)
                     if (dynToStatMapped(msym)) {
-                    mcode.Emit(OpCodes.Call, methodInfo)
-                    } else if ((methodInfo.DeclaringType ne null) && (methodInfo.DeclaringType.IsValueType)) {
+                      mcode.Emit(OpCodes.Call, methodInfo)
+                    } else if (isValuetypeVirtualMethod) {
+                      mcode.Emit(OpCodes.Constrained, methodInfo.DeclaringType)
+                      mcode.Emit(OpCodes.Callvirt, methodInfo)
+                    } else if (isValuetypeMethod) {
+                      // otherwise error "Callvirt on a value type method" ensues
                       mcode.Emit(OpCodes.Call, methodInfo)
                     } else {
                       mcode.Emit(OpCodes.Callvirt, methodInfo)
-                }
+                    }
                   case Static(_) =>
                     if(methodInfo.IsVirtual && !mcode.Ldarg0WasJustEmitted) {
                       mcode.Emit(OpCodes.Callvirt, methodInfo)
@@ -1184,9 +1215,17 @@ abstract class GenMSIL extends SubComponent {
             }
             }
 
-          case BOX(boxType) => emitBox(mcode, boxType)
+          case BOX(boxType) =>
+            emitBox(mcode, boxType)
 
-          case UNBOX(boxType) => emitUnbox(mcode, boxType)
+          case UNBOX(boxType) =>
+            emitUnbox(mcode, boxType)
+
+          case CIL_UNBOX(boxType) =>
+            mcode.Emit(OpCodes.Unbox, msilType(boxType))
+
+          case CIL_INITOBJ(valueType) =>
+            mcode.Emit(OpCodes.Initobj, msilType(valueType))
 
           case NEW(REFERENCE(cls)) =>
             // the next instruction must be a DUP, see comment on `var previousWasNEW`
@@ -1211,7 +1250,14 @@ abstract class GenMSIL extends SubComponent {
           //  Array[S] <: Array[T] in Scala. However, it is possible
           //  to cast an array of S to an array of T if such a cast
           //  is permitted in the host environment."
-          case CHECK_CAST(tpe) => mcode.Emit(OpCodes.Castclass, msilType(tpe))
+          case CHECK_CAST(tpknd) =>
+            val tMSIL = msilType(tpknd)
+            if (tMSIL.IsValueType) {
+              // calling emitUnbox does nothing because there's no unbox method for tMSIL
+              mcode.Emit(OpCodes.Unbox, tMSIL)
+              mcode.Emit(OpCodes.Ldobj, tMSIL)
+            } else
+              mcode.Emit(OpCodes.Castclass, tMSIL)
 
           // no SWITCH is generated when there's
           //  - a default case ("case _ => ...") in the matching expr
@@ -1398,7 +1444,14 @@ abstract class GenMSIL extends SubComponent {
           code.Emit(OpCodes.Ldc_I4, value)
     }
 
-    def loadArg(code: ILGenerator)(i: Int) = i match {
+    def loadArg(code: ILGenerator, loadAddr: Boolean)(i: Int) =
+      if (loadAddr) {
+        if (i >= -128 && i <= 127)
+          code.Emit(OpCodes.Ldarga_S, i)
+        else
+          code.Emit(OpCodes.Ldarga, i)
+      } else {
+        i match {
       case 0 => code.Emit(OpCodes.Ldarg_0)
       case 1 => code.Emit(OpCodes.Ldarg_1)
       case 2 => code.Emit(OpCodes.Ldarg_2)
@@ -1409,8 +1462,16 @@ abstract class GenMSIL extends SubComponent {
         else
           code.Emit(OpCodes.Ldarg, i)
     }
+      }
 
-    def loadLocal(i: Int, local: Local, code: ILGenerator) = i match {
+    def loadLocal(i: Int, local: Local, code: ILGenerator, loadAddr: Boolean) =
+      if (loadAddr) {
+        if (i >= -128 && i <= 127)
+          code.Emit(OpCodes.Ldloca_S, localBuilders(local))
+        else
+          code.Emit(OpCodes.Ldloca, localBuilders(local))
+      } else {
+        i match {
       case 0 => code.Emit(OpCodes.Ldloc_0)
       case 1 => code.Emit(OpCodes.Ldloc_1)
       case 2 => code.Emit(OpCodes.Ldloc_2)
@@ -1421,6 +1482,7 @@ abstract class GenMSIL extends SubComponent {
         else
           code.Emit(OpCodes.Ldloc, localBuilders(local))
     }
+      }
 
     ////////////////////// branches ///////////////////////
 
@@ -1826,7 +1888,9 @@ abstract class GenMSIL extends SubComponent {
     }
 
     def createClassMembers0(iclass: IClass) {
+
       val mtype = getType(iclass.symbol).asInstanceOf[TypeBuilder]
+
       for (ifield <- iclass.fields) {
         val sym = ifield.symbol
         if (settings.debug.value)
@@ -1836,7 +1900,7 @@ abstract class GenMSIL extends SubComponent {
         val fBuilder = mtype.DefineField(msilName(sym), msilType(sym.tpe), attributes)
         fields(sym) = fBuilder
         addAttributes(fBuilder, sym.annotations)
-      }
+      } // all iclass.fields iterated over
 
       if (iclass.symbol != definitions.ArrayClass) {
       for (m: IMethod <- iclass.methods) {
@@ -2010,7 +2074,12 @@ abstract class GenMSIL extends SubComponent {
 
           val mirrorCode = mirrorMethod.GetILGenerator()
           mirrorCode.Emit(OpCodes.Ldsfld, getModuleInstanceField(sym))
-          0.until(paramTypes.length) foreach loadArg(mirrorCode)
+          val mInfo = getMethod(m)
+          for (paramidx <- 0.until(paramTypes.length)) {
+            val mInfoParams = mInfo.GetParameters
+            val loadAddr = mInfoParams(paramidx).ParameterType.IsByRef
+            loadArg(mirrorCode, loadAddr)(paramidx)
+          }
 
           mirrorCode.Emit(OpCodes.Callvirt, getMethod(m))
           mirrorCode.Emit(OpCodes.Ret)
@@ -2067,7 +2136,7 @@ abstract class GenMSIL extends SubComponent {
       val dcode: ILGenerator = caller.GetILGenerator()
       dcode.Emit(OpCodes.Ldsfld, anonfunField)
       for (i <- 0 until params.length) {
-        loadArg(dcode)(i)
+        loadArg(dcode, false /* TODO confirm whether passing actual as-is to formal is correct wrt the ByRef attribute of the param */)(i)
         emitBox(dcode, toTypeKind(params(i).tpe))
       }
       dcode.Emit(OpCodes.Callvirt, functionApply)
@@ -2083,7 +2152,7 @@ abstract class GenMSIL extends SubComponent {
       case UNIT   => code.Emit(OpCodes.Ldsfld, boxedUnit)
       case BOOL | BYTE | SHORT | CHAR | INT | LONG | FLOAT | DOUBLE =>
         code.Emit(OpCodes.Box, msilType(boxType))
-      case REFERENCE(cls) if (definitions.unboxMethod.contains(cls)) =>
+      case REFERENCE(cls) if (definitions.boxMethod.contains(cls)) =>
         code.Emit(OpCodes.Box, (msilType(boxType)))
       case REFERENCE(_) | ARRAY(_) => ()
     }

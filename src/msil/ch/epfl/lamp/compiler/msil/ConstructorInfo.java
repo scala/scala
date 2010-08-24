@@ -24,23 +24,23 @@ public class ConstructorInfo extends MethodBase {
 
     protected static final String CTOR = ".ctor";
     protected static final String CCTOR = ".cctor";
-    protected static final ConstructorInfo[] EMPTY_ARRAY =
-	new ConstructorInfo[0];
+    protected static final ConstructorInfo[] EMPTY_ARRAY = new ConstructorInfo[0];
 
     protected static String getName(int attrs) {
-	return (attrs & MethodAttributes.Static) == 0 ? CTOR : CCTOR;
+	  return (attrs & MethodAttributes.Static) == 0 ? CTOR : CCTOR;
     }
 
-    /** Protected constructor */
-    protected ConstructorInfo(Type declType, int attrs, Type[] paramTypes) {
-	super(getName(attrs), declType, attrs, paramTypes);
-	assert declType != null : "Owner can't be 'null' for a constructor!";
+    /** Public constructors */
+
+    public ConstructorInfo(Type declType, int attrs, Type[] paramTypes) {
+	  super(getName(attrs), declType, attrs, paramTypes);
+	  assert declType != null : "Owner can't be 'null' for a constructor!";
     }
 
-    protected ConstructorInfo(Type declType, int attrs, ParameterInfo[] params)
+    public ConstructorInfo(Type declType, int attrs, ParameterInfo[] params)
     {
-	super(getName(attrs), declType, attrs, params);
-	assert declType != null : "Owner can't be 'null' for a constructor!";
+	  super(getName(attrs), declType, attrs, params);
+	  assert declType != null : "Owner can't be 'null' for a constructor!";
     }
 
 

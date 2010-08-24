@@ -235,6 +235,16 @@ object OpCodes {
      final val Call = OpCode.Call
 
     /**
+     * constrained. prefix
+     */
+     final val Constrained = OpCode.Constrained
+
+    /**
+     * readonly. prefix
+     */
+     final val Readonly = OpCode.Readonly
+
+    /**
      * Calls the method indicated on the evaluation stack (as a pointer to an entry point)
      * with arguments described by a calling convention.
      */

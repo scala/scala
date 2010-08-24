@@ -805,13 +805,13 @@ object OpCode {
    * constrained prefix
    */
   final val Constrained = new OpCode()
-opcode(Constrained, CEE_CONSTRAINED , "constrained"    , 0xFFFFFE16, POP_NONE, PUSH_NONE, INLINE_NONE    , FLOW_NEXT)
+opcode(Constrained, CEE_CONSTRAINED , "constrained."    , 0xFFFFFE16, POP_NONE, PUSH_NONE, INLINE_NONE    , FLOW_NEXT)
 
   /**
    * readonly prefix
    */
   final val Readonly = new OpCode()
-opcode(Readonly, CEE_READONLY , "readonly"    , 0xFFFFFE1E, POP_NONE, PUSH_NONE, INLINE_NONE    , FLOW_NEXT)
+opcode(Readonly, CEE_READONLY , "readonly."    , 0xFFFFFE1E, POP_NONE, PUSH_NONE, INLINE_NONE    , FLOW_NEXT)
 
     /**
      * Calls the method indicated on the evaluation stack (as a pointer to an entry point)

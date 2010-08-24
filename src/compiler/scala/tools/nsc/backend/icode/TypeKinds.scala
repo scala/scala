@@ -488,4 +488,10 @@ trait TypeKinds { self: ICodes =>
     }
   }
 
+  def msil_mgdptr(tk: TypeKind): TypeKind = (tk: @unchecked) match {
+    case REFERENCE(cls)  => REFERENCE(loaders.clrTypes.mdgptrcls4clssym(cls))
+    // TODO have ready class-symbols for the by-ref versions of built-in valuetypes
+    case _ => abort("cannot obtain a managed pointer for " + tk)
+  }
+
 }

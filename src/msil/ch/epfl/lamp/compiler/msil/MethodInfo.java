@@ -15,31 +15,16 @@ import java.util.Iterator;
  */
 public class MethodInfo extends MethodBase {
 
-    private java.util.List /* GenericParamAndConstraints */ mVars = new java.util.LinkedList();
-    private GenericParamAndConstraints[] sortedMVars = null;
-
-    public void addMVar(GenericParamAndConstraints tvarAndConstraints) {
-        sortedMVars = null;
-        mVars.add(tvarAndConstraints);
-    }
-
-    public GenericParamAndConstraints[] getSortedMVars() {
-        if(sortedMVars == null) {
-            sortedMVars = new GenericParamAndConstraints[mVars.size()];
-            for (int i = 0; i < sortedMVars.length; i ++){
-                Iterator iter = mVars.iterator();
-                while(iter.hasNext()) {
-                    GenericParamAndConstraints tvC = (GenericParamAndConstraints)iter.next();
-                    if(tvC.Number == i) {
-                        sortedMVars[i] = tvC;
-                    }
-                }
-            }
+    public boolean HasPtrParamOrRetType() {
+        if(ReturnType.IsByRef() && !(ReturnType.GetElementType().IsValueType())) {
+            /* A method returning ByRef won't pass peverify, so I guess this is dead code. */
+            return true;
         }
-        return sortedMVars;
+        if(ReturnType.IsPointer()) {
+            return true;
+        }
+        return super.HasPtrParamOrRetType();
     }
-
-
 
     //##########################################################################
     // public members

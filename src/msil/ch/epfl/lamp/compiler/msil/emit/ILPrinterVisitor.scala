@@ -450,7 +450,7 @@ abstract class ILPrinterVisitor extends Visitor {
     def caseOpCode(opCode: OpCode) {
 	var opString = opCode.toString()
 	print(opString)
-	pad(12 - opString.length())
+	pad(14 - opString.length())
 
 	// switch opcode
         if (opCode == OpCode.Ldstr) {
@@ -484,9 +484,8 @@ abstract class ILPrinterVisitor extends Visitor {
 	    print(" \'"); print(loc.name); print("\'")
 	    //print("'") print(((LocalBuilder)argument).name) print("'")
     } else if (opCode == OpCode.Readonly) {
-      println("readonly. ")
+      // nothing to do
     } else if (opCode == OpCode.Constrained) {
-      print("constrained. ")
       printReference(argument.asInstanceOf[Type])
     } else if (opCode == OpCode.Ldelema) {
       printReference(argument.asInstanceOf[Type])

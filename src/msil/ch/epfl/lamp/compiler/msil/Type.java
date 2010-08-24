@@ -285,6 +285,19 @@ public abstract class Type extends MemberInfo {
     public final boolean IsEnum() {
 	return BaseType() == ENUM();
     }
+    public boolean CanBeTakenAddressOf() {
+    /*  TODO should be overridden in TMVarUsage,
+        but there's currently no way to bind a TMVarUsage to its GenericParamAndConstraints definition. Why?
+        Because of the way the msil library is organized (e.g., mkArray() returns the same !0[] representation
+        for all !0[] usages, irrespective of the scope of the !0 type-param)
+        This  in turn is so because without generics there's no harm in using a type-def instance
+        where a type-ref should go (e.g., the ParameterType of a ParameterInfo nowadays may point to a PEType).
+        The net effect is that this method (CanBeTakenAddressOf) is conservative, it will answer "no"
+        for example for !0 where !0 refers to a type-param with the isValuetype constraint set.
+        The whole thing is ok at this point in time, where generics are not supported at the backend. */
+	    return IsValueType() && (this != ENUM());
+        /* ENUM() is a singleton, i.e. System.Enum is not generic */
+    }
 
     /** IsGeneric, true for a PEType or TypeBuilder (i.e., a type definition)
      * containing one or more type params. Not to be called on a reference
@@ -325,7 +338,8 @@ public abstract class Type extends MemberInfo {
         public final int Number;
         public final boolean isTVar;
 
-        /** Non-defining reference to either a TVar or an MVar */
+        /** Non-defining reference to either a TVar or an MVar.
+         *  An instance of GenericParamAndConstraints represents a TVar or an MVar definition. */
         public TMVarUsage(int Number, boolean isTVar) {
             super(null, 0, ((isTVar ? "!" : "!!") + Number), null, null, null, AuxAttr.None, null);
             this.Number = Number;
@@ -378,7 +392,7 @@ public abstract class Type extends MemberInfo {
 	if (array != null)
 	    return array;
 	array = new PrimitiveType(elemType.Module,
-				  TypeAttributes.Public
+				  elemType.Attributes
 				  | TypeAttributes.Sealed
 				  | TypeAttributes.Serializable,
 				  elemType.FullName + arrSig,
@@ -393,7 +407,7 @@ public abstract class Type extends MemberInfo {
 	Type type = getType(name);
 	if (type != null) return type;
 	type = new PrimitiveType(elemType.Module,
-				 TypeAttributes.NotPublic,
+				 elemType.Attributes,
 				 name, null, EmptyTypes, null,
 				 AuxAttr.Pointer, elemType);
 	return addType(type);
@@ -405,7 +419,7 @@ public abstract class Type extends MemberInfo {
         Type type = getType(name);
         if (type != null) return type;
         type = new PrimitiveType(elemType.Module,
-                TypeAttributes.NotPublic,
+                elemType.Attributes,
                 name, null, EmptyTypes, null,
                 AuxAttr.ByRef, elemType);
         return addType(type);
