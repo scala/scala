@@ -46,7 +46,7 @@ trait ContextTrees { self: Global =>
     if (contexts.isEmpty) None
     else {
       val hi = contexts.length - 1
-      if ((contexts(hi).pos precedes pos) || (pos precedes contexts(0).pos)) None
+      if ((contexts(hi).pos properlyPrecedes pos) || (pos properlyPrecedes contexts(0).pos)) None
       else {
         def loop(lo: Int, hi: Int): Option[ContextTree] = {
           val mid = (lo + hi) / 2
