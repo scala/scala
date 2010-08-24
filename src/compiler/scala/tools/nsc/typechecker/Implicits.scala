@@ -409,7 +409,7 @@ self: Analyzer =>
           if (mt.isImplicit) matchesPtView(restpe, ptarg, ptres, undet)
           else params.length == 1 && matchesArgRes(params.head.tpe, restpe, ptarg, ptres, undet)
         case ExistentialType(tparams, qtpe) =>
-          matchesPtView(normalize(tp), ptarg, ptres, undet)
+          matchesPtView(normalize(qtpe), ptarg, ptres, undet)
         case Function1(arg1, res1) =>
           matchesArgRes(arg1, res1, ptarg, ptres, undet)
         case _ => false
