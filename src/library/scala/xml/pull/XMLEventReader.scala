@@ -16,28 +16,14 @@ import java.nio.channels.ClosedChannelException
 import scala.io.Source
 import scala.xml.parsing.{ ExternalSources, MarkupHandler, MarkupParser }
 
-/** <p>
- *   A pull parser that offers to view an XML document as a series of events.
- *   Example usage:
- *  </p><pre>
- *  <b>import</b> scala.xml.pull._
- *  <b>import</b> scala.io.Source
- *
- *  <b>object</b> reader {
- *    <b>val</b> src = Source.fromString("<hello><world/></hello>")
- *    <b>val</b> er = new XMLEventReader(src)
- *
- *    <b>def</b> main(args: Array[String]) {
- *      while (er.hasNext)
- *        Console.println(er.next)
- *    }
- *  }
- *  </pre>
+/**
+ * Main entry point into creating an event-based XML parser.  Treating this
+ * as a [[scala.collection.Iterator]] will provide access to the generated events.
+ * @param src A [[scala.io.Source]] for XML data to parse
  *
  *  @author Burak Emir
  *  @author Paul Phillips
  */
-
 class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
 {
   // We implement a pull parser as an iterator, but since we may be operating on
