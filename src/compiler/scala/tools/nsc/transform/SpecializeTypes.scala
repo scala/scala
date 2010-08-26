@@ -679,7 +679,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     val specMember = sym.cloneSymbol(owner) // this method properly duplicates the symbol's info
     specMember.name = specializedName(sym, env)
 
-    specMember.setInfo(subst(env, specMember.info))
+    specMember.setInfo(subst(env, specMember.info.asSeenFrom(owner.thisType, sym.owner)))
       .setFlag(SPECIALIZED)
       .resetFlag(DEFERRED | CASEACCESSOR | ACCESSOR | LAZY)
   }
@@ -748,8 +748,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     for  (overriding <- clazz.info.decls;
           val (overridden, env) = needsSpecialOverride(overriding, overriding.allOverriddenSymbols)
           if overridden != NoSymbol) {
-      log("Added specialized overload for " + overriding.fullName + " in env: " + env)
       val om = specializedOverload(clazz, overridden, env)
+      log("Added specialized overload for %s in env: %s with type: %s".format(overriding.fullName, env, om.info))
       typeEnv(om) = env
       concreteSpecMethods += overriding
       if (!overriding.isDeferred) {  // concrete method
