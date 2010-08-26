@@ -1452,16 +1452,16 @@ abstract class GenMSIL extends SubComponent {
           code.Emit(OpCodes.Ldarga, i)
       } else {
         i match {
-      case 0 => code.Emit(OpCodes.Ldarg_0)
-      case 1 => code.Emit(OpCodes.Ldarg_1)
-      case 2 => code.Emit(OpCodes.Ldarg_2)
-      case 3 => code.Emit(OpCodes.Ldarg_3)
-      case _      =>
-        if (i >= -128 && i <= 127)
-          code.Emit(OpCodes.Ldarg_S, i)
-        else
-          code.Emit(OpCodes.Ldarg, i)
-    }
+          case 0 => code.Emit(OpCodes.Ldarg_0)
+          case 1 => code.Emit(OpCodes.Ldarg_1)
+          case 2 => code.Emit(OpCodes.Ldarg_2)
+          case 3 => code.Emit(OpCodes.Ldarg_3)
+          case _      =>
+            if (i >= -128 && i <= 127)
+              code.Emit(OpCodes.Ldarg_S, i)
+            else
+              code.Emit(OpCodes.Ldarg, i)
+        }
       }
 
     def loadLocal(i: Int, local: Local, code: ILGenerator, loadAddr: Boolean) =
@@ -1472,16 +1472,16 @@ abstract class GenMSIL extends SubComponent {
           code.Emit(OpCodes.Ldloca, localBuilders(local))
       } else {
         i match {
-      case 0 => code.Emit(OpCodes.Ldloc_0)
-      case 1 => code.Emit(OpCodes.Ldloc_1)
-      case 2 => code.Emit(OpCodes.Ldloc_2)
-      case 3 => code.Emit(OpCodes.Ldloc_3)
-      case _      =>
-        if (i >= -128 && i <= 127)
-          code.Emit(OpCodes.Ldloc_S, localBuilders(local))
-        else
-          code.Emit(OpCodes.Ldloc, localBuilders(local))
-    }
+          case 0 => code.Emit(OpCodes.Ldloc_0)
+          case 1 => code.Emit(OpCodes.Ldloc_1)
+          case 2 => code.Emit(OpCodes.Ldloc_2)
+          case 3 => code.Emit(OpCodes.Ldloc_3)
+          case _      =>
+            if (i >= -128 && i <= 127)
+              code.Emit(OpCodes.Ldloc_S, localBuilders(local))
+            else
+              code.Emit(OpCodes.Ldloc, localBuilders(local))
+        }
       }
 
     ////////////////////// branches ///////////////////////

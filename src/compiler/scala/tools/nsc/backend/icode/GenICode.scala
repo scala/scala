@@ -168,8 +168,9 @@ abstract class GenICode extends SubComponent  {
       case Assign(lhs @ Select(_, _), rhs) =>
         val isStatic = lhs.symbol.isStaticMember
         var ctx1 = if (isStatic) ctx
-                   else if (forMSIL && msil_IsValuetypeInstField(lhs.symbol)) msil_genLoadQualifierAddress(lhs, ctx)
-                        else genLoadQualifier(lhs, ctx)
+                   else if (forMSIL && msil_IsValuetypeInstField(lhs.symbol))
+                     msil_genLoadQualifierAddress(lhs, ctx)
+                   else genLoadQualifier(lhs, ctx)
 
         ctx1 = genLoad(rhs, ctx1, toTypeKind(lhs.symbol.info))
         ctx1.bb.emit(STORE_FIELD(lhs.symbol, isStatic), tree.pos)
@@ -902,12 +903,12 @@ abstract class GenICode extends SubComponent  {
                 Dynamic
 
             var ctx1 =
-              if (invokeStyle.hasInstance)
+              if (invokeStyle.hasInstance) {
                 if (forMSIL && !(invokeStyle.isInstanceOf[SuperCall]) && msil_IsValuetypeInstMethod(sym))
                   msil_genLoadQualifierAddress(fun, ctx)
                 else
                   genLoadQualifier(fun, ctx)
-              else ctx
+              } else ctx
 
             ctx1 = genLoadArguments(args, sym.info.paramTypes, ctx1)
             val cm = CALL_METHOD(sym, invokeStyle)
