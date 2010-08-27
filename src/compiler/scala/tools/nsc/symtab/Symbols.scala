@@ -1253,6 +1253,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** The class with the same name in the same package as this module or
      *  case class factory.
+     *  Note: does not work for classes owned by methods, see
+     *  Namers.companionClassOf
      */
     final def companionClass: Symbol = {
       if (this != NoSymbol)
@@ -1269,6 +1271,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** The module or case class factory with the same name in the same
      *  package as this class.
+     *  Note: does not work for modules owned by methods, see
+     *  Namers.companionModuleOf
      */
     final def companionModule: Symbol =
       if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass)
@@ -1277,6 +1281,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** For a module its linked class, for a class its linked module or case
      *  factory otherwise.
+     *  Note: does not work for modules owned by methods, see
+     *  Namers.companionModuleOf / Namers.companionClassOf
      */
     final def companionSymbol: Symbol =
       if (isTerm) companionClass

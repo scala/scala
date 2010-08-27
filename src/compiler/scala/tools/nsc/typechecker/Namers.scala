@@ -288,8 +288,10 @@ trait Namers { self: Analyzer =>
      *  @return the companion object symbol.
      */
      def ensureCompanionObject(tree: ClassDef, creator: => Tree): Symbol = {
-       val m: Symbol = context.scope.lookup(tree.name.toTermName).filter(! _.isSourceMethod)
-       if (m.isModule && inCurrentScope(m) && currentRun.compiles(m)) m
+       val m = companionModuleOf(tree.symbol, context)
+       // @luc: not sure why "currentRun.compiles(m)" is needed, things breaks
+       // otherwise. documentation welcome.
+       if (m != NoSymbol && currentRun.compiles(m)) m
        else enterSyntheticSym(creator)
      }
 
@@ -1363,6 +1365,25 @@ trait Namers { self: Analyzer =>
         result
       } else member.accessed
     } else member
+
+  /**
+   * Finds the companion module of a class symbol. Calling .companionModule
+   * does not work for classes defined inside methods.
+   */
+  def companionModuleOf(clazz: Symbol, context: Context) = {
+    var res = clazz.companionModule
+    if (res == NoSymbol)
+      res = context.lookup(clazz.name.toTermName, clazz.owner).suchThat(sym =>
+        sym.hasFlag(MODULE) && sym.isCoDefinedWith(clazz))
+    res
+  }
+
+  def companionClassOf(module: Symbol, context: Context) = {
+    var res = module.companionClass
+    if (res == NoSymbol)
+      res = context.lookup(module.name.toTypeName, module.owner).suchThat(_.isCoDefinedWith(module))
+    res
+  }
 
   /** An explanatory note to be added to error messages
    *  when there's a problem with abstract var defs */
