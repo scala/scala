@@ -11,7 +11,7 @@ package scala.concurrent
 /** A class to provide safe concurrent access to a mutable cell.
  *  All methods are synchronized.
  *
- *  @author  Martin Odersky, Stepan Koltsov
+ *  @author  Martin Odersky
  *  @version 1.0, 10/03/2003
  */
 class SyncVar[A] {
