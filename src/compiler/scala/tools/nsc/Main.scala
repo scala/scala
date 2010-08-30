@@ -8,8 +8,6 @@ package scala.tools.nsc
 import java.io.File
 import File.pathSeparator
 
-import scala.concurrent.SyncVar
-
 import scala.tools.nsc.interactive.{ RefinedBuildManager, SimpleBuildManager }
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
@@ -59,7 +57,7 @@ object Main extends AnyRef with EvalLoop {
       import compiler.{ reporter => _, _ }
 
       val sfs = command.files.map(getSourceFile(_))
-      val reloaded = new SyncVar[Either[Unit, Throwable]]
+      val reloaded = new interactive.Response[Unit]
       askReload(sfs, reloaded)
       reloaded.get.right.toOption match {
         case Some(ex) => reporter.cancelled = true // Causes exit code to be non-0
