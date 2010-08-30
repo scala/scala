@@ -685,6 +685,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class GenericHandler(member: Tree) extends MemberHandler(member)
 
   private class ValHandler(member: ValDef) extends MemberHandler(member) {
+    val maxStringElements = 1000  // no need to mkString billions of elements
     lazy val ValDef(mods, vname, _, _) = member
     lazy val prettyName = NameTransformer.decode(vname)
     lazy val isLazy = mods hasFlag Flags.LAZY
@@ -696,7 +697,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       val isInternal = isGeneratedVarName(vname) && req.typeOfEnc(vname) == "Unit"
       if (!mods.isPublic || isInternal) return
 
-      lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s)".format(req fullPath vname)
+      lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(req fullPath vname, maxStringElements)
 
       // if this is a lazy val we avoid evaluating it here
       val resultString = if (isLazy) codegenln(false, "<lazy>") else extractor
