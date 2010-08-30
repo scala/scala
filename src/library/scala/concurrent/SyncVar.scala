@@ -17,12 +17,10 @@ package scala.concurrent
 class SyncVar[A] {
   private var isDefined: Boolean = false
   private var value: A = _
-  private var exception: Option[Throwable] = None
 
   def get = synchronized {
     while (!isDefined) wait()
-    if (exception.isEmpty) value
-    else throw exception.get
+    value
   }
 
   def get(timeout: Long): Option[A] = synchronized {
@@ -30,8 +28,7 @@ class SyncVar[A] {
       try wait(timeout)
       catch { case _: InterruptedException => () }
     }
-    if (exception.isDefined) throw exception.get
-    else if (isDefined) Some(value)
+    if (isDefined) Some(value)
     else None
   }
 
@@ -43,7 +40,6 @@ class SyncVar[A] {
   def set(x: A) = synchronized {
     value = x
     isDefined = true
-    exception = None
     notifyAll()
   }
 
