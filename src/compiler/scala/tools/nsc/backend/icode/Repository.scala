@@ -50,7 +50,7 @@ trait Repository {
       loaded += (c1.symbol -> c1)
       loaded += (c2.symbol -> c2)
     } catch {
-      case e: MissingRequirementError =>
+      case e: Throwable => // possible exceptions are MissingRequirementError, IOException and TypeError -> no better common supertype
         log("Failed to load %s. [%s]".format(sym.fullName, e.getMessage))
         if (settings.debug.value)
           e.printStackTrace
