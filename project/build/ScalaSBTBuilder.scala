@@ -25,7 +25,6 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
   lazy val buildMsil = libs.buildMsil
   lazy val newMsil = libs.newMsil
   lazy val partest = quick.externalPartest
-  lazy val testSuite = strap.testSuite
 
 
 
@@ -247,17 +246,6 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
     override lazy val toolsWS= new WrapperStep(scalapConfig::partestConfig::Nil)
 
-
-
-    def compare = {
-      import PathConfig.classes
-      def filter(path:Path)= path.descendentsExcept(AllPassFilter, HiddenFileFilter || "*.properties")
-      Comparator.compare(this.pathLayout.outputDir/classes ##,quick.pathLayout.outputDir/classes ##, filter _ ,log)
-    }
-
-    lazy val testSuite=task{
-      compare
-    }
 
   }
 
