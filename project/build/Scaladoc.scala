@@ -35,7 +35,7 @@ trait Scaladoc{
 
   }
   lazy val scaladoc = task{
-    val externalSbt = new ExternalTaskRunner(projectRoot,this.name,generateScaladoc.name,log)
+    val externalSbt = new ExternalTaskRunner(projectRoot,this.name,generateScaladoc.name,"Error generating the scaladoc",log)
     externalSbt.runTask
   }.dependsOn(pack)
 

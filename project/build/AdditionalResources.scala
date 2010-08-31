@@ -40,14 +40,12 @@ trait AdditionalResources {
 
 }
 
-import sbt._
-import BasicLayer._
 object AdditionalResources {
   /**
    * A FileFilter that defines what are the files that will be copied
    */
   lazy val basicFilter =  "*.tmpl" | "*.xml"| "*.js"| "*.css" | "*.properties" | "*.swf" | "*.png"
-
+  implicit def stringToGlob(s:String):NameFilter=GlobFilter(s)
 }
 
 trait ResourcesToCopy {

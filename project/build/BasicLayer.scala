@@ -1,6 +1,5 @@
 import sbt._
 import xsbt.{ScalaInstance}
-import BasicLayer._
 import ScalaBuildProject._
 import scala.collection.immutable.{EmptyMap}
 
@@ -19,6 +18,7 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
 
   def buildInfoEnvironmentLocation:Path=outputRootPath / ("build-"+name+".properties")
 
+  override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"|| AdditionalResources.basicFilter) // Support of triggered execution at project level
 
   override def dependencies = info.dependencies
 
@@ -66,13 +66,18 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
 
   def cleaningList=layerOutput::layerEnvironment.envBackingPath::packingDestination::Nil
 
-  lazy val cleanFiles = FileUtilities.clean(cleaningList,true,log)
+  def  cleanFiles = FileUtilities.clean(cleaningList,true,log)
 
   lazy val clean:Task = nextLayer match {
     case None => super.task{ cleanFiles}// We use super.task, so cleaning is done in every case, even when locked
     case Some(next) => super.task{cleanFiles}.dependsOn{next.clean}
 
   }
+
+  lazy val cleanBuild = task{
+      cleanFiles orElse buildLayer
+    }.dependsOn(startLayer)
+
 
 
 
@@ -263,13 +268,6 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
 
 
 
-
-  //Needed Libraries
-  //TODO Check if not possible to manage some of them with the sbt dependency management (ivy)
-
-
-
-
   //Paths location that must be defined layer by layer
   /*
    * We must define which are the libraries used to instantiate the compiler
@@ -281,10 +279,3 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
 
 
   }
-
-object BasicLayer{
-   implicit def stringToGlob(s:String):NameFilter=GlobFilter(s)
-
-
-
-}

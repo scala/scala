@@ -7,7 +7,7 @@ import ExternalTaskRunner._
  * performance issue) and that in order to keep incremental compilation, we allow to launch a task from a
  * specific project / sub-project in a different instance of sbt that disappear once the task has finished.
  */
-class ExternalTaskRunner(root:Path,projectName:String, taskName :String, log: Logger ){
+class ExternalTaskRunner(root:Path,projectName:String, taskName :String,errorMessage:String, log: Logger ){
 
   def runTask:Option[String] ={
 
@@ -16,7 +16,7 @@ class ExternalTaskRunner(root:Path,projectName:String, taskName :String, log: Lo
     log.info("Launching task ["+taskName+"] of project ["+projectName+"] in new sbt instance")
     externalSbt.! match{
       case 0 => None
-      case _ => Some("External Task Failed")
+      case _ => Some(errorMessage)
     }
 
   }

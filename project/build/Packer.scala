@@ -1,7 +1,7 @@
 import sbt._
 import java.io.{File,FileInputStream}
 import java.util.jar.Manifest
-import BasicLayer._
+import AdditionalResources._
 import FileUtilities._
 
 
@@ -86,23 +86,10 @@ trait Packer {
 class PackagingConfiguration(val jarDestination:Path, val content:Iterable[Path],val manifest:Manifest,val jarsToInclude:List[Path]){
   def this(jarDestination:Path,content:Iterable[Path])=this(jarDestination,content, new Manifest,Nil)
   def this(jarDestination:Path,content:Iterable[Path],jarsToInclude:List[Path])=this(jarDestination,content,new Manifest, jarsToInclude)
-  //def this(jarName:String,destinationFunction:(String)=>Path,content:Iterable[Path],manifest:Manifest,jarsToInclude:List[Path]) =
-  //  this(destinationFunction(jarName),content,manifest,jarsToInclude)
-  //def this(jarName:String,destinationFunction:(String)=>Path,content:Iterable[Path]) =
-  //  this(jarName,destinationFunction,content, new Manifest, Nil)
 }
 
 trait Packaging extends Step{
-  //def manifest = new Manifest
-  //final def simplePath = packagingDestination / jarName
-  //final def libPath = packagingDestination /"lib" / jarName
-  //def jarDestination:Path = libPath
-  //def packagingDestination:Path
-  //def jarName:String
-  //def jarsToInclude:List[Path] = Nil
-  //def jarContent:Iterable[Path]
-  def packagingConfig:PackagingConfiguration
-
+    def packagingConfig:PackagingConfiguration
 }
 
 trait WrapperPackaging extends Packaging {

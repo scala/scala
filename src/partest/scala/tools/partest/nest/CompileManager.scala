@@ -40,7 +40,7 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
 
   def newSettings(out: Option[String]) = {
     val settings = new TestSettings(fileManager)
-    settings.usejavacp.value = true
+    //settings.usejavacp.value = true
     settings.deprecation.value = true
     settings.nowarnings.value = false
     settings.encoding.value = "ISO-8859-1"    // XXX why?

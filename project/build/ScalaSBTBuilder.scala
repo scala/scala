@@ -9,6 +9,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
   override def dependencies: Iterable[Project] = info.dependencies  ++ locker.dependencies ++ quick.dependencies ++ strap.dependencies ++ libs.dependencies
   override def shouldCheckOutputDirectories = false
 
+  override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"||AdditionalResources.basicFilter) // Support of triggered execution at top level
   // Top Level Tasks
   lazy val build = task{None}.dependsOn(quick.binPack,quick.binQuick)
   lazy val clean = locker.clean
@@ -23,6 +24,8 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
   lazy val newFjbg = libs.newFjbg
   lazy val buildMsil = libs.buildMsil
   lazy val newMsil = libs.newMsil
+  lazy val partest = quick.externalPartest
+  lazy val testSuite = strap.testSuite
 
 
 
@@ -155,7 +158,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
    * Definition of what is specific to the quick layer. It implements Packer in order to create pack, ScalaTools
    * for creating the binaries and Scaladoc to generate the documentation
    */
-  class QuickLayer(info:ProjectInfo, previous:BasicLayer) extends BasicLayer(info,versionNumber,Some(previous))
+  class QuickLayer(info:ProjectInfo, previous:BasicLayer) extends BasicLayer(info,versionNumber,Some(previous)) with PartestRunner
           with Packer with ScalaTools with Scaladoc{
 
     override lazy val nextLayer=Some(strap)
@@ -173,7 +176,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
 
 
-    override lazy val libraryWS = new WrapperStep(libraryConfig::actorsConfig::dbcConfig::swingConfig::Nil)with Packaging{
+    override lazy val libraryWS = new WrapperStep(libraryConfig::actorsConfig::dbcConfig::swingConfig::Nil) with Packaging{
         def jarContent = List(libraryConfig , actorsConfig, continuationLibraryConfig).map(_.outputDirectory ##)
         lazy val starrJarContent=List(libraryConfig , actorsConfig,dbcConfig,swingConfig, continuationLibraryConfig).map(_.outputDirectory ##)
         lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName,jarContent,libraryAdditionalJars)
@@ -189,7 +192,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
       compile(libraryConfig, cleanCompilation _)
     }
     lazy val externalCompileLibraryOnly = task{
-      val runner = new ExternalTaskRunner(projectRoot,this.name,compileLibraryOnly.name, log)
+      val runner = new ExternalTaskRunner(projectRoot,this.name,compileLibraryOnly.name,"Error during external compilation", log)
       runner.runTask
     }.dependsOn(startLayer)
 
@@ -215,6 +218,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
 
 
+
     /*
      * Defining here the creation of the binaries for quick and pack
      */
@@ -234,6 +238,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
     lazy val instantiationCompilerJar = previous.compilerOutput
     lazy val instantiationLibraryJar = previous.libraryOutput
+    private val quick = previous
 
     override lazy val libraryWS = new WrapperStep(libraryConfig::actorsConfig::dbcConfig::swingConfig::Nil) with WrapperPackaging{
         lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName,Set())
@@ -241,6 +246,18 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
          }
 
     override lazy val toolsWS= new WrapperStep(scalapConfig::partestConfig::Nil)
+
+
+
+    def compare = {
+      import PathConfig.classes
+      def filter(path:Path)= path.descendentsExcept(AllPassFilter, HiddenFileFilter || "*.properties")
+      Comparator.compare(this.pathLayout.outputDir/classes ##,quick.pathLayout.outputDir/classes ##, filter _ ,log)
+    }
+
+    lazy val testSuite=task{
+      compare
+    }
 
   }
 
@@ -251,6 +268,8 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
    */
   class LibsBuilder(val info:ProjectInfo) extends ScalaBuildProject with ReflectiveProject with Compilation with BuildInfoEnvironment {
     override def dependencies = info.dependencies
+    override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"||AdditionalResources.basicFilter) // Support of triggered execution at project level
+
 
     def buildInfoEnvironmentLocation:Path=outputRootPath / ("build-"+name+".properties")
 
@@ -260,8 +279,8 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
     def libsDestination = layerOutput
 
     lazy val checkJavaVersion = task{
-      val version = System.getProperty("java.specification.version")
-      log.debug("java.specification.version="+version)
+      val version = System.getProperty("java.version")
+      log.debug("java.version="+version)
       val required = "1.6"
       if (version.startsWith(required)) None else Some("Incompatible java version : required "+required)
     }

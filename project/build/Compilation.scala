@@ -106,7 +106,7 @@ trait LayerCompilation extends Compilation{
   lazy val compilation = task{compile(allSteps,cleanCompilation _)}
 
   def externalCompilation:Option[String] = {
-    val runner = new ExternalTaskRunner(projectRoot,this.name,compilation.name, log)
+    val runner = new ExternalTaskRunner(projectRoot,this.name,compilation.name,"Error during external compilation", log)
     runner.runTask
   }
 
