@@ -1151,8 +1151,23 @@ BOOTSTRAPPING BUILD (STRAP)
     <touch file="${build-strap.dir}/plugins.complete" verbose="no"/>
     <stopwatch name="strap.plugins.timer" action="total"/>
   </target>
+  
+  <target name="strap.scalacheck" depends="strap.plugins">
+    <mkdir dir="${build-strap.dir}/classes/scalacheck"/>
+    <scalacfork
+      destdir="${build-strap.dir}/classes/scalacheck"
+      compilerpathref="pack.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/scalacheck"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+	<pathelement location="${build-strap.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+  </target>
 
-  <target name="strap.pre-scalap" depends="strap.plugins">
+  <target name="strap.pre-scalap" depends="strap.scalacheck">
     <uptodate property="strap.scalap.available" targetfile="${build-strap.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
     </uptodate>
