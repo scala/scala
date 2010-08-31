@@ -173,6 +173,9 @@ trait Scanners {
       // Read a token or copy it from `next` tokenData
       if (next.token == EMPTY) {
         lastOffset = charOffset - 1
+        if(lastOffset > 0 && buf(lastOffset) == '\n' && buf(lastOffset - 1) == '\r') {
+          lastOffset -= 1
+        }
         fetchToken()
       } else {
         this copyFrom next
