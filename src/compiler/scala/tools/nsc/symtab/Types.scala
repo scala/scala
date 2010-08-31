@@ -8,7 +8,7 @@ package scala.tools.nsc
 package symtab
 
 import scala.collection.immutable
-import scala.collection.mutable.{ListBuffer, WeakHashMap}
+import scala.collection.mutable.{ListBuffer, HashMap, WeakHashMap}
 import ast.TreeGen
 import util.{HashSet, Position, NoPosition}
 import util.Statistics._
@@ -4864,7 +4864,15 @@ A type's typeSymbol should never be inspected directly.
     isNumericValueType(tp1) && isNumericValueType(tp2) &&
     isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
 
-  def lub(ts: List[Type]): Type = lub(ts, lubDepth(ts))
+  private val lubResults = new HashMap[(Int, List[Type]), Type]
+  private val glbResults = new HashMap[(Int, List[Type]), Type]
+
+  def lub(ts: List[Type]): Type = try {
+    lub(ts, lubDepth(ts))
+  } finally {
+    lubResults.clear()
+    glbResults.clear()
+  }
 
   /** The least upper bound wrt &lt;:&lt; of a list of types */
   def lub(ts: List[Type], depth: Int): Type = {
@@ -4879,72 +4887,83 @@ A type's typeSymbol should never be inspected directly.
         MethodType(params, lub0(matchingRestypes(ts, params map (_.tpe))))
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(glb(ts map (_.bounds.lo), depth), lub(ts map (_.bounds.hi), depth))
-      case ts0 =>
-        val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
-        val bts: List[BaseTypeSeq] = ts map (_.baseTypeSeq)
-        val lubBaseTypes: List[Type] = lubBaseTypeSeq(bts, depth)
-        val lubParents = spanningTypes(lubBaseTypes)
-        val lubOwner = commonOwner(ts)
-        val lubBase = intersectionType(lubParents, lubOwner)
-        val lubType =
-          if (phase.erasedTypes || depth == 0) lubBase
-          else {
-            val lubRefined = refinedType(lubParents, lubOwner)
-            val lubThisType = lubRefined.typeSymbol.thisType
-            val narrowts = ts map (_.narrow)
-            def lubsym(proto: Symbol): Symbol = {
-              val prototp = lubThisType.memberInfo(proto)
-              val syms = narrowts map (t =>
-                t.nonPrivateMember(proto.name).suchThat(sym =>
-                  sym.tpe matches prototp.substThis(lubThisType.typeSymbol, t)))
-              if (syms contains NoSymbol) NoSymbol
+      case ts =>
+        lubResults get (depth, ts) match {
+          case Some(lubType) =>
+            lubType
+          case None =>
+            lubResults((depth, ts)) = AnyClass.tpe
+            val res = if (depth < 0) AnyClass.tpe else lub1(ts)
+            lubResults((depth, ts)) = res
+            res
+        }
+    }
+    def lub1(ts0: List[Type]): Type = {
+      val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
+      val bts: List[BaseTypeSeq] = ts map (_.baseTypeSeq)
+      val lubBaseTypes: List[Type] = lubBaseTypeSeq(bts, depth)
+      val lubParents = spanningTypes(lubBaseTypes)
+      val lubOwner = commonOwner(ts)
+      val lubBase = intersectionType(lubParents, lubOwner)
+      val lubType =
+        if (phase.erasedTypes || depth == 0) lubBase
+        else {
+          val lubRefined = refinedType(lubParents, lubOwner)
+          val lubThisType = lubRefined.typeSymbol.thisType
+          val narrowts = ts map (_.narrow)
+          def lubsym(proto: Symbol): Symbol = {
+            val prototp = lubThisType.memberInfo(proto)
+            val syms = narrowts map (t =>
+              t.nonPrivateMember(proto.name).suchThat(sym =>
+                sym.tpe matches prototp.substThis(lubThisType.typeSymbol, t)))
+            if (syms contains NoSymbol) NoSymbol
+            else {
+              val symtypes =
+                (narrowts, syms).zipped map ((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
+              if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
+                proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(lub(symtypes, decr(depth)))
+              else if (symtypes.tail forall (symtypes.head =:=))
+                proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
               else {
-                val symtypes =
-                  (narrowts, syms).zipped map ((t, sym) => t.memberInfo(sym).substThis(t.typeSymbol, lubThisType))
-                if (proto.isTerm) // possible problem: owner of info is still the old one, instead of new refinement class
-                  proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(lub(symtypes, decr(depth)))
-                else if (symtypes.tail forall (symtypes.head =:=))
-                  proto.cloneSymbol(lubRefined.typeSymbol).setInfoOwnerAdjusted(symtypes.head)
-                else {
-                  def lubBounds(bnds: List[TypeBounds]): TypeBounds =
-                    TypeBounds(glb(bnds map (_.lo), decr(depth)), lub(bnds map (_.hi), decr(depth)))
-                  lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name)
-                    .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
-                }
+                def lubBounds(bnds: List[TypeBounds]): TypeBounds =
+                  TypeBounds(glb(bnds map (_.lo), decr(depth)), lub(bnds map (_.hi), decr(depth)))
+                lubRefined.typeSymbol.newAbstractType(proto.pos, proto.name)
+                  .setInfoOwnerAdjusted(lubBounds(symtypes map (_.bounds)))
               }
             }
-            def refines(tp: Type, sym: Symbol): Boolean = {
-              val syms = tp.nonPrivateMember(sym.name).alternatives;
-              !syms.isEmpty && (syms forall (alt =>
-                // todo alt != sym is strictly speaking not correct, but without it we lose
-                // efficiency.
-                alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
-            }
-            for (sym <- lubBase.nonPrivateMembers) {
-              // add a refinement symbol for all non-class members of lubBase
-              // which are refined by every type in ts.
-              if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
-                try {
-                  val lsym = lubsym(sym)
-                  if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lubsym(sym))
-                } catch {
-                  case ex: NoCommonType =>
-                }
-            }
-            if (lubRefined.decls.isEmpty) lubBase
-            else {
-//            println("refined lub of "+ts+"/"+narrowts+" is "+lubRefined+", baseclasses = "+(ts map (_.baseTypeSeq) map (_.toList)))
-              lubRefined
-            }
           }
-        existentialAbstraction(tparams, lubType)
+          def refines(tp: Type, sym: Symbol): Boolean = {
+            val syms = tp.nonPrivateMember(sym.name).alternatives;
+            !syms.isEmpty && (syms forall (alt =>
+              // todo alt != sym is strictly speaking not correct, but without it we lose
+              // efficiency.
+              alt != sym && !specializesSym(lubThisType, sym, tp, alt)))
+          }
+          for (sym <- lubBase.nonPrivateMembers) {
+            // add a refinement symbol for all non-class members of lubBase
+            // which are refined by every type in ts.
+            if (!sym.isClass && !sym.isConstructor && (narrowts forall (t => refines(t, sym))))
+              try {
+                val lsym = lubsym(sym)
+                if (lsym != NoSymbol) addMember(lubThisType, lubRefined, lubsym(sym))
+              } catch {
+                case ex: NoCommonType =>
+              }
+          }
+          if (lubRefined.decls.isEmpty) lubBase
+          else {
+//            println("refined lub of "+ts+"/"+narrowts+" is "+lubRefined+", baseclasses = "+(ts map (_.baseTypeSeq) map (_.toList)))
+            lubRefined
+          }
+        }
+      existentialAbstraction(tparams, lubType)
     }
     if (printLubs) {
       println(indent + "lub of " + ts + " at depth "+depth)//debug
       indent = indent + "  "
       assert(indent.length <= 100)
     }
-    val res = if (depth < 0) AnyClass.tpe else lub0(ts)
+    val res = lub0(ts)
     if (printLubs) {
       indent = indent.substring(0, indent.length() - 2)
       println(indent + "lub of " + ts + " is " + res)//debug
@@ -4963,7 +4982,12 @@ A type's typeSymbol should never be inspected directly.
   private var globalGlbDepth = 0
   private final val globalGlbLimit = 2
 
-  def glb(ts: List[Type]): Type = glb(ts, lubDepth(ts))
+  def glb(ts: List[Type]): Type = try {
+    glb(ts, lubDepth(ts))
+  } finally {
+    lubResults.clear()
+    glbResults.clear()
+  }
 
   /** The greatest lower bound wrt &lt;:&lt; of a list of types */
   private def glb(ts: List[Type], depth: Int): Type = {
@@ -4978,85 +5002,99 @@ A type's typeSymbol should never be inspected directly.
         MethodType(params, glb0(matchingRestypes(ts, params map (_.tpe))))
       case ts @ TypeBounds(_, _) :: rest =>
         TypeBounds(lub(ts map (_.bounds.lo), depth), glb(ts map (_.bounds.hi), depth))
-      case ts0 =>
-        try {
-          val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
-          val glbOwner = commonOwner(ts)
-          def refinedToParents(t: Type): List[Type] = t match {
-            case RefinedType(ps, _) => ps flatMap refinedToParents
-            case _ => List(t)
-          }
-          def refinedToDecls(t: Type): List[Scope] = t match {
-            case RefinedType(ps, decls) =>
-              val dss = ps flatMap refinedToDecls
-              if (decls.isEmpty) dss else decls :: dss
-            case _ => List()
-          }
-          val ts1 = ts flatMap refinedToParents
-          val glbBase = intersectionType(ts1, glbOwner)
-          val glbType =
-            if (phase.erasedTypes || depth == 0) glbBase
-            else {
-              val glbRefined = refinedType(ts1, glbOwner)
-              val glbThisType = glbRefined.typeSymbol.thisType
-              def glbsym(proto: Symbol): Symbol = {
-                val prototp = glbThisType.memberInfo(proto)
-                val syms = for (t <- ts;
-                      alt <- (t.nonPrivateMember(proto.name).alternatives);
-                  if glbThisType.memberInfo(alt) matches prototp
-                ) yield alt
-                val symtypes = syms map glbThisType.memberInfo
-                assert(!symtypes.isEmpty)
-                proto.cloneSymbol(glbRefined.typeSymbol).setInfoOwnerAdjusted(
-                  if (proto.isTerm) glb(symtypes, decr(depth))
-                  else {
-                    def isTypeBound(tp: Type) = tp match {
-                      case TypeBounds(_, _) => true
-                      case _ => false
-                    }
-                    def glbBounds(bnds: List[Type]): TypeBounds = {
-                      val lo = lub(bnds map (_.bounds.lo), decr(depth))
-                      val hi = glb(bnds map (_.bounds.hi), decr(depth))
-                      if (lo <:< hi) TypeBounds(lo, hi)
-                      else throw GlbFailure
-                    }
-                    val symbounds = symtypes filter isTypeBound
-                    var result: Type =
-                      if (symbounds.isEmpty)
-                        TypeBounds(NothingClass.tpe, AnyClass.tpe)
-                      else glbBounds(symbounds)
-                    for (t <- symtypes if !isTypeBound(t))
-                      if (result.bounds containsType t) result = t
-                      else throw GlbFailure
-                    result
-                  })
-              }
-              if (globalGlbDepth < globalGlbLimit)
-                try {
-                  globalGlbDepth += 1
-                  val dss = ts flatMap refinedToDecls
-                  for (ds <- dss; val sym <- ds.iterator)
-                    if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
-                      try {
-                        addMember(glbThisType, glbRefined, glbsym(sym))
-                      } catch {
-                        case ex: NoCommonType =>
-                      }
-                } finally {
-                  globalGlbDepth -= 1
-                }
-              if (glbRefined.decls.isEmpty) glbBase else glbRefined
-            }
-          existentialAbstraction(tparams, glbType)
-        } catch {
-          case GlbFailure =>
-            if (ts forall (t => NullClass.tpe <:< t)) NullClass.tpe
-            else NothingClass.tpe
+      case ts =>
+        glbResults get (depth, ts) match {
+          case Some(glbType) =>
+            glbType
+          case _ =>
+            glbResults((depth, ts)) = NothingClass.tpe
+            val res = if (depth < 0) NothingClass.tpe else glb1(ts)
+            glbResults((depth, ts)) = res
+            res
         }
     }
+    def glb1(ts0: List[Type]): Type = {
+      try {
+        val (ts, tparams) = stripExistentialsAndTypeVars(ts0)
+        val glbOwner = commonOwner(ts)
+        def refinedToParents(t: Type): List[Type] = t match {
+          case RefinedType(ps, _) => ps flatMap refinedToParents
+          case _ => List(t)
+        }
+        def refinedToDecls(t: Type): List[Scope] = t match {
+          case RefinedType(ps, decls) =>
+            val dss = ps flatMap refinedToDecls
+            if (decls.isEmpty) dss else decls :: dss
+          case _ => List()
+        }
+        val ts1 = ts flatMap refinedToParents
+        val glbBase = intersectionType(ts1, glbOwner)
+        val glbType =
+          if (phase.erasedTypes || depth == 0) glbBase
+          else {
+            val glbRefined = refinedType(ts1, glbOwner)
+            val glbThisType = glbRefined.typeSymbol.thisType
+            def glbsym(proto: Symbol): Symbol = {
+              val prototp = glbThisType.memberInfo(proto)
+              val syms = for (t <- ts;
+                    alt <- (t.nonPrivateMember(proto.name).alternatives);
+                if glbThisType.memberInfo(alt) matches prototp
+              ) yield alt
+              val symtypes = syms map glbThisType.memberInfo
+              assert(!symtypes.isEmpty)
+              proto.cloneSymbol(glbRefined.typeSymbol).setInfoOwnerAdjusted(
+                if (proto.isTerm) glb(symtypes, decr(depth))
+                else {
+                  def isTypeBound(tp: Type) = tp match {
+                    case TypeBounds(_, _) => true
+                    case _ => false
+                  }
+                  def glbBounds(bnds: List[Type]): TypeBounds = {
+                    val lo = lub(bnds map (_.bounds.lo), decr(depth))
+                    val hi = glb(bnds map (_.bounds.hi), decr(depth))
+                    if (lo <:< hi) TypeBounds(lo, hi)
+                    else throw GlbFailure
+                  }
+                  val symbounds = symtypes filter isTypeBound
+                  var result: Type =
+                    if (symbounds.isEmpty)
+                      TypeBounds(NothingClass.tpe, AnyClass.tpe)
+                    else glbBounds(symbounds)
+                  for (t <- symtypes if !isTypeBound(t))
+                    if (result.bounds containsType t) result = t
+                    else throw GlbFailure
+                  result
+                })
+            }
+            if (globalGlbDepth < globalGlbLimit)
+              try {
+                globalGlbDepth += 1
+                val dss = ts flatMap refinedToDecls
+                for (ds <- dss; val sym <- ds.iterator)
+                  if (globalGlbDepth < globalGlbLimit && !(glbThisType specializes sym))
+                    try {
+                      addMember(glbThisType, glbRefined, glbsym(sym))
+                    } catch {
+                      case ex: NoCommonType =>
+                    }
+              } finally {
+                globalGlbDepth -= 1
+              }
+            if (glbRefined.decls.isEmpty) glbBase else glbRefined
+          }
+        existentialAbstraction(tparams, glbType)
+      } catch {
+        case GlbFailure =>
+          if (ts forall (t => NullClass.tpe <:< t)) NullClass.tpe
+          else NothingClass.tpe
+      }
+    }
     // if (settings.debug.value) { println(indent + "glb of " + ts + " at depth "+depth); indent = indent + "  " } //DEBUG
-    val res = if (depth < 0) NothingClass.tpe else glb0(ts)
+
+    val res = glb0(ts)
+
     // if (settings.debug.value) { indent = indent.substring(0, indent.length() - 2); log(indent + "glb of " + ts + " is " + res) }//DEBUG
+
     if (ts exists (_.isNotNull)) res.notNull else res
   }
 
