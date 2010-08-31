@@ -286,6 +286,10 @@ extends IterableLike[T, Repr]
    */
   def reduceOption[U >: T](op: (U, U) => U): Option[U] = if (isEmpty) None else Some(reduce(op))
 
+  override def reduceLeft[U >: T](op: (U, T) => U): U = iterator.reduceLeft(op)
+
+  override def reduceRight[U >: T](op: (T, U) => U): U = iterator.reduceRight(op)
+
   /** Folds the elements of this sequence using the specified associative binary operator.
    *  The order in which the elements are reduced is unspecified and may be nondeterministic.
    *
@@ -304,6 +308,10 @@ extends IterableLike[T, Repr]
   def fold[U >: T](z: U)(op: (U, U) => U): U = {
     executeAndWaitResult(new Fold(z, op, parallelIterator))
   }
+
+  override def foldLeft[S](z: S)(op: (S, T) => S): S = iterator.foldLeft(z)(op)
+
+  override def foldRight[S](z: S)(op: (T, S) => S): S = iterator.foldRight(z)(op)
 
   /** Aggregates the results of applying an operator to subsequent elements.
    *
