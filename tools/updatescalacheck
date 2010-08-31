@@ -1,0 +1,12 @@
+# 
+# Updates ScalaCheck sources from ScalaCheck nightly branch
+# 
+
+# update sources
+rm -r -f ../src/scalacheck
+svn export https://scalacheck.googlecode.com/svn/branches/scalanightly/src/main/scala ../src/scalacheck
+
+# remove unneeded class
+rm ../src/scalacheck/org/scalacheck/ScalaCheckFramework.scala
+
+

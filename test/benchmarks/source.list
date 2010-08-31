@@ -23,6 +23,7 @@ src/scala/collection/parallel/benchmarks/parallel_array/PatchHalf.scala
 src/scala/collection/parallel/benchmarks/parallel_array/DiffHalf.scala
 src/scala/collection/parallel/benchmarks/parallel_array/TakeMany.scala
 src/scala/collection/parallel/benchmarks/parallel_array/PartialMapLight.scala
+src/scala/collection/parallel/benchmarks/parallel_array/ScanLight.scala
 src/scala/collection/parallel/benchmarks/parallel_array/Reverse.scala
 src/scala/collection/parallel/benchmarks/parallel_array/SpanLight.scala
 src/scala/collection/parallel/benchmarks/parallel_array/PlusPlus.scala
@@ -62,7 +63,10 @@ src/scala/collection/parallel/benchmarks/generic/Dummy.scala
 src/scala/collection/parallel/benchmarks/parallel_range/RangeBenches.scala
 src/scala/collection/parallel/benchmarks/Bench.scala
 src/scala/collection/parallel/benchmarks/hashtries/Foreach.scala
+src/scala/collection/parallel/benchmarks/hashtries/Combine.scala
+src/scala/collection/parallel/benchmarks/hashtries/MultipleCombine.scala
 src/scala/collection/parallel/benchmarks/hashtries/Iterate.scala
 src/scala/collection/parallel/benchmarks/hashtries/Construct.scala
 src/scala/collection/parallel/benchmarks/hashtries/IntInit.scala
 src/scala/collection/parallel/benchmarks/hashtries/Lookup.scala
+src/scala/collection/parallel/benchmarks/hashtries/ParallelHashTries.scala

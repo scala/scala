@@ -19,3 +19,4 @@ extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
   def runjsr = jsrarr.withFilter(Cont.predjsr).size
   def comparisonMap = collection.Map("jsr" -> runjsr _)
 }
+

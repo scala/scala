@@ -133,7 +133,7 @@ END-USER TARGETS
     description="Requires forkjoin library to be rebuilt. Add this target before any other if class file format is incompatible.">
     <property name="forkjoin.outdated" value="yes"/>
   </target>
-
+  
 <!-- ===========================================================================
 PROPERTIES
 ============================================================================ -->
@@ -451,7 +451,6 @@ QUICK BUILD (QUICK)
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
-	<!--<include name="parallel-collections/**"/>-->
         <include name="continuations/**"/>
         <include name="swing/**"/>
       </srcfiles>
@@ -496,18 +495,6 @@ QUICK BUILD (QUICK)
       <include name="**/*.scala"/>
       <compilationpath refid="quick.compilation.path"/>
     </scalacfork>
-    <!--<scalacfork
-      destdir="${build-quick.dir}/classes/library"
-      compilerpathref="locker.classpath"
-      params="${scalac.args.quick}"
-      srcdir="${src.dir}/parallel-collections"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-quick.dir}/classes/library"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
-      </compilationpath>
-    </scalacfork>-->
     <scalacfork
       destdir="${build-quick.dir}/classes/library"
       compilerpathref="locker.classpath"
@@ -652,8 +639,23 @@ QUICK BUILD (QUICK)
     <touch file="${build-quick.dir}/plugins.complete" verbose="no"/>
     <stopwatch name="quick.plugins.timer" action="total"/>
   </target>
-
-  <target name="quick.pre-scalap" depends="quick.plugins">
+  
+  <target name="quick.scalacheck" depends="quick.plugins">
+    <mkdir dir="${build-quick.dir}/classes/scalacheck"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/scalacheck"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/scalacheck"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+	<pathelement location="${build-quick.dir}/classes/library"/>
+      </compilationpath>
+    </scalacfork>
+  </target>
+  
+  <target name="quick.pre-scalap" depends="quick.scalacheck">
     <uptodate property="quick.scalap.available" targetfile="${build-quick.dir}/scalap.complete">
       <srcfiles dir="${src.dir}/scalap"/>
     </uptodate>
@@ -784,7 +786,7 @@ QUICK BUILD (QUICK)
     <chmod perm="ugo+rx" file="${build-quick.dir}/bin/scalap"/>
     <touch file="${build-quick.dir}/bin.complete" verbose="no"/>
   </target>
-
+  
   <target name="quick.done" depends="quick.bin">
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
@@ -836,7 +838,7 @@ PACKED QUICK BUILD (PACK)
       </fileset>
     </jar>
   </target>
-
+  
   <target name="pack.pre-comp" depends="pack.lib">
     <uptodate
       property="pack.comp.available"
@@ -874,7 +876,13 @@ PACKED QUICK BUILD (PACK)
     </jar>
   </target>
   
-  <target name="pack.pre-partest" depends="pack.plugins">
+  <target name="pack.scalacheck" depends="pack.plugins">
+    <jar destfile="${build-pack.dir}/lib/scalacheck.jar">
+      <fileset dir="${build-quick.dir}/classes/scalacheck"/>
+    </jar>
+  </target>
+  
+  <target name="pack.pre-partest" depends="pack.scalacheck">
     <uptodate
       property="pack.partest.available"
       targetfile="${build-pack.dir}/lib/scala-partest.jar"
@@ -1019,18 +1027,6 @@ BOOTSTRAPPING BUILD (STRAP)
       <include name="**/*.scala"/>
       <compilationpath refid="strap.compilation.path"/>
     </scalacfork>
-    <!--<scalacfork
-      destdir="${build-strap.dir}/classes/library"
-      compilerpathref="pack.classpath"
-      params="${scalac.args.all}"
-      srcdir="${src.dir}/parallel-collections"
-      jvmargs="${scalacfork.jvmargs}">
-      <include name="**/*.scala"/>
-      <compilationpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-        <pathelement location="${forkjoin.jar}"/>
-      </compilationpath>
-    </scalacfork>-->
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
       compilerpathref="pack.classpath"
@@ -1286,7 +1282,7 @@ LIBRARIES (MSIL, FJBG maybe later)
       <fileset dir="${build-libs.dir}/classes/forkjoin"/>
     </jar>
   </target>
-  
+    
   <target name="libs.pre-msil" depends="libs.start">
     <uptodate property="libs.msil.available" targetfile="${build-libs.dir}/msil.complete">
       <srcfiles dir="${src.dir}/msil">
@@ -1367,7 +1363,7 @@ LIBRARIES (MSIL, FJBG maybe later)
   <target name="libs.done" depends="libs.msilpack, libs.fjbgpack"/>
 
   <target name="forkjoin.done" depends="libs.forkjoinpack"/>
-
+  
   <target name="libs.clean" depends="pack.clean">
     <delete dir="${build-libs.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
   </target>
@@ -1384,7 +1380,6 @@ DOCUMENTATION
         <include name="library/**"/>
         <include name="dbc/**"/>
         <include name="actors/**"/>
-	<!--<include name="parallel-collections/**"/>-->
         <include name="swing/**"/>
       </srcfiles>
     </uptodate>
@@ -1402,7 +1397,6 @@ DOCUMENTATION
       classpathref="pack.classpath">
       <src>
         <files includes="${src.dir}/actors"/>
-	<!--<files includes="${src.dir}/parallel-collections"/>-->
         <files includes="${src.dir}/library/scala"/>
         <files includes="${src.dir}/swing"/>
         <files includes="${src.dir}/continuations/library"/>
@@ -1641,7 +1635,6 @@ DISTRIBUTION
     <jar destfile="${dist.dir}/src/scala-library-src.jar">
       <fileset dir="${src.dir}/library"/>
       <fileset dir="${src.dir}/actors"/>
-      <!--<fileset dir="${src.dir}/parallel-collections"/>-->
       <fileset dir="${src.dir}/continuations/library"/>
     </jar>
     <jar destfile="${dist.dir}/src/scala-dbc-src.jar">
@@ -1730,7 +1723,6 @@ STABLE REFERENCE (STARR)
     <jar destfile="${basedir}/lib/scala-library-src.jar">
       <fileset dir="${basedir}/src/library"/>
       <fileset dir="${basedir}/src/actors"/>
-      <!--<fileset dir="${basedir}/src/parallel-collections"/>-->
       <fileset dir="${basedir}/src/swing"/>
       <fileset dir="${basedir}/src/dbc"/>
     </jar>
