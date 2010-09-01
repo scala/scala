@@ -7,7 +7,7 @@ variances.scala:14: error: covariant type A occurs in contravariant position in 
 variances.scala:16: error: covariant type A occurs in invariant position in supertype test.C[A] with ScalaObject of object Baz
     object Baz extends C[A]
            ^
-variances.scala:63: error: covariant type A occurs in contravariant position in type => test.Covariant.T[A]{def m: (A) => A} of value x
+variances.scala:63: error: covariant type A occurs in contravariant position in type => test.Covariant.T[A]{val m: (A) => A} of value x
     val x: T[A] {
         ^
 variances.scala:79: error: covariant type T occurs in contravariant position in type => test.TestAlias.B[C.this.A] of method foo
