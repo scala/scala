@@ -501,23 +501,4 @@ trait NamesDefaults { self: Analyzer =>
     }
     (namelessArgs, argPos)
   }
-
-  /**
-   * Finds the companion module of a class symbol. Calling .companionModule
-   * does not work for classes defined inside methods.
-   */
-  def companionModuleOf(clazz: Symbol, context: Context) = {
-    var res = clazz.companionModule
-    if (res == NoSymbol)
-      res = context.lookup(clazz.name.toTermName, clazz.owner).suchThat(sym =>
-        sym.hasFlag(MODULE) && sym.isCoDefinedWith(clazz))
-    res
-  }
-
-  def companionClassOf(module: Symbol, context: Context) = {
-    var res = module.companionClass
-    if (res == NoSymbol)
-      res = context.lookup(module.name.toTypeName, module.owner).suchThat(_.isCoDefinedWith(module))
-    res
-  }
 }
