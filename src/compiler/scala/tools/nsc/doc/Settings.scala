@@ -27,7 +27,9 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   /** A setting that defines a URL to be concatenated with source locations and show a link to source files.
    * If needed the sourcepath option can be used to exclude undesired initial part of the link to sources */
-  val docsourceurl   = StringSetting    ("-doc-source-url", "url", "The URL prefix where documentation will link to sources", "")
+  val docsourceurl   = StringSetting    ("-doc-source-url", "url", "A URL pattern used to build links to template sources; use variables, for example: €{TPL_NAME} ('Seq'), €{TPL_OWNER} ('scala.collection'), €{FILE_PATH} ('scala/collection/Seq')", "")
+
+  val useStupidTypes = BooleanSetting   ("-Yuse-stupid-types", "Print the types of inherited members as seen from their original definition context. Hint: you don't want to do that!")
 
   // working around issue described in r18708.
   suppressVTWarn.value = true

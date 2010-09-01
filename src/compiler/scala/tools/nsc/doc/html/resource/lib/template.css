@@ -1,13 +1,37 @@
-* {
-  color: black;
-  text-decoration: none;
+/* Reset */
+
+html, body, div, span, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, code,
+del, dfn, em, img, q, dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend, input,
+table, caption, tbody, tfoot, thead, tr, th, td {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-weight: inherit;
+  font-style: inherit;
+  font-size: 100%;
   font-family: inherit;
-  font-size: inherit;
-  font-weight: normal;
-  border-width: 0px;
-  padding: 0px;
-  margin: 0px;
+  vertical-align: baseline;
 }
+
+body {
+  line-height: 1;
+}
+
+table { border-collapse: separate; border-spacing: 0; }
+caption, th, td { text-align: left; font-weight: normal; }
+table, td, th { vertical-align: middle; }
+
+blockquote:before, blockquote:after, q:before, q:after { content: ""; }
+blockquote, q { quotes: none; }
+
+a img { border: none; }
+
+input { border-width: 0px; }
+
+/* Page */
 
 body {
   font-family: sans-serif;
@@ -15,7 +39,6 @@ body {
 }
 
 a {
-  cursor: pointer;
   text-decoration: underline;
   color: #69481D; /* brown */
 }
@@ -85,7 +108,7 @@ a:hover {
   padding-left: 8px;
 }
 
-#values > h3 {
+#template .values > h3 {
   color: white;
   padding: 4px;
   background-color: #7996AC;
@@ -93,7 +116,7 @@ a:hover {
   font-weight: bold;
 }
 
-#types > h3 {
+#template .types > h3 {
   padding: 4px;
   color: white;
   font-weight: bold;
@@ -107,6 +130,19 @@ a:hover {
   font-weight: bold;
   font-size: 12pt;
   background-color: #333;
+}
+
+#template > div.parent > h3 {
+  color: white;
+  padding: 4px;
+  margin-top: 10px;
+  background-color: #47166D;
+  font-size: 12pt;
+  font-weight: bold;
+}
+
+#template > div.parent > h3 * {
+  color: white;
 }
 
 /* Member cells */
@@ -181,11 +217,11 @@ div.members > ol > li {
   font-style: italic;
 }
 
-#values .signature .name {
+#template .values .signature .name {
   color: blue;
 }
 
-#types .signature .name {
+#template .types .signature .name {
   color: green;
 }
 
@@ -299,15 +335,15 @@ p.comment {
 p.shortcomment {
   display: block;
   margin-left: 8.7em;
-  cursor: help;
+  cursor: pointer;
 }
 
 div.fullcomment {
-  display: block;
   margin: 10px 0 10px 0;
 }
 
 #template div.fullcomment {
+  display:none;
   margin: 6px 0 6px 8.7em;
 }
 
@@ -364,6 +400,50 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 /* Members filter tool */
 
+#textfilter {
+	position: relative;
+	display: block;
+    height: 20px;
+	margin-bottom: 5px;
+}
+
+#textfilter > .pre {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 20px;
+    width: 20px;
+    background: url("filter_box_left.png");
+}
+
+#textfilter > .input {
+	display: block;
+    position: absolute;
+    top: 0;
+    right: 20px;
+    left: 20px;
+}
+
+#textfilter > .input > input {
+	height: 16px;
+	padding: 2px;
+	font-weight: bold;
+	color: #993300;
+	background-color: white;
+    width: 100%;
+}
+
+#textfilter > .post {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 20px;
+    width: 20px;
+    background: url("filter_box_right.png");
+}
+
 #mbrsel {
   padding: 4px;
   background-color: #B78E99; /* grayish pink */
@@ -392,7 +472,7 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
   padding: 4px 8px 4px 8px;
   background-color: white;
   display: inline-block;
-  cursor: crosshair;
+  cursor: pointer;
 }
 
 #mbrsel > div > ol > li.in {

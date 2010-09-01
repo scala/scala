@@ -26,7 +26,7 @@ import reporters.Reporter
 class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor =>
 
   /** The unique compiler instance used by this processor and constructed from its `settings`. */
-  object compiler extends Global(settings, reporter) {
+  object compiler extends Global(settings, reporter) with interactive.RangePositions {
     override protected def computeInternalPhases() {
       phasesSet += syntaxAnalyzer
       phasesSet += analyzer.namerFactory
@@ -46,16 +46,21 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
   /** Creates a scaladoc site for all symbols defined in this call's `files`, as well as those defined in `files` of
     * previous calls to the same processor.
     * @param files The list of paths (relative to the compiler's source path, or absolute) of files to document. */
-  def document(files: List[String]): Unit = {
+  def universe(files: List[String]): Option[Universe] = {
     (new compiler.Run()) compile files
     compiler.addSourceless
     assert(settings.docformat.value == "html")
     if (!reporter.hasErrors) {
-      val modelFactory = (new model.ModelFactory(compiler, settings) with model.comment.CommentFactory)
-      val docModel = modelFactory.makeModel
+      val modelFactory = (new model.ModelFactory(compiler, settings) with model.comment.CommentFactory with model.TreeFactory)
       println("model contains " + modelFactory.templatesCount + " documentable templates")
-      (new html.HtmlFactory(docModel)) generate docModel
+      Some(modelFactory.makeModel)
     }
+    else None
   }
+
+  /** Generate document(s) for all `files` containing scaladoc documenataion.
+    * @param files The list of paths (relative to the compiler's source path, or absolute) of files to document. */
+  def document(files: List[String]): Unit =
+    universe(files) foreach { docModel => (new html.HtmlFactory(docModel)).generate }
 
 }

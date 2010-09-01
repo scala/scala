@@ -19,7 +19,7 @@ abstract class Comment {
   def body: Body
 
   /** A shorter version of the body. Usually, this is the first sentence of the body. */
-  def short: Inline
+  def short: Inline = body.summary getOrElse Text("")
 
   /** A list of authors. The empty list is used when no author is defined. */
   def authors: List[Body]
@@ -62,6 +62,12 @@ abstract class Comment {
   /** A usage example related to the entity. */
   def example: List[Body]
 
+  /** The comment as it appears in the source text. */
+  def source: Option[String]
+
+  /** A description for the primary constructor */
+  def constructor: Option[Body]
+
   override def toString =
     body.toString + "\n" +
     (authors map ("@author " + _.toString)).mkString("\n") +
@@ -69,4 +75,3 @@ abstract class Comment {
     (version map ("@version " + _.toString)).mkString
 
 }
-

@@ -26,7 +26,7 @@ class HtmlFactory(val universe: Universe) {
   /** Generates the Scaladoc site for a model into the site root. A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
     * @param model The model to generate in the form of a sequence of packages. */
-  def generate(universe: Universe): Unit = {
+  def generate : Unit = {
 
     def copyResource(subPath: String) {
       val bytes = new Streamable.Bytes {
@@ -41,6 +41,8 @@ class HtmlFactory(val universe: Universe) {
     }
 
     copyResource("lib/jquery.js")
+    copyResource("lib/jquery-ui.js")
+    copyResource("lib/jquery.layout.js")
     copyResource("lib/tools.tooltip.js")
     copyResource("lib/scheduler.js")
     copyResource("lib/index.css")

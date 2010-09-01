@@ -114,11 +114,13 @@ object Source {
   /** Create a <code>Source</code> from array of bytes, assuming
    *  one byte per character (ISO-8859-1 encoding.)
    */
-  def fromRawBytes(bytes: Array[Byte]): Source = fromString(new String(bytes, Codec.ISO8859.name))
+  def fromRawBytes(bytes: Array[Byte]): Source =
+    fromString(new String(bytes, Codec.ISO8859.name))
 
   /** creates <code>Source</code> from file with given file: URI
    */
-  def fromURI(uri: URI)(implicit codec: Codec): BufferedSource = fromFile(new JFile(uri))(codec)
+  def fromURI(uri: URI)(implicit codec: Codec): BufferedSource =
+    fromFile(new JFile(uri))(codec)
 
   /** same as fromURL(new URL(s))(Codec(enc))
    */
@@ -298,8 +300,9 @@ abstract class Source extends Iterator[Char] {
   def report(pos: Int, msg: String, out: PrintStream) {
     val line = Position line pos
     val col = Position column pos
+    val str = getLines() toIndexedSeq line
 
-    out println "%s:%d:%d: %s%s%s^".format(descr, line, col, msg, getLine(line), spaces(col - 1))
+    out println "%s:%d:%d: %s%s%s^".format(descr, line, col, msg, str, spaces(col - 1))
   }
 
   /**
@@ -340,8 +343,9 @@ abstract class Source extends Iterator[Char] {
   }
 
   /** The close() method closes the underlying resource. */
-  def close(): Unit     =
+  def close() {
     if (closeFunction != null) closeFunction()
+  }
 
   /** The reset() method creates a fresh copy of this Source. */
   def reset(): Source =

@@ -399,9 +399,8 @@ abstract class RefChecks extends InfoTransform {
       }
       printMixinOverrideErrors()
 
-      // 2. Check that only abstract classes have deferred members
-      if (clazz.isClass && !clazz.isTrait) {
-        def isClazzAbstract = clazz hasFlag ABSTRACT
+      // Verifying a concrete class has nothing unimplemented.
+      if (clazz.isClass && !clazz.isTrait && !(clazz hasFlag ABSTRACT)) {
         val abstractErrors = new ListBuffer[String]
         def abstractErrorMessage =
           // a little formatting polish
@@ -421,29 +420,56 @@ abstract class RefChecks extends InfoTransform {
 
         def javaErasedOverridingSym(sym: Symbol): Symbol =
           clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
-            !other.isDeferred &&
-            (other hasFlag JAVA) && {
+            !other.isDeferred && other.isJavaDefined && {
               val tp1 = erasure.erasure(clazz.thisType.memberType(sym))
               val tp2 = erasure.erasure(clazz.thisType.memberType(other))
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
             })
 
         def ignoreDeferred(member: Symbol) =
-          isAbstractTypeWithoutFBound(member) ||
-          ((member hasFlag JAVA) && javaErasedOverridingSym(member) != NoSymbol)
+          (currentRun.erasurePhase != NoPhase) && ( // the test requires atPhase(erasurePhase.next) so shouldn't be done if the compiler has no erasure phase available
+            isAbstractTypeWithoutFBound(member) ||
+            (member.isJavaDefined && javaErasedOverridingSym(member) != NoSymbol)
+          )
 
-        for (member <- clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE))
-          if (member.isDeferred && !isClazzAbstract && !ignoreDeferred(member)) {
-            abstractClassError(
-              false, infoString(member) + " is not defined" + analyzer.varNotice(member))
-          } else if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)) {
-            val other = member.superSymbol(clazz);
-            abstractClassError(true,
-              infoString(member) + " is marked `abstract' and `override'" +
-              (if (other != NoSymbol)
-                " and overrides incomplete superclass member " + infoString(other)
-               else ", but no concrete implementation could be found in a base class"))
+        // 2. Check that only abstract classes have deferred members
+        def checkNoAbstractMembers() = {
+          // Avoid spurious duplicates: first gather any missing members.
+          def memberList = clazz.tpe.nonPrivateMembersAdmitting(VBRIDGE)
+          val (missing, rest) = memberList partition (m => m.isDeferred && !ignoreDeferred(m))
+          // Group missing members by the underlying symbol.
+          val grouped = missing groupBy (analyzer underlying _ name)
+
+          for (member <- missing) {
+            def undefined(msg: String) = abstractClassError(false, infoString(member) + " is not defined" + msg)
+            val underlying = analyzer.underlying(member)
+
+            // Give a specific error message for abstract vars based on why it fails:
+            // It could be unimplemented, have only one accessor, or be uninitialized.
+            if (underlying.isVariable) {
+              // If both getter and setter are missing, squelch the setter error.
+              val isMultiple = grouped(underlying.name).size > 1
+              // TODO: messages shouldn't be spread over two files, and varNotice is not a clear name
+              if (member.isSetter && isMultiple) ()
+              else undefined(
+                if (member.isSetter) "\n(Note that an abstract var requires a setter in addition to the getter)"
+                else if (member.isGetter && !isMultiple) "\n(Note that an abstract var requires a getter in addition to the setter)"
+                else analyzer.varNotice(member)
+              )
+            }
+            else undefined("")
           }
+
+          // Check the remainder for invalid absoverride.
+          for (member <- rest ; if ((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz))) {
+            val other = member.superSymbol(clazz)
+            val explanation =
+              if (other != NoSymbol) " and overrides incomplete superclass member " + infoString(other)
+              else ", but no concrete implementation could be found in a base class"
+
+            abstractClassError(true, infoString(member) + " is marked `abstract' and `override'" + explanation)
+          }
+        }
 
         // 3. Check that concrete classes do not have deferred definitions
         // that are not implemented in a subclass.
@@ -467,7 +493,9 @@ abstract class RefChecks extends InfoTransform {
           if (!parents.isEmpty && parents.head.typeSymbol.hasFlag(ABSTRACT))
             checkNoAbstractDecls(parents.head.typeSymbol)
         }
-        if (abstractErrors.isEmpty && !isClazzAbstract)
+
+        checkNoAbstractMembers()
+        if (abstractErrors.isEmpty)
           checkNoAbstractDecls(clazz)
 
         if (abstractErrors.nonEmpty)

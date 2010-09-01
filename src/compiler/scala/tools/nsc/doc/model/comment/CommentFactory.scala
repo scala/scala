@@ -6,11 +6,10 @@ package model
 package comment
 
 import reporters.Reporter
-import util.Position
-
 import scala.collection._
 import scala.util.matching.Regex
 import scala.annotation.switch
+import util.{NoPosition, Position}
 
 /** The comment parser transforms raw comment strings into `Comment` objects. Call `parse` to run the parser. Note that
   * the parser is stateless and should only be built once for a given Scaladoc run.
@@ -24,10 +23,10 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
   val global: Global
   import global.reporter
 
-  private val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
+  protected val commentCache = mutable.HashMap.empty[(global.Symbol, TemplateImpl), Comment]
 
   def addCommentBody(sym: global.Symbol, inTpl: => TemplateImpl, docStr: String, docPos: global.Position): global.Symbol = {
-    commentCache += (sym, inTpl) -> parse(docStr, docPos)
+    commentCache += (sym, inTpl) -> parse(docStr, docStr, docPos)
     sym
   }
 
@@ -36,13 +35,90 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     if (commentCache isDefinedAt key)
       Some(commentCache(key))
     else { // not reached for use-case comments
+      val c = defineComment(sym, inTpl)
+      if (c isDefined) commentCache += (sym, inTpl) -> c.get
+      c
+    }
+  }
+
+  /** A comment is usualy created by the parser, however for some special cases we have to give
+    * some inTpl comments (parent class for example) to the comment of the symbol
+    * This function manages some of those cases : Param accessor and Primary constructor */
+  def defineComment(sym: global.Symbol, inTpl: => DocTemplateImpl):Option[Comment] =
+    //param accessor case
+    // We just need the @param argument, we put it into the body
+    if( sym.isParamAccessor &&
+        inTpl.comment.isDefined &&
+        inTpl.comment.get.valueParams.isDefinedAt(sym.encodedName)) {
+      val comContent = Some(inTpl.comment.get.valueParams(sym.encodedName))
+      Some(createComment(body0=comContent))
+    }
+
+    // Primary constructor case
+    // We need some content of the class definition : @constructor for the body,
+    // @param and @deprecated, we can add some more if necessary
+    else if (sym.isPrimaryConstructor && inTpl.comment.isDefined ) {
+      val tplComment = inTpl.comment.get
+      // If there is nothing to put into the comment there is no need to create it
+      if(tplComment.constructor.isDefined ||
+        tplComment.throws != Map.empty ||
+        tplComment.valueParams != Map.empty ||
+        tplComment.typeParams != Map.empty ||
+        tplComment.deprecated.isDefined
+        )
+        Some(createComment( body0 = tplComment.constructor,
+                            throws0 = tplComment.throws,
+                            valueParams0 = tplComment.valueParams,
+                            typeParams0 = tplComment.typeParams,
+                            deprecated0 = tplComment.deprecated
+                            ))
+      else None
+    }
+    //other comment cases
+    // parse function will make the comment
+    else {
       val rawComment = global.expandedDocComment(sym, inTpl.sym).trim
-      if (rawComment == "") None else {
-        val c = parse(rawComment, global.docCommentPos(sym))
-        commentCache += (sym, inTpl) -> c
+      if (rawComment != "") {
+        val c = parse(rawComment, global.rawDocComment(sym), global.docCommentPos(sym))
         Some(c)
       }
+      else None
     }
+
+  /* Creates comments with necessary arguments */
+  def createComment(body0:        Option[Body]     = None,
+                    authors0:     List[Body]       = List.empty,
+                    see0:         List[Body]       = List.empty,
+                    result0:      Option[Body]     = None,
+                    throws0:      Map[String,Body] = Map.empty,
+                    valueParams0: Map[String,Body] = Map.empty,
+                    typeParams0:  Map[String,Body] = Map.empty,
+                    version0:     Option[Body]     = None,
+                    since0:       Option[Body]     = None,
+                    todo0:        List[Body]       = List.empty,
+                    deprecated0:  Option[Body]     = None,
+                    note0:        List[Body]       = List.empty,
+                    example0:     List[Body]       = List.empty,
+                    constructor0: Option[Body]     = None,
+                    source0:      Option[String]   = None
+                    ):Comment =
+    new Comment{
+      val body        = if(body0 isDefined) body0.get else Body(Seq.empty)
+      val authors     = authors0
+      val see         = see0
+      val result      = result0
+      val throws      = throws0
+      val valueParams = valueParams0
+      val typeParams  = typeParams0
+      val version     = version0
+      val since       = since0
+      val todo        = todo0
+      val deprecated  = deprecated0
+      val note        = note0
+      val example     = example0
+      val constructor = constructor0
+      val source      = source0
+
   }
 
   protected val endOfText = '\u0003'
@@ -71,14 +147,29 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
     case "/h3" => " ===\n"
     case "h4" | "h5" | "h6" => "\n==== "
     case "/h4" | "/h5" | "/h6" => " ====\n"
-    case "code" | "/code" => "`"
     case "li" => "\n *  - "
+    case _ => ""
+  }
+
+  /** Javadoc tags that should be replaced by something useful, such as wiki syntax, or that should be dropped. */
+  protected val JavadocTags =
+    new Regex("""\{\@(code|docRoot|inheritDoc|link|linkplain|literal|value)([^}]*)\}""")
+
+  /** Maps a javadoc tag to a useful wiki replacement, or an empty string if it cannot be salvaged. */
+  protected def javadocReplacement(mtch: Regex.Match): String = mtch.group(1) match {
+    case "code" => "`" + mtch.group(2) + "`"
+    case "docRoot"  => ""
+    case "inheritDoc" => ""
+    case "link"  => "`" + mtch.group(2) + "`"
+    case "linkplain" => "`" + mtch.group(2) + "`"
+    case "literal"  => mtch.group(2)
+    case "value" => "`" + mtch.group(2) + "`"
     case _ => ""
   }
 
   /** Safe HTML tags that can be kept. */
   protected val SafeTags =
-    new Regex("""(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|code|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>)""")
+    new Regex("""((<code( [^>]*)?>.*</code>)|(</?(abbr|acronym|address|area|a|bdo|big|blockquote|br|button|b|caption|cite|col|colgroup|dd|del|dfn|em|fieldset|form|hr|img|input|ins|i|kbd|label|legend|link|map|object|optgroup|option|param|pre|q|samp|select|small|span|strong|sub|sup|table|tbody|td|textarea|tfoot|th|thead|tr|tt|var)( [^>]*)?/?>))""")
 
   protected val safeTagMarker = '\u000E'
 
@@ -109,13 +200,14 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
   protected final case class SymbolTagKey(name: String, symbol: String) extends TagKey
 
   /** Parses a raw comment string into a `Comment` object.
-    * @param comment The raw comment string (including start and end markers) to be parsed.
+    * @param comment The expanded comment string (including start and end markers) to be parsed.
+    * @param src     The raw comment source string.
     * @param pos     The position of the comment in source. */
-  protected def parse(comment: String, pos: Position): Comment = {
+  protected def parse(comment: String, src: String, pos: Position): Comment = {
 
     /** The cleaned raw comment as a list of lines. Cleaning removes comment start and end markers, line start markers
       * and unnecessary whitespace. */
-    val cleaned: List[String] = {
+    def clean(comment: String): List[String] = {
       def cleanLine(line: String): String = {
         //replaceAll removes trailing whitespaces
         line.replaceAll("""\s+$""", "") match {
@@ -125,8 +217,9 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       }
       val strippedComment = comment.trim.stripPrefix("/*").stripSuffix("*/")
       val safeComment = DangerousTags.replaceAllIn(strippedComment, { htmlReplacement(_) })
+      val javadoclessComment = JavadocTags.replaceAllIn(safeComment, { javadocReplacement(_) })
       val markedTagComment =
-        SafeTags.replaceAllIn(safeComment, { mtch =>
+        SafeTags.replaceAllIn(javadoclessComment, { mtch =>
           java.util.regex.Matcher.quoteReplacement(safeTagMarker + mtch.matched + safeTagMarker)
         })
       markedTagComment.lines.toList map (cleanLine(_))
@@ -219,22 +312,23 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
             Map.empty[String, Body] ++ pairs
           }
 
-          val com = new Comment {
-            val body        = parseWiki(docBody, pos)
-            val authors     = allTags(SimpleTagKey("author"))
-            val see         = allTags(SimpleTagKey("see"))
-            val result      = oneTag(SimpleTagKey("return"))
-            val throws      = allSymsOneTag(SimpleTagKey("throws"))
-            val valueParams = allSymsOneTag(SimpleTagKey("param"))
-            val typeParams  = allSymsOneTag(SimpleTagKey("tparam"))
-            val version     = oneTag(SimpleTagKey("version"))
-            val since       = oneTag(SimpleTagKey("since"))
-            val todo        = allTags(SimpleTagKey("todo"))
-            val deprecated  = oneTag(SimpleTagKey("deprecated"))
-            val note        = allTags(SimpleTagKey("note"))
-            val example     = allTags(SimpleTagKey("example"))
-            val short       = body.summary getOrElse Text("no summary matey")
-          }
+          val com = createComment (
+            body0        = Some(parseWiki(docBody, pos)),
+            authors0     = allTags(SimpleTagKey("author")),
+            see0         = allTags(SimpleTagKey("see")),
+            result0      = oneTag(SimpleTagKey("return")),
+            throws0      = allSymsOneTag(SimpleTagKey("throws")),
+            valueParams0 = allSymsOneTag(SimpleTagKey("param")),
+            typeParams0  = allSymsOneTag(SimpleTagKey("tparam")),
+            version0     = oneTag(SimpleTagKey("version")),
+            since0       = oneTag(SimpleTagKey("since")),
+            todo0        = allTags(SimpleTagKey("todo")),
+            deprecated0  = oneTag(SimpleTagKey("deprecated")),
+            note0        = allTags(SimpleTagKey("note")),
+            example0     = allTags(SimpleTagKey("example")),
+            constructor0 = oneTag(SimpleTagKey("constructor")),
+            source0      = Some(clean(src).mkString("\n"))
+          )
 
           for ((key, _) <- bodyTags)
             reporter.warning(pos, "Tag '@" + key.name + "' is not recognised")
@@ -244,7 +338,7 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
       }
     }
 
-    parse0("", Map.empty, None, cleaned, false)
+    parse0("", Map.empty, None, clean(comment), false)
 
   }
 

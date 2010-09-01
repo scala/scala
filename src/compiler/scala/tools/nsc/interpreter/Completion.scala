@@ -100,10 +100,12 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     def imported(tp: Type) = new ImportCompletion(tp)
   }
 
-  class TypeMemberCompletion(val tp: Type) extends CompletionAware with CompilerCompletion {
+  class TypeMemberCompletion(val tp: Type) extends CompletionAware
+                                              with CompilerCompletion {
     def excludeEndsWith: List[String] = Nil
     def excludeStartsWith: List[String] = List("<") // <byname>, <repeated>, etc.
-    def excludeNames: List[String] = anyref.methodNames -- anyRefMethodsToShow ++ List("_root_")
+    def excludeNames: List[String] =
+      anyref.methodNames.filterNot(anyRefMethodsToShow contains) ++ List("_root_")
 
     def methodSignatureString(sym: Symbol) = {
       def asString = new MethodSymbolOutput(sym).methodString()
@@ -298,7 +300,8 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     private var lastCursor: Int = -1
 
     // Does this represent two consecutive tabs?
-    def isConsecutiveTabs(buf: String, cursor: Int) = cursor == lastCursor && buf == lastBuf
+    def isConsecutiveTabs(buf: String, cursor: Int) =
+      cursor == lastCursor && buf == lastBuf
 
     // Longest common prefix
     def commonPrefix(xs: List[String]) =

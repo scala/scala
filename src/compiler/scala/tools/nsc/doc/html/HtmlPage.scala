@@ -47,7 +47,6 @@ abstract class HtmlPage { thisPage =>
         <head>
           <title>{ title }</title>
           <meta http-equiv="content-type" content={ "text/html; charset=" + site.encoding }/>
-		      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
           { headers }
         </head>
         { body }
@@ -201,6 +200,12 @@ abstract class HtmlPage { thisPage =>
       xml.Text(string)
   }
 
+  def typesToHtml(tpess: List[model.TypeEntity], hasLinks: Boolean, sep: NodeSeq): NodeSeq = tpess match {
+    case Nil         => NodeSeq.Empty
+    case tpe :: Nil  => typeToHtml(tpe, hasLinks)
+    case tpe :: tpes => typeToHtml(tpe, hasLinks) ++ sep ++ typesToHtml(tpes, hasLinks, sep)
+  }
+
   /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */
   def templateToHtml(tpl: TemplateEntity) = tpl match {
     case dTpl: DocTemplateEntity =>
@@ -218,8 +223,17 @@ abstract class HtmlPage { thisPage =>
 
   def docEntityKindToString(ety: DocTemplateEntity) =
   	if (ety.isTrait) "trait"
+  	else if (ety.isCaseClass) "case class"
   	else if (ety.isClass) "class"
   	else if (ety.isObject) "object"
   	else if (ety.isPackage) "package"
   	else "class"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
+
+  /** Returns the _big image name corresponding to the DocTemplate Entity (upper left icon) */
+  def docEntityKindToBigImage(ety: DocTemplateEntity) =
+    	if (ety.isTrait) "trait_big.png"
+    	else if (ety.isClass) "class_big.png"
+    	else if (ety.isObject) "object_big.png"
+    	else if (ety.isPackage) "package_big.png"
+    	else "class_big.png"	// FIXME: an entity *should* fall into one of the above categories, but AnyRef is somehow not
 }

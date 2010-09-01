@@ -73,7 +73,7 @@ trait JavaScanners {
     def floatVal: Double = floatVal(false)
     //def token2string(token : Int) : String = configuration.token2string(token)
     /** return recent scala doc, if any */
-    def flushDoc: String
+    def flushDoc: DocComment
     def currentPos: Position
   }
 
@@ -282,8 +282,8 @@ trait JavaScanners {
      */
     var docBuffer: StringBuilder = null
 
-    def flushDoc = {
-      val ret = if (docBuffer != null) docBuffer.toString else null
+    def flushDoc: DocComment = {
+      val ret = if (docBuffer != null) DocComment(docBuffer.toString, NoPosition) else null
       docBuffer = null
       ret
     }

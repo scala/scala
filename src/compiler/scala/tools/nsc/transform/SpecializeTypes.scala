@@ -612,12 +612,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     if (settings.debug.value) log("normalizeMember: " + sym.fullName)
     if (sym.isMethod && !atPhase(currentRun.typerPhase)(sym.typeParams.isEmpty)) {
       var (stps, tps) = splitParams(sym.info.typeParams)
-      val unusedStvars = stps -- specializedTypeVars(sym.info).toList
+      val unusedStvars = stps filterNot (specializedTypeVars(sym.info).toList contains)
       if (unusedStvars.nonEmpty && currentRun.compiles(sym) && !sym.isSynthetic) {
         reporter.warning(sym.pos, "%s %s unused or used in non-specializable positions."
           .format(unusedStvars.mkString("", ", ", ""), if (unusedStvars.length == 1) "is" else "are"))
         unusedStvars foreach (_.removeAnnotation(SpecializedClass))
-        stps = stps -- unusedStvars
+        stps = stps filterNot (unusedStvars contains)
         tps = tps ::: unusedStvars
       }
       val res = sym :: (for (env <- specializations(stps) if needsSpecialization(env, sym)) yield {
@@ -644,8 +644,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     } else List(sym)
   }
 
-  /** Specialize member `m' w.r.t. to the outer environment and the type parameters of
-   *  the innermost enclosing class.
+  /** Specialize member `m' w.r.t. to the outer environment and the type
+   *  parameters of the innermost enclosing class.
    *
    *  Turns 'private' into 'protected' for members that need specialization.
    *
@@ -714,7 +714,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
       def checkOverriddenTParams(overridden: Symbol) {
         if (currentRun.compiles(overriding))
-          for (val (baseTvar, derivedTvar) <- overridden.info.typeParams.zip(overriding.info.typeParams);
+          for ((baseTvar, derivedTvar) <- overridden.info.typeParams.zip(overriding.info.typeParams);
                val missing = missingSpecializations(baseTvar, derivedTvar)
                if missing.nonEmpty)
           reporter.error(derivedTvar.pos,

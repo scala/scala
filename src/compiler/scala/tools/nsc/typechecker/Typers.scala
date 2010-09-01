@@ -3784,12 +3784,17 @@ trait Typers { self: Analyzer =>
             docComments(sym) = comment
             comment.defineVariables(sym)
             val typer1 = newTyper(context.makeNewScope(tree, context.owner))
-            for (useCase <- comment.useCases)
+            for (useCase <- comment.useCases) {
               typer1.silent(_.typedUseCase(useCase)) match {
                 case ex: TypeError =>
                   unit.warning(useCase.pos, ex.msg)
                 case _ =>
               }
+              for (useCaseSym <- useCase.defined) {
+                if (sym.name != useCaseSym.name)
+                  unit.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
+              }
+            }
           }
           typed(defn, mode, pt)
 
