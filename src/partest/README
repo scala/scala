@@ -1,4 +1,4 @@
-How partest choses the compiler / library:
+How partest chooses the compiler / library:
 
   * ''-Dpartest.build=build/four-pack'' -> will search for libraries in
     ''lib'' directory of given path
