@@ -17,6 +17,8 @@ import collection.immutable.List
  *
  */
 class Random(val self: java.util.Random) {
+  import collection.mutable.ArrayBuffer
+  import collection.generic.CanBuildFrom
 
   /** Creates a new random number generator using a single long seed. */
   def this(seed: Long) = this(new java.util.Random(seed))
@@ -97,27 +99,6 @@ class Random(val self: java.util.Random) {
   }
 
   def setSeed(seed: Long) { self.setSeed(seed) }
-}
-
-/** The object <code>Random</code> offers a default implementation
- *  of scala.util.Random and random-related convenience methods.
- *
- *  @since 2.8
- */
-object Random extends Random {
-  import collection.mutable.ArrayBuffer
-  import collection.generic.CanBuildFrom
-
-  /** Returns a Stream of pseudorandomly chosen alphanumeric characters,
-   *  equally chosen from A-Z, a-z, and 0-9.
-   *
-   *  @since 2.8
-   */
-  def alphanumeric: Stream[Char] = {
-    def isAlphaNum(c: Char) = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
-
-    Stream continually nextPrintableChar filter isAlphaNum
-  }
 
   /** Returns a new collection of the same type in a randomly chosen order.
    *
@@ -140,4 +121,25 @@ object Random extends Random {
 
     bf(xs) ++= buf result
   }
+
+}
+
+/** The object <code>Random</code> offers a default implementation
+ *  of scala.util.Random and random-related convenience methods.
+ *
+ *  @since 2.8
+ */
+object Random extends Random {
+
+  /** Returns a Stream of pseudorandomly chosen alphanumeric characters,
+   *  equally chosen from A-Z, a-z, and 0-9.
+   *
+   *  @since 2.8
+   */
+  def alphanumeric: Stream[Char] = {
+    def isAlphaNum(c: Char) = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+
+    Stream continually nextPrintableChar filter isAlphaNum
+  }
+
 }

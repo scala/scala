@@ -698,7 +698,7 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
 
   def toTraversable: Traversable[A] = thisCollection
   def toIterator: Iterator[A] = toStream.iterator
-  def toStream: Stream[A] = Stream.empty[A] ++ thisCollection
+  def toStream: Stream[A] = toBuffer.toStream
 
   /** Converts this $coll to a string.
    *  @return   a string representation of this collection. By default this

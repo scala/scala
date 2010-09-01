@@ -63,9 +63,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -128,9 +127,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -193,9 +191,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -258,9 +255,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -323,9 +319,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -388,9 +383,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -453,9 +447,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -518,9 +511,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -583,9 +575,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }
@@ -648,9 +639,8 @@ object ArrayBuilder {
     }
 
     private def ensureSize(size: Int) {
-      if (capacity == 0) resize(16)
-      if (capacity < size) {
-        var newsize = capacity * 2
+      if (capacity < size || capacity == 0) {
+        var newsize = if (capacity == 0) 16 else capacity * 2
         while (newsize < size) newsize *= 2
         resize(newsize)
       }

@@ -15,6 +15,8 @@ import generic._
 import mutable.{Builder, StringBuilder, LazyBuilder, ListBuffer}
 import scala.annotation.tailrec
 
+
+
 /** The class `Stream` implements lazy lists where elements
  *  are only evaluated when they are needed. Here is an example:
  *
@@ -201,11 +203,14 @@ self =>
    *  @param p the predicate used to filter the stream.
    *  @return the elements of this stream satisfying <code>p</code>.
    */
-  override final def filter(p: A => Boolean): Stream[A] = {
+  override def filter(p: A => Boolean): Stream[A] = {
     // optimization: drop leading prefix of elems for which f returns false
-    var rest = this dropWhile (!p(_))
-    if (rest.isEmpty) Stream.Empty
-    else new Stream.Cons(rest.head, rest.tail filter p)
+    // var rest = this dropWhile (!p(_)) - forget DRY principle - GC can't collect otherwise
+    var rest = this
+    while (!rest.isEmpty && !p(rest.head)) rest = rest.tail
+    // private utility func to avoid `this` on stack (would be needed for the lazy arg)
+    if (rest.nonEmpty) Stream.filteredTail(rest, p)
+    else Stream.Empty
   }
 
   override final def withFilter(p: A => Boolean): StreamWithFilter = new StreamWithFilter(p)
@@ -213,6 +218,7 @@ self =>
   /** A lazier implementation of WithFilter than TraversableLike's.
    */
   final class StreamWithFilter(p: A => Boolean) extends WithFilter(p) {
+
     override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
       def tailMap = asStream[B](tail withFilter p map f)
       asThat[That](
@@ -343,6 +349,8 @@ self =>
   override def take(n: Int): Stream[A] =
     if (n <= 0 || isEmpty) Stream.Empty
     else new Stream.Cons(head, if (n == 1) Stream.empty else tail take (n-1))
+
+  override def splitAt(n: Int): (Stream[A], Stream[A]) = (take(n), drop(n))
 
   /** A substream starting at index `from`
    *  and extending up to (but not including) index `until`.
@@ -601,14 +609,18 @@ object Stream extends SeqFactory[Stream] {
     if (n <= 0) Empty else new Cons(elem, fill(n-1)(elem))
 
   override def tabulate[A](n: Int)(f: Int => A): Stream[A] = {
-    def loop(i: Int) =
-      if (i >= n) Empty else new Cons(f(i), tabulate(i+1)(f))
+    def loop(i: Int): Stream[A] =
+      if (i >= n) Empty else new Cons(f(i), loop(i+1))
     loop(0)
   }
 
   override def range(start: Int, end: Int, step: Int): Stream[Int] =
     if (if (step < 0) start <= end else end <= start) Empty
     else new Cons(start, range(start + step, end, step))
+
+  private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean) = {
+    new Stream.Cons(stream.head, stream.tail filter p)
+  }
 
   /** A stream containing all elements of a given iterator, in the order they are produced.
    *  @param it   The iterator producing the stream's elements
