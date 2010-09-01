@@ -2181,6 +2181,17 @@ trait Typers { self: Analyzer =>
     def isNamedApplyBlock(tree: Tree) =
       context.namedApplyBlockInfo exists (_._1 == tree)
 
+    def callToCompanionConstr(context: Context, calledFun: Symbol) = {
+      if (calledFun.isConstructor) {
+        val methCtx = context.enclMethod
+        if (methCtx != NoContext) {
+          val contextFun = methCtx.tree.symbol
+          contextFun.isPrimaryConstructor && contextFun.owner.isModuleClass &&
+          companionModuleOf(calledFun.owner, context).moduleClass == contextFun.owner
+        } else false
+      } else false
+    }
+
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
       var fun = fun0
       if (fun.hasSymbol && (fun.symbol hasFlag OVERLOADED)) {
@@ -2318,7 +2329,10 @@ trait Typers { self: Analyzer =>
                   case _ => false
                 }
                 val (allArgs, missing) = addDefaults(args, qual, targs, previousArgss, params, fun.pos.focus, context)
-                if (allArgs.length == formals.length) {
+                val funSym = fun1 match { case Block(_, expr) => expr.symbol }
+                if (allArgs.length != args.length && callToCompanionConstr(context, funSym)) {
+                  errorTree(tree, "module extending its companion class cannot use default constructor arguments")
+                } else if (allArgs.length == formals.length) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   val note = "Error occurred in an application involving default arguments."
                   if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
@@ -2561,6 +2575,10 @@ trait Typers { self: Analyzer =>
        *  an error message is reported and None is returned.
        */
       def tree2ConstArg(tree: Tree, pt: Type): Option[ClassfileAnnotArg] = tree match {
+        case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) if (pt.typeSymbol == ArrayClass) =>
+          error(tree.pos, "Array constants have to be specified using the `Array(...)' factory method")
+          None
+
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
           val annInfo = typedAnnotation(ann, mode, NoSymbol, pt.typeSymbol, true)
           if (annInfo.atp.isErroneous) {

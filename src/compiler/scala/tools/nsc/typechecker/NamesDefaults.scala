@@ -341,7 +341,7 @@ trait NamesDefaults { self: Analyzer =>
    *
    * Example: given
    *   def foo(x: Int = 2, y: String = "def")
-   *   foo(1)
+   *   foo(y = "lt")
    * the argument list (y = "lt") is transformed to (y = "lt", x = foo$default$1())
    */
   def addDefaults(givenArgs: List[Tree], qual: Option[Tree], targs: List[Tree],
