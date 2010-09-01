@@ -11,14 +11,6 @@
 package scala.collection
 package immutable;
 
-
-
-import scala.collection.generic.CanBuildFrom
-import scala.collection.mutable.Builder
-import scala.collection.mutable.MapBuilder
-
-
-
 /** Utility class for integer maps.
  *  @author David MacIver
  */
@@ -61,12 +53,6 @@ import IntMapUtils._
  *  @since 2.7
  */
 object IntMap {
-  /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B] = new CanBuildFrom[IntMap[A], (Int, B), IntMap[B]] {
-    def apply(from: IntMap[A]): Builder[(Int, B), IntMap[B]] = apply()
-    def apply(): Builder[(Int, B), IntMap[B]] = new MapBuilder[Int, B, IntMap[B]](empty[B])
-  }
-
   def empty[T] : IntMap[T]  = IntMap.Nil;
   def singleton[T](key : Int, value : T) : IntMap[T] = IntMap.Tip(key, value);
   def apply[T](elems : (Int, T)*) : IntMap[T] =
@@ -161,7 +147,7 @@ import IntMap._
 
 /** Specialised immutable map structure for integer keys, based on
  *  <a href="http://citeseer.ist.psu.edu/okasaki98fast.html">Fast Mergeable Integer Maps</a>
- *  by Okasaki and Gill. Essentially a trie based on binary digits of the integers.
+ *  by Okasaki and Gill. Essentially a trie based on binary digits of the the integers.
  *
  *  Note: This class is as of 2.8 largely superseded by HashMap.
  *

@@ -394,10 +394,9 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
     /** Replace formal type parameter symbols with actual type arguments.
      *
-     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M
+     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M (contact adriaan.moors at cs.kuleuven.be)
      */
-    def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
-      if(formals.length == actuals.length) this.subst(formals, actuals) else ErrorType
+    def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type = this.subst(formals, actuals)
 
     /** If this type is an existential, turn all existentially bound variables to type skolems.
      *  @param  owner    The owner of the created type skolems
@@ -1328,7 +1327,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      * to take the intersection of their bounds
      */
     override def normalize = {
-      if (isHigherKinded) {
+      if (isHigherKinded)
         PolyType(
           typeParams,
           RefinedType(
@@ -1338,7 +1337,6 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
             },
             decls,
             typeSymbol))
-      }
       else super.normalize
     }
 
@@ -1707,9 +1705,8 @@ A type's typeSymbol should never be inspected directly.
 
         if (substTps.length == typeParams.length)
           typeRef(pre, sym, actuals)
-        else if(formals.length == actuals.length) // partial application (needed in infer when bunching type arguments from classes and methods together)
+        else // partial application (needed in infer when bunching type arguments from classes and methods together)
           typeRef(pre, sym, dummyArgs).subst(formals, actuals)
-        else ErrorType
       }
       else
         super.instantiateTypeParams(formals, actuals)
@@ -1728,15 +1725,21 @@ A type's typeSymbol should never be inspected directly.
       if (sym == clazz && !args.isEmpty) args.head else this
 
     def normalize0: Type =
-      if (isHigherKinded) {
+      if (sym.isAliasType) { // beta-reduce
+        if (sym.info.typeParams.length == args.length || !isHigherKinded) {
+          /* !isHigherKinded && sym.info.typeParams.length != args.length only happens when compiling e.g.,
+           `val x: Class' with -Xgenerics, while `type Class = java.lang.Class' had already been compiled without -Xgenerics */
+          val xform = transform(sym.info.resultType)
+          assert(xform ne this, this)
+          xform.normalize // cycles have been checked in typeRef
+        } else { // should rarely happen, if at all
+          PolyType(sym.info.typeParams, transform(sym.info.resultType).normalize)  // eta-expand -- for regularity, go through sym.info for typeParams
+          // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
+        }
+      } else if (isHigherKinded) {
         // @M TODO: should not use PolyType, as that's the type of a polymorphic value -- we really want a type *function*
         // @M: initialize (by sym.info call) needed (see test/files/pos/ticket0137.scala)
         PolyType(sym.info.typeParams, typeRef(pre, sym, dummyArgs)) // must go through sym.info for typeParams
-      } else if (sym.isAliasType) { // beta-reduce
-        if(sym.info.typeParams.length == args.length) // don't do partial application
-          transform(sym.info.resultType).normalize // cycles have been checked in typeRef
-        else
-          ErrorType
       } else if (sym.isRefinementClass) {
         sym.info.normalize // @MO to AM: OK?
         //@M I think this is okay, but changeset 12414 (which fixed #1241) re-introduced another bug (#2208)
@@ -5083,41 +5086,37 @@ A type's typeSymbol should never be inspected directly.
     case List(tp) =>
       Some(tp)
     case TypeRef(_, sym, _) :: rest =>
-      val pres = tps map (_.prefix) // prefix normalizes automatically
+      val pres = tps map (_.prefix)
       val pre = if (variance == 1) lub(pres, depth) else glb(pres, depth)
-      val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
+      val argss = tps map (_.typeArgs)
       val capturedParams = new ListBuffer[Symbol]
-      try {
-        val args = (sym.typeParams, argss.transpose).zipped map {
-          (tparam, as) =>
-            if (depth == 0)
-              if (tparam.variance == variance) AnyClass.tpe
-              else if (tparam.variance == -variance) NothingClass.tpe
-              else NoType
-            else
-              if (tparam.variance == variance) lub(as, decr(depth))
-              else if (tparam.variance == -variance) glb(as, decr(depth))
-              else {
-                val l = lub(as, decr(depth))
-                val g = glb(as, decr(depth))
-                if (l <:< g) l
-                else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
-                       // just err on the conservative side, i.e. with a bound that is too high.
-                       // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
-                  val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
-                  capturedParams += qvar
-                  qvar.tpe
-                }
+      val args = (sym.typeParams, argss.transpose).zipped map {
+        (tparam, as) =>
+          if (depth == 0)
+            if (tparam.variance == variance) AnyClass.tpe
+            else if (tparam.variance == -variance) NothingClass.tpe
+            else NoType
+          else
+            if (tparam.variance == variance) lub(as, decr(depth))
+            else if (tparam.variance == -variance) glb(as, decr(depth))
+            else {
+              val l = lub(as, decr(depth))
+              val g = glb(as, decr(depth))
+              if (l <:< g) l
+              else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                     // just err on the conservative side, i.e. with a bound that is too high.
+                     // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
+                val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
+                capturedParams += qvar
+                qvar.tpe
               }
-        }
+            }
+      }
+      try {
         if (args contains NoType) None
         else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
       } catch {
         case ex: MalformedType => None
-        case ex: IndexOutOfBoundsException =>  // transpose freaked out because of irregular argss
-        // catching just in case (shouldn't happen, but also doesn't cost us)
-        if (settings.debug.value) log("transposed irregular matrix!?"+ (tps, argss))
-        None
       }
     case SingleType(_, sym) :: rest =>
       val pres = tps map (_.prefix)

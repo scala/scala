@@ -339,9 +339,9 @@ class BigInt(val bigInteger: BigInteger) extends ScalaNumber with ScalaNumericCo
   def floatValue  = this.bigInteger.floatValue
 
   /** Converts this BigInt to a <tt>double</tt>.
-   *  if this BigInt has too great a magnitude to represent as a double,
-   *  it will be converted to <code>Double.NEGATIVE_INFINITY</code> or
-   *  <code>Double.POSITIVE_INFINITY</code> as appropriate.
+   *  if this BigInt has too great a magnitude to represent as a float,
+   *  it will be converted to <code>Float.NEGATIVE_INFINITY</code> or
+   *  <code>Float.POSITIVE_INFINITY</code> as appropriate.
    */
   def doubleValue = this.bigInteger.doubleValue
 

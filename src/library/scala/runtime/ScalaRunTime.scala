@@ -235,12 +235,6 @@ object ScalaRunTime {
    *
    */
   def stringOf(arg: Any): String = {
-    import collection.{SortedSet, SortedMap}
-    def mapTraversable(x: Traversable[_], f: Any => String) = x match {
-      case ss: SortedSet[_] => ss.map(f)
-      case ss: SortedMap[_, _] => ss.map(f)
-      case _ => x.map(f)
-    }
     def inner(arg: Any): String = arg match {
       case null                     => "null"
       // Node extends NodeSeq extends Seq[Node] strikes again
@@ -258,7 +252,7 @@ object ScalaRunTime {
         // exception if you call iterator.  What a world.
         // And they can't be infinite either.
         if (x.getClass.getName startsWith "scala.tools.nsc.io") x.toString
-        else (mapTraversable(x, inner)) mkString (x.stringPrefix + "(", ", ", ")")
+        else (x map inner) mkString (x.stringPrefix + "(", ", ", ")")
       case x                        => x toString
     }
     val s = inner(arg)

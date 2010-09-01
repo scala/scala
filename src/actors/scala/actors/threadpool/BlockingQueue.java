@@ -7,10 +7,9 @@
 package scala.actors.threadpool;
 
 import java.util.Collection;
-import java.util.Queue;
 
 /**
- * A {@link java.util.Queue} that additionally supports operations
+ * A {@link edu.emory.mathcs.backport.java.util.Queue} that additionally supports operations
  * that wait for the queue to become non-empty when retrieving an
  * element, and wait for space to become available in the queue when
  * storing an element.
@@ -147,9 +146,8 @@ import java.util.Queue;
  *
  * @since 1.5
  * @author Doug Lea
- * @param <E> the type of elements held in this collection
  */
-public interface BlockingQueue<E> extends Queue<E> {
+public interface BlockingQueue extends Queue {
     /**
      * Inserts the specified element into this queue if it is possible to do
      * so immediately without violating capacity restrictions, returning
@@ -159,7 +157,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * use {@link #offer(Object) offer}.
      *
      * @param e the element to add
-     * @return <tt>true</tt> (as specified by {@link Collection#add})
+     * @return <tt>true</tt> (as specified by {@link java.util.Collection#add})
      * @throws IllegalStateException if the element cannot be added at this
      *         time due to capacity restrictions
      * @throws ClassCastException if the class of the specified element
@@ -168,7 +166,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    boolean add(E e);
+    boolean add(Object e);
 
     /**
      * Inserts the specified element into this queue if it is possible to do
@@ -187,7 +185,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    boolean offer(E e);
+    boolean offer(Object e);
 
     /**
      * Inserts the specified element into this queue, waiting if necessary
@@ -201,7 +199,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    void put(E e) throws InterruptedException;
+    void put(Object e) throws InterruptedException;
 
     /**
      * Inserts the specified element into this queue, waiting up to the
@@ -221,7 +219,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @throws IllegalArgumentException if some property of the specified
      *         element prevents it from being added to this queue
      */
-    boolean offer(E e, long timeout, TimeUnit unit)
+    boolean offer(Object e, long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**
@@ -231,7 +229,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      * @return the head of this queue
      * @throws InterruptedException if interrupted while waiting
      */
-    E take() throws InterruptedException;
+    Object take() throws InterruptedException;
 
     /**
      * Retrieves and removes the head of this queue, waiting up to the
@@ -245,7 +243,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    E poll(long timeout, TimeUnit unit)
+    Object poll(long timeout, TimeUnit unit)
         throws InterruptedException;
 
     /**
@@ -315,7 +313,7 @@ public interface BlockingQueue<E> extends Queue<E> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    int drainTo(Collection<? super E> c);
+    int drainTo(Collection c);
 
     /**
      * Removes at most the given number of available elements from
@@ -340,5 +338,5 @@ public interface BlockingQueue<E> extends Queue<E> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    int drainTo(Collection<? super E> c, int maxElements);
+    int drainTo(Collection c, int maxElements);
 }

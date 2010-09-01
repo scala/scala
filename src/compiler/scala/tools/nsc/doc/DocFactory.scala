@@ -54,7 +54,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
       val modelFactory = (new model.ModelFactory(compiler, settings) with model.comment.CommentFactory)
       val docModel = modelFactory.makeModel
       println("model contains " + modelFactory.templatesCount + " documentable templates")
-      (new html.HtmlFactory(docModel)).generate
+      (new html.HtmlFactory(docModel)) generate docModel
     }
   }
 

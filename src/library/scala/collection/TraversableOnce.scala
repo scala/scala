@@ -277,7 +277,7 @@ trait TraversableOnce[+A] {
    *   @tparam  B    the result type of the `+` operator.
    *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
    *
-   *   @usecase def sum: A
+   *   @usecase def sum: Int
    *
    *   @return       the sum of all elements in this $coll of numbers of type `Int`.
    *   Instead of `Int`, any other type `T` with an implicit `Numeric[T]` implementation

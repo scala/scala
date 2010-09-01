@@ -182,10 +182,8 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getScalapFiles       = getFiles(scalapFiles)
 
   override def execute() {
-    if (isPartestDebug || debug) {
+    if (isPartestDebug)
       setProp("partest.debug", "true")
-      nest.NestUI._verbose = true
-    }
 
     srcDir foreach (x => setProp("partest.srcdir", x))
 

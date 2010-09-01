@@ -29,8 +29,6 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
    * If needed the sourcepath option can be used to exclude undesired initial part of the link to sources */
   val docsourceurl   = StringSetting    ("-doc-source-url", "url", "The URL prefix where documentation will link to sources", "")
 
-  val useStupidTypes = BooleanSetting   ("-Yuse-stupid-types", "Print the types of inherited members as seen from their original definition context. Hint: you don't want to do that!")
-
   // working around issue described in r18708.
   suppressVTWarn.value = true
 

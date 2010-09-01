@@ -158,8 +158,7 @@ self =>
    *  @param step the distance between the first elements of successive
    *         groups (defaults to 1)
    *  @return An iterator producing ${coll}s of size `size`, except the
-   *          last and the only element will be truncated if there are
-   *          fewer elements than size.
+   *          last will be truncated if the elements don't divide evenly.
    */
   def sliding[B >: A](size: Int): Iterator[Repr] = sliding(size, 1)
   def sliding[B >: A](size: Int, step: Int): Iterator[Repr] =

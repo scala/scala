@@ -15,6 +15,7 @@ body {
 }
 
 a {
+  cursor: pointer;
   text-decoration: underline;
   color: #69481D; /* brown */
 }
@@ -84,7 +85,7 @@ a:hover {
   padding-left: 8px;
 }
 
-#template .values > h3 {
+#values > h3 {
   color: white;
   padding: 4px;
   background-color: #7996AC;
@@ -92,7 +93,7 @@ a:hover {
   font-weight: bold;
 }
 
-#template .types > h3 {
+#types > h3 {
   padding: 4px;
   color: white;
   font-weight: bold;
@@ -106,18 +107,6 @@ a:hover {
   font-weight: bold;
   font-size: 12pt;
   background-color: #333;
-}
-
-#template > div.parent > h3 {
-  color: white;
-  padding: 4px;
-  background-color: #385E1A;
-  font-size: 12pt;
-  font-weight: bold;
-}
-
-#template > div.parent > h3 * {
-  color: white;
 }
 
 /* Member cells */
@@ -192,11 +181,11 @@ div.members > ol > li {
   font-style: italic;
 }
 
-#template .values .signature .name {
+#values .signature .name {
   color: blue;
 }
 
-#template .types .signature .name {
+#types .signature .name {
   color: green;
 }
 
@@ -310,15 +299,15 @@ p.comment {
 p.shortcomment {
   display: block;
   margin-left: 8.7em;
-  cursor: pointer;
+  cursor: help;
 }
 
 div.fullcomment {
+  display: block;
   margin: 10px 0 10px 0;
 }
 
 #template div.fullcomment {
-  display:none;
   margin: 6px 0 6px 8.7em;
 }
 
@@ -375,46 +364,6 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
 
 /* Members filter tool */
 
-#textfilter {
-	position: relative;
-	display: block;
-    height: 20px;
-	margin-bottom: 5px;
-}
-
-#textfilter > .pre {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 20px;
-    width: 20px;
-    background: url("filter_box_left.png");
-}
-
-#textfilter > .post {
-    display: block;
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 20px;
-    width: 20px;
-    background: url("filter_box_right.png");
-}
-
-#textfilter input {
-	display: block;
-    position: absolute;
-    top: 0;
-    right: 20px;
-    left: 20px;
-	height: 16px;
-	padding: 2px;
-	font-weight: bold;
-	color: #993300;
-	background-color: white;
-}
-
 #mbrsel {
   padding: 4px;
   background-color: #B78E99; /* grayish pink */
@@ -443,7 +392,7 @@ div.fullcomment dl.paramcmts > dd + dt + dd {
   padding: 4px 8px 4px 8px;
   background-color: white;
   display: inline-block;
-  cursor: pointer;
+  cursor: crosshair;
 }
 
 #mbrsel > div > ol > li.in {

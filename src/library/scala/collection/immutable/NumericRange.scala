@@ -40,8 +40,8 @@ import generic._
 abstract class NumericRange[T]
   (val start: T, val end: T, val step: T, val isInclusive: Boolean)
   (implicit num: Integral[T])
-extends IndexedSeq[T] {
-
+extends IndexedSeq[T]
+{
   /** Note that NumericRange must be invariant so that constructs
    *  such as
    *
@@ -122,6 +122,18 @@ extends IndexedSeq[T] {
     else start + (fromInt(idx) * step)
   }
 
+  // a well-typed contains method.
+  def containsTyped(x: T): Boolean = {
+    def divides(d: T, by: T) = equiv(d % by, zero)
+
+    limitTest(x) || (
+      if (step > zero)
+        (start <= x) && (x < end) && divides(x - start, step)
+      else
+        (start >= x) && (x > end) && divides(start - x, step)
+    )
+  }
+
   // Motivated by the desire for Double ranges with BigDecimal precision,
   // we need some way to map a Range and get another Range.  This can't be
   // done in any fully general way because Ranges are not arbitrary
@@ -153,7 +165,7 @@ extends IndexedSeq[T] {
         if (isInclusive) NumericRange.inclusive(start, end, step)
         else NumericRange(start, end, step)
 
-      private lazy val underlyingRange: NumericRange[T] = self
+      private val underlyingRange: NumericRange[T] = self
       override def foreach[U](f: A => U) { underlyingRange foreach (x => f(fm(x))) }
       override def isEmpty = underlyingRange.isEmpty
       override def apply(idx: Int): A = fm(underlyingRange(idx))
@@ -161,21 +173,20 @@ extends IndexedSeq[T] {
     }
   }
 
-  // a well-typed contains method.
-  def containsTyped(x: T): Boolean = {
-    def divides(d: T, by: T) = equiv(d % by, zero)
-
-    limitTest(x) || (
-      if (step > zero)
-        (start <= x) && (x < end) && divides(x - start, step)
-      else
-        (start >= x) && (x > end) && divides(start - x, step)
-    )
-  }
-
+  // The contains situation makes for some interesting code.
+  // I am not aware of any way to avoid a cast somewhere, because
+  // contains must take an Any.
   override def contains(x: Any): Boolean =
-    try containsTyped(x.asInstanceOf[T])
-    catch { case _: ClassCastException => false }
+    try {
+      // if we don't verify that x == typedX, then a range
+      // of e.g. Longs will appear to contain an Int because
+      // the cast will perform the conversion.  (As of this writing
+      // it is anticipated that in scala 2.8, 5L != 5 although
+      // this is not yet implemented.)
+      val typedX = x.asInstanceOf[T]
+      containsTyped(typedX) && (x == typedX)
+    }
+    catch { case _: ClassCastException => super.contains(x) }
 
   override lazy val hashCode = super.hashCode()
   override def equals(other: Any) = other match {

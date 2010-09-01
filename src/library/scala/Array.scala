@@ -363,18 +363,13 @@ object Array extends FallbackArrayBuilding {
    */
   def iterate[T: ClassManifest](start: T, len: Int)(f: T => T): Array[T] = {
     val b = newBuilder[T]
-
-    if (len > 0) {
-      b.sizeHint(len)
-      var acc = start
-      var i = 1
+    b.sizeHint(len)
+    var acc = start
+    var i = 0
+    while (i < len) {
       b += acc
-
-      while (i < len) {
-        acc = f(acc)
-        i += 1
-        b += acc
-      }
+      acc = f(acc)
+      i += 1
     }
     b.result
   }

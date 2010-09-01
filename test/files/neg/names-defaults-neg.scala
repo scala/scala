@@ -81,11 +81,6 @@ object Test extends Application {
   // correct error message
   new A2[String]()
 
-  object t3648 {
-    class C(val s: String = "")
-    object C extends C()
-  }
-
   // DEFINITIONS
   def test1(a: Int, b: String) = a +": "+ b
   def test2(x: Unit) = println("test2")

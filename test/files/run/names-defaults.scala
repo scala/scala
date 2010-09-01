@@ -345,11 +345,6 @@ object Test extends Application {
   (new t3338.Test).a
 
 
-  // subclassing and defaults in both class constructors
-  class CBLAH(val x: Int = 1)
-  class DBLAH(val y: String = "2") extends CBLAH()
-  (new DBLAH())
-
 
   // DEFINITIONS
   def test1(a: Int, b: String) = println(a +": "+ b)

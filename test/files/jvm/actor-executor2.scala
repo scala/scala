@@ -1,6 +1,6 @@
 import scala.actors.{Actor, SchedulerAdapter, Exit}
 import Actor._
-import java.util.concurrent.{Executors, RejectedExecutionException}
+import java.util.concurrent.Executors
 
 object One extends AdaptedActor {
   def act() {
@@ -57,15 +57,9 @@ object Test {
   val scheduler =
     new SchedulerAdapter {
       def execute(block: => Unit) {
-        val task = new Runnable {
+        executor.execute(new Runnable {
           def run() { block }
-        }
-        try {
-          executor.execute(task)
-        } catch {
-          case ree: RejectedExecutionException =>
-            task.run() // run task on current thread
-        }
+        })
       }
     }
 

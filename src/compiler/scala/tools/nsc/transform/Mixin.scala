@@ -231,27 +231,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         for (member <- impl.info.decls.toList) {
           if (isForwarded(member)) {
             val imember = member.overriddenSymbol(iface)
-            // atPhase(currentRun.erasurePhase){
-            //   println(""+(clazz, iface, clazz.typeParams, iface.typeParams, imember, clazz.thisType.baseType(iface), clazz.thisType.baseType(iface).memberInfo(imember), imember.info substSym(iface.typeParams, clazz.typeParams)  ))
-            // }
-            // Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
+            //Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
             if (imember.overridingSymbol(clazz) == NoSymbol &&
                 clazz.info.findMember(member.name, 0, lateDEFERRED, false).alternatives.contains(imember)) {
-                  val newSym = atPhase(currentRun.erasurePhase){
-                      val res = imember.cloneSymbol(clazz)
-                      // since we used the member (imember) from the interface that represents the trait that's being mixed in,
-                      // have to instantiate the interface type params (that may occur in imember's info) as they are seen from the class
-                      // we can't use the member that we get from the implementation class, as it's a clone that was made after erasure,
-                      // and thus it does not know its info at the beginning of erasure anymore
-                      // optimize: no need if iface has no typeparams
-                      if(iface.typeParams nonEmpty) res.setInfo(clazz.thisType.baseType(iface).memberInfo(imember))
-                      res
-                    } // clone before erasure got rid of type info we'll need to generate a javaSig
-                  // now we'll have the type info at (the beginning of) erasure in our history,
-                  newSym.updateInfo(imember.info.cloneInfo(newSym)) // and now newSym has the info that's been transformed to fit this period (no need for asSeenFrom as phase.erasedTypes)
                   val member1 = addMember(
                     clazz,
-                    newSym setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
+                    member.cloneSymbol(clazz) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
                   member1.asInstanceOf[TermSymbol] setAlias member;
                 }
           }

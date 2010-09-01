@@ -374,7 +374,7 @@ class Worker(val fileManager: FileManager) extends Actor {
 
       def isInGroup(f: File, num: Int) = SFile(f).stripExtension endsWith ("_" + num)
       val groups = (0 to 9).toList map (num => testFiles filter (f => isInGroup(f, num)))
-      val noGroupSuffix = testFiles filterNot (groups.flatten contains)
+      val noGroupSuffix = testFiles -- groups.flatten
 
       def compileGroup(g: List[File]) {
         val (scalaFiles, javaFiles) = g partition isScala

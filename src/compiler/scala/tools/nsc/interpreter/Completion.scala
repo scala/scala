@@ -100,12 +100,10 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     def imported(tp: Type) = new ImportCompletion(tp)
   }
 
-  class TypeMemberCompletion(val tp: Type) extends CompletionAware
-                                              with CompilerCompletion {
+  class TypeMemberCompletion(val tp: Type) extends CompletionAware with CompilerCompletion {
     def excludeEndsWith: List[String] = Nil
     def excludeStartsWith: List[String] = List("<") // <byname>, <repeated>, etc.
-    def excludeNames: List[String] =
-      anyref.methodNames.filterNot(anyRefMethodsToShow contains) ++ List("_root_")
+    def excludeNames: List[String] = anyref.methodNames -- anyRefMethodsToShow ++ List("_root_")
 
     def methodSignatureString(sym: Symbol) = {
       def asString = new MethodSymbolOutput(sym).methodString()
@@ -300,8 +298,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     private var lastCursor: Int = -1
 
     // Does this represent two consecutive tabs?
-    def isConsecutiveTabs(buf: String, cursor: Int) =
-      cursor == lastCursor && buf == lastBuf
+    def isConsecutiveTabs(buf: String, cursor: Int) = cursor == lastCursor && buf == lastBuf
 
     // Longest common prefix
     def commonPrefix(xs: List[String]) =
@@ -312,7 +309,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     override def complete(_buf: String, cursor: Int, candidates: JList[String]): Int = {
       val buf = onull(_buf)
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
-      DBG("\ncomplete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
+      DBG("complete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
 
       // we don't try lower priority completions unless higher ones return no results.
       def tryCompletion(p: Parsed, completionFunction: Parsed => List[String]): Option[Int] = {
@@ -346,21 +343,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
       def regularCompletion = tryCompletion(mkDotted, topLevelFor)
       def fileCompletion    = tryCompletion(mkUndelimited, FileCompletion completionsFor _.buffer)
 
-      /** This is the kickoff point for all manner of theoretically possible compiler
-       *  unhappiness - fault may be here or elsewhere, but we don't want to crash the
-       *  repl regardless.  Hopefully catching Exception is enough, but because the
-       *  compiler still throws some Errors it may not be.
-       */
-      try {
-        (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse cursor
-      }
-      catch {
-        case ex: Exception =>
-          DBG("Error: complete(%s, %s, _) provoked %s".format(_buf, cursor, ex))
-          candidates add " "
-          candidates add "<completion error>"
-          cursor
-      }
+      (lastResultCompletion orElse regularCompletion orElse fileCompletion) getOrElse cursor
     }
   }
 }

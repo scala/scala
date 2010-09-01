@@ -1,7 +1,6 @@
 /* NSC -- new Scala compiler
- * Copyright LAMP/EPFL
+ * Copyright 2005-2010 LAMP/EPFL
  * @author Stephane Micheloud
- * @author Gilles Dubochet
  */
 
 package scala.man1
@@ -45,91 +44,81 @@ object scaladoc extends Command {
     CmdOption("d") & "(see " & Link(Bold("OPTIONS"), "#options") & ", below).",
 
     // tags are defined in class "scala.tools.nsc.doc.DocGenerator"
-    "The recognised format of comments in source is described in the " & Link("online documentation",
-    "http://lampsvn.epfl.ch/trac/scala/wiki/Scaladoc"))
+    "Supported tag comments are:",
+
+    BulletList(
+      Mono("@author"), Mono("@deprecated"),
+      Mono("@exception") & " (two arguments)",
+      Mono("@param") & " (two arguments)", Mono("@pre"),
+      Mono("@return"), Mono("@see"), Mono("@since"),
+      Mono("@throws") & " (two arguments)",
+      Mono("@todo"), Mono("@version")),
+
+    "See also online document \"" & Link("How to Write Doc Comments for the Javadoc Tool",
+    "http://java.sun.com/j2se/javadoc/writingdoccomments/") & "\" from Sun.")
 
   val options = Section("OPTIONS",
+
+    "The generator has a set of standard options that are supported on the " &
+    "current development environment and will be supported in future releases.",
 
     Section("Standard Options",
       DefinitionList(
         Definition(
           CmdOption("d", Argument("directory")),
-          "Specify where to generate documentation."),
+          "Specify where to place generated class files."),
+        Definition(
+          CmdOption("access:<access>"),
+          "Show only public, protected/public (default) or all classes " &
+          "and members (" & Mono("public") & ",protected,private)"),
+        Definition(
+          CmdOption("windowtitle", Argument("windowtitle")),
+          "Specify window title of generated HTML documentation"),
+        Definition(
+          CmdOption("doctitle", Argument("doctitle")),
+          "Include title for the overview page"),
+        Definition(
+          CmdOption("stylesheetfile", Argument("stylesheetfile")),
+          "File to change style of the generated documentation"),
+        Definition(
+          CmdOption("header", Argument("pageheader")),
+          "Include header text for each page"),
+        Definition(
+          CmdOption("footer", Argument("pagefooter")),
+          "Include footer text for each page"),
+        Definition(
+          CmdOption("top", Argument("pagetop")),
+          "Include top text for each page"),
+        Definition(
+          CmdOption("bottom", Argument("pagebottom")),
+          "Include bottom text for each page"),
         Definition(
           CmdOption("version"),
           "Print product version and exit."),
         Definition(
           /*CmdOption("?") & "| " &*/ CmdOption("help"),
-          "Print a synopsis of available options."))),
+          "Print a synopsis of standard options."))))
 
-    Section("Documentation Options",
-      DefinitionList(
-        Definition(
-          CmdOption("doc-title", Argument("title")),
-          "Define the overall title of the documentation, typically the name of the library being documented."),
-        Definition(
-          CmdOption("doc-version", Argument("version")),
-          "Define the overall version number of the documentation, typically the version of the library being documented."),
-        Definition(
-          CmdOption("doc-source-url", Argument("url")),
-          "Define a URL to be concatenated with source locations for link to source files."))),
+  val examples = Section("EXAMPLES",
 
-    Section("Compiler Options",
-      DefinitionList(
-        Definition(
-          CmdOption("verbose"),
-          "Output messages about what the compiler is doing"),
-        Definition(
-          CmdOption("deprecation"),
-          SeqPara(
-            "Indicate whether source should be compiled with deprecation " &
-            "information; defaults to " & Mono("off") & " (" &
-            "accepted values are: " & Mono("on") & ", " & Mono("off") &
-            ", " & Mono("yes") & " and " & Mono("no") & ")",
-            "Available since Scala version 2.2.1")),
-        Definition(
-          CmdOption("classpath", Argument("path")),
-          SeqPara(
-            "Specify where to find user class files (on Unix-based systems " &
-            "a colon-separated list of paths, on Windows-based systems, a " &
-            "semicolon-separate list of paths). This does not override the " &
-            "built-in (" & Mono("\"boot\"") & ") search path.",
-            "The default class path is the current directory. Setting the " &
-            Mono("CLASSPATH") & " variable or using the " & Mono("-classpath") & " " &
-            "command-line option overrides that default, so if you want to " &
-            "include the current directory in the search path, you must " &
-            "include " & Mono("\".\"") & " in the new settings.")),
-        Definition(
-          CmdOption("sourcepath", Argument("path")),
-          "Specify where to find input source files."),
-        Definition(
-          CmdOption("bootclasspath", Argument("path")),
-          "Override location of bootstrap class files (where to find the " &
-          "standard built-in classes, such as \"" & Mono("scala.List") & "\")."),
-        Definition(
-          CmdOption("extdirs", Argument("dirs")),
-          "Override location of installed extensions."),
-        Definition(
-          CmdOption("encoding", Argument("encoding")),
-          SeqPara(
-            "Specify character encoding used by source files.",
-            "The default value is platform-specific (Linux: " & Mono("\"UTF8\"") &
-            ", Windows: " & Mono("\"Cp1252\"") & "). Executing the following " &
-            "code in the Scala interpreter will return the default value " &
-            "on your system:",
-            MBold("    scala> ") &
-            Mono("new java.io.InputStreamReader(System.in).getEncoding"))))))
+    DefinitionList(
+      Definition(
+        "Generate documentation for a Scala program",
+        CmdLine("HelloWorld.scala")),
+      Definition(
+        "Generation documentation for a Scala program to the destination " &
+        "directory " & Bold("classes"),
+        CmdLine(CmdOption("d", "api") & "HelloWorld.scala")),
+      Definition(
+        "Generate documentation for all Scala files found in the source " &
+        "directory " & Bold("src") & " to the destination directory " &
+        Bold("api"),
+        CmdLine(CmdOption("d", "api") & "src/*.scala"))))
 
   val exitStatus = Section("EXIT STATUS",
 
     MBold(command) & " returns a zero exist status if it succeeds to process " &
     "the specified input files. Non zero is returned in case of failure.")
-
-  override val authors = Section("AUTHORS",
-
-    "This version of Scaladoc was written by Gilles Dubochet with contributions by Pedro Furlanetto and Johannes Rudolph. " &
-    "It is based on the original Scaladoc (Sean McDirmid, Geoffrey Washburn, Vincent Cremet and Stéphane Michleoud), " &
-    "on vScaladoc (David Bernard), as well as on an unreleased version of Scaladoc 2 (Manohar Jonnalagedda).")
 
   val seeAlso = Section("SEE ALSO",
 
@@ -141,17 +130,20 @@ object scaladoc extends Command {
 
   def manpage = new Document {
     title = command
-    date = "2 June 2010"
-    author = "Gilles Dubochet"
-    version = "2.0"
+    date = "May 1, 2007"
+    author = "Stephane Micheloud"
+    version = "0.4"
     sections = List(
       name,
       synopsis,
       parameters,
       description,
       options,
+      examples,
       exitStatus,
       authors,
+      bugs,
+      copyright,
       seeAlso)
   }
 }

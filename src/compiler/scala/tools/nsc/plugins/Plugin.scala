@@ -133,7 +133,7 @@ object Plugin {
     val alljars = (jars ::: (for {
       dir <- dirs if dir.isDirectory
       entry <- dir.toDirectory.files.toList sortBy (_.name)
-      if Path.isJarOrZip(entry)
+      if entry.extension == "jar"
       pdesc <- loadDescription(entry)
       if !(ignoring contains pdesc.name)
     } yield entry)).distinct
