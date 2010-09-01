@@ -18,6 +18,14 @@ object Test {
     ser(new o3.Inner(1))
     o3.Inner
     ser(new o3.Inner(1))
+
+    foo
+  }
+
+  def foo {
+    case class C(x: Int)
+    ser(new C(1))
+    ser(C)
   }
 
   def ser(o: AnyRef) {

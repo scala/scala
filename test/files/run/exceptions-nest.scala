@@ -11,6 +11,7 @@ object Test extends Application {
   println(test9)
   println(test10)
   println(test11)
+  println(test12)
 
   def test1 = {
     var x = 1
@@ -136,4 +137,21 @@ object Test extends Application {
     try { () }
     catch { case e => () }
   }
+
+  class E1 extends Exception
+  class E2 extends Exception
+  class E3 extends Exception
+
+  def test12_impl(op: => Int) = try {
+    op
+  } catch {
+    case e: E1 => 2
+    case e: E2 => 3
+    case e: E3 => 4
+  }
+  def test12 =
+    test12_impl(1) +
+    test12_impl(throw new E1) +
+    test12_impl(throw new E2) +
+    test12_impl(throw new E3)
 }

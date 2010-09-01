@@ -8,6 +8,9 @@
 
 
 
+/**
+ * Core Scala types. They are always available without an explicit import.
+ */
 package object scala {
   type Throwable = java.lang.Throwable
   type Exception = java.lang.Exception
