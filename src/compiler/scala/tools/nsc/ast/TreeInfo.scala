@@ -85,8 +85,6 @@ abstract class TreeInfo {
       tree.symbol.isStable && isPureExpr(qual)
     case TypeApply(fn, _) =>
       isPureExpr(fn)
-    case Apply(fn, List()) =>
-      isPureExpr(fn)
     case Typed(expr, _) =>
       isPureExpr(expr)
     case Block(stats, expr) =>

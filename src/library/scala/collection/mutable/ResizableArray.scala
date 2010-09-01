@@ -30,7 +30,7 @@ trait ResizableArray[A] extends IndexedSeq[A]
   override def companion: GenericCompanion[ResizableArray] = ResizableArray
 
   protected def initialSize: Int = 16
-  protected var array: Array[AnyRef] = new Array[AnyRef](initialSize max 1)
+  protected var array: Array[AnyRef] = new Array[AnyRef](math.max(initialSize, 1))
 
   protected var size0: Int = 0
 
