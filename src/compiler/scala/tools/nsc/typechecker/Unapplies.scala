@@ -137,14 +137,15 @@ trait Unapplies extends ast.TreeDSL
     def createFun      = gen.scalaFunctionConstr(constrParamss(cdef).head map (_.tpt), toIdent(cdef), abstractFun = true)
     def parents        = if (inheritFromFun) List(createFun) else Nil
 
-    companionModuleDef(cdef, parents ::: List(gen.scalaScalaObjectConstr))
+    companionModuleDef(cdef, parents)
   }
 
-  def companionModuleDef(cdef: ClassDef, parents: List[Tree]): ModuleDef = atPos(cdef.pos.focus) {
+  def companionModuleDef(cdef: ClassDef, parents: List[Tree] = Nil): ModuleDef = atPos(cdef.pos.focus) {
+    val allParents = parents ::: List( gen.scalaScalaObjectConstr)
     ModuleDef(
       Modifiers(cdef.mods.flags & AccessFlags | SYNTHETIC, cdef.mods.privateWithin),
       cdef.name.toTermName,
-      Template(parents, emptyValDef, NoMods, Nil, List(Nil), Nil, cdef.impl.pos.focus))
+      Template(allParents, emptyValDef, NoMods, Nil, List(Nil), Nil, cdef.impl.pos.focus))
   }
 
   private val caseMods = Modifiers(SYNTHETIC | CASE)

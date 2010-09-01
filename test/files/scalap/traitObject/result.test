@@ -5,4 +5,5 @@ trait TraitObject extends java.lang.Object with scala.ScalaObject {
 object TraitObject extends java.lang.Object with scala.ScalaObject {
   def this() = { /* compiled code */ }
   def bar : scala.Int = { /* compiled code */ }
+  protected def readResolve() : java.lang.Object = { /* compiled code */ }
 }

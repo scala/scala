@@ -40,19 +40,15 @@ trait Infer {
    *  (nargs - params.length + 1) copies of its type is returned.
    *  By-name types are replaced with their underlying type.
    *
-   *  @param formals ...
-   *  @param nargs ...
+   *  @param removeByName allows keeping ByName parameters. Used in NamesDefaults.
+   *  @param removeRepeated allows keeping repeated parameter (if there's one argument). Used in NamesDefaults.
    */
-  def formalTypes(formals: List[Type], nargs: Int): List[Type] =
-    formalTypes(formals, nargs, true)
-
-  /** This variant allows keeping ByName parameters. Useed in NamesDefaults. */
-  def formalTypes(formals: List[Type], nargs: Int, removeByName: Boolean): List[Type] = {
+  def formalTypes(formals: List[Type], nargs: Int, removeByName: Boolean = true, removeRepeated: Boolean = true): List[Type] = {
     val formals1 = if (removeByName) formals mapConserve {
       case TypeRef(_, sym, List(arg)) if (sym == ByNameParamClass) => arg
       case formal => formal
     } else formals
-    if (isVarArgTpes(formals1)) {
+    if (isVarArgTpes(formals1) && (removeRepeated || formals.length != nargs)) {
       val ft = formals1.last.normalize.typeArgs.head
       formals1.init ::: (for (i <- List.range(formals1.length - 1, nargs)) yield ft)
     } else formals1
