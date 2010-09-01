@@ -1218,11 +1218,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val tree1 = treeCopy.ValDef(tree, mods, name, tpt, body(symbol.alias).duplicate)
           if (settings.debug.value) log("now typing: " + tree1 + " in " + tree.symbol.owner.fullName)
           val d = new Duplicator
-          d.retyped(localTyper.context1.asInstanceOf[d.Context],
+          val tree2 = d.retyped(localTyper.context1.asInstanceOf[d.Context],
                     tree1,
                     symbol.alias.enclClass,
                     symbol.enclClass,
                     typeEnv(symbol.alias) ++ typeEnv(tree.symbol))
+          val ValDef(mods1, name1, tpt1, rhs1) = tree2
+          treeCopy.ValDef(tree1, mods1, name1, tpt1, transform(rhs1))
+
 //          val tree1 =
 //            treeCopy.ValDef(tree, mods, name, tpt,
 //              localTyper.typed(
