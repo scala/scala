@@ -580,17 +580,23 @@ abstract class ScalaPrimitives {
     import definitions._
     val code = getPrimitive(fun)
 
-    var elem: Type = null
-    tpe match {
-      case TypeRef(_, sym, _elem :: Nil)
-           if (sym == ArrayClass) => elem = _elem
-      case _ => ()
+    def elementType = atPhase(currentRun.typerPhase) {
+      val arrayParent = tpe :: tpe.parents find {
+        case TypeRef(_, sym, _elem :: Nil)
+             if (sym == ArrayClass) => true
+        case _ => false
+      }
+      if (arrayParent.isEmpty) {
+        println(fun.fullName + " : " + tpe :: tpe.baseTypeSeq.toList)
+      }
+      val TypeRef(_, _, elem :: Nil) = arrayParent.get
+      elem
     }
 
     code match {
 
       case APPLY =>
-        toTypeKind(elem) match {
+        toTypeKind(elementType) match {
           case BOOL    => ZARRAY_GET
           case BYTE    => BARRAY_GET
           case SHORT   => SARRAY_GET
@@ -601,11 +607,11 @@ abstract class ScalaPrimitives {
           case DOUBLE  => DARRAY_GET
           case REFERENCE(_) | ARRAY(_) => OARRAY_GET
           case _ =>
-            abort("Unexpected array element type: " + elem)
+            abort("Unexpected array element type: " + elementType)
         }
 
       case UPDATE =>
-        toTypeKind(elem) match {
+        toTypeKind(elementType) match {
           case BOOL    => ZARRAY_SET
           case BYTE    => BARRAY_SET
           case SHORT   => SARRAY_SET
@@ -616,12 +622,11 @@ abstract class ScalaPrimitives {
           case DOUBLE  => DARRAY_SET
           case REFERENCE(_) | ARRAY(_) => OARRAY_SET
           case _ =>
-            abort("Unexpected array element type: " + elem)
+            abort("Unexpected array element type: " + elementType)
         }
 
       case LENGTH =>
-        assert(elem != null)
-        toTypeKind(elem) match {
+        toTypeKind(elementType) match {
           case BOOL    => ZARRAY_LENGTH
           case BYTE    => BARRAY_LENGTH
           case SHORT   => SARRAY_LENGTH
@@ -632,7 +637,7 @@ abstract class ScalaPrimitives {
           case DOUBLE  => DARRAY_LENGTH
           case REFERENCE(_) | ARRAY(_) => OARRAY_LENGTH
           case _ =>
-            abort("Unexpected array element type: " + elem)
+            abort("Unexpected array element type: " + elementType)
         }
 
       case _ =>
