@@ -104,6 +104,7 @@ a:hover {
 }
 
 #comment {
+  display:none;
   padding-right: 8px;
   padding-left: 8px;
 }
@@ -332,10 +333,11 @@ p.comment {
   margin-left: 8.7em;
 }
 
-p.shortcomment {
+.shortcomment {
   display: block;
-  margin-left: 8.7em;
   cursor: pointer;
+  margin: 4px 0px;
+  padding: 0 8px;
 }
 
 div.fullcomment {
@@ -345,6 +347,11 @@ div.fullcomment {
 #template div.fullcomment {
   display:none;
   margin: 6px 0 6px 8.7em;
+}
+
+#template .shortcomment {
+  margin: 0 0 0 8.7em;
+  padding: 0;
 }
 
 div.fullcomment .block {

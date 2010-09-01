@@ -103,7 +103,7 @@ function prepareEntityList() {
 function configureTextFilter() {
     scheduler.add("init", function() {
         $("#filter").append("<div id='textfilter'><span class='pre'/><span class='input'><input type='text' accesskey='/'/></span><span class='post'/></div>");
-        var input = $("#textfilter > input");
+        var input = $("#textfilter input");
         resizeFilterBlock();
         input.bind("keyup", function(event) {
             if (event.keyCode == 27) { // escape
@@ -115,7 +115,7 @@ function configureTextFilter() {
     });
     scheduler.add("init", function() {
         $("#textfilter > .post").click(function(){
-            $("#textfilter > input").attr("value", "");
+            $("#textfilter input").attr("value", "");
             textFilter();
         });
     });

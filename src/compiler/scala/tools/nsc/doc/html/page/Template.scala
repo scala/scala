@@ -180,7 +180,13 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
     mbr match {
       case dte: DocTemplateEntity if isSelf =>
         // comment of class itself
-        <div id="comment" class="fullcomment">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
+        <xml:group>
+          { if (mbr.comment.isEmpty) NodeSeq.Empty
+            else
+              <div class="shortcomment cmt">{ commentToHtml(mbr.comment) }</div>
+          }
+          <div id="comment" class="fullcomment">{ memberToCommentBodyHtml(mbr, isSelf = true) }</div>
+        </xml:group>
       case dte: DocTemplateEntity if mbr.comment.isDefined =>
         // comment of inner, documented class (only short comment, full comment is on the class' own page)
         memberToInlineCommentHtml(mbr, isSelf)
