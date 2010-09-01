@@ -1,0 +1,14 @@
+t2462b.scala:6: warning: Invalid implicitNotFound message for trait Meh in package test:
+The type parameters Too, Elem referenced in the message of the @implicitNotFound annotation are not defined by trait Meh.
+trait Meh[-From, +To]
+      ^
+t2462b.scala:9: warning: Invalid implicitNotFound message for trait Meh2 in package test:
+The type parameter Elem referenced in the message of the @implicitNotFound annotation is not defined by trait Meh2.
+trait Meh2[-From, +To]
+      ^
+t2462b.scala:12: error: overriding method x in class thankyoupartest of type => Int;
+ method x needs `override' modifier
+class testmustfail extends thankyoupartest { def x = 43 }
+                                                 ^
+two warnings found
+one error found

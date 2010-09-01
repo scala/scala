@@ -62,6 +62,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         case MethodType(params, ExistentialType(tparams, restpe @ MethodType(_, _))) =>
           assert(false, "unexpected curried method types with intervening existential")
           tp0
+        case MethodType(h :: t, restpe) if h.isImplicit =>
+          apply(MethodType(h.cloneSymbol.resetFlag(IMPLICIT) :: t, restpe))
         case PolyType(List(), restpe) => // nullary method type
           apply(MethodType(List(), restpe))
         case PolyType(tparams, restpe) => // polymorphic nullary method type, since it didn't occur in a higher-kinded position
@@ -398,7 +400,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
                 val predef = gen.mkAttributedRef(PredefModule)
                 val meth =
                   if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol))
-                    Select(predef, "wrapRefArray")
+                    TypeApply(Select(predef, "wrapRefArray"), List(TypeTree(elemtp)))
                   else if (isValueClass(elemtp.typeSymbol))
                     Select(predef, "wrap"+elemtp.typeSymbol.name+"Array")
                   else

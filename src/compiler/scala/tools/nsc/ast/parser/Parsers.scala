@@ -1820,7 +1820,7 @@ self =>
         if (in.token != RPAREN) {
           if (in.token == IMPLICIT) {
             if (!contextBounds.isEmpty)
-              syntaxError("cannot have both implicit parameters and context bounds `: ...' on type parameters", false)
+              syntaxError("cannot have both implicit parameters and context bounds `: ...' or view bounds `<% ...' on type parameters", false)
             in.nextToken()
             implicitmod = Flags.IMPLICIT
           }
@@ -2328,7 +2328,7 @@ self =>
         classContextBounds = contextBoundBuf.toList
         val tstart = (in.offset::classContextBounds.map(_.pos.startOrPoint)).min
         if (!classContextBounds.isEmpty && mods.hasFlag(Flags.TRAIT)) {
-          syntaxError("traits cannot have type parameters with context bounds `: ...'", false)
+          syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", false)
           classContextBounds = List()
         }
         val constrAnnots = annotations(false, true)

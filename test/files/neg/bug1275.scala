@@ -1,14 +1,15 @@
-// tested using Scala compiler version 2.6.0-RC1 -- (c) 2002-2010 LAMP/EPFL
+object Test {
+  trait Seq[+t] {
+    type MyType[+t] <: Seq[t]
 
-// prompted by "Covariant return types" mailing list question
-object TestCovariance {
+    def f: MyType[t]
+  }
 
-    // see  Type constructor polymorphism  in  http://www.scala-lang.org/docu/changelog.html
-    trait Seq[+t] {
-        type MyType[+t] <: Seq[t]
-
-        def f: MyType[t]
-    }
-
-    def span[a, s <: Seq[a] { type MyType <: s } ](xs: s): s = xs f
+  // illegal abstract type member refinement: changes the arity of MyType
+  // the error is pretty strange, since the compiler forms the illegal type xs.MyType[a] anyway
+  def span[a, s <: Seq[a] { type MyType/*look ma, no type parameters!*/ <: s } ](xs: s): s
+     = xs f
+//        ^
+// found   : xs.MyType[a]
+// required: s
 }

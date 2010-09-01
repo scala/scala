@@ -123,6 +123,18 @@ trait AnnotationInfos extends reflect.generic.AnnotationInfos { self: SymbolTabl
       val subs = new TreeSymSubstituter(List(from), List(to))
       AnnotationInfo(atp, args.map(subs(_)), assocs).setPos(pos)
     }
+
+    // !!! when annotation arguments are not literal strings, but any sort of
+    // assembly of strings, there is a fair chance they will turn up here not as
+    // Literal(const) but some arbitrary AST.
+    def stringArg(index: Int): Option[String] = if(args.size > index) Some(args(index) match {
+      case Literal(const) => const.stringValue
+      case x              => x.toString // should not be necessary, but better than silently ignoring an issue
+    }) else None
+
+    def intArg(index: Int): Option[Int] = if(args.size > index) Some(args(index)) collect {
+      case Literal(Constant(x: Int)) => x
+    } else None
   }
 
   object AnnotationInfo extends AnnotationInfoExtractor

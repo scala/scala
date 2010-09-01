@@ -421,8 +421,9 @@ abstract class RefChecks extends InfoTransform {
         def javaErasedOverridingSym(sym: Symbol): Symbol =
           clazz.tpe.nonPrivateMemberAdmitting(sym.name, BRIDGE).filter(other =>
             !other.isDeferred && other.isJavaDefined && {
-              val tp1 = erasure.erasure(clazz.thisType.memberType(sym))
-              val tp2 = erasure.erasure(clazz.thisType.memberType(other))
+              def uncurryAndErase(tp: Type) = erasure.erasure(uncurry.transformInfo(sym, tp)) // #3622: erasure operates on uncurried types -- note on passing sym in both cases: only sym.isType is relevant for uncurry.transformInfo
+              val tp1 = uncurryAndErase(clazz.thisType.memberType(sym))
+              val tp2 = uncurryAndErase(clazz.thisType.memberType(other))
               atPhase(currentRun.erasurePhase.next)(tp1 matches tp2)
             })
 
@@ -1022,18 +1023,32 @@ abstract class RefChecks extends InfoTransform {
     private def checkAnnotations(tpes: List[Type], pos: Position) = tpes foreach (tp => checkTypeRef(tp, pos))
     private def doTypeTraversal(tree: Tree)(f: Type => Unit) = if (!inPattern) tree.tpe foreach f
 
-    private def applyRefchecksToAnnotations(tree: Tree) = {
+    private def applyRefchecksToAnnotations(tree: Tree): Unit = {
       def applyChecks(annots: List[AnnotationInfo]) = {
         checkAnnotations(annots map (_.atp), tree.pos)
         transformTrees(annots flatMap (_.args))
       }
 
       tree match {
-        case m: MemberDef => applyChecks(m.symbol.annotations)
-        case TypeTree()   => doTypeTraversal(tree) {
-          case AnnotatedType(annots, _, _)  => applyChecks(annots)
-          case _ =>
-        }
+        case m: MemberDef =>
+          val sym = m.symbol
+          applyChecks(sym.annotations)
+          // validate implicitNotFoundMessage
+          analyzer.ImplicitNotFoundMsg.check(sym) foreach { warn =>
+            unit.warning(tree.pos, "Invalid implicitNotFound message for %s%s:\n%s".format(sym, sym.locationString, warn))
+          }
+        case tpt@TypeTree() =>
+          if(tpt.original != null) {
+            tpt.original foreach {
+              case dc@TypeTreeWithDeferredRefCheck() => applyRefchecksToAnnotations(dc.check()) // #2416
+              case _ =>
+            }
+          }
+
+          doTypeTraversal(tree) {
+            case AnnotatedType(annots, _, _)  => applyChecks(annots)
+            case _ =>
+          }
         case _ =>
       }
     }
@@ -1143,7 +1158,6 @@ abstract class RefChecks extends InfoTransform {
         // type bounds (bug #935), issues deprecation warnings for symbols used
         // inside annotations.
         applyRefchecksToAnnotations(tree)
-
         var result: Tree = tree match {
           case DefDef(mods, name, tparams, vparams, tpt, EmptyTree) if tree.symbol.hasAnnotation(NativeAttr) =>
             tree.symbol.resetFlag(DEFERRED)
@@ -1164,7 +1178,17 @@ abstract class RefChecks extends InfoTransform {
             if (bridges.nonEmpty) treeCopy.Template(tree, parents, self, body ::: bridges)
             else tree
 
-          case TypeTree() =>
+          case dc@TypeTreeWithDeferredRefCheck() => assert(false, "adapt should have turned dc: TypeTreeWithDeferredRefCheck into tpt: TypeTree, with tpt.original == dc"); dc
+          case tpt@TypeTree() =>
+            if(tpt.original != null) {
+              tpt.original foreach {
+                case dc@TypeTreeWithDeferredRefCheck() =>
+                  transform(dc.check()) // #2416 -- only call transform to do refchecks, but discard results
+                  // tpt has the right type if the deferred checks are ok
+                case _ =>
+              }
+            }
+
             val existentialParams = new ListBuffer[Symbol]
             doTypeTraversal(tree) { // check all bounds, except those that are
                               // existential type parameters

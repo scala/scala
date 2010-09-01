@@ -299,7 +299,7 @@ trait Namers { self: Analyzer =>
       val sym = tree.symbol
       if (settings.debug.value) log("entered " + sym + " in " + context.owner + ", scope-id = " + context.scope.## )
       var ltype = namerOf(sym).typeCompleter(tree)
-      if (!tparams.isEmpty) {
+      if (tparams nonEmpty) {
         //@M! TypeDef's type params are handled differently
         //@M e.g., in [A[x <: B], B], A and B are entered first as both are in scope in the definition of x
         //@M x is only in scope in `A[x <: B]'
@@ -376,8 +376,9 @@ trait Namers { self: Analyzer =>
                  name.endsWith(nme.OUTER, nme.OUTER.length) ||
                  context.unit.isJava) &&
                  !mods.isLazy) {
-              tree.symbol = enterInScope(owner.newValue(tree.pos, name)
-                .setFlag(mods.flags))
+              val vsym = owner.newValue(tree.pos, name).setFlag(mods.flags);
+              if(context.unit.isJava) setPrivateWithin(tree, vsym, mods) // #3663
+              tree.symbol = enterInScope(vsym)
               finish
             } else {
               val mods1 =
@@ -420,7 +421,7 @@ trait Namers { self: Analyzer =>
               addBeanGetterSetter(vd, getter)
             }
           case DefDef(mods, nme.CONSTRUCTOR, tparams, _, _, _) =>
-            var sym = owner.newConstructor(tree.pos).setFlag(mods.flags | owner.getFlag(ConstrFlags))
+            val sym = owner.newConstructor(tree.pos).setFlag(mods.flags | owner.getFlag(ConstrFlags))
             setPrivateWithin(tree, sym, mods)
             tree.symbol = enterInScope(sym)
             finishWith(tparams)
@@ -430,7 +431,7 @@ trait Namers { self: Analyzer =>
           case TypeDef(mods, name, tparams, _) =>
             var flags: Long = mods.flags
             if ((flags & PARAM) != 0L) flags |= DEFERRED
-            var sym = new TypeSymbol(owner, tree.pos, name).setFlag(flags)
+            val sym = new TypeSymbol(owner, tree.pos, name).setFlag(flags)
             setPrivateWithin(tree, sym, mods)
             tree.symbol = enterInScope(sym)
             finishWith(tparams)
@@ -1070,23 +1071,17 @@ trait Namers { self: Analyzer =>
           tp
       }
 
-      def verifyOverriding(other: Symbol): Boolean = {
-        if(other.unsafeTypeParams.length != tparamSyms.length) {
-          context.error(tpsym.pos,
-              "The kind of "+tpsym.keyString+" "+tpsym.varianceString + tpsym.nameString+
-              " does not conform to the expected kind of " + other.defString + other.locationString + ".")
-          false
-        } else true
-      }
-
-      // @M: make sure overriding in refinements respects rudimentary kinding
-      // have to do this early, as otherwise we might get crashes: (see neg/bug1275.scala)
-      //   suppose some parameterized type member is overridden by a type member w/o params,
-      //   then appliedType will be called on a type that does not expect type args --> crash
-      if (tpsym.owner.isRefinementClass &&  // only needed in refinements
-          !tpsym.allOverriddenSymbols.forall{verifyOverriding(_)})
-	      ErrorType
-      else polyType(tparamSyms, tp)
+      // see neg/bug1275, #3419
+      // used to do a rudimentary kind check here to ensure overriding in refinements
+      // doesn't change a type member's arity (number of type parameters),
+      // e.g. trait T { type X[A] }; type S = T{type X}; val x: S
+      // X in x.X[A] will get rebound to the X in the refinement, which does not take any type parameters
+      // this mismatch does not crash the compiler (anymore), but leads to weird type errors,
+      // as x.X[A] will become NoType internally
+      // it's not obvious the errror refers to the X in the refinement and not the original X
+      // however, separate compilation requires the symbol info to be loaded to do this check,
+      // but loading the info will probably lead to spurious cyclic errors --> omit the check
+      polyType(tparamSyms, tp)
     }
 
     /** Given a case class
