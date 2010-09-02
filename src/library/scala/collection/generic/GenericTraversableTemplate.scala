@@ -51,6 +51,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
   def isEmpty: Boolean
 
   /** The factory companion object that builds instances of class $Coll.
+   *  (or its `Iterable` superclass where class $Coll is not a `Seq`.)
    */
   def companion: GenericCompanion[CC]
 

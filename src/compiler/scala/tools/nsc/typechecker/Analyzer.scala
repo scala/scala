@@ -74,7 +74,7 @@ trait Analyzer extends AnyRef
     val runsRightAfter = Some("packageobjects")
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       override def keepsTypeParams = false
-      resetTyper()
+      resetTyper() // this does not in fact to the reset for each compilation run!
       override def run {
         val start = startTimer(typerNanos)
         currentRun.units foreach applyPhase

@@ -13,7 +13,7 @@ package scala.concurrent
 
 /** The class <code>SyncVar</code> ...
  *
- *  @author  Martin Odersky, Stepan Koltsov
+ *  @author  Martin Odersky
  *  @version 1.0, 10/03/2003
  */
 class SyncVar[A] {

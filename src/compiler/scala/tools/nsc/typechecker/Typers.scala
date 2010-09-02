@@ -2087,6 +2087,8 @@ trait Typers { self: Analyzer =>
                 EmptyTree
             case _ =>
               if (localTarget && !includesTargetPos(stat)) {
+                // skip typechecking of statements in a sequence where some other statement includes
+                // the targetposition
                 stat
               } else {
                 val localTyper = if (inBlock || (stat.isDef && !stat.isInstanceOf[LabelDef])) this

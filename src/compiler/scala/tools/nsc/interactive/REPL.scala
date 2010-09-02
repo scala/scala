@@ -80,9 +80,9 @@ object REPL {
    *  complete file off1 off2?
    */
   def run(comp: Global) {
-    val reloadResult = new comp.Response[Unit]
-    val typeatResult = new comp.Response[comp.Tree]
-    val completeResult = new comp.Response[List[comp.Member]]
+    val reloadResult = new Response[Unit]
+    val typeatResult = new Response[comp.Tree]
+    val completeResult = new Response[List[comp.Member]]
     def makePos(file: String, off1: String, off2: String) = {
       val source = toSourceFile(file)
       comp.rangePos(source, off1.toInt, off1.toInt, off2.toInt)
@@ -118,11 +118,11 @@ object REPL {
 
   def toSourceFile(name: String) = new BatchSourceFile(new PlainFile(new java.io.File(name)))
 
-  def show[T](svar: SyncVar[Either[T, Throwable]]) {
+  def show[T](svar: Response[T]) {
     svar.get match {
       case Left(result) => println("==> "+result)
-      case Right(exc/*: Throwable ??*/) => exc.printStackTrace; println("ERROR: "+exc)
+      case Right(exc) => exc.printStackTrace; println("ERROR: "+exc)
     }
-    svar.unset()
+    svar.clear()
   }
 }

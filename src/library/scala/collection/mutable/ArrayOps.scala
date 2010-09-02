@@ -10,6 +10,7 @@
 
 package scala.collection
 package mutable
+import compat.Platform.arraycopy
 
 import scala.reflect.ClassManifest
 
@@ -37,6 +38,13 @@ abstract class ArrayOps[T] extends ArrayLike[T, Array[T]] {
     Array.newBuilder(
       ClassManifest.fromClass(
         repr.getClass.getComponentType.getComponentType.asInstanceOf[Predef.Class[U]]))
+
+  override def copyToArray[U >: T](xs: Array[U], start: Int, len: Int) {
+    var l = len
+    if (repr.length < l) l = repr.length
+    if (xs.length - start < l) l = xs.length - start max 0
+    Array.copy(repr, 0, xs, start, l)
+  }
 
   override def toArray[U >: T : ClassManifest]: Array[U] =
     if (implicitly[ClassManifest[U]].erasure eq repr.getClass.getComponentType)

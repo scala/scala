@@ -80,6 +80,7 @@ abstract class RefChecks extends InfoTransform {
     var localTyper: analyzer.Typer = typer;
     var currentApplication: Tree = EmptyTree
     var inPattern: Boolean = false
+    var checkedCombinations = Set[List[Type]]()
 
     // only one overloaded alternative is allowed to define default arguments
     private def checkDefaultsInOverloaded(clazz: Symbol) {
@@ -186,7 +187,7 @@ abstract class RefChecks extends InfoTransform {
      *  4. Check that every member with an `override' modifier
      *     overrides some other member.
      */
-    private def checkAllOverrides(clazz: Symbol) {
+    private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false) {
 
       case class MixinOverrideError(member: Symbol, msg: String)
 
@@ -299,56 +300,65 @@ abstract class RefChecks extends InfoTransform {
         def intersectionIsEmpty(syms1: List[Symbol], syms2: List[Symbol]) =
           !(syms1 exists (syms2 contains))
 
-        if (member hasFlag PRIVATE) { // (1.1)
-          overrideError("has weaker access privileges; it should not be private")
+        if (typesOnly) checkOverrideTypes()
+        else {
+          if (member hasFlag PRIVATE) { // (1.1)
+            overrideError("has weaker access privileges; it should not be private")
+          }
+          val mb = member.accessBoundary(member.owner)
+          val ob = other.accessBoundary(member.owner)
+          if (mb != RootClass && mb != NoSymbol && // todo: change
+              (ob == RootClass || ob == NoSymbol || !ob.hasTransOwner(mb) ||
+               (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
+            overrideAccessError()
+          }
+          else if (other.isClass || other.isModule) {
+            overrideError("cannot be used here - classes and objects cannot be overridden");
+          } else if (!other.isDeferred && (member.isClass || member.isModule)) {
+            overrideError("cannot be used here - classes and objects can only override abstract types");
+          } else if (other hasFlag FINAL) { // (1.2)
+            overrideError("cannot override final member");
+          } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE | SYNTHETIC))) { // (1.3), SYNTHETIC because of DEVIRTUALIZE
+            overrideError("needs `override' modifier");
+          } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
+            overrideError("needs `abstract override' modifiers")
+          } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
+                     (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
+            overrideError("cannot override a mutable variable")
+          } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
+                     !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&
+                     !member.isDeferred && !other.isDeferred &&
+                     intersectionIsEmpty(member.allOverriddenSymbols, other.allOverriddenSymbols)) {
+            overrideError("cannot override a concrete member without a third member that's overridden by both "+
+                          "(this rule is designed to prevent ``accidental overrides'')")
+          } else if (other.isStable && !member.isStable) { // (1.4)
+            overrideError("needs to be a stable, immutable value")
+          } else if (member.isValue && (member hasFlag LAZY) &&
+                     other.isValue && !other.isSourceMethod && !other.isDeferred && !(other hasFlag LAZY)) {
+            overrideError("cannot override a concrete non-lazy value")
+          } else if (other.isValue && (other hasFlag LAZY) && !other.isSourceMethod && !other.isDeferred &&
+                     member.isValue && !(member hasFlag LAZY)) {
+            overrideError("must be declared lazy to override a concrete lazy value")
+          } else {
+            checkOverrideTypes()
+          }
         }
-        val mb = member.accessBoundary(member.owner)
-        val ob = other.accessBoundary(member.owner)
-        if (mb != RootClass && mb != NoSymbol && // todo: change
-            (ob == RootClass || ob == NoSymbol || !ob.hasTransOwner(mb) ||
-             (other hasFlag PROTECTED) && !(member hasFlag PROTECTED))) {
-          overrideAccessError()
-        }
-        else if (other.isClass || other.isModule) {
-          overrideError("cannot be used here - classes and objects cannot be overridden");
-        } else if (!other.isDeferred && (member.isClass || member.isModule)) {
-          overrideError("cannot be used here - classes and objects can only override abstract types");
-        } else if (other hasFlag FINAL) { // (1.2)
-          overrideError("cannot override final member");
-        } else if (!other.isDeferred && !(member hasFlag (OVERRIDE | ABSOVERRIDE | SYNTHETIC))) { // (1.3), SYNTHETIC because of DEVIRTUALIZE
-          overrideError("needs `override' modifier");
-        } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
-          overrideError("needs `abstract override' modifiers")
-        } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-                   (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
-          overrideError("cannot override a mutable variable")
-        } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-                   !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&
-                   !member.isDeferred && !other.isDeferred &&
-                   intersectionIsEmpty(member.allOverriddenSymbols, other.allOverriddenSymbols)) {
-          overrideError("cannot override a concrete member without a third member that's overridden by both "+
-                        "(this rule is designed to prevent ``accidental overrides'')")
-        } else if (other.isStable && !member.isStable) { // (1.4)
-          overrideError("needs to be a stable, immutable value")
-        } else if (member.isValue && (member hasFlag LAZY) &&
-                   other.isValue && !other.isSourceMethod && !other.isDeferred && !(other hasFlag LAZY)) {
-          overrideError("cannot override a concrete non-lazy value")
-        } else if (other.isValue && (other hasFlag LAZY) && !other.isSourceMethod && !other.isDeferred &&
-                   member.isValue && !(member hasFlag LAZY)) {
-          overrideError("must be declared lazy to override a concrete lazy value")
-        } else {
+
+        def checkOverrideTypes() {
           if (other.isAliasType) {
-            //if (!member.typeParams.isEmpty) // (1.5)  @MAT
+            //if (!member.typeParams.isEmpty) (1.5)  @MAT
             //  overrideError("may not be parameterized");
-            //if (!other.typeParams.isEmpty) // (1.5)   @MAT
+            //if (!other.typeParams.isEmpty)  (1.5)   @MAT
             //  overrideError("may not override parameterized type");
             // @M: substSym
+
             if (!(self.memberType(member).substSym(member.typeParams, other.typeParams) =:= self.memberType(other))) // (1.6)
               overrideTypeError();
           } else if (other.isAbstractType) {
             //if (!member.typeParams.isEmpty) // (1.7)  @MAT
             //  overrideError("may not be parameterized");
-            var memberTp = self.memberType(member)
+
+            val memberTp = self.memberType(member)
             val otherTp = self.memberInfo(other)
             if (!(otherTp.bounds containsType memberTp)) { // (1.7.1)
               overrideTypeError(); // todo: do an explaintypes with bounds here
@@ -369,7 +379,7 @@ abstract class RefChecks extends InfoTransform {
             // this overlaps somewhat with validateVariance
             if(member.isAliasType) {
               val kindErrors = typer.infer.checkKindBounds(List(member), List(memberTp.normalize), self, member.owner)
-
+2
               if(!kindErrors.isEmpty)
                 unit.error(member.pos,
                   "The kind of the right-hand side "+memberTp.normalize+" of "+member.keyString+" "+
@@ -381,10 +391,25 @@ abstract class RefChecks extends InfoTransform {
             }
           } else if (other.isTerm) {
             other.cookJavaRawInfo() // #2454
-
-            if (!overridesType(self.memberInfo(member), self.memberInfo(other))) { // 8
+            val memberTp = self.memberType(member)
+            val otherTp = self.memberType(other)
+            if (!overridesType(memberTp, otherTp)) { // 8
               overrideTypeError()
-              explainTypes(self.memberInfo(member), self.memberInfo(other))
+              explainTypes(memberTp, otherTp)
+            }
+
+            if (member.isStable && !otherTp.isVolatile) {
+	          if (memberTp.isVolatile)
+                overrideError("has a volatile type; cannot override a member with non-volatile type")
+              else memberTp.normalize.resultType match {
+                case rt: RefinedType if !(rt =:= otherTp) && !(checkedCombinations contains rt.parents) =>
+                  // might mask some inconsistencies -- check overrides
+                  checkedCombinations += rt.parents
+                  val tsym = rt.typeSymbol;
+                  if (tsym.pos == NoPosition) tsym setPos member.pos
+                  checkAllOverrides(tsym, typesOnly = true)
+                case _ =>
+              }
             }
           }
         }
@@ -400,7 +425,7 @@ abstract class RefChecks extends InfoTransform {
       printMixinOverrideErrors()
 
       // Verifying a concrete class has nothing unimplemented.
-      if (clazz.isClass && !clazz.isTrait && !(clazz hasFlag ABSTRACT)) {
+      if (clazz.isClass && !clazz.isTrait && !(clazz hasFlag ABSTRACT) && !typesOnly) {
         val abstractErrors = new ListBuffer[String]
         def abstractErrorMessage =
           // a little formatting polish

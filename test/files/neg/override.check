@@ -1,0 +1,5 @@
+override.scala:9: error: overriding type T in trait A with bounds >: Int <: Int;
+ type T in trait B with bounds >: String <: String has incompatible type
+  lazy val x : A with B = x
+           ^
+one error found
