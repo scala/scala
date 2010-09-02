@@ -996,13 +996,7 @@ BOOTSTRAPPING BUILD (STRAP)
       srcdir="${src.dir}/library"
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
-<<<<<<< .working
-      <compilationpath>
-        <pathelement location="${build-strap.dir}/classes/library"/>
-      </compilationpath>
-=======
       <compilationpath refid="strap.compilation.path"/>
->>>>>>> .merge-right.r22462
     </scalacfork>
     <scalacfork
       destdir="${build-strap.dir}/classes/library"
