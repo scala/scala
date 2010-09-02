@@ -557,10 +557,14 @@ object Stream extends SeqFactory[Stream] {
   final class Cons[+A](hd: A, tl: => Stream[A]) extends Stream[A] {
     override def isEmpty = false
     override def head = hd
-    private[this] var tlVal: Stream[A] = _
-    def tailDefined = tlVal ne null
+    @volatile private[this] var tlVal: Stream[A] = _
+    def tailDefined: Boolean = tlVal ne null
     override def tail: Stream[A] = {
-      if (!tailDefined) { tlVal = tl }
+      if (!tailDefined)
+        synchronized {
+          if (!tailDefined) tlVal = tl
+        }
+
       tlVal
     }
   }
