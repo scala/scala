@@ -377,7 +377,7 @@ trait Namers { self: Analyzer =>
                  context.unit.isJava) &&
                  !mods.isLazy) {
               val vsym = owner.newValue(tree.pos, name).setFlag(mods.flags);
-              if(context.unit.isJava) setPrivateWithin(tree, vsym, mods) // #3663
+              if(context.unit.isJava) setPrivateWithin(tree, vsym, mods) // #3663 -- for Scala fields we assume private[this]
               tree.symbol = enterInScope(vsym)
               finish
             } else {
