@@ -475,16 +475,23 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           if (!currentOwner.isTrait) addMixedinMembers(currentOwner,unit)
           else if (currentOwner hasFlag lateINTERFACE) addLateInterfaceMembers(currentOwner)
           tree
-        case DefDef(mods, name, tparams, List(vparams), tpt, rhs) if currentOwner.isImplClass =>
-          if (isImplementedStatically(sym)) {
-            sym setFlag notOVERRIDE
-            self = sym.newValue(sym.pos, nme.SELF)
-              .setFlag(PARAM)
-              .setInfo(toInterface(currentOwner.typeOfThis));
-            val selfdef = ValDef(self) setType NoType
-            treeCopy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)
+        case DefDef(mods, name, tparams, List(vparams), tpt, rhs) =>
+          if (currentOwner.isImplClass) {
+            if (isImplementedStatically(sym)) {
+              sym setFlag notOVERRIDE
+              self = sym.newValue(sym.pos, nme.SELF)
+                .setFlag(PARAM)
+                .setInfo(toInterface(currentOwner.typeOfThis));
+              val selfdef = ValDef(self) setType NoType
+              treeCopy.DefDef(tree, mods, name, tparams, List(selfdef :: vparams), tpt, rhs)
+            } else {
+              EmptyTree
+            }
           } else {
-            EmptyTree
+            if (currentOwner.isTrait && sym.isSetter && !atPhase(currentRun.picklerPhase)(sym.isDeferred)) {
+              sym.addAnnotation(AnnotationInfo(TraitSetterAnnotationClass.tpe, List(), List()))
+            }
+            tree
           }
         case Apply(tapp @ TypeApply(fn, List(arg)), List()) =>
           if (arg.tpe.typeSymbol.isImplClass) {

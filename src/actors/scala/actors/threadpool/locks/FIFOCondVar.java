@@ -17,6 +17,7 @@ import scala.actors.threadpool.*;
 import scala.actors.threadpool.helpers.*;
 
 class FIFOCondVar extends CondVar implements Condition, java.io.Serializable {
+    private static final long serialVersionUID = -497497271881010475L;
 
     private static final WaitQueue.QueuedSync sync = new WaitQueue.QueuedSync() {
         public boolean recheck(WaitQueue.WaitNode node) { return false; }

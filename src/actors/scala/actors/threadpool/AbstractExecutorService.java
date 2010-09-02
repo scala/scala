@@ -120,7 +120,7 @@ public abstract class AbstractExecutorService implements ExecutorService {
         int ntasks = tasks.size();
         if (ntasks == 0)
             throw new IllegalArgumentException();
-        List futures= new ArrayList(ntasks);
+        List<Future> futures = new ArrayList<Future>(ntasks);
         ExecutorCompletionService ecs =
             new ExecutorCompletionService(this);
 
@@ -203,10 +203,10 @@ public abstract class AbstractExecutorService implements ExecutorService {
         return doInvokeAny(tasks, true, unit.toNanos(timeout));
     }
 
-    public List invokeAll(Collection tasks) throws InterruptedException {
+    public List<Future> invokeAll(Collection tasks) throws InterruptedException {
         if (tasks == null)
             throw new NullPointerException();
-        List futures = new ArrayList(tasks.size());
+        List<Future> futures = new ArrayList<Future>(tasks.size());
         boolean done = false;
         try {
             for (Iterator t = tasks.iterator(); t.hasNext();) {
@@ -235,13 +235,13 @@ public abstract class AbstractExecutorService implements ExecutorService {
         }
     }
 
-    public List invokeAll(Collection tasks,
+    public List<Future> invokeAll(Collection tasks,
                           long timeout, TimeUnit unit)
         throws InterruptedException {
         if (tasks == null || unit == null)
             throw new NullPointerException();
         long nanos = unit.toNanos(timeout);
-        List futures = new ArrayList(tasks.size());
+        List<Future> futures = new ArrayList<Future>(tasks.size());
         boolean done = false;
         try {
             for (Iterator t = tasks.iterator(); t.hasNext();)

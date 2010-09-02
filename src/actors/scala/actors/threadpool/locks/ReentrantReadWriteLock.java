@@ -190,7 +190,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
         transient int writeHolds_ = 0;
 
         /** Number of acquires on read lock by any reader thread **/
-        transient HashMap readers_ = new HashMap();
+        transient HashMap<Thread, Integer> readers_ = new HashMap<Thread, Integer>();
 
         /** cache/reuse the special Integer value one to speed up readlocks **/
         static final Integer IONE = new Integer(1);
@@ -344,7 +344,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
         synchronized int getReadHoldCount() {
             if (activeReaders_ == 0) return 0;
             Thread t = Thread.currentThread();
-            Integer i = (Integer)readers_.get(t);
+            Integer i = readers_.get(t);
             return (i == null) ? 0 : i.intValue();
         }
 
@@ -363,7 +363,7 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
             // and ensure visibility by synchronizing (all other accesses to
             // readers_ are also synchronized on "this")
             synchronized (this) {
-                readers_ = new HashMap();
+                readers_ = new HashMap<Thread, Integer>();
             }
         }
     }
@@ -372,6 +372,8 @@ public class ReentrantReadWriteLock implements ReadWriteLock, java.io.Serializab
      * Nonfair version of Sync
      */
     private static class NonfairSync extends Sync {
+        private static final long serialVersionUID = -2392241841540339773L;
+
         NonfairSync() {}
     }
 

@@ -17,6 +17,7 @@ import scala.actors.threadpool.*;
 import scala.actors.threadpool.helpers.*;
 
 class CondVar implements Condition, java.io.Serializable {
+    private static final long serialVersionUID = -5009898475638427940L;
 
     /** The lock **/
     protected final ExclusiveLock lock;

@@ -176,6 +176,10 @@ self =>
      */
     var classContextBounds: List[Tree] = Nil
 
+    /** Are we inside the Scala package? Set for files that start with package scala
+     */
+    private var inScalaPackage = false
+
     def parseStartRule: () => Tree
 
     /** This is the general parse entry point.
@@ -1312,6 +1316,9 @@ self =>
     }
 
     def simpleExprRest(t: Tree, canApply: Boolean): Tree = {
+      // Various errors in XML literals can cause xmlLiteral to propagate
+      // EmptyTree's. Watch out for them here (see also postfixExpr).
+      if (EmptyTree == t) return EmptyTree   // #3604 (mics)
       if (canApply) newLineOptWhenFollowedBy(LBRACE)
       in.token match {
         case DOT =>
@@ -2440,7 +2447,7 @@ self =>
           (List(), List(List()), self, body)
         }
       var parents = parents0
-      if (name != nme.ScalaObject.toTypeName && !isInterface(mods, body))
+      if (!isInterface(mods, body) && !(inScalaPackage && name == nme.Array.toTypeName))
         parents = parents ::: List(scalaScalaObjectConstr)
       if (parents.isEmpty)
         parents = List(scalaAnyRefConstr)
@@ -2709,6 +2716,8 @@ self =>
             }
           } else {
             in.flushDoc
+            if (in.token == IDENTIFIER && in.name.encode == nme.scala_)
+              inScalaPackage = true
             val pkg = qualId()
             newLineOptWhenFollowedBy(LBRACE)
             if (in.token == EOF) {

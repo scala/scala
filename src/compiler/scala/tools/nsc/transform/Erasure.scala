@@ -259,7 +259,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           def classSigSuffix: String =
             "."+sym.name
           if (sym == ArrayClass)
-            ARRAY_TAG.toString+(args map jsig).mkString
+            if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectClass.tpe)
+            else ARRAY_TAG.toString+(args map jsig).mkString
           else if (sym.isTypeParameterOrSkolem &&
                   // only refer to type params that will actually make it into the sig, this excludes:
                   !sym.owner.isTypeParameterOrSkolem && // higher-order type parameters (!sym.owner.isTypeParameterOrSkolem), and parameters of methods

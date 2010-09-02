@@ -283,7 +283,7 @@ self =>
    *  @param    kvs the collection containing the added key/value pairs
    *  @tparam   B1  the type of the added values
    *  @return   a new map with the given bindings added to this map
-   *  @usecase  def + (kvs: Traversable[(A, B)]): Map[A, B]
+   *  @usecase  def ++ (xs: Traversable[(A, B)]): Map[A, B]
    */
   def ++[B1 >: B](xs: TraversableOnce[(A, B1)]): Map[A, B1] =
     ((repr: Map[A, B1]) /: xs) (_ + _)
