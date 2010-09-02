@@ -26,7 +26,7 @@ sealed abstract class JSONType
  *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
 case class JSONObject (obj : Map[Any,Any]) extends JSONType {
-  override def toString = "JSONObject(" + obj.map({ case (k,v) => k + " -> " + v }).mkString(", ") + ")"
+  override def toString = "{" + obj.map({ case (k,v) => k + " : " + v }).mkString(", ") + "}"
 }
 
 /**
@@ -34,7 +34,7 @@ case class JSONObject (obj : Map[Any,Any]) extends JSONType {
  *  @author Derek Chen-Becker <"java"+@+"chen-becker"+"."+"org">
  */
 case class JSONArray (list : List[Any]) extends JSONType {
-  override def toString = "JSONArray(" + list.mkString(", ") + ")"
+  override def toString = "[" + list.mkString(", ") + "]"
 }
 
 /**
