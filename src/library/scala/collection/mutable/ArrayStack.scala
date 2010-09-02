@@ -13,7 +13,23 @@ package mutable
 
 import generic._
 
-private object Utils {
+
+
+/** Factory object for the `ArrayStack` class.
+ *
+ *  $factoryInfo
+ *  @define coll array stack
+ *  @define Coll ArrayStack
+ */
+object ArrayStack extends SeqFactory[ArrayStack] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ArrayStack[A]] = new GenericCanBuildFrom[A]
+  def newBuilder[A]: Builder[A, ArrayStack[A]] = new ArrayStack[A]
+  def empty: ArrayStack[Nothing] = new ArrayStack()
+  def apply[A: ClassManifest](elems: A*): ArrayStack[A]= {
+    val els: Array[AnyRef] = elems.reverse.map{_.asInstanceOf[AnyRef]}(breakOut)
+    new ArrayStack[A](els, els.length)
+  }
+
   def growArray(x: Array[AnyRef]) = {
     val y = new Array[AnyRef](x.length * 2)
     Array.copy(x, 0, y, 0, x.length)
@@ -26,6 +42,7 @@ private object Utils {
     y
   }
 }
+
 
 /** Simple stack class backed by an array. Should be significantly faster
  *  than the standard mutable stack.
@@ -44,22 +61,49 @@ private object Utils {
  */
 @cloneable @serializable @SerialVersionUID(8565219180626620510L)
 class ArrayStack[T] private(private var table : Array[AnyRef],
-                            private var index : Int) extends scala.collection.Seq[T] with Cloneable[ArrayStack[T]] {
+                            private var index : Int)
+extends Seq[T]
+   with SeqLike[T, ArrayStack[T]]
+   with GenericTraversableTemplate[T, ArrayStack]
+   with Cloneable[ArrayStack[T]]
+   with Builder[T, ArrayStack[T]]
+{
   def this() = this(new Array[AnyRef](1), 0)
 
-  /** Retrieve n'th element from stack, where top of stack has index 0 */
+  /** Retrieve n'th element from stack, where top of stack has index 0.
+   *
+   *  This is a constant time operation.
+   *
+   *  @param n     the index of the element to return
+   *  @return      the element at the specified index
+   *  @throws IndexOutOfBoundsException if the index is out of bounds
+   */
   def apply(n: Int): T =
     table(index - 1 - n).asInstanceOf[T]
 
   /** The number of elements in the stack */
   def length = index
 
+  override def companion = ArrayStack
+
+  /** Replace element at index <code>n</code> with the new element
+   *  <code>newelem</code>.
+   *
+   *  This is a constant time operation.
+   *
+   *  @param n       the index of the element to replace.
+   *  @param newelem the new element.
+   *  @throws   IndexOutOfBoundsException if the index is not valid
+   */
+  def update(n: Int, newelem: T) =
+    table(index - 1 - n) = newelem.asInstanceOf[AnyRef]
+
   /** Push an element onto the stack.
    *
    *  @param x The element to push
    */
   def push(x: T) {
-    if (index == table.length) table = Utils.growArray(table)
+    if (index == table.length) table = ArrayStack.growArray(table)
     table(index) = x.asInstanceOf[AnyRef]
     index += 1
   }
@@ -115,7 +159,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *  @param x  The source of elements to push.
    *  @return   A reference to this stack.
    */
-  def ++=(xs: TraversableOnce[T]): this.type = { xs foreach += ; this }
+  override def ++=(xs: TraversableOnce[T]): this.type = { xs foreach += ; this }
 
   /** Does the same as `push`, but returns the updated stack.
    *
@@ -123,6 +167,8 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    *  @return   A reference to this stack.
    */
   def +=(x: T): this.type = { push(x); this }
+
+  def result = new ArrayStack[T](table.reverse, index)
 
   /** Pop the top two elements off the stack, apply `f` to them and push the result
    *  back on to the stack.
@@ -150,7 +196,7 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
    */
   def preserving[T](action: => T) = {
     val oldIndex = index
-    val oldTable = Utils.clone(table)
+    val oldTable = ArrayStack.clone(table)
 
     try {
       action
@@ -182,5 +228,5 @@ class ArrayStack[T] private(private var table : Array[AnyRef],
     }
   }
 
-  override def clone = new ArrayStack[T](Utils.clone(table), index)
+  override def clone = new ArrayStack[T](ArrayStack.clone(table), index)
 }
