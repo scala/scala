@@ -24,7 +24,7 @@ self =>
 
   import definitions._
 
-  final val debugIDE = false
+  val debugIDE = false
 
   override def onlyPresentation = true
 
