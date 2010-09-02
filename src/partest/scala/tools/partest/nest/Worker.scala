@@ -43,9 +43,21 @@ class LogFile(parent: File, child: String) extends File(parent, child) {
   var toDelete = false
 }
 
+class ScalaCheckFileManager(val origmanager: FileManager) extends FileManager {
+  def testRootDir: Directory = origmanager.testRootDir
+  def testRootPath: String = origmanager.testRootPath
+
+  var JAVACMD: String = origmanager.JAVACMD
+  var JAVAC_CMD: String = origmanager.JAVAC_CMD
+
+  var CLASSPATH: String = origmanager.CLASSPATH + java.io.File.pathSeparator + PathSettings.scalaCheck
+  var LATEST_LIB: String = origmanager.LATEST_LIB
+}
+
 class Worker(val fileManager: FileManager) extends Actor {
   import fileManager._
 
+  val scalaCheckFileManager = new ScalaCheckFileManager(fileManager)
   var reporter: ConsoleReporter = _
   val timer = new Timer
 
@@ -305,6 +317,8 @@ class Worker(val fileManager: FileManager) extends Actor {
    */
   def runTests(kind: String, files: List[File])(topcont: ImmMap[String, Int] => Unit) {
     val compileMgr = new CompileManager(fileManager)
+    if (kind == "scalacheck") fileManager.CLASSPATH += File.pathSeparator + PathSettings.scalaCheck
+
     var errors = 0
     var succeeded = true
     var diff = ""
