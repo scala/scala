@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Scala Distribution
 Bundle-SymbolicName: scala.tools.nsc;singleton:=true
-Bundle-Version: 2.8.0
+Bundle-Version: 2.8.1.alpha
 Eclipse-LazyStart: true
 Bundle-ClassPath: 
  .,
