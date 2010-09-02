@@ -1373,7 +1373,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/library"
       doctitle="Scala Standard Library"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/tags/R_2_8_1_RC1/src/€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath">
       <src>
@@ -1460,7 +1460,7 @@ DOCUMENTATION
       destdir="${build-docs.dir}/compiler"
       doctitle="Scala Compiler"
       docversion="${version.number}"
-      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/trunk/src/€{FILE_PATH}.scala#L1"
+      docsourceurl="https://lampsvn.epfl.ch/trac/scala/browser/scala/tags/R_2_8_1_RC1/src/€{FILE_PATH}.scala#L1"
       sourcepath="${src.dir}"
       classpathref="pack.classpath"
       srcdir="${src.dir}/compiler">
