@@ -146,7 +146,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     else null
   }
 
-  import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type }
+  import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type, TypeRef, PolyType }
   import compiler.{
     Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
     ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef,
@@ -946,14 +946,19 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     lazy val typeOf: Map[Name, String] = {
       def getTypes(names: List[Name], nameMap: Name => Name): Map[Name, String] = {
         names.foldLeft(Map.empty[Name, String]) { (map, name) =>
-          val rawType = atNextPhase(resObjSym.info.member(name).tpe)
+          val tp1 = atNextPhase(resObjSym.info.nonPrivateDecl(name).tpe)
           // the types are all =>T; remove the =>
-          val cleanedType = rawType match {
-            case compiler.PolyType(Nil, rt) => rt
-            case rawType => rawType
+          val tp2 = tp1 match {
+            case PolyType(Nil, tp)  => tp
+            case tp                 => tp
           }
+          // normalize non-public types so we don't see protected aliases like Self
+          val tp3 = compiler.atPhase(objRun.typerPhase)(tp2 match {
+            case TypeRef(_, sym, _) if !sym.isPublic  => tp2.normalize.toString
+            case tp                                   => tp.toString
+          })
 
-          map + (name -> atNextPhase(cleanedType.toString))
+          map + (name -> tp3)
         }
       }
 

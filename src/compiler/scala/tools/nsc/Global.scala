@@ -808,11 +808,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     /** Compile list of files given by their names */
     def compile(filenames: List[String]) {
-      val sources: List[SourceFile] =
-        if (isScriptRun && filenames.size > 1) returning(Nil)(_ => error("can only compile one script at a time"))
-        else filenames map getSourceFile
+      try {
+        val sources: List[SourceFile] =
+          if (isScriptRun && filenames.size > 1) returning(Nil)(_ => error("can only compile one script at a time"))
+          else filenames map getSourceFile
 
-      try compileSources(sources)
+        compileSources(sources)
+      }
       catch { case ex: IOException => error(ex.getMessage()) }
     }
 

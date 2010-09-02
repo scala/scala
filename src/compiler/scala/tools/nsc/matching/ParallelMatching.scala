@@ -886,6 +886,7 @@ trait ParallelMatching extends ast.TreeDSL
           }
         case _: SingletonType if useEqTest                      =>
           val eqTest = REF(tpe.termSymbol) MEMBER_== scrutTree
+
           // See ticket #1503 for the motivation behind checking for a binding.
           // The upshot is that it is unsound to assume equality means the right
           // type, but if the value doesn't appear on the right hand side of the

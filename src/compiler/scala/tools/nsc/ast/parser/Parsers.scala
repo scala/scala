@@ -2731,10 +2731,10 @@ self =>
       topstats() match {
         case List(stat @ PackageDef(_, _)) => stat
         case stats =>
-          val start = stats match {
-            case Nil => 0
-            case _ => wrappingPos(stats).startOrPoint
-          }
+          val start =
+            if (stats forall (_ == EmptyTree)) 0
+            else wrappingPos(stats).startOrPoint
+
           makePackaging(start, atPos(start, start, start) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
       }
     }

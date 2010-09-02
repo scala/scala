@@ -198,7 +198,8 @@ abstract class Source extends Iterator[Char] {
    *
    */
   @deprecated("Use a collections method such as getLines().toIndexedSeq for random access.")
-  def getLine(line: Int): String = getLines() drop (line - 1) next
+  def getLine(line: Int): String = lineNum(line)
+  private def lineNum(line: Int): String = getLines() drop (line - 1) next
 
   class LineIterator() extends Iterator[String] {
     private[this] val sb = new StringBuilder
@@ -298,11 +299,10 @@ abstract class Source extends Iterator[Char] {
    *  @param out PrintStream to use
    */
   def report(pos: Int, msg: String, out: PrintStream) {
-    val line = Position line pos
-    val col = Position column pos
-    val str = getLines() toIndexedSeq line
+    val line  = Position line pos
+    val col   = Position column pos
 
-    out println "%s:%d:%d: %s%s%s^".format(descr, line, col, msg, str, spaces(col - 1))
+    out println "%s:%d:%d: %s%s%s^".format(descr, line, col, msg, lineNum(line), spaces(col - 1))
   }
 
   /**

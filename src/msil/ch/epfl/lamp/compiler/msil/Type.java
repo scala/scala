@@ -812,7 +812,7 @@ public abstract class Type extends MemberInfo {
 	if (k >= 0)
 	    cname = cname.substring(k + 1);
 	return  "[" + t.Assembly().GetName() + "]" + t +
-	    "(" + cname + "#" + Integer.toHexString(t.##) + ")";
+	    "(" + cname + "#" + Integer.toHexString(t.hashCode()) + ")";
     }
     private static String dumpType(Type t) {
 	StringBuffer str = new StringBuffer();
