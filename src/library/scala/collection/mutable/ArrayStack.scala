@@ -30,13 +30,13 @@ object ArrayStack extends SeqFactory[ArrayStack] {
     new ArrayStack[A](els, els.length)
   }
 
-  def growArray(x: Array[AnyRef]) = {
+  private[mutable] def growArray(x: Array[AnyRef]) = {
     val y = new Array[AnyRef](x.length * 2)
     Array.copy(x, 0, y, 0, x.length)
     y
   }
 
-  def clone(x: Array[AnyRef]) = {
+  private[mutable] def clone(x: Array[AnyRef]) = {
     val y = new Array[AnyRef](x.length)
     Array.copy(x, 0, y, 0, x.length)
     y
