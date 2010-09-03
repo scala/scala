@@ -133,6 +133,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ParamTargetClass           = getClass("scala.annotation.target.param")
     lazy val ScalaInlineClass           = getClass("scala.inline")
     lazy val ScalaNoInlineClass         = getClass("scala.noinline")
+    lazy val SpecializedClass           = definitions.getClass("scala.specialized")
+
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
