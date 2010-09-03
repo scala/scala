@@ -10,7 +10,7 @@ package scala.tools.scalap
 
 import java.io.{PrintStream, OutputStreamWriter, ByteArrayOutputStream}
 import scalax.rules.scalasig._
-import tools.nsc.util.{ ClassPath }
+import tools.nsc.util.{ ClassPath, JavaClassPath }
 import tools.util.PathResolver
 import ClassPath.DefaultJavaContext
 import tools.nsc.io.{PlainFile, AbstractFile}
@@ -255,11 +255,17 @@ object Main {
       printPrivates = arguments contains "-private"
       // construct a custom class path
       def cparg = List("-classpath", "-cp") map (arguments getArgument _) reduceLeft (_ orElse _)
-      val path = cparg map (PathResolver fromPathString _) getOrElse EmptyClasspath
-      // print the classpath if output is verbose
-      if (verbose) {
-        Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path)
+      val path = cparg match {
+        case Some(cpstring) =>
+          new JavaClassPath(DefaultJavaContext.classesInExpandedPath(cpstring), DefaultJavaContext)
+
+        case None =>
+          PathResolver.fromPathString("")
       }
+      // print the classpath if output is verbose
+      if (verbose)
+        Console.println(Console.BOLD + "CLASSPATH" + Console.RESET + " = " + path)
+
       // process all given classes
       arguments.getOthers.foreach(process(arguments, path))
     }
