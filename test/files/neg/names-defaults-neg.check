@@ -119,44 +119,47 @@ names-defaults-neg.scala:93: warning: the parameter name y has been deprecated. 
 names-defaults-neg.scala:93: error: parameter specified twice: b
   deprNam3(y = 10, b = 2)
                      ^
-names-defaults-neg.scala:127: error: reference to var2 is ambiguous; it is both, a parameter
+names-defaults-neg.scala:98: error: unknown parameter name: m
+  f3818(y = 1, m = 1)
+                 ^
+names-defaults-neg.scala:131: error: reference to var2 is ambiguous; it is both, a parameter
 name of the method and the name of a variable currently in scope.
   delay(var2 = 40)
              ^
-names-defaults-neg.scala:130: error: missing parameter type for expanded function ((x$1) => a = x$1)
+names-defaults-neg.scala:134: error: missing parameter type for expanded function ((x$1) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
-names-defaults-neg.scala:131: error: parameter specified twice: a
+names-defaults-neg.scala:135: error: parameter specified twice: a
   val taf3 = testAnnFun(b = _: String, a = get(8))
                                          ^
-names-defaults-neg.scala:132: error: wrong number of parameters; expected = 2
+names-defaults-neg.scala:136: error: wrong number of parameters; expected = 2
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                               ^
-names-defaults-neg.scala:140: error: variable definition needs type because the name is used as named argument the definition.
+names-defaults-neg.scala:144: error: variable definition needs type because the name is used as named argument the definition.
   def t3 { var x = t.f(x = 1) }
                ^
-names-defaults-neg.scala:143: error: variable definition needs type because the name is used as named argument the definition.
+names-defaults-neg.scala:147: error: variable definition needs type because the name is used as named argument the definition.
   object t6 { var x = t.f(x = 1) }
                   ^
-names-defaults-neg.scala:146: error: variable definition needs type because the name is used as named argument the definition.
+names-defaults-neg.scala:150: error: variable definition needs type because the name is used as named argument the definition.
   class t9 { var x = t.f(x = 1) }
                  ^
-names-defaults-neg.scala:160: error: variable definition needs type because the name is used as named argument the definition.
+names-defaults-neg.scala:164: error: variable definition needs type because the name is used as named argument the definition.
   def u3 { var x = u.f(x = 1) }
                ^
-names-defaults-neg.scala:163: error: variable definition needs type because the name is used as named argument the definition.
+names-defaults-neg.scala:167: error: variable definition needs type because the name is used as named argument the definition.
   def u6 { var x = u.f(x = "32") }
                ^
-names-defaults-neg.scala:166: error: reference to x is ambiguous; it is both, a parameter
+names-defaults-neg.scala:170: error: reference to x is ambiguous; it is both, a parameter
 name of the method and the name of a variable currently in scope.
   def u9 { var x: Int = u.f(x = 1) }
                               ^
-names-defaults-neg.scala:173: error: variable definition needs type because the name is used as named argument the definition.
+names-defaults-neg.scala:177: error: variable definition needs type because the name is used as named argument the definition.
   class u15 { var x = u.f(x = 1) }
                   ^
-names-defaults-neg.scala:176: error: reference to x is ambiguous; it is both, a parameter
+names-defaults-neg.scala:180: error: reference to x is ambiguous; it is both, a parameter
 name of the method and the name of a variable currently in scope.
   class u18 { var x: Int = u.f(x = 1) }
                                  ^
 one warning found
-40 errors found
+41 errors found

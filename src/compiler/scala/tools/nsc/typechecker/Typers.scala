@@ -2371,6 +2371,9 @@ trait Typers { self: Analyzer =>
                 val funSym = fun1 match { case Block(_, expr) => expr.symbol }
                 if (allArgs.length != args.length && callToCompanionConstr(context, funSym)) {
                   errorTree(tree, "module extending its companion class cannot use default constructor arguments")
+                } else if (allArgs.length > formals.length) {
+                  removeNames(Typer.this)(allArgs, params) // #3818
+                  setError(tree)
                 } else if (allArgs.length == formals.length) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   val note = "Error occurred in an application involving default arguments."

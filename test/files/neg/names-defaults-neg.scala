@@ -93,6 +93,10 @@ object Test extends Application {
   deprNam3(y = 10, b = 2)
 
 
+  // t3818
+  def f3818(x: Int = 1, y: Int, z: Int = 1) = 0
+  f3818(y = 1, m = 1)
+
   // DEFINITIONS
   def test1(a: Int, b: String) = a +": "+ b
   def test2(x: Unit) = println("test2")
