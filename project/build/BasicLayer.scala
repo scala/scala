@@ -184,6 +184,17 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
   ///// TOOLS CONFIGURATION ////////
 
   /**
+   *  Configuration of scalacheck
+   */
+  lazy val scalacheckConfig  = new CompilationStep("scalacheck", pathLayout, log) with Packaging {
+    def label = "["+layer.name+"] scalacheck"
+    def options: Seq[String] = Seq()
+    def dependencies = libraryConfig::compilerConfig::actorsConfig::Nil
+
+    lazy val packagingConfig = new PackagingConfiguration(libsDestination / scalacheckJarName,List(outputDirectory ##))
+  }
+
+  /**
    *  Configuration of scalap tool
    */
   lazy val scalapConfig  = new CompilationStep("scalap", pathLayout,log) with Packaging{

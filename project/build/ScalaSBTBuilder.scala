@@ -183,7 +183,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
     }
 
-    override lazy val toolsWS = new WrapperStep(scalapConfig::partestConfig::Nil)
+    override lazy val toolsWS = new WrapperStep(scalacheckConfig::scalapConfig::partestConfig::Nil)
 
     // An additional task for building only the library of quick
     // Used for compiling msil
@@ -244,7 +244,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
          }
 
-    override lazy val toolsWS= new WrapperStep(scalapConfig::partestConfig::Nil)
+    override lazy val toolsWS= new WrapperStep(scalacheckConfig::scalapConfig::partestConfig::Nil)
 
 
   }

@@ -24,6 +24,7 @@ object ScalaBuildProject {
    // Some path definitions related strings
   val compilerJarName = "scala-compiler.jar"
   val libraryJarName = "scala-library.jar"
+  val scalacheckJarName = "scalacheck.jar"
   val scalapJarName = "scalap.jar"
   val dbcJarName = "scala-dbc.jar"
   val swingJarName = "scala-swing.jar"
