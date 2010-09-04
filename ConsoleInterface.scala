@@ -4,26 +4,51 @@
 package xsbt
 
 import xsbti.Logger
-import scala.tools.nsc.{GenericRunnerCommand,InterpreterLoop}
+import scala.tools.nsc.{GenericRunnerCommand, Interpreter, InterpreterLoop, ObjectRunner, Settings}
+import scala.tools.nsc.interpreter.InteractiveReader
+import scala.tools.nsc.reporters.Reporter
+import scala.tools.nsc.util.ClassPath
 
 class ConsoleInterface
 {
-	def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, log: Logger)
+	def run(args: Array[String], bootClasspathString: String, classpathString: String, initialCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any], log: Logger)
 	{
-		val settings = MakeSettings(args.toList, log)
+		val options = args.toList
+		lazy val interpreterSettings = xsbt.MakeSettings(options, log)
+		val compilerSettings = xsbt.MakeSettings(options, log)
+		
 		if(!bootClasspathString.isEmpty)
-			settings.bootclasspath.value = bootClasspathString
-		settings.classpath.value = classpathString
+			compilerSettings.bootclasspath.value = bootClasspathString
+		compilerSettings.classpath.value = classpathString
 		log.info(Message("Starting scala interpreter..."))
-		log.debug(Message("  Classpath: " + settings.classpath.value))
+		log.debug(Message("  Boot classpath: " + compilerSettings.bootclasspath.value))
+		log.debug(Message("  Classpath: " + compilerSettings.classpath.value))
 		log.info(Message(""))
 		val loop = new InterpreterLoop {
+		
 			override def createInterpreter() = {
-				super.createInterpreter()
-				if(!initialCommands.isEmpty) interpreter.interpret(initialCommands)
+			
+				if(loader ne null)
+				{
+					in = InteractiveReader.createDefault()
+					interpreter = new Interpreter(settings)
+					{
+						override protected def parentClassLoader = if(loader eq null) super.parentClassLoader else loader
+						override protected def newCompiler(settings: Settings, reporter: Reporter) = super.newCompiler(compilerSettings, reporter)
+					}
+					interpreter.setContextClassLoader()
+				}
+				else
+					super.createInterpreter()
+					
+				for( (id, value) <- bindNames zip bindValues)
+					interpreter.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
+			
+				if(!initialCommands.isEmpty)
+					interpreter.interpret(initialCommands)
 			}
 		}
-		loop.main(settings)
+		loop.main(if(loader eq null) compilerSettings else interpreterSettings)
 	}
 }
 object MakeSettings
