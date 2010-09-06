@@ -289,6 +289,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
 
   /** Returns index of the first element satisfying a predicate, or `-1`.
    */
+  @deprecated("Use indexWhere(p) instead.")
   def findIndexOf(p: A => Boolean): Int = indexWhere(p)
 
   /** Finds index of first occurrence of some value in this $coll.

@@ -17,14 +17,18 @@ import annotation.unchecked.uncheckedVariance
 /**
  * @since 2.8
  */
-trait IterableMethods[+A, +This <: IterableLike[A, This] with Iterable[A]] extends TraversableMethods[A, This]
-{
+trait IterableMethods[+A, +This <: IterableLike[A, This] with Iterable[A]] extends TraversableMethods[A, This] {
+  self: Iterable[A] =>
+
   // abstract
   def iterator: Iterator[A]
 
   // concrete
   def dropRight(n: Int): Iterable[A]
+  def grouped(size: Int): Iterator[Iterable[A]]
   def sameElements[B >: A](that: Iterable[B]): Boolean
+  def sliding[B >: A](size: Int): Iterator[Iterable[A]]
+  def sliding[B >: A](size: Int, step: Int): Iterator[Iterable[A]]
   def sortWith(lt: (A, A) => Boolean)(implicit m: ClassManifest[A @uncheckedVariance]): This
   def takeRight(n: Int): Iterable[A]
   def zipAll[B, A1 >: A, That](that: Iterable[B], e1: A1, e2: B)(implicit bf: CanBuildFrom[This, (A1, B), That]): That

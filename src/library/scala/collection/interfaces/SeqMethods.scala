@@ -16,14 +16,21 @@ import scala.reflect.ClassManifest
 /**
  * @since 2.8
  */
-trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMethods[A, This]
-{
+trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMethods[A, This] {
+  self: Seq[A] =>
+
   // abstract
   def apply(idx: Int): A
   def length: Int
 
+  // concrete
+  def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
+  def :+[B >: A, That](elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
   def contains(elem: Any): Boolean
+  def containsSlice[B](that: Seq[B]): Boolean
+  def corresponds[B](that: Seq[B])(p: (A,B) => Boolean): Boolean
   def diff[B >: A, That](that: Seq[B]): This
+  def distinct: This
   def endsWith[B](that: Seq[B]): Boolean
   def indexOfSlice[B >: A](that: Seq[B]): Int
   def indexOfSlice[B >: A](that: Seq[B], fromIndex: Int): Int
@@ -44,13 +51,17 @@ trait SeqMethods[+A, +This <: SeqLike[A, This] with Seq[A]] extends IterableMeth
   def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
   def patch[B >: A, That](from: Int, patch: Seq[B], replaced: Int)(implicit bf: CanBuildFrom[This, B, That]): That
   def prefixLength(p: A => Boolean): Int
-  def distinct: This
   def reverse: This
   def reverseIterator: Iterator[A]
+  def reverseMap[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That
   def segmentLength(p: A => Boolean, from: Int): Int
+  def sortBy[B](f: A => B)(implicit ord: Ordering[B]): This
+  def sortWith(lt: (A, A) => Boolean): This
+  def sorted[B >: A](implicit ord: Ordering[B]): This
   def startsWith[B](that: Seq[B]): Boolean
   def startsWith[B](that: Seq[B], offset: Int): Boolean
   def union[B >: A, That](that: Seq[B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def updated[B >: A, That](index: Int, elem: B)(implicit bf: CanBuildFrom[This, B, That]): That
 
   override def view: SeqView[A, This]
   override def view(from: Int, until: Int): SeqView[A, This]

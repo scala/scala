@@ -18,17 +18,15 @@ import annotation.unchecked.uncheckedVariance
  * @since 2.8
  */
 trait AddableMethods[A, +This <: Addable[A, This]] {
-  protected def repr: This
   def +(elem: A): This
-  def + (elem1: A, elem2: A, elems: A*): This
-  def ++ (xs: TraversableOnce[A]): This
+  def +(elem1: A, elem2: A, elems: A*): This
+  def ++(xs: TraversableOnce[A]): This
 }
 
 /**
  * @since 2.8
  */
 trait SubtractableMethods[A, +This <: Subtractable[A, This]] {
-  protected def repr: This
   def -(elem: A): This
   def -(elem1: A, elem2: A, elems: A*): This
   def --(xs: TraversableOnce[A]): This
@@ -38,10 +36,11 @@ trait SubtractableMethods[A, +This <: Subtractable[A, This]] {
  * @since 2.8
  */
 trait SetMethods[A, +This <: SetLike[A, This] with Set[A]]
-extends IterableMethods[A, This]
-with AddableMethods[A, This]
-with SubtractableMethods[A, This]
-{
+          extends IterableMethods[A, This]
+             with AddableMethods[A, This]
+             with SubtractableMethods[A, This] {
+  self: Set[A] =>
+
   // abstract
   def empty: This
   def contains(elem: A): Boolean
