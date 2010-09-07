@@ -123,6 +123,12 @@ final class ListBuffer[A]
     this
   }
 
+  override def ++=(xs: TraversableOnce[A]): this.type =
+    if (xs eq this) ++= (this take size) else super.++=(xs)
+
+  override def ++=:(xs: TraversableOnce[A]): this.type =
+    if (xs eq this) ++=: (this take size) else super.++=(xs)
+
   /** Clears the buffer contents.
    */
   def clear() {
