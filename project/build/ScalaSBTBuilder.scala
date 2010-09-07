@@ -1,5 +1,6 @@
 import sbt._
 import ScalaBuildProject._
+import ScalaSBTBuilder._
 
 /**
  * This class is the entry point for building scala with SBT.
@@ -11,22 +12,22 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
   override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"||AdditionalResources.basicFilter) // Support of triggered execution at top level
   // Top Level Tasks
-  lazy val build = task{None}.dependsOn(quick.binPack,quick.binQuick)
-  lazy val clean = locker.clean
-  lazy val docs = quick.scaladoc
-  lazy val palo = locker.pack
-  lazy val pasta = quick.pasta
-  lazy val newStarr = quick.newStarr
-  lazy val newLocker=locker.newLocker
-  lazy val buildForkjoin=libs.buildForkjoin
-  lazy val newForkjoin = libs.newForkjoin
-  lazy val buildFjbg = libs.buildFjbg
-  lazy val newFjbg = libs.newFjbg
-  lazy val buildMsil = libs.buildMsil
-  lazy val newMsil = libs.newMsil
-  lazy val partest = quick.externalPartest
-
-
+  lazy val build = task{None}.dependsOn(quick.binPack,quick.binQuick).describedAs(buildTaskDescription)
+  lazy val clean = quick.clean.dependsOn(libs.clean).describedAs(cleanTaskDescription)
+  lazy val cleanAll = locker.clean.dependsOn(libs.clean).describedAs(cleanAllTaskDescription)
+  lazy val docs = quick.scaladoc.describedAs(docsTaskDescription)
+  lazy val palo = locker.pack.describedAs(paloTaskDescription)
+  lazy val pasta = quick.pasta.describedAs(pastaTaskDescription)
+  lazy val newStarr = quick.newStarr.describedAs(newStarrTaskDescription)
+  lazy val newLocker=locker.newLocker.describedAs(newLockerTaskDescription)
+  lazy val buildForkjoin=libs.buildForkjoin.describedAs(buildForkjoinTaskDescription)
+  lazy val newForkjoin = libs.newForkjoin.describedAs(newForkjoinTaskDescription)
+  lazy val buildFjbg = libs.buildFjbg.describedAs(buildFjbgTaskDescription)
+  lazy val newFjbg = libs.newFjbg.describedAs(newFjbgTaskDescription)
+  lazy val buildMsil = libs.buildMsil.describedAs(buildMislTaskDescription)
+  lazy val newMsil = libs.newMsil.describedAs(newMsilTaskDescription)
+  lazy val partest = quick.externalPartest.describedAs(partestTaskDescription)
+  lazy val stabilityTest = strap.stabilityTest.describedAs(stabilityTestTaskDescription)
 
   // Top level variables
 
@@ -40,8 +41,9 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
       import java.util.Calendar;
       import java.text.SimpleDateFormat;
       val formatString = "yyyyMMddHHmmss"
-      new SimpleDateFormat(formatString) format( Calendar.getInstance.getTime)
+      new SimpleDateFormat(formatString) format(Calendar.getInstance.getTime)
     }
+
     def getVersion:String ={
       val version:String = projectVersion.value.toString
       val stopIndex = version.lastIndexOf('-')
@@ -50,6 +52,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
         case i => version substring(0,i)
       }
     }
+
     def getRevision:Int = {
       new SVN(info.projectPath).getRevisionNumber
     }
@@ -138,11 +141,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
 
     override lazy val packingDestination:Path = outputRootPath /"palo"
 
-    /**
-     *  We must override the compilation steps as we only want to compile
-     * the core library (and not actors,dbc, scalap, partest)
-     */
-     override lazy val libraryWS = {
+    override lazy val libraryWS = {
         new WrapperStep(libraryConfig::Nil) with WrapperPackaging{
           lazy val packagingConfig = new PackagingConfiguration(libsDestination/libraryJarName, jarContent)
          }
@@ -173,6 +172,7 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
     override def compilerAdditionalJars = msilJar::fjbgJar::Nil
     override def libraryAdditionalJars = forkJoinJar::Nil
 
+    override def cleaningList = packedStarrOutput::super.cleaningList
 
 
     override lazy val libraryWS = new WrapperStep(libraryConfig::actorsConfig::dbcConfig::swingConfig::Nil) with Packaging{
@@ -247,6 +247,17 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
     override lazy val toolsWS= new WrapperStep(scalacheckConfig::scalapConfig::partestConfig::Nil)
 
 
+    def compare = {
+      import PathConfig.classes
+      def filter(path:Path)= path.descendentsExcept(AllPassFilter, HiddenFileFilter || "*.properties")
+      Comparator.compare(quick.pathLayout.outputDir/classes ##,this.pathLayout.outputDir/classes ##, filter _ ,log)
+    }
+
+    lazy val stabilityTest=task{
+      log.warn("Stability test must be runned on a clean build in order to yield correct results.")
+      compare
+    }.dependsOn(finishLayer)
+
   }
 
 
@@ -298,8 +309,6 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
       def options = Seq()
       override def javaOptions = Seq("-target","1.5","-source","1.5","-g")
       lazy val packagingConfig = new PackagingConfiguration(libsDestination/forkjoinJarName,List(outputDirectory ##))
-
-      // TODO Verify java options
     }
 
     lazy val fjbgConfig =  new CompilationStep("fjbg",pathLayout,log) with Packaging{
@@ -322,5 +331,30 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
       lazy val packagingConfig = new PackagingConfiguration(libsDestination/msilJarName,List(outputDirectory ##))
 
     }
+
+    def cleaningList=layerOutput::layerEnvironment.envBackingPath::Nil
+
+    def  cleanFiles = FileUtilities.clean(cleaningList,true,log)
+
+    lazy val clean:Task = task{cleanFiles}// We use super.task, so cleaning is done in every case, even when locked
+
   }
- }
+}
+object ScalaSBTBuilder {
+  val buildTaskDescription = "build locker, lock it, build quick and create pack. It is the equivalent command to 'ant build'."
+  val cleanTaskDescription = "clean the outputs of quick and strap. locker remains untouched."
+  val cleanAllTaskDescription = "same as clean, but in addition clean locker too."
+  val docsTaskDescription = "generate the scaladoc"
+  val partestTaskDescription = "run partest"
+  val stabilityTestTaskDescription = "run stability testing. It is required to use a clean build (for example, execute the clean-all action) in order to ensure correctness of the result."
+  val paloTaskDescription = "create palo"
+  val pastaTaskDescription = "create all the jar needed to make a new starr from quick (pasta = packed starr). It does not replace the current library and compiler jars in the libs folder, but the products of the task are instead located in target/pasta"
+  val newStarrTaskDescription = "create a new starr and replace the library and compiler jars in the libs folder. It will keep locker locker locked, meaning that if you want to update locker after updating starr, you must run the 'new-locker' command. It will not automatically run partest and stability testing before replacing."
+  val newLockerTaskDescription = "replace locker. It will build a new locker. It does not automatically rebuild quick."
+  val buildForkjoinTaskDescription = "create all the jar needed to make a new forkjoin. It does not replace the current library and compiler jars in the libs folder, but the products of the task are instead located in target/libs."
+  val newForkjoinTaskDescription = "create a new forkjoin and replace the corresponding jar in the libs folder."
+  val buildFjbgTaskDescription = "create all the jar needed to make a new fjbg. It does not replace the current library and compiler jars in the libs folder, but the products of the task are instead located in target/libs."
+  val newFjbgTaskDescription = "create a new fjbg and replace the corresponding jar in the libs folder."
+  val buildMislTaskDescription = "create all the jar needed to make a new msil. It does not replace the current library and compiler jars in the libs folder, but the products of the task are instead located in target/libs."
+  val newMsilTaskDescription = "create a msil and replace the corresponding jar in the libs folder."
+}

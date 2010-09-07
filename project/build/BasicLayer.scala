@@ -18,17 +18,21 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
 
   def buildInfoEnvironmentLocation:Path=outputRootPath / ("build-"+name+".properties")
 
-  override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"|| AdditionalResources.basicFilter) // Support of triggered execution at project level
-
+  // Support of triggered execution at project level
+  override def watchPaths = info.projectPath / "src" ** ("*.scala" || "*.java"|| AdditionalResources.basicFilter)
   override def dependencies = info.dependencies
 
   lazy val copyright = property[String]
   lazy val partestVersionNumber = property[Version]
 
   lazy val nextLayer:Option[BasicLayer]=None
+  def packingDestination :Path = layerOutput / "pack"
   lazy val libsDestination=packingDestination/"lib"
   lazy val packedStarrOutput=outputRootPath / "pasta"
   lazy val requiredPluginsDirForCompilation = layerOutput / "misc" / "scala-devel" / "plugins"
+
+  def compilerAdditionalJars: List[Path] = Nil
+  def libraryAdditionalJars: List[Path] = Nil
 
 
 
@@ -268,25 +272,11 @@ abstract class BasicLayer(val info:ProjectInfo,val versionNumber:String, previou
 
 
   // Grouping compilation steps
-  def minimalCompilation = false // It must be true for locker because we do not nedd to compile everything
+  def minimalCompilation = false // It must be true for locker because we do not need to compile everything
 
   def libraryWS:WrapperStep with Packaging
   def toolsWS:WrapperStep
   lazy val pluginsWS = new WrapperStep(continuationPluginConfig::continuationLibraryConfig::Nil)
 
   lazy val allSteps = new WrapperStep(libraryWS::compilerConfig::pluginsWS::toolsWS::Nil)
-
-
-
-
-  //Paths location that must be defined layer by layer
-  /*
-   * We must define which are the libraries used to instantiate the compiler
-   * that will be used to compile this layer.
-   */
-  def packingDestination :Path = layerOutput / "pack"
-  def compilerAdditionalJars: List[Path] = Nil
-  def libraryAdditionalJars: List[Path] = Nil
-
-
-  }
+}

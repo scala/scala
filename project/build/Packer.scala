@@ -83,6 +83,8 @@ trait Packer {
   }
   lazy val pack=task{packF}.dependsOn(finishLayer)
 }
+
+
 class PackagingConfiguration(val jarDestination:Path, val content:Iterable[Path],val manifest:Manifest,val jarsToInclude:List[Path]){
   def this(jarDestination:Path,content:Iterable[Path])=this(jarDestination,content, new Manifest,Nil)
   def this(jarDestination:Path,content:Iterable[Path],jarsToInclude:List[Path])=this(jarDestination,content,new Manifest, jarsToInclude)

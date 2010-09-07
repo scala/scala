@@ -12,11 +12,10 @@ class SVN(root: Path) {
 
   /**
    * Gets the revision number of the repository given through the constructor of the class
-   * It assumes that svn is installed on the running computer.
+   * It assumes that svn or git is installed on the running computer. Return 0 if it was not
+   * able to found the revision number
    */
-  def getRevisionNumber: Int = getSvn orElse getGit getOrElse {
-    throw new UnableToGetRevisionNumberException
-  }
+  def getRevisionNumber: Int = getSvn orElse getGit getOrElse 0
   def getSvn: Option[Int] = {
     val svnInfo = Process("svn info", root)
     val out = new ByteArrayOutputStream
@@ -36,5 +35,3 @@ class SVN(root: Path) {
     try   { Some(Process(GitSvnRevTool.toString, root).!!.trim.toInt) }
     catch { case _: Exception => None }
 }
-
-class UnableToGetRevisionNumberException extends RuntimeException
