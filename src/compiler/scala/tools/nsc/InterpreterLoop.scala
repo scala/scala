@@ -117,7 +117,8 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       settings.classpath append addedClasspath
 
     interpreter = new Interpreter(settings, out) {
-      override protected def parentClassLoader = classOf[InterpreterLoop].getClassLoader
+      override protected def parentClassLoader =
+        settings.explicitParentLoader.getOrElse( classOf[InterpreterLoop].getClassLoader )
     }
     interpreter.setContextClassLoader()
     // interpreter.quietBind("settings", "scala.tools.nsc.InterpreterSettings", interpreter.isettings)

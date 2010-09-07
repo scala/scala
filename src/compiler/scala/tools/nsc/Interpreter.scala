@@ -229,7 +229,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private def methodByName(c: Class[_], name: String): reflect.Method =
     c.getMethod(name, classOf[Object])
 
-  protected def parentClassLoader: ClassLoader = this.getClass.getClassLoader()
+  protected def parentClassLoader: ClassLoader =
+    settings.explicitParentLoader.getOrElse( this.getClass.getClassLoader() )
+
   def getInterpreterClassLoader() = classLoader
 
   // Set the current Java "context" class loader to this interpreter's class loader
@@ -1267,15 +1269,16 @@ object Interpreter {
       }
     }
   }
-  def breakIf(assertion: => Boolean, args: DebugParam[_]*): Unit =
-    if (assertion) break(args.toList)
+  // provide the enclosing type T
+  //  in order to set up the interpreter's classpath and parent class loader properly
+  def breakIf[T: Manifest](assertion: => Boolean, args: DebugParam[_]*): Unit =
+    if (assertion) break[T](args.toList)
 
   // start a repl, binding supplied args
-  def break(args: List[DebugParam[_]]): Unit = {
+  def break[T: Manifest](args: List[DebugParam[_]]): Unit = {
     val intLoop = new InterpreterLoop
     intLoop.settings = new Settings(Console.println)
-    // XXX come back to the dot handling
-    intLoop.settings.classpath.value = "."
+    intLoop.settings.embeddedDefaults[T]
     intLoop.createInterpreter
     intLoop.in = InteractiveReader.createDefault(intLoop.interpreter)
 
