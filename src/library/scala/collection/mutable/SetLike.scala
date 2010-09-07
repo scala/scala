@@ -118,7 +118,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 
   /** Removes all elements from the set for which do not satisfy a predicate.
    *  @param  p  the predicate used to test elements. Only elements for
-   *             while `p` returns `true` are retained in the set; all others
+   *             which `p` returns `true` are retained in the set; all others
    *             are removed.
    */
   def retain(p: A => Boolean): Unit = for (elem <- this.toList) if (!p(elem)) this -= elem
