@@ -11,6 +11,7 @@ package settings
 import io.{AbstractFile, VirtualDirectory}
 import scala.tools.util.StringOps
 import scala.collection.mutable.ListBuffer
+import scala.io.Source
 
 /** A mutable Settings object.
  */
@@ -159,6 +160,33 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
 
     doArgs(args)
   }
+
+  /** Initializes these settings for embedded use by type `T`.
+  * The class loader defining `T` should provide resources `app.class.path`
+  * and `boot.class.path`.  These resources should contain the application
+  * and boot classpaths in the same form as would be passed on the command line.*/
+  def embeddedDefaults[T: Manifest]: Unit =
+    embeddedDefaults(implicitly[Manifest[T]].erasure.getClassLoader)
+
+  /** Initializes these settings for embedded use by a class from the given class loader.
+  * The class loader for `T` should provide resources `app.class.path`
+  * and `boot.class.path`.  These resources should contain the application
+  * and boot classpaths in the same form as would be passed on the command line.*/
+  def embeddedDefaults(loader: ClassLoader) {
+    explicitParentLoader = Option(loader) // for the Interpreter parentClassLoader
+    getClasspath("app", loader) foreach { classpath.value = _ }
+    getClasspath("boot", loader) foreach { bootclasspath append _ }
+  }
+
+  /** The parent loader to use for the interpreter.*/
+  private[nsc] var explicitParentLoader: Option[ClassLoader] = None
+
+  /** Retrieves the contents of resource "${id}.class.path" from `loader`
+  * (wrapped in Some) or None if the resource does not exist.*/
+  private def getClasspath(id: String, loader: ClassLoader): Option[String] =
+    Option(loader).flatMap(ld => Option(ld.getResource(id + ".class.path"))).map { cp =>
+       Source.fromURL(cp).mkString
+    }
 
   // a wrapper for all Setting creators to keep our list up to date
   private def add[T <: Setting](s: T): T = {
