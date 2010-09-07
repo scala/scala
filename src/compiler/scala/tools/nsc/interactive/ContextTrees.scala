@@ -27,7 +27,7 @@ trait ContextTrees { self: Global =>
 
   /** Optionally returns the smallest context that contains given `pos`, or None if none exists.
    */
-  def locateContext(contexts: Contexts, pos: Position): Option[Context] = {
+  def locateContext(contexts: Contexts, pos: Position): Option[Context] = synchronized {
     def locateNearestContextTree(contexts: Contexts, pos: Position, recent: Array[ContextTree]): Option[ContextTree] = {
       locateContextTree(contexts, pos) match {
         case Some(x) =>
@@ -70,7 +70,7 @@ trait ContextTrees { self: Global =>
    *  If the `context` has a transparent position, add it multiple times
    *  at the positions of all its solid descendant trees.
    */
-  def addContext(contexts: Contexts, context: Context) {
+  def addContext(contexts: Contexts, context: Context): Unit = {
     val cpos = context.tree.pos
     if (cpos.isTransparent)
       for (t <- context.tree.children flatMap solidDescendants)
@@ -82,7 +82,7 @@ trait ContextTrees { self: Global =>
   /** Insert a context with non-transparent position `cpos`
    *  at correct position into a buffer of context trees.
    */
-  def addContext(contexts: Contexts, context: Context, cpos: Position) {
+  def addContext(contexts: Contexts, context: Context, cpos: Position): Unit = synchronized {
     try {
       if (!cpos.isRange) {}
       else if (contexts.isEmpty) contexts += new ContextTree(cpos, context)

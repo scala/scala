@@ -3,7 +3,8 @@ package interactive
 
 import java.io.{ PrintWriter, StringWriter }
 
-import scala.collection.mutable.{LinkedHashMap, SynchronizedMap}
+import scala.collection.mutable
+import mutable.{LinkedHashMap, SynchronizedMap,LinkedHashSet, SynchronizedSet}
 import scala.concurrent.SyncVar
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
@@ -85,7 +86,13 @@ self =>
 
       while(true)
         try {
-          pollForWork()
+          try {
+            pollForWork()
+	  } catch {
+            case ex : Throwable =>
+	      if (context.unit != null) integrateNew()
+              throw ex
+	  }
           if (typerRun == currentTyperRun)
             return
 
@@ -111,6 +118,18 @@ self =>
     case u: RichCompilationUnit => addContext(u.contexts, c)
     case _ =>
   }
+
+  /** The top level classes and objects currently seen in the presentation compiler
+   */
+  private val currentTopLevelSyms = new mutable.LinkedHashSet[Symbol]
+
+  /** The top level classes and objects no longer seen in the presentation compiler
+   */
+  val deletedTopLevelSyms = new mutable.LinkedHashSet[Symbol] with mutable.SynchronizedSet[Symbol]
+
+  /** Called from typechecker every time a top-level class or object is entered.
+   */
+  override def registerTopLevelSym(sym: Symbol) { currentTopLevelSyms += sym }
 
   // ----------------- Polling ---------------------------------------
 
@@ -276,8 +295,18 @@ self =>
       activeLocks = 0
       currentTyperRun.typeCheck(unit)
       unit.status = currentRunId
-      // todo: garbage collect any tyop-level symbols whose types are no longer valid for
-      // currentRunId
+      syncTopLevelSyms(unit)
+    }
+  }
+
+  def syncTopLevelSyms(unit: RichCompilationUnit) {
+    val deleted = currentTopLevelSyms filter { sym =>
+      sym.sourceFile == unit.source.file && runId(sym.validTo) < currentRunId
+    }
+    for (d <- deleted) {
+      d.owner.info.decls unlink d
+      deletedTopLevelSyms += d
+      currentTopLevelSyms -= d
     }
   }
 
@@ -288,19 +317,30 @@ self =>
 
   // ----------------- Implementations of client commands -----------------------
 
-  def respond[T](result: Response[T])(op: => T): Unit = {
+  def respond[T](result: Response[T])(op: => T): Unit =
+    respondGradually(result)(Stream(op))
+
+  def respondGradually[T](response: Response[T])(op: => Stream[T]): Unit = {
     val prevResponse = pendingResponse
     try {
-      pendingResponse = result
-      if (!result.isCancelled) result set op
+      pendingResponse = response
+      if (!response.isCancelled) {
+        var results = op
+        while (!response.isCancelled && results.nonEmpty) {
+          val result = results.head
+          results = results.tail
+          if (results.isEmpty) response set result
+          else response setProvisionally result
+        }
+      }
     } catch {
       case CancelException =>
         ;
       case ex @ FreshRunReq =>
-        scheduler.postWorkItem(() => respond(result)(op))
+        scheduler.postWorkItem(() => respondGradually(response)(op))
         throw ex
       case ex =>
-        result raise ex
+        response raise ex
         throw ex
     } finally {
       pendingResponse = prevResponse
@@ -319,8 +359,8 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reload(sources: List[SourceFile], result: Response[Unit]) {
-    respond(result)(reloadSources(sources))
+  def reload(sources: List[SourceFile], response: Response[Unit]) {
+    respond(response)(reloadSources(sources))
     if (outOfDate) throw FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
   }
@@ -344,14 +384,14 @@ self =>
     currentTyperRun.typedTree(unitOf(source))
   }
 
-  /** Set sync var `result` to a fully attributed tree located at position `pos`  */
-  def getTypedTreeAt(pos: Position, result: Response[Tree]) {
-    respond(result)(typedTreeAt(pos))
+  /** Set sync var `response` to a fully attributed tree located at position `pos`  */
+  def getTypedTreeAt(pos: Position, response: Response[Tree]) {
+    respond(response)(typedTreeAt(pos))
   }
 
-  /** Set sync var `result` to a fully attributed tree corresponding to the entire compilation unit  */
-  def getTypedTree(source : SourceFile, forceReload: Boolean, result: Response[Tree]) {
-    respond(result)(typedTree(source, forceReload))
+  /** Set sync var `response` to a fully attributed tree corresponding to the entire compilation unit  */
+  def getTypedTree(source : SourceFile, forceReload: Boolean, response: Response[Tree]) {
+    respond(response)(typedTree(source, forceReload))
   }
 
   def stabilizedType(tree: Tree): Type = tree match {
@@ -372,8 +412,8 @@ self =>
 
   import analyzer.{SearchResult, ImplicitSearch}
 
-  def getScopeCompletion(pos: Position, result: Response[List[Member]]) {
-    respond(result) { scopeMembers(pos) }
+  def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
+    respond(response) { scopeMembers(pos) }
   }
 
   val Dollar = newTermName("$")
@@ -415,12 +455,12 @@ self =>
     result
   }
 
-  def getTypeCompletion(pos: Position, result: Response[List[Member]]) {
-    respond(result) { typeMembers(pos) }
+  def getTypeCompletion(pos: Position, response: Response[List[Member]]) {
+    respondGradually(response) { typeMembers(pos) }
     if (debugIDE) scopeMembers(pos)
   }
 
-  def typeMembers(pos: Position): List[TypeMember] = {
+  def typeMembers(pos: Position): Stream[List[TypeMember]] = {
     var tree = typedTreeAt(pos)
 
     // Let's say you have something like val x: List[Int] and ypu want to get completion after List
@@ -478,19 +518,23 @@ self =>
 
     for (sym <- ownerTpe.decls)
       addTypeMember(sym, pre, false, NoSymbol)
-    for (sym <- ownerTpe.members)
-      addTypeMember(sym, pre, true, NoSymbol)
-    val applicableViews: List[SearchResult] =
-      new ImplicitSearch(tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true, context.makeImplicit(reportAmbiguousErrors = false))
-        .allImplicits
-    for (view <- applicableViews) {
-      val vtree = viewApply(view)
-      val vpre = stabilizedType(vtree)
-      for (sym <- vtree.tpe.members) {
-        addTypeMember(sym, vpre, false, view.tree.symbol)
+    members.values.toList #:: {
+      for (sym <- ownerTpe.members)
+        addTypeMember(sym, pre, true, NoSymbol)
+      members.values.toList #:: {
+        val applicableViews: List[SearchResult] =
+          new ImplicitSearch(tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true, context.makeImplicit(reportAmbiguousErrors = false))
+            .allImplicits
+        for (view <- applicableViews) {
+          val vtree = viewApply(view)
+          val vpre = stabilizedType(vtree)
+          for (sym <- vtree.tpe.members) {
+            addTypeMember(sym, vpre, false, view.tree.symbol)
+          }
+        }
+        Stream(members.values.toList)
       }
     }
-    members.values.toList
   }
 
   // ---------------- Helper classes ---------------------------
