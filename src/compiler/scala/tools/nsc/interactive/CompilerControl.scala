@@ -34,6 +34,8 @@ trait CompilerControl { self: Global =>
     accessible: Boolean,
     viaImport: Tree) extends Member
 
+  type Response[T] = scala.tools.nsc.interactive.Response[T]
+
   /** The scheduler by which client and compiler communicate
    *  Must be initialized before starting compilerRunner
    */
