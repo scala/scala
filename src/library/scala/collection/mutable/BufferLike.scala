@@ -244,7 +244,7 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
    *  @return     this buffer
    */
   @deprecated("use ++=: instead")
-  final def ++:(xs: Traversable[A]): This = ++=:(xs)
+  final def ++:(xs: collection.Traversable[A]): This = ++=:(xs)
 
   /** This method prepends elements to the buffer and
    *  returns the same buffer.
