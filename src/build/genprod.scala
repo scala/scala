@@ -153,6 +153,18 @@ object FunctionOne extends Function(1) {
   /** (f andThen g)(x) ==  g(f(x))
    */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
+
+  /** Turns a function A => Option[B] into a PartialFunction[A, B].
+   *  @see     PartialFunction#lift
+   *  @return  a partial function which is defined for those inputs
+   *           where this function returns Some(_) and undefined where
+   *           this function returns None.
+   */
+  def unlift[R1](implicit ev: R <:< Option[R1]): PartialFunction[T1, R1] = new PartialFunction[T1, R1] {
+    def apply(x: T1): R1 = ev(Function1.this.apply(x)).get
+    def isDefinedAt(x: T1): Boolean = Function1.this.apply(x).isDefined
+    override def lift = Function1.this.asInstanceOf[T1 => Option[R1]]
+  }
 """
 }
 
@@ -314,6 +326,7 @@ import scala.collection.generic.CanBuildFrom
   class Zipped[+Repr1, +El1, +Repr2, +El2](coll1: TraversableLike[El1, Repr1], coll2: IterableLike[El2, Repr2]) { // coll2: IterableLike for filter
     def map[B, To](f: (El1, El2) => B)(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
       val b = cbf(coll1.repr)
+      b.sizeHint(coll1)
       val elems2 = coll2.iterator
 
       for(el1 <- coll1)
