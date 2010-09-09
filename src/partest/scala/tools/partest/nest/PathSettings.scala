@@ -37,8 +37,11 @@ object PathSettings {
   // Directory <root>/build/pack/lib
   lazy val buildPackLibDir = Directory(buildDir / "pack" / "lib")
 
-  lazy val scalaCheck = buildPackLibDir.files find (_.name startsWith "scalacheck") getOrElse {
-    error("No scalacheck jar found in '%s'" format srcLibDir)
+  lazy val scalaCheck = {
+    (buildPackLibDir.files find (_.name startsWith "scalacheck")) orElse
+    (srcLibDir.files find (_.name startsWith "scalacheck")) getOrElse {
+      error("No scalacheck jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
+    }
   }
 }
 
