@@ -738,7 +738,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       addModuleMethod(FloatClass, "MinNegativeValue", -java.lang.Float.MAX_VALUE)
       addModuleMethod(FloatClass, "MaxValue",  java.lang.Float.MAX_VALUE)
       addDeprecatedModuleMethod(FloatClass, "Epsilon",   java.lang.Float.MIN_VALUE, "use Float.MinPositiveValue instead")
-      addModuleMethod(FloatClass, "MinPositiveValue", -java.lang.Float.MAX_VALUE)
+      addModuleMethod(FloatClass, "MinPositiveValue", java.lang.Float.MIN_VALUE)
       addModuleMethod(FloatClass, "NaN",       java.lang.Float.NaN)
       addModuleMethod(FloatClass, "PositiveInfinity", java.lang.Float.POSITIVE_INFINITY)
       addModuleMethod(FloatClass, "NegativeInfinity", java.lang.Float.NEGATIVE_INFINITY)
