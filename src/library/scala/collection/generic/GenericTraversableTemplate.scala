@@ -14,8 +14,9 @@ package generic
 import mutable.Builder
 import annotation.unchecked.uncheckedVariance
 
-/** A template class for companion objects of ``regular'' collection classes
+/** A template class for companion objects of ``regular`` collection classes
  *  that represent an unconstrained higher-kinded type.
+ *
  *  @tparam  A    The type of the collection elements.
  *  @tparam  CC   The type constructor representing the collection class.
  *  @author Martin Odersky
@@ -39,6 +40,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
   def foreach[U](f: A => U): Unit
 
   /** Selects the first element of this $coll.
+   *
    *  @return  the first element of this $coll.
    *  @throws `NoSuchElementException` if the $coll is empty.
    */
@@ -65,13 +67,14 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
   def genericBuilder[B]: Builder[B, CC[B]] = companion.newBuilder[B]
 
   /** Converts this $coll of pairs into two collections of the first and second
-   *  halfs of each pair.
-   *  @param A1 the type of the first half of the element pairs
-   *  @param A2 the type of the second half of the element pairs
-   *  @param asPair an implicit conversion which asserts that the element type of this
-   *          $coll is a pair.
-   *  @return a pair ${coll}s, containing the first, respectively second half
-   *          of each element pair of this $coll.
+   *  half of each pair.
+   *
+   *  @param A1     the type of the first half of the element pairs
+   *  @param A2     the type of the second half of the element pairs
+   *  @param asPair an implicit conversion which asserts that the element type
+   *                of this $coll is a pair.
+   *  @return       a pair ${coll}s, containing the first, respectively second
+   *                half of each element pair of this $coll.
    */
   def unzip[A1, A2](implicit asPair: A => /*<:<!!!*/ (A1, A2)): (CC[A1], CC[A2]) = {
     val b1 = genericBuilder[A1]
@@ -86,9 +89,10 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
 
   /** Converts this $coll of traversable collections into
    *  a $coll in which all element collections are concatenated.
+   *
    *  @tparam B the type of the elements of each traversable collection.
-   *  @param asTraversable an implicit conversion which asserts that the element type of this
-   *         $coll is a `Traversable`.
+   *  @param asTraversable an implicit conversion which asserts that the element
+   *          type of this $coll is a `Traversable`.
    *  @return a new $coll resulting from concatenating all element ${coll}s.
    *  @usecase def flatten[B]: $Coll[B]
    */
@@ -101,9 +105,10 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
 
   /** Transposes this $coll of traversable collections into
    *  a $coll of ${coll}s.
+   *
    *  @tparam B the type of the elements of each traversable collection.
-   *  @param  asTraversable an implicit conversion which asserts that the element type of this
-   *          $coll is a `Traversable`.
+   *  @param  asTraversable an implicit conversion which asserts that the
+   *          element type of this $coll is a `Traversable`.
    *  @return a two-dimensional $coll of ${coll}s which has as ''n''th row
    *          the ''n''th column of this $coll.
    */

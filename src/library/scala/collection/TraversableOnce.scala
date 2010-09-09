@@ -31,8 +31,9 @@ import mutable.{ Buffer, ListBuffer, ArrayBuffer }
  *  @define coll traversable or iterator
  *  @define orderDependentFold
  *
- *    Note: might return different results for different runs, unless the underlying collection type is ordered
- *    or the operator is associative and commutative.
+ *    Note: might return different results for different runs, unless the
+ *    underlying collection type is ordered or the operator is associative
+ *    and commutative.
  *  @define willNotTerminateInf
  *
  *    Note: will not terminate for infinite-sized collections.
@@ -120,9 +121,11 @@ trait TraversableOnce[+A] {
     cnt
   }
 
-  /** Applies a binary operator to a start value and all elements of this $coll, going left to right.
+  /** Applies a binary operator to a start value and all elements of this $coll,
+   *  going left to right.
    *
-   *  Note: `/:` is alternate syntax for `foldLeft`; `z /: xs` is the same as `xs foldLeft z`.
+   *  Note: `/:` is alternate syntax for `foldLeft`; `z /: xs` is the same as
+   *  `xs foldLeft z`.
    *  $willNotTerminateInf
    *  $orderDependentFold
    *
@@ -138,9 +141,11 @@ trait TraversableOnce[+A] {
    */
   def /:[B](z: B)(op: (B, A) => B): B = foldLeft(z)(op)
 
-  /** Applies a binary operator to all elements of this $coll and a start value, going right to left.
+  /** Applies a binary operator to all elements of this $coll and a start value,
+   *  going right to left.
    *
-   *  Note: `:\` is alternate syntax for `foldRight`; `xs :\ z` is the same as `xs foldRight z`.
+   *  Note: `:\` is alternate syntax for `foldRight`; `xs :\ z` is the same as
+   *  `xs foldRight z`.
    *  $willNotTerminateInf
    *  $orderDependentFold
    *
@@ -156,7 +161,8 @@ trait TraversableOnce[+A] {
    */
   def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
-  /** Applies a binary operator to a start value and all elements of this $coll, going left to right.
+  /** Applies a binary operator to a start value and all elements of this $coll,
+   *  going left to right.
    *
    *  $willNotTerminateInf
    *  $orderDependentFold
@@ -177,7 +183,8 @@ trait TraversableOnce[+A] {
     result
   }
 
-  /** Applies a binary operator to all elements of this $coll and a start value, going right to left.
+  /** Applies a binary operator to all elements of this $coll and a start value,
+   *  going right to left.
    *
    *  $willNotTerminateInf
    *  $orderDependentFold
@@ -258,7 +265,8 @@ trait TraversableOnce[+A] {
   def reduceLeftOption[B >: A](op: (B, A) => B): Option[B] =
     if (isEmpty) None else Some(reduceLeft(op))
 
-  /** Optionally applies a binary operator to all elements of this $coll, going right to left.
+  /** Optionally applies a binary operator to all elements of this $coll, going
+   *  right to left.
    *  $willNotTerminateInf
    *  $orderDependentFold
    *
@@ -375,9 +383,9 @@ trait TraversableOnce[+A] {
   /** Converts this $coll to an array.
    *  $willNotTerminateInf
    *
-   *  @tparam B    the type of the elements of the array. A `ClassManifest` for this type must
-   *               be available.
-   *  @return  an array containing all elements of this $coll.
+   *  @tparam B the type of the elements of the array. A `ClassManifest` for
+   *            this type must be available.
+   *  @return   an array containing all elements of this $coll.
    *
    *  @usecase def toArray: Array[A]
    *  @return  an array containing all elements of this $coll.
@@ -436,15 +444,15 @@ trait TraversableOnce[+A] {
   def toSet[B >: A]: immutable.Set[B] = immutable.Set() ++ self
 
   /** Converts this $coll to a map.  This method is unavailable unless
-   *  the elements are members of Tuple2, each ((K, V)) becoming a key-value
+   *  the elements are members of Tuple2, each ((T, U)) becoming a key-value
    *  pair in the map.  Duplicate keys will be overwritten by later keys:
    *  if this is an unordered collection, which key is in the resulting map
    *  is undefined.
    *  $willNotTerminateInf
-   *  @return      a map containing all elements of this $coll.
-   *  @usecase   def toMap: Map[K, V]
-   *  @return      a map of type `immutable.Map[K, V]`
-   *               containing all key/value pairs of type `(K, V)` of this $coll.
+   *  @return    a map containing all elements of this $coll.
+   *  @usecase   def toMap[T, U]: Map[T, U]
+   *  @return    a map of type `immutable.Map[T, U]`
+   *             containing all key/value pairs of type `(T, U)` of this $coll.
    */
   def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
     val b = immutable.Map.newBuilder[T, U]
@@ -454,15 +462,17 @@ trait TraversableOnce[+A] {
     b.result
   }
 
-  /** Displays all elements of this $coll in a string using start, end, and separator strings.
+  /** Displays all elements of this $coll in a string using start, end, and
+   *  separator strings.
    *
    *  @param start the starting string.
    *  @param sep   the separator string.
    *  @param end   the ending string.
    *  @return      a string representation of this $coll. The resulting string
    *               begins with the string `start` and ends with the string
-   *               `end`. Inside, the string representations (w.r.t. the method `toString`)
-   *               of all elements of this $coll are separated by the string `sep`.
+   *               `end`. Inside, the string representations (w.r.t. the method
+   *               `toString`) of all elements of this $coll are separated by
+   *               the string `sep`.
    *
    *  @example  `List(1, 2, 3).mkString("(", "; ", ")") = "(1; 2; 3)"`
    */
@@ -481,13 +491,16 @@ trait TraversableOnce[+A] {
   def mkString(sep: String): String = mkString("", sep, "")
 
   /** Displays all elements of this $coll in a string.
+   *
    *  @return a string representation of this $coll. In the resulting string
    *          the string representations (w.r.t. the method `toString`)
-   *          of all elements of this $coll follow each other without any separator string.
+   *          of all elements of this $coll follow each other without any
+   *          separator string.
    */
   def mkString: String = mkString("")
 
-  /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
+  /** Appends all elements of this $coll to a string builder using start, end,
+   *  and separator strings.
    *  The written text begins with the string `start` and ends with the string
    *  `end`. Inside, the string representations (w.r.t. the method `toString`)
    *  of all elements of this $coll are separated by the string `sep`.
@@ -517,9 +530,10 @@ trait TraversableOnce[+A] {
     b
   }
 
-  /** Appends all elements of this $coll to a string builder using a separator string.
-   *  The written text consists of the string representations (w.r.t. the method `toString`)
-   *  of all elements of this $coll, separated by the string `sep`.
+  /** Appends all elements of this $coll to a string builder using a separator
+   *  string. The written text consists of the string representations (w.r.t.
+   *  the method `toString`) of all elements of this $coll, separated by the
+   *  string `sep`.
    *
    *  @param  b    the string builder to which elements are appended.
    *  @param sep   the separator string.
@@ -528,8 +542,8 @@ trait TraversableOnce[+A] {
   def addString(b: StringBuilder, sep: String): StringBuilder = addString(b, "", sep, "")
 
   /** Appends all elements of this $coll to a string builder.
-   *  The written text consists of the string representations (w.r.t. the method `toString`)
-   *  of all elements of this $coll without any separator string.
+   *  The written text consists of the string representations (w.r.t. the method
+   * `toString`) of all elements of this $coll without any separator string.
    *
    *  @param  b    the string builder to which elements are appended.
    *  @return      the string builder `b` to which elements were appended.

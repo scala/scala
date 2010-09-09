@@ -22,63 +22,63 @@ package scala.runtime
  */
 sealed trait AnyValCompanion
 
-/** A object representing 'object scala.Unit'. It should never be used
+/** A object representing `object scala.Unit`. It should never be used
  *  directly.
  */
 object Unit extends AnyValCompanion {
   override def toString = "object scala.Unit"
 }
 
-/** A object representing 'object scala.Boolean'. It should never be used
+/** A object representing `object scala.Boolean`. It should never be used
  *  directly.
  */
 object Boolean extends AnyValCompanion {
   override def toString = "object scala.Boolean"
 }
 
-/** A object representing 'object scala.Byte'. It should never be used
+/** A object representing `object scala.Byte`. It should never be used
  *  directly.
  */
 object Byte extends AnyValCompanion {
   override def toString = "object scala.Byte"
 }
 
-/** A object representing 'object scala.Short'. It should never be used
+/** A object representing `object scala.Short`. It should never be used
  *  directly.
  */
 object Short extends AnyValCompanion {
   override def toString = "object scala.Short"
 }
 
-/** A object representing 'object scala.Char'. It should never be used
+/** A object representing `object scala.Char`. It should never be used
  *  directly.
  */
 object Char extends AnyValCompanion {
   override def toString = "object scala.Char"
 }
 
-/** A object representing 'object scala.Int'. It should never be used
+/** A object representing `object scala.Int`. It should never be used
  *  directly.
  */
 object Int extends AnyValCompanion {
   override def toString = "object scala.Int"
 }
 
-/** A object representing 'object scala.Long'. It should never be used
+/** A object representing `object scala.Long`. It should never be used
  *  directly.
  */
 object Long extends AnyValCompanion {
   override def toString = "object scala.Long"
 }
 
-/** A object representing 'object scala.Float'. It should never be used
+/** A object representing `object scala.Float`. It should never be used
  *  directly.
  */
 object Float extends AnyValCompanion {
   override def toString = "object scala.Float"
 }
 
-/** A object representing 'object scala.Double'. It should never be used
+/** A object representing `object scala.Double`. It should never be used
  *  directly.
  */
 object Double extends AnyValCompanion {
