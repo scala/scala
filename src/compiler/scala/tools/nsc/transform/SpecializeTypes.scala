@@ -616,7 +616,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           .format(unusedStvars.mkString("", ", ", ""), if (unusedStvars.length == 1) "is" else "are"))
         unusedStvars foreach (_.removeAnnotation(SpecializedClass))
         stps = stps filterNot (unusedStvars contains)
-        tps = tps ::: unusedStvars
+        tps = sym.info.typeParams filterNot (_.hasAnnotation(SpecializedClass))
       }
       val res = sym :: (for (env <- specializations(stps) if needsSpecialization(env, sym)) yield {
         val keys = env.keysIterator.toList;
@@ -1267,11 +1267,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val meth = addBody(tree, source)
       if (settings.debug.value) log("now typing: " + meth + " in " + symbol.owner.fullName)
       val d = new Duplicator
+      try {
       d.retyped(localTyper.context1.asInstanceOf[d.Context],
                 meth,
                 source.enclClass,
                 symbol.enclClass,
                 typeEnv(source) ++ typeEnv(symbol))
+      } catch {
+        case e =>
+          println("error compiling %s [%s]".format(unit, tree.pos))
+          throw e
+      }
     }
 
 
@@ -1460,7 +1466,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   }
 
   class SpecializationTransformer(unit: CompilationUnit) extends Transformer {
-    log("specializing " + unit)
+    informProgress("specializing " + unit)
     override def transform(tree: Tree) =
       if (settings.nospecialization.value) tree
       else atPhase(phase.next) {
