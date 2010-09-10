@@ -805,6 +805,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case (RefinedType(_, _), RefinedType(_, _)) => env
     case (AnnotatedType(_, tp1, _), tp2) => unify(tp2, tp1, env)
     case (ExistentialType(_, res1), _) => unify(tp2, res1, env)
+    case _ =>
+      log("don't know how to unify %s [%s] with %s [%s]".format(tp1, tp1.getClass, tp2, tp2.getClass))
+      env
   }
   }
 
@@ -1087,7 +1090,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         case Select(qual, name) =>
           if (settings.debug.value)
-            log("looking at Select: " + tree + " sym: " + symbol + ": " + symbol.info + "[tree.tpe: " + tree.tpe + "]")
+            log("[%s] looking at Select: %s sym: %s: %s [tree.tpe: %s]".format(tree.pos.line, tree, symbol, symbol.info, tree.tpe))
 
           if (!specializedTypeVars(symbol.info).isEmpty && name != nme.CONSTRUCTOR) {
             val env = unify(symbol.tpe, tree.tpe, emptyEnv)
