@@ -127,6 +127,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val BeanGetterTargetClass      = getClass("scala.annotation.target.beanGetter")
     lazy val BeanSetterTargetClass      = getClass("scala.annotation.target.beanSetter")
     lazy val ParamTargetClass           = getClass("scala.annotation.target.param")
+    lazy val SpecializedClass           = definitions.getClass("scala.specialized")
+
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")

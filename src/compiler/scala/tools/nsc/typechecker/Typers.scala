@@ -1794,6 +1794,13 @@ trait Typers { self: Analyzer =>
       val typedMods = removeAnnotations(tdef.mods)
       // complete lazy annotations
       val annots = tdef.symbol.annotations
+
+      // @specialized should not be pickled when compiling with -no-specialize
+      if (settings.nospecialization.value && currentRun.compiles(tdef.symbol)) {
+        tdef.symbol.removeAnnotation(definitions.SpecializedClass)
+        tdef.symbol.deSkolemize.removeAnnotation(definitions.SpecializedClass)
+      }
+
       val rhs1 = checkNoEscaping.privates(tdef.symbol, typedType(tdef.rhs))
       checkNonCyclic(tdef.symbol)
       if (tdef.symbol.owner.isType)
