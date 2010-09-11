@@ -216,6 +216,7 @@ trait Namers { self: Analyzer =>
           assert(currentRun.canRedefine(clazz) || clazz.sourceFile == currentRun.symSource(c));
           currentRun.symSource(c) = clazz.sourceFile
         }
+        registerTopLevelSym(clazz)
       }
       assert(c.name.toString.indexOf('(') == -1)
       c
@@ -244,9 +245,10 @@ trait Namers { self: Analyzer =>
         m.moduleClass.setFlag(moduleClassFlags(moduleFlags))
         setPrivateWithin(tree, m.moduleClass, tree.mods)
       }
-      if (m.owner.isPackageClass) {
+      if (m.owner.isPackageClass && !m.isPackage) {
         m.moduleClass.sourceFile = context.unit.source.file
         currentRun.symSource(m) = m.moduleClass.sourceFile
+        registerTopLevelSym(m)
       }
       m
     }

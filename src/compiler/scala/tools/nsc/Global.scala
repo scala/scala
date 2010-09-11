@@ -132,6 +132,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
    */
   def registerContext(c: analyzer.Context) {}
 
+  /** Register top level class (called on entering the class)
+   */
+  def registerTopLevelSym(sym: Symbol) {}
+
 // ------------------ Reporting -------------------------------------
 
   def error(msg: String) = reporter.error(NoPosition, msg)

@@ -42,14 +42,17 @@ trait CompilerControl { self: Global =>
   protected val scheduler = new WorkScheduler
 
   /** The compilation unit corresponding to a source file
+   *  if it does not yet exist creat a new one atomically
    */
-  def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile get s.file match {
-    case Some(unit) =>
-      unit
-    case None =>
-      val unit = new RichCompilationUnit(s)
-      unitOfFile(s.file) = unit
-      unit
+  def unitOf(s: SourceFile): RichCompilationUnit = unitOfFile.synchronized {
+    unitOfFile get s.file match {
+      case Some(unit) =>
+        unit
+      case None =>
+        val unit = new RichCompilationUnit(s)
+        unitOfFile(s.file) = unit
+        unit
+    }
   }
 
   /** The compilation unit corresponding to a position */
@@ -59,6 +62,15 @@ trait CompilerControl { self: Global =>
    *  from consideration for recompilation.
    */
   def removeUnitOf(s: SourceFile) = unitOfFile remove s.file
+
+  /* returns the top level classes and objects that were deleted
+   * in the editor since last time recentlyDeleted() was called.
+   */
+  def recentlyDeleted(): List[Symbol] = deletedTopLevelSyms.synchronized {
+    val result = deletedTopLevelSyms
+    deletedTopLevelSyms.clear()
+    result.toList
+  }
 
   /** Locate smallest tree that encloses position
    */
