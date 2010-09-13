@@ -115,7 +115,7 @@ trait AdaptiveWorkStealingTasks extends Tasks {
       do {
         val subtasks = head.split
         head = subtasks.head
-        for (t <- subtasks.tail) {
+        for (t <- subtasks.tail.reverse) {
           t.next = last
           last = t
           t.start

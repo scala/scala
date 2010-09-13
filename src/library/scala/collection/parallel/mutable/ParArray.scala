@@ -535,25 +535,33 @@ extends ParSeq[T]
 
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParArray[T], S, That]) = if (buildsArray(bf(repr))) {
     // reserve an array
-    val targetarr = new Array[Any](length)
+    val targarrseq = new ArraySeq[S](length)
+    val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
 
     // fill it in parallel
     executeAndWait(new Map[S](f, targetarr, 0, length))
 
     // wrap it into a parallel array
-    (new ParArray[S](new ExposedArraySeq[S](targetarr.asInstanceOf[Array[AnyRef]], length))).asInstanceOf[That]
+    (new ParArray[S](targarrseq)).asInstanceOf[That]
   } else super.map(f)(bf)
 
   override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanCombineFrom[ParArray[T], U, That]): That = if (buildsArray(cbf(repr))) {
     // reserve an array
-    val targetarr = new Array[Any](length + 1)
+    val targarrseq = new ArraySeq[U](length + 1)
+    val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
     targetarr(0) = z
 
     // do a parallel prefix scan
-    executeAndWait(new ScanToArray[U, Any](z, op, 1, size, targetarr, parallelIterator))
+    executeAndWait(new PartialScan[U, Any](z, op, 1, size, targetarr, parallelIterator) mapResult { st =>
+      //println("-----------------------")
+      //println(targetarr.toList)
+      //st.printTree
+      executeAndWaitResult(new ApplyScanTree[U, Any](None, op, st, targetarr))
+    })
+    //println(targetarr.toList)
 
     // wrap the array into a parallel array
-    (new ParArray[U](new ExposedArraySeq[U](targetarr.asInstanceOf[Array[AnyRef]], length + 1))).asInstanceOf[That]
+    (new ParArray[U](targarrseq)).asInstanceOf[That]
   } else super.scan(z)(op)(cbf)
 
   /* tasks */
