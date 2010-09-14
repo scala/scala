@@ -1,12 +1,3 @@
-implicits.scala:21: error: type mismatch;
- found   : Pos
- required: ?{val +: ?}
-Note that implicit conversions are not applicable because they are ambiguous:
- both method any2plus in object Sub of type (x: Any)Sub.Plus
- and method pos2int in object Super of type (p: Pos)Int
- are possible conversion functions from Pos to ?{val +: ?}
-  f(p+1)
-    ^
 implicits.scala:38: error: type mismatch;
  found   : test2.HSome[java.lang.String,test2.HMap]
  required: Int
@@ -17,4 +8,4 @@ implicits.scala:46: error: type mismatch;
  required: scala.List[Mxml]
         children.toList.flatMap ( e => {
                                 ^
-three errors found
+two errors found

@@ -214,8 +214,8 @@ trait Contexts { self: Analyzer =>
     def make(tree: Tree): Context =
       make(tree, owner)
 
-    def makeSilent(reportAmbiguousErrors: Boolean): Context = {
-      val c = make(tree)
+    def makeSilent(reportAmbiguousErrors: Boolean, newtree: Tree = tree): Context = {
+      val c = make(newtree)
       c.reportGeneralErrors = false
       c.reportAmbiguousErrors = reportAmbiguousErrors
       c

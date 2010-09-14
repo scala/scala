@@ -692,14 +692,18 @@ trait Typers { self: Analyzer =>
         else qual.tpe.nonLocalMember(name)
     }
 
-    def silent[T](op: Typer => T): Any /* in fact, TypeError or T */ = {
+    def silent[T](op: Typer => T,
+                  reportAmbiguousErrors: Boolean = context.reportAmbiguousErrors,
+                  newtree: Tree = context.tree): Any /* in fact, TypeError or T */ = {
       val rawTypeStart = startCounter(rawTypeFailed)
       val findMemberStart = startCounter(findMemberFailed)
       val subtypeStart = startCounter(subtypeFailed)
       val failedSilentStart = startTimer(failedSilentNanos)
       try {
-        if (context.reportGeneralErrors) {
-          val context1 = context.makeSilent(context.reportAmbiguousErrors)
+        if (context.reportGeneralErrors ||
+            reportAmbiguousErrors != context.reportAmbiguousErrors ||
+            newtree != context.tree) {
+          val context1 = context.makeSilent(reportAmbiguousErrors, newtree)
           context1.undetparams = context.undetparams
           context1.savedTypeBounds = context.savedTypeBounds
           context1.namedApplyBlockInfo = context.namedApplyBlockInfo
@@ -3349,7 +3353,9 @@ trait Typers { self: Analyzer =>
           val funpt = if (isPatternMode) pt else WildcardType
           val appStart = startTimer(failedApplyNanos)
           val opeqStart = startTimer(failedOpEqNanos)
-          silent(_.typed(fun, funMode(mode), funpt)) match {
+          silent(_.typed(fun, funMode(mode), funpt),
+                 if ((mode & EXPRmode) != 0) false else context.reportAmbiguousErrors,
+                 if ((mode & EXPRmode) != 0) tree else context.tree) match {
             case fun1: Tree =>
               val fun2 = if (stableApplication) stabilizeFun(fun1, mode, pt) else fun1
               incCounter(typedApplyCount)
@@ -3541,7 +3547,26 @@ trait Typers { self: Analyzer =>
             member(qual, name)
           }
         if (sym == NoSymbol && name != nme.CONSTRUCTOR && (mode & EXPRmode) != 0) {
-          val qual1 = adaptToName(qual, name)
+          val qual1 = try {
+            adaptToName(qual, name)
+          } catch {
+            case ex: TypeError =>
+            // this happens if implicits are ambiguous; try again with more context info.
+            // println("last ditch effort: "+qual+" . "+name) // DEBUG
+            context.tree match {
+              case Apply(tree1, args) if tree1 eq tree => // try handling the arguments
+                // println("typing args: "+args) // DEBUG
+                silent(_.typedArgs(args, mode)) match {
+                  case args: List[_] =>
+                    adaptToArguments(qual, name, args.asInstanceOf[List[Tree]], WildcardType)
+                  case _ =>
+                    throw ex
+                }
+              case _ =>
+                // println("not in an apply: "+context.tree+"/"+tree) // DEBUG
+                throw ex
+            }
+          }
           if (qual1 ne qual) return typed(treeCopy.Select(tree, qual1, name), mode, pt)
         }
 
