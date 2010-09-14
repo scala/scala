@@ -50,7 +50,7 @@ class ScalaCheckFileManager(val origmanager: FileManager) extends FileManager {
   var JAVACMD: String = origmanager.JAVACMD
   var JAVAC_CMD: String = origmanager.JAVAC_CMD
 
-  var CLASSPATH: String = origmanager.CLASSPATH + java.io.File.pathSeparator + PathSettings.scalaCheck
+  var CLASSPATH: String = join(origmanager.CLASSPATH, PathSettings.scalaCheck.path)
   var LATEST_LIB: String = origmanager.LATEST_LIB
 }
 

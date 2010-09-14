@@ -8,12 +8,12 @@ import scala.tools.nsc.io.{ Directory }
 class SBTRunner extends DirectRunner {
 
   val fileManager = new FileManager {
-    var JAVACMD: String = "java"
-    var JAVAC_CMD: String = "javac"
-    var CLASSPATH: String = _
-    var LATEST_LIB: String = _
-    val testRootPath: String = "test"
-    val testRootDir: Directory = Directory(testRootPath)
+    var JAVACMD: String        = "java"
+    var JAVAC_CMD: String      = "javac"
+    var CLASSPATH: String      = _
+    var LATEST_LIB: String     = _
+    val testRootPath: String   = PathSettings.testRoot.path
+    val testRootDir: Directory = PathSettings.testRoot
   }
 
   def reflectiveRunTestsForFiles(kindFiles: Array[File], kind: String):java.util.HashMap[String,Int] = {
