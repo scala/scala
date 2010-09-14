@@ -102,7 +102,7 @@ trait Contexts { self: Analyzer =>
                                                     // not inherited to child contexts
     var depth: Int = 0
     var imports: List[ImportInfo] = List()   // currently visible imports
-    var openImplicits: List[Type] = List()   // types for which implicit arguments
+    var openImplicits: List[(Type,Symbol)] = List()   // types for which implicit arguments
                                              // are currently searched
     // for a named application block (Tree) the corresponding NamedApplyInfo
     var namedApplyBlockInfo: Option[(Tree, NamedApplyInfo)] = None
