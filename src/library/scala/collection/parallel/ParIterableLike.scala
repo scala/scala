@@ -546,9 +546,9 @@ extends IterableLike[T, Repr]
   def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanCombineFrom[Repr, U, That]): That = {
     val array = new Array[Any](size + 1)
     array(0) = z
-    executeAndWaitResult(new PartialScan[U, Any](z, op, 1, size, array, parallelIterator) mapResult { st =>
-      executeAndWaitResult(new ApplyScanTree[U, Any](None, op, st, array) mapResult { u =>
-        executeAndWaitResult(new FromArray(array, 0, size + 1, cbf) mapResult { _.result });
+    executeAndWaitResult(new BuildScanTree[U, Any](z, op, 1, size, array, parallelIterator) mapResult { st =>
+      executeAndWaitResult(new ScanWithScanTree[U, Any](Some(z), op, st, array, array) mapResult { u =>
+        executeAndWaitResult(new FromArray(array, 0, size + 1, cbf) mapResult { _.result })
       })
     })
   }
@@ -948,15 +948,30 @@ extends IterableLike[T, Repr]
     var value: U = _
     var left: ScanTree[U] = null
     var right: ScanTree[U] = null
-    var shouldApply = true
+    @volatile var chunkFinished = false
+    var activeScan: () => Unit = null
 
+    def isApplying = activeScan ne null
     def isLeaf = (left eq null) && (right eq null)
+    def shouldApply = !chunkFinished && !isApplying
     def applyToInterval[A >: U](elem: U, op: (U, U) => U, array: Array[A]) = {
       //executeAndWait(new ApplyToArray(elem, op, from, len, array))
       var i = from
       val until = from + len
       while (i < until) {
         array(i) = op(elem, array(i).asInstanceOf[U])
+        i += 1
+      }
+    }
+    def scanInterval[A >: U](elem: U, op: (U, U) => U, srcA: Array[A], destA: Array[A]) = {
+      val src = srcA.asInstanceOf[Array[Any]]
+      val dest = destA.asInstanceOf[Array[Any]]
+      var last = elem
+      var i = from
+      val until = from + len
+      while (i < until) {
+        last = op(last, src(i - 1).asInstanceOf[U])
+        dest(i) = last
         i += 1
       }
     }
@@ -980,10 +995,17 @@ extends IterableLike[T, Repr]
   extends Accessor[ScanTree[U], PartialScan[U, A]] {
     var result: ScanTree[U] = null
     def leaf(prev: Option[ScanTree[U]]) = {
-      pit.scanToArray(z, op, array, from)
       result = new ScanTree[U](from, len)
+      val firstElem = prev match {
+        case Some(st) => if (st.chunkFinished) {
+          result.chunkFinished = true
+          st.value
+        } else z
+        case None => z
+      }
+      pit.scanToArray(firstElem, op, array, from)
       result.value = array(from + len - 1).asInstanceOf[U]
-      if (from == 1) result.shouldApply = false
+      if (from == 1) result.chunkFinished = true
     }
     def newSubtask(p: ParIterator) = unsupported
     override def split = {
@@ -994,6 +1016,7 @@ extends IterableLike[T, Repr]
       }
     }
     override def merge(that: PartialScan[U, A]) = {
+      // create scan tree node
       val left = result
       val right = that.result
       val ns = new ScanTree[U](left.from, left.len + right.len)
@@ -1002,6 +1025,14 @@ extends IterableLike[T, Repr]
       ns.value = op(left.value, right.value)
       ns.pushDownOnRight(left.value, op)
 
+      // commented out - didn't result in performance gains
+      // check if left tree has finished cumulating
+      // if it did, start the cumulate step in the right subtree before returning to the root
+      //if (left.chunkFinished) {
+      //  right.activeScan = execute(new ApplyScanTree[U](Some(left.value), op, right, array))
+      //}
+
+      // set result
       result = ns
     }
   }
@@ -1010,13 +1041,13 @@ extends IterableLike[T, Repr]
   extends super.Task[Unit, ApplyScanTree[U, A]] {
     var result = ();
     def leaf(prev: Option[Unit]) = if (st.shouldApply) apply(st, first.get)
-    private def apply(st: ScanTree[U], elem: U) {
+    private def apply(st: ScanTree[U], elem: U): Unit = if (st.shouldApply) {
       if (st.isLeaf) st.applyToInterval(elem, op, array)
       else {
         apply(st.left, elem)
         apply(st.right, st.left.value)
       }
-    }
+    } else if (st.isApplying) st.activeScan()
     def split = collection.mutable.ArrayBuffer(
       new ApplyScanTree(first, op, st.left, array),
       new ApplyScanTree(Some(st.left.value), op, st.right, array)
@@ -1044,6 +1075,60 @@ extends IterableLike[T, Repr]
         new ApplyToArray(elem, op, from + fp, sp, array)
       )
     }
+  }
+
+  protected[this] class BuildScanTree[U >: T, A >: U](z: U, op: (U, U) => U, val from: Int, val len: Int, array: Array[A], val pit: ParIterator)
+  extends Accessor[ScanTree[U], BuildScanTree[U, A]] {
+    var result: ScanTree[U] = null
+    def leaf(prev: Option[ScanTree[U]]) = if ((prev != None && prev.get.chunkFinished) || from == 1) {
+      val prevElem = if (from == 1) z else prev.get.value
+      result = new ScanTree[U](from, len)
+      pit.scanToArray(prevElem, op, array, from)
+      result.value = array(from + len - 1).asInstanceOf[U]
+      result.chunkFinished = true
+    } else {
+      result = new ScanTree[U](from, len)
+      result.value = pit.fold(z)(op)
+    }
+    def newSubtask(p: ParIterator) = unsupported
+    override def split = {
+      val pits = pit.split
+      for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining); if untilp < len) yield {
+        val plen = p.remaining min (len - untilp)
+        new BuildScanTree[U, A](z, op, from + untilp, plen, array, p)
+      }
+    }
+    override def merge(that: BuildScanTree[U, A]) = {
+      // create scan tree node
+      val left = result
+      val right = that.result
+      val ns = new ScanTree[U](left.from, left.len + right.len)
+      ns.left = left
+      ns.right = right
+      ns.value = op(left.value, right.value)
+      ns.pushDownOnRight(left.value, op)
+
+      // set result
+      result = ns
+    }
+  }
+
+  protected[this] class ScanWithScanTree[U >: T, A >: U](first: Option[U], op: (U, U) => U, st: ScanTree[U], src: Array[A], dest: Array[A])
+  extends super.Task[Unit, ScanWithScanTree[U, A]] {
+    var result = ();
+    def leaf(prev: Option[Unit]) = scan(st, first.get)
+    private def scan(st: ScanTree[U], elem: U): Unit = if (!st.chunkFinished) {
+      if (st.isLeaf) st.scanInterval(elem, op, src, dest)
+      else {
+        scan(st.left, elem)
+        scan(st.right, st.left.value)
+      }
+    }
+    def split = collection.mutable.ArrayBuffer(
+      new ScanWithScanTree(first, op, st.left, src, dest),
+      new ScanWithScanTree(Some(st.left.value), op, st.right, src, dest)
+    )
+    def shouldSplitFurther = (st.left ne null) && (st.right ne null)
   }
 
   protected[this] class FromArray[S, A, That](array: Array[A], from: Int, len: Int, cbf: CanCombineFrom[Repr, S, That])

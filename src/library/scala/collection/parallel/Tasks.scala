@@ -66,6 +66,9 @@ trait Tasks {
 
   var environment: ExecutionEnvironment
 
+  /** Executes a task and returns a future. */
+  def execute[R, Tp](fjtask: TaskType[R, Tp]): () => R
+
   /** Executes a task and waits for it to finish. */
   def executeAndWait[R, Tp](task: TaskType[R, Tp])
 
@@ -170,6 +173,23 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
    */
   def forkJoinPool: ForkJoinPool = environment
   var environment = ForkJoinTasks.defaultForkJoinPool
+
+  /** Executes a task and does not wait for it to finish - instead returns a future.
+   *
+   *  $fjdispatch
+   */
+  def execute[R, Tp](fjtask: Task[R, Tp]): () => R = {
+    if (currentThread.isInstanceOf[ForkJoinWorkerThread]) {
+      fjtask.fork
+    } else {
+      forkJoinPool.execute(fjtask)
+    }
+
+    () => {
+      fjtask.join
+      fjtask.result
+    }
+  }
 
   /** Executes a task on a fork/join pool and waits for it to finish.
    *

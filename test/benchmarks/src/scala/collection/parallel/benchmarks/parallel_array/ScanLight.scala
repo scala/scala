@@ -16,7 +16,7 @@ object ScanLight extends Companion {
   }
   def operation(a: Cont, b: Cont) = {
     val m = if (a.in < 0) 1 else 0
-    new Cont(a.in + b.in + m * (0 until 10).reduceLeft(_ + _))
+    new Cont(a.in + b.in + m * (0 until 2).reduceLeft(_ + _))
   }
 }
 

@@ -159,6 +159,8 @@ extends ParSeq[T]
       sum
     }
 
+    override def fold[U >: T](z: U)(op: (U, U) => U): U = foldLeft[U](z)(op)
+
     def aggregate[S](z: S)(seqop: (S, T) => S, combop: (S, S) => S): S = foldLeft[S](z)(seqop)
 
     override def sum[U >: T](implicit num: Numeric[U]): U = {
@@ -552,13 +554,13 @@ extends ParSeq[T]
     targetarr(0) = z
 
     // do a parallel prefix scan
-    executeAndWait(new PartialScan[U, Any](z, op, 1, size, targetarr, parallelIterator) mapResult { st =>
-      //println("-----------------------")
-      //println(targetarr.toList)
-      //st.printTree
-      executeAndWaitResult(new ApplyScanTree[U, Any](None, op, st, targetarr))
+    executeAndWait(new BuildScanTree[U, Any](z, op, 1, size, targetarr, parallelIterator) mapResult { st =>
+      // println("-----------------------")
+      // println(targetarr.toList)
+      // st.printTree
+      executeAndWaitResult(new ScanWithScanTree[U, Any](Some(z), op, st, array, targetarr))
     })
-    //println(targetarr.toList)
+    // println(targetarr.toList)
 
     // wrap the array into a parallel array
     (new ParArray[U](targarrseq)).asInstanceOf[That]
