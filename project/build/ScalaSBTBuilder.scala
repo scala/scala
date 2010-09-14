@@ -37,25 +37,14 @@ class ScalaSBTBuilder(val info: ProjectInfo) extends Project with  ReflectivePro
    * until sbt quit.
    */
   lazy val versionNumber:String ={
-    def getTimeString:String ={
+    def getTimeString: String = {
       import java.util.Calendar;
       import java.text.SimpleDateFormat;
       val formatString = "yyyyMMddHHmmss"
-      new SimpleDateFormat(formatString) format(Calendar.getInstance.getTime)
+      new SimpleDateFormat(formatString) format Calendar.getInstance.getTime
     }
-
-    def getVersion:String ={
-      val version:String = projectVersion.value.toString
-      val stopIndex = version.lastIndexOf('-')
-      stopIndex match{
-        case -1 => version
-        case i => version substring(0,i)
-      }
-    }
-
-    def getRevision:Int = {
-      new SVN(info.projectPath).getRevisionNumber
-    }
+    def getVersion: String = projectVersion.value.toString takeWhile (_ != '-') mkString
+    def getRevision: Int   = new SVN(info.projectPath) getRevisionNumber
 
     getVersion+".r"+getRevision+"-b"+getTimeString
   }

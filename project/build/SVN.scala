@@ -1,6 +1,4 @@
 import sbt._
-import java.io.{ByteArrayOutputStream}
-import scala.util.matching.{Regex}
 
 /**
  * @param root the root of an svn repository
@@ -9,6 +7,7 @@ import scala.util.matching.{Regex}
 class SVN(root: Path) {
   /** Location of tool which parses svn revision in git-svn repository. */
   val GitSvnRevTool = root / "tools" / "get-git-svn-rev"
+  val GitSvnRegex   = """^Revision:\s*(\d+).*""".r
 
   /**
    * Gets the revision number of the repository given through the constructor of the class
@@ -17,18 +16,18 @@ class SVN(root: Path) {
    */
   def getRevisionNumber: Int = getSvn orElse getGit getOrElse 0
   def getSvn: Option[Int] = {
-    val svnInfo = Process("svn info", root)
-    val out = new ByteArrayOutputStream
-    val code:Int = svnInfo.#>(out).!
+    /** Doing this the hard way trying to suppress the svn error message
+     *  on stderr.  Could not figure out how to do it simply in sbt.
+     */
+    val pb = new java.lang.ProcessBuilder("svn", "info")
+    pb directory root.asFile
+    pb redirectErrorStream true
 
-    if (code == 0) {
-      val r = out.toString
-      val Pattern = new Regex("""Revision: (\d+)""", "version")
-      val version = Pattern.findFirstMatchIn(r)
-
-      version map (_.group("version").toInt)
+    Process(pb).lines_! foreach {
+      case GitSvnRegex(rev) => return Some(rev.toInt)
+      case _                => ()
     }
-    else None
+    None
   }
 
   def getGit: Option[Int] =
