@@ -245,6 +245,30 @@ self =>
       new StreamWithFilter(x => p(x) && q(x))
   }
 
+  /** See #3273 and test case run/bug3273 for motivation. */
+  final class StreamIterator extends Iterator[A] {
+    // A call-by-need cell.
+    class LazyCell(st: => Stream[A]) {
+      lazy val v = st
+    }
+
+    private var these = new LazyCell(self)
+    def hasNext: Boolean = these.v.nonEmpty
+    def next: A =
+      if (isEmpty) Iterator.empty.next
+      else {
+        val cur    = these.v
+        val result = cur.head
+        these = new LazyCell(cur.tail)
+        result
+      }
+    override def toStream = these.v
+    override def toList   = toStream.toList
+  }
+
+  /** A lazier Iterator than LinearSeqLike's. */
+  override def iterator: Iterator[A] = new StreamIterator
+
   /** Apply the given function <code>f</code> to each element of this linear sequence
    *  (while respecting the order of the elements).
    *
