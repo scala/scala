@@ -12,17 +12,24 @@ abstract class InterruptReq {
   protected val todo: () => R
 
   /** The result provided */
-  private var result: Option[R] = None
+  private var result: Option[Either[R, Throwable]] = None
 
   /** To be called from interrupted server to execute demanded task */
   def execute(): Unit = synchronized {
-    result = Some(todo())
+    try {
+      result = Some(Left(todo()))
+    } catch {
+      case t => result = Some(Right(t))
+    }
     notify()
   }
 
   /** To be called from interrupting client to get result fo interrupt */
   def getResult(): R = synchronized {
     while (result.isEmpty) wait()
-    result.get
+    result.get match {
+      case Left(res) => res
+      case Right(t) => throw t
+    }
   }
 }
