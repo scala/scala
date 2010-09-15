@@ -1,4 +1,4 @@
 t1215.scala:2: error: value += is not a member of Int
   val x = 1 += 1
-          ^
+            ^
 one error found

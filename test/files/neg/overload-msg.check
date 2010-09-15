@@ -9,5 +9,5 @@ overload-msg.scala:3: error: overloaded method value + with alternatives:
   (java.lang.String)java.lang.String
  cannot be applied to (Int(in method f))
   def f[Int](y: Int) = x + y
-                       ^
+                         ^
 one error found

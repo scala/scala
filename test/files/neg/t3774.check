@@ -3,5 +3,5 @@ t3774.scala:4: error: overloaded method value ++ with alternatives:
   [B >: ((Int, Int), List[Int]),That](that: scala.collection.TraversableOnce[B])(implicit bf: scala.collection.generic.CanBuildFrom[scala.collection.immutable.Map[(Int, Int),List[Int]],B,That])That
  cannot be applied to (scala.collection.immutable.IndexedSeq[((Int, Int), scala.collection.immutable.Range.Inclusive)])
   Map[(Int,Int),List[Int]]() ++ (for(x <- 0 to 1 ; y <- 0 to 1) yield {(x,y)-> (0 to 1)})
-                          ^
+                             ^
 one error found

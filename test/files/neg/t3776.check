@@ -1,4 +1,4 @@
 t3776.scala:8: error: value someOperation is not a member of _$1
     def parsedAs[T](v: T) = MyParser.parse(pattern, a).get someOperation v 
-                                                       ^
+                                                           ^
 one error found

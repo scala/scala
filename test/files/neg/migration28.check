@@ -1,8 +1,8 @@
 migration28.scala:5: error: method ++= in class Stack is deprecated: use pushAll
   s ++= List(1,2,3)
-  ^
+    ^
 migration28.scala:7: error: method foreach in class Stack has changed semantics:
 Stack iterator and foreach now traverse in FIFO order.
   s foreach (_ => ())
-  ^
+    ^
 two errors found

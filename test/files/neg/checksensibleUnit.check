@@ -1,7 +1,7 @@
 checksensibleUnit.scala:3: error: value > is not a member of Unit
   println((c = 1) > 0)
-          ^
+                  ^
 checksensibleUnit.scala:4: error: value <= is not a member of Unit
   println((c = 1) <= 0)
-          ^
+                  ^
 two errors found
