@@ -289,8 +289,8 @@ object Predef extends LowPriorityImplicits {
 
   implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] =
     new CanBuildFrom[String, Char, String] {
-      def apply(from: String) = new scala.collection.mutable.StringBuilder
-      def apply() = new scala.collection.mutable.StringBuilder
+      def apply(from: String) = apply()
+      def apply() = scala.collection.mutable.StringBuilder.newBuilder
     }
 
   implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new CharSequence {

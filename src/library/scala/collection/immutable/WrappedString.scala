@@ -46,5 +46,5 @@ class WrappedString(override val self: String) extends IndexedSeq[Char] with Str
  *  @since 2.8
  */
 object WrappedString {
-  def newBuilder: Builder[Char, WrappedString] = new StringBuilder() mapResult (new WrappedString(_))
+  def newBuilder: Builder[Char, WrappedString] = StringBuilder.newBuilder mapResult (x => new WrappedString(x))
 }

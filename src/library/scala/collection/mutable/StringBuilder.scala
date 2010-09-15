@@ -11,6 +11,7 @@ package mutable
 
 import java.lang.{ StringBuilder => JavaStringBuilder }
 import annotation.migration
+import immutable.StringLike
 
 /** A builder for mutable sequence of characters.  This class provides an API
  *  mostly compatible with java.lang.StringBuilder, except where there are conflicts
@@ -24,10 +25,16 @@ import annotation.migration
 @serializable
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(private val underlying: JavaStringBuilder)
-      extends Builder[Char, String]
+      extends Builder[Char, StringBuilder]
          with java.lang.CharSequence
          with IndexedSeq[Char]
-         with IndexedSeqOptimized[Char, IndexedSeq[Char]] {
+         with StringLike[StringBuilder] {
+
+  override protected[this] def thisCollection: StringBuilder = this
+  override protected[this] def toCollection(repr: StringBuilder): StringBuilder = repr
+
+  /** Creates a string builder buffer as builder for this class */
+  override protected[this] def newBuilder = new StringBuilder
 
   /** Constructs a string builder initialized with String initValue
    *  and with additional Char capacity initCapacity.
@@ -59,7 +66,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
     arr
   }
 
-  def length: Int = underlying.length()
+  override def length: Int = underlying.length()
   def length_=(n: Int) { underlying.setLength(n) }
 
   /** Clears the builder contents.
@@ -105,7 +112,7 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
 
   /** Equivalent to charAt.
    */
-  def apply(index: Int): Char = underlying charAt index
+  override def apply(index: Int): Char = underlying charAt index
 
   /** Removes the Char at the specified index.  The sequence is
    *  shortened by one.
@@ -428,6 +435,11 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *  @return  the current contents of this sequence as a String
    */
   override def toString = underlying.toString
+  override def mkString = toString
 
-  def result(): String = toString
+  def result(): StringBuilder = this
+}
+
+object StringBuilder {
+  def newBuilder = new StringBuilder mapResult (_.toString)
 }
