@@ -1844,7 +1844,6 @@ abstract class GenJVM extends SubComponent {
 
       var jf: Int = 0
       val f = sym.flags
-      jf = jf | (if (sym hasFlag Flags.SYNTHETIC) ACC_SYNTHETIC else 0)
 /*      jf = jf | (if (sym hasFlag Flags.PRIVATE) ACC_PRIVATE else
                   if (sym hasFlag Flags.PROTECTED) ACC_PROTECTED else ACC_PUBLIC)
 */
@@ -1856,7 +1855,7 @@ abstract class GenJVM extends SubComponent {
                        && !sym.enclClass.hasFlag(Flags.INTERFACE)
                        && !sym.isClassConstructor) ACC_FINAL else 0)
       jf = jf | (if (sym.isStaticMember) ACC_STATIC else 0)
-      jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE | ACC_SYNTHETIC else 0)
+      jf = jf | (if (sym hasFlag Flags.BRIDGE) ACC_BRIDGE else 0)
 
       if (sym.isClass && !sym.hasFlag(Flags.INTERFACE))
         jf |= ACC_SUPER
