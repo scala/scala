@@ -6,9 +6,8 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.util
+
 import scala.reflect.ClassManifest
 
 /** The Sorting object provides functions that can sort various kinds of
@@ -25,18 +24,11 @@ import scala.reflect.ClassManifest
   * @version 1.0
   */
 object Sorting {
-
-  /** Provides implicit access to sorting on arbitrary sequences of orderable
-   *  items. This doesn't quite work the way that I want yet -- K should be
-   *  bounded as viewable, but the compiler rejects that.
-   */
-  // implicit def seq2RichSort[K <: Ordered[K] : ClassManifest](s: Seq[K]) = new RichSorting[K](s)
-
   /** Quickly sort an array of Doubles. */
   def quickSort(a: Array[Double]) { sort1(a, 0, a.length) }
 
   /** Quickly sort an array of items with an implicit Ordering. */
-  def quickSort[K](a: Array[K])(implicit ord: Ordering[K]) { sort1(a, 0, a.length) }
+  def quickSort[K: Ordering](a: Array[K]) { sort1(a, 0, a.length) }
 
   /** Quickly sort an array of Ints. */
   def quickSort(a: Array[Int]) { sort1(a, 0, a.length) }
@@ -46,15 +38,15 @@ object Sorting {
 
   /** Sort an array of K where K is Ordered, preserving the existing order
     * where the values are equal. */
-  def stableSort[K](a: Array[K])(implicit m: ClassManifest[K], ord: Ordering[K]) {
-    stableSort(a, 0, a.length-1, new Array[K](a.length), ord.lt _)
+  def stableSort[K: ClassManifest: Ordering](a: Array[K]) {
+    stableSort(a, 0, a.length-1, new Array[K](a.length), Ordering[K].lt _)
   }
 
   /** Sorts an array of <code>K</code> given an ordering function
    *  <code>f</code>. <code>f</code> should return <code>true</code> iff
    *  its first parameter is strictly less than its second parameter.
    */
-  def stableSort[K : ClassManifest](a: Array[K], f: (K,K) => Boolean) {
+  def stableSort[K: ClassManifest](a: Array[K], f: (K, K) => Boolean) {
     stableSort(a, 0, a.length-1, new Array[K](a.length), f)
   }
 
@@ -66,15 +58,15 @@ object Sorting {
    *  @param  f the comparison function.
    *  @return the sorted sequence of items.
    */
-  def stableSort[K : ClassManifest](a: Seq[K], f: (K,K) => Boolean): Array[K] = {
+  def stableSort[K: ClassManifest](a: Seq[K], f: (K, K) => Boolean): Array[K] = {
     val ret = a.toArray
     stableSort(ret, f)
     ret
   }
 
   /** Sorts an arbitrary sequence of items that are viewable as ordered. */
-  def stableSort[K](a: Seq[K])(implicit m: ClassManifest[K], ord: Ordering[K]): Array[K] =
-    stableSort(a, ord.lt _)
+  def stableSort[K: ClassManifest: Ordering](a: Seq[K]): Array[K] =
+    stableSort(a, Ordering[K].lt _)
 
   /** Stably sorts a sequence of items given an extraction function that will
    *  return an ordered key from an item.
@@ -83,11 +75,13 @@ object Sorting {
    *  @param  f the comparison function.
    *  @return the sorted sequence of items.
    */
-  def stableSort[K, M](a: Seq[K], f: K => M)(implicit m: ClassManifest[K], ord: Ordering[M]): Array[K] =
-    stableSort(a)(m, ord on f)
+  def stableSort[K: ClassManifest, M: Ordering](a: Seq[K], f: K => M): Array[K] =
+    stableSort(a)(implicitly[ClassManifest[K]], Ordering[M] on f)
 
-  private def sort1[K](x: Array[K], off: Int, len: Int)(implicit ord: Ordering[K]) {
+  private def sort1[K: Ordering](x: Array[K], off: Int, len: Int) {
+    val ord = Ordering[K]
     import ord._
+
     def swap(a: Int, b: Int) {
       val t = x(a)
       x(a) = x(b)
@@ -529,16 +523,4 @@ object Sorting {
       }
     }
   }
-}
-
-/** <p>
- *    A <code>RichSorting</code> object is generally created implicitly through
- *    the use of the <code>sort</code> function on an arbitrary sequence, where
- *    the items are ordered.
- *  </p>
- */
-class RichSorting[K](s: Seq[K])(implicit m: ClassManifest[K], ord: Ordering[K]) {
-  /** Returns an array with a sorted copy of the RichSorting's sequence.
-   */
-  def sort = Sorting.stableSort(s)
 }

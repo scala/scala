@@ -108,20 +108,23 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
   implicit def mkOrderingOps(lhs: T): Ops = new Ops(lhs)
 }
 
-/** This would conflict with all the nice implicit Orderings
- *  available, but thanks to the magic of prioritized implicits
- *  via subclassing we can make Ordered[A] => Ordering[A] only
- *  turn up if nothing else works.
- */
 trait LowPriorityOrderingImplicits {
-  implicit def ordered[A <: Ordered[A]]: Ordering[A] = new Ordering[A] {
-    def compare(x: A, y: A) = x.compare(y)
+  /** This would conflict with all the nice implicit Orderings
+   *  available, but thanks to the magic of prioritized implicits
+   *  via subclassing we can make Ordered[A] => Ordering[A] only
+   *  turn up if nothing else works.  Since Ordered[A] extends
+   *  Comparable[A] anyway, we can throw in some java interop too.
+   */
+  implicit def ordered[A <% Comparable[A]]: Ordering[A] = new Ordering[A] {
+    def compare(x: A, y: A): Int = x compareTo y
+  }
+  implicit def comparatorToOrdering[A](implicit cmp: Comparator[A]): Ordering[A] = new Ordering[A] {
+    def compare(x: A, y: A) = cmp.compare(x, y)
   }
 }
 
 object Ordering extends LowPriorityOrderingImplicits {
-
-  def apply[T](implicit ord : Ordering[T]) = ord
+  def apply[T](implicit ord: Ordering[T]) = ord
 
   def fromLessThan[T](cmp: (T, T) => Boolean): Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = if (cmp(x, y)) -1 else if (cmp(y, x)) 1 else 0
@@ -132,7 +135,8 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def lteq(x: T, y: T): Boolean = !cmp(y, x)
   }
 
-  def by[T, S: Ordering](f: T => S): Ordering[T] = fromLessThan((x, y) => implicitly[Ordering[S]].lt(f(x), f(y)))
+  def by[T, S](f: T => S)(implicit ord: Ordering[S]): Ordering[T] =
+    fromLessThan((x, y) => ord.lt(f(x), f(y)))
 
   trait UnitOrdering extends Ordering[Unit] {
     def compare(x: Unit, y: Unit) = 0
