@@ -52,8 +52,9 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
     assert(settings.docformat.value == "html")
     if (!reporter.hasErrors) {
       val modelFactory = (new model.ModelFactory(compiler, settings) with model.comment.CommentFactory with model.TreeFactory)
+      val madeModel = Some(modelFactory.makeModel)
       println("model contains " + modelFactory.templatesCount + " documentable templates")
-      Some(modelFactory.makeModel)
+      madeModel
     }
     else None
   }
