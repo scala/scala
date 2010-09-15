@@ -737,7 +737,7 @@ trait ParallelMatching extends ast.TreeDSL
       def duplicate = body.duplicate setType bodyTpe
 
       def isFinal = true
-      def isLabellable = !cond(body)  { case _: Throw | _: Literal => true }
+      def isLabellable = !cond(body)  { case _: Literal => true }
       def isNotReached = referenceCount == 0
       def isReachedOnce = referenceCount == 1
       def isReachedTwice = referenceCount > 1
