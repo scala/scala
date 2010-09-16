@@ -1,0 +1,28 @@
+body {
+	font-size: 10pt;
+	font-family: sans-serif;
+}
+
+a {
+	color:#69481D;
+}
+
+.letters {
+  width:100%;
+  text-align:center;
+  margin:0.6em;
+  padding:0.1em;
+  border-bottom:1px solid gray;
+}
+
+.entry {
+
+}
+
+.name {
+	background-color:#E5E5E5;
+}
+
+.occurrences {
+  margin-left:0.7em	
+}

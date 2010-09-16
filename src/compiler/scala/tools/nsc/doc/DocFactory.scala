@@ -62,6 +62,8 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
   /** Generate document(s) for all `files` containing scaladoc documenataion.
     * @param files The list of paths (relative to the compiler's source path, or absolute) of files to document. */
   def document(files: List[String]): Unit =
-    universe(files) foreach { docModel => (new html.HtmlFactory(docModel)).generate }
+    universe(files) foreach { docModel =>
+      new html.HtmlFactory(docModel, new model.IndexModelFactory makeModel(docModel)) generate
+    }
 
 }
