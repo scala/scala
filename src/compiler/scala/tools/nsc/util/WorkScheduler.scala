@@ -52,6 +52,7 @@ class WorkScheduler {
     }
     synchronized {
       interruptReqs enqueue ir
+      notify()
     }
     ir.getResult()
   }
