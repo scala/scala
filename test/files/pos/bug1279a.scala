@@ -1,3 +1,4 @@
+// see #13
 // providing the type parameter in the recursive call to all4Impl
 // avoids the problem
 
@@ -31,8 +32,9 @@ abstract class M
 
 object Unrelated
 {
-   def all4Impl[U](first: M {type T <: U}): Stream[M {type T <: U}] = Stream.cons(first, all4Impl(first.next))
+  // TODO!!! fix this bug for real, it compiles successfully, but weird types are inferred
+   // def all4Impl[U](first: M {type T <: U}): Stream[M {type T <: U}] = Stream.cons(first, all4Impl(first.next))
 
 // compiles successfully
-//      def all4Impl[U](first: M {type T <: U}): Stream[M {type T <: U}] = Stream.cons(first, all4Impl[U](first.next))
+     def all4Impl[U](first: M {type T <: U}): Stream[M {type T <: U}] = Stream.cons(first, all4Impl[U](first.next))
 }
