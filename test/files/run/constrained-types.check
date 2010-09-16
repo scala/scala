@@ -52,8 +52,8 @@ val y = b.y  // should keep the annotation
 y: Int @Annot(Stuff.x) = 10
 
 -----
-def m(x: String): String @Annot(x) = x     // m should be annotated with a debruijn
-m: (x$0:String)String @Annot(x)
+def m(x: String): String @Annot(x) = x
+m: (x: String)String @Annot(x)
 
 -----
 val three = "three"

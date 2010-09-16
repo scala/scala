@@ -164,7 +164,7 @@ abstract class Pickler extends SubComponent {
      */
     private def putType(tp: Type): Unit = if (putEntry(tp)) {
       tp match {
-        case NoType | NoPrefix | DeBruijnIndex(_, _) =>
+        case NoType | NoPrefix /*| DeBruijnIndex(_, _) */ =>
           ;
         case ThisType(sym) =>
           putSymbol(sym)
@@ -592,8 +592,8 @@ abstract class Pickler extends SubComponent {
           writeRef(restpe); writeRefs(tparams); POLYtpe
         case ExistentialType(tparams, restpe) =>
           writeRef(restpe); writeRefs(tparams); EXISTENTIALtpe
-        case DeBruijnIndex(l, i) =>
-          writeNat(l); writeNat(i); DEBRUIJNINDEXtpe
+        // case DeBruijnIndex(l, i) =>
+        //   writeNat(l); writeNat(i); DEBRUIJNINDEXtpe
         case c @ Constant(_) =>
           if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
           else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
@@ -1042,8 +1042,8 @@ abstract class Pickler extends SubComponent {
         case ExistentialType(tparams, restpe) =>
           print("EXISTENTIALtpe "); printRef(restpe); printRefs(tparams);
           print("||| "+entry)
-        case DeBruijnIndex(l, i) =>
-          print("DEBRUIJNINDEXtpe "); print(l+" "+i)
+        // case DeBruijnIndex(l, i) =>
+        //   print("DEBRUIJNINDEXtpe "); print(l+" "+i)
         case c @ Constant(_) =>
           print("LITERAL ")
           if (c.tag == BooleanTag) print("Boolean "+(if (c.booleanValue) 1 else 0))

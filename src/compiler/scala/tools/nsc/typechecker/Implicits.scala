@@ -234,11 +234,14 @@ self: Analyzer =>
     private def tparamsToWildcards(tp: Type, tparams: List[Symbol]) =
       tp.instantiateTypeParams(tparams, tparams map (t => WildcardType))
 
-    /* Map a polytype to one in which all type parameters are replaced by wildcards.
+    /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
+     * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate DebruijnIndex types
+     * when checking whether `b` is a valid implicit, as we haven't even searched a value for the implicit arg `x`,
+     * so we have to approximate (otherwise it is excluded a priori).
      */
     private def depoly(tp: Type): Type = tp match {
-      case PolyType(tparams, restpe) => tparamsToWildcards(restpe, tparams)
-      case _ => tp
+      case PolyType(tparams, restpe) => tparamsToWildcards(ApproximateDependentMap(restpe), tparams)
+      case _ => ApproximateDependentMap(tp)
     }
 
     /** Does type `dtor` dominate type `dted`?

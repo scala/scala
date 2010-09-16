@@ -118,17 +118,20 @@ abstract class TreeGen {
     else mkAttributedIdent(sym)
 
   /** Replaces tree type with a stable type if possible */
-  def stabilize(tree: Tree): Tree = tree match {
-    case Ident(_) =>
-      if (tree.symbol.isStable) tree.setType(singleType(tree.symbol.owner.thisType, tree.symbol))
-      else tree
-    case Select(qual, _) =>
-      assert((tree.symbol ne null) && (qual.tpe ne null))
-      if (tree.symbol.isStable && qual.tpe.isStable)
-        tree.setType(singleType(qual.tpe, tree.symbol))
-      else tree
+  def stabilize(tree: Tree): Tree = {
+    for(tp <- stableTypeFor(tree)) tree.tpe = tp
+    tree
+  }
+
+  /** Computes stable type for a tree if possible */
+  def stableTypeFor(tree: Tree): Option[Type] = tree match {
+    case Ident(_) if tree.symbol.isStable =>
+      Some(singleType(tree.symbol.owner.thisType, tree.symbol))
+    case Select(qual, _) if   {assert((tree.symbol ne null) && (qual.tpe ne null));
+                            tree.symbol.isStable && qual.tpe.isStable} =>
+      Some(singleType(qual.tpe, tree.symbol))
     case _ =>
-      tree
+      None
   }
 
   /** Cast `tree' to type `pt' */

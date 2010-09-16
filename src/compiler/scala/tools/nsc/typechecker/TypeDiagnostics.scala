@@ -139,7 +139,7 @@ trait TypeDiagnostics {
   def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
     def asParams(xs: List[Any]) = xs.mkString("(", ", ", ")")
 
-    def resType   = if (isWildcard(pt)) "" else " with expected result type " + pt
+    def resType   = if (pt isWildcard) "" else " with expected result type " + pt
     def allTypes  = (alternatives(tree) flatMap (_.paramTypes)) ++ argtpes :+ pt
 
     withDisambiguation(allTypes: _*) {

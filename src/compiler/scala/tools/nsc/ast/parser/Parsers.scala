@@ -1794,7 +1794,7 @@ self =>
         val name = ident()
         var bynamemod = 0
         val tpt =
-          if (settings.Xexperimental.value && !owner.isTypeName && in.token != COLON) {
+          if (settings.YmethodInfer.value && !owner.isTypeName && in.token != COLON) {
             TypeTree()
           } else { // XX-METHOD-INFER
             accept(COLON)
@@ -2344,7 +2344,7 @@ self =>
           else (accessModifierOpt(), paramClauses(name, classContextBounds, mods.hasFlag(Flags.CASE)))
         var mods1 = mods
         if (mods hasFlag Flags.TRAIT) {
-          if (settings.Xexperimental.value && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
+          if (settings.YvirtClasses && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
         } else if (in.token == SUBTYPE) {
           syntaxError("classes are not allowed to be virtual", false)
         }
@@ -2435,7 +2435,7 @@ self =>
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers,
                     vparamss: List[List[ValDef]], tstart: Int): Template = {
       val (parents0, argss, self, body) =
-        if (in.token == EXTENDS || settings.Xexperimental.value && (mods hasFlag Flags.TRAIT) && in.token == SUBTYPE) {
+        if (in.token == EXTENDS || settings.YvirtClasses && (mods hasFlag Flags.TRAIT) && in.token == SUBTYPE) {
           in.nextToken()
           template(mods hasFlag Flags.TRAIT)
         } else if ((in.token == SUBTYPE) && (mods hasFlag Flags.TRAIT)) {

@@ -767,99 +767,68 @@ trait Namers { self: Analyzer =>
       val tparamSyms = typer.reenterTypeParams(tparams)
       // since the skolemized tparams are in scope, the TypeRefs in vparamSymss refer to skolemized tparams
       var vparamSymss = enterValueParams(meth, vparamss)
+      // DEPMETTODO: do we need to skolemize value parameter symbols?
 
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
         tpt defineType context.enclClass.owner.tpe
         tpt setPos meth.pos.focus
       }
 
-      def convertToDeBruijn(vparams: List[Symbol], level: Int): TypeMap = new TypeMap {
-        def debruijnFor(param: Symbol) =
-          DeBruijnIndex(level, vparams indexOf param)
-        def apply(tp: Type) = {
-          tp match {
-            case SingleType(_, sym) =>
-              if (settings.Xexperimental.value && sym.owner == meth && (vparams contains sym)) {
-/*
-                if (sym hasFlag IMPLICIT) {
-                  context.error(sym.pos, "illegal type dependence on implicit parameter")
-                  ErrorType
-                } else
-*/
-                debruijnFor(sym)
-              } else tp
-            case MethodType(params, restpe) =>
-              val params1 = this.mapOver(params)
-              val restpe1 = convertToDeBruijn(vparams, level + 1)(restpe)
-              if ((params1 eq params) && (restpe1 eq restpe)) tp
-              else copyMethodType(tp, params1, restpe1)
-            case _ =>
-              mapOver(tp)
-          }
-        }
-
-        // AnnotatedTypes can contain trees in the annotation arguments. When accessing a
-        // parameter in an annotation, set the type of the Ident to the DeBruijnIndex
-        object treeTrans extends TypeMapTransformer {
-          override def transform(tree: Tree): Tree =
-            tree match {
-              case Ident(name) if (vparams contains tree.symbol) =>
-                val dtpe = debruijnFor(tree.symbol)
-                val dsym =
-                  context.owner.newLocalDummy(tree.symbol.pos)
-                  .newValue(tree.symbol.pos, name)
-
-                dsym.setFlag(PARAM)
-                dsym.setInfo(dtpe)
-                Ident(name).setSymbol(dsym).copyAttrs(tree).setType(dtpe)
-              case tree => super.transform(tree)
-            }
-        }
-
-        // for type annotations (which may contain trees)
-        override def mapOver(arg: Tree) = Some(treeTrans.transform(arg))
-      }
-
-      val checkDependencies: TypeTraverser = new TypeTraverser {
-        def traverse(tp: Type) = {
-          tp match {
-            case SingleType(_, sym) =>
-              if (sym.owner == meth && (vparamSymss exists (_ contains sym)))
-                context.error(
-                  sym.pos,
-                  "illegal dependent method type"+
-                  (if (settings.Xexperimental.value)
-                     ": parameter appears in the type of another parameter in the same section or an earlier one"
-                   else ""))
-            case _ =>
-              mapOver(tp)
-          }
-          this
-        }
-      }
 
       /** Called for all value parameter lists, right to left
        *  @param vparams the symbols of one parameter list
        *  @param restpe  the result type (possibly a MethodType)
        */
       def makeMethodType(vparams: List[Symbol], restpe: Type) = {
+        // TODODEPMET: check that we actually don't need to do anything here
         // new dependent method types: probably OK already, since 'enterValueParams' above
         // enters them in scope, and all have a lazy type. so they may depend on other params. but: need to
         // check that params only depend on ones in earlier sections, not the same. (done by checkDependencies,
         // so re-use / adapt that)
         val params = vparams map (vparam =>
           if (meth hasFlag JAVA) vparam.setInfo(objToAny(vparam.tpe)) else vparam)
-        val restpe1 = convertToDeBruijn(vparams, 1)(restpe) // new dependent types: replace symbols in restpe with the ones in vparams
-        if (meth hasFlag JAVA) JavaMethodType(params, restpe1)
-        else MethodType(params, restpe1)
+         // TODODEPMET necessary?? new dependent types: replace symbols in restpe with the ones in vparams
+        if (meth hasFlag JAVA) JavaMethodType(params, restpe)
+        else MethodType(params, restpe)
       }
 
-      def thisMethodType(restpe: Type) =
+      def thisMethodType(restpe: Type) =  {
+        import scala.collection.mutable.ListBuffer
+        val okParams = ListBuffer[Symbol]()
+        // can we relax these restrictions? see test/files/pos/depmet_implicit_oopsla_session_2.scala and neg/depmet_try_implicit.scala for motivation
+        // should allow forward references since type selections on implicit args are like type parameters:
+        // def foo[T](a: T, x: w.T2)(implicit w: ComputeT2[T])
+        // is more compact than: def foo[T, T2](a: T, x: T2)(implicit w: ComputeT2[T, T2])
+        // moreover, the latter is not an encoding of the former, which hides type inference of T2, so you can specify T while T2 is purely computed
+        val checkDependencies: TypeTraverser = new TypeTraverser {
+          def traverse(tp: Type) = {
+            tp match {
+              case SingleType(_, sym) =>
+                if (sym.owner == meth && sym.isValueParameter && !(okParams contains sym))
+                  context.error(
+                    sym.pos,
+                    "illegal dependent method type"+
+                    (if (settings.YdepMethTpes.value)
+                       ": parameter appears in the type of another parameter in the same section or an earlier one"
+                     else ""))
+              case _ =>
+                mapOver(tp)
+            }
+            this
+          }
+        }
+        for(vps <- vparamSymss) {
+          for(p <- vps) checkDependencies(p.info)
+          if(settings.YdepMethTpes.value) okParams ++= vps // can only refer to symbols in earlier parameter sections (if the extension is enabled)
+        }
+        checkDependencies(restpe) // DEPMETTODO: check not needed when they become on by default
+
         polyType(
-          tparamSyms, // deSkolemized symbols
-          if (vparamSymss.isEmpty) PolyType(List(), restpe)
+          tparamSyms, // deSkolemized symbols  -- TODO: check that their infos don't refer to method args?
+          if (vparamSymss.isEmpty) PolyType(List(), restpe) // nullary method type
           // vparamss refer (if they do) to skolemized tparams
-          else checkDependencies((vparamSymss :\ restpe) (makeMethodType)))
+          else (vparamSymss :\ restpe) (makeMethodType))
+      }
 
       var resultPt = if (tpt.isEmpty) WildcardType else typer.typedType(tpt).tpe
       val site = meth.owner.thisType
