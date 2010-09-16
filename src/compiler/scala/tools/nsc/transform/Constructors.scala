@@ -305,6 +305,23 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             case _ => false
           }
 
+        /** Rewrite calls to ScalaRunTime.array_update to the proper apply method in scala.Array.
+         *  Erasure transforms Array.update to ScalaRunTime.update when the element type is a type
+         *  variable, but after specialization this is a concrete primitive type, so it would
+         *  be an error to pass it to array_update(.., .., Object).
+         */
+        def rewriteArrayUpdate(tree: Tree): Tree = {
+          val array_update = definitions.ScalaRunTimeModule.info.member("array_update")
+          val adapter = new Transformer {
+            override def transform(t: Tree): Tree = t match {
+              case Apply(fun @ Select(receiver, method), List(xs, idx, v)) if fun.symbol == array_update =>
+                localTyper.typed(Apply(gen.mkAttributedSelect(xs, definitions.Array_update), List(idx, v)))
+              case _ => super.transform(t)
+            }
+          }
+          adapter.transform(tree)
+        }
+
         log("merging: " + originalStats.mkString("\n") + "\nwith\n" + specializedStats.mkString("\n"))
         val res = for (s <- originalStats; val stat = s.duplicate) yield {
           log("merge: looking at " + stat)
@@ -323,12 +340,13 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             // this is just to make private fields public
             (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), constrParams, null, true))(stat1)
 
+            val stat2 = rewriteArrayUpdate(stat1)
             // statements coming from the original class need retyping in the current context
-            if (settings.debug.value) log("retyping " + stat1)
+            if (settings.debug.value) log("retyping " + stat2)
 
             val d = new specializeTypes.Duplicator
             d.retyped(localTyper.context1.asInstanceOf[d.Context],
-                      stat1,
+                      stat2,
                       genericClazz,
                       clazz,
                       Map.empty)
