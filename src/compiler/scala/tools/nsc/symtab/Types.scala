@@ -363,7 +363,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def remove(clazz: Symbol): Type = this
 
-    def resultApprox: Type = ApproximateDependentMap(resultType)
+    def resultApprox: Type = if(settings.YdepMethTpes.value) ApproximateDependentMap(resultType) else resultType
 
     /** For a curried method or poly type its non-method result type,
      *  the type itself for all other types */
