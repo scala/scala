@@ -30,11 +30,6 @@ trait Infer {
   def isVarArgs(params: List[Symbol]) = !params.isEmpty && isRepeatedParamType(params.last.tpe)
   def isVarArgTpes(formals: List[Type]) = !formals.isEmpty && isRepeatedParamType(formals.last)
 
-  def isWildcard(tp: Type) = tp match {
-    case WildcardType | BoundedWildcardType(_) => true
-    case _ => false
-  }
-
   /** The formal parameter types corresponding to <code>formals</code>.
    *  If <code>formals</code> has a repeated last parameter, a list of
    *  (nargs - params.length + 1) copies of its type is returned.
@@ -566,7 +561,7 @@ trait Infer {
 
       (tparams, targs).zipped.map{ (tparam, targ) =>
         if (targ.typeSymbol == NothingClass &&
-            (isWildcard(restpe) || notCovariantIn(tparam, restpe))) {
+            (restpe.isWildcard || notCovariantIn(tparam, restpe))) {
           tparam -> None
         } else {
           tparam -> Some(

@@ -264,8 +264,16 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     /** Is this type a structural refinement type (it 'refines' members that have not been inherited) */
     def isStructuralRefinement: Boolean = false
 
+    /** Does this type depend immediately on an enclosing method parameter?
+      * i.e., is it a singleton type whose termSymbol refers to an argument of the symbol's owner (which is a method)
+      */
+    def isImmediatelyDependent: Boolean = false
+
     /** Does this depend on an enclosing method parameter? */
     def isDependent: Boolean = IsDependentCollector.collect(this)
+
+    /** True for WildcardType or BoundedWildcardType */
+    def isWildcard = false
 
     /** The term symbol associated with the type
       * Note that the symbol of the normalized type is returned (@see normalize)
@@ -355,7 +363,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def remove(clazz: Symbol): Type = this
 
-    def resultApprox: Type = ApproximateDeBruijnMap(resultType)
+    def resultApprox: Type = ApproximateDependentMap(resultType)
 
     /** For a curried method or poly type its non-method result type,
      *  the type itself for all other types */
@@ -1012,12 +1020,14 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
   /** An object representing an unknown type */
   case object WildcardType extends Type {
+    override def isWildcard = true
     override def safeToString: String = "?"
     // override def isNullable: Boolean = true
     override def kind = "WildcardType"
   }
 
   case class BoundedWildcardType(override val bounds: TypeBounds) extends Type {
+    override def isWildcard = true
     override def safeToString: String = "?" + bounds
     override def kind = "BoundedWildcardType"
   }
@@ -1071,13 +1081,13 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       else sym.tpe
   }
 
-  case class DeBruijnIndex(level: Int, paramId: Int) extends Type {
-    override def isTrivial = true
-    override def isStable = true
-    override def safeToString = "<param "+level+"."+paramId+">"
-    override def kind = "DeBruijnIndex"
-    // todo: this should be a subtype, which forwards to underlying
-  }
+  // case class DeBruijnIndex(level: Int, paramId: Int) extends Type {
+  //   override def isTrivial = true
+  //   override def isStable = true
+  //   override def safeToString = "<param "+level+"."+paramId+">"
+  //   override def kind = "DeBruijnIndex"
+  //   // todo: this should be a subtype, which forwards to underlying
+  // }
 
   /** A class for singleton types of the form &lt;prefix&gt;.&lt;sym.name&gt;.type.
    *  Cannot be created directly; one should always use
@@ -1100,6 +1110,9 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       }
       underlyingCache
     }
+
+    // more precise conceptually, but causes cyclic errors:    (paramss exists (_ contains sym))
+    override def isImmediatelyDependent = (sym ne NoSymbol) && (sym.owner.isMethod && sym.isValueParameter)
 
     override def isVolatile : Boolean = underlying.isVolatile && (!sym.isStable)
 /*
@@ -1190,9 +1203,8 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
                 case tv: TypeVar => tvs += tv
                 case _ =>
               }
- 	        val varToParamMap: Map[Type, Symbol] = tvs map (tv => tv -> tv.origin.typeSymbol.cloneSymbol) toMap
- 	        val paramToVarMap = varToParamMap map (_.swap)
-
+            val varToParamMap: Map[Type, Symbol] = tvs map (tv => tv -> tv.origin.typeSymbol.cloneSymbol) toMap
+            val paramToVarMap = varToParamMap map (_.swap)
             val varToParam = new TypeMap {
               def apply(tp: Type) = varToParamMap get tp match {
                 case Some(sym) => sym.tpe
@@ -1559,7 +1571,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
    *  Cannot be created directly; one should always use `typeRef'
    *  for creation. (@M: Otherwise hashing breaks)
    *
-   * @M: Higher-kinded types are represented as TypeRefs with a symbol that has type parameters, but with args==List()
+   * @M: a higher-kinded type is represented as a TypeRef with sym.info.typeParams.nonEmpty, but args.isEmpty
    *  @param pre  ...
    *  @param sym  ...
    *  @param args ...
@@ -1750,8 +1762,7 @@ A type's typeSymbol should never be inspected directly.
    // TODO: this would not be necessary if we could replace the call to sym.unsafeTypeParams in typeParamsDirect
    // by a call to sym.typeParams, but need to verify that that does not lead to spurious "illegal cycle" errors
    // the need for refreshing the cache is illustrated by #2278
-   // TODO: no test case in the suite because don't know how to tell partest to compile in different runs,
-   //       and in a specific order
+   // TODO: test case that is compiled  in a specific order and in different runs
     private var normalizeTyparCount = -1
 
     override def normalize: Type = {
@@ -1887,8 +1898,11 @@ A type's typeSymbol should never be inspected directly.
    */
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type {
-    override val isTrivial: Boolean =
-      params.forall(_.tpe.isTrivial) && resultType.isTrivial
+    override def isTrivial: Boolean = isTrivial0
+    private lazy val isTrivial0 =
+      resultType.isTrivial && params.forall{p => p.tpe.isTrivial &&  (
+        !settings.YdepMethTpes.value || !(params.exists(_.tpe.contains(p)) || resultType.contains(p)))
+      }
 
     def isImplicit = params.nonEmpty && params.head.isImplicit
     def isJava = false // can we do something like for implicits? I.e. do Java methods without parameters need to be recognized?
@@ -1902,30 +1916,36 @@ A type's typeSymbol should never be inspected directly.
 
     override def boundSyms = params ::: resultType.boundSyms
 
-    override def resultType(actuals: List[Type]) = {
-      val map = new InstantiateDeBruijnMap(actuals)
-      val rawResTpe = map.apply(resultType)
-
-      if (phase.erasedTypes)
-        rawResTpe
-      else
-        existentialAbstraction(map.existentialsNeeded, rawResTpe)
+    // this is needed for plugins to work correctly, only TypeConstraint annotations are supposed to be carried over
+    // TODO: this should probably be handled in a more structured way in adapt -- remove this map in resultType and watch the continuations tests fail
+    object dropNonContraintAnnotations extends TypeMap {
+      override val dropNonConstraintAnnotations = true
+      def apply(x: Type) = mapOver(x)
     }
+
+    override def resultType(actuals: List[Type]) =
+      if(isTrivial) dropNonContraintAnnotations(resultType)
+      else {
+        if(actuals.length == params.length)  {
+          val idm = new InstantiateDependentMap(params, actuals)
+          val res = idm(resultType)
+          // println("resultTypeDep "+(params, actuals, resultType, idm.existentialsNeeded, "\n= "+ res))
+          existentialAbstraction(idm.existentialsNeeded, res)
+        } else {
+          // Thread.dumpStack()
+          // println("resultType "+(params, actuals, resultType))
+          if (phase.erasedTypes) resultType
+          else existentialAbstraction(params, resultType)
+        }
+      }
+
+    // implicit args can only be depended on in result type: TODO this may be generalised so that the only constraint is dependencies are acyclic
+    def approximate: MethodType = MethodType(params, resultApprox)
 
     override def finalResultType: Type = resultType.finalResultType
 
-    private def dependentToString(base: Int): String = {
-      val params = for ((pt, n) <- paramTypes.zipWithIndex) yield "x$"+n+":"+pt
-      val res = resultType match {
-        case mt: MethodType => mt.dependentToString(base + params.length)
-        case rt => rt.toString
-      }
-      params.mkString("(", ",", ")")+res
-    }
-
     override def safeToString: String =
-      if (resultType.isDependent) dependentToString(0)
-      else params.map(_.defString).mkString("(", ",", ")") + resultType
+      params.map(_.defString).mkString("(", ",", ")") + resultType
 
     override def cloneInfo(owner: Symbol) = {
       val vparams = cloneSymbols(params, owner)
@@ -2147,7 +2167,7 @@ A type's typeSymbol should never be inspected directly.
   object TypeVar {
     def unapply(tv: TypeVar): Some[(Type, TypeConstraint)] = Some((tv.origin, tv.constr))
     def apply(origin: Type, constr: TypeConstraint) = new TypeVar(origin, constr, List(), List())
-    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint, List(), tparam.typeParams)
+    def apply(tparam: Symbol) = new TypeVar(tparam.tpeHK, new TypeConstraint, List(), tparam.typeParams) // TODO why not initialise TypeConstraint with bounds of tparam?
     def apply(origin: Type, constr: TypeConstraint, args: List[Type], params: List[Symbol]) = new TypeVar(origin, constr, args, params)
   }
 
@@ -2850,7 +2870,7 @@ A type's typeSymbol should never be inspected directly.
         if ((tparams1 eq tparams) && (result1 eq result)) tp
         else PolyType(tparams1, result1.substSym(tparams, tparams1))
       case ConstantType(_) => tp
-      case DeBruijnIndex(_, _) => tp
+      // case DeBruijnIndex(_, _) => tp
       case SuperType(thistp, supertp) =>
         val thistp1 = this(thistp)
         val supertp1 = this(supertp)
@@ -3227,7 +3247,7 @@ A type's typeSymbol should never be inspected directly.
       else if (matches(from.head, sym)) toType(tp, to.head)
       else subst(tp, sym, from.tail, to.tail)
 
-    private def renameBoundSyms(tp: Type): Type = tp match {
+    protected def renameBoundSyms(tp: Type): Type = tp match {
       case MethodType(ps, restp) =>
         val ps1 = cloneSymbols(ps)
         copyMethodType(tp, ps1, renameBoundSyms(restp.substSym(ps, ps1)))
@@ -3374,11 +3394,35 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
+// dependent method types
+  object IsDependentCollector extends TypeCollector(false) {
+    def traverse(tp: Type) {
+      if(tp isImmediatelyDependent) result = true
+      else if (!result) mapOver(tp)
+    }
+  }
+
+  object ApproximateDependentMap extends TypeMap {
+    def apply(tp: Type): Type =
+      if(tp isImmediatelyDependent) WildcardType
+      else mapOver(tp)
+  }
+
+/*
   /** Most of the implementation for MethodType.resultType.  The
    *  caller also needs to existentially quantify over the
    *  variables in existentialsNeeded.
    */
   class InstantiateDeBruijnMap(actuals: List[Type]) extends TypeMap {
+    def apply(tp: Type): Type = tp match {
+      case DeBruijnIndex(level, pid) =>
+        if (level == 1)
+          if (pid < actuals.length) actuals(pid) else tp
+        else DeBruijnIndex(level - 1, pid)
+      case _ =>
+        mapOver(tp)
+    }
+
     override val dropNonConstraintAnnotations = true
 
     private var existSyms = immutable.Map.empty[Int, Symbol]
@@ -3400,15 +3444,6 @@ A type's typeSymbol should never be inspected directly.
         existSyms = existSyms + (actualIdx -> sym)
         sym
       }
-
-    def apply(tp: Type): Type = tp match {
-      case DeBruijnIndex(level, pid) =>
-        if (level == 1)
-          if (pid < actuals.length) actuals(pid) else tp
-        else DeBruijnIndex(level - 1, pid)
-      case _ =>
-        mapOver(tp)
-    }
 
     override def mapOver(arg: Tree, giveup: ()=>Nothing): Tree = {
       object treeTrans extends TypeMapTransformer {
@@ -3442,15 +3477,70 @@ A type's typeSymbol should never be inspected directly.
       treeTrans.transform(arg)
     }
   }
+*/
 
-  object ApproximateDeBruijnMap extends TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case DeBruijnIndex(level, pid) =>
-        WildcardType
-      case _ =>
-        mapOver(tp)
+  class InstantiateDependentMap(params: List[Symbol], actuals: List[Type]) extends SubstTypeMap(params, actuals) {
+    override protected def renameBoundSyms(tp: Type): Type = tp match {
+      case MethodType(ps, restp) => tp // the whole point of this substitution is to instantiate these args
+      case _ => super.renameBoundSyms(tp)
+    }
+    // TODO: should we optimise this? only need to consider singletontypes
+
+    override val dropNonConstraintAnnotations = true
+
+    def existentialsNeeded: List[Symbol] = existSyms.filter(_ ne null).toList
+
+    private val existSyms: Array[Symbol] = new Array(actuals.length)
+    private def haveExistential(i: Int) = {assert((i >= 0) && (i <= actuals.length)); existSyms(i) ne null}
+
+    /* Return the type symbol for referencing a parameter inside the existential quantifier.
+     * (Only needed if the actual is unstable.)
+     */
+    def existSymFor(actualIdx: Int) =
+      if (haveExistential(actualIdx)) existSyms(actualIdx)
+      else {
+        val oldSym = params(actualIdx)
+        val symowner = oldSym.owner
+        val bound = singletonBounds(actuals(actualIdx))
+
+        val sym = symowner.newExistential(oldSym.pos, oldSym.name+".type")
+        sym.setInfo(bound)
+        sym.setFlag(oldSym.flags)
+
+        existSyms(actualIdx) = sym
+        sym
+      }
+
+    //AM propagate more info to annotations -- this seems a bit ad-hoc... (based on code by spoon)
+    override def mapOver(arg: Tree, giveup: ()=>Nothing): Tree = {
+      object treeTrans extends Transformer {
+        override def transform(tree: Tree): Tree = {
+          tree match {
+            case RefParamAt(pid) =>
+              if(actuals(pid) isStable) mkAttributedQualifier(actuals(pid), tree.symbol)
+              else {
+                val sym = existSymFor(pid)
+                (Ident(sym.name)
+                 copyAttrs tree
+                 setType typeRef(NoPrefix, sym, Nil))
+              }
+            case _ => super.transform(tree)
+          }
+        }
+        object RefParamAt {
+          def unapply(tree: Tree): Option[(Int)] = tree match {
+            case Ident(_) =>
+              val pid = params indexOf tree.symbol
+              if(pid != -1) Some((pid)) else None
+            case _ => None
+          }
+        }
+      }
+
+      treeTrans.transform(arg)
     }
   }
+
 
   object StripAnnotationsMap extends TypeMap {
     def apply(tp: Type): Type = tp match {
@@ -3552,15 +3642,6 @@ A type's typeSymbol should never be inspected directly.
       if (!result) {
         result = tp.isError
         mapOver(tp)
-      }
-    }
-  }
-
-  object IsDependentCollector extends TypeCollector(false) {
-    def traverse(tp: Type) {
-      tp match {
-        case DeBruijnIndex(_, _) => result = true
-        case _ => if (!result) mapOver(tp)
       }
     }
   }
@@ -4055,7 +4136,7 @@ A type's typeSymbol should never be inspected directly.
       case mt1: MethodType =>
         tp2 match {
           case mt2: MethodType =>
-            // new dependent types: probably fix this, use substSym as done for PolyType
+            // DEPMETTODO new dependent types: probably fix this, use substSym as done for PolyType
             return isSameTypes(mt1.paramTypes, mt2.paramTypes) &&
               mt1.resultType =:= mt2.resultType &&
               mt1.isImplicit == mt2.isImplicit

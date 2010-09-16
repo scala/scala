@@ -217,7 +217,7 @@ trait Scopes {
       if (e eq null) NoSymbol else e.sym
     }
 
-    /** Returns an iterator eidling every symbol with given name in this scope.
+    /** Returns an iterator yielding every symbol with given name in this scope.
      */
     def lookupAll(name: Name): Iterator[Symbol] = new Iterator[Symbol] {
       var e = lookupEntry(name)

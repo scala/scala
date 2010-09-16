@@ -165,8 +165,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
             cloneSymbols(params) map (p => p.setInfo(apply(p.tpe))),
             if (restpe.typeSymbol == UnitClass)
               erasedTypeRef(UnitClass)
-            else if (settings.Xexperimental.value)
-              apply(mt.resultType(params map (_.tpe))) // this gets rid of DeBruijnTypes
+            else if (settings.YdepMethTpes.value)
+              // this replaces each typeref that refers to an argument by the type `p.tpe` of the actual argument p (p in params)
+              apply(mt.resultType(params map (_.tpe)))
             else
               apply(restpe))
         case RefinedType(parents, decls) =>

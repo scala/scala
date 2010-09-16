@@ -30,14 +30,14 @@ abstract class UnPickler extends reflect.generic.UnPickler {
 
     protected override def debug = settings.debug.value
 
-    override def noSuchTypeTag(tag: Int, end: Int): Type = {
-      tag match {
-        case DEBRUIJNINDEXtpe =>
-          DeBruijnIndex(readNat(), readNat())
-        case _ =>
-          super.noSuchTypeTag(tag, end)
-      }
-    }
+    // override def noSuchTypeTag(tag: Int, end: Int): Type = {
+    //   tag match {
+    //     case DEBRUIJNINDEXtpe =>
+    //       DeBruijnIndex(readNat(), readNat())
+    //     case _ =>
+    //       super.noSuchTypeTag(tag, end)
+    //   }
+    // }
 
     override protected def errorMissingRequirement(name: Name, owner: Symbol) =
       errorMissingRequirement(

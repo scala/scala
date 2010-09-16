@@ -96,7 +96,7 @@ object ShowPickled extends Names {
     case ANNOTATEDtpe   => "ANNOTATEDtpe"
     case ANNOTINFO      => "ANNOTINFO"
     case ANNOTARGARRAY  => "ANNOTARGARRAY"
-    case DEBRUIJNINDEXtpe => "DEBRUIJNINDEXtpe"
+    // case DEBRUIJNINDEXtpe => "DEBRUIJNINDEXtpe"
     case EXISTENTIALtpe => "EXISTENTIALtpe"
     case TREE           => "TREE"
     case MODIFIERS      => "MODIFIERS"

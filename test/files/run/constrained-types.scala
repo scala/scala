@@ -45,7 +45,7 @@ object Test {
     "val y = b.y  // should keep the annotation",
 
 
-    "def m(x: String): String @Annot(x) = x     // m should be annotated with a debruijn",
+    "def m(x: String): String @Annot(x) = x",
     "val three = \"three\"",
     "val three2 = m(three:three.type)  // should change x to three",
     "var four = \"four\"",
