@@ -438,16 +438,14 @@ self =>
     while (cx != NoContext) {
       for (sym <- cx.scope)
         addScopeMember(sym, NoPrefix, EmptyTree)
+      if (cx == cx.enclClass) {
+	val pre = cx.prefix
+	for (sym <- pre.members)
+	  addScopeMember(sym, pre, EmptyTree)
+      }
       cx = cx.outer
     }
 
-    cx = context.enclClass
-    while (cx != NoContext) {
-      val pre = cx.prefix
-      for (sym <- pre.members)
-	addScopeMember(sym, pre, EmptyTree)
-      cx = cx.outer.enclClass
-    }
     for (imp <- context.imports) {
       val pre = imp.qual.tpe
       for (sym <- imp.allImportedSymbols) {
