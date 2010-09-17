@@ -57,6 +57,8 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
 
   private class Parser(val input: Source) extends MarkupHandler with MarkupParser with ExternalSources with Runnable {
     val preserveWS = XMLEventReader.this.preserveWS
+    // track level for elem memory usage optimization
+    private var level = 0
 
     // this is Parser's way to add to the queue - the odd return type
     // is to conform to MarkupHandler's interface
@@ -66,14 +68,19 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
     }
 
     override def elemStart(pos: Int, pre: String, label: String, attrs: MetaData, scope: NamespaceBinding) {
+      level += 1
       setEvent(EvElemStart(pre, label, attrs, scope))
     }
     override def elemEnd(pos: Int, pre: String, label: String) {
       setEvent(EvElemEnd(pre, label))
+      level -= 1
     }
 
     // this is a dummy to satisfy MarkupHandler's API
-    final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq = <ignore/>
+    // memory usage optimization return one <ignore/> for top level to satisfy MarkupParser.document() otherwise NodeSeq.Empty
+    private var ignoreWritten = false
+    final def elem(pos: Int, pre: String, label: String, attrs: MetaData, pscope: NamespaceBinding, nodes: NodeSeq): NodeSeq =
+      if (level == 1 && !ignoreWritten) {ignoreWritten = true; <ignore/> } else NodeSeq.Empty
 
     def procInstr(pos: Int, target: String, txt: String)  = setEvent(EvProcInstr(target, txt))
     def comment(pos: Int, txt: String)                    = setEvent(EvComment(txt))
