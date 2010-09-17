@@ -376,8 +376,8 @@ extends ParSeq[T]
       }
     }
 
-    override def collect2combiner[S, That](pf: PartialFunction[T, S], pbf: CanCombineFrom[ParArray[T], S, That]): Combiner[S, That] = {
-      val cb = pbf(self.repr)
+    override def collect2combiner[S, That](pf: PartialFunction[T, S], cb: Combiner[S, That]): Combiner[S, That] = {
+      //val cb = pbf(self.repr)
       collect2combiner_quick(pf, arr, cb, until, i)
       i = until
       cb
@@ -392,8 +392,8 @@ extends ParSeq[T]
       }
     }
 
-    override def flatmap2combiner[S, That](f: T => Traversable[S], pbf: CanCombineFrom[ParArray[T], S, That]): Combiner[S, That] = {
-      val cb = pbf(self.repr)
+    override def flatmap2combiner[S, That](f: T => Traversable[S], cb: Combiner[S, That]): Combiner[S, That] = {
+      //val cb = pbf(self.repr)
       while (i < until) {
         val traversable = f(arr(i).asInstanceOf[T])
         if (traversable.isInstanceOf[Iterable[_]]) cb ++= traversable.asInstanceOf[Iterable[S]].iterator
@@ -403,13 +403,13 @@ extends ParSeq[T]
       cb
     }
 
-    override def filter2combiner[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Combiner[U, This]) = {
+    override def filter2combiner[U >: T, This](pred: T => Boolean, cb: Combiner[U, This]) = {
       filter2combiner_quick(pred, cb, arr, until, i)
       i = until
       cb
     }
 
-    private def filter2combiner_quick[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
+    private def filter2combiner_quick[U >: T, This](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
         var curr = a(j).asInstanceOf[T]
@@ -418,13 +418,13 @@ extends ParSeq[T]
       }
     }
 
-    override def filterNot2combiner[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Combiner[U, This]) = {
+    override def filterNot2combiner[U >: T, This](pred: T => Boolean, cb: Combiner[U, This]) = {
       filterNot2combiner_quick(pred, cb, arr, until, i)
       i = until
       cb
     }
 
-    private def filterNot2combiner_quick[U >: T, This >: ParArray[T]](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
+    private def filterNot2combiner_quick[U >: T, This](pred: T => Boolean, cb: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = i
       while(j < ntil) {
         var curr = a(j).asInstanceOf[T]
@@ -454,13 +454,13 @@ extends ParSeq[T]
       }
     }
 
-    override def partition2combiners[U >: T, This >: ParArray[T]](pred: T => Boolean, btrue: Combiner[U, This], bfalse: Combiner[U, This]) = {
+    override def partition2combiners[U >: T, This](pred: T => Boolean, btrue: Combiner[U, This], bfalse: Combiner[U, This]) = {
       partition2combiners_quick(pred, btrue, bfalse, arr, until, i)
       i = until
       (btrue, bfalse)
     }
 
-    private def partition2combiners_quick[U >: T, This >: ParArray[T]](p: T => Boolean, btrue: Builder[U, This], bfalse: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
+    private def partition2combiners_quick[U >: T, This](p: T => Boolean, btrue: Builder[U, This], bfalse: Builder[U, This], a: Array[Any], ntil: Int, from: Int) {
       var j = from
       while (j < ntil) {
         val curr = a(j).asInstanceOf[T]
@@ -469,7 +469,7 @@ extends ParSeq[T]
       }
     }
 
-    override def take2combiner[U >: T, This >: ParArray[T]](n: Int, cb: Combiner[U, This]) = {
+    override def take2combiner[U >: T, This](n: Int, cb: Combiner[U, This]) = {
       cb.sizeHint(n)
       val ntil = i + n
       val a = arr
@@ -480,7 +480,7 @@ extends ParSeq[T]
       cb
     }
 
-    override def drop2combiner[U >: T, This >: ParArray[T]](n: Int, cb: Combiner[U, This]) = {
+    override def drop2combiner[U >: T, This](n: Int, cb: Combiner[U, This]) = {
       drop(n)
       cb.sizeHint(remaining)
       while (i < until) {
@@ -490,7 +490,7 @@ extends ParSeq[T]
       cb
     }
 
-    override def reverse2combiner[U >: T, This >: ParArray[T]](cb: Combiner[U, This]): Combiner[U, This] = {
+    override def reverse2combiner[U >: T, This](cb: Combiner[U, This]): Combiner[U, This] = {
       cb.ifIs[ParArrayCombiner[T]] { pac =>
         val sz = remaining
         pac.sizeHint(sz)

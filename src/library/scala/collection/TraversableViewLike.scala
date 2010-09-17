@@ -14,6 +14,7 @@ import generic._
 import mutable.{Builder, ArrayBuffer}
 import TraversableView.NoBuilder
 
+
 /** A template trait for non-strict views of traversable collections.
  *  $traversableviewinfo
  *

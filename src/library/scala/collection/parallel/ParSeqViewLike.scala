@@ -161,11 +161,11 @@ extends SeqView[T, Coll]
 
   /* tasks */
 
-  protected[this] class Force[U >: T, That](cbf: CanCombineFrom[Coll, U, That], val pit: ParIterator)
+  protected[this] class Force[U >: T, That](cbf: CanCombineFrom[Coll, U, That], protected[this] val pit: ParSeqIterator[T])
   extends Transformer[Combiner[U, That], Force[U, That]] {
     var result: Combiner[U, That] = null
     def leaf(prev: Option[Combiner[U, That]]) = result = pit.copy2builder[U, That, Combiner[U, That]](reuse(prev, cbf(self.underlying)))
-    def newSubtask(p: SuperParIterator) = new Force(cbf, down(p))
+    protected[this] def newSubtask(p: SuperParIterator) = new Force(cbf, down(p))
     override def merge(that: Force[U, That]) = result = result combine that.result
   }
 
