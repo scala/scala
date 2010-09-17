@@ -453,6 +453,15 @@ self =>
       case _ => false
     }
 
+    def isNumericLit: Boolean = in.token match {
+      case INTLIT | LONGLIT | FLOATLIT | DOUBLELIT => true
+      case _ => false
+    }
+    def isUnaryOp: Boolean = isIdent && (in.name match {
+      case MINUS | PLUS | TILDE | BANG  => true
+      case _                            => false
+    })
+
     def isIdent = in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT
 
     def isExprIntroToken(token: Int): Boolean = token match {
@@ -1241,24 +1250,14 @@ self =>
     /** PrefixExpr   ::= [`-' | `+' | `~' | `!' | `&'] SimpleExpr
     */
     def prefixExpr(): Tree = {
-      def unaryOp(): Name = "unary_" + ident()
-      if (isIdent && in.name == MINUS) {
+      if (isUnaryOp) {
         atPos(in.offset) {
-          val name = unaryOp()
-          in.token match {
-            // Don't include double and float here else we lose -0.0
-            case INTLIT | LONGLIT => literal(true)
-            case _ => Select(stripParens(simpleExpr()), name)
-          }
+          val name: Name = "unary_" + ident()
+          if (in.name == MINUS && isNumericLit) simpleExprRest(atPos(in.offset)(literal(true)), true)
+          else Select(stripParens(simpleExpr()), name)
         }
-      } else if (isIdent && (in.name == PLUS || in.name == TILDE || in.name == BANG)) {
-        atPos(in.offset) {
-          val name = unaryOp()
-          Select(stripParens(simpleExpr()), name)
-        }
-      } else {
-        simpleExpr()
       }
+      else simpleExpr()
     }
     def xmlLiteral(): Tree
 

@@ -146,27 +146,32 @@ public class JExtendedCode extends JCode {
     }
     public void emitPUSH(Long value) { emitPUSH(value.longValue()); }
 
-    public void emitPUSH(float value) {
-        if (value == 0.0F)
+    private static final Float ZEROF = Float.valueOf(0f);
+    private static final Float ONEF = Float.valueOf(1f);
+    private static final Float TWOF = Float.valueOf(2f);
+    public void emitPUSH(Float value) {
+        if (ZEROF.equals(value))
             emitFCONST_0();
-        else if (value == 1.0F)
+        else if (ONEF.equals(value))
             emitFCONST_1();
-        else if (value == 2.0F)
+        else if (TWOF.equals(value))
             emitFCONST_2();
         else
-            emitPUSH_index(pool.addFloat(value));
+            emitPUSH_index(pool.addFloat(value.floatValue()));
     }
-    public void emitPUSH(Float value) { emitPUSH(value.floatValue()); }
+    public void emitPUSH(float value) { emitPUSH(Float.valueOf(value)); }
 
-    public void emitPUSH(double value) {
-        if (value == 0.0)
+    private static final Double ZEROD = Double.valueOf(0d);
+    private static final Double ONED = Double.valueOf(1d);
+    public void emitPUSH(Double value) {
+        if (ZEROD.equals(value))
             emitDCONST_0();
-        else if (value == 1.0)
+        else if (ONED.equals(value))
             emitDCONST_1();
         else
-            emitLDC2_W(value);
+            emitLDC2_W(value.doubleValue());
     }
-    public void emitPUSH(Double value) { emitPUSH(value.doubleValue()); }
+    public void emitPUSH(double value) { emitPUSH(Double.valueOf(value)); }
 
     public void emitPUSH(String s) {
         emitPUSH_index(pool.addString(s));
