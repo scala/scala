@@ -12,6 +12,8 @@ package scala.collection
 package immutable
 
 import generic._
+import annotation.tailrec
+import mutable.{ ListBuffer, Builder }
 
 /** $factoryInfo
  *  @define Coll immutable.ListSet
@@ -22,8 +24,27 @@ object ListSet extends ImmutableSetFactory[ListSet] {
   /** setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListSet[A]] = setCanBuildFrom[A]
   override def empty[A] = new ListSet[A]
-}
+  override def newBuilder[A]: Builder[A, ListSet[A]] = new ListSetBuilder[A]
 
+  /** A custom builder because forgetfully adding elements one at
+   *  a time to a list backed set puts the "squared" in N^2.  There is a
+   *  temporary space cost, but it's improbable a list backed set could
+   *  become large enough for this to matter given its pricy element lookup.
+   */
+  class ListSetBuilder[Elem] extends Builder[Elem, ListSet[Elem]] {
+    protected val elems = new mutable.ListBuffer[Elem]
+    protected val seen  = new mutable.HashSet[Elem]
+    def +=(x: Elem): this.type = {
+      if (!seen(x)) {
+        elems += x
+        seen += x
+      }
+      this
+    }
+    def clear() = { elems.clear() ; seen.clear() }
+    def result() = elems.foldLeft(empty[Elem])(_ unchecked_+ _)
+  }
+}
 
 /** This class implements immutable sets using a list-based data
  *  structure. Instances of `ListSet` represent
@@ -64,10 +85,23 @@ class ListSet[A] extends Set[A]
    */
   def + (elem: A): ListSet[A] = new Node(elem)
 
-  /** <code>-</code> can be used to remove a single element from
-   *  a set.
+  /** `-` can be used to remove a single element.
    */
   def - (elem: A): ListSet[A] = this
+
+  /** If we are bulk adding elements and desire a runtime measured in
+   *  sub-interstellar time units, we better find a way to avoid traversing
+   *  the collection on each element.  That's what the custom builder does,
+   *  so we take the easy way out and add ourselves and the argument to
+   *  a new builder.
+   */
+  override def ++(xs: TraversableOnce[A]): ListSet[A] =
+    if (xs.isEmpty) this
+    else newBuilder ++= this ++= xs result
+
+  private[ListSet] def unchecked_+(e: A): ListSet[A] = new Node(e)
+  private[ListSet] def unchecked_outer: ListSet[A] =
+    throw new NoSuchElementException("Empty ListSet has no outer pointer")
 
   /** Creates a new iterator over all elements contained in this set.
    *
@@ -75,11 +109,15 @@ class ListSet[A] extends Set[A]
    *  @return the new iterator
    */
   def iterator: Iterator[A] = new Iterator[A] {
-    var that: ListSet[A] = self;
-    def hasNext = !that.isEmpty;
+    var that: ListSet[A] = self
+    def hasNext = that.nonEmpty
     def next: A =
-      if (!hasNext) throw new NoSuchElementException("next on empty iterator")
-      else { val res = that.elem; that = that.next; res }
+      if (hasNext) {
+        val res = that.elem
+        that = that.next
+        res
+      }
+      else Iterator.empty.next
   }
 
   /**
@@ -92,16 +130,22 @@ class ListSet[A] extends Set[A]
    */
   protected def next: ListSet[A] = throw new NoSuchElementException("Next of an empty set");
 
+  override def stringPrefix = "ListSet"
+
   /** Represents an entry in the `ListSet`.
    */
   @serializable
   protected class Node(override protected val elem: A) extends ListSet[A] {
+    override private[ListSet] def unchecked_outer = self
 
     /** Returns the number of elements in this set.
      *
      *  @return number of set elements.
      */
-    override def size = self.size + 1
+    override def size = sizeInternal(this, 0)
+    @tailrec private def sizeInternal(n: ListSet[A], acc: Int): Int =
+      if (n.isEmpty) acc
+      else sizeInternal(n.unchecked_outer, acc + 1)
 
     /** Checks if this set is empty.
      *
@@ -114,7 +158,9 @@ class ListSet[A] extends Set[A]
      *  @param  elem    the element to check for membership.
      *  @return true, iff <code>elem</code> is contained in this set.
      */
-    override def contains(e: A) = (e == elem) || self.contains(e)
+    override def contains(e: A) = containsInternal(this, e)
+    @tailrec private def containsInternal(n: ListSet[A], e: A): Boolean =
+      !n.isEmpty && (n.elem == e || containsInternal(n.unchecked_outer, e))
 
     /** This method creates a new set with an additional element.
      */
@@ -128,7 +174,5 @@ class ListSet[A] extends Set[A]
     }
 
     override protected def next: ListSet[A] = self
-
-    override def stringPrefix = "Set"
   }
 }

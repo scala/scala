@@ -93,8 +93,8 @@ x = Map(buffers -> 20, layers -> 2, title -> 3)
 y = Map(buffers -> 20, layers -> 2, title -> 3)
 x equals y: true, y equals x: true
 
-x = Set(5, 3)
-y = Set(5, 3)
+x = ListSet(5, 3)
+y = ListSet(5, 3)
 x equals y: true, y equals x: true
 
 x = Queue(a, b, c)
