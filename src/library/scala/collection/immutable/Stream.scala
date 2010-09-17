@@ -262,7 +262,11 @@ self =>
         these = new LazyCell(cur.tail)
         result
       }
-    override def toStream = these.v
+    override def toStream = {
+      val result = these.v
+      these = new LazyCell(Stream.empty)
+      result
+    }
     override def toList   = toStream.toList
   }
 
