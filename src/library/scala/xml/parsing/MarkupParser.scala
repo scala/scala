@@ -54,15 +54,31 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
   //
 
   var curInput: Source = input
-  def lookahead(): BufferedIterator[Char] = new BufferedIterator[Char] {
-    val stream = curInput.toStream
-    curInput = Source.fromIterable(stream)
-    val underlying = Source.fromIterable(stream).buffered
 
-    def hasNext = underlying.hasNext
-    def next = underlying.next
-    def head = underlying.head
+  // See ticket #3720 for motivations.
+  private class WithLookAhead(underlying: Source) extends Source {
+    private val queue = collection.mutable.Queue[Char]()
+    def lookahead(): BufferedIterator[Char] = {
+      val iter = queue.iterator ++ new Iterator[Char] {
+        def hasNext = underlying.hasNext
+        def next() = { val x = underlying.next(); queue += x; x }
+      }
+      iter.buffered
+    }
+    val iter = new Iterator[Char] {
+      def hasNext = underlying.hasNext || !queue.isEmpty
+      def next() = if (!queue.isEmpty) queue.dequeue() else underlying.next()
+    }
   }
+
+  def lookahead(): BufferedIterator[Char] = curInput match {
+    case curInputWLA:WithLookAhead => curInputWLA.lookahead()
+    case _ =>
+      val newInput = new WithLookAhead(curInput)
+      curInput = newInput
+      newInput.lookahead()
+  }
+
 
   /** the handler of the markup, returns this */
   private val handle: MarkupHandler = this
@@ -326,7 +342,10 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
    */
   def xCharData: NodeSeq = {
     xToken("[CDATA[")
-    def mkResult(pos: Int, s: String): NodeSeq = PCData(s)
+    def mkResult(pos: Int, s: String): NodeSeq = {
+      handle.text(pos, s)
+      PCData(s)
+    }
     xTakeUntil(mkResult, () => pos, "]]>")
   }
 
