@@ -40,5 +40,8 @@ trait RichCompilationUnits { self: Global =>
     def targetPos_=(p: Position) { _targetPos = p }
 
     var contexts: Contexts = new Contexts
+
+    /** The last fully type-checked body of this unit */
+    var lastBody: Tree = EmptyTree
   }
 }

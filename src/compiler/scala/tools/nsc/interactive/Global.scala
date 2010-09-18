@@ -60,7 +60,7 @@ self =>
   // ----------- Overriding hooks in nsc.Global -----------------------
 
   /** Called from typechecker, which signal hereby that a node has been completely typechecked.
-   *  If the node is included in unit.targetPos, abandons run and returns newly attributed tree.
+   *  If the node includes unit.targetPos, abandons run and returns newly attributed tree.
    *  Otherwise, if there's some higher priority work to be done, also abandons run with a FreshRunReq.
    *  @param  context  The context that typechecked the node
    *  @param  old      The original node
@@ -75,7 +75,7 @@ self =>
           result.pos.isOpaqueRange &&
           (result.pos includes context.unit.targetPos)) {
         integrateNew()
-        var located = new Locator(context.unit.targetPos) locateIn result
+        var located = new TypedLocator(context.unit.targetPos) locateIn result
         if (located == EmptyTree) {
           println("something's wrong: no "+context.unit+" in "+result+result.pos)
           located = result
@@ -270,6 +270,7 @@ self =>
       unit.toCheck.clear()
       unit.targetPos = NoPosition
       unit.contexts.clear()
+      unit.lastBody = unit.body
       unit.body = EmptyTree
       unit.status = NotLoaded
     }
@@ -394,6 +395,16 @@ self =>
     respond(response)(typedTree(source, forceReload))
   }
 
+  /** Set sync var `result` to the last fully attributed tree produced from the entire compilation unit  */
+  def getLastTypedTree(source : SourceFile, result: Response[Tree]) {
+    respond(result) {
+      val unit = unitOf(source)
+      if (unit.status > JustParsed) unit.body
+      else if (unit.lastBody ne EmptyTree) unit.lastBody
+      else typedTree(source, false)
+    }
+  }
+
   def stabilizedType(tree: Tree): Type = tree match {
     case Ident(_) if tree.symbol.isStable => singleType(NoPrefix, tree.symbol)
     case Select(qual, _) if qual.tpe != null && tree.symbol.isStable => singleType(qual.tpe, tree.symbol)
@@ -427,7 +438,6 @@ self =>
       if (!sym.name.decode.containsName(Dollar) &&
           !sym.hasFlag(Flags.SYNTHETIC) &&
           !locals.contains(sym.name)) {
-        //println("adding scope member: "+pre+" "+sym)
         locals(sym.name) = new ScopeMember(
           sym,
           pre.memberType(sym),
@@ -484,7 +494,7 @@ self =>
     if (tree.tpe == null)
       tree = analyzer.newTyper(context).typedQualifier(tree)
 
-    println("typeMembers at "+tree+" "+tree.tpe)
+    if (debugIDE) println("typeMembers at "+tree+" "+tree.tpe)
 
     val superAccess = tree.isInstanceOf[Super]
     val scope = new Scope
@@ -561,6 +571,7 @@ self =>
     override def canRedefine(sym: Symbol) = true
 
     def typeCheck(unit: CompilationUnit): Unit = {
+      activeLocks = 0
       applyPhase(typerPhase, unit)
     }
 
@@ -572,18 +583,20 @@ self =>
      *  (i.e. largest tree that's contained by position)
      */
     def typedTreeAt(pos: Position): Tree = {
-      println("starting typedTreeAt")
+      if (debugIDE) println("starting typedTreeAt")
       val tree = locateTree(pos)
-      println("at pos "+pos+" was found: "+tree+tree.pos.show)
+      if (debugIDE) println("at pos "+pos+" was found: "+tree+tree.pos.show)
       if (stabilizedType(tree) ne null) {
-        println("already attributed")
+        if (debugIDE) println("already attributed")
         tree
       } else {
         val unit = unitOf(pos)
         assert(unit.isParsed)
         unit.targetPos = pos
+        val lastPrintTypings = printTypings
         try {
           println("starting targeted type check")
+          if (debugIDE) printTypings = true
           typeCheck(unit)
           throw new FatalError("tree not found")
         } catch {
@@ -591,6 +604,7 @@ self =>
             ex.tree
         } finally {
           unit.targetPos = NoPosition
+          printTypings = lastPrintTypings
         }
       }
     }

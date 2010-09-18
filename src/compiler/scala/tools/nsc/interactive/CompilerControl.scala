@@ -113,6 +113,15 @@ trait CompilerControl { self: Global =>
       override def toString = "typecheck"
   }
 
+  /** Set sync var `result` to the last fully attributed & typechecked tree produced from `source`.
+   *  If no such tree exists yet, do a normal askType(source, false, result)
+   */
+  def askLastType(source: SourceFile, forceReload: Boolean, result: Response[Tree]) =
+    scheduler postWorkItem new WorkItem {
+      def apply() = self.getLastTypedTree(source, result)
+      override def toString = "reconcile"
+  }
+
   /** Set sync var `result' to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    */

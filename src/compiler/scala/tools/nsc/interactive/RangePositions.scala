@@ -253,9 +253,10 @@ self: scala.tools.nsc.Global =>
       traverse(root)
       this.last
     }
+    protected def isEligible(t: Tree) = !t.pos.isTransparent
     override def traverse(t: Tree) {
       if (t.pos includes pos) {
-        if (!t.pos.isTransparent) last = t
+        if (isEligible(t)) last = t
         super.traverse(t)
       } else if (t.symbol != null) {
         for(annot <- t.symbol.annotations if (annot.pos includes pos) && !annot.pos.isTransparent) {
@@ -266,5 +267,9 @@ self: scala.tools.nsc.Global =>
         }
       }
     }
+  }
+
+  class TypedLocator(pos: Position) extends Locator(pos) {
+    override protected def isEligible(t: Tree) = super.isEligible(t) && t.tpe != null
   }
 }
