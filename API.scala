@@ -172,15 +172,31 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		structure(baseTypes, declared, inherited)
 	}
 	private def structure(parents: List[Type], declared: List[Symbol], inherited: List[Symbol]): xsbti.api.Structure =
-		new xsbti.api.Structure(types(parents), processDefinitions(declared), Array())//processDefinitions(inherited))
-	private def processDefinitions(defs: List[Symbol]): Array[xsbti.api.Definition] = defs.toArray.map(definition)
+		new xsbti.api.Structure(types(parents), processDefinitions(declared), if(java.lang.Boolean.getBoolean("xsbt.api.inherited")) processDefinitions(inherited) else Array())
+	private def processDefinitions(defs: List[Symbol]): Array[xsbti.api.Definition] = defs.toArray.map(definition).filter(_ ne null) // TODO remove null hack
 	private def definition(sym: Symbol): xsbti.api.Definition =
 	{
-		if(sym.isClass) classLike(sym)
-		else if(sym.isMethod) defDef(sym)
-		else if(isNonClassType(sym)) typeDef(sym)
-		else if(sym.isVariable) fieldDef(sym, new xsbti.api.Var(_,_,_,_,_))
-		else fieldDef(sym, new xsbti.api.Val(_,_,_,_,_))
+		def mkVar = fieldDef(sym, new xsbti.api.Var(_,_,_,_,_))
+		if(sym.isClass)
+			classLike(sym)
+		else if(isNonClassType(sym))
+			typeDef(sym)
+		else if(sym.isVariable)
+			if(isSourceField(sym)) mkVar else null
+		else if(sym.isStable)
+			if(isSourceField(sym)) fieldDef(sym, new xsbti.api.Val(_,_,_,_,_)) else null
+		else if(sym.isSourceMethod && !sym.isSetter)
+			if(sym.isGetter) mkVar else defDef(sym)
+		else null
+	}
+	// This filters private[this] vals/vars that were not in the original source.
+	//  The getter will be used for processing instead.
+	private def isSourceField(sym: Symbol): Boolean =
+	{
+		val getter = sym.getter(sym.enclClass)
+		// the check `getter eq sym` is a precaution against infinite recursion
+		// `isParamAccessor` does not exist in all supported versions of Scala, so the flag check is done directly
+		(getter == NoSymbol && !sym.hasFlag(Flags.PARAMACCESSOR)) || (getter eq sym)
 	}
 	private def getModifiers(s: Symbol): xsbti.api.Modifiers =
 	{
@@ -310,7 +326,13 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 
 	private def annotations(s: Symbol): Array[xsbti.api.Annotation] =
 		atPhase(currentRun.typerPhase) {
-			annotations(s.attributes)
+			val base = if(s.hasFlag(Flags.ACCESSOR)) s.accessed else NoSymbol
+			val b = if(base == NoSymbol) s else base
+			// annotations from bean methods are not handled because:
+			//  a) they are recorded as normal source methods anyway
+			//  b) there is no way to distinguish them from user-defined methods
+			val associated = List(b, b.getter(b.enclClass), b.setter(b.enclClass)).filter(_ != NoSymbol)
+			associated.flatMap( ss => annotations(ss.attributes) ).removeDuplicates.toArray ;
 		}
 	private def annotatedType(at: AnnotatedType): xsbti.api.Type =
 	{
@@ -318,5 +340,5 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(annots.isEmpty) processType(at.underlying) else annotated(annots, at.underlying)
 	}
 	private def fullName(s: Symbol): String = nameString(s)
-	private def simpleName(s: Symbol): String = s.simpleName.toString.trim
+	private def simpleName(s: Symbol): String = s.simpleName.toString.trim	
 }
