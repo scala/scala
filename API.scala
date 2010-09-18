@@ -65,7 +65,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		{
 			if(sym.isLocalClass) Constants.emptyType
 			else if(sym.isTypeParameterOrSkolem || isExistential(sym)) new xsbti.api.ParameterRef(sym.id)
-			else error("Unknown prefixless type: " + sym)
+			else error("Unknown prefixless type: " + sym + " in " + sym.owner + " in class " + sym.enclClass)
 		}
 		else if(sym.isRoot || sym.isRootPackage) Constants.emptyType
 		else new xsbti.api.Projection(simpleType(pre), sym.nameString)
@@ -104,7 +104,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 				case MethodType(params, resultType) => // in 2.7, params is of type List[Type], in 2.8 it is List[Symbol]
 					build(resultType, typeParams, (params: xsbti.api.ParameterList) :: valueParameters)
 				case returnType =>
-					new xsbti.api.Def(valueParameters.toArray, processType(returnType), typeParams, simpleName(s), getAccess(s), getModifiers(s), annotations(s))
+					new xsbti.api.Def(valueParameters.reverse.toArray, processType(returnType), typeParams, simpleName(s), getAccess(s), getModifiers(s), annotations(s))
 			}
 		}
 		def parameterS(s: Symbol): xsbti.api.MethodParameter = makeParameter(s.nameString, s.info, s.info.typeSymbol)
@@ -162,7 +162,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	private def structure(info: Type): xsbti.api.Structure =
 	{
 		val s = info.typeSymbol
-		val (declared, inherited) = info.members.partition(_.owner == s)
+		val (declared, inherited) = info.members.reverse.partition(_.owner == s)
 		// would be nice to know how to do this properly:
 		//  baseClasses contains symbols in proper linearization order, but tpe doesn't have type parameters applied
 		//  baseTypeSeq contains the types with parameters properly applied
