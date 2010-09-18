@@ -358,13 +358,13 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def checkNonCyclic(pos: Position, tp: Type, lockedSym: Symbol): Boolean = {
+    def checkNonCyclic(pos: Position, tp: Type, lockedSym: Symbol): Boolean = try {
       lockedSym.lock {
         throw new TypeError("illegal cyclic reference involving " + lockedSym)
       }
-      val result = checkNonCyclic(pos, tp)
+      checkNonCyclic(pos, tp)
+    } finally {
       lockedSym.unlock()
-      result
     }
 
     def checkNonCyclic(sym: Symbol) {
@@ -697,6 +697,7 @@ trait Typers { self: Analyzer =>
     /** The member with given name of given qualifier tree */
     def member(qual: Tree, name: Name) = qual.tpe match {
       case ThisType(clazz) if (context.enclClass.owner.hasTransOwner(clazz)) =>
+      	// println("member")
         qual.tpe.member(name)
       case _  =>
         if (phase.next.erasedTypes) qual.tpe.member(name)
