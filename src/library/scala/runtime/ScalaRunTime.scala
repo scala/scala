@@ -208,8 +208,14 @@ object ScalaRunTime {
   @inline def hash(x: Short): Int = x.toInt
   @inline def hash(x: Byte): Int = x.toInt
   @inline def hash(x: Char): Int = x.toInt
+  @inline def hash(x: Boolean): Int = x.hashCode
+  @inline def hash(x: Unit): Int = 0
 
   @inline def hash(x: Number): Int  = runtime.BoxesRunTime.hashFromNumber(x)
+
+  /** XXX Why is there one boxed implementation in here? It would seem
+   *  we should have all the numbers or none of them.
+   */
   @inline def hash(x: java.lang.Long): Int = {
     val iv = x.intValue
     if (iv == x.longValue) iv else x.hashCode
