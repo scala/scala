@@ -37,20 +37,19 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 				callback.beginSource(sourceFile)
 				for(on <- unit.depends)
 				{
+					def binaryDependency(file: File, className: String) = callback.binaryDependency(file, className, sourceFile)
 					val onSource = on.sourceFile
 					if(onSource == null)
 					{
 						classFile(on) match
 						{
-							case Some(f) =>
-							{
+							case Some((f,className)) =>
 								f match
 								{
-									case ze: ZipArchive#Entry => callback.jarDependency(new File(archive(ze).getName), sourceFile)
-									case pf: PlainFile => callback.classDependency(pf.file, sourceFile)
+									case ze: ZipArchive#Entry => binaryDependency(new File(archive(ze).getName), className)
+									case pf: PlainFile => binaryDependency(pf.file, className)
 									case _ => ()
 								}
-							}
 							case None => ()
 						}
 					}
@@ -82,25 +81,11 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		}
 	}
 
-	private def classForName(name: String) =
-	{
-		try
-		{
-			if(name.indexOf('.') < 0)
-			{
-				val sym = definitions.EmptyPackageClass.info.member(newTypeName(name))
-				if(sym != NoSymbol) Some( sym ) else { callback.superclassNotFound(name); None }
-			}
-			else
-				Some( global.definitions.getClass(newTermName(name)) )
-		}
-		catch { case fe: scala.tools.nsc.FatalError =>  callback.superclassNotFound(name); None }
-	}
-	private def classFile(sym: Symbol): Option[AbstractFile] =
+	private def classFile(sym: Symbol): Option[(AbstractFile, String)] =
 	{
 		import scala.tools.nsc.symtab.Flags
 		val name = flatname(sym, finder.classSeparator) + moduleSuffix(sym)
-		finder.findClass(name) orElse {
+		finder.findClass(name).map(file => (file, name))  orElse {
 			if(isTopLevelModule(sym))
 			{
 				val linked = linkedClass(sym)
