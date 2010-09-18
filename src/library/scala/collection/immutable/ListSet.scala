@@ -31,9 +31,11 @@ object ListSet extends ImmutableSetFactory[ListSet] {
    *  temporary space cost, but it's improbable a list backed set could
    *  become large enough for this to matter given its pricy element lookup.
    */
-  class ListSetBuilder[Elem] extends Builder[Elem, ListSet[Elem]] {
-    protected val elems = new mutable.ListBuffer[Elem]
-    protected val seen  = new mutable.HashSet[Elem]
+  class ListSetBuilder[Elem](initial: ListSet[Elem]) extends Builder[Elem, ListSet[Elem]] {
+    def this() = this(empty[Elem])
+    protected val elems = new mutable.ListBuffer[Elem] ++= initial reverse
+    protected val seen  = new mutable.HashSet[Elem] ++= initial
+
     def +=(x: Elem): this.type = {
       if (!seen(x)) {
         elems += x
@@ -97,7 +99,7 @@ class ListSet[A] extends Set[A]
    */
   override def ++(xs: TraversableOnce[A]): ListSet[A] =
     if (xs.isEmpty) this
-    else newBuilder ++= this ++= xs result
+    else new ListSet.ListSetBuilder(this) ++= xs result
 
   private[ListSet] def unchecked_+(e: A): ListSet[A] = new Node(e)
   private[ListSet] def unchecked_outer: ListSet[A] =
