@@ -29,9 +29,6 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 		def run
 		{
 			val outputDirectory = new File(global.settings.outdir.value)
-			val superclasses = callback.superclassNames flatMap(classForName)
-			val annotations = callback.annotationNames flatMap (classForName) map { sym => (nameString(sym), sym) }
-			def annotated(sym: Symbol): Iterable[String] = annotatedClass(sym, annotations)
 
 			for(unit <- currentRun.units)
 			{
@@ -59,25 +56,6 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 					}
 					else
 						callback.sourceDependency(onSource.file, sourceFile)
-				}
-
-				// find subclasses and modules with main methods
-				for(clazz @ ClassDef(mods, n, _, _) <- unit.body)
-				{
-					// for each annotation on the class, if its name is in annotationNames, callback.foundAnnotated(sourceFile, nameString(sym), annotationName, isModule)
-					val sym = clazz.symbol
-					if(sym != NoSymbol && mods.isPublic && !mods.isAbstract && !mods.isTrait &&
-						 !sym.isImplClass && sym.isStatic && !sym.isNestedClass)
-					{
-						val name = nameString(sym)
-						val isModule = sym.isModuleClass
-						for(superclass <- superclasses.filter(sym.isSubClass))
-							callback.foundSubclass(sourceFile, name, nameString(superclass), isModule)
-						if(isModule && hasMainMethod(sym))
-							callback.foundApplication(sourceFile, name)
-						for(annotation <- annotated(sym))
-							callback.foundAnnotated(sourceFile, name, annotation, isModule)
-					}
 				}
 
 				// build list of generated classes
@@ -135,11 +113,6 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 				None
 		}
 	}
-	private def annotated(annotations: Iterable[(String, Symbol)])(sym: Symbol): Iterable[String] =
-		annotations flatMap { case (name, ann) => if(hasAnnotation(sym)(ann)) name :: Nil else  Nil }
-	private def annotatedClass(sym: Symbol, annotations: Iterable[(String, Symbol)]): Iterable[String] =
-		if(annotations.isEmpty) Nil else annotated(annotations)(sym) ++ sym.info.nonPrivateMembers.flatMap { annotated(annotations) }
-
 	// doesn't seem to be in 2.7.7, so copied from GenJVM to here
 	private def moduleSuffix(sym: Symbol) =
 		if (sym.hasFlag(Flags.MODULE) && !sym.isMethod && !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$" else "";
@@ -153,35 +126,6 @@ final class Analyzer(val global: Global, val callback: AnalysisCallback) extends
 	private def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
 		new File(outputDirectory, flatname(s, File.separatorChar) + (if(separatorRequired) "$" else "") + ".class")
 
-	private def hasMainMethod(sym: Symbol): Boolean =
-	{
-		val main = sym.info.nonPrivateMember(newTermName("main"))//nme.main)
-		atPhase(currentRun.typerPhase.next) {
-			main.tpe match
-			{
-				case OverloadedType(pre, alternatives) => alternatives.exists(alt => isVisible(alt) && isMainType(pre.memberType(alt)))
-				case tpe => isVisible(main) && isMainType(main.owner.thisType.memberType(main))
-			}
-		}
-	}
-	private def isVisible(sym: Symbol) = sym != NoSymbol && sym.isPublic && !sym.isDeferred
-	private def isMainType(tpe: Type): Boolean =
-		tpe match
-		{
-			// singleArgument is of type Symbol in 2.8.0 and type Type in 2.7.x
-			case MethodType(List(singleArgument), result) => isUnitType(result) && isStringArray(singleArgument)
-			case PolyType(typeParams, result) => isMainType(result)
-			case _ =>  false
-		}
-	private lazy val StringArrayType = appliedType(definitions.ArrayClass.typeConstructor, definitions.StringClass.tpe :: Nil)
-	// isStringArray is overloaded to handle the incompatibility between 2.7.x and 2.8.0
-	private def isStringArray(tpe: Type): Boolean =
-		tpe =:= StringArrayType ||
-		// needed for main defined in parent trait, not sure why
-		tpe.typeSymbol == definitions.ArrayClass && tpe.typeArgs.length == 1 && tpe.typeArgs(0).typeSymbol == definitions.StringClass
-	private def isStringArray(sym: Symbol): Boolean = isStringArray(sym.tpe)
-	private def isUnitType(tpe: Type) = tpe.typeSymbol == definitions.UnitClass
-	
 	// required because the 2.8 way to find a class is:
 	//   classPath.findClass(name).flatMap(_.binary)
 	// and the 2.7 way is:
