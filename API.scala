@@ -198,9 +198,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		{
 			val within = c.privateWithin
 			val qualifier = if(within == NoSymbol) Constants.unqualified else new xsbti.api.IdQualifier(fullName(within))
-			if(c.hasFlag(Flags.PRIVATE)) new xsbti.api.Private(qualifier)
-			else if(c.hasFlag(Flags.PROTECTED)) new xsbti.api.Protected(qualifier)
-			else new xsbti.api.Pkg(qualifier)
+			if(c.hasFlag(Flags.PROTECTED)) new xsbti.api.Protected(qualifier)
+			else new xsbti.api.Private(qualifier)
 		}
 	}
 	
