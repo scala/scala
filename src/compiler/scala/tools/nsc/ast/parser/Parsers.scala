@@ -199,6 +199,49 @@ self =>
       val stmts = templateStatSeq(false)._2
       accept(EOF)
 
+      def mainModuleName = settings.script.value
+      def searchForMain(): Option[Tree] = {
+        /** If there is only a single object template in the file and it has a
+         *  suitable main method, we will use it rather than building another object
+         *  around it.  Since objects are loaded lazily the whole script would have
+         *  been a no-op, so we're not taking much liberty.
+         */
+        val MainName: Name    = newTermName("main")
+
+        /** Have to be fairly liberal about what constitutes a main method since
+         *  nothing has been typed yet - for instance we can't assume the parameter
+         *  type will look exactly like "Array[String]" as it could have been renamed
+         *  via import, etc.
+         */
+        def isMainMethod(t: Tree) = t match {
+          case DefDef(_, MainName, Nil, List(_), _, _)  => true
+          case _                                        => false
+        }
+        /** For now we require there only be one top level object. */
+        var seenModule = false
+        val newStmts = stmts collect {
+          case t @ Import(_, _) => t
+          case md @ ModuleDef(mods, name, template) if !seenModule && (md exists isMainMethod) =>
+            seenModule = true
+            /** This slightly hacky situation arises because we have no way to communicate
+             *  back to the scriptrunner what the name of the program is.  Even if we were
+             *  willing to take the sketchy route of settings.script.value = progName, that
+             *  does not work when using fsc.  And to find out in advance would impose a
+             *  whole additional parse.  So instead, if the actual object's name differs from
+             *  what the script is expecting, we transform it to match.
+             */
+            if (name.toString == mainModuleName) md
+            else treeCopy.ModuleDef(md, mods, mainModuleName, template)
+          case _ =>
+            /** If we see anything but the above, fail. */
+            return None
+        }
+        Some(makePackaging(0, emptyPkg, newStmts))
+      }
+
+      if (mainModuleName == ScriptRunner.defaultScriptMain)
+        searchForMain() foreach { return _ }
+
       /** Here we are building an AST representing the following source fiction,
        *  where <moduleName> is from -Xscript (defaults to "Main") and <stmts> are
        *  the result of parsing the script file.
