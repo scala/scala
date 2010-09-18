@@ -116,7 +116,7 @@ trait CompilerControl { self: Global =>
   /** Set sync var `result` to the last fully attributed & typechecked tree produced from `source`.
    *  If no such tree exists yet, do a normal askType(source, false, result)
    */
-  def askLastType(source: SourceFile, forceReload: Boolean, result: Response[Tree]) =
+  def askLastType(source: SourceFile, result: Response[Tree]) =
     scheduler postWorkItem new WorkItem {
       def apply() = self.getLastTypedTree(source, result)
       override def toString = "reconcile"
