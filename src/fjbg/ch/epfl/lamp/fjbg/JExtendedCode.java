@@ -575,12 +575,13 @@ public class JExtendedCode extends JCode {
         }
 
         int keyMin = keys[0], keyMax = keys[keys.length - 1];
-        int keyRange = keyMax - keyMin + 1;
+        /** Calculate in long to guard against overflow. */
+        long keyRange = (long)keyMax - keyMin + 1;
         if ((double)keys.length / (double)keyRange >= minDensity) {
             // Keys are dense enough, use a table in which holes are
             // filled with defaultBranch.
-            int[] newKeys = new int[keyRange];
-            Label[] newBranches = new Label[keyRange];
+            int[] newKeys = new int[(int)keyRange];
+            Label[] newBranches = new Label[(int)keyRange];
             int oldPos = 0;
             for (int i = 0; i < keyRange; ++i) {
                 int key = keyMin + i;
