@@ -449,6 +449,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     // special attributes
     lazy val SerializableAttr: Symbol = getClass("scala.serializable")
+    lazy val SerialVersionUIDAttr: Symbol = getClass("scala.SerialVersionUID")
     lazy val DeprecatedAttr: Symbol = getClass("scala.deprecated")
     lazy val DeprecatedNameAttr: Symbol = getClass("scala.deprecatedName")
     lazy val MigrationAnnotationClass: Symbol = getClass("scala.annotation.migration")

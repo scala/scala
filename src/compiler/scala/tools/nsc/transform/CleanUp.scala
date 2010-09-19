@@ -31,12 +31,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
 
     private var localTyper: analyzer.Typer = null
 
-    private lazy val serializableAnnotation =
-      AnnotationInfo(SerializableAttr.tpe, Nil, Nil)
-    private lazy val serialVersionUIDAnnotation = {
-      val attr = definitions.getClass("scala.SerialVersionUID")
-      AnnotationInfo(attr.tpe, List(Literal(Constant(0))), List())
-    }
+    private lazy val serialVersionUIDAnnotation =
+      AnnotationInfo(SerialVersionUIDAttr.tpe, List(Literal(Constant(0))), List())
 
     private object MethodDispatchType extends scala.Enumeration {
       val NO_CACHE, MONO_CACHE, POLY_CACHE = Value
@@ -574,8 +570,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
         if (settings.target.value == "jvm-1.5") {
           val sym = cdef.symbol
           // is this an anonymous function class?
-          if (sym.isAnonymousFunction && !sym.hasAnnotation(SerializableAttr)) {
-            sym addAnnotation serializableAnnotation
+          if (sym.isAnonymousFunction && !sym.isSerializable) {
+            sym.setSerializable()
             sym addAnnotation serialVersionUIDAnnotation
           }
         }

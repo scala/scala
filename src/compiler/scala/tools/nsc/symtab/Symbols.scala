@@ -119,6 +119,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       annots1
     }
 
+    def setSerializable(): Unit =
+      addAnnotation(AnnotationInfo(SerializableAttr.tpe, Nil, Nil))
+
     def setAnnotations(annots: List[AnnotationInfoBase]): this.type = {
       this.rawannots = annots
       this
@@ -455,6 +458,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         }
       }
 
+    def isSerializable      = hasAnnotation(SerializableAttr)
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap { _.stringArg(0) }
     // !!! when annotation arguments are not literal strings, but any sort of

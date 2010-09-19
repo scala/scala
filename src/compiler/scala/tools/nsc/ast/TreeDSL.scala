@@ -8,6 +8,7 @@ package scala.tools.nsc
 package ast
 
 import PartialFunction._
+import symtab.Flags
 
 /** A DSL for generating scala code.  The goal is that the
  *  code generating code should look a lot like the code it
@@ -147,15 +148,98 @@ trait TreeDSL {
       def ==>(body: Tree): CaseDef  = CaseDef(pat, guard, body)
     }
 
-    abstract class ValOrDefStart(sym: Symbol) {
-      def ===(body: Tree): ValOrDefDef
+    /** VODD, if it's not obvious, means ValOrDefDef.  This is the
+     *  common code between a tree based on a pre-existing symbol and
+     *  one being built from scratch.
+     */
+    trait VODDStart {
+      def name: Name
+      def defaultMods: Modifiers
+      def defaultTpt: Tree
+      def defaultPos: Position
+
+      type ResultTreeType <: ValOrDefDef
+      def mkTree(rhs: Tree): ResultTreeType
+      def ===(rhs: Tree): ResultTreeType
+
+      private var _mods: Modifiers = null
+      private var _tpt: Tree = null
+      private var _pos: Position = null
+
+      def withType(tp: Type): this.type = {
+        _tpt = TypeTree(tp)
+        this
+      }
+      def withFlags(flags: Long*): this.type = {
+        if (_mods == null)
+          _mods = defaultMods
+
+        _mods = flags.foldLeft(_mods)(_ | _)
+        this
+      }
+      def withPos(pos: Position): this.type = {
+        _pos = pos
+        this
+      }
+
+      final def mods = if (_mods == null) defaultMods else _mods
+      final def tpt  = if (_tpt == null) defaultTpt else _tpt
+      final def pos  = if (_pos == null) defaultPos else _pos
     }
-    class DefStart(sym: Symbol) extends ValOrDefStart(sym) {
-      def ===(body: Tree) = DefDef(sym, body)
+    trait SymVODDStart extends VODDStart {
+      def sym: Symbol
+      def symType: Type
+
+      def name        = sym.name
+      def defaultMods = Modifiers(sym.flags)
+      def defaultTpt  = TypeTree(symType) setPos sym.pos.focus
+      def defaultPos  = sym.pos
+
+      final def ===(rhs: Tree): ResultTreeType =
+        atPos(sym.pos)(mkTree(rhs) setSymbol sym)
     }
-    class ValStart(sym: Symbol) extends ValOrDefStart(sym) {
-      def ===(body: Tree) = ValDef(sym, body)
+    trait ValCreator {
+      self: VODDStart =>
+
+      type ResultTreeType = ValDef
+      def mkTree(rhs: Tree): ValDef = ValDef(mods, name, tpt, rhs)
     }
+    trait DefCreator {
+      self: VODDStart =>
+
+      def tparams: List[TypeDef]
+      def vparamss: List[List[ValDef]]
+
+      type ResultTreeType = DefDef
+      def mkTree(rhs: Tree): DefDef = DefDef(mods, name, tparams, vparamss, tpt, rhs)
+    }
+
+    class DefSymStart(val sym: Symbol) extends SymVODDStart with DefCreator {
+      def symType  = sym.tpe.finalResultType
+      def tparams  = sym.typeParams map TypeDef
+      def vparamss = sym.paramss map (xs => xs map ValDef)
+    }
+    class ValSymStart(val sym: Symbol) extends SymVODDStart with ValCreator {
+      def symType = sym.tpe
+    }
+
+    trait TreeVODDStart extends VODDStart {
+      def defaultMods = NoMods
+      def defaultTpt  = TypeTree()
+      def defaultPos  = NoPosition
+
+      final def ===(rhs: Tree): ResultTreeType =
+        if (pos == NoPosition) mkTree(rhs)
+        else atPos(pos)(mkTree(rhs))
+    }
+
+    class ValTreeStart(val name: Name) extends TreeVODDStart with ValCreator {
+    }
+    class DefTreeStart(val name: Name) extends TreeVODDStart with DefCreator {
+      def tparams: List[TypeDef] = Nil
+      def vparamss: List[List[ValDef]] = List(Nil)
+    }
+
     class IfStart(cond: Tree, thenp: Tree) {
       def THEN(x: Tree) = new IfStart(cond, x)
       def ELSE(elsep: Tree) = If(cond, thenp, elsep)
@@ -169,10 +253,6 @@ trait TreeDSL {
 
     def CASE(pat: Tree): CaseStart  = new CaseStart(pat, EmptyTree)
     def DEFAULT: CaseStart          = new CaseStart(WILD(), EmptyTree)
-
-    class NameMethods(target: Name) {
-      def BIND(body: Tree) = Bind(target, body)
-    }
 
     class SymbolMethods(target: Symbol) {
       def BIND(body: Tree) = Bind(target, body)
@@ -204,8 +284,13 @@ trait TreeDSL {
       if (args.isEmpty) New(TypeTree(sym.tpe))
       else New(TypeTree(sym.tpe), List(args.toList))
 
-    def VAL(sym: Symbol) = new ValStart(sym)
-    def DEF(sym: Symbol) = new DefStart(sym)
+    def VAR(name: Name, tp: Type): ValTreeStart = VAR(name) withType tp
+    def VAR(name: Name): ValTreeStart           = new ValTreeStart(name) withFlags Flags.MUTABLE
+    def VAL(name: Name, tp: Type): ValTreeStart = VAL(name) withType tp
+    def VAL(name: Name): ValTreeStart           = new ValTreeStart(name)
+    def VAL(sym: Symbol): ValSymStart           = new ValSymStart(sym)
+
+    def DEF(sym: Symbol): DefSymStart = new DefSymStart(sym)
     def AND(guards: Tree*) =
       if (guards.isEmpty) EmptyTree
       else guards reduceLeft gen.mkAnd
@@ -248,12 +333,6 @@ trait TreeDSL {
     /** Implicits - some of these should probably disappear **/
     implicit def mkTreeMethods(target: Tree): TreeMethods = new TreeMethods(target)
     implicit def mkTreeMethodsFromSymbol(target: Symbol): TreeMethods = new TreeMethods(Ident(target))
-    implicit def mkTreeMethodsFromName(target: Name): TreeMethods = new TreeMethods(Ident(target))
-    implicit def mkTreeMethodsFromString(target: String): TreeMethods = new TreeMethods(Ident(target))
-
-    implicit def mkNameMethodsFromName(target: Name): NameMethods = new NameMethods(target)
-    implicit def mkNameMethodsFromString(target: String): NameMethods = new NameMethods(target)
-
     implicit def mkSymbolMethodsFromSymbol(target: Symbol): SymbolMethods = new SymbolMethods(target)
 
     /** (foo DOT bar) might be simply a Select, but more likely it is to be immediately

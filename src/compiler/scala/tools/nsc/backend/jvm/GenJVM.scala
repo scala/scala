@@ -89,8 +89,7 @@ abstract class GenJVM extends SubComponent {
     val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
 
     // Scala attributes
-    val SerializableAttr = definitions.SerializableAttr
-    val SerialVersionUID = definitions.getClass("scala.SerialVersionUID")
+    import definitions.{ SerializableAttr, SerialVersionUIDAttr }
     val CloneableAttr    = definitions.getClass("scala.cloneable")
     val TransientAtt     = definitions.getClass("scala.transient")
     val VolatileAttr     = definitions.getClass("scala.volatile")
@@ -213,7 +212,7 @@ abstract class GenJVM extends SubComponent {
           parents = parents ::: List(definitions.SerializableClass.tpe)
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == CloneableAttr =>
           parents = parents ::: List(CloneableClass.tpe)
-        case AnnotationInfo(tp, Literal(const) :: _, _) if tp.typeSymbol == SerialVersionUID =>
+        case AnnotationInfo(tp, Literal(const) :: _, _) if tp.typeSymbol == SerialVersionUIDAttr =>
           serialVUID = Some(const.longValue)
         case AnnotationInfo(tp, _, _) if tp.typeSymbol == RemoteAttr =>
           parents = parents ::: List(RemoteInterface.tpe)
