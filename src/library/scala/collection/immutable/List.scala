@@ -107,29 +107,32 @@ sealed abstract class List[+A] extends LinearSeq[A]
    *                `f` to each element of this list and collecting the results.
    *  @usecase def mapConserve(f: A => A): List[A]
    */
-  def mapConserve[B >: A <: AnyRef] (f: A => B): List[B] = {
-    def loop(ys: List[A]): List[B] =
-      if (ys.isEmpty) this
+  def mapConserve[B >: A <: AnyRef](f: A => B): List[B] = {
+    @tailrec
+    def loop(mapped: ListBuffer[B], unchanged: List[A], pending: List[A]): List[B] =
+      if (pending.isEmpty) {
+        if (mapped eq null) unchanged
+        else mapped.prependToList(unchanged)
+      }
       else {
-        val head0 = ys.head
+        val head0 = pending.head
         val head1 = f(head0)
-        if (head1 eq head0.asInstanceOf[AnyRef]) {
-          loop(ys.tail)
-        } else {
-          val ys1 = head1 :: ys.tail.mapConserve(f)
-          if (this eq ys) ys1
-          else {
-            val b = new ListBuffer[B]
-            var xc = this
-            while (xc ne ys) {
-              b += xc.head
-              xc = xc.tail
-            }
-            b.prependToList(ys1)
+
+        if (head1 == head0)
+          loop(mapped, unchanged, pending.tail)
+        else {
+          val b = if (mapped eq null) new ListBuffer[B] else mapped
+          var xc = unchanged
+          while (xc ne pending) {
+            b += xc.head
+            xc = xc.tail
           }
+          b += head1
+          val tail0 = pending.tail
+          loop(b, tail0, tail0)
         }
       }
-    loop(this)
+    loop(null, this, this)
   }
 
   // Overridden methods from IterableLike and SeqLike or overloaded variants of such methods
