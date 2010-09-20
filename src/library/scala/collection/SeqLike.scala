@@ -631,11 +631,11 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    */
   def distinct: Repr = {
     val b = newBuilder
-    var seen = Set[A]() //TR: should use mutable.HashSet?
+    val seen = mutable.HashSet[A]()
     for (x <- this) {
-      if (!(seen contains x)) {
+      if (!seen(x)) {
         b += x
-        seen = (seen + x)
+        seen += x
       }
     }
     b.result
