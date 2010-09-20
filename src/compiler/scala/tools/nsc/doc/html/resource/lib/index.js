@@ -14,6 +14,11 @@ var title = $(document).attr('title')
 
 $(document).ready(function() {
     $('body').layout({ west__size: '20%' });
+    $('#browser').layout({	
+    	center__paneSelector: ".ui-west-center"
+        //,center__initClosed:true
+    	,north__paneSelector: ".ui-west-north"
+	}); 
     $('iframe').bind("load", function(){
         var subtitle = $(this).contents().find('title').text();
         $(document).attr('title', (title ? title + " - " : "") + subtitle);

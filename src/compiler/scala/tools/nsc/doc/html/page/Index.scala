@@ -13,7 +13,7 @@ import model._
 import scala.collection._
 import scala.xml._
 
-class Index(universe: Universe) extends HtmlPage {
+class Index(universe: Universe, indexModel: IndexModelFactory#IndexModel) extends HtmlPage {
 
   def path = List("index.html")
 
@@ -48,7 +48,17 @@ class Index(universe: Universe) extends HtmlPage {
     </body>
 
   def browser =
+	<xml:group>
     <div id="browser" class="ui-layout-west">
+      <div class="ui-west-north">{
+        <div class="letters">
+	      { for(l <- indexModel.keySet.toList.sortBy( _.toString )) yield { // TODO there should be a better way to do that
+	          val ch = if(l=='#') "%23" else l // url encoding if needed
+              <a target="template" href={"index/index-"+ch+".html"}>{l.toUpper}</a> ++ xml.Text(" ")
+          } }
+	    </div>
+      }</div>
+      <div class="ui-west-center">
       <div id="filter"></div>
       <div class="pack" id="tpl">{
         def isExcluded(dtpl: DocTemplateEntity) = {
@@ -118,8 +128,9 @@ class Index(universe: Universe) extends HtmlPage {
           </xml:group>
         }
         packageElem(universe.rootPackage)
-      }</div>
+      }</div></div>
     </div>
+    </xml:group>
 
   def packageQualifiedName(ety: DocTemplateEntity): String =
     if (ety.inTemplate.isPackage) ety.name else (packageQualifiedName(ety.inTemplate) + "." + ety.name)

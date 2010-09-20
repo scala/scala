@@ -62,7 +62,7 @@ class HtmlFactory(val universe: Universe, indexModel: IndexModelFactory#IndexMod
     copyResource("lib/filter_box_right.png")
     copyResource("lib/remove.png")
 
-    new page.Index(universe) writeFor this
+    new page.Index(universe,indexModel) writeFor this
 
     val written = mutable.HashSet.empty[DocTemplateEntity]
 
