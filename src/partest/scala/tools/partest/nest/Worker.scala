@@ -483,7 +483,8 @@ class Worker(val fileManager: FileManager) extends Actor {
 
           NestUI.verbose(SFile(logFile).slurp())
           // obviously this must be improved upon
-          succeeded = SFile(logFile).lines() forall (_ contains " OK")
+          succeeded =
+            SFile(logFile).lines.filter(_.trim != "") forall (_ contains "OK")
       })
 
       case "pos" =>
