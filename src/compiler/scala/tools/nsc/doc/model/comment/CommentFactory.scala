@@ -510,11 +510,19 @@ trait CommentFactory { thisFactory: ModelFactory with CommentFactory =>
         val iss = mutable.ListBuffer.empty[Inline]
         iss += inline0()
         while(!isInlineEnd && !checkParaEnded) {
-          if (char == endOfLine) nextChar()
+          val skipEndOfLine = if (char == endOfLine) {
+            nextChar()
+            true
+          } else {
+            false
+          }
+
           val current = inline0()
           (iss.last, current) match {
             case (Text(t1), Text(t2)) =>
               iss.update(iss.length - 1, Text(t1 + endOfLine + t2))
+            case (_, Text(t)) if skipEndOfLine =>
+              iss += Text(endOfLine + t)
             case _ => iss += current
           }
         }
