@@ -397,24 +397,12 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           def arrayToSequence(tree: Tree, elemtp: Type) = {
             atPhase(phase.next) {
               localTyper.typedPos(pos) {
-                val predef = gen.mkAttributedRef(PredefModule)
-                val meth =
-                  if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol))
-                    TypeApply(Select(predef, "wrapRefArray"), List(TypeTree(elemtp)))
-                  else if (isValueClass(elemtp.typeSymbol))
-                    Select(predef, "wrap"+elemtp.typeSymbol.name+"Array")
-                  else
-                    TypeApply(Select(predef, "genericWrapArray"), List(TypeTree(elemtp)))
                 val pt = arrayType(elemtp)
                 val adaptedTree = // might need to cast to Array[elemtp], as arrays are not covariant
                   if (tree.tpe <:< pt) tree
-                  else gen.mkCast(
-                    if (elemtp.typeSymbol == AnyClass && isValueClass(tree.tpe.typeArgs.head.typeSymbol))
-                      gen.mkRuntimeCall("toObjectArray", List(tree))
-                    else
-                      tree,
-                    arrayType(elemtp))
-                Apply(meth, List(adaptedTree))
+                  else gen.mkCastArray(tree, elemtp, pt)
+
+                gen.mkWrapArray(adaptedTree, elemtp)
               }
             }
           }

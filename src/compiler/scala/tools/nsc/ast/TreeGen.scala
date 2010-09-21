@@ -304,13 +304,11 @@ abstract class TreeGen {
   def mkModuleAccessDcl(accessor: Symbol) =
     DefDef(accessor setFlag lateDEFERRED, EmptyTree)
 
-  def mkRuntimeCall(meth: Name, args: List[Tree]): Tree = {
+  def mkRuntimeCall(meth: Name, args: List[Tree]): Tree =
     Apply(Select(mkAttributedRef(ScalaRunTimeModule), meth), args)
-  }
 
-  def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree = {
+  def mkRuntimeCall(meth: Name, targs: List[Type], args: List[Tree]): Tree =
     Apply(TypeApply(Select(mkAttributedRef(ScalaRunTimeModule), meth), targs map TypeTree), args)
-  }
 
   /** Make a synchronized block on 'monitor'. */
   def mkSynchronized(monitor: Tree, body: Tree): Tree =
@@ -335,18 +333,31 @@ abstract class TreeGen {
   def mkForwarder(target: Tree, vparamss: List[List[Symbol]]) =
     (target /: vparamss)((fn, vparams) => Apply(fn, vparams map paramToArg))
 
-  /** Applies a wrapArray call to an array, making it a WrappedArray
+  /** Applies a wrapArray call to an array, making it a WrappedArray.
+   *  Don't let a reference type parameter be inferred, in case it's a singleton:
+   *  apply the element type directly.
    */
   def mkWrapArray(tree: Tree, elemtp: Type) = {
-    val predef = mkAttributedRef(PredefModule)
-    val meth =
-      if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(elemtp.typeSymbol) ||
-          isValueClass(elemtp.typeSymbol))
-        Select(predef, "wrapArray")
-      else
-        TypeApply(Select(predef, "genericWrapArray"), List(TypeTree(elemtp)))
-    Apply(meth, List(tree))
+    val sym = elemtp.typeSymbol
+    val meth: Name =
+      if (isValueClass(sym)) "wrap"+sym.name+"Array"
+      else if ((elemtp <:< AnyRefClass.tpe) && !isPhantomClass(sym)) "wrapRefArray"
+      else "genericWrapArray"
+
+    if (isValueClass(sym))
+      Apply(Select(mkAttributedRef(PredefModule), meth), List(tree))
+    else
+      Apply(TypeApply(Select(mkAttributedRef(PredefModule), meth), List(TypeTree(elemtp))), List(tree))
   }
+
+  /** Generate a cast for tree Tree representing Array with
+   *  elem type elemtp to expected type pt.
+   */
+  def mkCastArray(tree: Tree, elemtp: Type, pt: Type) =
+    if (elemtp.typeSymbol == AnyClass && isValueClass(tree.tpe.typeArgs.head.typeSymbol))
+      mkCast(mkRuntimeCall("toObjectArray", List(tree)), pt)
+    else
+      mkCast(tree, pt)
 
   /** Try to convert Select(qual, name) to a SelectFromTypeTree.
    */
