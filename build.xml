@@ -1588,7 +1588,16 @@ BOOTRAPING TEST AND TEST SUITE
     </partest>
   </target>
 
-  <target name="test.done" depends="test.suite, test.continuations.suite, test.stability"/>
+  <target name="test.scaladoc" depends="pack.done">
+    <partest erroronfailed="yes" scalacopts="${scalac.args.optimise}">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+      </compilationpath>
+      <scalachecktests dir="test/scaladoc" includes="**/*.scala"/>
+    </partest>
+  </target>
+
+  <target name="test.done" depends="test.suite, test.continuations.suite, test.scaladoc, test.stability"/>
 
 <!-- ===========================================================================
 DISTRIBUTION
