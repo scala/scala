@@ -9,7 +9,7 @@ package scala.tools.nsc
 package ast.parser
 
 import scala.collection.mutable.ListBuffer
-import util.{ OffsetPosition, BatchSourceFile }
+import util.{ OffsetPosition }
 import symtab.Flags
 import Tokens._
 
@@ -91,7 +91,7 @@ self =>
     val syntaxErrors = new ListBuffer[(Int, String)]
 
     def incompleteInputError(msg: String) {
-      val offset = unit.source.asInstanceOf[BatchSourceFile].content.length - 1
+      val offset = unit.source.content.length - 1
       if (smartParsing) syntaxErrors += ((offset, msg))
       else unit.incompleteInputError(o2p(offset), msg)
     }

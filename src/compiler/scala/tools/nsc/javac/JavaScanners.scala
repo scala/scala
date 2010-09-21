@@ -951,7 +951,7 @@ trait JavaScanners {
   /** ...
    */
   class JavaUnitScanner(unit: CompilationUnit) extends JavaScanner {
-    in = new JavaCharArrayReader(unit.source.asInstanceOf[BatchSourceFile].content, !settings.nouescape.value, syntaxError)
+    in = new JavaCharArrayReader(unit.source.content, !settings.nouescape.value, syntaxError)
     init
     def warning(pos: Int, msg: String) = unit.warning(pos, msg)
     def error  (pos: Int, msg: String) = unit.  error(pos, msg)
