@@ -112,10 +112,37 @@ public class JExtendedCode extends JCode {
     public void emitPUSH(boolean value) { emitPUSH(value ? 1 : 0); }
     public void emitPUSH(Boolean value) { emitPUSH(value.booleanValue()); }
 
-    public void emitPUSH(byte value) { emitBIPUSH(value); }
+    public void emitPUSH(byte value) {
+      switch (value) {
+        case -1: emitICONST_M1(); break;
+        case 0: emitICONST_0(); break;
+        case 1: emitICONST_1(); break;
+        case 2: emitICONST_2(); break;
+        case 3: emitICONST_3(); break;
+        case 4: emitICONST_4(); break;
+        case 5: emitICONST_5(); break;
+        default:
+          emitBIPUSH(value);
+      }
+    }
     public void emitPUSH(Byte value) { emitPUSH(value.byteValue()); }
 
-    public void emitPUSH(short value) { emitSIPUSH(value); }
+    public void emitPUSH(short value) {
+      switch (value) {
+        case -1: emitICONST_M1(); break;
+        case 0: emitICONST_0(); break;
+        case 1: emitICONST_1(); break;
+        case 2: emitICONST_2(); break;
+        case 3: emitICONST_3(); break;
+        case 4: emitICONST_4(); break;
+        case 5: emitICONST_5(); break;
+        default:
+          if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE)
+            emitBIPUSH((byte)value);
+          else
+            emitSIPUSH(value);
+      }
+    }
     public void emitPUSH(Short value) { emitPUSH(value.shortValue()); }
 
     // TODO check that we do the right thing here
@@ -131,7 +158,14 @@ public class JExtendedCode extends JCode {
         case 3: emitICONST_3(); break;
         case 4: emitICONST_4(); break;
         case 5: emitICONST_5(); break;
-        default: emitPUSH_index(pool.addInteger(value)); break;
+        default:
+          if (value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE)
+            emitBIPUSH((byte)value);
+          else if (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE)
+            emitSIPUSH((short)value);
+          else
+            emitPUSH_index(pool.addInteger(value));
+          break;
         }
     }
     public void emitPUSH(Integer value) { emitPUSH(value.intValue()); }
