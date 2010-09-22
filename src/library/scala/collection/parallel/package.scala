@@ -5,6 +5,7 @@ import java.lang.Thread._
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.generic.CanCombineFrom
+import scala.collection.parallel.mutable.ParArray
 
 
 /** Package object for parallel collections.
@@ -55,6 +56,12 @@ package object parallel {
     def asParSeq = t.asInstanceOf[ParSeq[T]]
     def ifParSeq[R](isbody: ParSeq[T] => R) = new {
       def otherwise(notbody: => R) = if (isParallel) isbody(asParSeq) else notbody
+    }
+    def toParArray = if (t.isInstanceOf[ParArray[_]]) t.asInstanceOf[ParArray[T]] else {
+      val it = t.toIterator
+      val cb = mutable.ParArrayCombiner[T]()
+      while (it.hasNext) cb += it.next
+      cb.result
     }
   }
 

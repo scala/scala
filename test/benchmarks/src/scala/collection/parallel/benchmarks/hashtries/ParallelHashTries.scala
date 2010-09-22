@@ -3,8 +3,7 @@ package scala.collection.parallel.benchmarks.hashtries
 
 
 
-import scala.collection.parallel.benchmarks.generic.StandardParIterableBench
-import scala.collection.parallel.benchmarks.generic.NotBenchmark
+import scala.collection.parallel.benchmarks.generic.StandardParIterableBenches
 import scala.collection.parallel.benchmarks.generic.Dummy
 import scala.collection.parallel.benchmarks.generic.Operators
 import scala.collection.parallel.immutable.ParHashTrie
@@ -13,7 +12,7 @@ import scala.collection.parallel.immutable.ParHashTrie
 
 
 
-trait ParHashTrieBenches[K, V] extends StandardParIterableBench[(K, V), ParHashTrie[K, V]] {
+trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHashTrie[K, V]] {
 
   def nameOfCollection = "ParHashTrie"
   def comparisonMap = collection.Map()
@@ -27,7 +26,7 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBench[(K, V), ParHashT
   }
 
   class Map2(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParIterableBench[(K, V), ParHashTrie[K, V]] {
+  extends IterableBench {
     var result: Int = 0
     def comparisonMap = collection.Map("jhashtable" -> runjhashtable _, "hashtable" -> runhashtable _)
     def runseq = {
@@ -78,7 +77,7 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBench[(K, V), ParHashT
   }
 
   class Reduce2(val size: Int, val parallelism: Int, val runWhat: String)
-  extends IterableBench with StandardParIterableBench[(K, V), ParHashTrie[K, V]] {
+  extends IterableBench {
     private var ht: collection.mutable.HashMap[K, V] = _
     def comparisonMap = collection.Map("hashtable" -> runhashtable _)
     def runseq = this.seqcoll.reduceLeft(operators.reducer)
@@ -99,7 +98,7 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBench[(K, V), ParHashT
 
 
 
-object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] with NotBenchmark {
+object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] {
 
   type DPair = (Dummy, Dummy)
 
@@ -149,6 +148,9 @@ object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] with NotBe
       (a, p._2)
     }
     val taker = (p: DPair) => true
+    val eachFun: DPair => Unit = { dp =>
+      dp._1.dummy
+    }
   }
 
   def createSequential(sz: Int, p: Int) = {

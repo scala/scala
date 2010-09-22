@@ -117,10 +117,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  *  This method will provide sequential views it produces with `indexFlag` signalling capabilities. This means
  *  that sequential views may set and read `indexFlag` state.
  */
-trait ParIterableLike[+T, +Repr <: Parallel, +SequentialView <: Iterable[T]]
+trait ParIterableLike[+T, +Repr <: Parallel, +Sequential <: Iterable[T] with IterableLike[T, Sequential]]
 extends IterableLike[T, Repr]
    with Parallelizable[Repr]
-   with Sequentializable[T, SequentialView]
+   with Sequentializable[T, Sequential]
    with Parallel
    with HasNewCombiner[T, Repr]
    with TaskSupport {
@@ -172,7 +172,7 @@ self =>
    *
    *  @return          a parallel iterator
    */
-  protected def parallelIterator: ParIterator
+  def parallelIterator: ParIterableIterator[T]
 
   /** Creates a new split iterator used to traverse the elements of this collection.
    *
@@ -235,8 +235,8 @@ self =>
     var result: R = null.asInstanceOf[R]
   }
 
-  /* convenience iterator operations wrapper */
-  protected implicit def iterator2ops[PI <: ParIterator](it: PI) = new {
+  /* convenience signalling operations wrapper */
+  protected implicit def delegatedSignalling2ops[PI <: DelegatedSignalling](it: PI) = new {
     def assign(cntx: Signalling): PI = {
       it.signalDelegate = cntx
       it
@@ -602,6 +602,12 @@ self =>
 
   override def copyToArray[U >: T](xs: Array[U], start: Int, len: Int) = if (len > 0) {
     executeAndWait(new CopyToArray(start, len, xs, parallelIterator))
+  }
+
+  override def view = new ParIterableView[T, Repr, Sequential] {
+    protected lazy val underlying = self.repr
+    def seq = self.seq.view
+    def parallelIterator = self.parallelIterator
   }
 
   override def toIterable: Iterable[T] = seq.drop(0).asInstanceOf[Iterable[T]]

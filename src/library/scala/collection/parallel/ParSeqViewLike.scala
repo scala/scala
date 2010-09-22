@@ -44,34 +44,38 @@ extends SeqView[T, Coll]
 
   trait Transformed[+S] extends ParSeqView[S, Coll, CollSeq]
   with super[ParIterableView].Transformed[S] with super[SeqView].Transformed[S] {
-    override def parallelIterator = new Elements(0, length) with SCPI {}
+    override def parallelIterator: ParSeqIterator[S] = new Elements(0, length) with SCPI {}
     override def iterator = parallelIterator
-    environment = self.environment
   }
 
-  trait Forced[S] extends super.Forced[S] with Transformed[S] {
+  trait Sliced extends super[SeqViewLike].Sliced with super[ParIterableViewLike].Sliced with Transformed[T] {
+    override def slice(from1: Int, until1: Int): This = newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
+    override def parallelIterator = self.parallelIterator.psplit(from, until - from)(1)
+  }
+
+  trait Mapped[S] extends super[SeqViewLike].Mapped[S] with super[ParIterableViewLike].Mapped[S] with Transformed[S] {
+    override def parallelIterator = self.parallelIterator.map(mapping)
+    override def seq = self.seq.map(mapping).asInstanceOf[SeqView[S, CollSeq]]
+  }
+
+  trait Appended[U >: T] extends super[SeqViewLike].Appended[U] with super[ParIterableViewLike].Appended[U] with Transformed[U] {
+    def restAsParSeq: ParSeq[U] = rest.asInstanceOf[ParSeq[U]]
+    override def parallelIterator = self.parallelIterator.appendSeq[U, ParSeqIterator[U]](restAsParSeq.parallelIterator)
+    override def seq = self.seq.++(rest).asInstanceOf[SeqView[U, CollSeq]]
+  }
+
+  trait Forced[S] extends super[SeqViewLike].Forced[S] with super[ParIterableViewLike].Forced[S] with Transformed[S] {
+    override def forcedPar: ParSeq[S] = forced.asParSeq
+    override def parallelIterator: ParSeqIterator[S] = forcedPar.parallelIterator
     // cheating here - knowing that `underlying` of `self.seq` is of type `CollSeq`,
     // we use it to obtain a view of the correct type - not the most efficient thing
     // in the universe, but without making `newForced` more accessible, or adding
     // a `forced` method to `SeqView`, this is the best we can do
-    def seq = self.seq.take(0).++(forced).asInstanceOf[SeqView[S, CollSeq]]
+    override def seq = self.seq.take(0).++(forced).asInstanceOf[SeqView[S, CollSeq]]
   }
 
   trait Filtered extends super.Filtered with Transformed[T] {
     def seq = self.seq filter pred
-  }
-
-  trait Sliced extends super.Sliced with Transformed[T] {
-    override def slice(from1: Int, until1: Int): This = newSliced(from1 max 0, until1 max 0).asInstanceOf[This]
-    def seq = self.seq.slice(from, until)
-  }
-
-  trait Appended[U >: T] extends super.Appended[U] with Transformed[U] {
-    def seq = self.seq.++(rest).asInstanceOf[SeqView[U, CollSeq]]
-  }
-
-  trait Mapped[S] extends super.Mapped[S] with Transformed[S]{
-    def seq = self.seq.map(mapping).asInstanceOf[SeqView[S, CollSeq]]
   }
 
   trait FlatMapped[S] extends super.FlatMapped[S] with Transformed[S] {
@@ -108,7 +112,13 @@ extends SeqView[T, Coll]
 
   protected override def newFiltered(p: T => Boolean): Transformed[T] = new Filtered { val pred = p }
   protected override def newSliced(f: Int, u: Int): Transformed[T] = new Sliced { val from = f; val until = u }
-  protected override def newAppended[U >: T](that: Traversable[U]): Transformed[U] = new Appended[U] { val rest = that }
+  protected override def newAppended[U >: T](that: Traversable[U]): Transformed[U] = {
+    // we only append if `that` is a parallel sequence, i.e. it has a precise splitter
+    if (that.isParSeq) new Appended[U] { val rest = that }
+    else newForced(mutable.ParArray.fromTraversables(this, that))
+  }
+  protected override def newForced[S](xs: => Seq[S]): Transformed[S] = new Forced[S] { val forced = xs }
+
   protected override def newMapped[S](f: T => S): Transformed[S] = new Mapped[S] { val mapping = f }
   protected override def newFlatMapped[S](f: T => Traversable[S]): Transformed[S] = new FlatMapped[S] { val mapping = f }
   protected override def newDroppedWhile(p: T => Boolean): Transformed[T] = new DroppedWhile { val pred = p }

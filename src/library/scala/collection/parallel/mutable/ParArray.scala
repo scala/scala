@@ -617,6 +617,15 @@ object ParArray extends ParFactory[ParArray] {
     handoff(newarr)
   }
 
+  def fromTraversables[T](xss: TraversableOnce[T]*) = {
+    val cb = ParArrayCombiner[T]()
+    for (xs <- xss) {
+      val it = xs.toIterator
+      while (it.hasNext) cb += it.next
+    }
+    cb.result
+  }
+
 }
 
 

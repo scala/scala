@@ -16,7 +16,7 @@ import scala.collection.SeqView
 
 
 trait DummyViewBenches
-extends ParSeqViewBench[Dummy, ParSeqView[Dummy, ParSeq[Dummy], Seq[Dummy]], Seq[Dummy]] {
+extends ParSeqViewBenches[Dummy, ParSeqView[Dummy, ParSeq[Dummy], Seq[Dummy]], Seq[Dummy]] {
   def nameOfCollection = "ParView"
   def operators = DummyOperators
   def comparisonMap = collection.Map()
@@ -34,10 +34,11 @@ extends ParSeqViewBench[Dummy, ParSeqView[Dummy, ParSeq[Dummy], Seq[Dummy]], Seq
     v.environment = forkJoinPool
     v
   }
+  def createSeqView(sz: Int, p: Int) = createSequential(sz, p).view
 }
 
 
-object DummyViewBenchList extends DummyViewBenches with NotBenchmark
+object DummyViewBenchList extends DummyViewBenches
 
 
 

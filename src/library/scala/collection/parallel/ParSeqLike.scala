@@ -81,7 +81,7 @@ self =>
    *
    *  @return       an iterator that can be split into subsets of precise size
    */
-  protected def parallelIterator: ParIterator
+  def parallelIterator: ParSeqIterator[T]
 
   override def iterator: PreciseSplitter[T] = parallelIterator
 
@@ -308,7 +308,7 @@ self =>
     def length = self.length
     def apply(idx: Int) = self(idx)
     def seq = self.seq.view
-    def parallelIterator = new Elements(0, length) with SCPI {}
+    def parallelIterator = self.parallelIterator
   }
 
   override def view(from: Int, until: Int) = view.slice(from, until)
@@ -350,7 +350,7 @@ self =>
         pit.setIndexFlagIfLesser(from)
       }
     }
-    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
+    protected[this] def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(from)(_ + _.remaining)) yield new IndexWhere(pred, untilp, p)
@@ -370,7 +370,7 @@ self =>
         pit.setIndexFlagIfGreater(pos)
       }
     }
-    protected[this] def newSubtask(p: SuperParIterator) = throw new UnsupportedOperationException
+    protected[this] def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
       val pits = pit.split
       for ((p, untilp) <- pits zip pits.scanLeft(pos)(_ + _.remaining)) yield new LastIndexWhere(pred, untilp, p)
@@ -396,7 +396,7 @@ self =>
     override def merge(that: ReverseMap[S, That]) = result = that.result combine result
   }
 
-  protected[this] class SameElements[U >: T](val pit: ParIterator, val otherpit: PreciseSplitter[U])
+  protected[this] class SameElements[U >: T](protected[this] val pit: ParSeqIterator[T], val otherpit: PreciseSplitter[U])
   extends Accessor[Boolean, SameElements[U]] {
     var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
@@ -424,7 +424,7 @@ self =>
     override def merge(that: Updated[U, That]) = result = result combine that.result
   }
 
-  protected[this] class Zip[U >: T, S, That](len: Int, pbf: CanCombineFrom[Repr, (U, S), That], val pit: ParIterator, val otherpit: PreciseSplitter[S])
+  protected[this] class Zip[U >: T, S, That](len: Int, pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParSeqIterator[T], val otherpit: PreciseSplitter[S])
   extends Transformer[Combiner[(U, S), That], Zip[U, S, That]] {
     var result: Result = null
     def leaf(prev: Option[Result]) = result = pit.zip2combiner[U, S, That](otherpit, pbf(self.repr))
@@ -442,7 +442,7 @@ self =>
     override def merge(that: Zip[U, S, That]) = result = result combine that.result
   }
 
-  protected[this] class Corresponds[S](corr: (T, S) => Boolean, val pit: ParIterator, val otherpit: PreciseSplitter[S])
+  protected[this] class Corresponds[S](corr: (T, S) => Boolean, protected[this] val pit: ParSeqIterator[T], val otherpit: PreciseSplitter[S])
   extends Accessor[Boolean, Corresponds[S]] {
     var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {

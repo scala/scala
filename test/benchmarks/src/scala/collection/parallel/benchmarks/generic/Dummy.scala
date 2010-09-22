@@ -7,6 +7,8 @@ class Dummy(val in: Int) {
   var num = in
   override def toString = in.toString
   override def hashCode = in
+  def dummy = num + in
+  def one = "1".length
 }
 
 
@@ -37,7 +39,7 @@ object DummyOperators extends Operators[Dummy] {
     a.in % 2 == 0
   }
   val mapper = (a: Dummy) => {
-    a.num = a.in % 2
+    a.num = a.dummy + a.num + a.in + a.one
     a
   }
   val heavymapper = (a: Dummy) => {
@@ -51,8 +53,15 @@ object DummyOperators extends Operators[Dummy] {
   val taker = (a: Dummy) => {
     a.in >= 0
   }
+  val eachFun: Dummy => Unit = (d: Dummy) => {
+    d.dummy
+  }
+  override def sequence(sz: Int): Seq[Dummy] = {
+    val pa = new collection.parallel.mutable.ParArray[Dummy](sz)
+    for (i <- 0 until sz) pa(i) = new Dummy(i)
+    pa
+  }
 }
-
 
 
 
