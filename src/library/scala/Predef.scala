@@ -309,20 +309,30 @@ object Predef extends LowPriorityImplicits {
 
   // Type Constraints --------------------------------------------------------------
 
-  // used, for example, in the encoding of generalized constraints
-  // we need a new type constructor `<:<` and evidence `conforms`, as
-  // reusing `Function2` and `identity` leads to ambiguities (any2stringadd is inferred)
-  // to constrain any abstract type T that's in scope in a method's argument list (not just the method's own type parameters)
-  // simply add an implicit argument of type `T <:< U`, where U is the required upper bound (for lower-bounds, use: `U <: T`)
-  // in part contributed by Jason Zaugg
+  /** An instance of `A <:< B` witnesses that `A` is a subtype of `B`.
+   *
+   * Requiring an implicit argument of the type `A <:< B` encodes the generalized constraint `A <: B`.
+   *
+   * @note we need a new type constructor `<:<` and evidence `conforms`, as
+   * reusing `Function2` and `identity` leads to ambiguities in case of type errors (any2stringadd is inferred)
+   * to constrain any abstract type T that's in scope in a method's argument list (not just the method's own type parameters)
+   * simply add an implicit argument of type `T <:< U`, where U is the required upper bound (for lower-bounds, use: `U <: T`)
+   * in part contributed by Jason Zaugg
+   */
   sealed abstract class <:<[-From, +To] extends (From => To)
-  implicit def conforms[A]: A <:< A = new (A <:< A) {def apply(x: A) = x} // not in the <:< companion object because it is also intended to subsume identity (which is no longer implicit)
+  implicit def conforms[A]: A <:< A = new (A <:< A) {def apply(x: A) = x}
+  // not in the <:< companion object because it is also intended to subsume identity (which is no longer implicit)
 
+  /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.
+   *
+   * @see <:< for expressing subtyping constraints
+   */
   sealed abstract class =:=[From, To] extends (From => To)
   object =:= {
     implicit def tpEquals[A]: A =:= A = new (A =:= A) {def apply(x: A) = x}
   }
 
+  // less useful due to #2781
   sealed abstract class <%<[-From, +To] extends (From => To)
   object <%< {
     implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}
