@@ -319,12 +319,12 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:result
      *
      */
-    case class CALL_METHOD(method: Symbol, style: InvokeStyle) extends Instruction {
+    case class CALL_METHOD(method: Symbol, style: InvokeStyle) extends Instruction with ReferenceEquality {
       /** Returns a string representation of this instruction */
       override def toString(): String =
         "CALL_METHOD " + hostClass.fullName + method.fullName +" ("+style.toString()+")";
 
-      var hostClass: Symbol = method.owner;
+      var hostClass: Symbol = method.owner
       def setHostClass(cls: Symbol): this.type = { hostClass = cls; this }
 
       /** This is specifically for preserving the target native Array type long
@@ -333,38 +333,32 @@ trait Opcodes { self: ICodes =>
       var targetTypeKind: TypeKind = UNIT // the default should never be used, so UNIT should fail fast.
       def setTargetTypeKind(tk: TypeKind) = targetTypeKind = tk
 
-      override def consumed = method.tpe.paramTypes.length + (
-        style match {
-          case Dynamic | InvokeDynamic => 1
-          case Static(true) => 1
-          case Static(false) => 0
-          case SuperCall(_) => 1
-        }
-      )
+      private def params = method.info.paramTypes
+      private def consumesInstance = style match {
+        case Static(false)  => 0
+        case _              => 1
+      }
 
+      override def consumed = params.length + consumesInstance
       override def consumedTypes = {
-        val args = method.tpe.paramTypes map toTypeKind
-        style match {
-          case Dynamic | Static(true) => AnyRefReference :: args
-          case _ => args
-        }
+        val args = params map toTypeKind
+        if (consumesInstance > 0) AnyRefReference :: args
+        else args
       }
 
       override def produced =
-        if(toTypeKind(method.tpe.resultType) == UNIT)
-          0
-        else if(method.isConstructor)
-          0
+        if (producedType == UNIT || method.isConstructor) 0
         else 1
+
+      private def producedType: TypeKind = toTypeKind(method.info.resultType)
+      override def producedTypes =
+        if (produced == 0) Nil
+        else List(producedType)
 
       /** object identity is equality for CALL_METHODs. Needed for
        *  being able to store such instructions into maps, when more
        *  than one CALL_METHOD to the same method might exist.
        */
-      override def equals(other: Any) = other match {
-        case o: AnyRef => this eq o
-        case _ => false
-      }
     }
 
     case class BOX(boxType: TypeKind) extends Instruction {
@@ -614,7 +608,6 @@ trait Opcodes { self: ICodes =>
 
     /** This class represents a method invocation style. */
     sealed abstract class InvokeStyle {
-
       /** Is this a dynamic method call? */
       def isDynamic: Boolean = this match {
         case Dynamic =>  true

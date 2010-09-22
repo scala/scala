@@ -5,10 +5,12 @@
 
 
 package scala.tools.nsc
-package backend.icode.analysis
+package backend.icode
+package analysis
 
-import scala.collection.immutable.{Set, ListSet, HashSet}
-import scala.collection.mutable.{HashMap, Map}
+import scala.collection.{ mutable, immutable }
+import immutable.ListSet
+import mutable.HashMap
 
 /** Compute reaching definitions. We are only interested in reaching
  *  definitions for local variables, since values on the stack
@@ -29,12 +31,12 @@ abstract class ReachingDefinitions {
     type StackPos = Set[(BasicBlock, Int)]
     type Stack = List[StackPos]
 
-    val top: Elem = IState(new ListSet[Definition](), Nil)
+    private def referenceEqualSet(name: String) = new ListSet[Definition] with ReferenceEquality {
+      override def toString = "<" + name + ">"
+    }
 
-    val bottom: Elem = IState(new ListSet[Definition]() {
-      override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-      override def toString = "<bottom>"
-    }, Nil)
+    val top: Elem = IState(referenceEqualSet("top"), Nil)
+    val bottom: Elem = IState(referenceEqualSet("bottom"), Nil)
 
     /** The least upper bound is set inclusion for locals, and pairwise set inclusion for stacks. */
     def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem =
@@ -43,8 +45,8 @@ abstract class ReachingDefinitions {
       else {
         val locals = a.vars ++ b.vars
         val stack =
-          if (a.stack == Nil) b.stack
-          else if (b.stack == Nil) a.stack
+          if (a.stack.isEmpty) b.stack
+          else if (b.stack.isEmpty) a.stack
           else (a.stack, b.stack).zipped map (_ ++ _)
 
         IState(locals, stack)
@@ -67,10 +69,10 @@ abstract class ReachingDefinitions {
 
     var method: IMethod = _
 
-    val gen: Map[BasicBlock, Set[Definition]] = new HashMap()
-    val kill:Map[BasicBlock, Set[Local]]      = new HashMap()
-    val drops: Map[BasicBlock, Int]           = new HashMap()
-    val outStack: Map[BasicBlock, Stack]      = new HashMap()
+    val gen: mutable.Map[BasicBlock, Set[Definition]] = new HashMap()
+    val kill: mutable.Map[BasicBlock, Set[Local]]     = new HashMap()
+    val drops: mutable.Map[BasicBlock, Int]           = new HashMap()
+    val outStack: mutable.Map[BasicBlock, Stack]      = new HashMap()
 
     def init(m: IMethod) {
       this.method = m
@@ -102,8 +104,8 @@ abstract class ReachingDefinitions {
     import opcodes._
 
     def genAndKill(b: BasicBlock): (Set[Definition], Set[Local]) = {
-      var genSet: Set[Definition] = new HashSet
-      var killSet: Set[Local] = new HashSet
+      var genSet: Set[Definition] = new immutable.HashSet
+      var killSet: Set[Local] = new immutable.HashSet
       for ((i, idx) <- b.toList.zipWithIndex) i match {
         case STORE_LOCAL(local) =>
           killSet = killSet + local

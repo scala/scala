@@ -8,11 +8,10 @@ package scala.tools.nsc
 package backend
 package icode
 
-//import scala.tools.nsc.ast._
-import scala.collection.mutable.{Map, Set}
-import scala.collection.mutable.LinkedHashSet
-import scala.tools.nsc.util.{Position,NoPosition}
-import scala.tools.nsc.backend.icode.analysis.ProgramPoint
+import scala.collection.{ mutable, immutable }
+import mutable.{ ArrayBuffer }
+import util.{ Position, NoPosition }
+import backend.icode.analysis.ProgramPoint
 
 trait BasicBlocks {
   self: ICodes =>
@@ -79,7 +78,7 @@ trait BasicBlocks {
     /** Local variables that are in scope at entry of this basic block. Used
      *  for debugging information.
      */
-    var varsInScope: Set[Local] = new LinkedHashSet()
+    var varsInScope: mutable.Set[Local] = new mutable.LinkedHashSet()
 
     /** ICode instructions, used as temporary storage while emitting code.
      * Once closed is called, only the `instrs' array should be used.
@@ -90,11 +89,8 @@ trait BasicBlocks {
 
     private var instrs: Array[Instruction] = _
 
-    override def toList: List[Instruction] = {
-      if (closed)
-        instrs.toList
-      else instructionList.reverse
-    }
+    override def toList: List[Instruction] =
+      if (closed) instrs.toList else instructionList.reverse
 
     /** Return an iterator over the instructions in this basic block. */
     def iterator: Iterator[Instruction] =
@@ -108,7 +104,7 @@ trait BasicBlocks {
 
     def fromList(is: List[Instruction]) {
       code.touched = true
-      instrs = toInstructionArray(is)
+      instrs = is.toArray
       closed = true
     }
 
@@ -117,16 +113,8 @@ trait BasicBlocks {
      */
     def indexOf(inst: Instruction): Int = {
       assert(closed)
-      var i = 0
-      while (i < instrs.length) {
-        if (instrs(i) eq inst) return i
-        i += 1
-      }
-      -1
+      instrs indexWhere (_ eq inst)
     }
-
-    /** Compute an hashCode for the block */
-//    override def hashCode() = label;
 
     /** Apply a function to all the instructions of the block. */
     override def foreach[U](f: Instruction => U) = {
@@ -138,26 +126,7 @@ trait BasicBlocks {
     }
 
     /** The number of instructions in this basic block so far. */
-    def length: Int =
-      if (closed) instrs.length else instructionList.length
-
-    /** Return the index of the instruction which produced the value
-     *  consumed by the given instruction.
-     */
-    def findDef(pos: Int): Option[Int] = {
-      assert(closed)
-      var i = pos
-      var d = 0
-      while (i > 0) {
-        i -= 1
-        val prod = instrs(i).produced
-        if (prod > 0 && d == 0)
-          return Some(i)
-        d += (instrs(i).consumed - instrs(i).produced)
-      }
-      None
-    }
-
+    def length = if (closed) instrs.length else instructionList.length
 
     /** Return the n-th instruction. */
     def apply(n: Int): Instruction =
@@ -185,21 +154,17 @@ trait BasicBlocks {
     def replaceInstruction(oldInstr: Instruction, newInstr: Instruction): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
 
-      var i = 0
-      var changed = false
-      while (i < instrs.length && !changed) {
-        if (instrs(i) eq oldInstr) {
-          newInstr.setPos(oldInstr.pos)
-          instrs(i) = newInstr
-          changed = true
+      indexOf(oldInstr) match {
+        case -1   => false
+        case idx  =>
+          newInstr setPos oldInstr.pos
+          instrs(idx) = newInstr
           code.touched = true
-        }
-        i += 1
+          true
       }
-      changed
     }
 
-    /** Replaces <code>iold</code> with <code>is</code>. It does not update
+    /** Replaces <code>oldInstr</code> with <code>is</code>. It does not update
      *  the position field in the newly inserted instructions, so it behaves
      *  differently than the one-instruction versions of this function.
      *
@@ -207,51 +172,23 @@ trait BasicBlocks {
      *  @param is   ..
      *  @return     ..
      */
-    def replaceInstruction(iold: Instruction, is: List[Instruction]): Boolean = {
+    def replaceInstruction(oldInstr: Instruction, is: List[Instruction]): Boolean = {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
 
-      var i = 0
-      var changed = false
-
-      while (i < instrs.length && (instrs(i) ne iold))
-        i += 1
-
-      if (i < instrs.length) {
-        val newInstrs = new Array[Instruction](instrs.length + is.length - 1);
-        changed = true
-        code.touched = true
-
-        Array.copy(instrs, 0, newInstrs, 0, i)
-        var j = i
-        for (x <- is) {
-          newInstrs(j) = x
-          j += 1
-        }
-        if (i + 1 < instrs.length)
-          Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i - 1)
-        instrs = newInstrs;
+      indexOf(oldInstr) match {
+        case -1   => false
+        case idx  =>
+          instrs = instrs.patch(idx, is, 1)
+          code.touched = true
+          true
       }
-
-      changed
     }
 
     /** Insert instructions in 'is' immediately after index 'idx'. */
     def insertAfter(idx: Int, is: List[Instruction]) {
       assert(closed, "Instructions can be replaced only after the basic block is closed")
 
-      var i = idx + 1
-      if (i < instrs.length) {
-        val newInstrs = new Array[Instruction](instrs.length + is.length);
-        Array.copy(instrs, 0, newInstrs, 0, i)
-        var j = i
-        for (x <- is) {
-          newInstrs(j) = x
-          j += 1
-        }
-        if (i + 1 < instrs.length)
-          Array.copy(instrs, i + 1, newInstrs, j, instrs.length - i)
-        instrs = newInstrs;
-      }
+      instrs = instrs.patch(idx + 1, is, 0)
       code.touched = true
     }
 
@@ -261,18 +198,7 @@ trait BasicBlocks {
      */
     def removeInstructionsAt(positions: Int*) {
       assert(closed)
-      val removed = positions.toList
-      val newInstrs = new Array[Instruction](instrs.length - positions.length)
-      var i = 0
-      var j = 0
-      while (i < instrs.length) {
-        if (!removed.contains(i)) {
-          newInstrs(j) = instrs(i)
-          j += 1
-        }
-        i += 1
-      }
-      instrs = newInstrs
+      instrs = instrs.indices.toArray filterNot positions.toSet map instrs
       code.touched = true
     }
 
@@ -292,33 +218,14 @@ trait BasicBlocks {
      *
      *  @param map ...
      */
-    def subst(map: Map[Instruction, Instruction]) {
-      if (!closed) substOnList(map) else {
-        var i = 0
-        while (i < instrs.length) {
-          map get instrs(i) match {
-            case Some(instr) =>
-              val changed = replaceInstruction(i, instr)
-              code.touched |= changed
-            case None => ()
-          }
-          i += 1
+    def subst(map: Map[Instruction, Instruction]): Unit =
+      if (!closed)
+        instructionList = instructionList map (x => map.getOrElse(x, x))
+      else
+        instrs.zipWithIndex collect {
+          case (oldInstr, i) if map contains oldInstr =>
+            code.touched |= replaceInstruction(i, map(oldInstr))
         }
-      }
-    }
-
-    private def substOnList(map: Map[Instruction, Instruction]) {
-      def subst(l: List[Instruction]): List[Instruction] = l match {
-        case Nil => Nil
-        case x :: xs =>
-          map.get(x) match {
-            case Some(newInstr) => newInstr :: subst(xs)
-            case None => x :: subst(xs)
-          }
-      }
-
-      instructionList = subst(instructionList)
-    }
 
     ////////////////////// Emit //////////////////////
 
@@ -327,10 +234,8 @@ trait BasicBlocks {
      *  using the same source position as the last emitted instruction
      */
     def emit(instr: Instruction) {
-      if (!instructionList.isEmpty)
-        emit(instr, instructionList.head.pos)
-      else
-        emit(instr, NoPosition)
+      val pos = if (instructionList.isEmpty) NoPosition else instructionList.head.pos
+      emit(instr, pos)
     }
 
     /** Emitting does not set touched to true. During code generation this is a hotspot and
@@ -390,7 +295,7 @@ trait BasicBlocks {
       closed = true
       setFlag(DIRTYSUCCS)
       instructionList = instructionList.reverse
-      instrs = toInstructionArray(instructionList)
+      instrs = instructionList.toArray
     }
 
     def open {
@@ -422,67 +327,38 @@ trait BasicBlocks {
 
     /** Return the last instruction of this basic block. */
     def lastInstruction =
-      if (closed)
-        instrs(instrs.length - 1)
-      else
-        instructionList.head
+      if (closed) instrs.last
+      else instructionList.head
 
     def firstInstruction =
-      if (closed)
-        instrs(0)
-      else
-        instructionList.last
+      if (closed) instrs(0)
+      else instructionList.last
 
-    /** Convert the list to an array */
-    private def toInstructionArray(l: List[Instruction]): Array[Instruction] = {
-      var array = new Array[Instruction](l.length)
-      var i: Int = 0
-
-      l foreach (x => { array(i) = x; i += 1 })
-      array
-    }
+    def exceptionSuccessorsForBlock(block: BasicBlock): List[BasicBlock] =
+      method.exh collect { case x if x covers block => x.startBlock }
 
     /** Cached value of successors. Must be recomputed whenver a block in the current method is changed. */
     private var succs: List[BasicBlock] = Nil
+    private def updateSuccs() {
+      resetFlag(DIRTYSUCCS)
+      succs =
+        if (isEmpty) Nil
+        else exceptionSuccessors ++ directSuccessors ++ indirectExceptionSuccessors
+    }
 
     def successors : List[BasicBlock] = {
-      if (touched) {
-        resetFlag(DIRTYSUCCS)
-        succs = if (isEmpty) Nil else {
-          var res = lastInstruction match {
-            case JUMP(whereto) => List(whereto)
-            case CJUMP(success, failure, _, _) => failure :: success :: Nil
-            case CZJUMP(success, failure, _, _) => failure :: success :: Nil
-            case SWITCH(_, labels) => labels
-            case RETURN(_) => Nil
-            case THROW() => Nil
-            case _ =>
-              if (closed) {
-                dump
-                global.abort("The last instruction is not a control flow instruction: " + lastInstruction)
-              }
-              else Nil
-          }
-          method.exh.foreach {
-            e: ExceptionHandler =>
-              if (e.covers(this)) res = e.startBlock :: res
-          }
-          val res1 = res ++ exceptionalSucc(this, res)
-          res1
-        }
-      }
-//        println("reusing cached successors for " + this + " in method " + method)
+      if (touched) updateSuccs()
       succs
     }
 
-    def directSuccessors: List[BasicBlock] = {
+    def directSuccessors: List[BasicBlock] =
       if (isEmpty) Nil else lastInstruction match {
-        case JUMP(whereto) => List(whereto)
-        case CJUMP(success, failure, _, _) => failure :: success :: Nil
-        case CZJUMP(success, failure, _, _) => failure :: success :: Nil
-        case SWITCH(_, labels) => labels
-        case RETURN(_) => Nil
-        case THROW() => Nil
+        case JUMP(whereto)              => List(whereto)
+        case CJUMP(succ, fail, _, _)    => fail :: succ :: Nil
+        case CZJUMP(succ, fail, _, _)   => fail :: succ :: Nil
+        case SWITCH(_, labels)          => labels
+        case RETURN(_)                  => Nil
+        case THROW()                    => Nil
         case _ =>
           if (closed) {
             dump
@@ -490,29 +366,23 @@ trait BasicBlocks {
           }
           else Nil
       }
-    }
+
+    def exceptionSuccessors: List[BasicBlock] =
+      exceptionSuccessorsForBlock(this)
 
     /** Return a list of successors for 'b' that come from exception handlers
      *  covering b's (non-exceptional) successors. These exception handlers
      *  might not cover 'b' itself. This situation corresponds to an
      *  exception being thrown as the first thing of one of b's successors.
      */
-    private def exceptionalSucc(b: BasicBlock, succs: List[BasicBlock]): List[BasicBlock] = {
-      def findSucc(s: BasicBlock): List[BasicBlock] = {
-        val ss = method.exh flatMap { h =>
-          if (h.covers(s) /*&& mayThrow(h.startBlock.firstInstruction)*/) List(h.startBlock) else Nil
-        }
-        ss ++ (ss flatMap findSucc)
-      }
-
-      succs.flatMap(findSucc).distinct
-    }
+    def indirectExceptionSuccessors: List[BasicBlock] =
+      directSuccessors flatMap exceptionSuccessorsForBlock distinct
 
     /** Returns the predecessors of this block.     */
     def predecessors: List[BasicBlock] = {
       if (hasFlag(DIRTYPREDS)) {
         resetFlag(DIRTYPREDS)
-        preds = code.blocks.iterator.filter (_.successors.contains(this)).toList
+        preds = code.blocks.iterator filter (_.successors contains this) toList
       }
       preds
     }

@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend
 package icode
@@ -13,23 +12,18 @@ package icode
  *  @author  Iulian Dragos
  *  @version 1.0
  */
-trait TypeStacks { self: ICodes =>
+trait TypeStacks {
+  self: ICodes =>
+
   import opcodes._
-  import global.{Symbol, Type, definitions}
 
   /* This class simulates the type of the operand
    * stack of the ICode.
    */
   type Rep = List[TypeKind]
 
-  class TypeStack {
-    var types: Rep = Nil
-
-    def this(stack: Rep) = {
-      this()
-      this.types = stack
-    }
-
+  class TypeStack(var types: Rep) {
+    def this() = this(Nil)
     def this(that: TypeStack) = this(that.types)
 
     def length: Int = types.length
@@ -82,7 +76,7 @@ trait TypeStacks { self: ICodes =>
 
     override def hashCode() = types.hashCode()
     override def equals(other: Any): Boolean = other match {
-      case x: TypeStack => x.types sameElements types
+      case x: TypeStack => x.types == types
       case _            => false
     }
   }

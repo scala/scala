@@ -56,14 +56,16 @@ abstract class CopyPropagation {
     def emptyBinding = new HashMap[Location, Value]()
 
     class State(val bindings: Bindings, var stack: List[Value]) {
-      override def equals(that: Any): Boolean =
-        (this eq that.asInstanceOf[AnyRef]) || (that match {
-          /* comparison with bottom is reference equality! */
-          case other: State if (this ne bottom) && (other ne bottom) =>
-            (this.bindings == other.bindings) &&
-            (this.stack corresponds other.stack)(_ == _)  // @PP: corresponds
-          case _ => false
-        })
+
+      override def hashCode = bindings.hashCode + stack.hashCode
+      /* comparison with bottom is reference equality! */
+      override def equals(that: Any): Boolean = that match {
+        case x: State =>
+          if ((this eq bottom) || (this eq top) || (x eq bottom) || (x eq top)) this eq x
+          else bindings == x.bindings && stack == x.stack
+        case _ =>
+          false
+      }
 
       /* Return an alias for the given local. It returns the last
        * local in the chain of aliased locals. Cycles are not allowed
@@ -84,30 +86,20 @@ abstract class CopyPropagation {
 
       /* Return the value bound to the given local. */
       def getBinding(l: Local): Value = {
-        var target = l
-        var stop = false
-        var value: Value = Deref(LocalVar(target))
-
-        while (bindings.isDefinedAt(LocalVar(target)) && !stop) {
-//          Console.println("finding binding for " + target)
-          value = bindings(LocalVar(target))
-          value match {
-            case Deref(LocalVar(t)) => target = t
-            case _ => stop = true
-          }
+        def loop(lv: Local): Option[Value] = (bindings get LocalVar(lv)) match {
+          case Some(Deref(LocalVar(t))) => loop(t)
+          case x                        => x
         }
-        value
+        loop(l) getOrElse Deref(LocalVar(l))
       }
 
       /* Return the binding for the given field of the given record */
       def getBinding(r: Record, f: Symbol): Value = {
-        assert(r.bindings.isDefinedAt(f),
-               "Record " + r + " does not contain a field " + f);
+        assert(r.bindings contains f, "Record " + r + " does not contain a field " + f)
 
-        var target: Value = r.bindings(f);
-        target match {
+        r.bindings(f) match {
           case Deref(LocalVar(l)) => getBinding(l)
-          case _ => target
+          case target             => target
         }
       }
 
@@ -115,17 +107,10 @@ abstract class CopyPropagation {
        * If the field holds a reference to a local, the returned value is the
        * binding of that local.
        */
-      def getFieldValue(r: Record, f: Symbol): Option[Value] = {
-        if(!r.bindings.isDefinedAt(f)) None else {
-        	var target: Value = r.bindings(f)
-        	target match {
-          	case Deref(LocalVar(l)) => Some(getBinding(l))
-          	case Deref(Field(r1, f1)) => getFieldValue(r1, f1) orElse Some(target)
-//          case Deref(This)    => Some(target)
-//          case Const(k) => Some(target)
-	          case _  => Some(target)
-          }
-        }
+      def getFieldValue(r: Record, f: Symbol): Option[Value] = r.bindings get f map {
+        case Deref(LocalVar(l))             => getBinding(l)
+        case target @ Deref(Field(r1, f1))  => getFieldValue(r1, f1) getOrElse target
+        case target                         => target
       }
 
       /** The same as getFieldValue, but never returns Record/Field values. Use
@@ -133,26 +118,23 @@ abstract class CopyPropagation {
        *  or a constant/this value).
        */
       def getFieldNonRecordValue(r: Record, f: Symbol): Option[Value] = {
-        assert(r.bindings.isDefinedAt(f),
-            "Record " + r + " does not contain a field " + f);
+        assert(r.bindings contains f, "Record " + r + " does not contain a field " + f)
 
-        var target: Value = r.bindings(f)
-        target match {
+        r.bindings(f) match {
           case Deref(LocalVar(l)) =>
             val alias = getAlias(l)
             val derefAlias = Deref(LocalVar(alias))
-            getBinding(alias) match {
-              case Record(_, _) => Some(derefAlias)
-              case Deref(Field(r1, f1)) =>
-                getFieldNonRecordValue(r1, f1) orElse Some(derefAlias)
-              case Boxed(_) => Some(derefAlias)
-              case v => Some(v)
-            }
-          case Deref(Field(r1, f1)) =>
-            getFieldNonRecordValue(r1, f1) orElse None
-          case Deref(This) => Some(target)
-          case Const(k)    => Some(target)
-          case _           => None
+
+            Some(getBinding(alias) match {
+              case Record(_, _)         => derefAlias
+              case Deref(Field(r1, f1)) => getFieldNonRecordValue(r1, f1) getOrElse derefAlias
+              case Boxed(_)             => derefAlias
+              case v                    => v
+            })
+          case Deref(Field(r1, f1)) => getFieldNonRecordValue(r1, f1)
+          case target @ Deref(This) => Some(target)
+          case target @ Const(k)    => Some(target)
+          case _                    => None
         }
       }
 
@@ -174,7 +156,7 @@ abstract class CopyPropagation {
     val exceptionHandlerStack = Unknown :: Nil
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem = {
-      if (a eq bottom)      b
+      if (a eq bottom) b
       else if (b eq bottom) a
       else if (a == b) a
       else {

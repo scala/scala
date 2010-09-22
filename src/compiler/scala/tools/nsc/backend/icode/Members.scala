@@ -10,11 +10,14 @@ package icode
 
 import java.io.PrintWriter
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.{Set, HashSet, ListBuffer}
-import scala.{Symbol => scala_Symbol}
+import scala.collection.{ mutable, immutable }
+import mutable.{ HashMap, ListBuffer }
+import symtab.Flags.{ DEFERRED }
 
-import scala.tools.nsc.symtab.Flags
+trait ReferenceEquality {
+  override def hashCode = System.identityHashCode(this)
+  override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
+}
 
 trait Members { self: ICodes =>
   import global._
@@ -38,31 +41,32 @@ trait Members { self: ICodes =>
     private var _touched = false
 
     def touched = _touched
-    def touched_=(b: Boolean): Unit = if (b) {
-      blocks foreach (_.touched = true)
-      _touched = true
-    } else
-      _touched = false
+    def touched_=(b: Boolean): Unit = {
+      if (b)
+        blocks foreach (_.touched = true)
+
+      _touched = b
+    }
 
     // Constructor code
     startBlock = newBlock
 
     def removeBlock(b: BasicBlock) {
       if (settings.debug.value) {
-        assert(blocks.forall(p => !(p.successors.contains(b))),
-               "Removing block that is still referenced in method code " + b + "preds: " + b.predecessors);
-        if (b == startBlock)
-          assert(b.successors.length == 1,
-                 "Removing start block with more than one successor.");
+        assert(blocks forall (p => !(p.successors contains b)),
+          "Removing block that is still referenced in method code " + b + "preds: " + b.predecessors
+        )
+        assert(b != startBlock || b.successors.length == 1,
+          "Removing start block with more than one successor."
+        )
       }
 
       if (b == startBlock)
-        startBlock = b.successors.head;
+        startBlock = b.successors.head
+
       blocks -= b
       assert(!blocks.contains(b))
-      for (handler <- method.exh if handler.covers(b))
-        handler.covered -= b
-
+      method.exh filter (_ covers b) foreach (_.covered -= b)
       touched = true
     }
 
@@ -109,19 +113,16 @@ trait Members { self: ICodes =>
 
     override def toString() = symbol.fullName
 
-    def lookupField(s: Symbol) = fields find (_.symbol == s)
+    def lookupField(s: Symbol)  = fields find (_.symbol == s)
     def lookupMethod(s: Symbol) = methods find (_.symbol == s)
-    def lookupMethod(s: Name) = methods find (_.symbol.name == s)
+    def lookupMethod(s: Name)   = methods find (_.symbol.name == s)
 
-    /* determines whether or not this class contains a static ctor. */
-    def containsStaticCtor: Boolean = methods.exists(_.isStaticCtor)
     /* returns this methods static ctor if it has one. */
-    def lookupStaticCtor: Option[IMethod] = methods.find(_.isStaticCtor)
+    def lookupStaticCtor: Option[IMethod] = methods find (_.symbol.isStaticConstructor)
   }
 
   /** Represent a field in ICode */
-  class IField(val symbol: Symbol) {
-  }
+  class IField(val symbol: Symbol) { }
 
   /**
    * Represents a method in ICode. Local variables contain
@@ -150,69 +151,56 @@ trait Members { self: ICodes =>
     /** method parameters */
     var params: List[Local] = Nil
 
+    def hasCode = code != null
     def setCode(code: Code): IMethod = {
       this.code = code;
       this
     }
 
     def addLocal(l: Local): Local =
-      locals find (l.==) match {
-        case Some(loc) => loc
-        case None =>
-          locals = l :: locals;
-          l
+      locals find (_ == l) getOrElse {
+        locals ::= l
+        l
       }
 
-    def addLocals(ls: List[Local]) {
-      ls foreach addLocal
-    }
 
-    def addParam(p: Local) {
-      if (!(params contains p)) {
-        params = p :: params;
-        locals = p :: locals;
+    def addParam(p: Local): Unit =
+      if (params contains p) ()
+      else {
+        params ::= p
+        locals ::= p
       }
-    }
 
-    def addParams(as: List[Local]) {
-      as foreach addParam
-    }
+    def addLocals(ls: List[Local]) = ls foreach addLocal
+    def addParams(as: List[Local]) = as foreach addParam
 
-    def lookupLocal(n: Name): Option[Local] =
-      locals find ((l) => l.sym.name == n);
+    def lookupLocal(n: Name): Option[Local]     = locals find (_.sym.name == n)
+    def lookupLocal(sym: Symbol): Option[Local] = locals find (_.sym == sym)
 
-    def lookupLocal(sym: Symbol): Option[Local] =
-      locals find ((l) => l.sym == sym);
+    def addHandler(e: ExceptionHandler) = exh ::= e
 
-    def addHandler(e: ExceptionHandler) {
-      exh = e :: exh
-    }
-
-    /** Is this method deferred ('abstract' in Java sense) */
-    def isDeferred = (
-      symbol.hasFlag(Flags.DEFERRED) ||
-      symbol.owner.hasFlag(Flags.INTERFACE) ||
-      native
-    );
+    /** Is this method deferred ('abstract' in Java sense)?
+     *  This differs from sym.isDeferred because the symbol only examines the
+     *  flag, which may not be set in the other covered cases.
+     */
+    def isDeferred = (symbol hasFlag DEFERRED) || symbol.owner.isInterface || native
 
     def isStatic: Boolean = symbol.isStaticMember
-
-    /* determines whether or not this method is the class static constructor. */
-    def isStaticCtor: Boolean = isStatic && symbol.rawname == nme.CONSTRUCTOR
 
     override def toString() = symbol.fullName
 
     import opcodes._
-    def checkLocals: Unit = if (code ne null) {
-      Console.println("[checking locals of " + this + "]")
-      for (bb <- code.blocks; i <- bb) i match {
-        case LOAD_LOCAL(l) =>
-          if (!this.locals.contains(l))
-            Console.println("Local " + l + " is not declared in " + this)
-        case STORE_LOCAL(l) =>
-          if (!this.locals.contains(l))
-            Console.println("Local " + l + " is not declared in " + this)
-        case _ => ()
+    def checkLocals: Unit = {
+      def localsSet = code.blocks.flatten collect {
+        case LOAD_LOCAL(l)  => l
+        case STORE_LOCAL(l) => l
+      } toSet
+
+      if (code != null) {
+        Console.println("[checking locals of " + this + "]")
+        locals filterNot localsSet foreach { l =>
+          Console.println("Local " + l + " is not declared in " + this)
+        }
       }
     }
 
@@ -276,13 +264,11 @@ trait Members { self: ICodes =>
     /** PC-based ranges for this local variable's visibility */
     var ranges: List[(Int, Int)] = Nil
 
-    override def equals(other: Any): Boolean = (
-      other.isInstanceOf[Local] &&
-      other.asInstanceOf[Local].sym == this.sym
-    );
-
+    override def equals(other: Any): Boolean = other match {
+      case x: Local => sym == x.sym
+      case _        => false
+    }
     override def hashCode = sym.hashCode
-
-    override def toString(): String = sym.toString()
+    override def toString(): String = sym.toString
   }
 }

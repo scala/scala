@@ -7,9 +7,8 @@
 package scala.tools.nsc
 package backend.opt
 
-import scala.collection._
-import scala.collection.immutable.{Map, HashMap, Set, HashSet}
-import scala.tools.nsc.symtab._
+import scala.collection.{ mutable, immutable }
+import symtab._
 
 /**
  */
@@ -54,7 +53,7 @@ abstract class DeadCodeElimination extends SubComponent {
     val rdef = new reachingDefinitions.ReachingDefinitionsAnalysis;
 
     /** Use-def chain: give the reaching definitions at the beginning of given instruction. */
-    var defs: Map[(BasicBlock, Int), Set[rdef.lattice.Definition]] = HashMap.empty
+    var defs: immutable.Map[(BasicBlock, Int), immutable.Set[rdef.lattice.Definition]] = immutable.HashMap.empty
 
     /** Useful instructions which have not been scanned yet. */
     val worklist: mutable.Set[(BasicBlock, Int)] = new mutable.LinkedHashSet
@@ -91,7 +90,7 @@ abstract class DeadCodeElimination extends SubComponent {
 
     /** collect reaching definitions and initial useful instructions for this method. */
     def collectRDef(m: IMethod): Unit = if (m.code ne null) {
-      defs = HashMap.empty; worklist.clear; useful.clear;
+      defs = immutable.HashMap.empty; worklist.clear; useful.clear;
       rdef.init(m);
       rdef.run;
 
@@ -264,19 +263,11 @@ abstract class DeadCodeElimination extends SubComponent {
     }
 
     private def findInstruction(bb: BasicBlock, i: Instruction): (BasicBlock, Int) = {
-      def find(bb: BasicBlock): Option[(BasicBlock, Int)] = {
-        var xs = bb.toList
-        xs.zipWithIndex find { hd => hd._1 eq i } match {
-          case Some((_, idx)) => Some(bb, idx)
-          case None => None
-        }
+      for (b <- linearizer.linearizeAt(method, bb)) {
+        val idx = b.toList indexWhere (_ eq i)
+        if (idx != -1)
+          return (b, idx)
       }
-
-      for (b <- linearizer.linearizeAt(method, bb))
-        find(b) match {
-          case Some(p) => return p
-          case None => ()
-        }
       abort("could not find init in: " + method)
     }
 

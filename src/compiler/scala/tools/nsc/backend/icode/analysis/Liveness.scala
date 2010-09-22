@@ -5,7 +5,8 @@
 
 
 package scala.tools.nsc
-package backend.icode.analysis
+package backend.icode
+package analysis
 
 import scala.collection.mutable.{HashMap, Map}
 import scala.collection.immutable.{Set, ListSet}
@@ -24,13 +25,8 @@ abstract class Liveness {
   object livenessLattice extends SemiLattice {
     type Elem = Set[Local]
 
-    val top: Elem = new ListSet[Local]() {
-      override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-    }
-
-    val bottom: Elem = new ListSet[Local]() {
-      override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-    }
+    object top extends ListSet[Local] with ReferenceEquality
+    object bottom extends ListSet[Local] with ReferenceEquality
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem = a ++ b
   }

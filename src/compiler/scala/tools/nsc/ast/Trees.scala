@@ -60,6 +60,11 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     /** Apply `f' to each subtree */
     def foreach(f: Tree => Unit) { new ForeachTreeTraverser(f).traverse(tree) }
 
+    /** If 'pf' is defined for a given subtree, call super.traverse(pf(tree)),
+     *  otherwise super.traverse(tree).
+     */
+    def foreachPartial(pf: PartialFunction[Tree, Tree]) { new ForeachPartialTreeTraverser(pf).traverse(tree) }
+
     /** Find all subtrees matching predicate `p' */
     def filter(f: Tree => Boolean): List[Tree] = {
       val ft = new FilterTreeTraverser(f)
@@ -1017,6 +1022,13 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     posAssigner.pos = pos
     posAssigner.traverse(tree)
     tree
+  }
+
+  class ForeachPartialTreeTraverser(pf: PartialFunction[Tree, Tree]) extends Traverser {
+    override def traverse(tree: Tree) {
+      val t = if (pf isDefinedAt tree) pf(tree) else tree
+      super.traverse(t)
+    }
   }
 
   class ForeachTreeTraverser(f: Tree => Unit) extends Traverser {

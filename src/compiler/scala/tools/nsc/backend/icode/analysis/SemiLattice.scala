@@ -5,7 +5,8 @@
 
 
 package scala.tools.nsc
-package backend.icode.analysis
+package backend.icode
+package analysis
 
 /** A complete lattice.
  */
@@ -16,17 +17,18 @@ trait SemiLattice {
    *  equals method uses reference equality for top and bottom,
    *  and structural equality for other values.
    */
-  case class IState[V, S](val vars: V, val stack: S) {
+  final case class IState[V, S](vars: V, stack: S) {
+    override def hashCode = vars.hashCode + stack.hashCode
     override def equals(other: Any): Boolean = other match {
-      case that: IState[_, _] =>
-        if ((this eq bottom) || (that eq bottom)) this eq that
-        else if ((this eq top) || (that eq top)) this eq that
-        else (stack == that.stack && vars == that.vars)
-      case _ => false
+      case x: IState[_, _]  =>
+        if ((this eq bottom) || (this eq top) || (x eq bottom) || (x eq top)) this eq x
+        else stack == x.stack && vars == x.vars
+      case _ =>
+        false
     }
   }
 
-  /** Return the least upper bound of <code>a</code> and <code>b</code> */
+  /** Return the least upper bound of a and b. */
   def lub2(exceptional: Boolean)(a: Elem, b: Elem): Elem
 
   /** Return the top element. */
@@ -36,11 +38,8 @@ trait SemiLattice {
   def bottom: Elem
 
   /** Compute the least upper bound of a list of elements. */
-  def lub(xs: List[Elem], exceptional: Boolean): Elem = try {
-    if (xs == Nil) bottom else xs reduceLeft lub2(exceptional)
-  } catch {
-      case e: LubException =>
-        Console.println("Lub on blocks: " + xs)
-        throw e
-  }
+  def lub(xs: List[Elem], exceptional: Boolean): Elem =
+    if (xs.isEmpty) bottom
+    else try xs reduceLeft lub2(exceptional)
+    catch { case e: LubException  => Console.println("Lub on blocks: " + xs) ; throw e }
 }

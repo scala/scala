@@ -16,17 +16,15 @@ import scala.collection.{mutable, immutable}
 abstract class TypeFlowAnalysis {
   val global: Global
   import global._
+  import definitions.{ ObjectClass, NothingClass, AnyRefClass, StringClass }
 
   /** The lattice of ICode types.
    */
   object typeLattice extends SemiLattice {
     type Elem = icodes.TypeKind
 
-    val Object = icodes.REFERENCE(global.definitions.ObjectClass)
-    val All    = icodes.REFERENCE(global.definitions.NothingClass)
-
-    def top    = Object
-    def bottom = All
+    val top    = icodes.REFERENCE(ObjectClass)
+    val bottom = icodes.REFERENCE(NothingClass)
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) =
       if (a eq bottom) b
@@ -41,9 +39,9 @@ abstract class TypeFlowAnalysis {
     import icodes._
     type Elem = TypeStack
 
-    override val top    = new TypeStack
-    override val bottom = new TypeStack
-    val exceptionHandlerStack: TypeStack = new TypeStack(List(REFERENCE(definitions.AnyRefClass)))
+    val top    = new TypeStack
+    val bottom = new TypeStack
+    val exceptionHandlerStack: TypeStack = new TypeStack(List(REFERENCE(AnyRefClass)))
 
     def lub2(exceptional: Boolean)(s1: TypeStack, s2: TypeStack) = {
       if (s1 eq bottom) s2
@@ -59,10 +57,7 @@ abstract class TypeFlowAnalysis {
 
   /** A map which returns the bottom type for unfound elements */
   class VarBinding extends mutable.HashMap[icodes.Local, icodes.TypeKind] {
-    override def get(l: icodes.Local) = super.get(l) match {
-      case Some(t) => Some(t)
-      case None    => Some(typeLattice.bottom)
-    }
+    override def get(l: icodes.Local) = super.get(l) orElse Some(typeLattice.bottom)
 
     def this(o: VarBinding) = {
       this()
@@ -77,32 +72,25 @@ abstract class TypeFlowAnalysis {
     import icodes._
     type Elem = IState[VarBinding, icodes.TypeStack]
 
-    override val top    = new Elem(new VarBinding, typeStackLattice.top)
-    override val bottom = new Elem(new VarBinding, typeStackLattice.bottom)
-
-//    var lubs = 0
+    val top    = new Elem(new VarBinding, typeStackLattice.top)
+    val bottom = new Elem(new VarBinding, typeStackLattice.bottom)
 
     def lub2(exceptional: Boolean)(a: Elem, b: Elem) = {
-      val IState(env1, s1) = a
-      val IState(env2, s2) = b
-
-//      lubs += 1
+      val IState(env1, _) = a
+      val IState(env2, _) = b
 
       val resultingLocals = new VarBinding
-
-      for (binding1 <- env1.iterator) {
-        val tp2 = env2(binding1._1)
-        resultingLocals += ((binding1._1, typeLattice.lub2(exceptional)(binding1._2, tp2)))
+      env1 foreach { case (k, v) =>
+        resultingLocals += ((k, typeLattice.lub2(exceptional)(v, env2(k))))
       }
-
-      for (binding2 <- env2.iterator if resultingLocals(binding2._1) eq typeLattice.bottom) {
-        val tp1 = env1(binding2._1)
-        resultingLocals += ((binding2._1, typeLattice.lub2(exceptional)(binding2._2, tp1)))
+      env2 collect { case (k, v) if resultingLocals(k) eq typeLattice.bottom =>
+        resultingLocals += ((k, typeLattice.lub2(exceptional)(v, env1(k))))
       }
-
-      IState(resultingLocals,
+      val stack =
         if (exceptional) typeStackLattice.exceptionHandlerStack
-        else typeStackLattice.lub2(exceptional)(a.stack, b.stack))
+        else typeStackLattice.lub2(exceptional)(a.stack, b.stack)
+
+      IState(resultingLocals, stack)
     }
   }
 
@@ -115,7 +103,7 @@ abstract class TypeFlowAnalysis {
     type P = BasicBlock
     val lattice = typeFlowLattice
 
-    val STRING = icodes.REFERENCE(TypeFlowAnalysis.this.global.definitions.StringClass)
+    val STRING = icodes.REFERENCE(StringClass)
     var method: IMethod = _
 
     /** Initialize the in/out maps for the analysis of the given method. */
@@ -131,8 +119,7 @@ abstract class TypeFlowAnalysis {
         }
 
         // start block has var bindings for each of its parameters
-        val entryBindings = new VarBinding
-        m.params.foreach(p => entryBindings += ((p, p.kind)))
+        val entryBindings     = new VarBinding ++= (m.params map (p => ((p, p.kind))))
         in(m.code.startBlock) = lattice.IState(entryBindings, typeStackLattice.bottom)
 
         m.exh foreach { e =>
@@ -143,7 +130,7 @@ abstract class TypeFlowAnalysis {
 
     /** reinitialize the analysis, keeping around solutions from a previous run. */
     def reinit(m: icodes.IMethod) {
-      if ((this.method eq null) || (this.method.symbol != m.symbol))
+      if (this.method == null || this.method.symbol != m.symbol)
         init(m)
       else reinit {
         for (b <- m.code.blocks; if !in.isDefinedAt(b)) {
@@ -154,12 +141,12 @@ abstract class TypeFlowAnalysis {
             }
 /*            else
               in(b)  = typeFlowLattice.bottom
-*/          }
+*/        }
           out(b) = typeFlowLattice.bottom
         }
-        for (exh <- m.exh; if !in.isDefinedAt(exh.startBlock)) {
-          worklist += exh.startBlock
-          in(exh.startBlock) = lattice.IState(in(exh.startBlock).vars, typeStackLattice.exceptionHandlerStack)
+        m.exh map (_.startBlock) filterNot (in contains _) foreach { start =>
+          worklist += start
+          in(start) = lattice.IState(in(start).vars, typeStackLattice.exceptionHandlerStack)
         }
       }
     }
@@ -187,12 +174,12 @@ abstract class TypeFlowAnalysis {
     def blockTransfer(b: BasicBlock, in: lattice.Elem): lattice.Elem = {
       b.foldLeft(in)(interpret)
     }
-
     /** The flow function of a given basic block. */
-    var flowFun: immutable.Map[BasicBlock, TransferFunction] = new immutable.HashMap
+    /* var flowFun: immutable.Map[BasicBlock, TransferFunction] = new immutable.HashMap */
 
     /** Fill flowFun with a transfer function per basic block. */
-/*    private def buildFlowFunctions(blocks: List[BasicBlock]) {
+/*
+    private def buildFlowFunctions(blocks: List[BasicBlock]) {
       def transfer(b: BasicBlock): TransferFunction = {
         var gens: List[Gen] = Nil
         var consumed: Int = 0
@@ -487,25 +474,9 @@ abstract class TypeFlowAnalysis {
               stack push ConcatClass
           }
 
-        case CALL_METHOD(method, style) => style match {
-          case Dynamic | InvokeDynamic =>
-            stack.pop(1 + method.info.paramTypes.length)
-            stack.push(toTypeKind(method.info.resultType))
-
-          case Static(onInstance) =>
-            if (onInstance) {
-              stack.pop(1 + method.info.paramTypes.length)
-              if (!method.isConstructor)
-                stack.push(toTypeKind(method.info.resultType));
-            } else {
-              stack.pop(method.info.paramTypes.length)
-              stack.push(toTypeKind(method.info.resultType))
-            }
-
-          case SuperCall(mix) =>
-            stack.pop(1 + method.info.paramTypes.length)
-            stack.push(toTypeKind(method.info.resultType))
-        }
+        case cm @ CALL_METHOD(_, _) =>
+          stack pop cm.consumed
+          cm.producedTypes foreach (stack push _)
 
         case BOX(kind) =>
           stack.pop
@@ -566,7 +537,7 @@ abstract class TypeFlowAnalysis {
 
         case LOAD_EXCEPTION() =>
           stack.pop(stack.length)
-          stack.push(typeLattice.Object)
+          stack.push(typeLattice.top)
 
         case _ =>
           dump

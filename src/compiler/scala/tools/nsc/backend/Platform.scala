@@ -29,3 +29,4 @@ trait Platform[T] {
   /** The various ways a boxed primitive might materialize at runtime. */
   def isMaybeBoxed(sym: Symbol): Boolean
 }
+
