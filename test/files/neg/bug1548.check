@@ -1,0 +1,4 @@
+S.scala:2: error: method defaultMethod overrides nothing
+  override def defaultMethod = "Boo!"
+               ^
+one error found
