@@ -85,9 +85,10 @@ class ScriptSourceFile(underlying: BatchSourceFile, content: Array[Char], overri
     else new OffsetPosition(underlying, pos.point + start)
 }
 
-trait LineOffsetMapper {
+sealed trait LineOffsetMapper {
   def content : Array[Char]
   def length : Int
+  def lineIndices : Array[Int]
 
   def isLineBreak(idx: Int) =
     if (idx >= length) false else {
@@ -104,7 +105,6 @@ trait LineOffsetMapper {
     buf += cs.length // sentinel, so that findLine below works smoother
     buf.toArray
   }
-  private lazy val lineIndices: Array[Int] = calculateLineIndices(content)
 
   def lineToOffset(index : Int): Int = lineIndices(index)
 
@@ -139,6 +139,8 @@ class BatchSourceFile(val file : AbstractFile, val content: Array[Char]) extends
   val length = content.length
   def start = 0
   def isSelfContained = true
+
+  lazy val lineIndices: Array[Int] = calculateLineIndices(content)
 }
 
 /** a file whose contents do change over time */
@@ -155,4 +157,6 @@ class MutableSourceFile(val file : AbstractFile, var content: Array[Char]) exten
   def length = content.length
   def start = 0
   def isSelfContained = true
+
+  def lineIndices : Array[Int] =  calculateLineIndices(content)
 }
