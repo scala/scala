@@ -4297,16 +4297,18 @@ A type's typeSymbol should never be inspected directly.
       case _: SingletonType =>
         tp2 match {
           case _: SingletonType =>
-            var origin1 = tp1
-            while (origin1.underlying.isInstanceOf[SingletonType]) {
-              assert(origin1 ne origin1.underlying, origin1)
-              origin1 = origin1.underlying
+            @inline def chaseDealiasedUnderlying(tp: Type): Type = {
+              var origin = tp
+              var next = origin.underlying.dealias
+              while (next.isInstanceOf[SingletonType]) {
+                assert(origin ne next, origin)
+                origin = next
+                next = origin.underlying.dealias
+              }
+              origin
             }
-            var origin2 = tp2
-            while (origin2.underlying.isInstanceOf[SingletonType]) {
-              assert(origin2 ne origin2.underlying, origin2)
-              origin2 = origin2.underlying
-            }
+            val origin1 = chaseDealiasedUnderlying(tp1)
+            val origin2 = chaseDealiasedUnderlying(tp2)
             ((origin1 ne tp1) || (origin2 ne tp2)) && (origin1 =:= origin2)
           case _ =>
             false
