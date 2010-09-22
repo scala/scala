@@ -1830,6 +1830,7 @@ trait Typers { self: Analyzer =>
     // call typedTypeDef instead
     // a TypeDef with type parameters must always be type checked in a new scope
     private def typedTypeDef0(tdef: TypeDef): TypeDef = {
+      tdef.symbol.initialize
       reenterTypeParams(tdef.tparams)
       val tparams1 = tdef.tparams mapConserve {typedTypeDef(_)}
       val typedMods = removeAnnotations(tdef.mods)

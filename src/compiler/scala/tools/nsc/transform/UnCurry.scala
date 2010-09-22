@@ -55,6 +55,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
 
   private val uncurry: TypeMap = new TypeMap {
     def apply(tp0: Type): Type = {
+      // tp0.typeSymbolDirect.initialize
       val tp = expandAlias(tp0)
       tp match {
         case MethodType(params, MethodType(params1, restpe)) =>
