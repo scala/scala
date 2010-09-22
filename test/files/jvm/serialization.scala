@@ -532,6 +532,31 @@ object Test6 {
 }
 
 //############################################################################
+// Nested objects cannot get readresolve automatically because after deserialization
+// they would be null (they are treated as lazy vals)
+@serializable
+class Outer {
+
+    @serializable
+    object Inner
+}
+
+object Test7 {
+  val x = new Outer
+  x.Inner // initialize
+  try {
+    val y:Outer = read(write(x))
+    if (y.Inner == null)
+      println("Inner object is null")
+  }
+  catch {
+  case e: Exception =>
+    println("Error in Test7: " + e)
+  }
+
+}
+
+//############################################################################
 // Test code
 
 object Test {
@@ -542,6 +567,7 @@ object Test {
     Test4_xml
     Test5
     Test6
+    Test7
   }
 }
 

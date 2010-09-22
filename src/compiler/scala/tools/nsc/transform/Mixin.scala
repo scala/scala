@@ -383,7 +383,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *  Each field has to be private and defined in the enclosing class, and there must
    *  be exactly one lazy value using it.
    *
-   *  Such fields will be nulled after the initializer has memoized the lazy value.
+   *  Such fields will be nulled after the initializer has memorized the lazy value.
    */
   def singleUseFields(templ: Template): collection.Map[Symbol, List[Symbol]] = {
     val usedIn = new mutable.HashMap[Symbol, List[Symbol]] {
@@ -402,6 +402,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   && !(currentOwner.isGetter && currentOwner.accessed == sym) // getter
                   && !definitions.isValueClass(sym.tpe.resultType.typeSymbol)
                   && sym.owner == templ.symbol.owner
+                  && !sym.hasFlag(LAZY)
                   && !tree.isDef) {
                 log("added use in: " + currentOwner + " -- " + tree)
                 usedIn(sym) ::= currentOwner
@@ -429,7 +430,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   class MixinTransformer(unit : CompilationUnit) extends Transformer {
 
     /** Within a static implementation method: the parameter referring to the
-     *  current object undefined evrywhere else.
+     *  current object undefined everywhere else.
      */
     private var self: Symbol = _
 
@@ -719,6 +720,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        *  the class constructor is changed to set the initialized bits.
        */
       def addCheckedGetters(clazz: Symbol, stats: List[Tree]): List[Tree] = {
+        // TODO: not used?
         def findLazyAssignment(stats: List[Tree]): Tree = (
           for (s @ Assign(lhs, _) <- stats ; if lhs.symbol hasFlag LAZY) yield s
         ) head // if there's no assignment then it's a bug and we crash
@@ -905,11 +907,6 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                 } else
                   gen.mkCheckInit(accessedRef)
               })
-            } else if (sym.isModule && !(sym hasFlag LIFTED | BRIDGE)) {
-              // add modules
-              val vdef = gen.mkModuleVarDef(sym)
-              addDef(position(sym), vdef)
-              addDef(position(sym), gen.mkCachedModuleAccessDef(sym, vdef.symbol))
             } else if (!sym.isMethod) {
               // add fields
               addDef(position(sym), ValDef(sym))
