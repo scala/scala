@@ -200,6 +200,25 @@ self =>
     def companion = IterationA
   }
 
+  object IterationZ extends SeqBenchCompanion {
+    override def defaultSize = 50000
+    def benchName = "iter-z"
+    def apply(sz: Int, p: Int, w: String) = new IterationZ(sz, p, w)
+  }
+
+  class IterationZ(val size: Int, val parallelism: Int, val runWhat: String)
+  extends SeqBench with SeqViewBench {
+    val zipped = operators.sequence(size)
+    def comparisonMap = collection.Map("seqview" -> runseqview _)
+    def runseq = {
+      val withzip = this.seqcoll.zip(zipped)
+      withzip.foreach(operators.eachPairFun)
+    }
+    def runpar = this.parcoll.zip(zipped).foreach(operators.eachPairFun)
+    def runseqview = this.seqview.zip(zipped).foreach(operators.eachPairFun)
+    def companion = IterationZ
+  }
+
   object Reduce extends SeqBenchCompanion {
     override def defaultSize = 50000
     def benchName = "reduce";

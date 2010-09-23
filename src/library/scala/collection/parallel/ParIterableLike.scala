@@ -604,6 +604,12 @@ self =>
     executeAndWait(new CopyToArray(start, len, xs, parallelIterator))
   }
 
+  override def zip[U >: T, S, That](that: Iterable[S])(implicit bf: CanBuildFrom[Repr, (U, S), That]): That = if (bf.isParallel && that.isParSeq) {
+    val pbf = bf.asParallel
+    val thatseq = that.asParSeq
+    executeAndWaitResult(new Zip(pbf, parallelIterator, thatseq.parallelIterator) mapResult { _.result });
+  } else super.zip(that)(bf)
+
   override def view = new ParIterableView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr
     def seq = self.seq.view
@@ -936,6 +942,20 @@ self =>
     }
   }
 
+  protected[this] class Zip[U >: T, S, That](pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParIterableIterator[T], val othpit: PreciseSplitter[S])
+  extends Transformer[Combiner[(U, S), That], Zip[U, S, That]] {
+    var result: Result = null
+    def leaf(prev: Option[Result]) = result = pit.zip2combiner[U, S, That](othpit, pbf(self.repr))
+    protected[this] def newSubtask(p: ParIterableIterator[T]) = unsupported
+    override def split = {
+      val pits = pit.split
+      val sizes = pits.map(_.remaining)
+      val opits = othpit.psplit(sizes: _*)
+      (pits zip opits) map { p => new Zip(pbf, p._1, p._2) }
+    }
+    override def merge(that: Zip[U, S, That]) = result = result combine that.result
+  }
+
   protected[this] class CopyToArray[U >: T, This >: Repr](from: Int, len: Int, array: Array[U], protected[this] val pit: ParIterableIterator[T])
   extends Accessor[Unit, CopyToArray[U, This]] {
     var result: Unit = ()
@@ -997,6 +1017,7 @@ self =>
     }
   }
 
+  @deprecated
   protected[this] class PartialScan[U >: T, A >: U](z: U, op: (U, U) => U, val from: Int, val len: Int, array: Array[A], protected[this] val pit: ParIterableIterator[T])
   extends Accessor[ScanTree[U], PartialScan[U, A]] {
     var result: ScanTree[U] = null
@@ -1043,6 +1064,7 @@ self =>
     }
   }
 
+  @deprecated
   protected[this] class ApplyScanTree[U >: T, A >: U](first: Option[U], op: (U, U) => U, st: ScanTree[U], array: Array[A])
   extends super.Task[Unit, ApplyScanTree[U, A]] {
     var result = ();

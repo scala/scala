@@ -219,6 +219,14 @@ trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
     }
   }
 
+  def zip2combiner[U >: T, S, That](otherpit: Iterator[S], cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
+    cb.sizeHint(remaining)
+    while (hasNext && otherpit.hasNext) {
+      cb += ((next, otherpit.next))
+    }
+    cb
+  }
+
 }
 
 
@@ -307,17 +315,6 @@ trait AugmentedSeqIterator[+T] extends AugmentedIterableIterator[T] {
     cb
   }
 
-  /** Iterator `otherpit` must have equal or more elements.
-   */
-  def zip2combiner[U >: T, S, That](otherpit: Iterator[S], cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
-    //val cb = cbf(repr)
-    cb.sizeHint(remaining)
-    while (hasNext) {
-      cb += ((next, otherpit.next))
-    }
-    cb
-  }
-
 }
 
 
@@ -400,7 +397,22 @@ self =>
     def split: Seq[ParIterableIterator[U]] = if (firstNonEmpty) Seq(curr, that) else curr.split
   }
 
-  def appendIterable[U >: T, PI <: ParIterableIterator[U]](that: PI) = new Appended[U, PI](that)
+  def appendParIterable[U >: T, PI <: ParIterableIterator[U]](that: PI) = new Appended[U, PI](that)
+
+  class Zipped[S](protected val that: ParSeqIterator[S]) extends ParIterableIterator[(T, S)] {
+    var signalDelegate = self.signalDelegate
+    def hasNext = self.hasNext && that.hasNext
+    def next = (self.next, that.next)
+    def remaining = self.remaining min that.remaining
+    def split: Seq[ParIterableIterator[(T, S)]] = {
+      val selfs = self.split
+      val sizes = selfs.map(_.remaining)
+      val thats = that.psplit(sizes: _*)
+      (selfs zip thats) map { p => p._1 zipParSeq p._2 }
+    }
+  }
+
+  def zipParSeq[S](that: ParSeqIterator[S]) = new Zipped(that)
 
 }
 
@@ -469,12 +481,19 @@ self =>
       val thats = that.psplit(thatsizes: _*)
 
       // appended last in self with first in rest if necessary
-      if (appendMiddle) selfs.init ++ Seq(selfs.last.appendSeq[U, ParSeqIterator[U]](thats.head)) ++ thats.tail
+      if (appendMiddle) selfs.init ++ Seq(selfs.last.appendParSeq[U, ParSeqIterator[U]](thats.head)) ++ thats.tail
       else selfs ++ thats
     } else curr.asInstanceOf[ParSeqIterator[U]].psplit(sizes: _*)
   }
 
-  def appendSeq[U >: T, PI <: ParSeqIterator[U]](that: PI) = new Appended[U, PI](that)
+  def appendParSeq[U >: T, PI <: ParSeqIterator[U]](that: PI) = new Appended[U, PI](that)
+
+  class Zipped[S](ti: ParSeqIterator[S]) extends super.Zipped[S](ti) with ParSeqIterator[(T, S)] {
+    override def split: Seq[ParSeqIterator[(T, S)]] = super.split.asInstanceOf[Seq[ParSeqIterator[(T, S)]]]
+    def psplit(szs: Int*) = (self.psplit(szs: _*) zip that.psplit(szs: _*)) map { p => p._1 zipParSeq p._2 }
+  }
+
+  override def zipParSeq[S](that: ParSeqIterator[S]) = new Zipped(that)
 
 }
 

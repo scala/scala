@@ -56,6 +56,10 @@ object DummyOperators extends Operators[Dummy] {
   val eachFun: Dummy => Unit = (d: Dummy) => {
     d.dummy
   }
+  override val eachPairFun: ((Dummy, Dummy)) => Unit = p => {
+    p._1.dummy
+    p._2.dummy
+  }
   override def sequence(sz: Int): Seq[Dummy] = {
     val pa = new collection.parallel.mutable.ParArray[Dummy](sz)
     for (i <- 0 until sz) pa(i) = new Dummy(i)

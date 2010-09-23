@@ -15,6 +15,7 @@ trait Operators[T] {
   def heavymapper: T => T
   def taker: T => Boolean
   def eachFun: T => Unit
+  def eachPairFun: ((T, T)) => Unit = error("unsupported")
   def sequence(sz: Int): Seq[T] = error("unsupported")
 
 }

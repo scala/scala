@@ -8,6 +8,8 @@ import scala.collection.TraversableViewLike
 import scala.collection.IterableView
 import scala.collection.IterableViewLike
 import scala.collection.generic.CanBuildFrom
+import scala.collection.generic.CanCombineFrom
+import scala.collection.parallel.immutable.ParRange
 
 
 
@@ -37,7 +39,7 @@ extends IterableView[T, Coll]
    with ParIterable[T]
    with ParIterableLike[T, This, ThisSeq]
 {
-  self =>
+self =>
 
   override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner");
 
@@ -64,36 +66,104 @@ extends IterableView[T, Coll]
 
   // only use if other is a ParIterable, otherwise force
   trait Appended[U >: T] extends super.Appended[U] with Transformed[U] {
-    def restAsParIterable: ParIterable[U] = rest.asParIterable
-    def parallelIterator: ParIterableIterator[U] = self.parallelIterator.appendIterable[U, ParIterableIterator[U]](restAsParIterable.parallelIterator)
+    def restPar: ParIterable[U] = rest.asParIterable
+    def parallelIterator: ParIterableIterator[U] = self.parallelIterator.appendParIterable[U, ParIterableIterator[U]](restPar.parallelIterator)
     def seq = self.seq.++(rest).asInstanceOf[IterableView[U, CollSeq]]
   }
 
   trait Forced[S] extends super.Forced[S] with Transformed[S] {
     def forcedPar: ParIterable[S] = forced.asParIterable
     def parallelIterator: ParIterableIterator[S] = forcedPar.parallelIterator
-    // cheating here - knowing that `underlying` of `self.seq` is of type `CollSeq`,
-    // we use it to obtain a view of the correct type - not the most efficient thing
-    // in the universe, but without making `newForced` more accessible, or adding
-    // a `forced` method to `SeqView`, this is the best we can do
-    def seq = self.seq.take(0).++(forced).asInstanceOf[IterableView[S, CollSeq]]
+    def seq = forcedPar.seq.view.asInstanceOf[IterableView[S, CollSeq]]
   }
+
+  // only use if other is a ParSeq, otherwise force
+  trait Zipped[S] extends super.Zipped[S] with Transformed[(T, S)] {
+    def otherPar: ParSeq[S] = other.asParSeq
+    def parallelIterator: ParIterableIterator[(T, S)] = self.parallelIterator zipParSeq otherPar.parallelIterator
+    def seq = (self.seq zip other).asInstanceOf[IterableView[(T, S), CollSeq]]
+  }
+
+  // only use if other is a ParSeq, otherwise force
+  // trait ZippedAll[U >: T, S] extends Transformed[(U, S)] {
+  //   def otherPar: ParSeq[S] = other.asParSeq
+  //   def parallelIterator: ParIterableIterator[(T, S)] = self.parallelIterator zipAllParSeq otherPar.parallelIterator
+  //   def seq =
+  // }
+
+  protected[this] def thisParSeq: ParSeq[T] = mutable.ParArray.fromTraversables(this.iterator)
 
   /* operation overrides */
 
+  override def take(n: Int): This = newSliced(0, n).asInstanceOf[This]
+  override def drop(n: Int): This = newSliced(n, parallelIterator.remaining).asInstanceOf[This]
+  override def splitAt(n: Int): (This, This) = (take(n), drop(n))
   override def slice(from: Int, until: Int): This = newSliced(from, until).asInstanceOf[This]
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[This, S, That]): That = newMapped(f).asInstanceOf[That]
-  override def ++[U >: T, That](xs: TraversableOnce[U])(implicit bf: CanBuildFrom[This, U, That]): That = newAppended(xs.toTraversable).asInstanceOf[That]
+  override def ++[U >: T, That](xs: TraversableOnce[U])(implicit bf: CanBuildFrom[This, U, That]): That = newAppendedTryParIterable(xs.toTraversable).asInstanceOf[That]
+
+  override def filter(p: T => Boolean): This = newForced(thisParSeq.filter(p)).asInstanceOf[This]
+  override def filterNot(p: T => Boolean): This = newForced(thisParSeq.filterNot(p)).asInstanceOf[This]
+  override def partition(p: T => Boolean): (This, This) = {
+    val (t, f) = thisParSeq.partition(p)
+    (newForced(t).asInstanceOf[This], newForced(f).asInstanceOf[This])
+  }
+  override def takeWhile(p: T => Boolean): This = newForced(thisParSeq.takeWhile(p)).asInstanceOf[This]
+  override def dropWhile(p: T => Boolean): This = newForced(thisParSeq.dropWhile(p)).asInstanceOf[This]
+  override def span(p: T => Boolean): (This, This) = {
+    val (pref, suff) = thisParSeq.span(p)
+    (newForced(pref).asInstanceOf[This], newForced(suff).asInstanceOf[This])
+  }
+  override def flatMap[S, That](f: T => Traversable[S])(implicit bf: CanBuildFrom[This, S, That]): That = newForced(thisParSeq.flatMap(f)).asInstanceOf[That]
+
+  override def zip[U >: T, S, That](that: Iterable[S])(implicit bf: CanBuildFrom[This, (U, S), That]): That = newZippedTryParSeq(that).asInstanceOf[That]
+  override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[This, (U, Int), That]): That =
+    newZipped(new ParRange(0, parallelIterator.remaining, 1, false)).asInstanceOf[That]
+
+  override def force[U >: T, That](implicit bf: CanBuildFrom[Coll, U, That]) = bf ifParallel { pbf =>
+    executeAndWaitResult(new Force(pbf, parallelIterator) mapResult { _.result })
+  } otherwise {
+    val b = bf(underlying)
+    b ++= this.iterator
+    b.result
+  }
 
   /* wrapper virtual ctors */
 
   protected override def newSliced(f: Int, u: Int): Transformed[T] = new Sliced { val from = f; val until = u }
   protected override def newMapped[S](f: T => S): Transformed[S] = new Mapped[S] { val mapping = f }
   protected override def newForced[S](xs: => Seq[S]): Transformed[S] = new Forced[S] { val forced = xs }
-  protected override def newAppended[U >: T](that: Traversable[U]): Transformed[U] = {
+  protected override def newAppended[U >: T](that: Traversable[U]): Transformed[U] = new Appended[U] { val rest = that }
+  protected override def newDroppedWhile(p: T => Boolean) = unsupported
+  protected override def newTakenWhile(p: T => Boolean) = unsupported
+  protected override def newFlatMapped[S](f: T => Traversable[S]) = unsupported
+  protected override def newFiltered(p: T => Boolean) = unsupported
+  protected override def newZipped[S](that: Iterable[S]): Transformed[(T, S)] = new Zipped[S] { val other = that }
+
+  /* argument sequence dependent ctors */
+
+  protected def newForcedTryParIterable[S](xs: => Seq[S]): Transformed[S] = {
+    if (xs.isParIterable) newForced[S](xs)
+    else newForced(mutable.ParArray.fromTraversables(xs))
+  }
+  protected def newAppendedTryParIterable[U >: T](that: Traversable[U]): Transformed[U] = {
     // we only append if `that` is a parallel iterable, i.e. it has a splitter
-    if (that.isParIterable) new Appended[U] { val rest = that }
-    else newForced(mutable.ParArray.fromTraversables(this, that))
+    if (that.isParIterable) newAppended(that)
+    else newAppended(mutable.ParArray.fromTraversables(that))
+  }
+  protected def newZippedTryParSeq[S](that: Iterable[S]): Transformed[(T, S)] = {
+    if (that.isParSeq) newZipped[S](that)
+    else newZipped[S](mutable.ParArray.fromTraversables(that))
+  }
+
+  /* tasks */
+
+  protected[this] class Force[U >: T, That](cbf: CanCombineFrom[Coll, U, That], protected[this] val pit: ParIterableIterator[T])
+  extends Transformer[Combiner[U, That], Force[U, That]] {
+    var result: Combiner[U, That] = null
+    def leaf(prev: Option[Combiner[U, That]]) = result = pit.copy2builder[U, That, Combiner[U, That]](reuse(prev, cbf(self.underlying)))
+    protected[this] def newSubtask(p: ParIterableIterator[T]) = new Force(cbf, p)
+    override def merge(that: Force[U, That]) = result = result combine that.result
   }
 
 }
