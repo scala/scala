@@ -41,7 +41,7 @@ extends IterableView[T, Coll]
 
   override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner");
 
-  type SCPI = SignalContextPassingIterator[ParIterator]
+  type CPI = SignalContextPassingIterator[ParIterator]
 
   /* wrappers */
 
