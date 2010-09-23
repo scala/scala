@@ -26,7 +26,12 @@ abstract class InterruptReq {
 
   /** To be called from interrupting client to get result fo interrupt */
   def getResult(): R = synchronized {
-    while (result.isEmpty) wait()
+    while (result.isEmpty) {
+      try {
+	wait()
+      } catch { case _ : InterruptedException => () }
+    }
+
     result.get match {
       case Left(res) => res
       case Right(t) => throw t
