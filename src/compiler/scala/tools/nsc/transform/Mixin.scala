@@ -155,11 +155,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       /** Create a new getter. Getters are never private or local. They are
        *  always accessors and deferred. */
       def newGetter(field: Symbol): Symbol = {
-        //println("creating new getter for "+field+field.locationString+(field hasFlag MUTABLE))
+        // println("creating new getter for "+ field +" : "+ field.info +" at "+ field.locationString+(field hasFlag MUTABLE))
+        // atPhase(currentRun.erasurePhase){
+        //   println("before erasure: "+ (field.info))
+        // }
         clazz.newMethod(field.pos, nme.getterName(field.name))
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED |
                      (if (field hasFlag MUTABLE) 0 else STABLE))
-          .setInfo(MethodType(List(), field.info))
+          .setInfo(MethodType(List(), field.info)) // TODO preserve pre-erasure info?
       }
 
       /** Create a new setter. Setters are never private or local. They are
@@ -169,7 +172,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         val setterName = nme.getterToSetter(nme.getterName(field.name))
         val setter = clazz.newMethod(field.pos, setterName)
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED)
-        setter.setInfo(MethodType(setter.newSyntheticValueParams(List(field.info)), UnitClass.tpe))
+        setter.setInfo(MethodType(setter.newSyntheticValueParams(List(field.info)), UnitClass.tpe))  // TODO preserve pre-erasure info?
         if (needsExpandedSetterName(field)) {
           //println("creating expanded setter from "+field)
           setter.name = nme.expandedSetterName(setter.name, clazz)
@@ -214,6 +217,22 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
    *      - for every module in T, add a module
    */
   def addMixedinMembers(clazz: Symbol, unit : CompilationUnit) {
+    def cloneBeforeErasure(iface: Symbol, clazz: Symbol, imember: Symbol): Symbol = {
+      val newSym = atPhase(currentRun.erasurePhase){
+        val res = imember.cloneSymbol(clazz)
+        // since we used the member (imember) from the interface that represents the trait that's being mixed in,
+        // have to instantiate the interface type params (that may occur in imember's info) as they are seen from the class
+        // we can't use the member that we get from the implementation class, as it's a clone that was made after erasure,
+        // and thus it does not know its info at the beginning of erasure anymore
+        // optimize: no need if iface has no typeparams
+        if(iface.typeParams nonEmpty) res.setInfo(clazz.thisType.baseType(iface).memberInfo(imember))
+        res
+      } // clone before erasure got rid of type info we'll need to generate a javaSig
+      // now we'll have the type info at (the beginning of) erasure in our history,
+      newSym.updateInfo(imember.info.cloneInfo(newSym)) // and now newSym has the info that's been transformed to fit this period (no need for asSeenFrom as phase.erasedTypes)
+      newSym // TODO: verify we need the updateInfo and document why
+    }
+
     if (!(clazz hasFlag JAVA) && (treatedClassInfos get clazz) != Some(clazz.info)) {
       treatedClassInfos(clazz) = clazz.info
 
@@ -237,21 +256,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             // Console.println("mixin member "+member+":"+member.tpe+member.locationString+" "+imember+" "+imember.overridingSymbol(clazz)+" to "+clazz+" with scope "+clazz.info.decls)//DEBUG
             if (imember.overridingSymbol(clazz) == NoSymbol &&
                 clazz.info.findMember(member.name, 0, lateDEFERRED, false).alternatives.contains(imember)) {
-                  val newSym = atPhase(currentRun.erasurePhase){
-                      val res = imember.cloneSymbol(clazz)
-                      // since we used the member (imember) from the interface that represents the trait that's being mixed in,
-                      // have to instantiate the interface type params (that may occur in imember's info) as they are seen from the class
-                      // we can't use the member that we get from the implementation class, as it's a clone that was made after erasure,
-                      // and thus it does not know its info at the beginning of erasure anymore
-                      // optimize: no need if iface has no typeparams
-                      if(iface.typeParams nonEmpty) res.setInfo(clazz.thisType.baseType(iface).memberInfo(imember))
-                      res
-                    } // clone before erasure got rid of type info we'll need to generate a javaSig
-                  // now we'll have the type info at (the beginning of) erasure in our history,
-                  newSym.updateInfo(imember.info.cloneInfo(newSym)) // and now newSym has the info that's been transformed to fit this period (no need for asSeenFrom as phase.erasedTypes)
                   val member1 = addMember(
                     clazz,
-                    newSym setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
+                    cloneBeforeErasure(iface, clazz, imember) setPos clazz.pos resetFlag (DEFERRED | lateDEFERRED))
                   member1.asInstanceOf[TermSymbol] setAlias member;
                 }
           }
@@ -259,7 +266,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       /** Mix in members of trait mixinClass into class clazz. Also,
-       *  for each lazy field in mixinClass, add a link from its mixed in member to it's
+       *  for each lazy field in mixinClass, add a link from its mixed in member to its
        *  initializer method inside the implclass.
        */
       def mixinTraitMembers(mixinClass: Symbol) {
@@ -272,9 +279,13 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               // mixin field accessors
               val member1 = addMember(
                 clazz,
-                member.cloneSymbol(clazz)
+                cloneBeforeErasure(mixinClass, clazz, member) //member.cloneSymbol(clazz)
                   setPos clazz.pos
                   resetFlag (DEFERRED | lateDEFERRED))
+              // println("mixing in: "+ (member, member.info, member1.info))
+              // atPhase(currentRun.erasurePhase){
+              //   println("before erasure: "+ (member.info, member1.info))
+              // }
               if (member.hasFlag(LAZY)) {
                 var init = implClass(mixinClass).info.decl(member.name)
                 assert(init != NoSymbol, "Could not find initializer for " + member.name)
@@ -288,17 +299,19 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   case MethodType(Nil, TypeRef(_, UnitClass, _)) =>
                     // member is a value of type unit. No field needed
                     ;
-                  case _ =>
+                  case _ => // otherwise mixin a field as well
                     // atPhase: the private field is moved to the implementation class by erasure,
                     // so it can no longer be found in the member's owner (the trait)
                     val accessed = atPhase(currentRun.picklerPhase)(member.accessed)
-                    // otherwise mixin a field as well
+                    val sym = atPhase(currentRun.erasurePhase){ // #3857, need to retain info before erasure when cloning (since cloning only carries over the current entry in the type history)
+                      clazz.newValue(member.pos, nme.getterToLocal(member.name)).setInfo(member.tpe.resultType) // so we have a type history entry before erasure
+                    }
+                    sym.updateInfo(member.tpe.resultType) // info at current phase
                     addMember(clazz,
-                              clazz.newValue(member.pos, nme.getterToLocal(member.name))
-                              setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
-                              setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
-                              setInfo member.tpe.resultType
-                              setAnnotations accessed.annotations)
+                              sym
+                                setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
+                                setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
+                                setAnnotations accessed.annotations)
                 }
             }
           } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
