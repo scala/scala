@@ -2656,6 +2656,7 @@ A type's typeSymbol should never be inspected directly.
       case RefinedType(parents, decls) => RefinedType(parents map (appliedType(_, args)), decls) // MO to AM: please check
       case TypeBounds(lo, hi) => TypeBounds(appliedType(lo, args), appliedType(hi, args))
       case tv@TypeVar(_, constr) => tv.applyArgs(args)
+      case AnnotatedType(annots, underlying, self) => AnnotatedType(annots, appliedType(underlying, args), self)
       case ErrorType => tycon
       case WildcardType => tycon // needed for neg/t0226
       case _ => abort(debugString(tycon))
@@ -4398,11 +4399,10 @@ A type's typeSymbol should never be inspected directly.
     ||
     tp2.typeSymbol == AnyClass // @M Any and Nothing are super-type resp. subtype of every well-kinded type
     || // @M! normalize reduces higher-kinded case to PolyType's
-    ((tp1.normalize, tp2.normalize) match {
+    ((tp1.normalize.withoutAnnotations , tp2.normalize.withoutAnnotations) match {
       case (PolyType(tparams1, res1), PolyType(tparams2, res2)) => // @assume tp1.isHigherKinded && tp2.isHigherKinded (as they were both normalized to PolyType)
         tparams1.length == tparams2.length && {
-          if (tparams1.isEmpty) res1 <:< res2 // fast-path: monomorphic nullary method type
-          else if (tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
+          if (tparams1.head.owner.isMethod) {  // fast-path: polymorphic method type -- type params cannot be captured
             (tparams1 corresponds tparams2)((p1, p2) => p2.info.substSym(tparams2, tparams1) <:< p1.info) &&
             res1 <:< res2.substSym(tparams2, tparams1)
           } else { // normalized higher-kinded type
@@ -4421,7 +4421,7 @@ A type's typeSymbol should never be inspected directly.
             // val tpsFresh = tparams1 map (_.cloneSymbol)
             // for (tpFresh <- tpsFresh) tpFresh.setInfo(tpFresh.info.substSym(tparams1, tpsFresh))
         }
-      }
+      } && annotationsConform(tp1.normalize, tp2.normalize)
       case (_, _) => false // @assume !tp1.isHigherKinded || !tp2.isHigherKinded
       // --> thus, cannot be subtypes (Any/Nothing has already been checked)
     }))
