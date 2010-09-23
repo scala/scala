@@ -85,11 +85,11 @@ self =>
   }
 
   // only use if other is a ParSeq, otherwise force
-  // trait ZippedAll[U >: T, S] extends Transformed[(U, S)] {
-  //   def otherPar: ParSeq[S] = other.asParSeq
-  //   def parallelIterator: ParIterableIterator[(T, S)] = self.parallelIterator zipAllParSeq otherPar.parallelIterator
-  //   def seq =
-  // }
+  trait ZippedAll[U >: T, S] extends super.ZippedAll[U, S] with Transformed[(U, S)] {
+    def otherPar: ParSeq[S] = other.asParSeq
+    def parallelIterator: ParIterableIterator[(U, S)] = self.parallelIterator.zipAllParSeq(otherPar.parallelIterator, thisElem, thatElem)
+    def seq = (self.seq.zipAll(other, thisElem, thatElem)).asInstanceOf[IterableView[(U, S), CollSeq]]
+  }
 
   protected[this] def thisParSeq: ParSeq[T] = mutable.ParArray.fromTraversables(this.iterator)
 
@@ -119,6 +119,8 @@ self =>
   override def zip[U >: T, S, That](that: Iterable[S])(implicit bf: CanBuildFrom[This, (U, S), That]): That = newZippedTryParSeq(that).asInstanceOf[That]
   override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[This, (U, Int), That]): That =
     newZipped(new ParRange(0, parallelIterator.remaining, 1, false)).asInstanceOf[That]
+  override def zipAll[S, U >: T, That](that: Iterable[S], thisElem: U, thatElem: S)(implicit bf: CanBuildFrom[This, (U, S), That]): That =
+    newZippedAllTryParSeq(that, thisElem, thatElem).asInstanceOf[That]
 
   override def force[U >: T, That](implicit bf: CanBuildFrom[Coll, U, That]) = bf ifParallel { pbf =>
     executeAndWaitResult(new Force(pbf, parallelIterator) mapResult { _.result })
@@ -139,6 +141,11 @@ self =>
   protected override def newFlatMapped[S](f: T => Traversable[S]) = unsupported
   protected override def newFiltered(p: T => Boolean) = unsupported
   protected override def newZipped[S](that: Iterable[S]): Transformed[(T, S)] = new Zipped[S] { val other = that }
+  protected override def newZippedAll[U >: T, S](that: Iterable[S], _thisElem: U, _thatElem: S): Transformed[(U, S)] = new ZippedAll[U, S] {
+    val other = that
+    val thisElem = _thisElem
+    val thatElem = _thatElem
+  }
 
   /* argument sequence dependent ctors */
 
@@ -154,6 +161,10 @@ self =>
   protected def newZippedTryParSeq[S](that: Iterable[S]): Transformed[(T, S)] = {
     if (that.isParSeq) newZipped[S](that)
     else newZipped[S](mutable.ParArray.fromTraversables(that))
+  }
+  protected def newZippedAllTryParSeq[S, U >: T](that: Iterable[S], thisElem: U, thatElem: S): Transformed[(U, S)] = {
+    if (that.isParSeq) newZippedAll(that, thisElem, thatElem)
+    else newZippedAll(mutable.ParArray.fromTraversables(that), thisElem, thatElem)
   }
 
   /* tasks */

@@ -75,11 +75,12 @@ self =>
     override def seq = (self.seq zip other).asInstanceOf[SeqView[(T, S), CollSeq]]
   }
 
-  // TODO from
-  trait ZippedAll[T1 >: T, S] extends super.ZippedAll[T1, S] with Transformed[(T1, S)] {
-    def seq = self.seq.zipAll(other, thisElem, thatElem).asInstanceOf[SeqView[(T1, S), CollSeq]]
+  trait ZippedAll[U >: T, S] extends super[SeqViewLike].ZippedAll[U, S] with super[ParIterableViewLike].ZippedAll[U, S] with Transformed[(U, S)] {
+    override def parallelIterator: ParSeqIterator[(U, S)] = self.parallelIterator.zipAllParSeq(otherPar.parallelIterator, thisElem, thatElem)
+    override def seq = (self.seq.zipAll(other, thisElem, thatElem)).asInstanceOf[SeqView[(U, S), CollSeq]]
   }
 
+  // TODO from
   trait Reversed extends super.Reversed with Transformed[T] {
     def seq = self.seq.reverse
   }
@@ -107,9 +108,13 @@ self =>
   }
   protected override def newMapped[S](f: T => S): Transformed[S] = new Mapped[S] { val mapping = f }
   protected override def newZipped[S](that: Iterable[S]): Transformed[(T, S)] = new Zipped[S] { val other = that }
+  protected override def newZippedAll[U >: T, S](that: Iterable[S], _thisElem: U, _thatElem: S): Transformed[(U, S)] = new ZippedAll[U, S] {
+    val other = that
+    val thisElem = _thisElem
+    val thatElem = _thatElem
+  }
 
   // TODO from here
-  protected override def newZippedAll[T1 >: T, S](that: Iterable[S], _thisElem: T1, _thatElem: S): Transformed[(T1, S)] = new ZippedAll[T1, S] { val other = that; val thisElem = _thisElem; val thatElem = _thatElem }
   protected override def newReversed: Transformed[T] = new Reversed { }
   protected override def newPatched[U >: T](_from: Int, _patch: Seq[U], _replaced: Int): Transformed[U] = new Patched[U] { val from = _from; val patch = _patch; val replaced = _replaced }
   protected override def newPrepended[U >: T](elem: U): Transformed[U] = new Prepended[U] { protected[this] val fst = elem }

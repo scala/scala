@@ -610,6 +610,14 @@ self =>
     executeAndWaitResult(new Zip(pbf, parallelIterator, thatseq.parallelIterator) mapResult { _.result });
   } else super.zip(that)(bf)
 
+  override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[Repr, (U, Int), That]): That = this zip new immutable.ParRange(0, size, 1, false)
+
+  override def zipAll[S, U >: T, That](that: Iterable[S], thisElem: U, thatElem: S)(implicit bf: CanBuildFrom[Repr, (U, S), That]): That = if (bf.isParallel && that.isParSeq) {
+    val pbf = bf.asParallel
+    val thatseq = that.asParSeq
+    executeAndWaitResult(new ZipAll(size max thatseq.length, thisElem, thatElem, pbf, parallelIterator, thatseq.parallelIterator) mapResult { _.result });
+  } else super.zipAll(that, thisElem, thatElem)(bf)
+
   override def view = new ParIterableView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr
     def seq = self.seq.view
@@ -942,7 +950,7 @@ self =>
     }
   }
 
-  protected[this] class Zip[U >: T, S, That](pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParIterableIterator[T], val othpit: PreciseSplitter[S])
+  protected[this] class Zip[U >: T, S, That](pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParIterableIterator[T], val othpit: ParSeqIterator[S])
   extends Transformer[Combiner[(U, S), That], Zip[U, S, That]] {
     var result: Result = null
     def leaf(prev: Option[Result]) = result = pit.zip2combiner[U, S, That](othpit, pbf(self.repr))
@@ -954,6 +962,28 @@ self =>
       (pits zip opits) map { p => new Zip(pbf, p._1, p._2) }
     }
     override def merge(that: Zip[U, S, That]) = result = result combine that.result
+  }
+
+  protected[this] class ZipAll[U >: T, S, That]
+    (len: Int, thiselem: U, thatelem: S, pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParIterableIterator[T], val othpit: ParSeqIterator[S])
+  extends Transformer[Combiner[(U, S), That], ZipAll[U, S, That]] {
+    var result: Result = null
+    def leaf(prev: Option[Result]) = result = pit.zipAll2combiner[U, S, That](othpit, thiselem, thatelem, pbf(self.repr))
+    protected[this] def newSubtask(p: ParIterableIterator[T]) = unsupported
+    override def split = if (pit.remaining <= len) {
+      val pits = pit.split
+      val sizes = pits.map(_.remaining)
+      val opits = othpit.psplit(sizes: _*)
+      ((pits zip opits) zip sizes) map { t => new ZipAll(t._2, thiselem, thatelem, pbf, t._1._1, t._1._2) }
+    } else {
+      val opits = othpit.psplit(pit.remaining)
+      val diff = len - pit.remaining
+      Seq(
+        new ZipAll(pit.remaining, thiselem, thatelem, pbf, pit, opits(0)), // nothing wrong will happen with the cast below - elem T is never accessed
+        new ZipAll(diff, thiselem, thatelem, pbf, immutable.repetition(thiselem, diff).parallelIterator.asInstanceOf[ParIterableIterator[T]], opits(1))
+        )
+    }
+    override def merge(that: ZipAll[U, S, That]) = result = result combine that.result
   }
 
   protected[this] class CopyToArray[U >: T, This >: Repr](from: Int, len: Int, array: Array[U], protected[this] val pit: ParIterableIterator[T])

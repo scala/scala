@@ -12,6 +12,8 @@ package scala.collection.parallel
 
 package object immutable {
 
+  def repetition[T](elem: T, len: Int) = new Repetition(elem, len)
+
   /** A (parallel) sequence consisting of `length` elements `elem`. Used in the `padTo` method.
    *
    *  @tparam T        type of the elements

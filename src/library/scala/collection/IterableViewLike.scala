@@ -95,6 +95,9 @@ extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] wit
   override def zipAll[B, A1 >: A, That](that: Iterable[B], thisElem: A1, thatElem: B)(implicit bf: CanBuildFrom[This, (A1, B), That]): That =
     newZippedAll(that, thisElem, thatElem).asInstanceOf[That]
 
+  /** Boilerplate method, to override in each subclass
+   *  This method could be eliminated if Scala had virtual classes
+   */
   protected def newZipped[B](that: Iterable[B]): Transformed[(A, B)] = new Zipped[B] {
     val other = that
   }
@@ -103,10 +106,6 @@ extends Iterable[A] with IterableLike[A, This] with TraversableView[A, Coll] wit
     val thisElem = _thisElem
     val thatElem = _thatElem
   }
-
-  /** Boilerplate method, to override in each subclass
-   *  This method could be eliminated if Scala had virtual classes
-   */
   protected override def newForced[B](xs: => Seq[B]): Transformed[B] = new Forced[B] { val forced = xs }
   protected override def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
   protected override def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }

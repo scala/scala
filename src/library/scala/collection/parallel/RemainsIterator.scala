@@ -8,6 +8,8 @@ import scala.collection.generic.DelegatedSignalling
 import scala.collection.generic.CanCombineFrom
 import scala.collection.mutable.Builder
 import scala.collection.Iterator.empty
+import scala.collection.parallel.immutable.repetition
+
 
 
 trait RemainsIterator[+T] extends Iterator[T] {
@@ -219,11 +221,19 @@ trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
     }
   }
 
-  def zip2combiner[U >: T, S, That](otherpit: Iterator[S], cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
-    cb.sizeHint(remaining)
+  def zip2combiner[U >: T, S, That](otherpit: RemainsIterator[S], cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
+    cb.sizeHint(remaining min otherpit.remaining)
     while (hasNext && otherpit.hasNext) {
       cb += ((next, otherpit.next))
     }
+    cb
+  }
+
+  def zipAll2combiner[U >: T, S, That](that: RemainsIterator[S], thiselem: U, thatelem: S, cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
+    cb.sizeHint(remaining max that.remaining)
+    while (this.hasNext && that.hasNext) cb += ((this.next, that.next))
+    while (this.hasNext) cb += ((this.next, thatelem))
+    while (that.hasNext) cb += ((thiselem, that.next))
     cb
   }
 
@@ -414,6 +424,27 @@ self =>
 
   def zipParSeq[S](that: ParSeqIterator[S]) = new Zipped(that)
 
+  class ZippedAll[U >: T, S](protected val that: ParSeqIterator[S], protected val thiselem: U, protected val thatelem: S)
+  extends ParIterableIterator[(U, S)] {
+    var signalDelegate = self.signalDelegate
+    def hasNext = self.hasNext || that.hasNext
+    def next = if (self.hasNext) {
+      if (that.hasNext) (self.next, that.next)
+      else (self.next, thatelem)
+    } else (thiselem, that.next);
+    def remaining = self.remaining max that.remaining
+    def split: Seq[ParIterableIterator[(U, S)]] = {
+      val selfrem = self.remaining
+      val thatrem = that.remaining
+      val thisit = if (selfrem < thatrem) self.appendParIterable[U, ParSeqIterator[U]](repetition[U](thiselem, thatrem - selfrem).parallelIterator) else self
+      val thatit = if (selfrem > thatrem) that.appendParSeq(repetition(thatelem, selfrem - thatrem).parallelIterator) else that
+      val zipped = thisit zipParSeq thatit
+      zipped.split
+    }
+  }
+
+  def zipAllParSeq[S, U >: T, R >: S](that: ParSeqIterator[S], thisElem: U, thatElem: R) = new ZippedAll[U, R](that, thisElem, thatElem)
+
 }
 
 
@@ -494,6 +525,28 @@ self =>
   }
 
   override def zipParSeq[S](that: ParSeqIterator[S]) = new Zipped(that)
+
+  class ZippedAll[U >: T, S](ti: ParSeqIterator[S], thise: U, thate: S) extends super.ZippedAll[U, S](ti, thise, thate) with ParSeqIterator[(U, S)] {
+    private def patchem = {
+      val selfrem = self.remaining
+      val thatrem = that.remaining
+      val thisit = if (selfrem < thatrem) self.appendParSeq[U, ParSeqIterator[U]](repetition[U](thiselem, thatrem - selfrem).parallelIterator) else self
+      val thatit = if (selfrem > thatrem) that.appendParSeq(repetition(thatelem, selfrem - thatrem).parallelIterator) else that
+      (thisit, thatit)
+    }
+    override def split: Seq[ParSeqIterator[(U, S)]] = {
+      val (thisit, thatit) = patchem
+      val zipped = thisit zipParSeq thatit
+      zipped.split
+    }
+    def psplit(sizes: Int*): Seq[ParSeqIterator[(U, S)]] = {
+      val (thisit, thatit) = patchem
+      val zipped = thisit zipParSeq thatit
+      zipped.psplit(sizes: _*)
+    }
+  }
+
+  override def zipAllParSeq[S, U >: T, R >: S](that: ParSeqIterator[S], thisElem: U, thatElem: R) = new ZippedAll[U, R](that, thisElem, thatElem)
 
 }
 
