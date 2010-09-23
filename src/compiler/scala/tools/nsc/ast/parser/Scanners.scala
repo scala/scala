@@ -242,7 +242,8 @@ trait Scanners {
 //              println("blank line found at "+lastOffset+":"+(lastOffset to idx).map(buf(_)).toList)
               return true
             }
-          } while (idx < end && ch <= ' ')
+	    if (idx == end) return false
+          } while (ch <= ' ')
         }
         idx += 1; ch = buf(idx)
       }
