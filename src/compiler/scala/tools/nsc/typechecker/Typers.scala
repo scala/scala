@@ -842,7 +842,8 @@ trait Typers { self: Analyzer =>
                     // as we would get ambiguity errors otherwise. Example
                     // Looking for a manifest of Nil: This mas many potential types,
                     // so we need to instantiate to minimal type List[Nothing].
-                    false) // false: retract Nothing's that indicate failure, ambiguities in manifests are dealt with in manifestOfType
+                    keepNothings = false, // retract Nothing's that indicate failure, ambiguities in manifests are dealt with in manifestOfType
+                    checkCompat = isWeaklyCompatible) // #3808
         }
 
         val typer1 = constrTyperIf(treeInfo.isSelfOrSuperConstrCall(tree))
@@ -1037,7 +1038,7 @@ trait Typers { self: Analyzer =>
      *  @return     ...
      */
     def instantiate(tree: Tree, mode: Int, pt: Type): Tree = {
-      inferExprInstance(tree, context.extractUndetparams(), pt, true)
+      inferExprInstance(tree, context.extractUndetparams(), pt)
       adapt(tree, mode, pt)
     }
 
@@ -2488,7 +2489,7 @@ trait Typers { self: Analyzer =>
 
             } else if (needsInstantiation(tparams, formals, args)) {
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
-              inferExprInstance(fun, tparams, WildcardType, true)
+              inferExprInstance(fun, tparams)
               doTypedApply(tree, fun, args, mode, pt)
             } else {
               assert((mode & PATTERNmode) == 0) // this case cannot arise for patterns
@@ -3031,10 +3032,9 @@ trait Typers { self: Analyzer =>
         errorTree(tree, treeSymTypeMsg(fun)+" does not take type parameters.")
     }
 
-    private[this] var typingIndent: String = ""
-    @inline final def deindentTyping() = if (printTypings) typingIndent = typingIndent.substring(0, typingIndent.length() - 2)
-    @inline final def indentTyping() = if (printTypings) typingIndent += "  "
-    @inline final def printTyping(s: => String) = if (printTypings) println(typingIndent+s)
+    @inline final def deindentTyping() = if (printTypings) context.typingIndent = context.typingIndent.substring(0, context.typingIndent.length() - 2)
+    @inline final def indentTyping() = if (printTypings) context.typingIndent += "  "
+    @inline final def printTyping(s: => String) = if (printTypings) println(context.typingIndent+s)
 
     /**
      *  @param tree ...

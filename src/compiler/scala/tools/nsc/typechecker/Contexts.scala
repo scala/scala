@@ -121,6 +121,8 @@ trait Contexts { self: Analyzer =>
     var savedTypeBounds: List[(Symbol, Type)] = List() // saved type bounds
        // for type parameters which are narrowed in a GADT
 
+    var typingIndent: String = ""
+
     def undetparams = _undetparams
     def undetparams_=(ps: List[Symbol]) = {
       //System.out.println("undetparams = " + ps);//debug
@@ -175,6 +177,7 @@ trait Contexts { self: Analyzer =>
       c.reportAmbiguousErrors = this.reportAmbiguousErrors
       c.reportGeneralErrors = this.reportGeneralErrors
       c.diagnostic = this.diagnostic
+      c.typingIndent = typingIndent
       c.implicitsEnabled = this.implicitsEnabled
       c.checking = this.checking
       c.retyping = this.retyping
