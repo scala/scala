@@ -40,11 +40,9 @@ extends SeqView[T, Coll]
 {
 self =>
 
-  type SCPI = SignalContextPassingIterator[ParIterator]
-
   trait Transformed[+S] extends ParSeqView[S, Coll, CollSeq]
   with super[ParIterableView].Transformed[S] with super[SeqView].Transformed[S] {
-    override def parallelIterator: ParSeqIterator[S] = new Elements(0, length) with SCPI {}
+    override def parallelIterator: ParSeqIterator[S]
     override def iterator = parallelIterator
   }
 
