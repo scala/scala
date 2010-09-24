@@ -43,7 +43,7 @@ self =>
 
   override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner");
 
-  type CPI = SignalContextPassingIterator[ParIterator]
+  type SCPI = SignalContextPassingIterator[ParIterator]
 
   /* wrappers */
 
