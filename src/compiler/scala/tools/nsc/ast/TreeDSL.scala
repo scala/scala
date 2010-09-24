@@ -63,8 +63,6 @@ trait TreeDSL {
     def fn(lhs: Tree, op: Symbol, args: Tree*)  = Apply(Select(lhs, op), args.toList)
 
     class TreeMethods(target: Tree) {
-      private def toAnyRef(x: Tree) = x setType AnyRefClass.tpe
-
       /** logical/comparison ops **/
       def OR(other: Tree) =
         if (target == EmptyTree) other
@@ -87,8 +85,7 @@ trait TreeDSL {
         if (opSym == NoSymbol) ANY_==(other)
         else fn(target, opSym, other)
       }
-      def ANY_EQ  (other: Tree)     = fn(target, nme.eq, toAnyRef(other))
-      def ANY_NE  (other: Tree)     = fn(target, nme.ne, toAnyRef(other))
+      def ANY_EQ  (other: Tree)     = OBJ_EQ(other AS ObjectClass.tpe)
       def ANY_==  (other: Tree)     = fn(target, Any_==, other)
       def ANY_!=  (other: Tree)     = fn(target, Any_!=, other)
       def OBJ_==  (other: Tree)     = fn(target, Object_==, other)
@@ -262,8 +259,8 @@ trait TreeDSL {
         if (target.tpe.typeSymbol == SomeClass) TRUE   // is Some[_]
         else NOT(ID(target) DOT nme.isEmpty)           // is Option[_]
 
-      def IS_NULL() = REF(target) ANY_EQ NULL
-      def NOT_NULL() = REF(target) ANY_NE NULL
+      def IS_NULL()  = REF(target) OBJ_EQ NULL
+      def NOT_NULL() = REF(target) OBJ_NE NULL
 
       def GET() = fn(REF(target), nme.get)
 

@@ -630,7 +630,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           }
           tree1
       }
-    } setType uncurryTreeType(tree.tpe)
+    } setType {
+      assert(tree.tpe != null, tree + " tpe is null")
+      uncurryTreeType(tree.tpe)
+    }
 
     def postTransform(tree: Tree): Tree = atPhase(phase.next) {
       def applyUnary(): Tree = {

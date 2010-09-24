@@ -195,7 +195,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
               def getMethodSym = ClassClass.tpe member nme.getMethod_
 
               def isCacheEmpty(receiver: Symbol): Tree =
-                reflClassCacheSym.IS_NULL() OR (reflClassCacheSym.GET() ANY_NE REF(receiver))
+                reflClassCacheSym.IS_NULL() OR (reflClassCacheSym.GET() OBJ_NE REF(receiver))
 
               addStaticMethodToClass("reflMethod$Method", List(ClassClass.tpe), MethodClass.tpe) {
                 case Pair(reflMethodSym, List(forReceiverSym)) =>
@@ -245,7 +245,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                   val methodSym = reflMethodSym.newVariable(ad.pos, mkTerm("method")) setInfo MethodClass.tpe
 
                   BLOCK(
-                    IF (getPolyCache ANY_EQ NULL) THEN (REF(reflPolyCacheSym) === mkNewPolyCache) ENDIF,
+                    IF (getPolyCache OBJ_EQ NULL) THEN (REF(reflPolyCacheSym) === mkNewPolyCache) ENDIF,
                     VAL(methodSym) === ((getPolyCache DOT methodCache_find)(REF(forReceiverSym))) ,
                     IF (REF(methodSym) OBJ_!= NULL) .
                       THEN (Return(REF(methodSym)))

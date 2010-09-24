@@ -142,14 +142,12 @@ trait SyntheticMethods extends ast.TreeDSL {
     /** The equality method for case modules:
      *   def equals(that: Any) = this eq that
      */
-    def equalsModuleMethod: Tree = localTyper typed {
+    def equalsModuleMethod: Tree = {
       val method = makeEqualityMethod(nme.equals_)
       val that   = method ARG 0
 
       localTyper typed {
-        DEF(method) === {
-          (This(clazz) DOT Object_eq)(that AS AnyRefClass.tpe)
-        }
+        DEF(method) === (This(clazz) ANY_EQ that)
       }
     }
 
@@ -197,10 +195,12 @@ trait SyntheticMethods extends ast.TreeDSL {
 
       // Verify with canEqual method before returning true.
       def canEqualCheck() = {
-        val that: Tree              = typer typed ((method ARG 0) AS clazz.tpe)
+        val that: Tree              = (method ARG 0) AS clazz.tpe
         val canEqualOther: Symbol   = clazz.info nonPrivateMember nme.canEqual_
 
-        (that DOT canEqualOther)(This(clazz))
+        typer typed {
+          (that DOT canEqualOther)(This(clazz))
+        }
       }
 
       // Pattern is classname applied to parameters, and guards are all logical and-ed
@@ -228,12 +228,12 @@ trait SyntheticMethods extends ast.TreeDSL {
         result
     }
 
-    def needsReadResolve =
+    def needsReadResolve = (
       // only nested objects inside objects should get readResolve automatically
       // otherwise after de-serialization we get null references for lazy accessors (nested object -> lazy val + class def)
       clazz.isSerializable &&
       ((!clazz.owner.isPackageClass && clazz.owner.isModuleClass) || clazz.owner.isPackageClass)
-       //(clazz.companionClass != NoSymbol))
+    )
 
     // A buffer collecting additional methods for the template body
     val ts = new ListBuffer[Tree]
@@ -323,6 +323,11 @@ trait SyntheticMethods extends ast.TreeDSL {
         if (!reporter.hasErrors) throw ex
     }
 
-    treeCopy.Template(templ, templ.parents, templ.self, templ.body ++ ts.toList)
+    if (phase.id <= currentRun.typerPhase.id) {
+      treeCopy.Template(templ, templ.parents, templ.self,
+        if (ts.isEmpty) templ.body else templ.body ++ ts // avoid copying templ.body if empty
+      )
+    }
+    else templ
   }
 }

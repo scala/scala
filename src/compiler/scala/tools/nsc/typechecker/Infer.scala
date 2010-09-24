@@ -246,10 +246,13 @@ trait Infer {
       if (sym.isError) {
         tree setSymbol sym setType ErrorType
       } else {
-        def accessError(explanation: String): Tree =
-          errorTree(tree, underlying(sym).toString() + " cannot be accessed in " +
+        def accessError(explanation: String): Tree = {
+          val realsym = underlying(sym)
+
+          errorTree(tree, realsym + realsym.locationString + " cannot be accessed in " +
                     (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
                     explanation)
+        }
 
         val topClass = context.owner.toplevelClass
         if (context.unit != null)
