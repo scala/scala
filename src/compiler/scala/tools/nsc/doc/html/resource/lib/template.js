@@ -98,13 +98,15 @@ $(document).ready(function(){
     $(".extype").tooltip({
         tip: "#tooltip",
         position:"top center",
+        predelay: 500,
         onBeforeShow: function(ev) {
             $(this.getTip()).text(this.getTrigger().attr("name"));
         }
     });
     $(".defval").tooltip({
         tip: "#tooltip",
-        position:"top center",        
+        position:"top center",
+        predelay: 500,        
         onBeforeShow: function(ev) {
             $(this.getTip()).html(this.getTrigger().attr("name"))
         }        
