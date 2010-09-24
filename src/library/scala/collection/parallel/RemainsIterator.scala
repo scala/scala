@@ -548,6 +548,28 @@ self =>
 
   override def zipAllParSeq[S, U >: T, R >: S](that: ParSeqIterator[S], thisElem: U, thatElem: R) = new ZippedAll[U, R](that, thisElem, thatElem)
 
+  def reverse: ParSeqIterator[T] = {
+    val pa = mutable.ParArray.fromTraversables(self)
+    new pa.ParArrayIterator with pa.SCPI {
+      override def reverse = self
+    }
+  }
+
+  class Patched[U >: T](from: Int, patch: ParSeqIterator[U], replaced: Int) extends ParSeqIterator[U] {
+    var signalDelegate = self.signalDelegate
+    private[this] val trio = {
+      val pits = self.psplit(from, replaced, self.remaining - from - replaced)
+      (pits(0).appendParSeq[U, ParSeqIterator[U]](patch)) appendParSeq pits(2)
+    }
+    def hasNext = trio.hasNext
+    def next = trio.next
+    def remaining = trio.remaining
+    def split = trio.split
+    def psplit(sizes: Int*) = trio.psplit(sizes: _*)
+  }
+
+  def patchParSeq[U >: T](from: Int, patchElems: ParSeqIterator[U], replaced: Int) = new Patched(from, patchElems, replaced)
+
 }
 
 

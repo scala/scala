@@ -77,6 +77,7 @@ trait BenchmarkRegister {
   register(parallel_view.DummyViewBenchList.IterationM)
   register(parallel_view.DummyViewBenchList.IterationA)
   register(parallel_view.DummyViewBenchList.IterationZ)
+  register(parallel_view.DummyViewBenchList.IterationP)
 
   // parallel ranges
   register(parallel_range.RangeBenches.Reduce)
