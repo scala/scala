@@ -164,7 +164,7 @@ self =>
 
   /** Convenience for signal context passing iterator.
    */
-  type SCPI <: SignalContextPassingIterator[ParIterator]
+  //type SCPI <: SignalContextPassingIterator[ParIterator]
 
   /** Creates a new parallel iterator used to traverse the elements of this parallel collection.
    *  This iterator is more specific than the iterator of the returned by `iterator`, and augmented

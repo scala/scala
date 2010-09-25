@@ -74,7 +74,7 @@ self =>
 
   /** A convenient shorthand for the signal context passing stackable modification.
    */
-  type SCPI <: SignalContextPassingIterator[ParIterator]
+  //type SCPI <: SignalContextPassingIterator[ParIterator]
 
   /** A more refined version of the iterator found in the `ParallelIterable` trait,
    *  this iterator can be split into arbitrary subsets of iterators.
