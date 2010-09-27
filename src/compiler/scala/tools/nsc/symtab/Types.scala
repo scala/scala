@@ -3494,85 +3494,26 @@ A type's typeSymbol should never be inspected directly.
       else mapOver(tp)
   }
 
-/*
-  /** Most of the implementation for MethodType.resultType.  The
-   *  caller also needs to existentially quantify over the
-   *  variables in existentialsNeeded.
-   */
-  class InstantiateDeBruijnMap(actuals: List[Type]) extends TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case DeBruijnIndex(level, pid) =>
-        if (level == 1)
-          if (pid < actuals.length) actuals(pid) else tp
-        else DeBruijnIndex(level - 1, pid)
-      case _ =>
-        mapOver(tp)
-    }
-
+  class InstantiateDependentMap(params: List[Symbol], actuals: List[Type]) extends TypeMap {
     override val dropNonConstraintAnnotations = true
 
-    private var existSyms = immutable.Map.empty[Int, Symbol]
-    def existentialsNeeded: List[Symbol] = existSyms.values.toList
-
-    /* Return the type symbol for referencing a parameter index
-     * inside the existential quantifier.  */
-    def existSymFor(actualIdx: Int, oldSym: Symbol) =
-      if (existSyms.isDefinedAt(actualIdx))
-        existSyms(actualIdx)
-      else {
-        val symowner = oldSym.owner // what should be used??
-        val bound = singletonBounds(actuals(actualIdx))
-
-        val sym = symowner.newExistential(oldSym.pos, oldSym.name+".type")
-        sym.setInfo(bound)
-        sym.setFlag(oldSym.flags)
-
-        existSyms = existSyms + (actualIdx -> sym)
-        sym
+    object ParamWithActual {
+      def unapply(sym: Symbol): Option[Type] = {
+        val pid = params indexOf sym
+        if(pid != -1) Some(actuals(pid)) else None
       }
+    }
 
-    override def mapOver(arg: Tree, giveup: ()=>Nothing): Tree = {
-      object treeTrans extends TypeMapTransformer {
-        override def transform(tree: Tree): Tree =
-          tree match {
-            case Ident(name) =>
-              tree.tpe.withoutAnnotations match {
-                case DeBruijnIndex(level, pid) =>
-                  if (level == 1) {
-                    if (actuals(pid).isStable)
-                      mkAttributedQualifier(actuals(pid), tree.symbol)
-                    else {
-                      val sym = existSymFor(pid, tree.symbol)
-                      (Ident(tree.symbol.name)
-                       copyAttrs tree
-                       setType typeRef(NoPrefix, sym, Nil))
-                    }
-                  } else
-                    Ident(name)
-                      .setPos(tree.pos)
-                      .setSymbol(tree.symbol)
-                      .setType(DeBruijnIndex(level-1, pid))
-                case _ =>
-                  super.transform(tree)
-
-              }
-            case _ => super.transform(tree)
-          }
+    def apply(tp: Type): Type =
+      mapOver(tp) match {
+        case SingleType(NoPrefix, ParamWithActual(arg)) if arg isStable => arg // unsound to replace args by unstable actual #3873
+        // (soundly) expand type alias selections on implicit arguments, see depmet_implicit_oopsla* test cases -- typically, `param.isImplicit`
+        case tp1@TypeRef(SingleType(NoPrefix, param@ParamWithActual(arg)), sym, targs) =>
+          val res = typeRef(arg, sym, targs)
+          if(res.typeSymbolDirect isAliasType) res.dealias
+          else tp1
+        case tp1 => tp1 // don't return the original `tp`, which may be different from `tp1`, due to `dropNonConstraintAnnotations`
       }
-
-      treeTrans.transform(arg)
-    }
-  }
-*/
-
-  class InstantiateDependentMap(params: List[Symbol], actuals: List[Type]) extends SubstTypeMap(params, actuals) {
-    override protected def renameBoundSyms(tp: Type): Type = tp match {
-      case MethodType(ps, restp) => tp // the whole point of this substitution is to instantiate these args
-      case _ => super.renameBoundSyms(tp)
-    }
-    // TODO: should we optimise this? only need to consider singletontypes
-
-    override val dropNonConstraintAnnotations = true
 
     def existentialsNeeded: List[Symbol] = existSyms.filter(_ ne null).toList
 
