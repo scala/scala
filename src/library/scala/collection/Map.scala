@@ -31,7 +31,7 @@ import generic._
 trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
 
-  /** The same map with a given default function !!! todo: move to general maps? */
+  /** The same map with a given default function */
   def withDefault[B1 >: B](d: A => B1): Map[A, B1] = new Map.WithDefault[A, B1](this, d)
 
   /** The same map with a given default value */

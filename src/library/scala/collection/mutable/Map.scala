@@ -26,7 +26,7 @@ trait Map[A, B]
 
   override def empty: Map[A, B] = Map.empty
 
-  /** The same map with a given default function !!! todo: move to general maps? */
+  /** The same map with a given default function */
   def withDefault(d: A => B): Map[A, B] = new Map.WithDefault[A, B](this, d)
 
   /** The same map with a given default value */
