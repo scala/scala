@@ -107,9 +107,10 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 					new xsbti.api.Def(valueParameters.reverse.toArray, processType(returnType), typeParams, simpleName(s), getAccess(s), getModifiers(s), annotations(s))
 			}
 		}
-		def parameterS(s: Symbol): xsbti.api.MethodParameter = makeParameter(s.nameString, s.info, s.info.typeSymbol)
-		def parameterT(t: Type): xsbti.api.MethodParameter = makeParameter("", t, t.typeSymbol)
-		def makeParameter(name: String, tpe: Type, ts: Symbol): xsbti.api.MethodParameter =
+		def parameterS(s: Symbol): xsbti.api.MethodParameter = makeParameter(s.nameString, s.info, s.info.typeSymbol, s)
+		def parameterT(t: Type): xsbti.api.MethodParameter = makeParameter("", t, t.typeSymbol, NoSymbol)
+		// paramSym is only for 2.8 and is to determine if the parameter has a default
+		def makeParameter(name: String, tpe: Type, ts: Symbol, paramSym: Symbol): xsbti.api.MethodParameter =
 		{
 			import xsbti.api.ParameterModifier._
 			val (t, special) =
@@ -119,7 +120,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 					(tpe.typeArgs(0), ByName)
 				else
 					(tpe, Plain)
-			new xsbti.api.MethodParameter(name, processType(t), hasDefault(s), special)
+			new xsbti.api.MethodParameter(name, processType(t), hasDefault(paramSym), special)
 		}
 		
 		build(s.info, Array(), Nil)
@@ -128,8 +129,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 	{
 		// 2.7 compatibility
 		implicit def flagsWithDefault(f: AnyRef): WithDefault = new WithDefault
-		class WithDefault { val DEFAULTPARAM = 0x02000000 }
-		s.hasFlag(Flags.DEFAULTPARAM)
+		class WithDefault { val DEFAULTPARAM = 0x00000000 }
+		s != NoSymbol && s.hasFlag(Flags.DEFAULTPARAM)
 	}
 	private def fieldDef[T](s: Symbol, create: (xsbti.api.Type, String, xsbti.api.Access, xsbti.api.Modifiers, Array[xsbti.api.Annotation]) => T): T =
 		create(processType(s.tpeHK), simpleName(s), getAccess(s), getModifiers(s), annotations(s))
