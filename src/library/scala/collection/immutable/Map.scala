@@ -39,12 +39,6 @@ trait Map[A, +B] extends Iterable[(A, B)]
    */
   override def updated [B1 >: B](key: A, value: B1): Map[A, B1]
   def + [B1 >: B](kv: (A, B1)): Map[A, B1]
-
-  /** The same map with a given default function !!! todo: move to general maps? */
-  def withDefault[B1 >: B](d: A => B1): Map[A, B1] = new Map.WithDefault[A, B1](this, d)
-
-  /** The same map with a given default value */
-  def withDefaultValue[B1 >: B](d: B1): Map[A, B1] = new Map.WithDefault[A, B1](this, x => d)
 }
 
 /** $factoryInfo
@@ -57,17 +51,6 @@ object Map extends ImmutableMapFactory[Map] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
 
   def empty[A, B]: Map[A, B] = EmptyMap.asInstanceOf[Map[A, B]]
-
-  class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends Map[A, B] {
-    override def size = underlying.size
-    def get(key: A) = underlying.get(key) orElse Some(default(key))
-    def iterator = underlying.iterator
-    override def empty = new WithDefault(underlying.empty, d)
-    override def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
-    def + [B1 >: B](kv: (A, B1)): WithDefault[A, B1] = updated(kv._1, kv._2)
-    def - (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
-    override def default(key: A): B = d(key)
-  }
 
   @serializable
   private object EmptyMap extends Map[Any, Nothing] {
