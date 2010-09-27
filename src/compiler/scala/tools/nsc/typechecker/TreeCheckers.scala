@@ -20,9 +20,11 @@ abstract class TreeCheckers extends Analyzer {
     try p.source.path + ":" + p.line
     catch { case _: UnsupportedOperationException => p.toString }
 
-  def errorFn(pos: Position, msg: Any) = println("[%s] %s: %s".format(phase, posstr(pos), msg))
+  def errorFn(msg: Any): Unit                = println("[check: %s] %s".format(phase.prev, msg))
+  def errorFn(pos: Position, msg: Any): Unit = errorFn(posstr(pos) + ": " + msg)
+
   def assertFn(cond: Boolean, msg: => Any) =
-    if (!cond) errorFn(NoPosition, msg)
+    if (!cond) errorFn(msg)
 
   def checkTrees {
     if (settings.verbose.value)
@@ -38,6 +40,14 @@ abstract class TreeCheckers extends Analyzer {
     global.printTypings = saved
     result
   }
+  def runWithUnit[T](unit: CompilationUnit)(body: => Unit): Unit = {
+    val unit0 = currentRun.currentUnit
+    currentRun.currentUnit = unit
+    body
+    currentRun.advanceUnit
+    assertFn(currentRun.currentUnit == unit, "currentUnit is " + currentRun.currentUnit + ", but unit is " + unit)
+    currentRun.currentUnit = unit0
+  }
 
   def check(unit: CompilationUnit) {
     informProgress("checking "+unit)
@@ -45,24 +55,22 @@ abstract class TreeCheckers extends Analyzer {
     context.checking = true
     tpeOfTree.clear
     val checker = new TreeChecker(context)
-
-    val unit0 = currentRun.currentUnit
-    currentRun.currentUnit = unit
-    checker.precheck.traverse(unit.body)
-    // printingTypings(checker.typed(unit.body))
-    checker.typed(unit.body)
-    checker.postcheck.traverse(unit.body)
-    currentRun.advanceUnit
-    assertFn(currentRun.currentUnit == unit, "currentRun.currentUnit == unit")
-    currentRun.currentUnit = unit0
+    runWithUnit(unit) {
+      checker.precheck.traverse(unit.body)
+      checker.typed(unit.body)
+      checker.postcheck.traverse(unit.body)
+    }
   }
 
   override def newTyper(context: Context): Typer = new TreeChecker(context)
 
   class TreeChecker(context0: Context) extends Typer(context0) {
-    private def treestr(t: Tree)    = t + " [" + t.getClass() + "]"
-    private def ownerstr(s: Symbol) = "" + s + s.locationString
+    private def classstr(x: AnyRef) = x.getClass.getName split '.' last;
+    private def typestr(x: Type)    = " (tpe = " + x + ")"
+    private def treestr(t: Tree)    = t + " [" + classstr(t) + "]" + typestr(t.tpe)
+    private def ownerstr(s: Symbol) = "'" + s + "'" + s.locationString
 
+    // XXX check for tree.original on TypeTrees.
     private def treesDiffer(t1: Tree, t2: Tree) =
       errorFn(t1.pos, "trees differ\n old: " + treestr(t1) + "\n new: " + treestr(t2))
     private def typesDiffer(tree: Tree, tp1: Type, tp2: Type) =
@@ -71,6 +79,16 @@ abstract class TreeCheckers extends Analyzer {
       val sym = tree.symbol
       errorFn(tree.pos, sym + " has wrong owner: " + ownerstr(sym.owner) + ", should be: " + ownerstr(shouldBe))
     }
+
+    /** XXX Disabled reporting of position errors until there is less noise. */
+    private def noPos(t: Tree) =
+      () // errorFn("no pos: " + treestr(t))
+    private def noType(t: Tree) =
+      errorFn(t.pos, "no type: " + treestr(t))
+
+    private def checkSym(t: Tree) =
+      if (t.symbol == NoSymbol)
+        errorFn(t.pos, "no symbol: " + treestr(t))
 
     override def typed(tree: Tree, mode: Int, pt: Type): Tree = returning(tree) {
       case EmptyTree | TypeTree() => ()
@@ -92,7 +110,7 @@ abstract class TreeCheckers extends Analyzer {
       override def traverse(tree: Tree) {
         val sym = tree.symbol
         def accessed = sym.accessed
-        def fail(msg: String) = errorFn(tree.pos, msg + tree.getClass + " / " + tree)
+        def fail(msg: String) = errorFn(tree.pos, msg + classstr(tree) + " / " + tree)
 
         tree match {
           case DefDef(_, _, _, _, _, _) =>
@@ -100,42 +118,48 @@ abstract class TreeCheckers extends Analyzer {
               sym.tpe.resultType match {
                 case _: ConstantType  => ()
                 case _                =>
-                  assertFn(accessed != NoSymbol, sym)
-                  assertFn(
-                    accessed.getter(sym.owner) == sym || accessed.setter(sym.owner) == sym,
-                    "accessed.getter(sym.owner) == sym || accessed.setter(sym.owner) == sym"
-                  )
+                  checkSym(tree)
+                  /** XXX: lots of syms show up here with accessed == NoSymbol. */
+                  if (accessed != NoSymbol) {
+                    val agetter = accessed.getter(sym.owner)
+                    val asetter = accessed.setter(sym.owner)
+
+                    assertFn(agetter == sym || asetter == sym,
+                      sym + " is getter or setter, but accessed sym " + accessed + " shows " + agetter + " and " + asetter
+                    )
+                  }
               }
             }
           case ValDef(_, _, _, _) =>
-            if (sym.hasGetter) {
-              assertFn(sym.getter(sym.owner) != NoSymbol, sym)
+            if (sym.hasGetter && !sym.isOuterField) {
+              assertFn(sym.getter(sym.owner) != NoSymbol, ownerstr(sym) + " has getter but cannot be found. " + sym.ownerChain)
             }
-          case Apply(_, args) =>
-            assertFn(args forall (_ != EmptyTree), args)
+          case Apply(fn, args) =>
+            if (args exists (_ == EmptyTree))
+              errorFn(tree.pos, "Apply arguments to " + fn + " contains an empty tree: " + args)
+
           case Select(qual, name) =>
-            if (sym == NoSymbol)
-              errorFn(tree.pos, "NoSymbol: " + tree)
+            checkSym(tree)
           case This(_) =>
-            if (sym == NoSymbol) errorFn(tree.pos, "NoSymbol: " + tree)
-            else if (sym.isStatic && (sym hasFlag MODULE)) ()
+            checkSym(tree)
+            if (sym.isStatic && (sym hasFlag MODULE)) ()
             else if (currentOwner.ownerChain takeWhile (_ != sym) exists (_ == NoSymbol))
               return fail("tree symbol "+sym+" does not point to enclosing class; tree = ")
 
-          /** Temporary while Import nodes are untyped. */
+          /** XXX: temporary while Import nodes are arriving untyped. */
           case Import(_, _) =>
             return
           case _ =>
         }
 
         if (tree.pos == NoPosition && tree != EmptyTree)
-          fail("tree without position: ")
+          noPos(tree)
         else if (tree.tpe == null && phase.id > currentRun.typerPhase.id)
-          fail("tree without type: ")
+          noType(tree)
         else if (tree.isDef) {
-          if (sym == NoSymbol)
-            fail("DefTree with NoSymbol: ")
-          else tree match {
+          checkSym(tree)
+
+          tree match {
             case x: PackageDef    =>
               if (sym.ownerChain contains currentOwner) ()
               else fail(sym + " owner chain does not contain currentOwner " + currentOwner)

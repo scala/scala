@@ -267,7 +267,21 @@ trait Infer {
             Console.println(tree)
             Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
           }
-          accessError("")
+          accessError(
+            if (settings.check.isDefault) "" else {
+              "\n because of an internal error (no accessible symbol):" +
+              "\nsym = " + sym +
+              "\nunderlying(sym) = " + underlying(sym) +
+              "\npre = " + pre +
+              "\nsite = " + site +
+              "\ntree = " + tree +
+              "\nsym.accessBoundary(sym.owner) = " + sym.accessBoundary(sym.owner) +
+              "\nsym.ownerChain = " + sym.ownerChain +
+              "\nsym.owner.thisType = " + sym.owner.thisType +
+              "\ncontext.owner = " + context.owner +
+              "\ncontext.outer.enclClass.owner = " + context.outer.enclClass.owner
+            }
+          )
         } else {
           if(sym1.isTerm)
             sym1.cookJavaRawInfo() // xform java rawtypes into existentials

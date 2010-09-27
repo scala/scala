@@ -405,13 +405,9 @@ trait BasicBlocks {
       out.println()
     }
 
-    def fullString: String = {
-      val buf = new StringBuilder()
-      buf.append("Block ").append(label.toString())
-      buf.append("\nSuccessors: ").append(successors)
-      buf.append("\nPredecessors: ").append(predecessors)
-      buf.toString()
-    }
+    private def succString = if (successors.isEmpty) "[S: N/A]" else successors.distinct.mkString("[S: ", ", ", "]")
+    private def predString = if (predecessors.isEmpty) "[P: N/A]" else predecessors.distinct.mkString("[P: ", ", ", "]")
+    def fullString: String = List("Block", label, succString, predString) mkString " "
 
     override def toString(): String = "" + label
 

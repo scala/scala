@@ -89,8 +89,18 @@ trait Members { self: ICodes =>
     }
   }
 
+  /** Common interface for IClass/IField/IMethod. */
+  trait IMember extends Ordered[IMember] {
+    def symbol: Symbol
+
+    def compare(other: IMember) =
+      if (symbol eq other.symbol) 0
+      else if (symbol isLess other.symbol) -1
+      else 1
+  }
+
   /** Represent a class in ICode */
-  class IClass(val symbol: Symbol) {
+  class IClass(val symbol: Symbol) extends IMember {
     var fields: List[IField] = Nil
     var methods: List[IMethod] = Nil
     var cunit: CompilationUnit = _
@@ -122,7 +132,7 @@ trait Members { self: ICodes =>
   }
 
   /** Represent a field in ICode */
-  class IField(val symbol: Symbol) { }
+  class IField(val symbol: Symbol) extends IMember { }
 
   /**
    * Represents a method in ICode. Local variables contain
@@ -134,7 +144,7 @@ trait Members { self: ICodes =>
    * reversing them and putting them back, when the generation is
    * finished (GenICode does that).
    */
-  class IMethod(val symbol: Symbol) {
+  class IMethod(val symbol: Symbol) extends IMember {
     var code: Code = null
     var native = false
 

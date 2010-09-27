@@ -265,7 +265,7 @@ trait Contexts { self: Analyzer =>
     }
 
     private def unitError(pos: Position, msg: String) =
-      unit.error(pos, if (checking) "**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
+      unit.error(pos, if (checking) "\n**** ERROR DURING INTERNAL CHECKING ****\n" + msg else msg)
 
     def error(pos: Position, err: Throwable) =
       if (reportGeneralErrors) unitError(pos, addDiagString(err.getMessage()))

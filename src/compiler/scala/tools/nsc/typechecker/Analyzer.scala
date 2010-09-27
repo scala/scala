@@ -48,6 +48,7 @@ trait Analyzer extends AnyRef
     val runsRightAfter= Some("namer")
 
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
+      override val checkable = false
       import global._
 
       val openPackageObjectsTraverser = new Traverser {

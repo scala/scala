@@ -50,12 +50,13 @@ abstract class ExplicitOuter extends InfoTransform
       clazz.owner.isClass &&
       clazz.owner == parent.typeSymbol.owner &&
       parent.prefix =:= clazz.owner.thisType
+
     isInner(clazz) && !clazz.isTrait &&
-    (clazz.info.parents.isEmpty || !hasSameOuter(clazz.info.parents.head))
+    !(clazz.info.parents.headOption exists hasSameOuter)
   }
 
   private def outerField(clazz: Symbol): Symbol = {
-    val result = clazz.info.member(nme getterToLocal nme.OUTER)
+    val result = clazz.info.member(nme.OUTER_LOCAL)
     assert(result != NoSymbol, "no outer field in "+clazz+clazz.info.decls+" at "+phase)
 
     result
@@ -113,7 +114,7 @@ abstract class ExplicitOuter extends InfoTransform
       if (sym.owner.isTrait && ((sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isModule)) { // 5
         sym.makeNotPrivate(sym.owner)
       }
-      if (sym.owner.isTrait && (sym hasFlag PROTECTED)) sym setFlag notPROTECTED // 6
+      if (sym.owner.isTrait && sym.isProtected) sym setFlag notPROTECTED // 6
       if (sym.isClassConstructor && isInner(sym.owner)) { // 1
         val p = sym.newValueParameter(sym.pos, "arg" + nme.OUTER)
                    .setInfo(sym.owner.outerClass.thisType)
@@ -300,6 +301,8 @@ abstract class ExplicitOuter extends InfoTransform
    *  </p>
    */
   class ExplicitOuterTransformer(unit: CompilationUnit) extends OuterPathTransformer(unit) {
+    transformer =>
+
     /** The definition tree of the outer accessor of current class
      */
     def outerFieldDef: Tree = VAL(outerField(currentClass)) === EmptyTree
@@ -328,13 +331,14 @@ abstract class ExplicitOuter extends InfoTransform
       val path =
         if (mixinClass.owner.isTerm) THIS(mixinClass.owner.enclClass)
         else gen.mkAttributedQualifier(currentClass.thisType baseType mixinClass prefix)
-      // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
-      val rhs = gen.mkAsInstanceOf(ExplicitOuterTransformer.this.transform(path),
-          outerAcc.info.resultType)
 
-      // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
-      rhs setPos currentClass.pos
-      typedPos(currentClass.pos) { (DEF(outerAcc) === rhs) setPos currentClass.pos }
+      localTyper typed {
+        DEF(outerAcc) === {
+          // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
+          // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
+          transformer.transform(path) AS_ANY outerAcc.info.resultType setPos currentClass.pos
+        }
+      }  setPos currentClass.pos
     }
 
     /** If FLAG is set on symbol, sets notFLAG (this exists in anticipation of generalizing). */
@@ -422,7 +426,7 @@ abstract class ExplicitOuter extends InfoTransform
         case Template(parents, self, decls) =>
           val newDefs = new ListBuffer[Tree]
           atOwner(tree, currentOwner) {
-            if (!(currentClass hasFlag INTERFACE) || (currentClass hasFlag lateINTERFACE)) {
+            if (!currentClass.isInterface || (currentClass hasFlag lateINTERFACE)) {
               if (isInner(currentClass)) {
                 if (hasOuterField(currentClass))
                   newDefs += outerFieldDef // (1a)
@@ -464,12 +468,12 @@ abstract class ExplicitOuter extends InfoTransform
           if (currentClass != sym.owner/* && currentClass != sym.moduleClass*/) // (3)
             sym.makeNotPrivate(sym.owner)
           val qsym = qual.tpe.widen.typeSymbol
-          if ((sym hasFlag PROTECTED) && //(4)
+          if (sym.isProtected && //(4)
               (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))
             sym setFlag notPROTECTED
           super.transform(tree)
 
-        case Apply(sel @ Select(qual, name), args) if (name == nme.CONSTRUCTOR && isInner(sel.symbol.owner)) =>
+        case Apply(sel @ Select(qual, nme.CONSTRUCTOR), args) if isInner(sel.symbol.owner) =>
           val outerVal = atPos(tree.pos)(qual match {
             // it's a call between constructors of same class
             case _: This  =>

@@ -40,6 +40,10 @@ abstract class ICodes extends AnyRef
   /** The ICode representation of classes */
   var classes: HashMap[global.Symbol, IClass] = new HashMap()
 
+  /** Debugging flag */
+  var isCheckerDebug: Boolean = global.settings.checkDebug.value
+  def checkerDebug(msg: String) = if (isCheckerDebug) println(msg)
+
   /** The ICode linearizer. */
   val linearizer: Linearizer =
     if (global.settings.Xlinearizer.value == "rpo")
@@ -87,7 +91,8 @@ abstract class ICodes extends AnyRef
     val global: ICodes.this.global.type = ICodes.this.global
   }
 
-  lazy val AnyRefReference: TypeKind = REFERENCE(global.definitions.ObjectClass)
+  lazy val ObjectReference: TypeKind    = REFERENCE(global.definitions.ObjectClass)
+  lazy val ThrowableReference: TypeKind = REFERENCE(global.definitions.ThrowableClass)
 
   object icodeReader extends ICodeReader {
     lazy val global: ICodes.this.global.type = ICodes.this.global

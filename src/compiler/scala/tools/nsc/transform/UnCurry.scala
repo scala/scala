@@ -188,7 +188,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      *  additional parameter sections of a case class are skipped.
      */
     def uncurryTreeType(tp: Type): Type = tp match {
-      case MethodType(params, MethodType(params1, restpe)) if (inPattern) =>
+      case MethodType(params, MethodType(params1, restpe)) if inPattern =>
         uncurryTreeType(MethodType(params, restpe))
       case _ =>
         uncurry(tp)
@@ -204,14 +204,12 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     private val nonLocalReturnKeys = new HashMap[Symbol, Symbol]
 
     /** Return non-local return key for given method */
-    private def nonLocalReturnKey(meth: Symbol) = nonLocalReturnKeys.get(meth) match {
-      case Some(k) => k
-      case None =>
-        val k = meth.newValue(meth.pos, unit.fresh.newName(meth.pos, "nonLocalReturnKey"))
-          .setFlag(SYNTHETIC).setInfo(ObjectClass.tpe)
-        nonLocalReturnKeys(meth) = k
-        k
-    }
+    private def nonLocalReturnKey(meth: Symbol) =
+      nonLocalReturnKeys.getOrElseUpdate(meth, {
+        meth.newValue(meth.pos, unit.fresh.newName(meth.pos, "nonLocalReturnKey"))
+          .setFlag (SYNTHETIC)
+          .setInfo (ObjectClass.tpe)
+      })
 
     /** Generate a non-local return throw with given return expression from given method.
      *  I.e. for the method's non-local return key, generate:

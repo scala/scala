@@ -55,10 +55,9 @@ abstract class GenICode extends SubComponent  {
 
     // this depends on the backend! should be changed.
     val ANY_REF_CLASS = REFERENCE(ObjectClass)
-
-    val SCALA_ALL    = REFERENCE(NothingClass)
-    val SCALA_ALLREF = REFERENCE(NullClass)
-    val THROWABLE    = REFERENCE(ThrowableClass)
+    val SCALA_NOTHING = REFERENCE(NothingClass)
+    val SCALA_NULL    = REFERENCE(NullClass)
+    val THROWABLE     = REFERENCE(ThrowableClass)
 
     override def run {
       scalaPrimitives.init
@@ -222,7 +221,7 @@ abstract class GenICode extends SubComponent  {
         case rarg :: Nil =>
           resKind = getMaxType(larg.tpe :: rarg.tpe :: Nil);
           if (scalaPrimitives.isShiftOp(code) || scalaPrimitives.isBitwiseOp(code))
-            assert(resKind.isIntType | resKind == BOOL,
+            assert(resKind.isIntegralType | resKind == BOOL,
                  resKind.toString() + " incompatible with arithmetic modulo operation: " + ctx1);
 
           ctx1 = genLoad(larg, ctx1, resKind)
@@ -704,7 +703,7 @@ abstract class GenICode extends SubComponent  {
           val ctx1 = genLoad(expr, ctx, THROWABLE)
           ctx1.bb.emit(THROW(), tree.pos)
           ctx1.bb.enterIgnoreMode
-          generatedType = SCALA_ALL
+          generatedType = SCALA_NOTHING
           ctx1
 
         case New(tpt) =>
@@ -1028,7 +1027,7 @@ abstract class GenICode extends SubComponent  {
               generatedType = DOUBLE
             case (NullTag, _) =>
               ctx.bb.emit(CONSTANT(value), tree.pos);
-              generatedType = SCALA_ALLREF
+              generatedType = SCALA_NULL
             case _ =>
               ctx.bb.emit(CONSTANT(value), tree.pos);
               generatedType = toTypeKind(tree.tpe)
@@ -1121,7 +1120,7 @@ abstract class GenICode extends SubComponent  {
     }
 
     private def adapt(from: TypeKind, to: TypeKind, ctx: Context, pos: Position): Unit = {
-      if (!(from <:< to) && !(from == SCALA_ALLREF && to == SCALA_ALL)) {
+      if (!(from <:< to) && !(from == SCALA_NULL && to == SCALA_NOTHING)) {
         to match {
           case UNIT =>
             ctx.bb.emit(DROP(from), pos)
@@ -1134,13 +1133,18 @@ abstract class GenICode extends SubComponent  {
             assert(!from.isReferenceType && !to.isReferenceType, "type error: can't convert from " + from + " to " + to +" in unit "+this.unit)
             ctx.bb.emit(CALL_PRIMITIVE(Conversion(from, to)), pos);
         }
-      } else if (from == SCALA_ALL) {
+      } else if (from == SCALA_NOTHING) {
         ctx.bb.emit(THROW())
         ctx.bb.enterIgnoreMode
-      } else if (from == SCALA_ALLREF) {
+      } else if (from == SCALA_NULL) {
         ctx.bb.emit(DROP(from))
         ctx.bb.emit(CONSTANT(Constant(null)))
-      } else (from, to) match  {
+      }
+      else if (from == THROWABLE) {
+        log("Inserted check-cast on throwable to " + to + " at " + pos)
+        ctx.bb.emit(CHECK_CAST(to))
+      }
+      else (from, to) match  {
         case (BYTE, LONG) | (SHORT, LONG) | (CHAR, LONG) | (INT, LONG) => ctx.bb.emit(CALL_PRIMITIVE(Conversion(INT, LONG)))
         case _ => ()
       }
@@ -1874,6 +1878,15 @@ abstract class GenICode extends SubComponent  {
         buf.toString()
       }
 
+      /** PP: This instruction was only emitted when settings.Xdce.value = true,
+       *  but I don't understand the condition.  It seems like the exception handler
+       *  stacks won't balance without it, so put it in under -Ycheck too.
+       */
+      def maybeLoadException(ctx: Context) = {
+        if (settings.Xdce.value || !settings.check.isDefault)
+          ctx.bb.emit(LOAD_EXCEPTION())
+      }
+
       def this(other: Context) = {
         this()
         this.packg = other.packg
@@ -2089,7 +2102,7 @@ abstract class GenICode extends SubComponent  {
           this.addActiveHandler(exh)  // .. and body aswell
           val ctx = finalizerCtx.enterHandler(exh)
           val exception = ctx.makeLocal(finalizer.pos, ThrowableClass.tpe, "exc")
-          if (settings.Xdce.value) ctx.bb.emit(LOAD_EXCEPTION())
+          maybeLoadException(ctx)
           ctx.bb.emit(STORE_LOCAL(exception));
           val ctx1 = genLoad(finalizer, ctx, UNIT);
           ctx1.bb.emit(LOAD_LOCAL(exception));
@@ -2103,7 +2116,7 @@ abstract class GenICode extends SubComponent  {
         val exhs = handlers.map { handler =>
             val exh = this.newHandler(handler._1, handler._2)
             var ctx1 = outerCtx.enterHandler(exh)
-            if (settings.Xdce.value) ctx1.bb.emit(LOAD_EXCEPTION())
+            maybeLoadException(ctx1)
             ctx1 = handler._3(ctx1)
             // emit finalizer
             val ctx2 = emitFinalizer(ctx1)
@@ -2157,7 +2170,7 @@ abstract class GenICode extends SubComponent  {
           val exh = outerCtx.newHandler(NoSymbol, UNIT)
           this.addActiveHandler(exh)
           val ctx = finalizerCtx.enterHandler(exh)
-          if (settings.Xdce.value) ctx.bb.emit(LOAD_EXCEPTION())
+          maybeLoadException(ctx)
           val ctx1 = genLoad(finalizer, ctx, UNIT)
           // need jump for the ICode to be valid. MSIL backend will emit `Endfinally` instead.
           ctx1.bb.closeWith(JUMP(afterCtx.bb))
@@ -2167,7 +2180,7 @@ abstract class GenICode extends SubComponent  {
         for (handler <- handlers) {
           val exh = this.newHandler(handler._1, handler._2)
           var ctx1 = outerCtx.enterHandler(exh)
-          if (settings.Xdce.value) ctx1.bb.emit(LOAD_EXCEPTION())
+          maybeLoadException(ctx1)
           ctx1 = handler._3(ctx1)
           // msil backend will emit `Leave` to jump out of a handler
           ctx1.bb.closeWith(JUMP(afterCtx.bb))

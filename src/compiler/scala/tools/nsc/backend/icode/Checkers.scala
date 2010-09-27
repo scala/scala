@@ -3,7 +3,6 @@
  * @author  Martin Odersky
  */
 
-
 package scala.tools.nsc
 package backend
 package icode
@@ -66,9 +65,15 @@ abstract class Checkers {
     val emptyStack = new TypeStack()
 
     val STRING        = REFERENCE(definitions.StringClass)
-    val SCALA_ALL     = REFERENCE(definitions.NothingClass)
-    val SCALA_ALL_REF = REFERENCE(definitions.NullClass)
-    val THROWABLE     = REFERENCE(definitions.ThrowableClass)
+    val SCALA_NOTHING = REFERENCE(definitions.NothingClass)
+    val SCALA_NULL    = REFERENCE(definitions.NullClass)
+
+    /** A wrapper to route log messages to debug output also.
+     */
+    def logChecker(msg: String) = {
+      log(msg)
+      checkerDebug(msg)
+    }
 
     def checkICodes: Unit = {
       if (settings.verbose.value)
@@ -76,33 +81,30 @@ abstract class Checkers {
       classes.values foreach check
     }
 
+    /** Only called when m1 < m2, so already known that (m1 ne m2).
+     */
+    private def isConfict(m1: IMember, m2: IMember, canOverload: Boolean) = (
+      (m1.symbol.name == m2.symbol.name) &&
+      (!canOverload || (m1.symbol.tpe =:= m2.symbol.tpe))
+    )
+
     def check(cls: IClass) {
-      log("Checking class " + cls)
+      logChecker("\n** Checking class " + cls)
       clasz = cls
 
-      for (f1 <- cls.fields; f2 <- cls.fields if f1 ne f2)
-        if (f1.symbol.name == f2.symbol.name)
-          Checkers.this.global.error("Repetitive field name: " +
-                                     f1.symbol.fullName);
+      for (f1 <- cls.fields ; f2 <- cls.fields ; if f1 < f2)
+        if (isConfict(f1, f2, false))
+          Checkers.this.global.error("Repetitive field name: " + f1.symbol.fullName)
 
-      for (m1 <- cls.methods; m2 <- cls.methods if m1 ne m2)
-        if (m1.symbol.name == m2.symbol.name &&
-            m1.symbol.tpe =:= m2.symbol.tpe)
-          Checkers.this.global.error("Repetitive method: " +
-                                     m1.symbol.fullName);
-      clasz.methods.foreach(check)
+      for (m1 <- cls.methods ; m2 <- cls.methods ; if m1 < m2)
+        if (isConfict(m1, m2, true))
+          Checkers.this.global.error("Repetitive method: " + m1.symbol.fullName)
+
+      clasz.methods foreach check
     }
 
-    /** Apply the give function to each pair of the cartesian product of
-     * l1 x l2.
-     */
-    def pairwise[a](l1: List[a], l2: List[a])(f: (a, a) => Unit) =
-      l1 foreach { x =>
-        l2 foreach { y => f(x, y) }
-      }
-
     def check(m: IMethod) {
-      log("Checking method " + m)
+      logChecker("\n** Checking method " + m)
       method = m
       if (!m.isDeferred)
         check(m.code)
@@ -116,7 +118,8 @@ abstract class Checkers {
         if (!(worklist contains bl))
           worklist += bl
 
-      in.clear;  out.clear;
+      in.clear;
+      out.clear;
       code = c;
       worklist += c.startBlock
       for (bl <- c.blocks) {
@@ -124,15 +127,17 @@ abstract class Checkers {
         out += (bl -> emptyStack)
       }
 
-      while (worklist.length > 0) {
-        val block = worklist(0); worklist.trimStart(1);
+      while (worklist.nonEmpty) {
+        val block = worklist(0);
+        worklist.trimStart(1);
         val output = check(block, in(block));
-        if (output != out(block) ||
-            (out(block) eq emptyStack)) {
-          log("Output changed for block: " + block.fullString);
-          out(block) = output;
-          append(block.successors);
-          block.successors foreach meet;
+        if (output != out(block) || (out(block) eq emptyStack)) {
+          if (block.successors.nonEmpty || block.successors.nonEmpty)
+            logChecker("Output changed for " + block.fullString)
+
+          out(block) = output
+          append(block.successors)
+          block.successors foreach meet
         }
       }
     }
@@ -149,9 +154,19 @@ abstract class Checkers {
         if (s1 eq emptyStack) s2
         else if (s2 eq emptyStack) s1
         else {
-          if (s1.length != s2.length)
+          if (s1.isEmpty && s2.isEmpty) {
+            // PP: I do not know the significance of this condition, but it arises a lot
+            // so I'm taking the intuitive position that any two empty stacks are as good
+            // as another, rather than throwing an exception as it did.
+            // If the reference eq test is achieving something please document.
+            return emptyStack
+          }
+          else if (s1.length != s2.length)
             throw new CheckerException("Incompatible stacks: " + s1 + " and " + s2 + " in " + method + " at entry to block: " + bl);
-          new TypeStack((s1.types, s2.types).zipped map lub)
+
+          val types = (s1.types, s2.types).zipped map lub
+          checkerDebug("Checker created new stack: (%s, %s) => %s".format(s1.types, s2.types, types))
+          new TypeStack(types)
         }
       }
 
@@ -170,29 +185,67 @@ abstract class Checkers {
      * produced type stack.
      */
     def check(b: BasicBlock, initial: TypeStack): TypeStack = {
-      log("** Checking block:\n" + b.fullString + " with initial stack:\n" + initial)
+      logChecker({
+        val prefix = "** Checking " + b.fullString
+
+        if (initial.isEmpty) prefix
+        else prefix + " with initial stack " + initial.types.mkString("[", ", ", "]")
+      })
+
       var stack = new TypeStack(initial)
+      def checkStack(len: Int) {
+        if (stack.length < len)
+          ICodeChecker.this.error("Expected at least " + len + " elements on the stack", stack)
+      }
+
+      def sizeString(push: Boolean) = {
+        val arrow = if (push) "-> " else "<- "
+        val sp    = "   " * stack.length
+
+        sp + stack.length + arrow
+      }
+      def _popStack: TypeKind = {
+        if (stack.isEmpty) {
+          error("Popped empty stack in " + b.fullString + ", throwing a Unit")
+          return UNIT
+        }
+
+        val res = stack.pop
+        checkerDebug(sizeString(false) + res)
+        res
+      }
+      def popStack     = { checkStack(1) ; _popStack }
+      def popStack2    = { checkStack(2) ; (_popStack, _popStack) }
+      def popStack3    = { checkStack(3) ; (_popStack, _popStack, _popStack) }
+      def clearStack() = 1 to stack.length foreach (_ => popStack)
+
+      def pushStack(xs: TypeKind*): Unit = {
+        xs foreach { x =>
+          if (x == UNIT)
+            logChecker("Ignoring pushed UNIT")
+          else {
+            stack push x
+            checkerDebug(sizeString(true) + x)
+          }
+        }
+      }
 
       this.typeStack = stack
       this.basicBlock = b
 
       def typeError(k1: TypeKind, k2: TypeKind) {
-        error(" expected: " + k1 + " but " + k2 + " found")
+        error("\n  expected: " + k1 + "\n     found: " + k2)
       }
+
+      def subtypeTest(k1: TypeKind, k2: TypeKind): Unit =
+        if (k1 <:< k2) ()
+        else typeError(k2, k1)
 
       for (instr <- b) {
 
-        def checkStack(len: Int) {
-          if (stack.length < len)
-            ICodeChecker.this.error("Expected at least " + len + " elements on the stack", stack);
-          else
-            ()
-        }
-
-        def checkLocal(local: Local) {
-          method.lookupLocal(local.sym.name) match {
-            case None => error(" " + local + " is not defined in method " + method);
-            case _ => ()
+        def checkLocal(local: Local): Unit = {
+          (method lookupLocal local.sym.name) getOrElse {
+            error(" " + local + " is not defined in method " + method)
           }
         }
 
@@ -208,17 +261,17 @@ abstract class Checkers {
 
         /** Checks that tpe is a subtype of one of the allowed types */
         def checkType(tpe: TypeKind, allowed: TypeKind*) {
-          if (isOneOf(tpe, allowed: _*))
-            ()
-          else
-            error(tpe.toString() + " is not one of: " + allowed.toList.mkString("{", ", ", "}"));
+          if (isOneOf(tpe, allowed: _*)) ()
+          else error(tpe + " is not one of: " + allowed.mkString("{", ", ", "}"))
         }
+        def checkNumeric(tpe: TypeKind) =
+          checkType(tpe, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
 
         /** Checks that the 2 topmost elements on stack are of the
          *  kind TypeKind.
          */
         def checkBinop(kind: TypeKind) {
-          val (a, b) = stack.pop2
+          val (a, b) = popStack2
           checkType(a, kind)
           checkType(b, kind)
         }
@@ -227,7 +280,7 @@ abstract class Checkers {
         def checkMethodArgs(method: Symbol) {
           val params = method.info.paramTypes
           checkStack(params.length)
-          params.reverse.foreach( (tpe) => checkType(stack.pop, toTypeKind(tpe)))
+          params.reverse foreach (tpe => checkType(popStack, toTypeKind(tpe)))
         }
 
         /** Checks that the object passed as receiver has a method
@@ -241,11 +294,11 @@ abstract class Checkers {
             case REFERENCE(sym) =>
               checkBool(sym.info.member(method.name) != NoSymbol,
                         "Method " + method + " does not exist in " + sym.fullName);
-              if (method hasFlag Flags.PRIVATE)
+              if (method.isPrivate)
                 checkBool(method.owner == clasz.symbol,
                           "Cannot call private method of " + method.owner.fullName
                           + " from " + clasz.symbol.fullName);
-              else if (method hasFlag Flags.PROTECTED)
+              else if (method.isProtected)
                 checkBool(clasz.symbol isSubClass method.owner,
                           "Cannot call protected method of " + method.owner.fullName
                           + " from " + clasz.symbol.fullName);
@@ -259,7 +312,7 @@ abstract class Checkers {
           }
 
         def checkBool(cond: Boolean, msg: String) =
-          if (cond) () else error(msg)
+          if (!cond) error(msg)
 
         this.instruction = instr
 
@@ -270,18 +323,16 @@ abstract class Checkers {
         }
         instr match {
           case THIS(clasz) =>
-            stack push toTypeKind(clasz.tpe)
+            pushStack(toTypeKind(clasz.tpe))
 
           case CONSTANT(const) =>
-            stack push toTypeKind(const.tpe)
+            pushStack(toTypeKind(const.tpe))
 
           case LOAD_ARRAY_ITEM(kind) =>
-            checkStack(2)
-            (stack.pop2: @unchecked) match {
+            popStack2 match {
               case (INT, ARRAY(elem)) =>
-                if (!(elem <:< kind))
-                  typeError(kind, elem);
-                stack.push(elem);
+                subtypeTest(elem, kind)
+                pushStack(elem)
               case (a, b) =>
                 error(" expected and INT and a array reference, but " +
                     a + ", " + b + " found");
@@ -289,33 +340,32 @@ abstract class Checkers {
 
          case LOAD_LOCAL(local) =>
            checkLocal(local)
-           stack.push(local.kind)
+           pushStack(local.kind)
 
          case LOAD_FIELD(field, isStatic) =>
-           if (isStatic) {
-             // the symbol's owner should contain it's field, but
-             // this is already checked by the type checker, no need
-             // to redo that here
-           } else {
-             checkStack(1)
-             val obj = stack.pop
-             checkField(obj, field)
-           }
-           stack.push(toTypeKind(field.tpe))
+           // the symbol's owner should contain it's field, but
+           // this is already checked by the type checker, no need
+           // to redo that here
+           if (isStatic) ()
+           else checkField(popStack, field)
+
+           pushStack(toTypeKind(field.tpe))
 
          case LOAD_MODULE(module) =>
            checkBool((module.isModule || module.isModuleClass),
                      "Expected module: " + module + " flags: " + Flags.flagsToString(module.flags));
-           stack.push(toTypeKind(module.tpe));
+           pushStack(toTypeKind(module.tpe));
+
+         case STORE_THIS(kind) =>
+           val actualType = popStack
+           if (actualType.isReferenceType) subtypeTest(actualType, kind)
+           else error("Expected this reference but found: " + actualType)
 
          case STORE_ARRAY_ITEM(kind) =>
-           checkStack(3);
-           (stack.pop3: @unchecked) match {
+           popStack3 match {
              case (k, INT, ARRAY(elem)) =>
-                if (!(k <:< kind))
-                  typeError(kind, k);
-                if (!(k <:< elem))
-                  typeError(elem, k);
+               subtypeTest(k, kind)
+               subtypeTest(k, elem)
              case (a, b, c) =>
                 error(" expected and array reference, and int and " + kind +
                       " but " + a + ", " + b + ", " + c + " found");
@@ -323,166 +373,145 @@ abstract class Checkers {
 
          case STORE_LOCAL(local) =>
            checkLocal(local)
-           checkStack(1)
+           val actualType = popStack
+           // PP: ThrowableReference is temporary to deal with exceptions
+           // not yet appearing typed.
+           if (actualType == ThrowableReference || local.kind == SCALA_NULL) ()
+           else subtypeTest(actualType, local.kind)
 
-           val actualType = stack.pop;
-           if (!(actualType <:< local.kind) &&
-               //actualType != CASE_CLASS &&
-               local.kind != SCALA_ALL_REF)
-             typeError(local.kind, actualType);
+         case STORE_FIELD(field, true) =>     // static
+           val fieldType = toTypeKind(field.tpe)
+           val actualType = popStack
+           subtypeTest(actualType, fieldType)
 
-         case STORE_FIELD(field, isStatic) =>
-           if (isStatic) {
-             checkStack(1);
-             val fieldType = toTypeKind(field.tpe);
-             val actualType = stack.pop;
-             if (!(actualType <:< fieldType))
-                   // && actualType != CASE_CLASS)
-               typeError(fieldType, actualType);
-           } else {
-             checkStack(2);
-             stack.pop2 match {
-               case (value, obj) =>
-                 checkField(obj, field);
-                 val fieldType = toTypeKind(field.tpe);
-                 if (fieldType != SCALA_ALL_REF && !(value <:< fieldType))
-                     //&& value != CASE_CLASS)
-                 typeError(fieldType, value);
-             }
-           }
+         case STORE_FIELD(field, false) =>    // not static
+           val (value, obj) = popStack2
+           checkField(obj, field)
+           val fieldType = toTypeKind(field.tpe)
+           if (fieldType == SCALA_NULL) ()
+           else subtypeTest(value, fieldType)
 
          case CALL_PRIMITIVE(primitive) =>
-           checkStack(instr.consumed);
+           checkStack(instr.consumed)
            primitive match {
              case Negation(kind) =>
-               checkType(kind, BOOL, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE);
-               checkType(stack.pop, kind);
-               stack push kind;
+               checkType(kind, BOOL, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
+               checkType(popStack, kind)
+               pushStack(kind)
 
              case Test(op, kind, zero) =>
-               if (zero) {
-                 val actualType = stack.pop;
-                 checkType(actualType, kind);
-               } else
-                 checkBinop(kind);
-               stack push BOOL
+               if (zero) checkType(popStack, kind)
+               else checkBinop(kind)
+
+               pushStack(BOOL)
 
              case Comparison(op, kind) =>
-               checkType(kind, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
+               checkNumeric(kind)
                checkBinop(kind)
-               stack push INT
+               pushStack(INT)
 
              case Arithmetic(op, kind) =>
-               checkType(kind, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
+               checkNumeric(kind)
                if (op == NOT)
-                 checkType(stack.pop, kind)
+                 checkType(popStack, kind)
                else
                  checkBinop(kind)
-               stack push kind
+               pushStack(kind)
 
              case Logical(op, kind) =>
-               checkType(kind,  BOOL, BYTE, CHAR, SHORT, INT, LONG)
+               checkType(kind, BOOL, BYTE, CHAR, SHORT, INT, LONG)
                checkBinop(kind)
-               stack push kind
+               pushStack(kind)
 
              case Shift(op, kind) =>
                checkType(kind, BYTE, CHAR, SHORT, INT, LONG)
-               val (a, b) = stack.pop2
+               val (a, b) = popStack2
                checkType(a, INT)
                checkType(b, kind)
-               stack push kind
+               pushStack(kind)
 
              case Conversion(src, dst) =>
-               checkType(src, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
-               checkType(dst, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
-               checkType(stack.pop, src)
-               stack push dst
+               checkNumeric(src)
+               checkNumeric(dst)
+               checkType(popStack, src)
+               pushStack(dst)
 
              case ArrayLength(kind) =>
-               val arr = stack.pop
-               arr match {
-                 case ARRAY(elem) =>
-                   checkType(elem, kind);
-                 case _ =>
-                   error(" array reference expected, but " + arr + " found");
+               popStack match {
+                 case ARRAY(elem) => checkType(elem, kind)
+                 case arr         => error(" array reference expected, but " + arr + " found")
                }
-               stack push INT
+               pushStack(INT)
 
              case StartConcat =>
-               stack.push(ConcatClass)
+               pushStack(ConcatClass)
 
              case EndConcat =>
-               checkType(stack.pop, ConcatClass)
-               stack.push(STRING)
+               checkType(popStack, ConcatClass)
+               pushStack(STRING)
 
              case StringConcat(el) =>
-               checkType(stack.pop, el)
-               checkType(stack.pop, ConcatClass)
-               stack push ConcatClass
+               checkType(popStack, el)
+               checkType(popStack, ConcatClass)
+               pushStack(ConcatClass)
            }
 
          case CALL_METHOD(method, style) =>
+           def paramCount     = method.info.paramTypes.length
+           def pushReturnType = pushStack(toTypeKind(method.info.resultType))
+
            style match {
              case Dynamic | InvokeDynamic =>
-               checkStack(1 + method.info.paramTypes.length)
+               checkStack(1 + paramCount)
                checkMethodArgs(method)
-               checkMethod(stack.pop, method)
-               stack.push(toTypeKind(method.info.resultType))
+               checkMethod(popStack, method)
+               pushReturnType
 
              case Static(onInstance) =>
                if (onInstance) {
-                 checkStack(1 + method.info.paramTypes.length)
-                 checkBool(method.hasFlag(Flags.PRIVATE) || method.isConstructor,
+                 checkStack(1 + paramCount)
+                 checkBool(method.isPrivate || method.isConstructor,
                            "Static call to non-private method.")
                  checkMethodArgs(method)
-                 checkMethod(stack.pop, method)
+                 checkMethod(popStack, method)
                  if (!method.isConstructor)
-                   stack.push(toTypeKind(method.info.resultType));
-               } else {
-                 checkStack(method.info.paramTypes.length);
+                   pushReturnType
+               }
+               else {
+                 checkStack(paramCount);
                  checkMethodArgs(method);
-                 stack.push(toTypeKind(method.info.resultType));
+                 pushReturnType
                }
 
              case SuperCall(mix) =>
-               checkStack(1 + method.info.paramTypes.length)
+               checkStack(1 + paramCount)
                checkMethodArgs(method)
-               checkMethod(stack.pop, method)
-               stack.push(toTypeKind(method.info.resultType))
+               checkMethod(popStack, method)
+               pushReturnType
            }
 
           case NEW(kind) =>
-            kind match {
-              case REFERENCE(cls) =>
-                stack.push(kind)
-              //bq: had to change from _ to null, because otherwise would be unreachable code
-              case null =>
-                error("NEW call to non-reference type: " + kind)
-            }
+            pushStack(kind)
 
           case CREATE_ARRAY(elem, dims) =>
             checkStack(dims)
             stack.pop(dims) foreach (checkType(_, INT))
-            stack.push(ARRAY(elem))
+            pushStack(ARRAY(elem))
 
           case IS_INSTANCE(tpe) =>
-            val ref = stack.pop
-            checkBool(ref.isReferenceType || ref.isArrayType,
-                      "IS_INSTANCE on primitive type: " + ref)
-            checkBool(tpe.isReferenceType || tpe.isArrayType,
-                      "IS_INSTANCE to primitive type: " + tpe)
-            stack.push(BOOL);
+            val ref = popStack
+            checkBool(!ref.isValueType, "IS_INSTANCE on primitive type: " + ref)
+            checkBool(!tpe.isValueType, "IS_INSTANCE on primitive type: " + tpe)
+            pushStack(BOOL)
 
           case CHECK_CAST(tpe) =>
-            val ref = stack.pop
-            checkBool(ref.isReferenceType || ref.isArrayType,
-                      "CHECK_CAST on primitive type: " + ref)
-            checkBool(tpe.isReferenceType || tpe.isArrayType,
-                      "CHECK_CAST to primitive type: " + tpe)
-            stack.push(tpe);
+            val ref = popStack
+            checkBool(!ref.isValueType, "CHECK_CAST to primitive type: " + ref)
+            checkBool(!tpe.isValueType, "CHECK_CAST to primitive type: " + tpe)
+            pushStack(tpe)
 
           case SWITCH(tags, labels) =>
-            checkType(stack.pop, INT)
+            checkType(popStack, INT)
             checkBool(tags.length == labels.length - 1,
                       "The number of tags and labels does not coincide.")
             checkBool(labels forall (b => code.blocks contains b),
@@ -504,60 +533,46 @@ abstract class Checkers {
                       "Jump to non-existant block " + success)
             checkBool(code.blocks contains failure,
                       "Jump to non-existant block " + failure)
-            checkType(stack.pop, kind)
+            checkType(popStack, kind)
 
+          case RETURN(UNIT) => ()
           case RETURN(kind) =>
-            kind match {
-              case UNIT => ()
-
-              case REFERENCE(_) | ARRAY(_) =>
-                checkStack(1)
-                val top = stack.pop
-                checkBool(top.isReferenceType || top.isArrayType,
-                            "" + kind + " is a reference type, but " + top + " is not");
-              case _ =>
-                checkStack(1)
-                val top = stack.pop
-                checkType(top, kind)
-            }
+            val top = popStack
+            if (kind.isValueType) checkType(top, kind)
+            else checkBool(!top.isValueType, "" + kind + " is a reference type, but " + top + " is not");
 
           case THROW() =>
-            val thrown = stack.pop
+            val thrown = popStack
             checkBool(thrown.toType <:< definitions.ThrowableClass.tpe,
                       "Element on top of stack should implement 'Throwable': " + thrown);
-            stack.push(SCALA_ALL)
+            pushStack(SCALA_NOTHING)
 
           case DROP(kind) =>
-            checkType(stack.pop, kind)
+            checkType(popStack, kind)
 
           case DUP(kind) =>
-            val top = stack.pop
+            val top = popStack
             checkType(top, kind)
-            stack.push(top)
-            stack.push(top)
+            pushStack(top)
+            pushStack(top)
 
           case MONITOR_ENTER() =>
-            checkStack(1)
-            checkBool(stack.pop.isReferenceType,
-                      "MONITOR_ENTER on non-reference type")
+            checkBool(popStack.isReferenceType, "MONITOR_ENTER on non-reference type")
 
           case MONITOR_EXIT() =>
-            checkStack(1)
-            checkBool(stack.pop.isReferenceType,
-                      "MONITOR_EXIT on non-reference type")
+            checkBool(popStack.isReferenceType, "MONITOR_EXIT on non-reference type")
 
           case BOX(kind) =>
-            checkStack(1)
-            checkType(stack.pop, kind)
-            stack.push(icodes.AnyRefReference)
+            checkType(popStack, kind)
+            pushStack(icodes.ObjectReference)
 
           case UNBOX(kind) =>
-            checkStack(1)
-            stack.pop
-            stack.push(kind)
+            popStack
+            pushStack(kind)
 
           case LOAD_EXCEPTION() =>
-            stack.push(THROWABLE)
+            clearStack()
+            pushStack(ThrowableReference)
 
           case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
             ()
@@ -572,15 +587,16 @@ abstract class Checkers {
     //////////////// Error reporting /////////////////////////
 
     def error(msg: String) {
-      Console.println(method.toString() + " in block: " + basicBlock.label)
-      printLastInstructions
+      Console.println("Error in " + method + ", block: " + basicBlock.label)
+      printLastInstructions(8)
 
       Checkers.this.global.error("ICode checker: " + method + ": " + msg)
     }
 
-    /** Prints the last 4 instructions. */
-    def printLastInstructions {
-      val buf = basicBlock.reverse dropWhile (_ != instruction) take 4 reverse;
+    /** Prints the last n instructions. */
+    def printLastInstructions(n: Int) {
+      val buf = basicBlock.reverse dropWhile (_ != instruction) take n reverse;
+      Console.println("Last " + buf.size + " instructions: ")
       buf foreach (Console println _)
       Console.println("at: " + buf.head.pos)
     }

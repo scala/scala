@@ -16,6 +16,10 @@ abstract class Set[T <: AnyRef] {
 
   def iterator: Iterator[T]
 
+  def foreach[U](f: T => U): Unit = iterator foreach f
+
+  def apply(x: T): Boolean = contains(x)
+
   @deprecated("use `iterator' instead") def elements = iterator
 
   def contains(x: T): Boolean =

@@ -104,6 +104,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       "specialized overload " + sym + " in " + env
   }
 
+
+  /** Just to mark uncheckable */
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new SpecializationPhase(prev)
+  class SpecializationPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    override def checkable = false
+  }
+
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new SpecializationTransformer(unit)
 

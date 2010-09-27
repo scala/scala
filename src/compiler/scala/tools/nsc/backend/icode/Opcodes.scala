@@ -112,7 +112,7 @@ trait Opcodes { self: ICodes =>
      */
     case class THIS(clasz: Symbol) extends Instruction {
       /** Returns a string representation of this constant */
-      override def toString(): String = "THIS"
+      override def toString = "THIS(" + clasz.name + ")"
 
       override def consumed = 0
       override def produced = 1
@@ -125,9 +125,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:constant
      */
     case class CONSTANT(constant: Constant) extends Instruction {
-      /** Returns a string representation of this constant */
-      override def toString(): String = "CONSTANT ("+constant.toString()+")"
-
       override def consumed = 0
       override def produced = 1
 
@@ -140,9 +137,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:element(a)
      */
     case class LOAD_ARRAY_ITEM(kind: TypeKind) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "LOAD_ARRAY_ITEM (" + kind + ")"
-
       override def consumed = 2
       override def produced = 1
 
@@ -155,9 +149,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:value
      */
     case class LOAD_LOCAL(local: Local) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "LOAD_LOCAL "+local.toString()  //+isArgument?" (argument)":"";
-
       override def consumed = 0
       override def produced = 1
 
@@ -182,11 +173,9 @@ trait Opcodes { self: ICodes =>
     }
 
     case class LOAD_MODULE(module: Symbol) extends Instruction {
-      assert(module != NoSymbol,
-             "Invalid module symbol");
+      assert(module != NoSymbol, "Invalid module symbol")
       /** Returns a string representation of this instruction */
-      override def toString(): String =
-        "LOAD_MODULE " + module.toString()
+      override def toString(): String = "LOAD_MODULE " + module
 
       override def consumed = 0
       override def produced = 1
@@ -199,9 +188,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...
      */
     case class STORE_ARRAY_ITEM(kind: TypeKind) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "STORE_ARRAY_ITEM (" + kind + ")"
-
       override def consumed = 3
       override def produced = 0
 
@@ -213,9 +199,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...
      */
     case class STORE_LOCAL(local: Local) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String = "STORE_LOCAL "+local.toString(); //+isArgument?" (argument)":"";
-
       override def consumed = 1
       override def produced = 0
 
@@ -229,7 +212,7 @@ trait Opcodes { self: ICodes =>
     case class STORE_FIELD(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "STORE_FIELD "+field.toString() + (if (isStatic) " (static)" else " (dynamic)");
+        "STORE_FIELD "+field + (if (isStatic) " (static)" else " (dynamic)");
 
       override def consumed = if(isStatic) 1 else 2;
       override def produced = 0;
@@ -246,7 +229,6 @@ trait Opcodes { self: ICodes =>
        *    ->: ...
        */
     case class STORE_THIS(kind: TypeKind) extends Instruction {
-      override def toString() = "STORE_THIS(" + kind + ")"
       override def consumed = 1
       override def produced = 0
       override def consumedTypes = List(kind)
@@ -257,9 +239,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:result
      */
     case class CALL_PRIMITIVE(primitive: Primitive) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String ="CALL_PRIMITIVE "+primitive.toString()
-
       override def consumed = primitive match {
         case Negation(_)       => 1
         case Test(_,_, true)   => 1
@@ -322,7 +301,7 @@ trait Opcodes { self: ICodes =>
     case class CALL_METHOD(method: Symbol, style: InvokeStyle) extends Instruction with ReferenceEquality {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "CALL_METHOD " + hostClass.fullName + method.fullName +" ("+style.toString()+")";
+        "CALL_METHOD " + method.fullName +" ("+style+")"
 
       var hostClass: Symbol = method.owner
       def setHostClass(cls: Symbol): this.type = { hostClass = cls; this }
@@ -342,7 +321,7 @@ trait Opcodes { self: ICodes =>
       override def consumed = params.length + consumesInstance
       override def consumedTypes = {
         val args = params map toTypeKind
-        if (consumesInstance > 0) AnyRefReference :: args
+        if (consumesInstance > 0) ObjectReference :: args
         else args
       }
 
@@ -371,7 +350,7 @@ trait Opcodes { self: ICodes =>
     case class UNBOX(boxType: TypeKind) extends Instruction {
       override def toString(): String = "UNBOX " + boxType
       override def consumed = 1
-      override def consumedTypes = AnyRefReference :: Nil
+      override def consumedTypes = ObjectReference :: Nil
       override def produced = 1
     }
 
@@ -397,7 +376,7 @@ trait Opcodes { self: ICodes =>
      */
     case class CREATE_ARRAY(elem: TypeKind, dims: Int) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CREATE_ARRAY "+elem.toString() + " x " + dims;
+      override def toString(): String ="CREATE_ARRAY "+elem + " x " + dims;
 
       override def consumed = dims;
       override def consumedTypes = List.fill(dims)(INT)
@@ -410,10 +389,10 @@ trait Opcodes { self: ICodes =>
      */
     case class IS_INSTANCE(typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="IS_INSTANCE "+typ.toString()
+      override def toString(): String ="IS_INSTANCE "+typ
 
       override def consumed = 1
-      override def consumedTypes = AnyRefReference :: Nil
+      override def consumedTypes = ObjectReference :: Nil
       override def produced = 1
     }
 
@@ -423,11 +402,11 @@ trait Opcodes { self: ICodes =>
      */
     case class CHECK_CAST(typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="CHECK_CAST "+typ.toString()
+      override def toString(): String ="CHECK_CAST "+typ
 
       override def consumed = 1
       override def produced = 1
-      override val consumedTypes = List(AnyRefReference)
+      override val consumedTypes = List(ObjectReference)
       override def producedTypes = List(typ)
     }
 
@@ -473,7 +452,7 @@ trait Opcodes { self: ICodes =>
       /** Returns a string representation of this instruction */
       override def toString(): String = (
         "CJUMP (" + kind + ")" +
-        cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label
+        cond + " ? "+successBlock.label+" : "+failureBlock.label
       );
 
       override def consumed = 2
@@ -492,7 +471,7 @@ trait Opcodes { self: ICodes =>
       /** Returns a string representation of this instruction */
       override def toString(): String = (
         "CZJUMP (" + kind + ")" +
-        cond.toString()+" ? "+successBlock.label+" : "+failureBlock.label
+        cond + " ? "+successBlock.label+" : "+failureBlock.label
       );
 
       override def consumed = 1
@@ -505,9 +484,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...
      */
     case class RETURN(kind: TypeKind) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String ="RETURN (" + kind + ")"
-
       override def consumed = if (kind == UNIT) 0 else 1
       override def produced = 0
     }
@@ -530,7 +506,7 @@ trait Opcodes { self: ICodes =>
      */
     case class DROP (typ: TypeKind) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String ="DROP "+typ.toString()
+      override def toString(): String ="DROP "+typ
 
       override def consumed = 1
       override def produced = 0
@@ -541,9 +517,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:something:something
      */
     case class DUP (typ: TypeKind) extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String ="DUP"
-
       override def consumed = 1
       override def produced = 2
     }
@@ -553,7 +526,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:
      */
     case class MONITOR_ENTER() extends Instruction {
-
       /** Returns a string representation of this instruction */
       override def toString(): String ="MONITOR_ENTER"
 
@@ -566,7 +538,6 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:
      */
     case class MONITOR_EXIT() extends Instruction {
-
       /** Returns a string representation of this instruction */
       override def toString(): String ="MONITOR_EXIT";
 
@@ -603,7 +574,7 @@ trait Opcodes { self: ICodes =>
       override def toString(): String = "LOAD_EXCEPTION"
       override def consumed = error("LOAD_EXCEPTION does clean the whole stack, no idea how many things it consumes!")
       override def produced = 1
-      override def producedTypes = AnyRefReference :: Nil
+      override def producedTypes = ThrowableReference :: Nil
     }
 
     /** This class represents a method invocation style. */
@@ -627,18 +598,18 @@ trait Opcodes { self: ICodes =>
 
       /** Is this an instance method call? */
       def hasInstance: Boolean = this match {
-        case Dynamic => true
+        case Dynamic            => true
         case Static(onInstance) => onInstance
-        case SuperCall(_) => true
-        case _ => false
+        case SuperCall(_)       => true
+        case _                  => false
       }
 
       /** Returns a string representation of this style. */
       override def toString(): String = this match {
-        case Dynamic =>  "dynamic"
-        case InvokeDynamic => "invoke-dynamic"
-        case Static(false) => "static-class"
-        case Static(true) =>  "static-instance"
+        case Dynamic        => "dynamic"
+        case InvokeDynamic  => "invoke-dynamic"
+        case Static(false)  => "static-class"
+        case Static(true)   => "static-instance"
         case SuperCall(mix) => "super(" + mix + ")"
       }
     }
@@ -663,7 +634,7 @@ trait Opcodes { self: ICodes =>
 
     case class CIL_LOAD_LOCAL_ADDRESS(local: Local) extends Instruction {
       /** Returns a string representation of this instruction */
-      override def toString(): String = "CIL_LOAD_LOCAL_ADDRESS "+local.toString()  //+isArgument?" (argument)":"";
+      override def toString(): String = "CIL_LOAD_LOCAL_ADDRESS "+local  //+isArgument?" (argument)":"";
 
       override def consumed = 0
       override def produced = 1
@@ -674,7 +645,7 @@ trait Opcodes { self: ICodes =>
     case class CIL_LOAD_FIELD_ADDRESS(field: Symbol, isStatic: Boolean) extends Instruction {
       /** Returns a string representation of this instruction */
       override def toString(): String =
-        "CIL_LOAD_FIELD_ADDRESS " + (if (isStatic) field.fullName else field.toString());
+        "CIL_LOAD_FIELD_ADDRESS " + (if (isStatic) field.fullName else field.toString)
 
       override def consumed = if (isStatic) 0 else 1
       override def produced = 1
@@ -697,7 +668,7 @@ trait Opcodes { self: ICodes =>
     case class CIL_UNBOX(valueType: TypeKind) extends Instruction {
       override def toString(): String = "CIL_UNBOX " + valueType
       override def consumed = 1
-      override def consumedTypes = AnyRefReference :: Nil // actually consumes a 'boxed valueType'
+      override def consumedTypes = ObjectReference :: Nil // actually consumes a 'boxed valueType'
       override def produced = 1
       override def producedTypes = List(msil_mgdptr(valueType))
     }
@@ -705,7 +676,7 @@ trait Opcodes { self: ICodes =>
     case class CIL_INITOBJ(valueType: TypeKind) extends Instruction {
       override def toString(): String = "CIL_INITOBJ " + valueType
       override def consumed = 1
-      override def consumedTypes = AnyRefReference :: Nil // actually consumes a managed pointer
+      override def consumedTypes = ObjectReference :: Nil // actually consumes a managed pointer
       override def produced = 0
     }
 
