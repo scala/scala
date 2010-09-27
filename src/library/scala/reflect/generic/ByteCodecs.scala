@@ -193,7 +193,9 @@ object ByteCodecs {
   @deprecated("use 1-argument version instead")
   def decode(xs: Array[Byte], dstlen: Int) { decode(xs) }
 
-  /** Destructively decode array xs and returns the length of the decoded array */
+  /** Destructively decode array xs and returns the length of the decoded array
+   *  LUKAS: my testing showed that this actually retruns the length of the
+   *  decoded array + 1. Gilles, please check. */
   def decode(xs: Array[Byte]): Int = {
     val len = regenerateZero(xs)
     decode7to8(xs, len)

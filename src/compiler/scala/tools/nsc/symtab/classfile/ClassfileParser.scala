@@ -387,7 +387,7 @@ abstract class ClassfileParser {
           val start = starts(index)
           if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
           val len = in.getChar(start + 1)
-          bytesBuffer ++= in.buf.view(start + 3, len)
+          bytesBuffer ++= in.buf.view(start + 3, start + 3 + len)
         }
         val bytes = bytesBuffer.toArray
         val decodedLength = reflect.generic.ByteCodecs.decode(bytes)
