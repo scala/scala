@@ -193,9 +193,22 @@ object ByteCodecs {
   @deprecated("use 1-argument version instead")
   def decode(xs: Array[Byte], dstlen: Int) { decode(xs) }
 
-  /** Destructively decode array xs and returns the length of the decoded array
-   *  LUKAS: my testing showed that this actually retruns the length of the
-   *  decoded array + 1. Gilles, please check. */
+  /**
+   * Destructively decodes array xs and returns the length of the decoded array.
+   *
+   * Sometimes returns (length+1) of the decoded array. Example:
+   *
+   *   scala> val enc = reflect.generic.ByteCodecs.encode(Array(1,2,3))
+   *   enc: Array[Byte] = Array(2, 5, 13, 1)
+   *
+   *   scala> reflect.generic.ByteCodecs.decode(enc)
+   *   res43: Int = 4
+   *
+   *   scala> enc
+   *   res44: Array[Byte] = Array(1, 2, 3, 0)
+   *
+   * However, this does not always happen.
+   */
   def decode(xs: Array[Byte]): Int = {
     val len = regenerateZero(xs)
     decode7to8(xs, len)
