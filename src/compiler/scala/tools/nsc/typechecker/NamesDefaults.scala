@@ -389,7 +389,7 @@ trait NamesDefaults { self: Analyzer =>
    * the default getter.
    */
   def defaultGetter(param: Symbol, context: Context): Symbol = {
-    val i = param.owner.paramss.flatten.findIndexOf(p => p.name == param.name) + 1
+    val i = param.owner.paramss.flatten.indexWhere(p => p.name == param.name) + 1
     if (i > 0) {
       if (param.owner.isConstructor) {
         val defGetterName = "init$default$"+ i
