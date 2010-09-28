@@ -2679,7 +2679,7 @@ trait Typers { self: Analyzer =>
         // and    Array.apply(x: Int, xs: Int*): Array[Int]       (and similar)
         case Apply(fun, args) =>
           val typedFun = typed(fun, funMode(mode), WildcardType)
-          if (isArray_Apply(typedFun.symbol))
+          if (typedFun.symbol.owner == ArrayModule.moduleClass && typedFun.symbol.name == nme.apply)
             pt match {
               case TypeRef(_, ArrayClass, targ :: _) =>
                 trees2ConstArg(args, targ)
@@ -3404,7 +3404,7 @@ trait Typers { self: Analyzer =>
                 res.tpe = res.tpe.notNull
               }
               */
-              if (isArray_Apply(fun2.symbol)) {
+              if (fun2.symbol == Array_apply) {
                 val checked = gen.mkCheckInit(res)
                 // this check is needed to avoid infinite recursion in Duplicators
                 // (calling typed1 more than once for the same tree)
