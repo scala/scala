@@ -1,0 +1,6 @@
+t3873.scala:11: error: type mismatch;
+ found   : Test.a.B
+ required: a.B
+  wrongf(new A)(a.b) // should not compile -- TODO: improve error message? the "a" is ambiguous
+                  ^
+one error found
