@@ -82,6 +82,19 @@ abstract class Checkers {
       classes.values foreach check
     }
 
+    private def posStr(p: Position) =
+      if (p.isDefined) p.line.toString else "<no pos>"
+
+    private def indent(s: String, spaces: Int): String = indent(s, " " * spaces)
+    private def indent(s: String, prefix: String): String = {
+      val lines = s split "\\n"
+      lines map (prefix + _) mkString "\n"
+    }
+    private def blockAsString(bl: BasicBlock) = {
+      val s = bl.toList map (instr => posStr(instr.pos) + "\t" + instr) mkString (bl.fullString + " {\n  ", "\n  ", "\n}")
+      indent(s, "// ")
+    }
+
     /** Only called when m1 < m2, so already known that (m1 ne m2).
      */
     private def isConfict(m1: IMember, m2: IMember, canOverload: Boolean) = (
@@ -176,6 +189,10 @@ abstract class Checkers {
           checkerDebug("  s2: " + s2)
           new TypeStack()
         }
+        def incompatibleString = (
+          "Incompatible stacks: " + s1 + " and " + s2 + " in " + method + " at entry to:\n" +
+          blockAsString(bl)
+        )
 
         if (s1 eq emptyStack) s2
         else if (s2 eq emptyStack) s1
@@ -185,7 +202,7 @@ abstract class Checkers {
           else if (isHandlerBlock)
             workaround("Ignoring mismatched stacks entering exception handler")
           else
-            throw new CheckerException("Incompatible stacks: " + s1 + " and " + s2 + " in " + method + " at entry to block: " + bl);
+            throw new CheckerException(incompatibleString)
         }
         else {
           val newStack = new TypeStack((s1.types, s2.types).zipped map lub)
@@ -293,7 +310,7 @@ abstract class Checkers {
         /** Checks that tpe is a subtype of one of the allowed types */
         def checkType(tpe: TypeKind, allowed: TypeKind*) {
           if (isOneOf(tpe, allowed: _*)) ()
-          else error(tpe + " is not one of: " + allowed.mkString("{", ", ", "}"))
+          else error(tpe + " is not one of: " + allowed.mkString("{ ", ", ", " }"))
         }
         def checkNumeric(tpe: TypeKind) =
           checkType(tpe, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
@@ -618,18 +635,9 @@ abstract class Checkers {
     //////////////// Error reporting /////////////////////////
 
     def error(msg: String) {
-      Console.println("Error in " + method + ", block: " + basicBlock.label)
-      printLastInstructions(8)
-
-      Checkers.this.global.error("ICode checker: " + method + ": " + msg)
-    }
-
-    /** Prints the last n instructions. */
-    def printLastInstructions(n: Int) {
-      val buf = basicBlock.reverse dropWhile (_ != instruction) take n reverse;
-      Console.println("Last " + buf.size + " instructions: ")
-      buf foreach (Console println _)
-      Console.println("at: " + buf.head.pos)
+      Console.println("!! ICode checker fatality in " + method + " at:")
+      Console.println(blockAsString(basicBlock))
+      Checkers.this.global.error(method + ":\n " + msg)
     }
 
     def error(msg: String, stack: TypeStack) {
