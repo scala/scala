@@ -63,12 +63,26 @@ trait TypeKinds { self: ICodes =>
     }
     def toTypeAt(ph: Phase): Type = atPhase(ph)(toType)
 
-    def isReferenceType        = false
-    def isArrayType            = false
-    def isValueType            = false
-    final def isRefOrArrayType = isReferenceType || isArrayType
-    final def isNothingType    = this == REFERENCE(NothingClass)
+    def isReferenceType           = false
+    def isArrayType               = false
+    def isValueType               = false
+    def isBoxedType               = false
+    final def isRefOrArrayType    = isReferenceType || isArrayType
+    final def isRefArrayOrBoxType = isRefOrArrayType || isBoxedType
+    final def isNothingType       = this == REFERENCE(NothingClass)
+    final def isInterfaceType     = this match {
+      case REFERENCE(cls) if cls.isInterface  => true
+      case _                                  => false
+    }
+    final def isBoxOrInterfaceType = isBoxedType || isInterfaceType
 
+    /** On the JVM, these types are like Ints for the
+     *  purposes of calculating the lub.
+     */
+    def isIntSizedType: Boolean = this match {
+      case BOOL | CHAR | BYTE | SHORT | INT => true
+      case _                                => false
+    }
     def isIntegralType: Boolean = this match {
       case BYTE | SHORT | INT | LONG | CHAR => true
       case _                                => false
@@ -117,48 +131,32 @@ trait TypeKinds { self: ICodes =>
    * The lub is based on the lub of scala types.
    */
   def lub(a: TypeKind, b: TypeKind): TypeKind = {
-    def lub0(tk1: TypeKind, tk2: TypeKind): Type = {
-      /** Returning existing implementation unless flag given.  See #3872. */
-      if (!isCheckerDebug)
-        return global.lub(List(tk1.toType, tk2.toType))
+    /** The compiler will be altered so this returns the right thing for our
+     *  purposes here.
+     */
+    def lub0(tk1: TypeKind, tk2: TypeKind): Type =
+      global.lub(List(tk1.toType, tk2.toType))
 
-      /** PP: Obviously looking for " with " is a bit short of the ideal robustness,
-       *  but that's why it's only used under -Ycheck-debug.  Correct fix is likely
-       *  to change compound types to lead with the class type.
-       */
-      atPhase(currentRun.typerPhase) {
-        val t1 = tk1.toType
-        val t2 = tk2.toType
-        val calculated = global.lub(List(t1, t2))
-        checkerDebug("at Phase %s, lub0(%s, %s) == %s".format(global.globalPhase, t1, t2, calculated))
-        calculated match {
-          case x: CompoundType =>
-            val tps = x.baseTypeSeq.toList filterNot (_.toString contains " with ")
-            val id  = global.erasure.erasure.intersectionDominator(tps)
-            checkerDebug("intersectionDominator(%s) == %s".format(tps.mkString(", "), id))
-            id
-          case x => x
-        }
-      }
-    }
+    // Approximate the JVM view of subtyping by collapsing boxed
+    // values and interfaces into AnyRef.  If we try to be more precise
+    // with intersections we run into post-erasure issues where a type
+    // like A with B may be used as an A in one place and a B in another.
+    def isBoxLub = (
+      (a.isBoxOrInterfaceType && b.isRefArrayOrBoxType) ||
+      (b.isBoxOrInterfaceType && a.isRefArrayOrBoxType)
+    )
+    def isIntLub = (
+      (a == INT && b.isIntSizedType) ||
+      (b == INT && a.isIntSizedType)
+    )
 
     if (a == b) a
     else if (a.isNothingType) b
     else if (b.isNothingType) a
-    else (a, b) match {
-      case (BOXED(a1), BOXED(b1)) => if (a1 == b1) a else REFERENCE(AnyRefClass)
-      case (BOXED(_), REFERENCE(_)) | (REFERENCE(_), BOXED(_)) => REFERENCE(AnyRefClass)
-      case (BOXED(_), ARRAY(_)) | (ARRAY(_), BOXED(_)) => REFERENCE(AnyRefClass)
-      case (BYTE, INT) | (INT, BYTE) => INT
-      case (SHORT, INT) | (INT, SHORT) => INT
-      case (CHAR, INT) | (INT, CHAR) => INT
-      case (BOOL, INT) | (INT, BOOL) => INT
-      case _ =>
-        if (a.isRefOrArrayType && b.isRefOrArrayType)
-          toTypeKind(lub0(a, b))
-        else
-          throw new CheckerException("Incompatible types: " + a + " with " + b)
-    }
+    else if (isBoxLub) REFERENCE(AnyRefClass)
+    else if (isIntLub) INT
+    else if (a.isRefOrArrayType && b.isRefOrArrayType) toTypeKind(lub0(a, b))
+    else throw new CheckerException("Incompatible types: " + a + " with " + b)
   }
 
   /** The unit value */
@@ -312,6 +310,7 @@ trait TypeKinds { self: ICodes =>
 
   /** A boxed value. */
   case class BOXED(kind: TypeKind) extends TypeKind {
+    override def isBoxedType = true
     /**
      * Approximate `lub'. The common type of two references is
      * always AnyRef. For 'real' least upper bound wrt to subclassing
