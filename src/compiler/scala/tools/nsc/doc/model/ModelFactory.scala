@@ -298,12 +298,16 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       val pack =
         if (bSym == RootPackage)
           new RootPackageImpl(bSym) {
+            // run this: println("Constructing root package. It's symbol is package? " + bSym.isPackage)
+            // RootPackage symbol package flag is set to false for some reason
+            // to circumvent this behaviour - isPackage is overridden below
             override val name = "root"
             override def inTemplate = this
             override def toRoot = this :: Nil
             override def qualifiedName = "_root_"
             override def inheritedFrom = Nil
             override def isRootPackage = true
+            override def isPackage = true
             override protected lazy val memberSyms =
               (bSym.info.members ++ EmptyPackage.info.members) filter { s =>
                 s != EmptyPackage && s != RootPackage
