@@ -316,8 +316,8 @@ abstract class ExplicitOuter extends InfoTransform
       /** If we don't re-type the tree, we see self-type related crashes like #266.
        */
       localTyper typed {
-        (DEF(outerAcc) withType null) === rhs
-      } setPos currentClass.pos
+        (DEF(outerAcc) withPos currentClass.pos withType null) === rhs
+      }
     }
 
     /** The definition tree of the outer accessor for class mixinClass.
@@ -334,11 +334,11 @@ abstract class ExplicitOuter extends InfoTransform
         else gen.mkAttributedQualifier(currentClass.thisType baseType mixinClass prefix)
 
       localTyper typed {
-        DEF(outerAcc) === {
+        (DEF(outerAcc) withPos currentClass.pos) === {
           // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
           transformer.transform(path) AS_ANY outerAcc.info.resultType
         }
-      } setPos currentClass.pos
+      }
     }
 
     /** If FLAG is set on symbol, sets notFLAG (this exists in anticipation of generalizing). */

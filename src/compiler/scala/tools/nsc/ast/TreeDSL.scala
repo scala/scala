@@ -193,7 +193,7 @@ trait TreeDSL {
       def defaultPos  = sym.pos
 
       final def ===(rhs: Tree): ResultTreeType =
-        atPos(sym.pos)(mkTree(rhs) setSymbol sym)
+        atPos(pos)(mkTree(rhs) setSymbol sym)
     }
     trait ValCreator {
       self: VODDStart =>
@@ -238,9 +238,9 @@ trait TreeDSL {
     }
 
     class IfStart(cond: Tree, thenp: Tree) {
-      def THEN(x: Tree) = new IfStart(cond, x)
+      def THEN(x: Tree)     = new IfStart(cond, x)
       def ELSE(elsep: Tree) = If(cond, thenp, elsep)
-      def ENDIF = If(cond, thenp, EmptyTree)
+      def ENDIF             = If(cond, thenp, EmptyTree)
     }
     class TryStart(body: Tree, catches: List[CaseDef], fin: Tree) {
       def CATCH(xs: CaseDef*) = new TryStart(body, xs.toList, fin)
@@ -301,9 +301,7 @@ trait TreeDSL {
     def TRY(tree: Tree)   = new TryStart(tree, Nil, EmptyTree)
     def BLOCK(xs: Tree*)  = Block(xs.init.toList, xs.last)
     def NOT(tree: Tree)   = Select(tree, getMember(BooleanClass, nme.UNARY_!))
-
-    private val _SOME     = scalaDot(nme.Some)
-    def SOME(xs: Tree*)   = Apply(_SOME, List(makeTupleTerm(xs.toList, true)))
+    def SOME(xs: Tree*)   = Apply(scalaDot(nme.Some), List(makeTupleTerm(xs.toList, true)))
 
     /** Typed trees from symbols. */
     def THIS(sym: Symbol)             = gen.mkAttributedThis(sym)

@@ -24,7 +24,7 @@ trait TypeStacks {
 
   class TypeStack(var types: Rep) {
     if (types.nonEmpty)
-      checkerDebug("TypeStack init: " + types.mkString(", "))
+      checkerDebug("Created " + this)
 
     def this() = this(Nil)
     def this(that: TypeStack) = this(that.types)
@@ -79,8 +79,8 @@ trait TypeStacks {
 
     /* This method returns a String representation of the stack */
     override def toString() =
-      if (types.isEmpty) "TypeStack()"
-      else types.mkString("TypeStack(" + types.size + " elems) {\n  ", "\n  ", "\n}")
+      if (types.isEmpty) "[]"
+      else types.mkString("[", " ", "]")
 
     override def hashCode() = types.hashCode()
     override def equals(other: Any): Boolean = other match {

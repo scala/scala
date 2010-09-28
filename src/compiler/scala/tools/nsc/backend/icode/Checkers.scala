@@ -65,6 +65,7 @@ abstract class Checkers {
     val emptyStack = new TypeStack()
 
     val STRING        = REFERENCE(definitions.StringClass)
+    val BOXED_UNIT    = REFERENCE(definitions.BoxedUnitClass)
     val SCALA_NOTHING = REFERENCE(definitions.NothingClass)
     val SCALA_NULL    = REFERENCE(definitions.NullClass)
 
@@ -150,27 +151,52 @@ abstract class Checkers {
     def meet(bl: BasicBlock) {
       val preds = bl.predecessors
 
+      /** XXX workaround #1: one stack empty, the other has BoxedUnit.
+       *  One example where this arises is:
+       *
+       *  def f(b: Boolean): Unit = synchronized { if (b) () }
+       */
+      def isAllUnits(s1: TypeStack, s2: TypeStack) = {
+        List(s1, s2) forall (x => x.types forall (_ == BOXED_UNIT))
+      }
+      /** XXX workaround #2: different stacks heading into an exception
+       *  handler which will clear them anyway.  Examples where it arises:
+       *
+       *  var bippy: Int = synchronized { if (b) 5 else 10 }
+       */
+      def isHandlerBlock() = bl.exceptionHandlerStart
+
+      /** The presence of emptyStack means that path has not yet been checked
+       *  (and may not be empty) thus the reference eq tests.
+       */
       def meet2(s1: TypeStack, s2: TypeStack): TypeStack = {
+        def workaround(msg: String) = {
+          checkerDebug(msg + ": " + method + " at block " + bl)
+          checkerDebug("  s1: " + s1)
+          checkerDebug("  s2: " + s2)
+          new TypeStack()
+        }
+
         if (s1 eq emptyStack) s2
         else if (s2 eq emptyStack) s1
-        else {
-          if (s1.isEmpty && s2.isEmpty) {
-            // PP: I do not know the significance of this condition, but it arises a lot
-            // so I'm taking the intuitive position that any two empty stacks are as good
-            // as another, rather than throwing an exception as it did.
-            // If the reference eq test is achieving something please document.
-            return emptyStack
-          }
-          else if (s1.length != s2.length)
+        else if (s1.length != s2.length) {
+          if (isAllUnits(s1, s2))
+            workaround("Ignoring mismatched boxed units")
+          else if (isHandlerBlock)
+            workaround("Ignoring mismatched stacks entering exception handler")
+          else
             throw new CheckerException("Incompatible stacks: " + s1 + " and " + s2 + " in " + method + " at entry to block: " + bl);
+        }
+        else {
+          val newStack = new TypeStack((s1.types, s2.types).zipped map lub)
+          if (newStack.nonEmpty)
+            checkerDebug("Checker created new stack:\n  (%s, %s) => %s".format(s1, s2, newStack))
 
-          val types = (s1.types, s2.types).zipped map lub
-          checkerDebug("Checker created new stack: (%s, %s) => %s".format(s1.types, s2.types, types))
-          new TypeStack(types)
+          newStack
         }
       }
 
-      if (preds != Nil) {
+      if (preds.nonEmpty) {
         in(bl) = (preds map out.apply) reduceLeft meet2;
         log("Input changed for block: " + bl +" to: " + in(bl));
       }
@@ -221,8 +247,13 @@ abstract class Checkers {
 
       def pushStack(xs: TypeKind*): Unit = {
         xs foreach { x =>
-          if (x == UNIT)
+          if (x == UNIT) {
+            /** PP: I admit I'm not yet figuring out how the stacks will balance when
+             *  we ignore UNIT, but I expect this knowledge will emerge naturally.
+             *  In the meantime I'm logging it to help me out.
+             */
             logChecker("Ignoring pushed UNIT")
+          }
           else {
             stack push x
             checkerDebug(sizeString(true) + x)
