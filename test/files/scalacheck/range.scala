@@ -183,10 +183,11 @@ object SmallValuesRange extends RangeTest("smallValues") {
 }
 
 object Test extends Properties("Range") {
-  include(NormalRangeTest)
-  include(InclusiveRangeTest)
-  include(ByOneRangeTest)
-  include(InclusiveByOneRangeTest)
+  import org.scalacheck.{ Test => STest }
+
+  List(NormalRangeTest, InclusiveRangeTest, ByOneRangeTest, InclusiveByOneRangeTest) foreach { ps =>
+    STest.checkProperties(STest.Params(testCallback = ConsoleReporter(0)), ps)
+  }
 }
 
 /* Mini-benchmark
