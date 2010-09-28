@@ -616,7 +616,7 @@ trait ParallelMatching extends ast.TreeDSL
       // temporary checks so we're less crashy while we determine what to implement.
       def checkErroneous(scrut: Scrutinee): Type = {
         scrut.tpe match {
-          case tpe @ ThisType(_) if tpe.termSymbol == NoSymbol        =>
+          case ThisType(clazz) if clazz.isAnonymousClass  =>
             cunit.error(scrut.pos, "self type test in anonymous class forbidden by implementation.")
             ErrorType
           case x => x
@@ -628,7 +628,7 @@ trait ParallelMatching extends ast.TreeDSL
           j -> (moreSpecific :: subsumed)
 
       lazy val casted = scrut castedTo pmatch.headType
-      lazy val cond   = condition(checkErroneous(casted), scrut, head.boundVariables.nonEmpty)
+      lazy val cond   = condition(checkErroneous(casted).tpe, scrut, head.boundVariables.nonEmpty)
 
       private def isAnyMoreSpecific = yeses exists (x => !x.moreSpecific.isEmpty)
       lazy val (subtests, subtestVars) =
