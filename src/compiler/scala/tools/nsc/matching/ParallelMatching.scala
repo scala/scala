@@ -613,22 +613,12 @@ trait ParallelMatching extends ast.TreeDSL
       val subsumed = yeses map (x => (x.bx, x.subsumed))
       val remaining = noes map (x => (x.bx, x.remaining))
 
-      // temporary checks so we're less crashy while we determine what to implement.
-      def checkErroneous(scrut: Scrutinee): Type = {
-        scrut.tpe match {
-          case ThisType(clazz) if clazz.isAnonymousClass  =>
-            cunit.error(scrut.pos, "self type test in anonymous class forbidden by implementation.")
-            ErrorType
-          case x => x
-        }
-      }
-
       private def mkZipped =
         for (Yes(j, moreSpecific, subsumed) <- yeses) yield
           j -> (moreSpecific :: subsumed)
 
       lazy val casted = scrut castedTo pmatch.headType
-      lazy val cond   = condition(checkErroneous(casted).tpe, scrut, head.boundVariables.nonEmpty)
+      lazy val cond   = condition(casted.tpe, scrut, head.boundVariables.nonEmpty)
 
       private def isAnyMoreSpecific = yeses exists (x => !x.moreSpecific.isEmpty)
       lazy val (subtests, subtestVars) =
@@ -873,36 +863,43 @@ trait ParallelMatching extends ast.TreeDSL
 
     final def condition(tpe: Type, scrutTree: Tree, isBound: Boolean): Tree = {
       assert((tpe ne NoType) && (scrutTree.tpe ne NoType))
-      def useEqTest     = tpe.termSymbol.isModule || (tpe.prefix eq NoPrefix)
+      def isMatchUnlessNull = scrutTree.tpe <:< tpe && tpe.isAnyRef
+      def isRef             = scrutTree.tpe.isAnyRef
 
-      //         case SingleType(_, _) | ThisType(_) | SuperType(_, _) =>
-      //           val cmpOp = if (targ.tpe <:< AnyValClass.tpe) Any_equals else Object_eq
-      // Apply(Select(qual, cmpOp), List(gen.mkAttributedQualifier(targ.tpe)))
+      // See ticket #1503 for the motivation behind checking for a binding.
+      // The upshot is that it is unsound to assume equality means the right
+      // type, but if the value doesn't appear on the right hand side of the
+      // match that's unimportant; so we add an instance check only if there
+      // is a binding.
+      def bindingWarning() = {
+        if (isBound && settings.Xmigration28.value) {
+          cunit.warning(scrutTree.pos,
+            "A bound pattern such as 'x @ Pattern' now matches fewer cases than the same pattern with no binding.")
+        }
+      }
 
-      typer typed (tpe match {
-        case ct: ConstantType => ct.value match {
-            case v @ Constant(null) if scrutTree.tpe.isAnyRef   => scrutTree OBJ_EQ NULL
-            case v                                              => scrutTree MEMBER_== Literal(v)
-          }
-        case _: SingletonType if useEqTest                      =>
-          val eqTest = REF(tpe.termSymbol) MEMBER_== scrutTree
+      def genEquals(sym: Symbol): Tree = {
+        val t1: Tree = REF(sym) MEMBER_== scrutTree
 
-          // See ticket #1503 for the motivation behind checking for a binding.
-          // The upshot is that it is unsound to assume equality means the right
-          // type, but if the value doesn't appear on the right hand side of the
-          // match that's unimportant; so we add an instance check only if there
-          // is a binding.
-          if (isBound) {
-            if (settings.Xmigration28.value) {
-              cunit.warning(scrutTree.pos, "A bound pattern such as 'x @ Pattern' now matches fewer cases than the same pattern with no binding.")
-            }
-            eqTest AND (scrutTree IS tpe.widen)
-          }
-          else eqTest
+        if (isBound) {
+          bindingWarning()
+          t1 AND (scrutTree IS tpe.widen)
+        }
+        else t1
+      }
 
-        case _ if scrutTree.tpe <:< tpe && tpe.isAnyRef         => scrutTree OBJ_!= NULL
-        case _                                                  => scrutTree IS tpe
-      })
+      typer typed {
+        tpe match {
+          case ConstantType(Constant(null)) if isRef  => scrutTree OBJ_EQ NULL
+          case ConstantType(Constant(value))          => scrutTree MEMBER_== Literal(value)
+          case SingleType(NoPrefix, sym)              => genEquals(sym)
+          case SingleType(pre, sym) if sym.isModule   => genEquals(sym)
+          case ThisType(sym) if sym.isAnonymousClass  => cunit.error(sym.pos, "self type test in anonymous class forbidden by implementation.") ; EmptyTree
+          case ThisType(sym) if sym.isModule          => genEquals(sym)
+          case _ if isMatchUnlessNull                 => scrutTree OBJ_NE NULL
+          case _                                      => scrutTree IS tpe
+        }
+      }
     }
 
     /** adds a test comparing the dynamic outer to the static outer */

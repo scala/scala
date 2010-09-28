@@ -1109,7 +1109,7 @@ abstract class GenICode extends SubComponent  {
           ctx
 
         case _ =>
-          abort("Unexpected tree in genLoad: " + tree + " at: " + tree.pos)
+          abort("Unexpected tree in genLoad: " + tree + "/" + tree.getClass + " at: " + tree.pos)
       }
 
       // emit conversion
