@@ -124,8 +124,8 @@ abstract class ExplicitOuter extends InfoTransform
       else tp
     case ClassInfoType(parents, decls, clazz) =>
       var decls1 = decls
-      if (isInner(clazz) && !(clazz hasFlag INTERFACE)) {
-        decls1 = new Scope(decls.toList)
+      if (isInner(clazz) && !clazz.isInterface) {
+        decls1 = decls.cloneScope
         val outerAcc = clazz.newMethod(clazz.pos, nme.OUTER) // 3
         outerAcc expandName clazz
 
@@ -134,7 +134,7 @@ abstract class ExplicitOuter extends InfoTransform
         if (hasOuterField(clazz)) { //2
           val access = if (clazz.isFinal) PRIVATE | LOCAL else PROTECTED
           decls1 enter (
-            clazz.newValue(clazz.pos, nme getterToLocal nme.OUTER)
+            clazz.newValue(clazz.pos, nme.OUTER_LOCAL)
             setFlag (SYNTHETIC | PARAMACCESSOR | access)
             setInfo clazz.outerClass.thisType
           )
@@ -144,7 +144,7 @@ abstract class ExplicitOuter extends InfoTransform
         for (mc <- clazz.mixinClasses) {
           val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
-            if (decls1 eq decls) decls1 = new Scope(decls.toList)
+            if (decls1 eq decls) decls1 = decls.cloneScope
             val newAcc = mixinOuterAcc.cloneSymbol(clazz)
             newAcc resetFlag DEFERRED setInfo (clazz.thisType memberType mixinOuterAcc)
             decls1 enter newAcc
@@ -239,9 +239,7 @@ abstract class ExplicitOuter extends InfoTransform
         }
         super.transform(tree)
       }
-      finally {
-        outerParam = savedOuterParam
-      }
+      finally outerParam = savedOuterParam
     }
   }
 
@@ -315,11 +313,14 @@ abstract class ExplicitOuter extends InfoTransform
         if (outerAcc.isDeferred) EmptyTree
         else This(currentClass) DOT outerField(currentClass)
 
-      typedPos(currentClass.pos)(DEF(outerAcc) === rhs)
+      /** If we don't re-type the tree, we see self-type related crashes like #266.
+       */
+      localTyper typed {
+        (DEF(outerAcc) withType null) === rhs
+      } setPos currentClass.pos
     }
 
-    /** The definition tree of the outer accessor for class
-     * <code>mixinClass</code>.
+    /** The definition tree of the outer accessor for class mixinClass.
      *
      *  @param mixinClass The mixin class which defines the abstract outer
      *                    accessor which is implemented by the generated one.
@@ -335,10 +336,9 @@ abstract class ExplicitOuter extends InfoTransform
       localTyper typed {
         DEF(outerAcc) === {
           // Need to cast for nested outer refs in presence of self-types. See ticket #3274.
-          // @S: atPos not good enough because of nested atPos in DefDef method, which gives position from wrong class!
-          transformer.transform(path) AS_ANY outerAcc.info.resultType setPos currentClass.pos
+          transformer.transform(path) AS_ANY outerAcc.info.resultType
         }
-      }  setPos currentClass.pos
+      } setPos currentClass.pos
     }
 
     /** If FLAG is set on symbol, sets notFLAG (this exists in anticipation of generalizing). */

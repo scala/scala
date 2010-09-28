@@ -287,6 +287,7 @@ trait TreeDSL {
     def VAL(name: Name): ValTreeStart           = new ValTreeStart(name)
     def VAL(sym: Symbol): ValSymStart           = new ValSymStart(sym)
 
+    def DEF(name: Name): DefTreeStart = new DefTreeStart(name)
     def DEF(sym: Symbol): DefSymStart = new DefSymStart(sym)
     def AND(guards: Tree*) =
       if (guards.isEmpty) EmptyTree
