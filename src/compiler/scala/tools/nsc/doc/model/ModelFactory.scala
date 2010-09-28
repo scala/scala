@@ -406,7 +406,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       else if (bSym.isAliasType)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with HigherKindedImpl with AliasType {
           override def isAliasType = true
-          def alias = makeType(appliedType(sym.tpe, sym.info.typeParams map {_.tpe}).normalize, inTpl, sym)
+          def alias = makeType(sym.tpe.dealias, inTpl, sym)
         })
       else if (bSym.isPackage)
         inTpl match { case inPkg: PackageImpl =>  makePackage(bSym, inPkg) }
@@ -540,8 +540,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
             nameBuffer append " {...}" // TODO: actually print the refinement
           }
         /* Polymorphic types */
-        case PolyType(tparams, result) if (!tparams.isEmpty) =>
-          throw new Error("Polymorphic type '" + tpe + "' cannot be printed as a type")
+        case PolyType(tparams, result) if tparams nonEmpty =>
+//          throw new Error("Polymorphic type '" + tpe + "' cannot be printed as a type")
+          def typeParamsToString(tps: List[Symbol]): String = if(tps isEmpty) "" else
+            tps.map{tparam =>
+              tparam.varianceString + tparam.name + typeParamsToString(tparam.typeParams)
+            }.mkString("[", ", ", "]")
+          nameBuffer append typeParamsToString(tparams)
+          appendType0(result)
         case PolyType(tparams, result) if (tparams.isEmpty) =>
           nameBuffer append '⇒'
           appendType0(result)
