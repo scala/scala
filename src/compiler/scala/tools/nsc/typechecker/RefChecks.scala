@@ -52,7 +52,7 @@ abstract class RefChecks extends InfoTransform {
   override def changesBaseClasses = false
 
   def transformInfo(sym: Symbol, tp: Type): Type = {
-    def isNestedModule = sym.isModule && !sym.isRoot && !sym.owner.isPackageClass
+    def isNestedModule = sym.isModule && !sym.isRootPackage && !sym.owner.isPackageClass
 
     if (sym.isModule && !sym.isStatic) {
 

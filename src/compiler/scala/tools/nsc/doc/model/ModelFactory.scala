@@ -370,6 +370,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           members collect { case d: Constructor => d }
         def primaryConstructor = constructors find { _.isPrimary }
       }
+    else if (isNestedObjectLazyVal(bSym))
+      new DocTemplateImpl(bSym, minimumInTpl) with Object {
+        override def isNested = true
+        override def isObject = true
+        override def isLazyVal = false
+      }
     else
       throw new Error("'" + bSym + "' that isn't a class, trait or object cannot be built as a documentable template")
   }
@@ -379,9 +385,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
 
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
       if (bSym.isGetter && bSym.isLazy)
-        Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
-          override def isLazyVal = true
-        })
+          Some(
+            if (isNestedObjectLazyVal(bSym))
+              makeDocTemplate(bSym, inTpl)
+            else
+              new NonTemplateMemberImpl(bSym, inTpl) with Val {
+                override def isLazyVal = true
+              })
       else if (bSym.isGetter && bSym.accessed.isMutable)
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true
@@ -565,12 +575,16 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     ( aSym.owner == NoSymbol || templateShouldDocument(aSym.owner) ) && !isEmptyJavaObject(aSym)
   }
 
+  def isNestedObjectLazyVal(aSym: Symbol): Boolean = {
+    aSym.isLazy && !aSym.isRootPackage && !aSym.owner.isPackageClass && (aSym.lazyAccessor != NoSymbol)
+  }
+
   def isEmptyJavaObject(aSym: Symbol): Boolean = {
     def hasMembers = aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
     aSym.isModule && aSym.hasFlag(Flags.JAVA) && !hasMembers
   }
 
   def localShouldDocument(aSym: Symbol): Boolean = {
-    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
+    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && (!aSym.isSynthetic || isNestedObjectLazyVal(aSym))
   }
 }

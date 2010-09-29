@@ -97,7 +97,9 @@ trait Class extends Trait with HigherKinded {
 }
 
 /** A ''documentable'' object. */
-trait Object extends DocTemplateEntity
+trait Object extends DocTemplateEntity {
+  def isNested: Boolean = false
+}
 
 /** A package that contains at least one ''documentable'' class, trait,
   * object or package. */
