@@ -218,6 +218,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       lazy val Array_clone   = getMember(ArrayClass, nme.clone_)
     lazy val ArrayModule  = getModule("scala.Array")
 
+    def isArray_Apply(sym: Symbol): Boolean = sym.owner == ArrayModule.moduleClass && sym.name == nme.apply
+
     // reflection / structural types
     lazy val SoftReferenceClass     = getClass("java.lang.ref.SoftReference")
     lazy val WeakReferenceClass     = getClass("java.lang.ref.WeakReference")

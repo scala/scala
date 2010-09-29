@@ -789,7 +789,7 @@ self: Analyzer =>
       * reflect.Manifest for type 'tp'. An EmptyTree is returned if
       * no manifest is found. todo: make this instantiate take type params as well?
       */
-    private def manifestOfType(tp: Type, full: Boolean): Tree = {
+    private def manifestOfType(tp: Type, full: Boolean): SearchResult = {
 
       /** Creates a tree that calls the factory method called constructor in object reflect.Manifest */
       def manifestFactoryCall(constructor: String, tparg: Type, args: Tree*): Tree =
@@ -814,8 +814,10 @@ self: Analyzer =>
         inferImplicit(tree, appliedType(manifestClass.typeConstructor, List(tp)), true, false, context).tree
 
       def findSubManifest(tp: Type) = findManifest(tp, if (full) FullManifestClass else OptManifestClass)
+      def mot(tp0: Type)(implicit from: List[Symbol] = List(), to: List[Type] = List()): SearchResult = {
+        implicit def wrapResult(tree: Tree): SearchResult =
+          if (tree == EmptyTree) SearchFailure else new SearchResult(tree, new TreeTypeSubstituter(from, to))
 
-      def mot(tp0: Type): Tree = {
         val tp1 = tp0.normalize
         tp1 match {
           case ThisType(_) | SingleType(_, _) if !(tp1 exists {tp => tp.typeSymbol.isExistentiallyBound}) => // can't generate a reference to a value that's abstracted over by an existential
@@ -849,7 +851,7 @@ self: Analyzer =>
               manifestFactoryCall("wildcardType", tp,
                                   findManifest(tp.bounds.lo), findManifest(tp.bounds.hi))
             } else if(undetParams contains sym) { // looking for a manifest of a type parameter that hasn't been inferred by now, can't do much, but let's not fail
-              mot(NothingClass.tpe)               // TODO: should we include the mapping from sym -> NothingClass.tpe in the SearchResult? (it'll get instantiated to nothing anyway, I think)
+              mot(NothingClass.tpe)(sym :: from, NothingClass.tpe :: to) // #3859: need to include the mapping from sym -> NothingClass.tpe in the SearchResult
             } else {
               EmptyTree  // a manifest should have been found by normal searchImplicit
             }
@@ -875,13 +877,12 @@ self: Analyzer =>
      */
     private def implicitManifestOrOfExpectedType(pt: Type): SearchResult = pt.dealias match {
       case TypeRef(_, FullManifestClass, List(arg)) =>
-        wrapResult(manifestOfType(arg, true))
+        manifestOfType(arg, true)
       case TypeRef(_, PartialManifestClass, List(arg)) =>
-        wrapResult(manifestOfType(arg, false))
+        manifestOfType(arg, false)
       case TypeRef(_, OptManifestClass, List(arg)) =>
-        val itree = manifestOfType(arg, false)
-        wrapResult(if (itree == EmptyTree) gen.mkAttributedRef(NoManifest)
-                   else itree)
+        val res = manifestOfType(arg, false)
+        if (res == SearchFailure) wrapResult(gen.mkAttributedRef(NoManifest)) else res
       case TypeRef(_, tsym, _) if (tsym.isAbstractType) =>
         implicitManifestOrOfExpectedType(pt.bounds.lo)
       case _ =>
