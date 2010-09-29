@@ -208,7 +208,7 @@ self =>
   // ----------------- The Background Runner Thread -----------------------
 
   /** The current presentation compiler runner */
-  private var compileRunner = newRunnerThread
+  protected var compileRunner = newRunnerThread
 
   private var threadId = 1
 
