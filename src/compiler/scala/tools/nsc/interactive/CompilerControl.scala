@@ -91,7 +91,7 @@ trait CompilerControl { self: Global =>
   /** Make sure a set of compilation units is loaded and parsed.
    *  Return () to syncvar `result` on completion.
    */
-  def askReload(sources: List[SourceFile], result: Response[Unit]) =
+  def askReload(sources: Seq[SourceFile], result: Response[Unit]) =
     scheduler postWorkItem new WorkItem {
       def apply() = reload(sources, result)
       override def toString = "reload "+sources

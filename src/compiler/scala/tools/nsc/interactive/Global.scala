@@ -33,7 +33,7 @@ self =>
    *  All units in firsts are typechecked before any unit not in this list
    *  Modified by askToDoFirst, reload, typeAtTree.
    */
-  var firsts: List[SourceFile] = List()
+  var firsts: Seq[SourceFile] = Seq()
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
@@ -210,9 +210,11 @@ self =>
   /** The current presentation compiler runner */
   private var compileRunner = newRunnerThread
 
+  private var threadId = 1
+
   /** Create a new presentation compiler runner.
    */
-  def newRunnerThread: Thread = new Thread("Scala Presentation Compiler") {
+  def newRunnerThread: Thread = new Thread("Scala Presentation Compiler V"+threadId) {
     override def run() {
       try {
         while (true) {
@@ -240,6 +242,7 @@ self =>
           }
       }
     }
+    threadId += 1
     start()
   }
 
@@ -254,7 +257,7 @@ self =>
 
     val prefix = firsts map unitOf
 
-    val units = prefix ::: (unitOfFile.values.toList diff prefix) filter (!_.isUpToDate)
+    val units = prefix ++ (unitOfFile.values.toSeq diff prefix) filter (!_.isUpToDate)
 
     recompile(units)
 
@@ -285,7 +288,7 @@ self =>
 
   /** Make sure symbol and type attributes are reset and recompile units.
    */
-  def recompile(units: List[RichCompilationUnit]) {
+  def recompile(units: Seq[RichCompilationUnit]) {
     for (unit <- units) {
       reset(unit)
       if (debugIDE) inform("parsing: "+unit)
@@ -296,7 +299,7 @@ self =>
       activeLocks = 0
       currentTyperRun.typeCheck(unit)
       unit.status = currentRunId
-      syncTopLevelSyms(unit)
+      if (!unit.isJava) syncTopLevelSyms(unit)
     }
   }
 
@@ -312,8 +315,8 @@ self =>
   }
 
   /** Move list of files to front of firsts */
-  def moveToFront(fs: List[SourceFile]) {
-    firsts = fs ::: (firsts diff fs)
+  def moveToFront(fs: Seq[SourceFile]) {
+    firsts = fs ++ (firsts diff fs)
   }
 
   // ----------------- Implementations of client commands -----------------------
@@ -349,7 +352,7 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reloadSources(sources: List[SourceFile]) {
+  def reloadSources(sources: Seq[SourceFile]) {
     currentTyperRun = newTyperRun
     for (source <- sources) {
       val unit = new RichCompilationUnit(source)
@@ -360,7 +363,7 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reload(sources: List[SourceFile], response: Response[Unit]) {
+  def reload(sources: Seq[SourceFile], response: Response[Unit]) {
     respond(response)(reloadSources(sources))
     if (outOfDate) throw FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
