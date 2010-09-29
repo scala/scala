@@ -1,8 +1,6 @@
 package scala.tools.nsc
 package interactive
 
-import scala.concurrent.SyncVar
-
 /** Typical interaction, given a predicate <user-input>, a function <display>,
  *  and an exception handler <handle>:
  *
@@ -19,49 +17,80 @@ import scala.concurrent.SyncVar
  */
 class Response[T] {
 
-  private val data = new SyncVar[Either[T, Throwable]]
+  private var data: Option[Either[T, Throwable]] = None
   private var complete = false
   private var cancelled = false
 
   /** Set provisional data, more to come
    */
-  def setProvisionally(x: T) =
-    data.set(Left(x))
-
-  /** Set final data, and mark resposne as complete.
-   */
-  def set(x: T) = data.synchronized {
-    data.set(Left(x))
-    complete = true
+  def setProvisionally(x: T) = synchronized {
+    data = Some(Left(x))
   }
 
-  def raise(exc: Throwable) = data.synchronized {
-    data.set(Right(exc))
+  /** Set final data, and mark response as complete.
+   */
+  def set(x: T) = synchronized {
+    data = Some(Left(x))
     complete = true
+    notifyAll()
   }
 
-  /** Get data, wait as long as necessary
+  /** Store raised exception in data, and mark response as complete.
    */
-  def get: Either[T, Throwable] = data.get
+  def raise(exc: Throwable) = synchronized {
+    data = Some(Right(exc))
+    complete = true
+    notifyAll()
+  }
+
+  /** Get final data, wait as long as necessary.
+   *  When interrupted will return with Right(InterruptedException)
+   */
+  def get: Either[T, Throwable] = synchronized {
+    while (!complete) {
+      try {
+        wait()
+      } catch {
+        case exc: InterruptedException => raise(exc)
+      }
+    }
+    data.get
+  }
 
   /** Optionally get data within `timeout` milliseconds.
+   *  When interrupted will return with Some(Right(InterruptedException))
+   *  When timeout ends, will return last stored provisional result,
+   *  or else None if no provisional result was stored.
    */
-  def get(timeout: Long): Option[Either[T, Throwable]] = data.get(timeout)
+  def get(timeout: Long): Option[Either[T, Throwable]] = {
+    val start = System.currentTimeMillis
+    var current = start
+    while (!complete && start + timeout > current) {
+      try {
+        wait(timeout - (current - start))
+      } catch {
+        case exc: InterruptedException => raise(exc)
+      }
+      current = System.currentTimeMillis
+    }
+    data
+  }
 
   /** Final data set was stored
    */
-  def isComplete = data.synchronized { complete }
+  def isComplete = synchronized { complete }
 
-  /** Cancel action computing this response
+  /** Cancel action computing this response (Only the
+   *  party that calls get on a response may cancel).
    */
-  def cancel() = data.synchronized { cancelled = true }
+  def cancel() = synchronized { cancelled = true }
 
   /** A cancel request for this response has been issued
    */
-  def isCancelled = data.synchronized { cancelled }
+  def isCancelled = synchronized { cancelled }
 
-  def clear() = data.synchronized {
-    data.unset()
+  def clear() = synchronized {
+    data = None
     complete = false
     cancelled = false
   }
