@@ -228,13 +228,6 @@ trait SyntheticMethods extends ast.TreeDSL {
         result
     }
 
-    def needsReadResolve = (
-      // only nested objects inside objects should get readResolve automatically
-      // otherwise after de-serialization we get null references for lazy accessors (nested object -> lazy val + class def)
-      clazz.isSerializable &&
-      ((!clazz.owner.isPackageClass && clazz.owner.isModuleClass) || clazz.owner.isPackageClass)
-    )
-
     // A buffer collecting additional methods for the template body
     val ts = new ListBuffer[Tree]
 
@@ -309,7 +302,7 @@ trait SyntheticMethods extends ast.TreeDSL {
          *  the readResolve() method (see http://www.javaworld.com/javaworld/
          *  jw-04-2003/jw-0425-designpatterns_p.html)
          */
-        if (!hasReadResolve && needsReadResolve){
+        if (clazz.isSerializable && !hasReadResolve) {
           // PP: To this day I really can't figure out what this next comment is getting at:
           // the !!! normally means there is something broken, but if so, what is it?
           //
