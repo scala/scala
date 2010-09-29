@@ -33,7 +33,7 @@ self =>
    *  All units in firsts are typechecked before any unit not in this list
    *  Modified by askToDoFirst, reload, typeAtTree.
    */
-  var firsts: Seq[SourceFile] = Seq()
+  var firsts: List[SourceFile] = List()
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
@@ -257,7 +257,7 @@ self =>
 
     val prefix = firsts map unitOf
 
-    val units = prefix ++ (unitOfFile.values.toSeq diff prefix) filter (!_.isUpToDate)
+    val units = prefix ::: (unitOfFile.values.toList diff prefix) filter (!_.isUpToDate)
 
     recompile(units)
 
@@ -288,7 +288,7 @@ self =>
 
   /** Make sure symbol and type attributes are reset and recompile units.
    */
-  def recompile(units: Seq[RichCompilationUnit]) {
+  def recompile(units: List[RichCompilationUnit]) {
     for (unit <- units) {
       reset(unit)
       if (debugIDE) inform("parsing: "+unit)
@@ -315,8 +315,8 @@ self =>
   }
 
   /** Move list of files to front of firsts */
-  def moveToFront(fs: Seq[SourceFile]) {
-    firsts = fs ++ (firsts diff fs)
+  def moveToFront(fs: List[SourceFile]) {
+    firsts = fs ::: (firsts diff fs)
   }
 
   // ----------------- Implementations of client commands -----------------------
@@ -352,7 +352,7 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reloadSources(sources: Seq[SourceFile]) {
+  def reloadSources(sources: List[SourceFile]) {
     currentTyperRun = newTyperRun
     for (source <- sources) {
       val unit = new RichCompilationUnit(source)
@@ -363,7 +363,7 @@ self =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed */
-  def reload(sources: Seq[SourceFile], response: Response[Unit]) {
+  def reload(sources: List[SourceFile], response: Response[Unit]) {
     respond(response)(reloadSources(sources))
     if (outOfDate) throw FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
