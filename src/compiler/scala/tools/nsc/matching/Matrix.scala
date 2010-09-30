@@ -155,8 +155,12 @@ trait Matrix extends MatrixAdditions {
       // XXX how will valsym.tpe differ from sym.tpe ?
       def tpe = valsym.tpe
 
-      lazy val ident  = ID(lhs)
-      lazy val valDef = tracing("typedVal", typer typedValDef (VAL(lhs) === rhs) setPos lhs.pos)
+      // See #1427 for an example of a crash which occurs unless we retype:
+      // in that instance there is an existential in the pattern.
+      lazy val ident  = typer typed { ID(lhs) setType null }
+      lazy val valDef = typer typedValDef {
+        (VAL(lhs) withType ident.tpe) === rhs
+      }
 
       override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
     }
