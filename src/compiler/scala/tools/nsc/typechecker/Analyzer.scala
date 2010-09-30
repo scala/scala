@@ -78,6 +78,7 @@ trait Analyzer extends AnyRef
       resetTyper() // this does not in fact to the reset for each compilation run!
       override def run {
         val start = startTimer(typerNanos)
+        global.echoPhaseSummary(this)
         currentRun.units foreach applyPhase
         stopTimer(typerNanos, start)
       }

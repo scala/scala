@@ -255,7 +255,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
-    def run { currentRun.units foreach applyPhase }
+
+    def run {
+      echoPhaseSummary(this)
+      currentRun.units foreach applyPhase
+    }
 
     def apply(unit: CompilationUnit): Unit
 
@@ -276,7 +280,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     }
 
     final def applyPhase(unit: CompilationUnit) {
-      if (settings.debug.value) inform("[running phase " + name + " on " + unit + "]")
+      if (doEchoFilenames)
+        inform("[running phase " + name + " on " + unit + "]")
+
       val unit0 = currentRun.currentUnit
       try {
         currentRun.currentUnit = unit
@@ -586,6 +592,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
    */
   override def currentRunId = curRunId
 
+  def currentRunSize  = currentRun.unitbufSize
+  def doEchoFilenames = settings.debug.value && (settings.verbose.value || currentRunSize < 5)
+  def echoPhaseSummary(ph: Phase) = {
+    /** Only output a summary message under debug if we aren't echoing each file. */
+    if (settings.debug.value && !doEchoFilenames)
+      inform("[running phase " + ph.name + " on " + currentRunSize +  " compilation units]")
+  }
+
   /** A Run is a single execution of the compiler on a sets of units
    */
   class Run {
@@ -693,10 +707,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private var unitbuf = new ListBuffer[CompilationUnit]
     var compiledFiles = new HashSet[String]
 
+    private var _unitbufSize = 0
+    def unitbufSize = _unitbufSize
+
     /** add unit to be compiled in this run */
     private def addUnit(unit: CompilationUnit) {
 //      unit.parseSettings()
       unitbuf += unit
+      _unitbufSize += 1 // counting as they're added so size is cheap
       compiledFiles += unit.source.file.path
     }
 

@@ -15,7 +15,10 @@ import backend.icode.analysis.ProgramPoint
 
 trait BasicBlocks {
   self: ICodes =>
+
   import opcodes._
+  import global.{ settings, log, nme }
+  import nme.isExceptionResultName
 
   /** This class represents a basic block. Each
    *  basic block contains a list of instructions that are
@@ -249,7 +252,19 @@ trait BasicBlocks {
       } */
       assert(!closed || ignore, "BasicBlock closed")
 
-      if (!ignore) {
+      if (ignore) {
+        if (settings.debug.value) {
+          /** Trying to pin down what it's likely to see after a block has been
+           *  put into ignore mode so we hear about it if there's a problem.
+           */
+          instr match {
+            case JUMP(_) | RETURN(_) | THROW() | SCOPE_EXIT(_)                => // ok
+            case STORE_LOCAL(local) if isExceptionResultName(local.sym.name)  => // ok
+            case x => log("Ignoring instruction, possibly at our peril, at " + pos + ": " + x)
+          }
+        }
+      }
+      else {
         instr.setPos(pos)
         instructionList = instr :: instructionList
         _lastInstruction = instr
@@ -318,7 +333,10 @@ trait BasicBlocks {
      *  added to this basic block. It makes the generation of THROW
      *  and RETURNs easier.
      */
-    def enterIgnoreMode = ignore = true
+    def enterIgnoreMode = {
+      log("Entering ignore mode in " + fullString)
+      ignore = true
+    }
 
     def exitIgnoreMode {
       assert(ignore, "Exit ignore mode when not in ignore mode.")

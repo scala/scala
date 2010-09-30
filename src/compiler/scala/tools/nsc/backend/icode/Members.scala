@@ -207,9 +207,9 @@ trait Members { self: ICodes =>
       } toSet
 
       if (code != null) {
-        Console.println("[checking locals of " + this + "]")
+        log("[checking locals of " + this + "]")
         locals filterNot localsSet foreach { l =>
-          Console.println("Local " + l + " is not declared in " + this)
+          log("Local " + l + " is not declared in " + this)
         }
       }
     }

@@ -1866,11 +1866,8 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    private def isLoopHeaderLabel(name: Name): Boolean =
-      name.startsWith("while$") || name.startsWith("doWhile$")
-
     def typedLabelDef(ldef: LabelDef): LabelDef = {
-      if (!isLoopHeaderLabel(ldef.symbol.name) || phase.id > currentRun.typerPhase.id) {
+      if (!nme.isLoopHeaderLabel(ldef.symbol.name) || phase.id > currentRun.typerPhase.id) {
         val restpe = ldef.symbol.tpe.resultType
         val rhs1 = typed(ldef.rhs, restpe)
         ldef.params foreach (param => param.tpe = param.symbol.tpe)
@@ -3602,7 +3599,14 @@ trait Typers { self: Analyzer =>
             if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
           }
 
-          if (settings.debug.value) Console.err.println("qual = "+qual+":"+qual.tpe+"\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+"\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+"\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner)
+          if (settings.debug.value) {
+            log(
+              "qual = "+qual+":"+qual.tpe+
+              "\nSymbol="+qual.tpe.termSymbol+"\nsymbol-info = "+qual.tpe.termSymbol.info+
+              "\nscope-id = "+qual.tpe.termSymbol.info.decls.hashCode()+"\nmembers = "+qual.tpe.members+
+              "\nname = "+name+"\nfound = "+sym+"\nowner = "+context.enclClass.owner
+            )
+          }
 
           def makeErrorTree = {
             val tree1 = tree match {
@@ -4195,7 +4199,8 @@ trait Typers { self: Analyzer =>
      def typed(tree: Tree, mode: Int, pt: Type): Tree = { indentTyping()
       def dropExistential(tp: Type): Type = tp match {
         case ExistentialType(tparams, tpe) =>
-          if (settings.debug.value) println("drop ex "+tree+" "+tp)
+          if (settings.debug.value)
+            log("Dropping existential: " + tree + " " + tp)
           new SubstWildcardMap(tparams).apply(tp)
         case TypeRef(_, sym, _) if sym.isAliasType =>
           val tp0 = tp.normalize

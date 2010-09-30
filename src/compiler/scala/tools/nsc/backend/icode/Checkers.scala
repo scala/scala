@@ -635,9 +635,7 @@ abstract class Checkers {
     //////////////// Error reporting /////////////////////////
 
     def error(msg: String) {
-      Console.println("!! ICode checker fatality in " + method + " at:")
-      Console.println(blockAsString(basicBlock))
-      Checkers.this.global.error(method + ":\n " + msg)
+      Checkers.this.global.error("!! ICode checker fatality in " + method + " at:" + blockAsString(basicBlock) + ":\n " + msg)
     }
 
     def error(msg: String, stack: TypeStack) {

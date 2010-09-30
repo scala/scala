@@ -184,7 +184,7 @@ PROPERTIES
 
   <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
        but if it is unset it will take this default value. -->
-  <property name="env.ANT_OPTS" value="-Xms1536M -Xmx1536M -Xss1M -XX:MaxPermSize=128M -XX:+UseParallelGC" />
+  <property name="env.ANT_OPTS" value="-Xms1536M -Xmx1536M -Xss1M -XX:MaxPermSize=192M -XX:+UseParallelGC" />
   <!--  to find max heap usage: -Xaprof ; currently at 980M for locker.comp -->
   <echo message="Using ANT_OPTS: ${env.ANT_OPTS}" />
 

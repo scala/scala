@@ -501,8 +501,10 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
                   )
               case _ => ""
             }
-            Console.printf("""Dynamically application '%s.%s(%s)' %s - resulting code: '%s'""",
-                List(qual, ad.symbol.name, paramsToString(params), mstr, t) map (_.toString) : _*
+            log(
+              """Dynamically application '%s.%s(%s)' %s - resulting code: '%s'""".format(
+                qual, ad.symbol.name, paramsToString(params), mstr, t
+              )
             )
           }
 
@@ -554,8 +556,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case theTry @ Try(block, catches, finalizer)
         if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.NothingClass =>
         val tpe = theTry.tpe.widen
-        val tempVar = currentOwner.newValue(theTry.pos, unit.fresh.newName(theTry.pos, "exceptionResult"))
-          .setInfo(tpe).setFlag(Flags.MUTABLE)
+        val tempVar = currentOwner.newVariable(theTry.pos, unit.fresh.newName(theTry.pos, nme.EXCEPTION_RESULT_PREFIX)).setInfo(tpe)
         def assignBlock(rhs: Tree) = super.transform(BLOCK(Ident(tempVar) === transform(rhs)))
 
         val newBlock    = assignBlock(block)
@@ -563,10 +564,11 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
           (CASE(super.transform(pattern)) IF (super.transform(guard))) ==> assignBlock(body)
         val newTry      = Try(newBlock, newCatches, super.transform(finalizer))
 
-        localTyper typed { BLOCK(VAL(tempVar) === EmptyTree, newTry, Ident(tempVar)) }
+        typedWithPos(theTry.pos)(BLOCK(VAL(tempVar) === EmptyTree, newTry, Ident(tempVar)))
 
       /* Adds @serializable annotation to anonymous function classes */
       case cdef @ ClassDef(mods, name, tparams, impl) =>
+        /** XXX This check is overly specific and bound to break if it hasn't already. */
         if (settings.target.value == "jvm-1.5") {
           val sym = cdef.symbol
           // is this an anonymous function class?

@@ -1193,7 +1193,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val tree1 = addBody(ddef, target)
               (new ChangeOwnerTraverser(target, tree1.symbol))(tree1.rhs)
               if (settings.debug.value)
-                println("changed owners, now: " + tree1)
+                log("changed owners, now: " + tree1)
               val DefDef(mods, name, tparams, vparamss, tpt, rhs) = tree1
               treeCopy.DefDef(tree1, mods, name, tparams, vparamss, tpt, transform(rhs))
 

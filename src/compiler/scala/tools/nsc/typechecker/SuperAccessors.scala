@@ -201,7 +201,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                   sym.alias) setPos tree.pos
             }
             if (settings.debug.value)
-              Console.println("alias replacement: " + tree + " ==> " + result);//debug
+              log("alias replacement: " + tree + " ==> " + result);//debug
             localTyper.typed(gen.maybeMkAsInstanceOf(transformSuperSelect(result), sym.tpe, sym.alias.tpe, true))
           }
           else mayNeedProtectedAccessor(sel, List(EmptyTree), false)

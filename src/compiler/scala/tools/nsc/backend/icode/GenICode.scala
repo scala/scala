@@ -617,19 +617,20 @@ abstract class GenICode extends SubComponent  {
       val resCtx: Context = tree match {
         case LabelDef(name, params, rhs) =>
           val ctx1 = ctx.newBlock
-          if (isLoopHeaderLabel(name))
-            ctx1.bb.loopHeader = true;
+          if (nme.isLoopHeaderLabel(name))
+            ctx1.bb.loopHeader = true
 
           ctx1.labels.get(tree.symbol) match {
             case Some(label) =>
+              log("Found existing label for " + tree.symbol)
               label.anchor(ctx1.bb)
               label.patch(ctx.method.code)
 
             case None =>
-              ctx1.labels += (tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (_.symbol))));
+              val pair = (tree.symbol -> (new Label(tree.symbol) anchor ctx1.bb setParams (params map (_.symbol))))
+              log("Adding label " + tree.symbol + " in genLoad.")
+              ctx1.labels += pair
               ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)));
-              if (settings.debug.value)
-                log("Adding label " + tree.symbol);
           }
 
           ctx.bb.closeWith(JUMP(ctx1.bb), tree.pos)
@@ -666,31 +667,39 @@ abstract class GenICode extends SubComponent  {
 
         case Return(expr) =>
           val returnedKind = toTypeKind(expr.tpe)
-          var ctx1 = genLoad(expr, ctx, returnedKind)
-          val oldcleanups = ctx1.cleanups
-          lazy val tmp = ctx1.makeLocal(tree.pos, expr.tpe, "tmp")
-          var saved = false
+          log("Return(" + expr + ") with returnedKind = " + returnedKind)
 
-          for (op <- ctx1.cleanups) op match {
-            case MonitorRelease(m) =>
-              if (settings.debug.value) log("removing " + m + " from cleanups: " + ctx1.cleanups)
-              ctx1.bb.emit(LOAD_LOCAL(m))
-              ctx1.bb.emit(MONITOR_EXIT())
-              ctx1.exitSynchronized(m)
-            case Finalizer(f) =>
-              if (settings.debug.value) log("removing " + f + " from cleanups: " + ctx1.cleanups)
-              if (returnedKind != UNIT && mayCleanStack(f) && !saved) {
-                ctx1.bb.emit(STORE_LOCAL(tmp))
-                saved = true
-              }
-              // we have to run this without the same finalizer in
-              // the list, otherwise infinite recursion happens for
-              // finalizers that contain 'return'
-              ctx1 = genLoad(f, ctx1.removeFinalizer(f), UNIT)
+          var ctx1         = genLoad(expr, ctx, returnedKind)
+          lazy val tmp     = ctx1.makeLocal(tree.pos, expr.tpe, "tmp")
+          val saved        = savingCleanups(ctx1) {
+            ctx1.cleanups exists {
+              case MonitorRelease(m) =>
+                if (settings.debug.value)
+                  log("removing " + m + " from cleanups: " + ctx1.cleanups)
+                ctx1.bb.emit(Seq(LOAD_LOCAL(m), MONITOR_EXIT()))
+                ctx1.exitSynchronized(m)
+                false
+              case Finalizer(f) =>
+                if (settings.debug.value)
+                  log("removing " + f + " from cleanups: " + ctx1.cleanups)
+
+                val saved = returnedKind != UNIT && mayCleanStack(f) && {
+                  log("Emitting STORE_LOCAL for " + tmp + " to save finalizer.")
+                  ctx1.bb.emit(STORE_LOCAL(tmp))
+                  true
+                }
+                // we have to run this without the same finalizer in
+                // the list, otherwise infinite recursion happens for
+                // finalizers that contain 'return'
+                ctx1 = genLoad(f, ctx1.removeFinalizer(f), UNIT)
+                saved
+            }
           }
-          ctx1.cleanups = oldcleanups
 
-          if (saved) ctx1.bb.emit(LOAD_LOCAL(tmp))
+          if (saved) {
+            log("Emitting LOAD_LOCAL for " + tmp + " after saving finalizer.")
+            ctx1.bb.emit(LOAD_LOCAL(tmp))
+          }
           adapt(returnedKind, ctx1.method.returnType, ctx1, tree.pos)
           ctx1.bb.emit(RETURN(ctx.method.returnType), tree.pos)
           ctx1.bb.enterIgnoreMode
@@ -1753,9 +1762,6 @@ abstract class GenICode extends SubComponent  {
     def getMaxType(ts: List[Type]): TypeKind =
       ts map toTypeKind reduceLeft (_ maxType _)
 
-    def isLoopHeaderLabel(name: Name): Boolean =
-      name.startsWith("while$") || name.startsWith("doWhile$")
-
     /** Tree transformer that duplicates code and at the same time creates
      *  fresh symbols for existing labels. Since labels may be used before
      *  they are defined (forward jumps), all labels found are mapped to fresh
@@ -1801,7 +1807,9 @@ abstract class GenICode extends SubComponent  {
             val tree = treeCopy.LabelDef(t, newSym.name, params, transform(rhs))
             tree.symbol = newSym
 
-            ctx.labels += (newSym -> (new Label(newSym) setParams (params map (_.symbol))))
+            val pair = (newSym -> (new Label(newSym) setParams (params map (_.symbol))))
+            log("Added " + pair + " to labels.")
+            ctx.labels += pair
             ctx.method.addLocals(params map (p => new Local(p.symbol, toTypeKind(p.symbol.info), false)))
 
             tree
@@ -1825,6 +1833,12 @@ abstract class GenICode extends SubComponent  {
 
     def duplicateFinalizer(boundLabels: Set[Symbol], targetCtx: Context, finalizer: Tree) =  {
       (new DuplicateLabels(boundLabels))(targetCtx, finalizer)
+    }
+
+    def savingCleanups[T](ctx: Context)(body: => T): T = {
+      val saved = ctx.cleanups
+      try body
+      finally ctx.cleanups = saved
     }
 
     /**

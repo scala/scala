@@ -166,6 +166,12 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     def getterName(name: Name): Name =
       if (isLocalName(name)) localToGetter(name) else name;
 
+    def isExceptionResultName(name: Name) =
+      (name startsWith EXCEPTION_RESULT_PREFIX)
+
+    def isLoopHeaderLabel(name: Name): Boolean =
+      (name startsWith WHILE_PREFIX) || (name startsWith DO_WHILE_PREFIX)
+
     def isImplClassName(name: Name): Boolean =
       name endsWith IMPL_CLASS_SUFFIX;
 
@@ -191,6 +197,11 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
 
     /** The name of bitmaps for initialized lazy vals. */
     def bitmapName(n: Int): Name = newTermName("bitmap$" + n)
+
+    /** The label prefixes for generated while and do loops. */
+    val WHILE_PREFIX = "while$"
+    val DO_WHILE_PREFIX = "doWhile$"
+    val EXCEPTION_RESULT_PREFIX = "exceptionResult"
 
     val ERROR = newTermName("<error>")
     val LOCALCHILD = newTypeName("<local child>")

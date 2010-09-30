@@ -3720,17 +3720,26 @@ A type's typeSymbol should never be inspected directly.
         def corresponds(sym1: Symbol, sym2: Symbol): Boolean =
           sym1.name == sym2.name && (sym1.isPackageClass || corresponds(sym1.owner, sym2.owner))
         if (!corresponds(sym.owner, rebind0.owner)) {
-          if (settings.debug.value) Console.println("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
+          if (settings.debug.value)
+            log("ADAPT1 pre = "+pre+", sym = "+sym+sym.locationString+", rebind = "+rebind0+rebind0.locationString)
           val bcs = pre.baseClasses.dropWhile(bc => !corresponds(bc, sym.owner));
           if (bcs.isEmpty)
             assert(pre.typeSymbol.isRefinementClass, pre) // if pre is a refinementclass it might be a structural type => OK to leave it in.
           else
             rebind0 = pre.baseType(bcs.head).member(sym.name)
-          if (settings.debug.value) Console.println("ADAPT2 pre = "+pre+", bcs.head = "+bcs.head+", sym = "+sym+sym.locationString+", rebind = "+rebind0+(if (rebind0 == NoSymbol) "" else rebind0.locationString))
+          if (settings.debug.value) log(
+            "ADAPT2 pre = " + pre +
+            ", bcs.head = " + bcs.head +
+            ", sym = " + sym+sym.locationString +
+            ", rebind = " + rebind0 + (
+              if (rebind0 == NoSymbol) ""
+              else rebind0.locationString
+            )
+          )
         }
         val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
         if (rebind == NoSymbol) {
-          if (settings.debug.value) Console.println("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
+          if (settings.debug.value) log("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
           throw new MalformedType(pre, sym.nameString)
         }
         rebind
@@ -5383,13 +5392,13 @@ A type's typeSymbol should never be inspected directly.
       // @M sometimes hkargs != arg.typeParams, the symbol and the type may have very different type parameters
       val hkparams = param.typeParams
 
-      if(settings.debug.value) {
-        println("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramowner)
-        println("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ owner)
-        println("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
+      if (settings.debug.value) {
+        log("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramowner)
+        log("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ owner)
+        log("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
       }
 
-      if(hkargs.length != hkparams.length) {
+      if (hkargs.length != hkparams.length) {
         if(arg == AnyClass || arg == NothingClass) (Nil, Nil, Nil) // Any and Nothing are kind-overloaded
         else {error = true; (List((arg, param)), Nil, Nil)} // shortcut: always set error, whether explainTypesOrNot
       } else {
@@ -5414,12 +5423,12 @@ A type's typeSymbol should never be inspected directly.
             if (!(bindHKParams(transformedBounds(hkparam, paramowner)) <:< transform(hkarg.info.bounds, owner)))
               stricterBound(hkarg, hkparam)
 
-            if(settings.debug.value) {
-              println("checkKindBoundsHK base case: "+ hkparam +" declared bounds: "+ transformedBounds(hkparam, paramowner) +" after instantiating earlier hkparams: "+ bindHKParams(transformedBounds(hkparam, paramowner)))
-              println("checkKindBoundsHK base case: "+ hkarg +" has bounds: "+ transform(hkarg.info.bounds, owner))
+            if (settings.debug.value) {
+              log("checkKindBoundsHK base case: "+ hkparam +" declared bounds: "+ transformedBounds(hkparam, paramowner) +" after instantiating earlier hkparams: "+ bindHKParams(transformedBounds(hkparam, paramowner)))
+              log("checkKindBoundsHK base case: "+ hkarg +" has bounds: "+ transform(hkarg.info.bounds, owner))
             }
           } else {
-            if(settings.debug.value) println("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
+            if(settings.debug.value) log("checkKindBoundsHK recursing to compare params of "+ hkparam +" with "+ hkarg)
             val (am, vm, sb) = checkKindBoundsHK(hkarg.typeParams, hkarg, hkparam, paramowner, underHKParams ++ hkparam.typeParams, withHKArgs ++ hkarg.typeParams)
             arityMismatches(am)
             varianceMismatches(vm)

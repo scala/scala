@@ -200,21 +200,19 @@ self =>
       accept(EOF)
 
       def mainModuleName = settings.script.value
+      /** If there is only a single object template in the file and it has a
+       *  suitable main method, we will use it rather than building another object
+       *  around it.  Since objects are loaded lazily the whole script would have
+       *  been a no-op, so we're not taking much liberty.
+       */
       def searchForMain(): Option[Tree] = {
-        /** If there is only a single object template in the file and it has a
-         *  suitable main method, we will use it rather than building another object
-         *  around it.  Since objects are loaded lazily the whole script would have
-         *  been a no-op, so we're not taking much liberty.
-         */
-        val MainName: Name    = newTermName("main")
-
         /** Have to be fairly liberal about what constitutes a main method since
          *  nothing has been typed yet - for instance we can't assume the parameter
          *  type will look exactly like "Array[String]" as it could have been renamed
          *  via import, etc.
          */
         def isMainMethod(t: Tree) = t match {
-          case DefDef(_, MainName, Nil, List(_), _, _)  => true
+          case DefDef(_, nme.main, Nil, List(_), _, _)  => true
           case _                                        => false
         }
         /** For now we require there only be one top level object. */
@@ -268,11 +266,11 @@ self =>
       )
 
       // def main
-      def mainParamType = AppliedTypeTree(Ident("Array".toTypeName), List(Ident("String".toTypeName)))
+      def mainParamType = AppliedTypeTree(Ident(nme.Array.toTypeName), List(Ident(nme.String.toTypeName)))
       def mainParameter = List(ValDef(Modifiers(Flags.PARAM), "argv", mainParamType, EmptyTree))
       def mainSetArgv   = List(ValDef(NoMods, "args", TypeTree(), Ident("argv")))
       def mainNew       = makeNew(Nil, emptyValDef, stmts, List(Nil), NoPosition, NoPosition)
-      def mainDef       = DefDef(NoMods, "main", Nil, List(mainParameter), scalaDot(nme.Unit.toTypeName), Block(mainSetArgv, mainNew))
+      def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(nme.Unit.toTypeName), Block(mainSetArgv, mainNew))
 
       // object Main
       def moduleName  = ScriptRunner scriptMain settings
@@ -1143,7 +1141,7 @@ self =>
       case WHILE =>
         val start = in.offset
         atPos(in.skipToken()) {
-          val lname: Name = freshName(o2p(start), "while$")
+          val lname: Name = freshName(o2p(start), nme.WHILE_PREFIX)
           val cond = condExpr()
           newLinesOpt()
           val body = expr()
@@ -1152,7 +1150,7 @@ self =>
       case DO =>
         val start = in.offset
         atPos(in.skipToken()) {
-          val lname: Name = freshName(o2p(start), "doWhile$")
+          val lname: Name = freshName(o2p(start), nme.DO_WHILE_PREFIX)
           val body = expr()
           if (isStatSep) in.nextToken()
           accept(WHILE)

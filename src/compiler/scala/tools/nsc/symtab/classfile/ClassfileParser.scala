@@ -888,7 +888,7 @@ abstract class ClassfileParser {
         case nme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
             if (settings.debug.value)
-              global.inform("warning: symbol " + sym.fullName + " has pickled signature in attribute")
+              log("warning: symbol " + sym.fullName + " has pickled signature in attribute")
             unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
           }
           in.skip(attrLen)
@@ -916,7 +916,7 @@ abstract class ClassfileParser {
                   throw new RuntimeException("Scala class file does not contain Scala annotation")
               }
             if (settings.debug.value)
-              global.inform("" + sym + "; annotations = " + sym.rawAnnotations)
+              log("" + sym + "; annotations = " + sym.rawAnnotations)
           } else
             in.skip(attrLen)
 
@@ -1033,8 +1033,8 @@ abstract class ClassfileParser {
       case f: FatalError => throw f // don't eat fatal errors, they mean a class was not found
       case ex: Throwable =>
         if (settings.debug.value)
-          global.inform("dropping annotation on " + sym +
-                        ", an error occured during parsing (e.g. annotation  class not found)")
+          log("dropping annotation on " + sym + ", an error occured during parsing (e.g. annotation  class not found)")
+
         None // ignore malformed annotations ==> t1135
     }
 
