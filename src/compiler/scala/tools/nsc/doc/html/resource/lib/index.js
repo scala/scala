@@ -60,6 +60,24 @@ $(document).ready(function() {
 
 });
 
+var Index = {};
+
+(function (ns) {
+    function toId(name) {
+        return name.replace(/[^A-Za-z0-9-]/g, function (str) {
+            return '-' + str.charCodeAt(0);
+        });
+    }
+
+    ns.idOfTemplate = function (name) {
+        return 'template-' + toId(name);
+    }
+
+    ns.idOfPackage = function (name) {
+        return 'package-' + toId(name);
+    }
+})(Index);
+
 function configureEntityList() {
     kindFilterSync();
     configureHideFilter();
@@ -141,37 +159,37 @@ function textFilter() {
         else { // if query is all lower case make a normal case insensitive search
             queryRegExp = new RegExp(query, "i");
         }
-        scheduler.addForAll("filter", domCache.packs, function(pack0) {
-            var pack = $(pack0);
-            $("> ol.templates > li", pack).each(function(){
-                var item = $(this).attr("title");
-                if (item == "" || queryRegExp.test(item)) {
-                    $(this).show();
-                    $(this).removeClass("hide");
-                }
-                else {
-                    $(this).addClass("hide");
-                    $(this).hide();
+
+        $.each(Index.PACKAGES, function (i, package) {
+            var empty = true;
+            var matchedSet = {};
+
+            $.each(package.children, function (j, child) {
+                if (queryRegExp.test(child)) {
+                    matchedSet[child] = 1;
+                    empty = false;
                 }
             });
-            if ($("> ol > li:not(.hide)", pack).length > 0) {
-                pack.show();
-                pack.removeClass("hide");
-            }
-            else {
-                pack.addClass("hide");
-                pack.hide();
-            }
-            if ($("> ol.templates > li:not(.hide)", pack).length > 0) {
-                $("> h3", pack).show();
-                $("> .packhide", pack).show();
-                $("> .packfocus", pack).show();
-            }
-            else {
+
+            var pack = $('#' + Index.idOfPackage(package.name));
+            if (empty) {
                 $("> h3", pack).hide();
+                $("> .templates", pack).hide();
                 $("> .packhide", pack).hide();
                 $("> .packfocus", pack).hide();
+
+                return;
             }
+
+            $("> h3", pack).show();
+            $.each(package.children, function (j, child) {
+                $('#' + Index.idOfTemplate(child))[
+                    matchedSet[child] ? 'show' : 'hide'
+                ]();
+            });
+            $("> .templates", pack).show();
+            $("> .packhide", pack).show();
+            $("> .packfocus", pack).show();
         });
     });
 }
