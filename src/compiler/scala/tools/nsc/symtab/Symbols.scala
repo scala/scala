@@ -1275,10 +1275,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** A helper method that factors the common code used the discover a companion module of a class. If a companion
       * module exists, its symbol is returned, otherwise, `NoSymbol` is returned. The method assumes that `this`
-      * symbol has already been checked to be a class (using `isClass`). */
-    private final def companionModule0: Symbol =
+      * symbol has already been checked to be a class (using `isClass`).
+      * After refchecks nested objects get transformed to lazy vals so we filter on LAZY flag*/
+    private final def companionModule0: Symbol = {
+      val f = if (phase.refChecked && isNestedClass) LAZY else MODULE
       flatOwnerInfo.decl(name.toTermName).suchThat(
-          sym => (sym hasFlag MODULE) && (sym isCoDefinedWith this))
+        sym => (sym hasFlag f) && (sym isCoDefinedWith this))
+    }
 
     /** The module or case class factory with the same name in the same
      *  package as this class.

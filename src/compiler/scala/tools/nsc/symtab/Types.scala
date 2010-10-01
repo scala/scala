@@ -3706,7 +3706,10 @@ A type's typeSymbol should never be inspected directly.
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (sym.isModuleClass && !phase.flatClasses) {
-        adaptToNewRun(pre, sym.sourceModule).moduleClass
+        if (!sym.owner.isPackageClass)
+          sym // Nested lazy object
+        else
+          adaptToNewRun(pre, sym.sourceModule).moduleClass
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
         sym
       } else {
@@ -4593,7 +4596,7 @@ A type's typeSymbol should never be inspected directly.
   def specializesSym(tp: Type, sym: Symbol): Boolean =
     tp.typeSymbol == NothingClass ||
     tp.typeSymbol == NullClass && (sym.owner isSubClass ObjectClass) ||
-    (tp.nonPrivateMember(sym.name).alternatives exists
+    (tp.member(sym.name).alternatives exists
       (alt => sym == alt || specializesSym(tp.narrow, alt, sym.owner.thisType, sym)))
 
   /** Does member `sym1' of `tp1' have a stronger type

@@ -259,30 +259,17 @@ abstract class TreeGen {
     )
   }
 
-  // var m$: T = null; or, if class member: local var m$: T = _;
-  /*!!!
-  def mkModuleValDef(accessor: Symbol) = {
-    val mval = accessor.owner.newValue(accessor.pos.focus, nme.moduleVarName(accessor.name))
+  def mkModuleVarDef(accessor: Symbol) = {
+    val mval = accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
       .setInfo(accessor.tpe.finalResultType)
-      .setFlag(LAZY);
+      .setFlag(LAZY)
+      .setFlag(MODULEVAR)
+    mval.setLazyAccessor(accessor)
     if (mval.owner.isClass) {
       mval setFlag (PRIVATE | LOCAL | SYNTHETIC)
       mval.owner.info.decls.enter(mval)
     }
-    ValDef(mval, New(TypeTree(mval.tpe), List(List())))
-  }
-  */
-
-  // var m$: T = null; or, if class member: local var m$: T = _;
-  def mkModuleVarDef(accessor: Symbol) = {
-    val mvar = accessor.owner.newVariable(accessor.pos.focus, nme.moduleVarName(accessor.name))
-      .setInfo(accessor.tpe.finalResultType)
-      .setFlag(MODULEVAR);
-    if (mvar.owner.isClass) {
-      mvar setFlag (PRIVATE | LOCAL | SYNTHETIC)
-      mvar.owner.info.decls.enter(mvar)
-    }
-    ValDef(mvar, if (mvar.owner.isClass) EmptyTree else Literal(Constant(null)))
+    ValDef(mval, EmptyTree)
   }
 
   // def m: T = { if (m$ eq null) m$ = new m$class(...) m$ }
@@ -295,7 +282,7 @@ abstract class TreeGen {
   def mkModuleAccessDef(accessor: Symbol, tpe: Type) =
     DefDef(accessor, newModule(accessor, tpe))
 
-  private def newModule(accessor: Symbol, tpe: Type) =
+  def newModule(accessor: Symbol, tpe: Type) =
     New(TypeTree(tpe),
         List(for (pt <- tpe.typeSymbol.primaryConstructor.info.paramTypes)
              yield This(accessor.owner.enclClass)))

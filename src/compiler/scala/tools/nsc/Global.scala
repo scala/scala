@@ -271,6 +271,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     override def devirtualized: Boolean = isDevirtualized  // (part of DEVIRTUALIZE)
     private val isSpecialized = prev.name == "specialize" || prev.specialized
     override def specialized: Boolean = isSpecialized
+    private val isRefChecked = prev.name == "refchecks" || prev.refChecked
+    override def refChecked: Boolean = isRefChecked
 
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {

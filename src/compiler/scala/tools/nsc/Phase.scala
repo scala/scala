@@ -36,6 +36,7 @@ abstract class Phase(val prev: Phase) {
   def specialized: Boolean = false
   def erasedTypes: Boolean = false
   def flatClasses: Boolean = false
+  def refChecked: Boolean = false
   def keepsTypeParams = true
   def run: Unit
 
