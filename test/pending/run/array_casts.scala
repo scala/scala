@@ -36,7 +36,7 @@ object Test {
      Console.println("is-seq array " + s.isInstanceOf[Array[Char]])
      try {
        Console.println(s.asInstanceOf[Array[Int]].getClass)
-     } catch { case ex : ClassCastException => Console.println("Bad, arrays as seqs should still be arrays of int") }
+     } catch { case ex : ClassCastException => Console.println("Bad, arrays as seqs should still be arrays of Int") }
      ()
    }
 }

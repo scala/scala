@@ -11,11 +11,15 @@ object DirX {
     def reverse = BEFORE;
   }
 }
+
 import DirX._;
+
 abstract class Linked {
   type Node <: Node0;
 
   abstract class Node0 {
+    self: Node =>
+
   	var next : Node = _;
     var prev : Node = _;
 
@@ -27,7 +31,13 @@ abstract class Linked {
       assert(get(dir) == null);
       assert(node.get(dir.reverse) == null);
       set(dir, node);
-      node.set(dir.reverse(), node);
+      node.set(dir.reverse, self);
+    }
+
+
+    def end(dir : Dir) : Node = {
+      if (get(dir) == null) this;
+      else get(dir).end(dir);
     }
   }
 }

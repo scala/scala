@@ -1,10 +1,10 @@
 trait C {
-  def f: int
+  def f: Int
 }
 
 object Test {
   type T = C {
-    def f: int
+    def f: Int
     def g: String
   }
 

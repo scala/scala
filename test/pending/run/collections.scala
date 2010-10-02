@@ -4,15 +4,15 @@ object Test extends Application {
 
   val printTime = false
 
-  def sum[A](xs: Iterable[int]) = (0 /: xs)((x, y) => x + y)
+  def sum[A](xs: Iterable[Int]) = (0 /: xs)((x, y) => x + y)
 
-  def time(op: => unit): unit = {
+  def time(op: => Unit): Unit = {
     val start = System.currentTimeMillis;
     op
     if (printTime) Console.println("  time = "+(System.currentTimeMillis - start)+"ms")
   }
 
-  def test(msg: String, s0: collection.immutable.Set[int]) = {
+  def test(msg: String, s0: collection.immutable.Set[Int]) = {
     Console.println("***** "+msg+":")
     var s = s0
     s = s + 2
@@ -30,7 +30,7 @@ object Test extends Application {
     }
   }
 
-  def test(msg: String, s0: collection.mutable.Set[int]) = {
+  def test(msg: String, s0: collection.mutable.Set[Int]) = {
     Console.println("***** "+msg+":")
     var s = s0
     s = s + 2
@@ -48,7 +48,7 @@ object Test extends Application {
     }
   }
 
-  def test(msg: String, s0: collection.immutable.Map[int, int]) = {
+  def test(msg: String, s0: collection.immutable.Map[Int, Int]) = {
     Console.println("***** "+msg+":")
     var s = s0
     s = s + (2 -> 2)
@@ -69,7 +69,7 @@ object Test extends Application {
     }
   }
 
-  def test(msg: String, s0: collection.mutable.Map[int, int]) = {
+  def test(msg: String, s0: collection.mutable.Map[Int, Int]) = {
     Console.println("***** "+msg+":")
     var s = s0
     s = s + (2 -> 2)
@@ -90,13 +90,13 @@ object Test extends Application {
     }
   }
 
-  test("immutable.ListSet", new immutable.ListSet[int])
-  test("immutable.TreeSet", new immutable.TreeSet[int])
-  test("mutable.HashSet", new mutable.HashSet[int])
-  test("immutable.ListMap", new immutable.ListMap[int, int])
-  test("immutable.TreeMap", new immutable.TreeMap[int, int])
-  test("immutable.UnBalancedTreeMap", new immutable.UnbalancedTreeMap[int, int])
-  test("immutable.HashTreeSet", new immutable.HashTreeSet[int])
-  test("immutable.HashTreeMap", new immutable.HashTreeMap[int, int])
-  test("mutable.HashMap", new mutable.HashMap[int, int])
+  test("immutable.ListSet", new immutable.ListSet[Int])
+  test("immutable.TreeSet", new immutable.TreeSet[Int])
+  test("mutable.HashSet", new mutable.HashSet[Int])
+  test("immutable.ListMap", new immutable.ListMap[Int, Int])
+  test("immutable.TreeMap", new immutable.TreeMap[Int, Int])
+  test("immutable.UnBalancedTreeMap", new immutable.UnbalancedTreeMap[Int, Int])
+  test("immutable.HashTreeSet", new immutable.HashTreeSet[Int])
+  test("immutable.HashTreeMap", new immutable.HashTreeMap[Int, Int])
+  test("mutable.HashMap", new mutable.HashMap[Int, Int])
 }

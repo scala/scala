@@ -1,5 +1,5 @@
-object exc1 extends Application {
-  def foo(): unit = {
+object Test extends Application {
+  def foo(): Unit = {
     while (true) {
       try {
       } catch {

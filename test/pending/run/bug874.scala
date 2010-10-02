@@ -1,12 +1,12 @@
 object Test {
   abstract class Base {
     val U: {
-      def apply[A](x1: A)(x2: int): Any
+      def apply[A](x1: A)(x2: Int): Any
     }
     U("xyz")(2)
   }
   class Mix extends Base {
-    case class U[A](x1: A)(x2: int) {
+    case class U[A](x1: A)(x2: Int) {
       Console.println("U created with "+x1+" and "+x2)
     }
   }
