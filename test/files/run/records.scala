@@ -20,6 +20,8 @@ object Test {
 
   val z: T = y
 
-  Console.println(x.f+z.f+", expected = 3")
-  Console.println(x.g+z.g+", expected = hello world")
+  def main(args: Array[String]): Unit = {
+    assert(x.f+z.f == 3)
+    assert(x.g+z.g == "hello world")
+  }
 }

@@ -1,30 +1,35 @@
 scopes.scala:1: error: x is already defined as value x
-case class test0(x: int, x: float)
+case class test0(x: Int, x: Float)
                          ^
+scopes.scala:1: error: type mismatch;
+ found   : Float
+ required: Int
+case class test0(x: Int, x: Float)
+                 ^
 scopes.scala:5: error: t is already defined as type t
-  type t = float
+  type t = Float
        ^
 scopes.scala:7: error: x is already defined as value x
-  val x: float = .0f;
+  val x: Float = .0f;
       ^
 scopes.scala:10: error: y is already defined as value y
-    val y: float = .0f
+    val y: Float = .0f
         ^
 scopes.scala:13: error: x is already defined as value x
-  def f1(x: int, x: float) = x
+  def f1(x: Int, x: Float) = x
                  ^
 scopes.scala:14: error: y is already defined as value y
-  def f2(x: int)(y: int, y: float) = x + y
+  def f2(x: Int)(y: Int, y: Float) = x + y
                          ^
 scopes.scala:15: error: x is already defined as value x
-  val closure = (x: int, x: float) => x
-                         ^
+  val closure = (x: Int, x: Float) => x
+                          ^
 scopes.scala:17: error: x is already defined as value x
     case x::x => x
             ^
 scopes.scala:1: error: type mismatch;
- found   : float
- required: int
-case class test0(x: int, x: float)
+ found   : Float
+ required: Int
+case class test0(x: Int, x: Float)
            ^
-9 errors found
+10 errors found
