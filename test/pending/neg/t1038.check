@@ -1,4 +1,0 @@
-t1038.scala:4: error: wrong number of arguments for constructor X: (Int)X
-  val a = new X
-          ^
-one error found

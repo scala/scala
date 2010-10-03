@@ -1,7 +1,0 @@
-bug1210.scala:13: error: illegal cyclic reference involving type Settings
-        val v: List[selfType] = f[selfType]((x: selfType) => x.v)
-                                                              ^
-bug1210.scala:24: error: illegal cyclic reference involving type Settings
-			f[selfType](_.g)
-                                     ^
-two errors found

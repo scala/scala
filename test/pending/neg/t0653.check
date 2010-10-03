@@ -1,5 +1,0 @@
-t0653.scala:5: error: inferred the kinds of the type arguments (InL[Nothing,Nothing]) do not conform to the expected kinds of the type parameters (type Op) in class Fix.
-InL[Nothing,Nothing]'s type parameters do not match type Op's expected parameters: class InL has two type parameters, but type Op has one
-   val zero = new Fix(new InL)
-              ^
-one error found

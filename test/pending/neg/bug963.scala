@@ -1,3 +1,4 @@
+// Soundness bug, at #963 and dup at #2079.
 trait A {
   type T
   var v : T

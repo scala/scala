@@ -1,0 +1,4 @@
+t2078.scala:2: error: contravariant type S occurs in covariant position in type => java.lang.Object{val x: S} of value f
+  val f  = new { val x = y }
+      ^
+one error found

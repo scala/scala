@@ -1,0 +1,7 @@
+t0513.scala:5: error: type arguments [Nothing,Int] do not conform to class Y's type parameter bounds [T1,T2 <: T1]
+    val test2 = Test[Y[Nothing, Int]]  // No error
+        ^
+t0513.scala:5: error: type arguments [Nothing,Int] do not conform to class Y's type parameter bounds [T1,T2 <: T1]
+    val test2 = Test[Y[Nothing, Int]]  // No error
+                    ^
+two errors found
