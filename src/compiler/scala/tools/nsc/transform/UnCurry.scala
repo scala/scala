@@ -158,7 +158,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     override def transformUnit(unit: CompilationUnit) {
       freeMutableVars.clear
       freeLocalsTraverser(unit.body)
-      unit.body = transform(unit.body)
+      super.transformUnit(unit)
     }
 
     private var nprinted = 0

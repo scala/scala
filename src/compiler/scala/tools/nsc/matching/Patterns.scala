@@ -348,7 +348,7 @@ trait Patterns extends ast.TreeDSL {
     def apply(x: Apply): Pattern = {
       val Apply(fn, args) = x
       def isModule  = x.symbol.isModule || x.tpe.termSymbol.isModule
-      def isTuple   = isTupleType(fn.tpe)
+      def isTuple   = isTupleTypeOrSubtype(fn.tpe)
 
       if (fn.isType) {
         if (isTuple) TuplePattern(x)

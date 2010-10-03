@@ -13,7 +13,7 @@ missing combination           Kult          Kult
 missing combination           Qult          Qult
 
     def ma3(x:Mult) = (x,x) match { // not exhaustive
-                       ^
+        ^
 patmatexhaust.scala:49: warning: match is not exhaustive!
 missing combination             Gp
 missing combination             Gu
