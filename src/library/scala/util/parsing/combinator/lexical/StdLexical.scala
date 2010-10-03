@@ -84,7 +84,4 @@ class StdLexical extends Lexical with StdTokens {
     (d.toList map parseDelim).foldRight(failure("no matching delimiter"): Parser[Token])((x, y) => y | x)
   }
   protected def delim: Parser[Token] = _delim
-
-  private def lift[T](f: String => T)(xs: List[Char]): T = f(xs.mkString("", "", ""))
-  private def lift2[T](f: String => T)(p: ~[Char, List[Char]]): T = lift(f)(p._1 :: p._2)
 }

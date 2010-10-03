@@ -72,7 +72,6 @@ class StaticCompletion(val clazz: Class[_]) extends ReflectionCompletion {
   lazy val completions = memberCompletions
   def completions(verbosity: Int) = completions
 
-  private def aliasForPath(path: String) = ByteCode aliasForType path flatMap (x => classForName(x + "$"))
   def className = clazz.getName
   def isJava = !isScalaClazz(clazz)
 

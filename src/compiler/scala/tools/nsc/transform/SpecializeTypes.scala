@@ -1427,25 +1427,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Concrete methods that use a specialized type, or override such methods. */
   private val concreteSpecMethods: mutable.Set[Symbol] = new mutable.HashSet
 
-  /** Instantiate polymorphic function `target' with type parameters from `from'.
-   *  For each type parameter `tp' in `target', its argument is:
-   *    - a corresponding type parameter of `from', if tp is not bound in
-   *      typeEnv(from)
-   *    - the upper bound of tp, if the binding conflicts with tp's bounds
-   *    - typeEnv(from)(tp), if the binding is not conflicting in its bounds
-   */
-  private def makeTypeArguments(from: Symbol, target: Symbol): List[Type] = {
-    val owner = from.owner
-    val env = typeEnv(from)
-    for (tp <- owner.info.memberType(target).typeParams)
-      yield
-        if (!env.isDefinedAt(tp))
-          typeRef(NoPrefix, from.info.typeParams.find(_.name == tp.name).get, Nil)
-        else if ((env(tp) <:< tp.info.bounds.hi) && (tp.info.bounds.lo <:< env(tp)))
-          env(tp)
-        else tp.info.bounds.hi
-  }
-
   private def makeArguments(fun: Symbol, vparams: List[Symbol]): List[Tree] = {
     def needsCast(tp1: Type, tp2: Type): Boolean =
       !(tp1 <:< tp2)

@@ -88,8 +88,6 @@ trait BasicBlocks {
      */
     private var instructionList: List[Instruction] = Nil
 
-    private var _lastInstruction: Instruction = null
-
     private var instrs: Array[Instruction] = _
 
     override def toList: List[Instruction] =
@@ -266,8 +264,7 @@ trait BasicBlocks {
       }
       else {
         instr.setPos(pos)
-        instructionList = instr :: instructionList
-        _lastInstruction = instr
+        instructionList ::= instr
       }
     }
 

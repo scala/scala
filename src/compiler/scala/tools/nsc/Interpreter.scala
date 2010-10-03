@@ -775,8 +775,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
 
     private def selectorWild    = selectors filter (_.name == USCOREkw)   // wildcard imports, e.g. import foo._
-    private def selectorMasked  = selectors filter (_.rename == USCOREkw) // masking imports, e.g. import foo.{ bar => _ }
-    private def selectorNames   = selectors map (_.name)
     private def selectorRenames = selectors map (_.rename) filterNot (_ == null)
 
     /** Whether this import includes a wildcard import */

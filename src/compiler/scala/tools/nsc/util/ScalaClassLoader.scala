@@ -32,9 +32,6 @@ trait ScalaClassLoader extends JavaClassLoader {
   /** Load, link and initialize a class with this classloader */
   def tryToInitializeClass[T <: AnyRef](path: String): Option[Class[T]] = tryClass(path, true)
 
-  private def tryBody[T <: AnyRef](body: => Any): Option[T] =
-    catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt body.asInstanceOf[T]
-
   private def tryClass[T <: AnyRef](path: String, initialize: Boolean): Option[Class[T]] =
     catching(classOf[ClassNotFoundException], classOf[SecurityException]) opt
       Class.forName(path, initialize, this).asInstanceOf[Class[T]]

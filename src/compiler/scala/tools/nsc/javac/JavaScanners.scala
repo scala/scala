@@ -332,12 +332,6 @@ trait JavaScanners {
       t
     }
 
-    private def afterLineEnd() = (
-      lastPos < in.lineStartPos &&
-      (in.lineStartPos <= pos ||
-       lastPos < in.lastLineStartPos && in.lastLineStartPos <= pos)
-    )
-
     /** read next token
      */
     private def fetchToken() {

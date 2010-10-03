@@ -219,7 +219,6 @@ abstract class Checkers {
       }
     }
 
-    private var typeStack: TypeStack = null
     private var instruction: Instruction = null
     private var basicBlock: BasicBlock = null
 
@@ -278,7 +277,6 @@ abstract class Checkers {
         }
       }
 
-      this.typeStack = stack
       this.basicBlock = b
 
       def typeError(k1: TypeKind, k2: TypeKind) {

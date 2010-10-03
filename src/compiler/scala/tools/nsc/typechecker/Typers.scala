@@ -661,21 +661,6 @@ trait Typers { self: Analyzer =>
       case _ => !phase.erasedTypes
     }
 
-    private def stabilizedType(tree: Tree): Type = tree.tpe
-/*{
-      val sym = tree.symbol
-      val res = tree match {
-        case Ident(_) if (sym.isStable) =>
-          val pre = if (sym.owner.isClass) sym.owner.thisType else NoPrefix
-          singleType(pre, sym)
-        case Select(qual, _) if (qual.tpe.isStable && sym.isStable) =>
-          singleType(qual.tpe, sym)
-        case _ =>
-          tree.tpe
-      }
-      res
-    }
-*/
     /**
      *  @param tree ...
      *  @param mode ...

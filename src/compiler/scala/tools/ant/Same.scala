@@ -13,7 +13,6 @@ import java.io.{File, FileInputStream}
 
 import org.apache.tools.ant.{BuildException, Project}
 import org.apache.tools.ant.taskdefs.MatchingTask
-import org.apache.tools.ant.util.FileUtils
 import org.apache.tools.ant.util.{FileNameMapper, IdentityMapper}
 
 import org.apache.tools.ant.types.Mapper
@@ -34,10 +33,6 @@ import org.apache.tools.ant.types.Mapper
  * @author  Gilles Dubochet
  * @version 1.0 */
 class Same extends MatchingTask {
-
-  /** The unique Ant file utilities instance to use in this task. */
-  private val fileUtils = FileUtils.getFileUtils()
-
 /*============================================================================*\
 **                             Ant user-properties                            **
 \*============================================================================*/

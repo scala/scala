@@ -54,8 +54,6 @@ abstract class OverridingPairs {
      */
     private type BitSet = Array[Int]
 
-    private def newBitSet(size: Int): BitSet = new Array((size + 31) >> 5)
-
     private def include(bs: BitSet, n: Int) {
       val nshifted = n >> 5
       val nmask = 1 << (n & 31)

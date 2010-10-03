@@ -735,13 +735,6 @@ trait ParallelMatching extends ast.TreeDSL
       // arguments to pass to this body%xx
       def labelParamTypes = label.tpe.paramTypes
 
-      private def consistencyFailure(idents: List[Tree], vdefs: List[Tree]) = {
-        val LabelDef(name, params, rhs) = label
-
-        val msg = "Consistency failure in generated block %s(%s):\n  idents = %s\n  vdefs = %s\n"
-        abort(msg.format(name, pp(labelParamTypes), pp(idents), pp(vdefs)))
-      }
-
       def createLabelBody(index: Int, pvgroup: PatternVarGroup) = {
         val args = pvgroup.syms
         val vdefs = pvgroup.valDefs
@@ -766,8 +759,6 @@ trait ParallelMatching extends ast.TreeDSL
         val idents = pvgroup map (_.rhs)
         val vdefs = pvgroup.valDefs
         referenceCount += 1
-        // if (idents.size != labelParamTypes.size)
-        //   consistencyFailure(idents, vdefs)
 
         ifLabellable(vdefs, ID(labelSym) APPLY (idents))
       }

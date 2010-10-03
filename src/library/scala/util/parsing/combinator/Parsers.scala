@@ -397,20 +397,6 @@ trait Parsers {
     def ? = opt(this)
   }
 
-  // TODO: can this implemented in ParseResult, like map?
-  /** A helper method for sequential composition of (unit-)parsers
-  */
-  private def seq[T, U, V](p: => Input => ParseResult[T], q: => Input => ParseResult[U])
-                          (compose: (T, U) => V)
-                          (in: Input): ParseResult[V]
-    = p(in) match {
-      case Success(x, next1) => q(next1) match {
-          case Success(y, next2) => Success(compose(x, y), next2)
-          case ns: NoSuccess => ns
-        }
-      case ns: NoSuccess => ns
-    }
-
   /** Wrap a parser so that its failures become errors (the | combinator will give up as soon as
    *  it encounters an error, on failure it simply tries the next alternative)
    */

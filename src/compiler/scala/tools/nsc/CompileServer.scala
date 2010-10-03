@@ -34,8 +34,6 @@ class StandardCompileServer extends SocketServer
 
   private var compiler: Global = null
 
-  private def settingsAreCompatible(s1: Settings, s2: Settings) = s1 == s2
-
   private def exit(code: Int): Nothing = {
     System.err.close()
     System.out.close()

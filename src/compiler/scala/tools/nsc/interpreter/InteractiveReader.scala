@@ -37,8 +37,6 @@ trait InteractiveReader {
 
 object InteractiveReader {
   val msgEINTR = "Interrupted system call"
-  private val exes = List(classOf[Exception], classOf[NoClassDefFoundError])
-
   def createDefault(): InteractiveReader = createDefault(null)
 
   /** Create an interactive reader.  Uses <code>JLineReader</code> if the
