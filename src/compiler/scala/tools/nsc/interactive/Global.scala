@@ -41,7 +41,7 @@ self =>
                        SynchronizedMap[AbstractFile, RichCompilationUnit]
 
   /** The currently active typer run */
-  private var currentTyperRun: TyperRun = _
+  private var currentTyperRun: TyperRun = newTyperRun
 
   /** Is a background compiler run needed?
    *  Note: outOfDate is true as long as there is a backgroud compile scheduled or going on.
@@ -472,7 +472,7 @@ self =>
 
   def getTypeCompletion(pos: Position, response: Response[List[Member]]) {
     respondGradually(response) { typeMembers(pos) }
-    if (debugIDE) scopeMembers(pos)
+    if (debugIDE) typeMembers(pos)
   }
 
   def typeMembers(pos: Position): Stream[List[TypeMember]] = {
