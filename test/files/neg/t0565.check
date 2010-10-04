@@ -1,0 +1,4 @@
+t0565.scala:8: error: Parameter type in structural refinement may not refer to a type member of that refinement
+               def z (w : T) : T } =
+                   ^
+one error found

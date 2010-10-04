@@ -4,7 +4,7 @@ abstract class  A {
   def toString(sb: StringBuilder): StringBuilder // crucial
 }
 
-case class B extends A {
+case class B() extends A {
   // overloaded version is implemented, causing toString not to be implemented?
   def toString(sb: StringBuilder): StringBuilder = error("")
 }

@@ -4,7 +4,7 @@ object A1 {
  }
 }
 
-object C {
+object Test {
   def main(args: Array[String]) {
     val q = new A1.A2.X
     val res = 5 match { case q(x) => x }

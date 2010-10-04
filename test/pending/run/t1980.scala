@@ -1,9 +1,9 @@
-by-name argument incorrectly evaluated on :-ending operator
-Reported by: 	extempore 	Owned by: 	odersky
-Priority: 	normal 	Component: 	Compiler
-Keywords: 		Cc: 	paulp@…
-Fixed in version:
-Description
+// by-name argument incorrectly evaluated on :-ending operator
+// Reported by:   extempore   Owned by:   odersky
+// Priority:  normal  Component:  Compiler
+// Keywords:    Cc:   paulp@…
+// Fixed in version:
+// Description
 
 scala> def foo() = { println("foo") ; 5 }
 foo: ()Int
@@ -19,9 +19,9 @@ scala> c m1 foo()
 scala> foo() m2_: c
 foo
 
-But it is not evaluated if invoked directly:
+// But it is not evaluated if invoked directly:
 
 scala> c.m2_:(foo())
 
-scala>
+// scala>
 
