@@ -9,7 +9,7 @@ package transform
 import symtab._
 import Flags.{ CASE => _, _ }
 import scala.collection.mutable.ListBuffer
-import matching.{ Patterns, ParallelMatching }
+import matching.{ TransMatcher, Patterns, ParallelMatching }
 
 /** This class ...
  *
@@ -17,6 +17,7 @@ import matching.{ Patterns, ParallelMatching }
  *  @version 1.0
  */
 abstract class ExplicitOuter extends InfoTransform
+      with TransMatcher
       with Patterns
       with ParallelMatching
       with TypingTransformers
@@ -356,7 +357,7 @@ abstract class ExplicitOuter extends InfoTransform
       var nselector = transform(selector)
 
       def makeGuardDef(vs: List[Symbol], guard: Tree) = {
-        val gdname = unit.fresh.newName(guard.pos, "gd")
+        val gdname = newName(guard.pos, "gd")
         val method = currentOwner.newMethod(tree.pos, gdname) setFlag SYNTHETIC
         val fmls   = vs map (_.tpe)
         val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)
@@ -399,7 +400,7 @@ abstract class ExplicitOuter extends InfoTransform
       }
 
       val t = atPos(tree.pos) {
-        val context     = MatrixContext(currentRun.currentUnit, transform, localTyper, currentOwner, tree.tpe)
+        val context     = MatrixContext(transform, localTyper, currentOwner, tree.tpe)
         val t_untyped   = handlePattern(nselector, ncases, checkExhaustive, context)
 
         /* if @switch annotation is present, verify the resulting tree is a Match */
@@ -487,7 +488,7 @@ abstract class ExplicitOuter extends InfoTransform
           })
           super.transform(treeCopy.Apply(tree, sel, outerVal :: args))
 
-        // entry point for pattern matcher translation
+        // TransMatch hook
         case mch: Match =>
           matchTranslation(mch)
 
@@ -507,7 +508,9 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The transformation method for whole compilation units */
     override def transformUnit(unit: CompilationUnit) {
+      cunit = unit
       atPhase(phase.next) { super.transformUnit(unit) }
+      cunit = null
     }
   }
 

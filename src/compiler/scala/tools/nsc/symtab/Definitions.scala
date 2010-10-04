@@ -288,15 +288,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val AbstractFunctionClass = mkArityArray("runtime.AbstractFunction", MaxFunctionArity, 0)
 
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
-      def isTupleType(tp: Type): Boolean = isTupleType(tp, false)
-      def isTupleTypeOrSubtype(tp: Type): Boolean = isTupleType(tp, true)
-      private def isTupleType(tp: Type, subtypeOK: Boolean): Boolean = cond(tp.normalize) {
-        case t @ TypeRef(_, sym, elems) =>
-          elems.length <= MaxTupleArity &&
-          (sym == TupleClass(elems.length) ||
-           subtypeOK && !tp.isHigherKinded && (t <:< TupleClass(elems.length).tpe))
+      def isTupleType(tp: Type): Boolean = cond(tp.normalize) {
+        case TypeRef(_, sym, elems) => elems.length <= MaxTupleArity && sym == TupleClass(elems.length)
       }
-
       def tupleType(elems: List[Type]) =
         if (elems.length <= MaxTupleArity) {
           val sym = TupleClass(elems.length)

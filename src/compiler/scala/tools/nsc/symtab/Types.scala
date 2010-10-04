@@ -1852,7 +1852,7 @@ A type's typeSymbol should never be inspected directly.
           return "=> " + args(0).toString
         if (isFunctionType(this))
           return normalize.typeArgs.init.mkString("(", ", ", ")") + " => " + normalize.typeArgs.last
-        if (isTupleTypeOrSubtype(this))
+        if (isTupleType(this))
           return normalize.typeArgs.mkString("(", ", ", if (normalize.typeArgs.length == 1) ",)" else ")")
         if (sym.isAliasType && (prefixChain exists (_.termSymbol hasFlag SYNTHETIC))) {
           val normed = normalize;
