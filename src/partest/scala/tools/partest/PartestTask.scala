@@ -162,10 +162,13 @@ class PartestTask extends Task with CompilationPathProperty {
     case None     => Array()
     case Some(fs) =>
       def shouldExclude(name: String) = (name endsWith ".obj") || (name startsWith ".")
+      // println("----> " + fileSet)
 
       val fileTests = getFiles(Some(fs)) filterNot (x => shouldExclude(x.getName))
       val dirTests: Iterator[SPath] = fileSetToDir(fs).dirs filterNot (x => shouldExclude(x.name))
       val dirResult = dirTests.toList.toArray map (_.jfile)
+      // println("dirs: " + dirResult.toList)
+      // println("files: " + fileTests.toList)
 
       dirResult ++ fileTests
   }
@@ -176,7 +179,7 @@ class PartestTask extends Task with CompilationPathProperty {
   private def getJvmFiles          = getFilesAndDirs(jvmFiles)
   private def getResidentFiles     = getFiles(residentFiles)
   private def getBuildManagerFiles = getFilesAndDirs(buildManagerFiles)
-  private def getScalacheckFiles   = getFiles(scalacheckFiles)
+  private def getScalacheckFiles   = getFilesAndDirs(scalacheckFiles)
   private def getScriptFiles       = getFiles(scriptFiles)
   private def getShootoutFiles     = getFiles(shootoutFiles)
   private def getScalapFiles       = getFiles(scalapFiles)

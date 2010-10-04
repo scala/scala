@@ -69,7 +69,7 @@ class Worker(val fileManager: FileManager) extends Actor {
   def act() {
     react {
       case RunTests(kind, files) =>
-        // NestUI.verbose("received "+files.length+" to test")
+        //NestUI.normal("received "+files.length+" to test")
         val master = sender
         runTests(kind, files) { results =>
           master ! Results(results, createdLogFiles, createdOutputDirs)

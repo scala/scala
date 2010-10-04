@@ -3,6 +3,8 @@ import Prop._
 import Gen._
 
 
+
+
 object Test extends Properties("TraversableLike.scanLeft") {
   property("scanLeft") = forAll { (xs: List[Int], z: Int) => {
     val sums = xs.scanLeft(z)(_ + _)
