@@ -1,3 +1,5 @@
+import java.lang.Integer
+
 object ManifestTester {
   def main(args: Array[String]) = {
     val map = Map("John" -> 1, "Josh" -> 2)

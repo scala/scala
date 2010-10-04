@@ -1,21 +1,21 @@
-patmat-type-check.scala:18: error: scrutinee is incompatible with pattern type;
+patmat-type-check.scala:22: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
  required: java.lang.String
   def f1 = "bob".reverse match { case Seq('b', 'o', 'b') => true } // fail
                                          ^
-patmat-type-check.scala:19: error: scrutinee is incompatible with pattern type;
+patmat-type-check.scala:23: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
  required: Array[Char]
   def f2 = "bob".toArray match { case Seq('b', 'o', 'b') => true } // fail
                                          ^
-patmat-type-check.scala:23: error: scrutinee is incompatible with pattern type;
+patmat-type-check.scala:27: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
  required: Test.Bop2
   def f3(x: Bop2) = x match { case Seq('b', 'o', 'b') => true } // fail
                                       ^
-patmat-type-check.scala:27: error: scrutinee is incompatible with pattern type;
+patmat-type-check.scala:30: error: scrutinee is incompatible with pattern type;
  found   : Seq[A]
- required: Test.Bop3[T]
-  def f4[T](x: Bop3[T]) = x match { case Seq('b', 'o', 'b') => true } // fail
-                                            ^
+ required: Test.Bop3[Char]
+  def f4[T](x: Bop3[Char]) = x match { case Seq('b', 'o', 'b') => true } // fail
+                                               ^
 four errors found

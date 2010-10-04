@@ -1,14 +1,4 @@
-t3692.scala:11: warning: type Integer in package scala is deprecated: use <code>java.lang.Integer</code> instead
-      case m0: Map[Int, Int] => new java.util.HashMap[Integer, Integer]
-                                              ^
-t3692.scala:12: warning: type Integer in package scala is deprecated: use <code>java.lang.Integer</code> instead
-      case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
-                                            ^
-t3692.scala:13: warning: type Integer in package scala is deprecated: use <code>java.lang.Integer</code> instead
-      case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
-                                            ^
-t3692.scala:13: error: unreachable code
+t3692.scala:15: error: unreachable code
       case m2: Map[T, Int] => new java.util.HashMap[T, Integer]
                               ^
-three warnings found
 one error found

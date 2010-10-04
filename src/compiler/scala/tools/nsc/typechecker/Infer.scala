@@ -1342,8 +1342,8 @@ trait Infer {
       check(tp, List())
     }
 
-    /** Type intersection of simple type <code>tp1</code> with general
-     *  type <code>tp2</code>. The result eliminates some redundancies.
+    /** Type intersection of simple type tp1 with general type tp2.
+     *  The result eliminates some redundancies.
      */
     def intersect(tp1: Type, tp2: Type): Type = {
       if (tp1 <:< tp2) tp1
@@ -1351,7 +1351,7 @@ trait Infer {
       else {
         val reduced2 = tp2 match {
           case rtp @ RefinedType(parents2, decls2) =>
-            copyRefinedType(rtp, parents2 filter (p2 => !(tp1 <:< p2)), decls2)
+            copyRefinedType(rtp, parents2 filterNot (tp1 <:< _), decls2)
           case _ =>
             tp2
         }
@@ -1360,36 +1360,57 @@ trait Infer {
     }
 
     def inferTypedPattern(pos: Position, pattp: Type, pt0: Type): Type = {
-      val pt = widen(pt0)
+      val pt        = widen(pt0)
+      val ptparams  = freeTypeParamsOfTerms.collect(pt)
+      val tpparams  = freeTypeParamsOfTerms.collect(pattp)
 
-      /** If we can absolutely rule out a match we can fail fast. */
-      if (pt.isFinalType && !(pt matchesPattern pattp))
-        error(pos, "scrutinee is incompatible with pattern type"+foundReqMsg(pattp, pt))
+      def ptMatchesPattp = pt matchesPattern pattp
+      def pattpMatchesPt = pattp matchesPattern pt
+
+      /** If we can absolutely rule out a match we can fail early.
+       *  This is the case if the scrutinee has no unresolved type arguments
+       *  and is a "final type", meaning final + invariant in all type parameters.
+       */
+      if (pt.isFinalType && ptparams.isEmpty && !ptMatchesPattp)
+        error(pos, "scrutinee is incompatible with pattern type" + foundReqMsg(pattp, pt))
 
       checkCheckable(pos, pattp, "pattern ")
-      if (!(pattp <:< pt)) {
-        val tpparams = freeTypeParamsOfTerms.collect(pattp)
-        if (settings.debug.value) log("free type params (1) = " + tpparams)
+      if (pattp <:< pt) ()
+      else {
+        if (settings.debug.value)
+          log("free type params (1) = " + tpparams)
+
         var tvars = tpparams map freshVar
-        var tp = pattp.instantiateTypeParams(tpparams, tvars)
-        if (!((tp <:< pt) && isInstantiatable(tvars))) {
+        var tp    = pattp.instantiateTypeParams(tpparams, tvars)
+
+        if ((tp <:< pt) && isInstantiatable(tvars)) ()
+        else {
           tvars = tpparams map freshVar
-          tp = pattp.instantiateTypeParams(tpparams, tvars)
-          val ptparams = freeTypeParamsOfTerms.collect(pt)
-          if (settings.debug.value) log("free type params (2) = " + ptparams)
+          tp    = pattp.instantiateTypeParams(tpparams, tvars)
+
+          if (settings.debug.value)
+            log("free type params (2) = " + ptparams)
+
           val ptvars = ptparams map freshVar
-          val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
-          // See ticket #2486 we have this example of code which would incorrectly
-          // fail without verifying that !(pattp matchesPattern pt)
-          if (!(isPopulated(tp, pt1) && isInstantiatable(tvars ::: ptvars)) && !(pattp matchesPattern pt)) {
-            error(pos, "pattern type is incompatible with expected type"+foundReqMsg(pattp, pt))
+          val pt1    = pt.instantiateTypeParams(ptparams, ptvars)
+
+          // See ticket #2486 for an example of code which would incorrectly
+          // fail if we didn't allow for pattpMatchesPt.
+          if (isPopulated(tp, pt1) && isInstantiatable(tvars ++ ptvars) || pattpMatchesPt)
+             ptvars foreach instantiateTypeVar
+          else {
+            error(pos, "pattern type is incompatible with expected type" + foundReqMsg(pattp, pt))
             return pattp
           }
-          ptvars foreach instantiateTypeVar
         }
         tvars foreach instantiateTypeVar
       }
-      intersect(pt, pattp)
+      /** If the scrutinee has free type parameters but the pattern does not,
+       *  we have to flip the arguments so the expected type is treated as more
+       *  general when calculating the intersection.  See run/bug2755.scala.
+       */
+      if (tpparams.isEmpty && ptparams.nonEmpty) intersect(pattp, pt)
+      else intersect(pt, pattp)
     }
 
     def inferModulePattern(pat: Tree, pt: Type) =
