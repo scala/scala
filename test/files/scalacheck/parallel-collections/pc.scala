@@ -17,7 +17,7 @@ class ParCollProperties extends Properties("Parallel collections") {
 
 object Test {
   def main(args: Array[String]) {
-    // val results = org.scalacheck.Test.checkProperties(new ParCollProperties)
-    // if (!results.forall(_._2.passed)) println("Test results: " + results.mkString("\n"))
+    val results = org.scalacheck.Test.checkProperties(new ParCollProperties)
+    if (!results.forall(_._2.passed)) println("Test results: " + results.mkString("\n"))
   }
 }
