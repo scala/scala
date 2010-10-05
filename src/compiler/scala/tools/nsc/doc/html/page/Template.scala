@@ -339,7 +339,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
                 </ol></div>
               else NodeSeq.Empty
             }
-            { if(!comment.since.isEmpty && !isReduced)
+            { if(!comment.authors.isEmpty && !isReduced)
                 <div class="block"><ol>authors
                   { val authors:List[scala.xml.NodeSeq]=for(body <- comment.authors) yield <li>{bodyToHtml(body)}</li>
                     authors.reduceLeft(_ ++ Text(", ") ++ _)
