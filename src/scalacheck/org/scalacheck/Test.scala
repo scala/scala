@@ -156,7 +156,8 @@ object Test {
    *  the test results. */
   def check(prms: Params, p: Prop): Result = {
     import prms._
-    import actors.Futures.future
+    //import actors.Futures.future
+    import scala.concurrent.ops.future
 
     assertParams(prms)
     if(workers > 1)
