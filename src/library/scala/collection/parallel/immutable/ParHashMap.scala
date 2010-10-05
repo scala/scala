@@ -9,6 +9,7 @@ package scala.collection.parallel.immutable
 import scala.collection.parallel.ParMap
 import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
+import scala.collection.parallel.ParIterableIterator
 import scala.collection.parallel.EnvironmentPassingCombiner
 import scala.collection.generic.ParMapFactory
 import scala.collection.generic.CanCombineFrom
@@ -25,26 +26,26 @@ import scala.collection.immutable.HashMap
  *
  *  @author prokopec
  */
-class ParHashTrie[K, +V] private[immutable] (private[this] val trie: HashMap[K, V])
+class ParHashMap[K, +V] private[immutable] (private[this] val trie: HashMap[K, V])
 extends ParMap[K, V]
-   with GenericParMapTemplate[K, V, ParHashTrie]
-   with ParMapLike[K, V, ParHashTrie[K, V], HashMap[K, V]]
+   with GenericParMapTemplate[K, V, ParHashMap]
+   with ParMapLike[K, V, ParHashMap[K, V], HashMap[K, V]]
 {
 self =>
 
   def this() = this(HashMap.empty[K, V])
 
-  override def mapCompanion: GenericParMapCompanion[ParHashTrie] = ParHashTrie
+  override def mapCompanion: GenericParMapCompanion[ParHashMap] = ParHashMap
 
-  override def empty: ParHashTrie[K, V] = new ParHashTrie[K, V]
+  override def empty: ParHashMap[K, V] = new ParHashMap[K, V]
 
-  def parallelIterator = new ParHashTrieIterator(trie) with SCPI
+  def parallelIterator: ParIterableIterator[(K, V)] = new ParHashMapIterator(trie.iterator, trie.size) with SCPI
 
   def seq = trie
 
-  def -(k: K) = new ParHashTrie(trie - k)
+  def -(k: K) = new ParHashMap(trie - k)
 
-  def +[U >: V](kv: (K, U)) = new ParHashTrie(trie + kv)
+  def +[U >: V](kv: (K, U)) = new ParHashMap(trie + kv)
 
   def get(k: K) = trie.get(k)
 
@@ -55,59 +56,66 @@ self =>
     case None => newc
   }
 
-  type SCPI = SignalContextPassingIterator[ParHashTrieIterator]
+  type SCPI = SignalContextPassingIterator[ParHashMapIterator]
 
-  class ParHashTrieIterator(val ht: HashMap[K, V])
+  class ParHashMapIterator(val triter: Iterator[(K, V)], val sz: Int)
   extends super.ParIterator {
-  self: SignalContextPassingIterator[ParHashTrieIterator] =>
-    // println("created iterator " + ht)
+  self: SignalContextPassingIterator[ParHashMapIterator] =>
     var i = 0
-    lazy val triter = ht.iterator
-    def split: Seq[ParIterator] = {
-      // println("splitting " + ht + " into " + ht.split.map(new ParHashTrieIterator(_) with SCPI).map(_.toList))
-      ht.split.map(new ParHashTrieIterator(_) with SCPI)
+    def split: Seq[ParIterator] = if (remaining < 2) Seq(this) else triter match {
+      case t: HashMap.TrieIterator[_, _] =>
+        val previousRemaining = remaining
+        val ((fst, fstlength), snd) = t.asInstanceOf[HashMap.TrieIterator[K, V]].split
+        val sndlength = previousRemaining - fstlength
+        Seq(
+          new ParHashMapIterator(fst, fstlength) with SCPI,
+          new ParHashMapIterator(snd, sndlength) with SCPI
+        )
+      case _ =>
+        // iterator of the collision map case
+        val buff = triter.toBuffer
+        val (fp, sp) = buff.splitAt(buff.length / 2)
+        Seq(fp, sp) map { b => new ParHashMapIterator(b.iterator, b.length) with SCPI }
     }
     def next: (K, V) = {
-      // println("taking next after " + i + ", in " + ht)
       i += 1
       triter.next
     }
     def hasNext: Boolean = {
-      // println("hasNext: " + i + ", " + ht.size + ", " + ht)
-      i < ht.size
+      i < sz
     }
-    def remaining = ht.size - i
+    def remaining = sz - i
   }
 
 }
 
 
-object ParHashTrie extends ParMapFactory[ParHashTrie] {
-  def empty[K, V]: ParHashTrie[K, V] = new ParHashTrie[K, V]
+object ParHashMap extends ParMapFactory[ParHashMap] {
+  def empty[K, V]: ParHashMap[K, V] = new ParHashMap[K, V]
 
-  def newCombiner[K, V]: Combiner[(K, V), ParHashTrie[K, V]] = HashTrieCombiner[K, V]
+  def newCombiner[K, V]: Combiner[(K, V), ParHashMap[K, V]] = HashMapCombiner[K, V]
 
-  implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParHashTrie[K, V]] = {
+  implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParHashMap[K, V]] = {
     new CanCombineFromMap[K, V]
   }
 
-  def fromTrie[K, V](t: HashMap[K, V]) = new ParHashTrie(t)
+  def fromTrie[K, V](t: HashMap[K, V]) = new ParHashMap(t)
 
   var totalcombines = new java.util.concurrent.atomic.AtomicInteger(0)
 }
 
 
-trait HashTrieCombiner[K, V]
-extends Combiner[(K, V), ParHashTrie[K, V]] {
-self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
-  import HashTrieCombiner._
-  var heads = new Array[Unrolled[K, V]](rootsize)
-  var lasts = new Array[Unrolled[K, V]](rootsize)
+private[immutable] trait HashMapCombiner[K, V]
+extends Combiner[(K, V), ParHashMap[K, V]] {
+self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
+  import HashMapCombiner._
+  var heads = new Array[Unrolled[(K, V)]](rootsize)
+  var lasts = new Array[Unrolled[(K, V)]](rootsize)
   var size: Int = 0
 
   def clear = {
-    heads = new Array[Unrolled[K, V]](rootsize)
-    lasts = new Array[Unrolled[K, V]](rootsize)
+    heads = new Array[Unrolled[(K, V)]](rootsize)
+    lasts = new Array[Unrolled[(K, V)]](rootsize)
   }
 
   def +=(elem: (K, V)) = {
@@ -116,7 +124,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
     val pos = hc & 0x1f
     if (lasts(pos) eq null) {
       // initialize bucket
-      heads(pos) = new Unrolled[K, V]
+      heads(pos) = new Unrolled[(K, V)]
       lasts(pos) = heads(pos)
     }
     // add to bucket
@@ -124,10 +132,10 @@ self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
     this
   }
 
-  def combine[N <: (K, V), NewTo >: ParHashTrie[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
-    // ParHashTrie.totalcombines.incrementAndGet
-    if (other.isInstanceOf[HashTrieCombiner[_, _]]) {
-      val that = other.asInstanceOf[HashTrieCombiner[K, V]]
+  def combine[N <: (K, V), NewTo >: ParHashMap[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
+    // ParHashMap.totalcombines.incrementAndGet
+    if (other.isInstanceOf[HashMapCombiner[_, _]]) {
+      val that = other.asInstanceOf[HashMapCombiner[K, V]]
       var i = 0
       while (i < rootsize) {
         if (lasts(i) eq null) {
@@ -158,17 +166,17 @@ self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
     }
     val sz = root.foldLeft(0)(_ + _.size)
 
-    if (sz == 0) new ParHashTrie[K, V]
-    else if (sz == 1) new ParHashTrie[K, V](root(0))
+    if (sz == 0) new ParHashMap[K, V]
+    else if (sz == 1) new ParHashMap[K, V](root(0))
     else {
       val trie = new HashMap.HashTrieMap(bitmap, root, sz)
-      new ParHashTrie[K, V](trie)
+      new ParHashMap[K, V](trie)
     }
   }
 
   /* tasks */
 
-  class CreateTrie(buckets: Array[Unrolled[K, V]], root: Array[HashMap[K, V]], offset: Int, howmany: Int) extends super.Task[Unit, CreateTrie] {
+  class CreateTrie(buckets: Array[Unrolled[(K, V)]], root: Array[HashMap[K, V]], offset: Int, howmany: Int) extends super.Task[Unit, CreateTrie] {
     var result = ()
     def leaf(prev: Option[Unit]) = {
       var i = offset
@@ -178,7 +186,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
         i += 1
       }
     }
-    private def createTrie(elems: Unrolled[K, V]): HashMap[K, V] = {
+    private def createTrie(elems: Unrolled[(K, V)]): HashMap[K, V] = {
       var trie = new HashMap[K, V]
 
       var unrolled = elems
@@ -208,29 +216,14 @@ self: EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] =>
 }
 
 
-object HashTrieCombiner {
-  def apply[K, V] = new HashTrieCombiner[K, V] with EnvironmentPassingCombiner[(K, V), ParHashTrie[K, V]] {}
+object HashMapCombiner {
+  def apply[K, V] = new HashMapCombiner[K, V] with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] {}
 
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5
-  private[immutable] val unrolledsize = 16
-
-  private[immutable] class Unrolled[K, V] {
-    var size = 0
-    var array = new Array[(K, V)](unrolledsize)
-    var next: Unrolled[K, V] = null
-    // adds and returns itself or the new unrolled if full
-    def add(elem: (K, V)): Unrolled[K, V] = if (size < unrolledsize) {
-      array(size) = elem
-      size += 1
-      this
-    } else {
-      next = new Unrolled[K, V]
-      next.add(elem)
-    }
-    override def toString = "Unrolled(" + array.mkString(", ") + ")"
-  }
 }
+
+
 
 
 

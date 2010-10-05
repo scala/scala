@@ -427,7 +427,10 @@ self =>
     executeAndWaitResult(new Find(pred, parallelIterator assign new DefaultSignalling with VolatileAbort))
   }
 
-  protected[this] def cbfactory = () => newCombiner
+  protected[this] def cbfactory ={
+    println(newCombiner + ", " + newCombiner.getClass)
+    () => newCombiner
+  }
 
   override def filter(pred: T => Boolean): Repr = {
     executeAndWaitResult(new Filter(pred, cbfactory, parallelIterator) mapResult { _.result })
@@ -655,6 +658,7 @@ self =>
     protected[this] def newSubtask(p: ParIterableIterator[T]): Accessor[R, Tp]
     def shouldSplitFurther = pit.remaining > threshold(size, parallelismLevel)
     def split = pit.split.map(newSubtask(_)) // default split procedure
+    private[parallel] override def signalAbort = pit.abort
     override def toString = "Accessor(" + pit.toString + ")"
   }
 
@@ -672,6 +676,10 @@ self =>
     val st: Second
     def combineResults(fr: FR, sr: SR): R
     var result: R = null.asInstanceOf[R]
+    private[parallel] override def signalAbort {
+      ft.signalAbort
+      st.signalAbort
+    }
   }
 
   /** Sequentially performs one task after another. */
@@ -702,6 +710,9 @@ self =>
     def leaf(prevr: Option[R1]) = {
       inner.compute
       result = map(inner.result)
+    }
+    private[parallel] override def signalAbort {
+      inner.signalAbort
     }
   }
 
@@ -1187,6 +1198,7 @@ self =>
       new ScanWithScanTree(Some(st.left.value), op, st.right, src, dest)
     )
     def shouldSplitFurther = (st.left ne null) && (st.right ne null)
+
   }
 
   protected[this] class FromArray[S, A, That](array: Array[A], from: Int, len: Int, cbf: CanCombineFrom[Repr, S, That])

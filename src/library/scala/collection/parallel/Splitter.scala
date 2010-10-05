@@ -34,6 +34,15 @@ trait Splitter[+T] extends Iterator[T] {
 }
 
 
+object Splitter {
+  def empty[T]: Splitter[T] = new Splitter[T] {
+    def hasNext = false
+    def next = Iterator.empty.next
+    def split = Seq(this)
+  }
+}
+
+
 /** A precise splitter (or a precise split iterator) can be split into arbitrary number of splitters
  *  that traverse disjoint subsets of arbitrary sizes.
  *

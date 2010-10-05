@@ -366,8 +366,9 @@ self =>
     def next = { remaining -= 1; self.next }
     def split: Seq[ParIterableIterator[T]] = takeSeq(self.split) { (p, n) => p.take(n) }
     protected[this] def takeSeq[PI <: ParIterableIterator[T]](sq: Seq[PI])(taker: (PI, Int) => PI) = {
-      val shortened = for ((it, total) <- sq zip sq.scanLeft(0)(_ + _.remaining).tail) yield
-        if (total < remaining) it else taker(it, total - remaining)
+      val sizes = sq.scanLeft(0)(_ + _.remaining)
+      val shortened = for ((it, (from, until)) <- sq zip (sizes.init zip sizes.tail)) yield
+        if (until < remaining) it else taker(it, remaining - from)
       shortened filter { _.remaining > 0 }
     }
   }

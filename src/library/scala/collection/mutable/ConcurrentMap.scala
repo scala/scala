@@ -20,12 +20,13 @@ package mutable
  *  Note: The concurrent maps do not accept `null` for keys or values.
  *
  *  @define atomicop
- *  This is done atomically.
+ *  This is an atomic operation.
  */
 trait ConcurrentMap[A, B] extends Map[A, B] {
 
   /**
    * Associates the given key with a given value, unless the key was already associated with some other value.
+   *
    * $atomicop
    *
    * @param k   key with which the specified value is to be associated with
@@ -37,6 +38,7 @@ trait ConcurrentMap[A, B] extends Map[A, B] {
 
   /**
    * Removes the entry for the specified key if its currently mapped to the specified value.
+   *
    * $atomicop
    *
    * @param k   key for which the entry should be removed
@@ -47,6 +49,7 @@ trait ConcurrentMap[A, B] extends Map[A, B] {
 
   /**
    * Replaces the entry for the given key only if it was previously mapped to a given value.
+   *
    * $atomicop
    *
    * @param k         key for which the entry should be replaced
@@ -58,6 +61,7 @@ trait ConcurrentMap[A, B] extends Map[A, B] {
 
   /**
    * Replaces the entry for the given key only if it was previously mapped to some value.
+   *
    * $atomicop
    *
    * @param k   key for which the entry should be replaced

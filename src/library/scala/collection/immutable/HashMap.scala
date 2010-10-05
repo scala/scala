@@ -15,7 +15,7 @@ import generic._
 import annotation.unchecked.uncheckedVariance
 
 
-import parallel.immutable.ParHashTrie
+import parallel.immutable.ParHashMap
 
 
 /** This class implements immutable maps using a hash trie.
@@ -36,7 +36,7 @@ import parallel.immutable.ParHashTrie
  *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(2L)
-class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Parallelizable[ParHashTrie[A, B]] {
+class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Parallelizable[ParHashMap[A, B]] {
 
   override def size: Int = 0
 
@@ -90,7 +90,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
 
   protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[B1]): HashMap[A, B1] = that
 
-  def par = ParHashTrie.fromTrie(this)
+  def par = ParHashMap.fromTrie(this)
 
 }
 
@@ -307,78 +307,7 @@ object HashMap extends ImmutableMapFactory[HashMap] {
       }
     }
 
-/*
-    override def iterator = {   // TODO: optimize (use a stack to keep track of pos)
-
-      def iter(m: HashTrieMap[A,B], k: => Stream[(A,B)]): Stream[(A,B)] = {
-        def horiz(elems: Array[HashMap[A,B]], i: Int, k: => Stream[(A,B)]): Stream[(A,B)] = {
-          if (i < elems.length) {
-            elems(i) match {
-              case m: HashTrieMap[A,B] => iter(m, horiz(elems, i+1, k))
-              case m: HashMap1[A,B] => new Stream.Cons(m.ensurePair, horiz(elems, i+1, k))
-            }
-          } else k
-        }
-        horiz(m.elems, 0, k)
-      }
-      iter(this, Stream.empty).iterator
-    }
-*/
-
-
-    override def iterator = new Iterator[(A,B)] {
-      private[this] var depth = 0
-      private[this] var arrayStack = new Array[Array[HashMap[A,B]]](6)
-      private[this] var posStack = new Array[Int](6)
-
-      private[this] var arrayD = elems
-      private[this] var posD = 0
-
-      private[this] var subIter: Iterator[(A,B)] = null // to traverse collision nodes
-
-      def hasNext = (subIter ne null) || depth >= 0
-
-      def next: (A,B) = {
-        if (subIter ne null) {
-          val el = subIter.next
-          if (!subIter.hasNext)
-            subIter = null
-          el
-        } else
-          next0(arrayD, posD)
-      }
-
-      @scala.annotation.tailrec private[this] def next0(elems: Array[HashMap[A,B]], i: Int): (A,B) = {
-        if (i == elems.length-1) { // reached end of level, pop stack
-          depth -= 1
-          if (depth >= 0) {
-            arrayD = arrayStack(depth)
-            posD = posStack(depth)
-            arrayStack(depth) = null
-          } else {
-            arrayD = null
-            posD = 0
-          }
-        } else
-          posD += 1
-
-        elems(i) match {
-          case m: HashTrieMap[A,B] => // push current pos onto stack and descend
-            if (depth >= 0) {
-              arrayStack(depth) = arrayD
-              posStack(depth) = posD
-            }
-            depth += 1
-            arrayD = m.elems
-            posD = 0
-            next0(m.elems, 0)
-          case m: HashMap1[A,B] => m.ensurePair
-          case m =>
-            subIter = m.iterator
-            subIter.next
-        }
-      }
-    }
+    override def iterator = new TrieIterator[A, B](elems)
 
 /*
 
@@ -532,6 +461,125 @@ time { mNew.iterator.foreach( p => ()) }
       case _ => error("section supposed to be unreachable.")
     }
 
+  }
+
+  class TrieIterator[A, +B](elems: Array[HashMap[A, B]]) extends Iterator[(A, B)] {
+    private[this] var depth = 0
+    private[this] var arrayStack = new Array[Array[HashMap[A,B]]](6)
+    private[this] var posStack = new Array[Int](6)
+
+    private[this] var arrayD = elems
+    private[this] var posD = 0
+
+    private[this] var subIter: Iterator[(A, B)] = null // to traverse collision nodes
+
+    def hasNext = (subIter ne null) || depth >= 0
+
+    def next: (A,B) = {
+      if (subIter ne null) {
+        val el = subIter.next
+        if (!subIter.hasNext)
+          subIter = null
+        el
+      } else
+        next0(arrayD, posD)
+    }
+
+    @scala.annotation.tailrec private[this] def next0(elems: Array[HashMap[A,B]], i: Int): (A,B) = {
+      if (i == elems.length-1) { // reached end of level, pop stack
+        depth -= 1
+        if (depth >= 0) {
+          arrayD = arrayStack(depth)
+          posD = posStack(depth)
+          arrayStack(depth) = null
+        } else {
+          arrayD = null
+          posD = 0
+        }
+      } else
+        posD += 1
+
+      elems(i) match {
+        case m: HashTrieMap[A,B] => // push current pos onto stack and descend
+          if (depth >= 0) {
+            arrayStack(depth) = arrayD
+            posStack(depth) = posD
+          }
+          depth += 1
+          arrayD = m.elems
+          posD = 0
+          next0(m.elems, 0)
+        case m: HashMap1[A,B] => m.ensurePair
+        case m =>
+          subIter = m.iterator
+          subIter.next
+      }
+    }
+
+    // assumption: contains 2 or more elements
+    // splits this iterator into 2 iterators
+    // returns the 1st iterator, its number of elements, and the second iterator
+    def split: ((Iterator[(A, B)], Int), Iterator[(A, B)]) = {
+      // 0) simple case: no elements have been iterated - simply divide arrayD
+      if (arrayD != null && depth == 0 && posD == 0) {
+        val (fst, snd) = arrayD.splitAt(arrayD.length / 2)
+        val szfst = fst.foldLeft(0)(_ + _.size)
+        return ((new TrieIterator(fst), szfst), new TrieIterator(snd))
+      }
+
+      // otherwise, some elements have been iterated over
+      // 1) collision case: if we have a subIter, we return subIter and elements after it
+      if (subIter ne null) {
+        val buff = subIter.toBuffer
+        subIter = null
+        ((buff.iterator, buff.length), this)
+      } else {
+        // otherwise find the topmost array stack element
+        if (depth > 0) {
+          // 2) topmost comes before (is not) arrayD
+          //    steal a portion of top to create a new iterator
+          val topmost = arrayStack(0)
+          if (posStack(0) == arrayStack(0).length - 1) {
+            // 2a) only a single entry left on top
+            // this means we have to modify this iterator - pop topmost
+            val snd = Array(arrayStack(0).last)
+            val szsnd = snd(0).size
+            // modify this - pop
+            depth -= 1
+            arrayStack = arrayStack.tail ++ Array[Array[HashMap[A, B]]](null)
+            posStack = posStack.tail ++ Array[Int](0)
+            // we know that `this` is not empty, since it had something on the arrayStack and arrayStack elements are always non-empty
+            ((new TrieIterator[A, B](snd), szsnd), this)
+          } else {
+            // 2b) more than a single entry left on top
+            val (fst, snd) = arrayStack(0).splitAt(arrayStack(0).length - (arrayStack(0).length - posStack(0) + 1) / 2)
+            arrayStack(0) = fst
+            val szsnd = snd.foldLeft(0)(_ + _.size)
+            ((new TrieIterator[A, B](snd), szsnd), this)
+          }
+        } else {
+          // 3) no topmost element (arrayD is at the top)
+          //    steal a portion of it and update this iterator
+          if (posD == arrayD.length - 1) {
+            // 3a) positioned at the last element of arrayD
+            val arr: Array[HashMap[A, B]] = arrayD(posD) match {
+              case c: HashMapCollision1[_, _] => c.asInstanceOf[HashMapCollision1[A, B]].kvs.toArray map { HashMap() + _ }
+              case ht: HashTrieMap[_, _] => ht.asInstanceOf[HashTrieMap[A, B]].elems
+              case _ => error("cannot divide single element")
+            }
+            val (fst, snd) = arr.splitAt(arr.length / 2)
+            val szsnd = snd.foldLeft(0)(_ + _.size)
+            ((new TrieIterator(snd), szsnd), new TrieIterator(fst))
+          } else {
+            // 3b) arrayD has more free elements
+            val (fst, snd) = arrayD.splitAt(arrayD.length - (arrayD.length - posD + 1) / 2)
+            arrayD = fst
+            val szsnd = snd.foldLeft(0)(_ + _.size)
+            ((new TrieIterator[A, B](snd), szsnd), this)
+          }
+        }
+      }
+    }
   }
 
   private def check[K](x: HashMap[K, _], y: HashMap[K, _], xy: HashMap[K, _]) = { // TODO remove this debugging helper

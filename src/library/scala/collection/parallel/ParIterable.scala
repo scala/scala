@@ -26,8 +26,7 @@ trait ParIterable[+T] extends Iterable[T]
 /** $factoryinfo
  */
 object ParIterable extends ParFactory[ParIterable] {
-  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParIterable[T]] =
-    new GenericCanCombineFrom[T]
+  implicit def canBuildFrom[T]: CanCombineFrom[Coll, T, ParIterable[T]] = new GenericCanCombineFrom[T]
 
   def newBuilder[T]: Combiner[T, ParIterable[T]] = ParArrayCombiner[T]
 

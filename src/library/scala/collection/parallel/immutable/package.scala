@@ -12,7 +12,28 @@ package scala.collection.parallel
 
 package object immutable {
 
+  /* package level methods */
   def repetition[T](elem: T, len: Int) = new Repetition(elem, len)
+
+  /* properties */
+  private[immutable] val unrolledsize = 16
+
+  /* classes */
+  private[immutable] class Unrolled[T: ClassManifest] {
+    var size = 0
+    var array = new Array[T](unrolledsize)
+    var next: Unrolled[T] = null
+    // adds and returns itself or the new unrolled if full
+    def add(elem: T): Unrolled[T] = if (size < unrolledsize) {
+      array(size) = elem
+      size += 1
+      this
+    } else {
+      next = new Unrolled[T]
+      next.add(elem)
+    }
+    override def toString = "Unrolled(" + array.mkString(", ") + ")"
+  }
 
   /** A (parallel) sequence consisting of `length` elements `elem`. Used in the `padTo` method.
    *

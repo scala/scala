@@ -39,6 +39,16 @@ class Breaks {
     }
   }
 
+  def tryBreakable(op: => Unit) = new {
+    def catchBreak(onBreak: => Unit) = try {
+      op
+    } catch {
+      case ex: BreakControl =>
+        if (ex ne breakException) throw ex
+        onBreak
+    }
+  }
+
   /* Break from dynamically closest enclosing breakable block
    * @note this might be different than the statically closest enclosing
    * block!

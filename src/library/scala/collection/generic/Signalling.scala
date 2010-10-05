@@ -91,10 +91,7 @@ trait Signalling {
 /**
  * This signalling implementation returns default values and ignores received signals.
  */
-class DefaultSignalling extends Signalling {
-  def isAborted = false
-  def abort {}
-
+class DefaultSignalling extends Signalling with VolatileAbort {
   def indexFlag = -1
   def setIndexFlag(f: Int) {}
   def setIndexFlagIfGreater(f: Int) {}
@@ -115,8 +112,8 @@ object IdleSignalling extends DefaultSignalling
  */
 trait VolatileAbort extends Signalling {
   @volatile private var abortflag = false
-  abstract override def isAborted = abortflag
-  abstract override def abort = abortflag = true
+  override def isAborted = abortflag
+  override def abort = abortflag = true
 }
 
 
