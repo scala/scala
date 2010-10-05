@@ -155,32 +155,11 @@ trait MatrixAdditions extends ast.TreeDSL
       import Flags.{ MUTABLE, ABSTRACT, SEALED, TRANS_FLAG }
 
       private case class Combo(index: Int, sym: Symbol) {
+        val isBaseClass = sym.tpe.baseClasses.toSet
+
         // is this combination covered by the given pattern?
         def isCovered(p: Pattern) = {
-          def cmpSymbols(t1: Type, t2: Type)  = t1.typeSymbol eq t2.typeSymbol
-          def coversSym = {
-            val tpe = decodedEqualsType(p.tpe)
-            lazy val lmoc = sym.companionModule
-            val symtpe =
-              if ((sym hasFlag Flags.MODULE) && (lmoc ne NoSymbol))
-                singleType(sym.tpe.prefix, lmoc)   // e.g. None, Nil
-              else sym.tpe
-
-            /** Note to Martin should you come through this way: this
-             *  logic looks way overcomplicated for the intention, but a little
-             *  experimentation showed that at least most of it is serving
-             *  some necessary purpose.  It doesn't seem like much more than
-             *  "sym.tpe matchesPattern tpe" ought to be necessary though.
-             *
-             *  For the time being I tacked the matchesPattern test onto the
-             *  end to address #3097.
-             */
-            (tpe.typeSymbol == sym) ||
-            (symtpe <:< tpe) ||
-            (symtpe.parents exists (x => cmpSymbols(x, tpe))) || // e.g. Some[Int] <: Option[&b]
-            ((tpe.prefix memberType sym) <:< tpe) ||  // outer, see combinator.lexical.Scanner
-            (symtpe matchesPattern tpe)
-          }
+          def coversSym = isBaseClass(decodedEqualsType(p.tpe).typeSymbol)
 
           cond(p.tree) {
             case _: UnApply | _: ArrayValue => true
