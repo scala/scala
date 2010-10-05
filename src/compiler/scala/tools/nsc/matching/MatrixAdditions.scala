@@ -173,19 +173,24 @@ trait MatrixAdditions extends ast.TreeDSL
       private def rowCoversCombo(row: Row, combos: List[Combo]) =
         row.guard.isEmpty && (combos forall (c => c isCovered row.pats(c.index)))
 
-      private def requiresExhaustive(s: Symbol) = {
-         (s hasFlag MUTABLE) &&                 // indicates that have not yet checked exhaustivity
-        !(s hasFlag TRANS_FLAG) &&              // indicates @unchecked
-         (s.tpe.typeSymbol.isSealed) && {
-            s resetFlag MUTABLE                 // side effects MUTABLE flag
-            !isValueClass(s.tpe.typeSymbol)     // but make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
-         }
+      private def requiresExhaustive(sym: Symbol) = {
+         (sym.isMutable) &&                 // indicates that have not yet checked exhaustivity
+        !(sym hasFlag TRANS_FLAG) &&        // indicates @unchecked
+         (sym.tpe.typeSymbol.isSealed) &&
+        !isValueClass(sym.tpe.typeSymbol)   // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
       }
 
       private lazy val inexhaustives: List[List[Combo]] = {
-        val collected =
-          for ((pv, i) <- tvars.zipWithIndex ; val sym = pv.lhs ; if requiresExhaustive(sym)) yield
-            i -> sym.tpe.typeSymbol.sealedDescendants
+        // let's please not get too clever side-effecting the mutable flag.
+        val toCollect = tvars.zipWithIndex filter { case (pv, i) => requiresExhaustive(pv.sym) }
+        val collected = toCollect map { case (pv, i) =>
+          // okay, now reset the flag
+          pv.sym resetFlag MUTABLE
+          // have to filter out children which cannot match: see ticket #3683 for an example
+          val kids = pv.tpe.typeSymbol.sealedDescendants filter (_.tpe matchesPattern pv.tpe)
+
+          i -> kids
+        }
 
         val folded =
           collected.foldRight(List[List[Combo]]())((c, xs) => {

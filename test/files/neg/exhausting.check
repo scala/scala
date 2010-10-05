@@ -14,11 +14,16 @@ missing combination           Bar3
   def fail3[T](x: Foo[T]) = x match {
                             ^
 exhausting.scala:31: error: match is not exhaustive!
+missing combination           Bar2          Bar2
+
+  def fail4[T <: AnyRef](xx: (Foo[T], Foo[T])) = xx match {
+      ^
+exhausting.scala:36: error: match is not exhaustive!
 missing combination           Bar1          Bar2
 missing combination           Bar1          Bar3
 missing combination           Bar2          Bar1
 missing combination           Bar2          Bar2
 
-  def fail4[T](xx: (Foo[T], Foo[T])) = xx match {
+  def fail5[T](xx: (Foo[T], Foo[T])) = xx match {
       ^
-four errors found
+5 errors found

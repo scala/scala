@@ -28,7 +28,12 @@ object Test {
     case Bar1   => "ok"
     case Bar2   => "ok"
   }
-  def fail4[T](xx: (Foo[T], Foo[T])) = xx match {
+  def fail4[T <: AnyRef](xx: (Foo[T], Foo[T])) = xx match {
+    case (Bar1, Bar1) => ()
+    case (Bar2, Bar3) => ()
+    case (Bar3, _) => ()
+  }
+  def fail5[T](xx: (Foo[T], Foo[T])) = xx match {
     case (Bar1, Bar1) => ()
     case (Bar2, Bar3) => ()
     case (Bar3, _) => ()
