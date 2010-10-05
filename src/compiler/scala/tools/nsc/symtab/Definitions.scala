@@ -865,6 +865,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         Object_isInstanceOf,
         Object_asInstanceOf
       )
+      // AnyVal is sealed but needs to be made aware of its children
+      ScalaValueClasses foreach (AnyValClass addChild _)
 
       if (forMSIL) {
         val intType = IntClass.typeConstructor

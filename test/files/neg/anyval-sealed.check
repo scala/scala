@@ -1,0 +1,12 @@
+anyval-sealed.scala:2: error: match is not exhaustive!
+missing combination           Byte
+missing combination           Char
+missing combination         Double
+missing combination          Float
+missing combination           Long
+missing combination          Short
+missing combination           Unit
+
+  def f(x: AnyVal) = x match {
+                     ^
+one error found

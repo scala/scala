@@ -21,6 +21,7 @@ trait MatrixAdditions extends ast.TreeDSL
   import CODE._
   import Debug._
   import treeInfo.{ IsTrue, IsFalse }
+  import definitions.{ isValueClass }
 
   /** The Squeezer, responsible for all the squeezing.
    */
@@ -172,11 +173,14 @@ trait MatrixAdditions extends ast.TreeDSL
       private def rowCoversCombo(row: Row, combos: List[Combo]) =
         row.guard.isEmpty && (combos forall (c => c isCovered row.pats(c.index)))
 
-      private def requiresExhaustive(s: Symbol) =
+      private def requiresExhaustive(s: Symbol) = {
          (s hasFlag MUTABLE) &&                 // indicates that have not yet checked exhaustivity
         !(s hasFlag TRANS_FLAG) &&              // indicates @unchecked
-         (s.tpe.typeSymbol.isSealed) &&
-         { s resetFlag MUTABLE ; true }         // side effects MUTABLE flag
+         (s.tpe.typeSymbol.isSealed) && {
+            s resetFlag MUTABLE                 // side effects MUTABLE flag
+            !isValueClass(s.tpe.typeSymbol)     // but make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
+         }
+      }
 
       private lazy val inexhaustives: List[List[Combo]] = {
         val collected =

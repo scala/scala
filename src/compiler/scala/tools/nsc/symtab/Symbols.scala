@@ -1491,10 +1491,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** If this is a sealed class, its known direct subclasses. Otherwise Set.empty */
     def children: List[Symbol] = Nil
 
-    /** Recursively finds all sealed descendants and returns a sorted list. */
+    /** Recursively finds all sealed descendants and returns a sorted list.
+     *  Includes this symbol unless it is abstract, but as value classes are
+     *  marked abstract so they can't be instantiated, they are special cased.
+     */
     def sealedDescendants: List[Symbol] = {
       val kids = children flatMap (_.sealedDescendants)
-      val all = if (this hasFlag ABSTRACT) kids else this :: kids
+      val all = if (isAbstractClass && !isValueClass(this)) kids else this :: kids
 
       all.distinct sortBy (_.sealedSortName)
     }
