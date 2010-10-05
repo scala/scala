@@ -8,10 +8,10 @@ import scala.collection.parallel._
 
 class ParCollProperties extends Properties("Parallel collections") {
   // parallel arrays
-  include(mutable.IntParallelArrayCheck)
+  //include(mutable.IntParallelArrayCheck)
 
   // parallel ranges
-  include(immutable.ParallelRangeCheck)
+  //include(immutable.ParallelRangeCheck)
 }
 
 
