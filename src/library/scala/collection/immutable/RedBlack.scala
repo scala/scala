@@ -185,7 +185,7 @@ abstract class RedBlack[A] {
       // else if (newRight eq Empty) newLeft.upd(key, value);
       // else mkTree(isBlack, key, value, newLeft, newRight)
       iterator
-      .dropWhile { case (key, _) => from forall (isSmaller(key, _)) }
+      .dropWhile { case (key, _) => from exists (isSmaller(key, _)) }
       .takeWhile { case (key, _) => until forall (isSmaller(_, key)) }
       .foldLeft(Empty: Tree[B]) { case (tree, (key, value)) => tree.update(key, value) }
     }
