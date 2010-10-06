@@ -242,9 +242,6 @@ object scalac extends Command {
           MItalic("uncurry"),
           "uncurry function types and applications"),
         Definition(
-          MItalic("transmatch"),
-          "translate match expressions"),
-        Definition(
           MItalic("lambdalift"),
           "lambda lifter"),
         Definition(

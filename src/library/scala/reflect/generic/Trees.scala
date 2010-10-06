@@ -296,23 +296,23 @@ trait Trees { self: Universe =>
   case class Block(stats: List[Tree], expr: Tree)
        extends TermTree
 
-  /** Case clause in a pattern match, eliminated by TransMatch
+  /** Case clause in a pattern match, eliminated during explicitouter
    *  (except for occurrences in switch statements)
    */
   case class CaseDef(pat: Tree, guard: Tree, body: Tree)
        extends Tree
 
-  /** Alternatives of patterns, eliminated by TransMatch, except for
+  /** Alternatives of patterns, eliminated by explicitouter, except for
    *  occurrences in encoded Switch stmt (=remaining Match(CaseDef(...))
    */
   case class Alternative(trees: List[Tree])
        extends TermTree
 
-  /** Repetition of pattern, eliminated by TransMatch */
+  /** Repetition of pattern, eliminated by explicitouter */
   case class Star(elem: Tree)
        extends TermTree
 
-  /** Bind of a variable to a rhs pattern, eliminated by TransMatch
+  /** Bind of a variable to a rhs pattern, eliminated by explicitouter
    *
    *  @param name
    *  @param body
@@ -343,12 +343,11 @@ trait Trees { self: Universe =>
        extends TermTree
 
   /** <p>
-   *    Pattern matching expression  (before <code>TransMatch</code>)
-   *    Switch statements            (after TransMatch)
+   *    Pattern matching expression  (before explicitouter)
+   *    Switch statements            (after explicitouter)
    *  </p>
    *  <p>
-   *    After <code>TransMatch</code>, cases will satisfy the following
-   *    constraints:
+   *    After explicitouter, cases will satisfy the following constraints:
    *  </p>
    *  <ul>
    *    <li>all guards are EmptyTree,</li>

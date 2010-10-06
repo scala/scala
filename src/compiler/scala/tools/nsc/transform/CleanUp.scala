@@ -47,9 +47,6 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
     private def typedWithPos(pos: Position)(tree: Tree) =
       localTyper typed { atPos(pos)(tree) }
 
-    override def transformUnit(unit: CompilationUnit) =
-      unit.body = transform(unit.body)
-
     /** A value class is defined to be only Java-compatible values: unit is
       * not part of it, as opposed to isValueClass in definitions. scala.Int is
       * a value class, java.lang.Integer is not. */
