@@ -483,7 +483,8 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
             val passedok = lines filter (_ startsWith "+") forall (_ contains "OK")
             failures.isEmpty && passedok
           }
-      })
+          NestUI.verbose("test for '" + file + "' success: " + succeeded)
+        })
 
       case "pos" =>
         runTestCommon(file, kind, expectFailure = false)((_, _) => ())
