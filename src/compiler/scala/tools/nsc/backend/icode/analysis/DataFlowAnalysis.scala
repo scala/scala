@@ -73,7 +73,7 @@ trait DataFlowAnalysis[L <: SemiLattice] {
               assert(false, "Invalid successor for: " + point + " successor " + p + " does not exist")
 //          if (!p.exceptionHandlerHeader) {
 //            println("lubbing " + p.predecessors + " outs: " + p.predecessors.map(out.apply).mkString("\n", "\n", ""))
-            in(p) = lattice.lub(/*in(p) :: */(p.predecessors map out.apply), p.exceptionHandlerStart)
+            in(p) = lattice.lub(in(p) :: (p.predecessors map out.apply), p.exceptionHandlerStart)
 //          }
         }
       }
