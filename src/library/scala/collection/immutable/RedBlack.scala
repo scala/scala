@@ -173,17 +173,21 @@ abstract class RedBlack[A] {
       if (!middle._1) return middle
       return this.right.visit(middle._2)(f)
     }
-   override def range(from: Option[A], until: Option[A]): Tree[B] = {
-      if (from == None && until == None) return this
-      if (from != None && isSmaller(key, from.get)) return right.range(from, until);
-      if (until != None && (isSmaller(until.get,key) || !isSmaller(key,until.get)))
-        return left.range(from, until);
-      val newLeft = left.range(from, None)
-      val newRight = right.range(None, until)
-      if ((newLeft eq left) && (newRight eq right)) this
-      else if (newLeft eq Empty) newRight.upd(key, value);
-      else if (newRight eq Empty) newLeft.upd(key, value);
-      else mkTree(isBlack, key, value, newLeft, newRight)
+    override def range(from: Option[A], until: Option[A]): Tree[B] = {
+      // if (from == None && until == None) return this
+      // if (from != None && isSmaller(key, from.get)) return right.range(from, until);
+      // if (until != None && (isSmaller(until.get,key) || !isSmaller(key,until.get)))
+      //   return left.range(from, until);
+      // val newLeft = left.range(from, None)
+      // val newRight = right.range(None, until)
+      // if ((newLeft eq left) && (newRight eq right)) this
+      // else if (newLeft eq Empty) newRight.upd(key, value);
+      // else if (newRight eq Empty) newLeft.upd(key, value);
+      // else mkTree(isBlack, key, value, newLeft, newRight)
+      iterator
+      .dropWhile { case (key, _) => from forall (isSmaller(key, _)) }
+      .takeWhile { case (key, _) => until forall (isSmaller(_, key)) }
+      .foldLeft(Empty: Tree[B]) { case (tree, (key, value)) => tree.update(key, value) }
     }
     def first = if (left .isEmpty) key else left.first
     def last  = if (right.isEmpty) key else right.last
