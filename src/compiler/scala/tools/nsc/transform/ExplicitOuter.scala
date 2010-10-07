@@ -9,6 +9,7 @@ package transform
 import symtab._
 import Flags.{ CASE => _, _ }
 import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 import matching.{ Patterns, ParallelMatching }
 
 /** This class ...

@@ -10,7 +10,7 @@ package icode
 import scala.collection.mutable.{Buffer, ListBuffer, Map, HashMap}
 import scala.tools.nsc.symtab._
 
-abstract class Checkers {
+abstract class ICodeCheckers {
   val global: Global
   import global._
 
@@ -108,11 +108,11 @@ abstract class Checkers {
 
       for (f1 <- cls.fields ; f2 <- cls.fields ; if f1 < f2)
         if (isConfict(f1, f2, false))
-          Checkers.this.global.error("Repetitive field name: " + f1.symbol.fullName)
+          ICodeCheckers.this.global.error("Repetitive field name: " + f1.symbol.fullName)
 
       for (m1 <- cls.methods ; m2 <- cls.methods ; if m1 < m2)
         if (isConfict(m1, m2, true))
-          Checkers.this.global.error("Repetitive method: " + m1.symbol.fullName)
+          ICodeCheckers.this.global.error("Repetitive method: " + m1.symbol.fullName)
 
       clasz.methods foreach check
     }
@@ -633,7 +633,7 @@ abstract class Checkers {
     //////////////// Error reporting /////////////////////////
 
     def error(msg: String) {
-      Checkers.this.global.error("!! ICode checker fatality in " + method + " at:" + blockAsString(basicBlock) + ":\n " + msg)
+      ICodeCheckers.this.global.error("!! ICode checker fatality in " + method + " at:" + blockAsString(basicBlock) + ":\n " + msg)
     }
 
     def error(msg: String, stack: TypeStack) {

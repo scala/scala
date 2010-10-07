@@ -814,9 +814,19 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       // of a subtyping/equality judgement, which can lead to recursive types being constructed.
       // See (t0851) for a situation where this happens.
       if (!this.isGround) {
+        // PP: The foreach below was formerly expressed as:
+        //   for(tv @ TypeVar(_, _) <- this) { suspension suspend tv }
+        //
+        // The tree checker failed this saying a TypeVar is required, but a (Type @unchecked) was found.
+        // This is a consequence of using a pattern match and variable binding + ticket #1503, which
+        // was addressed by weakening the type of bindings in pattern matches if they occur on the right.
+        // So I'm not quite sure why this works at all, as the checker is right that it is mistyped.
+        // For now I modified it as below, which achieves the same without error.
+        //
         // make each type var in this type use its original type for comparisons instead of collecting constraints
-        for(tv@TypeVar(_, _) <- this) {
-          suspension suspend tv
+        this foreach {
+          case tv: TypeVar  => suspension suspend tv
+          case _            => ()
         }
       }
 

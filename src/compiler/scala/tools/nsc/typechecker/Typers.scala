@@ -1301,7 +1301,7 @@ trait Typers { self: Analyzer =>
       val tparams1 = cdef.tparams mapConserve (typedTypeDef)
       val impl1 = newTyper(context.make(cdef.impl, clazz, new Scope))
         .typedTemplate(cdef.impl, parentTypes(cdef.impl))
-      val impl2 = addSyntheticMethods(impl1, clazz, context)
+      val impl2 = typerAddSyntheticMethods(impl1, clazz, context)
       if ((clazz != ClassfileAnnotationClass) &&
           (clazz isNonBottomSubClass ClassfileAnnotationClass))
         unit.warning (cdef.pos,
@@ -1338,7 +1338,7 @@ trait Typers { self: Analyzer =>
       assert(clazz != NoSymbol)
       val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope))
         .typedTemplate(mdef.impl, parentTypes(mdef.impl))
-      val impl2 = addSyntheticMethods(impl1, clazz, context)
+      val impl2 = typerAddSyntheticMethods(impl1, clazz, context)
 
       if (mdef.name == nme.PACKAGEkw)
         for (m <- mdef.symbol.info.members)
@@ -1346,6 +1346,13 @@ trait Typers { self: Analyzer =>
             context.error(if (m.pos.isDefined) m.pos else mdef.pos,
                           "implementation restriction: "+mdef.symbol+" cannot contain case "+m)
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
+    }
+
+    /** In order to override this in the TreeCheckers Typer so synthetics aren't re-added
+     *  all the time, it is exposed here the module/class typing methods go through it.
+     */
+    protected def typerAddSyntheticMethods(templ: Template, clazz: Symbol, context: Context): Template = {
+      addSyntheticMethods(templ, clazz, context)
     }
 
     /**
