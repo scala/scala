@@ -1882,7 +1882,7 @@ self =>
       val start = in.offset
       newLineOptWhenFollowedBy(LPAREN)
       if (ofCaseClass && in.token != LPAREN)
-        deprecationWarning(in.offset, "case classes without a parameter list have been deprecated;\n"+
+        deprecationWarning(in.lastOffset, "case classes without a parameter list have been deprecated;\n"+
                            "use either case objects or case classes with `()' as parameter list.")
       while (implicitmod == 0 && in.token == LPAREN) {
         in.nextToken()
