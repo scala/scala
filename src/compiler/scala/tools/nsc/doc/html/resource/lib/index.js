@@ -187,7 +187,7 @@ function textFilter() {
                     matchedSet[child] ? 'show' : 'hide'
                 ]();
             });
-            $("> .templates", pack).show();
+            if(kindFilterState=="all") $("> .templates", pack).show();
             $("> .packhide", pack).show();
             $("> .packfocus", pack).show();
         });
@@ -206,7 +206,9 @@ function configureHideFilter() {
                 packhide.text("show");
             }
             else {
-                $("~ ol", packhide).show();
+            	  // When the filter is in "packs" state, we don't want to show the `.templates`, only `.packages`
+            	  var selector = kindFilterState=="packs" ? "~ ol.packages" : "~ ol"
+                $(selector, packhide).show();
                 packhide.text("hide");
             }
             return false;
