@@ -650,7 +650,8 @@ QUICK BUILD (QUICK)
       jvmargs="${scalacfork.jvmargs}">
       <include name="**/*.scala"/>
       <compilationpath>
-	<pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/scalacheck"/>
       </compilationpath>
     </scalacfork>
   </target>
