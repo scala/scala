@@ -86,114 +86,65 @@ class Flags {
   // The flags from 0x001 to 0x800 are different in the raw flags
   // and in the pickled format.
 
-  private final val IMPLICIT_PKL   = 0x00000001
-  private final val FINAL_PKL      = 0x00000002
-  private final val PRIVATE_PKL    = 0x00000004
-  private final val PROTECTED_PKL  = 0x00000008
+  private final val IMPLICIT_PKL   = (1 << 0)
+  private final val FINAL_PKL      = (1 << 1)
+  private final val PRIVATE_PKL    = (1 << 2)
+  private final val PROTECTED_PKL  = (1 << 3)
 
-  private final val SEALED_PKL     = 0x00000010
-  private final val OVERRIDE_PKL   = 0x00000020
-  private final val CASE_PKL       = 0x00000040
-  private final val ABSTRACT_PKL   = 0x00000080
+  private final val SEALED_PKL     = (1 << 4)
+  private final val OVERRIDE_PKL   = (1 << 5)
+  private final val CASE_PKL       = (1 << 6)
+  private final val ABSTRACT_PKL   = (1 << 7)
 
-  private final val DEFERRED_PKL   = 0x00000100
-  private final val METHOD_PKL     = 0x00000200
-  private final val MODULE_PKL     = 0x00000400
-  private final val INTERFACE_PKL  = 0x00000800
+  private final val DEFERRED_PKL   = (1 << 8)
+  private final val METHOD_PKL     = (1 << 9)
+  private final val MODULE_PKL     = (1 << 10)
+  private final val INTERFACE_PKL  = (1 << 11)
 
   private final val PKL_MASK       = 0x00000FFF
 
   final val PickledFlags: Long  = 0xFFFFFFFFL
 
-  private val r2p = {
-    def rawFlagsToPickledAux(flags:Int) = {
-      var pflags=0
-      if ((flags & IMPLICIT )!=0) pflags|=IMPLICIT_PKL
-      if ((flags & FINAL    )!=0) pflags|=FINAL_PKL
-      if ((flags & PRIVATE  )!=0) pflags|=PRIVATE_PKL
-      if ((flags & PROTECTED)!=0) pflags|=PROTECTED_PKL
-      if ((flags & SEALED   )!=0) pflags|=SEALED_PKL
-      if ((flags & OVERRIDE )!=0) pflags|=OVERRIDE_PKL
-      if ((flags & CASE     )!=0) pflags|=CASE_PKL
-      if ((flags & ABSTRACT )!=0) pflags|=ABSTRACT_PKL
-      if ((flags & DEFERRED )!=0) pflags|=DEFERRED_PKL
-      if ((flags & METHOD   )!=0) pflags|=METHOD_PKL
-      if ((flags & MODULE   )!=0) pflags|=MODULE_PKL
-      if ((flags & INTERFACE)!=0) pflags|=INTERFACE_PKL
-      pflags
+  private val rawPickledCorrespondence = List(
+    (IMPLICIT, IMPLICIT_PKL),
+    (FINAL, FINAL_PKL),
+    (PRIVATE, PRIVATE_PKL),
+    (PROTECTED, PROTECTED_PKL),
+    (SEALED, SEALED_PKL),
+    (OVERRIDE, OVERRIDE_PKL),
+    (CASE, CASE_PKL),
+    (ABSTRACT, ABSTRACT_PKL),
+    (DEFERRED, DEFERRED_PKL),
+    (METHOD, METHOD_PKL),
+    (MODULE, MODULE_PKL),
+    (INTERFACE, INTERFACE_PKL)
+  )
+  private def mkCorrespondenceArray(correspondence: List[(Int, Int)]) = {
+    def f(flags: Int): Int = {
+      correspondence.foldLeft(0) {
+        case (result, (oldFlag, newFlag)) =>
+          if ((flags & oldFlag) != 0) result | newFlag
+          else result
+      }
     }
-    val v=new Array[Int](PKL_MASK+1)
-    var i=0
-    while (i<=PKL_MASK) {
-      v(i)=rawFlagsToPickledAux(i)
-      i+=1
-    }
-    v
+    0 to PKL_MASK map f toArray
   }
+  /** A map from the raw to pickled flags, and vice versa.
+   */
+  private val r2p = mkCorrespondenceArray(rawPickledCorrespondence)
+  private val p2r = mkCorrespondenceArray(rawPickledCorrespondence map (_.swap))
 
-  private val p2r = {
-    def pickledToRawFlagsAux(pflags:Int) = {
-      var flags=0
-      if ((pflags & IMPLICIT_PKL )!=0) flags|=IMPLICIT
-      if ((pflags & FINAL_PKL    )!=0) flags|=FINAL
-      if ((pflags & PRIVATE_PKL  )!=0) flags|=PRIVATE
-      if ((pflags & PROTECTED_PKL)!=0) flags|=PROTECTED
-      if ((pflags & SEALED_PKL   )!=0) flags|=SEALED
-      if ((pflags & OVERRIDE_PKL )!=0) flags|=OVERRIDE
-      if ((pflags & CASE_PKL     )!=0) flags|=CASE
-      if ((pflags & ABSTRACT_PKL )!=0) flags|=ABSTRACT
-      if ((pflags & DEFERRED_PKL )!=0) flags|=DEFERRED
-      if ((pflags & METHOD_PKL   )!=0) flags|=METHOD
-      if ((pflags & MODULE_PKL   )!=0) flags|=MODULE
-      if ((pflags & INTERFACE_PKL)!=0) flags|=INTERFACE
-      flags
-    }
-    val v=new Array[Int](PKL_MASK+1)
-    var i=0
-    while (i<=PKL_MASK) {
-      v(i)=pickledToRawFlagsAux(i)
-      i+=1
-    }
-    v
-  }
-
-  def rawFlagsToPickled(flags:Long):Long =
+  def rawFlagsToPickled(flags: Long): Long =
     (flags & ~PKL_MASK) | r2p(flags.toInt & PKL_MASK)
 
-  def pickledToRawFlags(pflags:Long):Long =
+  def pickledToRawFlags(pflags: Long): Long =
     (pflags & ~PKL_MASK) | p2r(pflags.toInt & PKL_MASK)
 
   // List of the raw flags, in pickled order
-  protected val pickledListOrder = {
-    def findBit(m:Long):Int = {
-      var mask=m
-      var i=0
-      while (i <= 62) {
-        if ((mask&1) == 1L) return i
-        mask >>= 1
-        i += 1
-      }
-      throw new AssertionError()
-    }
-    val v=new Array[Long](63)
-    v(findBit(IMPLICIT_PKL ))=IMPLICIT
-    v(findBit(FINAL_PKL    ))=FINAL
-    v(findBit(PRIVATE_PKL  ))=PRIVATE
-    v(findBit(PROTECTED_PKL))=PROTECTED
-    v(findBit(SEALED_PKL   ))=SEALED
-    v(findBit(OVERRIDE_PKL ))=OVERRIDE
-    v(findBit(CASE_PKL     ))=CASE
-    v(findBit(ABSTRACT_PKL ))=ABSTRACT
-    v(findBit(DEFERRED_PKL ))=DEFERRED
-    v(findBit(METHOD_PKL   ))=METHOD
-    v(findBit(MODULE_PKL   ))=MODULE
-    v(findBit(INTERFACE_PKL))=INTERFACE
-    var i=findBit(PKL_MASK+1)
-    while (i <= 62) {
-      v(i)=1L << i
-      i += 1
-    }
-    v.toList
-  }
+  protected val pickledListOrder: List[Long] = {
+    val all   = 0 to 62 map (1L << _)
+    val front = rawPickledCorrespondence map (_._1.toLong)
 
+    front.toList ++ (all filterNot (front contains _))
+  }
 }
