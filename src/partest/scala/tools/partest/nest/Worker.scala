@@ -310,6 +310,13 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
   def isScala(f: File) = SFile(f) hasExtension "scala"
   def isJavaOrScala(f: File) = isJava(f) || isScala(f)
 
+  def outputLogFile(logFile: File) {
+    NestUI.normal("Log file '" + logFile + "': \n")
+    val lines = SFile(logFile).lines
+    for (lin <- lines) NestUI.normal(lin + "\n")
+  }
+
+
   /** Runs a list of tests.
    *
    * @param kind  The test kind (pos, neg, run, etc.)
@@ -375,6 +382,7 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
             val writer = new PrintWriter(new FileWriter(logFile), true)
             e.printStackTrace(writer)
             writer.close()
+            outputLogFile(logFile) // if running the test threw an exception, output log file
             succeeded = false
         }
 
@@ -421,7 +429,7 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
       }
     }
 
-    def runTestCommon(file: File, kind: String, expectFailure: Boolean)(onSuccess: (File, File) => Unit): LogContext =
+    def runTestCommon(file: File, kind: String, expectFailure: Boolean)(onSuccess: (File, File) => Unit, onFail: (File, File) => Unit = (logf, outd) => ()): LogContext =
       runInContext(file, kind, (logFile: File, outDir: File) => {
 
         if (file.isDirectory) {
@@ -439,6 +447,8 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
 
         if (succeeded)  // run test
           onSuccess(logFile, outDir)
+        else
+          onFail(logFile, outDir)
       })
 
     def runJvmTest(file: File, kind: String): LogContext =
@@ -477,14 +487,18 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
 
           NestUI.verbose(SFile(logFile).slurp())
           // obviously this must be improved upon
+          val lines = SFile(logFile).lines.filter(_.trim != "").toBuffer
           succeeded = {
-            val lines = SFile(logFile).lines.filter(_.trim != "").toBuffer
             val failures = lines filter (_ startsWith "!")
             val passedok = lines filter (_ startsWith "+") forall (_ contains "OK")
             failures.isEmpty && passedok
           }
+          if (!succeeded) {
+            NestUI.normal("ScalaCheck test failed. Output:\n")
+            for (lin <- lines) NestUI.normal(lin + "\n")
+          }
           NestUI.verbose("test for '" + file + "' success: " + succeeded)
-        })
+        }, (logFile, outDir) => outputLogFile(logFile))
 
       case "pos" =>
         runTestCommon(file, kind, expectFailure = false)((_, _) => ())

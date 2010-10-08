@@ -1,4 +1,5 @@
 import org.scalacheck._
+import org.scalacheck.Prop._
 
 import scala.tools.nsc.doc
 import scala.tools.nsc.doc.html.page.Index
