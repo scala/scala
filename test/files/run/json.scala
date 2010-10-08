@@ -15,65 +15,107 @@ object Test extends Application {
     case x => x.toString
   }
 
+  /*
+   * This method takes input JSON values and sorts keys on objects.
+   */
   def sortJSON(in : Any) : Any = in match {
     case l : List[_] => l.map(sortJSON)
     case m : Map[String,_] => TreeMap(m.mapElements(sortJSON).elements.toSeq : _*)
+    // For the object versions, sort their contents, ugly casts and all...
+    case JSONObject(data) => JSONObject(sortJSON(data).asInstanceOf[Map[String,Any]])
+    case JSONArray(data) => JSONArray(sortJSON(data).asInstanceOf[List[Any]])
     case x => x
   }
 
   // For this one, just parsing should be considered a pass
   def printJSON(given : String) {
-    JSON parseFull given match {
+    JSON parseRaw given match {
       case None => println("Parse failed for \"%s\"".format(given))
-      case Some(parsed) => println("Passed: " + sortJSON(parsed))
+      case Some(parsed) => println("Passed parse  : " + sortJSON(parsed))
     }
   }
 
-  def printJSON(given : String, expected : Any) {
-    JSON parseFull given match {
+  // For this usage, do a raw parse (to JSONObject/JSONArray)
+  def printJSON(given : String, expected : JSONType) {
+    printJSON(given, JSON.parseRaw, expected)
+  }
+
+  // For this usage, do a raw parse (to JSONType and subclasses)
+  def printJSONFull(given : String, expected : Any) {
+    printJSON(given, JSON.parseFull, expected)
+  }
+
+  // For this usage, do configurable parsing so that you can do raw if desired
+  def printJSON[T](given : String, parser : String => T, expected : Any) {
+    parser(given) match {
       case None => println("Parse failed for \"%s\"".format(given))
       case Some(parsed) => if (parsed == expected) {
-        println("Passed: " + parsed)
+        println("Passed compare: " + parsed)
       } else {
         val eStr = sortJSON(expected).toString
         val pStr = sortJSON(parsed).toString
-
-        // Figure out where the Strings differ and generate a marker
-        val mismatchPosition = eStr.toList.zip(pStr.toList).findIndexOf({case (a,b) => a != b}) match {
-          case -1 => Math.min(eStr.length, pStr.length)
-          case x => x
-        }
-        val reason = (" " * mismatchPosition) + "^"
-        println("Expected, got:\n  %s\n  %s (from \"%s\")\n  %s".format(eStr, pStr, given, reason))
+        stringDiff(eStr,pStr)
       }
     }
   }
 
+  def stringDiff (expected : String, actual : String) {
+    if (expected != actual) {
+      // Figure out where the Strings differ and generate a marker
+        val mismatchPosition = expected.toList.zip(actual.toList).findIndexOf({case (x,y) => x != y}) match {
+          case -1 => Math.min(expected.length, actual.length)
+          case x => x
+        }
+        val reason = (" " * mismatchPosition) + "^"
+        println("Expected: %s\nGot     : %s \n          %s".format(expected, actual, reason))
+
+    } else {
+      println("Passed compare: " + actual)
+    }
+  }
+
+
   // The library should differentiate between lower case "l" and number "1" (ticket #136)
-  printJSON("{\"name\": \"value\"}", Map("name" -> "value"))
-  printJSON("{\"name\": \"va1ue\"}", Map("name" -> "va1ue"))
-  printJSON("{\"name\": { \"name1\": \"va1ue1\", \"name2\": \"va1ue2\" } }",
-            Map("name" -> Map("name1" -> "va1ue1", "name2" -> "va1ue2")))
+  printJSON("{\"name\" : \"value\"}", JSONObject(Map("name" -> "value")))
+  printJSON("{\"name\" : \"va1ue\"}", JSONObject(Map("name" -> "va1ue")))
+  printJSON("{\"name\" : { \"name1\" : \"va1ue1\", \"name2\" : \"va1ue2\" } }",
+            JSONObject(Map("name" -> JSONObject(Map("name1" -> "va1ue1", "name2" -> "va1ue2")))))
 
   // Unicode escapes should be handled properly
-  printJSON("{\"name\": \"\\u0022\"}")
+  printJSON("{\"name\" : \"\\u0022\"}")
 
   // The library should return a map for JSON objects (ticket #873)
-  printJSON("""{"function":"add_symbol"}""", Map("function" -> "add_symbol"))
+  printJSONFull("{\"function\" : \"add_symbol\"}", Map("function" -> "add_symbol"))
 
   // The library should recurse into arrays to find objects (ticket #2207)
-  printJSON("""[{"a": "team"},{"b": 52}]""", List(Map("a" -> "team"), Map("b" -> 52.0)))
+  printJSON("[{\"a\" : \"team\"},{\"b\" : 52}]", JSONArray(List(JSONObject(Map("a" -> "team")), JSONObject(Map("b" -> 52.0)))))
 
   // The library should differentiate between empty maps and lists (ticket #3284)
-  printJSON("{}", Map())
-  printJSON("[]", List())
+  printJSONFull("{}", Map())
+  printJSONFull("[]", List())
 
   // Lists should be returned in the same order as specified
-  printJSON("[4,1,3,2,6,5,8,7]", List[Double](4,1,3,2,6,5,8,7))
+  printJSON("[4,1,3,2,6,5,8,7]", JSONArray(List[Double](4,1,3,2,6,5,8,7)))
 
   // Additional tests
   printJSON("{\"age\": 0}")
 
+  // The library should do a proper toString representation using default and custom renderers (ticket #3605)
+  stringDiff("{\"name\" : \"va1ue\"}", JSONObject(Map("name" -> "va1ue")).toString)
+  stringDiff("{\"name\" : {\"name1\" : \"va1ue1\", \"name2\" : \"va1ue2\"}}",
+             JSONObject(Map("name" -> JSONObject(TreeMap("name1" -> "va1ue1", "name2" -> "va1ue2")))).toString)
+
+  stringDiff("[4.0, 1.0, 3.0, 2.0, 6.0, 5.0, 8.0, 7.0]", JSONArray(List[Double](4,1,3,2,6,5,8,7)).toString)
+
+  // A test method that escapes all characters in strings
+  def escapeEverything (in : Any) : String = in match {
+    case s : String => "\"" + s.map(c => "\\u%04x".format(c : Int)).mkString + "\""
+    case jo : JSONObject => jo.toString(escapeEverything)
+    case ja : JSONArray => ja.toString(escapeEverything)
+    case other => other.toString
+  }
+
+  stringDiff("{\"\\u006e\\u0061\\u006d\\u0065\" : \"\\u0076\\u0061\\u006c\"}", JSONObject(Map("name" -> "val")).toString(escapeEverything))
 
   println
 
@@ -111,7 +153,7 @@ object Test extends Application {
   )
 
 
-  printJSON(sample1, sample1Obj)
+  printJSONFull(sample1, sample1Obj)
   println
 
   // from http://www.developer.com/lang/jscript/article.php/3596836
@@ -139,7 +181,7 @@ object Test extends Application {
       {"type": "home", "value": "http://seankelly.tv/"}
    ]
 }"""
-  //println(sample2)
+
   printJSON(sample2)
   println
 
@@ -235,7 +277,7 @@ object Test extends Application {
     "taglib-location": "/WEB-INF/tlds/cofax.tld"}
   }
 }"""
-  //println(sample3)
+
   printJSON(sample3)
   println
 }
