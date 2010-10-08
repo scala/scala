@@ -421,7 +421,7 @@ trait Infer {
     def isCoercible(tp: Type, pt: Type): Boolean = false
 
     def isCompatibleArgs(tps: List[Type], pts: List[Type]) =
-      (tps corresponds pts)(isCompatibleArg)  // @PP: corresponds
+      (tps corresponds pts)(isCompatibleArg)
 
     /* -- Type instantiation------------------------------------------------ */
 

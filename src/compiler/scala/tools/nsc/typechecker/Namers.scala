@@ -1218,7 +1218,7 @@ trait Namers { self: Analyzer =>
             ErrorType
         }
       result match {
-        case PolyType(tparams, restpe) if (tparams.nonEmpty && tparams.head.owner.isTerm) =>
+        case PolyType(tparams @ (tp :: _), _) if tp.owner.isTerm =>
             // ||
             // Adriaan: The added condition below is quite a hack. It seems that HK type parameters is relying
             // on a pass that forces all infos in the type to get everything right.

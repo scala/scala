@@ -24,14 +24,19 @@ import scala.util.control.ControlThrowable
   case NoPrefix =>
   case ThisType(sym) =>
     // sym.this.type
+  case SuperType(thistpe, supertpe) =>
+    // super references
   case SingleType(pre, sym) =>
     // pre.sym.type
   case ConstantType(value) =>
-    // int(2)
+    // Int(2)
   case TypeRef(pre, sym, args) =>
     // pre.sym[targs]
+    // Outer.this.C would be represented as TypeRef(ThisType(Outer), C, List())
   case RefinedType(parents, defs) =>
     // parent1 with ... with parentn { defs }
+  case ExistentialType(tparams, result) =>
+    // result forSome { tparams }
   case AnnotatedType(annots, tp, selfsym) =>
     // tp @annots
 
@@ -43,26 +48,30 @@ import scala.util.control.ControlThrowable
     // same as RefinedType except as body of class
   case MethodType(paramtypes, result) =>
     // (paramtypes)result
+    // For instance def m(): T is represented as MethodType(List(), T)
   case PolyType(tparams, result) =>
     // [tparams]result where result is a MethodType or ClassInfoType
     // or
     // []T  for a eval-by-name type
-  case ExistentialType(tparams, result) =>
-    // exists[tparams]result
+    // For instance def m: T is represented as PolyType(List(), T)
 
-  // the last five types are not used after phase `typer'.
+  // The remaining types are not used after phase `typer'.
 
   case OverloadedType(pre, tparams, alts) =>
     // all alternatives of an overloaded ident
-  case AntiPolyType(pre: Type, targs) =>
-  case TypeVar(_, _) =>
+  case AntiPolyType(pre, targs) =>
+    // rarely used, disappears when combined with a PolyType
+  case TypeVar(inst, constr) =>
     // a type variable
+    // Replace occurrences of type parameters with type vars, where
+    // inst is the instantiation and constr is a list of bounds.
   case DeBruijnIndex(level, index)
+    // for dependent method types: a type referring to a method parameter.
+    // Not presently used, it seems.
 */
 
 trait Types extends reflect.generic.Types { self: SymbolTable =>
   import definitions._
-
 
   //statistics
   def uniqueTypeCount = if (uniques == null) 0 else uniques.size
@@ -154,7 +163,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     case ClassInfoType(parents, defs, clazz) =>  "class "+ clazz.nameString + (parents map debugString).mkString("", " with ", "") + defs.toList.mkString("{", " ;\n ", "}")
     case PolyType(tparams, result) => tparams.mkString("[", ", ", "] ") + debugString(result)
     case TypeBounds(lo, hi) => ">: "+ debugString(lo) +" <: "+ debugString(hi)
-    case tv : TypeVar => tv.toString
+    case tv @ TypeVar(_, _) => tv.toString
     case ExistentialType(tparams, qtpe) => "forsome "+ tparams.mkString("[", ", ", "] ") + debugString(qtpe)
     case _ => tp.toString
   }
@@ -297,13 +306,19 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *  identity on all other types */
     def underlying: Type = this
 
-    /** Widen from singleton type to its underlying non-singleton base type
-     *  by applying one or more `underlying' derefernces,
-     *  identity for all other types */
+    /** Widen from singleton type to its underlying non-singleton
+     *  base type by applying one or more `underlying' dereferences,
+     *  identity for all other types.
+     *
+     *  class Outer { class C ; val x: C }
+     *  val o: Outer
+     *  <o.x.type>.widen = o.C
+     */
     def widen: Type = this
 
     /** Map a constant type or not-null-type to its underlying base type,
-     *  identity for all other types */
+     *  identity for all other types.
+     */
     def deconst: Type = this
 
     /** The type of `this' of a class type or reference type
@@ -311,6 +326,10 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     def typeOfThis: Type = typeSymbol.typeOfThis
 
     /** Map to a singleton type which is a subtype of this type.
+     *  The fallback implemented here gives
+     *    T.narrow  =  (T {}).this.type
+     *  Overridden where we know more about where types come from.
+     *
      *  todo: change to singleton type of an existentially defined variable
      *  of the right type instead of making this a `this` of a refined type.
      */
@@ -336,10 +355,13 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *  The empty list for all other types */
     def parents: List[Type] = List()
 
-    /** For a typeref or single-type, the prefix of the normalized type (@see normalize). NoType for all other types. */
+    /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
+     *  NoType for all other types. */
     def prefix: Type = NoType
 
-    /** A chain of all typeref or singletype prefixes of this type, longest first */
+    /** A chain of all typeref or singletype prefixes of this type, longest first.
+     *  (Only used from safeToString.)
+     */
     def prefixChain: List[Type] = this match {
       case TypeRef(pre, _, _) => pre :: pre.prefixChain
       case SingleType(pre, _) => pre :: pre.prefixChain
@@ -353,17 +375,18 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     def typeArgs: List[Type] = List()
 
     /** For a method or poly type, its direct result type,
-     *  the type itself for all other types */
+     *  the type itself for all other types. */
     def resultType: Type = this
 
     def resultType(actuals: List[Type]) = this
+
+    /** Only used for dependent method types. */
+    def resultApprox: Type = if(settings.YdepMethTpes.value) ApproximateDependentMap(resultType) else resultType
 
     /** If this is a TypeRef `clazz`[`T`], return the argument `T`
      *  otherwise return this type
      */
     def remove(clazz: Symbol): Type = this
-
-    def resultApprox: Type = if(settings.YdepMethTpes.value) ApproximateDependentMap(resultType) else resultType
 
     /** For a curried method or poly type its non-method result type,
      *  the type itself for all other types */
@@ -413,13 +436,19 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      */
     def skolemizeExistential(owner: Symbol, origin: AnyRef): Type = this
 
-
     /** A simple version of skolemizeExistential for situations where
      *  owner or unpack location do not matter (typically used in subtype tests)
      */
     def skolemizeExistential: Type = skolemizeExistential(NoSymbol, null)
 
-    /** Reduce to beta eta-long normal form. Expands type aliases and converts higher-kinded TypeRef's to PolyTypes. @M */
+    /** Reduce to beta eta-long normal form.
+     *  Expands type aliases and converts higher-kinded TypeRefs to PolyTypes.
+     *  Functions on types are also implemented as PolyTypes.
+     *
+     *  Example: (in the below, <List> is the type constructor of List)
+     *    TypeRef(pre, <List>, List()) is replaced by
+     *    PolyType(X, TypeRef(pre, <List>, List(X)))
+     */
     def normalize = this // @MAT
 
     /** Expands type aliases. */
@@ -436,7 +465,8 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
 
     /** For a classtype or refined type, its defined or declared members;
      *  inherited by subtypes and typerefs.
-     *  The empty scope for all other types */
+     *  The empty scope for all other types.
+     */
     def decls: Scope = EmptyScope
 
     /** The defined or declared members with name `name' in this type;
@@ -498,15 +528,23 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       findMember(name, LOCAL | BRIDGES, 0, false)
 
     /** The least type instance of given class which is a supertype
-     *  of this type */
+     *  of this type.  Example:
+     *    class D[T]
+     *    class C extends p.D[Int]
+     *    ThisType(C).baseType(D) = p.D[Int]
+     */
     def baseType(clazz: Symbol): Type = NoType
 
-    /** This type as seen from prefix `pre' and class
-     *  `clazz'. This means:
+    /** This type as seen from prefix `pre' and class `clazz'. This means:
      *  Replace all thistypes of `clazz' or one of its subclasses
-     *  by `pre' and instantiate all parameters by arguments of
-     *  `pre'.
+     *  by `pre' and instantiate all parameters by arguments of `pre'.
      *  Proceed analogously for thistypes referring to outer classes.
+     *
+     *  Example:
+     *    class D[T] { def m: T }
+     *    class C extends p.D[Int]
+     *    T.asSeenFrom(ThisType(C), D)  (where D is owner of m)
+     *      = Int
      */
     def asSeenFrom(pre: Type, clazz: Symbol): Type =
       if (!isTrivial && (!phase.erasedTypes || pre.typeSymbol == ArrayClass)) {
@@ -520,6 +558,11 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       } else this
 
     /** The info of `sym', seen as a member of this type.
+     *
+     *  Example:
+     *    class D[T] { def m: T }
+     *    class C extends p.D[Int]
+     *    ThisType(C).memberType(m) = Int
      */
     def memberInfo(sym: Symbol): Type = {
       sym.info.asSeenFrom(this, sym.owner)
@@ -552,8 +595,9 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      * first, as otherwise symbols will immediately get rebound in typeRef to the old
      * symbol.
      */
-    def substSym(from: List[Symbol], to: List[Symbol]): Type = if (from eq to) this
-    else new SubstSymMap(from, to) apply this
+    def substSym(from: List[Symbol], to: List[Symbol]): Type =
+      if (from eq to) this
+      else new SubstSymMap(from, to) apply this
 
     /** Substitute all occurrences of `ThisType(from)' in this type
      *  by `to'.
@@ -667,8 +711,8 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
       if (explainSwitch) explain("specializes", specializesSym, this, sym)
       else specializesSym(this, sym)
 
-    /** Is this type close enough to that type so that
-     *  members with the two type would override each other?
+    /** Is this type close enough to that type so that members
+     *  with the two type would override each other?
      *  This means:
      *    - Either both types are polytypes with the same number of
      *      type parameters and their result types match after renaming
@@ -691,21 +735,29 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
      *  A list or array of types ts is upwards closed if
      *
      *    for all t in ts:
-     *      for all typerefs p.s[args] such that t &lt;: p.s[args]
+     *      for all typerefs p.s[args] such that t <: p.s[args]
      *      there exists a typeref p'.s[args'] in ts such that
-     *      t &lt;: p'.s['args] &lt;: p.s[args],
+     *      t <: p'.s['args] <: p.s[args],
+     *
      *      and
-     *      for all singleton types p.s such that t &lt;: p.s
+     *
+     *      for all singleton types p.s such that t <: p.s
      *      there exists a singleton type p'.s in ts such that
-     *      t &lt;: p'.s &lt;: p.s
+     *      t <: p'.s <: p.s
      *
      *  Sorting is with respect to Symbol.isLess() on type symbols.
      */
     def baseTypeSeq: BaseTypeSeq = baseTypeSingletonSeq(this)
 
-    /** The maximum depth (@see maxDepth) of each type in the BaseTypeSeq of this type. */
+    /** The maximum depth (@see maxDepth)
+     *  of each type in the BaseTypeSeq of this type.
+     */
     def baseTypeSeqDepth: Int = 1
 
+    /** The list of all baseclasses of this type (including its own typeSymbol)
+     *  in reverse linearization order, starting with the class itself and ending
+     *  in class Any.
+     */
     def baseClasses: List[Symbol] = List()
 
     /**
@@ -740,10 +792,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     protected def objectPrefix = "object "
     protected def packagePrefix = "package "
 
-    def trimPrefix(str: String) =
-      if (str.startsWith(objectPrefix)) str.substring(objectPrefix.length)
-      else if (str.startsWith(packagePrefix)) str.substring(packagePrefix.length)
-      else str
+    def trimPrefix(str: String) = str stripPrefix objectPrefix stripPrefix packagePrefix
 
     /** The string representation of this type used as a prefix */
     def prefixString = trimPrefix(toString) + "#"
@@ -1036,7 +1085,9 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def kind = "ErrorType"
   }
 
-  /** An object representing an unknown type */
+  /** An object representing an unknown type, used during type inference.
+   *  If you see WildcardType outside of inference it is almost certainly a bug.
+   */
   case object WildcardType extends Type {
     override def isWildcard = true
     override def safeToString: String = "?"
@@ -1107,7 +1158,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   //   // todo: this should be a subtype, which forwards to underlying
   // }
 
-  /** A class for singleton types of the form &lt;prefix&gt;.&lt;sym.name&gt;.type.
+  /** A class for singleton types of the form <prefix>.<sym.name>.type.
    *  Cannot be created directly; one should always use
    *  `singleType' for creation.
    */
@@ -1333,15 +1384,18 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   }
 
   /** A class representing intersection types with refinements of the form
-   *    `&lt;parents_0&gt; with ... with &lt;parents_n&gt; { decls }'
+   *    `<parents_0> with ... with <parents_n> { decls }'
    *  Cannot be created directly;
    *  one should always use `refinedType' for creation.
    */
   case class RefinedType(override val parents: List[Type],
                          override val decls: Scope) extends CompoundType {
 
-    override def isHigherKinded =
-      !parents.isEmpty && (parents forall (_.isHigherKinded)) // @MO to AM: please check this class!
+    override def isHigherKinded = (
+      parents.nonEmpty &&
+      (parents forall (_.isHigherKinded)) &&
+      !phase.erasedTypes    // @MO to AM: please check this class!
+    )
 
     override def typeParams =
       if (isHigherKinded) parents.head.typeParams
@@ -1585,7 +1639,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   private val pendingVolatiles = new collection.mutable.HashSet[Symbol]
 
   /** A class for named types of the form
-   *  `&lt;prefix&gt;.&lt;sym.name&gt;[args]'
+   *  `<prefix>.<sym.name>[args]'
    *  Cannot be created directly; one should always use `typeRef'
    *  for creation. (@M: Otherwise hashing breaks)
    *
@@ -1922,6 +1976,11 @@ A type's typeSymbol should never be inspected directly.
   }
 
   /** A class representing a method type with parameters.
+   *  Note that a parameterless method is instead encoded
+   *  as a PolyType, as shown here:
+   *
+   *    def m(): Int        MethodType(Nil, Int)
+   *    def m: Int          PolyType(Nil, Int)
    */
   case class MethodType(override val params: List[Symbol],
                         override val resultType: Type) extends Type {
@@ -1994,14 +2053,14 @@ A type's typeSymbol should never be inspected directly.
     override def isJava = true
   }
 
-  /** A class representing a polymorphic type or, if tparams.length == 0,
-   *  a parameterless method type.
+  /** A class representing a polymorphic type or, if typeParams.isEmpty, a parameterless method type.
+   *
    *  (@M: note that polymorphic nullary methods have non-empty tparams,
    *   e.g., isInstanceOf or def makeList[T] = new List[T].
    *   Ideally, there would be a NullaryMethodType, but since the only polymorphic values are methods, it's not that problematic.
    *   More pressingly, we should add a TypeFunction type for anonymous type constructors -- for now, PolyType is used in:
    *     - normalize: for eta-expansion of type aliases
-   *     - abstractTypeSig )
+   *     - typeDefSig )
    */
   case class PolyType(override val typeParams: List[Symbol], override val resultType: Type)
        extends Type {
@@ -2025,7 +2084,7 @@ A type's typeSymbol should never be inspected directly.
     override def isVolatile = resultType.isVolatile
     override def finalResultType: Type = resultType.finalResultType
 
-    /** @M: abstractTypeSig now wraps a TypeBounds in a PolyType
+    /** @M: typeDefSig now wraps a TypeBounds in a PolyType
      *  to represent a higher-kinded type parameter
      *  wrap lo&hi in polytypes to bind variables
      */
@@ -2896,15 +2955,8 @@ A type's typeSymbol should never be inspected directly.
     val dropNonConstraintAnnotations = false
 
     /** Check whether two lists have elements that are eq-equal */
-    def allEq[T <: AnyRef](l1: List[T], l2: List[T]): Boolean =
-      (l1, l2) match {
-        case (Nil, Nil) => true
-        case (hd1::tl1, hd2::tl2) =>
-          if (!(hd1 eq hd2))
-            return false
-          allEq(tl1, tl2)
-        case _ => false
-      }
+    def allEq[T <: AnyRef](l1: List[T], l2: List[T]) =
+      (l1 corresponds l2)(_ eq _)
 
     // #3731: return sym1 for which holds: pre bound sym.name to sym and pre1 now binds sym.name to sym1, conceptually exactly the same symbol as sym
     // the selection of sym on pre must be updated to the selection of sym1 on pre1,
@@ -4370,7 +4422,7 @@ A type's typeSymbol should never be inspected directly.
             val tpsFresh = cloneSymbols(tparams1)
 
             (tparams1 corresponds tparams2)((p1, p2) =>
-              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&   // @PP: corresponds
+              p2.info.substSym(tparams2, tpsFresh) <:< p1.info.substSym(tparams1, tpsFresh)) &&
             res1.substSym(tparams1, tpsFresh) <:< res2.substSym(tparams2, tpsFresh)
 
             //@M the forall in the previous test could be optimised to the following,
@@ -4837,7 +4889,7 @@ A type's typeSymbol should never be inspected directly.
     var bounds = instantiatedBounds(pre, owner, tparams, targs)
     if (targs.exists(_.annotations.nonEmpty))
       bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
-    (bounds corresponds targs)(_ containsType _)  // @PP: corresponds
+    (bounds corresponds targs)(_ containsType _)
   }
 
   def instantiatedBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): List[TypeBounds] =
@@ -4846,9 +4898,9 @@ A type's typeSymbol should never be inspected directly.
 // Lubs and Glbs ---------------------------------------------------------
 
   /** The least sorted upwards closed upper bound of a non-empty list
-   *  of lists of types relative to the following ordering &lt;= between lists of types:
+   *  of lists of types relative to the following ordering <= between lists of types:
    *
-   *    xs &lt;= ys   iff   forall y in ys exists x in xs such that x &lt;: y
+   *    xs <= ys   iff   forall y in ys exists x in xs such that x <: y
    *
    *  @See baseTypeSeq  for a definition of sorted and upwards closed.
    */
@@ -5010,7 +5062,7 @@ A type's typeSymbol should never be inspected directly.
     glbResults.clear()
   }
 
-  /** The least upper bound wrt &lt;:&lt; of a list of types */
+  /** The least upper bound wrt <:< of a list of types */
   def lub(ts: List[Type], depth: Int): Type = {
     def lub0(ts0: List[Type]): Type = elimSub(ts0, depth) match {
       case List() => NothingClass.tpe
@@ -5125,7 +5177,7 @@ A type's typeSymbol should never be inspected directly.
     glbResults.clear()
   }
 
-  /** The greatest lower bound wrt &lt;:&lt; of a list of types */
+  /** The greatest lower bound wrt <:< of a list of types */
   private def glb(ts: List[Type], depth: Int): Type = {
     def glb0(ts0: List[Type]): Type = elimSuper(ts0 map (_.deconst)) match {// todo: deconst needed?
       case List() => AnyClass.tpe
