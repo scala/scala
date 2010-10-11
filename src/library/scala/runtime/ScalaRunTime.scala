@@ -146,8 +146,8 @@ object ScalaRunTime {
   def _toString(x: Product): String =
     x.productIterator.mkString(x.productPrefix + "(", ",", ")")
 
-  // def _hashCodeJenkins(x: Product): Int =
-  //   scala.util.JenkinsHash.hashSeq(x.productPrefix.toSeq ++ x.productIterator.toSeq)
+  def _hashCodeMurmur(x: Product): Int =
+    scala.util.MurmurHash.product(x)
 
   def _hashCode(x: Product): Int = {
     val arr =  x.productArity

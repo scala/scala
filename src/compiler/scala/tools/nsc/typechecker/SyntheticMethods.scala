@@ -136,8 +136,10 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
     }
 
-    def hashCodeTarget: Name = nme.hashCode_
-      // if (settings.Yjenkins.value) "hashCodeJenkins" else nme.hashCode_
+    // XXX short term, expecting to make murmur the default as soon as it is put through some paces.
+    def hashCodeTarget: Name =
+      if (settings.Ymurmur.value) "hashCodeMurmur"
+      else nme.hashCode_
 
     /** The equality method for case modules:
      *   def equals(that: Any) = this eq that
