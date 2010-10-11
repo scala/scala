@@ -75,6 +75,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
     val TUPLE_FIELD_PREFIX_STRING = "_"
     val CHECK_IF_REFUTABLE_STRING = "check$ifrefutable$"
+    val DEFAULT_GETTER_STRING = "$default$"
 
     val INTERPRETER_WRAPPER_SUFFIX = "$object"
     val INTERPRETER_LINE_PREFIX = "line"
@@ -99,6 +100,7 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     def isSetterName(name: Name) = name.endsWith(SETTER_SUFFIX)
     def isLocalDummyName(name: Name) = name.startsWith(LOCALDUMMY_PREFIX)
     def isTraitSetterName(name: Name) = isSetterName(name) && name.pos(TRAIT_SETTER_SEPARATOR_STRING) < name.length
+    def isConstructorName(name: Name) = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isOpAssignmentName(name: Name) =
       name(name.length - 1) == '=' &&
       isOperatorPart(name(0)) &&
@@ -160,6 +162,11 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
         setterToGetter(name.subName(p + TRAIT_SETTER_SEPARATOR_STRING.length, name.length))
       else
         name.subName(0, name.length - SETTER_SUFFIX.length)
+    }
+
+    def defaultGetterName(name: Name, pos: Int): Name = {
+      val prefix = if (isConstructorName(name)) "init" else name
+      newTermName(prefix + DEFAULT_GETTER_STRING + pos)
     }
 
     def getterName(name: Name): Name =

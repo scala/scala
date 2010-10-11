@@ -391,12 +391,12 @@ trait NamesDefaults { self: Analyzer =>
   def defaultGetter(param: Symbol, context: Context): Symbol = {
     val i = param.owner.paramss.flatten.indexWhere(p => p.name == param.name) + 1
     if (i > 0) {
+      val defGetterName = nme.defaultGetterName(param.owner.name, i)
       if (param.owner.isConstructor) {
-        val defGetterName = "init$default$"+ i
         val mod = companionModuleOf(param.owner.owner, context)
         mod.info.member(defGetterName)
-      } else {
-        val defGetterName = param.owner.name +"$default$"+ i
+      }
+      else {
         // isClass also works for methods in objects, owner is the ModuleClassSymbol
         if (param.owner.owner.isClass) {
           // .toInterface: otherwise we get the method symbol of the impl class

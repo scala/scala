@@ -212,12 +212,7 @@ abstract class UnPickler {
           sym = NoSymbol
 
         case _ => // symbols that were pickled with Pickler.writeSymInfo
-          var defaultGetter: Symbol = NoSymbol // @deprecated, to be removed for 2.8 final
           var nameref = readNat()
-          if (tag == VALsym && isSymbolRef(nameref)) {  // @deprecated, to be removed for 2.8 final
-            defaultGetter = at(nameref, readSymbol)
-            nameref = readNat()
-          }
           val name = at(nameref, readName)
           val owner = readSymbolRef()
           val flags = pickledToRawFlags(readLongNat())

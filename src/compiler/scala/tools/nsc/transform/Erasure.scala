@@ -212,18 +212,6 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 
   private def needsJavaSig(tp: Type) = !settings.Ynogenericsig.value && NeedsSigCollector.collect(tp)
 
-  private lazy val tagOfClass = Map[Symbol,Char](
-    ByteClass -> BYTE_TAG,
-    CharClass -> CHAR_TAG,
-    DoubleClass -> DOUBLE_TAG,
-    FloatClass -> FLOAT_TAG,
-    IntClass -> INT_TAG,
-    LongClass -> LONG_TAG,
-    ShortClass -> SHORT_TAG,
-    BooleanClass -> BOOL_TAG,
-    UnitClass -> VOID_TAG
-  )
-
   /** The Java signature of type 'info', for symbol sym. The symbol is used to give the right return
    *  type for constructors.
    */
@@ -275,7 +263,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
           else if (isValueClass(sym))
-            tagOfClass(sym).toString
+            abbrvTag(sym).toString
           else if (sym.isClass)
             {
               val preRebound = pre.baseType(sym.owner) // #2585
@@ -425,10 +413,9 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
    *  @pre phase > erasure
    */
   def bridgedSym(bridge: Symbol) =
-    bridge.owner.info.nonPrivateDecl(bridge.name) suchThat {
-      sym => !(sym hasFlag BRIDGE) &&
-             matchesType(sym.tpe, bridge.tpe, true) &&
-             sym.tpe.resultType <:< bridge.tpe.resultType
+    bridge.owner.info.nonPrivateDecl(bridge.name) suchThat { sym =>
+      !sym.isBridge && matchesType(sym.tpe, bridge.tpe, true) &&
+      (sym.tpe.resultType <:< bridge.tpe.resultType)
     }
 
 // -------- erasure on trees ------------------------------------------

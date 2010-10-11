@@ -149,12 +149,10 @@ abstract class TreeInfo {
   }
 
   /** The first constructor definitions in `stats' */
-  def firstConstructor(stats: List[Tree]): Tree = stats match {
-    case List() => EmptyTree
-    case (constr @ DefDef(_, name, _, _, _, _)) :: _
-    if (name == nme.CONSTRUCTOR || name == nme.MIXIN_CONSTRUCTOR) => constr
-    case _ :: stats1 => firstConstructor(stats1)
-  }
+  def firstConstructor(stats: List[Tree]): Tree = stats find {
+    case x: DefDef  => nme.isConstructorName(x.name)
+    case _          => false
+  } getOrElse EmptyTree
 
   /** The arguments to the first constructor in `stats'. */
   def firstConstructorArgs(stats: List[Tree]): List[Tree] = firstConstructor(stats) match {

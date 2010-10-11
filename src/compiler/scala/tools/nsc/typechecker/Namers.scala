@@ -96,6 +96,9 @@ trait Namers { self: Analyzer =>
       sym
     }
 
+    private def isCopyGetter(meth: Symbol) = {
+      meth.name startsWith (nme.copy + nme.DEFAULT_GETTER_STRING)
+    }
     private def isTemplateContext(context: Context): Boolean = context.tree match {
       case Template(_, _, _) => true
       case Import(_, _) => isTemplateContext(context.outer)
@@ -312,7 +315,7 @@ trait Namers { self: Analyzer =>
         if (sym.isTerm) skolemize(tparams)
       }
 
-      if (sym.name == nme.copy || sym.name.startsWith(nme.copy + "$default$")) {
+      if (sym.name == nme.copy || isCopyGetter(sym)) {
         // it could be a compiler-generated copy method or one of its default getters
         setInfo(sym)(mkTypeCompleter(tree)(copySym => {
           def copyIsSynthetic() = sym.owner.info.member(nme.copy).hasFlag(SYNTHETIC)
@@ -718,11 +721,9 @@ trait Namers { self: Analyzer =>
       // add apply and unapply methods to companion objects of case classes,
       // unless they exist already; here, "clazz" is the module class
       if (clazz.isModuleClass) {
-        Namers.this.caseClassOfModuleClass get clazz match {
-          case Some(cdef) =>
-            addApplyUnapply(cdef, templateNamer)
-            caseClassOfModuleClass -= clazz
-          case None =>
+        Namers.this.caseClassOfModuleClass get clazz map { cdef =>
+          addApplyUnapply(cdef, templateNamer)
+          caseClassOfModuleClass -= clazz
         }
       }
 
@@ -732,16 +733,12 @@ trait Namers { self: Analyzer =>
       // @check: this seems to work only if the type completer of the class runs before the one of the
       // module class: the one from the module class removes the entry form caseClassOfModuleClass (see above).
       if (clazz.isClass && !clazz.hasFlag(MODULE)) {
-        Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass match {
-          case Some(cdef) =>
-            def hasCopy(decls: Scope) = {
-              decls.iterator exists (_.name == nme.copy)
-            }
-            if (!hasCopy(decls) &&
-                    !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
-                    !parents.flatMap(_.baseClasses).distinct.exists(bc => hasCopy(bc.info.decls)))
-              addCopyMethod(cdef, templateNamer)
-          case None =>
+        Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass map { cdef =>
+          def hasCopy(decls: Scope) = (decls lookup nme.copy) != NoSymbol
+          if (!hasCopy(decls) &&
+                  !parents.exists(p => hasCopy(p.typeSymbol.info.decls)) &&
+                  !parents.flatMap(_.baseClasses).distinct.exists(bc => hasCopy(bc.info.decls)))
+            addCopyMethod(cdef, templateNamer)
         }
       }
 
@@ -918,6 +915,7 @@ trait Namers { self: Analyzer =>
      * flag.
      */
     private def addDefaultGetters(meth: Symbol, vparamss: List[List[ValDef]], tparams: List[TypeDef], overriddenSymbol: => Symbol) {
+
       val isConstr = meth.isConstructor
       val overridden = if (isConstr || !meth.owner.isClass) NoSymbol
                        else overriddenSymbol
@@ -948,7 +946,7 @@ trait Namers { self: Analyzer =>
           if (sym hasFlag DEFAULTPARAM) {
             // generate a default getter for that argument
             val oflag = if (baseHasDefault) OVERRIDE else 0
-            val name = (if (isConstr) "init" else meth.name) +"$default$"+ posCounter
+            val name = nme.defaultGetterName(meth.name, posCounter)
 
             // Create trees for the defaultGetter. Uses tools from Unapplies.scala
             var deftParams = tparams map copyUntyped[TypeDef]

@@ -413,7 +413,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isInitializedToDefault = !isType && (getFlag(DEFAULTINIT | ACCESSOR) == (DEFAULTINIT | ACCESSOR))
     final def isClassConstructor = isTerm && (name == nme.CONSTRUCTOR)
     final def isMixinConstructor = isTerm && (name == nme.MIXIN_CONSTRUCTOR)
-    final def isConstructor = isTerm && (name == nme.CONSTRUCTOR) || (name == nme.MIXIN_CONSTRUCTOR)
+    final def isConstructor = isTerm && nme.isConstructorName(name)
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isThisSym = isTerm && owner.thisSym == this
     final def isError = hasFlag(IS_ERROR)
