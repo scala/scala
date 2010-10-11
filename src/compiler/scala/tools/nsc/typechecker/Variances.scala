@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
-import symtab.Flags._
+import symtab.Flags.{ VarianceFlags => VARIANCES, _ }
 
 /** Variances form a lattice, 0 <= COVARIANT <= Variances, 0 <= CONTRAVARIANT <= VARIANCES
  */

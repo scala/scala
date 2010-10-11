@@ -14,8 +14,6 @@ import util.{ Position, NoPosition, BatchSourceFile }
 import util.Statistics._
 import Flags._
 
-//todo: get rid of MONOMORPHIC flag
-
 trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   import definitions._
 
@@ -418,7 +416,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isConstructor = isTerm && (name == nme.CONSTRUCTOR) || (name == nme.MIXIN_CONSTRUCTOR)
     final def isStaticModule = isModule && isStatic && !isMethod
     final def isThisSym = isTerm && owner.thisSym == this
-    //final def isMonomorphicType = isType && hasFlag(MONOMORPHIC)
     final def isError = hasFlag(IS_ERROR)
     final def isErroneous = isError || isInitialized && tpe.isErroneous
     override final def isTrait: Boolean = isClass && hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
@@ -1863,12 +1860,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     override def info_=(tp: Type) {
       tpePeriod = NoPeriod
       tyconCache = null
-      if (tp.isComplete)
-        tp match {
-          case PolyType(_, _) => resetFlag(MONOMORPHIC)
-          case NoType | AnnotatedType(_, _, _) => ;
-          case _ => setFlag(MONOMORPHIC)
-        }
       super.info_=(tp)
     }
 

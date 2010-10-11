@@ -99,7 +99,6 @@ abstract class NodePrinters {
           if (sym hasFlag PARAMACCESSOR) buf.append(" | PARAMACCESSOR")
           if (sym hasFlag MODULEVAR    ) buf.append(" | MODULEVAR")
           if (sym hasFlag SYNTHETICMETH) buf.append(" | SYNTHETICMETH")
-          if (sym hasFlag MONOMORPHIC  ) buf.append(" | MONOMORPHIC")
           if (sym hasFlag LAZY         ) buf.append(" | LAZY")
 
           if (sym hasFlag IS_ERROR     ) buf.append(" | IS_ERROR")
