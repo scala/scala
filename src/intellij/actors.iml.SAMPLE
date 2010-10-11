@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<module relativePaths="true" type="JAVA_MODULE" version="4">
+<module type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="scala" name="Scala">
       <configuration>
         <option name="compilerLibraryLevel" value="Project" />
-        <option name="compilerLibraryName" value="compiler_palo" />
+        <option name="compilerLibraryName" value="compiler-locker" />
+        <option name="maximumHeapSize" value="1536" />
+        <option name="vmOptions" value="-Xms1536m -Xss1m -XX:MaxPermSize=128M -d32 -server -XX:+UseParallelGC" />
       </configuration>
     </facet>
   </component>
@@ -16,7 +18,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="library" />
-    <orderEntry type="module" module-name="compiler" />
     <orderEntry type="library" name="lib" level="project" />
   </component>
 </module>

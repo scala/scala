@@ -1,0 +1,12 @@
+Use IntelliJ IDEA X EAP (http://confluence.jetbrains.net/display/IDEADEV/IDEA+X+EAP)
+a Scala Plugin nightly build (http://confluence.jetbrains.net/display/SCA/Scala+Plugin+Nightly+Builds+for+IDEA+X)
+
+The following steps are required to use IntelliJ IDEA on Scala trunk
+ - Copy the *.iml.SAMPLE / *.ipr.SAMPLE files to *.iml / *.ipr
+ - In IDEA, create a global library named "ant" which contains "ant.jar"
+ - In the Scala Facet of the "library" module, update the path in the command-line
+   argument for "-sourcepath"
+ - In the Project Settings, update the "Version Control" to match your checkout
+
+Known problems
+ - Currently, it's not possible to build the "actors" module in IDEA

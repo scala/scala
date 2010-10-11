@@ -2,50 +2,6 @@
 <project version="4">
   <component name="AntConfiguration">
     <defaultAnt bundledAnt="true" />
-    <buildFile url="file://$PROJECT_DIR$/../../build.xml">
-      <additionalClassPath />
-      <antReference projectDefault="true" />
-      <customJdkName value="" />
-      <maximumHeapSize value="128" />
-      <maximumStackSize value="32" />
-      <properties />
-    </buildFile>
-  </component>
-  <component name="BuildJarProjectSettings">
-    <option name="BUILD_JARS_ON_MAKE" value="false" />
-  </component>
-  <component name="CodeStyleSettingsManager">
-    <option name="PER_PROJECT_SETTINGS">
-      <value>
-        <ADDITIONAL_INDENT_OPTIONS fileType="java">
-          <option name="INDENT_SIZE" value="4" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="jsp">
-          <option name="INDENT_SIZE" value="4" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-        <ADDITIONAL_INDENT_OPTIONS fileType="xml">
-          <option name="INDENT_SIZE" value="4" />
-          <option name="CONTINUATION_INDENT_SIZE" value="8" />
-          <option name="TAB_SIZE" value="4" />
-          <option name="USE_TAB_CHARACTER" value="false" />
-          <option name="SMART_TABS" value="false" />
-          <option name="LABEL_INDENT_SIZE" value="0" />
-          <option name="LABEL_INDENT_ABSOLUTE" value="false" />
-        </ADDITIONAL_INDENT_OPTIONS>
-      </value>
-    </option>
   </component>
   <component name="CompilerConfiguration">
     <option name="DEFAULT_COMPILER" value="Javac" />
@@ -73,19 +29,7 @@
   <component name="DependencyValidationManager">
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
-  <component name="EclipseCompilerSettings">
-    <option name="GENERATE_NO_WARNINGS" value="true" />
-    <option name="DEPRECATION" value="false" />
-  </component>
-  <component name="EclipseEmbeddedCompilerSettings">
-    <option name="DEBUGGING_INFO" value="true" />
-    <option name="GENERATE_NO_WARNINGS" value="true" />
-    <option name="DEPRECATION" value="false" />
-    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
-    <option name="MAXIMUM_HEAP_SIZE" value="128" />
-  </component>
   <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false" />
-  <component name="IdProvider" IDEtalkID="522B472C2EA573563CC2BA93160270BE" />
   <component name="InspectionProjectProfileManager">
     <profiles>
       <profile version="1.0" is_locked="false">
@@ -101,13 +45,9 @@
     <option name="PROJECT_PROFILE" value="Project Default" />
     <option name="USE_PROJECT_PROFILE" value="true" />
     <version value="1.0" />
-    <list size="5">
-      <item index="0" class="java.lang.String" itemvalue="TYPO" />
-      <item index="1" class="java.lang.String" itemvalue="SERVER PROBLEM" />
-      <item index="2" class="java.lang.String" itemvalue="INFO" />
-      <item index="3" class="java.lang.String" itemvalue="WARNING" />
-      <item index="4" class="java.lang.String" itemvalue="ERROR" />
-    </list>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_STRING" value="-source 1.5 -target 1.5" />
   </component>
   <component name="JavadocGenerationManager">
     <option name="OUTPUT_DIRECTORY" />
@@ -247,16 +187,8 @@
       </item>
     </group>
   </component>
-  <component name="ProjectDetails">
-    <option name="projectName" value="scala-lang" />
-  </component>
   <component name="ProjectDictionaryState">
-    <dictionary name="dragos" />
-    <dictionary name="odersky" />
     <dictionary name="luc" />
-  </component>
-  <component name="ProjectKey">
-    <option name="state" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk/scala-lang.ipr" />
   </component>
   <component name="ProjectModuleManager">
     <modules>
@@ -270,395 +202,33 @@
       <module fileurl="file://$PROJECT_DIR$/swing.iml" filepath="$PROJECT_DIR$/swing.iml" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_5" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
+  <component name="ProjectResources">
+    <default-html-doctype>http://www.w3.org/1999/xhtml</default-html-doctype>
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.6" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/../../out" />
   </component>
-  <component name="ResourceManagerContainer">
-    <option name="myResourceBundles">
-      <value>
-        <list size="0" />
-      </value>
-    </option>
-  </component>
-  <component name="ScalaSettings">
-    <option name="MAXIMUM_HEAP_SIZE" value="1024" />
-    <option name="DEPRECATION" value="false" />
-    <option name="UNCHECKED" value="false" />
-  </component>
-  <component name="ScalacSettings">
-    <option name="MAXIMUM_HEAP_SIZE" value="1536" />
-  </component>
-  <component name="SvnBranchConfigurationManager">
-    <option name="myConfigurationMap">
-      <map>
-        <entry key="$PROJECT_DIR$/../..">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../../META-INF">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../../lib">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../actors">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../compiler">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../dbc">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../library">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../manual">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../partest">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../scalap">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../swing">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-        <entry key="$PROJECT_DIR$/../../test">
-          <value>
-            <SvnBranchConfiguration>
-              <option name="branchMap">
-                <map>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                  <entry key="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags">
-                    <value>
-                      <list />
-                    </value>
-                  </entry>
-                </map>
-              </option>
-              <option name="branchUrls">
-                <list>
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/branches" />
-                  <option value="https://lampsvn.epfl.ch/svn-repos/scala/scala/tags" />
-                </list>
-              </option>
-              <option name="trunkUrl" value="https://lampsvn.epfl.ch/svn-repos/scala/scala/trunk" />
-            </SvnBranchConfiguration>
-          </value>
-        </entry>
-      </map>
-    </option>
-    <option name="myVersion" value="124" />
-    <option name="mySupportsUserInfoFilter" value="true" />
-  </component>
   <component name="VcsDirectoryMappings">
-    <mapping directory="" vcs="svn" />
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
   </component>
-  <component name="WebServicesPlugin" addRequiredLibraries="true" />
   <component name="libraryTable">
     <library name="lib">
       <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/jline.jar!/" />
         <root url="jar://$PROJECT_DIR$/../../lib/forkjoin.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="compiler-locker">
+      <CLASSES>
+        <root url="file://$PROJECT_DIR$/../../build/locker/classes/library" />
+        <root url="file://$PROJECT_DIR$/../../build/locker/classes/compiler" />
+        <root url="jar://$PROJECT_DIR$/../../lib/forkjoin.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
+        <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
@@ -668,24 +238,9 @@
         <root url="file://$PROJECT_DIR$/../../build/quick/classes/library" />
       </CLASSES>
       <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="quicklib_sbt">
-      <CLASSES>
-        <root url="file://$PROJECT_DIR$/../../target/quick/ classes/library" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="compiler_palo">
-      <CLASSES>
-        <root url="jar://$PROJECT_DIR$/../../build/palo/lib/scala-library.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../build/palo/lib/scala-compiler.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/fjbg.jar!/" />
-        <root url="jar://$PROJECT_DIR$/../../lib/msil.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
+      <SOURCES>
+        <root url="file://$PROJECT_DIR$/../library" />
+      </SOURCES>
     </library>
   </component>
 </project>
