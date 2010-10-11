@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import scala.util.control.ControlThrowable
 import symtab.Flags._
@@ -78,7 +79,7 @@ trait Infer {
    *  @throws    NoInstance
    */
   object instantiate extends TypeMap {
-    private var excludedVars = scala.collection.immutable.Set[TypeVar]()
+    private var excludedVars = immutable.Set[TypeVar]()
     def apply(tp: Type): Type = tp match {
       case WildcardType | BoundedWildcardType(_) | NoType =>
         throw new NoInstance("undetermined type")

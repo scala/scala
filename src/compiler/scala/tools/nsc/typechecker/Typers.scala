@@ -3,17 +3,17 @@
  * @author  Martin Odersky
  */
 
-//todo: rewrite or disllow new T where T is a mixin (currently: <init> not a member of T)
+// Added: Sat Oct 7 16:08:21 2006
 //todo: use inherited type info also for vars and values
+
+// Added: Thu Apr 12 18:23:58 2007
 //todo: disallow C#D in superclass
 //todo: treat :::= correctly
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.util.control.ControlThrowable
-import scala.tools.nsc.interactive.RangePositions
-import scala.tools.nsc.util.{Set, SourceFile, BatchSourceFile}
+import scala.collection.mutable.{ HashMap, ListBuffer }
+import scala.tools.nsc.util.BatchSourceFile
 import symtab.Flags._
 
 import util.Statistics

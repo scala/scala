@@ -180,7 +180,7 @@ scala> <console>:1: error: '=' expected but '=>' found.
        def x => y => z
              ^
 
-scala> <console>:1: error: expected start of definition
+scala> <console>:1: error: illegal start of definition
        [1,2,3]
        ^
 

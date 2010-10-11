@@ -1,5 +1,6 @@
 package scala.tools.nsc
 package transform
+
 import scala.tools.nsc.symtab.SymbolTable
 import scala.reflect
 import collection.mutable.HashMap

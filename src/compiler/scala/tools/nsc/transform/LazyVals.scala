@@ -1,8 +1,7 @@
 package scala.tools.nsc
-package transform;
+package transform
 
-import scala.tools.nsc._
-import scala.collection.mutable.HashMap
+import scala.collection.{ mutable, immutable }
 
 abstract class LazyVals extends Transform with TypingTransformers with ast.TreeDSL {
   // inherits abstract value `global' and class `Phase' from Transform
@@ -22,7 +21,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
    */
   class LazyValues(unit: CompilationUnit) extends TypingTransformer(unit) {
     /** map from method symbols to the number of lazy values it defines. */
-    private val lazyVals = new HashMap[Symbol, Int] {
+    private val lazyVals = new mutable.HashMap[Symbol, Int] {
       override def default(meth: Symbol) = 0
     }
 
@@ -153,7 +152,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       Ident(bmp) === (Ident(bmp) INT_| mask)
 
     final val FLAGS_PER_WORD = 32
-    val bitmaps = new HashMap[Symbol, List[Symbol]] {
+    val bitmaps = new mutable.HashMap[Symbol, List[Symbol]] {
       override def default(meth: Symbol) = Nil
     }
 

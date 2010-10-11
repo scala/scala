@@ -8,7 +8,8 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.mutable.{HashMap, ListBuffer}
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
   import global._
@@ -76,7 +77,7 @@ abstract class Flatten extends InfoTransform {
   class Flattener extends Transformer {
 
     /** Buffers for lifted out classes */
-    private val liftedDefs = new HashMap[Symbol, ListBuffer[Tree]]
+    private val liftedDefs = new mutable.HashMap[Symbol, ListBuffer[Tree]]
 
     override def transform(tree: Tree): Tree = {
       tree match {

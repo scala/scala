@@ -6,6 +6,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
 import symtab.Flags._
 import util.TreeSet
@@ -16,7 +17,6 @@ import util.TreeSet
 abstract class Constructors extends Transform with ast.TreeDSL {
   import global._
   import definitions._
-  import collection.mutable
 
   /** the following two members override abstract members in Transform */
   val phaseName: String = "constructors"

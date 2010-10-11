@@ -8,8 +8,8 @@ package scala.tools.nsc
 package backend.icode
 package analysis
 
-import scala.collection.mutable.{HashMap, Map}
-import scala.collection.immutable.{Set, ListSet}
+import scala.collection.{ mutable, immutable }
+import scala.collection.immutable.{ Set, ListSet }
 
 /**
  * Compute liveness information for local variables.
@@ -37,8 +37,8 @@ abstract class Liveness {
 
     var method: IMethod = _
 
-    val gen: Map[BasicBlock, Set[Local]] = new HashMap()
-    val kill:Map[BasicBlock, Set[Local]] = new HashMap()
+    val gen: mutable.Map[BasicBlock, Set[Local]] = new mutable.HashMap()
+    val kill: mutable.Map[BasicBlock, Set[Local]] = new mutable.HashMap()
 
     def init(m: IMethod) {
       this.method = m

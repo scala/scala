@@ -6,17 +6,14 @@
 package scala.tools.nsc
 package symtab
 
-import java.io.{File, IOException}
+import java.io.IOException
+import ch.epfl.lamp.compiler.msil.{ Type => MSILType, Attribute => MSILAttribute }
 
-import ch.epfl.lamp.compiler.msil.{Type => MSILType, Attribute => MSILAttribute}
-
-import scala.collection.mutable.{HashMap, HashSet, ListBuffer}
 import scala.compat.Platform.currentTime
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.util.{ ClassPath, JavaClassPath }
+import scala.tools.nsc.util.{ ClassPath }
 import classfile.ClassfileParser
 import Flags._
-
 import util.Statistics._
 
 /** This class ...

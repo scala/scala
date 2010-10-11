@@ -7,13 +7,8 @@ package scala.tools.nsc
 package symtab
 package classfile
 
-import java.io.IOException
-import java.lang.{Float, Double}
-
 import Flags._
 import scala.reflect.generic.PickleFormat._
-import collection.mutable.{HashMap, ListBuffer}
-import annotation.switch
 
 /** @author Martin Odersky
  *  @version 1.0

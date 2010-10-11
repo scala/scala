@@ -2,15 +2,14 @@
  * Copyright 2005-2010 LAMP/EPFL
  * @author  Martin Odersky
  */
-//
 
 package scala.tools.nsc
 package symtab
 
-import scala.collection.immutable
-import scala.collection.mutable.{ListBuffer, HashMap, WeakHashMap}
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.ListBuffer
 import ast.TreeGen
-import util.{HashSet, Position, NoPosition}
+import util.{ Position, NoPosition }
 import util.Statistics._
 import Flags._
 import scala.util.control.ControlThrowable
@@ -146,7 +145,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
    *  It makes use of the fact that these two operations depend only on the parents,
    *  not on the refinement.
    */
-  val intersectionWitness = new WeakHashMap[List[Type], Type]
+  val intersectionWitness = new mutable.WeakHashMap[List[Type], Type]
 
   private object gen extends {
     val global : Types.this.type = Types.this
@@ -1478,7 +1477,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     private final val Initializing = 1
     private final val Initialized = 2
 
-    private type RefMap = Map[Symbol, collection.immutable.Set[Symbol]]
+    private type RefMap = Map[Symbol, immutable.Set[Symbol]]
 
     /** All type parameters reachable from given type parameter
      *  by a path which contains at least one expansive reference.
@@ -1636,7 +1635,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   }
 
   private var volatileRecursions: Int = 0
-  private val pendingVolatiles = new collection.mutable.HashSet[Symbol]
+  private val pendingVolatiles = new mutable.HashSet[Symbol]
 
   /** A class for named types of the form
    *  `<prefix>.<sym.name>[args]'
@@ -2254,7 +2253,7 @@ A type's typeSymbol should never be inspected directly.
     // encapsulate suspension so we can automatically link the suspension of cloned typevars to their original if this turns out to be necessary
     def Suspension = new Suspension
     class Suspension {
-      private val suspended = collection.mutable.HashSet[TypeVar]()
+      private val suspended = mutable.HashSet[TypeVar]()
       def suspend(tv: TypeVar): Unit = {
         tv.suspended = true
         suspended += tv
@@ -2862,13 +2861,13 @@ A type's typeSymbol should never be inspected directly.
 // Hash consing --------------------------------------------------------------
 
   private val initialUniquesCapacity = 4096
-  private var uniques: HashSet[AnyRef] = _
+  private var uniques: util.HashSet[AnyRef] = _
   private var uniqueRunId = NoRunId
 
   private def unique[T <: AnyRef](tp: T): T = {
     incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
-      uniques = new HashSet("uniques", initialUniquesCapacity)
+      uniques = new util.HashSet("uniques", initialUniquesCapacity)
       uniqueRunId = currentRunId
     }
     (uniques findEntryOrUpdate tp).asInstanceOf[T]
@@ -3201,8 +3200,8 @@ A type's typeSymbol should never be inspected directly.
     }
   }
 
-  private val emptySymMap = scala.collection.immutable.Map[Symbol, Symbol]()
-  private val emptySymCount = scala.collection.immutable.Map[Symbol, Int]()
+  private val emptySymMap   = immutable.Map[Symbol, Symbol]()
+  private val emptySymCount = immutable.Map[Symbol, Int]()
 
   def typeParamsToExistentials(clazz: Symbol, tparams: List[Symbol]): List[Symbol] = {
     val eparams = for ((tparam, i) <- tparams.zipWithIndex) yield {
@@ -4336,9 +4335,9 @@ A type's typeSymbol should never be inspected directly.
    */
   def isSameTypes(tps1: List[Type], tps2: List[Type]): Boolean = (tps1 corresponds tps2)(_ =:= _)
 
-  private val pendingSubTypes = new collection.mutable.HashSet[SubTypePair]
+  private val pendingSubTypes = new mutable.HashSet[SubTypePair]
   private var basetypeRecursions: Int = 0
-  private val pendingBaseTypes = new collection.mutable.HashSet[Type]
+  private val pendingBaseTypes = new mutable.HashSet[Type]
 
   def isSubType(tp1: Type, tp2: Type): Boolean = isSubType(tp1, tp2, AnyDepth)
 
@@ -5052,8 +5051,8 @@ A type's typeSymbol should never be inspected directly.
     isNumericValueType(tp1) && isNumericValueType(tp2) &&
     isNumericSubClass(tp1.typeSymbol, tp2.typeSymbol)
 
-  private val lubResults = new HashMap[(Int, List[Type]), Type]
-  private val glbResults = new HashMap[(Int, List[Type]), Type]
+  private val lubResults = new mutable.HashMap[(Int, List[Type]), Type]
+  private val glbResults = new mutable.HashMap[(Int, List[Type]), Type]
 
   def lub(ts: List[Type]): Type = try {
     lub(ts, lubDepth(ts))

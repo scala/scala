@@ -10,8 +10,8 @@ package classfile
 import java.io.{ File, IOException }
 import java.lang.Integer.toHexString
 
-import scala.collection.immutable.{Map, ListMap}
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
 import scala.tools.nsc.io.AbstractFile
 import scala.annotation.switch
 import reflect.generic.PickleBuffer
@@ -690,7 +690,7 @@ abstract class ClassfileParser {
     }
     def existentialType(tparams: List[Symbol], tp: Type): Type =
       if (tparams.isEmpty) tp else ExistentialType(tparams, tp)
-    def sig2type(tparams: Map[Name,Symbol], skiptvs: Boolean): Type = {
+    def sig2type(tparams: immutable.Map[Name,Symbol], skiptvs: Boolean): Type = {
       val tag = sig(index); index += 1
       tag match {
         case BYTE_TAG   => definitions.ByteClass.tpe
@@ -797,7 +797,7 @@ abstract class ClassfileParser {
       }
     } // sig2type(tparams, skiptvs)
 
-    def sig2typeBounds(tparams: Map[Name, Symbol], skiptvs: Boolean): Type = {
+    def sig2typeBounds(tparams: immutable.Map[Name, Symbol], skiptvs: Boolean): Type = {
       val ts = new ListBuffer[Type]
       while (sig(index) == ':') {
         index += 1

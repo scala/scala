@@ -8,7 +8,8 @@ package transform
 
 import symtab._
 import Flags._
-import collection.mutable.{HashMap, ListBuffer}
+import scala.collection.{ mutable, immutable }
+import collection.mutable.ListBuffer
 
 abstract class AddInterfaces extends InfoTransform {
   import global._                  // the global environment
@@ -38,13 +39,13 @@ abstract class AddInterfaces extends InfoTransform {
   /** A lazily constructed map that associates every non-interface trait with
    *  its implementation class.
    */
-  private val implClassMap = new HashMap[Symbol, Symbol]
+  private val implClassMap = new mutable.HashMap[Symbol, Symbol]
 
   /** A lazily constructed map that associates every concrete method in a non-interface
    *  trait that's currently compiled with its corresponding method in the trait's
    *  implementation class.
    */
-  private val implMethodMap = new HashMap[Symbol, Symbol]
+  private val implMethodMap = new mutable.HashMap[Symbol, Symbol]
 
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
     implClassMap.clear

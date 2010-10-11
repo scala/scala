@@ -8,7 +8,8 @@ package transform
 
 import symtab._
 import Flags._
-import collection.mutable.{ListBuffer, HashMap}
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.ListBuffer
 
 abstract class Mixin extends InfoTransform with ast.TreeDSL {
   import global._
@@ -203,7 +204,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   }
 
   /** Map a lazy, mixedin field accessor to it's trait member accessor */
-  val initializer = new HashMap[Symbol, Symbol]
+  val initializer = new mutable.HashMap[Symbol, Symbol]
 
   /** Add all members to be mixed in into a (non-trait-) class
    *  These are:

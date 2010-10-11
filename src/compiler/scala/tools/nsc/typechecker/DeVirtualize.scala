@@ -7,8 +7,7 @@ package scala.tools.nsc
 package typechecker
 
 import symtab.Flags._
-import transform.{InfoTransform, TypingTransformers}
-import scala.tools.nsc.util.{Position, NoPosition}
+import transform.{ InfoTransform, TypingTransformers }
 import scala.collection.mutable.ListBuffer
 
 abstract class DeVirtualize extends InfoTransform with TypingTransformers {

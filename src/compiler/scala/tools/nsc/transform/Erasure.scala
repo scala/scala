@@ -7,9 +7,7 @@ package scala.tools.nsc
 package transform
 
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
-import scala.collection.mutable.{HashMap,ListBuffer}
-import scala.collection.immutable.Set
-import scala.util.control.ControlThrowable
+import scala.collection.{ mutable, immutable }
 import symtab._
 import Flags._
 
@@ -817,13 +815,13 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
      *    with the erased type of <code>m1</code> in the template.
      *  </p>
      */
-    private def bridgeDefs(owner: Symbol): (List[Tree], Set[Symbol]) = {
-      var toBeRemoved: Set[Symbol] = Set()
+    private def bridgeDefs(owner: Symbol): (List[Tree], immutable.Set[Symbol]) = {
+      var toBeRemoved: immutable.Set[Symbol] = immutable.Set()
       //println("computing bridges for " + owner)//DEBUG
       assert(phase == currentRun.erasurePhase)
       val site = owner.thisType
       val bridgesScope = new Scope
-      val bridgeTarget = new HashMap[Symbol, Symbol]
+      val bridgeTarget = new mutable.HashMap[Symbol, Symbol]
       var bridges: List[Tree] = List()
       val opc = atPhase(currentRun.explicitOuterPhase) {
         new overridingPairs.Cursor(owner) {

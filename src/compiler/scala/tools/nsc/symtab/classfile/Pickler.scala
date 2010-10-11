@@ -7,9 +7,9 @@ package scala.tools.nsc
 package symtab
 package classfile
 
-import java.lang.{Float, Double}
-import util.{ Position, NoPosition, ShowPickled }
-import collection.mutable.Set
+import java.lang.Float.floatToIntBits
+import java.lang.Double.doubleToLongBits
+import util.{ ShowPickled }
 import reflect.generic.{ PickleBuffer, PickleFormat }
 import PickleFormat._
 import Flags._
@@ -597,8 +597,8 @@ abstract class Pickler extends SubComponent {
         case c @ Constant(_) =>
           if (c.tag == BooleanTag) writeLong(if (c.booleanValue) 1 else 0)
           else if (ByteTag <= c.tag && c.tag <= LongTag) writeLong(c.longValue)
-          else if (c.tag == FloatTag) writeLong(Float.floatToIntBits(c.floatValue))
-          else if (c.tag == DoubleTag) writeLong(Double.doubleToLongBits(c.doubleValue))
+          else if (c.tag == FloatTag) writeLong(floatToIntBits(c.floatValue))
+          else if (c.tag == DoubleTag) writeLong(doubleToLongBits(c.doubleValue))
           else if (c.tag == StringTag) writeRef(newTermName(c.stringValue))
           else if (c.tag == ClassTag) writeRef(c.typeValue)
           else if (c.tag == EnumTag) writeRef(c.symbolValue)

@@ -8,10 +8,9 @@ package transform
 
 import symtab._
 import Flags._
-import symtab.Flags._
-import scala.collection.immutable.ListMap
-import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.tools.nsc.util.{FreshNameCreator, TreeSet}
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.util.FreshNameCreator
 
 /** Translate expressions of the form reflect.Code.lift(exp)
  *  to the lifted "reflect trees" representation of exp.
@@ -44,7 +43,7 @@ abstract class LiftCode extends Transform with Reifiers {
   }
 
 
-  type InjectEnvironment = ListMap[reflect.Symbol, Name]
+  type InjectEnvironment = immutable.ListMap[reflect.Symbol, Name]
 
   class Injector(env: InjectEnvironment, fresh: FreshNameCreator) {
 
@@ -109,7 +108,7 @@ abstract class LiftCode extends Transform with Reifiers {
 
 
   def inject(code: reflect.Tree): Tree =
-    new Injector(ListMap.empty, new FreshNameCreator.Default).inject(code)
+    new Injector(immutable.ListMap.empty, new FreshNameCreator.Default).inject(code)
 
   def codify (tree: Tree): Tree =
     New(TypeTree(appliedType(definitions.CodeClass.typeConstructor,

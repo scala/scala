@@ -7,10 +7,7 @@ package scala.tools.nsc
 package transform
 
 import scala.tools.nsc.symtab.Flags
-import scala.tools.nsc.util.FreshNameCreator
-
-import scala.collection.{mutable, immutable}
-import immutable.Set
+import scala.collection.{ mutable, immutable }
 
 /** Specialize code on types.
  */
@@ -711,7 +708,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *    * there is a valid specialization environment that maps the overridden method type to m's type.
      */
     def needsSpecialOverride(overriding: Symbol, syms: List[Symbol]): (Symbol, TypeEnv) = {
-      def missingSpecializations(baseTvar: Symbol, derivedTvar: Symbol): Set[Type] = {
+      def missingSpecializations(baseTvar: Symbol, derivedTvar: Symbol): immutable.Set[Type] = {
         val baseSet = concreteTypes(baseTvar).toSet
         val derivedSet = concreteTypes(derivedTvar).toSet
         baseSet diff derivedSet

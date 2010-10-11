@@ -1,9 +1,7 @@
 package scala.tools.nsc
 package symtab
 
-import ast.Trees
-import scala.tools.nsc.util.{SourceFile, Position, RangePosition, OffsetPosition, NoPosition, WorkScheduler}
-import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.util.{ SourceFile, Position, OffsetPosition, NoPosition }
 
 trait Positions {
 self: scala.tools.nsc.symtab.SymbolTable =>

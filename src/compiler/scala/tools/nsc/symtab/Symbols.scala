@@ -7,10 +7,10 @@
 package scala.tools.nsc
 package symtab
 
+import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.ListBuffer
-import scala.collection.immutable.Map
 import io.AbstractFile
-import util.{Position, NoPosition, BatchSourceFile}
+import util.{ Position, NoPosition, BatchSourceFile }
 import util.Statistics._
 import Flags._
 
@@ -31,7 +31,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   protected var lockedSyms = collection.immutable.Set[Symbol]()
 
   /** Used to keep track of the recursion depth on locked symbols */
-  private var recursionTable = Map.empty[Symbol, Int]
+  private var recursionTable = immutable.Map.empty[Symbol, Int]
 
   private var nextexid = 0
   private def freshExistentialName() = {

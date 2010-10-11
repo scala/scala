@@ -6,7 +6,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.collection.mutable.{Map, HashMap}
+import scala.collection.{ mutable, immutable }
 
 /** A base class for transforms.
  *  A transform contains a compiler phase which applies a tree transformer.
@@ -26,7 +26,7 @@ trait TypingTransformers {
     protected def typedPos(pos: Position)(tree: Tree) = localTyper typed { atPos(pos)(tree) }
 
     /** a typer for each enclosing class */
-    val typers: Map[Symbol, analyzer.Typer] = new HashMap
+    val typers: mutable.Map[Symbol, analyzer.Typer] = new mutable.HashMap
 
     override def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)
 

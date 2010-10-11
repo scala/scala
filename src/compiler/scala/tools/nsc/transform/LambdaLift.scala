@@ -9,7 +9,7 @@ package transform
 import symtab._
 import Flags._
 import util.TreeSet
-import scala.collection.mutable.{HashMap, LinkedHashMap, ListBuffer}
+import scala.collection.mutable.{ LinkedHashMap, ListBuffer }
 
 abstract class LambdaLift extends InfoTransform {
   import global._
