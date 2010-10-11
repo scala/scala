@@ -3605,8 +3605,12 @@ A type's typeSymbol should never be inspected directly.
         override def transform(tree: Tree): Tree = {
           tree match {
             case RefParamAt(pid) =>
-              if(actuals(pid) isStable) mkAttributedQualifier(actuals(pid), tree.symbol)
-              else {
+              // TODO: this should be simplified; in the stable case, one can probably
+              // just use an Ident to the tree.symbol. Why an existential in the non-stable case?
+              val actual = actuals(pid)
+              if(actual.isStable && actual.typeSymbol != NothingClass) {
+                mkAttributedQualifier(actuals(pid), tree.symbol)
+              } else {
                 val sym = existSymFor(pid)
                 (Ident(sym.name)
                  copyAttrs tree
