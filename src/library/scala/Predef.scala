@@ -10,9 +10,10 @@
 
 package scala
 
-import collection.immutable.StringOps
-import collection.mutable.ArrayOps
-import collection.generic.CanBuildFrom
+import scala.collection.{ mutable, immutable, generic }
+import immutable.StringOps
+import mutable.ArrayOps
+import generic.CanBuildFrom
 import annotation.elidable
 import annotation.elidable.ASSERTION
 
@@ -35,10 +36,10 @@ object Predef extends LowPriorityImplicits {
 
   type Function[-A, +B] = Function1[A, B]
 
-  type Map[A, +B] = collection.immutable.Map[A, B]
-  type Set[A] = collection.immutable.Set[A]
-  val Map = collection.immutable.Map
-  val Set = collection.immutable.Set
+  type Map[A, +B] = immutable.Map[A, B]
+  type Set[A]     = immutable.Set[A]
+  val Map         = immutable.Map
+  val Set         = immutable.Set
 
   type Manifest[T] = scala.reflect.Manifest[T]
   type ClassManifest[T] = scala.reflect.ClassManifest[T]
@@ -209,6 +210,18 @@ object Predef extends LowPriorityImplicits {
 
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
 
+  // tuple zip views
+
+  implicit def zipped2ToTraversable[El1, El2](zz: Tuple2[_, _]#Zipped[_, El1, _, El2]): Traversable[(El1, El2)] =
+    new Traversable[(El1, El2)] {
+      def foreach[U](f: ((El1, El2)) => U): Unit = zz foreach Function.untupled(f)
+    }
+
+  implicit def zipped3ToTraversable[El1, El2, El3](zz: Tuple3[_, _, _]#Zipped[_, El1, _, El2, _, El3]): Traversable[(El1, El2, El3)] =
+    new Traversable[(El1, El2, El3)] {
+      def foreach[U](f: ((El1, El2, El3)) => U): Unit = zz foreach Function.untupled(f)
+    }
+
   implicit def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = (xs: AnyRef) match { // !!! drop the AnyRef and get unreachable code errors!
     case x: Array[AnyRef] => refArrayOps[AnyRef](x).asInstanceOf[ArrayOps[T]]
     case x: Array[Int] => intArrayOps(x).asInstanceOf[ArrayOps[T]]
@@ -290,7 +303,7 @@ object Predef extends LowPriorityImplicits {
   implicit def stringCanBuildFrom: CanBuildFrom[String, Char, String] =
     new CanBuildFrom[String, Char, String] {
       def apply(from: String) = apply()
-      def apply() = scala.collection.mutable.StringBuilder.newBuilder
+      def apply() = StringBuilder.newBuilder
     }
 
   implicit def seqToCharSequence(xs: collection.IndexedSeq[Char]): CharSequence = new CharSequence {
@@ -320,7 +333,7 @@ object Predef extends LowPriorityImplicits {
    * in part contributed by Jason Zaugg
    */
   sealed abstract class <:<[-From, +To] extends (From => To)
-  implicit def conforms[A]: A <:< A = new (A <:< A) {def apply(x: A) = x}
+  implicit def conforms[A]: A <:< A = new (A <:< A) { def apply(x: A) = x }
   // not in the <:< companion object because it is also intended to subsume identity (which is no longer implicit)
 
   /** An instance of `A =:= B` witnesses that the types `A` and `B` are equal.

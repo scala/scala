@@ -154,7 +154,11 @@ object FunctionOne extends Function(1) {
    */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 
-  /** Turns a function A => Option[B] into a PartialFunction[A, B].
+  /** Turns a function A => Option[B] into a PartialFunction[A, B].  Important note:
+   *  this transformation implies the original function will be called 2 or more
+   *  times on each logical invocation, because the only way to supply an implementation
+   *  of isDefinedAt is to call the function and examine the return value.
+   *
    *  @see     PartialFunction#lift
    *  @return  a partial function which is defined for those inputs
    *           where this function returns Some(_) and undefined where
@@ -273,8 +277,12 @@ trait {className}{contraCoArgs} extends AnyRef {{ self =>
                                      T U P L E
 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 
-object Tuple
-{
+object Tuple {
+  val zipImports = """
+import scala.collection.{ TraversableLike => TLike, IterableLike => ILike }
+import scala.collection.generic.{ CanBuildFrom => CBF }
+"""
+
   def make(i: Int) = apply(i)()
   def apply(i: Int) = i match {
     case 1  => TupleOne
@@ -291,26 +299,26 @@ object TupleOne extends Tuple(1)
 
 object TupleTwo extends Tuple(2)
 {
-  override def imports = """
-import scala.collection.{TraversableLike, IterableLike}
-import scala.collection.generic.CanBuildFrom
-"""
+  override def imports = Tuple.zipImports
   override def covariantSpecs = "@specialized(Int, Long, Double) "
   override def moreMethods = """
   /** Swap the elements of the tuple */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
 
-  def zip[Repr1, El1, El2, To](implicit w1:   T1 => TraversableLike[El1, Repr1],
+  def zip[Repr1, El1, El2, To](implicit w1:   T1 => TLike[El1, Repr1],
                                         w2:   T2 => Iterable[El2],
-                                        cbf1: CanBuildFrom[Repr1, (El1, El2), To]): To = {
-    val coll1: TraversableLike[El1, Repr1] = _1
+                                        cbf1: CBF[Repr1, (El1, El2), To]): To = {
+    val coll1: TLike[El1, Repr1] = _1
     val coll2: Iterable[El2] = _2
     val b1 = cbf1(coll1.repr)
     val elems2 = coll2.iterator
 
-    for(el1 <- coll1)
-      if(elems2.hasNext)
+    for (el1 <- coll1) {
+      if (elems2.hasNext)
         b1 += ((el1, elems2.next))
+      else
+        return b1.result
+    }
 
     b1.result
   }
@@ -320,104 +328,108 @@ import scala.collection.generic.CanBuildFrom
    * @see Zipped
    * $willNotTerminateInf
    */
-  def zipped[Repr1, El1, Repr2, El2](implicit w1: T1 => TraversableLike[El1, Repr1], w2: T2 => IterableLike[El2, Repr2]): Zipped[Repr1, El1, Repr2, El2]
+  def zipped[Repr1, El1, Repr2, El2](implicit w1: T1 => TLike[El1, Repr1], w2: T2 => ILike[El2, Repr2]): Zipped[Repr1, El1, Repr2, El2]
     = new Zipped[Repr1, El1, Repr2, El2](_1, _2)
 
-  class Zipped[+Repr1, +El1, +Repr2, +El2](coll1: TraversableLike[El1, Repr1], coll2: IterableLike[El2, Repr2]) { // coll2: IterableLike for filter
-    def map[B, To](f: (El1, El2) => B)(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+  class Zipped[+Repr1, +El1, +Repr2, +El2](coll1: TLike[El1, Repr1], coll2: ILike[El2, Repr2]) { // coll2: ILike for filter
+    def map[B, To](f: (El1, El2) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
       val b = cbf(coll1.repr)
       b.sizeHint(coll1)
       val elems2 = coll2.iterator
 
-      for(el1 <- coll1)
-       if(elems2.hasNext)
-         b += f(el1, elems2.next)
+      for (el1 <- coll1) {
+        if (elems2.hasNext)
+          b += f(el1, elems2.next)
+        else
+          return b.result
+      }
 
       b.result
     }
 
-    def flatMap[B, To](f: (El1, El2) => Traversable[B])(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+    def flatMap[B, To](f: (El1, El2) => Traversable[B])(implicit cbf: CBF[Repr1, B, To]): To = {
       val b = cbf(coll1.repr)
       val elems2 = coll2.iterator
 
-      for(el1 <- coll1)
-       if(elems2.hasNext)
-         b ++= f(el1, elems2.next)
+      for (el1 <- coll1) {
+        if (elems2.hasNext)
+          b ++= f(el1, elems2.next)
+        else
+          return b.result
+      }
 
       b.result
     }
 
-    def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CanBuildFrom[Repr1, El1, To1], cbf2: CanBuildFrom[Repr2, El2, To2]): (To1, To2) = {
+    def filter[To1, To2](f: (El1, El2) => Boolean)(implicit cbf1: CBF[Repr1, El1, To1], cbf2: CBF[Repr2, El2, To2]): (To1, To2) = {
       val b1 = cbf1(coll1.repr)
       val b2 = cbf2(coll2.repr)
       val elems2 = coll2.iterator
 
-      for(el1 <- coll1) {
-        if(elems2.hasNext) {
+      for (el1 <- coll1) {
+        if (elems2.hasNext) {
           val el2 = elems2.next
-          if(f(el1, el2)) {
+          if (f(el1, el2)) {
             b1 += el1
             b2 += el2
           }
         }
+        else return (b1.result, b2.result)
       }
 
       (b1.result, b2.result)
     }
 
     def exists(f: (El1, El2) => Boolean): Boolean = {
-      var acc = false
       val elems2 = coll2.iterator
 
-      for(el1 <- coll1)
-       if(!acc && elems2.hasNext)
-         acc = f(el1, elems2.next)
-
-      acc
+      for (el1 <- coll1) {
+        if (elems2.hasNext) {
+          if (f(el1, elems2.next))
+            return true
+        }
+        else return false
+      }
+      false
     }
 
-    def forall(f: (El1, El2) => Boolean): Boolean = {
-      var acc = true
-      val elems2 = coll2.iterator
-
-      for(el1 <- coll1)
-       if(acc && elems2.hasNext)
-         acc = f(el1, elems2.next)
-
-      acc
-    }
+    def forall(f: (El1, El2) => Boolean): Boolean =
+      !exists((x, y) => !f(x, y))
 
     def foreach[U](f: (El1, El2) => U): Unit = {
       val elems2 = coll2.iterator
 
-      for(el1 <- coll1)
-       if(elems2.hasNext)
-         f(el1, elems2.next)
+      for (el1 <- coll1) {
+        if (elems2.hasNext)
+          f(el1, elems2.next)
+        else
+          return
+      }
     }
   }
 """
 }
 
 object TupleThree extends Tuple(3) {
-  override def imports = """
-import scala.collection.{TraversableLike, IterableLike}
-import scala.collection.generic.CanBuildFrom
-"""
+  override def imports = Tuple.zipImports
   override def moreMethods = """
-  def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 => TraversableLike[El1, Repr1],
+  def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 => TLike[El1, Repr1],
                                              w2:   T2 => Iterable[El2],
                                              w3:   T3 => Iterable[El3],
-                                             cbf1: CanBuildFrom[Repr1, (El1, El2, El3), To]): To = {
-    val coll1: TraversableLike[El1, Repr1] = _1
+                                             cbf1: CBF[Repr1, (El1, El2, El3), To]): To = {
+    val coll1: TLike[El1, Repr1] = _1
     val coll2: Iterable[El2] = _2
     val coll3: Iterable[El3] = _3
     val b1 = cbf1(coll1.repr)
     val elems2 = coll2.iterator
     val elems3 = coll3.iterator
 
-    for(el1 <- coll1)
-      if(elems2.hasNext && elems3.hasNext)
+    for (el1 <- coll1) {
+      if (elems2.hasNext && elems3.hasNext)
         b1 += ((el1, elems2.next, elems3.next))
+      else
+        return b1.result
+    }
 
     b1.result
   }
@@ -427,94 +439,108 @@ import scala.collection.generic.CanBuildFrom
    * @see Zipped
    * $willNotTerminateInf
    */
-  def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 => TraversableLike[El1, Repr1],
-                                                          w2: T2 => IterableLike[El2, Repr2],
-                                                          w3: T3 => IterableLike[El3, Repr3]): Zipped[Repr1, El1, Repr2, El2, Repr3, El3]
+  def zipped[Repr1, El1, Repr2, El2, Repr3, El3](implicit w1: T1 => TLike[El1, Repr1],
+                                                          w2: T2 => ILike[El2, Repr2],
+                                                          w3: T3 => ILike[El3, Repr3]): Zipped[Repr1, El1, Repr2, El2, Repr3, El3]
     = new Zipped[Repr1, El1, Repr2, El2, Repr3, El3](_1, _2, _3)
 
-  class Zipped[+Repr1, +El1, +Repr2, +El2, +Repr3, +El3](coll1: TraversableLike[El1, Repr1],
-                                                         coll2: IterableLike[El2, Repr2],
-                                                         coll3: IterableLike[El3, Repr3]) {
-    def map[B, To](f: (El1, El2, El3) => B)(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
-     val b = cbf(coll1.repr)
-     val elems2 = coll2.iterator
-     val elems3 = coll3.iterator
-
-     for(el1 <- coll1)
-       if(elems2.hasNext && elems3.hasNext)
-         b += f(el1, elems2.next, elems3.next)
-
-     b.result
-    }
-
-    def flatMap[B, To](f: (El1, El2, El3) => Traversable[B])(implicit cbf: CanBuildFrom[Repr1, B, To]): To = {
+  class Zipped[+Repr1, +El1, +Repr2, +El2, +Repr3, +El3](coll1: TLike[El1, Repr1],
+                                                         coll2: ILike[El2, Repr2],
+                                                         coll3: ILike[El3, Repr3]) {
+    def map[B, To](f: (El1, El2, El3) => B)(implicit cbf: CBF[Repr1, B, To]): To = {
       val b = cbf(coll1.repr)
       val elems2 = coll2.iterator
       val elems3 = coll3.iterator
 
-      for(el1 <- coll1)
-       if(elems2.hasNext && elems3.hasNext)
-         b ++= f(el1, elems2.next, elems3.next)
+      for (el1 <- coll1) {
+        if (elems2.hasNext && elems3.hasNext)
+          b += f(el1, elems2.next, elems3.next)
+        else
+          return b.result
+      }
+      b.result
+    }
 
+    def flatMap[B, To](f: (El1, El2, El3) => Traversable[B])(implicit cbf: CBF[Repr1, B, To]): To = {
+      val b = cbf(coll1.repr)
+      val elems2 = coll2.iterator
+      val elems3 = coll3.iterator
+
+      for (el1 <- coll1) {
+        if (elems2.hasNext && elems3.hasNext)
+          b ++= f(el1, elems2.next, elems3.next)
+        else
+          return b.result
+      }
       b.result
     }
 
     def filter[To1, To2, To3](f: (El1, El2, El3) => Boolean)(
-                 implicit cbf1: CanBuildFrom[Repr1, El1, To1],
-                          cbf2: CanBuildFrom[Repr2, El2, To2],
-                          cbf3: CanBuildFrom[Repr3, El3, To3]): (To1, To2, To3) = {
+                 implicit cbf1: CBF[Repr1, El1, To1],
+                          cbf2: CBF[Repr2, El2, To2],
+                          cbf3: CBF[Repr3, El3, To3]): (To1, To2, To3) = {
       val b1 = cbf1(coll1.repr)
       val b2 = cbf2(coll2.repr)
       val b3 = cbf3(coll3.repr)
       val elems2 = coll2.iterator
       val elems3 = coll3.iterator
+      def result = (b1.result, b2.result, b3.result)
 
       for(el1 <- coll1) {
-        if(elems2.hasNext && elems3.hasNext) {
+        if (elems2.hasNext && elems3.hasNext) {
           val el2 = elems2.next
           val el3 = elems3.next
-          if(f(el1, el2, el3)) {
+
+          if (f(el1, el2, el3)) {
             b1 += el1
             b2 += el2
             b3 += el3
           }
         }
+        else return result
       }
 
-      (b1.result, b2.result, b3.result)
+      result
     }
 
     def exists(f: (El1, El2, El3) => Boolean): Boolean = {
-      var acc = false
       val elems2 = coll2.iterator
       val elems3 = coll3.iterator
 
-      for(el1 <- coll1)
-       if(!acc && elems2.hasNext && elems3.hasNext)
-         acc = f(el1, elems2.next, elems3.next)
-
-      acc
+      for (el1 <- coll1) {
+        if (elems2.hasNext && elems3.hasNext) {
+          if (f(el1, elems2.next, elems3.next))
+            return true
+        }
+        else return false
+      }
+      false
     }
 
-    def forall(f: (El1, El2, El3) => Boolean): Boolean = {
-      var acc = true
+    def forall(f: (El1, El2, El3) => Boolean): Boolean =
+      !exists((x, y, z) => !f(x, y, z))
+
+    def foreach[U](f: (El1, El2) => U): Unit = {
       val elems2 = coll2.iterator
-      val elems3 = coll3.iterator
 
-      for(el1 <- coll1)
-       if(acc && elems2.hasNext && elems3.hasNext)
-         acc = f(el1, elems2.next, elems3.next)
-
-      acc
+      for (el1 <- coll1) {
+        if (elems2.hasNext)
+          f(el1, elems2.next)
+        else
+          return
+      }
     }
 
     def foreach[U](f: (El1, El2, El3) => U): Unit = {
       val elems2 = coll2.iterator
       val elems3 = coll3.iterator
 
-      for(el1 <- coll1)
-       if(elems2.hasNext && elems3.hasNext)
-         f(el1, elems2.next, elems3.next)
+      for (el1 <- coll1) {
+        if (elems2.hasNext && elems3.hasNext)
+          f(el1, elems2.next, elems3.next)
+        else
+          return
+      }
     }
   }
 """
