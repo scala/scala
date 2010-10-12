@@ -6,9 +6,8 @@ object Test extends Properties("String") {
 
   property("endsWith") = Prop.forAll((a: String, b: String) => (a+b).endsWith(b))
 
-  // Is this really always true?
   property("concat") = Prop.forAll((a: String, b: String) =>
-    (a+b).length > a.length && (a+b).length > b.length
+    (a+b).length >= a.length && (a+b).length >= b.length
   )
 
   property("substring") = Prop.forAll((a: String, b: String) =>
