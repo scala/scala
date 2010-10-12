@@ -99,11 +99,7 @@ abstract class GenJVM extends SubComponent {
     val MethodHandleType  = new JObjectType("java.dyn.MethodHandle")
 
     // Scala attributes
-    import definitions.{ SerializableAttr, SerialVersionUIDAttr }
-    val CloneableAttr    = definitions.getClass("scala.cloneable")
-    val TransientAtt     = definitions.getClass("scala.transient")
-    val VolatileAttr     = definitions.getClass("scala.volatile")
-    val RemoteAttr       = definitions.getClass("scala.remote")
+    import definitions.{ SerializableAttr, SerialVersionUIDAttr, VolatileAttr, TransientAttr, CloneableAttr, RemoteAttr }
     val BeanInfoAttr     = definitions.getClass("scala.reflect.BeanInfo")
     val BeanInfoSkipAttr = definitions.getClass("scala.reflect.BeanInfoSkip")
     val BeanDisplayNameAttr = definitions.getClass("scala.reflect.BeanDisplayName")
@@ -607,7 +603,7 @@ abstract class GenJVM extends SubComponent {
         log("Adding field: " + f.symbol.fullName)
 
       val attributes = f.symbol.annotations.map(_.atp.typeSymbol).foldLeft(0) {
-        case (res, TransientAtt)  => res | ACC_TRANSIENT
+        case (res, TransientAttr) => res | ACC_TRANSIENT
         case (res, VolatileAttr)  => res | ACC_VOLATILE
         case (res, _)             => res
       }
