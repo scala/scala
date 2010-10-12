@@ -950,7 +950,7 @@ self: Analyzer =>
       // http://dcsobral.blogspot.com/2010/01/string-interpolation-in-scala-with.html
       private def interpolate(text: String, vars: Map[String, String]) = { import scala.util.matching.Regex
         """\$\{([^}]+)\}""".r.replaceAllIn(text, (_: Regex.Match) match {
-          case Regex.Groups(v) => vars.getOrElse(v, "")
+          case Regex.Groups(v) => java.util.regex.Matcher.quoteReplacement(vars.getOrElse(v, "")) // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
         })}
 
       private lazy val typeParamNames: List[String] = sym.typeParams.map(_.decodedName)
