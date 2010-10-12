@@ -961,6 +961,21 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
 
+  class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol]) extends Traverser {
+    val subst = new SubstSymMap(from, to)
+    override def traverse(tree: Tree) {
+      if (tree.tpe ne null) tree.tpe = subst(tree.tpe)
+      if (tree.isDef) {
+        val sym = tree.symbol
+        val info1 = subst(sym.info)
+        if (info1 ne sym.info) sym.setInfo(info1)
+      }
+      super.traverse(tree)
+    }
+    override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
+    override def toString() = "TreeSymSubstTraverser("+from+","+to+")"
+  }
+
   /** Substitute symbols in 'from' with symbols in 'to'. Returns a new
    *  tree using the new symbols and whose Ident and Select nodes are
    *  name-consistent with the new symbols.

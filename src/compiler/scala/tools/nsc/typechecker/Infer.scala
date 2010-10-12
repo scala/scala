@@ -1164,7 +1164,15 @@ trait Infer {
           val treeSubst = new TreeTypeSubstituter(okparams, okargs)
           treeSubst.traverse(fn)
           treeSubst.traverseTrees(args)
-          leftUndet
+          if(leftUndet nonEmpty) {  // #3890
+            val leftUndet1 = treeSubst.typeSubst mapOver leftUndet
+            if(leftUndet ne leftUndet1) {
+              val symSubst = new TreeSymSubstTraverser(leftUndet, leftUndet1)
+              symSubst.traverse(fn)
+              symSubst.traverseTrees(args)
+            }
+            leftUndet1
+          } else leftUndet
         } catch {
           case ex: NoInstance =>
             errorTree(fn,
