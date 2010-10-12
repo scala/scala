@@ -19,7 +19,13 @@ package scala
  *  @version 1.1, 05/03/2004
  *  @since   2.0
  */
-final class MatchError(msg: String) extends RuntimeException(msg) {
-  def this(obj: Any) =
-    this(if (null != obj) obj.toString() else "null")
+final class MatchError(obj: Any) extends RuntimeException {
+  /** There's no reason we need to call toString eagerly,
+   *  so defer it until getMessage is called.
+   */
+  private lazy val objString =
+    if (obj == null) "null"
+    else obj.toString() + " (of class " + obj.asInstanceOf[AnyRef].getClass.getName + ")"
+
+  override def getMessage() = objString
 }
