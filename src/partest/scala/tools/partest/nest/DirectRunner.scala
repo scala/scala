@@ -18,6 +18,10 @@ import scala.tools.nsc.io.Directory
 import scala.actors.Actor._
 import scala.actors.TIMEOUT
 
+
+case class TestRunParams(val scalaCheckParentClassLoader: ScalaClassLoader)
+
+
 trait DirectRunner {
 
   def fileManager: FileManager
@@ -39,10 +43,13 @@ trait DirectRunner {
     val consFM = new ConsoleFileManager
     import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
     val scalacheckURL = PathSettings.scalaCheck.toURL
-    val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL))
+    val scalaCheckParentClassLoader = ScalaClassLoader.fromURLs(
+      List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL)
+    )
+    Output.init
     val workers = for (i <- List.range(0, numActors)) yield {
       val toTest = kindFiles.slice(i*testsEach, (i+1)*testsEach)
-      val worker = new Worker(fileManager, scalaCheckParentClassLoader)
+      val worker = new Worker(fileManager, TestRunParams(scalaCheckParentClassLoader))
       worker.start()
       if (i == last)
         worker ! RunTests(kind, (kindFiles splitAt (last*testsEach))._2)

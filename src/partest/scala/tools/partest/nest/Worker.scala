@@ -54,7 +54,55 @@ class ScalaCheckFileManager(val origmanager: FileManager) extends FileManager {
   var LATEST_LIB: String = origmanager.LATEST_LIB
 }
 
-class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaClassLoader) extends Actor {
+object Output {
+  def init {
+    System.setOut(outRedirect)
+    System.setErr(errRedirect)
+  }
+
+  import scala.util.DynamicVariable
+  private def out = java.lang.System.out
+  private def err = java.lang.System.err
+  private val redirVar = new DynamicVariable[Option[PrintStream]](None)
+
+  class Redirecter(stream: PrintStream) extends PrintStream(new OutputStream {
+    private def withStream(f: PrintStream => Unit) = {
+      if (redirVar.value != None) f(redirVar.value.get)
+      else f(stream)
+    }
+    def write(b: Int) = withStream(_.write(b))
+    override def write(b: Array[Byte]) = withStream(_.write(b))
+    override def write(b: Array[Byte], off: Int, len: Int) = withStream(_.write(b, off, len))
+    override def flush = withStream(_.flush)
+    override def close = withStream(_.close)
+  })
+
+  object outRedirect extends Redirecter(out)
+
+  object errRedirect extends Redirecter(err)
+
+  // this supports thread-safe nested output redirects
+  def withRedirected(newstream: PrintStream)(func: => Unit) {
+    // note down old redirect destination
+    // this may be None in which case outRedirect and errRedirect print to stdout and stderr
+    val oldred = redirVar.value
+
+    // set new redirecter
+    // this one will redirect both out and err to newstream
+    redirVar.value = Some(newstream)
+
+    try {
+      func
+    } finally {
+      // revert to old redirect
+      // this may be None, which makes outRedirect and errRedirect choose standard outputs again
+      redirVar.value = oldred
+    }
+  }
+}
+
+
+class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor {
   import fileManager._
 
   val scalaCheckFileManager = new ScalaCheckFileManager(fileManager)
@@ -478,10 +526,10 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
 
           val logWriter = new PrintStream(new FileOutputStream(logFile))
 
-          withOutputRedirected(logWriter) {
+          Output.withRedirected(logWriter) {
             // this classloader is test specific
             // its parent contains library classes and others
-            val classloader = ScalaClassLoader.fromURLs(List(outURL), scalaCheckParentClassLoader)
+            val classloader = ScalaClassLoader.fromURLs(List(outURL), params.scalaCheckParentClassLoader)
             classloader.run("Test", Nil)
           }
 
@@ -638,7 +686,7 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
                 }
               }
 
-              withOutputRedirected(logWriter) {
+              Output.withRedirected(logWriter) {
                 loop()
                 testReader.close()
               }
@@ -751,7 +799,7 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
               }
             }
 
-            withOutputRedirected(logWriter) {
+            Output.withRedirected(logWriter) {
               loop(resCompile)
               resReader.close()
             }
@@ -1051,22 +1099,6 @@ class Worker(val fileManager: FileManager, scalaCheckParentClassLoader: ScalaCla
               fileCnt += 1
           }
       }
-    }
-  }
-
-  private def withOutputRedirected(out: PrintStream)(func: => Unit) {
-    val oldStdOut = System.out
-    val oldStdErr = System.err
-
-    try {
-      System.setOut(out)
-      System.setErr(out)
-      func
-      out.flush()
-      out.close()
-    } finally {
-      System.setOut(oldStdOut)
-      System.setErr(oldStdErr)
     }
   }
 
