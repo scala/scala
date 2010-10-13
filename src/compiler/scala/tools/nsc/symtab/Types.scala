@@ -2373,15 +2373,20 @@ A type's typeSymbol should never be inspected directly.
           addBound(tp)
           true
         } else { // higher-kinded type var with same arity as tp
+          // needed because HK unification is limited to constraints of the shape TC1[T1,..., TN] <: TC2[T'1,...,T'N], which precludes e.g., Nothing <: ?TC[?T]
+          def isKindPolymorphic(tp: Type) = tp.typeSymbol == NothingClass || tp.typeSymbol == AnyClass
+          // TODO: fancier unification, maybe rewrite constraint as follows?
+            // val sym = constr.hiBounds map {_.typeSymbol} find { _.typeParams.length == typeArgs.length}
+            // this <: tp.baseType(sym)
           def unifyHK(tp: Type) =
-            (typeArgs.length == tp.typeArgs.length) && {
+            (typeArgs.length == tp.typeArgs.length || isKindPolymorphic(tp)) && {
               // register type constructor (the type without its type arguments) as bound
               addBound(tp.typeConstructor)
               // check subtyping of higher-order type vars
               // use variances as defined in the type parameter that we're trying to infer (the result is sanity-checked later)
-              checkArgs(tp.typeArgs, typeArgs, params)
+              isKindPolymorphic(tp) || checkArgs(tp.typeArgs, typeArgs, params)
             }
-          unifyHK(tp) || unifyHK(tp.dealias)
+            unifyHK(tp) || unifyHK(tp.dealias)
         }
       }
     }
