@@ -21,6 +21,8 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   type CompilationUnit <: CompilationUnitTrait
 
+  protected def flagsIntoString(flags: Long, privateWithin: String): String = flagsToString(flags, privateWithin)
+
   // sub-components --------------------------------------------------
 
   lazy val treePrinter = newTreePrinter()
@@ -242,7 +244,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     } unzip
 
     val constrs = {
-      if (constrMods.isTrait) {
+      if (constrMods hasFlag TRAIT) {
         if (body forall treeInfo.isInterfaceMember) List()
         else List(
           atPos(wrappingPos(superPos, lvdefs)) (

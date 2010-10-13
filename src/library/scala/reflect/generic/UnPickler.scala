@@ -196,11 +196,8 @@ abstract class UnPickler {
             tag match {
               case EXTMODCLASSref =>
                 val moduleVar = owner.info.decl(nme.moduleVarName(name))
-                if (moduleVar.hasFlag(LAZY)) {
-                  val lazyAcc = moduleVar.lazyAccessor
-                  if (lazyAcc != NoSymbol)
-                    sym = lazyAcc.lazyAccessor
-                }
+                if (moduleVar.isLazyAccessor)
+                  sym = moduleVar.lazyAccessor.lazyAccessor
               case _ =>
             }
 
@@ -255,7 +252,7 @@ abstract class UnPickler {
           sym.flags = flags & PickledFlags
           sym.privateWithin = privateWithin
           if (readIndex != end) assert(sym hasFlag (SUPERACCESSOR | PARAMACCESSOR), sym)
-          if (sym hasFlag SUPERACCESSOR) assert(readIndex != end)
+          if (sym.isSuperAccessor) assert(readIndex != end)
           sym.info =
             if (readIndex != end) newLazyTypeRefAndAlias(inforef, readNat())
             else newLazyTypeRef(inforef)

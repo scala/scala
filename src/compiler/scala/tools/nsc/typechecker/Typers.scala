@@ -1748,7 +1748,7 @@ trait Typers { self: Analyzer =>
       // for `val` and `var` parameter, look at `target` meta-annotation
       if (phase.id <= currentRun.typerPhase.id && meth.isPrimaryConstructor) {
         for (vparams <- ddef.vparamss; vd <- vparams) {
-          if (vd hasFlag PARAMACCESSOR) {
+          if (vd.mods.isParamAccessor) {
             val sym = vd.symbol
             sym.setAnnotations(memberAnnots(sym.annotations, ParamTargetClass, keepClean = true))
           }

@@ -113,15 +113,13 @@ trait TreePrinters { trees: SymbolTable =>
       if (!tree.isEmpty) { print(prefix); print(tree) }
     }
 
-    def printModifiers(tree: Tree, mods: Modifiers) {
-      def pw = tree.symbol.privateWithin
-      val args =
-        if (tree.symbol == NoSymbol) (mods.flags, mods.privateWithin)
-        else if (pw == NoSymbol) (tree.symbol.flags, "")
-        else (tree.symbol.flags, pw.name)
-
-      printFlags(args._1, args._2.toString)
-    }
+    def printModifiers(tree: Tree, mods: Modifiers): Unit = printFlags(
+       if (tree.symbol == NoSymbol) mods.flags else tree.symbol.flags, "" + (
+         if (tree.symbol == NoSymbol) mods.privateWithin
+         else if (tree.symbol.hasAccessBoundary) tree.symbol.privateWithin.name
+         else ""
+      )
+    )
 
     def printFlags(flags: Long, privateWithin: String) {
       var mask: Long = if (settings.debug.value) -1L else PrintableFlags
@@ -151,9 +149,9 @@ trait TreePrinters { trees: SymbolTable =>
         case ClassDef(mods, name, tparams, impl) =>
           printAnnotations(tree)
           printModifiers(tree, mods)
-          print((if (mods.isTrait) "trait " else "class ") + symName(tree, name))
+          print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
           printTypeParams(tparams)
-          print(if (mods hasFlag DEFERRED) " <: " else " extends "); print(impl) // (part of DEVIRTUALIZE)
+          print(if (mods.isDeferred) " <: " else " extends "); print(impl) // (part of DEVIRTUALIZE)
 
         case PackageDef(packaged, stats) =>
           printAnnotations(tree)
@@ -167,10 +165,10 @@ trait TreePrinters { trees: SymbolTable =>
         case ValDef(mods, name, tp, rhs) =>
           printAnnotations(tree)
           printModifiers(tree, mods)
-          print(if (mods.isVariable) "var " else "val ")
+          print(if (mods.isMutable) "var " else "val ")
           print(symName(tree, name))
           printOpt(": ", tp)
-          if (!mods.hasFlag(DEFERRED)) {
+          if (!mods.isDeferred) {
             print(" = ")
             if (rhs.isEmpty) print("_") else print(rhs)
           }

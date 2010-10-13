@@ -397,7 +397,7 @@ trait Namers { self: Analyzer =>
               // .isInstanceOf[..]: probably for (old) IDE hook. is this obsolete?
               val getter = enterAccessorMethod(tree, name, getterFlags(mods1.flags), mods1)
               setInfo(getter)(namerOf(getter).getterTypeCompleter(vd))
-              if (mods1.isVariable) {
+              if (mods1.isMutable) {
                 val setter = enterAccessorMethod(tree, nme.getterToSetter(name), setterFlags(mods1.flags), mods1)
                 setInfo(setter)(namerOf(setter).setterTypeCompleter(vd))
               }

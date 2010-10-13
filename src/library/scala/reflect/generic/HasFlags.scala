@@ -1,6 +1,76 @@
 package scala.reflect
 package generic
 
+/** ISSUE #1: Flag names vs. Test method names
+ *
+ *  The following methods from Symbol have a name of
+ *  the form isFoo where FOO is the name of a flag, but where the method
+ *  body tests for more than whether the flag is set.
+ *
+ *  There are two possibilities with such methods.  Either the extra
+ *  tests are strictly to partition among overloaded flags (which is
+ *  the case we can live with in the short term, if each such flag's
+ *  partitioning assumptions are documented) or they aren't.
+ *
+ *  The second case implies that "x hasFlag FOO" and "x.isFoo" have
+ *  different semantics, and this we can't live with, because even if
+ *  we're smart enough to avoid being tripped up by that, the next guy isn't.
+ *
+ *  No extreme measures necessary, only renaming isFoo to something
+ *  which hews more closely to its implementation.  (Or renaming the flag.)
+ *
+    // Defined in the compiler Symbol
+    //
+    final def isLabel = isMethod && !hasFlag(ACCESSOR) && hasFlag(LABEL)
+    final def isLocal: Boolean = owner.isTerm
+    final def isModuleVar: Boolean = isVariable && hasFlag(MODULEVAR)
+    final def isStable =
+      isTerm &&
+      !hasFlag(MUTABLE) &&
+      (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE)) &&
+      !(tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
+    final def isStatic: Boolean =
+      hasFlag(STATIC) || isRoot || owner.isStaticOwner
+    override final def isTrait: Boolean =
+      isClass && hasFlag(TRAIT | notDEFERRED)     // A virtual class becomes a trait (part of DEVIRTUALIZE)
+
+    // Defined in the library Symbol
+    //
+          def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
+    final def isContravariant = isType && hasFlag(CONTRAVARIANT)
+    final def isCovariant = isType && hasFlag(COVARIANT)
+    final def isMethod = isTerm && hasFlag(METHOD)
+    final def isModule = isTerm && hasFlag(MODULE)
+    final def isPackage = isModule && hasFlag(PACKAGE)
+ *
+ */
+
+/** ISSUE #2: Implicit flag relationships must be made explicit.
+ *
+ *  For instance, every time the MODULE flag is set, the FINAL flag is
+ *  set along with it:
+ *
+   .setFlag(FINAL | MODULE | PACKAGE | JAVA)
+   .setFlag(FINAL | MODULE | PACKAGE | JAVA).setInfo(rootLoader)
+   new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
+   new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
+   val m = new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
+   setFlag(module.getFlag(ModuleToClassFlags) | MODULE | FINAL)
+   sourceModule.flags = MODULE | FINAL
+
+ * However the same is not true of when the MODULE flag is cleared:
+
+    sym.resetFlag(MODULE)
+    .setFlag(sym.flags | STABLE).resetFlag(MODULE)
+    sym.resetFlag(MODULE | FINAL | CASE)
+
+ *  It's not relevant whether this example poses any issues: we must
+ *  not tolerate these uncertainties.  If the flags are to move together
+ *  then both setting and clearing have to be encapsulated.  If there
+ *  is a useful and used distinction between the various permutations
+ *  of on and off, then it must be documented.  It's the only way!
+ */
+
 import Flags._
 
 /** Common code utilized by Modifiers (which carry the flags associated
@@ -63,6 +133,10 @@ trait HasFlags {
    */
   def hasAllFlags(mask: Long): Boolean
 
+  /** Whether this entity has NONE of the flags in the given mask.
+   */
+  def hasNoFlags(mask: Long): Boolean = !hasFlag(mask)
+
   // Tests which come through cleanly: both Symbol and Modifiers use these
   // identically, testing for a single flag.
   def isCase          = hasFlag(CASE     )
@@ -97,10 +171,15 @@ trait HasFlags {
 
   // Problematic:
   // DEFAULTPARAM overloaded with TRAIT
-  def hasDefault       = isParameter && hasFlag(DEFAULTPARAM)
-  def hasDefaultFlag   = hasFlag(DEFAULTPARAM)
+  def hasDefault     = isParameter && hasFlag(DEFAULTPARAM)
+  def hasDefaultFlag = hasFlag(DEFAULTPARAM)
   // def isTrait          = hasFlag(TRAIT    )
   // def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
+
+  // Straightforwardly named accessors already being used differently
+  def hasStaticFlag  = hasFlag(STATIC)
+  def hasLocalFlag   = hasFlag(LOCAL)
+  def hasModuleFlag  = hasFlag(MODULE)
 
   // Problematic:
   // ABSTRACT and DEFERRED too easy to confuse, and
