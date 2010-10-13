@@ -168,11 +168,11 @@ trait Typers { self: Analyzer =>
     import context0.unit
 
     val infer = new Inferencer(context0) {
-      override def isCoercible(tp: Type, pt: Type): Boolean =
+      override def isCoercible(tp: Type, pt: Type): Boolean = undoLog undo { // #3281
         tp.isError || pt.isError ||
         context0.implicitsEnabled && // this condition prevents chains of views
         inferView(EmptyTree, tp, pt, false) != EmptyTree
-    }
+      }}
 
     /** Find implicit arguments and pass them to given tree.
      */
