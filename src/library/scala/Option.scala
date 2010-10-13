@@ -69,6 +69,11 @@ object Option {
  *  }
  *  }}}
  *
+ *  @note Many of the methods in here are duplicative with those
+ *  in the Traversable hierarchy, but they are duplicated for a reason:
+ *  the implicit conversion tends to leave one with an Iterable in
+ *  situations where one could have retained an Option.
+ *
  *  @author  Martin Odersky
  *  @author  Matthias Zenger
  *  @version 1.1, 16/01/2007
@@ -148,6 +153,14 @@ sealed abstract class Option[+A] extends Product {
    */
   def filter(p: A => Boolean): Option[A] =
     if (isEmpty || p(this.get)) this else None
+
+  /** Returns this $option if it is nonempty '''and''' applying the predicate $p to
+   * this $option's value returns false. Otherwise, return $none.
+   *
+   *  @param  p   the predicate used for testing.
+   */
+  def filterNot(p: A => Boolean): Option[A] =
+    if (isEmpty || !p(this.get)) this else None
 
   /** Necessary to keep $option from being implicitly converted to
    *  [[scala.collection.Iterable]] in `for` comprehensions.
