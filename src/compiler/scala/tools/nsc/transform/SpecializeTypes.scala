@@ -27,54 +27,53 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   type TypeEnv = immutable.Map[Symbol, Type]
   def emptyEnv: TypeEnv = immutable.ListMap.empty[Symbol, Type]
 
-  import definitions.SpecializedClass
+  import definitions.{
+    RootClass, BooleanClass, UnitClass, ArrayClass, ScalaValueClasses,
+    SpecializedClass, RepeatedParamClass, JavaRepeatedParamClass
+  }
+  private def isSpecialized(sym: Symbol) = sym hasAnnotation SpecializedClass
+
   object TypeEnv {
     /** Return a new type environment binding specialized type parameters of sym to
      *  the given args. Expects the lists to have the same length.
      */
     def fromSpecialization(sym: Symbol, args: List[Type]): TypeEnv = {
       assert(sym.info.typeParams.length == args.length, sym + " args: " + args)
-      var env = emptyEnv
-      for ((tvar, tpe) <- sym.info.typeParams.zip(args) if tvar.hasAnnotation(SpecializedClass))
-        env = env + ((tvar, tpe))
-      env
+      emptyEnv ++ (sym.info.typeParams zip args filter (kv => isSpecialized(kv._1)))
     }
 
     /** Is this typeenv included in `other'? All type variables in this environment
      *  are defined in `other' and bound to the same type.
      */
-    def includes(t1: TypeEnv, t2: TypeEnv) = {
-      t1 forall { kv =>
-        t2.get(kv._1) match {
-          case Some(v2) => v2 == kv._2
-          case _ => false
-        }
-      }
+    def includes(t1: TypeEnv, t2: TypeEnv) = t1 forall {
+      case (sym, tpe) =>
+        t2 get sym exists (_ == tpe)
     }
 
     /** Reduce the given environment to contain mappings only for type variables in tps. */
-    def restrict(env: TypeEnv, tps: immutable.Set[Symbol]): TypeEnv = {
-      env filter { kv => tps.contains(kv._1)}
-    }
+    def restrict(env: TypeEnv, tps: immutable.Set[Symbol]): TypeEnv =
+      env filterKeys tps toMap
 
     /** Is the given environment a valid specialization for sym?
      *  It is valid if each binding is from a @specialized type parameter in sym (or its owner)
      *  to a type for which `sym' is specialized.
      */
     def isValid(env: TypeEnv, sym: Symbol): Boolean = {
-      def validBinding(tvar: Symbol, tpe: Type, sym: Symbol) =
-        (tvar.hasAnnotation(SpecializedClass)
-         && sym.typeParams.contains(tvar)
-         && concreteTypes(tvar).contains(tpe))
-      env forall { binding =>
-        val (tvar, tpe) = binding
+      def validBinding(tvar: Symbol, tpe: Type, sym: Symbol) = (
+        isSpecialized(tvar)
+        && sym.typeParams.contains(tvar)
+        && concreteTypes(tvar).contains(tpe)
+      )
+      env forall {
+        case (tvar, tpe) =>
 //         log("isValid: " + env + " sym: " + sym + " sym.tparams: " + sym.typeParams)
 //         log("Flag " + tvar + ": " + tvar.hasAnnotation(SpecializedClass))
 //         log("tparams contains: " + sym.typeParams.contains(tvar))
 //         log("concreteTypes: " + concreteTypes.contains(tpe))
-        (validBinding(tvar, tpe, sym)
-         || ((sym.owner != definitions.RootClass)
-             && validBinding(tvar, tpe, sym.owner)))
+
+          validBinding(tvar, tpe, sym) || (
+            (sym.owner != RootClass) && validBinding(tvar, tpe, sym.owner)
+          )
       }
     }
   }
@@ -155,8 +154,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     /** Type bounds of a @specialized type var are now in the environment. */
     override def typeBoundsIn(env: TypeEnv): Boolean = {
       target.info.typeParams exists { tvar =>
-        (tvar.hasAnnotation(SpecializedClass)
-         && (specializedTypeVars(tvar.info.bounds) exists env.isDefinedAt))
+        isSpecialized(tvar) && (specializedTypeVars(tvar.info.bounds) exists env.isDefinedAt)
       }
     }
 
@@ -181,10 +179,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     splitParams(sym.info.typeParams)._1
 
   def splitParams(tps: List[Symbol]) =
-    tps.partition(_.hasAnnotation(SpecializedClass))
+    tps partition isSpecialized
 
   def unspecializedArgs(sym: Symbol, args: List[Type]): List[Type] =
-    for ((tvar, tpe) <- sym.info.typeParams.zip(args) if !tvar.hasAnnotation(SpecializedClass))
+    for ((tvar, tpe) <- sym.info.typeParams.zip(args) if !isSpecialized(tvar))
       yield tpe
 
   val specializedType = new TypeMap {
@@ -240,16 +238,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  lazy val primitiveTypes = List(
-    definitions.UnitClass.tpe,
-    definitions.BooleanClass.tpe,
-    definitions.ByteClass.tpe,
-    definitions.ShortClass.tpe,
-    definitions.CharClass.tpe,
-    definitions.IntClass.tpe,
-    definitions.LongClass.tpe,
-    definitions.FloatClass.tpe,
-    definitions.DoubleClass.tpe)
+  lazy val primitiveTypes = ScalaValueClasses map (_.tpe)
 
    /** Return the concrete types `sym' should be specialized at.
    */
@@ -259,7 +248,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         args match {
           case Nil =>
             log(sym + " specialized on everything")
-            primitiveTypes.toList
+            primitiveTypes
           case _ =>
             val tpes = args.map(_.symbol.companionClass.tpe)
             log(sym + " specialized on " + tpes)
@@ -273,11 +262,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  of @specialized types in `tps'.
    */
   private def specializations(tps: List[Symbol]): List[TypeEnv] = {
-    val stps = tps filter (_.hasAnnotation(SpecializedClass))
-    val env = immutable.HashMap.empty[Symbol, Type]
-    count(stps, concreteTypes _) map { tps =>
-      immutable.HashMap.empty[Symbol, Type] ++ (stps zip tps)
-    }
+    val stps = tps filter isSpecialized
+    count(stps, concreteTypes _) map (tps => immutable.HashMap(stps zip tps: _*))
   }
 
   /** Generate all arrangements with repetitions from the list of values,
@@ -296,12 +282,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *    - constructors of specialized classes
    *    - normalized members whose type bounds appear in the environment
    */
-  private def needsSpecialization(env: TypeEnv, sym: Symbol): Boolean = {
-    (specializedTypeVars(sym).intersect(env.keySet).nonEmpty
-     || (sym.isClassConstructor && sym.enclClass.typeParams.exists(_.hasAnnotation(SpecializedClass)))
-     || (isNormalizedMember(sym) && info(sym).typeBoundsIn(env)))
-
-  }
+  private def needsSpecialization(env: TypeEnv, sym: Symbol): Boolean = (
+    specializedTypeVars(sym).intersect(env.keySet).nonEmpty
+     || (sym.isClassConstructor && (sym.enclClass.typeParams exists isSpecialized))
+     || (isNormalizedMember(sym) && info(sym).typeBoundsIn(env))
+  )
 
   def isNormalizedMember(m: Symbol): Boolean =
     (m.hasFlag(SPECIALIZED) && (info.get(m) match {
@@ -328,13 +313,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case TypeRef(pre, sym, args) =>
       if (sym.isAliasType)
         specializedTypeVars(tpe.normalize)
-      else if (   sym.isTypeParameter && sym.hasAnnotation(SpecializedClass)
-               || (sym.isTypeSkolem && sym.deSkolemize.hasAnnotation(SpecializedClass)))
+      else if (sym.isTypeParameter && isSpecialized(sym)
+               || (sym.isTypeSkolem && isSpecialized(sym.deSkolemize)))
         immutable.ListSet.empty + sym
-      else if (sym == definitions.ArrayClass)
+      else if (sym == ArrayClass)
         specializedTypeVars(args)
       else {
-        val extra = for ((tp, arg) <- sym.typeParams.zip(args) if tp.hasAnnotation(SpecializedClass))
+        val extra = for ((tp, arg) <- sym.typeParams.zip(args) if isSpecialized(tp))
           yield specializedTypeVars(arg).toList
         immutable.ListSet.empty[Symbol] ++ extra.flatten
       }
@@ -547,7 +532,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val specSetter = mkAccessor(specVal, nme.getterToSetter(specGetter.name))
                 .resetFlag(STABLE)
               specSetter.setInfo(MethodType(specSetter.newSyntheticValueParams(List(specVal.info)),
-                                            definitions.UnitClass.tpe))
+                                            UnitClass.tpe))
               val origSetter = overrideIn(cls, m.setter(clazz))
               info(origSetter) = Forward(specSetter)
               enterMember(specSetter)
@@ -786,7 +771,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   private def unify(tp1: Type, tp2: Type, env: TypeEnv): TypeEnv = {
 //    println("\tunify \t" + tp1 + "\n\t\t" + tp2)
     (tp1, tp2) match {
-    case (TypeRef(_, sym1, _), _) if sym1.hasAnnotation(SpecializedClass) =>
+    case (TypeRef(_, sym1, _), _) if isSpecialized(sym1) =>
       if (definitions.isValueClass(tp2.typeSymbol))
         env + ((sym1, tp2))
       else
@@ -882,8 +867,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   override def transformInfo(sym: Symbol, tpe: Type): Type = {
     val res = if (!settings.nospecialization.value || !currentRun.compiles(sym)) tpe match {
       case PolyType(targs, ClassInfoType(base, decls, clazz))
-              if clazz != definitions.RepeatedParamClass
-              && clazz != definitions.JavaRepeatedParamClass
+              if clazz != RepeatedParamClass
+              && clazz != JavaRepeatedParamClass
               && !clazz.hasFlag(JAVA) =>
         val parents = base map specializedType
         if (settings.debug.value) log("transformInfo (poly) " + clazz + " with parents1: " + parents + " ph: " + phase)
@@ -1373,8 +1358,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
       if (hasSpecializedFields) {
-        import definitions.BooleanClass
-
         val isSpecializedInstance = cls.hasFlag(SPECIALIZED) || cls.info.parents.exists(_.typeSymbol.hasFlag(SPECIALIZED))
         val sym = cls.newMethod(nme.SPECIALIZED_INSTANCE, cls.pos)
                      .setInfo(MethodType(Nil, BooleanClass.tpe))

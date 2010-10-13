@@ -97,8 +97,15 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def Boolean_or  = getMember(BooleanClass, nme.ZOR)
 
     def ScalaValueClasses = List(
-      UnitClass, ByteClass, ShortClass, IntClass, LongClass,
-      CharClass, FloatClass, DoubleClass, BooleanClass
+      UnitClass,
+      BooleanClass,
+      ByteClass,
+      ShortClass,
+      CharClass,
+      IntClass,
+      LongClass,
+      FloatClass,
+      DoubleClass
     )
 
     // exceptions and other throwables
