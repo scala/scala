@@ -92,8 +92,8 @@ def m = {
   val x = "three"
   val y : String @Annot(x) = x
   y
-} // x should be existentially bound
-m: java.lang.String @Annot(x) forSome { val x: java.lang.String }
+} // x should not escape the local scope with a narrow type
+m: String @Annot("three")
 
 -----
 def n(y: String) = {

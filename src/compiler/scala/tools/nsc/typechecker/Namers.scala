@@ -577,9 +577,27 @@ trait Namers { self: Analyzer =>
       sym.setInfo(selftpe)
     }
 
-    private def widenIfNotFinal(sym: Symbol, tpe: Type, pt: Type): Type = {
+    /** This method has a big impact on the eventual compiled code.
+     *  At this point many values have the most specific possible
+     *  type (e.g. in val x = 42, x's type is Int(42), not Int) but
+     *  most need to be widened to avoid undesirable propagation of
+     *  those singleton types.
+     *
+     *  However, the compilation of pattern matches into switch
+     *  statements depends on constant folding, which will only take
+     *  place for those values which aren't widened.  The "final"
+     *  modifier is the present means of signaling that a constant
+     *  value should not be widened, so it has a use even in situations
+     *  whether it is otherwise redundant (such as in a singleton.)
+     *  Locally defined symbols are also excluded from widening.
+     *
+     *  PP:is there a useful difference in practice between widen
+     *  and deconst which wouldn't be achieved by simply calling widen
+     *  in both situations? If so, could an example of this be added?
+     */
+    private def widenIfNecessary(sym: Symbol, tpe: Type, pt: Type): Type = {
       val getter =
-        if (sym.isValue && sym.owner.isClass && (sym hasFlag PRIVATE))
+        if (sym.isValue && sym.owner.isClass && sym.isPrivate)
           sym.getter(sym.owner)
         else sym
       def isHidden(tp: Type): Boolean = tp match {
@@ -597,8 +615,8 @@ trait Namers { self: Analyzer =>
       if ((sym.isVariable || sym.isMethod && !(sym hasFlag ACCESSOR)))
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
-      else if (!(sym hasFlag FINAL)) tpe1
-      else tpe
+      else if (sym.isFinal || sym.isLocal) tpe
+      else tpe1
     }
 
     // sets each ValDef's symbol
@@ -895,7 +913,7 @@ trait Namers { self: Analyzer =>
           // replace deSkolemized symbols with skolemized ones (for resultPt computed by looking at overridden symbol, right?)
           val pt = resultPt.substSym(tparamSyms, tparams map (_.symbol))
           // compute result type from rhs
-          tpt defineType widenIfNotFinal(meth, typer.computeType(rhs, pt), pt)
+          tpt defineType widenIfNecessary(meth, typer.computeType(rhs, pt), pt)
           tpt setPos meth.pos.focus
           tpt.tpe
         } else typer.typedType(tpt).tpe
@@ -1138,7 +1156,7 @@ trait Namers { self: Analyzer =>
                   context.error(tpt.pos, "missing parameter type");
                   ErrorType
                 } else {
-                  tpt defineType widenIfNotFinal(
+                  tpt defineType widenIfNecessary(
                     sym,
                     newTyper(typer1.context.make(vdef, sym)).computeType(rhs, WildcardType),
                     WildcardType)

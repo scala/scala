@@ -61,7 +61,7 @@ object Test {
       |  val x = "three"
       |  val y : String @Annot(x) = x
       |  y
-      |} // x should be existentially bound""",
+      |} // x should not escape the local scope with a narrow type""",
 
     """def n(y: String) = {
       |  def m(x: String) : String @Annot(x) = {
