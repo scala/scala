@@ -125,7 +125,6 @@ cd $SCALACHECK_DIR
 svn export --force https://scalacheck.googlecode.com/svn/branches/scalanightly/src/main/scala .
 
 # remove unneeded class
-rm ../src/scalacheck/org/scalacheck/ScalaCheckFramework.scala
-
+rm org/scalacheck/ScalaCheckFramework.scala
 
 success
