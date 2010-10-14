@@ -1,12 +1,131 @@
 # 
-# Updates ScalaCheck sources from ScalaCheck nightly branch
+# 
+# ScalaCheck update script.
+# 
 # 
 
+
+# vars
+TMPFILE=`mktemp`
+SCALACHECK_REL_DIR=src/scalacheck
+DESC="Updates ScalaCheck sources from ScalaCheck nightly branch."
+WARN="Make sure your repository checkout is clean. Will remove and delete existing ScalaCheck source in <path-to-scala-repo>/$SCALACHECK_REL_DIR!"
+USAGE="  Usage: updatescalacheck <path-to-scala-repo>"
+
+
+# functions
+function error() {
+  rm $TMPFILE
+  exit 1
+}
+
+function success() {
+  rm $TMPFILE
+  exit 0
+}
+
+
+
+# check num args
+if [ $# -ne 1 ]
+then
+  echo $DESC
+  echo $WARN
+  echo "Must provide path to scala repo checkout dir."
+  echo $USAGE
+  error
+fi
+
+if [[ $1 = "--help" ]]
+then
+  echo $DESC
+  echo $WARN
+  echo $USAGE
+  error
+fi
+
+if [ ! -d $1 ]
+then
+  echo "The folder $1 does not exist."
+  error
+fi
+
+# go to scala dir
+SCALA_DIR=$1
+cd $SCALA_DIR
+
+# 
+# check if checkout is svn and up to date
+# otherwise check if its git and up to date
+# 
+if [ -d .svn ] || [ -d _svn ]
+then
+  #
+  # svn repo - check if clean
+  #
+  svn status > $TMPFILE
+  if [ $? -ne 0 ]
+  then
+    echo "Detected .svn dir, but svn status returns an error. Check if this is really an .svn repo."
+    error
+  fi
+  echo "svn status output: "
+  cat $TMPFILE
+  echo "grep found: "
+  cat $TMPFILE | grep "^\(?\|A\|D\|M\|C\|!\|~\)"
+  GREPRETCODE=$?
+  echo "grep return code: $GREPRETCODE"
+  if [ $GREPRETCODE -eq 0 ]
+  then
+    echo "Working directory does not seem to be clean. Do a clean checkout and try again."
+    error
+  fi
+  echo "Checkout appears to be clean."
+elif [ -d .git ]
+then
+  #
+  # git repo - check if clean
+  #
+  git status --porcelain > $TMPFILE
+  if [ $? -ne 0 ]
+  then
+    echo "Detected .git dir, but git status returns an error. Check if this is really a .git repo."
+    error
+  fi
+  echo "git status output: "
+  cat $TMPFILE
+  echo "grep found: "
+  cat $TMPFILE | grep "^\(A\|M\|D\|R\|C\|U\)"
+  GREPRETCODE=$?
+  echo "grep return code: $GREPRETCODE"
+  if [ $GREPRETCODE -eq 0 ]
+  then
+    echo "Working directory does not seem to be clean. Do a clean checkout and try again."
+    error
+  fi
+  echo "Checkout appears to be clean."
+else
+  # no repo detected
+  echo "The directory $SCALA_DIR does not seem to be a repository."
+  error
+fi
+
+# check if ScalaCheck source dir exists
+if [ ! -d $SCALACHECK_REL_DIR ]
+then
+  echo "ScalaCheck source dir does not seem to exist in: $SCALA_DIR/$SCALACHECK_REL_DIR"
+  echo "Please create one and try again."
+  error
+fi
+
+# go to ScalaCheck source dir
+cd $SCALACHECK_DIR
+
 # update sources
-rm -r -f ../src/scalacheck
-svn export https://scalacheck.googlecode.com/svn/branches/scalanightly/src/main/scala ../src/scalacheck
+svn export --force https://scalacheck.googlecode.com/svn/branches/scalanightly/src/main/scala .
 
 # remove unneeded class
 rm ../src/scalacheck/org/scalacheck/ScalaCheckFramework.scala
 
 
+success
