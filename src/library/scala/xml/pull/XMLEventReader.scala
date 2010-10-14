@@ -52,6 +52,7 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
   // or at least as much as it can fit in the queue.)
   def stop = {
     produce(POISON)
+    parser.pause()
     parserThread.interrupt()
   }
 
@@ -87,8 +88,21 @@ class XMLEventReader(src: Source) extends ProducerConsumerIterator[XMLEvent]
     def entityRef(pos: Int, n: String)                    = setEvent(EvEntityRef(n))
     def text(pos: Int, txt:String)                        = setEvent(EvText(txt))
 
+    // use to make thread sleep on XMLEventReader.stop
+    @volatile private var pauseRequested = false
+    // requesting this thread to sleep so that it can be interrupted.
+    def pause() { pauseRequested = true }
+
     override def run() {
-      curInput = input
+      curInput = new Source {
+        val iter = new Iterator[Char] {
+          def hasNext = input.hasNext
+          def next() = {
+            if (pauseRequested) Thread.sleep(1000)
+            input.next()
+          }
+        }
+      }
       interruptibly { this.initialize.document() }
       setEvent(POISON)
     }
