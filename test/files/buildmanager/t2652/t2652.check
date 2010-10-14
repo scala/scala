@@ -3,7 +3,7 @@ compiling Set(A.scala, B.scala)
 Changes: Map()
 builder > A.scala
 compiling Set(A.scala)
-Changes: Map(class A -> List(Added(Definition(A.x$mBc$sp)), Added(Definition(A.x$mCc$sp)), Added(Definition(A.x$mDc$sp)), Added(Definition(A.x$mFc$sp)), Added(Definition(A.x$mIc$sp)), Added(Definition(A.x$mLc$sp)), Added(Definition(A.x$mSc$sp)), Added(Definition(A.x$mVc$sp)), Added(Definition(A.x$mZc$sp)), Changed(Definition(A.x))[method x changed from [T](t: T)T to [T](t: T)T flags: <method>]))
+Changes: Map(class A -> List(Added(Definition(A.x$mBc$sp)), Added(Definition(A.x$mCc$sp)), Added(Definition(A.x$mDc$sp)), Added(Definition(A.x$mFc$sp)), Added(Definition(A.x$mIc$sp)), Added(Definition(A.x$mJc$sp)), Added(Definition(A.x$mSc$sp)), Added(Definition(A.x$mVc$sp)), Added(Definition(A.x$mZc$sp)), Changed(Definition(A.x))[method x changed from [T](t: T)T to [T](t: T)T flags: <method>]))
 invalidate B.scala because it references changed definition [Changed(Definition(A.x))[method x changed from [T](t: T)T to [T](t: T)T flags: <method>]]
 compiling Set(B.scala)
 Changes: Map(object B -> List())
