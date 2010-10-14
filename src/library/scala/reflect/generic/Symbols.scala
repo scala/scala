@@ -128,7 +128,7 @@ trait Symbols { self: Universe =>
     def isAbstractType = false  // to be overridden
     private[scala] def isSkolem = false // to be overridden
 
-          def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
+    override def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
     final def isAbstractClass = isClass && hasFlag(ABSTRACT)
     final def isAbstractOverride = isTerm && hasFlag(ABSOVERRIDE)
     final def isBridge = hasFlag(BRIDGE)

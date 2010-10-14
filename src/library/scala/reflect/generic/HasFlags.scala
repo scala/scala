@@ -173,7 +173,7 @@ trait HasFlags {
   // DEFAULTPARAM overloaded with TRAIT
   def hasDefault     = isParameter && hasFlag(DEFAULTPARAM)
   def hasDefaultFlag = hasFlag(DEFAULTPARAM)
-  // def isTrait          = hasFlag(TRAIT    )
+  @deprecated("") def isTrait        = hasFlag(TRAIT)
   // def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
 
   // Straightforwardly named accessors already being used differently
@@ -185,7 +185,7 @@ trait HasFlags {
   // ABSTRACT and DEFERRED too easy to confuse, and
   // ABSTRACT + OVERRIDE ==> ABSOVERRIDE adds to it.
   //
-  // def isAbstract      = hasFlag(ABSTRACT )
+  @deprecated("") def isAbstract = hasFlag(ABSTRACT)
   // final def isAbstractClass = isClass && hasFlag(ABSTRACT)
   // def isAbstractType = false  // to be overridden
 
