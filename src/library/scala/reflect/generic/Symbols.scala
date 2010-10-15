@@ -130,7 +130,6 @@ trait Symbols { self: Universe =>
 
     override def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
     final def isAbstractClass = isClass && hasFlag(ABSTRACT)
-    final def isAbstractOverride = isTerm && hasFlag(ABSOVERRIDE)
     final def isBridge = hasFlag(BRIDGE)
     final def isContravariant = isType && hasFlag(CONTRAVARIANT)
     final def isCovariant = isType && hasFlag(COVARIANT)
@@ -138,8 +137,6 @@ trait Symbols { self: Universe =>
     final def isExistentiallyBound = isType && hasFlag(EXISTENTIAL)
     final def isGetterOrSetter = hasFlag(ACCESSOR)
     final def isImplClass = isClass && hasFlag(IMPLCLASS) // Is this symbol an implementation class for a mixin?
-    final def isInterface = hasFlag(INTERFACE)
-    final def isJavaDefined = hasFlag(JAVA)
     final def isLazyAccessor = isLazy && lazyAccessor != NoSymbol
     final def isMethod = isTerm && hasFlag(METHOD)
     final def isModule = isTerm && hasFlag(MODULE)
@@ -147,7 +144,6 @@ trait Symbols { self: Universe =>
     final def isOverloaded = hasFlag(OVERLOADED)
     final def isRefinementClass = isClass && name == mkTypeName(nme.REFINE_CLASS_NAME)
     final def isSourceMethod = isMethod && !hasFlag(STABLE) // exclude all accessors!!!
-    final def isSuperAccessor = hasFlag(SUPERACCESSOR)
     final def isTypeParameter = isType && isParameter && !isSkolem
 
     /** Package tests */

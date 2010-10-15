@@ -393,7 +393,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     final def isValueParameter = isTerm && hasFlag(PARAM)
     final def isLocalDummy = isTerm && nme.isLocalDummyName(name)
-    final def isLabel = isMethod && !hasFlag(ACCESSOR) && hasFlag(LABEL)
     final def isInitializedToDefault = !isType && hasAllFlags(DEFAULTINIT | ACCESSOR)
     final def isClassConstructor = isTerm && (name == nme.CONSTRUCTOR)
     final def isMixinConstructor = isTerm && (name == nme.MIXIN_CONSTRUCTOR)
@@ -512,8 +511,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       ((hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor) ||
        (hasFlag(LIFTED) && isModule && isMethod))
 
-    /** Is this symbol a module variable ? */
-    final def isModuleVar: Boolean = isVariable && hasFlag(MODULEVAR)
+    /** Is this symbol a module variable ?
+     *  MUTABLE is needed to partition overloaded flags MODULEVAR and SYNTHETICMETH.
+     */
+    final def isModuleVar: Boolean = hasAllFlags(MODULEVAR | MUTABLE)
 
     /** Is this symbol static (i.e. with no outer instance)? */
     final def isStatic: Boolean =

@@ -21,7 +21,7 @@ package generic
  *
     // Defined in the compiler Symbol
     //
-    final def isLabel = isMethod && !hasFlag(ACCESSOR) && hasFlag(LABEL)
+    final def isLabel = isMethod && !hasAccessorFlag && hasFlag(LABEL)
     final def isLocal: Boolean = owner.isTerm
     final def isModuleVar: Boolean = isVariable && hasFlag(MODULEVAR)
     final def isStable =
@@ -139,25 +139,28 @@ trait HasFlags {
 
   // Tests which come through cleanly: both Symbol and Modifiers use these
   // identically, testing for a single flag.
-  def isCase          = hasFlag(CASE     )
-  def isFinal         = hasFlag(FINAL    )
-  def isImplicit      = hasFlag(IMPLICIT )
-  def isLazy          = hasFlag(LAZY     )
-  def isMutable       = hasFlag(MUTABLE  )  // in Modifiers, formerly isVariable
-  def isOverride      = hasFlag(OVERRIDE )
-  def isPrivate       = hasFlag(PRIVATE  )
-  def isProtected     = hasFlag(PROTECTED)
-  def isSynthetic     = hasFlag(SYNTHETIC)
+  def isCase      = hasFlag(CASE     )
+  def isFinal     = hasFlag(FINAL    )
+  def isImplicit  = hasFlag(IMPLICIT )
+  def isLazy      = hasFlag(LAZY     )
+  def isMutable   = hasFlag(MUTABLE  )  // in Modifiers, formerly isVariable
+  def isOverride  = hasFlag(OVERRIDE )
+  def isPrivate   = hasFlag(PRIVATE  )
+  def isProtected = hasFlag(PROTECTED)
+  def isSynthetic = hasFlag(SYNTHETIC)
+  def isInterface = hasFlag(INTERFACE)
 
   // Newly introduced based on having a reasonably obvious clean translation.
-  def isPrivateLocal   = isPrivate && hasFlag(LOCAL)
-  def isProtectedLocal = isProtected && hasFlag(LOCAL)
+  def isPrivateLocal   = hasAllFlags(PRIVATE | LOCAL)
+  def isProtectedLocal = hasAllFlags(PROTECTED | LOCAL)
   def isParamAccessor  = hasFlag(PARAMACCESSOR)
   def isCaseAccessor   = hasFlag(CASEACCESSOR)
+  def isSuperAccessor  = hasFlag(SUPERACCESSOR)
+  def isLifted         = hasFlag(LIFTED)
 
   // Formerly the Modifiers impl did not include the access boundary check,
   // which must have been a bug.
-  def isPublic = !hasFlag(PRIVATE | PROTECTED) && !hasAccessBoundary
+  def isPublic = hasNoFlags(PRIVATE | PROTECTED) && !hasAccessBoundary
 
   // Renamed the Modifiers impl from isArgument.
   def isParameter = hasFlag(PARAM)
@@ -169,23 +172,48 @@ trait HasFlags {
   // Removed !isClass qualification since the flag isn't overloaded.
   def isDeferred = hasFlag(DEFERRED )
 
-  // Problematic:
-  // DEFAULTPARAM overloaded with TRAIT
-  def hasDefault     = isParameter && hasFlag(DEFAULTPARAM)
-  def hasDefaultFlag = hasFlag(DEFAULTPARAM)
-  @deprecated("") def isTrait        = hasFlag(TRAIT)
-  // def isTrait: Boolean = isClass && hasFlag(TRAIT) // refined later for virtual classes.
+  // Dropped isTerm condition because flag isn't overloaded.
+  def isAbstractOverride = hasFlag(ABSOVERRIDE)
 
-  // Straightforwardly named accessors already being used differently
-  def hasStaticFlag  = hasFlag(STATIC)
-  def hasLocalFlag   = hasFlag(LOCAL)
-  def hasModuleFlag  = hasFlag(MODULE)
+  def isDefaultInit = hasFlag(DEFAULTINIT)
 
+  // Disambiguating: DEFAULTPARAM, TRAIT
+  def hasDefault = hasAllFlags(DEFAULTPARAM | PARAM)
+  def isTrait    = hasFlag(TRAIT) && !hasFlag(PARAM)
+
+  // Straightforwardly named accessors already being used differently.
+  // These names are most likely temporary.
+  def hasAbstractFlag      = hasFlag(ABSTRACT)
+  def hasAccessorFlag      = hasFlag(ACCESSOR)
+  def hasLocalFlag         = hasFlag(LOCAL)
+  def hasModuleFlag        = hasFlag(MODULE)
+  def hasPackageFlag       = hasFlag(PACKAGE)
+  def hasPreSuperFlag      = hasFlag(PRESUPER)
+  def hasStableFlag        = hasFlag(STABLE)
+  def hasStaticFlag        = hasFlag(STATIC)
+
+   // Disambiguating: BYNAMEPARAM, CAPTURED, COVARIANT.
+  def isByNameParam      = hasAllFlags(BYNAMEPARAM | PARAM)
+  // Nope, these aren't going to fly:
+  // def isCapturedVariable = hasAllFlags(CAPTURED | MUTABLE)
+  // def isCovariant        = hasFlag(COVARIANT) && hasNoFlags(PARAM | MUTABLE)
+
+  // Disambiguating: LABEL, CONTRAVARIANT, INCONSTRUCTOR
+  def isLabel = hasAllFlags(LABEL | METHOD) && !hasAccessorFlag
+  // Cannot effectively disambiguate the others at this level.
+  def hasContravariantFlag = hasFlag(CONTRAVARIANT)
+  def hasInConstructorFlag = hasFlag(INCONSTRUCTOR)
+
+  // Name
+  def isJavaDefined = hasFlag(JAVA)
+
+  // Keeping some potentially ambiguous names around so as not to break
+  // the rest of the world
+  @deprecated("") def isAbstract = hasFlag(ABSTRACT)
   // Problematic:
   // ABSTRACT and DEFERRED too easy to confuse, and
   // ABSTRACT + OVERRIDE ==> ABSOVERRIDE adds to it.
   //
-  @deprecated("") def isAbstract = hasFlag(ABSTRACT)
   // final def isAbstractClass = isClass && hasFlag(ABSTRACT)
   // def isAbstractType = false  // to be overridden
 
@@ -195,6 +223,6 @@ trait HasFlags {
   // *ACCESSOR flags. Perhaps something like isSimpleAccessor.
   //
   // def isAccessor      = hasFlag(ACCESSOR )
-  // final def isGetterOrSetter = hasFlag(ACCESSOR)
+  // final def isGetterOrSetter = hasAccessorFlag
 }
 
