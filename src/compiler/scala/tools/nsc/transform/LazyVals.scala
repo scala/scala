@@ -12,7 +12,6 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
   import CODE._
 
   val phaseName: String = "lazyvals"
-  val FLAGS_PER_WORD: Int
 
   def newTransformer(unit: CompilationUnit): Transformer =
     new LazyValues(unit)
@@ -152,6 +151,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
     private def mkSetFlag(bmp: Symbol, mask: Tree): Tree =
       Ident(bmp) === (Ident(bmp) INT_| mask)
 
+    final val FLAGS_PER_WORD = 32
     val bitmaps = new mutable.HashMap[Symbol, List[Symbol]] {
       override def default(meth: Symbol) = Nil
     }
