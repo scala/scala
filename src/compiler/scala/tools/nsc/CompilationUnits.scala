@@ -16,7 +16,7 @@ trait CompilationUnits { self: Global =>
   class CompilationUnit(val source: SourceFile) extends CompilationUnitTrait {
 
     /** the fresh name creator */
-    var fresh : FreshNameCreator = new FreshNameCreator.Default
+    var fresh: FreshNameCreator = new FreshNameCreator.Default
 
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree

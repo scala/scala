@@ -49,20 +49,11 @@ trait EtaExpansion { self: Analyzer =>
    */
   def etaExpand(unit : CompilationUnit, tree: Tree): Tree = {
     val tpe = tree.tpe
-    val symbolHash = ""
     var cnt = 0 // for NoPosition
-    def freshName(pos : util.Position, n : Int) = {
+    def freshName() = {
       cnt += 1
-      newTermName(unit.fresh.newName(pos, "eta$" + (cnt - 1) + "$"))
-      // Note - the comment below made more sense before I ripped inIDE out -
-      // I leave it in to give context to the todo: at the bottom.
-      // Martin to Sean: I removed the
-      // else if (n == 0) branch and changed `n' in the line above to `(cnt - 1)'
-      // this was necessary because otherwise curried eta-expansions would get the same
-      // symbol. An example which fails test/files/run/Course-2002-02.scala
-      // todo: review and get rid of the `n' argument (which is unused right now).
+      newTermName(unit.fresh.newName("eta$" + (cnt - 1) + "$"))
     }
-    // { cnt = cnt + 1; newTermName("eta$" + cnt) }
     val defs = new ListBuffer[Tree]
 
     /** Append to <code>defs</code> value definitions for all non-stable
@@ -75,7 +66,7 @@ trait EtaExpansion { self: Analyzer =>
       def liftout(tree: Tree): Tree =
         if (treeInfo.isPureExpr(tree)) tree
         else {
-          val vname: Name = freshName(tree.pos, 0)
+          val vname: Name = freshName()
           // Problem with ticket #2351 here
           defs += atPos(tree.pos) {
             ValDef(Modifiers(SYNTHETIC), vname, TypeTree(), tree)
@@ -107,10 +98,6 @@ trait EtaExpansion { self: Analyzer =>
     }
 
     /** Eta-expand lifted tree.
-     *
-     *  @param tree ...
-     *  @param tpe  ...
-     *  @return     ...
      */
     def expand(tree: Tree, tpe: Type): Tree = tpe match {
       case mt @ MethodType(paramSyms, restpe) if !mt.isImplicit =>

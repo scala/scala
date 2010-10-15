@@ -217,6 +217,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       sym setFlag (STABLE | SYNTHETIC)
       if (isTrait) sym setFlag DEFERRED
       sym.expandName(this)
+      // todo: stop depending on compiler bug (ticket #3871) to set referenced.
       sym.referenced = this
       sym
     }

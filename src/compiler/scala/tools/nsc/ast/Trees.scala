@@ -9,7 +9,7 @@ package ast
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.symtab.SymbolTable
 import scala.tools.nsc.symtab.Flags._
-import scala.tools.nsc.util.{FreshNameCreator, HashSet, SourceFile}
+import scala.tools.nsc.util.{ FreshNameCreator, HashSet, SourceFile }
 
 trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 

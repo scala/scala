@@ -544,7 +544,7 @@ trait ParallelMatching extends ast.TreeDSL
         }
 
       lazy val label =
-        owner.newLabel(scrut.pos, newName(scrut.pos, "failCont%")) setInfo MethodType(Nil, labelBody.tpe)
+        owner.newLabel(scrut.pos, newName("failCont%")) setInfo MethodType(Nil, labelBody.tpe)
 
       lazy val cond =
         handleOuter(rhs MEMBER_== scrut.id )

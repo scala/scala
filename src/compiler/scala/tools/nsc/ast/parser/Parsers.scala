@@ -73,12 +73,10 @@ self =>
     val in = new UnitScanner(unit, patches)
     in.init()
 
-    def freshName(pos: Position, prefix: String): Name =
-      unit.fresh.newName(pos, prefix)
+    def freshName(prefix: String): Name = unit.fresh.newName(prefix)
 
     def o2p(offset: Int): Position = new OffsetPosition(unit.source,offset)
     def r2p(start: Int, mid: Int, end: Int): Position = rangePos(unit.source, start, mid, end)
-
     def warning(offset: Int, msg: String) { unit.warning(o2p(offset), msg) }
 
     def deprecationWarning(offset: Int,
@@ -150,18 +148,12 @@ self =>
 
   abstract class Parser {
     val in: Scanner
-    //val unit : CompilationUnit
-    //import in.ScanPosition
-    def freshName(pos: Position, prefix: String): Name
-    def freshName(prefix: String): Name = freshName(NoPosition, prefix) // todo get rid of position
 
+    def freshName(prefix: String): Name
     def o2p(offset: Int): Position
     def r2p(start: Int, mid: Int, end: Int): Position
-    //private implicit def p2i(pos: Position) = pos.offset.get
 
     /** whether a non-continuable syntax error has been seen */
-    //private var syntaxErrorSeen = false
-
     private var lastErrorOffset : Int = -1
 
     object treeBuilder extends TreeBuilder {
@@ -1002,7 +994,7 @@ self =>
     /** WildcardType ::= `_' TypeBounds
      */
     def wildcardType(start: Int) = {
-      val pname = freshName(o2p(start), "_$").toTypeName
+      val pname = freshName("_$").toTypeName
       val t = atPos(start) { Ident(pname) }
       val bounds = typeBounds()
       val param = atPos(t.pos union bounds.pos) { makeSyntheticTypeParam(pname, bounds) }
@@ -1141,7 +1133,7 @@ self =>
       case WHILE =>
         val start = in.offset
         atPos(in.skipToken()) {
-          val lname: Name = freshName(o2p(start), nme.WHILE_PREFIX)
+          val lname: Name = freshName(nme.WHILE_PREFIX)
           val cond = condExpr()
           newLinesOpt()
           val body = expr()
@@ -1150,7 +1142,7 @@ self =>
       case DO =>
         val start = in.offset
         atPos(in.skipToken()) {
-          val lname: Name = freshName(o2p(start), nme.DO_WHILE_PREFIX)
+          val lname: Name = freshName(nme.DO_WHILE_PREFIX)
           val body = expr()
           if (isStatSep) in.nextToken()
           accept(WHILE)
@@ -1325,7 +1317,7 @@ self =>
           path(true, false)
         case USCORE =>
           val start = in.offset
-          val pname = freshName(o2p(start), "x$")
+          val pname = freshName("x$")
           in.nextToken()
           val id = atPos(start) (Ident(pname))
           val param = atPos(id.pos.focus){ makeSyntheticParam(pname) }

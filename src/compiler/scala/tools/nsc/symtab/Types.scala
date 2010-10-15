@@ -5194,7 +5194,7 @@ A type's typeSymbol should never be inspected directly.
 
   /** The greatest lower bound wrt <:< of a list of types */
   private def glb(ts: List[Type], depth: Int): Type = {
-    def glb0(ts0: List[Type]): Type = elimSuper(ts0 map (_.deconst)) match {// todo: deconst needed?
+    def glb0(ts0: List[Type]): Type = elimSuper(ts0) match {
       case List() => AnyClass.tpe
       case List(t) => t
       case ts @ PolyType(tparams, _) :: _ =>

@@ -88,16 +88,6 @@ abstract class ClosureElimination extends SubComponent {
    *
    */
   class ClosureElim {
-
-    /* fresh name counter */
-    var count = 0
-
-    def freshName(s: String) = {
-      val ret = s + this.count
-      this.count += 1
-      ret
-    }
-
     def analyzeClass(cls: IClass): Unit = if (settings.Xcloselim.value) {
       cls.methods.foreach { m =>
         analyzeMethod(m)
@@ -106,7 +96,6 @@ abstract class ClosureElimination extends SubComponent {
 
 
     val cpp = new copyPropagation.CopyAnalysis
-
 
     import copyPropagation._
 

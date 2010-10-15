@@ -9,25 +9,20 @@ package util
 import scala.collection.mutable.HashMap
 
 trait FreshNameCreator {
-
-  /** do not call before after type checking ends.
+  /** Do not call before after type checking ends.
+   *  PP: I think that directive needs to lose a word somewhere.
    */
-  @deprecated("use newName(Position, String) instead")
+  def newName(): String
   def newName(prefix: String): String
 
-  /** do not call before after type checking ends.
-   */
-  @deprecated("use newName(Position) instead")
-  def newName(): String
-
-  def newName(pos: util.Position, prefix: String): String
-  def newName(pos: util.Position): String
+  @deprecated("use newName(prefix)")
+  def newName(pos: util.Position, prefix: String): String = newName(prefix)
+  @deprecated("use newName()")
+  def newName(pos: util.Position): String = newName()
 }
 
 object FreshNameCreator {
-
   class Default extends FreshNameCreator {
-
     protected var counter = 0
     protected val counters = new HashMap[String, Int]
 
@@ -42,13 +37,9 @@ object FreshNameCreator {
       counters(safePrefix) = count
       safePrefix + count
     }
-    def newName(pos: util.Position, prefix: String) = newName(prefix)
-    def newName(pos: util.Position) = newName()
-
     def newName(): String = {
       counter += 1
       "$" + counter + "$"
     }
   }
-
 }
