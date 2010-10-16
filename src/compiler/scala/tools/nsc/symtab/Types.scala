@@ -4925,7 +4925,7 @@ A type's typeSymbol should never be inspected directly.
     else {
       val ts0 = tss map (_.head)
       val sym = minSym(ts0)
-      if (ts0 forall (t => t.typeSymbol == sym))
+      if (ts0 forall (_.typeSymbol == sym))
         mergePrefixAndArgs(elimSub(ts0, depth), 1, depth).toList ::: lubList(tss map (_.tail), depth)
       else
         lubList(tss map (ts => if (ts.head.typeSymbol == sym) ts.tail else ts), depth)
@@ -5009,7 +5009,7 @@ A type's typeSymbol should never be inspected directly.
         else abort("trying to do lub/glb of typevar "+tp)
       case t => t
     }
-    val strippedTypes = ts mapConserve (stripType)
+    val strippedTypes = ts mapConserve stripType
     (strippedTypes, quantified)
   }
 
@@ -5336,30 +5336,45 @@ A type's typeSymbol should never be inspected directly.
       val argss = tps map (_.normalize.typeArgs) // symbol equality (of the tp in tps) was checked using typeSymbol, which normalizes, so should normalize before retrieving arguments
       val capturedParams = new ListBuffer[Symbol]
       try {
-        val args = (sym.typeParams, argss.transpose).zipped map {
-          (tparam, as) =>
-            if (depth == 0)
-              if (tparam.variance == variance) AnyClass.tpe
-              else if (tparam.variance == -variance) NothingClass.tpe
-              else NoType
-            else
-              if (tparam.variance == variance) lub(as, decr(depth))
-              else if (tparam.variance == -variance) glb(as, decr(depth))
-              else {
-                val l = lub(as, decr(depth))
-                val g = glb(as, decr(depth))
-                if (l <:< g) l
-                else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
-                       // just err on the conservative side, i.e. with a bound that is too high.
-                       // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
-                  val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
-                  capturedParams += qvar
-                  qvar.tpe
+        if (sym == ArrayClass && phase.erasedTypes) {
+          // special treatment for lubs of array types after erasure:
+          // if argss contain one value type and some other type, the lub is Object
+          // if argss contain several reference types, the lub is an array over lub of argtypes
+          if (argss exists (_.isEmpty)) {
+            None  // something is wrong: an array without a type arg.
+          } else {
+            val args = argss map (_.head)
+            if (args.tail forall (_ =:= args.head)) Some(TypeRef(pre, sym, List(args.head)))
+            else if (args exists (arg => isValueClass(arg.typeSymbol))) Some(ObjectClass.tpe)
+            else Some(TypeRef(pre, sym, List(lub(args))))
+          }
+        } else {
+          val args = (sym.typeParams, argss.transpose).zipped map {
+            (tparam, as) =>
+              if (depth == 0)
+                if (tparam.variance == variance) AnyClass.tpe
+                else if (tparam.variance == -variance) NothingClass.tpe
+                else NoType
+              else
+                if (tparam.variance == variance) lub(as, decr(depth))
+                else if (tparam.variance == -variance) glb(as, decr(depth))
+                else {
+                  val l = lub(as, decr(depth))
+                  val g = glb(as, decr(depth))
+                  if (l <:< g) l
+                  else { // Martin: I removed this, because incomplete. Not sure there is a good way to fix it. For the moment we
+                         // just err on the conservative side, i.e. with a bound that is too high.
+                         // if(!(tparam.info.bounds contains tparam)){ //@M can't deal with f-bounds, see #2251
+
+                    val qvar = commonOwner(as) freshExistential "" setInfo TypeBounds(g, l)
+                    capturedParams += qvar
+                    qvar.tpe
+                  }
                 }
-              }
+          }
+          if (args contains NoType) None
+          else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
         }
-        if (args contains NoType) None
-        else Some(existentialAbstraction(capturedParams.toList, typeRef(pre, sym, args)))
       } catch {
         case ex: MalformedType => None
         case ex: IndexOutOfBoundsException =>  // transpose freaked out because of irregular argss
