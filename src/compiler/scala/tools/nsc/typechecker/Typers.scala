@@ -32,7 +32,8 @@ trait Typers { self: Analyzer =>
 
   // namer calls typer.computeType(rhs) on DefDef / ValDef when tpt is empty. the result
   // is cached here and re-used in typedDefDef / typedValDef
-  private val transformed = new HashMap[Tree, Tree]
+  // Also used to cache imports type-checked by namer.
+  val transformed = new HashMap[Tree, Tree]
 
   // currently not used at all (March 09)
   private val superDefs = new HashMap[Symbol, ListBuffer[Tree]]
@@ -682,7 +683,7 @@ trait Typers { self: Analyzer =>
     /** The member with given name of given qualifier tree */
     def member(qual: Tree, name: Name) = qual.tpe match {
       case ThisType(clazz) if (context.enclClass.owner.hasTransOwner(clazz)) =>
-      	// println("member")
+        // println("member "+qual.tpe+" . "+name+" "+qual.tpe.getClass)
         qual.tpe.member(name)
       case _  =>
         if (phase.next.erasedTypes) qual.tpe.member(name)
@@ -1917,7 +1918,7 @@ trait Typers { self: Analyzer =>
           // The cleanest way forward is if we would find a way to suppress
           // structural type checking for these members and maybe defer
           // type errors to the places where members are called. But that would
-          // be a bug refactoring and also a  big departure from existing code.
+          // be a big refactoring and also a  big departure from existing code.
           // The probably safest fix for 2.8 is to keep members of an anonymous
           // class that are not mentioned in a parent type private (as before)
           // but to disable escape checking for code that's in the same anonymous class.
@@ -2093,7 +2094,10 @@ trait Typers { self: Analyzer =>
       namer.enterSyms(stats)
       // need to delay rest of typedRefinement to avoid cyclic reference errors
       unit.toCheck += { () =>
-        val stats1 = typedStats(stats, NoSymbol)
+        // go to next outer context which is not silent, see #3614
+        var c = context
+        while (!c.reportGeneralErrors) c = c.outer
+        val stats1 = newTyper(c).typedStats(stats, NoSymbol)
         for (stat <- stats1 if stat.isDef) {
           val member = stat.symbol
           if (!(context.owner.ancestors forall
@@ -2104,7 +2108,10 @@ trait Typers { self: Analyzer =>
       }
     }
 
-    def typedImport(imp : Import) : Import = imp
+    def typedImport(imp : Import) : Import = (transformed remove imp) match {
+      case Some(imp1: Import) => imp1
+      case None => println("unhandled impoprt: "+imp+" in "+unit); imp
+    }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
@@ -2117,13 +2124,9 @@ trait Typers { self: Analyzer =>
         else
           stat match {
             case imp @ Import(_, _) =>
-              val imp0 = typedImport(imp)
-              if (imp0 ne null) {
-                context = context.makeNewImport(imp0)
-                imp0.symbol.initialize
-                imp0
-              } else
-                EmptyTree
+              context = context.makeNewImport(imp)
+              imp.symbol.initialize
+              typedImport(imp)
             case _ =>
               if (localTarget && !includesTargetPos(stat)) {
                 // skip typechecking of statements in a sequence where some other statement includes
@@ -3916,7 +3919,7 @@ trait Typers { self: Analyzer =>
         case Star(elem) =>
           checkStarPatOK(tree.pos, mode)
           val elem1 = typed(elem, mode, pt)
-          treeCopy.Star(tree, elem1) setType pt
+          treeCopy.Star(tree, elem1) setType makeFullyDefined(pt)
 
         case Bind(name, body) =>
           typedBind(name, body)

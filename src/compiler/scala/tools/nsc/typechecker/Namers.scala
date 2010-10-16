@@ -278,6 +278,7 @@ trait Namers { self: Analyzer =>
 
     /** Replace type parameters with their TypeSkolems, which can later be deskolemized to the original type param
      * (a skolem is a representation of a bound variable when viewed inside its scope)
+     *  !!!Adriaan: this does not work for hk types.
      */
     def skolemize(tparams: List[TypeDef]) {
       val tskolems = newTypeSkolems(tparams map (_.symbol))
@@ -378,7 +379,7 @@ trait Namers { self: Analyzer =>
           case vd @ ValDef(mods, name, tp, rhs) =>
             if ((!context.owner.isClass ||
                  (mods.flags & (PRIVATE | LOCAL | CASEACCESSOR)) == (PRIVATE | LOCAL) ||
-                 name.endsWith(nme.OUTER, nme.OUTER.length) ||
+                 name.startsWith(nme.OUTER) ||
                  context.unit.isJava) &&
                  !mods.isLazy) {
               val vsym = owner.newValue(tree.pos, name).setFlag(mods.flags);
@@ -1223,13 +1224,13 @@ trait Namers { self: Analyzer =>
                   checkSelectors(rest)
                 case Nil =>
               }
-
               checkSelectors(selectors)
+              transformed(tree) = treeCopy.Import(tree, expr1, selectors)
               ImportType(expr1)
           }
         } catch {
           case ex: TypeError =>
-            //Console.println("caught " + ex + " in typeSig")//DEBUG
+            //Console.println("caught " + ex + " in typeSig")
             typer.reportTypeError(tree.pos, ex)
             ErrorType
         }
