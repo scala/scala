@@ -337,7 +337,7 @@ trait TreePrinters { trees: SymbolTable =>
           print(x.escapedStringValue)
 
         case tt: TypeTree =>
-          if (tree.tpe eq null) {
+          if ((tree.tpe eq null) || (settings.Xprintpos.value && tt.original != null)) {
             if (tt.original != null) { print("<type: "); print(tt.original); print(">") }
             else print("<type ?>")
           } else if ((tree.tpe.typeSymbol ne null) && tree.tpe.typeSymbol.isAnonymousClass) {
