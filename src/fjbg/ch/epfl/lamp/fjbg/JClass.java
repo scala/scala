@@ -310,8 +310,15 @@ public class JClass extends JMember {
 
 	stream.writeShort(methods.size());
         Iterator methodsIt = methods.iterator();
-        while (methodsIt.hasNext())
-            ((JMethod)methodsIt.next()).writeTo(stream);
+        while (methodsIt.hasNext()) {
+          JMethod m = (JMethod)methodsIt.next();
+          try {
+            m.writeTo(stream);
+          }
+          catch (Throwable t) {
+              throw FJBGContext.mkFatal(name + "." + m.getName(), t);
+          }
+        }
 
 	// Attributes
         JAttribute.writeTo(attributes, stream);
