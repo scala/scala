@@ -894,6 +894,9 @@ self =>
       infixTypeRest(compoundType(isPattern), isPattern, mode)
     }
 
+    def typeOrInfixType(location: Int): Tree =
+      if (location == Local) typ() else infixType(false, InfixMode.FirstOp)
+
     def infixTypeRest(t: Tree, isPattern: Boolean, mode: InfixMode.Value): Tree = {
       if (isIdent && in.name != nme.STAR) {
         val opOffset = in.offset
@@ -1197,8 +1200,7 @@ self =>
             t = (t /: annotations(false, false)) (makeAnnotated)
           } else {
             t = atPos(t.pos.startOrPoint, colonPos) {
-              val tpt =
-                if (location == Local) typ() else infixType(false, InfixMode.FirstOp)
+              val tpt = typeOrInfixType(location)
               if (isWildcard(t))
                 (placeholderParams: @unchecked) match {
                   case (vd @ ValDef(mods, name, _, _)) :: rest =>
@@ -1237,7 +1239,16 @@ self =>
     /** Expr ::= implicit Id => Expr
      */
     def implicitClosure(start: Int, location: Int): Tree = {
-      val param0 = convertToParam(atPos(in.offset)(Ident(ident())))
+      val param0 = convertToParam {
+        atPos(in.offset) {
+          var paramexpr: Tree = Ident(ident())
+          if (in.token == COLON) {
+            in.nextToken()
+            paramexpr = Typed(paramexpr, typeOrInfixType(location))
+          }
+          paramexpr
+        }
+      }
       val param = treeCopy.ValDef(param0, param0.mods | Flags.IMPLICIT, param0.name, param0.tpt, param0.rhs)
       atPos(start, in.offset) {
         accept(ARROW)
