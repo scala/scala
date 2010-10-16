@@ -652,7 +652,7 @@ abstract class GenJVM extends SubComponent {
 
         // add a fake local for debugging purpuses
         if (emitVars && isClosureApply(method.symbol)) {
-          val outerField = clasz.symbol.info.decl(nme.getterToLocal(nme.OUTER))
+          val outerField = clasz.symbol.info.decl(nme.OUTER_LOCAL)
           if (outerField != NoSymbol) {
             log("Adding fake local to represent outer 'this' for closure " + clasz)
             val _this = new Local(

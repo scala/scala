@@ -186,7 +186,7 @@ trait MarkupParsers
     }
 
     /** adds entity/character to ts as side-effect
-     *  @precond ch == '&amp;'
+     *  @precond ch == '&'
      */
     def content_AMP(ts: ArrayBuffer[Tree]) {
       nextch

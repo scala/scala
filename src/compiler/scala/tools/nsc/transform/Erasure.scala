@@ -351,7 +351,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
    *      <code>C</code> is the erased classinfo of the <code>Array</code> class
    *    </li>
    *    <li>
-   *      For <code>Array[T].&lt;init&gt;</code> : <code>{scala#Int)Array[T]</code>
+   *      For <code>Array[T].<init></code> : <code>{scala#Int)Array[T]</code>
    *    </li>
    *    <li>
    *      For a type parameter : A type bounds type consisting of the erasures
@@ -540,8 +540,8 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
      *      class <code>Object</code>.
      *    </li>
      *    <li>
-     *      <code>new BoxedArray.&lt;init&gt;(len)</code> becomes
-     *      <code>new BoxedAnyArray.&lt;init&gt;(len): BoxedArray</code>
+     *      <code>new BoxedArray.<init>(len)</code> becomes
+     *      <code>new BoxedAnyArray.<init>(len): BoxedArray</code>
      *      (the widening typing is necessary so that subsequent member
      *      symbols stay the same)
      *    </li>

@@ -110,7 +110,7 @@ trait Typers { self: Analyzer =>
   val TAPPmode      = 0x080
 
   /** The mode <code>SUPERCONSTRmode</code> is set for the <code>super</code>
-   *  in a superclass constructor call <code>super.&lt;init&gt;</code>.
+   *  in a superclass constructor call <code>super.<init></code>.
    */
   val SUPERCONSTRmode = 0x100
 

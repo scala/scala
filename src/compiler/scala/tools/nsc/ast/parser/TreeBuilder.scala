@@ -204,7 +204,7 @@ abstract class TreeBuilder {
       }
     }
 
-  /** Create a tree representing an assignment &lt;lhs = rhs&gt; */
+  /** Create a tree representing an assignment <lhs = rhs> */
   def makeAssign(lhs: Tree, rhs: Tree): Tree = lhs match {
     case Apply(fn, args) =>
       Apply(atPos(fn.pos) { Select(fn, nme.update) }, args ::: List(rhs))
@@ -238,7 +238,7 @@ abstract class TreeBuilder {
     else if (stats.length == 1) stats.head
     else Block(stats.init, stats.last)
 
-  /** Create tree for for-comprehension generator &lt;val pat0 &lt;- rhs0&gt; */
+  /** Create tree for for-comprehension generator <val pat0 <- rhs0> */
   def makeGenerator(pos: Position, pat: Tree, valeq: Boolean, rhs: Tree): Enumerator = {
     val pat1 = patvarTransformer.transform(pat);
     val rhs1 =
@@ -274,8 +274,8 @@ abstract class TreeBuilder {
   case class ValEq(pos: Position, pat: Tree, rhs: Tree) extends Enumerator
   case class Filter(pos: Position, test: Tree) extends Enumerator
 
-  /** Create tree for for-comprehension &lt;for (enums) do body&gt; or
-  *   &lt;for (enums) yield body&gt; where mapName and flatMapName are chosen
+  /** Create tree for for-comprehension <for (enums) do body> or
+  *   <for (enums) yield body> where mapName and flatMapName are chosen
   *  corresponding to whether this is a for-do or a for-yield.
   *  The creation performs the following rewrite rules:
   *
@@ -411,11 +411,11 @@ abstract class TreeBuilder {
 //    result
   }
 
-  /** Create tree for for-do comprehension &lt;for (enums) body&gt; */
+  /** Create tree for for-do comprehension <for (enums) body> */
   def makeFor(enums: List[Enumerator], body: Tree): Tree =
     makeFor(nme.foreach, nme.foreach, enums, body)
 
-  /** Create tree for for-yield comprehension &lt;for (enums) yield body&gt; */
+  /** Create tree for for-yield comprehension <for (enums) yield body> */
   def makeForYield(enums: List[Enumerator], body: Tree): Tree =
     makeFor(nme.map, nme.flatMap, enums, body)
 
@@ -456,11 +456,11 @@ abstract class TreeBuilder {
     Function(List(makeSyntheticParam(x)), Match(sel, cases))
   }
 
-  /** Create tree for case definition &lt;case pat if guard => rhs&gt; */
+  /** Create tree for case definition <case pat if guard => rhs> */
   def makeCaseDef(pat: Tree, guard: Tree, rhs: Tree): CaseDef =
     CaseDef(patvarTransformer.transform(pat), guard, rhs)
 
-  /** Create tree for pattern definition &lt;val pat0 = rhs&gt; */
+  /** Create tree for pattern definition <val pat0 = rhs> */
   def makePatDef(pat: Tree, rhs: Tree): List[Tree] =
     makePatDef(Modifiers(0), pat, rhs)
 

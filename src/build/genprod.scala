@@ -7,14 +7,11 @@
 \*                                                                      */
 
 
-/** <p>
- *   This program generates the <code>ProductN</code>, <code>TupleN</code> <code>FunctionN</code> classes, where
- *   <code>0 &lt;= N &lt;+ MAXWIDTH</code>.
- *  </p>
- *  <p>
- *    usage: <code>scala -classpath ... genprod PATH</code>
- *    where <code>PATH</code> is the desired output directory
- *  </p>
+/** This program generates the ProductN, TupleN, FunctionN,
+ *  and AbstractFunctionN, where 0 <= N <= MAX_ARITY.
+ *
+ *    Usage: scala genprod <directory>
+ *      where the argument is the desired output directory
  *
  *  @author  Burak Emir, Stephane Micheloud, Geoffrey Washburn, Paul Phillips
  *  @version 1.1
@@ -73,7 +70,6 @@ object genprod {
 **                          |/                                          **
 \*                                                                      */
 
-
 %s
 
 package %s
@@ -88,21 +84,10 @@ package %s
     }
     val out = args(0)
     def writeFile(node: scala.xml.Node) {
-      import java.io.{File, FileOutputStream}
-      import java.nio.channels.Channels
-      val f = new File(out, node.attributes("name").toString)
-      try {
-        f.createNewFile
-        val fos = new FileOutputStream(f)
-        val c = fos.getChannel
-        val w = Channels.newWriter(c, "utf-8")
-        w.write(node.text)
-        w.close
-      } catch {
-        case e: java.io.IOException =>
-          println(e.getMessage() + ": " + f)
-          exit(-1)
-      }
+      import scala.tools.nsc.io._
+      val f = Path(out) / node.attributes("name").toString
+      f.parent.createDirectory(force = true)
+      f.toFile writeAll node.text
     }
 
     allfiles foreach writeFile
@@ -118,15 +103,16 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz */
 object FunctionZero extends Function(0) {
   override def covariantSpecs = "@specialized "
   override def descriptiveComment = functionNTemplate.format("currentSeconds", "anonfun0",
-""" *
- *    <b>val</b> currentSeconds = () => System.currentTimeMillis() / 1000L
+"""
+ *    val currentSeconds = () => System.currentTimeMillis() / 1000L
  *
- *    <b>val</b> anonfun0 = <b>new</b> Function0[Long] {
- *      <b>def</b> apply(): Long = System.currentTimeMillis() / 1000L
+ *    val anonfun0 = new Function0[Long] {
+ *      def apply(): Long = System.currentTimeMillis() / 1000L
  *    }
  *
  *    println(currentSeconds())
- *    println(anonfun0())""")
+ *    println(anonfun0())
+ * """)
   override def moreMethods = ""
 }
 
@@ -135,15 +121,16 @@ object FunctionOne extends Function(1) {
   override def covariantSpecs = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) "
 
   override def descriptiveComment = functionNTemplate.format("succ", "anonfun1",
-""" *
- *    <b>val</b> succ = (x: Int) => x + 1
+"""
+ *    val succ = (x: Int) => x + 1
  *
- *    <b>val</b> anonfun1 = <b>new</b> Function1[Int, Int] {
- *      <b>def</b> apply(x: Int): Int = x + 1
+ *    val anonfun1 = new Function1[Int, Int] {
+ *      def apply(x: Int): Int = x + 1
  *    }
  *
  *    println(succ(0))
- *    println(anonfun1(0))""")
+ *    println(anonfun1(0))
+ * """)
 
   override def moreMethods = """
   /** (f compose g)(x) ==  f(g(x))
@@ -177,15 +164,16 @@ object FunctionTwo extends Function(2) {
   override def covariantSpecs = "@specialized(scala.Unit, scala.Boolean, scala.Int, scala.Float, scala.Long, scala.Double) "
 
   override def descriptiveComment = functionNTemplate.format("max", "anonfun2",
-""" *
- *    <b>val</b> max = (x: Int, y: Int) => <b>if</b> (x < y) y <b>else</b> x
+"""
+ *    val max = (x: Int, y: Int) => if (x < y) y else x
  *
- *    <b>val</b> anonfun2 = <b>new</b> Function2[Int, Int, Int] {
- *      <b>def</b> apply(x: Int, y: Int): Int = <b>if</b> (x < y) y <b>else</b> x
+ *    val anonfun2 = new Function2[Int, Int, Int] {
+ *      def apply(x: Int, y: Int): Int = if (x < y) y else x
  *    }
  *
  *    println(max(0, 1))
- *    println(anonfun2(0, 1))""")
+ *    println(anonfun2(0, 1))
+ * """)
 }
 
 object Function
@@ -199,25 +187,21 @@ object Function
   }
 }
 
-class Function(val i: Int) extends Group("Function") with Arity
-{
-  val functionNTemplate = """<p>
+class Function(val i: Int) extends Group("Function") with Arity {
+  val functionNTemplate = """
  * In the following example the definition of
- *    <code>%s</code> is a shorthand for the anonymous class
- *    definition <code>%s</code>:
- *  </p>
- *  <pre>
- *  <b>object</b> Main <b>extends</b> Application {
-%s
- *  }</pre>"""
+ *    %s is a shorthand for the anonymous class
+ *    definition %s:
+ *
+ *  {{{
+ *  object Main extends Application { %s }
+ *  }}}"""
 
   def toStr() = "\"" + ("<function%d>" format i) + "\""
   def apply() = {
 <file name={fileName}>{header}
 
-/** &lt;p&gt;
- *    Function with {i} parameter{s}.
- *  &lt;/p&gt;
+/** Function with {i} parameter{s}.
  *  {descriptiveComment}
  */
 trait {className}{contraCoArgs} extends AnyRef {{ self =>
@@ -599,8 +583,18 @@ object ProductTwo extends Product(2)
   override def covariantSpecs = "@specialized(Int, Long, Double) "
 }
 
-class Product(val i: Int) extends Group("Product") with Arity
-{
+class Product(val i: Int) extends Group("Product") with Arity {
+  val productElementComment = """
+  /**
+   *  Returns the n-th projection of this product if 0 < n <= productArity,
+   *  otherwise throws IndexOutOfBoundsException.
+   *
+   *  @param n number of the projection to be returned
+   *  @return  same as _(n+1)
+   *  @throws  IndexOutOfBoundsException
+   */
+"""
+
   def cases = {
     val xs = for ((x, i) <- mdefs.zipWithIndex) yield "case %d => %s".format(i, x)
     val default = "case _ => throw new IndexOutOfBoundsException(n.toString())"
@@ -630,14 +624,7 @@ trait {className}{covariantArgs} extends Product {{
    */
   override def productArity = {i}
 
-  /**
-   *  Returns the n-th projection of this product if 0&amp;lt;=n&amp;lt;arity,
-   *  otherwise <code>null</code>.
-   *
-   *  @param n number of the projection to be returned
-   *  @return  same as _(n+1)
-   *  @throws  IndexOutOfBoundsException
-   */
+  {productElementComment}
   @throws(classOf[IndexOutOfBoundsException])
   override def productElement(n: Int) = n match {{ {cases} }}
 
