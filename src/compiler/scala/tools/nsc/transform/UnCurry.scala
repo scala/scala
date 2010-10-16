@@ -9,7 +9,7 @@ package transform
 import symtab.Flags._
 import scala.collection.{ mutable, immutable }
 
-/*<export>*/
+/*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase)
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
@@ -33,7 +33,7 @@ import scala.collection.{ mutable, immutable }
  *  - convert non-trivial catches in try statements to matches
  *  - convert non-local returns to throws with enclosing try statements.
  */
-/*</export>*/
+/*</export> */
 abstract class UnCurry extends InfoTransform with TypingTransformers {
   import global._                  // the global environment
   import definitions._             // standard classes and methods
