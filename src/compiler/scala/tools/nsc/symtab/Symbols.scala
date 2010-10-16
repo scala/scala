@@ -629,11 +629,15 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       def next = { val r = current; current = current.owner; r }
     }
 
-    // same as ownerChain contains sym, but more efficient
-    def hasTransOwner(sym: Symbol) = {
+    /** same as ownerChain contains sym, but more efficient, and
+     *  with a twist for refinement classes. A refinement class
+     *  has a transowner X if an of its parents has transowner X.
+     */
+    def hasTransOwner(sym: Symbol): Boolean = {
       var o = this
       while ((o ne sym) && (o ne NoSymbol)) o = o.owner
-      o eq sym
+      (o eq sym) ||
+      isRefinementClass && (info.parents exists (_.typeSymbol.hasTransOwner(sym)))
     }
 
     def name: Name = rawname
