@@ -226,7 +226,7 @@ trait JavaParsers extends JavaScanners {
         Ident(name.toTypeName).setPos(tree.pos)
       case Select(qual, name) =>
         Select(qual, name.toTypeName).setPos(tree.pos)
-      case AppliedTypeTree(_, _) | ExistentialTypeTree(_, _) =>
+      case AppliedTypeTree(_, _) | ExistentialTypeTree(_, _) | SelectFromTypeTree(_, _) =>
         tree
       case _ =>
         syntaxError(tree.pos, "identifier expected", false)
@@ -272,9 +272,18 @@ trait JavaParsers extends JavaScanners {
         if (in.token == FINAL) in.nextToken
         if (in.token == IDENTIFIER) {
           var t = typeArgs(atPos(in.currentPos)(Ident(ident())))
+          // typeSelect generates Select nodes is the lhs is an Ident or Select,
+          // SelectFromTypeTree otherwise. See #3567.
+          // Select nodes can be later
+          // converted in the typechecker to SelectFromTypeTree if the class
+          // turns out to be an instance ionner class instead of a static inner class.
+          def typeSelect(t: Tree, name: Name) = t match {
+            case Ident(_) | Select(_, _) => Select(t, name)
+            case _ => SelectFromTypeTree(t, name)
+          }
           while (in.token == DOT) {
             in.nextToken
-            t = typeArgs(atPos(in.currentPos)(Select(t, ident())))
+            t = typeArgs(atPos(in.currentPos)(typeSelect(t, ident())))
           }
           convertToTypeId(t)
         } else {
