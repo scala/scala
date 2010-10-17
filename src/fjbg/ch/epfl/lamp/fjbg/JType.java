@@ -100,7 +100,7 @@ abstract public class JType {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("invalid signature " + signature);
         } catch (IOException e) {
-            throw FJBGContext.mkFatal(e);
+            throw new Error(e);
         }
     }
 

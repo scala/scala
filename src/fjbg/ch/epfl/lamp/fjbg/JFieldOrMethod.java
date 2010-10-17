@@ -110,7 +110,7 @@ abstract public class JFieldOrMethod extends JMember {
                 freeze();
             }
             catch (JCode.OffsetTooBigException e) {
-                throw FJBGContext.mkFatal(owner.name + "." + name, e);
+                throw new Error(e);
             }
         }
         stream.writeShort(accessFlags);

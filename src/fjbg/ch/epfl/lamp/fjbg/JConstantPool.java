@@ -104,7 +104,7 @@ public class JConstantPool {
         case 12 : return "Methodref";
         case 13 : return "InterfaceMethodref";
         case 14 : return "NameAndType";
-        default : throw FJBGContext.mkFatal("invalid constant pool tag : " + tag);
+        default : throw new Error("invalid constant pool tag : " + tag);
         }
     }
 

@@ -125,7 +125,7 @@ public class JCodeIterator {
             else
                 return 4;
         } else
-            throw FJBGContext.mkFatal("Unknown size for instruction " + opcode);
+            throw new Error("Unknown size for instruction " + opcode);
     }
 
     /**
@@ -144,7 +144,7 @@ public class JCodeIterator {
             int npairsPos = pc + 1 + pad4(pc + 1) + 4;
             return 1 + codeArray.getS4(npairsPos);
         } else
-            throw FJBGContext.mkFatal("Unknown successors for instruction " + opcode);
+            throw new Error("Unknown successors for instruction " + opcode);
     }
 
     /**
@@ -185,7 +185,7 @@ public class JCodeIterator {
                 return pc + codeArray.getS4(defaultPos + 2*4 + 4 + 8 * (index - 1));
         }
         default:
-            throw FJBGContext.mkFatal("");
+            throw new Error();
         }
     }
 
@@ -226,7 +226,7 @@ public class JCodeIterator {
                 else return 0; // (IINC)
             }
             default :
-                throw FJBGContext.mkFatal(opcode.toString());
+                throw new Error(opcode.toString());
             }
         } else
             return JType.getTotalSize(opcode.getProducedDataTypes());
@@ -281,7 +281,7 @@ public class JCodeIterator {
             case JOpcode.cMULTIANEWARRAY :
                 return codeArray.getU1(pc + 3);
             default:
-                throw FJBGContext.mkFatal(opcode.toString());
+                throw new Error(opcode.toString());
             }
         }
     }
@@ -315,7 +315,7 @@ public class JCodeIterator {
                     return 0; // (IINC)
             }
             default:
-                throw FJBGContext.mkFatal("JOpcode implementation error");
+                throw new Error("JOpcode implementation error");
             }
         }
     }
@@ -358,7 +358,7 @@ public class JCodeIterator {
 //                     return JOpcode.OPCODES[op].getConsumedDataTypes().length;
 //                 else return 0; // (IINC)
 //             case 197 : return codeArray.getU1(pc + 3); // MULTIANEWARRAY
-//             default : throw FJBGContext.mkFatal("JOpcode implementation error");
+//             default : throw new Error("JOpcode implementation error");
 //             }
 //         } else return opcode.getConsumedDataTypes().length;
 //     }

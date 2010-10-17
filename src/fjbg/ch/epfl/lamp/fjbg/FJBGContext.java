@@ -28,31 +28,6 @@ public class FJBGContext {
         MINOR_VERSION = minor;
     }
 
-    public static class FJBGWrapper extends RuntimeException {
-        public String culprit;
-        public FJBGWrapper(Throwable cause) {
-          super(cause);
-          this.culprit = "<unknown>";
-        }
-        public FJBGWrapper(String culprit, Throwable cause) {
-          super(cause);
-          this.culprit = culprit;
-        }
-    }
-
-    static FJBGWrapper mkFatal(String culprit, Throwable t) {
-        return new FJBGWrapper(culprit, t);
-    }
-    static FJBGWrapper mkFatal(Throwable t) {
-        return new FJBGWrapper(t);
-    }
-    static RuntimeException mkFatal(Object obj) {
-        return new FJBGWrapper(new java.lang.Error(obj.toString()));
-    }
-    static RuntimeException mkFatal(String message) {
-        return new FJBGWrapper(new java.lang.Error(message));
-    }
-
     // Factory methods
     //////////////////////////////////////////////////////////////////////
 

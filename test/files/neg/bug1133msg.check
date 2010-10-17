@@ -1,4 +1,0 @@
-bug1133msg.scala:1: error: cannot emit bytecode for Match$.badMethod: offset too big to fit in 16 bits: 53273
-object Match {    
-       ^
-one error found

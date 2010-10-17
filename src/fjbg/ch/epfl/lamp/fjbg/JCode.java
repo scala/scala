@@ -889,6 +889,7 @@ public class JCode {
         public OffsetTooBigException() { super(); }
         public OffsetTooBigException(String message) { super(message); }
     }
+
     protected void checkOffset16(int offset) throws OffsetTooBigException {
         if (offset < Short.MIN_VALUE || offset > Short.MAX_VALUE)
             throw new OffsetTooBigException("offset too big to fit"

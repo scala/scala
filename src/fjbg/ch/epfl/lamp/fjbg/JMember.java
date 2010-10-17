@@ -13,6 +13,7 @@ import java.util.Iterator;
  */
 
 abstract public class JMember {
+
     protected boolean frozen = false;
 
     protected final FJBGContext context;

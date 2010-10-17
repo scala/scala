@@ -15,8 +15,6 @@ import scala.tools.nsc.symtab._
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
 
 import ch.epfl.lamp.fjbg._
-import FJBGContext.FJBGWrapper
-import JCode.OffsetTooBigException
 import JAccessFlags._
 import JObjectType.{ JAVA_LANG_STRING, JAVA_LANG_OBJECT }
 import java.io.{ DataOutputStream }
@@ -140,15 +138,6 @@ abstract class GenJVM extends SubComponent {
     val emitLines  = debugLevel >= 2
     val emitVars   = debugLevel >= 3
 
-    def analyzeException(culprit: String, t: Throwable): Unit = t match {
-      case x: FJBGWrapper =>
-        analyzeException(x.culprit, x.getCause())
-      case _: OffsetTooBigException =>
-        clasz.cunit.error(clasz.symbol.pos, "cannot emit bytecode for " + culprit + ": " + t.getMessage)
-      case x =>
-        throw x
-    }
-
     /** Write a class to disk, adding the Scala signature (pickled type
      *  information) and inner classes.
      *
@@ -159,10 +148,8 @@ abstract class GenJVM extends SubComponent {
       addInnerClasses(jclass)
       val outfile = getFile(sym, jclass, ".class")
       val outstream = new DataOutputStream(outfile.bufferedOutput)
-      try jclass.writeTo(outstream)
-      catch { case x  => analyzeException(jclass.getName(), x) }
-      finally outstream.close()
-
+      jclass.writeTo(outstream)
+      outstream.close()
       informProgress("wrote " + outfile)
     }
 

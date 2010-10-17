@@ -463,7 +463,7 @@ public class JExtendedCode extends JCode {
 
         JOpcode[] conv = typeConversions[fromType.getTag() - 4][toType.getTag() - 4];
         if (conv == forbidden) {
-            throw FJBGContext.mkFatal("inconvertible types : " + fromType.toString()
+            throw new Error("inconvertible types : " + fromType.toString()
                             + " -> " + toType.toString());
         } else if (conv != nothingToDo) {
             for (int i = 0; i < conv.length; i++) {
@@ -518,7 +518,7 @@ public class JExtendedCode extends JCode {
                 try {
                     emitGOTO(label);
                 } catch (OffsetTooBigException e) {
-                    throw FJBGContext.mkFatal(e);
+                    throw new Error(e);
                 }
             }
         }
@@ -532,7 +532,7 @@ public class JExtendedCode extends JCode {
             try {
                 emitGOTO(targetPC);
             } catch (OffsetTooBigException e) {
-                throw FJBGContext.mkFatal(e);
+                throw new Error(e);
             }
         }
     }

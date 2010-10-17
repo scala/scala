@@ -1201,7 +1201,7 @@ public class JOpcode {
             case cDUP2_X2:
                 return 6;
             default:
-                throw FJBGContext.mkFatal(this.toString());
+                throw new Error(this.toString());
             }
         }
     }
@@ -1220,7 +1220,7 @@ public class JOpcode {
             case cDUP2_X2:
                 return 4;
             default:
-                throw FJBGContext.mkFatal(this.toString());
+                throw new Error(this.toString());
             }
         }
     }
@@ -1240,7 +1240,7 @@ public class JOpcode {
             case cDUP_X1:
                 return 3;
             default:
-                throw FJBGContext.mkFatal(this.toString());
+                throw new Error(this.toString());
             }
         }
     }
@@ -1256,7 +1256,7 @@ public class JOpcode {
             case cDUP2: case cDUP2_X1: case cPOP2: case cSWAP:
                 return 2;
             default:
-                throw FJBGContext.mkFatal(this.toString());
+                throw new Error(this.toString());
             }
         }
     }
