@@ -3664,9 +3664,12 @@ trait Typers { self: Analyzer =>
         def ambiguousError(msg: String) =
           error(tree.pos, "reference to " + name + " is ambiguous;\n" + msg)
 
-        var defSym: Symbol = tree.symbol // the directly found symbol
-        var pre: Type = NoPrefix         // the prefix type of defSym, if a class member
-        var qual: Tree = EmptyTree       // the qualifier tree if transformed tree is a select
+        var defSym: Symbol = tree.symbol  // the directly found symbol
+        var pre: Type = NoPrefix          // the prefix type of defSym, if a class member
+        var qual: Tree = EmptyTree        // the qualifier tree if transformed tree is a select
+        var inaccessibleSym: Symbol = NoSymbol // the first symbol that was found but that was discarded
+                                          // for being inaccessible; used for error reporting
+        var inaccessibleExplanation: String = ""
 
         // A symbol qualifies if it exists and is not stale. Stale symbols
         // are made to disappear here. In addition,
@@ -3699,7 +3702,13 @@ trait Typers { self: Analyzer =>
               cx = cx.enclClass
               defSym = pre.member(name) filter (
                 sym => qualifies(sym) && context.isAccessible(sym, pre, false))
-              if (defSym == NoSymbol) cx = cx.outer
+              if (defSym == NoSymbol) {
+                if (inaccessibleSym eq NoSymbol) {
+                  inaccessibleSym = pre.member(name) filter qualifies
+                  inaccessibleExplanation = analyzer.lastAccessCheckDetails
+                }
+                cx = cx.outer
+              }
             }
           }
 
@@ -3769,7 +3778,11 @@ trait Typers { self: Analyzer =>
               if (settings.debug.value) {
                 log(context.imports)//debug
               }
-              error(tree.pos, "not found: "+decodeWithNamespace(name))
+              if (inaccessibleSym eq NoSymbol) {
+                error(tree.pos, "not found: "+decodeWithNamespace(name))
+              } else accessError(
+                tree, inaccessibleSym, context.enclClass.owner.thisType,
+                inaccessibleExplanation)
               defSym = context.owner.newErrorSymbol(name)
             }
           }

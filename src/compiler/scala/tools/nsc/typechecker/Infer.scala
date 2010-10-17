@@ -235,6 +235,14 @@ trait Infer {
     def explainTypes(tp1: Type, tp2: Type) =
       withDisambiguation(tp1, tp2)(global.explainTypes(tp1, tp2))
 
+    def accessError(tree: Tree, sym: Symbol, pre: Type, explanation: String): Tree = {
+      val realsym = underlying(sym)
+
+      errorTree(tree, realsym + realsym.locationString + " cannot be accessed in " +
+                (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
+                explanation)
+    }
+
     /* -- Tests & Checks---------------------------------------------------- */
 
     /** Check that <code>sym</code> is defined and accessible as a member of
@@ -247,14 +255,6 @@ trait Infer {
       if (sym.isError) {
         tree setSymbol sym setType ErrorType
       } else {
-        def accessError(explanation: String): Tree = {
-          val realsym = underlying(sym)
-
-          errorTree(tree, realsym + realsym.locationString + " cannot be accessed in " +
-                    (if (sym.isClassConstructor) context.enclClass.owner else pre.widen) +
-                    explanation)
-        }
-
         val topClass = context.owner.toplevelClass
         if (context.unit != null)
           context.unit.depends += sym.toplevelClass
@@ -268,8 +268,10 @@ trait Infer {
             Console.println(tree)
             Console.println("" + pre + " " + sym.owner + " " + context.owner + " " + context.outer.enclClass.owner + " " + sym.owner.thisType + (pre =:= sym.owner.thisType))
           }
-          accessError(
-            if (settings.check.isDefault) "" else {
+          accessError(tree, sym, pre,
+            if (settings.check.isDefault) {
+              analyzer.lastAccessCheckDetails
+            } else {
               "\n because of an internal error (no accessible symbol):" +
               "\nsym = " + sym +
               "\nunderlying(sym) = " + underlying(sym) +
@@ -294,7 +296,8 @@ trait Infer {
               if (settings.debug.value) ex.printStackTrace
               val sym2 = underlying(sym1)
               val itype = pre.memberType(sym2)
-              accessError("\n because its instance type "+itype+
+              accessError(tree, sym, pre,
+                          "\n because its instance type "+itype+
                           (if ("malformed type: "+itype.toString==ex.msg) " is malformed"
                            else " contains a "+ex.msg))
               ErrorType

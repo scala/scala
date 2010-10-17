@@ -32,6 +32,8 @@ trait Contexts { self: Analyzer =>
     global.definitions.RootClass.info.decls)
   }
 
+  var lastAccessCheckDetails: String = ""
+
   /** List of objects and packages to import from in
    *  a root context.  This list is sensitive to the
    *  compiler settings.
@@ -324,6 +326,12 @@ trait Contexts { self: Analyzer =>
            " " + scope.toList + "\n:: " + outer.toString()
     }
 
+    /** Is `sub' a subclass of `base' or a companion object of such a subclass?
+     */
+    def isSubClassOrCompanion(sub: Symbol, base: Symbol) =
+      sub.isNonBottomSubClass(base) ||
+      sub.isModuleClass && sub.linkedClassOfClass.isNonBottomSubClass(base)
+
     /** Return closest enclosing context that defines a superclass of `clazz', or a
      *  companion module of a superclass of `clazz', or NoContext if none exists */
     def enclosingSuperClassContext(clazz: Symbol): Context = {
@@ -335,11 +343,12 @@ trait Contexts { self: Analyzer =>
       c
     }
 
-    /** Return closest enclosing context that defines a subclass of `clazz', or NoContext
-     *  if none exists */
+    /** Return closest enclosing context that defines a subclass of `clazz' or a companion
+     * object thereof, or NoContext if no such context exists
+     */
     def enclosingSubClassContext(clazz: Symbol): Context = {
       var c = this.enclClass
-      while (c != NoContext && !c.owner.isNonBottomSubClass(clazz))
+      while (c != NoContext && !isSubClassOrCompanion(c.owner, clazz))
         c = c.outer.enclClass
       c
     }
@@ -353,6 +362,8 @@ trait Contexts { self: Analyzer =>
      *  @return            ...
      */
     def isAccessible(sym: Symbol, pre: Type, superAccess: Boolean): Boolean = {
+      lastAccessCheckDetails = ""
+
       @inline def accessWithinLinked(ab: Symbol) = {
         val linked = ab.linkedClassOfClass
         // don't have access if there is no linked class
@@ -364,7 +375,7 @@ trait Contexts { self: Analyzer =>
       /** Are we inside definition of `ab'? */
       def accessWithin(ab: Symbol) = {
         // #3663: we must disregard package nesting if sym isJavaDefined
-        if(sym.isJavaDefined) {
+        if (sym.isJavaDefined) {
           // is `o` or one of its transitive owners equal to `ab`?
           // stops at first package, since further owners can only be surrounding packages
           @tailrec def abEnclosesStopAtPkg(o: Symbol): Boolean =
@@ -392,6 +403,28 @@ trait Contexts { self: Analyzer =>
         case _ => false
       }
 
+      /** Is protected access to target symbol permitted */
+      def isProtectedAccessOK(target: Symbol) = {
+        val c = enclosingSubClassContext(sym.owner)
+        if (c == NoContext)
+          lastAccessCheckDetails =
+            "\n Access to protected "+target+" not permitted because"+
+            "\n "+"enclosing class "+this.enclClass.owner+this.enclClass.owner.locationString+" is not a subclass of "+
+            "\n "+sym.owner+sym.owner.locationString+" where target is defined"
+        c != NoContext && {
+          val res =
+            isSubClassOrCompanion(pre.widen.typeSymbol, c.owner) ||
+            c.owner.isModuleClass &&
+            isSubClassOrCompanion(pre.widen.typeSymbol, c.owner.linkedClassOfClass)
+          if (!res)
+            lastAccessCheckDetails =
+              "\n Access to protected "+target+" not permitted because"+
+              "\n prefix type "+pre.widen+" does not conform to"
+              "\n "+c.owner+c.owner.locationString+" where the access take place"
+          res
+        }
+      }
+
       (pre == NoPrefix) || {
         val ab = sym.accessBoundary(sym.owner)
         (  (ab.isTerm || ab == definitions.RootClass)
@@ -403,9 +436,12 @@ trait Contexts { self: Analyzer =>
              )
         || (sym hasFlag PROTECTED) &&
              (  superAccess
+             || pre.isInstanceOf[ThisType]
              || sym.isConstructor
-             || (pre.widen.typeSymbol.isNonBottomSubClass(sym.owner) &&
-                  (isSubClassOfEnclosing(pre.widen.typeSymbol) || phase.erasedTypes))
+             || phase.erasedTypes
+             || isProtectedAccessOK(sym)
+             || (sym.allOverriddenSymbols exists isProtectedAccessOK)
+                // that last condition makes protected access via self types work.
              )
         )
         // note: phase.erasedTypes disables last test, because after addinterfaces
