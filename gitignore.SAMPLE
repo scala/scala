@@ -1,0 +1,23 @@
+# see also test/files/.gitignore
+/.gitignore
+/test/files/.gitignore
+
+/.scala_dependencies
+
+# "a" and "a/" to get both file (i.e. symlink) and folder
+/build
+/build/
+/target
+/target/
+/dists/
+/out/
+/bin/
+
+/sandbox/
+
+/src/intellij/*.iml
+/src/intellij/*.ipr
+/src/intellij/*.iws
+
+/project/boot/
+/project/build/target/
