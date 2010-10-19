@@ -419,7 +419,7 @@ trait Contexts { self: Analyzer =>
           if (!res)
             lastAccessCheckDetails =
               "\n Access to protected "+target+" not permitted because"+
-              "\n prefix type "+pre.widen+" does not conform to"
+              "\n prefix type "+pre.widen+" does not conform to"+
               "\n "+c.owner+c.owner.locationString+" where the access take place"
           res
         }

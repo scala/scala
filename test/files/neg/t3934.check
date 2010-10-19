@@ -1,0 +1,13 @@
+t3934.scala:15: error: method f2 in class J cannot be accessed in test.J
+ Access to protected method f2 not permitted because
+ enclosing class class S1 in package nest is not a subclass of 
+ class J in package test where target is defined
+  def g2(x: J) = x.f2()
+                   ^
+t3934.scala:20: error: method f2 in class J cannot be accessed in test.J
+ Access to protected method f2 not permitted because
+ prefix type test.J does not conform to
+ class S2 in package nest where the access take place
+  def g2(x: J) = x.f2()
+                   ^
+two errors found
