@@ -1,0 +1,131 @@
+
+
+# 
+# Remote build&test script.
+# Author: Aleksandar Prokopec
+# 
+
+
+SCRIPTNAME="..:: RemoteTest ::.."
+DESC="This script pushes the current git repo to a remote bare repo. \
+It then checks out the source tree in a workspace repo and starts the\
+ build and all the tests. It can also initialize the remote bare repo\
+ and the workspace repo. It assumes that the current repo refspec has\
+ been set for the remote bare repository - .git/config of the current\
+ repo must have a remote called <server> and the corresponding master\
+ branch. Git should, naturally, be installed on both systems.\
+ "
+USAGE="   Usage: remotetest [--init] <user> <server> <bare-repo-path> <workspace-repo-path>"
+
+
+function usage()
+{
+  echo $SCRIPTNAME
+  echo $DESC
+  echo 
+  echo $USAGE
+}
+
+
+function error()
+{
+  echo "Failed."
+  exit 1
+}
+
+function success()
+{
+  echo "Success!"
+  exit 0
+}
+
+function instruct()
+{
+  usage
+  error
+}
+
+
+
+if [ $# -lt 1 ]
+then
+  instruct
+fi
+
+
+if [[ $1 = "--init" ]]
+then
+  if [ $# -ne 5 ]
+  then
+    instruct
+  fi
+  USER=$2
+  LOCATION=$3
+  BAREREPO=$4
+  WORKREPO=$5
+else
+  if [ $# -ne 4 ]
+  then
+    instruct
+  fi
+  USER=$1
+  LOCATION=$2
+  BAREREPO=$3
+  WORKREPO=$4
+fi
+
+if [[ $1 = "--init" ]]
+then
+  # init bare repo
+  ssh $USER@$LOCATION "mkdir $BAREREPO"
+  ssh $USER@$LOCATION "cd $BAREREPO; git init --bare"
+  if [ $? -ne 0 ]
+  then
+    error "Could not initialize bare repo."
+  fi
+  
+  # push to bare repo
+  git push --all
+  if [ $? -ne 0 ]
+  then
+    error "Could not push to bare repo."
+  fi
+  
+  # init and checkout work repo
+  ssh $USER@$LOCATION "mkdir $WORKREPO"
+  ssh $USER@$LOCATION "cd $WORKREPO; git clone --local $BAREREPO ."
+  if [ $? -ne 0 ]
+  then
+    error "Could not init working repo."
+  fi
+  
+  success
+fi
+
+
+
+
+# if it's not the init operation, proceed normally
+# push to remote bare repo
+git push $LOCATION $LOCATION/master
+if [ $? -ne 0 ]
+then
+  error "Could not push to bare repo."
+fi
+
+# remotely checkout the repo
+ssh $USER@$LOCATION "cd $WORKREPO; git pull origin master"
+if [ $? -ne 0 ]
+then
+  error "Could remotely pull from bare repo to work repo."
+fi
+
+# run the build and tests
+ssh $USER@$LOCATION "cd $WORKREPO; ant all.clean; ant test"
+
+
+success
+
+
+
+
