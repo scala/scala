@@ -1,13 +1,9 @@
-
-
-
-
 // ticket #3829
 object Test {
-  import collection._
+  import collection.{ mutable, immutable }
 
   def main(args: Array[String]) {
-    val map = Map(1 -> 2, 3 -> 4)
+    val map = immutable.Map(1 -> 2, 3 -> 4)
     assert(map.get(0) == None)
 
     val defmap = map.withDefaultValue(-1)

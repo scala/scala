@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 import generic._
@@ -30,12 +28,6 @@ import generic._
  */
 trait Map[A, +B] extends Iterable[(A, B)] with MapLike[A, B, Map[A, B]] {
   def empty: Map[A, B] = Map.empty
-
-  /** The same map with a given default function */
-  def withDefault[B1 >: B](d: A => B1): Map[A, B1] = new Map.WithDefault[A, B1](this, d)
-
-  /** The same map with a given default value */
-  def withDefaultValue[B1 >: B](d: B1): Map[A, B1] = new Map.WithDefault[A, B1](this, x => d)
 }
 
 /** $factoryInfo
@@ -48,15 +40,13 @@ object Map extends MapFactory[Map] {
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
 
-  class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends Map[A, B] {
-    override def size = underlying.size
-    def get(key: A) = underlying.get(key) orElse Some(default(key))
-    def iterator = underlying.iterator
-    override def empty = new WithDefault(underlying.empty, d)
-    override def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
-    override def + [B1 >: B](kv: (A, B1)): WithDefault[A, B1] = updated(kv._1, kv._2)
-    def - (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
+  /** An abstract shell used by { mutable, immutable }.Map but not by collection.Map
+   *  because of variance issues.
+   */
+  abstract class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends Map[A, B] {
+    override def size               = underlying.size
+    def get(key: A)                 = underlying.get(key) orElse Some(default(key))
+    def iterator                    = underlying.iterator
     override def default(key: A): B = d(key)
   }
-
 }

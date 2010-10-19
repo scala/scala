@@ -7,7 +7,6 @@
 \*                                                                      */
 
 
-
 package scala.collection
 package immutable
 
@@ -32,6 +31,12 @@ trait Map[A, +B] extends Iterable[(A, B)]
 
   override def empty: Map[A, B] = Map.empty
 
+  /** The same map with a given default function */
+  def withDefault[B1 >: B](d: A => B1): immutable.Map[A, B1] = new Map.WithDefault[A, B1](this, d)
+
+  /** The same map with a given default value */
+  def withDefaultValue[B1 >: B](d: B1): immutable.Map[A, B1] = new Map.WithDefault[A, B1](this, x => d)
+
   /** Add a key/value pair to this map.
    *  @param    key the key
    *  @param    value the value
@@ -51,6 +56,15 @@ object Map extends ImmutableMapFactory[Map] {
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), Map[A, B]] = new MapCanBuildFrom[A, B]
 
   def empty[A, B]: Map[A, B] = EmptyMap.asInstanceOf[Map[A, B]]
+
+  class WithDefault[A, +B](underlying: Map[A, B], d: A => B) extends collection.Map.WithDefault[A, B](underlying, d) with Map[A, B] {
+    override def empty = new WithDefault(underlying.empty, d)
+    override def updated[B1 >: B](key: A, value: B1): WithDefault[A, B1] = new WithDefault[A, B1](underlying.updated[B1](key, value), d)
+    override def + [B1 >: B](kv: (A, B1)): WithDefault[A, B1] = updated(kv._1, kv._2)
+    override def - (key: A): WithDefault[A, B] = new WithDefault(underlying - key, d)
+    override def withDefault[B1 >: B](d: A => B1): immutable.Map[A, B1] = new WithDefault[A, B1](underlying, d)
+    override def withDefaultValue[B1 >: B](d: B1): immutable.Map[A, B1] = new WithDefault[A, B1](underlying, x => d)
+  }
 
   @serializable
   private object EmptyMap extends Map[Any, Nothing] {
