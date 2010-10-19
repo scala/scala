@@ -127,18 +127,8 @@ trait MatrixAdditions extends ast.TreeDSL
           })
         }
       }
-      object resetTraverser extends Traverser {
-        import Flags._
-        def reset(vd: ValDef) =
-          if (vd.symbol hasFlag SYNTHETIC) vd.symbol resetFlag (TRANS_FLAG|MUTABLE)
 
-        override def traverse(x: Tree): Unit = x match {
-          case vd: ValDef => reset(vd)
-          case _          => super.traverse(x)
-        }
-      }
-
-      returning(lxtt transform tree)(resetTraverser traverse _)
+      returning(lxtt transform tree)(_ => clearSyntheticSyms())
     }
   }
 

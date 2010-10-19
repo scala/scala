@@ -8,6 +8,7 @@ package matching
 
 import transform.ExplicitOuter
 import symtab.Flags
+import scala.collection.mutable
 
 trait Matrix extends MatrixAdditions {
   self: ExplicitOuter with ParallelMatching =>
@@ -16,7 +17,7 @@ trait Matrix extends MatrixAdditions {
   import analyzer.Typer
   import CODE._
   import Debug._
-  import Flags.{ TRANS_FLAG, SYNTHETIC }
+  import Flags.{ TRANS_FLAG, SYNTHETIC, MUTABLE }
 
   /** Translation of match expressions.
    *
@@ -116,6 +117,19 @@ trait Matrix extends MatrixAdditions {
 
     // TRANS_FLAG communicates there should be no exhaustiveness checking
     private def flags(checked: Boolean) = if (checked) Nil else List(TRANS_FLAG)
+
+    // Recording the symbols of the synthetics we create so we don't go clearing
+    // anyone else's mutable flags.
+    private val _syntheticSyms = mutable.HashSet[Symbol]()
+    def clearSyntheticSyms() = {
+      _syntheticSyms foreach (_ resetFlag (TRANS_FLAG|MUTABLE))
+      log("Cleared TRANS_FLAG/MUTABLE on " + _syntheticSyms.size + " synthetic symbols.")
+      _syntheticSyms.clear()
+    }
+    def recordSyntheticSym(sym: Symbol): Symbol = {
+      _syntheticSyms += sym
+      sym
+    }
 
     case class MatrixInit(
       roots: List[PatternVar],
@@ -235,7 +249,7 @@ trait Matrix extends MatrixAdditions {
     {
       val n: Name = if (name == null) newName("temp") else name
       // careful: pos has special meaning
-      owner.newVariable(pos, n) setInfo tpe setFlag (SYNTHETIC.toLong /: flags)(_|_)
+      recordSyntheticSym(owner.newVariable(pos, n) setInfo tpe setFlag (SYNTHETIC.toLong /: flags)(_|_))
     }
 
     def typedValDef(x: Symbol, rhs: Tree) =
