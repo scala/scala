@@ -48,6 +48,8 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
    */
   @transient protected var threshold: Int = initialThreshold(_loadFactor)
 
+  protected def initialSize: Int = HashTable.initialSize
+
   /**
    * Initializes the collection from the input stream. `f` will be called for each key/value pair
    * read from the input stream in the order determined by the stream. This is useful for
