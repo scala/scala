@@ -24,7 +24,7 @@ extends MapLike[K, V, Repr]
 
   protected[this] override def newBuilder: Builder[(K, V), Repr] = newCombiner
 
-  protected[this] override def newCombiner: Combiner[(K, V), Repr] = error("Must be implemented in concrete classes.")
+  protected[this] override def newCombiner: Combiner[(K, V), Repr] = unsupportedop("Must implement `newCombiner` in concrete collections.")
 
   override def empty: Repr
 

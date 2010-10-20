@@ -59,8 +59,8 @@ trait Tasks {
     protected[this] def merge(that: Tp) {}
 
     // exception handling mechanism
-    var exception: Exception = null
-    def forwardException = if (exception != null) throw exception
+    var throwable: Throwable = null
+    def forwardThrowable = if (throwable != null) throw throwable
     // tries to do the leaf computation, storing the possible exception
     protected def tryLeaf(result: Option[R]) {
       try {
@@ -70,15 +70,21 @@ trait Tasks {
           signalAbort
         }
       } catch {
-        case e: Exception =>
-          exception = e
+        case thr: Throwable =>
+          throwable = thr
           signalAbort
       }
     }
     protected[this] def tryMerge(t: Tp) {
       val that = t.asInstanceOf[Task[R, Tp]]
-      if (this.exception == null && that.exception == null) merge(that.repr)
-      else if (that.exception != null) this.exception = that.exception
+      if (this.throwable == null && that.throwable == null) merge(t)
+      mergeThrowables(that)
+    }
+    private[parallel] def mergeThrowables(that: Task[_, _]) {
+      if (this.throwable != null && that.throwable != null) {
+        // merge exceptions, since there were multiple exceptions
+        this.throwable = this.throwable alongWith that.throwable
+      } else if (that.throwable != null) this.throwable = that.throwable
     }
     // override in concrete task implementations to signal abort to other tasks
     private[parallel] def signalAbort {}
@@ -206,7 +212,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
 
     () => {
       fjtask.join
-      fjtask.forwardException
+      fjtask.forwardThrowable
       fjtask.result
     }
   }
@@ -225,7 +231,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
       forkJoinPool.execute(fjtask)
     }
     fjtask.join
-    fjtask.forwardException
+    fjtask.forwardThrowable
     fjtask.result
   }
 

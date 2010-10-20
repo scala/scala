@@ -227,15 +227,11 @@ self =>
       def map(r: R): R1 = mapping(r)
     }
 
-    def compose[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3) = new SeqComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]] {
-      val ft = tsk
-      val st = t2
+    def compose[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3) = new SeqComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]](tsk, t2) {
       def combineResults(fr: R, sr: R2): R3 = resCombiner(fr, sr)
     }
 
-    def parallel[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3) = new ParComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]] {
-      val ft = tsk
-      val st = t2
+    def parallel[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3) = new ParComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]](tsk, t2) {
       def combineResults(fr: R, sr: R2): R3 = resCombiner(fr, sr)
     }
   }
@@ -460,7 +456,9 @@ self =>
         othtask.compute
         othtask.result
       }
-      val task = (copythis parallel copythat) { _ combine _ } mapResult { _.result }
+      val task = (copythis parallel copythat) { _ combine _ } mapResult {
+        _.result
+      }
       executeAndWaitResult(task)
     } else if (bf.isParallel) {
       // println("case parallel builder, `that` not parallel")
@@ -687,37 +685,42 @@ self =>
 
   protected[this] trait NonDivisible[R] extends NonDivisibleTask[R, NonDivisible[R]]
 
-  protected[this] trait Composite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
+  protected[this] abstract class Composite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
+    (val ft: First, val st: Second)
   extends NonDivisibleTask[R, Composite[FR, SR, R, First, Second]] {
-    val ft: First
-    val st: Second
     def combineResults(fr: FR, sr: SR): R
     var result: R = null.asInstanceOf[R]
     private[parallel] override def signalAbort {
       ft.signalAbort
       st.signalAbort
     }
+    protected def mergeSubtasks {
+      ft mergeThrowables st
+      if (throwable eq null) result = combineResults(ft.result, st.result)
+    }
     override def requiresStrictSplitters = ft.requiresStrictSplitters || st.requiresStrictSplitters
   }
 
   /** Sequentially performs one task after another. */
-  protected[this] trait SeqComposite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
-  extends Composite[FR, SR, R, First, Second] {
+  protected[this] abstract class SeqComposite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
+    (f: First, s: Second)
+  extends Composite[FR, SR, R, First, Second](f, s) {
     def leaf(prevr: Option[R]) = {
-      ft.compute
-      st.compute
-      result = combineResults(ft.result, st.result)
+      executeAndWaitResult(ft)
+      executeAndWaitResult(st)
+      mergeSubtasks
     }
   }
 
   /** Performs two tasks in parallel, and waits for both to finish. */
-  protected[this] trait ParComposite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
-  extends Composite[FR, SR, R, First, Second] {
+  protected[this] abstract class ParComposite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
+    (f: First, s: Second)
+  extends Composite[FR, SR, R, First, Second](f, s) {
     def leaf(prevr: Option[R]) = {
-      st.start
-      ft.compute
-      st.sync
-      result = combineResults(ft.result, st.result)
+      val ftfuture = execute(ft)
+      executeAndWaitResult(st)
+      ftfuture()
+      mergeSubtasks
     }
   }
 
@@ -727,7 +730,8 @@ self =>
     def map(r: R): R1
     def leaf(prevr: Option[R1]) = {
       inner.compute
-      result = map(inner.result)
+      throwable = inner.throwable
+      if (throwable eq null) result = map(inner.result)
     }
     private[parallel] override def signalAbort {
       inner.signalAbort
@@ -756,7 +760,7 @@ self =>
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new Reduce(op, p)
     override def merge(that: Reduce[U]) =
       if (this.result == None) result = that.result
-      else if (that.result != None) op(result.get, that.result.get)
+      else if (that.result != None) result = Some(op(result.get, that.result.get))
     override def requiresStrictSplitters = true
   }
 
@@ -890,7 +894,9 @@ self =>
   protected[this] class Take[U >: T, This >: Repr](n: Int, cbf: () => Combiner[U, This], protected[this] val pit: ParIterableIterator[T])
   extends Transformer[Combiner[U, This], Take[U, This]] {
     var result: Combiner[U, This] = null
-    def leaf(prev: Option[Combiner[U, This]]) = result = pit.take2combiner(n, reuse(prev, cbf()))
+    def leaf(prev: Option[Combiner[U, This]]) = {
+      result = pit.take2combiner(n, reuse(prev, cbf()))
+    }
     protected[this] def newSubtask(p: ParIterableIterator[T]) = throw new UnsupportedOperationException
     override def split = {
       val pits = pit.split

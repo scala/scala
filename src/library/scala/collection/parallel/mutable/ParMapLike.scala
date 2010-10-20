@@ -12,6 +12,6 @@ trait ParMapLike[K,
                  V,
                  +Repr <: ParMapLike[K, V, Repr, Sequential] with ParMap[K, V],
                  +Sequential <: collection.mutable.Map[K, V] with collection.mutable.MapLike[K, V, Sequential]]
-extends collection.parallel.ParMapLike[K, V, Repr, Sequential]
-   with collection.mutable.MapLike[K, V, Repr]
+extends collection.mutable.MapLike[K, V, Repr]
+   with collection.parallel.ParMapLike[K, V, Repr, Sequential]
 

@@ -31,11 +31,60 @@ package object parallel {
     else sz
   }
 
-  private[parallel] def unsupported(msg: String) = throw new UnsupportedOperationException(msg)
-
   private[parallel] def unsupported = throw new UnsupportedOperationException
 
+  private[parallel] def unsupportedop(msg: String) = throw new UnsupportedOperationException(msg)
+
+  /* implicit conversions */
+
+  /** An implicit conversion providing arrays with a `par` method, which
+   *  returns a parallel array.
+   *
+   *  @tparam T      type of the elements in the array, which is a subtype of AnyRef
+   *  @param array   the array to be parallelized
+   *  @return        a `Parallelizable` object with a `par` method=
+   */
+  implicit def array2ParArray[T <: AnyRef](array: Array[T]) = new Parallelizable[mutable.ParArray[T]] {
+    def par = mutable.ParArray.handoff[T](array)
+  }
+
+  implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new {
+    def isParallel = bf.isInstanceOf[Parallel]
+    def asParallel = bf.asInstanceOf[CanCombineFrom[From, Elem, To]]
+    def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R) = new {
+      def otherwise(notbody: => R) = if (isParallel) isbody(asParallel) else notbody
+    }
+  }
+
+  implicit def traversable2ops[T](t: TraversableOnce[T]) = new {
+    def isParallel = t.isInstanceOf[Parallel]
+    def isParIterable = t.isInstanceOf[ParIterable[_]]
+    def asParIterable = t.asInstanceOf[ParIterable[T]]
+    def isParSeq = t.isInstanceOf[ParSeq[_]]
+    def asParSeq = t.asInstanceOf[ParSeq[T]]
+    def ifParSeq[R](isbody: ParSeq[T] => R) = new {
+      def otherwise(notbody: => R) = if (isParallel) isbody(asParSeq) else notbody
+    }
+    def toParArray = if (t.isInstanceOf[ParArray[_]]) t.asInstanceOf[ParArray[T]] else {
+      val it = t.toIterator
+      val cb = mutable.ParArrayCombiner[T]()
+      while (it.hasNext) cb += it.next
+      cb.result
+    }
+  }
+
+  implicit def throwable2ops(self: Throwable) = new {
+    def alongWith(that: Throwable) = self match {
+      case ct: CompositeThrowable => new CompositeThrowable(ct.throwables + that)
+      case _ => new CompositeThrowable(Set(self, that))
+    }
+  }
+
   /* classes */
+
+  /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
+  final class CompositeThrowable(val throwables: Set[Throwable])
+  extends Throwable("Multiple exceptions thrown during a parallel computation: " + throwables.mkString(", "))
 
   /** Unrolled list node.
    */
@@ -159,45 +208,6 @@ package object parallel {
     } else this
 
   }
-
-  /* implicit conversions */
-
-  /** An implicit conversion providing arrays with a `par` method, which
-   *  returns a parallel array.
-   *
-   *  @tparam T      type of the elements in the array, which is a subtype of AnyRef
-   *  @param array   the array to be parallelized
-   *  @return        a `Parallelizable` object with a `par` method=
-   */
-  implicit def array2ParArray[T <: AnyRef](array: Array[T]) = new Parallelizable[mutable.ParArray[T]] {
-    def par = mutable.ParArray.handoff[T](array)
-  }
-
-  implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new {
-    def isParallel = bf.isInstanceOf[Parallel]
-    def asParallel = bf.asInstanceOf[CanCombineFrom[From, Elem, To]]
-    def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R) = new {
-      def otherwise(notbody: => R) = if (isParallel) isbody(asParallel) else notbody
-    }
-  }
-
-  implicit def traversable2ops[T](t: TraversableOnce[T]) = new {
-    def isParallel = t.isInstanceOf[Parallel]
-    def isParIterable = t.isInstanceOf[ParIterable[_]]
-    def asParIterable = t.asInstanceOf[ParIterable[T]]
-    def isParSeq = t.isInstanceOf[ParSeq[_]]
-    def asParSeq = t.asInstanceOf[ParSeq[T]]
-    def ifParSeq[R](isbody: ParSeq[T] => R) = new {
-      def otherwise(notbody: => R) = if (isParallel) isbody(asParSeq) else notbody
-    }
-    def toParArray = if (t.isInstanceOf[ParArray[_]]) t.asInstanceOf[ParArray[T]] else {
-      val it = t.toIterator
-      val cb = mutable.ParArrayCombiner[T]()
-      while (it.hasNext) cb += it.next
-      cb.result
-    }
-  }
-
 }
 
 

@@ -95,8 +95,18 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
   }
 
   property("mappings must be equal") = forAll(collectionPairs) { case (t, coll) =>
-    val results = for ((f, ind) <- mapFunctions.zipWithIndex)
-      yield ("op index: " + ind) |: t.map(f) == coll.map(f)
+    val results = for ((f, ind) <- mapFunctions.zipWithIndex) yield {
+      val ms = t.map(f)
+      val mp = coll.map(f)
+      if (ms != mp) {
+        println(t)
+        println(coll)
+        println("mapped to: ")
+        println(ms)
+        println(mp)
+      }
+      ("op index: " + ind) |: ms == mp
+    }
     results.reduceLeft(_ && _)
   }
 
@@ -107,7 +117,7 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       if (ps != pp) {
         println(t)
         println(coll)
-        println("partially mapped to: ")
+        println("collected to: ")
         println(ps)
         println(pp)
       }
@@ -166,7 +176,6 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
       println(tsl)
       println(collsl)
       println("as list: " + collsl.toList)
-      println(tsl.asInstanceOf[Seq[T]].sameElements(collsl))
       println(collsl.iterator.hasNext)
       println(collsl.iterator.next)
       println(collsl.iterator.hasNext)

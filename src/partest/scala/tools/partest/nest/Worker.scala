@@ -538,8 +538,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
           val lines = SFile(logFile).lines.filter(_.trim != "").toBuffer
           succeeded = {
             val failures = lines filter (_ startsWith "!")
-            val passedok = lines filter (_ startsWith "+") forall (_ contains "OK")
-            failures.isEmpty && passedok
+            //val passedok = lines filter (_ startsWith "+") forall (_ contains "OK") - OK may wrap!!
+            failures.isEmpty
           }
           if (!succeeded) {
             NestUI.normal("ScalaCheck test failed. Output:\n")

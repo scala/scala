@@ -40,6 +40,8 @@ self =>
 
   override def empty: ParHashMap[K, V] = new ParHashMap[K, V]
 
+  protected[this] override def newCombiner = HashMapCombiner[K, V]
+
   def parallelIterator: ParIterableIterator[(K, V)] = new ParHashMapIterator(trie.iterator, trie.size) with SCPI
 
   def seq = trie

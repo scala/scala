@@ -249,7 +249,9 @@ self =>
       tsk.result
     }
     val copyend = new Copy[U, That](() => pbf(repr), pits(2))
-    executeAndWaitResult(((copystart parallel copymiddle) { _ combine _ } parallel copyend) { _ combine _ } mapResult { _.result })
+    executeAndWaitResult(((copystart parallel copymiddle) { _ combine _ } parallel copyend) { _ combine _ } mapResult {
+      _.result
+    })
   } else patch_sequential(from, patch, replaced)
 
   private def patch_sequential[U >: T, That](from: Int, patch: Seq[U], r: Int)(implicit bf: CanBuildFrom[Repr, U, That]): That = {

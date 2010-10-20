@@ -14,7 +14,7 @@ import scala.collection._
 import scala.collection.parallel.ops._
 
 
-abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("ParallelArray[" + tp + "]") {
+abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("ParArray[" + tp + "]") {
   ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
 

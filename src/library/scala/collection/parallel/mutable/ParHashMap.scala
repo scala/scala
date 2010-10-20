@@ -28,6 +28,8 @@ self =>
 
   override def empty: ParHashMap[K, V] = new ParHashMap[K, V]
 
+  protected[this] override def newCombiner = ParHashMapCombiner[K, V]
+
   def seq = new collection.mutable.HashMap[K, V](hashTableContents)
 
   def parallelIterator = new ParHashMapIterator(0, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
@@ -108,7 +110,9 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     // construct table
     val table = new AddingHashTable(size, tableLoadFactor)
 
-    executeAndWaitResult(new FillBlocks(heads, table, 0, ParHashMapCombiner.numblocks))
+    val insertcount = executeAndWaitResult(new FillBlocks(heads, table, 0, ParHashMapCombiner.numblocks))
+
+    // TODO compare insertcount and size to see if compression is needed
 
     val c = table.hashTableContents
     new ParHashMap(c)
@@ -118,7 +122,8 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
    *  it allocates the table of the required size when created.
    *
    *  Entries are added using the `insertEntry` method. This method checks whether the element
-   *  exists and updates the size map.
+   *  exists and updates the size map. It returns false if the key was already in the table,
+   *  and true if the key was successfully inserted.
    */
   class AddingHashTable(numelems: Int, lf: Int) extends HashTable[K, DefaultEntry[K, V]] {
     import HashTable._
@@ -127,7 +132,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     tableSize = 0
     threshold = newThreshold(_loadFactor, table.length)
     sizeMapInit(table.length)
-    def insertEntry(e: DefaultEntry[K, V]) {
+    def insertEntry(e: DefaultEntry[K, V]) = {
       var h = index(elemHashCode(e.key))
       var olde = table(h).asInstanceOf[DefaultEntry[K, V]]
 
@@ -146,24 +151,27 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
         table(h) = e
         tableSize = tableSize + 1
         nnSizeMapAdd(h)
-      }
+        true
+      } else false
     }
   }
 
   /* tasks */
 
   class FillBlocks(buckets: Array[Unrolled[DefaultEntry[K, V]]], table: AddingHashTable, offset: Int, howmany: Int)
-  extends super.Task[Unit, FillBlocks] {
-    var result = ()
-    def leaf(prev: Option[Unit]) = {
+  extends super.Task[Int, FillBlocks] {
+    var result = Int.MinValue
+    def leaf(prev: Option[Int]) = {
       var i = offset
       val until = offset + howmany
+      result = 0
       while (i < until) {
-        fillBlock(buckets(i))
+        result += fillBlock(buckets(i))
         i += 1
       }
     }
-    private def fillBlock(elems: Unrolled[DefaultEntry[K, V]]) {
+    private def fillBlock(elems: Unrolled[DefaultEntry[K, V]]) = {
+      var insertcount = 0
       var unrolled = elems
       var i = 0
       val t = table
@@ -172,16 +180,20 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
         val chunksz = unrolled.size
         while (i < chunksz) {
           val elem = chunkarr(i)
-          t.insertEntry(elem)
+          if (t.insertEntry(elem)) insertcount += 1
           i += 1
         }
         i = 0
         unrolled = unrolled.next
       }
+      insertcount
     }
     def split = {
       val fp = howmany / 2
       List(new FillBlocks(buckets, table, offset, fp), new FillBlocks(buckets, table, offset + fp, howmany - fp))
+    }
+    override def merge(that: FillBlocks) {
+      this.result += that.result
     }
     def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(ParHashMapCombiner.numblocks, parallelismLevel)
   }
