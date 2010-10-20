@@ -237,7 +237,13 @@ trait HashTable[A] {
     h ^ (h >>> 10)
   }
 
-  protected final def index(hcode: Int) = improve(hcode) & (table.length - 1)
+  // Note:
+  // we take the most significant bits of the hashcode, not the lower ones
+  // this is of crucial importance when populating the table in parallel
+  protected final def index(hcode: Int) = {
+    val ones = table.length - 1
+    (improve(hcode) >> (32 - java.lang.Integer.bitCount(ones))) & ones
+  }
 }
 
 private[collection] object HashTable {
