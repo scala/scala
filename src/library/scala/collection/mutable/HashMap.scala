@@ -14,6 +14,10 @@ package mutable
 import generic._
 
 
+import scala.collection.parallel.mutable.ParHashMap
+
+
+
 /** This class implements mutable maps using a hashtable.
  *
  *  @since 1
@@ -36,15 +40,23 @@ import generic._
  *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(1L)
-class HashMap[A, B] extends Map[A, B]
-                       with MapLike[A, B, HashMap[A, B]]
-                       with HashTable[A] {
+class HashMap[A, B] private[collection] (contents: HashTable.Contents[A, DefaultEntry[A, B]])
+extends Map[A, B]
+   with MapLike[A, B, HashMap[A, B]]
+   with HashTable[A, DefaultEntry[A, B]]
+   with Parallelizable[ParHashMap[A, B]]
+{
+  initWithContents(contents)
+
+  type Entry = DefaultEntry[A, B]
 
   override def empty: HashMap[A, B] = HashMap.empty[A, B]
   override def clear() = clearTable()
   override def size: Int = tableSize
 
-  type Entry = DefaultEntry[A, B]
+  def this() = this(null)
+
+  def par = new ParHashMap[A, B](contents)
 
   def get(key: A): Option[B] = {
     val e = findEntry(key)
@@ -103,6 +115,12 @@ class HashMap[A, B] extends Map[A, B]
     def next = iter.next.value
   }
 
+  /** Toggles whether a size map is used to track hash map statistics.
+   */
+  def useSizeMap(t: Boolean) = if (t) {
+    if (!isSizeMapDefined) sizeMapInitAndRebuild
+  } else sizeMapDisable
+
   private def writeObject(out: java.io.ObjectOutputStream) {
     serializeTo(out, _.value)
   }
@@ -110,6 +128,7 @@ class HashMap[A, B] extends Map[A, B]
   private def readObject(in: java.io.ObjectInputStream) {
     init[B](in, new Entry(_, _))
   }
+
 }
 
 /** $factoryInfo

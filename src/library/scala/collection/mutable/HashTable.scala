@@ -31,25 +31,10 @@ package mutable
  *
  *  @tparam A     type of the elements contained in this hash table.
  */
-trait HashTable[A] {
+trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
   import HashTable._
 
-  protected type Entry >: Null <: HashEntry[A, Entry]
-
-  /** The load factor for the hash table (in 0.001 step).
-   */
-  protected def loadFactor: Int = 750 // corresponds to 75%
-  protected final val loadFactorDenum = 1000;
-
-  /** The initial size of the hash table.
-   */
-  protected def initialSize: Int = 16
-
-  /** The initial threshold
-   */
-  protected def initialThreshold: Int = newThreshold(initialCapacity)
-
-  @transient private[collection] var _loadFactor = loadFactor
+  @transient protected var _loadFactor = defaultLoadFactor
 
   /** The actual hash table.
    */
@@ -61,9 +46,7 @@ trait HashTable[A] {
 
   /** The next size value at which to resize (capacity * load factor).
    */
-  @transient protected var threshold: Int = initialThreshold
-
-  private def initialCapacity = capacity(initialSize)
+  @transient protected var threshold: Int = initialThreshold(_loadFactor)
 
   /**
    * Initializes the collection from the input stream. `f` will be called for each key/value pair
@@ -79,12 +62,12 @@ trait HashTable[A] {
     val size = in.readInt
     assert(size >= 0)
 
-    //val smDefined = in.readBoolean
+    val smDefined = in.readBoolean
 
-    table = new Array(capacity(size * loadFactorDenum / _loadFactor))
-    threshold = newThreshold(table.size)
+    table = new Array(capacity(sizeForThreshold(_loadFactor, size)))
+    threshold = newThreshold(_loadFactor, table.size)
 
-    //if (smDefined) sizeMapInit(table.size)
+    if (smDefined) sizeMapInit(table.size)
 
     var index = 0
     while (index < size) {
@@ -103,16 +86,14 @@ trait HashTable[A] {
    */
   private[collection] def serializeTo[B](out: java.io.ObjectOutputStream, value: Entry => B) {
     out.defaultWriteObject
-    out.writeInt(loadFactor)
+    out.writeInt(_loadFactor)
     out.writeInt(tableSize)
-    //out.writeBoolean(isSizeMapDefined)
+    out.writeBoolean(isSizeMapDefined)
     foreachEntry { entry =>
       out.writeObject(entry.key)
       out.writeObject(value(entry))
     }
   }
-
-  private def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
 
   /** Find entry with given key in table, null if not found.
    */
@@ -131,7 +112,7 @@ trait HashTable[A] {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
-    sizeMapAdd(h)
+    nnSizeMapAdd(h)
     if (tableSize > threshold)
       resize(2 * table.length)
   }
@@ -145,7 +126,7 @@ trait HashTable[A] {
       if (elemEquals(e.key, key)) {
         table(h) = e.next
         tableSize = tableSize - 1
-        sizeMapRemove(h)
+        nnSizeMapRemove(h)
         return e
       } else {
         var e1 = e.next
@@ -156,7 +137,7 @@ trait HashTable[A] {
         if (e1 != null) {
           e.next = e1.next
           tableSize = tableSize - 1
-          sizeMapRemove(h)
+          nnSizeMapRemove(h)
           return e1
         }
       }
@@ -211,16 +192,13 @@ trait HashTable[A] {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }
     tableSize = 0
-    sizeMapReset(0)
+    nnSizeMapReset(0)
   }
-
-  private def newThreshold(size: Int) =
-    ((size.toLong * _loadFactor)/loadFactorDenum).toInt
 
   private def resize(newSize: Int) {
     val oldTable = table
     table = new Array(newSize)
-    sizeMapReset(table.length)
+    nnSizeMapReset(table.length)
     var i = oldTable.length - 1
     while (i >= 0) {
       var e = oldTable(i)
@@ -230,15 +208,18 @@ trait HashTable[A] {
         e.next = table(h).asInstanceOf[Entry]
         table(h) = e
         e = e1
-        sizeMapAdd(h)
+        nnSizeMapAdd(h)
       }
       i = i - 1
     }
-    threshold = newThreshold(newSize)
+    threshold = newThreshold(_loadFactor, newSize)
   }
 
-  protected def sizemap: Array[Int] = null
-  private final def sizeMapBucketSize = 1 << 5
+  @transient protected var sizemap: Array[Int] = null
+  protected final def sizeMapBucketBitSize = 5
+  // so that:
+  protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
+  protected final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
 
   /*
    * The following three sizeMap* functions (Add, Remove, Reset)
@@ -247,27 +228,69 @@ trait HashTable[A] {
    * The size map logically divides the hash table into `sizeMapBucketSize` element buckets
    * by keeping an integer entry for each such bucket. Each integer entry simply denotes
    * the number of elements in the corresponding bucket.
+   * Best understood through an example, see:
+   * table   = [/, 1, /, 6, 90, /, -3, 5]    (8 entries)
+   * sizemap = [     2     |     3      ]    (2 entries)
+   * where sizeMapBucketSize == 4.
    *
    * By default the size map is not initialized, so these methods don't do anything, thus,
    * their impact on hash table performance is negligible. However, if the hash table
    * is converted into a parallel hash table, the size map is initialized, as it will be needed
    * there.
    */
-  protected def sizeMapAdd(h: Int) = if (sizemap ne null) {
-    // TODO
+  protected def nnSizeMapAdd(h: Int) = if (sizemap ne null) {
+    sizemap(h >> sizeMapBucketBitSize) += 1
   }
 
-  protected def sizeMapRemove(h: Int) = if (sizemap ne null) {
-    // TODO
+  protected def nnSizeMapRemove(h: Int) = if (sizemap ne null) {
+    sizemap(h >> sizeMapBucketBitSize) -= 1
   }
 
-  protected def sizeMapReset(nTableLength: Int) = if (sizemap ne null) {
-    // TODO
+  protected def nnSizeMapReset(tableLength: Int) = if (sizemap ne null) {
+    val nsize = calcSizeMapSize(tableLength)
+    if (sizemap.length != nsize) sizemap = new Array[Int](nsize)
+    else java.util.Arrays.fill(sizemap, 0)
   }
 
-  // protected def sizeMapInit(nTableLength: Int) = sizemap = new Array[Int](nTableLength / sizeMapBucketSize)
+  protected def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
 
-  // protected def sizeMapDisable = sizemap = null
+  // discards the previous sizemap and only allocates a new one
+  protected def sizeMapInit(tableLength: Int) {
+    sizemap = new Array[Int](calcSizeMapSize(tableLength))
+  }
+
+  // discards the previous sizemap and populates the new one
+  protected def sizeMapInitAndRebuild {
+    sizeMapInit(table.length)
+
+    // go through the buckets, count elements
+    var tableidx = 0
+    var bucketidx = 0
+    val tbl = table
+    var tableuntil = 0
+    if (tbl.length < sizeMapBucketSize) tableuntil = tbl.length else tableuntil = sizeMapBucketSize
+    val totalbuckets = totalSizeMapBuckets
+    while (bucketidx < totalbuckets) {
+      var currbucketsize = 0
+      while (tableidx < tableuntil) {
+        var e = tbl(tableidx)
+        while (e ne null) {
+          currbucketsize += 1
+          e = e.next
+        }
+        tableidx += 1
+      }
+      sizemap(bucketidx) = currbucketsize
+      tableuntil += sizeMapBucketSize
+      bucketidx += 1
+    }
+  }
+
+  def printSizeMap {
+    println(sizemap.toList)
+  }
+
+  protected def sizeMapDisable = sizemap = null
 
   protected def isSizeMapDefined = sizemap ne null
 
@@ -289,9 +312,45 @@ trait HashTable[A] {
     val ones = table.length - 1
     (improve(hcode) >> (32 - java.lang.Integer.bitCount(ones))) & ones
   }
+
+  protected def initWithContents(c: HashTable.Contents[A, Entry]) = if (c != null) {
+    _loadFactor = c.loadFactor
+    table = c.table
+    tableSize = c.tableSize
+    threshold = c.threshold
+    sizemap = c.sizemap
+  }
+
+  private[collection] def hashTableContents = new HashTable.Contents(
+    _loadFactor,
+    table,
+    tableSize,
+    threshold,
+    sizemap
+  )
 }
 
 private[collection] object HashTable {
+  /** The load factor for the hash table (in 0.001 step).
+   */
+  private[collection] final def defaultLoadFactor: Int = 750 // corresponds to 75%
+  private[collection] final def loadFactorDenum = 1000;
+
+  /** The initial size of the hash table.
+   */
+  private[collection] final def initialSize: Int = 16
+
+  /** The initial threshold.
+   */
+  private[collection] final def initialThreshold(_loadFactor: Int): Int = newThreshold(_loadFactor, initialCapacity)
+
+  private[collection] final def initialCapacity = capacity(initialSize)
+
+  private[collection] final def newThreshold(_loadFactor: Int, size: Int) = ((size.toLong * _loadFactor) / loadFactorDenum).toInt
+
+  private[collection] final def sizeForThreshold(_loadFactor: Int, thr: Int) = thr * loadFactorDenum / _loadFactor
+
+  private[collection] final def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
 
   /**
    * Returns a power of two >= `target`.
@@ -306,4 +365,13 @@ private[collection] object HashTable {
     c |= c >>> 16;
     c + 1;
   }
+
+  class Contents[A, Entry >: Null <: HashEntry[A, Entry]](
+    val loadFactor: Int,
+    val table: Array[HashEntry[A, Entry]],
+    val tableSize: Int,
+    val threshold: Int,
+    val sizemap: Array[Int]
+  )
+
 }

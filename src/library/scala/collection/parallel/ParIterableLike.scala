@@ -141,7 +141,7 @@ self =>
     me: SignalContextPassingIterator[ParIterator] =>
     var signalDelegate: Signalling = IdleSignalling
     def repr = self.repr
-    def split: Seq[ParIterator]
+    def split: Seq[ParIterableIterator[T]]
   }
 
   /** A stackable modification that ensures signal contexts get passed along the iterators.
@@ -489,7 +489,9 @@ self =>
   override def take(n: Int): Repr = {
     val actualn = if (size > n) n else size
     if (actualn < MIN_FOR_COPY) take_sequential(actualn)
-    else executeAndWaitResult(new Take(actualn, cbfactory, parallelIterator) mapResult { _.result })
+    else executeAndWaitResult(new Take(actualn, cbfactory, parallelIterator) mapResult {
+      _.result
+    })
   }
 
   private def take_sequential(n: Int) = {

@@ -15,25 +15,9 @@ package object immutable {
   /* package level methods */
   def repetition[T](elem: T, len: Int) = new Repetition(elem, len)
 
-  /* properties */
-  private[immutable] val unrolledsize = 16
+  /* constants */
 
   /* classes */
-  private[immutable] class Unrolled[T: ClassManifest] {
-    var size = 0
-    var array = new Array[T](unrolledsize)
-    var next: Unrolled[T] = null
-    // adds and returns itself or the new unrolled if full
-    def add(elem: T): Unrolled[T] = if (size < unrolledsize) {
-      array(size) = elem
-      size += 1
-      this
-    } else {
-      next = new Unrolled[T]
-      next.add(elem)
-    }
-    override def toString = "Unrolled(" + array.mkString(", ") + ")"
-  }
 
   /** A (parallel) sequence consisting of `length` elements `elem`. Used in the `padTo` method.
    *
@@ -42,8 +26,7 @@ package object immutable {
    *  @param length    the length of the collection
    */
   private[parallel] class Repetition[T](elem: T, val length: Int) extends ParSeq[T] {
-    self =>
-
+  self =>
     def apply(idx: Int) = if (0 <= idx && idx < length) elem else throw new IndexOutOfBoundsException
     def seq = throw new UnsupportedOperationException
     def update(idx: Int, elem: T) = throw new UnsupportedOperationException

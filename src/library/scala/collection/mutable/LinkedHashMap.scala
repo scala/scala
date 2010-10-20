@@ -47,7 +47,7 @@ object LinkedHashMap extends MutableMapFactory[LinkedHashMap] {
 @serializable @SerialVersionUID(1L)
 class LinkedHashMap[A, B] extends Map[A, B]
                              with MapLike[A, B, LinkedHashMap[A, B]]
-                             with HashTable[A] {
+                             with HashTable[A, LinkedEntry[A, B]] {
 
   override def empty = LinkedHashMap.empty[A, B]
   override def size = tableSize

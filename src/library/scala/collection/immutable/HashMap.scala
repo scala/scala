@@ -77,7 +77,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
 
   protected def get0(key: A, hash: Int, level: Int): Option[B] = None
 
-  def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[B1]): HashMap[A, B1] =
+  private[collection] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[B1]): HashMap[A, B1] =
     new HashMap.HashMap1(key, hash, value, kv)
 
   protected def removed0(key: A, hash: Int, level: Int): HashMap[A, B] = this

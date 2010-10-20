@@ -18,16 +18,16 @@ extends collection.mutable.Map[K, V]
 
   override def mapCompanion: GenericParMapCompanion[ParMap] = ParMap
 
-  override def empty: ParMap[K, V] = null // TODO
+  override def empty: ParMap[K, V] = new ParHashMap[K, V]
 
 }
 
 
 
 object ParMap extends ParMapFactory[ParMap] {
-  def empty[K, V]: ParMap[K, V] = null // TODO
+  def empty[K, V]: ParMap[K, V] = new ParHashMap[K, V]
 
-  def newCombiner[K, V]: Combiner[(K, V), ParMap[K, V]] = null // TODO
+  def newCombiner[K, V]: Combiner[(K, V), ParMap[K, V]] = ParHashMapCombiner.apply[K, V]
 
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParMap[K, V]] = new CanCombineFromMap[K, V]
 

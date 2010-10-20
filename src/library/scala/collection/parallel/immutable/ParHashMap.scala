@@ -11,6 +11,7 @@ import scala.collection.parallel.ParMapLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParIterableIterator
 import scala.collection.parallel.EnvironmentPassingCombiner
+import scala.collection.parallel.Unrolled
 import scala.collection.generic.ParMapFactory
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.GenericParMapTemplate
@@ -105,21 +106,13 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 }
 
 
-private[immutable] trait HashMapCombiner[K, V]
-extends Combiner[(K, V), ParHashMap[K, V]] {
+private[immutable] abstract class HashMapCombiner[K, V]
+extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), HashMapCombiner[K, V]](HashMapCombiner.rootsize) {
 self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   import HashMapCombiner._
-  var heads = new Array[Unrolled[(K, V)]](rootsize)
-  var lasts = new Array[Unrolled[(K, V)]](rootsize)
-  var size: Int = 0
-
-  def clear = {
-    heads = new Array[Unrolled[(K, V)]](rootsize)
-    lasts = new Array[Unrolled[(K, V)]](rootsize)
-  }
 
   def +=(elem: (K, V)) = {
-    size += 1
+    sz += 1
     val hc = elem._1.##
     val pos = hc & 0x1f
     if (lasts(pos) eq null) {
@@ -131,26 +124,6 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     lasts(pos) = lasts(pos).add(elem)
     this
   }
-
-  def combine[N <: (K, V), NewTo >: ParHashMap[K, V]](other: Combiner[N, NewTo]): Combiner[N, NewTo] = if (this ne other) {
-    // ParHashMap.totalcombines.incrementAndGet
-    if (other.isInstanceOf[HashMapCombiner[_, _]]) {
-      val that = other.asInstanceOf[HashMapCombiner[K, V]]
-      var i = 0
-      while (i < rootsize) {
-        if (lasts(i) eq null) {
-          heads(i) = that.heads(i)
-          lasts(i) = that.lasts(i)
-        } else {
-          lasts(i).next = that.heads(i)
-          if (that.lasts(i) ne null) lasts(i) = that.lasts(i)
-        }
-        i += 1
-      }
-      size = size + that.size
-      this
-    } else error("Unexpected combiner type.")
-  } else this
 
   def result = {
     val buckets = heads.filter(_ != null)
@@ -216,8 +189,8 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
 }
 
 
-object HashMapCombiner {
-  def apply[K, V] = new HashMapCombiner[K, V] with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] {}
+private[parallel] object HashMapCombiner {
+  def apply[K, V] = new HashMapCombiner[K, V] with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
 
   private[immutable] val rootbits = 5
   private[immutable] val rootsize = 1 << 5
