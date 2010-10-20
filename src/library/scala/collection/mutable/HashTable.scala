@@ -79,8 +79,12 @@ trait HashTable[A] {
     val size = in.readInt
     assert(size >= 0)
 
+    //val smDefined = in.readBoolean
+
     table = new Array(capacity(size * loadFactorDenum / _loadFactor))
     threshold = newThreshold(table.size)
+
+    //if (smDefined) sizeMapInit(table.size)
 
     var index = 0
     while (index < size) {
@@ -101,6 +105,7 @@ trait HashTable[A] {
     out.defaultWriteObject
     out.writeInt(loadFactor)
     out.writeInt(tableSize)
+    //out.writeBoolean(isSizeMapDefined)
     foreachEntry { entry =>
       out.writeObject(entry.key)
       out.writeObject(value(entry))
@@ -126,6 +131,7 @@ trait HashTable[A] {
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
     tableSize = tableSize + 1
+    sizeMapAdd(h)
     if (tableSize > threshold)
       resize(2 * table.length)
   }
@@ -139,6 +145,7 @@ trait HashTable[A] {
       if (elemEquals(e.key, key)) {
         table(h) = e.next
         tableSize = tableSize - 1
+        sizeMapRemove(h)
         return e
       } else {
         var e1 = e.next
@@ -149,6 +156,7 @@ trait HashTable[A] {
         if (e1 != null) {
           e.next = e1.next
           tableSize = tableSize - 1
+          sizeMapRemove(h)
           return e1
         }
       }
@@ -203,6 +211,7 @@ trait HashTable[A] {
     var i = table.length - 1
     while (i >= 0) { table(i) = null; i = i - 1 }
     tableSize = 0
+    sizeMapReset(0)
   }
 
   private def newThreshold(size: Int) =
@@ -211,6 +220,7 @@ trait HashTable[A] {
   private def resize(newSize: Int) {
     val oldTable = table
     table = new Array(newSize)
+    sizeMapReset(table.length)
     var i = oldTable.length - 1
     while (i >= 0) {
       var e = oldTable(i)
@@ -220,11 +230,46 @@ trait HashTable[A] {
         e.next = table(h).asInstanceOf[Entry]
         table(h) = e
         e = e1
+        sizeMapAdd(h)
       }
       i = i - 1
     }
     threshold = newThreshold(newSize)
   }
+
+  protected def sizemap: Array[Int] = null
+  private final def sizeMapBucketSize = 1 << 5
+
+  /*
+   * The following three sizeMap* functions (Add, Remove, Reset)
+   * are used to update the size map of the hash table.
+   *
+   * The size map logically divides the hash table into `sizeMapBucketSize` element buckets
+   * by keeping an integer entry for each such bucket. Each integer entry simply denotes
+   * the number of elements in the corresponding bucket.
+   *
+   * By default the size map is not initialized, so these methods don't do anything, thus,
+   * their impact on hash table performance is negligible. However, if the hash table
+   * is converted into a parallel hash table, the size map is initialized, as it will be needed
+   * there.
+   */
+  protected def sizeMapAdd(h: Int) = if (sizemap ne null) {
+    // TODO
+  }
+
+  protected def sizeMapRemove(h: Int) = if (sizemap ne null) {
+    // TODO
+  }
+
+  protected def sizeMapReset(nTableLength: Int) = if (sizemap ne null) {
+    // TODO
+  }
+
+  // protected def sizeMapInit(nTableLength: Int) = sizemap = new Array[Int](nTableLength / sizeMapBucketSize)
+
+  // protected def sizeMapDisable = sizemap = null
+
+  protected def isSizeMapDefined = sizemap ne null
 
   protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
 
