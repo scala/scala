@@ -347,7 +347,8 @@ self =>
       try {
         this forall {
           case (k, v) => that.get(k.asInstanceOf[b]) match {
-            case Some(`v`) => true
+            case Some(`v`) =>
+              true
             case _ => false
           }
         }

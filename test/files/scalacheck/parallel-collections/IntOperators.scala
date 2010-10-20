@@ -11,7 +11,7 @@ trait IntOperators extends Operators[Int] {
   def existsPredicates = List(_ >= 0, _ < 0, _ % 2 == 0, _ == 55, _ == 505, _ == 5005)
   def findPredicates = List(_ >= 0, _ % 2 == 0, _ < 0, _ == 50, _ == 500, _ == 5000)
   def mapFunctions = List(-_)
-  def partialMapFunctions = List({case x => -x}, { case 0 => -1; case x if x > 0 => x + 1})
+  def partialMapFunctions = List({case x => -x}, { case 0 => -1; case x if x > 0 => x + 1}, {case x if x % 3 == 0 => x / 3})
   def flatMapFunctions = List(
       (n: Int) => if (n < 0) List() else if (n % 2 == 0) List(1, 2, 3) else List(4, 5, 6),
       (n: Int) => List[Int](),

@@ -14,13 +14,15 @@ import scala.collection._
 import scala.collection.parallel.ops._
 
 
-abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelIterableCheck[(K, V)]("immutable.ParHashMap[" + tp + "]") {
+abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K, V]("immutable.ParHashMap[" + tp + "]") {
   ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
 
   type CollType = ParHashMap[K, V]
 
   def isCheckingViews = false
+
+  def hasStrictOrder = false
 
   def instances(vals: Seq[Gen[(K, V)]]): Gen[Iterable[(K, V)]] = sized { sz =>
     var hm = new immutable.HashMap[K, V]
@@ -53,6 +55,13 @@ with PairValues[Int, Int]
   val intoperators = new IntOperators {}
   def voperators = intoperators
   def koperators = intoperators
+
+  override def printDataStructureDebugInfo(ds: AnyRef) = ds match {
+    case pm: ParHashMap[k, v] =>
+      pm.printDebugInfo
+    case _ =>
+      println("could not match data structure type: " + ds.getClass)
+  }
 }
 
 

@@ -116,7 +116,7 @@ package object parallel {
         unrolled = unrolled.next
       }
     }
-    override def toString = array.mkString("Unrolled(", ", ", ")")
+    override def toString = array.take(size).mkString("Unrolled(", ", ", ")") + (if (next ne null) next.toString else "")
   }
 
   /** A helper iterator for iterating very small array buffers.

@@ -22,6 +22,8 @@ abstract class ParallelArrayCheck[T](tp: String) extends ParallelSeqCheck[T]("Pa
 
   def isCheckingViews = false
 
+  def hasStrictOrder = true
+
   def instances(vals: Seq[Gen[T]]): Gen[Seq[T]] = sized { sz =>
     val a = new mutable.ArrayBuffer[T](sz)
     val gen = vals(rnd.nextInt(vals.size))

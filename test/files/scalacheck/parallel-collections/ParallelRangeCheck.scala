@@ -23,6 +23,8 @@ object ParallelRangeCheck extends ParallelSeqCheck[Int]("ParallelRange[Int]") wi
 
   type CollType = collection.parallel.ParSeq[Int]
 
+  def hasStrictOrder = true
+
   def isCheckingViews = false
 
   def instances(vals: Seq[Gen[Int]]): Gen[Seq[Int]] = sized { start =>

@@ -82,12 +82,28 @@ self =>
     }
     def next: (K, V) = {
       i += 1
-      triter.next
+      val r = triter.next
+      r
     }
     def hasNext: Boolean = {
       i < sz
     }
     def remaining = sz - i
+  }
+
+  private[parallel] def printDebugInfo {
+    println("Parallel hash trie")
+    println("Top level inner trie type: " + trie.getClass)
+    trie match {
+      case hm: HashMap.HashMap1[k, v] =>
+        println("single node type")
+        println("key stored: " + hm.getKey)
+        println("hash of key: " + hm.getHash)
+        println("computed hash of " + hm.getKey + ": " + hm.computeHashFor(hm.getKey))
+        println("trie.get(key): " + hm.get(hm.getKey))
+      case _ =>
+        println("other kind of node")
+    }
   }
 
 }
@@ -112,10 +128,11 @@ private[immutable] abstract class HashMapCombiner[K, V]
 extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), HashMapCombiner[K, V]](HashMapCombiner.rootsize) {
 self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   import HashMapCombiner._
+  val emptyTrie = HashMap.empty[K, V]
 
   def +=(elem: (K, V)) = {
     sz += 1
-    val hc = elem._1.##
+    val hc = emptyTrie.computeHash(elem._1)
     val pos = hc & 0x1f
     if (lasts(pos) eq null) {
       // initialize bucket
@@ -149,6 +166,10 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     }
   }
 
+  override def toString = {
+    "HashTrieCombiner(buckets:\n\t" + heads.filter(_ != null).mkString("\n\t") + ")\n"
+  }
+
   /* tasks */
 
   class CreateTrie(buckets: Array[Unrolled[(K, V)]], root: Array[HashMap[K, V]], offset: Int, howmany: Int) extends super.Task[Unit, CreateTrie] {
@@ -171,7 +192,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
         val chunksz = unrolled.size
         while (i < chunksz) {
           val kv = chunkarr(i)
-          val hc = kv._1.##
+          val hc = trie.computeHash(kv._1)
           trie = trie.updated0(kv._1, hc, rootbits, kv._2, kv, null)
           i += 1
         }

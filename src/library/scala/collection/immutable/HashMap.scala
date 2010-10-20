@@ -71,7 +71,7 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
     h ^ (h >>> 10)
   }
 
-  protected def computeHash(key: A) = improve(elemHashCode(key))
+  private[collection] def computeHash(key: A) = improve(elemHashCode(key))
 
   protected type Merger[B1] = ((A, B1), (A, B1)) => (A, B1)
 
@@ -114,6 +114,10 @@ object HashMap extends ImmutableMapFactory[HashMap] {
 
   class HashMap1[A,+B](private[HashMap] var key: A, private[HashMap] var hash: Int, private[HashMap] var value: (B @uncheckedVariance), private[HashMap] var kv: (A,B @uncheckedVariance)) extends HashMap[A,B] {
     override def size = 1
+
+    private[collection] def getKey = key
+    private[collection] def getHash = hash
+    private[collection] def computeHashFor(k: A) = computeHash(k)
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash && key == this.key) Some(value) else None
@@ -520,11 +524,23 @@ time { mNew.iterator.foreach( p => ()) }
     // splits this iterator into 2 iterators
     // returns the 1st iterator, its number of elements, and the second iterator
     def split: ((Iterator[(A, B)], Int), Iterator[(A, B)]) = {
+      def collisionToArray(c: HashMapCollision1[_, _]) =
+        c.asInstanceOf[HashMapCollision1[A, B]].kvs.toArray map { HashMap() + _ }
+      def arrayToIterators(arr: Array[HashMap[A, B]]) = {
+        val (fst, snd) = arr.splitAt(arr.length / 2)
+        val szsnd = snd.foldLeft(0)(_ + _.size)
+        ((new TrieIterator(snd), szsnd), new TrieIterator(fst))
+      }
+      def splitArray(ad: Array[HashMap[A, B]]): ((Iterator[(A, B)], Int), Iterator[(A, B)]) = if (ad.length > 1) {
+        arrayToIterators(ad)
+      } else ad(0) match {
+        case c: HashMapCollision1[a, b] => arrayToIterators(collisionToArray(c.asInstanceOf[HashMapCollision1[A, B]]))
+        case hm: HashTrieMap[a, b] => splitArray(hm.elems.asInstanceOf[Array[HashMap[A, B]]])
+      }
+
       // 0) simple case: no elements have been iterated - simply divide arrayD
       if (arrayD != null && depth == 0 && posD == 0) {
-        val (fst, snd) = arrayD.splitAt(arrayD.length / 2)
-        val szfst = fst.foldLeft(0)(_ + _.size)
-        return ((new TrieIterator(fst), szfst), new TrieIterator(snd))
+        return splitArray(arrayD)
       }
 
       // otherwise, some elements have been iterated over
@@ -563,13 +579,11 @@ time { mNew.iterator.foreach( p => ()) }
           if (posD == arrayD.length - 1) {
             // 3a) positioned at the last element of arrayD
             val arr: Array[HashMap[A, B]] = arrayD(posD) match {
-              case c: HashMapCollision1[_, _] => c.asInstanceOf[HashMapCollision1[A, B]].kvs.toArray map { HashMap() + _ }
+              case c: HashMapCollision1[a, b] => collisionToArray(c).asInstanceOf[Array[HashMap[A, B]]]
               case ht: HashTrieMap[_, _] => ht.asInstanceOf[HashTrieMap[A, B]].elems
               case _ => error("cannot divide single element")
             }
-            val (fst, snd) = arr.splitAt(arr.length / 2)
-            val szsnd = snd.foldLeft(0)(_ + _.size)
-            ((new TrieIterator(snd), szsnd), new TrieIterator(fst))
+            arrayToIterators(arr)
           } else {
             // 3b) arrayD has more free elements
             val (fst, snd) = arrayD.splitAt(arrayD.length - (arrayD.length - posD + 1) / 2)

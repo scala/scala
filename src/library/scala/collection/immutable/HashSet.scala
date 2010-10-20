@@ -70,7 +70,7 @@ class HashSet[A] extends Set[A]
     h ^ (h >>> 10)
   }
 
-  protected def computeHash(key: A) = improve(elemHashCode(key))
+  private[collection] def computeHash(key: A) = improve(elemHashCode(key))
 
   protected def get0(key: A, hash: Int, level: Int): Boolean = false
 
@@ -335,11 +335,23 @@ time { mNew.iterator.foreach( p => ()) }
     // splits this iterator into 2 iterators
     // returns the 1st iterator, its number of elements, and the second iterator
     def split: ((Iterator[A], Int), Iterator[A]) = {
+      def collisionToArray(c: HashSetCollision1[_]) =
+        c.asInstanceOf[HashSetCollision1[A]].ks.toList map { HashSet() + _ } toArray
+      def arrayToIterators(arr: Array[HashSet[A]]) = {
+        val (fst, snd) = arr.splitAt(arr.length / 2)
+        val szsnd = snd.foldLeft(0)(_ + _.size)
+        ((new TrieIterator(snd), szsnd), new TrieIterator(fst))
+      }
+      def splitArray(ad: Array[HashSet[A]]): ((Iterator[A], Int), Iterator[A]) = if (ad.length > 1) {
+        arrayToIterators(ad)
+      } else ad(0) match {
+        case c: HashSetCollision1[a] => arrayToIterators(collisionToArray(c.asInstanceOf[HashSetCollision1[A]]))
+        case hm: HashTrieSet[a] => splitArray(hm.elems.asInstanceOf[Array[HashSet[A]]])
+      }
+
       // 0) simple case: no elements have been iterated - simply divide arrayD
       if (arrayD != null && depth == 0 && posD == 0) {
-        val (fst, snd) = arrayD.splitAt(arrayD.length / 2)
-        val szfst = fst.foldLeft(0)(_ + _.size)
-        return ((new TrieIterator(fst), szfst), new TrieIterator(snd))
+        return splitArray(arrayD)
       }
 
       // otherwise, some elements have been iterated over
@@ -378,13 +390,11 @@ time { mNew.iterator.foreach( p => ()) }
           if (posD == arrayD.length - 1) {
             // 3a) positioned at the last element of arrayD
             val arr: Array[HashSet[A]] = arrayD(posD) match {
-              case c: HashSetCollision1[_] => c.asInstanceOf[HashSetCollision1[A]].ks.toList map { HashSet() + _ } toArray
+              case c: HashSetCollision1[a] => collisionToArray(c).asInstanceOf[Array[HashSet[A]]]
               case ht: HashTrieSet[_] => ht.asInstanceOf[HashTrieSet[A]].elems
               case _ => error("cannot divide single element")
             }
-            val (fst, snd) = arr.splitAt(arr.length / 2)
-            val szsnd = snd.foldLeft(0)(_ + _.size)
-            ((new TrieIterator(snd), szsnd), new TrieIterator(fst))
+            arrayToIterators(arr)
           } else {
             // 3b) arrayD has more free elements
             val (fst, snd) = arrayD.splitAt(arrayD.length - (arrayD.length - posD + 1) / 2)

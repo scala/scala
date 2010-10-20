@@ -983,7 +983,11 @@ self =>
   extends Transformer[(Combiner[U, This], Combiner[U, This]), Span[U, This]] {
     var result: (Combiner[U, This], Combiner[U, This]) = null
     def leaf(prev: Option[(Combiner[U, This], Combiner[U, This])]) = if (pos < pit.indexFlag) {
-      result = pit.span2combiners(pred, reuse(prev.map(_._1), cbf()), reuse(prev.map(_._2), cbf()))
+      // val lst = pit.toList
+      // val pa = mutable.ParArray(lst: _*)
+      // val str = "At leaf we will iterate: " + pa.parallelIterator.toList
+      result = pit.span2combiners(pred, cbf(), cbf()) // do NOT reuse old combiners here, lest ye be surprised
+      // println("\nAt leaf result is: " + result)
       if (result._2.size > 0) pit.setIndexFlagIfLesser(pos)
     } else {
       result = (reuse(prev.map(_._2), cbf()), pit.copy2builder[U, This, Combiner[U, This]](reuse(prev.map(_._2), cbf())))
