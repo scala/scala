@@ -155,7 +155,7 @@ abstract class LambdaLift extends InfoTransform {
           if (settings.debug.value) log("" + sym + " is free in " + owner);
           if ((sym.isVariable || (sym.isValue && sym.isLazy)) && !sym.hasFlag(CAPTURED)) {
             sym setFlag CAPTURED
-            val symClass = sym.tpe.typeSymbol;
+            val symClass = sym.tpe.typeSymbol
             atPhase(phase.next) {
               sym updateInfo (
                 if (sym.hasAnnotation(VolatileAttr))
@@ -433,7 +433,7 @@ abstract class LambdaLift extends InfoTransform {
               else if (sym.isLocal && !isSameOwnerEnclosure(sym))
                 atPos(tree.pos)(proxyRef(sym))
               else tree
-            else tree;
+            else tree
           if (sym.isCapturedVariable)
             atPos(tree.pos) {
               val tp = tree.tpe
@@ -441,6 +441,12 @@ abstract class LambdaLift extends InfoTransform {
               if (elemTree.tpe.typeSymbol != tp.typeSymbol) gen.mkAttributedCast(elemTree, tp) else elemTree
             }
           else tree1
+        case Block(stats, expr0) =>
+          val (lzyVals, rest) = stats.partition {
+                      case stat@ValDef(_, _, _, _) if stat.symbol.isLazy => true
+                      case _                                             => false
+                  }
+          treeCopy.Block(tree, lzyVals:::rest, expr0)
         case _ =>
           tree
       }

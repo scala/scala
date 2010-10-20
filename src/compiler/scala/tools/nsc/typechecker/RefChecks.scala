@@ -795,16 +795,20 @@ abstract class RefChecks extends InfoTransform {
       currentLevel = currentLevel.outer
     }
 
+    private def normalizeSymToRef(sym: Symbol): Symbol =
+      if(sym isLazy) sym.lazyAccessor else sym
+
     private def enterSyms(stats: List[Tree]) {
       var index = -1
       for (stat <- stats) {
         index = index + 1;
         stat match {
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) | ValDef(_, _, _, _) =>
-            assert(stat.symbol != NoSymbol, stat);//debug
-            if (stat.symbol.isLocal) {
-              currentLevel.scope.enter(stat.symbol)
-              symIndex(stat.symbol) = index;
+            //assert(stat.symbol != NoSymbol, stat);//debug
+            val sym = normalizeSymToRef(stat.symbol)
+            if (sym.isLocal) {
+              currentLevel.scope.enter(sym)
+              symIndex(sym) = index;
             }
           case _ =>
         }
@@ -918,111 +922,115 @@ abstract class RefChecks extends InfoTransform {
      *    - for all other lazy values z the accessor is a block of this form:
      *      { z = <rhs>; z } where z can be an identifier or a field.
      */
-    def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
-      case ModuleDef(mods, name, impl) =>
-        val sym = tree.symbol
-        if (sym.isStatic) {
-          val cdef = ClassDef(mods | MODULE, name, List(), impl)
-            .setPos(tree.pos)
-            .setSymbol(sym.moduleClass)
-            .setType(NoType)
-
-          if (!sym.allOverriddenSymbols.isEmpty) {
-            val factory = sym.owner.newMethod(sym.pos, sym.name)
-              .setFlag(sym.flags | STABLE).resetFlag(MODULE)
-              .setInfo(PolyType(List(), sym.moduleClass.tpe))
-            sym.owner.info.decls.enter(factory)
-            val ddef =
-              atPhase(phase.next) {
-                localTyper.typed {
-                  gen.mkModuleAccessDef(factory, sym.tpe)
-                }
-              }
-            transformTrees(List(cdef, ddef))
-          } else {
-            List(transform(cdef))
-          }
-        } else {
-          def lazyNestedObjectTrees(transformedInfo: Boolean) = {
+    def transformStat(tree: Tree, index: Int): List[Tree] = {
+      def checkForwardReference(sym: Symbol) =
+        if (sym.isLocal && index <= currentLevel.maxindex) {
+          if (settings.debug.value) Console.println(currentLevel.refsym)
+          unit.error(currentLevel.refpos, "forward reference extends over definition of " + sym)
+        }
+      tree match {
+        case ModuleDef(mods, name, impl) =>
+          val sym = tree.symbol
+          if (sym.isStatic) {
             val cdef = ClassDef(mods | MODULE, name, List(), impl)
               .setPos(tree.pos)
-              .setSymbol(if (!transformedInfo) sym.moduleClass else sym.lazyAccessor)
+              .setSymbol(sym.moduleClass)
               .setType(NoType)
 
-            val vdef = localTyper.typedPos(tree.pos){
-              if (!transformedInfo)
-                gen.mkModuleVarDef(sym)
-              else {
-                val vsym = sym.owner.info.decl(nme.moduleVarName(sym.name))
-                assert(vsym != NoSymbol, "Nested object after transformInfo set module variable")
-                ValDef(vsym, EmptyTree)
-              }
-            }
-            val vsym = vdef.symbol
-
-            val ddef = atPhase(phase.next) {
-              localTyper.typed {
-                val rhs = gen.newModule(sym, vsym.tpe)
-                if (!transformedInfo) {
-                  sym.resetFlag(MODULE | FINAL | CASE)
-                  sym.setFlag(LAZY | ACCESSOR | SYNTHETIC)
-
-                  sym.setInfo(PolyType(List(), sym.tpe))
-                  sym setFlag (lateMETHOD | STABLE)
+            if (!sym.allOverriddenSymbols.isEmpty) {
+              val factory = sym.owner.newMethod(sym.pos, sym.name)
+                .setFlag(sym.flags | STABLE).resetFlag(MODULE)
+                .setInfo(PolyType(List(), sym.moduleClass.tpe))
+              sym.owner.info.decls.enter(factory)
+              val ddef =
+                atPhase(phase.next) {
+                  localTyper.typed {
+                    gen.mkModuleAccessDef(factory, sym.tpe)
+                  }
                 }
-
-                val ownerTransformer = new ChangeOwnerTraverser(vsym, sym)
-                val lazyDef = atPos(tree.pos)(
-                  DefDef(sym, ownerTransformer(
-                    if (sym.owner.isTrait) rhs
-                    else Block(List(
-                            Assign(gen.mkAttributedRef(vsym), rhs)),
-                            gen.mkAttributedRef(vsym)))
-                       ))
-                lazyDef
-              }
+              transformTrees(List(cdef, ddef))
+            } else {
+              List(transform(cdef))
             }
-            transformTrees(List(cdef, vdef, ddef))
+          } else {
+            def lazyNestedObjectTrees(transformedInfo: Boolean) = {
+              val cdef = ClassDef(mods | MODULE, name, List(), impl)
+                .setPos(tree.pos)
+                .setSymbol(if (!transformedInfo) sym.moduleClass else sym.lazyAccessor)
+                .setType(NoType)
+
+              val vdef = localTyper.typedPos(tree.pos){
+                if (!transformedInfo)
+                  gen.mkModuleVarDef(sym)
+                else {
+                  val vsym0 = sym.owner.info.decl(nme.moduleVarName(sym.name))
+                  // In case we are dealing with local symbol then we already have correct error with forward reference
+                  ValDef(if (vsym0 == NoSymbol) gen.mkModuleVarDef(sym).symbol else vsym0, EmptyTree)
+                }
+              }
+              val vsym = vdef.symbol
+
+              val ddef = atPhase(phase.next) {
+                localTyper.typed {
+                  val rhs = gen.newModule(sym, vsym.tpe)
+                  if (!transformedInfo) {
+                    sym.resetFlag(MODULE | FINAL | CASE)
+                    sym.setFlag(LAZY | ACCESSOR | SYNTHETIC)
+
+                    sym.setInfo(PolyType(List(), sym.tpe))
+                    sym setFlag (lateMETHOD | STABLE)
+                  }
+
+                  val ownerTransformer = new ChangeOwnerTraverser(vsym, sym)
+                  val lazyDef = atPos(tree.pos)(
+                    DefDef(sym, ownerTransformer(
+                      if (sym.owner.isTrait) rhs
+                      else Block(List(
+                              Assign(gen.mkAttributedRef(vsym), rhs)),
+                              gen.mkAttributedRef(vsym)))
+                         ))
+                  lazyDef
+                }
+              }
+              transformTrees(List(cdef, vdef, ddef))
+            }
+            lazyNestedObjectTrees(sym.hasFlag(LAZY))
           }
-          lazyNestedObjectTrees(sym.hasFlag(LAZY))
-        }
 
-      case ValDef(_, _, _, _) =>
-        val tree1 = transform(tree); // important to do before forward reference check
-        val ValDef(_, _, _, rhs) = tree1
-        if (tree.symbol.hasFlag(LAZY)) {
-          assert(tree.symbol.isTerm, tree.symbol)
-          val vsym = tree.symbol
-          val hasUnitType = (tree.symbol.tpe.typeSymbol == UnitClass)
-          val lazyDefSym = vsym.lazyAccessor
-          assert(lazyDefSym != NoSymbol, vsym)
-          val ownerTransformer = new ChangeOwnerTraverser(vsym, lazyDefSym)
-          val lazyDef = atPos(tree.pos)(
-              DefDef(lazyDefSym, ownerTransformer(
-                if (tree.symbol.owner.isTrait // for traits, this is further transformed in mixins
-                    || hasUnitType) rhs
-                else Block(List(
-                       Assign(gen.mkAttributedRef(vsym), rhs)),
-                       gen.mkAttributedRef(vsym)))))
-          log("Made lazy def: " + lazyDef)
-          if (hasUnitType)
-            typed(lazyDef) :: Nil
-          else
-            typed(ValDef(vsym, EmptyTree)) :: atPhase(phase.next) { typed(lazyDef) } :: Nil
-        } else {
-          if (tree.symbol.isLocal && index <= currentLevel.maxindex) {
-            if (settings.debug.value)
-              Console.println(currentLevel.refsym)
-            unit.error(currentLevel.refpos, "forward reference extends over definition of " + tree.symbol);
+        case ValDef(_, _, _, _) =>
+          val tree1 = transform(tree); // important to do before forward reference check
+
+          if (tree.symbol.hasFlag(LAZY)) {
+            assert(tree.symbol.isTerm, tree.symbol)
+            val ValDef(_, _, _, rhs) = tree1
+            val vsym = tree.symbol
+            val hasUnitType = (tree.symbol.tpe.typeSymbol == UnitClass)
+            val lazyDefSym = vsym.lazyAccessor
+            assert(lazyDefSym != NoSymbol, vsym)
+            val ownerTransformer = new ChangeOwnerTraverser(vsym, lazyDefSym)
+            val lazyDef = atPos(tree.pos)(
+                DefDef(lazyDefSym, ownerTransformer(
+                  if (tree.symbol.owner.isTrait // for traits, this is further transformed in mixins
+                      || hasUnitType) rhs
+                  else Block(List(
+                         Assign(gen.mkAttributedRef(vsym), rhs)),
+                         gen.mkAttributedRef(vsym)))))
+            log("Made lazy def: " + lazyDef)
+            if (hasUnitType)
+              typed(lazyDef) :: Nil
+            else
+              typed(ValDef(vsym, EmptyTree)) :: atPhase(phase.next) { typed(lazyDef) } :: Nil
+          } else {
+            checkForwardReference(normalizeSymToRef(tree.symbol))
+            List(tree1)
           }
-          List(tree1)
-        }
 
-      case Import(_, _) =>
-        List()
+        case Import(_, _) =>
+          List()
 
-      case _ =>
-        List(transform(tree))
+        case _ =>
+          List(transform(tree))
+      }
     }
 
     /******** Begin transform inner function section ********/
@@ -1328,6 +1336,13 @@ abstract class RefChecks extends InfoTransform {
 
           case x @ Select(_, _) =>
             transformSelect(x)
+
+          case UnApply(fun, args) =>
+            transform(fun) // just make sure we enterReference for unapply symbols, note that super.transform(tree) would not transform(fun)
+                           // transformTrees(args) // TODO: is this necessary? could there be forward references in the args??
+                           // probably not, until we allow parameterised extractors
+            tree
+
 
           case _ => tree
         }
