@@ -39,8 +39,7 @@ object Attribute {
     }
 }
 
-abstract trait Attribute extends MetaData
-{
+abstract trait Attribute extends MetaData {
   def pre: String        // will be null if unprefixed
   val key: String
   val value: Seq[Node]
@@ -70,7 +69,7 @@ abstract trait Attribute extends MetaData
     case _              => false
   }
   override def strict_==(other: Equality) = other match {
-    case x: Attribute   => (pre == x.pre) && (key == x.key) && (value sameElements x.value)
+    case x: Attribute   => (pre == x.pre) && (key == x.key) && (value sameElements x.value) && (next == x.next)
     case _              => false
   }
   override def basisForHashCode = List(pre, key, value)
