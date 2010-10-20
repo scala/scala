@@ -156,7 +156,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     val buckets = heads.filter(_ != null)
     val root = new Array[HashMap[K, V]](buckets.length)
 
-    executeAndWait(new CreateTrie(buckets, root, 0, buckets.length))
+    executeAndWaitResult(new CreateTrie(buckets, root, 0, buckets.length))
 
     var bitmap = 0
     var i = 0

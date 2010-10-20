@@ -92,9 +92,6 @@ trait Tasks {
   /** Executes a task and returns a future. Forwards an exception if some task threw it. */
   def execute[R, Tp](fjtask: TaskType[R, Tp]): () => R
 
-  /** Executes a task and waits for it to finish. Forwards an exception if some task threw it. */
-  def executeAndWait[R, Tp](task: TaskType[R, Tp])
-
   /** Executes a result task, waits for it to finish, then returns its result. Forwards an exception if some task threw it. */
   def executeAndWaitResult[R, Tp](task: TaskType[R, Tp]): R
 
@@ -212,20 +209,6 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
       fjtask.forwardException
       fjtask.result
     }
-  }
-
-  /** Executes a task on a fork/join pool and waits for it to finish.
-   *
-   *  $fjdispatch
-   */
-  def executeAndWait[R, Tp](fjtask: Task[R, Tp]) {
-    if (currentThread.isInstanceOf[ForkJoinWorkerThread]) {
-      fjtask.fork
-    } else {
-      forkJoinPool.execute(fjtask)
-    }
-    fjtask.join
-    fjtask.forwardException
   }
 
   /** Executes a task on a fork/join pool and waits for it to finish.

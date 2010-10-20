@@ -541,7 +541,7 @@ extends ParSeq[T]
     val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
 
     // fill it in parallel
-    executeAndWait(new Map[S](f, targetarr, 0, length))
+    executeAndWaitResult(new Map[S](f, targetarr, 0, length))
 
     // wrap it into a parallel array
     (new ParArray[S](targarrseq)).asInstanceOf[That]
@@ -554,7 +554,7 @@ extends ParSeq[T]
     targetarr(0) = z
 
     // do a parallel prefix scan
-    executeAndWait(new BuildScanTree[U, Any](z, op, 1, size, targetarr, parallelIterator) mapResult { st =>
+    executeAndWaitResult(new BuildScanTree[U, Any](z, op, 1, size, targetarr, parallelIterator) mapResult { st =>
       // println("-----------------------")
       // println(targetarr.toList)
       // st.printTree

@@ -338,6 +338,7 @@ self =>
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining)) yield new SegmentLength(pred, from + untilp, p)
     }
     override def merge(that: SegmentLength) = if (result._2) result = (result._1 + that.result._1, that.result._2)
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class IndexWhere(pred: T => Boolean, from: Int, protected[this] val pit: ParSeqIterator[T])
@@ -358,6 +359,7 @@ self =>
     override def merge(that: IndexWhere) = result = if (result == -1) that.result else {
       if (that.result != -1) result min that.result else result
     }
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class LastIndexWhere(pred: T => Boolean, pos: Int, protected[this] val pit: ParSeqIterator[T])
@@ -378,6 +380,7 @@ self =>
     override def merge(that: LastIndexWhere) = result = if (result == -1) that.result else {
       if (that.result != -1) result max that.result else result
     }
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Reverse[U >: T, This >: Repr](cbf: () => Combiner[U, This], protected[this] val pit: ParSeqIterator[T])
@@ -410,6 +413,7 @@ self =>
       for ((p, op) <- pit.psplit(fp, sp) zip otherpit.psplit(fp, sp)) yield new SameElements(p, op)
     }
     override def merge(that: SameElements[U]) = result = result && that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: CanCombineFrom[Repr, U, That], protected[this] val pit: ParSeqIterator[T])
@@ -422,6 +426,7 @@ self =>
       for ((p, untilp) <- pits zip pits.scanLeft(0)(_ + _.remaining)) yield new Updated(pos - untilp, elem, pbf, p)
     }
     override def merge(that: Updated[U, That]) = result = result combine that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Zip[U >: T, S, That](len: Int, pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParSeqIterator[T], val otherpit: ParSeqIterator[S])
@@ -456,6 +461,7 @@ self =>
       for ((p, op) <- pit.psplit(fp, sp) zip otherpit.psplit(fp, sp)) yield new Corresponds(corr, p, op)
     }
     override def merge(that: Corresponds[S]) = result = result && that.result
+    override def requiresStrictSplitters = true
   }
 
 }

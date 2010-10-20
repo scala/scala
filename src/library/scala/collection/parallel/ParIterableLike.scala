@@ -162,10 +162,6 @@ self =>
     }
   }
 
-  /** Convenience for signal context passing iterator.
-   */
-  //type SCPI <: SignalContextPassingIterator[ParIterator]
-
   /** Creates a new parallel iterator used to traverse the elements of this parallel collection.
    *  This iterator is more specific than the iterator of the returned by `iterator`, and augmented
    *  with additional accessor and transformer methods.
@@ -183,6 +179,18 @@ self =>
   def iterator: Splitter[T] = parallelIterator
 
   def par = repr
+
+  /** Denotes whether this parallel collection has strict splitters.
+   *
+   *  This is true in general, and specific collection instances may choose to
+   *  override this method. Such collections will fail to execute methods
+   *  which rely on splitters being strict, i.e. returning a correct value
+   *  in the `remaining` method.
+   *
+   *  This method helps ensure that such failures occur on method invocations,
+   *  rather than later on and in unpredictable ways.
+   */
+  def isStrictSplitterCollection = true
 
   /** Some minimal number of elements after which this collection should be handled
    *  sequentially by different processors.
@@ -211,19 +219,21 @@ self =>
    */
   protected def reuse[S, That](oldc: Option[Combiner[S, That]], newc: Combiner[S, That]): Combiner[S, That] = newc
 
+  type SSCTask[R, Tp] = StrictSplitterCheckTask[R, Tp]
+
   /* convenience task operations wrapper */
-  protected implicit def task2ops[R, Tp](tsk: Task[R, Tp]) = new {
+  protected implicit def task2ops[R, Tp](tsk: SSCTask[R, Tp]) = new {
     def mapResult[R1](mapping: R => R1): ResultMapping[R, Tp, R1] = new ResultMapping[R, Tp, R1](tsk) {
       def map(r: R): R1 = mapping(r)
     }
 
-    def compose[R3, R2, Tp2](t2: Task[R2, Tp2])(resCombiner: (R, R2) => R3) = new SeqComposite[R, R2, R3, Task[R, Tp], Task[R2, Tp2]] {
+    def compose[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3) = new SeqComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]] {
       val ft = tsk
       val st = t2
       def combineResults(fr: R, sr: R2): R3 = resCombiner(fr, sr)
     }
 
-    def parallel[R3, R2, Tp2](t2: Task[R2, Tp2])(resCombiner: (R, R2) => R3) = new ParComposite[R, R2, R3, Task[R, Tp], Task[R2, Tp2]] {
+    def parallel[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3) = new ParComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]] {
       val ft = tsk
       val st = t2
       def combineResults(fr: R, sr: R2): R3 = resCombiner(fr, sr)
@@ -269,7 +279,7 @@ self =>
    *  if this $coll is empty.
    */
   def reduce[U >: T](op: (U, U) => U): U = {
-    executeAndWaitResult(new Reduce(op, parallelIterator))
+    executeAndWaitResult(new Reduce(op, parallelIterator) mapResult { _.get })
   }
 
   /** Optionally reduces the elements of this sequence using the specified associative binary operator.
@@ -355,7 +365,7 @@ self =>
    *  @param f     function that's applied to each element
    */
   override def foreach[U](f: T => U): Unit = {
-    executeAndWait(new Foreach(f, parallelIterator))
+    executeAndWaitResult(new Foreach(f, parallelIterator))
   }
 
   override def count(p: T => Boolean): Int = {
@@ -371,11 +381,11 @@ self =>
   }
 
   override def min[U >: T](implicit ord: Ordering[U]): T = {
-    executeAndWaitResult(new Min(ord, parallelIterator)).asInstanceOf[T]
+    executeAndWaitResult(new Min(ord, parallelIterator) mapResult { _.get }).asInstanceOf[T]
   }
 
   override def max[U >: T](implicit ord: Ordering[U]): T = {
-    executeAndWaitResult(new Max(ord, parallelIterator)).asInstanceOf[T]
+    executeAndWaitResult(new Max(ord, parallelIterator) mapResult { _.get }).asInstanceOf[T]
   }
 
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
@@ -428,7 +438,6 @@ self =>
   }
 
   protected[this] def cbfactory ={
-    println(newCombiner + ", " + newCombiner.getClass)
     () => newCombiner
   }
 
@@ -604,7 +613,7 @@ self =>
   }
 
   override def copyToArray[U >: T](xs: Array[U], start: Int, len: Int) = if (len > 0) {
-    executeAndWait(new CopyToArray(start, len, xs, parallelIterator))
+    executeAndWaitResult(new CopyToArray(start, len, xs, parallelIterator))
   }
 
   override def zip[U >: T, S, That](that: Iterable[S])(implicit bf: CanBuildFrom[Repr, (U, S), That]): That = if (bf.isParallel && that.isParSeq) {
@@ -647,13 +656,19 @@ self =>
 
   /* tasks */
 
+  protected trait StrictSplitterCheckTask[R, Tp] extends super.Task[R, Tp] {
+    def requiresStrictSplitters = false
+    if (requiresStrictSplitters && !isStrictSplitterCollection)
+      throw new UnsupportedOperationException("This collection does not provide strict splitters.")
+  }
+
   /** Standard accessor task that iterates over the elements of the collection.
    *
    *  @tparam R    type of the result of this method (`R` for result).
    *  @tparam Tp   the representation type of the task at hand.
    */
   protected trait Accessor[R, Tp]
-  extends super.Task[R, Tp] {
+  extends StrictSplitterCheckTask[R, Tp] {
     protected[this] val pit: ParIterableIterator[T]
     protected[this] def newSubtask(p: ParIterableIterator[T]): Accessor[R, Tp]
     def shouldSplitFurther = pit.remaining > threshold(size, parallelismLevel)
@@ -662,7 +677,7 @@ self =>
     override def toString = "Accessor(" + pit.toString + ")"
   }
 
-  protected[this] trait NonDivisibleTask[R, Tp] extends super.Task[R, Tp] {
+  protected[this] trait NonDivisibleTask[R, Tp] extends StrictSplitterCheckTask[R, Tp] {
     def shouldSplitFurther = false
     def split = throw new UnsupportedOperationException("Does not split.")
     override def toString = "NonDivisibleTask"
@@ -670,7 +685,7 @@ self =>
 
   protected[this] trait NonDivisible[R] extends NonDivisibleTask[R, NonDivisible[R]]
 
-  protected[this] trait Composite[FR, SR, R, First <: super.Task[FR, _], Second <: super.Task[SR, _]]
+  protected[this] trait Composite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
   extends NonDivisibleTask[R, Composite[FR, SR, R, First, Second]] {
     val ft: First
     val st: Second
@@ -680,10 +695,11 @@ self =>
       ft.signalAbort
       st.signalAbort
     }
+    override def requiresStrictSplitters = ft.requiresStrictSplitters || st.requiresStrictSplitters
   }
 
   /** Sequentially performs one task after another. */
-  protected[this] trait SeqComposite[FR, SR, R, First <: super.Task[FR, _], Second <: super.Task[SR, _]]
+  protected[this] trait SeqComposite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
   extends Composite[FR, SR, R, First, Second] {
     def leaf(prevr: Option[R]) = {
       ft.compute
@@ -693,7 +709,7 @@ self =>
   }
 
   /** Performs two tasks in parallel, and waits for both to finish. */
-  protected[this] trait ParComposite[FR, SR, R, First <: super.Task[FR, _], Second <: super.Task[SR, _]]
+  protected[this] trait ParComposite[FR, SR, R, First <: StrictSplitterCheckTask[FR, _], Second <: StrictSplitterCheckTask[SR, _]]
   extends Composite[FR, SR, R, First, Second] {
     def leaf(prevr: Option[R]) = {
       st.start
@@ -703,7 +719,7 @@ self =>
     }
   }
 
-  protected[this] abstract class ResultMapping[R, Tp, R1](val inner: Task[R, Tp])
+  protected[this] abstract class ResultMapping[R, Tp, R1](val inner: StrictSplitterCheckTask[R, Tp])
   extends NonDivisibleTask[R1, ResultMapping[R, Tp, R1]] {
     var result: R1 = null.asInstanceOf[R1]
     def map(r: R): R1
@@ -714,6 +730,7 @@ self =>
     private[parallel] override def signalAbort {
       inner.signalAbort
     }
+    override def requiresStrictSplitters = inner.requiresStrictSplitters
   }
 
   protected trait Transformer[R, Tp] extends Accessor[R, Tp]
@@ -731,11 +748,14 @@ self =>
     override def merge(that: Count) = result = result + that.result
   }
 
-  protected[this] class Reduce[U >: T](op: (U, U) => U, protected[this] val pit: ParIterableIterator[T]) extends Accessor[U, Reduce[U]] {
-    var result: U = null.asInstanceOf[U]
-    def leaf(prevr: Option[U]) = result = pit.reduce(op)
+  protected[this] class Reduce[U >: T](op: (U, U) => U, protected[this] val pit: ParIterableIterator[T]) extends Accessor[Option[U], Reduce[U]] {
+    var result: Option[U] = None
+    def leaf(prevr: Option[Option[U]]) = if (pit.remaining > 0) result = Some(pit.reduce(op))
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new Reduce(op, p)
-    override def merge(that: Reduce[U]) = result = op(result, that.result)
+    override def merge(that: Reduce[U]) =
+      if (this.result == None) result = that.result
+      else if (that.result != None) op(result.get, that.result.get)
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Fold[U >: T](z: U, op: (U, U) => U, protected[this] val pit: ParIterableIterator[T]) extends Accessor[U, Fold[U]] {
@@ -767,18 +787,24 @@ self =>
     override def merge(that: Product[U]) = result = num.times(result, that.result)
   }
 
-  protected[this] class Min[U >: T](ord: Ordering[U], protected[this] val pit: ParIterableIterator[T]) extends Accessor[U, Min[U]] {
-    var result: U = null.asInstanceOf[U]
-    def leaf(prevr: Option[U]) = result = pit.min(ord)
+  protected[this] class Min[U >: T](ord: Ordering[U], protected[this] val pit: ParIterableIterator[T]) extends Accessor[Option[U], Min[U]] {
+    var result: Option[U] = None
+    def leaf(prevr: Option[Option[U]]) = if (pit.remaining > 0) result = Some(pit.min(ord))
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new Min(ord, p)
-    override def merge(that: Min[U]) = result = if (ord.lteq(result, that.result)) result else that.result
+    override def merge(that: Min[U]) =
+      if (this.result == None) result = that.result
+      else if (that.result != None) result = if (ord.lteq(result.get, that.result.get)) result else that.result
+    override def requiresStrictSplitters = true
   }
 
-  protected[this] class Max[U >: T](ord: Ordering[U], protected[this] val pit: ParIterableIterator[T]) extends Accessor[U, Max[U]] {
-    var result: U = null.asInstanceOf[U]
-    def leaf(prevr: Option[U]) = result = pit.max(ord)
+  protected[this] class Max[U >: T](ord: Ordering[U], protected[this] val pit: ParIterableIterator[T]) extends Accessor[Option[U], Max[U]] {
+    var result: Option[U] = None
+    def leaf(prevr: Option[Option[U]]) = if (pit.remaining > 0) result = Some(pit.max(ord))
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new Max(ord, p)
-    override def merge(that: Max[U]) = result = if (ord.gteq(result, that.result)) result else that.result
+    override def merge(that: Max[U]) =
+      if (this.result == None) result = that.result
+      else if (that.result != None) result = if (ord.gteq(result.get, that.result.get)) result else that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Map[S, That](f: T => S, pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: ParIterableIterator[T])
@@ -873,6 +899,7 @@ self =>
       }
     }
     override def merge(that: Take[U, This]) = result = result combine that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Drop[U >: T, This >: Repr](n: Int, cbf: () => Combiner[U, This], protected[this] val pit: ParIterableIterator[T])
@@ -889,6 +916,7 @@ self =>
       }
     }
     override def merge(that: Drop[U, This]) = result = result combine that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Slice[U >: T, This >: Repr](from: Int, until: Int, cbf: () => Combiner[U, This], protected[this] val pit: ParIterableIterator[T])
@@ -906,6 +934,7 @@ self =>
       }
     }
     override def merge(that: Slice[U, This]) = result = result combine that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class SplitAt[U >: T, This >: Repr](at: Int, cbf: () => Combiner[U, This], protected[this] val pit: ParIterableIterator[T])
@@ -919,6 +948,7 @@ self =>
       for ((p, untilp) <- pits zip sizes) yield new SplitAt((at max untilp min (untilp + p.remaining)) - untilp, cbf, p)
     }
     override def merge(that: SplitAt[U, This]) = result = (result._1 combine that.result._1, result._2 combine that.result._2)
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class TakeWhile[U >: T, This >: Repr]
@@ -937,6 +967,7 @@ self =>
     override def merge(that: TakeWhile[U, This]) = if (result._2) {
       result = (result._1 combine that.result._1, that.result._2)
     }
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Span[U >: T, This >: Repr]
@@ -959,6 +990,7 @@ self =>
     } else {
       (result._1, result._2 combine that.result._1 combine that.result._2)
     }
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class Zip[U >: T, S, That](pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParIterableIterator[T], val othpit: ParSeqIterator[S])
@@ -973,6 +1005,7 @@ self =>
       (pits zip opits) map { p => new Zip(pbf, p._1, p._2) }
     }
     override def merge(that: Zip[U, S, That]) = result = result combine that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class ZipAll[U >: T, S, That]
@@ -992,9 +1025,10 @@ self =>
       Seq(
         new ZipAll(pit.remaining, thiselem, thatelem, pbf, pit, opits(0)), // nothing wrong will happen with the cast below - elem T is never accessed
         new ZipAll(diff, thiselem, thatelem, pbf, immutable.repetition(thiselem, diff).parallelIterator.asInstanceOf[ParIterableIterator[T]], opits(1))
-        )
+      )
     }
     override def merge(that: ZipAll[U, S, That]) = result = result combine that.result
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class CopyToArray[U >: T, This >: Repr](from: Int, len: Int, array: Array[U], protected[this] val pit: ParIterableIterator[T])
@@ -1009,6 +1043,7 @@ self =>
         new CopyToArray[U, This](from + untilp, plen, array, p)
       }
     }
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class ScanTree[U >: T](val from: Int, val len: Int) {
@@ -1059,7 +1094,7 @@ self =>
   }
 
   protected[this] class ApplyToArray[U >: T, A >: U](elem: U, op: (U, U) => U, from: Int, len: Int, array: Array[A])
-  extends super.Task[Unit, ApplyToArray[U, A]] {
+  extends StrictSplitterCheckTask[Unit, ApplyToArray[U, A]] {
     var result: Unit = ()
     def leaf(prev: Option[Unit]) = {
       var i = from
@@ -1082,6 +1117,7 @@ self =>
 
   protected[this] class BuildScanTree[U >: T, A >: U](z: U, op: (U, U) => U, val from: Int, val len: Int, array: Array[A], protected[this] val pit: ParIterableIterator[T])
   extends Accessor[ScanTree[U], BuildScanTree[U, A]] {
+    // TODO reimplement - there are some issues here
     var result: ScanTree[U] = null
     def leaf(prev: Option[ScanTree[U]]) = if ((prev != None && prev.get.chunkFinished) || from == 1) {
       val prevElem = if (from == 1) z else prev.get.value
@@ -1114,10 +1150,11 @@ self =>
       // set result
       result = ns
     }
+    override def requiresStrictSplitters = true
   }
 
   protected[this] class ScanWithScanTree[U >: T, A >: U](first: Option[U], op: (U, U) => U, st: ScanTree[U], src: Array[A], dest: Array[A])
-  extends super.Task[Unit, ScanWithScanTree[U, A]] {
+  extends StrictSplitterCheckTask[Unit, ScanWithScanTree[U, A]] {
     var result = ();
     def leaf(prev: Option[Unit]) = scan(st, first.get)
     private def scan(st: ScanTree[U], elem: U): Unit = if (!st.chunkFinished) {
@@ -1135,7 +1172,7 @@ self =>
   }
 
   protected[this] class FromArray[S, A, That](array: Array[A], from: Int, len: Int, cbf: CanCombineFrom[Repr, S, That])
-  extends super.Task[Combiner[S, That], FromArray[S, A, That]] {
+  extends StrictSplitterCheckTask[Combiner[S, That], FromArray[S, A, That]] {
     var result: Result = null
     def leaf(prev: Option[Result]) = {
       val cb = prev getOrElse cbf(self.repr)

@@ -346,11 +346,12 @@ self =>
    *
    *  '''Note''': This method may be implemented to return an upper bound on the number of elements
    *  in the iterator, instead of the exact number of elements to iterate.
+   *  Parallel collections which have such iterators are called non-strict-splitter collections.
    *
    *  In that case, 2 considerations must be taken into account:
    *
    *    1) classes that inherit `ParIterable` must reimplement methods `take`, `drop`, `slice`, `splitAt`, `copyToArray`
-   *       and which use tasks having the iterated subset length as a ctor argument.
+   *       and all others using this information.
    *
    *    2) if an iterator provides an upper bound on the number of elements, then after splitting the sum
    *       of `remaining` values of split iterators must be less than or equal to this upper bound.
