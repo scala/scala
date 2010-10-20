@@ -1264,7 +1264,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       * symbol has already been checked to be a class (using `isClass`).
       * After refchecks nested objects get transformed to lazy vals so we filter on LAZY flag*/
     private final def companionModule0: Symbol = {
-      val f = if (phase.refChecked && isNestedClass) LAZY else MODULE
+      val f = if (phase.refChecked && isNestedClass && !forMSIL) LAZY else MODULE
       flatOwnerInfo.decl(name.toTermName).suchThat(
         sym => (sym hasFlag f) && (sym isCoDefinedWith this))
     }
