@@ -15,12 +15,20 @@ It then checks out the source tree in a workspace repo and starts the\
  repo must have a remote called <server> and the corresponding master\
  branch. Git should, naturally, be installed on both systems.\
  "
-USAGE="   Usage: remotetest [--init] <user> <server> <bare-repo-path> <workspace-repo-path>"
+USAGE="   Usage: remotetest (--help|--init|--all|--incr|--clear) <user> <server> <bare-repo-path> <workspace-repo-path> [logfile]"
 
+
+
+function title()
+{
+  echo
+  echo $SCRIPTNAME
+  echo
+}
 
 function usage()
 {
-  echo $SCRIPTNAME
+  title
   echo $DESC
   echo 
   echo $USAGE
@@ -29,6 +37,7 @@ function usage()
 
 function error()
 {
+  echo $1
   echo "Failed."
   exit 1
 }
@@ -45,6 +54,32 @@ function instruct()
   error
 }
 
+function help()
+{
+  title
+  echo "Make sure you have git installed on both your computer and the server, as well as java and ant."
+  echo "Add your ssh key to the list of authorized keys on the server (see .ssh dir in your home). This is not required, but makes life easier, as you will have to answer fewer passwords."
+  echo "To initialize the remote repositories on a server 'server.url.com', see the following example:"
+  echo
+  echo "> tools/remotetest --init jack server.url.com ~jack/git-repos-dir/scala ~jack/tmp-build-dir/scala"
+  echo
+  echo "If you decide you no longer want this remote repository to be tracked (this also tries to delete remote repos on the server):"
+  echo
+  echo "> tools/remotetest --clear jack server.url.com ~jack/git-repos-dir/scala ~jack/tmp-build-dir/scala"
+  echo 
+  echo "Once the initialization is successful, simply run: "
+  echo
+  echo "> tools/remotetest --all jack server.url.com ~jack/git-repos-dir/scala ~jack/tmp-build-dir/scala"
+  echo 
+  echo "Optionally, build and test results will be saved into the logfile on the server (an additional, last argument)."
+  echo
+  echo "Complete argument list:"
+  echo "  --help       prints this help"
+  echo "  --init       initializes remote repos"
+  echo "  --clear      deletes remote repos and removes the remote repo reference from local git repo"
+  echo "  --all        pushes the newest version, checks it out at the server, cleans all, builds and tests"
+  echo "  --incr       incremental does the same as --all, but does not clean the directory before testing"
+}
 
 
 if [ $# -lt 1 ]
@@ -53,47 +88,64 @@ then
 fi
 
 
-if [[ $1 = "--init" ]]
+
+if [ $# -lt 5 ]
 then
-  if [ $# -ne 5 ]
+  if [[ $1 = "--help" ]]
   then
+    help
+    success
+  else
     instruct
   fi
-  USER=$2
-  LOCATION=$3
-  BAREREPO=$4
-  WORKREPO=$5
-else
-  if [ $# -ne 4 ]
-  then
-    instruct
-  fi
-  USER=$1
-  LOCATION=$2
-  BAREREPO=$3
-  WORKREPO=$4
 fi
 
-if [[ $1 = "--init" ]]
+COMMAND=$1
+USER=$2
+LOCATION=$3
+BAREREPO=$4
+WORKREPO=$5
+LOGFILE=$6
+
+
+if [[ $COMMAND = "--help" ]]
 then
+  help
+  success
+fi
+
+
+
+
+# 
+# Init
+# 
+
+
+if [[ $COMMAND = "--init" ]]
+then
+  echo "Initializing."
+  
   # init bare repo
   ssh $USER@$LOCATION "mkdir $BAREREPO"
-  ssh $USER@$LOCATION "cd $BAREREPO; git init --bare"
+  ssh $USER@$LOCATION "cd $BAREREPO; git init; git config --bool core.bare true"
   if [ $? -ne 0 ]
   then
     error "Could not initialize bare repo."
   fi
   
+  # add remote bare repo
+  git remote add $LOCATION $USER@$LOCATION:$BAREREPO
+  
   # push to bare repo
-  git push --all
+  git push $LOCATION master
   if [ $? -ne 0 ]
   then
     error "Could not push to bare repo."
   fi
   
   # init and checkout work repo
-  ssh $USER@$LOCATION "mkdir $WORKREPO"
-  ssh $USER@$LOCATION "cd $WORKREPO; git clone --local $BAREREPO ."
+  ssh $USER@$LOCATION "git clone $BAREREPO $WORKREPO"
   if [ $? -ne 0 ]
   then
     error "Could not init working repo."
@@ -104,6 +156,38 @@ fi
 
 
 
+
+# 
+# Clear.
+# 
+
+
+if [[ $COMMAND = "--clear" ]]
+then
+  echo "Clearing remote and deleting remote repos."
+  git remote rm $LOCATION
+  ssh $USER@$LOCATION "rm -rf $BAREREPO"
+  ssh $USER@$LOCATION "cd $WORKREPO; ant all.clean; rm -rf $WORKREPO"
+  
+  echo "Removed remote repo $LOCATION."
+  success
+fi
+
+
+
+
+# 
+# Test.
+# 
+
+
+if [[ $COMMAND = "--all" || $COMMAND = "--incr" ]]
+then
+  # proceed
+  echo "Starting remote build and testing."
+else
+  error "Unrecognized command $COMMAND."
+fi
 
 # if it's not the init operation, proceed normally
 # push to remote bare repo
@@ -117,12 +201,22 @@ fi
 ssh $USER@$LOCATION "cd $WORKREPO; git pull origin master"
 if [ $? -ne 0 ]
 then
-  error "Could remotely pull from bare repo to work repo."
+  error "Could not remotely pull from bare repo to work repo."
+fi
+
+# clean the build dir if not incremental
+if [[ $COMMAND = "--all" ]]
+then
+  ssh $USER@$LOCATION "cd $WORKREPO; ant all.clean"
 fi
 
 # run the build and tests
-ssh $USER@$LOCATION "cd $WORKREPO; ant all.clean; ant test"
-
+if [[ $LOGFILE != "" ]]
+then
+  ssh $USER@$LOCATION "cd $WORKREPO; ant test"
+else
+  ssh $USER@$LOCATION "cd $WORKREPO; ant test | tee -a $LOGFILE"
+fi
 
 success
 
