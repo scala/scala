@@ -22,6 +22,7 @@ object Serialize {
     println("x = " + x)
     println("y = " + y)
     println("x equals y: " + (x equals y) + ", y equals x: " + (y equals x))
+    assert((x equals y) && (y equals x))
     println()
   }
 }

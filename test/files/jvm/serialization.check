@@ -157,8 +157,8 @@ x = BitSet(0, 8, 9)
 y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true
 
-x = Map(A -> 1, C -> 3, B -> 2)
-y = Map(B -> 2, C -> 3, A -> 1)
+x = Map(C -> 3, B -> 2, A -> 1)
+y = Map(A -> 1, B -> 2, C -> 3)
 x equals y: true, y equals x: true
 
 x = Set(layers, buffers, title)
