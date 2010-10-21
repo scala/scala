@@ -1,5 +1,3 @@
-case class test0(x: Int, x: Float)
-
 object test1 {
   type t = Int
   type t = Float

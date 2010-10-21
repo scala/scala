@@ -1,0 +1,14 @@
+dbldef.scala:1: error: x is already defined as value x
+case class test0(x: Int, x: Float)
+                         ^
+dbldef.scala:1: error: type mismatch;
+ found   : Float
+ required: Int
+case class test0(x: Int, x: Float)
+                 ^
+dbldef.scala:1: error: type mismatch;
+ found   : Float
+ required: Int
+case class test0(x: Int, x: Float)
+           ^
+three errors found
