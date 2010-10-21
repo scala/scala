@@ -93,12 +93,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     val global: Global.this.type = Global.this
   } with CopyPropagation
 
-  /** Some statistics (normally disabled) */
+  /** Some statistics (normally disabled) set with -Ystatistics */
   object statistics extends {
     val global: Global.this.type = Global.this
   } with Statistics
-
-  util.Statistics.enabled = settings.Ystatistics.value
 
   /** Computing pairs of overriding/overridden symbols */
   object overridingPairs extends {
@@ -912,7 +910,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
      *
      * 1 is to avoid cyclic reference errors.
      * 2 is due to the following. When completing "Predef" (*), typedIdent is called
-     * for its parents (e.g. "LowPriorityImplicits"). typedIdent checks wethter
+     * for its parents (e.g. "LowPriorityImplicits"). typedIdent checks whether
      * the symbol reallyExists, which tests if the type of the symbol after running
      * its completer is != NoType.
      * If the "namer" phase has not yet run for "LowPriorityImplicits", the symbol
@@ -930,18 +928,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
      *
      */
     private def coreClassesFirst(files: List[SourceFile]) = {
-      def inScalaFolder(f: SourceFile) =
-        f.file.container.name == "scala"
-      var scalaObject: Option[SourceFile] = None
-      val res = new ListBuffer[SourceFile]
-      for (file <- files) file.file.name match {
-        case "ScalaObject.scala" if inScalaFolder(file) => scalaObject = Some(file)
-        case "LowPriorityImplicits.scala" if inScalaFolder(file) => file +=: res
-        case "StandardEmbeddings.scala" if inScalaFolder(file) => file +=: res
-        case _ => res += file
+      def rank(f: SourceFile) = {
+        if (f.file.container.name != "scala") 3
+        else f.file.name match {
+          case "ScalaObject.scala"            => 1
+          case "LowPriorityImplicits.scala"   => 2
+          case "StandardEmbeddings.scala"     => 2
+          case _                              => 3
+        }
       }
-      for (so <- scalaObject) so +=: res
-      res.toList
+      files sortBy rank
     }
   } // class Run
 
