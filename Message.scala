@@ -5,5 +5,5 @@ package xsbt
 
 object Message
 {
-	def apply(s: => String) = new xsbti.F0[String] { def apply() = s }
+	def apply[T](s: => T) = new xsbti.F0[T] { def apply() = s }
 }
