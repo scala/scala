@@ -111,7 +111,7 @@ object StreamFoo extends TestCase("unapply for Streams") with Assert {
       case Stream.cons(hd, tl) => hd + sum(tl)
     }
   override def runTest {
-    val str: Stream[Int] = Stream.fromIterator(List(1,2,3).iterator)
+    val str: Stream[Int] = List(1,2,3).toStream
     assertEquals(sum(str), 6)
   }
 }
