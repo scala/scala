@@ -3,13 +3,13 @@
  */
 package xsbt
 
-import xsbti.{AnalysisCallback,Logger}
+import xsbti.{AnalysisCallback,Logger,Problem,Reporter}
 import scala.tools.nsc.{Phase, SubComponent}
 import Log.debug
 
 class CompilerInterface
 {
-	def run(args: Array[String], callback: AnalysisCallback, maximumErrors: Int, log: Logger)
+	def run(args: Array[String], callback: AnalysisCallback, log: Logger, delegate: Reporter)
 	{
 			import scala.tools.nsc.{Global, Settings}
 
@@ -17,7 +17,7 @@ class CompilerInterface
 
 		val settings = new Settings(Log.settingsError(log))
 		val command = Command(args.toList, settings)
-		val reporter = LoggerReporter(settings, maximumErrors, log)
+		val reporter = DelegatingReporter(settings, delegate)
 		def noErrors = !reporter.hasErrors && command.ok
 
 		val phasesSet = new scala.collection.mutable.HashSet[Any] // 2.7 compatibility
@@ -84,8 +84,8 @@ class CompilerInterface
 		if(!noErrors)
 		{
 			debug(log, "Compilation failed (CompilerInterface)")
-			throw new InterfaceCompileFailed(args, "Compilation failed")
+			throw new InterfaceCompileFailed(args, reporter.problems, "Compilation failed")
 		}
 	}
 }
-class InterfaceCompileFailed(val arguments: Array[String], override val toString: String) extends xsbti.CompileFailed
+class InterfaceCompileFailed(val arguments: Array[String], val problems: Array[Problem], override val toString: String) extends xsbti.CompileFailed

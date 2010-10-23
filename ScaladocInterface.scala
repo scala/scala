@@ -3,19 +3,20 @@
  */
 package xsbt
 
-import xsbti.Logger
-import Log.debug
+	import xsbti.Logger
+	import Log.debug
 
 class ScaladocInterface
 {
-	def run(args: Array[String], maximumErrors: Int, log: Logger) = (new Runner(args, maximumErrors, log)).run
+	def run(args: Array[String], log: Logger, delegate: xsbti.Reporter) = (new Runner(args, log, delegate)).run
 }
-private class Runner(args: Array[String], maximumErrors: Int, log: Logger)
+private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
 {
-	import scala.tools.nsc.{doc, Global}
+	import scala.tools.nsc.{doc, Global, reporters}
+	import reporters.Reporter
 	val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
 	val command = Command(args.toList, docSettings)
-	val reporter = LoggerReporter(docSettings, maximumErrors, log)
+	val reporter = DelegatingReporter(docSettings, delegate)
 	def noErrors = !reporter.hasErrors && command.ok
 
 	import forScope._
@@ -29,12 +30,12 @@ private class Runner(args: Array[String], maximumErrors: Int, log: Logger)
 			processor.document(command.files)
 		}
 		reporter.printSummary()
-		if(!noErrors) throw new InterfaceCompileFailed(args, "Scaladoc generation failed")
+		if(!noErrors) throw new InterfaceCompileFailed(args, reporter.problems, "Scaladoc generation failed")
 	}
 
 	object forScope
 	{
-		class DocFactory(reporter: LoggerReporter, docSettings: doc.Settings) // 2.7 compatibility
+		class DocFactory(reporter: Reporter, docSettings: doc.Settings) // 2.7 compatibility
 		{
 			object compiler extends Global(command.settings, reporter)
 			{

@@ -59,6 +59,6 @@ object MakeSettings
 		if(command.ok)
 			command.settings
 		else
-			throw new InterfaceCompileFailed(Array(), command.usageMsg)
+			throw new InterfaceCompileFailed(Array(), Array(), command.usageMsg)
 	}
 }
