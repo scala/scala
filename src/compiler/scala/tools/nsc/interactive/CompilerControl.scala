@@ -13,6 +13,11 @@ trait CompilerControl { self: Global =>
 
   abstract class WorkItem extends (() => Unit)
 
+  case class ReloadItem(sources: List[SourceFile], response: Response[Unit]) extends WorkItem {
+    def apply() = reload(sources, response)
+    override def toString = "reload "+sources
+  }
+
   /** Info given for every member found by completion
    */
   abstract class Member {
@@ -89,54 +94,57 @@ trait CompilerControl { self: Global =>
   }
 
   /** Make sure a set of compilation units is loaded and parsed.
-   *  Return () to syncvar `result` on completion.
+   *  Return () to syncvar `response` on completion.
    */
-  def askReload(sources: List[SourceFile], result: Response[Unit]) =
-    scheduler postWorkItem new WorkItem {
-      def apply() = reload(sources, result)
-      override def toString = "reload "+sources
+  def askReload(sources: List[SourceFile], response: Response[Unit]) = {
+    val superseeded = scheduler.dequeueAll {
+      case ri: ReloadItem if ri.sources == sources => Some(ri)
+      case _ => None
     }
+    superseeded foreach (_.response.set())
+    scheduler postWorkItem new ReloadItem(sources, response)
+  }
 
-  /** Set sync var `result` to the smallest fully attributed tree that encloses position `pos`.
+  /** Set sync var `response` to the smallest fully attributed tree that encloses position `pos`.
    */
-  def askTypeAt(pos: Position, result: Response[Tree]) =
+  def askTypeAt(pos: Position, response: Response[Tree]) =
     scheduler postWorkItem new WorkItem {
-      def apply() = self.getTypedTreeAt(pos, result)
+      def apply() = self.getTypedTreeAt(pos, response)
       override def toString = "typeat "+pos.source+" "+pos.show
     }
 
-  /** Set sync var `result` to the fully attributed & typechecked tree contained in `source`.
+  /** Set sync var `response` to the fully attributed & typechecked tree contained in `source`.
    */
-  def askType(source: SourceFile, forceReload: Boolean, result: Response[Tree]) =
+  def askType(source: SourceFile, forceReload: Boolean, response: Response[Tree]) =
     scheduler postWorkItem new WorkItem {
-      def apply() = self.getTypedTree(source, forceReload, result)
+      def apply() = self.getTypedTree(source, forceReload, response)
       override def toString = "typecheck"
   }
 
-  /** Set sync var `result` to the last fully attributed & typechecked tree produced from `source`.
-   *  If no such tree exists yet, do a normal askType(source, false, result)
+  /** Set sync var `response` to the last fully attributed & typechecked tree produced from `source`.
+   *  If no such tree exists yet, do a normal askType(source, false, response)
    */
-  def askLastType(source: SourceFile, result: Response[Tree]) =
+  def askLastType(source: SourceFile, response: Response[Tree]) =
     scheduler postWorkItem new WorkItem {
-      def apply() = self.getLastTypedTree(source, result)
+      def apply() = self.getLastTypedTree(source, response)
       override def toString = "reconcile"
   }
 
-  /** Set sync var `result' to list of members that are visible
+  /** Set sync var `response' to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
    */
-  def askTypeCompletion(pos: Position, result: Response[List[Member]]) =
+  def askTypeCompletion(pos: Position, response: Response[List[Member]]) =
     scheduler postWorkItem new WorkItem {
-      def apply() = self.getTypeCompletion(pos, result)
+      def apply() = self.getTypeCompletion(pos, response)
       override def toString = "type completion "+pos.source+" "+pos.show
     }
 
-  /** Set sync var `result' to list of members that are visible
+  /** Set sync var `response' to list of members that are visible
    *  as members of the scope enclosing `pos`.
    */
-  def askScopeCompletion(pos: Position, result: Response[List[Member]]) =
+  def askScopeCompletion(pos: Position, response: Response[List[Member]]) =
     scheduler postWorkItem new WorkItem {
-      def apply() = self.getScopeCompletion(pos, result)
+      def apply() = self.getScopeCompletion(pos, response)
       override def toString = "scope completion "+pos.source+" "+pos.show
     }
 
