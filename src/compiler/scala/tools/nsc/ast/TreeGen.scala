@@ -230,6 +230,22 @@ abstract class TreeGen {
   /** Builds a list with given head and tail. */
   def mkNil: Tree = mkAttributedRef(NilModule)
 
+  /** Builds a tree representing an undefined local, as in
+   *    var x: T = _
+   *  which is appropriate to the given Type.
+   */
+  def mkZero(tp: Type): Tree = {
+    val sym = tp.typeSymbol
+    val tree =
+      if (sym == UnitClass) Literal(())
+      else if (sym == BooleanClass) Literal(false)
+      else if (isValueClass(sym)) Literal(0)
+      else if (NullClass.tpe <:< tp) Literal(null: Any)
+      else abort("Cannot determine zero for " + tp)
+
+    tree setType tp
+  }
+
   /** Builds a tuple */
   def mkTuple(elems: List[Tree]): Tree =
     if (elems.isEmpty) Literal(())

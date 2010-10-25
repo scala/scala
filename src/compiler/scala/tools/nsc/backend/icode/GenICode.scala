@@ -1233,22 +1233,6 @@ abstract class GenICode extends SubComponent  {
     def genCast(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean) =
       ctx.bb.emit(if (cast) CHECK_CAST(to) else IS_INSTANCE(to))
 
-    def zeroOf(k: TypeKind): Tree = k match {
-      case UNIT            => Literal(())
-      case BOOL            => Literal(false)
-      case BYTE            => Literal(0: Byte)
-      case SHORT           => Literal(0: Short)
-      case CHAR            => Literal(0: Char)
-      case INT             => Literal(0: Int)
-      case LONG            => Literal(0: Long)
-      case FLOAT           => Literal(0.0f)
-      case DOUBLE          => Literal(0.0d)
-      case REFERENCE(cls)  => Literal(null: Any)
-      case ARRAY(elem)     => Literal(null: Any)
-      case BOXED(_)        => Literal(null: Any)
-      case ConcatClass     => abort("no zero of ConcatClass")
-    }
-
     def getZeroOf(k: TypeKind): Instruction = k match {
       case UNIT            => CONSTANT(Constant(()))
       case BOOL            => CONSTANT(Constant(false))

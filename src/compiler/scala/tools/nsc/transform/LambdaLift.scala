@@ -405,13 +405,20 @@ abstract class LambdaLift extends InfoTransform {
         case ValDef(mods, name, tpt, rhs) =>
           if (sym.isCapturedVariable) {
             val tpt1 = TypeTree(sym.tpe) setPos tpt.pos
-            val rhs1 =
-              atPos(rhs.pos) {
-                typer typed {
-                  Apply(Select(New(TypeTree(sym.tpe)), nme.CONSTRUCTOR), List(rhs))
+            /* Creating a constructor argument if one isn't present. */
+            val constructorArg = rhs match {
+              case EmptyTree =>
+                sym.primaryConstructor.info.paramTypes match {
+                  case List(tp) => gen.mkZero(tp)
+                  case _        =>
+                    log("Couldn't determine how to properly construct " + sym)
+                    rhs
                 }
-              }
-            treeCopy.ValDef(tree, mods, name, tpt1, rhs1)
+              case arg => arg
+            }
+            treeCopy.ValDef(tree, mods, name, tpt1, typer.typedPos(rhs.pos) {
+              Apply(Select(New(TypeTree(sym.tpe)), nme.CONSTRUCTOR), List(constructorArg))
+            })
           } else tree
         case Return(Block(stats, value)) =>
           Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos
