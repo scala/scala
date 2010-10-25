@@ -707,6 +707,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  ensuring that symbol is initialized (i.e. type is completed).
      */
     override def info: Type = try {
+      // Eugene: insert same thread assertion here
       var cnt = 0
       while (validTo == NoPeriod) {
         //if (settings.debug.value) System.out.println("completing " + this);//DEBUG

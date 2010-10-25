@@ -97,6 +97,7 @@ abstract class SymbolTable extends reflect.generic.Universe
 
   /** Perform given operation at given phase */
   final def atPhase[T](ph: Phase)(op: => T): T = {
+    // Eugene: insert same thread assertion here
     val current = phase
     try {
       phase = ph
