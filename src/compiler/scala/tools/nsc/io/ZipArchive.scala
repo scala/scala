@@ -53,6 +53,9 @@ object ZipArchive {
     def foreach[U](f: ZipEntry => U) = {
       var in: ZipInputStream = null
       @tailrec def loop(): Unit = {
+        if (in.available == 0)
+          return
+
         val entry = in.getNextEntry()
         if (entry != null) {
           f(entry)
@@ -74,8 +77,7 @@ object ZipArchive {
  *  ZipArchive (backed by a zip file) and URLZipArchive (backed
  *  by an InputStream.)
  */
-private[io] trait ZipContainer extends AbstractFile
-{
+private[io] trait ZipContainer extends AbstractFile {
   /** Abstract types */
   type SourceType             // InputStream or AbstractFile
   type CreationType           // InputStream or ZipFile
@@ -245,7 +247,11 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
   private def zipTraversableFromZipFile(z: ZipFile): ZipTrav =
     new Iterable[ZipEntry] {
       def zis: () => ZipInputStream = null    // not valid for this type
-      def iterator = asIterator(z.entries())
+      def iterator = new Iterator[ZipEntry] {
+        val enum    = z.entries()
+        def hasNext = enum.hasMoreElements
+        def next    = enum.nextElement
+      }
     }
 }
 
@@ -256,8 +262,7 @@ final class ZipArchive(file: File, val archive: ZipFile) extends PlainFile(file)
  * @author  Stephane Micheloud
  * @version 1.0, 29/05/2007
  */
-final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer
-{
+final class URLZipArchive(url: URL) extends AbstractFile with ZipContainer {
   type SourceType   = InputStream
   type CreationType = InputStream
 
