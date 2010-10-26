@@ -56,6 +56,8 @@ trait Symbols { self: Universe =>
      */
     def privateWithin: Symbol
 
+    final def hasAccessBoundary = (privateWithin != null) && (privateWithin != NoSymbol)
+
     /** The raw info of the type
      */
     def rawInfo: Type
