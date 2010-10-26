@@ -26,8 +26,6 @@ abstract class SimpleCompiler {
   def compile(out: Option[File], files: List[File], kind: String, log: File): Boolean
 }
 
-class TestSettings(fileMan: FileManager) extends Settings(_ => ()) { }
-
 class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   def newGlobal(settings: Settings, reporter: Reporter): Global =
     new Global(settings, reporter)
@@ -39,13 +37,12 @@ class DirectCompiler(val fileManager: FileManager) extends SimpleCompiler {
   }
 
   def newSettings(out: Option[String]) = {
-    val settings = new TestSettings(fileManager)
-    //settings.usejavacp.value = true
+    val settings = new Settings(_ => ())
     settings.deprecation.value = true
     settings.nowarnings.value = false
     settings.encoding.value = "ISO-8859-1"    // XXX why?
 
-    val classpathElements = settings.classpath.value :: fileManager.LATEST_LIB :: out.toList
+    val classpathElements = fileManager.LATEST_LIB :: out.toList
     settings.classpath.value = ClassPath.join(classpathElements: _*)
     out foreach (settings.outdir.value = _)
 

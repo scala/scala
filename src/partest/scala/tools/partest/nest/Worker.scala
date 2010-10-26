@@ -396,8 +396,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
      *     output directory as arguments.
      */
     def runInContext(file: File, kind: String, script: (File, File) => Unit): LogContext = {
-      // when option "--failed" is provided
-      // execute test only if log file is present
+      // When option "--failed" is provided, execute test only if log file is present
       // (which means it failed before)
       val logFile = createLogFile(file, kind)
       if (!fileManager.failed || logFile.canRead) {
