@@ -46,5 +46,20 @@ class TestSet(s0: Set[Int], s1: Set[Int]) {
   Console.println("succeeded for "+Iterations+" iterations.")
 }
 object Test extends Application {
+  def t3954 {
+    import scala.collection.mutable
+    import scala.collection.immutable
+    val result = new mutable.ImmutableSetAdaptor(immutable.ListSet.empty[Int])
+    println(result.add(1))
+    println(result.add(1))
+    val result2 = new mutable.HashSet[Int]
+    println(result2.add(1))
+    println(result2.add(1))
+    val result3 = new java.util.HashSet[Int]()
+    println(result3.add(1))
+    println(result3.add(1))
+  }
+  t3954
+
   new TestSet(HashSet.empty, new scala.collection.mutable.LinkedHashSet)
 }

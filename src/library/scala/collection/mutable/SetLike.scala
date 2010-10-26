@@ -79,7 +79,7 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
   def add(elem: A): Boolean = {
     val r = contains(elem)
     this += elem
-    r
+    !r
   }
 
   /** Removes an element from this set.
