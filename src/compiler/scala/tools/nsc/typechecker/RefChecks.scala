@@ -254,13 +254,15 @@ abstract class RefChecks extends InfoTransform {
           tp1 <:< tp2
       }
 
-      /** Check that all conditions for overriding <code>other</code> by
-       *  <code>member</code> of class <code>clazz</code> are met.
+      /** Check that all conditions for overriding `other` by `member`
+       *  of class `clazz` are met.
        */
       def checkOverride(clazz: Symbol, member: Symbol, other: Symbol) {
+        def noErrorType = other.tpe != ErrorType && member.tpe != ErrorType
+        def isRootOrNone(sym: Symbol) = sym == RootClass || sym == NoSymbol
 
         def overrideError(msg: String) {
-          if (other.tpe != ErrorType && member.tpe != ErrorType) {
+          if (noErrorType) {
             val fullmsg =
               "overriding "+infoStringWithLocation(other)+";\n "+
               infoString(member)+" "+msg+
@@ -274,13 +276,13 @@ abstract class RefChecks extends InfoTransform {
         }
 
         def overrideTypeError() {
-          if (other.tpe != ErrorType && member.tpe != ErrorType) {
+          if (noErrorType) {
             overrideError("has incompatible type")
           }
         }
 
         def accessFlagsToString(sym: Symbol)
-          = flagsToString(sym getFlag (PRIVATE | PROTECTED), if (sym.privateWithin eq NoSymbol) "" else sym.privateWithin.name.toString)
+          = flagsToString(sym getFlag (PRIVATE | PROTECTED), if (!sym.hasAccessBoundary) "" else sym.privateWithin.name.toString)
 
         def overrideAccessError() {
           val otherAccess = accessFlagsToString(other)
@@ -319,23 +321,19 @@ abstract class RefChecks extends InfoTransform {
           // ^-may be overridden by member with access privileges-v
           // m: public | public/protected | public/protected/package-protected-in-same-package-as-o
 
-          if (member hasFlag PRIVATE) // (1.1)
+          if (member.isPrivate) // (1.1)
             overrideError("has weaker access privileges; it should not be private")
 
-          @inline def definedIn(sym: Symbol, in: Symbol) = sym != RootClass && sym != NoSymbol && sym.hasTransOwner(in)
-
+          // todo: align accessibility implication checking with isAccessible in Contexts
           val ob = other.accessBoundary(member.owner)
           val mb = member.accessBoundary(member.owner)
-          // println("checking override in "+ clazz +"\n  other: "+ infoString(other) +" ab: "+ ob.ownerChain +" flags: "+ accessFlagsToString(other))
-          // println("  overriding member: "+ infoString(member) +" ab: "+ mb.ownerChain +" flags: "+ accessFlagsToString(member))
-          // todo: align accessibility implication checking with isAccessible in Contexts
-          if (!(  mb == RootClass // m is public, definitely relaxes o's access restrictions (unless o.isJavaDefined, see below)
-               || mb == NoSymbol  // AM: what does this check?? accessBoundary does not ever seem to return NoSymbol (unless member.owner were NoSymbol)
-               || ((!(other hasFlag PROTECTED) || (member hasFlag PROTECTED)) && definedIn(ob, mb)) // (if o isProtected, so is m) and m relaxes o's access boundary
-               )) {
-            overrideAccessError()
+          def isOverrideAccessOK = member.isPublic || {     // member is public, definitely same or relaxed access
+            (!other.isProtected || member.isProtected) &&   // if o is protected, so is m
+            (!isRootOrNone(ob) && ob.hasTransOwner(mb))     // m relaxes o's access boundary
           }
-          else if (other.isClass || other.isModule) {
+          if (!isOverrideAccessOK) {
+            overrideAccessError()
+          } else if (other.isClass || other.isModule) {
             overrideError("cannot be used here - classes and objects cannot be overridden");
           } else if (!other.isDeferred && (member.isClass || member.isModule)) {
             overrideError("cannot be used here - classes and objects can only override abstract types");
@@ -555,24 +553,44 @@ abstract class RefChecks extends InfoTransform {
        *  (which must be different from `clazz`) whose name and type
        *  seen as a member of `class.thisType` matches `member`'s.
        */
-      def hasMatchingSym(inclazz: Symbol, member: Symbol): Boolean =
-        inclazz != clazz && {
-          lazy val memberEnclPackageCls = member.enclosingPackageClass
+      def hasMatchingSym(inclazz: Symbol, member: Symbol): Boolean = {
+        val isVarargs = hasRepeatedParam(member.tpe)
+        lazy val varargsType = toJavaRepeatedParam(member.tpe)
 
-          val isVarargs = hasRepeatedParam(member.tpe)
-          inclazz.info.nonPrivateDecl(member.name).filter { sym =>
-            (!sym.isTerm || {
-              val symtpe = clazz.thisType.memberType(sym)
-              (member.tpe matches symtpe) || isVarargs && (toJavaRepeatedParam(member.tpe) matches symtpe)
-            }) && {
-              // http://java.sun.com/docs/books/jls/third_edition/html/names.html#6.6.5:
-              // If a public class has a [member] with default access, then this [member] is not accessible to,
-              // or inherited by a subclass declared outside this package.
-              // (sym is a java member with default access in pkg P) implies (member's enclosing package == P)
-              !(inclazz.isJavaDefined && sym.privateWithin == sym.enclosingPackageClass) || memberEnclPackageCls == sym.privateWithin
-            }
-          } != NoSymbol
+        def isSignatureMatch(sym: Symbol) = !sym.isTerm || {
+          val symtpe            = clazz.thisType memberType sym
+          def matches(tp: Type) = tp matches symtpe
+
+          matches(member.tpe) || (isVarargs && matches(varargsType))
         }
+        /** The rules for accessing members which have an access boundary are more
+         *  restrictive in java than scala.  Since java has no concept of package nesting,
+         *  a member with "default" (package-level) access can only be accessed by members
+         *  in the exact same package.  Example:
+         *
+         *    package a.b;
+         *    public class JavaClass { void foo() { } }
+         *
+         *  The member foo() can be accessed only from members of package a.b, and not
+         *  nested packages like a.b.c.  In the analogous scala class:
+         *
+         *    package a.b
+         *    class ScalaClass { private[b] def foo() = () }
+         *
+         *  The member IS accessible to classes in package a.b.c.  The javaAccessCheck logic
+         *  is restricting the set of matching signatures according to the above semantics.
+         */
+        def javaAccessCheck(sym: Symbol) = (
+             !inclazz.isJavaDefined                             // not a java defined member
+          || !sym.hasAccessBoundary                             // no access boundary
+          || sym.isProtected                                    // marked protected in java, thus accessible to subclasses
+          || sym.privateWithin == member.enclosingPackageClass  // exact package match
+        )
+        def classDecls   = inclazz.info.nonPrivateDecl(member.name)
+        def matchingSyms = classDecls filter (sym => isSignatureMatch(sym) && javaAccessCheck(sym))
+
+        (inclazz != clazz) && (matchingSyms != NoSymbol)
+      }
 
       // 4. Check that every defined member with an `override' modifier overrides some other member.
       for (member <- clazz.info.decls.toList)

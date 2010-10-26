@@ -670,10 +670,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
 
     /** The class or term up to which this symbol is accessible,
-     *  or RootClass if it is public
+     *  or RootClass if it is public.
      */
     def accessBoundary(base: Symbol): Symbol = {
-      if (hasFlag(PRIVATE) || owner.isTerm) owner
+      if (hasFlag(PRIVATE) || isLocal) owner
       else if (hasAccessBoundary && !phase.erasedTypes) privateWithin
       else if (hasFlag(PROTECTED)) base
       else RootClass
