@@ -673,6 +673,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def getFlag(mask: Long): Long = flags & mask
     final def resetFlags { rawflags = rawflags & TopLevelCreationFlags }
 
+    final def hasAccessBoundary = (privateWithin != null) && (privateWithin != NoSymbol)
+
     /** The class or term up to which this symbol is accessible,
      *  or RootClass if it is public.
      */
