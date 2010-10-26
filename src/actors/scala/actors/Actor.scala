@@ -796,8 +796,10 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
     () => {
       mylinks.foreach((linked: AbstractActor) => {
         linked.synchronized {
-          if (!linked.exiting)
+          if (!linked.exiting) {
+            linked.unlinkFrom(this)
             linked.exit(this, exitReason)
+          }
         }
       })
     }
