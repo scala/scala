@@ -1,0 +1,16 @@
+S2.scala:12: error: method packageAbstract overrides nothing
+  override private[b] def packageAbstract() = ()      // fail
+                          ^
+S2.scala:16: error: method packageConcrete overrides nothing
+  override private[b] def packageConcrete() = ()      // fail
+                          ^
+S2.scala:36: error: method packageConcrete overrides nothing
+  override protected[b] def packageConcrete() = ()    // fail
+                            ^
+S2.scala:47: error: method packageConcrete overrides nothing
+  override private[a] def packageConcrete() = ()        // fail
+                          ^
+S2.scala:58: error: method packageConcrete overrides nothing
+  override def packageConcrete() = ()   // fail
+               ^
+5 errors found
