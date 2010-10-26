@@ -95,15 +95,19 @@ trait TreePrinters { trees: SymbolTable =>
       }
     }
 
+    private def symFn[T](tree: Tree, f: Symbol => T, orElse: => T): T = tree.symbol match {
+      case null | NoSymbol  => orElse
+      case sym              => f(sym)
+    }
+    private def ifSym(tree: Tree, p: Symbol => Boolean) = symFn(tree, p, false)
+
     private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
       val nameToString: Name => String = if (decoded) _.decode else _.toString
-
-      tree.symbol match {
-        case null | NoSymbol  => nameToString(name)
-        case sym =>
-          val prefix = if (sym.isMixinConstructor) "/*%s*/".format(nameToString(sym.owner.name)) else ""
-          prefix + tree.symbol.nameString
+      def nameFn(sym: Symbol) = {
+        val prefix = if (sym.isMixinConstructor) "/*%s*/".format(nameToString(sym.owner.name)) else ""
+        prefix + tree.symbol.nameString
       }
+      symFn(tree, nameFn, nameToString(name))
     }
 
     def decodedSymName(tree: Tree, name: Name) = symNameInternal(tree, name, true)
@@ -149,7 +153,12 @@ trait TreePrinters { trees: SymbolTable =>
         case ClassDef(mods, name, tparams, impl) =>
           printAnnotations(tree)
           printModifiers(tree, mods)
-          print((if (mods hasFlag TRAIT) "trait " else "class ") + symName(tree, name))
+          val word =
+            if (mods.isTrait) "trait"
+            else if (ifSym(tree, _.isModuleClass)) "object"
+            else "class"
+
+          print(word + " " + symName(tree, name))
           printTypeParams(tparams)
           print(if (mods.isDeferred) " <: " else " extends "); print(impl) // (part of DEVIRTUALIZE)
 

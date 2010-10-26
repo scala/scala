@@ -37,23 +37,20 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       val specializedFlag: Symbol = clazz.info.decl(nme.SPECIALIZED_INSTANCE)
       val shouldGuard = (specializedFlag != NoSymbol) && !clazz.hasFlag(SPECIALIZED)
 
-      var constr: DefDef = null      // The primary constructor
-      var constrParams: List[Symbol] = null // ... and its parameters
-      var constrBody: Block = null   // ... and its body
-
+      case class ConstrInfo(
+        constr: DefDef,               // The primary constructor
+        constrParams: List[Symbol],   // ... and its parameters
+        constrBody: Block             // ... and its body
+      )
       // decompose primary constructor into the three entities above.
-      for (stat <- stats) {
-        stat match {
-          case ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, Literal(_))) =>
-            if (ddef.symbol.isPrimaryConstructor) {
-              constr = ddef
-              constrParams = vparams map (_.symbol)
-              constrBody = rhs
-            }
-          case _ =>
-        }
+      val constrInfo: ConstrInfo = {
+        val primary = stats find (_.symbol.isPrimaryConstructor)
+        assert(primary.isDefined, "no constructor in template: impl = " + impl)
+
+        val ddef @ DefDef(_, _, _, List(vparams), _, rhs @ Block(_, _)) = primary.get
+        ConstrInfo(ddef, vparams map (_.symbol), rhs)
       }
-      assert((constr ne null) && (constrBody ne null), impl)
+      import constrInfo._
 
       // The parameter accessor fields which are members of the class
       val paramAccessors = clazz.constrParamAccessors
@@ -65,12 +62,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // The constructor parameter with given name. This means the parameter
       // has given name, or starts with given name, and continues with a `$' afterwards.
       def parameterNamed(name: Name): Symbol = {
-        def matchesName(param: Symbol) =
-          param.name == name ||
-          param.name.startsWith(name) && param.name(name.length) == '$'
-        val ps = constrParams filter matchesName
-        if (ps.isEmpty) assert(false, "" + name + " not in " + constrParams)
-        ps.head
+        def matchesName(param: Symbol) = param.name == name || param.name.startsWith(name + "$")
+
+        (constrParams filter matchesName) match {
+          case Nil    => assert(false, name + " not in " + constrParams) ; null
+          case p :: _ => p
+        }
       }
 
       var thisRefSeen: Boolean = false
@@ -79,7 +76,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // A transformer for expressions that go into the constructor
       val intoConstructorTransformer = new Transformer {
         def isParamRef(sym: Symbol) =
-          (sym hasFlag PARAMACCESSOR) &&
+          sym.isParamAccessor &&
           sym.owner == clazz &&
           !(sym.isGetter && sym.accessed.isVariable) &&
           !sym.isSetter
@@ -133,32 +130,27 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Create an assignment to class field `to' with rhs `from'
       def mkAssign(to: Symbol, from: Tree): Tree =
-        localTyper.typed {
-          //util.trace("compiling "+unit+" ") {
-            atPos(to.pos) {
-              Assign(Select(This(clazz), to), from)
-            }
-          //}
-        }
+        localTyper.typedPos(to.pos) { Assign(Select(This(clazz), to), from) }
 
       // Create code to copy parameter to parameter accessor field.
-      // If parameter is $outer, check that it is not null.
+      // If parameter is $outer, check that it is not null so that we NPE
+      // here instead of at some unknown future $outer access.
       def copyParam(to: Symbol, from: Symbol): Tree = {
         import CODE._
-        var result = mkAssign(to, Ident(from))
-        if (from.name == nme.OUTER)
-          result =
-            atPos(to.pos) {
-              localTyper.typed {
-                IF (from OBJ_EQ NULL) THEN THROW(NullPointerExceptionClass) ELSE result
-              }
-            }
+        val result = mkAssign(to, Ident(from))
 
-        result
+        if (from.name != nme.OUTER) result
+        else localTyper.typedPos(to.pos) {
+          IF (from OBJ_EQ NULL) THEN THROW(NullPointerExceptionClass) ELSE result
+        }
       }
 
       // The list of definitions that go into class
       val defBuf = new ListBuffer[Tree]
+
+      // The auxiliary constructors, separate from the defBuf since they should
+      // follow the primary constructor
+      val auxConstructorBuf = new ListBuffer[Tree]
 
       // The list of statements that go into constructor after superclass constructor call
       val constrStatBuf = new ListBuffer[Tree]
@@ -183,7 +175,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         }
       }
 
-      // Triage all template definitions to go into defBuf, constrStatBuf, or constrPrefixBuf.
+      // Triage all template definitions to go into defBuf/auxConstructorBuf, constrStatBuf, or constrPrefixBuf.
       for (stat <- stats) stat match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           // methods with constant result type get literals as their body
@@ -194,7 +186,9 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                 stat, mods, name, tparams, vparamss, tpt,
                 Literal(c) setPos rhs.pos setType tp)
             case _ =>
-              if (!stat.symbol.isPrimaryConstructor) defBuf += stat
+              if (stat.symbol.isPrimaryConstructor) ()
+              else if (stat.symbol.isConstructor) auxConstructorBuf += stat
+              else defBuf += stat
           }
         case ValDef(mods, name, tpt, rhs) =>
           // val defs with constant right-hand sides are eliminated.
@@ -238,8 +232,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // Is symbol known to be accessed outside of the primary constructor,
       // or is it a symbol whose definition cannot be omitted anyway?
-      def mustbeKept(sym: Symbol) =
-        !maybeOmittable(sym) || (accessedSyms contains sym)
+      def mustbeKept(sym: Symbol) = !maybeOmittable(sym) || accessedSyms(sym)
 
       // A traverser to set accessedSyms and outerAccessors
       val accessTraverser = new Traverser {
@@ -263,7 +256,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // first traverse all definitions except outeraccesors
       // (outeraccessors are avoided in accessTraverser)
-      for (stat <- defBuf.iterator) accessTraverser.traverse(stat)
+      for (stat <- defBuf.iterator ++ auxConstructorBuf.iterator)
+        accessTraverser.traverse(stat)
 
       // then traverse all bodies of outeraccessors which are accessed themselves
       // note: this relies on the fact that an outer accessor never calls another
@@ -417,6 +411,9 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           constrBody,
           paramInits ::: constrPrefixBuf.toList ::: guardSpecializedInitializer(constrStatBuf.toList),
           constrBody.expr));
+
+      // Followed by any auxiliary constructors
+      defBuf ++= auxConstructorBuf
 
       // Unlink all fields that can be dropped from class scope
       for (sym <- clazz.info.decls.toList)
