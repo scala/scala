@@ -1,0 +1,13 @@
+bug3714-neg.scala:17: error: value break in class BreakImpl cannot be accessed in BreakImpl
+ Access to protected value break not permitted because
+ enclosing class object Test is not a subclass of 
+ class BreakImpl where target is defined
+    case b: BreakImpl => b.break
+                           ^
+bug3714-neg.scala:25: error: value break in class BreakImpl cannot be accessed in BreakImpl
+ Access to protected value break not permitted because
+ enclosing class object Test is not a subclass of 
+ class BreakImpl where target is defined
+    case b: BreakImpl => b.break
+                           ^
+two errors found
