@@ -39,6 +39,8 @@ trait TypeDiagnostics {
   import definitions._
   import global.typer.infer
 
+  private def currentUnit = currentRun.currentUnit
+
   /** It can be quite difficult to know which of the many functions called "error"
    *  is being called at any given point in the compiler.  To alleviate this I am
    *  renaming such functions inside this trait based on where it originated.
@@ -52,6 +54,14 @@ trait TypeDiagnostics {
   def noErroneousTypes(tps: Type*)    = tps forall (x => !x.isErroneous)
   def noErroneousSyms(syms: Symbol*)  = syms forall (x => !x.isErroneous)
   def noErroneousTrees(trees: Tree*)  = trees forall (x => !x.isErroneous)
+
+  /** For errors which are artifacts of the implementation: such messages
+   *  indicate that the restriction may be lifted in the future.
+   */
+  def restrictionWarning(pos: Position, unit: CompilationUnit, msg: String): Unit =
+    unit.warning(pos, "Implementation restriction: " + msg)
+  def restrictionError(pos: Position, unit: CompilationUnit, msg: String): Unit =
+    unit.error(pos, "Implementation restriction: " + msg)
 
   /** A map of Positions to addendums - if an error involves a position in
    *  the map, the addendum should also be printed.

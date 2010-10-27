@@ -1,9 +1,9 @@
-annot-nonconst.scala:1: warning: implementation restriction: subclassing Classfile does not
+annot-nonconst.scala:1: warning: Implementation restriction: subclassing Classfile does not
 make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
 class Length(value: Int) extends ClassfileAnnotation
       ^
-annot-nonconst.scala:2: warning: implementation restriction: subclassing Classfile does not
+annot-nonconst.scala:2: warning: Implementation restriction: subclassing Classfile does not
 make your annotation visible at runtime.  If that is what
 you want, you must write the annotation class in Java.
 class Ann2(value: String) extends ClassfileAnnotation

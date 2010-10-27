@@ -1305,8 +1305,8 @@ trait Typers { self: Analyzer =>
       val impl2 = typerAddSyntheticMethods(impl1, clazz, context)
       if ((clazz != ClassfileAnnotationClass) &&
           (clazz isNonBottomSubClass ClassfileAnnotationClass))
-        unit.warning (cdef.pos,
-          "implementation restriction: subclassing Classfile does not\n"+
+        restrictionWarning(cdef.pos, unit,
+          "subclassing Classfile does not\n"+
           "make your annotation visible at runtime.  If that is what\n"+
           "you want, you must write the annotation class in Java.")
       if (phase.id <= currentRun.typerPhase.id) {
@@ -3504,7 +3504,7 @@ trait Typers { self: Analyzer =>
                 Console.println(site.parents map (_.typeSymbol.name))//debug
               if (phase.erasedTypes && context.enclClass.owner.isImplClass) {
                 // the reference to super class got lost during erasure
-                unit.error(tree.pos, "implementation restriction: traits may not select fields or methods from to super[C] where C is a class")
+                restrictionError(tree.pos, unit, "traits may not select fields or methods from to super[C] where C is a class")
               } else {
                 error(tree.pos, mix+" does not name a parent class of "+clazz)
               }
