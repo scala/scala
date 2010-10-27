@@ -12,6 +12,7 @@ import model._
 
 import scala.collection._
 import scala.xml._
+import scala.util.parsing.json.{JSONObject, JSONArray}
 
 class Index(universe: Universe, indexModel: IndexModelFactory#IndexModel) extends HtmlPage {
 
@@ -118,11 +119,7 @@ class Index(universe: Universe, indexModel: IndexModelFactory#IndexModel) extend
                     placeholderSeq ++ createLink(entry, includePlaceholder = false, includeText = true)
                 }
 
-                <li id={
-                  "template-" + toId(entities.head.qualifiedName)
-                } title={ entities.head.qualifiedName }>{
-                  itemContents
-                }</li>
+                <li title={ entities.head.qualifiedName }>{ itemContents }</li>
               }
             }</ol>
             <ol class="packages"> {
@@ -145,20 +142,40 @@ class Index(universe: Universe, indexModel: IndexModelFactory#IndexModel) extend
     })
   }
 
+  def mergeByQualifiedName(source: List[DocTemplateEntity]): Map[String, List[DocTemplateEntity]]= {
+    var result = Map[String, List[DocTemplateEntity]]()
+
+    for (t <- source) {
+      val k = t.qualifiedName
+      result += k -> (result.getOrElse(k, List()) :+ t)
+    }
+
+    result
+  }
+
   def scriptElement = {
-    val templatesOf = allPackagesWithTemplates
+    val packages = allPackagesWithTemplates.toIterable.map(_ match {
+      case (pack, templates) => {
+        val merged = mergeByQualifiedName(templates)
 
-    val elements = templatesOf.keys.map(pack => {
-      List(
-        "{ name: '", pack, "', children: ",
-        templatesOf(pack).map(t => "'" + t + "'").mkString("[", ",", "]"),
-        "}"
-      ).mkString("")
-    })
+        val ary = merged.keys.toList.sortBy(_.toLowerCase).map(key => {
+          val pairs = merged(key).map(
+            t => docEntityKindToString(t) -> relativeLinkTo(t)
+          ) :+ ("name" -> key)
 
-    <script type="text/javascript">{
-      elements.mkString("Index.PACKAGES = [", ",", "]")
-    }</script>
+          JSONObject(scala.collection.immutable.Map(pairs : _*))
+        })
+
+        pack.qualifiedName -> JSONArray(ary)
+      }
+    }).toSeq
+
+    val obj =
+      JSONObject(scala.collection.immutable.Map(packages : _*)).toString()
+
+    <script type="text/javascript">
+      Index.PACKAGES = {scala.xml.Unparsed(obj)};
+    </script>
   }
 
   def allPackagesWithTemplates: Map[Package, List[DocTemplateEntity]] = {
