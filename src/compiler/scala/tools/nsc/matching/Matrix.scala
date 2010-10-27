@@ -201,9 +201,7 @@ trait Matrix extends MatrixAdditions {
       // See #1427 for an example of a crash which occurs unless we retype:
       // in that instance there is an existential in the pattern.
       lazy val ident  = typer typed { ID(lhs) setType null }
-      lazy val valDef = typer typedValDef {
-        (VAL(lhs) withType ident.tpe) === rhs
-      }
+      lazy val valDef = typer typed { (VAL(lhs) withType ident.tpe) === rhs }
 
       override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
     }
