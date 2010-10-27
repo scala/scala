@@ -13,6 +13,7 @@ import util.{ Position, NoPosition }
 import util.Statistics._
 import Flags._
 import scala.util.control.ControlThrowable
+import scala.annotation.tailrec
 
 /* A standard type pattern match:
   case ErrorType =>
@@ -2317,77 +2318,90 @@ A type's typeSymbol should never be inspected directly.
       constr.inst = tp
     }
 
-    def addLoBound(tp: Type, numBound: Boolean = false) {
+    def addLoBound(tp: Type, isNumericBound: Boolean = false) {
       assert(tp != this) // implies there is a cycle somewhere (?)
       //println("addLoBound: "+(safeToString, debugString(tp))) //DEBUG
       undoLog record this
-      constr.addLoBound(tp, numBound)
+      constr.addLoBound(tp, isNumericBound)
     }
 
-    def addHiBound(tp: Type, numBound: Boolean = false) {
+    def addHiBound(tp: Type, isNumericBound: Boolean = false) {
       // assert(tp != this)
       //println("addHiBound: "+(safeToString, debugString(tp))) //DEBUG
       undoLog record this
-      constr.addHiBound(tp, numBound)
+      constr.addHiBound(tp, isNumericBound)
     }
     // </region>
 
     // ignore subtyping&equality checks while true -- see findMember
     private[TypeVar] var suspended = false
 
-    /** Called from isSubtype0 when a TypeVar is involved in a subtyping check.
-     * if isLowerBound is true,
-     *   registerBound returns whether this TypeVar could plausibly be a supertype of tp and,
-     *     if so, tracks tp as a lower bound of this type variable
+    /** Called when a TypeVar is involved in a subtyping check.  Result is whether
+     *  this TypeVar could plausibly be a [super/sub]type of argument `tp` and if so,
+     *  tracks tp as a [lower/upper] bound of this TypeVar.
      *
-     * if isLowerBound is false,
-     *   registerBound returns whether this TypeVar could plausibly be a subtype of tp and,
-     *     if so, tracks tp as a upper bound of this type variable
+     *  if (isLowerBound)   this typevar could be a subtype, track tp as a lower bound
+     *  if (!isLowerBound)  this typevar could be a supertype, track tp as an upper bound
+     *
+     *  If isNumericBound is true, the subtype check is performed with weak_<:< instead of <:<.
      */
-    def registerBound(tp: Type, isLowerBound: Boolean, numBound: Boolean = false): Boolean = { //println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
-      if(isLowerBound) assert(tp != this)
+    def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = {
+      // println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
+      if (isLowerBound) assert(tp != this)
 
+      def checkSubtypeLower(tp1: Type, tp2: Type) =
+        if (isNumericBound) tp1 weak_<:< tp2
+        else tp1 <:< tp2
+
+      // swaps the arguments if it's an upper bound
       def checkSubtype(tp1: Type, tp2: Type) =
-        if (numBound)
-          if (isLowerBound) tp1 weak_<:< tp2
-          else              tp2 weak_<:< tp1
-        else
-          if(isLowerBound) tp1 <:< tp2
-          else             tp2 <:< tp1
+        if (isLowerBound) checkSubtypeLower(tp1, tp2)
+        else checkSubtypeLower(tp2, tp1)
 
       def addBound(tp: Type) = {
-        if (isLowerBound) addLoBound(tp, numBound)
-        else addHiBound(tp, numBound)
+        if (isLowerBound) addLoBound(tp, isNumericBound)
+        else addHiBound(tp, isNumericBound)
         // println("addedBound: "+(this, tp)) // @MDEBUG
+        true
       }
 
-      def checkArgs(args1: List[Type], args2: List[Type], params: List[Symbol]) =
-        if(isLowerBound) isSubArgs(args1, args2, params)
-        else             isSubArgs(args2, args1, params)
+      /** Simple case: type arguments can be ignored, because either this typevar has
+       *  no type parameters, or we are comparing to Any/Nothing.
+       *
+       *  The latter condition is needed because HK unification is limited to constraints of the shape
+       *    TC1[T1,..., TN] <: TC2[T'1,...,T'N]
+       *  which would preclude the following important constraints:
+       *    Nothing <: ?TC[?T]
+       *    ?TC[?T] <: Any
+       */
+      def unifySimple = (params.isEmpty || tp.typeSymbol == NothingClass || tp.typeSymbol == AnyClass) &&
+        addBound(tp)
 
+      /** Full case: involving a check of the form
+       *    TC1[T1,..., TN] <: TC2[T'1,...,T'N]
+       *  Checks subtyping of higher-order type vars, and uses variances as defined in the
+       *  type parameter we're trying to infer (the result will be sanity-checked later)
+       */
+      def unifyFull(tp: Type) = (typeArgs.length == tp.typeArgs.length) && {  // this is a higher-kinded type var with same arity as tp
+        // side effect: adds the type constructor itself as a bound
+        addBound(tp.typeConstructor)
+        if (isLowerBound) isSubArgs(tp.typeArgs, typeArgs, params)
+        else isSubArgs(typeArgs, tp.typeArgs, params)
+      }
+
+      /** TODO: need positive/negative test cases demonstrating this is correct.
+       */
+      def unifyParents =
+        if (isLowerBound) tp.parents exists unifyFull
+        else tp.parents forall unifyFull
+
+      // TODO: fancier unification, maybe rewrite constraint as follows?
+      // val sym = constr.hiBounds map {_.typeSymbol} find { _.typeParams.length == typeArgs.length}
+      // this <: tp.baseType(sym)
       if (suspended) checkSubtype(tp, origin)
-      else if (constr.instValid) // type var is already set
-        checkSubtype(tp, constr.inst)
+      else if (constr.instValid) checkSubtype(tp, constr.inst)  // type var is already set
       else isRelatable(tp) && {
-        if(params.isEmpty) { // type var has kind *
-          addBound(tp)
-          true
-        } else { // higher-kinded type var with same arity as tp
-          // needed because HK unification is limited to constraints of the shape TC1[T1,..., TN] <: TC2[T'1,...,T'N], which precludes e.g., Nothing <: ?TC[?T]
-          def isKindPolymorphic(tp: Type) = tp.typeSymbol == NothingClass || tp.typeSymbol == AnyClass
-          // TODO: fancier unification, maybe rewrite constraint as follows?
-            // val sym = constr.hiBounds map {_.typeSymbol} find { _.typeParams.length == typeArgs.length}
-            // this <: tp.baseType(sym)
-          def unifyHK(tp: Type) =
-            (typeArgs.length == tp.typeArgs.length || isKindPolymorphic(tp)) && {
-              // register type constructor (the type without its type arguments) as bound
-              addBound(tp.typeConstructor)
-              // check subtyping of higher-order type vars
-              // use variances as defined in the type parameter that we're trying to infer (the result is sanity-checked later)
-              isKindPolymorphic(tp) || checkArgs(tp.typeArgs, typeArgs, params)
-            }
-            unifyHK(tp) || unifyHK(tp.dealias)
-        }
+        unifySimple || unifyFull(tp) || unifyFull(tp.dealias) || unifyFull(tp.widen) || unifyParents
       }
     }
 
@@ -2896,29 +2910,31 @@ A type's typeSymbol should never be inspected directly.
     def loBounds: List[Type] = if (numlo == NoType) lobounds else numlo :: lobounds
     def hiBounds: List[Type] = if (numhi == NoType) hibounds else numhi :: hibounds
 
-/* not needed
-    def numLoBound: Type = numlo
-    def numHiBound: Type = numhi
-    def nonNumLoBounds: List[Type] = lobounds
-    def nonNumHiBounds: List[Type] = hibounds
-*/
+    /** @PP: Would it be possible to get a comment explaining what role these are serving?
+     *  In particular, why is numericHiBound being calculated this way given that all the
+     *  arguments are constant?
+     */
+    private val numericLoBound = IntClass.tpe
+    private val numericHiBound = intersectionType(List(ByteClass.tpe, CharClass.tpe), ScalaPackageClass)
 
-    def addLoBound(tp: Type, numBound: Boolean = false) {
-      if (numBound && isNumericValueType(tp)) {
-        if (numlo == NoType || isNumericSubType(numlo, tp)) numlo = tp
-        else if (!isNumericSubType(tp, numlo)) numlo = IntClass.tpe
-      } else {
-        lobounds = tp :: lobounds
+    def addLoBound(tp: Type, isNumericBound: Boolean = false) {
+      if (isNumericBound && isNumericValueType(tp)) {
+        if (numlo == NoType || isNumericSubType(numlo, tp))
+          numlo = tp
+        else if (!isNumericSubType(tp, numlo))
+          numlo = numericLoBound
       }
+      else lobounds ::= tp
     }
 
-    def addHiBound(tp: Type, numBound: Boolean = false) {
-      if (numBound && isNumericValueType(tp)) {
-        if (numhi == NoType || isNumericSubType(tp, numhi)) numhi = tp
-        else if (!isNumericSubType(numhi, tp)) numhi = intersectionType(List(ByteClass.tpe, CharClass.tpe), ScalaPackageClass)
-      } else {
-        hibounds = tp :: hibounds
+    def addHiBound(tp: Type, isNumericBound: Boolean = false) {
+      if (isNumericBound && isNumericValueType(tp)) {
+        if (numhi == NoType || isNumericSubType(tp, numhi))
+          numhi = tp
+        else if (!isNumericSubType(numhi, tp))
+          numhi = numericHiBound
       }
+      else hibounds ::= tp
     }
 
     def isWithinBounds(tp: Type): Boolean =
@@ -4453,14 +4469,19 @@ A type's typeSymbol should never be inspected directly.
       // --> thus, cannot be subtypes (Any/Nothing has already been checked)
     }))
 
-  def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean = (
-    tps1.isEmpty && tps2.isEmpty
-    ||
-    !tps1.isEmpty && !tps2.isEmpty &&
-    (tparams.head.isCovariant || (tps2.head <:< tps1.head)) &&
-    (tparams.head.isContravariant || (tps1.head <:< tps2.head)) &&
-    isSubArgs(tps1.tail, tps2.tail, tparams.tail)
-  )
+  /** True if all three arguments have the same number of elements and
+   *  the function is true for all the triples.
+   */
+  @tailrec final def corresponds3[A, B, C](xs1: List[A], xs2: List[B], xs3: List[C], f: (A, B, C) => Boolean): Boolean = {
+    if (xs1.isEmpty) xs2.isEmpty && xs3.isEmpty
+    else !xs2.isEmpty && !xs3.isEmpty && f(xs1.head, xs2.head, xs3.head) && corresponds3(xs1.tail, xs2.tail, xs3.tail, f)
+  }
+
+  def isSubArg(t1: Type, t2: Type, variance: Int) =
+    (variance > 0 || t2 <:< t1) && (variance < 0 || t1 <:< t2)
+
+  def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol]): Boolean =
+    corresponds3(tps1, tps2, tparams map (_.variance), isSubArg)
 
   def differentOrNone(tp1: Type, tp2: Type) = if (tp1 eq tp2) NoType else tp1
 
@@ -5048,14 +5069,14 @@ A type's typeSymbol should never be inspected directly.
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
             isNumericSubClass(sym1, sym2)
           case tv2 @ TypeVar(_, _) =>
-            tv2.registerBound(tp1, isLowerBound = true, numBound = true)
+            tv2.registerBound(tp1, isLowerBound = true, isNumericBound = true)
           case _ =>
             isSubType(tp1, tp2)
         }
       case tv1 @ TypeVar(_, _) =>
         tp2.deconst.normalize match {
           case TypeRef(_, sym2, _) if isNumericValueClass(sym2) =>
-            tv1.registerBound(tp2, isLowerBound = false, numBound = true)
+            tv1.registerBound(tp2, isLowerBound = false, isNumericBound = true)
           case _ =>
             isSubType(tp1, tp2)
         }
