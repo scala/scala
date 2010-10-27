@@ -289,22 +289,11 @@ object TupleTwo extends Tuple(2)
   /** Swap the elements of the tuple */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
 
+  @deprecated("Use `zipped` instead.")
   def zip[Repr1, El1, El2, To](implicit w1:   T1 => TLike[El1, Repr1],
                                         w2:   T2 => Iterable[El2],
                                         cbf1: CBF[Repr1, (El1, El2), To]): To = {
-    val coll1: TLike[El1, Repr1] = _1
-    val coll2: Iterable[El2] = _2
-    val b1 = cbf1(coll1.repr)
-    val elems2 = coll2.iterator
-
-    for (el1 <- coll1) {
-      if (elems2.hasNext)
-        b1 += ((el1, elems2.next))
-      else
-        return b1.result
-    }
-
-    b1.result
+    zipped map ((x, y) => ((x, y)))
   }
 
   /** Wraps a tuple in a `Zipped`, which supports 2-ary generalisations of map, flatMap, filter,...
@@ -397,25 +386,13 @@ object TupleTwo extends Tuple(2)
 object TupleThree extends Tuple(3) {
   override def imports = Tuple.zipImports
   override def moreMethods = """
+
+  @deprecated("Use `zipped` instead.")
   def zip[Repr1, El1, El2, El3, To](implicit w1:   T1 => TLike[El1, Repr1],
                                              w2:   T2 => Iterable[El2],
                                              w3:   T3 => Iterable[El3],
                                              cbf1: CBF[Repr1, (El1, El2, El3), To]): To = {
-    val coll1: TLike[El1, Repr1] = _1
-    val coll2: Iterable[El2] = _2
-    val coll3: Iterable[El3] = _3
-    val b1 = cbf1(coll1.repr)
-    val elems2 = coll2.iterator
-    val elems3 = coll3.iterator
-
-    for (el1 <- coll1) {
-      if (elems2.hasNext && elems3.hasNext)
-        b1 += ((el1, elems2.next, elems3.next))
-      else
-        return b1.result
-    }
-
-    b1.result
+    zipped map ((x, y, z) => ((x, y, z)))
   }
 
   /** Wraps a tuple in a `Zipped`, which supports 3-ary generalisations of map, flatMap, filter,...
@@ -470,7 +447,7 @@ object TupleThree extends Tuple(3) {
       val elems3 = coll3.iterator
       def result = (b1.result, b2.result, b3.result)
 
-      for(el1 <- coll1) {
+      for (el1 <- coll1) {
         if (elems2.hasNext && elems3.hasNext) {
           val el2 = elems2.next
           val el3 = elems3.next
@@ -503,17 +480,6 @@ object TupleThree extends Tuple(3) {
 
     def forall(f: (El1, El2, El3) => Boolean): Boolean =
       !exists((x, y, z) => !f(x, y, z))
-
-    def foreach[U](f: (El1, El2) => U): Unit = {
-      val elems2 = coll2.iterator
-
-      for (el1 <- coll1) {
-        if (elems2.hasNext)
-          f(el1, elems2.next)
-        else
-          return
-      }
-    }
 
     def foreach[U](f: (El1, El2, El3) => U): Unit = {
       val elems2 = coll2.iterator
