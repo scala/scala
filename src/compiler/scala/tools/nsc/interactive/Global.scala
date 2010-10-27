@@ -27,6 +27,10 @@ self =>
 
   val debugIDE = false
 
+  /** Print msg only when debugIDE is true. */
+  @inline def debugLog(msg: => String) =
+    if (debugIDE) println(msg)
+
   override def onlyPresentation = true
 
   /** A list indicating in which order some units should be typechecked.
@@ -159,11 +163,11 @@ self =>
       case Some(action) =>
         try {
           acting = true
-          if (debugIDE) println("picked up work item: "+action)
+          debugLog("picked up work item: "+action)
           action()
-          if (debugIDE) println("done with work item: "+action)
+          debugLog("done with work item: "+action)
         } finally {
-          if (debugIDE) println("quitting work item: "+action)
+          debugLog("quitting work item: "+action)
           acting = false
         }
       case None =>
@@ -291,11 +295,11 @@ self =>
   def recompile(units: List[RichCompilationUnit]) {
     for (unit <- units) {
       reset(unit)
-      if (debugIDE) inform("parsing: "+unit)
+      debugLog("parsing: "+unit)
       parse(unit)
     }
     for (unit <- units) {
-      if (debugIDE) inform("type checking: "+unit)
+      debugLog("type checking: "+unit)
       activeLocks = 0
       currentTyperRun.typeCheck(unit)
       unit.status = currentRunId
@@ -452,9 +456,9 @@ self =>
       for (sym <- cx.scope)
         addScopeMember(sym, NoPrefix, EmptyTree)
       if (cx == cx.enclClass) {
-	val pre = cx.prefix
-	for (sym <- pre.members)
-	  addScopeMember(sym, pre, EmptyTree)
+        val pre = cx.prefix
+        for (sym <- pre.members)
+          addScopeMember(sym, pre, EmptyTree)
       }
       cx = cx.outer
     }
@@ -497,7 +501,7 @@ self =>
     if (tree.tpe == null)
       tree = analyzer.newTyper(context).typedQualifier(tree)
 
-    if (debugIDE) println("typeMembers at "+tree+" "+tree.tpe)
+    debugLog("typeMembers at "+tree+" "+tree.tpe)
 
     val superAccess = tree.isInstanceOf[Super]
     val scope = new Scope
@@ -528,25 +532,29 @@ self =>
       }
     }
 
+    /** Names containing $ are not valid completions. */
+    def shouldDisplay(sym: Symbol): Boolean =
+      !sym.name.toString.contains("$")
+
     val pre = stabilizedType(tree)
     val ownerTpe = if (tree.tpe != null) tree.tpe else pre
 
-    for (sym <- ownerTpe.decls)
+    for (sym <- ownerTpe.decls if shouldDisplay(sym))
       addTypeMember(sym, pre, false, NoSymbol)
-    members.values.toList #:: {
-      for (sym <- ownerTpe.members)
-        addTypeMember(sym, pre, true, NoSymbol)
       members.values.toList #:: {
-        val applicableViews: List[SearchResult] =
-          new ImplicitSearch(tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true, context.makeImplicit(reportAmbiguousErrors = false))
-            .allImplicits
-        for (view <- applicableViews) {
-          val vtree = viewApply(view)
-          val vpre = stabilizedType(vtree)
-          for (sym <- vtree.tpe.members) {
-            addTypeMember(sym, vpre, false, view.tree.symbol)
+        for (sym <- ownerTpe.members if shouldDisplay(sym))
+          addTypeMember(sym, pre, true, NoSymbol)
+        members.values.toList #:: {
+          val applicableViews: List[SearchResult] =
+            new ImplicitSearch(tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true, context.makeImplicit(reportAmbiguousErrors = false))
+              .allImplicits
+          for (view <- applicableViews) {
+            val vtree = viewApply(view)
+            val vpre = stabilizedType(vtree)
+            for (sym <- vtree.tpe.members) {
+              addTypeMember(sym, vpre, false, view.tree.symbol)
+            }
           }
-        }
         Stream(members.values.toList)
       }
     }
@@ -586,11 +594,11 @@ self =>
      *  (i.e. largest tree that's contained by position)
      */
     def typedTreeAt(pos: Position): Tree = {
-      if (debugIDE) println("starting typedTreeAt")
+      debugLog("starting typedTreeAt")
       val tree = locateTree(pos)
-      if (debugIDE) println("at pos "+pos+" was found: "+tree+tree.pos.show)
+      debugLog("at pos "+pos+" was found: "+tree+tree.pos.show)
       if (stabilizedType(tree) ne null) {
-        if (debugIDE) println("already attributed")
+        debugLog("already attributed")
         tree
       } else {
         val unit = unitOf(pos)
