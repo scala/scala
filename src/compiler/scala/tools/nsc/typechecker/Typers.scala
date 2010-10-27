@@ -1400,23 +1400,13 @@ trait Typers { self: Analyzer =>
           }
           checkNoEscaping.privates(getter, getterDef.tpt)
           def setterDef(setter: Symbol, isBean: Boolean = false): DefDef = {
-            setter.setAnnotations(memberAnnots(allAnnots, if (isBean) BeanSetterTargetClass else SetterTargetClass))
-            val result = typed {
-              atPos(vdef.pos.focus) {
-                DefDef(
-                  setter,
-                  if ((mods hasFlag DEFERRED) || (setter hasFlag OVERLOADED))
-                    EmptyTree
-                  else
-                    Assign(Select(This(value.owner), value),
-                           Ident(setter.paramss.head.head)))
-              }
-            }
-            result.asInstanceOf[DefDef]
-            // Martin: was
-            // treeCopy.DefDef(result, result.mods, result.name, result.tparams,
-            //                result.vparamss, result.tpt, result.rhs)
-            // but that's redundant, no?
+            setter setAnnotations memberAnnots(allAnnots, if (isBean) BeanSetterTargetClass else SetterTargetClass)
+            val defTree =
+              if ((mods hasFlag DEFERRED) || (setter hasFlag OVERLOADED)) EmptyTree
+              else Assign(Select(This(value.owner), value), Ident(setter.paramss.head.head))
+
+
+            typedPos(vdef.pos.focus)(DefDef(setter, defTree)).asInstanceOf[DefDef]
           }
 
           val gs = new ListBuffer[DefDef]
@@ -1994,21 +1984,10 @@ trait Typers { self: Analyzer =>
       treeCopy.CaseDef(cdef, pat1, guard1, body1) setType body1.tpe
     }
 
-    def typedCases(tree: Tree, cases: List[CaseDef], pattp0: Type, pt: Type): List[CaseDef] = {
-      var pattp = pattp0
-      cases mapConserve (cdef =>
-        newTyper(context.makeNewScope(cdef, context.owner))
-          .typedCase(cdef, pattp, pt))
-/* not yet!
-        cdef.pat match {
-          case Literal(Constant(null)) =>
-            if (!(pattp <:< NonNullClass.tpe))
-              pattp = intersectionType(List(pattp, NonNullClass.tpe), context.owner)
-          case _ =>
-        }
-        result
-*/
-    }
+    def typedCases(tree: Tree, cases: List[CaseDef], pattp: Type, pt: Type): List[CaseDef] =
+      cases mapConserve { cdef =>
+        newTyper(context.makeNewScope(cdef, context.owner)).typedCase(cdef, pattp, pt)
+      }
 
     /**
      *  @param fun  ...
@@ -2556,6 +2535,7 @@ trait Typers { self: Analyzer =>
             freeVars foreach context1.scope.enter
             val typer1 = newTyper(context1)
             val pattp = typer1.infer.inferTypedPattern(tree.pos, unappFormal, arg.tpe)
+
             // turn any unresolved type variables in freevars into existential skolems
             val skolems = freeVars map { fv =>
               val skolem = new TypeSkolem(context1.owner, fun.pos, fv.name, fv)
@@ -2567,42 +2547,10 @@ trait Typers { self: Analyzer =>
             //todo: replace arg with arg.asInstanceOf[inferTypedPattern(unappFormal, arg.tpe)] instead.
             argDummy.setInfo(arg.tpe) // bq: this line fixed #1281. w.r.t. comment ^^^, maybe good enough?
           }
-/*
-          val funPrefix = fun.tpe.prefix match {
-            case tt @ ThisType(sym) =>
-              //Console.println(" sym="+sym+" "+" .isPackageClass="+sym.isPackageClass+" .isModuleClass="+sym.isModuleClass);
-              //Console.println(" funsymown="+fun.symbol.owner+" .isClass+"+fun.symbol.owner.isClass);
-              //Console.println(" contains?"+sym.tpe.decls.lookup(fun.symbol.name));
-              if(sym != fun.symbol.owner && (sym.isPackageClass||sym.isModuleClass) /*(1)*/ ) { // (1) see 'files/pos/unapplyVal.scala'
-                if(fun.symbol.owner.isClass) {
-                  ThisType(fun.symbol.owner)
-                } else {
-                //Console.println("2 ThisType("+fun.symbol.owner+")")
-                  NoPrefix                                                 // see 'files/run/unapplyComplex.scala'
-                }
-              } else tt
-            case st @ SingleType(pre, sym) => st
-              st
-            case xx                        => xx // cannot happen?
-          }
-          val fun1untyped = fun
-            Apply(
-              Select(
-                gen.mkAttributedRef(funPrefix, fun.symbol) setType null,
-                // setType null is necessary so that ref will be stabilized; see bug 881
-                unapp),
-              List(arg))
-          }
-*/
-          val fun1untyped = atPos(fun.pos) {
-            Apply(
-              Select(
-                fun setType null, // setType null is necessary so that ref will be stabilized; see bug 881
-                unapp),
-              List(arg))
-          }
 
-          val fun1 = typed(fun1untyped)
+          // setType null is necessary so that ref will be stabilized; see bug 881
+          val fun1 = typedPos(fun.pos)(Apply(Select(fun setType null, unapp), List(arg)))
+
           if (fun1.tpe.isErroneous) setError(tree)
           else {
             val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)

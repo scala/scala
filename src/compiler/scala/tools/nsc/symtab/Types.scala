@@ -2173,7 +2173,7 @@ A type's typeSymbol should never be inspected directly.
         // try to represent with wildcards first
         underlying match {
           case TypeRef(pre, sym, args) if (!args.isEmpty) =>
-            val wargs = wildcardArgsString(Predef.Set()++quantified, args)
+            val wargs = wildcardArgsString(quantified.toSet, args)
             if (wargs.length == args.length)
               return TypeRef(pre, sym, List()).toString+wargs.mkString("[", ", ", "]")
           case _ =>
