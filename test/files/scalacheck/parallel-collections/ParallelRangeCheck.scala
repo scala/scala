@@ -27,7 +27,9 @@ object ParallelRangeCheck extends ParallelSeqCheck[Int]("ParallelRange[Int]") wi
 
   def isCheckingViews = false
 
-  def instances(vals: Seq[Gen[Int]]): Gen[Seq[Int]] = sized { start =>
+  def ofSize(vals: Seq[Gen[Int]], sz: Int) = unsupported
+
+  override def instances(vals: Seq[Gen[Int]]): Gen[Seq[Int]] = sized { start =>
     sized { end =>
       sized { step =>
         new Range(start, end, if (step != 0) step else 1)

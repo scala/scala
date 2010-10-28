@@ -5,7 +5,7 @@ import scala.collection.parallel._
 
 
 trait IntOperators extends Operators[Int] {
-  def reduceOperators = List(_ + _, _ * _, Math.min(_, _), Math.max(_, _))
+  def reduceOperators = List(_ + _, _ * _, math.min(_, _), math.max(_, _))
   def countPredicates = List(_ >= 0, _ < 0, _ < 50, _ < 500, _ < 5000, _ < 50000, _ % 2 == 0, _ == 99)
   def forallPredicates = List(_ >= 0, _ < 0, _ % 2 == 0, _ != 55, _ != 505, _ != 5005)
   def existsPredicates = List(_ >= 0, _ < 0, _ % 2 == 0, _ == 55, _ == 505, _ == 5005)
@@ -34,7 +34,7 @@ trait IntOperators extends Operators[Int] {
   def foldArguments = List(
       (0, _ + _),
       (1, _ * _),
-      (Int.MinValue, Math.max(_, _))
+      (Int.MinValue, math.max(_, _))
       )
   def addAllTraversables = List(
       List[Int](),

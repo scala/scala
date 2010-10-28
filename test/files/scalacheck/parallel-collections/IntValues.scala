@@ -21,6 +21,9 @@ trait IntValues {
       arbitrary[Int] suchThat (_ < 0),
       choose(0, 0),
       choose(0, 10),
-      choose(0, 100)
+      choose(0, 100),
+      choose(0, 1000) suchThat (_ % 2 == 0),
+      choose(0, 1000) suchThat (_ % 2 != 0),
+      choose(0, 1000) suchThat (n => (n % 2 == 0) || (n % 3 == 0))
       )
 }

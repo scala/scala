@@ -1,5 +1,5 @@
 package scala.collection.parallel
-package immutable
+package mutable
 
 
 
@@ -14,7 +14,7 @@ import scala.collection._
 import scala.collection.parallel.ops._
 
 
-abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K, V]("immutable.ParHashMap[" + tp + "]") {
+abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K, V]("mutable.ParHashMap[" + tp + "]") {
   ForkJoinTasks.defaultForkJoinPool.setMaximumPoolSize(Runtime.getRuntime.availableProcessors * 2)
   ForkJoinTasks.defaultForkJoinPool.setParallelism(Runtime.getRuntime.availableProcessors * 2)
 
@@ -24,15 +24,15 @@ abstract class ParallelHashMapCheck[K, V](tp: String) extends ParallelMapCheck[K
 
   def hasStrictOrder = false
 
-  def instances(vals: Seq[Gen[(K, V)]]): Gen[Iterable[(K, V)]] = sized { sz =>
-    var hm = new immutable.HashMap[K, V]
+  def ofSize(vals: Seq[Gen[(K, V)]], sz: Int) = {
+    val hm = new mutable.HashMap[K, V]
     val gen = vals(rnd.nextInt(vals.size))
     for (i <- 0 until sz) hm += sample(gen)
     hm
   }
 
   def fromTraversable(t: Traversable[(K, V)]) = {
-    var phm = new ParHashMap[K, V]
+    val phm = new ParHashMap[K, V]
     var i = 0
     for (kv <- t.toList) {
       phm += kv
@@ -58,7 +58,7 @@ with PairValues[Int, Int]
 
   override def printDataStructureDebugInfo(ds: AnyRef) = ds match {
     case pm: ParHashMap[k, v] =>
-      pm.printDebugInfo
+      println("Mutable parallel hash map")
     case _ =>
       println("could not match data structure type: " + ds.getClass)
   }

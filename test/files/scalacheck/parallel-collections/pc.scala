@@ -17,12 +17,13 @@ class ParCollProperties extends Properties("Parallel collections") {
   //include(immutable.ParallelRangeCheck)
 
   // parallel immutable hash maps (tries)
-  include(immutable.IntIntParallelHashMapCheck)
+  //include(immutable.IntIntParallelHashMapCheck)
 
   // parallel immutable hash sets (tries)
+  //include(immutable.IntParallelHashSetCheck)
 
   // parallel mutable hash maps (tables)
-
+  include(mutable.IntIntParallelHashMapCheck)
 
   /*   Views   */
 
@@ -41,7 +42,10 @@ object Test {
       org.scalacheck.Test.Params(
         rng = new java.util.Random(5134L),
         testCallback = new ConsoleReporter(0),
-        workers = 1
+        workers = 1,
+        minSize = 0,
+        maxSize = 250,
+        minSuccessfulTests = 250
       ),
       pc
     )

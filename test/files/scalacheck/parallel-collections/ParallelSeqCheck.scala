@@ -19,8 +19,19 @@ abstract class ParallelSeqCheck[T](collName: String) extends ParallelIterableChe
 
   type CollType <: collection.parallel.ParSeq[T] with Sequentializable[T, Seq[T]]
 
-  def instances(vals: Seq[Gen[T]]): Gen[Seq[T]]
+
+  def ofSize(vals: Seq[Gen[T]], sz: Int): Seq[T]
   def fromSeq(s: Seq[T]): CollType
+
+  override def instances(vals: Seq[Gen[T]]): Gen[Seq[T]] = oneOf(
+    sized(
+      sz =>
+      ofSize(vals, sz)
+    ),
+    for (sz <- choose(1000, 2000)) yield ofSize(vals, sz)
+  )
+
+
   def fromTraversable(t: Traversable[T]) = fromSeq(traversable2Seq(t))
   def traversable2Seq(t: Traversable[T]): Seq[T] = {
     if (t.isInstanceOf[Iterable[_]]) t.asInstanceOf[Iterable[T]].iterator.toList else t.toList
