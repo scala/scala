@@ -13,6 +13,10 @@ class Dummy(val in: Int) {
 
 
 object DummyOperators extends Operators[Dummy] {
+  val foreachFun = (a: Dummy) => {
+    a
+    ()
+  }
   val reducer = (a: Dummy, b: Dummy) => {
     var i = 0
     if (a.in > b.in) {

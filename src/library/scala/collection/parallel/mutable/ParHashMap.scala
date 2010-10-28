@@ -106,6 +106,8 @@ self =>
 
 
 object ParHashMap extends ParMapFactory[ParHashMap] {
+  var iters = 0
+
   def empty[K, V]: ParHashMap[K, V] = new ParHashMap[K, V]
 
   def newCombiner[K, V]: Combiner[(K, V), ParHashMap[K, V]] = ParHashMapCombiner.apply[K, V]

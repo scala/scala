@@ -115,6 +115,10 @@ object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] {
       }
       sum
     }
+    val foreachFun = (t: DPair) => {
+      t
+      ()
+    }
     val reducer = (x: DPair, y: DPair) => {
       //y._2.num = x._2.in + y._2.in
       y

@@ -82,11 +82,15 @@ trait Bench extends Benchmark {
    */
   def printResults {}
 
+  def onEnd {}
+
   def executeBenchmark = {
     println("-----------------------")
     print(name + ", " + runWhat + ", par.=" + parallelism + ", sz=" + niceSize + ": ")
 
     val times = runBenchmark(runs)
+
+    onEnd
 
     for (t <- times) print(t + " ")
     println

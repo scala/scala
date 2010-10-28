@@ -7,6 +7,7 @@ package scala.collection.parallel.benchmarks.generic
 
 trait Operators[T] {
 
+  def foreachFun: T => Unit
   def reducer: (T, T) => T
   def mediumreducer: (T, T) => T
   def filterer: T => Boolean
@@ -24,6 +25,7 @@ trait Operators[T] {
 
 trait IntOperators extends Operators[Int] {
 
+  val foreachFun: Int => Unit = x => ()
   val reducer: (Int, Int) => Int = _ + _
   val mediumreducer: (Int, Int) => Int = (a: Int, b: Int) => {
     val result = if (b == 0) a else {

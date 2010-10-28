@@ -30,9 +30,11 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
     def entry2item(e: Entry): T
     def newIterator(idxFrom: Int, idxUntil: Int, totalSize: Int, es: Entry): IterRepr
 
-    def hasNext = es != null
+    def hasNext = {
+      es ne null
+    }
 
-    def next = {
+    def next: T = {
       val res = es
       es = es.next
       scan()
@@ -113,7 +115,9 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
       val fbindex = from / sizeMapBucketSize
 
       // find the last bucket
-      val lbindex = from / sizeMapBucketSize
+      val lbindex = until / sizeMapBucketSize
+      // note to self: FYI if you define lbindex as from / sizeMapBucketSize, the first branch
+      // below always triggers and tests pass, so you spend a great day benchmarking and profiling
 
       if (fbindex == lbindex) {
         // if first and last are the same, just count between `from` and `until`
@@ -164,5 +168,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
 
 
 
-
+object ParHashTable {
+  var iters = 0
+}
 

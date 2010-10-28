@@ -112,6 +112,11 @@ trait BenchmarkRegister {
   // parallel hash table benchmarks
   register(hashtables.RefParHashTableBenches.Reduce)
   register(hashtables.RefParHashTableBenches.Reduce2)
+  register(hashtables.RefParHashTableBenches.Foreach)
+  register(hashtables.RefParHashTableBenches.ForeachSet)
+  register(hashtables.RefParHashTableBenches.Map)
+  register(hashtables.RefParHashTableBenches.Map2)
+  register(hashtables.RefParHashTableBenches.HeavyMap)
 }
 
 
