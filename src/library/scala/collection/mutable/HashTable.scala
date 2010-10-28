@@ -113,7 +113,6 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
     val h = index(elemHashCode(e.key))
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
-    if (this.isInstanceOf[collection.parallel.mutable.ParHashMap[_, _]]) println("adding at pos: " + h)
     tableSize = tableSize + 1
     nnSizeMapAdd(h)
     if (tableSize > threshold)
@@ -302,10 +301,34 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
   protected def elemHashCode(key: A) = if (key == null) 0 else key.##
 
   protected final def improve(hcode: Int) = {
-    var h: Int = hcode + ~(hcode << 9)
-    h = h ^ (h >>> 14)
-    h = h + (h << 4)
-    h ^ (h >>> 10)
+    /* Murmur hash
+     *  m = 0x5bd1e995
+     *  r = 24
+     *  note: h = seed = 0 in mmix
+     *  mmix(h,k) = k *= m; k ^= k >> r; k *= m; h *= m; h ^= k; */
+    var k = hcode * 0x5bd1e995
+    k ^= k >> 24
+    k *= 0x5bd1e995
+    k
+
+    /* Jenkins hash
+     * for range 0-10000, output has the msb set to zero */
+    // var h = hcode + (hcode << 12)
+    // h ^= (h >> 22)
+    // h += (h << 4)
+    // h ^= (h >> 9)
+    // h += (h << 10)
+    // h ^= (h >> 2)
+    // h += (h << 7)
+    // h ^= (h >> 12)
+    // h
+
+    /* OLD VERSION
+     * since 2003 */
+    // var h: Int = hcode + ~(hcode << 9)
+    // h = h ^ (h >>> 14)
+    // h = h + (h << 4)
+    // h ^ (h >>> 10)
   }
 
   // Note:
@@ -315,7 +338,6 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
     val ones = table.length - 1
     val improved = improve(hcode)
     val shifted = (improved >> (32 - java.lang.Integer.bitCount(ones))) & ones
-    if (this.isInstanceOf[collection.parallel.mutable.ParHashMap[_, _]]) println("computing hash code for: " + hcode + " -> " + improved + " -> " + shifted)
     shifted
   }
 
