@@ -194,7 +194,7 @@ fi
 git push $LOCATION master
 if [ $? -ne 0 ]
 then
-  error "Could not push to bare repo."
+  error "Could not push to bare repo - push from local machine failed."
 fi
 
 # remotely checkout the repo
