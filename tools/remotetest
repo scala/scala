@@ -191,7 +191,7 @@ fi
 
 # if it's not the init operation, proceed normally
 # push to remote bare repo
-git push $LOCATION $LOCATION/master
+git push $LOCATION master
 if [ $? -ne 0 ]
 then
   error "Could not push to bare repo."

@@ -17,7 +17,7 @@ class ParCollProperties extends Properties("Parallel collections") {
   //include(immutable.ParallelRangeCheck)
 
   // parallel immutable hash maps (tries)
-  //include(immutable.IntIntParallelHashMapCheck)
+  include(immutable.IntIntParallelHashMapCheck)
 
   // parallel immutable hash sets (tries)
 
