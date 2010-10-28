@@ -108,6 +108,10 @@ trait BenchmarkRegister {
   register(hashtries.RefParHashTrieBenches.Reduce2)
   register(hashtries.RefParHashTrieBenches.Map)
   register(hashtries.RefParHashTrieBenches.Map2)
+
+  // parallel hash table benchmarks
+  register(hashtables.RefParHashTableBenches.Reduce)
+  register(hashtables.RefParHashTableBenches.Reduce2)
 }
 
 

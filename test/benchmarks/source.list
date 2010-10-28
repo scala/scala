@@ -1,5 +1,6 @@
 src/scala/collection/parallel/Benchmarking.scala
 src/scala/collection/parallel/benchmarks/parallel_view/SeqViewBenches.scala
+src/scala/collection/parallel/benchmarks/hashtables/ParallelHashTables.scala
 src/scala/collection/parallel/benchmarks/arrays/ObjectAccess.scala
 src/scala/collection/parallel/benchmarks/arrays/IntAccess.scala
 src/scala/collection/parallel/benchmarks/arrays/Resetting.scala

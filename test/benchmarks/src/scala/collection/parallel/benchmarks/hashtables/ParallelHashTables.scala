@@ -1,4 +1,4 @@
-package scala.collection.parallel.benchmarks.hashtries
+package scala.collection.parallel.benchmarks.hashtables
 
 
 
@@ -6,21 +6,21 @@ package scala.collection.parallel.benchmarks.hashtries
 import scala.collection.parallel.benchmarks.generic.StandardParIterableBenches
 import scala.collection.parallel.benchmarks.generic.Dummy
 import scala.collection.parallel.benchmarks.generic.Operators
-import scala.collection.parallel.immutable.ParHashMap
+import scala.collection.parallel.mutable.ParHashMap
 
 
 
 
 
-trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHashMap[K, V]] {
+trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHashMap[K, V]] {
 
-  def nameOfCollection = "immutable.ParHashMap"
-  def comparisonMap = collection.Map()
+  def nameOfCollection = "mutable.ParHashMap"
+  def comparisonMap = collection.mutable.Map()
   val forkJoinPool = new scala.concurrent.forkjoin.ForkJoinPool
 
   object Map2 extends IterableBenchCompanion {
     override def defaultSize = 5000
-    override def comparisons = List("jhashtable", "hashtable")
+    override def comparisons = List("jhashtable")
     def benchName = "map2";
     def apply(sz: Int, p: Int, w: String) = new Map2(sz, p, w)
   }
@@ -28,9 +28,9 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHas
   class Map2(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     var result: Int = 0
-    def comparisonMap = collection.Map("jhashtable" -> runjhashtable _, "hashtable" -> runhashtable _)
+    def comparisonMap = collection.Map("jhashtable" -> runjhashtable _)
     def runseq = {
-      val r = this.seqcoll.asInstanceOf[collection.immutable.HashMap[K, V]].map(operators.mapper2)
+      val r = this.seqcoll.asInstanceOf[collection.mutable.HashMap[K, V]].map(operators.mapper2)
       result = r.size
     }
     def runpar = {
@@ -45,18 +45,8 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHas
       }
       result = jumap.size
     }
-    def runhashtable = {
-      val smap = collection.mutable.HashMap[K, V]()
-      val it = this.seqcoll.iterator
-      while (it.hasNext) {
-        val p = it.next
-        smap.put(p._1, p._2)
-      }
-      result = smap.size
-    }
     override def reset = runWhat match {
       case "jhashtable" => this.seqcoll = createSequential(size, parallelism)
-      case "hashtable" => this.seqcoll = createSequential(size, parallelism)
       case _ => super.reset
     }
     def companion = Map2
@@ -68,7 +58,7 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHas
 
   object Reduce2 extends IterableBenchCompanion {
     override def defaultSize = 50000
-    override def comparisons = List("hashtable")
+    override def comparisons = List()
     def benchName = "reduce2";
     def apply(sz: Int, p: Int, w: String) = new Reduce2(sz, p, w)
   }
@@ -76,18 +66,14 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHas
   class Reduce2(val size: Int, val parallelism: Int, val runWhat: String)
   extends IterableBench {
     private var ht: collection.mutable.HashMap[K, V] = _
-    def comparisonMap = collection.Map("hashtable" -> runhashtable _)
-    def runseq = this.seqcoll.reduceLeft(operators.reducer)
-    def runpar = this.parcoll.reduce(operators.reducer)
-    def runhashtable = ht.reduceLeft(operators.reducer)
+    def comparisonMap = collection.Map()
+    def runseq = this.seqcoll.reduceLeft(operators.mediumreducer)
+    def runpar = this.parcoll.reduce(operators.mediumreducer)
     override def reset = runWhat match {
-      case "hashtable" => ht = createHashTable(size)
       case _ => super.reset
     }
     def companion = Reduce2
   }
-
-  def createHashTable(sz: Int): collection.mutable.HashMap[K, V]
 
 }
 
@@ -95,7 +81,7 @@ trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHas
 
 
 
-object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] {
+object RefParHashTableBenches extends ParHashTableBenches[Dummy, Dummy] {
 
   type DPair = (Dummy, Dummy)
 
@@ -151,23 +137,17 @@ object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] {
   }
 
   def createSequential(sz: Int, p: Int) = {
-    var ht = new collection.immutable.HashMap[Dummy, Dummy]
+    val ht = new collection.mutable.HashMap[Dummy, Dummy]
     for (i <- 0 until sz) ht += ((new Dummy(i), new Dummy(i)))
     ht
   }
 
   def createParallel(sz: Int, p: Int) = {
-    var pht = new ParHashMap[Dummy, Dummy]
-    for (i <- 0 until sz) pht += ((new Dummy(i), new Dummy(i)))
+    val phm = new ParHashMap[Dummy, Dummy]
+    for (i <- 0 until sz) phm += ((new Dummy(i), new Dummy(i)))
     forkJoinPool.setParallelism(p)
-    pht.environment = forkJoinPool
-    pht
-  }
-
-  def createHashTable(sz: Int) = {
-    val hm = collection.mutable.HashMap[Dummy, Dummy]()
-    for (i <- 0 until sz) hm.put(new Dummy(i), new Dummy(i))
-    hm
+    phm.environment = forkJoinPool
+    phm
   }
 
 }

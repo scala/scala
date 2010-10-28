@@ -52,7 +52,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
     private[parallel] override def debugInformation = {
       buildString {
         append =>
-        append("/-------------------\\")
+        append("/--------------------\\")
         append("Parallel hash table entry iterator")
         append("total hash table elements: " + tableSize)
         append("pos: " + idx)
@@ -62,7 +62,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
         append("current entry: " + es)
         append("underlying from " + idx + " until " + until)
         append(itertable.slice(idx, until).map(x => if (x != null) x.toString else "n/a").mkString(" | "))
-        append("\\-------------------/")
+        append("\\--------------------/")
       }
     }
 
