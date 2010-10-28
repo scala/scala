@@ -178,7 +178,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     threshold = newThreshold(_loadFactor, table.length)
     sizeMapInit(table.length)
     def setSize(sz: Int) = tableSize = sz
-    def insertEntry(block: Int, e: DefaultEntry[K, V]) = {
+    def insertEntry(/*block: Int, */e: DefaultEntry[K, V]) = {
       var h = index(elemHashCode(e.key))
       // assertCorrectBlock(h, block)
       var olde = table(h).asInstanceOf[DefaultEntry[K, V]]
@@ -234,7 +234,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
         while (i < chunksz) {
           val elem = chunkarr(i)
           // assertCorrectBlock(block, elem.key)
-          if (t.insertEntry(block, elem)) insertcount += 1
+          if (t.insertEntry(elem)) insertcount += 1
           i += 1
         }
         i = 0

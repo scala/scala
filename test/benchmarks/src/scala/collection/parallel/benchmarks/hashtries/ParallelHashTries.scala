@@ -14,7 +14,7 @@ import scala.collection.parallel.immutable.ParHashTrie
 
 trait ParHashTrieBenches[K, V] extends StandardParIterableBenches[(K, V), ParHashTrie[K, V]] {
 
-  def nameOfCollection = "ParHashTrie"
+  def nameOfCollection = "immutable.ParHashMap"
   def comparisonMap = collection.Map()
   val forkJoinPool = new scala.concurrent.forkjoin.ForkJoinPool
 

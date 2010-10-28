@@ -189,7 +189,7 @@ scala>
 scala> 
 scala>      |      |      |      | res8: scala.xml.Elem = 
 <a>
-<b d="dd" c="c"></b></a>
+<b c="c" d="dd"></b></a>
 
 scala> 
 scala> 

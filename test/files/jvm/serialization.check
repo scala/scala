@@ -158,7 +158,7 @@ y = BitSet(0, 8, 9)
 x equals y: true, y equals x: true
 
 x = Map(C -> 3, B -> 2, A -> 1)
-y = Map(A -> 1, B -> 2, C -> 3)
+y = Map(C -> 3, A -> 1, B -> 2)
 x equals y: true, y equals x: true
 
 x = Set(layers, buffers, title)
@@ -203,7 +203,7 @@ x equals y: true, y equals x: true
 
 x = <html>
       <body>
-        <table cellpadding="2" cellspacing="0">
+        <table cellspacing="0" cellpadding="2">
         <tr>
           <th>Last Name</th>
           <th>First Name</th>
@@ -223,7 +223,7 @@ x = <html>
       </html>
 y = <html>
       <body>
-        <table cellpadding="2" cellspacing="0">
+        <table cellspacing="0" cellpadding="2">
         <tr>
           <th>Last Name</th>
           <th>First Name</th>
