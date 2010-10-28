@@ -56,7 +56,8 @@ function instruct()
 
 function help()
 {
-  title
+  usage
+  echo
   echo "Make sure you have git installed on both your computer and the server, as well as java and ant."
   echo "Add your ssh key to the list of authorized keys on the server (see .ssh dir in your home). This is not required, but makes life easier, as you will have to answer fewer passwords."
   echo "To initialize the remote repositories on a server 'server.url.com', see the following example:"
@@ -72,6 +73,13 @@ function help()
   echo "> tools/remotetest --all jack server.url.com ~jack/git-repos-dir/scala ~jack/tmp-build-dir/scala"
   echo 
   echo "Optionally, build and test results will be saved into the logfile on the server (an additional, last argument). Be aware that problems arise should you push an ammended commit over a previously pushed commit - this has nothing to do with this script per se."
+  echo
+  echo "  Example workflow:"
+  echo 
+  echo "          -------------------          "
+  echo "         |                   |         "
+  echo "         V                   |         "
+  echo "   init ---> [ all | incr ] ---> clear "
   echo
   echo "Complete argument list:"
   echo "  --help       prints this help"
