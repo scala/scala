@@ -76,4 +76,17 @@ package object collection {
     new CanBuildFrom[From, T, To] { // TODO: could we just return b instead?
       def apply(from: From) = b.apply() ; def apply() = b.apply()
     }
+
+  private[collection] object DebugUtils {
+    /* debug utils */
+    def buildString(closure: (String => Unit) => Unit): String = {
+      var output = ""
+      def appendln(s: String) = output += s + "\n"
+      closure(appendln)
+      output
+    }
+
+    def arrayString[T](array: Array[T], from: Int, until: Int) = array.slice(from, until).map(x => if (x != null) x.toString else "n/a").mkString(" | ")
+  }
+
 }

@@ -11,16 +11,16 @@ class ParCollProperties extends Properties("Parallel collections") {
   /*   Collections   */
 
   // parallel arrays
-  //include(mutable.IntParallelArrayCheck)
+  include(mutable.IntParallelArrayCheck)
 
   // parallel ranges
-  //include(immutable.ParallelRangeCheck)
+  include(immutable.ParallelRangeCheck)
 
   // parallel immutable hash maps (tries)
-  //include(immutable.IntIntParallelHashMapCheck)
+  include(immutable.IntIntParallelHashMapCheck)
 
   // parallel immutable hash sets (tries)
-  //include(immutable.IntParallelHashSetCheck)
+  include(immutable.IntParallelHashSetCheck)
 
   // parallel mutable hash maps (tables)
   include(mutable.IntIntParallelHashMapCheck)
@@ -44,8 +44,8 @@ object Test {
         testCallback = new ConsoleReporter(0),
         workers = 1,
         minSize = 0,
-        maxSize = 250,
-        minSuccessfulTests = 250
+        maxSize = 4000,
+        minSuccessfulTests = 100
       ),
       pc
     )

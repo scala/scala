@@ -58,10 +58,32 @@ with PairValues[Int, Int]
 
   override def printDataStructureDebugInfo(ds: AnyRef) = ds match {
     case pm: ParHashMap[k, v] =>
-      println("Mutable parallel hash map")
+      println("Mutable parallel hash map\n" + pm.hashTableContents.debugInformation)
     case _ =>
       println("could not match data structure type: " + ds.getClass)
   }
+
+  override def checkDataStructureInvariants(orig: Traversable[(Int, Int)], ds: AnyRef) = ds match {
+    case pm: ParHashMap[k, v] =>
+      val invs = pm.brokenInvariants
+
+      val containsall = (for ((k, v) <- orig) yield {
+        if (pm.asInstanceOf[ParHashMap[Int, Int]].get(k) == Some(v)) true
+        else {
+          println("Does not contain original element: " + (k, v))
+          false
+        }
+      }).foldLeft(true)(_ && _)
+
+
+      if (invs.isEmpty) containsall
+      else {
+        println("Invariants broken:\n" + invs.mkString("\n"))
+        false
+      }
+    case _ => true
+  }
+
 }
 
 

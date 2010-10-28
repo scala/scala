@@ -75,6 +75,33 @@ self =>
       new ParHashMapIterator(idxFrom, idxUntil, totalSz, es) with SCPI
   }
 
+  private[parallel] override def brokenInvariants = {
+    // bucket by bucket, count elements
+    val buckets = for (i <- 0 until (table.length / sizeMapBucketSize)) yield checkBucket(i)
+
+    // check if each element is in the position corresponding to its key
+    val elems = for (i <- 0 until table.length) yield checkEntry(i)
+
+    buckets.flatMap(x => x) ++ elems.flatMap(x => x)
+  }
+
+  private def checkBucket(i: Int) = {
+    def count(e: HashEntry[K, DefaultEntry[K, V]]): Int = if (e eq null) 0 else 1 + count(e.next)
+    val expected = sizemap(i)
+    val found = ((i * sizeMapBucketSize) until ((i + 1) * sizeMapBucketSize)).foldLeft(0) {
+      (acc, c) => acc + count(table(c))
+    }
+    if (found != expected) List("Found " + found + " elements, while sizemap showed " + expected)
+    else Nil
+  }
+
+  private def checkEntry(i: Int) = {
+    def check(e: HashEntry[K, DefaultEntry[K, V]]): List[String] = if (e eq null) Nil else
+      if (index(elemHashCode(e.key)) == i) check(e.next)
+      else ("Element " + e.key + " at " + i + " with " + elemHashCode(e.key) + " maps to " + index(elemHashCode(e.key))) :: check(e.next)
+    check(table(i))
+  }
+
 }
 
 
@@ -88,14 +115,17 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
 
 
 private[mutable] abstract class ParHashMapCombiner[K, V](private val tableLoadFactor: Int)
-extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks) {
+extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
+   with collection.mutable.HashTable.HashUtils[K]
+{
 self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   private var mask = ParHashMapCombiner.discriminantmask
+  private var nonmasklen = ParHashMapCombiner.nonmasklength
 
   def +=(elem: (K, V)) = {
     sz += 1
-    val hc = elem._1.##
-    val pos = hc & mask
+    val hc = improve(elemHashCode(elem._1))
+    val pos = (hc >>> nonmasklen)
     if (lasts(pos) eq null) {
       // initialize bucket
       heads(pos) = new Unrolled[DefaultEntry[K, V]]
@@ -106,14 +136,28 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     this
   }
 
-  def result: ParHashMap[K, V] = {
+  def result: ParHashMap[K, V] = if (size >= (ParHashMapCombiner.numblocks * sizeMapBucketSize)) { // 1024
     // construct table
     val table = new AddingHashTable(size, tableLoadFactor)
-
     val insertcount = executeAndWaitResult(new FillBlocks(heads, table, 0, ParHashMapCombiner.numblocks))
-
+    table.setSize(insertcount)
     // TODO compare insertcount and size to see if compression is needed
-
+    val c = table.hashTableContents
+    new ParHashMap(c)
+  } else {
+    // construct a normal table and fill it sequentially
+    val table = new HashTable[K, DefaultEntry[K, V]] {
+      def insertEntry(e: DefaultEntry[K, V]) = if (super.findEntry(e.key) eq null) super.addEntry(e)
+      sizeMapInit(table.length)
+    }
+    var i = 0
+    while (i < ParHashMapCombiner.numblocks) {
+      if (heads(i) ne null) {
+        for (elem <- heads(i)) table.insertEntry(elem)
+      }
+      i += 1
+    }
+    // TODO compression
     val c = table.hashTableContents
     new ParHashMap(c)
   }
@@ -123,17 +167,20 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
    *
    *  Entries are added using the `insertEntry` method. This method checks whether the element
    *  exists and updates the size map. It returns false if the key was already in the table,
-   *  and true if the key was successfully inserted.
+   *  and true if the key was successfully inserted. It does not update the number of elements
+   *  in the table.
    */
-  class AddingHashTable(numelems: Int, lf: Int) extends HashTable[K, DefaultEntry[K, V]] {
+  private[ParHashMapCombiner] class AddingHashTable(numelems: Int, lf: Int) extends HashTable[K, DefaultEntry[K, V]] {
     import HashTable._
     _loadFactor = lf
     table = new Array[HashEntry[K, DefaultEntry[K, V]]](capacity(sizeForThreshold(_loadFactor, numelems)))
     tableSize = 0
     threshold = newThreshold(_loadFactor, table.length)
     sizeMapInit(table.length)
-    def insertEntry(e: DefaultEntry[K, V]) = {
+    def setSize(sz: Int) = tableSize = sz
+    def insertEntry(block: Int, e: DefaultEntry[K, V]) = {
       var h = index(elemHashCode(e.key))
+      // assertCorrectBlock(h, block)
       var olde = table(h).asInstanceOf[DefaultEntry[K, V]]
 
       // check if key already exists
@@ -149,10 +196,16 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
       if (h != -1) {
         e.next = olde
         table(h) = e
-        tableSize = tableSize + 1
         nnSizeMapAdd(h)
         true
       } else false
+    }
+    private def assertCorrectBlock(h: Int, block: Int) {
+      val blocksize = table.length / (1 << ParHashMapCombiner.discriminantbits)
+      if (!(h >= block * blocksize && h < (block + 1) * blocksize)) {
+        println("trying to put " + h + " into block no.: " + block + ", range: [" + block * blocksize + ", " + (block + 1) * blocksize + ">")
+        assert(h >= block * blocksize && h < (block + 1) * blocksize)
+      }
     }
   }
 
@@ -166,11 +219,11 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
       val until = offset + howmany
       result = 0
       while (i < until) {
-        result += fillBlock(buckets(i))
+        result += fillBlock(i, buckets(i))
         i += 1
       }
     }
-    private def fillBlock(elems: Unrolled[DefaultEntry[K, V]]) = {
+    private def fillBlock(block: Int, elems: Unrolled[DefaultEntry[K, V]]) = {
       var insertcount = 0
       var unrolled = elems
       var i = 0
@@ -180,13 +233,21 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
         val chunksz = unrolled.size
         while (i < chunksz) {
           val elem = chunkarr(i)
-          if (t.insertEntry(elem)) insertcount += 1
+          // assertCorrectBlock(block, elem.key)
+          if (t.insertEntry(block, elem)) insertcount += 1
           i += 1
         }
         i = 0
         unrolled = unrolled.next
       }
       insertcount
+    }
+    private def assertCorrectBlock(block: Int, k: K) {
+      val hc = improve(elemHashCode(k))
+      if ((hc >>> nonmasklen) != block) {
+        println(hc + " goes to " + (hc >>> nonmasklen) + ", while expected block is " + block)
+        assert((hc >>> nonmasklen) == block)
+      }
     }
     def split = {
       val fp = howmany / 2
@@ -204,7 +265,8 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
 private[mutable] object ParHashMapCombiner {
   private[mutable] val discriminantbits = 5
   private[mutable] val numblocks = 1 << discriminantbits
-  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1) << (32 - discriminantbits)
+  private[mutable] val discriminantmask = ((1 << discriminantbits) - 1);
+  private[mutable] val nonmasklength = 32 - discriminantbits
 
   def apply[K, V] = new ParHashMapCombiner[K, V](HashTable.defaultLoadFactor) with EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]]
 }

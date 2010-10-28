@@ -275,7 +275,6 @@ self =>
    *  if this $coll is empty.
    */
   def reduce[U >: T](op: (U, U) => U): U = {
-    println("------------------------------------------------")
     executeAndWaitResult(new Reduce(op, parallelIterator) mapResult { _.get })
   }
 
@@ -758,7 +757,7 @@ self =>
   protected[this] class Reduce[U >: T](op: (U, U) => U, protected[this] val pit: ParIterableIterator[T]) extends Accessor[Option[U], Reduce[U]] {
     var result: Option[U] = None
     def leaf(prevr: Option[Option[U]]) = {
-      // pit.printDebugInformation
+      // pit.debugInformation
       // val rem = pit.remaining
       // val lst = pit.toList
       // val pa = mutable.ParArray(lst: _*)
@@ -1226,6 +1225,12 @@ self =>
     }
     override def merge(that: FromArray[S, A, That]) = result = result combine that.result
   }
+
+  /* debug information */
+
+  private[parallel] def debugInformation = "Parallel collection: " + this.getClass
+
+  private[parallel] def brokenInvariants = Seq[String]()
 
 }
 

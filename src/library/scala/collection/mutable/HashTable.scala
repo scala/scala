@@ -31,7 +31,7 @@ package mutable
  *
  *  @tparam A     type of the elements contained in this hash table.
  */
-trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
+trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashUtils[A] {
   import HashTable._
 
   @transient protected var _loadFactor = defaultLoadFactor
@@ -218,10 +218,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
   }
 
   @transient protected var sizemap: Array[Int] = null
-  protected final def sizeMapBucketBitSize = 5
-  // so that:
-  protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
-  protected final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
+  private[collection] final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
 
   /*
    * The following three sizeMap* functions (Add, Remove, Reset)
@@ -298,39 +295,6 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
 
   protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
 
-  protected def elemHashCode(key: A) = if (key == null) 0 else key.##
-
-  protected final def improve(hcode: Int) = {
-    /* Murmur hash
-     *  m = 0x5bd1e995
-     *  r = 24
-     *  note: h = seed = 0 in mmix
-     *  mmix(h,k) = k *= m; k ^= k >> r; k *= m; h *= m; h ^= k; */
-    var k = hcode * 0x5bd1e995
-    k ^= k >> 24
-    k *= 0x5bd1e995
-    k
-
-    /* Jenkins hash
-     * for range 0-10000, output has the msb set to zero */
-    // var h = hcode + (hcode << 12)
-    // h ^= (h >> 22)
-    // h += (h << 4)
-    // h ^= (h >> 9)
-    // h += (h << 10)
-    // h ^= (h >> 2)
-    // h += (h << 7)
-    // h ^= (h >> 12)
-    // h
-
-    /* OLD VERSION
-     * since 2003 */
-    // var h: Int = hcode + ~(hcode << 9)
-    // h = h ^ (h >>> 14)
-    // h = h + (h << 4)
-    // h ^ (h >>> 10)
-  }
-
   // Note:
   // we take the most significant bits of the hashcode, not the lower ones
   // this is of crucial importance when populating the table in parallel
@@ -380,6 +344,68 @@ private[collection] object HashTable {
 
   private[collection] final def capacity(expectedSize: Int) = if (expectedSize == 0) 1 else powerOfTwo(expectedSize)
 
+  trait HashUtils[KeyType] {
+    protected final def sizeMapBucketBitSize = 5
+    // so that:
+    protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
+
+    protected def elemHashCode(key: KeyType) = if (key == null) 0 else key.##
+
+    protected final def improve(hcode: Int) = {
+      /* Murmur hash
+       *  m = 0x5bd1e995
+       *  r = 24
+       *  note: h = seed = 0 in mmix
+       *  mmix(h,k) = k *= m; k ^= k >> r; k *= m; h *= m; h ^= k; */
+      // var k = hcode * 0x5bd1e995
+      // k ^= k >> 24
+      // k *= 0x5bd1e995
+      // k
+
+      /* Another fast multiplicative hash
+       * by Phil Bagwell
+       *
+       * Comment:
+       * Multiplication doesn't affect all the bits in the same way, so we want to
+       * multiply twice, "once from each side".
+       * It would be ideal to reverse all the bits after the first multiplication,
+       * however, this is more costly. We therefore restrict ourselves only to
+       * reversing the bytes before final multiplication. This yields a slightly
+       * worse entropy in the lower 8 bits, but that can be improved by adding:
+       *
+       * `i ^= i >> 6`
+       *
+       * For performance reasons, we avoid this improvement.
+       * */
+      var i = hcode * 0x9e3775cd
+      i = java.lang.Integer.reverseBytes(i)
+      i * 0x9e3775cd
+      // a slower alternative for byte reversal:
+      // i = (i << 16) | (i >> 16)
+      // i = ((i >> 8) & 0x00ff00ff) | ((i << 8) & 0xff00ff00)
+
+      /* Jenkins hash
+       * for range 0-10000, output has the msb set to zero */
+      // var h = hcode + (hcode << 12)
+      // h ^= (h >> 22)
+      // h += (h << 4)
+      // h ^= (h >> 9)
+      // h += (h << 10)
+      // h ^= (h >> 2)
+      // h += (h << 7)
+      // h ^= (h >> 12)
+      // h
+
+      /* OLD VERSION
+       * quick, but bad for sequence 0-10000 - little enthropy in higher bits
+       * since 2003 */
+      // var h: Int = hcode + ~(hcode << 9)
+      // h = h ^ (h >>> 14)
+      // h = h + (h << 4)
+      // h ^ (h >>> 10)
+    }
+  }
+
   /**
    * Returns a power of two >= `target`.
    */
@@ -400,6 +426,18 @@ private[collection] object HashTable {
     val tableSize: Int,
     val threshold: Int,
     val sizemap: Array[Int]
-  )
+  ) {
+    import collection.DebugUtils._
+    private[collection] def debugInformation = buildString {
+      append =>
+      append("Hash table contents")
+      append("-------------------")
+      append("Table: [" + arrayString(table, 0, table.length) + "]")
+      append("Table size: " + tableSize)
+      append("Load factor: " + loadFactor)
+      append("Threshold: " + threshold)
+      append("Sizemap: [" + arrayString(sizemap, 0, sizemap.length) + "]")
+    }
+  }
 
 }
