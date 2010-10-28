@@ -32,7 +32,7 @@ self =>
 
   def seq = new collection.mutable.HashMap[K, V](hashTableContents)
 
-  def parallelIterator = new ParHashMapIterator(0, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
+  def parallelIterator = new ParHashMapIterator(1, table.length, size, table(0).asInstanceOf[DefaultEntry[K, V]]) with SCPI
 
   override def size = tableSize
 

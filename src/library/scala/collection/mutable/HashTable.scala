@@ -113,6 +113,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
     val h = index(elemHashCode(e.key))
     e.next = table(h).asInstanceOf[Entry]
     table(h) = e
+    if (this.isInstanceOf[collection.parallel.mutable.ParHashMap[_, _]]) println("adding at pos: " + h)
     tableSize = tableSize + 1
     nnSizeMapAdd(h)
     if (tableSize > threshold)
@@ -312,7 +313,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] {
   // this is of crucial importance when populating the table in parallel
   protected final def index(hcode: Int) = {
     val ones = table.length - 1
-    (improve(hcode) >> (32 - java.lang.Integer.bitCount(ones))) & ones
+    val improved = improve(hcode)
+    val shifted = (improved >> (32 - java.lang.Integer.bitCount(ones))) & ones
+    if (this.isInstanceOf[collection.parallel.mutable.ParHashMap[_, _]]) println("computing hash code for: " + hcode + " -> " + improved + " -> " + shifted)
+    shifted
   }
 
   protected def initWithContents(c: HashTable.Contents[A, Entry]) = if (c != null) {

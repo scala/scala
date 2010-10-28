@@ -139,6 +139,17 @@ package object parallel {
         new BufferIterator(buffer, index + divsz, until, signalDelegate)
       )
     } else Seq(this)
+    private[parallel] override def debugInformation = {
+      buildString {
+        append =>
+        append("---------------")
+        append("Buffer iterator")
+        append("buffer: " + buffer)
+        append("index: " + index)
+        append("until: " + until)
+        append("---------------")
+      }
+    }
   }
 
   /** A helper combiner which contains an array of buckets. Buckets themselves

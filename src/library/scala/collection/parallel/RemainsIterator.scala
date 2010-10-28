@@ -358,6 +358,18 @@ self =>
    */
   def remaining: Int
 
+  protected def buildString(closure: (String => Unit) => Unit): String = {
+    var output = ""
+    def appendln(s: String) = output += s + "\n"
+    closure(appendln)
+    output
+  }
+
+  private[parallel] def debugInformation = {
+    // can be overridden in subclasses
+    "Parallel iterator: " + this.getClass
+  }
+
   /* iterator transformers */
 
   class Taken(taken: Int) extends ParIterableIterator[T] {

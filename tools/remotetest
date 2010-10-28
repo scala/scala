@@ -71,7 +71,7 @@ function help()
   echo
   echo "> tools/remotetest --all jack server.url.com ~jack/git-repos-dir/scala ~jack/tmp-build-dir/scala"
   echo 
-  echo "Optionally, build and test results will be saved into the logfile on the server (an additional, last argument)."
+  echo "Optionally, build and test results will be saved into the logfile on the server (an additional, last argument). Be aware that problems arise should you push an ammended commit over a previously pushed commit - this has nothing to do with this script per se."
   echo
   echo "Complete argument list:"
   echo "  --help       prints this help"

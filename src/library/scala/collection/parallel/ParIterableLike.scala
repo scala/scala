@@ -275,6 +275,7 @@ self =>
    *  if this $coll is empty.
    */
   def reduce[U >: T](op: (U, U) => U): U = {
+    println("------------------------------------------------")
     executeAndWaitResult(new Reduce(op, parallelIterator) mapResult { _.get })
   }
 
@@ -756,8 +757,26 @@ self =>
 
   protected[this] class Reduce[U >: T](op: (U, U) => U, protected[this] val pit: ParIterableIterator[T]) extends Accessor[Option[U], Reduce[U]] {
     var result: Option[U] = None
-    def leaf(prevr: Option[Option[U]]) = if (pit.remaining > 0) result = Some(pit.reduce(op))
+    def leaf(prevr: Option[Option[U]]) = {
+      // pit.printDebugInformation
+      // val rem = pit.remaining
+      // val lst = pit.toList
+      // val pa = mutable.ParArray(lst: _*)
+      // val str = "At leaf we will iterate " + rem + " elems: " + pa.parallelIterator.toList
+      // val p2 = pa.parallelIterator
+      if (pit.remaining > 0) result = Some(pit.reduce(op))
+      // println(str)
+    }
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new Reduce(op, p)
+    // override def split = {
+    //   var str = pit.debugInformation
+    //   val pits = pit.split
+    //   str += "\nsplitting: " + pits.map(_.remaining) + "\n"
+    //   str += pits.map(_.debugInformation).mkString("\n")
+    //   str += "=========================================\n"
+    //   println(str)
+    //   pits map { p => newSubtask(p) }
+    // }
     override def merge(that: Reduce[U]) =
       if (this.result == None) result = that.result
       else if (that.result != None) result = Some(op(result.get, that.result.get))
