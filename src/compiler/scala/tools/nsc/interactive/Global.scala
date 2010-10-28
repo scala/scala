@@ -537,24 +537,28 @@ self =>
       !sym.name.toString.contains("$")
 
     val pre = stabilizedType(tree)
-    val ownerTpe = if (tree.tpe != null) tree.tpe else pre
+    val ownerTpe = tree.tpe match {
+      case analyzer.ImportType(expr) => expr.tpe
+      case null => pre
+      case _ => tree.tpe
+    }
 
     for (sym <- ownerTpe.decls if shouldDisplay(sym))
       addTypeMember(sym, pre, false, NoSymbol)
+    members.values.toList #:: {
+      for (sym <- ownerTpe.members if shouldDisplay(sym))
+        addTypeMember(sym, pre, true, NoSymbol)
       members.values.toList #:: {
-        for (sym <- ownerTpe.members if shouldDisplay(sym))
-          addTypeMember(sym, pre, true, NoSymbol)
-        members.values.toList #:: {
-          val applicableViews: List[SearchResult] =
-            new ImplicitSearch(tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true, context.makeImplicit(reportAmbiguousErrors = false))
-              .allImplicits
-          for (view <- applicableViews) {
-            val vtree = viewApply(view)
-            val vpre = stabilizedType(vtree)
-            for (sym <- vtree.tpe.members) {
-              addTypeMember(sym, vpre, false, view.tree.symbol)
-            }
+        val applicableViews: List[SearchResult] =
+          new ImplicitSearch(tree, functionType(List(ownerTpe), AnyClass.tpe), isView = true, context.makeImplicit(reportAmbiguousErrors = false))
+            .allImplicits
+        for (view <- applicableViews) {
+          val vtree = viewApply(view)
+          val vpre = stabilizedType(vtree)
+          for (sym <- vtree.tpe.members) {
+            addTypeMember(sym, vpre, false, view.tree.symbol)
           }
+        }
         Stream(members.values.toList)
       }
     }
@@ -589,6 +593,7 @@ self =>
     def enterNames(unit: CompilationUnit): Unit = {
       applyPhase(namerPhase, unit)
     }
+
 
     /** Return fully attributed tree at given position
      *  (i.e. largest tree that's contained by position)
