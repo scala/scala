@@ -530,10 +530,14 @@ self =>
       if ((doc ne null) && doc.raw.length > 0) {
         val joined = trees map {
           t =>
-            val dd = DocDef(doc, t)
-            val defnPos = t.pos
-            val pos = doc.pos.withEnd(defnPos.endOrPoint)
-            dd setPos (if (defnPos.isOpaqueRange) pos else pos.makeTransparent)
+            DocDef(doc, t) setPos {
+              if (t.pos.isDefined) {
+                val pos = doc.pos.withEnd(t.pos.endOrPoint)
+                if (t.pos.isOpaqueRange) pos else pos.makeTransparent
+              } else {
+                t.pos
+              }
+            }
         }
         joined.find(_.pos.isOpaqueRange) foreach {
           main =>

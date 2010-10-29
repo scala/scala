@@ -26,8 +26,9 @@ class WorkScheduler {
     if (todo.isEmpty) None else Some(todo.dequeue())
   }
 
-  def dequeueAll[T](f: Action => Option[T]): Seq[T] =
+  def dequeueAll[T](f: Action => Option[T]): Seq[T] = synchronized {
     todo.dequeueAll(a => f(a).isDefined).map(a => f(a).get)
+  }
 
   /** Called from server: return optional exception posted by client
    *  Reset to no exception.

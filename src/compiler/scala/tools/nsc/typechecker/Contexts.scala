@@ -90,6 +90,7 @@ trait Contexts { self: Analyzer =>
       sc = sc.outer
     }
   }
+
   class Context private[typechecker] {
     var unit: CompilationUnit = _
     var tree: Tree = _ // Tree associated with this context
