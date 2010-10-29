@@ -16,6 +16,7 @@ package object partest {
   implicit private[partest] def temporaryFile2Path(x: JFile): Path = Path(x)
 
   def basename(name: String): String = Path(name).stripExtension
+
   def resultsToStatistics(results: Iterable[(_, Int)]): (Int, Int) = {
     val (files, failures) = results map (_._2 == 0) partition (_ == true)
     (files.size, failures.size)
@@ -36,5 +37,6 @@ package object partest {
     NestUI.verbose(allPropertiesString)
   }
 
-  def isPartestDebug = propOrEmpty("partest.debug") == "true"
+  def isPartestDebug: Boolean =
+    propOrEmpty("partest.debug") == "true"
 }
