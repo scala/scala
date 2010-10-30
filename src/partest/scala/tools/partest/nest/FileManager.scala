@@ -43,6 +43,7 @@ trait FileManager {
   var LATEST_LIB: String
 
   var showDiff = false
+  var updateCheck = false
   var showLog = false
   var failed = false
 

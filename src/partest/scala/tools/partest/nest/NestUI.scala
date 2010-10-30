@@ -87,6 +87,7 @@ object NestUI {
     println("    --show-log   show log")
     println("    --show-diff  show diff between log and check file")
     println("    --failed     run only those tests that failed during the last run")
+    println("    --update-check instead of failing tests with output change, update checkfile. (Use with care!)")
     println("    --verbose    show progress information")
     println("    --buildpath  set (relative) path to build jars")
     println("                 ex.: --buildpath build/pack")
