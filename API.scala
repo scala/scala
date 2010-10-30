@@ -44,13 +44,28 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			val packages = traverser.packages.toArray[String].map(p => new xsbti.api.Package(p))
 			val source = new xsbti.api.Source(packages, traverser.definitions.toArray[xsbti.api.Definition])
 			forceStructures()
+			clearCaches()
 			callback.api(sourceFile, source)
 		}
 	}
 
+	// this cache reduces duplicate work both here and when persisting
+	//   caches on other structures had minimal effect on time and cache size
+	//   (tried: Definition, Modifier, Path, Id, String)
+	private[this] val typeCache = new HashMap[Type, xsbti.api.Type]
+	// these caches are necessary for correctness
 	private[this] val structureCache = new HashMap[Symbol, xsbti.api.Structure]
 	private[this] val classLikeCache = new HashMap[Symbol, xsbti.api.ClassLike]
 	private[this] val pending = new HashSet[xsbti.api.Lazy[_]]
+
+	// to mitigate "temporary leaks" like that caused by NoPhase in 2.8.0,
+	//   this ensures this class is not retaining objects
+	private def clearCaches()
+	{
+		typeCache.clear()
+		structureCache.clear()
+		classLikeCache.clear()
+	}
 
 	// call back to the xsbti.SafeLazy class in main sbt code to construct a SafeLazy instance
 	//   we pass a thunk, whose class is loaded by the interface class loader (this class's loader)
@@ -256,6 +271,7 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		new xsbti.api.Modifiers(s.hasFlag(ABSTRACT) || s.hasFlag(DEFERRED), s.hasFlag(OVERRIDE),
 			s.isFinal, s.hasFlag(SEALED), isImplicit(s), s.hasFlag(LAZY))
 	}
+
 	private def isImplicit(s: Symbol) = s.hasFlag(Flags.IMPLICIT)
 	private def getAccess(c: Symbol): xsbti.api.Access =
 	{
@@ -270,7 +286,8 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 			else new xsbti.api.Private(qualifier)
 		}
 	}
-	private def processType(t: Type): xsbti.api.Type =
+	private def processType(t: Type): xsbti.api.Type = typeCache.getOrElseUpdate(t, makeType(t))
+	private def makeType(t: Type): xsbti.api.Type =
 	{
 		def dealias(t: Type) = t match { case TypeRef(_, sym, _) if sym.isAliasType => t.normalize; case _ => t }
 
@@ -394,5 +411,5 @@ final class API(val global: Global, val callback: xsbti.AnalysisCallback) extend
 		if(annots.isEmpty) processType(at.underlying) else annotated(annots, at.underlying)
 	}
 	private def fullName(s: Symbol): String = nameString(s)
-	private def simpleName(s: Symbol): String = s.simpleName.toString.trim	
+	private def simpleName(s: Symbol): String = s.simpleName.toString.trim
 }
