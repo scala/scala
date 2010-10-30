@@ -1376,7 +1376,7 @@ trait Infer {
       val ptparams  = freeTypeParamsOfTerms.collect(pt)
       val tpparams  = freeTypeParamsOfTerms.collect(pattp)
 
-      def ptMatchesPattp = pt matchesPattern pattp
+      def ptMatchesPattp = pt matchesPattern pattp.widen
       def pattpMatchesPt = pattp matchesPattern pt
 
       /** If we can absolutely rule out a match we can fail early.
