@@ -28,7 +28,7 @@ self =>
   val debugIDE = false
 
   /** Print msg only when debugIDE is true. */
-  @inline def debugLog(msg: => String) =
+  @inline final def debugLog(msg: => String) =
     if (debugIDE) println(msg)
 
   override def onlyPresentation = true
