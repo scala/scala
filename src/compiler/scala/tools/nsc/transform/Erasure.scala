@@ -114,8 +114,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
    *    </li>
    *  </ul>
    */
-  val erasure = new TypeMap {
-
+  object erasure extends TypeMap {
     // Compute the dominant part of the intersection type with given `parents` according to new spec.
     def intersectionDominator(parents: List[Type]): Type =
       if (parents.isEmpty) ObjectClass.tpe
