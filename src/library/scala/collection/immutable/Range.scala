@@ -232,31 +232,13 @@ class Range(val start: Int, val end: Int, val step: Int) extends IndexedSeq[Int]
 object Range {
   private[immutable] val MAX_PRINT = 512  // some arbitrary value
 
-  /** Calculates the number of elements in a range given start, end, step, and
-   *  whether or not it is inclusive.  Throws an exception if step == 0 or
-   *  the number of elements exceeds the maximum Int.
+  /** Counts in "Long arithmetic" so we can recognize overflow.
    */
-  def count(start: Int, end: Int, step: Int): Int = count(start, end, step, false)
-  def count(start: Int, end: Int, step: Int, isInclusive: Boolean): Int = {
-    def exclusiveEnd: Long =
-      if (isInclusive && step < 0) end.toLong - 1
-      else if (isInclusive && step > 0) end.toLong + 1
-      else end.toLong
+  def count(start: Int, end: Int, step: Int): Int =
+    count(start, end, step, false)
 
-    if (step == 0)
-      throw new IllegalArgumentException("step cannot be 0.")
-
-    val result: Long =
-      if (start == end) { if (isInclusive) 1 else 0 }
-      else if (end > start != step > 0) 0
-      else if (step.abs == 1) (exclusiveEnd - start) / step
-      else ((exclusiveEnd - start - 1) / step) + 1
-
-    if (result > scala.Int.MaxValue)
-      throw new IllegalArgumentException("Seqs cannot contain more than Int.MaxValue elements.")
-
-    result.toInt
-  }
+  def count(start: Int, end: Int, step: Int, isInclusive: Boolean): Int =
+    NumericRange.count[Long](start, end, step, isInclusive)
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
     override def isInclusive = true

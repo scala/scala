@@ -16,14 +16,15 @@ object Test {
     def gr2 = NumericRange.inclusive(x, x, x)
     def gr3 = NumericRange(x, x * fromInt(10), x)
     def gr4 = NumericRange.inclusive(x, x * fromInt(10), x)
+    def gr5 = gr3.toList ::: negated.gr3.toList
 
-    def check = assert(
-      gr1.isEmpty && !gr2.isEmpty &&
-      gr3.size == 9 && gr4.size == 10 &&
-      (gr3.toList ::: negated.gr3.toList).sum == num.zero &&
-      !(gr3 contains (x * fromInt(10))) &&
-      (gr4 contains (x * fromInt(10)))
-    )
+    def check = {
+      assert(gr1.isEmpty && !gr2.isEmpty)
+      assert(gr3.size == 9 && gr4.size == 10)
+      assert(gr5.sum == num.zero, gr5.toString)
+      assert(!(gr3 contains (x * fromInt(10))))
+      assert((gr4 contains (x * fromInt(10))))
+    }
   }
 
   def main(args: Array[String]): Unit = {
