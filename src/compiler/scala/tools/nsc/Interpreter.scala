@@ -337,10 +337,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** Clean up a string for output */
-  private def clean(str: String) = truncPrintString(
+  private def clean(str: String) = truncPrintString(cleanNoTruncate(str))
+  private def cleanNoTruncate(str: String) =
     if (isettings.unwrapStrings) stripWrapperGunk(str)
     else str
-  )
 
   /** Indent some code by the width of the scala> prompt.
    *  This way, compiler error messages read better.
@@ -577,8 +577,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def interpret(line: String, synthetic: Boolean): IR.Result = {
     def loadAndRunReq(req: Request) = {
       val (result, succeeded) = req.loadAndRun
-      if (printResults || !succeeded)
-        out print clean(result)
+      // don't truncate stack traces
+      if (!succeeded) out print cleanNoTruncate(result)
+      else if (printResults) out print clean(result)
 
       // book-keeping
       if (succeeded && !synthetic)
