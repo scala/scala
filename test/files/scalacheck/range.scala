@@ -182,10 +182,25 @@ object SmallValuesRange extends RangeTest("smallValues") {
   override def myGen = genSmallRange
 }
 
+object TooLargeRange extends Properties("Too Large Range") {
+  val genTooLargeStart = for {
+    start <- choose(-Int.MinValue, 0)
+  } yield start
+
+  property("Too large range throws exception") = forAll(genTooLargeStart) { start =>
+    try   {
+      val r = Range.inclusive(start, Int.MaxValue, 1)
+      println("how here? r = " + r.toString)
+      false
+    }
+    catch { case _: IllegalArgumentException => true }
+  }
+}
+
 object Test extends Properties("Range") {
   import org.scalacheck.{ Test => STest }
 
-  List(NormalRangeTest, InclusiveRangeTest, ByOneRangeTest, InclusiveByOneRangeTest) foreach { ps =>
+  List(NormalRangeTest, InclusiveRangeTest, ByOneRangeTest, InclusiveByOneRangeTest, TooLargeRange) foreach { ps =>
     STest.checkProperties(STest.Params(testCallback = ConsoleReporter(0)), ps)
   }
 }
