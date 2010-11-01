@@ -37,17 +37,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     "_"+nextexid
   }
 
-/*
-  type Position;
-  def NoPos : Position;
-  def FirstPos : Position;
-  implicit def coercePosToInt(pos : Position) : Int;
-  def coerceIntToPos(pos : Int) : Position;
-  object RequiresIntsAsPositions {
-    implicit def coerceIntToPos0(pos: Int) =
-      coerceIntToPos(pos)
-  }
-  */
   /** The class for all symbols */
   abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends AbsSymbol {
 
@@ -64,37 +53,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     def pos = rawpos
     def setPos(pos: Position): this.type = { this.rawpos = pos; this }
-
-    def namePos(source: BatchSourceFile) = {
-      val pos: Int = this.pos.pointOrElse(-1)
-      val buf = source.content
-      if (pos == -1) -1
-      else if (isTypeParameter) pos - name.length
-      else if (isVariable || isMethod || isClass || isModule) {
-        var ret = pos
-        if (buf(pos) == ',') ret += 1
-        else if (isClass)  ret += "class".length()
-        else if (isModule) ret += "object".length()
-        else ret += "var".length()
-        while (buf(ret).isWhitespace) ret += 1
-        ret
-      }
-      else if (isValue) {
-        if (pos < (buf.length + ("val ").length())) {
-          if ((buf(pos + 0) == 'v') &&
-              (buf(pos + 1) == 'a') &&
-              (buf(pos + 2) == 'l') &&
-              (buf(pos + 3) == ' ')) {
-            var pos0 = pos + 4
-            while (pos0 < buf.length && buf(pos0).isWhitespace)
-              pos0 += 1
-            pos0
-
-          } else pos
-        } else pos
-      }
-      else -1
-    }
 
 // annotations
 
