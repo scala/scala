@@ -471,6 +471,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val MigrationAnnotationClass: Symbol   = getClass("scala.annotation.migration")
     lazy val NativeAttr: Symbol                 = getClass("scala.native")
     lazy val RemoteAttr: Symbol                 = getClass("scala.remote")
+    lazy val ScalaNumberClass: Symbol           = getClass("scala.math.ScalaNumber")
     lazy val SerialVersionUIDAttr: Symbol       = getClass("scala.SerialVersionUID")
     lazy val SerializableAttr: Symbol           = getClass("scala.serializable")
     lazy val TraitSetterAnnotationClass: Symbol = getClass("scala.runtime.TraitSetter")

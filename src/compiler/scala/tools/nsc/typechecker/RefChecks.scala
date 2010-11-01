@@ -883,7 +883,7 @@ abstract class RefChecks extends InfoTransform {
         }
         // Whether the operands+operator represent a warnable combo (assuming anyrefs)
         def isWarnable                = isReferenceOp || (isUsingDefaultEquals && isUsingDefaultScalaOp)
-        def isValueOrBoxed(s: Symbol) = isNumericValueClass(s) || (s isSubClass BoxedNumberClass)
+        def isScalaNumber(s: Symbol)  = isNumericValueClass(s) || (s isSubClass BoxedNumberClass) || (s isSubClass ScalaNumberClass)
         def isEitherNull              = (receiver == NullClass) || (actual == NullClass)
         def isEitherNullable          = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
 
@@ -901,8 +901,10 @@ abstract class RefChecks extends InfoTransform {
           nonSensible("", false)
         else if (receiver == UnitClass && actual == UnitClass)  // () == ()
           nonSensible("", true)
-        else if (isNumericValueClass(receiver) && !isValueOrBoxed(actual) && !forMSIL) // 5 == "abc"
-          nonSensible("", false)
+        else if (isNumericValueClass(receiver)) {
+          if (!isScalaNumber(actual) && !forMSIL) // 5 == "abc"
+            nonSensible("", false)
+        }
         else if (isWarnable) {
           if (receiver.isFinal && !isEitherNull && !(receiver isSubClass actual)) // object X, Y; X == Y
             nonSensible((if (isEitherNullable) "non-null " else ""), false)
