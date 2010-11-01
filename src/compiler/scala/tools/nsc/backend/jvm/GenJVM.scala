@@ -635,6 +635,9 @@ abstract class GenJVM extends SubComponent {
       if (jclass.isInterface())
         flags |= ACC_ABSTRACT
 
+      if (m.symbol.isStrictFP)
+        flags |= ACC_STRICT
+
       // native methods of objects are generated in mirror classes
       if (method.native)
         flags |= ACC_NATIVE

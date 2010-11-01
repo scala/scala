@@ -142,8 +142,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ParamTargetClass           = getClass("scala.annotation.target.param")
     lazy val ScalaInlineClass           = getClass("scala.inline")
     lazy val ScalaNoInlineClass         = getClass("scala.noinline")
-    lazy val SpecializedClass           = definitions.getClass("scala.specialized")
-
+    lazy val SpecializedClass           = getClass("scala.specialized")
 
     // fundamental reference classes
     lazy val ScalaObjectClass     = getClass("scala.ScalaObject")
@@ -472,6 +471,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val NativeAttr: Symbol                 = getClass("scala.native")
     lazy val RemoteAttr: Symbol                 = getClass("scala.remote")
     lazy val ScalaNumberClass: Symbol           = getClass("scala.math.ScalaNumber")
+    lazy val ScalaStrictFPAttr: Symbol          = getClass("scala.annotation.strictfp")
     lazy val SerialVersionUIDAttr: Symbol       = getClass("scala.SerialVersionUID")
     lazy val SerializableAttr: Symbol           = getClass("scala.serializable")
     lazy val TraitSetterAnnotationClass: Symbol = getClass("scala.runtime.TraitSetter")

@@ -396,6 +396,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         }
       }
 
+    def isStrictFP          = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
     def isSerializable      = hasAnnotation(SerializableAttr)
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap { _.stringArg(0) }
