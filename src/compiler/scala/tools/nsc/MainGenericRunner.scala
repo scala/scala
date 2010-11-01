@@ -21,16 +21,19 @@ import Properties.{ versionString, copyrightString }
   * or interactive entry.
   */
 object MainGenericRunner {
-  def main(args: Array[String]) {
-    def errorFn(str: String) = Console println str
-    def exitSuccess: Nothing = exit(0)
-    def exitFailure(msg: Any = null): Nothing = {
-      if (msg != null) errorFn(msg.toString)
-      exit(1)
-    }
-    def exitCond(b: Boolean): Nothing = if (b) exitSuccess else exitFailure(null)
+  def errorFn(ex: Throwable): Boolean = errorFn(ex.toString)
+  def errorFn(str: String): Boolean = {
+    Console println str
+    false
+  }
 
-    val command = new GenericRunnerCommand(args.toList, errorFn _)
+  def main(args: Array[String]) {
+    if (!process(args))
+      exit(1)
+  }
+
+  def process(args: Array[String]): Boolean = {
+    val command = new GenericRunnerCommand(args.toList, (x: String) => errorFn(x))
     import command.settings
     def sampleCompiler = new Global(settings)   // def so its not created unless needed
 
@@ -64,12 +67,13 @@ object MainGenericRunner {
        */
       val fullArgs = command.thingToRun.toList ::: command.arguments
 
-      exitCond(ScriptRunner.runCommand(settings, combinedCode, fullArgs))
+      return ScriptRunner.runCommand(settings, combinedCode, fullArgs)
     }
     else command.thingToRun match {
       case None             =>
-        // Questionably, we start the interpreter when there are no arguments.
+        // We start the repl when no arguments are given.
         new InterpreterLoop main settings
+        true  // not actually reached in general
 
       case Some(thingToRun) =>
         val isObjectName =
@@ -80,18 +84,21 @@ object MainGenericRunner {
           }
 
         if (isObjectName)
-          try ObjectRunner.run(classpath, thingToRun, command.arguments)
+          try {
+            ObjectRunner.run(classpath, thingToRun, command.arguments)
+            true
+          }
           catch {
-            case e @ (_: ClassNotFoundException | _: NoSuchMethodException) => exitFailure(e)
-            case e: InvocationTargetException =>
-              e.getCause.printStackTrace
-              exitFailure()
+            case e @ (_: ClassNotFoundException | _: NoSuchMethodException) => errorFn(e)
+            case e: InvocationTargetException => errorFn(e.getCause)
           }
         else
-          try exitCond(ScriptRunner.runScript(settings, thingToRun, command.arguments))
+          try {
+            ScriptRunner.runScript(settings, thingToRun, command.arguments)
+          }
           catch {
-            case e: IOException       => exitFailure(e.getMessage)
-            case e: SecurityException => exitFailure(e)
+            case e: IOException       => errorFn(e.getMessage)
+            case e: SecurityException => errorFn(e)
           }
     }
   }
