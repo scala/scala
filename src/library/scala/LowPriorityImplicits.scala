@@ -21,6 +21,19 @@ import collection.generic.CanBuildFrom
  *  @since 2.8
  */
 class LowPriorityImplicits {
+  /** We prefer the java.lang.* boxed types to these wrappers in
+   *  any potential conflicts.  Conflicts do exist because the wrappers
+   *  need to implement ScalaNumber in order to have a symmetric equals
+   *  method, but that implies implementing java.lang.Number as well.
+   */
+  implicit def byteWrapper(x: Byte)       = new runtime.RichByte(x)
+  implicit def shortWrapper(x: Short)     = new runtime.RichShort(x)
+  implicit def intWrapper(x: Int)         = new runtime.RichInt(x)
+  implicit def charWrapper(c: Char)       = new runtime.RichChar(c)
+  implicit def longWrapper(x: Long)       = new runtime.RichLong(x)
+  implicit def floatWrapper(x: Float)     = new runtime.RichFloat(x)
+  implicit def doubleWrapper(x: Double)   = new runtime.RichDouble(x)
+  implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
 
   implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] =
     if (xs ne null) WrappedArray.make(xs) else null

@@ -6,27 +6,14 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.runtime
 
+final class RichFloat(val self: Float) extends FractionalProxy[Float] {
+  protected val integralNum = Numeric.FloatAsIfIntegral
 
-final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
-
-  // Proxy.self
-  def self: Any = x
-
-  // Ordered[Float].compare
-  //def compare(y: Float): Int = if (x < y) -1 else if (x > y) 1 else 0
-  def compare(y: Float): Int = java.lang.Float.compare(x, y)
-
-  def min(y: Float) = math.min(x, y)
-  def max(y: Float) = math.max(x, y)
-  def abs: Float = math.abs(x)
-
-  def round: Int = math.round(x)
-  def ceil: Float = math.ceil(x).toFloat
-  def floor: Float = math.floor(x).toFloat
+  def round: Int   = math.round(self)
+  def ceil: Float  = math.ceil(self).toFloat
+  def floor: Float = math.floor(self).toFloat
 
   /** Converts an angle measured in degrees to an approximately equivalent
    *  angle measured in radians.
@@ -34,7 +21,7 @@ final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
    *  @param  x an angle, in degrees
    *  @return the measurement of the angle <code>x</code> in radians.
    */
-  def toRadians: Float = math.toRadians(x).toFloat
+  def toRadians: Float = math.toRadians(self).toFloat
 
   /** Converts an angle measured in radians to an approximately equivalent
    *  angle measured in degrees.
@@ -42,12 +29,11 @@ final class RichFloat(x: Float) extends Proxy with Ordered[Float] {
    *  @param  x angle, in radians
    *  @return the measurement of the angle <code>x</code> in degrees.
    */
-  def toDegrees: Float = math.toDegrees(x).toFloat
+  def toDegrees: Float = math.toDegrees(self).toFloat
 
   // isNaN is provided by the implicit conversion to java.lang.Float
-  // def isNaN: Boolean = java.lang.Float.isNaN(x)
-  def isInfinity: Boolean = java.lang.Float.isInfinite(x)
-  def isPosInfinity: Boolean = isInfinity && x > 0.0f
-  def isNegInfinity: Boolean = isInfinity && x < 0.0f
-
+  // def isNaN: Boolean = java.lang.Float.isNaN(self)
+  def isInfinity: Boolean = java.lang.Float.isInfinite(self)
+  def isPosInfinity: Boolean = isInfinity && self > 0.0f
+  def isNegInfinity: Boolean = isInfinity && self < 0.0f
 }

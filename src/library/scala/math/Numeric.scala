@@ -104,11 +104,10 @@ object Numeric {
   }
   implicit object LongIsIntegral extends LongIsIntegral with Ordering.LongOrdering
 
-  trait FloatIsFractional extends Fractional[Float] {
+  trait FloatIsConflicted extends Numeric[Float] {
     def plus(x: Float, y: Float): Float = x + y
     def minus(x: Float, y: Float): Float = x - y
     def times(x: Float, y: Float): Float = x * y
-    def div(x: Float, y: Float): Float = x / y
     def negate(x: Float): Float = -x
     def fromInt(x: Int): Float = x
     def toInt(x: Float): Int = x.toInt
@@ -116,7 +115,16 @@ object Numeric {
     def toFloat(x: Float): Float = x
     def toDouble(x: Float): Double = x
   }
+  trait FloatIsFractional extends FloatIsConflicted with Fractional[Float] {
+    def div(x: Float, y: Float): Float = x / y
+  }
+  trait FloatAsIfIntegral extends FloatIsConflicted with Integral[Float] {
+    def quot(x: Float, y: Float): Float = (BigDecimal(x) / BigDecimal(y)).floatValue
+    def rem(x: Float, y: Float): Float = (BigDecimal(x) remainder BigDecimal(y)).floatValue
+  }
   implicit object FloatIsFractional extends FloatIsFractional with Ordering.FloatOrdering
+  object FloatAsIfIntegral extends FloatAsIfIntegral with Ordering.FloatOrdering {
+  }
 
   trait DoubleIsConflicted extends Numeric[Double] {
     def plus(x: Double, y: Double): Double = x + y

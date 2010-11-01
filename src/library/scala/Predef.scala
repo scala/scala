@@ -199,18 +199,7 @@ object Predef extends LowPriorityImplicits {
 
   // views --------------------------------------------------------------
 
-  implicit def byteWrapper(x: Byte)     = new runtime.RichByte(x)
-  implicit def shortWrapper(x: Short)   = new runtime.RichShort(x)
-  implicit def intWrapper(x: Int)       = new runtime.RichInt(x)
-  implicit def charWrapper(c: Char)     = new runtime.RichChar(c)
-  implicit def longWrapper(x: Long)     = new runtime.RichLong(x)
-  implicit def floatWrapper(x: Float)   = new runtime.RichFloat(x)
-  implicit def doubleWrapper(x: Double) = new runtime.RichDouble(x)
-  implicit def booleanWrapper(x: Boolean) = new runtime.RichBoolean(x)
-
   implicit def exceptionWrapper(exc: Throwable) = new runtime.RichException(exc)
-
-  // tuple zip views
 
   implicit def zipped2ToTraversable[El1, El2](zz: Tuple2[_, _]#Zipped[_, El1, _, El2]): Traversable[(El1, El2)] =
     new Traversable[(El1, El2)] {
@@ -284,6 +273,19 @@ object Predef extends LowPriorityImplicits {
   implicit def float2Float(x: Float)        = java.lang.Float.valueOf(x)
   implicit def double2Double(x: Double)     = java.lang.Double.valueOf(x)
   implicit def boolean2Boolean(x: Boolean)  = java.lang.Boolean.valueOf(x)
+
+  // These next eight implicits exist solely to exclude AnyRef methods from the
+  // eight implicits above so that primitives are not coerced to AnyRefs.  They
+  // only create such conflict for AnyRef methods, so the methods on the java.lang
+  // boxed types are unambiguously reachable.
+  implicit def byte2ByteConflict(x: Byte)           = new AnyRef
+  implicit def short2ShortConflict(x: Short)        = new AnyRef
+  implicit def char2CharacterConflict(x: Char)      = new AnyRef
+  implicit def int2IntegerConflict(x: Int)          = new AnyRef
+  implicit def long2LongConflict(x: Long)           = new AnyRef
+  implicit def float2FloatConflict(x: Float)        = new AnyRef
+  implicit def double2DoubleConflict(x: Double)     = new AnyRef
+  implicit def boolean2BooleanConflict(x: Boolean)  = new AnyRef
 
   implicit def Byte2byte(x: java.lang.Byte): Byte             = x.byteValue
   implicit def Short2short(x: java.lang.Short): Short         = x.shortValue

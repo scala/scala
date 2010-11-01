@@ -7,32 +7,28 @@
 \*                                                                      */
 
 
-
 package scala.runtime
 
-import collection.immutable.Range
+import scala.collection.immutable.Range
 
+// Note that this does not implement IntegralProxy[Int] so that it can return
+// the Int-specific Range class from until/to.
+final class RichInt(val self: Int) extends ScalaNumberProxy[Int] with RangedProxy[Int] {
+  type ResultWithoutStep = Range
+  def isWhole() = true
 
-final class RichInt(val start: Int) extends Proxy with Ordered[Int] {
+  def until(end: Int): Range = Range(self, end)
+  def until(end: Int, step: Int): Range = Range(self, end, step)
 
-  // Proxy
-  def self: Any = start
+  /** like `until`, but includes the last index */
+  def to(end: Int): Range.Inclusive = Range.inclusive(self, end)
+  def to(end: Int, step: Int): Range.Inclusive = Range.inclusive(self, end, step)
 
-  // Ordered[Int]
-  def compare(that: Int): Int = if (start < that) -1 else if (start > that) 1 else 0
+  override def min(that: Int): Int = if (self < that) self else that
+  override def max(that: Int): Int = if (self > that) self else that
+  override def abs: Int = if (self < 0) -self else self
 
-  def until(end: Int): Range = Range(start, end)
-  def until(end: Int, step: Int): Range = Range(start, end, step)
-
-  /** like <code>until</code>, but includes the last index */
-  def to(end: Int): Range.Inclusive = Range.inclusive(start, end)
-  def to(end: Int, step: Int): Range.Inclusive = Range.inclusive(start, end, step)
-
-  def min(that: Int): Int = if (start < that) start else that
-  def max(that: Int): Int = if (start > that) start else that
-  def abs: Int = if (start < 0) -start else start
-
-  def toBinaryString: String = java.lang.Integer.toBinaryString(start)
-  def toHexString: String = java.lang.Integer.toHexString(start)
-  def toOctalString: String = java.lang.Integer.toOctalString(start)
+  def toBinaryString: String = java.lang.Integer.toBinaryString(self)
+  def toHexString: String = java.lang.Integer.toHexString(self)
+  def toOctalString: String = java.lang.Integer.toOctalString(self)
 }

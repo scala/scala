@@ -10,13 +10,6 @@
 
 package scala.runtime
 
-
-final class RichBoolean(x: Boolean) extends Proxy with Ordered[Boolean] {
-
-  // Proxy.self
-  def self: Any = x
-
-  // Ordered[Boolean].compare
-  def compare (y: Boolean): Int = if (x == y) 0 else if (x) 1 else -1
-
+final class RichBoolean(val self: Boolean) extends OrderedProxy[Boolean] {
+  protected val ord = Ordering[Boolean]
 }

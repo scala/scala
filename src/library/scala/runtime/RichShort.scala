@@ -6,17 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.runtime
 
-
-final class RichShort(start: Short) extends Proxy with Ordered[Short] {
-
-  // Proxy.self
-  def self: Any = start
-
-  // Ordered[Short].compare
-  def compare(that: Short): Int = if (start < that) -1 else if (start > that) 1 else 0
-
-}
+final class RichShort(val self: Short) extends ScalaWholeNumberProxy[Short] { }
