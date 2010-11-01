@@ -39,7 +39,7 @@ object Test {
         case FutureInput ! (data @ ImageData(_)) =>
           renderImage(data)
         case Exit(from, UncaughtException(_, Some(Download(info)), _, _, cause)) =>
-          println("Couldn't download image "+info+" because of "+cause)
+          println("Couldn't download image because of "+cause)
       }
     }
     println("OK, all images rendered.")
@@ -47,6 +47,7 @@ object Test {
 
   def main(args: Array[String]) {
     actor {
+      self.trapExit = true
       renderImages("panorama.epfl.ch")
     }
   }
