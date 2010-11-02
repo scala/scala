@@ -175,7 +175,7 @@ class PartestTask extends Task with CompilationPathProperty {
 
   private def getPosFiles          = getFilesAndDirs(posFiles)
   private def getNegFiles          = getFilesAndDirs(negFiles)
-  private def getRunFiles          = getFiles(runFiles)
+  private def getRunFiles          = getFilesAndDirs(runFiles)
   private def getJvmFiles          = getFilesAndDirs(jvmFiles)
   private def getResidentFiles     = getFiles(residentFiles)
   private def getBuildManagerFiles = getFilesAndDirs(buildManagerFiles)

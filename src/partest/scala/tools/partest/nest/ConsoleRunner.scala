@@ -28,7 +28,7 @@ class ConsoleRunner extends DirectRunner {
     List(
       TestSet("pos", pathFilter, "Testing compiler (on files whose compilation should succeed)"),
       TestSet("neg", pathFilter, "Testing compiler (on files whose compilation should fail)"),
-      TestSet("run", pathFilter, "Testing JVM backend"),
+      TestSet("run", pathFilter, "Testing interpreter and backend"),
       TestSet("jvm", pathFilter, "Testing JVM backend"),
       TestSet("res", x => x.isFile && (x hasExtension "res"), "Testing resident compiler"),
       TestSet("buildmanager", _.isDirectory, "Testing Build Manager"),

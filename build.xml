@@ -1560,9 +1560,7 @@ BOOTRAPING TEST AND TEST SUITE
       </compilationpath>
       <postests  dir="${partest.dir}/${partest.srcdir}/pos" includes="*.scala"/>
       <negtests  dir="${partest.dir}/${partest.srcdir}/neg" includes="*.scala"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}">
-        <include name="run/**/*.scala"/>
-      </runtests>
+      <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
       <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
       <residenttests dir="${partest.dir}/${partest.srcdir}/res" includes="*.res"/>
       <buildmanagertests dir="${partest.dir}/${partest.srcdir}/buildmanager" includes="*"/>
@@ -1585,9 +1583,7 @@ BOOTRAPING TEST AND TEST SUITE
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
       <negtests  dir="${partest.dir}/${partest.srcdir}/continuations-neg" includes="*.scala"/>
-      <runtests  dir="${partest.dir}/${partest.srcdir}">
-        <include name="continuations-run/**/*.scala"/>
-      </runtests>
+      <runtests  dir="${partest.dir}/${partest.srcdir}/continuations-run" includes="*.scala"/>
     </partest>
   </target>
 
