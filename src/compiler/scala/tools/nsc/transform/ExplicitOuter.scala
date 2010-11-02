@@ -161,8 +161,8 @@ abstract class ExplicitOuter extends InfoTransform
       // On the other hand, mixing in the trait into a separately compiled
       // class needs to have a common naming scheme, independently of whether
       // the field was accessed from an inner class or not. See #2946
-      if (sym.owner.isTrait && (sym hasFlag LOCAL) &&
-              ((sym.getter(sym.owner.toInterface) == NoSymbol) && (!sym.isLazy || (sym.lazyAccessor == NoSymbol))))
+      if (sym.owner.isTrait && sym.hasLocalFlag &&
+              ((sym.getter(sym.owner.toInterface) == NoSymbol) && !sym.isLazyAccessor))
         sym.makeNotPrivate(sym.owner)
       tp
   }
@@ -343,12 +343,9 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** If FLAG is set on symbol, sets notFLAG (this exists in anticipation of generalizing). */
     def setNotFlags(sym: Symbol, flags: Int*) {
-      val notMap = Map(
-        PRIVATE -> notPRIVATE,
-        PROTECTED -> notPROTECTED
-      )
-      for (f <- flags ; notFlag <- notMap get f ; if sym hasFlag f)
-        sym setFlag notFlag
+      for (f <- flags ; notFlag <- notFlagMap get f)
+        if (sym hasFlag f)
+          sym setFlag notFlag
     }
 
     def matchTranslation(tree: Match) = {
@@ -461,7 +458,7 @@ abstract class ExplicitOuter extends InfoTransform
             super.transform(tree)
 
         case This(qual) =>
-          if (sym == currentClass || (sym hasFlag MODULE) && sym.isStatic) tree
+          if (sym == currentClass || sym.hasModuleFlag && sym.isStatic) tree
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>

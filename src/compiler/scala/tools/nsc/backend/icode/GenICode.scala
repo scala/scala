@@ -121,7 +121,7 @@ abstract class GenICode extends SubComponent  {
         addMethodParams(ctx1, vparamss)
         m.native = m.symbol.hasAnnotation(definitions.NativeAttr)
 
-        if (!m.isDeferred && !m.native) {
+        if (!m.isAbstractMethod && !m.native) {
           ctx1 = genLoad(rhs, ctx1, m.returnType);
 
           // reverse the order of the local variables, to match the source-order

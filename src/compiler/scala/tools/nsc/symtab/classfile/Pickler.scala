@@ -91,7 +91,7 @@ abstract class Pickler extends SubComponent {
       (isRootSym(sym) ||
        sym.isRefinementClass ||
        sym.isAbstractType && sym.hasFlag(EXISTENTIAL) || // existential param
-       (sym hasFlag PARAM) ||
+       sym.isParameter ||
        isLocal(sym.owner))
 
     private def staticAnnotations(annots: List[AnnotationInfo]) =
@@ -497,7 +497,7 @@ abstract class Pickler extends SubComponent {
       writeRef(sym.name)
       writeRef(localizedOwner(sym))
       writeLongNat((rawFlagsToPickled(sym.flags & PickledFlags)))
-      if (sym.privateWithin != NoSymbol) writeRef(sym.privateWithin)
+      if (sym.hasAccessBoundary) writeRef(sym.privateWithin)
       writeRef(sym.info)
     }
 
@@ -990,7 +990,7 @@ abstract class Pickler extends SubComponent {
         printRef(sym.name)
         printRef(localizedOwner(sym))
         print(flagsToString(sym.flags & PickledFlags)+" ")
-        if (sym.privateWithin != NoSymbol) printRef(sym.privateWithin)
+        if (sym.hasAccessBoundary) printRef(sym.privateWithin)
         printRef(sym.info)
       }
       def printBody(entry: AnyRef) = entry match {

@@ -70,7 +70,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def isTrait = sym.isTrait
     def isClass = sym.isClass && !sym.isTrait
     def isObject = sym.isModule && !sym.isPackage
-    def isCaseClass = sym.isClass && sym.hasFlag(Flags.CASE)
+    def isCaseClass = sym.isCaseClass
     def isRootPackage = false
     def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
   }
@@ -98,7 +98,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       else if (sym.isProtectedLocal) ProtectedInInstance()
       else {
         val qual =
-          if (sym.privateWithin != null && sym.privateWithin != NoSymbol)
+          if (sym.hasAccessBoundary)
             Some(makeTemplate(sym.privateWithin))
           else None
         if (sym.isPrivate) PrivateInTemplate(inTpl)
@@ -110,7 +110,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def flags = {
       val fgs = mutable.ListBuffer.empty[Paragraph]
       if (sym.isImplicit) fgs += Paragraph(Text("implicit"))
-      if (sym hasFlag Flags.SEALED) fgs += Paragraph(Text("sealed"))
+      if (sym.isSealed) fgs += Paragraph(Text("sealed"))
       if (!sym.isTrait && (sym hasFlag Flags.ABSTRACT)) fgs += Paragraph(Text("abstract"))
       if (!sym.isTrait && (sym hasFlag Flags.DEFERRED)) fgs += Paragraph(Text("abstract"))
       if (!sym.isModule && (sym hasFlag Flags.FINAL)) fgs += Paragraph(Text("final"))
@@ -392,7 +392,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
         Some(new NonTemplateMemberImpl(bSym, inTpl) with Val {
           override def isVar = true
         })
-      else if (bSym.isMethod && !bSym.isGetterOrSetter && !bSym.isConstructor && !bSym.isModule)
+      else if (bSym.isMethod && !bSym.hasAccessorFlag && !bSym.isConstructor && !bSym.isModule)
         Some(new NonTemplateParamMemberImpl(bSym, inTpl) with HigherKindedImpl with Def {
           override def isDef = true
         })
@@ -572,12 +572,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   }
 
   def isNestedObjectLazyVal(aSym: Symbol): Boolean = {
-    aSym.isLazy && !aSym.isRootPackage && !aSym.owner.isPackageClass && (aSym.lazyAccessor != NoSymbol)
+    aSym.isLazyAccessor && !aSym.isRootPackage && !aSym.owner.isPackageClass
   }
 
   def isEmptyJavaObject(aSym: Symbol): Boolean = {
     def hasMembers = aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
-    aSym.isModule && aSym.hasFlag(Flags.JAVA) && !hasMembers
+    aSym.isModule && aSym.isJavaDefined && !hasMembers
   }
 
   def localShouldDocument(aSym: Symbol): Boolean = {

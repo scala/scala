@@ -154,7 +154,7 @@ trait TreePrinters { trees: SymbolTable =>
           printAnnotations(tree)
           printModifiers(tree, mods)
           val word =
-            if (mods.isTrait) "trait"
+            if (mods.hasTraitFlag) "trait"
             else if (ifSym(tree, _.isModuleClass)) "object"
             else "class"
 

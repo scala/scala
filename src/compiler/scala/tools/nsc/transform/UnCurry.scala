@@ -274,7 +274,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
     /** Undo eta expansion for parameterless and nullary methods */
     def deEta(fun: Function): Tree = fun match {
       case Function(List(), Apply(expr, List())) if treeInfo.isPureExpr(expr) =>
-        if (expr.hasSymbol && expr.symbol.hasFlag(LAZY))
+        if (expr hasSymbolWhich (_.isLazy))
           fun
         else
           expr
@@ -690,7 +690,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           applyUnary()
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()
-        case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.hasFlag(LAZY)) =>
+        case Return(expr) if (tree.symbol != currentOwner.enclMethod || currentOwner.isLazy) =>
           if (settings.debug.value) log("non local return in "+tree.symbol+" from "+currentOwner.enclMethod)
           atPos(tree.pos)(nonLocalReturnThrow(expr, tree.symbol))
         case TypeTree() =>

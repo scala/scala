@@ -99,10 +99,10 @@ abstract class RefChecks extends InfoTransform {
     private def checkDefaultsInOverloaded(clazz: Symbol) {
       def check(members: List[Symbol]): Unit = members match {
         case x :: xs =>
-          if (x.paramss.exists(_.exists(p => p.hasFlag(DEFAULTPARAM))) && !nme.isProtectedAccessor(x.name)) {
+          if ((x hasParamWhich (_.hasDefaultFlag)) && !nme.isProtectedAccessor(x.name)) {
             val others = xs.filter(alt => {
               alt.name == x.name &&
-              alt.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM))) &&
+              (alt hasParamWhich (_.hasDefaultFlag)) &&
               (!alt.isConstructor || alt.owner == x.owner) // constructors of different classes are allowed to have defaults
             })
             if (!others.isEmpty) {
@@ -281,8 +281,10 @@ abstract class RefChecks extends InfoTransform {
           }
         }
 
-        def accessFlagsToString(sym: Symbol)
-          = flagsToString(sym getFlag (PRIVATE | PROTECTED), if (!sym.hasAccessBoundary) "" else sym.privateWithin.name.toString)
+        def accessFlagsToString(sym: Symbol) = flagsToString(
+          sym getFlag (PRIVATE | PROTECTED),
+          if (sym.hasAccessBoundary) "" + sym.privateWithin.name else ""
+        )
 
         def overrideAccessError() {
           val otherAccess = accessFlagsToString(other)
@@ -344,7 +346,7 @@ abstract class RefChecks extends InfoTransform {
           } else if ((other hasFlag ABSOVERRIDE) && other.isIncompleteIn(clazz) && !(member hasFlag ABSOVERRIDE)) {
             overrideError("needs `abstract override' modifiers")
           } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
-                     (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.hasFlag(LAZY)) {
+                     (other hasFlag ACCESSOR) && other.accessed.isVariable && !other.accessed.isLazy) {
             overrideError("cannot override a mutable variable")
           } else if ((member hasFlag (OVERRIDE | ABSOVERRIDE)) &&
                      !(member.owner.thisType.baseClasses exists (_ isSubClass other.owner)) &&
@@ -681,7 +683,7 @@ abstract class RefChecks extends InfoTransform {
             // Flip occurrences of type parameters and parameters, unless
             //  - it's a constructor, or case class factory or extractor
             //  - it's a type parameter of tvar's owner.
-            if ((sym hasFlag PARAM) && !sym.owner.isConstructor && !sym.owner.isCaseApplyOrUnapply &&
+            if (sym.isParameter && !sym.owner.isConstructor && !sym.owner.isCaseApplyOrUnapply &&
                 !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem &&
                   tvar.owner == sym.owner)) state = -state;
             else if (!sym.owner.isClass ||
@@ -1078,7 +1080,7 @@ abstract class RefChecks extends InfoTransform {
         case Apply(_, args) =>
           val clazz = pat.tpe.typeSymbol;
           clazz == seltpe.typeSymbol &&
-          clazz.isClass && (clazz hasFlag CASE) &&
+          clazz.isCaseClass &&
           (args corresponds clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable) // @PP: corresponds
         case Typed(pat, tpt) =>
           seltpe <:< tpt.tpe
@@ -1138,7 +1140,7 @@ abstract class RefChecks extends InfoTransform {
     private def checkTypeRef(tp: Type, pos: Position) = tp match {
       case TypeRef(pre, sym, args) =>
         checkDeprecated(sym, pos)
-        if(sym.hasFlag(JAVA))
+        if(sym.isJavaDefined)
           sym.typeParams foreach (_.cookJavaRawInfo())
         if (!tp.isHigherKinded)
           checkBounds(pre, sym.owner, sym.typeParams, args, pos)
@@ -1239,7 +1241,7 @@ abstract class RefChecks extends InfoTransform {
       if (settings.Xmigration28.value)
         checkMigration(sym, tree.pos)
 
-      if (currentClass != sym.owner && (sym hasFlag LOCAL)) {
+      if (currentClass != sym.owner && sym.hasLocalFlag) {
         var o = currentClass
         var hidden = false
         while (!hidden && o != sym.owner && o != sym.owner.moduleClass && !o.isPackage) {

@@ -899,12 +899,12 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
             if (name == nme.ANYNAME) decls.elems else decls.lookupEntry(name)
           while (entry ne null) {
             val sym = entry.sym
-            if (sym.getFlag(requiredFlags) == requiredFlags) {
+            if (sym hasAllFlags requiredFlags) {
               val excl = sym.getFlag(excluded)
               if (excl == 0L &&
                   (// omit PRIVATE LOCALS unless selector class is contained in class owning the def.
                    (bcs eq bcs0) ||
-                   sym.getFlag(PRIVATE | LOCAL) != (PRIVATE | LOCAL).toLong ||
+                   !sym.isPrivateLocal ||
                    (bcs0.head.hasTransOwner(bcs.head)))) {
                 if (name.isTypeName || stableOnly && sym.isStable) {
                   stopTimer(findMemberNanos, start)
@@ -916,7 +916,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
                   if (member.name != sym.name ||
                       !(member == sym ||
                         member.owner != sym.owner &&
-                        !sym.hasFlag(PRIVATE) && {
+                        !sym.isPrivate && {
                           if (self eq null) self = this.narrow
                           if (membertpe eq null) membertpe = self.memberType(member)
                           (membertpe matches self.memberType(sym))
@@ -1183,7 +1183,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     // more precise conceptually, but causes cyclic errors:    (paramss exists (_ contains sym))
     override def isImmediatelyDependent = (sym ne NoSymbol) && (sym.owner.isMethod && sym.isValueParameter)
 
-    override def isVolatile : Boolean = underlying.isVolatile && (!sym.isStable)
+    override def isVolatile : Boolean = underlying.isVolatile && !sym.isStable
 /*
     override def narrow: Type = {
       if (phase.erasedTypes) this
@@ -1918,7 +1918,7 @@ A type's typeSymbol should never be inspected directly.
           return normalize.typeArgs.init.mkString("(", ", ", ")") + " => " + normalize.typeArgs.last
         if (isTupleTypeOrSubtype(this))
           return normalize.typeArgs.mkString("(", ", ", if (normalize.typeArgs.length == 1) ",)" else ")")
-        if (sym.isAliasType && (prefixChain exists (_.termSymbol hasFlag SYNTHETIC))) {
+        if (sym.isAliasType && (prefixChain exists (_.termSymbol.isSynthetic))) {
           val normed = normalize;
           if (normed ne this) return normed.toString
         }
@@ -1942,7 +1942,7 @@ A type's typeSymbol should never be inspected directly.
         thisInfo.parents.mkString(" with ") + {
           if (sym.isStructuralRefinement)
             ((decls.toList filter { entry =>
-              !entry.isConstructor && entry.allOverriddenSymbols.isEmpty && !entry.hasFlag(PRIVATE)
+              !entry.isConstructor && entry.allOverriddenSymbols.isEmpty && !entry.isPrivate
             }) map { entry => entry.defString }).mkString("{", "; ", "}")
           else
             ""
@@ -3236,7 +3236,7 @@ A type's typeSymbol should never be inspected directly.
   //  note: it's important to write the two tests in this order,
   //  as only typeParams forces the classfile to be read. See #400
   private def isRawIfWithoutArgs(sym: Symbol) =
-    sym.isClass && !sym.typeParams.isEmpty && sym.hasFlag(JAVA)
+    sym.isClass && sym.typeParams.nonEmpty && sym.isJavaDefined
 
   def isRaw(sym: Symbol, args: List[Type]) =
     !phase.erasedTypes && isRawIfWithoutArgs(sym) && args.isEmpty
@@ -4036,7 +4036,7 @@ A type's typeSymbol should never be inspected directly.
   }
 
   private def equalSymsAndPrefixes(sym1: Symbol, pre1: Type, sym2: Symbol, pre2: Type): Boolean =
-    if (sym1 == sym2) sym1.hasFlag(PACKAGE) || phase.erasedTypes || pre1 =:= pre2
+    if (sym1 == sym2) sym1.hasPackageFlag || phase.erasedTypes || pre1 =:= pre2
     else (sym1.name == sym2.name) && isUnifiable(pre1, pre2)
 
   /** Do `tp1' and `tp2' denote equivalent types?
@@ -4084,7 +4084,7 @@ A type's typeSymbol should never be inspected directly.
   def normalizePlus(tp: Type) = tp match {
     case TypeRef(pre, sym, List()) =>
       if (!sym.isInitialized) sym.rawInfo.load(sym)
-      if (sym.hasFlag(JAVA) && !sym.typeParams.isEmpty) rawToExistential(tp)
+      if (sym.isJavaDefined && !sym.typeParams.isEmpty) rawToExistential(tp)
       else tp.normalize
     case _ => tp.normalize
   }

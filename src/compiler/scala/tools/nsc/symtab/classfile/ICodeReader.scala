@@ -45,7 +45,7 @@ abstract class ICodeReader extends ClassfileParser {
     var sym = cls
     sym.info // ensure accurate type information
 
-    isScalaModule = cls.isModule && !cls.hasFlag(JAVA)
+    isScalaModule = cls.isModule && !cls.isJavaDefined
     log("Reading class: " + cls + " isScalaModule?: " + isScalaModule)
     val name = cls.fullName('.') + (if (sym.hasFlag(MODULE)) "$" else "")
 
@@ -506,7 +506,7 @@ abstract class ICodeReader extends ClassfileParser {
 
         case JVM.getstatic    =>
           val field = pool.getMemberSymbol(in.nextChar, true); size += 2
-          if (field.hasFlag(Flags.MODULE))
+          if (field.hasModuleFlag)
             code.emit(LOAD_MODULE(field))
           else
             code.emit(LOAD_FIELD(field, true))
@@ -529,7 +529,7 @@ abstract class ICodeReader extends ClassfileParser {
           code.emit(CALL_METHOD(m, Dynamic))
         case JVM.invokespecial   =>
           val m = pool.getMemberSymbol(in.nextChar, false); size += 2
-          val style = if (m.name == nme.CONSTRUCTOR || m.hasFlag(Flags.PRIVATE)) Static(true)
+          val style = if (m.name == nme.CONSTRUCTOR || m.isPrivate) Static(true)
                       else SuperCall(m.owner.name);
           code.emit(CALL_METHOD(m, style))
         case JVM.invokestatic    =>

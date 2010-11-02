@@ -337,13 +337,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      */
     final def isValue = isTerm && !(isModule && hasFlag(PACKAGE | JAVA))
 
-    final def isVariable  = isTerm && hasFlag(MUTABLE) && !isMethod
+    final def isVariable  = isTerm && isMutable && !isMethod
 
     // interesting only for lambda lift. Captured variables are accessed from inner lambdas.
     final def isCapturedVariable  = isVariable && hasFlag(CAPTURED)
 
-    final def isGetter = isTerm && hasFlag(ACCESSOR) && !nme.isSetterName(name)
-    final def isSetter = isTerm && hasFlag(ACCESSOR) && nme.isSetterName(name)
+    final def isGetter = isTerm && hasAccessorFlag && !nme.isSetterName(name)
+    final def isSetter = isTerm && hasAccessorFlag && nme.isSetterName(name)
        //todo: make independent of name, as this can be forged.
 
     final def hasGetter = isTerm && nme.isLocalName(name)
@@ -434,7 +434,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** Does this symbol denote a stable value? */
     final def isStable =
       isTerm &&
-      !hasFlag(MUTABLE) &&
+      !isMutable &&
       (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE)) &&
       !(tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
 
@@ -1099,7 +1099,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** The symbol accessed by this accessor function, but with given owner type */
     final def accessed(ownerTp: Type): Symbol = {
-      assert(hasFlag(ACCESSOR))
+      assert(hasAccessorFlag)
       ownerTp.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name))
     }
 
@@ -1366,7 +1366,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      */
     final def getter(base: Symbol): Symbol = {
       val getterName = if (isSetter) nme.setterToGetter(name) else nme.getterName(name)
-      base.info.decl(getterName) filter (_.hasFlag(ACCESSOR))
+      base.info.decl(getterName) filter (_.hasAccessorFlag)
     }
 
     /** The setter of this value or getter definition, or NoSymbol if none exists */
@@ -1375,7 +1375,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def setter(base: Symbol, hasExpandedName: Boolean): Symbol = {
       var sname = nme.getterToSetter(nme.getterName(name))
       if (hasExpandedName) sname = nme.expandedSetterName(sname, base)
-      base.info.decl(sname) filter (_.hasFlag(ACCESSOR))
+      base.info.decl(sname) filter (_.hasAccessorFlag)
     }
 
     /** The case module corresponding to this case class
@@ -1416,7 +1416,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     def expandName(base: Symbol) {
       if (this.isTerm && this != NoSymbol && !hasFlag(EXPANDEDNAME)) {
         setFlag(EXPANDEDNAME)
-        if (hasFlag(ACCESSOR) && !isDeferred) {
+        if (hasAccessorFlag && !isDeferred) {
           accessed.expandName(base)
         } else if (hasGetter) {
           getter(owner).expandName(base)
@@ -1476,7 +1476,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else if (isPackage) "package"
       else if (isModule) "object"
       else if (isSourceMethod) "def"
-      else if (isTerm && (!isParameter || hasFlag(PARAMACCESSOR))) "val"
+      else if (isTerm && (!isParameter || isParamAccessor)) "val"
       else ""
 
     /** String representation of symbol's kind */
@@ -1664,13 +1664,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     }
 
     def setLazyAccessor(sym: Symbol): TermSymbol = {
-      assert(hasFlag(LAZY) && (referenced == NoSymbol || referenced == sym), this)
+      assert(isLazy && (referenced == NoSymbol || referenced == sym), this)
       referenced = sym
       this
     }
 
     override def lazyAccessor: Symbol = {
-      assert(hasFlag(LAZY), this)
+      assert(isLazy, this)
       referenced
     }
 
@@ -1696,7 +1696,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         }
       }
 
-      if (hasFlag(JAVA))
+      if (isJavaDefined)
         cook(this)
       else if (hasFlag(OVERLOADED))
         for (sym2 <- alternatives)
@@ -1709,18 +1709,18 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   class ModuleSymbol(initOwner: Symbol, initPos: Position, initName: Name)
   extends TermSymbol(initOwner, initPos, initName) {
     private var flatname = nme.EMPTY
+    // This method could use a better name from someone clearer on what the condition expresses.
+    private def isFlatAdjusted = phase.flatClasses && !isMethod && rawowner != NoSymbol && !rawowner.isPackageClass
 
     override def owner: Symbol =
-      if (phase.flatClasses && !hasFlag(METHOD) &&
-          rawowner != NoSymbol && !rawowner.isPackageClass) rawowner.owner
+      if (isFlatAdjusted) rawowner.owner
       else rawowner
 
     override def name: Name =
-      if (phase.flatClasses && !hasFlag(METHOD) &&
-          rawowner != NoSymbol && !rawowner.isPackageClass) {
+      if (isFlatAdjusted) {
         if (flatname == nme.EMPTY) {
           assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname, rawowner))
-          flatname = newTermName(compactify(rawowner.name.toString() + "$" + rawname))
+          flatname = newTermName(compactify(rawowner.name + "$" + rawname))
         }
         flatname
       } else rawname
@@ -1834,7 +1834,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      * info for T in Test1 should be >: Nothing <: Test3[_]
      */
     protected def doCookJavaRawInfo() {
-      // don't require hasFlag(JAVA), since T in the above example does not have that flag
+      // don't require isJavaDefined, since T in the above example does not have that flag
       val tpe1 = rawToExistential(info)
       // println("cooking type: "+ this +": "+ info +" to "+ tpe1)
       if (tpe1 ne info) {

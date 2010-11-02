@@ -307,7 +307,7 @@ abstract class GenMSIL extends SubComponent {
         log("creating annotations: " + annotations + " for member : " + member)
       for (annot@ AnnotationInfo(typ, annArgs, nvPairs) <- annotations ;
            if annot.isConstant)
-           //!typ.typeSymbol.hasFlag(Flags.JAVA)
+           //!typ.typeSymbol.isJavaDefined
       {
 //        assert(consts.length <= 1,
 //               "too many constant arguments for annotations; "+consts.toString())
@@ -1629,9 +1629,9 @@ abstract class GenMSIL extends SubComponent {
      * not exist in the classpath: the type checker will be very confused.
      */
     def msilName(sym: Symbol): String = {
-      val suffix: String = if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
+      val suffix: String = if (sym.hasModuleFlag && !sym.isMethod &&
                                !sym.isImplClass &&
-                               !sym.hasFlag(Flags.JAVA)) "$" else ""
+                               !sym.isJavaDefined) "$" else ""
       // Flags.JAVA: "symbol was not defined by a scala-class" (java, or .net-class)
 
       if (sym == definitions.NothingClass)
@@ -1688,7 +1688,7 @@ abstract class GenMSIL extends SubComponent {
           mf = mf | MethodAttributes.Virtual
           if (sym.isFinal && !getType(sym.owner).IsInterface)
             mf = mf | MethodAttributes.Final
-          if (sym.hasFlag(Flags.DEFERRED) || getType(sym.owner).IsInterface)
+          if (sym.isDeferred || getType(sym.owner).IsInterface)
             mf = mf | MethodAttributes.Abstract
         }
       }
@@ -2049,8 +2049,8 @@ abstract class GenMSIL extends SubComponent {
       val iclass = classes(sym)
 
       for (m <- sym.tpe.nonPrivateMembers
-           if m.owner != definitions.ObjectClass && !m.hasFlag(Flags.PROTECTED) &&
-           m.isMethod && !m.isClassConstructor && !m.isStaticMember && !m.hasFlag(Flags.CASE))
+           if m.owner != definitions.ObjectClass && !m.isProtected &&
+           m.isMethod && !m.isClassConstructor && !m.isStaticMember && !m.isCase)
         {
           if (settings.debug.value)
             log("   Mirroring method: " + m)

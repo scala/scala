@@ -65,7 +65,7 @@ abstract class UnPickler extends reflect.generic.UnPickler {
       override def complete(sym: Symbol) {
         super.complete(sym)
         var alias = at(j, readSymbol)
-        if (alias hasFlag OVERLOADED) {
+        if (alias.isOverloaded) {
           atPhase(currentRun.picklerPhase) {
             alias = alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))
           }

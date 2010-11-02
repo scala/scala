@@ -68,7 +68,7 @@ trait Namers { self: Analyzer =>
     val typer = newTyper(context)
 
     def setPrivateWithin[Sym <: Symbol](tree: Tree, sym: Sym, mods: Modifiers): Sym = {
-      if (!mods.privateWithin.isEmpty)
+      if (mods.hasAccessBoundary)
         sym.privateWithin = typer.qualifyingClass(tree, mods.privateWithin, true)
       sym
     }
@@ -130,8 +130,8 @@ trait Namers { self: Analyzer =>
       }
 
       def usePrimary = sym.isTerm && (
-        (sym hasFlag PARAMACCESSOR) ||
-        ((sym hasFlag PARAM) && sym.owner.isPrimaryConstructor)
+        (sym.isParamAccessor) ||
+        (sym.isParameter && sym.owner.isPrimaryConstructor)
       )
 
       if (usePrimary) primaryConstructorParamNamer
@@ -152,10 +152,10 @@ trait Namers { self: Analyzer =>
     private def doubleDefError(pos: Position, sym: Symbol) {
       context.error(pos,
         sym.name.toString() + " is already defined as " +
-        (if (sym.hasFlag(SYNTHETIC))
+        (if (sym.isSynthetic)
           "(compiler-generated) "+ (if (sym.isModule) "case class companion " else "")
          else "") +
-        (if (sym.hasFlag(CASE)) "case class " + sym.name else sym.toString()))
+        (if (sym.isCase) "case class " + sym.name else sym.toString()))
     }
 
     private def inCurrentScope(m: Symbol): Boolean = {
@@ -232,7 +232,7 @@ trait Namers { self: Analyzer =>
       var m: Symbol = context.scope.lookup(tree.name)
       val moduleFlags = tree.mods.flags | MODULE | FINAL
       if (m.isModule && !m.isPackage && inCurrentScope(m) &&
-          (currentRun.canRedefine(m) || (m hasFlag SYNTHETIC))) {
+          (currentRun.canRedefine(m) || m.isSynthetic)) {
         updatePosFlags(m, tree.pos, moduleFlags)
         setPrivateWithin(tree, m, tree.mods)
         if (m.moduleClass != NoSymbol)
@@ -260,7 +260,7 @@ trait Namers { self: Analyzer =>
       var namer : Namer = this
       for (tree <- trees) {
         val txt = namer.enterSym(tree)
-        if (!(txt eq namer.context)) namer = newNamer(txt)
+        if (txt ne namer.context) namer = newNamer(txt)
       }
       namer
     }
@@ -319,8 +319,8 @@ trait Namers { self: Analyzer =>
       if (sym.name == nme.copy || isCopyGetter(sym)) {
         // it could be a compiler-generated copy method or one of its default getters
         setInfo(sym)(mkTypeCompleter(tree)(copySym => {
-          def copyIsSynthetic() = sym.owner.info.member(nme.copy).hasFlag(SYNTHETIC)
-          if (sym.hasFlag(SYNTHETIC) && (!sym.hasFlag(DEFAULTPARAM) || copyIsSynthetic())) {
+          def copyIsSynthetic() = sym.owner.info.member(nme.copy).isSynthetic
+          if (sym.isSynthetic && (!sym.hasDefaultFlag || copyIsSynthetic())) {
             // the 'copy' method of case classes needs a special type completer to make bug0054.scala (and others)
             // work. the copy method has to take exactly the same parameter types as the primary constructor.
             val constrType = copySym.owner.primaryConstructor.tpe
@@ -362,10 +362,10 @@ trait Namers { self: Analyzer =>
               val m = ensureCompanionObject(tree, caseModuleDef(tree))
               caseClassOfModuleClass(m.moduleClass) = tree
             }
-            val hasDefault = impl.body flatMap {
-              case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => vparamss.flatten
-              case _                                              => Nil
-            } exists (_.mods hasFlag DEFAULTPARAM)
+            val hasDefault = impl.body exists {
+              case DefDef(_, nme.CONSTRUCTOR, _, vparamss, _, _)  => vparamss.flatten exists (_.mods.hasDefault)
+              case _                                              => false
+            }
 
             if (hasDefault) {
               val m = ensureCompanionObject(tree, companionModuleDef(tree))
@@ -378,7 +378,7 @@ trait Namers { self: Analyzer =>
 
           case vd @ ValDef(mods, name, tp, rhs) =>
             if ((!context.owner.isClass ||
-                 (mods.flags & (PRIVATE | LOCAL | CASEACCESSOR)) == (PRIVATE | LOCAL) ||
+                 (mods.isPrivateLocal && !mods.isCaseAccessor) ||
                  name.startsWith(nme.OUTER) ||
                  context.unit.isJava) &&
                  !mods.isLazy) {
@@ -388,7 +388,7 @@ trait Namers { self: Analyzer =>
               finish
             } else {
               val mods1 =
-            	  if (mods.hasFlag(PRIVATE) && mods.hasFlag(LOCAL) && !mods.isLazy) {
+            	  if (mods.isPrivateLocal && !mods.isLazy) {
                     context.error(tree.pos, "private[this] not allowed for case class parameters")
                     mods &~ LOCAL
                   } else mods
@@ -413,7 +413,7 @@ trait Namers { self: Analyzer =>
                       owner.newValue(tree.pos, name + "$lzy" ).setFlag((mods1.flags | MUTABLE) & ~IMPLICIT)
                     } else {
                       val mFlag = if (mods1.isLazy) MUTABLE else 0
-                      val lFlag = if (mods.hasFlag(PRIVATE) && mods.hasFlag(LOCAL)) 0 else LOCAL
+                      val lFlag = if (mods.isPrivateLocal) 0 else LOCAL
                       val newflags = mods1.flags & FieldFlags | PRIVATE | lFlag | mFlag
                       owner.newValue(tree.pos, nme.getterToLocal(name)) setFlag newflags
                     }
@@ -446,7 +446,7 @@ trait Namers { self: Analyzer =>
           case imp @ Import(_, _) =>
             tree.symbol = NoSymbol.newImport(tree.pos)
             setInfo(sym)(namerOf(sym).typeCompleter(tree))
-            return (context.makeNewImport(imp))
+            return context.makeNewImport(imp)
           case _ =>
         }
       }
@@ -507,7 +507,7 @@ trait Namers { self: Analyzer =>
                    else Select(This(getter.owner.name), name)) }
           enterSyntheticSym(beanGetterDef)
 
-          if (mods hasFlag MUTABLE) {
+          if (mods.isMutable) {
             // can't use "enterSyntheticSym", because the parameter type is not yet
             // known. instead, uses the same machinery as for the non-bean setter:
             // create and enter the symbol here, add the tree in Typer.addGettterSetter.
@@ -537,7 +537,7 @@ trait Namers { self: Analyzer =>
         case _ =>
       }
       sym.setInfo(tp)
-      if ((sym.isAliasType || sym.isAbstractType) && !(sym hasFlag PARAM) &&
+      if ((sym.isAliasType || sym.isAbstractType) && !sym.isParameter &&
           !typer.checkNonCyclic(tree.pos, tp))
         sym.setInfo(ErrorType) // this early test is there to avoid infinite baseTypes when
                                // adding setters and getters --> bug798
@@ -613,7 +613,7 @@ trait Namers { self: Analyzer =>
       }
       val tpe1 = tpe.deconst
       val tpe2 = tpe1.widen
-      if ((sym.isVariable || sym.isMethod && !(sym hasFlag ACCESSOR)))
+      if ((sym.isVariable || sym.isMethod && !sym.hasAccessorFlag))
         if (tpe2 <:< pt) tpe2 else tpe1
       else if (isHidden(tpe)) tpe2
       else if (sym.isFinal || sym.isLocal) tpe
@@ -751,7 +751,7 @@ trait Namers { self: Analyzer =>
       // here, clazz is the ClassSymbol of the case class (not the module).
       // @check: this seems to work only if the type completer of the class runs before the one of the
       // module class: the one from the module class removes the entry form caseClassOfModuleClass (see above).
-      if (clazz.isClass && !clazz.hasFlag(MODULE)) {
+      if (clazz.isClass && !clazz.hasModuleFlag) {
         Namers.this.caseClassOfModuleClass get companionModuleOf(clazz, context).moduleClass map { cdef =>
           def hasCopy(decls: Scope) = (decls lookup nme.copy) != NoSymbol
           if (!hasCopy(decls) &&
@@ -865,7 +865,7 @@ trait Namers { self: Analyzer =>
         for (vparams <- vparamss; vparam <- vparams)
           if (vparam.tpt.isEmpty) vparam.symbol setInfo WildcardType
         val overridden = overriddenSymbol
-        if (overridden != NoSymbol && !(overridden hasFlag OVERLOADED)) {
+        if (overridden != NoSymbol && !overridden.isOverloaded) {
           overridden.cookJavaRawInfo() // #3404 xform java rawtypes into existentials
           resultPt = site.memberType(overridden) match {
             case PolyType(tparams, rt) => rt.substSym(tparams, tparamSyms)
@@ -919,7 +919,7 @@ trait Namers { self: Analyzer =>
           tpt.tpe
         } else typer.typedType(tpt).tpe
         // #2382: return type of default getters are always @uncheckedVariance
-        if (meth.hasFlag(DEFAULTPARAM))
+        if (meth.hasDefaultFlag)
           rt.withAnnotation(AnnotationInfo(definitions.uncheckedVarianceClass.tpe, List(), List()))
         else rt
       })
@@ -938,7 +938,7 @@ trait Namers { self: Analyzer =>
       val isConstr = meth.isConstructor
       val overridden = if (isConstr || !meth.owner.isClass) NoSymbol
                        else overriddenSymbol
-      val overrides = overridden != NoSymbol && !(overridden hasFlag OVERLOADED)
+      val overrides = overridden != NoSymbol && !overridden.isOverloaded
       // value parameters of the base class (whose defaults might be overridden)
       var baseParamss = overridden.tpe.paramss
         // match empty and missing parameter list
@@ -961,8 +961,8 @@ trait Namers { self: Analyzer =>
         for (vparam <- vparams) {
           val sym = vparam.symbol
           // true if the corresponding parameter of the base class has a default argument
-          val baseHasDefault = overrides && (baseParams.head hasFlag DEFAULTPARAM)
-          if (sym hasFlag DEFAULTPARAM) {
+          val baseHasDefault = overrides && baseParams.head.hasDefaultFlag
+          if (sym.hasDefaultFlag) {
             // generate a default getter for that argument
             val oflag = if (baseHasDefault) OVERRIDE else 0
             val name = nme.defaultGetterName(meth.name, posCounter)
@@ -1151,7 +1151,7 @@ trait Namers { self: Analyzer =>
               newNamer(context.makeNewScope(tree, sym)).methodSig(mods, tparams, vparamss, tpt, rhs)
 
             case vdef @ ValDef(mods, name, tpt, rhs) =>
-              val typer1 = typer.constrTyperIf(sym.hasFlag(PARAM | PRESUPER) && !mods.hasFlag(JAVA) && sym.owner.isConstructor)
+              val typer1 = typer.constrTyperIf(sym.hasFlag(PARAM | PRESUPER) && !mods.isJavaDefined && sym.owner.isConstructor)
               if (tpt.isEmpty) {
                 if (rhs.isEmpty) {
                   context.error(tpt.pos, "missing parameter type");
@@ -1175,7 +1175,7 @@ trait Namers { self: Analyzer =>
               typer.checkStable(expr1)
               if ((expr1.symbol ne null) && expr1.symbol.isRootPackage) context.error(tree.pos, "_root_ cannot be imported")
               def checkNotRedundant(pos: Position, from: Name, to: Name): Boolean = {
-                if (!tree.symbol.hasFlag(SYNTHETIC) &&
+                if (!tree.symbol.isSynthetic &&
                     !((expr1.symbol ne null) && expr1.symbol.isInterpreterWrapper) &&
                     base.member(from) != NoSymbol) {
                   val e = context.scope.lookupEntry(to)
@@ -1290,10 +1290,10 @@ trait Namers { self: Analyzer =>
         context.error(sym.pos, "`override' modifier not allowed for constructors")
       if (sym.hasFlag(ABSOVERRIDE) && !sym.owner.isTrait)
         context.error(sym.pos, "`abstract override' modifier only allowed for members of traits")
-      if (sym.hasFlag(LAZY) && sym.hasFlag(PRESUPER))
+      if (sym.isLazy && sym.hasFlag(PRESUPER))
         context.error(sym.pos, "`lazy' definitions may not be initialized early")
       if (sym.info.typeSymbol == FunctionClass(0) &&
-          sym.isValueParameter && sym.owner.isClass && sym.owner.hasFlag(CASE))
+          sym.isValueParameter && sym.owner.isCaseClass)
         context.error(sym.pos, "pass-by-name arguments not allowed for case class parameters")
       if (sym hasFlag DEFERRED) { // virtual classes count, too
         if (sym.hasAnnotation(definitions.NativeAttr))
@@ -1314,6 +1314,10 @@ trait Namers { self: Analyzer =>
       /* checkNoConflict(PRIVATE, FINAL) // can't do this because FINAL also means compile-time constant */
       checkNoConflict(ABSTRACT, FINAL)  // bug #1833
       checkNoConflict(DEFERRED, FINAL)
+
+      // @PP: I added this as a sanity check because these flags are supposed to be
+      // converted to ABSOVERRIDE before arriving here.
+      checkNoConflict(ABSTRACT, OVERRIDE)
     }
   }
 
@@ -1343,7 +1347,7 @@ trait Namers { self: Analyzer =>
    *  of the actual declaration or definition, not in terms of the generated setters
    *  and getters */
   def underlying(member: Symbol): Symbol =
-    if (member hasFlag ACCESSOR) {
+    if (member.hasAccessorFlag) {
       if (member.isDeferred) {
         val getter = if (member.isSetter) member.getter(member.owner) else member
         val result = getter.owner.newValue(getter.pos, getter.name)
@@ -1363,7 +1367,7 @@ trait Namers { self: Analyzer =>
       var res = clazz.companionModule
       if (res == NoSymbol)
         res = context.lookup(clazz.name.toTermName, clazz.owner).suchThat(sym =>
-          sym.hasFlag(MODULE) && sym.isCoDefinedWith(clazz))
+          sym.hasModuleFlag && sym.isCoDefinedWith(clazz))
         res
     } catch {
       case e: InvalidCompanions =>

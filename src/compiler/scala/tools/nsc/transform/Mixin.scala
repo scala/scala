@@ -43,7 +43,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
   private def isImplementedStatically(sym: Symbol) =
     sym.owner.isImplClass && sym.isMethod &&
     (!sym.isModule || sym.hasFlag(PRIVATE | LIFTED)) &&
-    (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.hasFlag(LAZY))
+    (!(sym hasFlag (ACCESSOR | SUPERACCESSOR)) || sym.isLazy)
 
   /** A member of a trait is static only if it belongs only to the
    *  implementation class, not the interface, and it is implemented
@@ -114,8 +114,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 // --------- type transformation -----------------------------------------------
 
   def isConcreteAccessor(member: Symbol) =
-    (member hasFlag ACCESSOR) &&
-    (!(member hasFlag DEFERRED) || (member hasFlag lateDEFERRED))
+    member.hasAccessorFlag && (!member.isDeferred || (member hasFlag lateDEFERRED))
 
   /** Is member overridden (either directly or via a bridge) in base class sequence `bcs'? */
   def isOverriddenAccessor(member: Symbol, bcs: List[Symbol]): Boolean = atPhase(ownPhase) {
@@ -138,9 +137,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     member setFlag MIXEDIN
   }
 
-  def needsExpandedSetterName(field: Symbol) =
-    !(field hasFlag LAZY) &&
-    (if (field.isMethod) (field hasFlag STABLE) else !(field hasFlag MUTABLE))
+  def needsExpandedSetterName(field: Symbol) = !field.isLazy && (
+    if (field.isMethod) field.hasStableFlag
+    else !field.isMutable
+  )
 
   /** Add getters and setters for all non-module fields of an implementation
    *  class to its interface unless they are already present. This is done
@@ -162,7 +162,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         // }
         clazz.newMethod(field.pos, nme.getterName(field.name))
           .setFlag(field.flags & ~(PRIVATE | LOCAL) | ACCESSOR | lateDEFERRED |
-                     (if (field hasFlag MUTABLE) 0 else STABLE))
+                     (if (field.isMutable) 0 else STABLE))
           .setInfo(MethodType(List(), field.info)) // TODO preserve pre-erasure info?
       }
 
@@ -188,12 +188,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       for (member <- impl.info.decls.toList) {
         if (!member.isMethod && !member.isModule && !member.isModuleVar) {
           assert(member.isTerm && !member.isDeferred, member)
-          if (member.getter(impl) hasFlag PRIVATE) {
+          if (member.getter(impl).isPrivate) {
             member.makeNotPrivate(clazz) // this will also make getter&setter not private
           }
           val getter = member.getter(clazz)
           if (getter == NoSymbol) addMember(clazz, newGetter(member))
-          if (!member.tpe.isInstanceOf[ConstantType] && !member.hasFlag(LAZY)) {
+          if (!member.tpe.isInstanceOf[ConstantType] && !member.isLazy) {
             val setter = member.setter(clazz, needsExpandedSetterName(member))
             if (setter == NoSymbol) addMember(clazz, newSetter(member))
           }
@@ -278,7 +278,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         for (member <- mixinClass.info.decls.toList) {
           if (isConcreteAccessor(member)) {
             if (isOverriddenAccessor(member, clazz.info.baseClasses)) {
-              if (settings.debug.value) println("!!! is overridden val: "+member)
+              if (settings.debug.value)
+                println("!!! is overridden val: "+member)
             } else {
               // mixin field accessors
               val member1 = addMember(
@@ -290,7 +291,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               // atPhase(currentRun.erasurePhase){
               //   println("before erasure: "+ (member.info, member1.info))
               // }
-              if (member.hasFlag(LAZY)) {
+              if (member.isLazy) {
                 var init = implClass(mixinClass).info.decl(member.name)
                 assert(init != NoSymbol, "Could not find initializer for " + member.name)
                 initializer(member1) = init
@@ -314,17 +315,17 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                     addMember(clazz,
                               sym
                                 setFlag (LOCAL | PRIVATE | member.getFlag(MUTABLE | LAZY))
-                                setFlag (if (!member.hasFlag(STABLE)) MUTABLE else 0)
+                                setFlag (if (!member.hasStableFlag) MUTABLE else 0)
                                 setAnnotations accessed.annotations)
                 }
             }
-          } else if (member hasFlag SUPERACCESSOR) { // mixin super accessors
+          } else if (member.isSuperAccessor) { // mixin super accessors
             val member1 = addMember(clazz, member.cloneSymbol(clazz)) setPos clazz.pos
             assert(member1.alias != NoSymbol, member1)
             val alias1 = rebindSuper(clazz, member.alias, mixinClass)
             member1.asInstanceOf[TermSymbol] setAlias alias1
 
-          } else if (member.isMethod && member.isModule && !(member hasFlag (LIFTED | BRIDGE))) {
+          } else if (member.isMethod && member.isModule && member.hasNoFlags(LIFTED | BRIDGE)) {
             // mixin objects: todo what happens with abstract objects?
             addMember(clazz, member.cloneSymbol(clazz))
               .setPos(clazz.pos)
@@ -414,12 +415,12 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           case _ =>
             if (tree.hasSymbol && tree.symbol != NoSymbol) {
               val sym = tree.symbol
-              if ((sym.hasFlag(ACCESSOR) || (sym.isTerm && !sym.isMethod))
-                  && sym.hasFlag(PRIVATE)
+              if ((sym.hasAccessorFlag || (sym.isTerm && !sym.isMethod))
+                  && sym.isPrivate
                   && !(currentOwner.isGetter && currentOwner.accessed == sym) // getter
                   && !definitions.isValueClass(sym.tpe.resultType.typeSymbol)
                   && sym.owner == templ.symbol.owner
-                  && !sym.hasFlag(LAZY)
+                  && !sym.isLazy
                   && !tree.isDef) {
                 log("added use in: " + currentOwner + " -- " + tree)
                 usedIn(sym) ::= currentOwner
@@ -432,11 +433,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
     }
     SingleUseTraverser(templ)
     log("usedIn: " + usedIn)
-    usedIn filter { pair =>
-      val member = pair._2.head
-      (member.isValue
-         && member.hasFlag(LAZY)
-         && pair._2.tail.isEmpty) }
+    usedIn filter {
+      case (_, member :: Nil) => member.isValue && member.isLazy
+      case _                  => false
+    }
   }
 
 // --------- term transformation -----------------------------------------------
@@ -631,7 +631,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)
-        if (stat.symbol hasFlag SUPERACCESSOR) =>
+        if (stat.symbol.isSuperAccessor) =>
           val rhs0 = (Super(clazz, nme.EMPTY.toTypeName) DOT stat.symbol.alias)(vparams map (v => Ident(v.symbol)): _*)
           val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType)
           val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
@@ -779,7 +779,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def mkLazyDef(clazz: Symbol, lzyVal: Symbol, init: List[Tree], retVal: Tree, offset: Int): Tree = {
         def nullify(sym: Symbol): Tree = {
-          val sym1 = if (sym.hasFlag(ACCESSOR)) sym.accessed else sym
+          val sym1 = if (sym.hasAccessorFlag) sym.accessed else sym
           Select(This(clazz), sym1) === LIT(null)
         }
 
@@ -814,7 +814,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
         val stats1 = for (stat <- stats; sym = stat.symbol) yield stat match {
           case DefDef(mods, name, tp, vp, tpt, rhs)
-            if sym.hasFlag(LAZY) && rhs != EmptyTree && !clazz.isImplClass =>
+            if sym.isLazy && rhs != EmptyTree && !clazz.isImplClass =>
               assert(fieldOffset.isDefinedAt(sym))
               val rhs1 = if (sym.tpe.resultType.typeSymbol == UnitClass)
                 mkLazyDef(clazz, sym, List(rhs), UNIT, fieldOffset(sym))
@@ -861,8 +861,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 //        if (settings.debug.value) {
 //          log("needsInitFlag(" + sym.fullName + "): " + res)
 //          log("\tsym.isGetter: " + sym.isGetter)
-//          log("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasFlag(ACCESSOR) + sym.isTerm)
-//          log("\t!sym.hasFlag(PARAMACCESSOR): " + !sym.hasFlag(PARAMACCESSOR))
+//          log("\t!isInitializedToDefault: " + !sym.isInitializedToDefault + sym.hasFlag(DEFAULTINIT) + sym.hasAccessorFlag + sym.isTerm)
+//          log("\t!sym.isParamAccessor: " + !sym.isParamAccessor)
 //          //println("\t!sym.accessed.hasFlag(PRESUPER): " + !sym.accessed.hasFlag(PRESUPER))
 //          log("\t!sym.isOuterAccessor: " + !sym.isOuterAccessor)
 //        }
@@ -967,7 +967,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   case MethodType(List(), ConstantType(c)) => Literal(c)
                   case _ =>
                     // if it is a mixed-in lazy value, complete the accessor
-                    if (sym.hasFlag(LAZY) && sym.isGetter) {
+                    if (sym.isLazy && sym.isGetter) {
                       val rhs1 =
                         if (sym.tpe.resultType.typeSymbol == UnitClass)
                           mkLazyDef(clazz, sym, List(Apply(staticRef(initializer(sym)), List(gen.mkAttributedThis(clazz)))), UNIT, fieldOffset(sym))
@@ -1006,7 +1006,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                       else
                         init
                   }
-                } else if (!sym.hasFlag(LAZY) && needsInitFlag(sym)) {
+                } else if (!sym.isLazy && needsInitFlag(sym)) {
                   mkCheckedAccessor(clazz,  accessedRef, fieldOffset(sym), sym.pos, sym)
                 } else
                   gen.mkCheckInit(accessedRef)
@@ -1014,7 +1014,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
             } else if (!sym.isMethod) {
               // add fields
               addDef(position(sym), ValDef(sym))
-            } else if (sym hasFlag SUPERACCESSOR) {
+            } else if (sym.isSuperAccessor) {
               // add superaccessors
               addDefDef(sym, vparams => EmptyTree)
             } else {
@@ -1037,7 +1037,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       // if there are no lazy fields, take the fast path and save a traversal of the whole AST
-      if (templ.symbol.owner.info.decls.exists(_.hasFlag(LAZY))) {
+      if (templ.symbol.owner.info.decls.exists(_.isLazy)) {
         // check what fields can be nulled for
         val uses = singleUseFields(templ)
         for ((field, users) <- uses; lazyFld <- users) {
@@ -1117,7 +1117,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               if (mix == nme.EMPTY.toTypeName && currentOwner.enclClass.isImplClass)
                 assert(false, "illegal super in trait: " + currentOwner.enclClass + " " + tree);
               if (sym.owner hasFlag lateINTERFACE) {
-                if (sym.hasFlag(ACCESSOR)) {
+                if (sym.hasAccessorFlag) {
                   assert(args.isEmpty)
                   val sym1 = sym.overridingSymbol(currentOwner.enclClass)
                   typedPos(tree.pos)((transformSuper(qual) DOT sym1)())

@@ -364,7 +364,7 @@ trait NamesDefaults { self: Analyzer =>
                   pos: util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
       val (missing, positional) = missingParams(givenArgs, params)
-      if (missing forall (_.hasFlag(DEFAULTPARAM))) {
+      if (missing forall (_.hasDefaultFlag)) {
         val defaultArgs = missing map (p => {
           var default1 = qual match {
             case Some(q) => gen.mkAttributedSelect(q.duplicate, defaultGetter(p, context))
@@ -380,7 +380,7 @@ trait NamesDefaults { self: Analyzer =>
           }
         })
         (givenArgs ::: defaultArgs, Nil)
-      } else (givenArgs, missing filter (! _.hasFlag(DEFAULTPARAM)))
+      } else (givenArgs, missing filterNot (_.hasDefaultFlag))
     } else (givenArgs, Nil)
   }
 
@@ -453,7 +453,7 @@ trait NamesDefaults { self: Analyzer =>
           val udp = typer.context.extractUndetparams()
           val subst = new SubstTypeMap(udp, udp map (_ => WildcardType)) {
             override def apply(tp: Type): Type = tp match {
-              case TypeRef(_, sym, List(arg)) if (sym == ByNameParamClass) => super.apply(arg)
+              case TypeRef(_, ByNameParamClass, List(arg))  => super.apply(arg)
               case _ => super.apply(tp)
             }
           }
@@ -515,7 +515,7 @@ trait NamesDefaults { self: Analyzer =>
     var rest = params
     while (!rest.isEmpty) {
       val p = rest.head
-      if (!p.hasFlag(SYNTHETIC)) {
+      if (!p.isSynthetic) {
         if (p.name == name) return (i, None)
         if (deprecatedName(p) == Some(name)) return (i, Some(p.name))
       }

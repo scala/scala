@@ -145,7 +145,7 @@ abstract class NodePrinters {
                 if ((infolevel > InfoLevel.Normal) &&
                     !(sym.owner eq definitions.ScalaPackageClass) &&
                     !sym.isModuleClass && !sym.isPackageClass &&
-                    !sym.hasFlag(JAVA)) {
+                    !sym.isJavaDefined) {
                   val members = for (m <- tree.tpe.decls.toList)
                     yield m.toString() + ": " + m.tpe + ", "
                   buf.append(", tpe.decls=" + members)

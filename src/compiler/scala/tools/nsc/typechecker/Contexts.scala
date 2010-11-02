@@ -430,12 +430,12 @@ trait Contexts { self: Analyzer =>
         val ab = sym.accessBoundary(sym.owner)
         (  (ab.isTerm || ab == definitions.RootClass)
         || (accessWithin(ab) || accessWithinLinked(ab)) &&
-             (  !sym.hasFlag(LOCAL)
+             (  !sym.hasLocalFlag
              || sym.owner.isImplClass // allow private local accesses to impl classes
-             || (sym hasFlag PROTECTED) && isSubThisType(pre, sym.owner)
+             || sym.isProtected && isSubThisType(pre, sym.owner)
              || pre =:= sym.owner.thisType
              )
-        || (sym hasFlag PROTECTED) &&
+        || sym.isProtected &&
              (  superAccess
              || pre.isInstanceOf[ThisType]
              || sym.isConstructor
@@ -485,7 +485,7 @@ trait Contexts { self: Analyzer =>
      *  with the same names. Local symbols override imported ones. This fixes #2866.
      */
     private def isQualifyingImplicit(sym: Symbol, pre: Type, imported: Boolean) =
-      sym.hasFlag(IMPLICIT) &&
+      sym.isImplicit &&
       isAccessible(sym, pre, false) &&
       !(imported && {
         val e = scope.lookupEntry(sym.name)

@@ -26,7 +26,7 @@ package generic
     final def isModuleVar: Boolean = isVariable && hasFlag(MODULEVAR)
     final def isStable =
       isTerm &&
-      !hasFlag(MUTABLE) &&
+      !hasTraitFlag &&
       (!hasFlag(METHOD | BYNAMEPARAM) || hasFlag(STABLE)) &&
       !(tpe.isVolatile && !hasAnnotation(uncheckedStableClass))
     final def isStatic: Boolean =
@@ -178,8 +178,10 @@ trait HasFlags {
   def isDefaultInit = hasFlag(DEFAULTINIT)
 
   // Disambiguating: DEFAULTPARAM, TRAIT
-  def hasDefault = hasAllFlags(DEFAULTPARAM | PARAM)
-  def isTrait    = hasFlag(TRAIT) && !hasFlag(PARAM)
+  def hasDefault     = hasAllFlags(DEFAULTPARAM | PARAM)
+  def isTrait        = hasFlag(TRAIT) && !hasFlag(PARAM)
+  def hasTraitFlag   = hasFlag(TRAIT)
+  def hasDefaultFlag = hasFlag(DEFAULTPARAM)
 
   // Straightforwardly named accessors already being used differently.
   // These names are most likely temporary.

@@ -157,7 +157,7 @@ trait DependencyAnalysis extends SubComponent with Files {
           if ((tree.symbol ne null)
               && (tree.symbol != NoSymbol)
               && (!tree.symbol.isPackage)
-              && (!tree.symbol.hasFlag(Flags.JAVA))
+              && (!tree.symbol.isJavaDefined)
               && ((tree.symbol.sourceFile eq null)
                   || (tree.symbol.sourceFile.path != file.path))
               && (!tree.symbol.isClassConstructor)) {
@@ -168,7 +168,7 @@ trait DependencyAnalysis extends SubComponent with Files {
           }
 
           tree match {
-            case cdef: ClassDef if !cdef.symbol.hasFlag(Flags.PACKAGE) &&
+            case cdef: ClassDef if !cdef.symbol.hasPackageFlag &&
                                    !cdef.symbol.isAnonymousFunction =>
               if (cdef.symbol != NoSymbol) buf += cdef.symbol
               atPhase(currentRun.erasurePhase.prev) {

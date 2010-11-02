@@ -444,7 +444,7 @@ self =>
     val locals = new LinkedHashMap[Name, ScopeMember]
     def addScopeMember(sym: Symbol, pre: Type, viaImport: Tree) =
       if (!sym.name.decode.containsName(Dollar) &&
-          !sym.hasFlag(Flags.SYNTHETIC) &&
+          !sym.isSynthetic &&
           !locals.contains(sym.name)) {
         locals(sym.name) = new ScopeMember(
           sym,

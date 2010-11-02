@@ -211,7 +211,7 @@ abstract class TreeCheckers extends Analyzer {
 
         tree match {
           case DefDef(_, _, _, _, _, _) =>
-            if (sym.isGetterOrSetter && !sym.isDeferred) {
+            if (sym.hasAccessorFlag && !sym.isDeferred) {
               sym.tpe.resultType match {
                 case _: ConstantType  => ()
                 case _                =>
@@ -239,7 +239,7 @@ abstract class TreeCheckers extends Analyzer {
             checkSym(tree)
           case This(_) =>
             checkSym(tree)
-            if (sym.isStatic && (sym hasFlag MODULE)) ()
+            if (sym.isStatic && sym.hasModuleFlag) ()
             else if (currentOwner.ownerChain takeWhile (_ != sym) exists (_ == NoSymbol))
               return fail("tree symbol "+sym+" does not point to enclosing class; tree = ")
 

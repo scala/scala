@@ -474,7 +474,7 @@ trait Patterns extends ast.TreeDSL {
 
     def isSymValid = (sym != null) && (sym != NoSymbol)
     def isModule = sym.isModule || tpe.termSymbol.isModule
-    def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
+    def isCaseClass = tpe.typeSymbol.isCase
     def isObject = isSymValid && prefix.isStable  // XXX not entire logic
 
     def unadorn(t: Tree): Tree = Pattern unadorn t

@@ -234,8 +234,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       // only nested objects inside objects should get readResolve automatically
       // otherwise after de-serialization we get null references for lazy accessors (nested object -> lazy val + class def)
       // since the bitmap gets serialized but the moduleVar not
-      clazz.isSerializable &&
-      ((!clazz.owner.isPackageClass && clazz.owner.isModuleClass) || clazz.owner.isPackageClass)
+      clazz.isSerializable && (clazz.owner.isPackageClass || clazz.owner.isModuleClass)
     )
 
     // A buffer collecting additional methods for the template body

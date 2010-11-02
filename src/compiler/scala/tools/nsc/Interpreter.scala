@@ -674,7 +674,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
     def boundNames: List[Name] = Nil
     val definesImplicit = cond(member) {
-      case tree: MemberDef => tree.mods hasFlag Flags.IMPLICIT
+      case tree: MemberDef => tree.mods.isImplicit
     }
     def generatesValue: Option[Name] = None
 
@@ -690,7 +690,6 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     val maxStringElements = 1000  // no need to mkString billions of elements
     lazy val ValDef(mods, vname, _, _) = member
     lazy val prettyName = NameTransformer.decode(vname)
-    lazy val isLazy = mods hasFlag Flags.LAZY
 
     override lazy val boundNames = List(vname)
     override def generatesValue = Some(vname)
@@ -702,7 +701,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(req fullPath vname, maxStringElements)
 
       // if this is a lazy val we avoid evaluating it here
-      val resultString = if (isLazy) codegenln(false, "<lazy>") else extractor
+      val resultString = if (mods.isLazy) codegenln(false, "<lazy>") else extractor
       val codeToPrint =
         """ + "%s: %s = " + %s""".format(prettyName, string2code(req typeOf vname), resultString)
 
@@ -752,7 +751,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   private class ClassHandler(classdef: ClassDef) extends MemberHandler(classdef) {
     lazy val ClassDef(mods, name, _, _) = classdef
     override lazy val boundNames =
-      name :: (if (mods hasFlag Flags.CASE) List(name.toTermName) else Nil)
+      name :: (if (mods.isCase) List(name.toTermName) else Nil)
 
     override def resultExtractionCode(req: Request, code: PrintWriter) =
       code print codegenln("defined %s %s".format(classdef.keyword, name))

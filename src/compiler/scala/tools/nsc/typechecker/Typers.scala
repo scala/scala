@@ -211,7 +211,7 @@ trait Typers { self: Analyzer =>
             argBuff += mkArg(res.tree, param.name)
           } else {
             mkArg = mkNamedArg // don't pass the default argument (if any) here, but start emitting named arguments for the following args
-            if (!param.hasFlag(DEFAULTPARAM))
+            if (!param.hasDefault)
               context.error(fun.pos, errorMessage(param.name, param.tpe))
             /* else {
              TODO: alternative (to expose implicit search failure more) -->
@@ -444,7 +444,7 @@ trait Typers { self: Analyzer =>
         else if (!phase.erasedTypes) { // privates
           val badSymbol = hiddenSymbols.head
           error(tree.pos,
-                (if (badSymbol hasFlag PRIVATE) "private " else "") + badSymbol +
+                (if (badSymbol.isPrivate) "private " else "") + badSymbol +
                 " escapes its defining scope as part of type "+tree.tpe)
           setError(tree)
         } else tree
@@ -455,7 +455,7 @@ trait Typers { self: Analyzer =>
 
       override def apply(t: Type): Type = {
         def checkNoEscape(sym: Symbol) {
-          if (sym.hasFlag(PRIVATE) && !sym.hasFlag(SYNTHETIC_PRIVATE)) {
+          if (sym.isPrivate && !sym.hasFlag(SYNTHETIC_PRIVATE)) {
             var o = owner
             while (o != NoSymbol && o != sym.owner &&
                    !o.isLocal && !o.hasFlag(PRIVATE) &&
@@ -636,7 +636,7 @@ trait Typers { self: Analyzer =>
      *  </ol>
      */
     private def stabilize(tree: Tree, pre: Type, mode: Int, pt: Type): Tree = {
-      if (tree.symbol.hasFlag(OVERLOADED) && (mode & FUNmode) == 0)
+      if (tree.symbol.isOverloaded && (mode & FUNmode) == 0)
         inferExprAlternative(tree, pt)
       val sym = tree.symbol
 
@@ -890,9 +890,9 @@ trait Typers { self: Analyzer =>
           if ((mode & FUNmode) != 0) {
             tree
           } else if (tree.hasSymbol && !tree.symbol.typeParams.isEmpty && (mode & HKmode) == 0 &&
-                     !(tree.symbol.hasFlag(JAVA) && context.unit.isJava)) { // (7)
+                     !(tree.symbol.isJavaDefined && context.unit.isJava)) { // (7)
             // @M When not typing a higher-kinded type ((mode & HKmode) == 0)
-            // or raw type (tree.symbol.hasFlag(JAVA) && context.unit.isJava), types must be of kind *,
+            // or raw type (tree.symbol.isJavaDefined && context.unit.isJava), types must be of kind *,
             // and thus parameterized types must be applied to their type arguments
             // @M TODO: why do kind-* tree's have symbols, while higher-kinded ones don't?
             errorTree(tree, tree.symbol+" takes type parameters")
@@ -925,7 +925,7 @@ trait Typers { self: Analyzer =>
             val unapply = unapplyMember(extractor.tpe)
             val clazz = unapplyParameterType(unapply)
 
-            if ((unapply hasFlag CASE) && (clazz hasFlag CASE) && !(clazz.ancestors exists (_ hasFlag CASE))) {
+            if (unapply.isCase && clazz.isCase && !(clazz.ancestors exists (_.isCase))) {
               if (!phase.erasedTypes) checkStable(tree) // todo: do we need to demand this?
               // convert synthetic unapply of case class to case class constructor
               val prefix = tree.tpe.prefix
@@ -1098,7 +1098,7 @@ trait Typers { self: Analyzer =>
       // "change your code now!" as there are material bugs (which are very unlikely
       // to be fixed) associated with case class inheritance.
       if (!phase.erasedTypes) {
-        for (ancestor <- clazz.ancestors find (_ hasFlag CASE))
+        for (ancestor <- clazz.ancestors find (_.isCase))
           unit.deprecationWarning(clazz.pos, (
             "case class `%s' has case class ancestor `%s'.  This has been deprecated " +
             "for unduly complicating both usage and implementation.  You should instead " +
@@ -1230,7 +1230,7 @@ trait Typers { self: Analyzer =>
               error(parent.pos, psym+" needs to be a trait to be mixed in")
             }
           }
-          if (psym hasFlag FINAL) {
+          if (psym.isFinal) {
             error(parent.pos, "illegal inheritance from final "+psym)
           }
           if (psym.isSealed && !phase.erasedTypes) {
@@ -1241,7 +1241,7 @@ trait Typers { self: Analyzer =>
           }
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
-              !(context.owner hasFlag SYNTHETIC) && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+              !context.owner.isSynthetic && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
               !(settings.suppressVTWarn.value) &&
               !selfType.isErroneous && !parent.tpe.isErroneous)
           {
@@ -1350,7 +1350,7 @@ trait Typers { self: Analyzer =>
 
       if (mdef.name == nme.PACKAGEkw)
         for (m <- mdef.symbol.info.members)
-          if (m.isClass && m.hasFlag(CASE))
+          if (m.isCaseClass)
             context.error(if (m.pos.isDefined) m.pos else mdef.pos,
                           "implementation restriction: "+mdef.symbol+" cannot contain case "+m)
       treeCopy.ModuleDef(mdef, typedMods, mdef.name, impl2) setType NoType
@@ -1370,23 +1370,22 @@ trait Typers { self: Analyzer =>
     def addGetterSetter(stat: Tree): List[Tree] = stat match {
       case ValDef(mods, name, tpt, rhs)
         // PRIVATE | LOCAL are fields generated for primary constructor arguments
-        if (mods.flags & (PRIVATE | LOCAL)) != (PRIVATE | LOCAL).toLong && !stat.symbol.isModuleVar =>
-
-        val isDeferred = mods hasFlag DEFERRED
+        if !mods.isPrivateLocal && !stat.symbol.isModuleVar =>
+        val isDeferred = mods.isDeferred
         val value = stat.symbol
         val allAnnots = value.annotations
         if (!isDeferred)
           // keepClean: by default annotations go to the field, except if the field is
           // generated for a class parameter (PARAMACCESSOR).
-          value.setAnnotations(memberAnnots(allAnnots, FieldTargetClass, keepClean = !mods.hasFlag(PARAMACCESSOR)))
+          value.setAnnotations(memberAnnots(allAnnots, FieldTargetClass, keepClean = !mods.isParamAccessor))
 
         val getter = if (isDeferred) value else value.getter(value.owner)
         assert(getter != NoSymbol, stat)
-        if (getter hasFlag OVERLOADED)
+        if (getter.isOverloaded)
           error(getter.pos, getter+" is defined twice")
         getter.setAnnotations(memberAnnots(allAnnots, GetterTargetClass))
 
-        if (value.hasFlag(LAZY)) List(stat)
+        if (value.isLazy) List(stat)
         else {
           val vdef = treeCopy.ValDef(stat, mods | PRIVATE | LOCAL, nme.getterToLocal(name), tpt, rhs)
           val getterDef: DefDef = atPos(vdef.pos.focus) {
@@ -1418,7 +1417,7 @@ trait Typers { self: Analyzer =>
 
           val gs = new ListBuffer[DefDef]
           gs.append(getterDef)
-          if (mods hasFlag MUTABLE) {
+          if (mods.isMutable) {
             val setter = getter.setter(value.owner)
             gs.append(setterDef(setter))
           }
@@ -1435,14 +1434,14 @@ trait Typers { self: Analyzer =>
               unit.error(stat.pos, "implementation limitation: the BeanProperty annotation cannot be used in a type alias or renamed import")
             }
             beanGetter.setAnnotations(memberAnnots(allAnnots, BeanGetterTargetClass))
-            if (mods.hasFlag(MUTABLE) && beanGetter != NoSymbol) {
+            if (mods.isMutable && beanGetter != NoSymbol) {
               val beanSetterName = "set" + nameSuffix
               val beanSetter = value.owner.info.decl(beanSetterName)
               // unlike for the beanGetter, the beanSetter body is generated here. see comment in Namers.
               gs.append(setterDef(beanSetter, isBean = true))
             }
           }
-          if (mods hasFlag DEFERRED) gs.toList else vdef :: gs.toList
+          if (mods.isDeferred) gs.toList else vdef :: gs.toList
         }
       case dd @ DocDef(comment, defn) =>
         addGetterSetter(defn) map (stat => DocDef(comment, stat) setPos dd.pos)
@@ -1532,7 +1531,7 @@ trait Typers { self: Analyzer =>
       assert(clazz.info.decls != EmptyScope)
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), templ.body)
       validateParentClasses(parents1, selfType)
-      if (clazz hasFlag CASE)
+      if (clazz.isCase)
         validateNoCaseAncestor(clazz)
 
       if ((clazz isSubClass ClassfileAnnotationClass) && !clazz.owner.isPackageClass)
@@ -1560,7 +1559,7 @@ trait Typers { self: Analyzer =>
     def typedValDef(vdef: ValDef): ValDef = {
 //      attributes(vdef)
       val sym = vdef.symbol
-      val typer1 = constrTyperIf(sym.hasFlag(PARAM) && sym.owner.isConstructor)
+      val typer1 = constrTyperIf(sym.isParameter && sym.owner.isConstructor)
       val typedMods = removeAnnotations(vdef.mods)
 
       // complete lazy annotations
@@ -1569,9 +1568,9 @@ trait Typers { self: Analyzer =>
       var tpt1 = checkNoEscaping.privates(sym, typer1.typedType(vdef.tpt))
       checkNonCyclic(vdef, tpt1)
       if (sym.hasAnnotation(definitions.VolatileAttr)) {
-        if (!sym.hasFlag(MUTABLE))
+        if (!sym.isMutable)
           error(vdef.pos, "values cannot be volatile")
-        else if (sym.hasFlag(FINAL))
+        else if (sym.isFinal)
           error(vdef.pos, "final vars cannot be volatile")
       }
       val rhs1 =
@@ -1580,7 +1579,7 @@ trait Typers { self: Analyzer =>
             error(vdef.pos, "local variables must be initialized")
           vdef.rhs
         } else {
-          val tpt2 = if (sym hasFlag DEFAULTPARAM) {
+          val tpt2 = if (sym.hasDefault) {
             // When typechecking default parameter, replace all type parameters in the expected type by Wildcard.
             // This allows defining "def foo[T](a: T = 1)"
             val tparams =
@@ -1638,7 +1637,7 @@ trait Typers { self: Analyzer =>
 
       if (superConstr.symbol.isPrimaryConstructor) {
         val superClazz = superConstr.symbol.owner
-        if (!superClazz.hasFlag(JAVA)) {
+        if (!superClazz.isJavaDefined) {
           val superParamAccessors = superClazz.constrParamAccessors
           if (superParamAccessors.length == superArgs.length) {
             (superParamAccessors, superArgs).zipped map { (superAcc, superArg) =>
@@ -1652,7 +1651,7 @@ trait Typers { self: Analyzer =>
                         superClazz.info.nonPrivateMember(alias.name) != alias)
                       alias = NoSymbol
                     if (alias != NoSymbol) {
-                      var ownAcc = clazz.info.decl(name).suchThat(_.hasFlag(PARAMACCESSOR))
+                      var ownAcc = clazz.info.decl(name).suchThat(_.isParamAccessor)
                       if ((ownAcc hasFlag ACCESSOR) && !ownAcc.isDeferred)
                         ownAcc = ownAcc.accessed
                       if (!ownAcc.isVariable && !alias.accessed.isVariable) {
@@ -1678,7 +1677,7 @@ trait Typers { self: Analyzer =>
       * - a type member of the structural type
       * - an abstract type declared outside of the structural type. */
     def checkMethodStructuralCompatible(meth: Symbol): Unit =
-      if (meth.owner.isStructuralRefinement && meth.allOverriddenSymbols.isEmpty && (!meth.hasFlag(PRIVATE) && meth.privateWithin == NoSymbol)) {
+      if (meth.owner.isStructuralRefinement && meth.allOverriddenSymbols.isEmpty && !(meth.isPrivate || meth.hasAccessBoundary)) {
         val tp: Type = meth.tpe match {
           case mt: MethodType => mt
           case pt: PolyType => pt.resultType
@@ -1774,7 +1773,7 @@ trait Typers { self: Analyzer =>
       ddef.tpt.setType(tpt1.tpe)
       val typedMods = removeAnnotations(ddef.mods)
       var rhs1 =
-        if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasFlag(STATIC)) { // need this to make it possible to generate static ctors
+        if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasStaticFlag) { // need this to make it possible to generate static ctors
           if (!meth.isPrimaryConstructor &&
               (!meth.owner.isClass ||
                meth.owner.isModuleClass ||
@@ -1792,7 +1791,7 @@ trait Typers { self: Analyzer =>
       if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
 
       if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
-          meth.paramss.exists(ps => ps.exists(_.hasFlag(DEFAULTPARAM)) && isRepeatedParamType(ps.last.tpe)))
+          meth.paramss.exists(ps => ps.exists(_.hasDefaultFlag) && isRepeatedParamType(ps.last.tpe)))
         error(meth.pos, "a parameter section with a `*'-parameter is not allowed to have default arguments")
 
       if (phase.id <= currentRun.typerPhase.id) {
@@ -1935,7 +1934,7 @@ trait Typers { self: Analyzer =>
               for (member <- classDef.symbol.info.decls.toList
                    if member.isTerm && !member.isConstructor &&
                       member.allOverriddenSymbols.isEmpty &&
-                      (!member.hasFlag(PRIVATE) && member.privateWithin == NoSymbol) &&
+                      (!member.isPrivate && !member.hasAccessBoundary) &&
                       !(visibleMembers exists { visible =>
                         visible.name == member.name &&
                         member.tpe <:< visible.tpe.substThis(visible.owner, ThisType(classDef.symbol))
@@ -2048,7 +2047,7 @@ trait Typers { self: Analyzer =>
                 error(
                   vparam.pos,
                   "missing parameter type"+
-                  (if (vparam.mods.hasFlag(SYNTHETIC)) " for expanded function "+fun
+                  (if (vparam.mods.isSynthetic) " for expanded function "+fun
                    else ""))
                 ErrorType
               }
@@ -2132,10 +2131,12 @@ trait Typers { self: Analyzer =>
           }
       }
 
-      def accesses(accessor: Symbol, accessed: Symbol) =
-        (accessed hasFlag LOCAL) && (accessed hasFlag PARAMACCESSOR) ||
-        (accessor hasFlag ACCESSOR) &&
-        !(accessed hasFlag ACCESSOR) && accessed.isPrivateLocal
+      /** 'accessor' and 'accessed' are so similar it becomes very difficult to
+       *  follow the logic, so I renamed one to something distinct.
+       */
+      def accesses(looker: Symbol, accessed: Symbol) = accessed.hasLocalFlag && (
+        accessed.isParamAccessor || (looker.hasAccessorFlag && !accessed.hasAccessorFlag && accessed.isPrivate)
+      )
 
       def checkNoDoubleDefsAndAddSynthetics(stats: List[Tree]): List[Tree] = {
         val scope = if (inBlock) context.scope else context.owner.info.decls
@@ -2155,7 +2156,7 @@ trait Typers { self: Analyzer =>
                     (e.sym.isType || inBlock || (e.sym.tpe matches e1.sym.tpe)))
                   // default getters are defined twice when multiple overloads have defaults. an
                   // error for this is issued in RefChecks.checkDefaultsInOverloaded
-                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasFlag(DEFAULTPARAM)) {
+                  if (!e.sym.isErroneous && !e1.sym.isErroneous && !e.sym.hasDefaultFlag) {
                     error(e.sym.pos, e1.sym+" is defined twice"+
                           {if(!settings.debug.value) "" else " in "+unit.toString})
                     scope.unlink(e1) // need to unlink to avoid later problems with lub; see #2779
@@ -2165,11 +2166,9 @@ trait Typers { self: Analyzer =>
             }
 
           // add synthetics
-          context.unit.synthetics get e.sym match {
-            case Some(tree) =>
-              newStats += typedStat(tree) // might add even more synthetics to the scope
-              context.unit.synthetics -= e.sym
-            case _ =>
+          context.unit.synthetics get e.sym foreach { tree =>
+            newStats += typedStat(tree) // might add even more synthetics to the scope
+            context.unit.synthetics -= e.sym
           }
 
           e = e.next
@@ -2182,7 +2181,7 @@ trait Typers { self: Analyzer =>
         if (newStats.isEmpty) stats
         else {
           val (defaultGetters, others) = newStats.toList.partition {
-            case DefDef(mods, _, _, _, _, _) => mods.hasFlag(DEFAULTPARAM)
+            case DefDef(mods, _, _, _, _, _) => mods.hasDefaultFlag
             case _ => false
           }
           // default getters first: see #2489
@@ -2251,7 +2250,7 @@ trait Typers { self: Analyzer =>
 
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
       var fun = fun0
-      if (fun.hasSymbol && (fun.symbol hasFlag OVERLOADED)) {
+      if (fun.hasSymbol && fun.symbol.isOverloaded) {
         // remove alternatives with wrong number of parameters without looking at types.
         // less expensive than including them in inferMethodAlternatvie (see below).
         def shapeType(arg: Tree): Type = arg match {
@@ -2272,13 +2271,13 @@ trait Typers { self: Analyzer =>
           // (I had expected inferMethodAlternative to pick up the slack introduced by using WildcardType here)
           isApplicableSafe(context.undetparams, followApply(pre.memberType(alt)), argtypes, pt)
         }
-        if (sym hasFlag OVERLOADED) {
+        if (sym.isOverloaded) {
           val sym1 = sym filter (alt => {
             // eliminate functions that would result from tupling transforms
             // keeps alternatives with repeated params
             hasExactlyNumParams(followApply(alt.tpe), argtypes.length) ||
             // also keep alts which define at least one default
-            alt.tpe.paramss.exists(_.exists(_.hasFlag(DEFAULTPARAM)))
+            alt.tpe.paramss.exists(_.exists(_.hasDefault))
           })
           if (sym1 != NoSymbol) sym = sym1
         }
@@ -2675,7 +2674,7 @@ trait Typers { self: Analyzer =>
         if (typedFun.isErroneous) annotationError
         else if (annType.typeSymbol isNonBottomSubClass ClassfileAnnotationClass) {
           // annotation to be saved as java classfile annotation
-          val isJava = typedFun.symbol.owner.hasFlag(JAVA)
+          val isJava = typedFun.symbol.owner.isJavaDefined
           if (!annType.typeSymbol.isNonBottomSubClass(annClass)) {
             error(tpt.pos, "expected annotation of type "+ annClass.tpe +", found "+ annType)
           } else if (argss.length > 1) {
@@ -2686,7 +2685,7 @@ trait Typers { self: Analyzer =>
                 List(new AssignOrNamedArg(Ident(nme.value), argss.head.head))
               else argss.head
             val annScope = annType.decls
-                .filter(sym => sym.isMethod && !sym.isConstructor && sym.hasFlag(JAVA))
+                .filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             val names = new collection.mutable.HashSet[Symbol]
             names ++= (if (isJava) annScope.iterator
                        else typedFun.tpe.params.iterator)
@@ -2713,7 +2712,7 @@ trait Typers { self: Analyzer =>
 
             for (name <- names) {
               if (!name.annotations.contains(AnnotationInfo(AnnotationDefaultAttr.tpe, List(), List())) &&
-                  !name.hasFlag(DEFAULTPARAM))
+                  !name.hasDefaultFlag)
                 error(ann.pos, "annotation " + annType.typeSymbol.fullName + " is missing argument " + name.name)
             }
 
@@ -2789,7 +2788,7 @@ trait Typers { self: Analyzer =>
     }
 
     def isRawParameter(sym: Symbol) = // is it a type parameter leaked by a raw type?
-      sym.isTypeParameter && sym.owner.hasFlag(JAVA)
+      sym.isTypeParameter && sym.owner.isJavaDefined
 
     /** Given a set `rawSyms' of term- and type-symbols, and a type `tp'.
      *  produce a set of fresh type parameters and a type so that it can be
@@ -2841,11 +2840,11 @@ trait Typers { self: Analyzer =>
         sym.isExistentialSkolem && sym.unpackLocation == tree ||
         tree.isDef && tree.symbol == sym
       def isVisibleParameter(sym: Symbol) =
-        (sym hasFlag PARAM) && (sym.owner == owner) && (sym.isType || !owner.isAnonymousFunction)
+        sym.isParameter && (sym.owner == owner) && (sym.isType || !owner.isAnonymousFunction)
       def containsDef(owner: Symbol, sym: Symbol): Boolean =
-        (!(sym hasFlag PACKAGE)) && {
+        (!sym.hasPackageFlag) && {
           var o = sym.owner
-          while (o != owner && o != NoSymbol && !(o hasFlag PACKAGE)) o = o.owner
+          while (o != owner && o != NoSymbol && !o.hasPackageFlag) o = o.owner
           o == owner && !isVisibleParameter(sym)
         }
       var localSyms = collection.immutable.Set[Symbol]()
@@ -2874,7 +2873,7 @@ trait Typers { self: Analyzer =>
       def addLocals(tp: Type) {
         val remainingSyms = new ListBuffer[Symbol]
         def addIfLocal(sym: Symbol, tp: Type) {
-          if (isLocal(sym) && !localSyms.contains(sym) && !boundSyms.contains(sym)) {
+          if (isLocal(sym) && !localSyms(sym) && !boundSyms(sym)) {
             if (sym.typeParams.isEmpty) {
               localSyms += sym
               remainingSyms += sym
@@ -3198,9 +3197,9 @@ trait Typers { self: Analyzer =>
          */
         def narrowRhs(tp: Type) = { val sym = context.tree.symbol
           context.tree match {
-            case ValDef(mods, _, _, Apply(Select(`tree`, _), _)) if !(mods hasFlag MUTABLE) && sym != null && sym != NoSymbol =>
+            case ValDef(mods, _, _, Apply(Select(`tree`, _), _)) if !mods.isMutable && sym != null && sym != NoSymbol =>
               val sym1 = if (sym.owner.isClass && sym.getter(sym.owner) != NoSymbol) sym.getter(sym.owner)
-                else if ((sym hasFlag LAZY) && sym.lazyAccessor != NoSymbol) sym.lazyAccessor
+                else if (sym.isLazyAccessor) sym.lazyAccessor
                 else sym
               val pre = if (sym1.owner.isClass) sym1.owner.thisType else NoPrefix
               intersectionType(List(tp, singleType(pre, sym1)))
@@ -3209,7 +3208,7 @@ trait Typers { self: Analyzer =>
 
         val tp = tpt1.tpe
         val sym = tp.typeSymbol
-        if (sym.isAbstractType || (sym hasFlag ABSTRACT))
+        if (sym.isAbstractType || sym.hasAbstractFlag)
           error(tree.pos, sym + " is abstract; cannot be instantiated")
         else if (!(  tp == sym.initialize.thisSym.tpe // when there's no explicit self type -- with (#3612) or without self variable
                      // sym.thisSym.tpe == tp.typeOfThis (except for objects)
@@ -3544,7 +3543,7 @@ trait Typers { self: Analyzer =>
         }
 
         if (!reallyExists(sym)) {
-          if (context.owner.toplevelClass.hasFlag(JAVA) && name.isTypeName) {
+          if (context.owner.toplevelClass.isJavaDefined && name.isTypeName) {
             val tree1 = atPos(tree.pos) { gen.convertToSelectFromType(qual, name)  }
             if (tree1 != EmptyTree) return typed1(tree1, mode, pt)
           }

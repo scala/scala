@@ -197,15 +197,15 @@ abstract class AddInterfaces extends InfoTransform {
         clazz setFlag lateINTERFACE
         implClass(clazz) // generate an impl class
       }
-      val parents1 =
-        if (parents.isEmpty) List()
-        else {
-          assert(!parents.head.typeSymbol.isTrait, clazz)
-          if (clazz.isTrait) erasedTypeRef(ObjectClass) :: parents.tail
+      val parents1 = parents match {
+        case Nil      => Nil
+        case hd :: tl =>
+          assert(!hd.typeSymbol.isTrait, clazz)
+          if (clazz.isTrait) erasedTypeRef(ObjectClass) :: tl
           else parents
-        }
+      }
       val decls1 = decls filter (sym =>
-        if (clazz hasFlag INTERFACE) isInterfaceMember(sym)
+        if (clazz.isInterface) isInterfaceMember(sym)
         else (!sym.isType || sym.isClass))
 
       //if (!clazz.isPackageClass) System.out.println("Decls of "+clazz+" after explicitOuter = " + decls1);//DEBUG
@@ -271,18 +271,11 @@ abstract class AddInterfaces extends InfoTransform {
   }
 
   def implClassDefs(trees: List[Tree]): List[Tree] = {
-    val buf = new ListBuffer[Tree]
-    for (tree <- trees)
-      tree match {
-        case ClassDef(_, _, _, impl) =>
-          if (tree.symbol.needsImplClass)
-            buf += {
-              val clazz = implClass(tree.symbol).initialize
-              ClassDef(clazz, implTemplate(clazz, impl))
-            }
-        case _ =>
-      }
-    buf.toList
+    trees collect {
+      case cd: ClassDef if cd.symbol.needsImplClass =>
+        val clazz = implClass(cd.symbol).initialize
+        ClassDef(clazz, implTemplate(clazz, cd.impl))
+    }
   }
 
   /** Add calls to supermixin constructors
@@ -302,7 +295,7 @@ abstract class AddInterfaces extends InfoTransform {
     (tree: @unchecked) match {
       case Block(stats, expr) =>
         // needs `hasSymbol' check because `supercall' could be a block (named / default args)
-        val (presuper, supercall :: rest) = stats span (t => t.hasSymbol && t.symbol.hasFlag(PRESUPER))
+        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
         //assert(supercall.symbol.isClassConstructor, supercall)
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }

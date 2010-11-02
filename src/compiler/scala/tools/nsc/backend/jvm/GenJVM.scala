@@ -68,8 +68,8 @@ abstract class GenJVM extends SubComponent {
 
   /** Return the suffix of a class name */
   def moduleSuffix(sym: Symbol) =
-    if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
-       !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$"
+    if (sym.hasModuleFlag && !sym.isMethod &&
+       !sym.isImplClass && !sym.isJavaDefined) "$"
     else "";
 
 
@@ -260,12 +260,12 @@ abstract class GenJVM extends SubComponent {
         // it must be a top level class (name contains no $s)
         def isCandidateForForwarders(sym: Symbol): Boolean =
           atPhase (currentRun.picklerPhase.next) {
-            !(sym.name.toString contains '$') && (sym hasFlag Flags.MODULE) && !sym.isImplClass && !sym.isNestedClass
+            !(sym.name.toString contains '$') && sym.hasModuleFlag && !sym.isImplClass && !sym.isNestedClass
           }
 
         val lmoc = c.symbol.companionModule
         // add static forwarders if there are no name conflicts; see bugs #363 and #1735
-        if (lmoc != NoSymbol && !c.symbol.hasFlag(Flags.INTERFACE)) {
+        if (lmoc != NoSymbol && !c.symbol.isInterface) {
           if (isCandidateForForwarders(lmoc) && !settings.noForwarders.value) {
             log("Adding static forwarders from '%s' to implementations in '%s'".format(c.symbol, lmoc))
             addForwarders(jclass, lmoc.moduleClass)
@@ -394,7 +394,7 @@ abstract class GenJVM extends SubComponent {
      *   .initialize: if 'annot' is read from pickle, atp might be un-initialized
      */
     private def shouldEmitAnnotation(annot: AnnotationInfo) =
-      (annot.atp.typeSymbol.initialize.hasFlag(Flags.JAVA) &&
+      (annot.atp.typeSymbol.initialize.isJavaDefined &&
        annot.atp.typeSymbol.isNonBottomSubClass(ClassfileAnnotationClass) &&
        annot.args.isEmpty)
 
@@ -491,10 +491,16 @@ abstract class GenJVM extends SubComponent {
       nannots
     }
 
+    private def noGenericSignature(sym: Symbol) = (
+      sym.isSynthetic ||
+      sym.isLiftedMethod ||
+      (sym hasFlag Flags.EXPANDEDNAME) ||
+      // @M don't generate java generics sigs for (members of) implementation classes, as they are monomorphic (TODO: ok?)
+      (sym.ownerChain exists (_.isImplClass))
+    )
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
-      if (!sym.hasFlag(Flags.EXPANDEDNAME | Flags.SYNTHETIC)
-          && !(sym.isMethod && sym.hasFlag(Flags.LIFTED))
-          && !(sym.ownerChain exists (_.isImplClass))) {  // @M don't generate java generics sigs for (members of) implementation classes, as they are monomorphic (TODO: ok?)
+      if (noGenericSignature(sym)) ()
+      else {
         val memberTpe = atPhase(currentRun.erasurePhase)(owner.thisType.memberInfo(sym))
         // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
@@ -576,7 +582,7 @@ abstract class GenJVM extends SubComponent {
           if (outerName.endsWith("$") && isTopLevelModule(innerSym.rawowner))
             outerName = outerName dropRight 1
           var flags = javaFlags(innerSym)
-          if (innerSym.rawowner.hasFlag(Flags.MODULE))
+          if (innerSym.rawowner.hasModuleFlag)
             flags |= ACC_STATIC
 
           innerClassesAttr.addEntry(javaName(innerSym),
@@ -593,7 +599,7 @@ abstract class GenJVM extends SubComponent {
       }
 
     def isStaticModule(sym: Symbol): Boolean = {
-      sym.isModuleClass && !sym.isImplClass && !sym.hasFlag(Flags.LIFTED)
+      sym.isModuleClass && !sym.isImplClass && !sym.isLifted
     }
 
     def genField(f: IField) {
@@ -722,7 +728,7 @@ abstract class GenJVM extends SubComponent {
 
     private def isClosureApply(sym: Symbol): Boolean = {
       (sym.name == nme.apply) &&
-      sym.owner.hasFlag(Flags.SYNTHETIC) &&
+      sym.owner.isSynthetic &&
       sym.owner.tpe.parents.exists { t =>
         val TypeRef(_, sym, _) = t;
         FunctionClass contains sym
@@ -883,7 +889,7 @@ abstract class GenJVM extends SubComponent {
 
       addRemoteException(mirrorMethod, m)
       // only add generic signature if the method is concrete; bug #1745
-      if (!m.hasFlag(Flags.DEFERRED))
+      if (!m.isDeferred)
         addGenericSignature(mirrorMethod, m, module)
 
       val (throws, others) = splitAnnotations(m.annotations, ThrowsClass)
@@ -1125,7 +1131,6 @@ abstract class GenJVM extends SubComponent {
 
           case LOAD_FIELD(field, isStatic) =>
             var owner = javaName(field.owner)
-//            if (field.owner.hasFlag(Flags.MODULE)) owner = owner + "$";
             if (settings.debug.value)
               log("LOAD_FIELD with owner: " + owner +
                   " flags: " + Flags.flagsToString(field.owner.flags))
@@ -1162,7 +1167,7 @@ abstract class GenJVM extends SubComponent {
             jcode.emitASTORE_0()
 
           case STORE_FIELD(field, isStatic) =>
-            val owner = javaName(field.owner) // + (if (field.owner.hasFlag(Flags.MODULE)) "$" else "");
+            val owner = javaName(field.owner)
             if (isStatic)
               jcode.emitPUTSTATIC(owner,
                                   javaName(field),
@@ -1648,8 +1653,7 @@ abstract class GenJVM extends SubComponent {
      *  Synthetic locals are skipped. All variables are method-scoped.
      */
     private def genLocalVariableTable(m: IMethod, jcode: JCode) {
-      var vars = m.locals.filter(l => !l.sym.hasFlag(Flags.SYNTHETIC))
-
+      var vars = m.locals filterNot (_.sym.isSynthetic)
       if (vars.length == 0) return
 
       val pool = jclass.getConstantPool()
@@ -1839,7 +1843,7 @@ abstract class GenJVM extends SubComponent {
 
       mkFlags(
         if (isConsideredPrivate) ACC_PRIVATE else ACC_PUBLIC,
-        if (sym.isDeferred || sym.hasFlag(Flags.ABSTRACT)) ACC_ABSTRACT else 0,
+        if (sym.isDeferred || sym.hasAbstractFlag) ACC_ABSTRACT else 0,
         if (sym.isInterface) ACC_INTERFACE else 0,
         if (sym.isFinal && !sym.enclClass.isInterface && !sym.isClassConstructor) ACC_FINAL else 0,
         if (sym.isStaticMember) ACC_STATIC else 0,
@@ -1858,9 +1862,8 @@ abstract class GenJVM extends SubComponent {
       if (sym.isTrait) sym.info // needed so that the type is up to date
                                 // (erasure may add lateINTERFACE to traits)
 
-      sym.hasFlag(Flags.INTERFACE) ||
-      (sym.hasFlag(Flags.JAVA) &&
-       sym.isNonBottomSubClass(ClassfileAnnotationClass))
+      sym.isInterface ||
+      (sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass))
     }
 
 

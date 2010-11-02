@@ -65,7 +65,7 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
 
       tree match {
         case DefDef(mods, name, tparams, vparams, tpt, rhs) => atOwner(tree.symbol) {
-          val res = if (!sym.owner.isClass && sym.hasFlag(LAZY)) {
+          val res = if (!sym.owner.isClass && sym.isLazy) {
             val enclosingDummyOrMethod =
               if (sym.enclMethod == NoSymbol) sym.owner else sym.enclMethod
             val idx = lazyVals(enclosingDummyOrMethod)

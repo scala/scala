@@ -10,7 +10,7 @@ package ast.parser
 
 import scala.collection.mutable.ListBuffer
 import util.{ OffsetPosition }
-import symtab.Flags
+import scala.reflect.generic.{ ModifierFlags => Flags }
 import Tokens._
 
 //todo verify when stableId's should be just plain qualified type ids
@@ -1677,12 +1677,12 @@ self =>
 /* -------- MODIFIERS and ANNOTATIONS ------------------------------------------- */
 
     /** Drop `private' modifier when followed by a qualifier.
-     *  Conract `abstract' and `override' to ABSOVERRIDE
+     *  Contract `abstract' and `override' to ABSOVERRIDE
      */
     private def normalize(mods: Modifiers): Modifiers =
-      if ((mods hasFlag Flags.PRIVATE) && mods.privateWithin != nme.EMPTY.toTypeName)
+      if (mods.isPrivate && mods.hasAccessBoundary)
         normalize(mods &~ Flags.PRIVATE)
-      else if ((mods hasFlag Flags.ABSTRACT) && (mods hasFlag Flags.OVERRIDE))
+      else if (mods hasAllFlags (Flags.ABSTRACT | Flags.OVERRIDE))
         normalize(mods &~ (Flags.ABSTRACT | Flags.OVERRIDE) | Flags.ABSOVERRIDE)
       else
         mods
@@ -1701,7 +1701,7 @@ self =>
       var result = mods
       if (in.token == LBRACKET) {
         in.nextToken()
-        if (mods.privateWithin != nme.EMPTY.toTypeName)
+        if (mods.hasAccessBoundary)
           syntaxError("duplicate private/protected qualifier", false)
         result = if (in.token == THIS) { in.nextToken(); mods | Flags.LOCAL }
                  else Modifiers(mods.flags, ident().toTypeName)
@@ -1819,7 +1819,7 @@ self =>
         var mods = Modifiers(Flags.PARAM)
         if (owner.isTypeName) {
           mods = modifiers() | Flags.PARAMACCESSOR
-          if (mods.hasFlag(Flags.LAZY)) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", false)
+          if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", false)
           if (in.token == VAL) {
             mods = mods withPosition (in.token, tokenRange(in))
             in.nextToken()
@@ -1846,10 +1846,10 @@ self =>
           } else { // XX-METHOD-INFER
             accept(COLON)
             if (in.token == ARROW) {
-              if (owner.isTypeName && !mods.hasFlag(Flags.LOCAL))
+              if (owner.isTypeName && !mods.hasLocalFlag)
                 syntaxError(
                   in.offset,
-                  (if (mods.hasFlag(Flags.MUTABLE)) "`var'" else "`val'") +
+                  (if (mods.isMutable) "`var'" else "`val'") +
                   " parameters may not be call-by-name", false)
               else if (implicitmod != 0)
                 syntaxError(
@@ -1901,7 +1901,7 @@ self =>
       val result = vds.toList
       if (owner == nme.CONSTRUCTOR &&
           (result.isEmpty ||
-           (!result.head.isEmpty && result.head.head.mods.hasFlag(Flags.IMPLICIT))))
+           (!result.head.isEmpty && result.head.head.mods.isImplicit)))
         if (in.token == LBRACKET)
           syntaxError(in.offset, "no type parameters allowed here", false)
         else if(in.token == EOF)
@@ -2123,7 +2123,7 @@ self =>
      *           | type [nl] TypeDcl
      */
     def defOrDcl(pos: Int, mods: Modifiers): List[Tree] = {
-      if ((mods hasFlag Flags.LAZY) && in.token != VAL)
+      if (mods.isLazy && in.token != VAL)
         syntaxError("lazy not allowed here. Only vals can be lazy", false)
       in.token match {
         case VAL =>
@@ -2163,7 +2163,7 @@ self =>
       val rhs =
         if (tp.isEmpty || in.token == EQUALS) {
           accept(EQUALS)
-          if (!tp.isEmpty && newmods.hasFlag(Flags.MUTABLE) &&
+          if (!tp.isEmpty && newmods.isMutable &&
               (lhs.toList forall (_.isInstanceOf[Ident])) && in.token == USCORE) {
             in.nextToken()
             newmods = newmods | Flags.DEFAULTINIT
@@ -2182,10 +2182,10 @@ self =>
                      if (tp.isEmpty) p
                      else Typed(p, tp) setPos (p.pos union tp.pos),
                      rhs)
-        if (newmods hasFlag Flags.DEFERRED) {
+        if (newmods.isDeferred) {
           trees match {
             case List(ValDef(_, _, _, EmptyTree)) =>
-              if (mods.hasFlag(Flags.LAZY)) syntaxError(p.pos, "lazy values may not be abstract", false)
+              if (mods.isLazy) syntaxError(p.pos, "lazy values may not be abstract", false)
             case _ => syntaxError(p.pos, "pattern definition may not be abstract", false)
           }
         }
@@ -2349,7 +2349,7 @@ self =>
      *            |  [override] trait TraitDef
      */
     def tmplDef(pos: Int, mods: Modifiers): Tree = {
-      if (mods.hasFlag(Flags.LAZY)) syntaxError("classes cannot be lazy", false)
+      if (mods.isLazy) syntaxError("classes cannot be lazy", false)
       in.token match {
         case TRAIT =>
           classDef(pos, (mods | Flags.TRAIT | Flags.ABSTRACT) withPosition (Flags.TRAIT, tokenRange(in)))
@@ -2381,16 +2381,16 @@ self =>
         val tparams = typeParamClauseOpt(name, contextBoundBuf)
         classContextBounds = contextBoundBuf.toList
         val tstart = (in.offset::classContextBounds.map(_.pos.startOrPoint)).min
-        if (!classContextBounds.isEmpty && mods.hasFlag(Flags.TRAIT)) {
+        if (!classContextBounds.isEmpty && mods.hasTraitFlag) {
           syntaxError("traits cannot have type parameters with context bounds `: ...' nor view bounds `<% ...'", false)
           classContextBounds = List()
         }
         val constrAnnots = annotations(false, true)
         val (constrMods, vparamss) =
-          if (mods.hasFlag(Flags.TRAIT)) (Modifiers(Flags.TRAIT), List())
-          else (accessModifierOpt(), paramClauses(name, classContextBounds, mods.hasFlag(Flags.CASE)))
+          if (mods.hasTraitFlag) (Modifiers(Flags.TRAIT), List())
+          else (accessModifierOpt(), paramClauses(name, classContextBounds, mods.isCase))
         var mods1 = mods
-        if (mods hasFlag Flags.TRAIT) {
+        if (mods.hasTraitFlag) {
           if (settings.YvirtClasses && in.token == SUBTYPE) mods1 |= Flags.DEFERRED
         } else if (in.token == SUBTYPE) {
           syntaxError("classes are not allowed to be virtual", false)
@@ -2449,7 +2449,7 @@ self =>
         val (self, body) = templateBody(true)
         if (in.token == WITH && self.isEmpty) {
           val earlyDefs: List[Tree] = body flatMap {
-            case vdef @ ValDef(mods, name, tpt, rhs) if !(mods hasFlag Flags.DEFERRED) =>
+            case vdef @ ValDef(mods, name, tpt, rhs) if !mods.isDeferred =>
               List(treeCopy.ValDef(vdef, mods | Flags.PRESUPER, name, tpt, rhs))
             case tdef @ TypeDef(mods, name, tparams, rhs) =>
               List(treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs))
@@ -2473,7 +2473,7 @@ self =>
     }
 
     def isInterface(mods: Modifiers, body: List[Tree]): Boolean =
-      (mods hasFlag Flags.TRAIT) && (body forall treeInfo.isInterfaceMember)
+      mods.hasTraitFlag && (body forall treeInfo.isInterfaceMember)
 
     /** ClassTemplateOpt ::= 'extends' ClassTemplate | [['extends'] TemplateBody]
      *  TraitTemplateOpt ::= TraitExtends TraitTemplate | [['extends'] TemplateBody] | '<:' TemplateBody
@@ -2482,10 +2482,10 @@ self =>
     def templateOpt(mods: Modifiers, name: Name, constrMods: Modifiers,
                     vparamss: List[List[ValDef]], tstart: Int): Template = {
       val (parents0, argss, self, body) =
-        if (in.token == EXTENDS || settings.YvirtClasses && (mods hasFlag Flags.TRAIT) && in.token == SUBTYPE) {
+        if (in.token == EXTENDS || settings.YvirtClasses && mods.hasTraitFlag && in.token == SUBTYPE) {
           in.nextToken()
-          template(mods hasFlag Flags.TRAIT)
-        } else if ((in.token == SUBTYPE) && (mods hasFlag Flags.TRAIT)) {
+          template(mods.hasTraitFlag)
+        } else if ((in.token == SUBTYPE) && mods.hasTraitFlag) {
           in.nextToken()
           template(true)
         } else {
@@ -2498,7 +2498,7 @@ self =>
         parents = parents ::: List(scalaScalaObjectConstr)
       if (parents.isEmpty)
         parents = List(scalaAnyRefConstr)
-      if (mods.hasFlag(Flags.CASE)) parents = parents ::: List(productConstr)
+      if (mods.isCase) parents = parents ::: List(productConstr)
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
         Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))

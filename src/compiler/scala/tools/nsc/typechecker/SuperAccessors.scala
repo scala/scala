@@ -194,8 +194,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           mayNeedProtectedAccessor(sel, args, false)
 
         case sel @ Select(qual @ This(_), name) =>
-           if ((sym hasFlag PARAMACCESSOR)
-               && (sym.alias != NoSymbol)) {
+           if (sym.isParamAccessor && sym.alias != NoSymbol) {
             val result = localTyper.typed {
                 Select(
                   Super(qual.symbol, nme.EMPTY.toTypeName/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
@@ -208,9 +207,9 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
           else mayNeedProtectedAccessor(sel, List(EmptyTree), false)
 
         case Select(sup @ Super(_, mix), name) =>
-          if (sym.isValue && !sym.isMethod || sym.hasFlag(ACCESSOR)) {
+          if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
             unit.error(tree.pos, "super may be not be used on "+
-                       (if (sym.hasFlag(ACCESSOR)) sym.accessed else sym))
+                       (if (sym.hasAccessorFlag) sym.accessed else sym))
           }
           else if (isDisallowed(sym)) {
             unit.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
@@ -225,7 +224,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         case Assign(lhs @ Select(qual, name), rhs) =>
           if (lhs.symbol.isVariable &&
-              lhs.symbol.hasFlag(JAVA) &&
+              lhs.symbol.isJavaDefined &&
               needsProtectedAccessor(lhs.symbol, tree.pos)) {
             if (settings.debug.value) log("Adding protected setter for " + tree)
             val setter = makeSetter(lhs);

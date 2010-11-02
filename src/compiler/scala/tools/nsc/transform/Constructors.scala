@@ -198,7 +198,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           // before the superclass constructor call, otherwise it goes after.
           // Lazy vals don't get the assignment in the constructor.
           if (!stat.symbol.tpe.isInstanceOf[ConstantType]) {
-            if (rhs != EmptyTree && !stat.symbol.hasFlag(LAZY)) {
+            if (rhs != EmptyTree && !stat.symbol.isLazy) {
               val rhs1 = intoConstructor(stat.symbol, rhs);
               (if (canBeMoved(stat)) constrPrefixBuf else constrStatBuf) += mkAssign(
                 stat.symbol, rhs1)
@@ -225,10 +225,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // This is the case if the symbol is defined in the current class, and
       // ( the symbol is an object private parameter accessor field, or
       //   the symbol is an outer accessor of a final class which does not override another outer accessor. )
-      def maybeOmittable(sym: Symbol) =
-        (sym.owner == clazz &&
-         ((sym hasFlag PARAMACCESSOR) && sym.isPrivateLocal ||
-          sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty))
+      def maybeOmittable(sym: Symbol) = sym.owner == clazz && (
+        sym.isParamAccessor && sym.isPrivateLocal ||
+        sym.isOuterAccessor && sym.owner.isFinal && sym.allOverriddenSymbols.isEmpty
+      )
 
       // Is symbol known to be accessed outside of the primary constructor,
       // or is it a symbol whose definition cannot be omitted anyway?
@@ -426,7 +426,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
     override def transform(tree: Tree): Tree =
       tree match {
-        case ClassDef(mods, name, tparams, impl) if !tree.symbol.hasFlag(INTERFACE) =>
+        case ClassDef(mods, name, tparams, impl) if !tree.symbol.isInterface =>
           treeCopy.ClassDef(tree, mods, name, tparams, transformClassTemplate(impl))
         case _ =>
           super.transform(tree)

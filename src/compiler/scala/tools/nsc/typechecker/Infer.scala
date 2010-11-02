@@ -707,7 +707,7 @@ trait Infer {
       val argtpes1 = argtpes map {
         case NamedType(name, tp) => // a named argument
           var res = tp
-          val pos = params.indexWhere(p => (p.name == name || deprecatedName(p) == Some(name)) && !p.hasFlag(SYNTHETIC))
+          val pos = params.indexWhere(p => (p.name == name || deprecatedName(p) == Some(name)) && !p.isSynthetic)
           if (pos == -1) {
             if (positionalAllowed) { // treat assignment as positional argument
               argPos(index) = index
@@ -820,13 +820,12 @@ trait Infer {
               case NamedType(name, _) => Some(name)
               case _ => None
             })._1
-            if (missing.exists(!_.hasFlag(DEFAULTPARAM))) tryTupleApply
-            else {
-              val argtpes1 = argtpes0 ::: missing.map {
-                p => NamedType(p.name, p.tpe) // add defaults as named arguments
-              }
+            if (missing forall (_.hasDefaultFlag)) {
+              // add defaults as named arguments
+              val argtpes1 = argtpes0 ::: (missing map (p => NamedType(p.name, p.tpe)))
               isApplicable(undetparams, ftpe, argtpes1, pt)
             }
+            else tryTupleApply
           }
 
         case PolyType(tparams, restpe) =>
@@ -1679,7 +1678,7 @@ trait Infer {
             else treeSymTypeMsg(tree) + " does not take type parameters")
           return
         }
-        if (sym0.hasFlag(OVERLOADED)) {
+        if (sym0.isOverloaded) {
           val sym = sym0 filter { alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) }
           if (sym == NoSymbol) {
             if (!(argtypes exists (_.isErroneous))) {
@@ -1691,7 +1690,7 @@ trait Infer {
               return
             }
           }
-          if (sym.hasFlag(OVERLOADED)) {
+          if (sym.isOverloaded) {
             val tparams = new AsSeenFromMap(pre, sym.alternatives.head.owner).mapOver(
               sym.alternatives.head.typeParams)
             val bounds = tparams map (_.tpeHK) // see e.g., #1236

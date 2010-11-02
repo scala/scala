@@ -959,7 +959,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   private def writeICode() {
     val printer = new icodes.TextPrinter(null, icodes.linearizer)
     icodes.classes.values.foreach((cls) => {
-      val suffix = if (cls.symbol hasFlag Flags.MODULE) "$.icode" else ".icode"
+      val suffix = if (cls.symbol.hasModuleFlag) "$.icode" else ".icode"
       var file = getFile(cls.symbol, suffix)
 //      if (file.exists())
 //        file = new File(file.getParentFile(), file.getName() + "1")

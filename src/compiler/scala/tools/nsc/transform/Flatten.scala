@@ -51,7 +51,7 @@ abstract class Flatten extends InfoTransform {
               decls1 enter sym
               if (sym.isModule) sym.moduleClass setFlag LIFTED  // Only top modules
               // Nested modules (MODULE flag is reset so we access through lazy):
-              if (sym.isModuleVar && sym.hasFlag(LAZY)) sym.lazyAccessor.lazyAccessor setFlag LIFTED
+              if (sym.isModuleVar && sym.isLazy) sym.lazyAccessor.lazyAccessor setFlag LIFTED
             } else if (sym.isClass) {
               liftClass(sym)
               if (sym.needsImplClass) liftClass(erasure.implClass(sym))
@@ -83,7 +83,7 @@ abstract class Flatten extends InfoTransform {
       tree match {
         case PackageDef(_, _) =>
           liftedDefs(tree.symbol.moduleClass) = new ListBuffer
-        case Template(_, _, _) if (tree.symbol.owner.hasFlag(PACKAGE)) =>
+        case Template(_, _, _) if tree.symbol.owner.hasPackageFlag =>
           liftedDefs(tree.symbol.owner) = new ListBuffer
         case _ =>
       }

@@ -615,8 +615,8 @@ trait JavaParsers extends JavaScanners {
 
     def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: Name): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
-      if (in.token == ASSIGN && !(mods hasFlag Flags.PARAM)) skipTo(COMMA, SEMI)
-      val mods1 = if (mods hasFlag Flags.FINAL) mods &~ Flags.FINAL else mods | Flags.MUTABLE
+      if (in.token == ASSIGN && !mods.isParameter) skipTo(COMMA, SEMI)
+      val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
       atPos(pos) {
         ValDef(mods1, name, tpt1, blankExpr)
       }
@@ -771,7 +771,7 @@ trait JavaParsers extends JavaScanners {
         } else {
           if (in.token == ENUM || definesInterface(in.token)) mods |= Flags.STATIC
           val decls = memberDecl(mods, parentToken)
-          (if ((mods hasFlag Flags.STATIC) || inInterface && !(decls exists (_.isInstanceOf[DefDef])))
+          (if (mods.hasStaticFlag || inInterface && !(decls exists (_.isInstanceOf[DefDef])))
              statics
            else
              members) ++= decls

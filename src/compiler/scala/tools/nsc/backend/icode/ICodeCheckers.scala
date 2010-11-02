@@ -120,7 +120,7 @@ abstract class ICodeCheckers {
     def check(m: IMethod) {
       logChecker("\n** Checking method " + m)
       method = m
-      if (!m.isDeferred)
+      if (!m.isAbstractMethod)
         check(m.code)
     }
 

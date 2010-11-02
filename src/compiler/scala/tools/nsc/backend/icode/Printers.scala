@@ -81,7 +81,7 @@ trait Printers { self: ICodes =>
       print("("); printList(printParam)(m.params, ", "); print(")");
       print(": "); print(m.symbol.info.resultType)
 
-      if (!m.isDeferred) {
+      if (!m.isAbstractMethod) {
         println(" {")
         println("locals: " + m.locals.mkString("", ", ", ""))
         println("startBlock: " + m.code.startBlock)

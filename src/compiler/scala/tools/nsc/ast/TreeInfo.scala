@@ -48,8 +48,8 @@ abstract class TreeInfo {
     case EmptyTree                     => true
     case Import(_, _)                  => true
     case TypeDef(_, _, _, _)           => true
-    case DefDef(mods, _, _, _, _, __)  => mods.hasFlag(DEFERRED)
-    case ValDef(mods, _, _, _)         => mods.hasFlag(DEFERRED)
+    case DefDef(mods, _, _, _, _, __)  => mods.isDeferred
+    case ValDef(mods, _, _, _)         => mods.isDeferred
     case DocDef(_, definition)         => isInterfaceMember(definition)
     case _ => false
   }
@@ -64,7 +64,7 @@ abstract class TreeInfo {
        | DefDef(_, _, _, _, _, _) =>
       true
     case ValDef(mods, _, _, rhs) =>
-      !mods.hasFlag(MUTABLE) && isPureExpr(rhs)
+      !mods.isMutable && isPureExpr(rhs)
     case DocDef(_, definition) =>
       isPureDef(definition)
     case _ =>

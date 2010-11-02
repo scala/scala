@@ -671,7 +671,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         case Try(block, catches, finalizer) =>
           treeCopy.Try(tree1, adaptBranch(block), catches map adaptCase, finalizer)
         case Ident(_) | Select(_, _) =>
-          if (tree1.symbol hasFlag OVERLOADED) {
+          if (tree1.symbol.isOverloaded) {
             val first = tree1.symbol.alternatives.head
             val sym1 = tree1.symbol.filter {
               alt => alt == first || !(first.tpe looselyMatches alt.tpe)
@@ -745,7 +745,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
 
       val opc = new overridingPairs.Cursor(root) {
         override def exclude(sym: Symbol): Boolean =
-          (!sym.isTerm || sym.hasFlag(PRIVATE) || super.exclude(sym)
+          (!sym.isTerm || sym.isPrivate || super.exclude(sym)
            // specialized members have no type history before 'specialize', causing double def errors for curried defs
            || !sym.hasTypeAt(currentRun.refchecksPhase.id))
 
@@ -813,7 +813,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         new overridingPairs.Cursor(owner) {
           override def parents: List[Type] = List(owner.info.parents.head)
           override def exclude(sym: Symbol): Boolean =
-            !sym.isMethod || sym.hasFlag(PRIVATE) || super.exclude(sym)
+            !sym.isMethod || sym.isPrivate || super.exclude(sym)
         }
       }
       while (opc.hasNext) {

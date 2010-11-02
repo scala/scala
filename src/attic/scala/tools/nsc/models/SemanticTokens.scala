@@ -234,7 +234,7 @@ class SemanticTokens(val compiler: Global) {
         build(tree.impl.parents)
         build(tree.impl.body)
       case tree: ValOrDefDef =>
-        if (!tree.symbol.hasFlag(Flags.ACCESSOR) || tree.symbol.hasFlag(DEFERRED)) {
+        if (!tree.symbol.hasAccessorFlag || tree.symbol.isDeferred) {
           // MO: I added !tree.symbol.hasFlag(DEFERRED) in a refactoring where
           // getters now can be abstract whereas before they could not.
           // Adding the condition thus keeps the old behavior.
@@ -244,9 +244,9 @@ class SemanticTokens(val compiler: Global) {
               eatKeywords(unit.source.asInstanceOf[BatchSourceFile], tree.pos.point);
           if (false) Console.err.println("VALDEF: tree=" + tree + " sym=" + tree.symbol + " pos0=" +
             tree.symbol.pos + " alias=" + tree.symbol.alias + " pos1=" +
-            pos + " pos2=" + tree.pos.dbgString + " " + tree.symbol.hasFlag(Flags.SYNTHETIC));
+            pos + " pos2=" + tree.pos.dbgString + " " + tree.symbol.isSynthetic);
 
-          if (pos != -1 && !tree.hasFlag(Flags.SYNTHETIC))
+          if (pos != -1 && !tree.isSynthetic)
             buildDef(tree.symbol, pos);
               }
 
@@ -496,7 +496,7 @@ class SemanticTokens(val compiler: Global) {
   def buildDef(term: Symbol, pos: Int) = buildSym(term, pos, true, null)
 
   def buildSym(term: Symbol, pos: Int, isDef: Boolean, tpe: Type): Unit =
-    if (term.hasFlag(Flags.ACCESSOR))
+    if (term.hasAccessorFlag)
       buildSym(analyzer.underlying(term), pos, isDef, tpe)
     else if (pos == -1) {
       //Console.err.println("NOPOS: " + term)

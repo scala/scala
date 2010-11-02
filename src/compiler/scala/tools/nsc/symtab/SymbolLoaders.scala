@@ -176,7 +176,7 @@ abstract class SymbolLoaders {
   def openPackageModule(module: Symbol)(packageClass: Symbol = module.owner): Unit = {
     // unlink existing symbols in the package
     for (member <- module.info.decls.iterator) {
-      if (!member.hasFlag(PRIVATE) && !member.isConstructor) {
+      if (!member.isPrivate && !member.isConstructor) {
         // todo: handle overlapping definitions in some way: mark as errors
         // or treat as abstractions. For now the symbol in the package module takes precedence.
         for (existing <- packageClass.info.decl(member.name).alternatives)
@@ -185,7 +185,7 @@ abstract class SymbolLoaders {
     }
     // enter non-private decls the class
     for (member <- module.info.decls.iterator) {
-      if (!member.hasFlag(PRIVATE) && !member.isConstructor) {
+      if (!member.isPrivate && !member.isConstructor) {
         packageClass.info.decls.enter(member)
       }
     }

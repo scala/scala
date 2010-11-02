@@ -84,7 +84,7 @@ abstract class Models {
       }
     } else {
       val ddef = tree.asInstanceOf[ValOrDefDef];
-      if (ddef.mods.hasFlag(symtab.Flags.MUTABLE)) VAR;
+      if (ddef.mods.isMutable) VAR;
       else VAL;
     }
   }

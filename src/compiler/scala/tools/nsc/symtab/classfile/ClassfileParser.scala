@@ -756,7 +756,7 @@ abstract class ClassfileParser {
           }
 
           val classSym = classNameToSymbol(subName(c => c == ';' || c == '<'))
-          assert(!classSym.hasFlag(OVERLOADED), classSym.alternatives)
+          assert(!classSym.isOverloaded, classSym.alternatives)
           var tpe = processClassType(processInner(classSym.tpe))
           while (sig(index) == '.') {
             accept('.')

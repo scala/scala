@@ -135,7 +135,6 @@ trait Symbols { self: Universe =>
     final def isCovariant = isType && hasFlag(COVARIANT)
     final def isEarlyInitialized: Boolean = isTerm && hasFlag(PRESUPER)
     final def isExistentiallyBound = isType && hasFlag(EXISTENTIAL)
-    final def isGetterOrSetter = hasFlag(ACCESSOR)
     final def isImplClass = isClass && hasFlag(IMPLCLASS) // Is this symbol an implementation class for a mixin?
     final def isLazyAccessor = isLazy && lazyAccessor != NoSymbol
     final def isMethod = isTerm && hasFlag(METHOD)

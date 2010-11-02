@@ -110,7 +110,7 @@ trait ParallelMatching extends ast.TreeDSL
       // tests
       def isDefined   = sym ne NoSymbol
       def isSimple    = tpe.isByte || tpe.isShort || tpe.isChar || tpe.isInt
-      def isCaseClass = tpe.typeSymbol hasFlag Flags.CASE
+      def isCaseClass = tpe.typeSymbol.isCase
 
       // sequences
       def seqType         = tpe.widen baseType SeqClass

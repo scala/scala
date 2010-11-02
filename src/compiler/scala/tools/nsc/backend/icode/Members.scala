@@ -190,10 +190,8 @@ trait Members { self: ICodes =>
     def addHandler(e: ExceptionHandler) = exh ::= e
 
     /** Is this method deferred ('abstract' in Java sense)?
-     *  This differs from sym.isDeferred because the symbol only examines the
-     *  flag, which may not be set in the other covered cases.
      */
-    def isDeferred = (symbol hasFlag DEFERRED) || symbol.owner.isInterface || native
+    def isAbstractMethod = symbol.isDeferred || symbol.owner.isInterface || native
 
     def isStatic: Boolean = symbol.isStaticMember
 
