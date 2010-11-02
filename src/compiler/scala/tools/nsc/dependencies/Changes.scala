@@ -24,8 +24,11 @@ abstract class Changes {
   /** Are the new modifiers more restrictive than the old ones? */
   private def moreRestrictive(from: Long, to: Long): Boolean =
     ((((to & PRIVATE) != 0L) && (from & PRIVATE) == 0L)
-     || (((to & PROTECTED) != 0L) && (from & PROTECTED) == 0L)) ||
-    ((from & IMPLICIT) != (to & IMPLICIT))
+     || (((to & PROTECTED) != 0L) && (from & PROTECTED) == 0L))
+
+  /** Check if flags have changed **/
+  private def modifiedFlags(from: Long, to: Long): Boolean =
+    (from & IMPLICIT) != (to & IMPLICIT)
 
   /** An entity in source code, either a class or a member definition.
    *  Name is fully-qualified.
@@ -163,7 +166,7 @@ abstract class Changes {
 
     val to = toSym.info
     changedTypeParams.clear
-    def omitSymbols(s: Symbol): Boolean = !s.hasFlag(LOCAL | LIFTED | PRIVATE)
+    def omitSymbols(s: Symbol): Boolean = !s.hasFlag(LOCAL | LIFTED | PRIVATE | SYNTHETIC)
     val cs = new mutable.ListBuffer[Change]
 
     if ((from.parents zip to.parents) exists { case (t1, t2) => !sameType(t1, t2) })
@@ -191,8 +194,12 @@ abstract class Changes {
               case _                             =>
                 n.suchThat(ov => sameType(ov.tpe, o.tpe))
              }
-        if (newSym == NoSymbol || moreRestrictive(o.flags, newSym.flags))
+        if (newSym == NoSymbol || moreRestrictive(o.flags, newSym.flags) || modifiedFlags(o.flags, newSym.flags))
           cs += Changed(toEntity(o))(n + " changed from " + o.tpe + " to " + n.tpe + " flags: " + Flags.flagsToString(o.flags))
+        else if (newSym.isGetter && (o.accessed(from).hasFlag(MUTABLE) != newSym.accessed.hasFlag(MUTABLE)))
+          // o.owner is already updated to newSym.owner
+          // so o.accessed will return the accessed for the new owner
+          cs += Changed(toEntity(o))(o.accessed(from) + " changed to " + newSym.accessed)
         else
           newMembers -= newSym
       }

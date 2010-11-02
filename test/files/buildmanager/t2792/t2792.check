@@ -1,0 +1,11 @@
+builder > A1.scala A2.scala A3.scala
+compiling Set(A1.scala, A2.scala, A3.scala)
+Changes: Map()
+builder > A1.scala
+compiling Set(A1.scala)
+Changes: Map(object A -> List(Added(Definition(A.x_$eq)), Changed(Definition(A.x))[value x changed to variable x]))
+invalidate A2.scala because it references changed definition [Changed(Definition(A.x))[value x changed to variable x]]
+compiling Set(A2.scala)
+A2.scala:2: error: stable identifier required, but A.x found.
+  import A.x.y
+           ^

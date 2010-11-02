@@ -1,0 +1,3 @@
+>>compile A1.scala A2.scala A3.scala
+>>update A1.scala=>A1_1.scala
+>>compile A1.scala

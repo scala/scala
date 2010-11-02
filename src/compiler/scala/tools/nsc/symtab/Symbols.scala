@@ -1094,11 +1094,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def constrParamAccessors: List[Symbol] =
       info.decls.toList filter (sym => !sym.isMethod && sym.isParamAccessor)
 
-    /** The symbol accessed by this accessor (getter or setter) function.
-     */
-    final def accessed: Symbol = {
+    /** The symbol accessed by this accessor (getter or setter) function. */
+    final def accessed: Symbol = accessed(owner.info)
+
+    /** The symbol accessed by this accessor function, but with given owner type */
+    final def accessed(ownerTp: Type): Symbol = {
       assert(hasFlag(ACCESSOR))
-      owner.info.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name))
+      ownerTp.decl(nme.getterToLocal(if (isSetter) nme.setterToGetter(name) else name))
     }
 
     /** The implementation class of a trait */
