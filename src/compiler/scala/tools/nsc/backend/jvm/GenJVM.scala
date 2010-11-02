@@ -923,12 +923,11 @@ abstract class GenJVM extends SubComponent {
        *  then all matching names.
        */
       def memberNames(sym: Symbol) = sym.info.members map (_.name.toString) toSet
-      lazy val membersInCommon     = atPhase(currentRun.picklerPhase)(
+      lazy val membersInCommon     =
         memberNames(linkedModule) intersect memberNames(linkedClass)
-      )
 
       /** Should method `m' get a forwarder in the mirror class? */
-      def shouldForward(m: Symbol): Boolean = atPhase(currentRun.picklerPhase)(
+      def shouldForward(m: Symbol): Boolean = (
         m.owner != ObjectClass
         && m.isMethod
         && m.isPublic
