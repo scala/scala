@@ -1,2 +1,7 @@
-error: fatal error: Companions 'object Foo' and 'trait Foo' must be defined in same file.
-one error found
+a.scala:1: error: Companions 'object Foo' and 'trait Foo' must be defined in same file
+trait Foo {
+      ^
+b.scala:1: error: Companions 'trait Foo' and 'object Foo' must be defined in same file
+object Foo extends Foo {
+       ^
+two errors found

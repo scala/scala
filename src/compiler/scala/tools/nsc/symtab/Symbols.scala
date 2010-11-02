@@ -1185,7 +1185,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         if (res == false) {
           val (f1, f2) = (this.sourceFile, that.sourceFile)
           if (f1 != null && f2 != null && f1.path != f2.path)
-            throw FatalError("Companions '" + this + "' and '" + that + "' must be defined in same file.")
+            throw InvalidCompanions(this, that)
         }
 
         res
@@ -2046,6 +2046,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   extends TypeError("illegal cyclic reference involving " + sym) {
     // printStackTrace() // debug
   }
+
+  case class InvalidCompanions(sym1: Symbol, sym2: Symbol)
+  extends Throwable("Companions '" + sym1 + "' and '" + sym2 + "' must be defined in same file")
 
   /** A class for type histories */
   private sealed case class TypeHistory(var validFrom: Period, info: Type, prev: TypeHistory) {

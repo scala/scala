@@ -1359,18 +1359,30 @@ trait Namers { self: Analyzer =>
    * does not work for classes defined inside methods.
    */
   def companionModuleOf(clazz: Symbol, context: Context) = {
-    var res = clazz.companionModule
-    if (res == NoSymbol)
-      res = context.lookup(clazz.name.toTermName, clazz.owner).suchThat(sym =>
-        sym.hasFlag(MODULE) && sym.isCoDefinedWith(clazz))
-    res
+    try {
+      var res = clazz.companionModule
+      if (res == NoSymbol)
+        res = context.lookup(clazz.name.toTermName, clazz.owner).suchThat(sym =>
+          sym.hasFlag(MODULE) && sym.isCoDefinedWith(clazz))
+        res
+    } catch {
+      case e: InvalidCompanions =>
+        context.error(clazz.pos, e.getMessage)
+        NoSymbol
+    }
   }
 
   def companionClassOf(module: Symbol, context: Context) = {
-    var res = module.companionClass
-    if (res == NoSymbol)
-      res = context.lookup(module.name.toTypeName, module.owner).suchThat(_.isCoDefinedWith(module))
-    res
+    try {
+      var res = module.companionClass
+      if (res == NoSymbol)
+        res = context.lookup(module.name.toTypeName, module.owner).suchThat(_.isCoDefinedWith(module))
+      res
+    } catch {
+      case e: InvalidCompanions =>
+        context.error(module.pos, e.getMessage)
+        NoSymbol
+    }
   }
 
   /** An explanatory note to be added to error messages
