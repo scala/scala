@@ -212,7 +212,8 @@ self =>
   // ----------------- The Background Runner Thread -----------------------
 
   /** The current presentation compiler runner */
-  protected var compileRunner = newRunnerThread
+  @volatile protected var compileRunner = newRunnerThread
+  compileRunner.start()
 
   private var threadId = 1
 
@@ -239,6 +240,7 @@ self =>
         case ex =>
           outOfDate = false
           compileRunner = newRunnerThread
+          compileRunner.start()
           ex match {
             case FreshRunReq =>   // This shouldn't be reported
             case _ : ValidateException => // This will have been reported elsewhere
@@ -247,7 +249,6 @@ self =>
       }
     }
     threadId += 1
-    start()
   }
 
   /** Compile all given units
