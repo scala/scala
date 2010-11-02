@@ -3623,10 +3623,11 @@ trait Typers { self: Analyzer =>
         // are made to disappear here. In addition,
         // if we are in a constructor of a pattern, we ignore all definitions
         // which are methods (note: if we don't do that
-        // case x :: xs in class List would return the :: method).
+        // case x :: xs in class List would return the :: method)
+        // unless they are stable or are accessors (the latter exception is for better error messages).
         def qualifies(sym: Symbol): Boolean = {
           reallyExists(sym) &&
-          ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) || !sym.isSourceMethod)
+          ((mode & PATTERNmode | FUNmode) != (PATTERNmode | FUNmode) || !sym.isSourceMethod || sym.hasFlag(ACCESSOR))
         }
 
         if (defSym == NoSymbol) {

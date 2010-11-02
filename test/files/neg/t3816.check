@@ -1,0 +1,7 @@
+t3816.scala:30: error: stable identifier required, but syncID found.
+      case Some( `syncID` ) =>
+                 ^
+t3816.scala:38: error: stable identifier required, but Test.this.foo found.
+      case Some( `foo` ) =>
+                 ^
+two errors found
