@@ -646,30 +646,59 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
 
       import lazyVals._
 
+      def bitmapOperation[T](field: Symbol, transientCase: => T, privateCase: => T, rest: => T): T =
+        if (field.accessed.hasAnnotation(TransientAttr))
+          transientCase
+        else if (field.hasFlag(PRIVATE))
+          privateCase
+        else
+          rest
+
+      /**
+       *  Private or transient lazy vals use bitmaps that are private for the class context,
+       *  unlike public or protected vals, which can use inherited bitmaps.
+       */
+      def localBitmapField(field: Symbol) =
+        field.accessed.hasAnnotation(TransientAttr) || field.hasFlag(PRIVATE)
+
       /**
        *  Return the bitmap field for 'offset'. Depending on the hierarchy it is possible to reuse
        *  the bitmap of its parents. If that does not exist yet we create one.
        */
-      def bitmapFor(clazz0: Symbol, offset: Int, searchParents:Boolean = true): Symbol = {
+      def bitmapFor(clazz0: Symbol, offset: Int, field: Symbol, searchParents:Boolean = true): Symbol = {
+        def bitmapName: Name =
+          bitmapOperation(field, nme.bitmapNameForTransitive(offset / FLAGS_PER_WORD),
+                          nme.bitmapNameForPrivate(offset / FLAGS_PER_WORD),
+                          nme.bitmapName(offset / FLAGS_PER_WORD))
         def createBitmap: Symbol = {
-          val sym = clazz0.newVariable(clazz0.pos, nme.bitmapName(offset / FLAGS_PER_WORD))
+          val sym = clazz0.newVariable(clazz0.pos, bitmapName)
                        .setInfo(IntClass.tpe)
-                       .setFlag(PROTECTED)
           atPhase(currentRun.typerPhase) {
             sym addAnnotation AnnotationInfo(VolatileAttr.tpe, Nil, Nil)
           }
+
+          bitmapOperation(field,
+            {sym.addAnnotation(AnnotationInfo(TransientAttr.tpe, Nil, Nil)); sym.setFlag(PRIVATE | LOCAL)},
+            sym.setFlag(PRIVATE | LOCAL), sym.setFlag(PROTECTED))
+
           clazz0.info.decls.enter(sym)
           if (clazz0 == clazz)
             addDef(clazz.pos, VAL(sym) === ZERO)
-          else
+          else {
+            //FIXME: the assertion below will not work because of the way bitmaps are added.
+            // They should be added during inforTransform, so that in separate compilation, bitmap
+            // is a member of clazz and doesn't fail the condition couple lines below.
+            // This works, as long as we assume that the previous classes were compiled correctly.
+            //assert(clazz0.sourceFile != null)
             addDeferredBitmap(clazz0, VAL(sym) === ZERO)
+          }
           sym
         }
-        var sym = clazz0.info.member(nme.bitmapName(offset / FLAGS_PER_WORD))
+        var sym = clazz0.info.member(bitmapName)
         assert(!sym.hasFlag(OVERLOADED))
         if (sym == NoSymbol) {
-          if (searchParents)
-            bitmapForParents(clazz0, offset) match {
+          if (searchParents && !localBitmapField(field))
+            bitmapForParents(clazz0, offset, field) match {
               case Some(bitmap) =>
                 sym = bitmap
               case None =>
@@ -678,26 +707,26 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           else
             sym = createBitmap
         }
-        //assert(sym != NoSymbol)
         sym
       }
 
-      def bitmapForParents(clazz0: Symbol, offset: Int): Option[Symbol] = {
+      def bitmapForParents(clazz0: Symbol, offset: Int, valSym: Symbol): Option[Symbol] = {
         def requiredBitmaps(fs: Int): Int = if (fs == 0) -1 else (fs - 1) / FLAGS_PER_WORD
 
         var res:Option[Symbol] = None
         val bitmapNum = offset / FLAGS_PER_WORD
 
+
+        // filter private and transient
         // on what else should we filter?
         for (cl <- clazz0.info.baseClasses.tail.filter(c => !c.isTrait && !c.hasFlag(JAVA))
              if res == None) {
           val fields0 = usedBits(cl)
 
           if (requiredBitmaps(fields0) < bitmapNum) {
-            val fields1 = cl.info.decls.filter(fieldWithBitmap).size
+            val fields1 = cl.info.decls.filter(decl => fieldWithBitmap(decl) && !localBitmapField(decl)).size
             if (requiredBitmaps(fields0 + fields1) >= bitmapNum)
-              // assert(cl.sourceFile != null)
-              res = Some(bitmapFor(cl, offset, false))
+              res = Some(bitmapFor(cl, offset, valSym, false))
             else return None // Don't waste time, since we won't find bitmap anyway
           }
         }
@@ -705,8 +734,8 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       }
 
       /** Return an (untyped) tree of the form 'Clazz.this.bmp = Clazz.this.bmp | mask'. */
-      def mkSetFlag(clazz: Symbol, offset: Int): Tree = {
-        val bmp   = bitmapFor(clazz, offset)
+      def mkSetFlag(clazz: Symbol, offset: Int, valSym: Symbol): Tree = {
+        val bmp   = bitmapFor(clazz, offset, valSym)
         val mask  = LIT(1 << (offset % FLAGS_PER_WORD))
         def x     = This(clazz) DOT bmp
 
@@ -754,19 +783,19 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           Select(This(clazz), sym1) === LIT(null)
         }
 
-        val bitmapSym = bitmapFor(clazz, offset)
+        val bitmapSym = bitmapFor(clazz, offset, lzyVal)
         val mask      = LIT(1 << (offset % FLAGS_PER_WORD))
         def cond      = mkTest(clazz, mask, bitmapSym, true)
         val nulls     = (lazyValNullables(lzyVal).toList sortBy (_.id) map nullify)
-        def syncBody  = init ::: List(mkSetFlag(clazz, offset), UNIT)
+        def syncBody  = init ::: List(mkSetFlag(clazz, offset, lzyVal), UNIT)
 
         log("nulling fields inside " + lzyVal + ": " + nulls)
         val result    = gen.mkDoubleCheckedLocking(clazz, cond, syncBody, nulls)
         typedPos(init.head.pos)(BLOCK(result, retVal))
       }
 
-      def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position): Tree = {
-        val bitmapSym = bitmapFor(clazz, offset)
+      def mkCheckedAccessor(clazz: Symbol, retVal: Tree, offset: Int, pos: Position, fieldSym: Symbol): Tree = {
+        val bitmapSym = bitmapFor(clazz, offset, fieldSym.getter(fieldSym.owner))
         val mask      = LIT(1 << (offset % FLAGS_PER_WORD))
         val msg       = "Uninitialized field: " + unit.source + ": " + pos.line
         val result    =
@@ -798,14 +827,22 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           case DefDef(mods, name, tp, vp, tpt, rhs)
             if needsInitFlag(sym) && rhs != EmptyTree && !clazz.isImplClass && !clazz.isTrait =>
               assert(fieldOffset.isDefinedAt(sym))
-
-              val rhs1 = (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos))(
+              val rhs1 = (mkCheckedAccessor(clazz, _: Tree, fieldOffset(sym), stat.pos, sym))(
                 if (sym.tpe.resultType.typeSymbol == UnitClass) UNIT else rhs
               )
               treeCopy.DefDef(stat, mods, name, tp, vp, tpt, rhs1)
 
           case DefDef(mods, name, tp, vp, tpt, rhs) if sym.isConstructor =>
             treeCopy.DefDef(stat, mods, name, tp, vp, tpt, addInitBits(clazz, rhs))
+
+          case DefDef(mods, name, tp, vp, tpt, rhs)
+            if settings.checkInit.value && !clazz.isTrait && sym.isSetter =>
+              val getter = sym.getter(clazz)
+              if (needsInitFlag(getter) && fieldOffset.isDefinedAt(getter))
+                treeCopy.DefDef(stat, mods, name, tp, vp, tpt,
+                        Block(List(rhs, localTyper.typed(mkSetFlag(clazz, fieldOffset(getter), getter))), UNIT))
+              else
+                stat
 
           case _ => stat
         }
@@ -847,7 +884,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                   List()
                 else if (sym != NoSymbol && needsInitFlag(sym) && fieldOffset.isDefinedAt(sym)) {
                   log("adding checked getter for: " + sym + " " + Flags.flagsToString(lhs.symbol.flags))
-                  List(stat, localTyper.typed(mkSetFlag(clazz, fieldOffset(sym))))
+                  List(stat, localTyper.typed(mkSetFlag(clazz, fieldOffset(sym), sym)))
                 } else {
                   List(stat)
                 }
@@ -877,10 +914,9 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
           def needsBitmap(field: Symbol) =
               field.owner != clazz0 &&
               fieldWithBitmap(field)
-
           val fs = for {
                cl <- clazz0.info.baseClasses.tail.filter(cl => !cl.isTrait && !cl.hasFlag(JAVA))
-               field <- cl.info.decls.iterator.toList if needsBitmap(field)
+               field <- cl.info.decls.iterator.toList if needsBitmap(field) && !localBitmapField(field)
           } yield field
           fs.length
       }
@@ -891,11 +927,16 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
        */
       def buildFieldPositions(clazz0: Symbol) {
         var fields = usedBits(clazz0)
+        var fieldsPrivate = 0
+        var fieldsTransient = 0
         for (f <- clazz0.info.decls.iterator if fieldWithBitmap(f)) {
           if (settings.debug.value) log(f.fullName + " -> " + fields)
 
-          fieldOffset(f) = fields
-          fields += 1
+          val (idx, _) =
+              bitmapOperation(f, (fieldsTransient, fieldsTransient += 1),
+                              (fieldsPrivate, fieldsPrivate += 1),
+                              (fields, fields += 1))
+          fieldOffset(f) = idx
         }
       }
 
@@ -959,13 +1000,14 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
                     case Literal(_) => accessedRef
                     case _ =>
                       val init = Assign(accessedRef, Ident(vparams.head))
-                      if (settings.checkInit.value && needsInitFlag(sym.getter(clazz))) {
-                        Block(List(init, mkSetFlag(clazz, fieldOffset(sym.getter(clazz)))), UNIT)
-                      } else
+                      val getter = sym.getter(clazz)
+                      if (settings.checkInit.value && needsInitFlag(getter))
+                        Block(List(init, mkSetFlag(clazz, fieldOffset(getter), getter)), UNIT)
+                      else
                         init
                   }
                 } else if (!sym.hasFlag(LAZY) && needsInitFlag(sym)) {
-                  mkCheckedAccessor(clazz,  accessedRef, fieldOffset(sym), sym.pos)
+                  mkCheckedAccessor(clazz,  accessedRef, fieldOffset(sym), sym.pos, sym)
                 } else
                   gen.mkCheckInit(accessedRef)
               })

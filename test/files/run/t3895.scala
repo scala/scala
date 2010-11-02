@@ -20,6 +20,12 @@ class B extends A{
   val b = 12
 }
 
+trait T {
+    private final val a = false
+}
+
+class Impl extends T
+
 
 object Test {
     def main(args: Array[String]) {

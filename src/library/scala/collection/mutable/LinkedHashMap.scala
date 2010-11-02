@@ -140,6 +140,8 @@ class LinkedHashMap[A, B] extends Map[A, B]
   }
 
   private def readObject(in: java.io.ObjectInputStream) {
+    firstEntry = null
+    lastEntry = null
     init[B](in, { (key, value) =>
       val entry = new Entry(key, value)
       updateLinkedEntries(entry)

@@ -65,6 +65,7 @@ trait FlatHashTable[A] {
     assert(_loadFactor > 0)
 
     val size = in.readInt
+    tableSize = 0
     assert(size >= 0)
 
     table = new Array(capacity(size * loadFactorDenum / _loadFactor))

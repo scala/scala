@@ -62,6 +62,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     assert(_loadFactor > 0)
 
     val size = in.readInt
+    tableSize = 0
     assert(size >= 0)
 
     val smDefined = in.readBoolean
@@ -69,7 +70,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     table = new Array(capacity(sizeForThreshold(_loadFactor, size)))
     threshold = newThreshold(_loadFactor, table.size)
 
-    if (smDefined) sizeMapInit(table.size)
+    if (smDefined) sizeMapInit(table.size) else sizemap = null
 
     var index = 0
     while (index < size) {

@@ -198,8 +198,17 @@ trait StdNames extends reflect.generic.StdNames { self: SymbolTable =>
     /** The name of a setter for protected symbols. Used for inherited Java fields. */
     def protSetterName(name: Name): Name = newTermName(PROTECTED_PREFIX + "set" + name)
 
-    /** The name of bitmaps for initialized lazy vals. */
-    def bitmapName(n: Int): Name = newTermName("bitmap$" + n)
+    private def bitmapName(n: Int, suffix: String): Name = newTermName("bitmap$" + suffix + n)
+
+    /** The name of bitmaps for initialized (public or protected) lazy vals. */
+    def bitmapName(n: Int): Name = bitmapName(n, "")
+
+    /** The name of bitmaps for initialized transitive lazy vals. */
+    def bitmapNameForTransitive(n: Int): Name = bitmapName(n, "trans$")
+
+    /** The name of bitmaps for initialized private lazy vals. */
+    def bitmapNameForPrivate(n: Int): Name = bitmapName(n, "priv$")
+
 
     /** The label prefixes for generated while and do loops. */
     val WHILE_PREFIX = "while$"
