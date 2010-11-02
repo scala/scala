@@ -8,14 +8,14 @@ package interpreter
 
 import java.io.File
 import jline.{ ConsoleReader, History => JHistory }
-import scala.collection.JavaConversions.asBuffer
+import scala.collection.JavaConversions.asScalaBuffer
 import Properties.userHome
 
 /** Primarily, a wrapper for JLine's History.
  */
 class History(val jhistory: JHistory) {
   def asJavaList = jhistory.getHistoryList
-  def asList: List[String] = asBuffer(asJavaList).toList
+  def asList: List[String] = asScalaBuffer(asJavaList).toList
   def index = jhistory.getCurrentIndex
 
   def grep(s: String) = asList filter (_ contains s)

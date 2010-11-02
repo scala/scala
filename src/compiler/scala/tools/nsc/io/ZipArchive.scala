@@ -14,7 +14,6 @@ import java.util.zip.{ ZipEntry, ZipFile, ZipInputStream }
 import PartialFunction._
 
 import scala.collection.mutable.{ Map, HashMap }
-import scala.collection.JavaConversions.asIterator
 import annotation.tailrec
 
 /**
