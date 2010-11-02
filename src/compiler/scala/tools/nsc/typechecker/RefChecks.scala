@@ -965,7 +965,7 @@ abstract class RefChecks extends InfoTransform {
               val ddef =
                 atPhase(phase.next) {
                   localTyper.typed {
-                    gen.mkModuleAccessDef(factory, sym.tpe)
+                    gen.mkModuleAccessDef(factory, sym)
                   }
                 }
               transformTrees(List(cdef, ddef))
