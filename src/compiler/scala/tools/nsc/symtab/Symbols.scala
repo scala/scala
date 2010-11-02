@@ -116,7 +116,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       newValue(pos, name).setFlag(PARAM)
     /** Create local dummy for template (owner of local blocks) */
     final def newLocalDummy(pos: Position) =
-      newValue(pos, nme.LOCAL(this)).setInfo(NoType)
+      newValue(pos, nme.localDummyName(this)).setInfo(NoType)
     final def newMethod(pos: Position, name: Name) =
       new MethodSymbol(this, pos, name).setFlag(METHOD)
     final def newMethod(name: Name, pos: Position = NoPosition) =

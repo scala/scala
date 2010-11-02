@@ -1508,13 +1508,10 @@ abstract class GenICode extends SubComponent  {
      * @param elseCtx target context if the comparison yields false
      */
     def genEqEqPrimitive(l: Tree, r: Tree, ctx: Context)(thenCtx: Context, elseCtx: Context): Unit = {
-
-      def eqEqTempName: Name = "eqEqTemp$"
-
-      def getTempLocal: Local = ctx.method.lookupLocal(eqEqTempName) match {
+      def getTempLocal: Local = ctx.method.lookupLocal(nme.EQEQ_LOCAL_VAR) match {
         case Some(local) => local
         case None =>
-          val local = ctx.makeLocal(l.pos, AnyRefClass.typeConstructor, eqEqTempName.toString)
+          val local = ctx.makeLocal(l.pos, AnyRefClass.typeConstructor, nme.EQEQ_LOCAL_VAR)
           //assert(!l.pos.source.isEmpty, "bad position, unit = "+unit+", tree = "+l+", pos = "+l.pos.source)
           // Note - I commented these out because they were crashing the test case in ticket #2426
           // (and I have also had to comment them out at various times while working on equality.)

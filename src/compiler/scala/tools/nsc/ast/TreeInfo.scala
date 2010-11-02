@@ -200,10 +200,7 @@ abstract class TreeInfo {
   def isLeftAssoc(operator: Name): Boolean =
     operator.length > 0 && operator(operator.length - 1) != ':'
 
-  private val reserved = new HashSet[Name]("reserved", 64)
-  reserved addEntry nme.false_
-  reserved addEntry nme.true_
-  reserved addEntry nme.null_
+  private val reserved = Set[Name](nme.false_, nme.true_, nme.null_)
 
   /** Is name a variable name? */
   def isVariableName(name: Name): Boolean = {

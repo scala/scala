@@ -10,7 +10,7 @@ import scala.reflect.NameTransformer
 import scala.io.Codec
 import java.security.MessageDigest
 
-/** The class <code>Names</code> ...
+/** The class Names ...
  *
  *  @author  Martin Odersky
  *  @version 1.0, 05/02/2005
@@ -52,13 +52,7 @@ trait Names extends reflect.generic.Names {
     else 0;
 
   /** Is (the ASCII representation of) name at given index equal to
-   *  <code>cs[offset..offset+len-1]</code>?
-   *
-   *  @param index  ...
-   *  @param cs     ...
-   *  @param offset ...
-   *  @param len    ...
-   *  @return       ...
+   *  cs[offset..offset+len-1]?
    */
   private def equals(index: Int, cs: Array[Char], offset: Int, len: Int): Boolean = {
     var i = 0
@@ -104,12 +98,7 @@ trait Names extends reflect.generic.Names {
     if (s.length <= MaxClassNameLength) s
     else toMD5(s, MaxClassNameLength / 4)
 
-  /** Create a term name from the characters in <code>cs[offset..offset+len-1]</code>.
-   *
-   *  @param cs     ...
-   *  @param offset ...
-   *  @param len    ...
-   *  @return       the created term name
+  /** Create a term name from the characters in cs[offset..offset+len-1].
    */
   def newTermName(cs: Array[Char], offset: Int, len: Int): Name = {
     val h = hashValue(cs, offset, len) & HASH_MASK
@@ -128,37 +117,22 @@ trait Names extends reflect.generic.Names {
   def newTermName(s: String): Name =
     newTermName(s.toCharArray(), 0, s.length())
 
-  /** Create a term name from the UTF8 encoded bytes in <code>bs[offset..offset+len-1]</code>.
-   *
-   *  @param bs     ...
-   *  @param offset ...
-   *  @param len    ...
-   *  @return       the created term name
+  /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1].
    */
   def newTermName(bs: Array[Byte], offset: Int, len: Int): Name =
     newTermName(Codec toUTF8 bs.slice(offset, offset + len) mkString)
 
-  /** Create a type name from the characters in <code>cs[offset..offset+len-1]</code>.
-   *
-   *  @param cs     ...
-   *  @param offset ...
-   *  @param len    ...
-   *  @return       the created type name
+  /** Create a type name from the characters in cs[offset..offset+len-1].
    */
   def newTypeName(cs: Array[Char], offset: Int, len: Int): Name =
     newTermName(cs, offset, len).toTypeName
 
-  /** create a type name from string
+  /** Create a type name from string
    */
   def newTypeName(s: String): Name =
     newTermName(s).toTypeName
 
-  /** Create a type name from the UTF8 encoded bytes in <code>bs[offset..offset+len-1]</code>.
-   *
-   *  @param bs     ...
-   *  @param offset ...
-   *  @param len    ...
-   *  @return       the create type name
+  /** Create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1].
    */
   def newTypeName(bs: Array[Byte], offset: Int, len: Int): Name =
     newTermName(bs, offset, len).toTypeName
@@ -185,7 +159,6 @@ trait Names extends reflect.generic.Names {
     /** return the length of this name
      */
     final def length: Int = len
-
     final def isEmpty = length == 0
 
     def isTermName: Boolean
@@ -193,12 +166,7 @@ trait Names extends reflect.generic.Names {
     def toTermName: Name
     def toTypeName: Name
 
-
-    /** Copy bytes of this name to buffer <code>cs</code>, starting at position
-     *  <code>offset</code>.
-     *
-     *  @param cs     ...
-     *  @param offset ...
+    /** Copy bytes of this name to buffer cs, starting at position `offset`.
      */
     final def copyChars(cs: Array[Char], offset: Int) =
       compat.Platform.arraycopy(chrs, index, cs, offset, len)
@@ -240,12 +208,12 @@ trait Names extends reflect.generic.Names {
     /** return the index of first occurrence of char c in this name, length if not found */
     final def pos(s: String): Int = pos(s, 0)
 
-    /** return the index of the first occurrence of character <code>c</code> in
-     *  this name from <code>start</code>, length if not found.
+    /** return the index of the first occurrence of character c in
+     *  this name from start, length if not found.
      *
      *  @param c     the character
      *  @param start ...
-     *  @return      the index of the first occurrence of <code>c</code>
+     *  @return      the index of the first occurrence of c
      */
     final def pos(c: Char, start: Int): Int = {
       var i = start
@@ -253,12 +221,12 @@ trait Names extends reflect.generic.Names {
       i
     }
 
-    /** return the index of the first occurrence of nonempty string <code>s</code>
-     *  in this name from <code>start</code>, length if not found.
+    /** return the index of the first occurrence of nonempty string s
+     *  in this name from start, length if not found.
      *
      *  @param s     the string
      *  @param start ...
-     *  @return      the index of the first occurrence of <code>s</code>
+     *  @return      the index of the first occurrence of s
      */
     final def pos(s: String, start: Int): Int = {
       var i = pos(s.charAt(0), start)
@@ -273,22 +241,22 @@ trait Names extends reflect.generic.Names {
       len
     }
 
-    /** return the index of last occurrence of char <code>c</code> in this
-     *  name, <code>-1</code> if not found.
+    /** return the index of last occurrence of char c in this
+     *  name, -1 if not found.
      *
      *  @param c the character
-     *  @return  the index of the last occurrence of <code>c</code>
+     *  @return  the index of the last occurrence of c
      */
     final def lastPos(c: Char): Int = lastPos(c, len - 1)
 
     final def lastPos(s: String): Int = lastPos(s, len - s.length())
 
-    /** return the index of the last occurrence of char <code>c</code> in this
-     *  name from <code>start</code>, <code>-1</code> if not found.
+    /** return the index of the last occurrence of char c in this
+     *  name from start, -1 if not found.
      *
      *  @param c     the character
      *  @param start ...
-     *  @return      the index of the last occurrence of <code>c</code>
+     *  @return      the index of the last occurrence of c
      */
     final def lastPos(c: Char, start: Int): Int = {
       var i = start
@@ -296,12 +264,12 @@ trait Names extends reflect.generic.Names {
       i
     }
 
-    /** return the index of the last occurrence of string <code>s</code> in this
-     *  name from <code>start</code>, <code>-1</code> if not found.
+    /** return the index of the last occurrence of string s in this
+     *  name from start, -1 if not found.
      *
      *  @param s     the string
      *  @param start ...
-     *  @return      the index of the last occurrence of <code>s</code>
+     *  @return      the index of the last occurrence of s
      */
     final def lastPos(s: String, start: Int): Int = {
       var i = lastPos(s.charAt(0), start)
@@ -351,20 +319,25 @@ trait Names extends reflect.generic.Names {
       start <= last
     }
 
+    /** Some thoroughly self-explanatory convenience functions.  They
+     *  assume that what they're being asked to do is known to be valid.
+     */
+    final def startChar: Char                 = apply(0)
+    final def endChar: Char                   = apply(len - 1)
+    final def startsWith(char: Char): Boolean = len > 0 && startChar == char
+    final def endsWith(char: Char): Boolean   = len > 0 && endChar == char
+    final def stripStart(prefix: Name): Name  = subName(prefix.length, len)
+    final def stripEnd(suffix: Name): Name    = subName(0, len - suffix.length)
+    final def append(suffix: Name): Name      =
+      if (isTermName) newTermName(this.toString + suffix)
+      else newTypeName(this.toString + suffix)
+
     /** Return the subname with characters from start to end-1.
-     *
-     *  @param from ...
-     *  @param to   ...
-     *  @return     ...
      */
     def subName(from: Int, to: Int): Name
 
-    /** Replace all occurrences of <code>from</code> by </code>to</code> in
+    /** Replace all occurrences of `from` by `to` in
      *  name; result is always a term name.
-     *
-     *  @param from ...
-     *  @param to   ...
-     *  @return     ...
      */
     def replace(from: Char, to: Char): Name = {
       val cs = new Array[Char](len)
@@ -377,7 +350,7 @@ trait Names extends reflect.generic.Names {
       newTermName(cs, 0, len)
     }
 
-    /** Replace operator symbols by corresponding <code>$op_name</code>.
+    /** Replace operator symbols by corresponding $op_name.
      */
     def encode: Name = {
       val str = toString()
@@ -387,7 +360,7 @@ trait Names extends reflect.generic.Names {
       else newTermName(res)
     }
 
-    /** Replace <code>$op_name</code> by corresponding operator symbol.
+    /** Replace $op_name by corresponding operator symbol.
      */
     def decode: String = (
       NameTransformer.decode(toString()) +

@@ -193,8 +193,8 @@ abstract class ICodeReader extends ClassfileParser {
       definitions.NothingClass
     else if (name == nullName)
       definitions.NullClass
-    else if (name.endsWith("$class")) {
-      val iface = definitions.getClass(name.subName(0, name.length - "$class".length))
+    else if (nme.isImplClassName(name)) {
+      val iface = definitions.getClass(nme.interfaceName(name))
       log("forcing " + iface.owner + " at phase: " + phase + " impl: " + iface.implClass)
       iface.owner.info // force the mixin type-transformer
       definitions.getClass(name)

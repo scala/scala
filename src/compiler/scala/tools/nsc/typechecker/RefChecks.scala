@@ -99,7 +99,7 @@ abstract class RefChecks extends InfoTransform {
     private def checkDefaultsInOverloaded(clazz: Symbol) {
       def check(members: List[Symbol]): Unit = members match {
         case x :: xs =>
-          if ((x hasParamWhich (_.hasDefaultFlag)) && !nme.isProtectedAccessor(x.name)) {
+          if (x.hasParamWhich(_.hasDefaultFlag) && !nme.isProtectedAccessorName(x.name)) {
             val others = xs.filter(alt => {
               alt.name == x.name &&
               (alt hasParamWhich (_.hasDefaultFlag)) &&
