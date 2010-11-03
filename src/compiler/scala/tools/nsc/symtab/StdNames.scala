@@ -91,8 +91,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val EQEQ_LOCAL_VAR            = "eqEqTemp$"
     val EVIDENCE_PARAM_PREFIX     = "evidence$"
     val EXCEPTION_RESULT_PREFIX   = "exceptionResult"
-    val MODULE_INSTANCE_FIELD     = "MODULE$"
-    val SPECIALIZED_INSTANCE      = "specInstance$"
     val WHILE_PREFIX              = "while$"
 
     /** Internal names */
@@ -115,6 +113,9 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val SELF            = newTermName("$this")
     val THIS            = newTermName("_$this")
     val FAKE_LOCAL_THIS = newTermName("this$")
+
+    val MODULE_INSTANCE_FIELD = newTermName("MODULE$")
+    val SPECIALIZED_INSTANCE  = newTermName("specInstance$")
 
     val TYPE_         = newTermName("TYPE")
     val WILDCARD      = newTermName("_")
