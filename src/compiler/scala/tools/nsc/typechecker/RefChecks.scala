@@ -81,7 +81,7 @@ abstract class RefChecks extends InfoTransform {
 
   val toScalaRepeatedParam = new TypeMap {
     def apply(tp: Type): Type = tp match {
-      case tp @ TypeRef(pre, JavaRepeatedParamClass, args) =>
+      case TypeRef(pre, JavaRepeatedParamClass, args) =>
         typeRef(pre, RepeatedParamClass, args)
       case _ =>
         mapOver(tp)
@@ -122,20 +122,15 @@ abstract class RefChecks extends InfoTransform {
 // Override checking ------------------------------------------------------------
 
     def hasRepeatedParam(tp: Type): Boolean = tp match {
-      case MethodType(formals, restpe) =>
-        formals.nonEmpty && formals.last.tpe.typeSymbol == RepeatedParamClass ||
-        hasRepeatedParam(restpe)
-      case PolyType(_, restpe) =>
-        hasRepeatedParam(restpe)
-      case _ =>
-        false
+      case MethodType(formals, restpe) => isScalaVarArgs(formals) || hasRepeatedParam(restpe)
+      case PolyType(_, restpe)         => hasRepeatedParam(restpe)
+      case _                           => false
     }
 
     /** Add bridges for vararg methods that extend Java vararg methods
      */
     def addVarargBridges(clazz: Symbol): List[Tree] = {
       val self = clazz.thisType
-
       val bridges = new ListBuffer[Tree]
 
       def varargBridge(member: Symbol, bridgetpe: Type): Tree = {
@@ -1343,14 +1338,14 @@ abstract class RefChecks extends InfoTransform {
             enterReference(tree.pos, tpt.tpe.typeSymbol)
             tree
 
-          case Typed(expr, tpt @ Ident(name)) if name == nme.WILDCARD_STAR.toTypeName && !isRepeatedParamArg(tree) =>
+          case Typed(_, Ident(nme.WILDCARD_STAR)) if !isRepeatedParamArg(tree) =>
             unit.error(tree.pos, "no `: _*' annotation allowed here\n"+
               "(such annotations are only allowed in arguments to *-parameters)")
             tree
 
           case Ident(name) =>
             transformCaseApply(tree,
-              if (name != nme.WILDCARD && name != nme.WILDCARD_STAR.toTypeName) {
+              if (name != nme.WILDCARD && name != nme.WILDCARD_STAR) {
                 assert(sym != NoSymbol, tree) //debug
                 enterReference(tree.pos, sym)
               }

@@ -58,7 +58,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean)
   private def LL[A](x: A*): List[List[A]] = List(List(x:_*))
   private def const(x: Any) = Literal(Constant(x))
   private def wild                          = Ident(nme.WILDCARD)
-  private def wildStar                      = Ident(nme.WILDCARD_STAR.toTypeName)
+  private def wildStar                      = Ident(nme.WILDCARD_STAR)
   private def _scala(name: Name)            = Select(Select(Ident(nme.ROOTPKG), nme.scala_), name)
   private def _scala_xml(name: Name)        = Select(_scala(_xml), name)
 

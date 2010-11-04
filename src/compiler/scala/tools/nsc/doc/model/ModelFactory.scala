@@ -514,13 +514,13 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
           appendTypes0(tp.args.init, ", ")
           nameBuffer append ") ⇒ "
           appendType0(tp.args.last)
-        case tp: TypeRef if (tp.typeSymbol == definitions.RepeatedParamClass) =>
+        case tp: TypeRef if definitions.isScalaRepeatedParamType(tp) =>
           appendType0(tp.args.head)
           nameBuffer append '*'
-        case tp: TypeRef if (tp.typeSymbol == definitions.ByNameParamClass) =>
+        case tp: TypeRef if definitions.isByNameParamType(tp) =>
           nameBuffer append "⇒ "
           appendType0(tp.args.head)
-        case tp: TypeRef if (definitions.isTupleTypeOrSubtype(tp)) =>
+        case tp: TypeRef if definitions.isTupleTypeOrSubtype(tp) =>
           nameBuffer append '('
           appendTypes0(tp.args, ", ")
           nameBuffer append ')'

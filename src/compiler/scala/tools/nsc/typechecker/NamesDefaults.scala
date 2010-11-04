@@ -250,10 +250,10 @@ trait NamesDefaults { self: Analyzer =>
     def argValDefs(args: List[Tree], paramTypes: List[Type], blockTyper: Typer): List[ValDef] = {
       val context = blockTyper.context
       val symPs = (args, paramTypes).zipped map ((arg, tpe) => {
-        val byName = tpe.typeSymbol == ByNameParamClass
+        val byName = isByNameParamType(tpe)
         val (argTpe, repeated) =
-          if (tpe.typeSymbol == RepeatedParamClass) arg match {
-            case Typed(expr, tpt @ Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
+          if (isScalaRepeatedParamType(tpe)) arg match {
+            case Typed(expr, Ident(nme.WILDCARD_STAR)) =>
               (expr.tpe, true)
             case _ =>
               (seqType(arg.tpe), true)
@@ -271,7 +271,7 @@ trait NamesDefaults { self: Analyzer =>
         // () => { val x = 1; x }, the owner of symbol x must change (to the apply method of the function).
         val body = if (byName) blockTyper.typed(Function(List(), resetLocalAttrs(arg)))
                    else if (repeated) arg match {
-                     case Typed(expr, tpt @ Ident(name)) if name == nme.WILDCARD_STAR.toTypeName =>
+                     case Typed(expr, Ident(nme.WILDCARD_STAR)) =>
                        expr
                      case _ =>
                        val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
@@ -314,8 +314,8 @@ trait NamesDefaults { self: Analyzer =>
                 val ref = gen.mkAttributedRef(vDef.symbol)
                 atPos(vDef.pos.focus) {
                   // for by-name parameters, the local value is a nullary function returning the argument
-                  if (tpe.typeSymbol == ByNameParamClass) Apply(ref, List())
-                  else if (tpe.typeSymbol == RepeatedParamClass) Typed(ref, Ident(nme.WILDCARD_STAR.toTypeName))
+                  if (isByNameParamType(tpe)) Apply(ref, List())
+                  else if (isScalaRepeatedParamType(tpe)) Typed(ref, Ident(nme.WILDCARD_STAR))
                   else ref
                 }
               })

@@ -670,7 +670,7 @@ abstract class ClassfileParser {
           t
       }
       val newParams = method.newSyntheticValueParams(
-        formals.init ::: List(appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(elemtp))))
+        formals.init :+ appliedType(definitions.JavaRepeatedParamClass.typeConstructor, List(elemtp)))
       MethodType(newParams, rtpe)
     case PolyType(tparams, rtpe) =>
       PolyType(tparams, arrayToRepeated(rtpe))

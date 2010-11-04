@@ -316,7 +316,7 @@ abstract class TreeGen {
     Apply(Select(monitor, Object_synchronized), List(body))
 
   def wildcardStar(tree: Tree) =
-    atPos(tree.pos) { Typed(tree, Ident(nme.WILDCARD_STAR.toTypeName)) }
+    atPos(tree.pos) { Typed(tree, Ident(nme.WILDCARD_STAR)) }
 
   def paramToArg(vparam: Symbol) = {
     val arg = Ident(vparam)

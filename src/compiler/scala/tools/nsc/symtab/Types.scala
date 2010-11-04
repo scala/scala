@@ -818,10 +818,6 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
         typeVarToOriginMap(this) eq this
     }
 
-    /** Is this type a varargs parameter?
-     */
-    def isVarargs: Boolean = typeSymbol == RepeatedParamClass
-
     /** If this is a symbol loader type, load and assign a new type to
      *  `sym'.
      */
@@ -1910,17 +1906,18 @@ A type's typeSymbol should never be inspected directly.
 
     override def safeToString: String = {
       if (!settings.debug.value) {
-        if (sym == RepeatedParamClass && !args.isEmpty)
-          return args(0).toString + "*"
-        if (sym == ByNameParamClass && !args.isEmpty)
-          return "=> " + args(0).toString
-        if (isFunctionType(this))
-          return normalize.typeArgs.init.mkString("(", ", ", ")") + " => " + normalize.typeArgs.last
-        if (isTupleTypeOrSubtype(this))
-          return normalize.typeArgs.mkString("(", ", ", if (normalize.typeArgs.length == 1) ",)" else ")")
-        if (sym.isAliasType && (prefixChain exists (_.termSymbol.isSynthetic))) {
-          val normed = normalize;
-          if (normed ne this) return normed.toString
+        this match {
+          case TypeRef(_, RepeatedParamClass, arg :: _) => return arg + "*"
+          case TypeRef(_, ByNameParamClass, arg :: _)   => return "=> " + arg
+          case _ =>
+            if (isFunctionType(this))
+              return normalize.typeArgs.init.mkString("(", ", ", ")") + " => " + normalize.typeArgs.last
+            else if (isTupleTypeOrSubtype(this))
+              return normalize.typeArgs.mkString("(", ", ", if (normalize.typeArgs.length == 1) ",)" else ")")
+            else if (sym.isAliasType && prefixChain.exists(_.termSymbol.isSynthetic)) {
+              val normed = normalize;
+              if (normed ne this) return normed.toString
+            }
         }
       }
       val monopart =

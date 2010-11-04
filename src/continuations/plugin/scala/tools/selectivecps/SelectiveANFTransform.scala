@@ -147,7 +147,7 @@ abstract class SelectiveANFTransform extends PluginComponent with Transform with
 
       val (stm,expr) = (for ((a,tp) <- args.zip(formals ::: List.fill(overshoot)(NoType))) yield {
         tp match {
-          case TypeRef(_, sym, List(elemtp)) if sym == ByNameParamClass =>
+          case TypeRef(_, ByNameParamClass, List(elemtp)) =>
             (Nil, transExpr(a, None, getAnswerTypeAnn(elemtp)))
           case _ =>
             val (valStm, valExpr, valSpc) = transInlineValue(a, spc)

@@ -182,8 +182,23 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       tparam => arrayType(tparam.typeConstructor)
     )
 
-    def isRepeatedParamType(tp: Type) =
-      tp.typeSymbol == RepeatedParamClass || tp.typeSymbol == JavaRepeatedParamClass
+    def isByNameParamType(tp: Type)        = tp.typeSymbol == ByNameParamClass
+    def isScalaRepeatedParamType(tp: Type) = tp.typeSymbol == RepeatedParamClass
+    def isJavaRepeatedParamType(tp: Type)  = tp.typeSymbol == JavaRepeatedParamClass
+    def isRepeatedParamType(tp: Type)      = isScalaRepeatedParamType(tp) || isJavaRepeatedParamType(tp)
+
+    def isScalaVarArgs(params: List[Symbol]) = params.nonEmpty && isScalaRepeatedParamType(params.last.tpe)
+    def isVarArgsList(params: List[Symbol])  = params.nonEmpty && isRepeatedParamType(params.last.tpe)
+    def isVarArgTypes(formals: List[Type])   = formals.nonEmpty && isRepeatedParamType(formals.last)
+
+    def isPrimitiveArray(tp: Type) = tp match {
+      case TypeRef(_, ArrayClass, arg :: Nil) => isValueClass(arg.typeSymbol)
+      case _                                  => false
+    }
+    def isArrayOfSymbol(tp: Type, elem: Symbol) = tp match {
+      case TypeRef(_, ArrayClass, arg :: Nil) => arg.typeSymbol == elem
+      case _                                  => false
+    }
 
     lazy val ByNameParamClass = newCovariantPolyClass(
       ScalaPackageClass,
@@ -362,7 +377,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
         false
     }
 
-    def seqType(arg: Type) = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
+    def seqType(arg: Type)   = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
     def arrayType(arg: Type) = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))
 
     def ClassType(arg: Type) =

@@ -443,14 +443,12 @@ self =>
     def errorTermTree = Literal(Constant(null)).setPos(o2p(in.offset))
     def errorPatternTree = Ident(nme.WILDCARD).setPos(o2p(in.offset))
 
-    /** Check that type parameter is not by name T* */
-    def checkNotByName(t: Tree) = t match {
-      case AppliedTypeTree(Select(_, n), _) =>
-        if (n == nme.BYNAME_PARAM_CLASS_NAME.toTypeName)
-          syntaxError(t.pos, "no by-name parameter type allowed here", false)
-        else if (n == nme.REPEATED_PARAM_CLASS_NAME.toTypeName)
-          syntaxError(t.pos, "no * parameter type allowed here", false)
-      case _ =>
+    /** Check that type parameter is not by name or repeated */
+    def checkNotByNameOrVarargs(tpt: Tree) = {
+      if (treeInfo isByNameParamType tpt)
+        syntaxError(tpt.pos, "no by-name parameter type allowed here", false)
+      else if (treeInfo isRepeatedParamType tpt)
+        syntaxError(tpt.pos, "no * parameter type allowed here", false)
     }
 
     /** Check that tree is a legal clause of a forSome */
@@ -867,7 +865,7 @@ self =>
                 makeFunctionTypeTree(ts, typ(isPattern))
               }
             else {
-              ts foreach checkNotByName
+              ts foreach checkNotByNameOrVarargs
               val tuple = atPos(start) { makeTupleType(ts, true) }
               infixTypeRest(
                 compoundTypeRest(
@@ -1036,12 +1034,12 @@ self =>
         // copy-paste (with change) from def paramType
         if (in.token == ARROW) {
           in.nextToken()
-          val tycon = atPos(start) { rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName) }
+          val tycon = atPos(start) { rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME) }
           atPos(start) { AppliedTypeTree(tycon, List(typ())) }
         } else {
           val t = typ()
           if (isIdent && in.name == STAR) {
-            val tycon = atPos(in.skipToken()) { rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName) }
+            val tycon = atPos(in.skipToken()) { rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME) }
             atPos(start) { AppliedTypeTree(tycon, List(t)) }
           } else t
         }
@@ -1195,7 +1193,7 @@ self =>
             if (isIdent && in.name == nme.STAR) {
               in.nextToken()
               t = atPos(t.pos.startOrPoint, colonPos) {
-                Typed(t, atPos(uscorePos) { Ident(nme.WILDCARD_STAR.toTypeName) })
+                Typed(t, atPos(uscorePos) { Ident(nme.WILDCARD_STAR) })
               }
             } else {
               syntaxErrorOrIncomplete("`*' expected", true)
@@ -1917,7 +1915,7 @@ self =>
       if (in.token == ARROW) {
         atPos(in.skipToken()) {
           AppliedTypeTree(
-            rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME.toTypeName), List(typ()))
+            rootScalaDot(nme.BYNAME_PARAM_CLASS_NAME), List(typ()))
         }
       } else {
         val t = typ()
@@ -1925,7 +1923,7 @@ self =>
           in.nextToken()
           atPos(t.pos.startOrPoint, t.pos.point) {
             AppliedTypeTree(
-              rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
+              rootScalaDot(nme.REPEATED_PARAM_CLASS_NAME), List(t))
           }
         } else t
       }

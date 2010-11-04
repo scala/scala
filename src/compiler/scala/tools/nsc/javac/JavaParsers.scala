@@ -487,7 +487,7 @@ trait JavaParsers extends JavaScanners {
       if (in.token == DOTDOTDOT) {
         in.nextToken
         t = atPos(t.pos) {
-          AppliedTypeTree(scalaDot(nme.JAVA_REPEATED_PARAM_CLASS_NAME.toTypeName), List(t))
+          AppliedTypeTree(scalaDot(nme.JAVA_REPEATED_PARAM_CLASS_NAME), List(t))
         }
       }
      varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM), t, ident())

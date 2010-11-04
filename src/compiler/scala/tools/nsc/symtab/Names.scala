@@ -160,6 +160,7 @@ trait Names extends reflect.generic.Names {
      */
     final def length: Int = len
     final def isEmpty = length == 0
+    final def nonEmpty = !isEmpty
 
     def isTermName: Boolean
     def isTypeName: Boolean

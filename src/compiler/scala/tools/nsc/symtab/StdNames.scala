@@ -95,13 +95,16 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
 
     /** Internal names */
     val ANYNAME                        = newTermName("<anyname>")
-    val BYNAME_PARAM_CLASS_NAME        = newTermName("<byname>")
     val EQUALS_PATTERN_NAME            = newTermName("<equals>")
     val ERROR                          = newTermName("<error>")
-    val JAVA_REPEATED_PARAM_CLASS_NAME = newTermName("<repeated...>")
-    val LOCALCHILD                     = newTypeName("<local child>")
     val NOSYMBOL                       = newTermName("<none>")
-    val REPEATED_PARAM_CLASS_NAME      = newTermName("<repeated>")
+
+    /** TYPE names. */
+    val BYNAME_PARAM_CLASS_NAME        = newTypeName("<byname>")
+    val JAVA_REPEATED_PARAM_CLASS_NAME = newTypeName("<repeated...>")
+    val LOCALCHILD                     = newTypeName("<local child>")
+    val REPEATED_PARAM_CLASS_NAME      = newTypeName("<repeated>")
+    val WILDCARD_STAR                  = newTypeName("_*")
 
     val CONSTRUCTOR         = newTermName("<init>")
     val INITIALIZER         = newTermName("<init>")
@@ -119,7 +122,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
 
     val TYPE_         = newTermName("TYPE")
     val WILDCARD      = newTermName("_")
-    val WILDCARD_STAR = newTermName("_*")
     val STAR          = newTermName("*")
 
     val MINUS = encode("-")

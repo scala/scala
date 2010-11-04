@@ -647,7 +647,7 @@ trait Typers { self: Analyzer =>
       } else if ((mode & (EXPRmode | QUALmode)) == EXPRmode && !sym.isValue && !phase.erasedTypes) { // (2)
         errorTree(tree, sym+" is not a value")
       } else {
-        if (sym.isStable && pre.isStable && tree.tpe.typeSymbol != ByNameParamClass &&
+        if (sym.isStable && pre.isStable && !isByNameParamType(tree.tpe) &&
             (isStableContext(tree, mode, pt) || sym.isModule && !sym.isMethod))
           tree.setType(singleType(pre, sym))
         else tree
@@ -793,8 +793,8 @@ trait Typers { self: Analyzer =>
         adapt(tree, mode, pt, original)
       case PolyType(List(), restpe) => // (2)
         adapt(tree setType restpe, mode, pt, original)
-      case TypeRef(_, sym, List(arg))
-      if ((mode & EXPRmode) != 0 && sym == ByNameParamClass) => // (2)
+      case TypeRef(_, ByNameParamClass, List(arg))
+      if ((mode & EXPRmode) != 0)   => // (2)
         adapt(tree setType arg, mode, pt, original)
       case tr @ TypeRef(_, sym, _)
       if sym.isAliasType && tr.normalize.isInstanceOf[ExistentialType] &&
@@ -2200,11 +2200,13 @@ trait Typers { self: Analyzer =>
       args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))
 
     def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
-      var newmodes = originalFormals map ((tp: Type) => if (tp.typeSymbol != ByNameParamClass) BYVALmode else 0)
-      if (isVarArgTpes(originalFormals)) // TR check really necessary?
-        newmodes = newmodes.take(newmodes.length-1) ::: List.fill(args.length - originalFormals.length + 1)(STARmode | BYVALmode)
-      for (((arg, formal), m) <- ((args zip adaptedFormals) zip newmodes)) yield
+      var newmodes = originalFormals map (tp => if (isByNameParamType(tp)) 0 else BYVALmode)
+      if (isVarArgTypes(originalFormals)) // TR check really necessary?
+        newmodes = newmodes.init ::: List.fill(args.length - originalFormals.length + 1)(STARmode | BYVALmode)
+
+      (args, adaptedFormals, newmodes).zipped map { (arg, formal, m) =>
         typedArg(arg, mode, m, formal)
+      }
     }
 
     /** Does function need to be instantiated, because a missing parameter
@@ -2238,14 +2240,14 @@ trait Typers { self: Analyzer =>
       context.namedApplyBlockInfo exists (_._1 == tree)
 
     def callToCompanionConstr(context: Context, calledFun: Symbol) = {
-      if (calledFun.isConstructor) {
+      calledFun.isConstructor && {
         val methCtx = context.enclMethod
-        if (methCtx != NoContext) {
+        (methCtx != NoContext) && {
           val contextFun = methCtx.tree.symbol
           contextFun.isPrimaryConstructor && contextFun.owner.isModuleClass &&
           companionModuleOf(calledFun.owner, context).moduleClass == contextFun.owner
-        } else false
-      } else false
+        }
+      }
     }
 
     def doTypedApply(tree: Tree, fun0: Tree, args: List[Tree], mode: Int, pt: Type): Tree = {
@@ -2303,8 +2305,7 @@ trait Typers { self: Analyzer =>
               arg1
           }
           context.undetparams = undetparams
-          inferMethodAlternative(fun, undetparams, argtpes.toList, pt,
-                                 varArgsOnly = args.nonEmpty && treeInfo.isWildcardStarArg(args.last))
+          inferMethodAlternative(fun, undetparams, argtpes.toList, pt, varArgsOnly = treeInfo.isWildcardStarArgList(args))
           doTypedApply(tree, adapt(fun, funMode(mode), WildcardType), args1, mode, pt)
 
         case mt @ MethodType(params, _) =>
@@ -2477,7 +2478,7 @@ trait Typers { self: Analyzer =>
               def typedArgToPoly(arg: Tree, formal: Type): Tree = { //TR TODO: cleanup
                 val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
                 val newmode =
-                  if (remainingParams.head.typeSymbol == ByNameParamClass) POLYmode
+                  if (isByNameParamType(remainingParams.head)) POLYmode
                   else POLYmode | BYVALmode
                 if (remainingParams.tail.nonEmpty) remainingParams = remainingParams.tail
                 // println("typedArgToPoly(arg, formal): "+(arg, formal))
@@ -3963,35 +3964,33 @@ trait Typers { self: Analyzer =>
         case Typed(expr, Function(List(), EmptyTree)) =>
           typedEta(checkDead(typed1(expr, mode, pt)))
 
-        case Typed(expr, tpt) =>
-          if (treeInfo.isWildcardStarArg(tree)) {
-            val expr0 = typed(expr, mode & stickyModes, WildcardType)
-            def subArrayType(pt: Type) =
-              if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
-              else {
-                val tparam = context.owner freshExistential "" setInfo TypeBounds(NothingClass.tpe, pt)
-                ExistentialType(List(tparam), arrayType(tparam.tpe))
-              }
-            val (expr1, baseClass) =
-              if (expr0.tpe.typeSymbol == ArrayClass)
-                (adapt(expr0, mode & stickyModes, subArrayType(pt)), ArrayClass)
-              else
-                (adapt(expr0, mode & stickyModes, seqType(pt)), SeqClass)
-            expr1.tpe.baseType(baseClass) match {
-              case TypeRef(_, _, List(elemtp)) =>
-                treeCopy.Typed(tree, expr1, tpt setType elemtp) setType elemtp
-              case _ =>
-                setError(tree)
+        case Typed(expr, tpt @ Ident(nme.WILDCARD_STAR))  =>
+          val expr0 = typed(expr, mode & stickyModes, WildcardType)
+          def subArrayType(pt: Type) =
+            if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
+            else {
+              val tparam = context.owner freshExistential "" setInfo TypeBounds(NothingClass.tpe, pt)
+              ExistentialType(List(tparam), arrayType(tparam.tpe))
             }
-          } else {
-            val tpt1 = typedType(tpt, mode)
-            val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
-            val owntype =
-              if (isPatternMode) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
-              else tpt1.tpe
-            //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
-            treeCopy.Typed(tree, expr1, tpt1) setType owntype
+          val (expr1, baseClass) = expr0.tpe.typeSymbol match {
+            case ArrayClass => (adapt(expr0, mode & stickyModes, subArrayType(pt)), ArrayClass)
+            case _          => (adapt(expr0, mode & stickyModes, seqType(pt)), SeqClass)
           }
+          expr1.tpe.baseType(baseClass) match {
+            case TypeRef(_, _, List(elemtp)) =>
+              treeCopy.Typed(tree, expr1, tpt setType elemtp) setType elemtp
+            case _ =>
+              setError(tree)
+          }
+
+        case Typed(expr, tpt) =>
+          val tpt1 = typedType(tpt, mode)
+          val expr1 = typed(expr, mode & stickyModes, tpt1.tpe.deconst)
+          val owntype =
+            if (isPatternMode) inferTypedPattern(tpt1.pos, tpt1.tpe, pt)
+            else tpt1.tpe
+          //Console.println(typed pattern: "+tree+":"+", tp = "+tpt1.tpe+", pt = "+pt+" ==> "+owntype)//DEBUG
+          treeCopy.Typed(tree, expr1, tpt1) setType owntype
 
         case TypeApply(fun, args) =>
           // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)

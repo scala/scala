@@ -303,7 +303,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
 
       for ((a,tp) <- args.zip(formals ::: List.fill(overshoot)(NoType))) yield {
         tp match {
-          case TypeRef(_, sym, List(elemtp)) if sym == ByNameParamClass =>
+          case TypeRef(_, ByNameParamClass, List(elemtp)) =>
             Nil // TODO: check conformance??
           case _ =>
             List(a)

@@ -25,7 +25,7 @@ package icode
 
 trait TypeKinds { self: ICodes =>
   import global._
-  import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass }
+  import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass, arrayType }
   import icodes.checkerDebug
 
   /** A map from scala primitive Types to ICode TypeKinds */
@@ -56,9 +56,9 @@ trait TypeKinds { self: ICodes =>
 
     def toType: Type = (reversePrimitiveMap get this) map (_.tpe) getOrElse {
       this match {
-        case REFERENCE(cls)  => cls.tpe
-        case ARRAY(elem)     => typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(elem.toType))
-        case _ => abort("Unknown type kind.")
+        case REFERENCE(cls) => cls.tpe
+        case ARRAY(elem)    => arrayType(elem.toType)
+        case _              => abort("Unknown type kind.")
       }
     }
     def toTypeAt(ph: Phase): Type = atPhase(ph)(toType)
