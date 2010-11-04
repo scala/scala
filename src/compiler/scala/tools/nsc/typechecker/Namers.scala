@@ -89,7 +89,7 @@ trait Namers { self: Analyzer =>
       if (sym.isModule && sym.moduleClass != NoSymbol)
         updatePosFlags(sym.moduleClass, pos, moduleClassFlags(flags))
       var companion: Symbol = NoSymbol
-      if (sym.owner.isPackageClass && {companion = companionSymbolOf(sym, context); true} &&
+      if (sym.owner.isPackageClass && {companion = companionSymbolOf(sym, context); companion != NoSymbol} &&
         (companion.rawInfo.isInstanceOf[loaders.SymbolLoader] ||
          companion.rawInfo.isComplete && runId(sym.validTo) != currentRunId))
         // pre-set linked symbol to NoType, in case it is not loaded together with this symbol.
