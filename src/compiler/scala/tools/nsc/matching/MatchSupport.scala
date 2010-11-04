@@ -23,6 +23,9 @@ trait MatchSupport extends ast.TreeDSL { self: ParallelMatching =>
 
   def impossible:           Nothing = abort("this never happens")
 
+  def treeCollect[T](tree: Tree, pf: PartialFunction[Tree, T]): List[T] =
+    tree filter (pf isDefinedAt _) map (x => pf(x))
+
   object Types {
     import definitions._
     implicit def enrichType(x: Type): RichType = new RichType(x)

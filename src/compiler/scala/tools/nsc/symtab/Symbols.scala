@@ -376,12 +376,12 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
     final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass
     final def definedInPackage  = owner.isPackageClass || owner.isPackageObjectClass
-    final def isPredefModule = isModule && name == nme.Predef && owner.isScalaPackageClass // not printed as a prefix
+    final def isPredefModule = this == PredefModule // not printed as a prefix
     final def isJavaInterface = isJavaDefined && isTrait
-    final def isScalaPackage = isPackage && name == nme.scala_ && owner.isRoot || // not printed as a prefix
-                               isPackageObject && owner.isScalaPackageClass
-    final def isScalaPackageClass: Boolean = isPackageClass && owner.isRoot && name == nme.scala_.toTypeName ||
-                                    isPackageObjectClass && owner.isScalaPackageClass // not printed as a prefix
+
+    // not printed as prefixes
+    final def isScalaPackage      = (this == ScalaPackage) || (isPackageObject && owner == ScalaPackageClass)
+    final def isScalaPackageClass = (this == ScalaPackageClass) || (isPackageObjectClass && owner == ScalaPackageClass)
 
     /** Is symbol a monomorphic type?
      *  assumption: if a type starts out as monomorphic, it will not acquire

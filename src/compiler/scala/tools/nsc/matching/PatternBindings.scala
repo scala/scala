@@ -119,17 +119,10 @@ trait PatternBindings extends ast.TreeDSL
       case _                => Nil
     }
     private def deepstrip(t: Tree): List[Symbol] =
-      t filter { case _: Bind => true ; case _ => false } map (_.symbol)
+      treeCollect(t, { case x: Bind => x.symbol })
   }
 
   case class Binding(pvar: Symbol, tvar: Symbol) {
-    // see bug #1843 for the consequences of not setting info.
-    // there is surely a better way to do this, especially since
-    // this looks to be the only usage of containsTp anywhere
-    // in the compiler, but it suffices for now.
-    if (tvar.info containsTp WildcardType)
-      tvar setInfo pvar.info
-
     override def toString() = pp(pvar -> tvar)
   }
 
