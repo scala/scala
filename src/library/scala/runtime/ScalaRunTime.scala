@@ -101,7 +101,7 @@ object ScalaRunTime {
     dest
   }
 
-  def toArray[T](xs: scala.collection.Seq[T]) = {
+  def toArray[T](xs: collection.Seq[T]) = {
     val arr = new Array[AnyRef](xs.length)
     var i = 0
     for (x <- xs) {
@@ -226,7 +226,7 @@ object ScalaRunTime {
    *  it's performing a series of Any/Any equals comparisons anyway.
    *  See ticket #2867 for specifics.
    */
-  def sameElements(xs1: Seq[Any], xs2: Seq[Any]) = xs1 sameElements xs2
+  def sameElements(xs1: collection.Seq[Any], xs2: collection.Seq[Any]) = xs1 sameElements xs2
 
   /** Given any Scala value, convert it to a String.
    *
@@ -257,6 +257,8 @@ object ScalaRunTime {
       case _: Range | _: NumericRange[_] => true
       // Sorted collections to the wrong thing (for us) on iteration - ticket #3493
       case _: Sorted[_, _]  => true
+      // StringBuilder(a, b, c) is not so attractive
+      case _: StringBuilder => true
       // Don't want to evaluate any elements in a view
       case _: TraversableView[_, _] => true
       // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
@@ -266,12 +268,18 @@ object ScalaRunTime {
       case _ => false
     }
 
+    // A variation on inner for maps so they print -> instead of bare tuples
+    def mapInner(arg: Any): String = arg match {
+      case (k, v)   => inner(k) + " -> " + inner(v)
+      case _        => inner(arg)
+    }
     // The recursively applied attempt to prettify Array printing
     def inner(arg: Any): String = arg match {
       case null                         => "null"
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => WrappedArray make x take maxElements map inner mkString ("Array(", ", ", ")")
-      case x: Traversable[_]            => x.toIterator take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: collection.Map[_, _]      => x take maxElements map mapInner mkString (x.stringPrefix + "(", ", ", ")")
+      case x: Traversable[_]            => x take maxElements map inner mkString (x.stringPrefix + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
       case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
       case x                            => x toString
