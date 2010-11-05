@@ -288,6 +288,7 @@ self =>
     currentTyperRun.compileLate(unit)
     if (!reporter.hasErrors) validatePositions(unit.body)
     //println("parsed: [["+unit.body+"]]")
+    if (!unit.isJava) syncTopLevelSyms(unit)
     unit.status = JustParsed
   }
 
@@ -304,13 +305,14 @@ self =>
       activeLocks = 0
       currentTyperRun.typeCheck(unit)
       unit.status = currentRunId
-      if (!unit.isJava) syncTopLevelSyms(unit)
     }
   }
 
   def syncTopLevelSyms(unit: RichCompilationUnit) {
     val deleted = currentTopLevelSyms filter { sym =>
-      sym.sourceFile == unit.source.file && runId(sym.validTo) < currentRunId
+      /** We sync after namer phase and it resets all the top-level symbols that survive the new parsing
+       * round to NoPeriod. */
+      sym.sourceFile == unit.source.file && sym.validTo != NoPeriod && runId(sym.validTo) < currentRunId
     }
     for (d <- deleted) {
       d.owner.info.decls unlink d
