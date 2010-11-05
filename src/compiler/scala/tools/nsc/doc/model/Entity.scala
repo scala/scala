@@ -18,6 +18,7 @@ trait Entity {
   def qualifiedName: String
   override def toString = qualifiedName
   def universe: Universe
+  def annotations: List[Annotation]
 }
 
 /** A class, trait, object or package. A package is represented as an instance
@@ -156,6 +157,18 @@ trait ValueParam extends ParameterEntity {
   def resultType: TypeEntity
   def defaultValue: Option[TreeEntity]
   def isImplicit: Boolean
+}
+
+/** An annotation, defined by its class and its constructor arguments. */
+trait Annotation extends Entity {
+  def annotationClass: TemplateEntity
+  def arguments: List[ValueArgument]
+}
+
+/** A value that is passed as an argument to a value paramater. */
+trait ValueArgument {
+  def parameter: Option[ValueParam]
+  def value: TreeEntity
 }
 
 /** An type that represents visibility of members. */

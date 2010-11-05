@@ -59,6 +59,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     def toRoot: List[EntityImpl] = this :: inTpl.toRoot
     def qualifiedName = name
     val universe = thisFactory.universe
+    def annotations = sym.annotations.map(makeAnnotation)
   }
 
   /** Provides a default implementation for instances of the `WeakTemplateEntity` type. It must be instantiated as a
@@ -162,7 +163,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
     templatesCache += (sym -> this)
     lazy val definitionName = optimize(inDefinitionTemplates.head.qualifiedName + "." + name)
     override def toRoot: List[DocTemplateImpl] = this :: inTpl.toRoot
-    def inSource = if (sym.sourceFile != null) Some(sym.sourceFile, sym.pos.line) else None
+    def inSource = if (sym.sourceFile != null) Some((sym.sourceFile, sym.pos.line)) else None
     def sourceUrl = {
       def fixPath(s: String) = s.replaceAll("\\" + java.io.File.separator, "/")
       val assumedSourceRoot: String = {
@@ -376,6 +377,37 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
   }
 
   /** */
+  def makeAnnotation(annot: AnnotationInfo): Annotation = {
+    val aSym = annot.atp.typeSymbol
+    new EntityImpl(aSym, makeTemplate(aSym.owner)) with Annotation {
+      def annotationClass =
+        makeTemplate(annot.atp.typeSymbol)
+      def arguments =
+        annotationClass match {
+          case aClass: Class =>
+            aClass.valueParams match {
+              case Nil => Nil
+              case vp :: vps =>
+                (vp zip annot.args) map { case (param, arg) =>
+                  new ValueArgument {
+                    def parameter = Some(param)
+                    def value = makeTree(arg)
+                  }
+                }
+            }
+          case _ =>
+            annot.args map { arg =>
+              new ValueArgument {
+                def parameter = None
+                def value = makeTree(arg)
+              }
+            }
+        }
+
+    }
+  }
+
+  /** */
   def makeMember(aSym: Symbol, inTpl: => DocTemplateImpl): List[MemberImpl] = {
 
     def makeMember0(bSym: Symbol): Option[MemberImpl] = {
@@ -457,17 +489,17 @@ class ModelFactory(val global: Global, val settings: doc.Settings) { thisFactory
       def isTypeParam = false
       def isValueParam = true
       def defaultValue =
-        if (aSym.hasDefault)
+        if (aSym.hasDefault) {
           // units.filter should return only one element
           (currentRun.units filter (_.source.file == aSym.sourceFile)).toList match {
             case List(unit) =>
               (unit.body find (_.symbol == aSym)) match {
-                case Some(ValDef(_,_,_,rhs)) =>
-                  Some(makeTree(rhs))
+                case Some(ValDef(_,_,_,rhs)) => Some(makeTree(rhs))
                 case _ => None
               }
             case _ => None
           }
+        }
         else None
       def resultType =
         makeType(sym.tpe, inTpl, sym)

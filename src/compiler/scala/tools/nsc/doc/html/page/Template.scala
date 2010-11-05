@@ -219,7 +219,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   def memberToInlineCommentHtml(mbr: MemberEntity, isSelf: Boolean): NodeSeq =
     <p class="comment cmt">{ inlineToHtml(mbr.comment.get.short) }</p>
 
-  def memberToCommentBodyHtml(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq =
+  def memberToCommentBodyHtml(mbr: MemberEntity, isSelf: Boolean, isReduced: Boolean = false): NodeSeq = {
     NodeSeq.Empty ++
     { if (mbr.comment.isEmpty) NodeSeq.Empty else
         <div class="comment cmt">{ commentToHtml(mbr.comment) }</div>
@@ -310,6 +310,30 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         case _ => NodeSeq.Empty
       }
     } ++
+    { if (!mbr.annotations.isEmpty) {
+        <div class="block">
+          annotations: {
+            mbr.annotations.map { annot =>
+              <xml:group>
+                <span class="name">@{ templateToHtml(annot.annotationClass) }</span>{
+                  def paramsToHtml(vls: List[ValueArgument]): NodeSeq =
+                    vls map { vl =>
+                      <span>{
+                        vl.parameter match {
+                          case Some(p) => Text(p.name + " = ")
+                          case None => NodeSeq.Empty
+                        }
+                      }{ treeToHtml(vl.value) }</span>
+                    }
+                  <span class="params">({ paramsToHtml(annot.arguments) })</span>
+                }
+              </xml:group>
+            }
+          }
+        </div>
+      }
+      else NodeSeq.Empty
+    } ++
     { mbr match {
         case dtpl: DocTemplateEntity if (isSelf && dtpl.sourceUrl.isDefined && dtpl.inSource.isDefined && !isReduced) =>
           val (absFile, line) = dtpl.inSource.get
@@ -351,6 +375,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
         case None => NodeSeq.Empty
       }
     }
+  }
 
   def kindToString(mbr: MemberEntity): String = mbr match {
     case tpl: DocTemplateEntity => docEntityKindToString(tpl)
@@ -418,33 +443,35 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
           tparamsToHtml(mbr)
         }
         { if (isReduced) NodeSeq.Empty else {
-          def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
-            def param0(vl: ValueParam): NodeSeq =
-              // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
-              <span name={ vl.name }>{ Text(vl.name + ": ") }{ typeToHtml(vl.resultType, hasLinks) }{
-                if(!vl.defaultValue.isEmpty) {
-                  defaultValueToHtml(vl.defaultValue.get);
-                }
-                else NodeSeq.Empty
-              }</span>
-            def params0(vlss: List[ValueParam]): NodeSeq = vlss match {
-              case Nil => NodeSeq.Empty
-              case vl :: Nil => param0(vl)
-              case vl :: vls => param0(vl) ++ Text(", ") ++ params0(vls)
+            def paramsToHtml(vlsss: List[List[ValueParam]]): NodeSeq = {
+              def param0(vl: ValueParam): NodeSeq =
+                // notice the }{ in the next lines, they are necessary to avoid a undesired withspace in output
+                <span name={ vl.name }>{ Text(vl.name + ": ") }{ typeToHtml(vl.resultType, hasLinks) }{
+                  if(!vl.defaultValue.isEmpty) {
+                    treeToHtml(vl.defaultValue.get);
+                  }
+                  else NodeSeq.Empty
+                }</span>
+
+              def params0(vlss: List[ValueParam]): NodeSeq = vlss match {
+                case Nil => NodeSeq.Empty
+                case vl :: Nil => param0(vl)
+                case vl :: vls => param0(vl) ++ Text(", ") ++ params0(vls)
+              }
+              def implicitCheck(vlss: List[ValueParam]): NodeSeq = vlss match {
+                case vl :: vls => if(vl.isImplicit) { <span class="implicit">implicit </span> } else Text("")
+                case _ => Text("")
+              }
+              vlsss map { vlss => <span class="params">({implicitCheck(vlss) ++ params0(vlss) })</span> }
             }
-            def implicitCheck(vlss: List[ValueParam]): NodeSeq = vlss match {
-              case vl :: vls => if(vl.isImplicit) { <span class="implicit">implicit </span> } else Text("")
-              case _ => Text("")
+            mbr match {
+              case cls: Class => paramsToHtml(cls.valueParams)
+              case ctr: Constructor => paramsToHtml(ctr.valueParams)
+              case dfe: Def => paramsToHtml(dfe.valueParams)
+              case _ => NodeSeq.Empty
             }
-            vlsss map { vlss => <span class="params">({implicitCheck(vlss) ++ params0(vlss) })</span> }
           }
-          mbr match {
-            case cls: Class => paramsToHtml(cls.valueParams)
-            case ctr: Constructor => paramsToHtml(ctr.valueParams)
-            case dfe: Def => paramsToHtml(dfe.valueParams)
-            case _ => NodeSeq.Empty
-          }
-        }}
+        }
         { if (isReduced) NodeSeq.Empty else {
           mbr match {
             case tpl: DocTemplateEntity if (!tpl.isPackage) =>
@@ -477,7 +504,7 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
   }
 
   /** */
-  def defaultValueToHtml(defVal:TreeEntity):NodeSeq = {
+  def treeToHtml(defVal:TreeEntity):NodeSeq = {
     var index = 0
     val str = defVal.expression
     val length = str.length
@@ -500,7 +527,6 @@ class Template(tpl: DocTemplateEntity) extends HtmlPage {
             val anchor = "#" + mbr.name + defParamsString(mbr) + ":" + mbr.resultType.name
             val link = relativeLinkTo(mbr.inTemplate)
             myXml ++= <span class="name"><a href={link ++ anchor}>{str.substring(from, to)}</a></span>
-          case _ => assert(false, "unexpected case in defaultValueToHtml")
         }
         index = to
       }
