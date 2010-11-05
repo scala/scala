@@ -3794,7 +3794,7 @@ A type's typeSymbol should never be inspected directly.
           sym // Nested lazy object
         else
           adaptToNewRun(pre, sym.sourceModule).moduleClass
-      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
+      } else if ((pre eq NoPrefix) || (pre eq NoType)/* || sym.owner.isPackageClass*/) {
         sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
