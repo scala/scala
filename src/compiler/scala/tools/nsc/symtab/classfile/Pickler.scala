@@ -1093,22 +1093,32 @@ abstract class Pickler extends SubComponent {
       writeNat(MajorVersion)
       writeNat(MinorVersion)
       writeNat(ep)
-      if (showSig) {
-        println("Pickled info for "+rootName+" V"+MajorVersion+"."+MinorVersion)
-      }
+      def matchesRoot(name: String) = (
+        rootName.toString == (
+          if (name contains '.') name.split('.').last
+          else name
+        )
+      )
+      val showClass = opt.showClass exists matchesRoot
+      def versionString  = "V" + MajorVersion + "." + MinorVersion
+
+      if (showSig)
+        println("Pickled info for " + rootName + " in " + rootOwner.fullName + " " + versionString)
+
       for (i <- 0 until ep) {
-        if (showSig/* || rootName.toString == "StaticCompletion"*/) {
+        if (showSig) {
           print((i formatted "%3d: ")+(writeIndex formatted "%5d: "))
           printEntry(entries(i))
         }
         writeEntry(entries(i))
       }
-      if (settings.Xshowcls.value == rootName.toString) {
+
+      if (showClass) {
         readIndex = 0
         ShowPickled.printFile(this, Console.out)
       }
     }
 
-    override def toString() = "" + rootName + " in " + rootOwner
+    override def toString = "" + rootName + " in " + rootOwner
   }
 }

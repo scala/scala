@@ -1,7 +1,8 @@
 package scala.tools.nsc
 package dependencies
+
 import util.SourceFile
-import io.AbstractFile
+import io.{ AbstractFile, Path }
 import collection._
 import symtab.Flags
 
@@ -10,17 +11,34 @@ trait DependencyAnalysis extends SubComponent with Files {
 
   val phaseName = "dependencyAnalysis"
 
-  def off = settings.make.value == "all"
+  def off                  = settings.make.isDefault
+  def shouldCheckClasspath = settings.make.value != "transitivenocp"
 
   def newPhase(prev: Phase) = new AnalysisPhase(prev)
+
+  private def depPath = Path(settings.dependenciesFile.value)
+  def loadDependencyAnalysis(): Boolean = (
+    depPath.path != "none" && depPath.isFile && loadFrom(
+      AbstractFile.getFile(depPath),
+      path => AbstractFile.getFile(depPath.parent resolve Path(path))
+    )
+  )
+  def saveDependencyAnalysis(): Unit = {
+    if (!depPath.exists)
+      dependenciesFile = AbstractFile.getFile(depPath.createFile())
+
+    /** The directory where file lookup should start */
+    val rootPath = depPath.parent.normalize
+    saveDependencies(
+      file => rootPath.relativize(Path(file.file).normalize).path
+    )
+  }
 
   lazy val maxDepth = settings.make.value match {
     case "changed" => 0
     case "transitive" | "transitivenocp" => Int.MaxValue
     case "immediate" => 1
   }
-
-  def shouldCheckClasspath = settings.make.value != "transitivenocp"
 
   // todo: order insensible checking and, also checking timestamp?
   def validateClasspath(cp1: String, cp2: String): Boolean = cp1 == cp2
@@ -87,7 +105,7 @@ trait DependencyAnalysis extends SubComponent with Files {
     }
   }
 
-  def filter(files: List[SourceFile]): List[SourceFile] =
+  def calculateFiles(files: List[SourceFile]): List[SourceFile] =
     if (off) files
     else if (dependencies.isEmpty) {
       println("No known dependencies. Compiling " +

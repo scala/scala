@@ -809,7 +809,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
       val bridgesScope = new Scope
       val bridgeTarget = new mutable.HashMap[Symbol, Symbol]
       var bridges: List[Tree] = List()
-      val opc = atPhase(currentRun.explicitOuterPhase) {
+      val opc = atPhase(currentRun.explicitouterPhase) {
         new overridingPairs.Cursor(owner) {
           override def parents: List[Type] = List(owner.info.parents.head)
           override def exclude(sym: Symbol): Boolean =
@@ -820,7 +820,7 @@ abstract class Erasure extends AddInterfaces with typechecker.Analyzer with ast.
         val member = opc.overriding
         val other = opc.overridden
         //Console.println("bridge? " + member + ":" + member.tpe + member.locationString + " to " + other + ":" + other.tpe + other.locationString);//DEBUG
-        if (atPhase(currentRun.explicitOuterPhase)(!member.isDeferred)) {
+        if (atPhase(currentRun.explicitouterPhase)(!member.isDeferred)) {
           val otpe = erasure(other.tpe);
           val bridgeNeeded = atPhase(phase.next) (
             !(other.tpe =:= member.tpe) &&

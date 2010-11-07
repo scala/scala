@@ -1,25 +1,26 @@
-parser
-namer
-packageobjects
-typer
-superaccessors
-pickler
-refchecks
-liftcode
-uncurry
-tailcalls
-specialize
-explicitouter
-erasure
-lazyvals
-lambdalift
-constructors
-flatten
-mixin
-cleanup
-icode
-inliner
-closelim
-dce
-jvm
-terminal
+        parser  parse source into ASTs, perform simple desugaring
+         namer  resolve names, attach symbols to named trees
+packageobjects  load package objects
+         typer  the meat and potatoes: type the trees
+superaccessors  add super accessors in traits and nested classes
+       pickler  serialize symbol tables
+     refchecks  reference and override checking, translate nested objects
+      liftcode  reify trees
+       uncurry  uncurry, translate function values to anonymous classes
+     tailcalls  replace tail calls by jumps
+    specialize  @specialized-driven class and method specialization
+ explicitouter  C.this refs become outer pointers, translate pattern matches
+       erasure  erase types, add interfaces for traits
+      lazyvals  allocate bitmaps, translate lazy vals into lazified defs
+    lambdalift  move nested functions to top level
+  constructors  move field definitions into constructors
+       flatten  eliminate inner classes
+         mixin  mixin composition
+       cleanup  platform-specific cleanups, generate reflective calls
+         icode  generate portable intermediate code
+       inliner  optimization: do inlining
+      closelim  optimization: eliminate uncalled closures
+           dce  optimization: eliminate dead code
+           jvm  generate JVM bytecode
+      terminal  The last phase in the compiler chain
+

@@ -69,6 +69,7 @@ private[scala] trait PropertiesTrait
    *  Note that it uses "prop" i.e. looks in the scala jar, not the system properties.
    */
   def sourceEncoding        = scalaPropOrElse("file.encoding", "UTF-8")
+  def sourceReader          = scalaPropOrElse("source.reader", "scala.tools.nsc.io.SourceReader")
 
   /** This is the default text encoding, overridden (unreliably) with
    *  JAVA_OPTS="-Dfile.encoding=Foo"

@@ -18,7 +18,10 @@ trait JavaPlatform extends Platform[AbstractFile] {
   lazy val classPath  = new PathResolver(settings).result
   def rootLoader      = new loaders.JavaPackageLoader(classPath)
 
-  private def depAnalysisPhase = if (settings.make.value != "all") List(dependencyAnalysis) else Nil
+  private def depAnalysisPhase =
+    if (settings.make.isDefault) Nil
+    else List(dependencyAnalysis)
+
   def platformPhases = List(
     flatten,    // get rid of inner classes
     liftcode,   // generate reified trees
