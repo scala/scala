@@ -26,7 +26,7 @@ class ParCollProperties extends Properties("Parallel collections") {
   // include(mutable.IntIntParallelHashMapCheck)
 
   // parallel mutable hash sets (tables)
-  include(mutable.IntParallelHashSetCheck)
+  // include(mutable.IntParallelHashSetCheck)
 
   // parallel vectors
 
