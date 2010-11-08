@@ -467,10 +467,13 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
      */
     def elideIntoUnit(tree: Tree): Tree = Literal(()) setPos tree.pos setType UnitClass.tpe
     def isElidable(tree: Tree) = {
-      val sym = tree.symbol
+      val sym = treeInfo.methPart(tree).symbol
       // XXX settings.noassertions.value temporarily retained to avoid
       // breakage until a reasonable interface is settled upon.
-      sym != null && sym.elisionLevel.exists(x => x < settings.elidebelow.value || settings.noassertions.value)
+      sym != null && sym.elisionLevel.exists(x => x < settings.elidebelow.value || settings.noassertions.value) && {
+        log("Eliding call from " + tree.symbol.owner + " to " + sym + " based on its elision threshold of " + sym.elisionLevel.get)
+        true
+      }
     }
 
 // ------ The tree transformers --------------------------------------------------------
@@ -516,7 +519,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
         t
       }
 
-      tree match {
+      if (isElidable(tree)) elideIntoUnit(tree)
+      else tree match {
         case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
           withNeedLift(false) {
             if (tree.symbol.isClassConstructor) {
@@ -577,9 +581,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           treeCopy.UnApply(tree, fn1, args1)
 
         case Apply(fn, args) =>
-          if (isElidable(fn))
-            elideIntoUnit(tree)
-          else if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head))
+          if (fn.symbol == Object_synchronized && shouldBeLiftedAnyway(args.head))
             transform(treeCopy.Apply(tree, fn, List(liftTree(args.head))))
           else
             withNeedLift(true) {
@@ -637,8 +639,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers {
           atPos(tree.pos)(Apply(tree, Nil) setType tree.tpe.resultType)
         }
 
-        if (isElidable(tree)) elideIntoUnit(tree) // was not seen in mainTransform
-        else if (needsParens) repair
+        if (needsParens) repair
         else if (tree.isType) TypeTree(tree.tpe) setPos tree.pos
         else tree
       }
