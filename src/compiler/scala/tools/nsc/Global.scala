@@ -973,25 +973,55 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     atPhase(phase.next) { currentRun.units foreach treePrinter.print }
   }
 
-  def showDef(name: Name) {
-    val segments  = name.toString split '.'
-    val container = segments.init.foldLeft(definitions.RootClass: Symbol)(_.info member _)
-    val target    = if (name.isTypeName) newTypeName(segments.last) else newTermName(segments.last)
+  /** We resolve the class/object ambiguity by passing a type/term name.
+   */
+  def showDef(fullName: Name, ph: Phase = currentRun.typerPhase.next) = {
+    def phased[T](body: => T): T = atPhase(ph)(body)
 
-    // If the name as given resolves to an existing symbol, show that.
-    // Otherwise we'll show every symbol in the current run with a matching name.
-    val syms = (container.info member target) match {
-      case NoSymbol   => currentRun.symSource.keys filter (_.name == name) toList
-      case sym        => List(sym)
+    def walker(sym: Symbol, n: Name)         = sym.info member n
+    def walk(root: Symbol, segs: List[Name]) = phased(segs.foldLeft(root)(walker))
+    def defs(sym: Symbol)                    = phased(sym.info.members map (x => if (x.isTerm) x.defString else x.toString))
+    def bases(sym: Symbol)                   = phased(sym.info.baseClasses map (_.fullName))
+    def mkName(str: String, term: Boolean) =
+      if (term) newTermName(str)
+      else newTypeName(str)
+
+    def nameSegments(name: String): List[Name] = {
+      name.indexWhere(ch => ch == '.' || ch == '#') match {
+        // it's the last segment: the argument to showDef tells us whether type or term
+        case -1     => if (name == "") Nil else List(mkName(name, fullName.isTermName))
+        // otherwise, we can tell based on whether '#' or '.' is the following char.
+        case idx    =>
+          val (id, div, rest) = (name take idx, name charAt idx, name drop (idx + 1))
+          mkName(id, div == '.') :: nameSegments(rest)
+      }
+    }
+
+    val syms = {
+      // creates a list of simple type and term names.
+      val segments = nameSegments(fullName.toString)
+
+      // make the type/term selections walking from the root.
+      walk(definitions.RootClass, segments) match {
+        // The name as given was not found, so we'll sift through every symbol in
+        // the run looking for plausible matches.
+        case NoSymbol => phased {
+          currentRun.symSource.keys.toList .
+            filter (_.simpleName == segments.head) .
+            map (sym => walk(sym, segments.tail)) .
+            filterNot (_ == NoSymbol)
+        }
+        // The name as given matched, so show only that.
+        case sym => List(sym)
+      }
     }
 
     syms foreach { sym =>
-      val name        = "\n<<-- " + sym.kindString + " " + sym.fullName + " -->>\n"
-      val baseClasses = sym.info.baseClasses map (_.fullName) mkString ("Base classes:\n  ", "\n  ", "\n")
-      val members     = atPhase(currentRun.typerPhase.next)(sym.info.members map (_.defString))
-      val memberStr   = members.mkString("Members after phase typer:\n  ", "\n  ", "\n")
+      val name        = phased("\n<<-- " + sym.kindString + " " + sym.fullName + " -->>\n")
+      val baseClasses = bases(sym).mkString("Base classes:\n  ", "\n  ", "\n")
+      val members     = defs(sym).mkString("Members after phase typer:\n  ", "\n  ", "\n")
 
-      inform(List(name, baseClasses, memberStr) mkString "\n")
+      inform(List(name, baseClasses, members) mkString "\n")
     }
   }
 
