@@ -39,7 +39,11 @@ class Breaks {
     }
   }
 
-  def tryBreakable(op: => Unit) = new {
+  trait TryBlock {
+    def catchBreak(onBreak: => Unit): Unit
+  }
+
+  def tryBreakable(op: => Unit) = new TryBlock {
     def catchBreak(onBreak: => Unit) = try {
       op
     } catch {

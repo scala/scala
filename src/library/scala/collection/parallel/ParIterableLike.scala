@@ -221,8 +221,28 @@ self =>
 
   type SSCTask[R, Tp] = StrictSplitterCheckTask[R, Tp]
 
+  /* helper traits - to avoid structural invocations */
+
+  trait TaskOps[R, Tp] {
+    def mapResult[R1](mapping: R => R1): ResultMapping[R, Tp, R1]
+    def compose[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3): SeqComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]]
+    def parallel[R3, R2, Tp2](t2: SSCTask[R2, Tp2])(resCombiner: (R, R2) => R3): ParComposite[R, R2, R3, SSCTask[R, Tp], SSCTask[R2, Tp2]]
+  }
+
+  trait BuilderOps[Elem, To] {
+    trait Otherwise[Cmb] {
+      def otherwise(notbody: => Unit)(implicit m: ClassManifest[Cmb]): Unit
+    }
+
+    def ifIs[Cmb](isbody: Cmb => Unit): Otherwise[Cmb]
+  }
+
+  trait SignallingOps[PI <: DelegatedSignalling] {
+    def assign(cntx: Signalling): PI
+  }
+
   /* convenience task operations wrapper */
-  protected implicit def task2ops[R, Tp](tsk: SSCTask[R, Tp]) = new {
+  protected implicit def task2ops[R, Tp](tsk: SSCTask[R, Tp]) = new TaskOps[R, Tp] {
     def mapResult[R1](mapping: R => R1): ResultMapping[R, Tp, R1] = new ResultMapping[R, Tp, R1](tsk) {
       def map(r: R): R1 = mapping(r)
     }
@@ -242,15 +262,15 @@ self =>
   }
 
   /* convenience signalling operations wrapper */
-  protected implicit def delegatedSignalling2ops[PI <: DelegatedSignalling](it: PI) = new {
+  protected implicit def delegatedSignalling2ops[PI <: DelegatedSignalling](it: PI) = new SignallingOps[PI] {
     def assign(cntx: Signalling): PI = {
       it.signalDelegate = cntx
       it
     }
   }
 
-  protected implicit def builder2ops[Elem, To](cb: Builder[Elem, To]) = new {
-    def ifIs[Cmb](isbody: Cmb => Unit) = new {
+  protected implicit def builder2ops[Elem, To](cb: Builder[Elem, To]) = new BuilderOps[Elem, To] {
+    def ifIs[Cmb](isbody: Cmb => Unit) = new Otherwise[Cmb] {
       def otherwise(notbody: => Unit)(implicit m: ClassManifest[Cmb]) {
         if (cb.getClass == m.erasure) isbody(cb.asInstanceOf[Cmb]) else notbody
       }

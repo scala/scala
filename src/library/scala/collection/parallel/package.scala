@@ -48,21 +48,45 @@ package object parallel {
     def par = mutable.ParArray.handoff[T](array)
   }
 
-  implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new {
+  trait FactoryOps[From, Elem, To] {
+    trait Otherwise[R] {
+      def otherwise(notbody: => R): R
+    }
+
+    def isParallel: Boolean
+    def asParallel: CanCombineFrom[From, Elem, To]
+    def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R): Otherwise[R]
+  }
+
+  implicit def factory2ops[From, Elem, To](bf: CanBuildFrom[From, Elem, To]) = new FactoryOps[From, Elem, To] {
     def isParallel = bf.isInstanceOf[Parallel]
     def asParallel = bf.asInstanceOf[CanCombineFrom[From, Elem, To]]
-    def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R) = new {
+    def ifParallel[R](isbody: CanCombineFrom[From, Elem, To] => R) = new Otherwise[R] {
       def otherwise(notbody: => R) = if (isParallel) isbody(asParallel) else notbody
     }
   }
 
-  implicit def traversable2ops[T](t: TraversableOnce[T]) = new {
+  trait TraversableOps[T] {
+    trait Otherwise[R] {
+      def otherwise(notbody: => R): R
+    }
+
+    def isParallel: Boolean
+    def isParIterable: Boolean
+    def asParIterable: ParIterable[T]
+    def isParSeq: Boolean
+    def asParSeq: ParSeq[T]
+    def ifParSeq[R](isbody: ParSeq[T] => R): Otherwise[R]
+    def toParArray: ParArray[T]
+  }
+
+  implicit def traversable2ops[T](t: TraversableOnce[T]) = new TraversableOps[T] {
     def isParallel = t.isInstanceOf[Parallel]
     def isParIterable = t.isInstanceOf[ParIterable[_]]
     def asParIterable = t.asInstanceOf[ParIterable[T]]
     def isParSeq = t.isInstanceOf[ParSeq[_]]
     def asParSeq = t.asInstanceOf[ParSeq[T]]
-    def ifParSeq[R](isbody: ParSeq[T] => R) = new {
+    def ifParSeq[R](isbody: ParSeq[T] => R) = new Otherwise[R] {
       def otherwise(notbody: => R) = if (isParallel) isbody(asParSeq) else notbody
     }
     def toParArray = if (t.isInstanceOf[ParArray[_]]) t.asInstanceOf[ParArray[T]] else {
@@ -73,7 +97,11 @@ package object parallel {
     }
   }
 
-  implicit def throwable2ops(self: Throwable) = new {
+  trait ThrowableOps {
+    def alongWith(that: Throwable): Throwable
+  }
+
+  implicit def throwable2ops(self: Throwable) = new ThrowableOps {
     def alongWith(that: Throwable) = self match {
       case ct: CompositeThrowable => new CompositeThrowable(ct.throwables + that)
       case _ => new CompositeThrowable(Set(self, that))
