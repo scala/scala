@@ -1393,7 +1393,7 @@ abstract class GenJVM extends SubComponent {
           case RETURN(kind) =>
             jcode emitRETURN javaType(kind)
 
-          case THROW() =>
+          case THROW(_) =>
             jcode.emitATHROW()
 
           case DROP(kind) =>
@@ -1429,7 +1429,7 @@ abstract class GenJVM extends SubComponent {
             } else
               assert(false, "Illegal local var nesting: " + method)
 
-          case LOAD_EXCEPTION() =>
+          case LOAD_EXCEPTION(_) =>
             ()
         }
 

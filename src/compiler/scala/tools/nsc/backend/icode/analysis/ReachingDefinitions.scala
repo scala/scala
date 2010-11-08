@@ -121,15 +121,15 @@ abstract class ReachingDefinitions {
       var stackOut: List[Set[(BasicBlock, Int)]] = Nil
 
       for ((instr, idx) <- b.toList.zipWithIndex) {
-        if (instr == LOAD_EXCEPTION())
-          ()
-        else if (instr.consumed > depth) {
-          drops = drops + (instr.consumed - depth)
-          depth = 0
-          stackOut = Nil
-        } else {
-          stackOut = stackOut.drop(instr.consumed)
-          depth = depth - instr.consumed
+        instr match {
+          case LOAD_EXCEPTION(_)            => ()
+          case _ if instr.consumed > depth  =>
+            drops += (instr.consumed - depth)
+            depth = 0
+            stackOut = Nil
+          case _ =>
+            stackOut = stackOut.drop(instr.consumed)
+            depth -= instr.consumed
         }
         var prod = instr.produced
         depth = depth + prod
@@ -178,7 +178,7 @@ abstract class ReachingDefinitions {
         case STORE_LOCAL(l1) =>
           locals = updateReachingDefinition(b, idx, locals)
           stack = stack.drop(instr.consumed)
-        case LOAD_EXCEPTION() =>
+        case LOAD_EXCEPTION(_) =>
           stack = Nil
         case _ =>
           stack = stack.drop(instr.consumed)
@@ -211,8 +211,9 @@ abstract class ReachingDefinitions {
         if (prod > d) {
           res = (bb, i) :: res
           n   = n - (prod - d)
-          if (instrs(i) != LOAD_EXCEPTION()) {
-            d = instrs(i).consumed
+          instrs(i) match {
+            case LOAD_EXCEPTION(_)  => ()
+            case _                  => d = instrs(i).consumed
           }
         } else {
           d -= prod

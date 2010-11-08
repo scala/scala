@@ -26,7 +26,7 @@ package icode
 trait TypeKinds { self: ICodes =>
   import global._
   import definitions.{ ArrayClass, AnyRefClass, ObjectClass, NullClass, NothingClass, arrayType }
-  import icodes.checkerDebug
+  import icodes.{ checkerDebug, NothingReference, NullReference }
 
   /** A map from scala primitive Types to ICode TypeKinds */
   lazy val primitiveTypeMap: Map[Symbol, TypeKind] = {
@@ -68,12 +68,12 @@ trait TypeKinds { self: ICodes =>
     def isBoxedType               = false
     final def isRefOrArrayType    = isReferenceType || isArrayType
     final def isRefArrayOrBoxType = isRefOrArrayType || isBoxedType
-    final def isNothingType       = this == REFERENCE(NothingClass)
+    final def isNothingType       = this == NothingReference
+    final def isNullType          = this == NullReference
     final def isInterfaceType     = this match {
-      case REFERENCE(cls) if cls.isInterface => true
-      case _                                 => false
+      case REFERENCE(cls) if cls.isInterface || cls.isTrait => true
+      case _                                                => false
     }
-    final def isBoxOrInterfaceType = isBoxedType || isInterfaceType
 
     /** On the JVM, these types are like Ints for the
      *  purposes of calculating the lub.
@@ -150,21 +150,15 @@ trait TypeKinds { self: ICodes =>
       import definitions._
       val tp = global.lub(List(tk1.toType, tk2.toType))
       val (front, rest) = tp.parents span (_.typeSymbol.hasTraitFlag)
-      if (front.isEmpty || rest.isEmpty) tp
+
+      if (front.isEmpty) tp
+      else if (rest.isEmpty) front.head   // all parents are interfaces
       else rest.head match {
-        case AnyClass | AnyRefClass | AnyValClass => tp
-        case x                                    => x
+        case AnyRefClass | ObjectClass  => tp
+        case x                          => x
       }
     }
 
-    // Approximate the JVM view of subtyping by collapsing boxed
-    // values and interfaces into AnyRef.  If we try to be more precise
-    // with intersections we run into post-erasure issues where a type
-    // like A with B may be used as an A in one place and a B in another.
-    def isBoxLub = (
-      (a.isBoxOrInterfaceType && b.isRefArrayOrBoxType) ||
-      (b.isBoxOrInterfaceType && a.isRefArrayOrBoxType)
-    )
     def isIntLub = (
       (a == INT && b.isIntSizedType) ||
       (b == INT && a.isIntSizedType)
@@ -173,9 +167,13 @@ trait TypeKinds { self: ICodes =>
     if (a == b) a
     else if (a.isNothingType) b
     else if (b.isNothingType) a
-    else if (isBoxLub) AnyRefReference
+    else if (a.isBoxedType || b.isBoxedType) AnyRefReference  // we should do better
     else if (isIntLub) INT
-    else if (a.isRefOrArrayType && b.isRefOrArrayType) toTypeKind(lub0(a, b))
+    else if (a.isRefOrArrayType && b.isRefOrArrayType) {
+      if (a.isNullType) b
+      else if (b.isNullType) a
+      else toTypeKind(lub0(a, b))
+    }
     else throw new CheckerException("Incompatible types: " + a + " with " + b)
   }
 
@@ -331,19 +329,16 @@ trait TypeKinds { self: ICodes =>
   /** A boxed value. */
   case class BOXED(kind: TypeKind) extends TypeKind {
     override def isBoxedType = true
-    /**
-     * Approximate `lub'. The common type of two references is
-     * always AnyRef. For 'real' least upper bound wrt to subclassing
-     * use method 'lub'.
-     */
+
     override def maxType(other: TypeKind) = other match {
+      case BOXED(`kind`)                      => this
       case REFERENCE(_) | ARRAY(_) | BOXED(_) => AnyRefReference
       case _                                  => uncomparable("BOXED", other)
     }
 
     /** Checks subtyping relationship. */
     override def <:<(other: TypeKind) = other match {
-      case BOXED(other)                         => kind == other
+      case BOXED(`kind`)                        => true
       case REFERENCE(AnyRefClass | ObjectClass) => true // TODO: platform dependent!
       case _                                    => false
     }
@@ -387,6 +382,9 @@ trait TypeKinds { self: ICodes =>
     case ClassInfoType(_, _, sym)        => primitiveOrRefType(sym)
     case ExistentialType(_, t)           => toTypeKind(t)
     case AnnotatedType(_, t, _)          => toTypeKind(t)
+    // PP to ID: I added RefinedType here, is this OK or should they never be
+    // allowed to reach here?
+    case RefinedType(parents, _)         => parents map toTypeKind reduceLeft lub
     // bq: useful hack when wildcard types come here
     // case WildcardType                    => REFERENCE(ObjectClass)
     case norm => abort(
@@ -405,12 +403,23 @@ trait TypeKinds { self: ICodes =>
       assert(sym.isType, sym) // it must be compiling Array[a]
       ObjectReference
   }
-  /** Interfaces are all treated as AnyRef else we will run into
-   *  post-erasure inconsistencies when differing lubs are needed.
+  /** Interfaces have to be handled delicately to avoid introducing
+   *  spurious errors, but if we treat them all as AnyRef we lose too
+   *  much information.
    */
-  private def newReference(sym: Symbol) =
-    if (sym.isInterface || sym.isTrait) ObjectReference
-    else REFERENCE(sym)
+  private def newReference(sym: Symbol): TypeKind = {
+    // Can't call .toInterface (at this phase) or we trip an assertion.
+    // See PackratParser#grow for a method which fails with an apparent mismatch
+    // between "object PackratParsers$class" and "trait PackratParsers"
+    if (sym.isImplClass) {
+      // pos/spec-List.scala is the sole failure if we don't check for NoSymbol
+      val traitSym = sym.owner.info.decl(nme.interfaceName(sym.name))
+      if (traitSym != NoSymbol)
+        return REFERENCE(traitSym)
+    }
+    REFERENCE(sym)
+  }
+
   private def primitiveOrRefType(sym: Symbol) =
     primitiveTypeMap.getOrElse(sym, newReference(sym))
   private def primitiveOrClassType(sym: Symbol, targs: List[Type]) =

@@ -8,7 +8,7 @@ package scala.tools
 package nsc
 package settings
 
-import io.{AbstractFile, VirtualDirectory}
+import io.{ AbstractFile, VirtualDirectory }
 import scala.tools.util.StringOps
 import scala.collection.mutable.ListBuffer
 import scala.io.Source

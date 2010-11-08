@@ -31,9 +31,8 @@ abstract class ICodeReader extends ClassfileParser {
   var staticCode:   IClass = null          // the ICode class static members
   var method: IMethod = _                  // the current IMethod
 
-  val OBJECT: TypeKind = REFERENCE(definitions.ObjectClass)
-  val nothingName = newTermName(SCALA_NOTHING)
-  val nullName    = newTermName(SCALA_NULL)
+  val nothingName = newTermName(ClassfileConstants.SCALA_NOTHING)
+  val nullName    = newTermName(ClassfileConstants.SCALA_NULL)
   var isScalaModule = false
 
   /** Read back bytecode for the given class symbol. It returns
@@ -288,7 +287,7 @@ abstract class ICodeReader extends ClassfileParser {
           if (local == 0 && !method.isStatic)
             code.emit(THIS(method.symbol.owner));
           else
-            code.emit(LOAD_LOCAL(code.getLocal(local, OBJECT)));
+            code.emit(LOAD_LOCAL(code.getLocal(local, ObjectReference)));
 
         case JVM.iload_0     => code.emit(LOAD_LOCAL(code.getLocal(0, INT)))
         case JVM.iload_1     => code.emit(LOAD_LOCAL(code.getLocal(1, INT)))
@@ -310,16 +309,16 @@ abstract class ICodeReader extends ClassfileParser {
           if (!method.isStatic)
             code.emit(THIS(method.symbol.owner));
           else
-            code.emit(LOAD_LOCAL(code.getLocal(0, OBJECT)));
-        case JVM.aload_1     => code.emit(LOAD_LOCAL(code.getLocal(1, OBJECT)))
-        case JVM.aload_2     => code.emit(LOAD_LOCAL(code.getLocal(2, OBJECT)))
-        case JVM.aload_3     => code.emit(LOAD_LOCAL(code.getLocal(3, OBJECT)))
+            code.emit(LOAD_LOCAL(code.getLocal(0, ObjectReference)));
+        case JVM.aload_1     => code.emit(LOAD_LOCAL(code.getLocal(1, ObjectReference)))
+        case JVM.aload_2     => code.emit(LOAD_LOCAL(code.getLocal(2, ObjectReference)))
+        case JVM.aload_3     => code.emit(LOAD_LOCAL(code.getLocal(3, ObjectReference)))
 
         case JVM.iaload      => code.emit(LOAD_ARRAY_ITEM(INT))
         case JVM.laload      => code.emit(LOAD_ARRAY_ITEM(LONG))
         case JVM.faload      => code.emit(LOAD_ARRAY_ITEM(FLOAT))
         case JVM.daload      => code.emit(LOAD_ARRAY_ITEM(DOUBLE))
-        case JVM.aaload      => code.emit(LOAD_ARRAY_ITEM(OBJECT))
+        case JVM.aaload      => code.emit(LOAD_ARRAY_ITEM(ObjectReference))
         case JVM.baload      => code.emit(LOAD_ARRAY_ITEM(BYTE))
         case JVM.caload      => code.emit(LOAD_ARRAY_ITEM(CHAR))
         case JVM.saload      => code.emit(LOAD_ARRAY_ITEM(SHORT))
@@ -328,7 +327,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.lstore      => code.emit(STORE_LOCAL(code.getLocal(in.nextByte, LONG)));   size += 1
         case JVM.fstore      => code.emit(STORE_LOCAL(code.getLocal(in.nextByte, FLOAT)));  size += 1
         case JVM.dstore      => code.emit(STORE_LOCAL(code.getLocal(in.nextByte, DOUBLE))); size += 1
-        case JVM.astore      => code.emit(STORE_LOCAL(code.getLocal(in.nextByte, OBJECT))); size += 1
+        case JVM.astore      => code.emit(STORE_LOCAL(code.getLocal(in.nextByte, ObjectReference))); size += 1
         case JVM.istore_0    => code.emit(STORE_LOCAL(code.getLocal(0, INT)))
         case JVM.istore_1    => code.emit(STORE_LOCAL(code.getLocal(1, INT)))
         case JVM.istore_2    => code.emit(STORE_LOCAL(code.getLocal(2, INT)))
@@ -347,24 +346,24 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.dstore_3    => code.emit(STORE_LOCAL(code.getLocal(3, DOUBLE)))
         case JVM.astore_0    =>
           if (method.isStatic)
-            code.emit(STORE_LOCAL(code.getLocal(0, OBJECT)))
+            code.emit(STORE_LOCAL(code.getLocal(0, ObjectReference)))
           else
-            code.emit(STORE_THIS(OBJECT))
-        case JVM.astore_1    => code.emit(STORE_LOCAL(code.getLocal(1, OBJECT)))
-        case JVM.astore_2    => code.emit(STORE_LOCAL(code.getLocal(2, OBJECT)))
-        case JVM.astore_3    => code.emit(STORE_LOCAL(code.getLocal(3, OBJECT)))
+            code.emit(STORE_THIS(ObjectReference))
+        case JVM.astore_1    => code.emit(STORE_LOCAL(code.getLocal(1, ObjectReference)))
+        case JVM.astore_2    => code.emit(STORE_LOCAL(code.getLocal(2, ObjectReference)))
+        case JVM.astore_3    => code.emit(STORE_LOCAL(code.getLocal(3, ObjectReference)))
         case JVM.iastore     => code.emit(STORE_ARRAY_ITEM(INT))
         case JVM.lastore     => code.emit(STORE_ARRAY_ITEM(LONG))
         case JVM.fastore     => code.emit(STORE_ARRAY_ITEM(FLOAT))
         case JVM.dastore     => code.emit(STORE_ARRAY_ITEM(DOUBLE))
-        case JVM.aastore     => code.emit(STORE_ARRAY_ITEM(OBJECT))
+        case JVM.aastore     => code.emit(STORE_ARRAY_ITEM(ObjectReference))
         case JVM.bastore     => code.emit(STORE_ARRAY_ITEM(BYTE))
         case JVM.castore     => code.emit(STORE_ARRAY_ITEM(CHAR))
         case JVM.sastore     => code.emit(STORE_ARRAY_ITEM(SHORT))
 
         case JVM.pop         => code.emit(DROP(INT))   // any 1-word type would do
         case JVM.pop2        => code.emit(DROP(LONG))  // any 2-word type would do
-        case JVM.dup         => code.emit(DUP(OBJECT)) // TODO: Is the kind inside DUP ever needed?
+        case JVM.dup         => code.emit(DUP(ObjectReference)) // TODO: Is the kind inside DUP ever needed?
         case JVM.dup_x1      => code.emit(DUP_X1)      // Predef.error("Unsupported JVM bytecode: dup_x1")
         case JVM.dup_x2      => code.emit(DUP_X2)      // Predef.error("Unsupported JVM bytecode: dup_x2")
         case JVM.dup2        => code.emit(DUP(LONG))   // TODO: Is the kind inside DUP ever needed?
@@ -453,8 +452,8 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.if_icmpge   => code.emit(LCJUMP(parseJumpTarget, pc + size, GE, INT))
         case JVM.if_icmpgt   => code.emit(LCJUMP(parseJumpTarget, pc + size, GT, INT))
         case JVM.if_icmple   => code.emit(LCJUMP(parseJumpTarget, pc + size, LE, INT))
-        case JVM.if_acmpeq   => code.emit(LCJUMP(parseJumpTarget, pc + size, EQ, OBJECT))
-        case JVM.if_acmpne   => code.emit(LCJUMP(parseJumpTarget, pc + size, NE, OBJECT))
+        case JVM.if_acmpeq   => code.emit(LCJUMP(parseJumpTarget, pc + size, EQ, ObjectReference))
+        case JVM.if_acmpne   => code.emit(LCJUMP(parseJumpTarget, pc + size, NE, ObjectReference))
 
         case JVM.goto        => emit(LJUMP(parseJumpTarget))
         case JVM.jsr         => Predef.error("Cannot handle jsr/ret")
@@ -501,7 +500,7 @@ abstract class ICodeReader extends ClassfileParser {
         case JVM.lreturn     => code.emit(RETURN(LONG))
         case JVM.freturn     => code.emit(RETURN(FLOAT))
         case JVM.dreturn     => code.emit(RETURN(DOUBLE))
-        case JVM.areturn     => code.emit(RETURN(OBJECT))
+        case JVM.areturn     => code.emit(RETURN(ObjectReference))
         case JVM.return_     => code.emit(RETURN(UNIT))
 
         case JVM.getstatic    =>
@@ -562,8 +561,8 @@ abstract class ICodeReader extends ClassfileParser {
           val tpe = pool.getClassOrArrayType(in.nextChar); size += 2
           code.emit(CREATE_ARRAY(toTypeKind(tpe), 1))
 
-        case JVM.arraylength   => code.emit(CALL_PRIMITIVE(ArrayLength(OBJECT))); // the kind does not matter
-        case JVM.athrow        => code.emit(THROW());
+        case JVM.arraylength   => code.emit(CALL_PRIMITIVE(ArrayLength(ObjectReference))); // the kind does not matter
+        case JVM.athrow        => code.emit(THROW(definitions.ThrowableClass))
         case JVM.checkcast     =>
           code.emit(CHECK_CAST(toTypeKind(pool.getClassOrArrayType(in.nextChar)))); size += 2
         case JVM.instanceof    =>
@@ -577,12 +576,12 @@ abstract class ICodeReader extends ClassfileParser {
             case JVM.lload  => code.emit(LOAD_LOCAL(code.getLocal(in.nextChar, LONG)));   size += 2
             case JVM.fload  => code.emit(LOAD_LOCAL(code.getLocal(in.nextChar, FLOAT)));  size += 2
             case JVM.dload  => code.emit(LOAD_LOCAL(code.getLocal(in.nextChar, DOUBLE))); size += 2
-            case JVM.aload  => code.emit(LOAD_LOCAL(code.getLocal(in.nextChar, OBJECT))); size += 2
+            case JVM.aload  => code.emit(LOAD_LOCAL(code.getLocal(in.nextChar, ObjectReference))); size += 2
             case JVM.istore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, INT)));    size += 2
             case JVM.lstore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, LONG)));   size += 2
             case JVM.fstore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, FLOAT)));  size += 2
             case JVM.dstore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, DOUBLE))); size += 2
-            case JVM.astore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, OBJECT))); size += 2
+            case JVM.astore => code.emit(STORE_LOCAL(code.getLocal(in.nextChar, ObjectReference))); size += 2
             case JVM.ret => Predef.error("Cannot handle jsr/ret")
             case JVM.iinc =>
               size += 4
@@ -600,8 +599,8 @@ abstract class ICodeReader extends ClassfileParser {
 //          assert(dim == 1, "Cannot handle multidimensional arrays yet.")
           code.emit(CREATE_ARRAY(tpe, dim))
 
-        case JVM.ifnull    => code.emit(LCZJUMP(parseJumpTarget, pc + size, EQ, OBJECT))
-        case JVM.ifnonnull => code.emit(LCZJUMP(parseJumpTarget, pc + size, NE, OBJECT))
+        case JVM.ifnull    => code.emit(LCZJUMP(parseJumpTarget, pc + size, EQ, ObjectReference))
+        case JVM.ifnonnull => code.emit(LCZJUMP(parseJumpTarget, pc + size, NE, ObjectReference))
         case JVM.goto_w    => code.emit(LJUMP(parseJumpTargetW))
         case JVM.jsr_w     => Predef.error("Cannot handle jsr/ret")
 
@@ -739,7 +738,7 @@ abstract class ICodeReader extends ClassfileParser {
             bb.emit(instr)
             bb.close
 
-          case THROW() =>
+          case THROW(clasz) =>
             bb.emit(instr)
             bb.close
 

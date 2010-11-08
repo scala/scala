@@ -809,7 +809,7 @@ abstract class GenMSIL extends SubComponent {
           NEW(REFERENCE(definitions.ThrowableClass)),
           DUP(REFERENCE(definitions.ObjectClass)),
           CALL_METHOD(definitions.ThrowableClass.primaryConstructor, Static(true)),
-          THROW()
+          THROW(definitions.ThrowableClass)
         ))
         b.close
         endExBlock(b) = rest
@@ -1321,7 +1321,7 @@ abstract class GenMSIL extends SubComponent {
               mcode.Emit(OpCodes.Leave, label)
             }
 
-          case THROW() =>
+          case THROW(_) =>
             mcode.Emit(OpCodes.Throw)
 
           case DROP(kind) =>
@@ -1340,7 +1340,7 @@ abstract class GenMSIL extends SubComponent {
           case MONITOR_EXIT() =>
             mcode.Emit(OpCodes.Call, MMONITOR_EXIT)
 
-          case SCOPE_ENTER(_) | SCOPE_EXIT(_) | LOAD_EXCEPTION() =>
+          case SCOPE_ENTER(_) | SCOPE_EXIT(_) | LOAD_EXCEPTION(_) =>
             ()
         }
 

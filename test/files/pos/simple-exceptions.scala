@@ -7,14 +7,14 @@ object Test {
   def main(args: Array[String]): Unit = {
     try {
       try {
-	Console.println("hi!");
-        error("xx");
-      } finally {
-        Console.println("ho!")
+	      Console.println("hi!")
+        error("xx")
       }
-    } catch {
+      finally Console.println("ho!")
+    }
+    catch {
       case ex: IOException => Console.println("io exception!");
-      case ex => Console.println(ex);
+      case ex              => Console.println(ex);
     }
   }
 }

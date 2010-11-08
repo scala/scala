@@ -6,9 +6,10 @@
 
 package scala.tools.nsc
 package backend
-package icode;
+package icode
 
-import scala.collection._
+import scala.collection.{ mutable, immutable, generic }
+import util.{ Position, NoPosition }
 
 /**
  * Exception handlers are pieces of code that `handle' exceptions on
@@ -17,10 +18,14 @@ import scala.collection._
  * all our handlers will catch `Throwable' and rely on proper ordering
  * in the generated code to preserve nesting.
  */
-trait ExceptionHandlers { self: ICodes =>
-  import global.{Symbol, NoSymbol};
+trait ExceptionHandlers {
+  self: ICodes =>
 
-  class ExceptionHandler(val method: IMethod, val label: String, val cls: Symbol) {
+  import global.{ definitions, Symbol, NoSymbol }
+  import definitions.{ ThrowableClass }
+
+  class ExceptionHandler(val method: IMethod, val label: String, val cls: Symbol, val pos: Position) {
+    def loadExceptionClass = if (cls == NoSymbol) ThrowableClass else cls
     private var _startBlock: BasicBlock = _;
     var finalizer: Finalizer = _;
 
@@ -31,18 +36,18 @@ trait ExceptionHandlers { self: ICodes =>
       _startBlock = b;
       b.exceptionHandlerStart = true
     }
-    def startBlock = _startBlock;
+    def startBlock = _startBlock
 
     /** The list of blocks that are covered by this exception handler */
     var covered: immutable.Set[BasicBlock] = immutable.HashSet.empty[BasicBlock]
 
-    def addCoveredBlock(b: BasicBlock): ExceptionHandler = {
+    def addCoveredBlock(b: BasicBlock): this.type = {
       covered = covered + b
       this
     }
 
     /** Is `b' covered by this exception handler? */
-    def covers(b: BasicBlock): Boolean = covered(b);
+    def covers(b: BasicBlock): Boolean = covered(b)
 
     /** The body of this exception handler. May contain 'dead' blocks (which will not
       * make it into generated code because linearizers may not include them) */
@@ -54,23 +59,24 @@ trait ExceptionHandlers { self: ICodes =>
 
     /** A standard copy constructor */
     def this(other: ExceptionHandler) = {
-      this(other.method, other.label, other.cls);
-      covered    = other.covered;
-      setStartBlock(other.startBlock);
-      finalizer  = other.finalizer;
+      this(other.method, other.label, other.cls, other.pos)
+
+      covered   = other.covered
+      setStartBlock(other.startBlock)
+      finalizer = other.finalizer
     }
 
-    def dup: ExceptionHandler = new ExceptionHandler(this);
+    def dup: ExceptionHandler = new ExceptionHandler(this)
   }
 
-  class Finalizer(method: IMethod, label: String) extends ExceptionHandler(method, label, NoSymbol) {
-    override def toString() = "finalizer_" + label;
-
-    override def dup: Finalizer = new Finalizer(method, label);
+  class Finalizer(method: IMethod, label: String, pos: Position) extends ExceptionHandler(method, label, NoSymbol, pos) {
+    override def toString() = "finalizer_" + label
+    override def dup: Finalizer = new Finalizer(method, label, pos)
   }
 
-  object NoFinalizer extends Finalizer(null, "<no finalizer>") {
-    override def startBlock: BasicBlock = error("NoFinalizer cannot have a start block.");
+  object NoFinalizer extends Finalizer(null, "<no finalizer>", NoPosition) {
+    override def startBlock: BasicBlock             = error("NoFinalizer cannot have a start block.");
     override def setStartBlock(b: BasicBlock): Unit = error("NoFinalizer cannot have a start block.");
+    override def dup = this
   }
 }

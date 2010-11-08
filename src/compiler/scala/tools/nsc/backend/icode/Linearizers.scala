@@ -73,7 +73,7 @@ trait Linearizers { self: ICodes =>
           case SWITCH(_, labels) =>
             add(labels);
           case RETURN(_) => ();
-          case THROW() =>   ();
+          case THROW(clasz) =>   ();
         }
       }
 

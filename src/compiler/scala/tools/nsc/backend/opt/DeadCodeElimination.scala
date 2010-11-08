@@ -103,8 +103,8 @@ abstract class DeadCodeElimination extends SubComponent {
               defs = defs + Pair(((bb, idx)), rd.vars)
 //              Console.println(i + ": " + (bb, idx) + " rd: " + rd + " and having: " + defs)
             case RETURN(_) | JUMP(_) | CJUMP(_, _, _, _) | CZJUMP(_, _, _, _) | STORE_FIELD(_, _) |
-                 THROW()   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
-                 LOAD_EXCEPTION() | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
+                 THROW(_)   | STORE_ARRAY_ITEM(_) | SCOPE_ENTER(_) | SCOPE_EXIT(_) | STORE_THIS(_) |
+                 LOAD_EXCEPTION(_) | SWITCH(_, _) | MONITOR_ENTER() | MONITOR_EXIT() => worklist += ((bb, idx))
             case CALL_METHOD(m1, _) if isSideEffecting(m1) => worklist += ((bb, idx)); log("marking " + m1)
             case CALL_METHOD(m1, SuperCall(_)) =>
               worklist += ((bb, idx)) // super calls to constructor
@@ -113,7 +113,7 @@ abstract class DeadCodeElimination extends SubComponent {
                 val (bb1, idx1) = p
                 bb1(idx1) match {
                   case CALL_METHOD(m1, _) if isSideEffecting(m1) => true
-                  case LOAD_EXCEPTION() | DUP(_) | LOAD_MODULE(_) => true
+                  case LOAD_EXCEPTION(_) | DUP(_) | LOAD_MODULE(_) => true
                   case _ =>
                     dropOf((bb1, idx1)) = (bb, idx)
 //                    println("DROP is innessential: " + i + " because of: " + bb1(idx1) + " at " + bb1 + ":" + idx1)
@@ -168,7 +168,7 @@ abstract class DeadCodeElimination extends SubComponent {
               log("added closure class for field " + sym)
               liveClosures += sym.owner
 
-            case LOAD_EXCEPTION() =>
+            case LOAD_EXCEPTION(_) =>
               ()
 
             case _ =>

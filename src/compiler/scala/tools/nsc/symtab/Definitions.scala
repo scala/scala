@@ -10,6 +10,7 @@ import scala.collection.mutable.{HashMap, HashSet}
 import scala.tools.nsc.util.NoPosition
 import Flags._
 import PartialFunction._
+import classfile.ClassfileConstants
 
 trait Definitions extends reflect.generic.StandardDefinitions {
   self: SymbolTable =>
@@ -71,17 +72,17 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ObjectClass  = getClass(sn.Object)
 
     // bottom types
-    lazy val NullClass    = newClass(ScalaPackageClass, nme.Null, anyrefparam) setFlag (ABSTRACT | TRAIT | FINAL)
-    lazy val NothingClass = newClass(ScalaPackageClass, nme.Nothing, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
-    lazy val RuntimeNothingClass  = getClass("scala.runtime.Nothing$")
-    lazy val RuntimeNullClass     = getClass("scala.runtime.Null$")
+    lazy val NullClass            = newClass(ScalaPackageClass, nme.Null, anyrefparam) setFlag (ABSTRACT | TRAIT | FINAL)
+    lazy val NothingClass         = newClass(ScalaPackageClass, nme.Nothing, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
+    lazy val RuntimeNothingClass  = getClass(ClassfileConstants.SCALA_NOTHING)
+    lazy val RuntimeNullClass     = getClass(ClassfileConstants.SCALA_NULL)
     lazy val AnyValCompanionClass = getClass("scala.runtime.AnyValCompanion").setFlag(SEALED | ABSTRACT | TRAIT)
 
     // the scala value classes
     lazy val UnitClass    =
       newClass(ScalaPackageClass, nme.Unit, anyvalparam).setFlag(ABSTRACT | FINAL)
 
-    import classfile.ClassfileConstants._
+    import ClassfileConstants._
 
     lazy val ByteClass    = newValueClass(nme.Byte,    BYTE_TAG, 2)
     lazy val ShortClass   = newValueClass(nme.Short,   SHORT_TAG, 4)
@@ -107,13 +108,14 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     )
 
     // exceptions and other throwables
-    lazy val ThrowableClass                 = getClass(sn.Throwable)
-    lazy val NullPointerExceptionClass      = getClass(sn.NPException)
-    lazy val NonLocalReturnControlClass     = getClass(sn.NLRControl)
+    lazy val ClassCastExceptionClass        = getClass("java.lang.ClassCastException")
     lazy val IndexOutOfBoundsExceptionClass = getClass(sn.IOOBException)
-    lazy val UninitializedErrorClass        = getClass("scala.UninitializedFieldError")
-    lazy val MatchErrorClass                = getClass("scala.MatchError")
     lazy val InvocationTargetExceptionClass = getClass(sn.InvTargetException)
+    lazy val MatchErrorClass                = getClass("scala.MatchError")
+    lazy val NonLocalReturnControlClass     = getClass(sn.NLRControl)
+    lazy val NullPointerExceptionClass      = getClass(sn.NPException)
+    lazy val ThrowableClass                 = getClass(sn.Throwable)
+    lazy val UninitializedErrorClass        = getClass("scala.UninitializedFieldError")
 
     // annotations
     lazy val AnnotationClass            = getClass("scala.Annotation")

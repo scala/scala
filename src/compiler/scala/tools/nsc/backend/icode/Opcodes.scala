@@ -36,7 +36,7 @@ import scala.tools.nsc.util.{Position,NoPosition}
   case CJUMP(success, failure, cond, kind) =>
   case CZJUMP(success, failure, cond, kind) =>
   case RETURN(kind) =>
-  case THROW() =>
+  case THROW(clasz) =>
   case DROP(kind) =>
   case DUP(kind) =>
   case MONITOR_ENTER() =>
@@ -45,7 +45,7 @@ import scala.tools.nsc.util.{Position,NoPosition}
   case UNBOX(tpe) =>
   case SCOPE_ENTER(lv) =>
   case SCOPE_EXIT(lv) =>
-  case LOAD_EXCEPTION() =>
+  case LOAD_EXCEPTION(clasz) =>
 */
 
 
@@ -102,7 +102,7 @@ trait Opcodes { self: ICodes =>
 
     def mayThrow(i: Instruction): Boolean = i match {
       case LOAD_LOCAL(_) | STORE_LOCAL(_) | CONSTANT(_) | THIS(_) | CZJUMP(_, _, _, _)
-              | DROP(_) | DUP(_) | RETURN(_) | LOAD_EXCEPTION() | JUMP(_) | CJUMP(_, _, _, _) => false
+              | DROP(_) | DUP(_) | RETURN(_) | LOAD_EXCEPTION(_) | JUMP(_) | CJUMP(_, _, _, _) => false
       case _ => true
     }
 
@@ -125,6 +125,7 @@ trait Opcodes { self: ICodes =>
      *    ->: ...:constant
      */
     case class CONSTANT(constant: Constant) extends Instruction {
+      override def toString = "CONSTANT(" + constant.escapedStringValue + ")"
       override def consumed = 0
       override def produced = 1
 
@@ -299,6 +300,9 @@ trait Opcodes { self: ICodes =>
      *
      */
     case class CALL_METHOD(method: Symbol, style: InvokeStyle) extends Instruction with ReferenceEquality {
+      def toShortString =
+        "CALL_METHOD " + method.name +" ("+style+")"
+
       /** Returns a string representation of this instruction */
       override def toString(): String =
         "CALL_METHOD " + method.fullName +" ("+style+")"
@@ -492,9 +496,12 @@ trait Opcodes { self: ICodes =>
      * Stack: ...:Throwable(Ref)
      *    ->: ...:
      */
-    case class THROW() extends Instruction {
-      /** Returns a string representation of this instruction */
-      override def toString(): String ="THROW"
+    case class THROW(clasz: Symbol) extends Instruction {
+      /** PP to ID: We discussed parameterizing LOAD_EXCEPTION but
+       *  not THROW, which came about organically.  It seems like the
+       *  right thing, but can you confirm?
+       */
+      override def toString = "THROW(" + clasz.name + ")"
 
       override def consumed = 1
       override def produced = 0
@@ -570,11 +577,10 @@ trait Opcodes { self: ICodes =>
      *  Note: Unlike other instructions, it consumes all elements on the stack!
      *        then pushes one exception instance.
      */
-    case class LOAD_EXCEPTION() extends Instruction {
-      override def toString(): String = "LOAD_EXCEPTION"
+    case class LOAD_EXCEPTION(clasz: Symbol) extends Instruction {
       override def consumed = error("LOAD_EXCEPTION does clean the whole stack, no idea how many things it consumes!")
       override def produced = 1
-      override def producedTypes = ThrowableReference :: Nil
+      override def producedTypes = REFERENCE(clasz) :: Nil
     }
 
     /** This class represents a method invocation style. */
@@ -598,10 +604,8 @@ trait Opcodes { self: ICodes =>
 
       /** Is this an instance method call? */
       def hasInstance: Boolean = this match {
-        case Dynamic            => true
-        case Static(onInstance) => onInstance
-        case SuperCall(_)       => true
-        case _                  => false
+        case Static(false)      => false
+        case _                  => true
       }
 
       /** Returns a string representation of this style. */

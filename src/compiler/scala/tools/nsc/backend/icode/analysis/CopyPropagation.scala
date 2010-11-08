@@ -406,7 +406,7 @@ abstract class CopyPropagation {
           if (kind != UNIT)
             out.stack = out.stack.drop(1)
 
-        case THROW() =>
+        case THROW(_) =>
           out.stack = out.stack.drop(1)
 
         case DROP(kind) =>
@@ -424,7 +424,7 @@ abstract class CopyPropagation {
         case SCOPE_ENTER(_) | SCOPE_EXIT(_) =>
           ()
 
-        case LOAD_EXCEPTION() =>
+        case LOAD_EXCEPTION(_) =>
           out.stack = Unknown :: Nil
 
         case _ =>
