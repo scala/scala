@@ -148,7 +148,7 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(qual.pos, unit.fresh.newName(qual.pos, "qual$"))
+        val sym = blockTyper.context.owner.newValue(qual.pos, unit.fresh.newName("qual$"))
                             .setInfo(qual.tpe)
         blockTyper.context.scope.enter(sym)
         val vd = atPos(sym.pos)(ValDef(sym, qual).setType(NoType))
@@ -258,7 +258,7 @@ trait NamesDefaults { self: Analyzer =>
             case _ =>
               (seqType(arg.tpe), true)
           } else (arg.tpe, false)
-        val s = context.owner.newValue(arg.pos, unit.fresh.newName(arg.pos, "x$"))
+        val s = context.owner.newValue(arg.pos, unit.fresh.newName("x$"))
         val valType = if (byName) functionType(List(), argTpe)
                       else if (repeated) argTpe
                       else argTpe

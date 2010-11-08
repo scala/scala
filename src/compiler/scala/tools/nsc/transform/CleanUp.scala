@@ -92,8 +92,8 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
        *   type variable. */
       case ad@ApplyDynamic(qual0, params) =>
         def mkName(s: String = "") =
-          if (s == "") unit.fresh newName ad.pos
-          else unit.fresh.newName(ad.pos, s)
+          if (s == "") unit.fresh.newName()
+          else unit.fresh.newName(s)
         def mkTerm(s: String = "") = newTermName(mkName(s))
         val typedPos = typedWithPos(ad.pos) _
 
@@ -553,7 +553,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
       case theTry @ Try(block, catches, finalizer)
         if theTry.tpe.typeSymbol != definitions.UnitClass && theTry.tpe.typeSymbol != definitions.NothingClass =>
         val tpe = theTry.tpe.widen
-        val tempVar = currentOwner.newVariable(theTry.pos, unit.fresh.newName(theTry.pos, nme.EXCEPTION_RESULT_PREFIX)).setInfo(tpe)
+        val tempVar = currentOwner.newVariable(theTry.pos, unit.fresh.newName(nme.EXCEPTION_RESULT_PREFIX)).setInfo(tpe)
         def assignBlock(rhs: Tree) = super.transform(BLOCK(Ident(tempVar) === transform(rhs)))
 
         val newBlock    = assignBlock(block)
@@ -627,7 +627,7 @@ abstract class CleanUp extends Transform with ast.TreeDSL {
      */
     private def getSymbolStaticField(pos: Position, symname: String, rhs: Tree, tree: Tree): Symbol =
       symbolsStoredAsStatic.getOrElseUpdate(symname, {
-        val freshname = unit.fresh.newName(pos, "symbol$")
+        val freshname = unit.fresh.newName("symbol$")
         val theTyper = typer.atOwner(tree, currentClass)
 
         // create a symbol for the static field

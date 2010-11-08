@@ -6,8 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.collection
 
 /** <p>
@@ -63,6 +61,10 @@ object JavaConverters {
   import java.{ lang => jl, util => ju }
   import java.util.{ concurrent => juc }
   import JavaConversions._
+
+  // TODO: I cleaned all this documentation up in JavaConversions, but the
+  // documentation in here is basically the pre-cleaned-up version with minor
+  // additions.  Would be nice to have in one place.
 
   // Conversion decorator classes
 
@@ -173,8 +175,8 @@ object JavaConverters {
    * @param b The <code>Buffer</code> to be converted.
    * @return An object with an `asJava` method that returns a Java <code>List</code> view of the argument.
    */
-  implicit def asJavaListConverter[A](b : mutable.Buffer[A]): AsJava[ju.List[A]] =
-    new AsJava(asJavaList(b))
+  implicit def bufferAsJavaListConverter[A](b : mutable.Buffer[A]): AsJava[ju.List[A]] =
+    new AsJava(bufferAsJavaList(b))
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala mutable <code>Seq</code> to a Java <code>List</code>.
@@ -189,8 +191,8 @@ object JavaConverters {
    * @param b The <code>Seq</code> to be converted.
    * @return An object with an `asJava` method that returns a Java <code>List</code> view of the argument.
    */
-  implicit def asJavaListConverter[A](b : mutable.Seq[A]): AsJava[ju.List[A]] =
-    new AsJava(asJavaList(b))
+  implicit def mutableSeqAsJavaListConverter[A](b : mutable.Seq[A]): AsJava[ju.List[A]] =
+    new AsJava(mutableSeqAsJavaList(b))
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala <code>Seq</code> to a Java <code>List</code>.
@@ -205,8 +207,15 @@ object JavaConverters {
    * @param b The <code>Seq</code> to be converted.
    * @return An object with an `asJava` method that returns a Java <code>List</code> view of the argument.
    */
-  implicit def asJavaListConverter[A](b : Seq[A]): AsJava[ju.List[A]] =
-    new AsJava(asJavaList(b))
+  implicit def seqAsJavaListConverter[A](b : Seq[A]): AsJava[ju.List[A]] =
+    new AsJava(seqAsJavaList(b))
+
+  @deprecated("Use bufferAsJavaListConverter instead")
+  def asJavaListConverter[A](b : mutable.Buffer[A]): AsJava[ju.List[A]] = bufferAsJavaListConverter(b)
+  @deprecated("Use mutableSeqAsJavaListConverter instead")
+  def asJavaListConverter[A](b : mutable.Seq[A]): AsJava[ju.List[A]] = mutableSeqAsJavaListConverter(b)
+  @deprecated("Use seqAsJavaListConverter instead")
+  def asJavaListConverter[A](b : Seq[A]): AsJava[ju.List[A]] = seqAsJavaListConverter(b)
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala mutable <code>Set</code> to a Java <code>Set</code>.
@@ -221,8 +230,11 @@ object JavaConverters {
    * @param s The <code>Set</code> to be converted.
    * @return An object with an `asJava` method that returns a Java <code>Set</code> view of the argument.
    */
-  implicit def asJavaSetConverter[A](s : mutable.Set[A]): AsJava[ju.Set[A]] =
-    new AsJava(asJavaSet(s))
+  implicit def mutableSetAsJavaSetConverter[A](s : mutable.Set[A]): AsJava[ju.Set[A]] =
+    new AsJava(mutableSetAsJavaSet(s))
+
+  @deprecated("Use mutableSetAsJavaSetConverter instead")
+  def asJavaSetConverter[A](s : mutable.Set[A]): AsJava[ju.Set[A]] = mutableSetAsJavaSetConverter(s)
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala <code>Set</code> to a Java <code>Set</code>.
@@ -237,8 +249,11 @@ object JavaConverters {
    * @param s The <code>Set</code> to be converted.
    * @return An object with an `asJava` method that returns a Java <code>Set</code> view of the argument.
    */
-  implicit def asJavaSetConverter[A](s : Set[A]): AsJava[ju.Set[A]] =
-    new AsJava(asJavaSet(s))
+  implicit def setAsJavaSetConverter[A](s : Set[A]): AsJava[ju.Set[A]] =
+    new AsJava(setAsJavaSet(s))
+
+  @deprecated("Use setAsJavaSetConverter instead")
+  def asJavaSetConverter[A](s : Set[A]): AsJava[ju.Set[A]] = setAsJavaSetConverter(s)
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala mutable <code>Map</code> to a Java <code>Map</code>.
@@ -253,8 +268,11 @@ object JavaConverters {
    * @param m The <code>Map</code> to be converted.
    * @return An object with an `asJava` method that returns a Java <code>Map</code> view of the argument.
    */
-  implicit def asJavaMapConverter[A, B](m : mutable.Map[A, B]): AsJava[ju.Map[A, B]] =
-    new AsJava(asJavaMap(m))
+  implicit def mutableMapAsJavaMapConverter[A, B](m : mutable.Map[A, B]): AsJava[ju.Map[A, B]] =
+    new AsJava(mutableMapAsJavaMap(m))
+
+  @deprecated("use mutableMapAsJavaMapConverter instead")
+  def asJavaMapConverter[A, B](m : mutable.Map[A, B]): AsJava[ju.Map[A, B]] = mutableMapAsJavaMapConverter(m)
 
   /**
    * Adds an `asJavaDictionary` method that implicitly converts a Scala mutable <code>Map</code> to a Java <code>Dictionary</code>.
@@ -285,8 +303,11 @@ object JavaConverters {
    * @param m The <code>Map</code> to be converted.
    * @return An object with an `asJava` method that returns a Java <code>Map</code> view of the argument.
    */
-  implicit def asJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] =
-    new AsJava(asJavaMap(m))
+  implicit def mapAsJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] =
+    new AsJava(mapAsJavaMap(m))
+
+  @deprecated("Use mapAsJavaMapConverter instead")
+  def asJavaMapConverter[A, B](m : Map[A, B]): AsJava[ju.Map[A, B]] = mapAsJavaMapConverter(m)
 
   /**
    * Adds an `asJava` method that implicitly converts a Scala mutable `ConcurrentMap` to a Java `ConcurrentMap`.
@@ -349,8 +370,11 @@ object JavaConverters {
    * @param i The <code>Iterable</code> to be converted.
    * @return An object with an `asScala` method that returns a Scala <code>Iterable</code> view of the argument.
    */
-  implicit def asScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] =
-    new AsScala(asScalaIterable(i))
+  implicit def iterableAsScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] =
+    new AsScala(iterableAsScalaIterable(i))
+
+  @deprecated("Use iterableAsScalaIterableConverter instead")
+  def asScalaIterableConverter[A](i : jl.Iterable[A]): AsScala[Iterable[A]] = iterableAsScalaIterableConverter(i)
 
   /**
    * Adds an `asScala` method that implicitly converts a Java <code>Collection</code> to an Scala <code>Iterable</code>.
@@ -362,8 +386,11 @@ object JavaConverters {
    * @param i The <code>Collection</code> to be converted.
    * @return An object with an `asScala` method that returns a Scala <code>SizedIterable</code> view of the argument.
    */
-  implicit def asScalaIterableConverter[A](i : ju.Collection[A]): AsScala[Iterable[A]] =
-    new AsScala(asScalaIterable(i))
+  implicit def collectionAsScalaIterableConverter[A](i : ju.Collection[A]): AsScala[Iterable[A]] =
+    new AsScala(collectionAsScalaIterable(i))
+
+  @deprecated("Use collectionAsScalaIterableConverter instead")
+  def asScalaIterableConverter[A](i : ju.Collection[A]): AsScala[Iterable[A]] = collectionAsScalaIterableConverter(i)
 
   /**
    * Adds an `asScala` method that implicitly converts a Java <code>List</code> to a Scala mutable <code>Buffer</code>.
@@ -389,7 +416,7 @@ object JavaConverters {
    * <p>
    * If the Java <code>Set</code> was previously obtained from an implicit or
    * explicit call of <code>asSet(scala.collection.mutable.Set)</code> then the original
-   * ScalaThe reported problems have to do with dependent method types, which is currently an experimental feature in Scala and is still under development. We emphasize that these problems are related to type-inference and, as stated in the paper, it is possible to run and type-check the programs with additional annotations. <code>Set</code> will be returned.
+   * Scala <code>Set</code> will be returned.
    *
    * @param s The <code>Set</code> to be converted.
    * @return An object with an `asScala` method that returns a Scala mutable <code>Set</code> view of the argument.
@@ -410,8 +437,11 @@ object JavaConverters {
    * @param m The <code>Map</code> to be converted.
    * @return An object with an `asScala` method that returns a Scala mutable <code>Map</code> view of the argument.
    */
-  implicit def asScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] =
-    new AsScala(asScalaMap(m))
+  implicit def mapAsScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] =
+    new AsScala(mapAsScalaMap(m))
+
+  @deprecated("Use mapAsScalaMapConverter instead")
+  def asScalaMapConverter[A, B](m : ju.Map[A, B]): AsScala[mutable.Map[A, B]] = mapAsScalaMapConverter(m)
 
   /**
    * Adds an `asScala` method that implicitly converts a Java <code>ConcurrentMap</code> to a Scala mutable <code>ConcurrentMap</code>.
@@ -450,7 +480,11 @@ object JavaConverters {
    * @param m The <code>Properties</code> to be converted.
    * @return An object with an `asScala` method that returns a Scala mutable <code>Map[String, String]</code> view of the argument.
    */
-  implicit def asScalaMapConverter(p: ju.Properties): AsScala[mutable.Map[String, String]] =
-    new AsScala(asScalaMap(p))
+  implicit def propertiesAsScalaMapConverter(p: ju.Properties): AsScala[mutable.Map[String, String]] =
+    new AsScala(propertiesAsScalaMap(p))
+
+  @deprecated("Use propertiesAsScalaMapConverter instead")
+  def asScalaMapConverter(p: ju.Properties): AsScala[mutable.Map[String, String]] =
+    propertiesAsScalaMapConverter(p)
 
 }

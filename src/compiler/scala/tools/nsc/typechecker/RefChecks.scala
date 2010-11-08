@@ -96,7 +96,7 @@ abstract class RefChecks extends InfoTransform {
     var checkedCombinations = Set[List[Type]]()
 
     // only one overloaded alternative is allowed to define default arguments
-    private def checkDefaultsInOverloaded(clazz: Symbol) {
+    private def checkOverloadedRestrictions(clazz: Symbol) {
       def check(members: List[Symbol]): Unit = members match {
         case x :: xs =>
           if (x.hasParamWhich(_.hasDefaultFlag) && !nme.isProtectedAccessorName(x.name)) {
@@ -115,6 +115,11 @@ abstract class RefChecks extends InfoTransform {
           }
           check(xs)
         case _ => ()
+      }
+      clazz.info.decls filter (x => x.isImplicit && x.typeParams.nonEmpty) foreach { sym =>
+        val alts = clazz.info.decl(sym.name).alternatives
+        if (alts.size > 1)
+          alts foreach (x => unit.warning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds"))
       }
       check(clazz.info.members)
     }
@@ -1293,7 +1298,7 @@ abstract class RefChecks extends InfoTransform {
           case Template(parents, self, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
             validateBaseTypes(currentOwner)
-            checkDefaultsInOverloaded(currentOwner)
+            checkOverloadedRestrictions(currentOwner)
             val bridges = addVarargBridges(currentOwner)
             checkAllOverrides(currentOwner)
 

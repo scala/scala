@@ -378,7 +378,7 @@ abstract class TreeGen {
     if (treeInfo.isPureExpr(expr)) {
       within(() => if (used) expr.duplicate else { used = true; expr })
     } else {
-      val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName(expr.pos, "ev$"))
+      val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName("ev$"))
         .setFlag(SYNTHETIC).setInfo(expr.tpe)
       val containing = within(() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
       ensureNonOverlapping(containing, List(expr))
@@ -398,7 +398,7 @@ abstract class TreeGen {
           () => if (used(idx)) expr.duplicate else { used(idx) = true; expr }
         }
       } else {
-        val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName(expr.pos, "ev$"))
+        val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName("ev$"))
           .setFlag(SYNTHETIC).setInfo(expr.tpe)
         vdefs += ValDef(temp, expr)
         exprs1 += (() => Ident(temp) setPos temp.pos.focus setType expr.tpe)

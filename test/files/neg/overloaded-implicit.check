@@ -1,0 +1,7 @@
+overloaded-implicit.scala:2: error: parameterized overloaded implicit methods are not visible as view bounds
+  implicit def imp1[T](x: List[T]): Map[T, T] = Map()
+               ^
+overloaded-implicit.scala:3: error: parameterized overloaded implicit methods are not visible as view bounds
+  implicit def imp1[T](x: Set[T]): Map[T, T] = Map()
+               ^
+two errors found

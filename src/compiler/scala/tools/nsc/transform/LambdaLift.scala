@@ -254,7 +254,7 @@ abstract class LambdaLift extends InfoTransform {
             sym.owner.name + "$"
           else ""
         )
-        val fresh = unit.fresh.newName(sym.pos, base)
+        val fresh = unit.fresh.newName(base)
         sym.name = if (sym.name.isTypeName) fresh.toTypeName else fresh
         if (settings.debug.value) log("renamed: " + sym.name)
       }

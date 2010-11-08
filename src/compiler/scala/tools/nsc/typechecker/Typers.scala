@@ -3916,7 +3916,7 @@ trait Typers { self: Analyzer =>
             val params = for (i <- List.range(0, arity)) yield
               atPos(tree.pos.focusStart) {
                 ValDef(Modifiers(PARAM | SYNTHETIC),
-                       unit.fresh.newName(tree.pos, "x" + i + "$"), TypeTree(), EmptyTree)
+                       unit.fresh.newName("x" + i + "$"), TypeTree(), EmptyTree)
               }
             val ids = for (p <- params) yield Ident(p.name)
             val selector1 = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
