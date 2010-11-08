@@ -54,14 +54,13 @@ trait TypeKinds { self: ICodes =>
   sealed abstract class TypeKind {
     def maxType(other: TypeKind): TypeKind
 
-    def toType: Type = (reversePrimitiveMap get this) map (_.tpe) getOrElse {
+    def toType: Type = reversePrimitiveMap get this map (_.tpe) getOrElse {
       this match {
         case REFERENCE(cls) => cls.tpe
         case ARRAY(elem)    => arrayType(elem.toType)
         case _              => abort("Unknown type kind.")
       }
     }
-    def toTypeAt(ph: Phase): Type = atPhase(ph)(toType)
 
     def isReferenceType           = false
     def isArrayType               = false
@@ -71,8 +70,8 @@ trait TypeKinds { self: ICodes =>
     final def isRefArrayOrBoxType = isRefOrArrayType || isBoxedType
     final def isNothingType       = this == REFERENCE(NothingClass)
     final def isInterfaceType     = this match {
-      case REFERENCE(cls) if cls.isInterface  => true
-      case _                                  => false
+      case REFERENCE(cls) if cls.isInterface => true
+      case _                                 => false
     }
     final def isBoxOrInterfaceType = isBoxedType || isInterfaceType
 
@@ -131,11 +130,32 @@ trait TypeKinds { self: ICodes =>
    * The lub is based on the lub of scala types.
    */
   def lub(a: TypeKind, b: TypeKind): TypeKind = {
-    /** The compiler will be altered so this returns the right thing for our
-     *  purposes here.
+    /** The compiler's lub calculation does not order classes before traits.
+     *  This is apparently not wrong but it is inconvenient, and causes the
+     *  icode checker to choke when things don't match up.  My attempts to
+     *  alter the calculation at the compiler level were failures, so in the
+     *  interests of a working icode checker I'm making the adjustment here.
+     *
+     *  Example where we'd like a different answer:
+     *
+     *    abstract class Tom
+     *    case object Bob extends Tom
+     *    case object Harry extends Tom
+     *    List(Bob, Harry)  // compiler calculates "Product with Tom" rather than "Tom with Product"
+     *
+     *  Here we make the adjustment by rewinding to a pre-erasure state and
+     *  sifting through the parents for a class type.
      */
-    def lub0(tk1: TypeKind, tk2: TypeKind): Type =
-      global.lub(List(tk1.toType, tk2.toType))
+    def lub0(tk1: TypeKind, tk2: TypeKind): Type = atPhase(currentRun.uncurryPhase) {
+      import definitions._
+      val tp = global.lub(List(tk1.toType, tk2.toType))
+      val (front, rest) = tp.parents span (_.typeSymbol.hasTraitFlag)
+      if (front.isEmpty || rest.isEmpty) tp
+      else rest.head match {
+        case AnyClass | AnyRefClass | AnyValClass => tp
+        case x                                    => x
+      }
+    }
 
     // Approximate the JVM view of subtyping by collapsing boxed
     // values and interfaces into AnyRef.  If we try to be more precise
@@ -153,7 +173,7 @@ trait TypeKinds { self: ICodes =>
     if (a == b) a
     else if (a.isNothingType) b
     else if (b.isNothingType) a
-    else if (isBoxLub) REFERENCE(AnyRefClass)
+    else if (isBoxLub) AnyRefReference
     else if (isIntLub) INT
     else if (a.isRefOrArrayType && b.isRefOrArrayType) toTypeKind(lub0(a, b))
     else throw new CheckerException("Incompatible types: " + a + " with " + b)
@@ -258,7 +278,7 @@ trait TypeKinds { self: ICodes =>
      * use method 'lub'.
      */
     override def maxType(other: TypeKind) = other match {
-      case REFERENCE(_) | ARRAY(_)  => REFERENCE(AnyRefClass)
+      case REFERENCE(_) | ARRAY(_)  => AnyRefReference
       case _                        => uncomparable("REFERENCE", other)
     }
 
@@ -295,7 +315,7 @@ trait TypeKinds { self: ICodes =>
      */
     override def maxType(other: TypeKind) = other match {
       case ARRAY(elem2) if elem == elem2  => ARRAY(elem)
-      case ARRAY(_) | REFERENCE(_)        => REFERENCE(AnyRefClass)
+      case ARRAY(_) | REFERENCE(_)        => AnyRefReference
       case _                              => uncomparable("ARRAY", other)
     }
 
@@ -317,7 +337,7 @@ trait TypeKinds { self: ICodes =>
      * use method 'lub'.
      */
     override def maxType(other: TypeKind) = other match {
-      case REFERENCE(_) | ARRAY(_) | BOXED(_) => REFERENCE(AnyRefClass)
+      case REFERENCE(_) | ARRAY(_) | BOXED(_) => AnyRefReference
       case _                                  => uncomparable("BOXED", other)
     }
 
@@ -342,7 +362,7 @@ trait TypeKinds { self: ICodes =>
      * use method 'lub'.
      */
     override def maxType(other: TypeKind) = other match {
-      case REFERENCE(_) => REFERENCE(AnyRefClass)
+      case REFERENCE(_) => AnyRefReference
       case _            => uncomparable(other)
     }
 
@@ -380,13 +400,19 @@ trait TypeKinds { self: ICodes =>
    */
   private def arrayOrClassType(sym: Symbol, targs: List[Type]) = sym match {
     case ArrayClass       => ARRAY(toTypeKind(targs.head))
-    case _ if sym.isClass => REFERENCE(sym)
+    case _ if sym.isClass => newReference(sym)
     case _                =>
       assert(sym.isType, sym) // it must be compiling Array[a]
       ObjectReference
   }
+  /** Interfaces are all treated as AnyRef else we will run into
+   *  post-erasure inconsistencies when differing lubs are needed.
+   */
+  private def newReference(sym: Symbol) =
+    if (sym.isInterface || sym.isTrait) ObjectReference
+    else REFERENCE(sym)
   private def primitiveOrRefType(sym: Symbol) =
-    primitiveTypeMap.getOrElse(sym, REFERENCE(sym))
+    primitiveTypeMap.getOrElse(sym, newReference(sym))
   private def primitiveOrClassType(sym: Symbol, targs: List[Type]) =
     primitiveTypeMap.getOrElse(sym, arrayOrClassType(sym, targs))
 
