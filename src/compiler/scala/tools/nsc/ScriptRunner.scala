@@ -13,7 +13,6 @@ import java.io.{
 }
 import java.io.{ File => JFile }
 import io.{ Directory, File, Path, PlainFile }
-import java.lang.reflect.InvocationTargetException
 import java.net.URL
 import java.util.jar.{ JarEntry, JarOutputStream }
 
@@ -250,17 +249,9 @@ object ScriptRunner {
 	  val pr = new PathResolver(settings)
 	  val classpath = File(compiledLocation).toURL +: pr.asURLs
 
-    try {
-      ObjectRunner.run(classpath, scriptMain(settings), scriptArgs)
-      true
-    }
-    catch {
-      case e @ (_: ClassNotFoundException | _: NoSuchMethodException) =>
-        Console println e
-        false
-      case e: InvocationTargetException =>
-        e.getCause.printStackTrace
-        false
+    ObjectRunner.runAndCatch(classpath, scriptMain(settings), scriptArgs) match {
+      case Left(ex) => Console println ex ; false
+      case _        => true
     }
   }
 
@@ -278,6 +269,21 @@ object ScriptRunner {
 	    withCompiledScript(settings, scriptFile) { runCompiled(settings, _, scriptArgs) }
 	  else
 	    throw new IOException("no such file: " + scriptFile)
+  }
+
+  /** Calls runScript and catches the enumerated exceptions, routing
+   *  them to Left(ex) if thrown.
+   */
+  def runScriptAndCatch(
+    settings: GenericRunnerSettings,
+		scriptFile: String,
+		scriptArgs: List[String]): Either[Throwable, Boolean] =
+	{
+	  try Right(runScript(settings, scriptFile, scriptArgs))
+	  catch {
+	    case e: IOException       => Left(e)
+	    case e: SecurityException => Left(e)
+	  }
   }
 
   /** Run a command

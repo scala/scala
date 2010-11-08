@@ -16,10 +16,7 @@ import collection.immutable.List
  *  @author Paul Phillips
  */
 
-import java.lang.reflect.InvocationTargetException
-
-object Exception
-{
+object Exception {
   // We get lots of crashes using this, so for now we just use Class[_]
   // type ExClass = Class[_ <: Throwable]
 

@@ -8,7 +8,6 @@ package scala.tools.nsc
 
 import java.io.IOException
 import java.lang.{ClassNotFoundException, NoSuchMethodException}
-import java.lang.reflect.InvocationTargetException
 import java.net.{ URL, MalformedURLException }
 import scala.tools.util.PathResolver
 
@@ -21,7 +20,10 @@ import Properties.{ versionString, copyrightString }
   * or interactive entry.
   */
 object MainGenericRunner {
-  def errorFn(ex: Throwable): Boolean = errorFn(ex.toString)
+  def errorFn(ex: Throwable): Boolean = {
+    ex.printStackTrace()
+    false
+  }
   def errorFn(str: String): Boolean = {
     Console println str
     false
@@ -83,23 +85,18 @@ object MainGenericRunner {
             case "guess"  => ScalaClassLoader.classExists(classpath, thingToRun)
           }
 
-        if (isObjectName)
-          try {
-            ObjectRunner.run(classpath, thingToRun, command.arguments)
-            true
+        if (isObjectName) {
+          ObjectRunner.runAndCatch(classpath, thingToRun, command.arguments) match {
+            case Left(ex) => errorFn(ex)
+            case _        => true
           }
-          catch {
-            case e @ (_: ClassNotFoundException | _: NoSuchMethodException) => errorFn(e)
-            case e: InvocationTargetException => errorFn(e.getCause)
+        }
+        else {
+          ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments) match {
+            case Left(ex) => errorFn(ex)
+            case Right(b) => b
           }
-        else
-          try {
-            ScriptRunner.runScript(settings, thingToRun, command.arguments)
-          }
-          catch {
-            case e: IOException       => errorFn(e.getMessage)
-            case e: SecurityException => errorFn(e)
-          }
+        }
     }
   }
 }
