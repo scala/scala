@@ -161,8 +161,8 @@ x = Map(C -> 3, B -> 2, A -> 1)
 y = Map(C -> 3, A -> 1, B -> 2)
 x equals y: true, y equals x: true
 
-x = Set(layers, buffers, title)
-y = Set(layers, buffers, title)
+x = Set(layers, title, buffers)
+y = Set(layers, title, buffers)
 x equals y: true, y equals x: true
 
 x = History()
