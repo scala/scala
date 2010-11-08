@@ -11,6 +11,6 @@ import scala.collection.immutable.TreeMap
 
 
 class TreeEntity {
-  var expression:String = ""
+  var expression:String = "?"
   var refs = new TreeMap[Int, (Entity, Int)] // start, (Entity to be linked to , end)
 }
