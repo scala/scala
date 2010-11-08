@@ -3789,12 +3789,14 @@ A type's typeSymbol should never be inspected directly.
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (sym.isModuleClass && !phase.flatClasses) {
+      if (phase.flatClasses) {
+	sym
+      } else if (sym.isModuleClass) {
         if (!sym.owner.isPackageClass)
           sym // Nested lazy object
         else
           adaptToNewRun(pre, sym.sourceModule).moduleClass
-      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.owner.isPackageClass) {
+      } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
         var rebind0 = pre.findMember(sym.name, BRIDGE, 0, true)
@@ -3833,7 +3835,7 @@ A type's typeSymbol should never be inspected directly.
       }
     }
     def apply(tp: Type): Type = tp match {
-      case ThisType(sym)/* if (sym.isModuleClass)*/ =>
+      case ThisType(sym) =>
         val sym1 = adaptToNewRun(sym.owner.thisType, sym)
         if (sym1 == sym) tp else ThisType(sym1)
       case SingleType(pre, sym) =>
