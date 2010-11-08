@@ -128,41 +128,43 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
     sz += 1
     val hc = improve(elemHashCode(elem._1))
     val pos = (hc >>> nonmasklen)
-    if (lasts(pos) eq null) {
+    if (buckets(pos) eq null) {
       // initialize bucket
-      heads(pos) = new Unrolled[DefaultEntry[K, V]]
-      lasts(pos) = heads(pos)
+      buckets(pos) = new UnrolledBuffer[DefaultEntry[K, V]]()
     }
     // add to bucket
-    lasts(pos) = lasts(pos).add(new DefaultEntry(elem._1, elem._2))
+    buckets(pos) += new DefaultEntry(elem._1, elem._2)
     this
   }
 
   def result: ParHashMap[K, V] = if (size >= (ParHashMapCombiner.numblocks * sizeMapBucketSize)) { // 1024
     // construct table
     val table = new AddingHashTable(size, tableLoadFactor)
-    val insertcount = executeAndWaitResult(new FillBlocks(heads, table, 0, ParHashMapCombiner.numblocks))
+    val bucks = buckets.map(b => if (b ne null) b.headPtr else null)
+    val insertcount = executeAndWaitResult(new FillBlocks(bucks, table, 0, bucks.length))
     table.setSize(insertcount)
     // TODO compare insertcount and size to see if compression is needed
     val c = table.hashTableContents
     new ParHashMap(c)
   } else {
     // construct a normal table and fill it sequentially
+    // TODO parallelize by keeping separate sizemaps and merging them
     val table = new HashTable[K, DefaultEntry[K, V]] {
       def insertEntry(e: DefaultEntry[K, V]) = if (super.findEntry(e.key) eq null) super.addEntry(e)
       sizeMapInit(table.length)
     }
     var i = 0
     while (i < ParHashMapCombiner.numblocks) {
-      if (heads(i) ne null) {
-        for (elem <- heads(i)) table.insertEntry(elem)
+      if (buckets(i) ne null) {
+        for (elem <- buckets(i)) table.insertEntry(elem)
       }
       i += 1
     }
-    // TODO compression
     val c = table.hashTableContents
     new ParHashMap(c)
   }
+
+  /* classes */
 
   /** A hash table which will never resize itself. Knowing the number of elements in advance,
    *  it allocates the table of the required size when created.
@@ -212,6 +214,8 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   }
 
   /* tasks */
+
+  import UnrolledBuffer.Unrolled
 
   class FillBlocks(buckets: Array[Unrolled[DefaultEntry[K, V]]], table: AddingHashTable, offset: Int, howmany: Int)
   extends super.Task[Int, FillBlocks] {

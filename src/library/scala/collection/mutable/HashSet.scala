@@ -12,6 +12,7 @@ package scala.collection
 package mutable
 
 import generic._
+import collection.parallel.mutable.ParHashSet
 
 /** This class implements mutable sets using a hashtable.
  *
@@ -35,10 +36,17 @@ import generic._
  *  @define willNotTerminateInf
  */
 @serializable @SerialVersionUID(1L)
-class HashSet[A] extends Set[A]
-                    with GenericSetTemplate[A, HashSet]
-                    with SetLike[A, HashSet[A]]
-                    with FlatHashTable[A] {
+class HashSet[A] private[collection] (contents: FlatHashTable.Contents[A])
+extends Set[A]
+   with GenericSetTemplate[A, HashSet]
+   with SetLike[A, HashSet[A]]
+   with FlatHashTable[A]
+   with Parallelizable[ParHashSet[A]]
+{
+  initWithContents(contents)
+
+  def this() = this(null)
+
   override def companion: GenericCompanion[HashSet] = HashSet
 
   override def size = tableSize
@@ -47,6 +55,8 @@ class HashSet[A] extends Set[A]
 
   def += (elem: A): this.type = { addEntry(elem); this }
   def -= (elem: A): this.type = { removeEntry(elem); this }
+
+  def par = new ParHashSet(hashTableContents)
 
   override def add(elem: A): Boolean = addEntry(elem)
   override def remove(elem: A): Boolean = removeEntry(elem).isDefined
@@ -72,6 +82,13 @@ class HashSet[A] extends Set[A]
   private def readObject(in: java.io.ObjectInputStream) {
     init(in, x => x)
   }
+
+  /** Toggles whether a size map is used to track hash map statistics.
+   */
+  def useSizeMap(t: Boolean) = if (t) {
+    if (!isSizeMapDefined) sizeMapInitAndRebuild
+  } else sizeMapDisable
+
 }
 
 /** $factoryInfo

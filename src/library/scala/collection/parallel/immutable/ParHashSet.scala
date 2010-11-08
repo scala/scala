@@ -11,7 +11,8 @@ import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParIterableIterator
 import scala.collection.parallel.EnvironmentPassingCombiner
-import scala.collection.parallel.Unrolled
+import scala.collection.parallel.UnrolledBuffer.Unrolled
+import scala.collection.parallel.UnrolledBuffer
 import scala.collection.generic.ParSetFactory
 import scala.collection.generic.CanCombineFrom
 import scala.collection.generic.GenericParTemplate
@@ -112,26 +113,25 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
     sz += 1
     val hc = emptyTrie.computeHash(elem)
     val pos = hc & 0x1f
-    if (lasts(pos) eq null) {
+    if (buckets(pos) eq null) {
       // initialize bucket
-      heads(pos) = new Unrolled[Any]
-      lasts(pos) = heads(pos)
+      buckets(pos) = new UnrolledBuffer[Any]
     }
     // add to bucket
-    lasts(pos) = lasts(pos).add(elem)
+    buckets(pos) += elem
     this
   }
 
   def result = {
-    val buckets = heads.filter(_ != null)
-    val root = new Array[HashSet[T]](buckets.length)
+    val bucks = buckets.filter(_ != null).map(_.headPtr)
+    val root = new Array[HashSet[T]](bucks.length)
 
-    executeAndWaitResult(new CreateTrie(buckets, root, 0, buckets.length))
+    executeAndWaitResult(new CreateTrie(bucks, root, 0, bucks.length))
 
     var bitmap = 0
     var i = 0
     while (i < rootsize) {
-      if (heads(i) ne null) bitmap |= 1 << i
+      if (buckets(i) ne null) bitmap |= 1 << i
       i += 1
     }
     val sz = root.foldLeft(0)(_ + _.size)
@@ -146,14 +146,14 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
 
   /* tasks */
 
-  class CreateTrie(buckets: Array[Unrolled[Any]], root: Array[HashSet[T]], offset: Int, howmany: Int)
+  class CreateTrie(bucks: Array[Unrolled[Any]], root: Array[HashSet[T]], offset: Int, howmany: Int)
   extends super.Task[Unit, CreateTrie] {
     var result = ()
     def leaf(prev: Option[Unit]) = {
       var i = offset
       val until = offset + howmany
       while (i < until) {
-        root(i) = createTrie(buckets(i))
+        root(i) = createTrie(bucks(i))
         i += 1
       }
     }
@@ -179,7 +179,7 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
     }
     def split = {
       val fp = howmany / 2
-      List(new CreateTrie(buckets, root, offset, fp), new CreateTrie(buckets, root, offset + fp, howmany - fp))
+      List(new CreateTrie(bucks, root, offset, fp), new CreateTrie(bucks, root, offset + fp, howmany - fp))
     }
     def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(root.length, parallelismLevel)
   }

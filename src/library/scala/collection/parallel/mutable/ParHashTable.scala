@@ -15,14 +15,13 @@ import collection.parallel.ParIterableIterator
  */
 trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.mutable.HashTable[K, Entry] {
 
-  // always initialize size map
-  if (!isSizeMapDefined) sizeMapInitAndRebuild
+  override def alwaysInitSizeMap = true
 
   /** A parallel iterator returning all the entries.
    */
   abstract class EntryIterator[T, +IterRepr <: ParIterableIterator[T]]
     (private var idx: Int, private val until: Int, private val totalsize: Int, private var es: Entry)
-  extends ParIterableIterator[T] {
+  extends ParIterableIterator[T] with SizeMapUtils {
     private val itertable = table
     private var traversed = 0
     scan()
@@ -78,7 +77,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
         val sidx = idx + divsz + 1 // + 1 preserves iteration invariant
         val suntil = until
         val ses = itertable(sidx - 1).asInstanceOf[Entry] // sidx - 1 ensures counting from the right spot
-        val stotal = calcNumElems(sidx - 1, suntil)
+        val stotal = calcNumElems(sidx - 1, suntil, table.length, sizeMapBucketSize)
 
         // first iterator params
         val fidx = idx
@@ -110,35 +109,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
       buff map { e => entry2item(e) }
     }
 
-    private def calcNumElems(from: Int, until: Int) = {
-      // find the first bucket
-      val fbindex = from / sizeMapBucketSize
-
-      // find the last bucket
-      val lbindex = until / sizeMapBucketSize
-      // note to self: FYI if you define lbindex as from / sizeMapBucketSize, the first branch
-      // below always triggers and tests pass, so you spend a great day benchmarking and profiling
-
-      if (fbindex == lbindex) {
-        // if first and last are the same, just count between `from` and `until`
-        // return this count
-        countElems(from, until)
-      } else {
-        // otherwise count in first, then count in last
-        val fbuntil = ((fbindex + 1) * sizeMapBucketSize) min itertable.length
-        val fbcount = countElems(from, fbuntil)
-        val lbstart = lbindex * sizeMapBucketSize
-        val lbcount = countElems(lbstart, until)
-
-        // and finally count the elements in all the buckets between first and last using a sizemap
-        val inbetween = countBucketSizes(fbindex + 1, lbindex)
-
-        // return the sum
-        fbcount + inbetween + lbcount
-      }
-    }
-
-    private def countElems(from: Int, until: Int) = {
+    protected def countElems(from: Int, until: Int) = {
       var c = 0
       var idx = from
       var es: Entry = null
@@ -153,7 +124,7 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
       c
     }
 
-    private def countBucketSizes(fromBucket: Int, untilBucket: Int) = {
+    protected def countBucketSizes(fromBucket: Int, untilBucket: Int) = {
       var c = 0
       var idx = fromBucket
       while (idx < untilBucket) {
@@ -168,7 +139,6 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends collection.m
 
 
 
-object ParHashTable {
-  var iters = 0
-}
+
+
 

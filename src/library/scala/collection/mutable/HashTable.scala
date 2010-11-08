@@ -48,6 +48,10 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
    */
   @transient protected var threshold: Int = initialThreshold(_loadFactor)
 
+  /** The array keeping track of the number of elements in 32 element blocks.
+   */
+  @transient protected var sizemap: Array[Int] = null
+
   protected def initialSize: Int = HashTable.initialSize
 
   /**
@@ -70,7 +74,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     table = new Array(capacity(sizeForThreshold(_loadFactor, size)))
     threshold = newThreshold(_loadFactor, table.size)
 
-    if (smDefined) sizeMapInit(table.size) else sizemap = null
+    if (smDefined) sizeMapInit(table.length) else sizemap = null
 
     var index = 0
     while (index < size) {
@@ -218,8 +222,7 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     threshold = newThreshold(_loadFactor, newSize)
   }
 
-  @transient protected var sizemap: Array[Int] = null
-  private[collection] final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
+  /* Size map handling code */
 
   /*
    * The following three sizeMap* functions (Add, Remove, Reset)
@@ -251,6 +254,8 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     if (sizemap.length != nsize) sizemap = new Array[Int](nsize)
     else java.util.Arrays.fill(sizemap, 0)
   }
+
+  private[collection] final def totalSizeMapBuckets = if (sizeMapBucketSize < table.length) 1 else table.length / sizeMapBucketSize
 
   protected def calcSizeMapSize(tableLength: Int) = (tableLength >> sizeMapBucketBitSize) + 1
 
@@ -286,13 +291,18 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     }
   }
 
-  def printSizeMap {
+  private[collection] def printSizeMap {
     println(sizemap.toList)
   }
 
   protected def sizeMapDisable = sizemap = null
 
   protected def isSizeMapDefined = sizemap ne null
+
+  // override to automatically initialize the size map
+  protected def alwaysInitSizeMap = false
+
+  /* End of size map handling code */
 
   protected def elemEquals(key1: A, key2: A): Boolean = (key1 == key2)
 
@@ -306,12 +316,15 @@ trait HashTable[A, Entry >: Null <: HashEntry[A, Entry]] extends HashTable.HashU
     shifted
   }
 
-  protected def initWithContents(c: HashTable.Contents[A, Entry]) = if (c != null) {
-    _loadFactor = c.loadFactor
-    table = c.table
-    tableSize = c.tableSize
-    threshold = c.threshold
-    sizemap = c.sizemap
+  protected def initWithContents(c: HashTable.Contents[A, Entry]) = {
+    if (c != null) {
+      _loadFactor = c.loadFactor
+      table = c.table
+      tableSize = c.tableSize
+      threshold = c.threshold
+      sizemap = c.sizemap
+    }
+    if (alwaysInitSizeMap && sizemap == null) sizeMapInitAndRebuild
   }
 
   private[collection] def hashTableContents = new HashTable.Contents(

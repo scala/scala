@@ -193,7 +193,7 @@ self =>
    *  $orderDependent
    *
    *  @param  n    The number of elements to take
-   *  @return a $coll consisting of all elements of this $coll except the first `n` ones, or else the
+   *  @return a $coll consisting of all elements of this $coll except the last `n` ones, or else the
    *          empty $coll, if this $coll has less than `n` elements.
    */
   def dropRight(n: Int): Repr = {

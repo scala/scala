@@ -6,7 +6,7 @@ package scala.collection.parallel
 
 
 
-import scala.collection.Map
+import scala.collection.Set
 import scala.collection.mutable.Builder
 import scala.collection.generic._
 

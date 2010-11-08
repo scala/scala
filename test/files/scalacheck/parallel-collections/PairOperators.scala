@@ -49,7 +49,7 @@ trait PairOperators[K, V] extends Operators[(K, V)] {
     def apply(kv: (K, V)) = kfm(kv._1).toIterable zip vfm(kv._2).toIterable
   }
 
-  def filterPredicates = zipPredicates(koperators.filterPredicates, voperators.existsPredicates)
+  def filterPredicates = zipPredicates(koperators.filterPredicates, voperators.filterPredicates)
 
   def filterNotPredicates = filterPredicates
 

@@ -146,7 +146,10 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
         println("mapped to: ")
         println(ms)
         println(mp)
-        println("valid: " + !checkDataStructureInvariants(ms, mp))
+        println("sizes: ")
+        println(ms.size)
+        println(mp.size)
+        println("valid: " + checkDataStructureInvariants(ms, mp))
       }
       ("op index: " + ind) |: (areEqual(ms, mp) && checkDataStructureInvariants(ms, mp))
     }
