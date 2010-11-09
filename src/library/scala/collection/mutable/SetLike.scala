@@ -68,9 +68,6 @@ trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
    */
   override protected[this] def newBuilder: Builder[A, This] = empty
 
-  @migration(2, 8, "Set.map now returns a Set, so it will discard duplicate values.")
-  override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = super.map(f)(bf)
-
   /** Adds an element to this $coll.
    *
    *  @param elem the element to be added

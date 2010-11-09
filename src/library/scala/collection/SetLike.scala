@@ -11,6 +11,7 @@ package scala.collection
 
 import generic._
 import mutable.{Builder, AddingBuilder}
+import scala.annotation.migration
 
 /** A template trait for sets.
  *
@@ -71,6 +72,12 @@ self =>
    *  `mutable.SetLike`</a>.
    */
   override protected[this] def newBuilder: Builder[A, This] = new AddingBuilder[A, This](empty)
+
+  // note: this is only overridden here to add the migration annotation,
+  // which I hope to turn into an Xlint style warning as the migration aspect
+  // is not central to its importance.
+  @migration(2, 8, "Set.map now returns a Set, so it will discard duplicate values.")
+  override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That = super.map(f)(bf)
 
   /** Tests if some element is contained in this set.
    *
@@ -182,9 +189,13 @@ self =>
    *           Unless overridden this is simply `"Set"`.
    */
   override def stringPrefix: String = "Set"
-
   override def toString = super[IterableLike].toString
-  override def hashCode() = this map (_.hashCode) sum
+
+  // Careful! Don't write a Set's hashCode like:
+  //    override def hashCode() = this map (_.hashCode) sum
+  // Calling map on a set drops duplicates: any hashcode collisions would
+  // then be dropped before they can be added.
+  override def hashCode() = this.foldLeft(0)(_ + _.hashCode)
 
   /** Compares this set with another object for equality.
    *
