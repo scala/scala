@@ -17,6 +17,8 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
   def newTransformer(unit: CompilationUnit): Transformer =
     new LazyValues(unit)
 
+  private def lazyUnit(sym: Symbol) = sym.tpe.resultType.typeSymbol == UnitClass
+
   object LocalLazyValFinder extends Traverser {
     var result: Boolean  = _
 
@@ -27,6 +29,10 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
       if (!result)
         t match {
           case v@ValDef(_, _, _, _) if v.symbol.isLazy =>
+            result = true
+
+          case d@DefDef(_, _, _, _, _, _) if d.symbol.isLazy && lazyUnit(d.symbol) =>
+            d.symbol.resetFlag(symtab.Flags.LAZY)
             result = true
 
           case ClassDef(_, _, _, _) | DefDef(_, _, _, _, _, _) | ModuleDef(_, _, _) =>
@@ -70,8 +76,8 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
               if (sym.enclMethod == NoSymbol) sym.owner else sym.enclMethod
             val idx = lazyVals(enclosingDummyOrMethod)
             lazyVals(enclosingDummyOrMethod) = idx + 1
-            val rhs1 = mkLazyDef(enclosingDummyOrMethod, super.transform(rhs), idx)
-            sym.resetFlag(LAZY | ACCESSOR)
+            val rhs1 = mkLazyDef(enclosingDummyOrMethod, super.transform(rhs), idx, sym)
+            sym.resetFlag((if (lazyUnit(sym)) 0 else LAZY) | ACCESSOR)
             rhs1
           } else
             super.transform(rhs)
@@ -180,16 +186,17 @@ abstract class LazyVals extends Transform with TypingTransformers with ast.TreeD
      *    ()
      *  }
      */
-    private def mkLazyDef(meth: Symbol, tree: Tree, offset: Int): Tree = {
+    private def mkLazyDef(meth: Symbol, tree: Tree, offset: Int, lazyVal: Symbol): Tree = {
       val bitmapSym           = getBitmapFor(meth, offset)
       val mask                = LIT(1 << (offset % FLAGS_PER_WORD))
       def mkBlock(stmt: Tree) = BLOCK(stmt, mkSetFlag(bitmapSym, mask), UNIT)
 
       val (block, res) = tree match {
-        case Block(List(assignment), res) => (mkBlock(assignment),  res)
-        case rhs                          => (mkBlock(rhs),         UNIT)
+        case Block(List(assignment), res) if !lazyUnit(lazyVal) =>
+          (mkBlock(assignment),  res)
+        case rhs                          =>
+          (mkBlock(rhs),         UNIT)
       }
-      assert(res != UNIT || meth.tpe.finalResultType.typeSymbol == UnitClass)
 
       val cond = (Ident(bitmapSym) INT_& mask) INT_== ZERO
 
