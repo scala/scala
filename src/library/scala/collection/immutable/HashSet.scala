@@ -301,7 +301,7 @@ time { mNew.iterator.foreach( p => ()) }
     }
 
     @scala.annotation.tailrec private[this] def next0(elems: Array[HashSet[A]], i: Int): A = {
-      if (i == elems.length-1) { // reached end of level, pop stack
+      if (i == elems.length - 1) { // reached end of level, pop stack
         depth -= 1
         if (depth >= 0) {
           arrayD = arrayStack(depth)
@@ -327,7 +327,7 @@ time { mNew.iterator.foreach( p => ()) }
         case m: HashSet1[A] => m.key
         case m =>
           subIter = m.iterator
-          subIter.next
+          next
       }
     }
 
