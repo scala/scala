@@ -221,12 +221,7 @@ fi
 # run the build and tests
 SET_ANT_OPTS='export ANT_OPTS="-XX:MaxPermSize=192M -Xmx1536m"; echo $ANT_OPTS'
 echo "Set ant options command: $SET_ANT_OPTS"
-if [[ $LOGFILE != "" ]]
-then
-  ssh $USER@$LOCATION "cd $WORKREPO; $SET_ANT_OPTS; ant test"
-else
-  ssh $USER@$LOCATION "cd $WORKREPO; $SET_ANT_OPTS; ant test | tee -a $LOGFILE"
-fi
+ssh $USER@$LOCATION "cd $WORKREPO; $SET_ANT_OPTS; ant nightly | tee -a $LOGFILE"
 
 success
 
