@@ -68,7 +68,7 @@ trait FlatHashTable[A] extends FlatHashTable.HashUtils[A] {
     threshold = newThreshold(_loadFactor, table.size)
 
     val smDefined = in.readBoolean
-    if (smDefined) sizeMapInit(table.length)
+    if (smDefined) sizeMapInit(table.length) else sizemap = null
 
     var index = 0
     while (index < size) {

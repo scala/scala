@@ -174,17 +174,17 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
      */
     def insertEntry(insertAt: Int, comesBefore: Int, elem: T): Int = {
       var h = insertAt
-      if (h == -1) h = index(elemHashCode(elem))
-      var entry = table(h)
-      while (null != entry) {
-        if (entry == elem) return 0
-        h = (h + 1) // we *do not* do `(h + 1) % table.length` here, because we don't overlap!!
-        if (h >= comesBefore) return -1
-        entry = table(h)
-      }
-      table(h) = elem.asInstanceOf[AnyRef]
-      tableSize = tableSize + 1
-      nnSizeMapAdd(h)
+      // if (h == -1) h = index(elemHashCode(elem))
+      // var entry = table(h)
+      // while (null != entry) {
+      //   if (entry == elem) return 0
+      //   h = (h + 1) // we *do not* do `(h + 1) % table.length` here, because we don't overlap!!
+      //   if (h >= comesBefore) return -1
+      //   entry = table(h)
+      // }
+      // table(h) = elem.asInstanceOf[AnyRef]
+      // tableSize = tableSize + 1
+      // nnSizeMapAdd(h)
       1
     }
   }
@@ -222,15 +222,35 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
       (elemsIn + leftoversIn, elemsLeft concat leftoversLeft)
     }
     private def insertAll(atPos: Int, beforePos: Int, elems: UnrolledBuffer[Any]): (Int, UnrolledBuffer[Any]) = {
-      var it = elems.iterator
       var leftovers = new UnrolledBuffer[Any]
       var inserted = 0
+
+      // var unrolled = elems.headPtr
+      // var i = 0
+      // var t = table
+      // while (unrolled ne null) {
+      //   val chunkarr = unrolled.array
+      //   val chunksz = unrolled.size
+      //   while (i < chunksz) {
+      //     val elem = chunkarr(i)
+      //     val res = t.insertEntry(atPos, beforePos, elem.asInstanceOf[T])
+      //     if (res >= 0) inserted += 1
+      //     else leftovers += elem
+      //     i += 1
+      //   }
+      //   i = 0
+      //   unrolled = unrolled.next
+      // }
+
+      // slower:
+      var it = elems.iterator
       while (it.hasNext) {
         val elem = it.next
         val res = table.insertEntry(atPos, beforePos, elem.asInstanceOf[T])
         if (res >= 0) inserted += res
         else leftovers += elem
       }
+
       (inserted, leftovers)
     }
     def split = {

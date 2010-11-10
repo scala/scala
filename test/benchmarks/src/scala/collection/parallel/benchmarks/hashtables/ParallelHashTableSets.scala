@@ -19,7 +19,7 @@ trait ParHashTableSetBenches[T] extends StandardParIterableBenches[T, ParHashSet
   val forkJoinPool = new scala.concurrent.forkjoin.ForkJoinPool
 
   object Map2 extends IterableBenchCompanion {
-    override def defaultSize = 5000
+    override def defaultSize = 50000
     override def comparisons = List()
     def benchName = "map2";
     def apply(sz: Int, p: Int, w: String) = new Map2(sz, p, w)

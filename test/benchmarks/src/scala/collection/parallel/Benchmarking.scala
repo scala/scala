@@ -109,7 +109,7 @@ trait BenchmarkRegister {
   register(hashtries.RefParHashTrieBenches.Map)
   register(hashtries.RefParHashTrieBenches.Map2)
 
-  // parallel hash table benchmarks
+  // parallel hash table map benchmarks
   register(hashtables.RefParHashTableBenches.Reduce)
   register(hashtables.RefParHashTableBenches.Reduce2)
   register(hashtables.RefParHashTableBenches.Foreach)
@@ -117,6 +117,15 @@ trait BenchmarkRegister {
   register(hashtables.RefParHashTableBenches.Map)
   register(hashtables.RefParHashTableBenches.Map2)
   register(hashtables.RefParHashTableBenches.HeavyMap)
+
+  // parallel hash table set benchmarks
+  register(hashtables.RefParHashTableSetBenches.Reduce)
+  register(hashtables.RefParHashTableSetBenches.Reduce2)
+  register(hashtables.RefParHashTableSetBenches.Foreach)
+  register(hashtables.RefParHashTableSetBenches.ForeachSet)
+  register(hashtables.RefParHashTableSetBenches.Map)
+  register(hashtables.RefParHashTableSetBenches.Map2)
+  register(hashtables.RefParHashTableSetBenches.HeavyMap)
 }
 
 
