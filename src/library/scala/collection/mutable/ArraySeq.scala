@@ -38,6 +38,7 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@serializable @SerialVersionUID(1530165946227428979L)
 class ArraySeq[A](override val length: Int)
 extends IndexedSeq[A]
    with GenericTraversableTemplate[A, ArraySeq]

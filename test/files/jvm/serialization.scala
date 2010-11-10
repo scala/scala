@@ -295,7 +295,7 @@ object Test2_immutable {
 object Test3_mutable {
   import scala.reflect.ClassManifest
   import scala.collection.mutable.{
-    ArrayBuffer, ArrayBuilder, ArrayStack, BitSet, DoubleLinkedList,
+    ArrayBuffer, ArrayBuilder, ArraySeq, ArrayStack, BitSet, DoubleLinkedList,
     HashMap, HashSet, History, LinkedList, ListBuffer, Publisher, Queue,
     Stack, StringBuilder, WrappedArray}
 
@@ -315,6 +315,11 @@ object Test3_mutable {
     val abu2 = ArrayBuilder.make[Float]
     val _abu2: ArrayBuilder[ClassManifest[Float]] = read(write(abu2))
     check(abu2, _abu2)
+
+    // ArraySeq
+    val aq1 = ArraySeq(1, 2, 3)
+    val _aq1: ArraySeq[Int] = read(write(aq1))
+    check(aq1, _aq1)
 
     // ArrayStack
     val as1 = new ArrayStack[Int]

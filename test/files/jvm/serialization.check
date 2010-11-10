@@ -149,6 +149,10 @@ x = ArrayBuilder.ofFloat
 y = ArrayBuilder.ofFloat
 x equals y: true, y equals x: true
 
+x = ArraySeq(1, 2, 3)
+y = ArraySeq(1, 2, 3)
+x equals y: true, y equals x: true
+
 x = ArrayStack(3, 2, 20)
 y = ArrayStack(3, 2, 20)
 x equals y: true, y equals x: true
