@@ -46,6 +46,10 @@ object DummyOperators extends Operators[Dummy] {
     a.num = a.dummy + a.num + a.in + a.one
     a
   }
+  override val mapper2 = (a: Dummy) => {
+    val x = 1
+    new Dummy(a.in * -2 + x)
+  }
   val heavymapper = (a: Dummy) => {
     var i = -100
     while (i < 0) {
