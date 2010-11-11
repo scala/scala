@@ -12,8 +12,8 @@ import compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, SourceFile, Statistics, BatchSourceFile, ScriptSourceFile, returning }
-import reflect.generic.{ PickleBuffer }
+import util.{ ClassPath, SourceFile, Statistics, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
+import reflect.generic.{ PickleBuffer, PickleFormat }
 
 import symtab.{ Flags, SymbolTable, SymbolLoaders }
 import symtab.classfile.Pickler
@@ -202,8 +202,20 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def optSetting[T](s: Settings#Setting): Option[T] =
       if (s.isDefault) None else Some(s.value.asInstanceOf[T])
 
-    def showClass    = optSetting[String](settings.Xshowcls)
-    def showObject   = optSetting[String](settings.Xshowobj)
+    // Allows for syntax like scalac -Xshow-class Random@erasure,typer
+    private def splitClassAndPhase(str: String, term: Boolean): Name = {
+      def mkName(s: String) = if (term) newTermName(s) else newTypeName(s)
+      (str indexOf '@') match {
+        case -1   => mkName(str)
+        case idx  =>
+          val phasePart = str drop (idx + 1)
+          settings.Yshow.tryToSetColon(phasePart split ',' toList)
+          mkName(str take idx)
+      }
+    }
+
+    val showClass    = optSetting[String](settings.Xshowcls) map (x => splitClassAndPhase(x, false))
+    val showObject   = optSetting[String](settings.Xshowobj) map (x => splitClassAndPhase(x, true))
     def script       = optSetting[String](settings.script)
     def encoding     = optSetting[String](settings.encoding)
     def sourceReader = optSetting[String](settings.sourceReader)
@@ -220,15 +232,17 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def unchecked     = settings.unchecked.value
     def verbose       = settings.verbose.value
     def writeICode    = settings.writeICode.value
+    def declsOnly     = false
 
     /** Flags as applied to the current or previous phase */
     def browsePhase = isActive(settings.browse)
+    def checkPhase  = wasActive(settings.check)
     def logPhase    = isActive(settings.log)
     def printPhase  = isActive(settings.Xprint)
-
-    def checkPhase  = wasActive(settings.check)
+    def showPhase   = isActive(settings.Yshow)
 
     /** Derived values */
+    def showNames     = List(showClass, showObject).flatten
     def jvm           = target startsWith "jvm"
     def msil          = target == "msil"
     def verboseDebug  = debug && verbose
@@ -755,6 +769,15 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** A map from compiled top-level symbols to their picklers */
     val symData = new mutable.HashMap[Symbol, PickleBuffer]
 
+    def registerPickle(sym: Symbol): Unit = {
+      // Convert all names to the type name: objects don't store pickled data
+      if (opt.showPhase && (opt.showNames exists (x => findNamedMember(x.toTypeName, sym) != NoSymbol))) {
+        symData get sym foreach { pickle =>
+          ShowPickled.show("\n<<-- " + sym.fullName + " -->>\n", pickle, false)
+        }
+      }
+    }
+
     /** does this run compile given class, module, or case factory? */
     def compiles(sym: Symbol): Boolean =
       if (sym == NoSymbol) false
@@ -785,6 +808,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       }
     }
 
+    private def showMembers() =
+      opt.showNames foreach (x => showDef(x, opt.declsOnly, globalPhase))
+
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
       val depSources = dependencyAnalysis.calculateFiles(_sources.distinct) // bug #1268, scalac confused by duplicated filenames
@@ -807,9 +833,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           writeICode()
 
         // print trees
-        if (opt.printPhase || opt.printLate && runIsAt(cleanupPhase))
+        if (opt.printPhase || opt.printLate && runIsAt(cleanupPhase)) {
           if (opt.showTrees) nodePrinters.printAll()
           else printAllUnits()
+        }
+        // print members
+        if (opt.showPhase)
+          showMembers()
 
         // browse trees with swing tree viewer
         if (opt.browsePhase)
@@ -830,9 +860,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
         advancePhase
       }
 
-      // print class and object definitions
-      opt.showClass foreach (x => showDef(newTypeName(x)))
-      opt.showObject foreach (x => showDef(newTermName(x)))
+      // If no phase was specified for -Xshow-class/object, show it now.
+      if (settings.Yshow.isDefault)
+        showMembers()
 
       if (reporter.hasErrors) {
         for ((sym, file) <- symSource.iterator) {
@@ -973,55 +1003,50 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     atPhase(phase.next) { currentRun.units foreach treePrinter.print }
   }
 
+  private def findMemberFromRoot(fullName: Name): Symbol = {
+    val segs = nme.segments(fullName.toString, fullName.isTermName)
+    if (segs.isEmpty) NoSymbol
+    else findNamedMember(segs.tail, definitions.RootClass.info member segs.head)
+  }
+
+  private def findNamedMember(fullName: Name, root: Symbol): Symbol = {
+    val segs = nme.segments(fullName.toString, fullName.isTermName)
+    if (segs.isEmpty || segs.head != root.simpleName) NoSymbol
+    else findNamedMember(segs.tail, root)
+  }
+  private def findNamedMember(segs: List[Name], root: Symbol): Symbol =
+    if (segs.isEmpty) root
+    else findNamedMember(segs.tail, root.info member segs.head)
+
   /** We resolve the class/object ambiguity by passing a type/term name.
    */
-  def showDef(fullName: Name, ph: Phase = currentRun.typerPhase.next) = {
-    def phased[T](body: => T): T = atPhase(ph)(body)
+  def showDef(fullName: Name, declsOnly: Boolean, ph: Phase) = {
+    val boringOwners = Set(definitions.AnyClass, definitions.AnyRefClass, definitions.ObjectClass)
+    def phased[T](body: => T): T = afterPhase(ph)(body)
+    def boringMember(sym: Symbol) = boringOwners(sym.owner)
+    def symString(sym: Symbol) = if (sym.isTerm) sym.defString else sym.toString
 
-    def walker(sym: Symbol, n: Name)         = sym.info member n
-    def walk(root: Symbol, segs: List[Name]) = phased(segs.foldLeft(root)(walker))
-    def defs(sym: Symbol)                    = phased(sym.info.members map (x => if (x.isTerm) x.defString else x.toString))
-    def bases(sym: Symbol)                   = phased(sym.info.baseClasses map (_.fullName))
-    def mkName(str: String, term: Boolean) =
-      if (term) newTermName(str)
-      else newTypeName(str)
+    def members(sym: Symbol) = phased(sym.info.members filterNot boringMember map symString)
+    def decls(sym: Symbol)   = phased(sym.info.decls.toList map symString)
+    def bases(sym: Symbol)   = phased(sym.info.baseClasses map (x => x.kindString + " " + x.fullName))
 
-    def nameSegments(name: String): List[Name] = {
-      name.indexWhere(ch => ch == '.' || ch == '#') match {
-        // it's the last segment: the argument to showDef tells us whether type or term
-        case -1     => if (name == "") Nil else List(mkName(name, fullName.isTermName))
-        // otherwise, we can tell based on whether '#' or '.' is the following char.
-        case idx    =>
-          val (id, div, rest) = (name take idx, name charAt idx, name drop (idx + 1))
-          mkName(id, div == '.') :: nameSegments(rest)
-      }
-    }
-
-    val syms = {
-      // creates a list of simple type and term names.
-      val segments = nameSegments(fullName.toString)
-
-      // make the type/term selections walking from the root.
-      walk(definitions.RootClass, segments) match {
-        // The name as given was not found, so we'll sift through every symbol in
-        // the run looking for plausible matches.
-        case NoSymbol => phased {
-          currentRun.symSource.keys.toList .
-            filter (_.simpleName == segments.head) .
-            map (sym => walk(sym, segments.tail)) .
-            filterNot (_ == NoSymbol)
-        }
-        // The name as given matched, so show only that.
-        case sym => List(sym)
-      }
+    // make the type/term selections walking from the root.
+    val syms = findMemberFromRoot(fullName) match {
+      // The name as given was not found, so we'll sift through every symbol in
+      // the run looking for plausible matches.
+      case NoSymbol => phased(currentRun.symSource.keys map (sym => findNamedMember(fullName, sym)) filterNot (_ == NoSymbol) toList)
+      // The name as given matched, so show only that.
+      case sym      => List(sym)
     }
 
     syms foreach { sym =>
-      val name        = phased("\n<<-- " + sym.kindString + " " + sym.fullName + " -->>\n")
-      val baseClasses = bases(sym).mkString("Base classes:\n  ", "\n  ", "\n")
-      val members     = defs(sym).mkString("Members after phase typer:\n  ", "\n  ", "\n")
+      val name        = "\n<<-- %s %s after phase '%s' -->>".format(sym.kindString, sym.fullName, ph.name)
+      val baseClasses = bases(sym).mkString("Base classes:\n  ", "\n  ", "")
+      val contents =
+        if (declsOnly) decls(sym).mkString("Declarations:\n  ", "\n  ", "")
+        else members(sym).mkString("Members (excluding Any/AnyRef unless overridden):\n  ", "\n  ", "")
 
-      inform(List(name, baseClasses, members) mkString "\n")
+      inform(List(name, baseClasses, contents) mkString "\n\n")
     }
   }
 

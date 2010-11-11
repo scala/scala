@@ -12,6 +12,42 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
   self: SymbolTable =>
 
   object nme extends StandardNames with NameMangling {
+    /** Translate a String into a list of simple TypeNames and TermNames.
+     *  In all segments before the last, type/term is determined by whether
+     *  the following separator char is '.' or '#'.  In the last segment,
+     *  the argument "assumeTerm" determines it.  Examples:
+     *
+     *  package foo {
+     *    object Lorax { object Wog ; class Wog }
+     *    class Lorax  { object Zax ; class Zax }
+     *  }
+     *
+     *  f("foo.Lorax", true)   == List("foo": Term, "Lorax": Term) // object Lorax
+     *  f("foo.Lorax", false)  == List("foo": Term, "Lorax": Type) // class Lorax
+     *  f("Lorax.Wog", true)   == List("Lorax": Term, "Wog": Term) // object Wog
+     *  f("Lorax.Wog", false)  == List("Lorax": Term, "Wog": Type) // class Wog
+     *  f("Lorax#Zax", true)   == List("Lorax": Type, "Zax": Term) // object Zax
+     *  f("Lorax#Zax", false)  == List("Lorax": Type, "Zax": Type) // class Zax
+     *
+     *  Note that in actual scala syntax you cannot refer to object Zax without an
+     *  instance of Lorax, so Lorax#Zax could only mean the type.  One might think
+     *  that Lorax#Zax.type would work, but this is not accepted by the parser.
+     *  For the purposes of referencing that object, the syntax is allowed.
+     */
+    def segments(name: String, assumeTerm: Boolean): List[Name] = {
+      def mkName(str: String, term: Boolean): Name =
+        if (term) newTermName(str) else newTypeName(str)
+
+      name.indexWhere(ch => ch == '.' || ch == '#') match {
+        // it's the last segment: the parameter tells us whether type or term
+        case -1     => if (name == "") scala.Nil else scala.List(mkName(name, assumeTerm))
+        // otherwise, we can tell based on whether '#' or '.' is the following char.
+        case idx    =>
+          val (simple, div, rest) = (name take idx, name charAt idx, name drop (idx + 1))
+          mkName(simple, div == '.') :: segments(rest, assumeTerm)
+      }
+    }
+
     // Scala keywords
     val ABSTRACTkw = newTermName("abstract")
     val CASEkw = newTermName("case")

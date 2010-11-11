@@ -55,8 +55,8 @@ object Bippy {
     }
     output split "\\n" toList
   }
-  def showClass(name: String) = lines("-Xshow-class", name)
-  def showObject(name: String) = lines("-Xshow-object", name)
+  def showClass(name: String) = lines("-Yshow:typer", "-Xshow-class", name)
+  def showObject(name: String) = lines("-Yshow:typer", "-Xshow-object", name)
 
   def show(xs: List[String]) = {
     xs filter (x => (x contains "def showdefTestMember") || (x startsWith "<<-- ")) foreach println

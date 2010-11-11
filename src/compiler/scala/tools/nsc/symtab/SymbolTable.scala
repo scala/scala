@@ -106,6 +106,8 @@ abstract class SymbolTable extends reflect.generic.Universe
       phase = current
     }
   }
+  final def afterPhase[T](ph: Phase)(op: => T): T =
+    atPhase(ph.next)(op)
 
   /** Break into repl debugger if assertion is true */
   // def breakIf(assertion: => Boolean, args: Any*): Unit =

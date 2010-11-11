@@ -1,14 +1,14 @@
-<<-- class foo.bar.Bippy -->>
+<<-- class foo.bar.Bippy after phase 'typer' -->>
   def showdefTestMemberClass1: Int
-<<-- type foo.bar.Bippy.BippyType -->>
+<<-- type foo.bar.Bippy.BippyType after phase 'typer' -->>
   def showdefTestMemberType1: Unit
-<<-- type foo.bar.Bippy.BippyType -->>
+<<-- type foo.bar.Bippy.BippyType after phase 'typer' -->>
   def showdefTestMemberType2: Unit
-<<-- class foo.bar.Bippy.Boppity -->>
+<<-- class foo.bar.Bippy.Boppity after phase 'typer' -->>
   def showdefTestMemberClass2: Int
-<<-- class foo.bar.Bippy.Boppity.Boo -->>
+<<-- class foo.bar.Bippy.Boppity.Boo after phase 'typer' -->>
   def showdefTestMemberClass3: Int
-<<-- object foo.bar.Bippy -->>
+<<-- object foo.bar.Bippy after phase 'typer' -->>
   def showdefTestMemberObject2: java.lang.String
-<<-- object foo.bar.Bippy.Boppity.Boo -->>
+<<-- object foo.bar.Bippy.Boppity.Boo after phase 'typer' -->>
   def showdefTestMemberObject1: java.lang.String

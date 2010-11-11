@@ -106,6 +106,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Yhelp         = BooleanSetting    ("-Y", "Print a synopsis of private options")
   val browse        = PhasesSetting     ("-Ybrowse", "Browse the abstract syntax tree after")
   val check         = PhasesSetting     ("-Ycheck", "Check the tree at the end of")
+  val Yshow         = PhasesSetting     ("-Yshow", "Specifies show phases in conjunction with -Xshow-class or -Xshow-object")
   val Xcloselim     = BooleanSetting    ("-Yclosure-elim", "Perform closure elimination")
   val Ycompacttrees = BooleanSetting    ("-Ycompact-trees", "Use compact tree printer when displaying trees")
   val noCompletion  = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL")

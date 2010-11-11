@@ -284,8 +284,11 @@ object ShowPickled extends Names {
     catch { case _: Exception => None }
 
   def show(what: String, pickle: PickleBuffer, bare: Boolean) = {
-    Console.println(what + ": ")
+    Console.println(what)
+    val saved = pickle.readIndex
+    pickle.readIndex = 0
     printFile(pickle, Console.out, bare)
+    pickle.readIndex = saved
   }
 
   private lazy val ShowPickledSpec =
@@ -304,7 +307,7 @@ object ShowPickled extends Names {
 
     residualArgs foreach { arg =>
       (fromFile(arg) orElse fromName(arg)) match {
-        case Some(pb) => show(arg, pb, parsed isSet "--bare")
+        case Some(pb) => show(arg + ":", pb, parsed isSet "--bare")
         case _        => Console.println("Cannot read " + arg)
       }
     }

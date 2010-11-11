@@ -114,6 +114,7 @@ object PickleFormat {
  */
   val MajorVersion = 5
   val MinorVersion = 0
+  def VersionString = "V" + MajorVersion + "." + MinorVersion
 
   final val TERMname = 1
   final val TYPEname = 2
