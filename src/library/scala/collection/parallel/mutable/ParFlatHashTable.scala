@@ -23,7 +23,13 @@ trait ParFlatHashTable[T] extends collection.mutable.FlatHashTable[T] {
     if (hasNext) scan()
 
     private def scan() {
-      while (itertable(idx) eq null) idx += 1
+      while (itertable(idx) eq null) {
+        idx += 1
+      }
+    }
+
+    private def checkbounds = if (idx >= itertable.length) {
+      throw new IndexOutOfBoundsException(idx.toString)
     }
 
     def newIterator(index: Int, until: Int, totalsize: Int): ParIterableIterator[T]

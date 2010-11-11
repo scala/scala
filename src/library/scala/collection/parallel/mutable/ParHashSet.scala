@@ -174,17 +174,25 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
      */
     def insertEntry(insertAt: Int, comesBefore: Int, elem: T): Int = {
       var h = insertAt
-      // if (h == -1) h = index(elemHashCode(elem))
-      // var entry = table(h)
-      // while (null != entry) {
-      //   if (entry == elem) return 0
-      //   h = (h + 1) // we *do not* do `(h + 1) % table.length` here, because we don't overlap!!
-      //   if (h >= comesBefore) return -1
-      //   entry = table(h)
-      // }
-      // table(h) = elem.asInstanceOf[AnyRef]
-      // tableSize = tableSize + 1
-      // nnSizeMapAdd(h)
+      if (h == -1) h = index(elemHashCode(elem))
+      var entry = table(h)
+      while (null != entry) {
+        if (entry == elem) return 0
+        h = h + 1 // we *do not* do `(h + 1) % table.length` here, because we'll never overflow!!
+        if (h >= comesBefore) return -1
+        entry = table(h)
+      }
+      table(h) = elem.asInstanceOf[AnyRef]
+
+      // this is incorrect since we set size afterwards anyway and such a
+      // counter would not work anyway:
+      //
+      //   tableSize = tableSize + 1
+      //
+      // interestingly, it completely bogs down the parallel
+      // execution when there are multiple workers
+
+      nnSizeMapAdd(h)
       1
     }
   }
