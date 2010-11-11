@@ -491,12 +491,15 @@ abstract class GenJVM extends SubComponent {
       nannots
     }
 
+    // @M don't generate java generics sigs for (members of) implementation classes, as they are monomorphic (TODO: ok?)
     private def noGenericSignature(sym: Symbol) = (
-      sym.isSynthetic ||
-      sym.isLiftedMethod ||
-      (sym hasFlag Flags.EXPANDEDNAME) ||
-      // @M don't generate java generics sigs for (members of) implementation classes, as they are monomorphic (TODO: ok?)
-      (sym.ownerChain exists (_.isImplClass))
+      // PP: This condition used to include sym.hasExpandedName, but this leads to the total loss
+      // of generic information if a private member is accessed from a closure: both the field and
+      // the accessor were generated without it.  This is particularly bad because the availability
+      // of generic information could disappear as a consequence of a seemingly unrelated change.
+         sym.isSynthetic
+      || sym.isLiftedMethod
+      || (sym.ownerChain exists (_.isImplClass))
     )
     def addGenericSignature(jmember: JMember, sym: Symbol, owner: Symbol) {
       if (noGenericSignature(sym)) ()
