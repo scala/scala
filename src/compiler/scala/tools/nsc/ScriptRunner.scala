@@ -16,7 +16,7 @@ import io.{ Directory, File, Path, PlainFile }
 import java.net.URL
 import java.util.jar.{ JarEntry, JarOutputStream }
 
-import util.waitingForThreads
+import util.{ waitingForThreads, addShutdownHook }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 
@@ -55,14 +55,6 @@ object ScriptRunner {
 
   /** Default name to use for the wrapped script */
   val defaultScriptMain = "Main"
-
-  /** Must be a daemon thread else scripts won't shut down: ticket #3678 */
-  private def addShutdownHook(body: => Unit) =
-    Runtime.getRuntime addShutdownHook {
-      val t = new Thread { override def run { body } }
-      t setDaemon true
-      t
-    }
 
   /** Pick a main object name from the specified settings */
   def scriptMain(settings: Settings) = settings.script.value match {
