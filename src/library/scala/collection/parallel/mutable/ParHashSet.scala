@@ -184,8 +184,8 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
       }
       table(h) = elem.asInstanceOf[AnyRef]
 
-      // this is incorrect since we set size afterwards anyway and such a
-      // counter would not work anyway:
+      // this is incorrect since we set size afterwards anyway and a counter
+      // like this would not even work:
       //
       //   tableSize = tableSize + 1
       //
@@ -233,31 +233,31 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
       var leftovers = new UnrolledBuffer[Any]
       var inserted = 0
 
-      // var unrolled = elems.headPtr
-      // var i = 0
-      // var t = table
-      // while (unrolled ne null) {
-      //   val chunkarr = unrolled.array
-      //   val chunksz = unrolled.size
-      //   while (i < chunksz) {
-      //     val elem = chunkarr(i)
-      //     val res = t.insertEntry(atPos, beforePos, elem.asInstanceOf[T])
-      //     if (res >= 0) inserted += 1
-      //     else leftovers += elem
-      //     i += 1
-      //   }
-      //   i = 0
-      //   unrolled = unrolled.next
-      // }
+      var unrolled = elems.headPtr
+      var i = 0
+      var t = table
+      while (unrolled ne null) {
+        val chunkarr = unrolled.array
+        val chunksz = unrolled.size
+        while (i < chunksz) {
+          val elem = chunkarr(i)
+          val res = t.insertEntry(atPos, beforePos, elem.asInstanceOf[T])
+          if (res >= 0) inserted += res
+          else leftovers += elem
+          i += 1
+        }
+        i = 0
+        unrolled = unrolled.next
+      }
 
       // slower:
-      var it = elems.iterator
-      while (it.hasNext) {
-        val elem = it.next
-        val res = table.insertEntry(atPos, beforePos, elem.asInstanceOf[T])
-        if (res >= 0) inserted += res
-        else leftovers += elem
-      }
+      // var it = elems.iterator
+      // while (it.hasNext) {
+      //   val elem = it.next
+      //   val res = table.insertEntry(atPos, beforePos, elem.asInstanceOf[T])
+      //   if (res >= 0) inserted += res
+      //   else leftovers += elem
+      // }
 
       (inserted, leftovers)
     }
