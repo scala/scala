@@ -57,4 +57,5 @@ class History[Evt, Pub] extends Subscriber[Evt, Pub] with Iterable[(Pub, Evt)]
     case that: History[_, _] => this.log equals that.log
     case _                   => false
   }
+  override def hashCode = log.hashCode
 }

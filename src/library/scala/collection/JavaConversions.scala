@@ -701,7 +701,8 @@ object JavaConversions {
             def getKey = k
             def getValue = v
             def setValue(v1 : B) = self.put(k, v1)
-            override def equals(other : Any) = other match {
+            override def hashCode = k.hashCode + v.hashCode
+            override def equals(other: Any) = other match {
               case e : ju.Map.Entry[_, _] => k == e.getKey && v == e.getValue
               case _ => false
             }

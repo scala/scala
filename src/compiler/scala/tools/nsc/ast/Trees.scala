@@ -95,7 +95,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
           case (xs: List[_], ys: List[_]) => (xs corresponds ys)(equals0)
           case _                          => this0 == that0
         }
-        def compareOriginals() = (this, that) match {
+        def compareOriginals() = (tree, that) match {
           case (x: TypeTree, y: TypeTree) if x.original != null && y.original != null =>
             (x.original equalsStructure0 y.original)(f)
           case _                          =>
