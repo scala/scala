@@ -222,6 +222,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
     def debug         = settings.debug.value
     def deprecation   = settings.deprecation.value
+    def experimental  = settings.Xexperimental.value
     def fatalWarnings = settings.Xwarnfatal.value
     def logClasspath  = settings.Ylogcp.value
     def printLate     = settings.printLate.value

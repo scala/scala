@@ -603,14 +603,28 @@ abstract class ClassfileParser {
     if ((sflags & PRIVATE) != 0L && !global.settings.XO.value) {
       in.skip(4); skipAttributes()
     } else {
-      val name = pool.getName(in.nextChar)
-      val info = pool.getType(in.nextChar)
-      val sym = getOwner(jflags)
-        .newValue(NoPosition, name).setFlag(sflags)
-      sym.setInfo(if ((jflags & JAVA_ACC_ENUM) == 0) info else ConstantType(Constant(sym)))
+      val name    = pool.getName(in.nextChar)
+      val info    = pool.getType(in.nextChar)
+      val sym     = getOwner(jflags).newValue(NoPosition, name).setFlag(sflags)
+      val isEnum  = (jflags & JAVA_ACC_ENUM) != 0
+
+      sym setInfo {
+        if (isEnum) ConstantType(Constant(sym))
+        else info
+      }
       setPrivateWithin(sym, jflags)
       parseAttributes(sym, info)
       getScope(jflags).enter(sym)
+
+      // sealed java enums (experimental)
+      if (isEnum && opt.experimental) {
+        // need to give singleton type
+        sym setInfo info.narrow
+        if (!sym.superClass.isSealed)
+          sym.superClass setFlag (SEALED | ABSTRACT)
+
+        sym.superClass addChild sym
+      }
     }
   }
 

@@ -1,0 +1,8 @@
+sealed-java-enums.scala:5: error: match is not exhaustive!
+missing combination        BLOCKED
+missing combination     TERMINATED
+missing combination  TIMED_WAITING
+
+  def f(state: State) = state match {
+                        ^
+one error found
