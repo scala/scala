@@ -331,7 +331,6 @@ trait BasicBlocks {
      *  and RETURNs easier.
      */
     def enterIgnoreMode = {
-      log("Entering ignore mode in " + fullString)
       ignore = true
     }
 

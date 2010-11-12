@@ -199,6 +199,9 @@ abstract class GenJVM extends SubComponent {
     var isParcelableClass = false
 
     def genClass(c: IClass) {
+      val needsEnclosingMethod: Boolean =
+        c.symbol.isClass && c.symbol.asInstanceOf[ClassSymbol].originalOwner.isMethod
+
       clasz = c
       innerClasses = immutable.ListSet.empty
 
@@ -282,12 +285,20 @@ abstract class GenJVM extends SubComponent {
       val ssa = scalaSignatureAddingMarker(jclass, c.symbol)
       addGenericSignature(jclass, c.symbol, c.symbol.owner)
       addAnnotations(jclass, c.symbol.annotations ++ ssa)
+      if (needsEnclosingMethod)  addEnclosingMethodAttribute(jclass, c.symbol)
       emitClass(jclass, c.symbol)
 
       if (c.symbol hasAnnotation BeanInfoAttr)
         genBeanInfoClass(c)
     }
 
+    def addEnclosingMethodAttribute(jclass: JClass, clazz: Symbol) {
+      val sym = clazz.asInstanceOf[ClassSymbol].originalOwner
+      if (sym.isMethod) {
+        jclass.addAttribute(fjbgContext.JEnclosingMethodAttribute(jclass, javaName(sym.enclClass), javaName(sym), javaType(sym)))
+      } else
+        log("Local class %s has non-method owner: %s".format(clazz, sym))
+    }
 
     /**
      * Generate a bean info class that describes the given class.

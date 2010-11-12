@@ -145,6 +145,14 @@ public class FJBGContext {
         return new JOtherAttribute(this, clazz, owner, name, contents, length);
     }
 
+    public JEnclosingMethodAttribute JEnclosingMethodAttribute(JClass clazz,
+                                                               String className,
+                                                               String methodName,
+                                                               JType methodType) {
+        return new JEnclosingMethodAttribute(this, clazz, className, methodName, methodType);
+    }
+
+
     public JOtherAttribute JOtherAttribute(JClass clazz,
                                            Object owner,
                                            String name,
