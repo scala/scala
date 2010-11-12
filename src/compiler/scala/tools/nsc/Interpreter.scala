@@ -20,7 +20,7 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{ ListBuffer, HashSet, HashMap, ArrayBuffer }
 import scala.tools.nsc.util.ScalaClassLoader
 import ScalaClassLoader.URLClassLoader
-import scala.util.control.Exception.{ Catcher, catching, ultimately, unwrapping }
+import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately, unwrapping }
 
 import io.{ PlainFile, VirtualDirectory }
 import reporters.{ ConsoleReporter, Reporter }
@@ -981,7 +981,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           }
       }
 
-      catching(onErr) {
+      catchingPromiscuously(onErr) {
         unwrapping(wrapperExceptions: _*) {
           (resultValMethod.invoke(loadedResultObject).toString, true)
         }
