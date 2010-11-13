@@ -4,15 +4,8 @@ object Scalatest {
   val outputdir = System.getProperty("partest.output", "inner.obj")
   val scalalib  = System.getProperty("partest.lib", "")
   val classpath = outputdir + File.pathSeparator + scalalib
-  val javabin  = {
-    val jhome = new File(System.getProperty("java.home"))
-    if (jhome.getName == "jre")
-      new File(jhome.getParent, "bin").getAbsolutePath
-    else
-      new File(jhome, "bin").getAbsolutePath
-  }
-  val javacmd   = javabin + File.separator + "java"
-  val javac     = javabin + File.separator + "javac"
+  val javacmd   = System.getProperty("javacmd", "java")
+  val javac     = javacmd + "c"
 
   def javac(src: String, opts: String, fname: String) {
     val tmpfilename = outputdir + File.separator + fname
