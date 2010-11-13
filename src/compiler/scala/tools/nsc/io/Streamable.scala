@@ -1,5 +1,6 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2010 LAMP/EPFL
+ * @author Paul Phillips
  */
 
 package scala.tools.nsc
@@ -9,7 +10,6 @@ import java.net.{ URI, URL }
 import java.io.{ BufferedInputStream, InputStream, PrintStream, File => JFile }
 import java.io.{ BufferedReader, InputStreamReader }
 import scala.io.{ Codec, BufferedSource, Source }
-
 import collection.mutable.ArrayBuffer
 import Path.fail
 
@@ -19,8 +19,7 @@ import Path.fail
  *  @since  2.8
  */
 
-object Streamable
-{
+object Streamable {
   /** Traits which can be viewed as a sequence of bytes.  Source types
    *  which know their length should override def length: Long for more
    *  efficient method implementations.

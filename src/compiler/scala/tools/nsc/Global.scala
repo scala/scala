@@ -12,7 +12,7 @@ import compat.Platform.currentTime
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
-import util.{ ClassPath, SourceFile, Statistics, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
+import util.{ Exceptional, ClassPath, SourceFile, Statistics, BatchSourceFile, ScriptSourceFile, ShowPickled, returning }
 import reflect.generic.{ PickleBuffer, PickleFormat }
 
 import symtab.{ Flags, SymbolTable, SymbolLoaders }
@@ -147,6 +147,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def logError(msg: String, t: Throwable): Unit = ()
   def log(msg: => AnyRef): Unit = if (opt.logPhase) inform("[log " + phase + "] " + msg)
 
+  def logThrowable(t: Throwable): Unit = error(throwableAsString(t))
+  def throwableAsString(t: Throwable): String =
+    if (opt.richExes) Exceptional(t).force().context()
+    else util.stringFromWriter(t printStackTrace _)
+
 // ------------ File interface -----------------------------------------
 
   private val reader: SourceReader = {
@@ -227,6 +232,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def logClasspath  = settings.Ylogcp.value
     def printLate     = settings.printLate.value
     def printStats    = settings.Ystatistics.value
+    def richExes      = settings.YrichExes.value
     def showTrees     = settings.Xshowtrees.value
     def target        = settings.target.value
     def typerDebug    = settings.Ytyperdebug.value

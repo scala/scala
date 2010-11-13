@@ -18,7 +18,6 @@ import Properties.{ versionString, copyrightString, residentPromptString, msilLi
  *  language Scala.
  */
 object Main extends AnyRef with EvalLoop {
-
   val versionMsg = "Scala compiler " +
     versionString + " -- " +
     copyrightString
@@ -28,12 +27,8 @@ object Main extends AnyRef with EvalLoop {
   var reporter: ConsoleReporter = _
 
   def error(msg: String) {
-    reporter.error(/*new Position */FakePos("scalac"),
-                   msg + "\n  scalac -help  gives more information")
+    reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
   }
-
-  /* needed ?? */
-  //def errors() = reporter.errors
 
   def resident(compiler: Global) {
     loop { line =>
@@ -45,33 +40,36 @@ object Main extends AnyRef with EvalLoop {
   }
 
   def process(args: Array[String]) {
-    val settings = new Settings(error)
-    reporter = new ConsoleReporter(settings)
-    val command = new CompilerCommand(args.toList, settings)
-    if (command.settings.version.value)
+    val ss       = new Settings(error)
+    reporter     = new ConsoleReporter(ss)
+    val command  = new CompilerCommand(args.toList, ss)
+    val settings = command.settings
+
+    if (settings.version.value)
       reporter.info(null, versionMsg, true)
-    else if (command.settings.Yidedebug.value) {
-      command.settings.Xprintpos.value = true
-      command.settings.Yrangepos.value = true
-      val compiler = new interactive.Global(command.settings, reporter)
+    else if (settings.Yidedebug.value) {
+      settings.Xprintpos.value = true
+      settings.Yrangepos.value = true
+      val compiler = new interactive.Global(settings, reporter)
       import compiler.{ reporter => _, _ }
 
-      val sfs = command.files.map(getSourceFile(_))
+      val sfs = command.files map getSourceFile
       val reloaded = new interactive.Response[Unit]
       askReload(sfs, reloaded)
+
       reloaded.get.right.toOption match {
         case Some(ex) => reporter.cancelled = true // Causes exit code to be non-0
         case None => reporter.reset // Causes other compiler errors to be ignored
       }
       askShutdown
-    } else if (command.settings.Ybuilderdebug.value != "none") {
+    }
+    else if (settings.Ybuilderdebug.value != "none") {
       def fileSet(files : List[String]) = Set.empty ++ (files map AbstractFile.getFile)
 
-      val buildManager = if (command.settings.Ybuilderdebug.value == "simple")
-        new SimpleBuildManager(settings)
-      else
-        new RefinedBuildManager(settings)
-
+      val buildManager = settings.Ybuilderdebug.value match {
+        case "simple"   => new SimpleBuildManager(settings)
+        case _          => new RefinedBuildManager(settings)
+      }
       buildManager.addSourceFiles(fileSet(command.files))
 
       // enter resident mode
@@ -80,38 +78,42 @@ object Main extends AnyRef with EvalLoop {
         val command = new CompilerCommand(args.toList, settings)
         buildManager.update(fileSet(command.files), Set.empty)
       }
-    } else {
-      if (command.settings.target.value == "msil")
-        msilLibPath foreach (x => command.settings.assemrefs.value += (pathSeparator + x))
+    }
+    else {
+      if (settings.target.value == "msil")
+        msilLibPath foreach (x => settings.assemrefs.value += (pathSeparator + x))
+
+      val compiler =
+        if (settings.Yrangepos.value) new interactive.Global(settings, reporter)
+        else new Global(settings, reporter)
 
       try {
-        val compiler = if (command.settings.Yrangepos.value) new interactive.Global(command.settings, reporter)
-        else new Global(command.settings, reporter)
-
-        if (reporter.hasErrors) {
-          reporter.flush()
-          return
-        }
+        if (reporter.hasErrors)
+          return reporter.flush()
 
         if (command.shouldStopWithInfo) {
           reporter.info(null, command.getInfoMessage(compiler), true)
-        } else {
-          if (command.settings.resident.value)
+        }
+        else {
+          if (settings.resident.value)
             resident(compiler)
           else if (command.files.isEmpty) {
             reporter.info(null, command.usageMsg, true)
             reporter.info(null, compiler.pluginOptionsHelp, true)
-          } else {
+          }
+          else {
             val run = new compiler.Run()
             run compile command.files
             reporter.printSummary()
           }
         }
-      } catch {
-        case ex @ FatalError(msg) =>
-          if (true || command.settings.debug.value) // !!!
-            ex.printStackTrace();
+      }
+      catch {
+        case FatalError(msg)              =>
           reporter.error(null, "fatal error: " + msg)
+        case ex if compiler.opt.richExes  =>
+          compiler.logThrowable(ex)
+          throw ex
       }
     }
   }

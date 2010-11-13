@@ -8,6 +8,8 @@ package scala.tools.nsc
 import java.io.{ OutputStream, PrintStream, ByteArrayOutputStream, PrintWriter, StringWriter }
 
 package object util {
+  def onull[T](value: T, orElse: => T): T = if (value == null) orElse else value
+
   /** Apply a function and return the passed value */
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
@@ -35,10 +37,10 @@ package object util {
    *  execution to complete.
    */
   def waitingForThreads[T](body: => T) = {
-    val ts1 = allThreads()
-    val result = body
-    val ts2 = allThreads()
-    val newThreads = (ts2.toSet -- ts1) filterNot (_.isDaemon())
+    val ts1        = allThreads()
+    val result     = body
+    val ts2        = allThreads()
+    val newThreads = ts2.toSet -- ts1 filterNot (_.isDaemon())
 
     newThreads foreach (_.join())
     result

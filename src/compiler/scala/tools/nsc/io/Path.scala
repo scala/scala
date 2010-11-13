@@ -1,5 +1,6 @@
 /* NSC -- new Scala compiler
  * Copyright 2005-2010 LAMP/EPFL
+ * @author Paul Phillips
  */
 
 package scala.tools.nsc
@@ -40,6 +41,21 @@ object Path {
   // not certain these won't be problematic, but looks good so far
   implicit def string2path(s: String): Path = apply(s)
   implicit def jfile2path(jfile: JFile): Path = apply(jfile)
+
+  def locateJarByClass(clazz: Class[_]): Option[File] = {
+    try Some(File(clazz.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()))
+    catch { case _: Exception => None }
+  }
+  /** Walks upward from wherever the scala library jar is searching for
+   *  the given jar name.  This approach finds the scala library jar in the
+   *  release layout and in trunk builds going up from pack.
+   */
+  def locateJarByName(name: String): Option[File] = {
+    def toSrc(d: Directory) = d.dirs.toList map (_ / name)
+    def walk(d: Directory)  = d.parents flatMap toSrc find (_.isFile) map (_.toFile)
+
+    locateJarByClass(classOf[ScalaObject]) flatMap (x => walk(x.parent))
+  }
 
   // java 7 style, we don't use it yet
   // object AccessMode extends Enumeration("AccessMode") {

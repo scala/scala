@@ -17,6 +17,13 @@ package util
  *  @version 1.0
  */
 object StringOps {
+  def oempty(xs: String*)                 = xs filterNot (x => x == null || x == "")
+  def ojoin(xs: Seq[String], sep: String) = oempty(xs: _*) mkString sep
+  def ojoinOr(xs: Seq[String], sep: String, orElse: String) = {
+    val ys = oempty(xs: _*)
+    if (ys.isEmpty) orElse else ys mkString sep
+  }
+
   def decompose(str: String, sep: Char): List[String] = {
     def ws(start: Int): List[String] =
       if (start == str.length) List()

@@ -16,4 +16,10 @@ object NullPrintStream extends NullPrintStream {
   def setOut() = Console setOut this
   def setErr() = Console setErr this
   def setOutAndErr() = { setOut() ; setErr() }
+  def sinkingOutAndErr[T](body: => T): T =
+    Console.withOut(this) {
+      Console.withErr(this) {
+        body
+      }
+    }
 }
