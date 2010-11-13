@@ -118,7 +118,7 @@ abstract class SymbolLoaders {
       module.moduleClass setInfo moduleClassLoader
       owner.info.decls enter clazz
       owner.info.decls enter module
-      assert(clazz.companionModule == module, module)
+      assert(clazz.companionModule == module || clazz.isAnonymousClass, module)
       assert(module.companionClass == clazz, clazz)
     }
 

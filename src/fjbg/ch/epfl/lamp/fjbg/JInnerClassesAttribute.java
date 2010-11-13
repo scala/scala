@@ -24,7 +24,14 @@ public class JInnerClassesAttribute extends JAttribute {
     }
 
     public void addEntry(String inner, String outer, String name, int flags) {
-    	Entry e = new Entry(inner, outer, name, flags);
+        int inIdx = pool.addClass(inner);
+        int ouIdx = 0;
+        if (outer != null) ouIdx = pool.addClass(outer);
+        int nIdx = 0;
+        if (name != null) nIdx = pool.addUtf8(name);
+
+    	Entry e = new Entry(inIdx, ouIdx, nIdx, flags);
+
     	if (entries.containsKey(inner)) {
     		Entry other = (Entry) entries.get(inner);
     		assert other.outerInfo == e.outerInfo && other.originalName == e.originalName && other.innerFlags == e.innerFlags

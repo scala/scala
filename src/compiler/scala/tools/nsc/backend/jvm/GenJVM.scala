@@ -200,7 +200,7 @@ abstract class GenJVM extends SubComponent {
 
     def genClass(c: IClass) {
       val needsEnclosingMethod: Boolean =
-        c.symbol.isClass && c.symbol.asInstanceOf[ClassSymbol].originalOwner.isMethod
+        c.symbol.isClass && (c.symbol.originalEnclosingMethod != NoSymbol)
 
       clasz = c
       innerClasses = immutable.ListSet.empty
@@ -293,11 +293,13 @@ abstract class GenJVM extends SubComponent {
     }
 
     def addEnclosingMethodAttribute(jclass: JClass, clazz: Symbol) {
-      val sym = clazz.asInstanceOf[ClassSymbol].originalOwner
+      val sym = clazz.originalEnclosingMethod
       if (sym.isMethod) {
-        jclass.addAttribute(fjbgContext.JEnclosingMethodAttribute(jclass, javaName(sym.enclClass), javaName(sym), javaType(sym)))
-      } else
-        log("Local class %s has non-method owner: %s".format(clazz, sym))
+        log("enclosing method for %s is %s".format(clazz, sym))
+        var outerName = javaName(sym.enclClass)
+        if (outerName.endsWith("$")) outerName = outerName.dropRight(1)
+        jclass.addAttribute(fjbgContext.JEnclosingMethodAttribute(jclass, outerName, javaName(sym), javaType(sym)))
+      }
     }
 
     /**
@@ -580,6 +582,28 @@ abstract class GenJVM extends SubComponent {
       def addOwnInnerClasses(cls: Symbol): Unit =
         innerClasses ++= (cls.info.decls filter (_.isClass))
 
+      /** The outer name for this inner class. Note that it returns null
+       *  when the inner class should not get an index in the constant pool.
+       *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
+       */
+      def outerName(innerSym: Symbol): String = {
+        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction || innerSym.originalEnclosingMethod != NoSymbol)
+          null
+        else {
+          var outerName = javaName(innerSym.rawowner)
+          // remove the trailing '$'
+          if (outerName.endsWith("$") && isTopLevelModule(innerSym.rawowner))
+            outerName = outerName dropRight 1
+          outerName
+        }
+      }
+
+      def innerName(innerSym: Symbol): String =
+        if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction)
+          null
+        else
+          innerSym.rawname.toString
+
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase.next) {
         addOwnInnerClasses(clasz.symbol)
@@ -591,17 +615,13 @@ abstract class GenJVM extends SubComponent {
         // sort them so inner classes succeed their enclosing class
         // to satisfy the Eclipse Java compiler
         for (innerSym <- innerClasses.toList sortBy (_.name.length)) {
-          var outerName = javaName(innerSym.rawowner)
-          // remove the trailing '$'
-          if (outerName.endsWith("$") && isTopLevelModule(innerSym.rawowner))
-            outerName = outerName dropRight 1
           var flags = javaFlags(innerSym)
           if (innerSym.rawowner.hasModuleFlag)
             flags |= ACC_STATIC
 
           innerClassesAttr.addEntry(javaName(innerSym),
-              outerName,
-              innerSym.rawname.toString,
+              outerName(innerSym),
+              innerName(innerSym),
               (flags & INNER_CLASSES_FLAGS));
         }
       }

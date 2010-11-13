@@ -41,6 +41,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends AbsSymbol {
 
     var rawowner = initOwner
+
+    /** The original owner of this class. Used by the backend to generate
+     *  EnclosingMethod attributes. */
+    var originalOwner: Symbol = initOwner
+
     var rawname = initName
     var rawflags: Long = 0
     private var rawpos = initPos
@@ -369,7 +374,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
-    final def isAnonymousClass = isClass && (originalName startsWith nme.ANON_CLASS_NAME) // todo: find out why we can't use containsName here.
+    final def isAnonymousClass = isClass && (name containsName nme.ANON_CLASS_NAME) // todo: find out why we can't use containsName here.
     final def isAnonymousFunction = hasFlag(SYNTHETIC) && (name containsName nme.ANON_FUN_NAME)
 
     final def isClassOfModule = isModuleClass || isClass && nme.isLocalName(name)
@@ -1163,6 +1168,16 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       else packSym
     }
 
+    /** Return the original enclosing method of this symbol. It
+     *  should return the same thing as enclMethod when called before
+     *  lambda lift, but it preserves the original nesting when called afterwards.
+     */
+    def originalEnclosingMethod: Symbol = {
+      if (isMethod) this
+      else
+        originalOwner.originalEnclosingMethod
+    }
+
     /** The top-level class containing this symbol */
     def toplevelClass: Symbol =
       if (owner.isPackageClass) {
@@ -1897,10 +1912,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** The classfile from which this class was loaded. Maybe null. */
     var classFile: AbstractFile = null;
 
-    /** The original owner of this class. Used by the backend to generate
-     *  EnclosingMethod attributes. */
-    var originalOwner: Symbol = initOwner
-
     private var source: AbstractFile = null
     override def sourceFile =
       if (owner.isPackageClass) source else super.sourceFile
@@ -2031,6 +2042,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     protected def doCookJavaRawInfo() {}
     override def accessBoundary(base: Symbol): Symbol = RootClass
     def cloneSymbolImpl(owner: Symbol): Symbol = abort()
+    override def originalEnclosingMethod = this
   }
 
   def cloneSymbols(syms: List[Symbol]): List[Symbol] = {
