@@ -35,8 +35,12 @@ class Channel[A] {
   }
 
   def read: A = synchronized {
-    while (null == written.next) {
-      nreaders += 1; wait(); nreaders -= 1
+    while (written.next == null) {
+      try {
+        nreaders += 1
+        wait()
+      }
+      finally nreaders -= 1
     }
     val x = written.elem
     written = written.next
