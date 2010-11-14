@@ -39,7 +39,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val defines       = DefinesSetting()
   val optimise      = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program") .
                                             withAbbreviation("-optimize") .
-                                            withPostSetHook(_ => List(inline, Xcloselim, Xdce) foreach (_.value = true))
+                                            withPostSetHook(set => List(inline, Xcloselim, Xdce) foreach (_.value = set.value))
   val nospecialization = BooleanSetting    ("-no-specialization", "Ignore @specialize annotations.")
 
 
@@ -85,7 +85,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
 
   // Experimental Extensions
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions") .
-                          withPostSetHook(_ => List(YdepMethTpes, YmethodInfer) foreach (_.value = true)) //YvirtClasses,
+                          withPostSetHook(set => List(YdepMethTpes, YmethodInfer) foreach (_.value = set.value)) //YvirtClasses,
   val YdepMethTpes  = BooleanSetting    ("-Ydependent-method-types", "Allow dependent method types")
   val YmethodInfer  = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overriden methods")
   val YvirtClasses  = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
@@ -129,7 +129,7 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Xsqueeze      = ChoiceSetting     ("-Ysqueeze", "if on, creates compact code in matching", List("on","off"), "on") .
                                           withHelpSyntax("-Ysqueeze:<enabled>")
   val Ystatistics   = BooleanSetting    ("-Ystatistics", "Print compiler statistics") .
-                                          withPostSetHook(_ => util.Statistics.enabled = true)
+                                          withPostSetHook(set => util.Statistics.enabled = set.value)
   val stop          = PhasesSetting     ("-Ystop", "Stop after phase")
   val refinementMethodDispatch =
                       ChoiceSetting     ("-Ystruct-dispatch", "Selects dispatch method for structural refinement method calls",
