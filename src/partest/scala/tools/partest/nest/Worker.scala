@@ -109,6 +109,12 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   var reporter: ConsoleReporter = _
   val timer = new Timer
 
+  val javacCmd = if ((fileManager.JAVAC_CMD.indexOf("${env.JAVA_HOME}") != -1) ||
+                     fileManager.JAVAC_CMD.equals("/bin/javac") ||
+                     fileManager.JAVAC_CMD.equals("\\bin\\javac")) "javac"
+                 else
+                   fileManager.JAVAC_CMD
+
   def error(msg: String): Unit = reporter.error(
     FakePos("scalac"),
     msg + "\n  scalac -help  gives more information"
@@ -221,13 +227,6 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
   def javac(outDir: File, files: List[File], output: File): Boolean = {
     // compile using command-line javac compiler
-    val javacCmd = if ((fileManager.JAVAC_CMD.indexOf("${env.JAVA_HOME}") != -1) ||
-                       fileManager.JAVAC_CMD.equals("/bin/javac") ||
-                       fileManager.JAVAC_CMD.equals("\\bin\\javac"))
-      "javac"
-    else
-      fileManager.JAVAC_CMD
-
     val cmd = javacCmd+
       " -d "+outDir.getAbsolutePath+
       " -classpath "+ join(outDir.toString, CLASSPATH) +
@@ -304,6 +303,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       "-Dpartest.lib="+LATEST_LIB,
       "-Dpartest.cwd="+outDir.getParent,
       "-Djavacmd="+JAVACMD,
+      "-Djavaccmd="+javacCmd,
       "-Duser.language=en -Duser.country=US"
     ) ::: (
       if (isPartestDebug) List("-Dpartest.debug=true") else Nil
