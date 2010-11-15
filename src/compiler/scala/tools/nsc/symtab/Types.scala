@@ -3826,7 +3826,7 @@ A type's typeSymbol should never be inspected directly.
             )
           )
         }
-        val rebind = rebind0.suchThat(sym => sym.isType || sym.isStable)
+        val rebind = rebind0.suchThat(s => if (sym.isType) s.isType else s.isStable)
         if (rebind == NoSymbol) {
           if (settings.debug.value) log("" + phase + " " +phase.flatClasses+sym.owner+sym.name+" "+sym.isType)
           throw new MalformedType(pre, sym.nameString)
