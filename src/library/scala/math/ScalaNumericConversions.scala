@@ -22,10 +22,10 @@ trait ScalaNumericConversions extends ScalaNumber {
   def toFloat = floatValue
   def toDouble = doubleValue
 
-  def isValidByte = isWhole && (toByte == toInt)
-  def isValidShort = isWhole && (toShort == toInt)
-  def isValidInt = isWhole && (toInt == toLong)
-  def isValidChar = isWhole && (toInt >= Char.MinValue && toInt <= Char.MaxValue)
+  def isValidByte  = isWhole && (toInt == toByte)
+  def isValidShort = isWhole && (toInt == toShort)
+  def isValidInt   = isWhole && (toLong == toInt)
+  def isValidChar  = isWhole && (toInt >= Char.MinValue && toInt <= Char.MaxValue)
 
   protected def unifiedPrimitiveHashcode() = {
     val lv = toLong

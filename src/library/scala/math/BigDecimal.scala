@@ -23,10 +23,12 @@ import annotation.migration
 object BigDecimal {
   private val minCached = -512
   private val maxCached = 512
-
   val defaultMathContext = MathContext.UNLIMITED
 
+  @deprecated("Use Long.MinValue")
   val MinLong = new BigDecimal(BigDec valueOf Long.MinValue, defaultMathContext)
+
+  @deprecated("Use Long.MaxValue")
   val MaxLong = new BigDecimal(BigDec valueOf Long.MaxValue, defaultMathContext)
 
   /** Cache ony for defaultMathContext using BigDecimals in a small range. */
@@ -181,8 +183,9 @@ extends ScalaNumber with ScalaNumericConversions
     case that: BigDecimal     => this equals that
     case that: BigInt         => this.toBigIntExact exists (that equals _)
     case _: Float | _: Double => unifiedPrimitiveEquals(that)
-    case x                    => isWhole && this <= BigDecimal.MaxLong && this >= BigDecimal.MinLong && unifiedPrimitiveEquals(x)
+    case _                    => fitsInLong && unifiedPrimitiveEquals(that)
   }
+  private def fitsInLong = isWhole && this <= Long.MaxValue && this >= Long.MinValue
 
   protected[math] def isWhole = (this remainder 1) == BigDecimal(0)
   def underlying = bigDecimal
