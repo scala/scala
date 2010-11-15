@@ -5,7 +5,7 @@ object Scalatest {
   val scalalib  = System.getProperty("partest.lib", "")
   val classpath = outputdir + File.pathSeparator + scalalib
   val javacmd   = System.getProperty("javacmd", "java")
-  val javac     = javacmd + "c"
+  val javac     = System.getProperty("javaccmd", "javac")
 
   def javac(src: String, opts: String, fname: String) {
     val tmpfilename = outputdir + File.separator + fname
