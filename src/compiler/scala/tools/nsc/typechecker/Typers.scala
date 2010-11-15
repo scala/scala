@@ -46,6 +46,7 @@ trait Typers { self: Analyzer =>
     resetImplicits()
     transformed.clear
     superDefs.clear
+    undoLog.clear
   }
 
   object UnTyper extends Traverser {
