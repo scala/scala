@@ -15,4 +15,13 @@ package object io {
   def runnableFn(f: () => Unit): Runnable     = runnable(f())
   def callableFn[T](f: () => T): Callable[T]  = callable(f())
   def spawnFn[T](f: () => T): Future[T]       = spawn(f())
+
+  // Create, start, and return a background thread
+  // If isDaemon is true, it is marked as daemon (and will not interfere with JVM shutdown)
+  def daemonize(isDaemon: Boolean)(body: => Unit): Thread = {
+    val thread = new Thread(runnable(body))
+    thread setDaemon isDaemon
+    thread.start
+    thread
+  }
 }

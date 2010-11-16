@@ -122,6 +122,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ynogenericsig = BooleanSetting    ("-Yno-generic-signatures", "Suppress generation of generic signatures for Java")
   val noimports     = BooleanSetting    ("-Yno-imports", "Compile without any implicit imports")
   val nopredefs     = BooleanSetting    ("-Yno-predefs", "Compile without any implicit predefined values")
+  val Yprofile      = PhasesSetting     ("-Yprofile", "Profile the given phase. Needs yjpagent to run.")
+  val YprofileClass = StringSetting     ("-Yprofile-class", "class", "Name of profiler class", "scala.tools.util.YourkitProfiling")
   val Yrecursion    = IntSetting        ("-Yrecursion", "Recursion depth used when locking symbols", 0, Some(0, Int.MaxValue), (_: String) => None)
   val selfInAnnots  = BooleanSetting    ("-Yself-in-annots", "Include a \"self\" identifier inside of annotations")
   val Xshowtrees    = BooleanSetting    ("-Yshow-trees", "Show detailed trees when used in connection with -Xprint:<phase>")

@@ -9,6 +9,7 @@ import java.io.{ File, FileOutputStream, PrintWriter, IOException, FileNotFoundE
 import java.nio.charset.{ Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException }
 import compat.Platform.currentTime
 
+import scala.tools.util.Profiling
 import scala.collection.{ mutable, immutable }
 import io.{ SourceReader, AbstractFile, Path }
 import reporters.{ Reporter, ConsoleReporter }
@@ -232,6 +233,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def logClasspath  = settings.Ylogcp.value
     def printLate     = settings.printLate.value
     def printStats    = settings.Ystatistics.value
+    def profileClass  = settings.YprofileClass.value
     def richExes      = settings.YrichExes.value
     def showTrees     = settings.Xshowtrees.value
     def target        = settings.target.value
@@ -242,14 +244,16 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     def declsOnly     = false
 
     /** Flags as applied to the current or previous phase */
-    def browsePhase = isActive(settings.browse)
-    def checkPhase  = wasActive(settings.check)
-    def logPhase    = isActive(settings.log)
-    def printPhase  = isActive(settings.Xprint)
-    def showPhase   = isActive(settings.Yshow)
+    def browsePhase  = isActive(settings.browse)
+    def checkPhase   = wasActive(settings.check)
+    def logPhase     = isActive(settings.log)
+    def printPhase   = isActive(settings.Xprint)
+    def showPhase    = isActive(settings.Yshow)
+    def profilePhase = isActive(settings.Yprofile) && !profileAll
 
     /** Derived values */
     def showNames     = List(showClass, showObject).flatten
+    def profileAll    = settings.Yprofile.doAllPhases
     def jvm           = target startsWith "jvm"
     def msil          = target == "msil"
     def verboseDebug  = debug && verbose
@@ -818,6 +822,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     private def showMembers() =
       opt.showNames foreach (x => showDef(x, opt.declsOnly, globalPhase))
 
+    // If -Yprofile isn't given this will never be triggered.
+    lazy val profiler = Class.forName(opt.profileClass).newInstance().asInstanceOf[Profiling]
+
     /** Compile list of source files */
     def compileSources(_sources: List[SourceFile]) {
       val depSources = dependencyAnalysis.calculateFiles(_sources.distinct) // bug #1268, scalac confused by duplicated filenames
@@ -830,10 +837,20 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       for (source <- sources) addUnit(new CompilationUnit(source))
 
       globalPhase = firstPhase
+
+      if (opt.profileAll) {
+        inform("starting CPU profiling on compilation run")
+        profiler.startProfiling()
+      }
       while (globalPhase != terminalPhase && !reporter.hasErrors) {
         val startTime = currentTime
         phase = globalPhase
-        globalPhase.run
+
+        if (opt.profilePhase) {
+          inform("starting CPU profiling on phase " + globalPhase.name)
+          profiler profile globalPhase.run
+        }
+        else globalPhase.run
 
         // write icode to *.icode files
         if (opt.writeICode && (runIsAt(icodePhase) || opt.printPhase && runIsPast(icodePhase)))
@@ -865,6 +882,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
           statistics.print(phase)
 
         advancePhase
+      }
+      if (opt.profileAll) {
+        profiler.stopProfiling()
+        profiler.captureSnapshot()
       }
 
       // If no phase was specified for -Xshow-class/object, show it now.

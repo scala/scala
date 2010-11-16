@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <project name="sabbus" default="build">
-
   <description>
 SuperSabbus for Scala core, builds the scala library and compiler. It can also package it as a simple distribution, tests it for stable bootstrapping and against the Scala test suite.
   </description>
@@ -185,16 +184,18 @@ PROPERTIES
   <!-- These are NOT the flags used to run SuperSabbus, but the ones written
        into the script runners created with scala.tools.ant.ScalaTool -->
   <property name="java.flags" value="-Xmx256M -Xms32M"/>
+  <property name="jvm.opts" value=""/>
 
   <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
        but if it is unset it will take this default value. -->
   <property name="env.ANT_OPTS" value="-Xms1536M -Xmx1536M -Xss1M -XX:MaxPermSize=192M -XX:+UseParallelGC" />
+  
   <!--  to find max heap usage: -Xaprof ; currently at 980M for locker.comp -->
-  <echo message="Using ANT_OPTS: ${env.ANT_OPTS}" />
+  <echo message="Forking with JVM opts: ${env.ANT_OPTS} ${jvm.opts}" />
 
   <property
       name="scalacfork.jvmargs"
-      value="${env.ANT_OPTS}"/>
+      value="${env.ANT_OPTS} ${jvm.opts}"/>
 
 <!-- ===========================================================================
 INITIALISATION
@@ -255,7 +256,8 @@ INITIALISATION
   
     <!-- Local libs (developer use.) -->
     <mkdir dir="${lib-extra.dir}"/>
-    <path id="lib.dir.extra">
+    
+    <path id="lib.extra">
       <!-- needs ant 1.7.1 -->
       <!-- <fileset dir="${lib-extra.dir}" erroronmissingdir="false"> -->
       <fileset dir="${lib-extra.dir}">
@@ -271,7 +273,7 @@ INITIALISATION
         <include name="forkjoin.jar"/>
       </fileset>
       <pathelement location="${ant.jar}"/>
-      <path refid="lib.dir.extra"/>
+      <path refid="lib.extra"/>
     </path>
 
     <!-- Define tasks that can be run with Starr -->
@@ -284,12 +286,12 @@ INITIALISATION
     <path id="quick.compilation.path">
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
-      <path refid="lib.dir.extra"/>
+      <path refid="lib.extra"/>
     </path>
     <path id="strap.compilation.path">
       <pathelement location="${build-strap.dir}/classes/library"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
-      <path refid="lib.dir.extra"/>
+      <path refid="lib.extra"/>
     </path>  
     <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>    
   </target>
@@ -872,6 +874,11 @@ PACKED QUICK BUILD (PACK)
       <zipfileset dirmode="755" filemode="644" src="${msil.jar}"/>
     </jar>
     <copy file="${jline.jar}" toDir="${build-pack.dir}/lib"/>
+    <copy todir="${build-pack.dir}/lib">
+      <fileset dir="${lib-extra.dir}">
+        <include name="**/*.jar"/>
+      </fileset>
+    </copy>
   </target>
   
   <target name="pack.pre-plugins" depends="pack.comp">
@@ -975,6 +982,7 @@ PACKED QUICK BUILD (PACK)
       <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
       <pathelement location="${ant.jar}"/>
       <pathelement location="${jline.jar}"/>
+      <path refid="lib.extra"/>
     </path>
     <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/>
     <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.classpath"/>
@@ -1905,6 +1913,50 @@ POSITIONS
 <!-- ===========================================================================
 MISCELLANEOUS
 ============================================================================ -->
+
+  <target name="yourkit.init">
+    <property name="yourkit.home" value="/Applications/YourKit.app"/>
+    <property name="yourkit.api.jar" value="${yourkit.home}/lib/yjp-controller-api-redist.jar"/>
+    <property name="yourkit.agent" value="${yourkit.home}/bin/mac/libyjpagent.jnilib"/>
+    <property name="yourkit.jvm.opts" value="-agentpath:${yourkit.agent}"/>
+    <property name="yourkit.scalac.opts" value="-Yprofile:all"/>
+  </target>
+
+  <!-- Builds yourkit wrapper/jar and copies into lib/extra. -->
+  <target name="yourkit.build" depends="locker.done,yourkit.init">
+    <copy file="${yourkit.api.jar}" todir="${lib-extra.dir}"/>
+    <property name="yourkit.build.dir" value="${build-quick.dir}/classes/yourkit"/>
+    <mkdir dir="${yourkit.build.dir}"/>
+
+    <scalacfork
+      destdir="${yourkit.build.dir}"
+      compilerpathref="locker.classpath"
+      params="${scalac.args.all}"
+      srcdir="${src.dir}/yourkit"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <path refid="locker.classpath"/>
+      </compilationpath>
+    </scalacfork>
+    <jar destfile="${lib-extra.dir}/scalac-yourkit.jar">
+      <fileset dir="${yourkit.build.dir}"/>
+    </jar>
+  </target>
+
+  <!-- Builds quick.lib/comp with profiling enabled. -->
+  <target name="yourkit.run" depends="yourkit.build">
+    <antcall target="clean"/>
+    <ant target="quick.lib" inheritall="false" inheritrefs="false">
+      <property name="jvm.opts" value="${yourkit.jvm.opts}"/>
+      <property name="scalac.args" value="${yourkit.scalac.opts}"/>
+    </ant>
+    <ant target="quick.comp" inheritall="false" inheritrefs="false">
+      <property name="jvm.opts" value="${yourkit.jvm.opts}"/>
+      <property name="scalac.args" value="${yourkit.scalac.opts}"/>
+    </ant>
+    <antcall target="build"/>
+  </target>
 
   <target name="graph.init">
     <taskdef name="vizant" classname="vizant.Vizant" classpath="${lib-ant.dir}/vizant.jar"/>
