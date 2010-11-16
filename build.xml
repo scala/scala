@@ -148,6 +148,10 @@ PROPERTIES
   <property name="lib-ant.dir" value="${lib.dir}/ant"/>
   <property name="src.dir" value="${basedir}/src"/>
   <property name="partest.dir" value="${basedir}/test"/>
+  
+  <!-- For developers: any jars placed in this dir will be added to the classpath
+       of all targets and copied into quick/pack/etc builds. -->
+  <property name="lib-extra.dir" value="${lib.dir}/extra"/>
 
   <!-- Loads custom properties definitions -->
   <property file="${basedir}/build.properties"/>
@@ -201,18 +205,18 @@ INITIALISATION
     <property name="scalac.args.optimise" value=""/>
   <!-- scalac.args.quickonly are added to quick.* targets but not others (particularly, locker.)
        This is to facilitate testing new command line options which do not yet exist in starr. -->
-	<property name="scalac.args.quickonly" value=""/>
+	  <property name="scalac.args.quickonly" value=""/>
 	
     <property name="scalac.args.all" value="${scalac.args} ${scalac.args.optimise}"/>
-	<property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
-  <!-- Setting-up Ant contrib tasks -->
+	  <property name="scalac.args.quick" value="${scalac.args.all} ${scalac.args.quickonly}"/>
+    <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
-  <!-- This is the start time for the distribution -->
+    <!-- This is the start time for the distribution -->
     <tstamp prefix="time">
       <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
       <format property="short" pattern="yyyyMMddHHmmss"/>
     </tstamp>
-  <!-- Find out whether we are running on Windows -->
+    <!-- Find out whether we are running on Windows -->
     <condition property="os.win">
       <os family="windows"/>
     </condition>
@@ -240,33 +244,51 @@ INITIALISATION
 
     <property name="init.avail" value="yes"/>
 
-  <!-- Generating version number -->
+    <!-- Generating version number -->
     <property file="${basedir}/build.number"/>
     <property
       name="version.number"
       value="${version.major}.${version.minor}.${version.patch}.r${svn.number}-b${time.short}"/>
-  <!-- And print-out what we are building -->
+    <!-- And print-out what we are building -->
     <echo level="info" message="Build number is '${version.number}'"/>
     <echo level="info" message="Built ${time.human} from revision ${svn.number} with ${java.vm.name} ${java.version}"/>
-  <!-- Define tasks that can be run with Starr -->
+  
+    <!-- Local libs (developer use.) -->
+    <path id="lib.dir.extra">
+      <fileset dir="${lib-extra.dir}" erroronmissingdir="false">
+        <include name="**/*.jar"/>
+      </fileset>
+    </path>
+
+    <!-- Auxiliary libs placed on every classpath. -->
+    <path id="aux.libs">
+      <fileset dir="${lib.dir}">
+        <include name="fjbg.jar"/>
+        <include name="msil.jar"/>
+        <include name="forkjoin.jar"/>
+      </fileset>
+      <pathelement location="${ant.jar}"/>
+      <path refid="lib.dir.extra"/>
+    </path>
+
+    <!-- Define tasks that can be run with Starr -->
     <path id="starr.classpath">
       <pathelement location="${lib.starr.jar}"/>
       <pathelement location="${comp.starr.jar}"/>
-      <pathelement location="${lib.dir}/fjbg.jar"/>
-      <pathelement location="${lib.dir}/msil.jar"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
-      <pathelement location="${ant.jar}"/>
+      <path refid="aux.libs"/>
     </path>
     <!-- What to have on the compilation path when compiling during certain phases -->
     <path id="quick.compilation.path">
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
+      <path refid="lib.dir.extra"/>
     </path>
     <path id="strap.compilation.path">
       <pathelement location="${build-strap.dir}/classes/library"/>
       <pathelement location="${lib.dir}/forkjoin.jar"/>
+      <path refid="lib.dir.extra"/>
     </path>  
-    <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>
+    <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="starr.classpath"/>    
   </target>
 
 <!-- ===========================================================================
@@ -347,10 +369,7 @@ LOCAL REFERENCE BUILD (LOCKER)
       <compilationpath>
         <pathelement location="${build-locker.dir}/classes/library"/>
         <pathelement location="${build-locker.dir}/classes/compiler"/>
-        <pathelement location="${lib.dir}/fjbg.jar"/>
-        <pathelement location="${lib.dir}/msil.jar"/>
-        <pathelement location="${lib.dir}/forkjoin.jar"/>
-        <pathelement location="${ant.jar}"/>
+        <path refid="aux.libs"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -380,10 +399,7 @@ LOCAL REFERENCE BUILD (LOCKER)
     <path id="locker.classpath">
       <pathelement location="${build-locker.dir}/classes/library"/>
       <pathelement location="${build-locker.dir}/classes/compiler"/>
-      <pathelement location="${lib.dir}/fjbg.jar"/>
-      <pathelement location="${lib.dir}/msil.jar"/>
-      <pathelement location="${lib.dir}/forkjoin.jar"/>
-      <pathelement location="${ant.jar}"/>
+      <path refid="aux.libs"/>
     </path>
   </target>
   
@@ -568,10 +584,7 @@ QUICK BUILD (QUICK)
       <compilationpath>
         <pathelement location="${build-quick.dir}/classes/library"/>
         <pathelement location="${build-quick.dir}/classes/compiler"/>
-        <pathelement location="${fjbg.jar}"/>
-        <pathelement location="${msil.jar}"/>
-        <pathelement location="${forkjoin.jar}"/>
-        <pathelement location="${ant.jar}"/>
+        <path refid="aux.libs"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -748,9 +761,7 @@ QUICK BUILD (QUICK)
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
       <pathelement location="${build-quick.dir}/classes/scalap"/>
-      <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${msil.jar}"/>
-      <pathelement location="${forkjoin.jar}"/>
+      <path refid="aux.libs"/>
       <pathelement location="${jline.jar}"/>
     </path>
     <taskdef name="quick-bin" classname="scala.tools.ant.ScalaTool" classpathref="quick.bin.classpath"/>
@@ -792,10 +803,7 @@ QUICK BUILD (QUICK)
     <path id="quick.classpath">
       <pathelement location="${build-quick.dir}/classes/library"/>
       <pathelement location="${build-quick.dir}/classes/compiler"/>
-      <pathelement location="${fjbg.jar}"/>
-      <pathelement location="${msil.jar}"/>
-      <pathelement location="${forkjoin.jar}"/>
-      <pathelement location="${ant.jar}"/>
+      <path refid="aux.libs"/>
     </path>
   </target>
 
@@ -1081,10 +1089,7 @@ BOOTSTRAPPING BUILD (STRAP)
       <compilationpath>
         <pathelement location="${build-strap.dir}/classes/library"/>
         <pathelement location="${build-strap.dir}/classes/compiler"/>
-        <pathelement location="${fjbg.jar}"/>
-        <pathelement location="${msil.jar}"/>
-        <pathelement location="${forkjoin.jar}"/>
-        <pathelement location="${ant.jar}"/>
+        <path refid="aux.libs"/>
         <pathelement location="${jline.jar}"/>
       </compilationpath>
     </scalacfork>
@@ -1533,17 +1538,18 @@ BOOTRAPING TEST AND TEST SUITE
   </target>
 
   <target name="test.run" depends="pack.done">
+    <property name="partest.srcdir" value="files" />
     <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
              timeout="1200000"
+             srcdir="${partest.srcdir}"
              scalacopts="${scalac.args.optimise}">
       <compilationpath>
         <path refid="pack.classpath"/>
+        <pathelement location="${pack.dir}/lib/scala-swing.jar"/>
         <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
       </compilationpath>
-      <runtests  dir="${partest.dir}/files">
-        <include name="run/**/*.scala"/>
-        <include name="jvm/**/*.scala"/>
-      </runtests>
+      <runtests  dir="${partest.dir}/${partest.srcdir}/run" includes="*.scala"/>
+      <jvmtests dir="${partest.dir}/${partest.srcdir}/jvm" includes="*.scala"/>
     </partest>
   </target>
 
