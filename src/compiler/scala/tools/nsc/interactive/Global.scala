@@ -599,7 +599,7 @@ self =>
 
 
     /** Return fully attributed tree at given position
-     *  (i.e. largest tree that's contained by position)
+     *  (i.e. smallest tree containing position)
      */
     def typedTreeAt(pos: Position): Tree = {
       debugLog("starting typedTreeAt")
