@@ -115,7 +115,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     }
 
     private[Types] def record(tv: TypeVar) = {log = (tv, tv.constr.cloneInternal) :: log}
-    private[nsc] def clear() { log = List() } // TODO: what's the point of this method? -- we roll back the log (using undoTo) in the combinators below anyway, see comments at clear() calls below
+    private[nsc] def clear() { log = List() }
 
     // `block` should not affect constraints on typevars
     def undo[T](block: => T): T = {

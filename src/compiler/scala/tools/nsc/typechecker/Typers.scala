@@ -46,6 +46,9 @@ trait Typers { self: Analyzer =>
     resetImplicits()
     transformed.clear
     superDefs.clear
+    // the log accumulates entries over time, even though it should not (Adriaan, Martin said so).
+    // Lacking a better fix, we clear it here (before the phase is created, meaning for each
+    // compiler run). This is good enough for the resident compiler, which was the most affected.
     undoLog.clear
   }
 
