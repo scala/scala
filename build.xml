@@ -254,8 +254,11 @@ INITIALISATION
     <echo level="info" message="Built ${time.human} from revision ${svn.number} with ${java.vm.name} ${java.version}"/>
   
     <!-- Local libs (developer use.) -->
+    <mkdir dir="${lib-extra.dir}"/>
     <path id="lib.dir.extra">
-      <fileset dir="${lib-extra.dir}" erroronmissingdir="false">
+      <!-- needs ant 1.7.1 -->
+      <!-- <fileset dir="${lib-extra.dir}" erroronmissingdir="false"> -->
+      <fileset dir="${lib-extra.dir}">
         <include name="**/*.jar"/>
       </fileset>
     </path>
