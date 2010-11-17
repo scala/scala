@@ -183,22 +183,14 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
      *  @param k ...
      *  @return  ...
      */
-    override def - (k: A): ListMap[A, B1] = remove0(this, k, ListMap[A, B1]())
-
-    // this solution was nicer and possibly more efficient, but resulted in stack overflows:
-    // if (k == key)
-    //   next
-    // else {
-    //   val tail = next - k
-    //   if (tail eq next) this
-    //   else new tail.Node(key, value)
-    // }
-
-    @tailrec private def remove0(cur: ListMap[A, B1], k: A, acc: ListMap[A, B1]): ListMap[A, B1] =
-      if (cur.nonEmpty) {
-        if (k == cur.key) remove0(cur.next, k, acc)
-        else remove0(cur.next, k, new acc.Node(cur.key, cur.value))
-      } else cur
+    override def - (k: A): ListMap[A, B1] =
+      if (k == key)
+        next
+      else {
+        val tail = next - k
+        if (tail eq next) this
+        else new tail.Node(key, value)
+      }
 
     override protected def next: ListMap[A, B1] = ListMap.this
   }

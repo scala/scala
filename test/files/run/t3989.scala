@@ -5,6 +5,7 @@
 
 class Foo{ override def equals(o: Any) = false; override def hashCode = 1}
 
+// should not result in a stack overflow
 object Test {
   def main(args: Array[String]) {
     import collection.immutable.HashMap
