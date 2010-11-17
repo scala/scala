@@ -22,6 +22,9 @@ import mutable.{ Buffer, ListBuffer, ArrayBuffer }
  *  It represents the implementations common to Iterators and
  *  Traversables, such as folds, conversions, and other operations which
  *  traverse some or all of the elements and return a derived value.
+ *  Note that, while all the methods here can implemented in terms of
+ *  foreach, some of them are defined in subtraits such as `TraversableLike`
+ *  and `Iterator`.
  *
  *  @author Martin Odersky
  *  @author Paul Phillips
