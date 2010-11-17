@@ -53,6 +53,7 @@ class DoubleLinkedList[A]() extends LinearSeq[A]
     if (next != null) {
       this.elem = elem
       this.next = next
+      this.next.prev = this
     }
   }
 
