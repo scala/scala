@@ -6,6 +6,7 @@
 package scala.tools.nsc
 
 import java.util.concurrent.{ Future, Callable, Executors }
+import java.util.{ Timer, TimerTask }
 
 package object io {
   def runnable(body: => Unit): Runnable       = new Runnable { override def run() = body }
@@ -23,5 +24,14 @@ package object io {
     thread setDaemon isDaemon
     thread.start
     thread
+  }
+
+  // Set a timer to execute the given code.
+  def timer(seconds: Int)(body: => Unit): Timer = {
+    val alarm = new Timer(true) // daemon
+    val tt    = new TimerTask { def run() = body }
+
+    alarm.schedule(tt, seconds * 1000)
+    alarm
   }
 }

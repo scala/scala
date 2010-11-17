@@ -5,19 +5,24 @@
 
 package scala.tools.nsc
 package interpreter
+
+import java.io.IOException
+import java.nio.channels.ClosedByInterruptException
 import scala.util.control.Exception._
+import InteractiveReader._
 
 /** Reads lines from an input stream */
 trait InteractiveReader {
-  import InteractiveReader._
-  import java.io.IOException
 
   protected def readOneLine(prompt: String): String
   val interactive: Boolean
+  def init(): Unit = ()
 
   def readLine(prompt: String): String = {
     def handler: Catcher[String] = {
-      case e: IOException if restartSystemCall(e) => readLine(prompt)
+      case e: ClosedByInterruptException          => error("Reader closed by interrupt.")
+      // Terminal has to be re-initialized after SIGSTP or up arrow etc. stop working.
+      case e: IOException if restartSystemCall(e) => init() ; readLine(prompt)
     }
     catching(handler) { readOneLine(prompt) }
   }
@@ -33,7 +38,6 @@ trait InteractiveReader {
   private def restartSystemCall(e: Exception): Boolean =
     Properties.isMac && (e.getMessage == msgEINTR)
 }
-
 
 object InteractiveReader {
   val msgEINTR = "Interrupted system call"
