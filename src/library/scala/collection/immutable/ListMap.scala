@@ -12,6 +12,7 @@ package scala.collection
 package immutable
 
 import generic._
+import annotation.tailrec
 
 /** $factoryInfo
  *  @since 1
@@ -129,7 +130,10 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
      *
      *  @return number of mappings.
      */
-    override def size: Int = next.size + 1
+    override def size: Int = size0(this, 0)
+
+    // to allow tail recursion and prevent stack overflows
+    @tailrec private def size0(cur: ListMap[A, B1], acc: Int): Int = if (cur.isEmpty) acc else size0(cur.next, acc + 1)
 
     /** Is this an empty map?
      *
@@ -144,7 +148,9 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
      *  @param  key the key
      *  @return     the value associated with the given key.
      */
-    override def apply(k: A): B1 = if (k == key) value else next(k)
+    override def apply(k: A): B1 = apply0(this, k)
+
+    @tailrec private def apply0(cur: ListMap[A, B1], k: A): B1 = if (k == cur.key) cur.value else apply0(cur.next, k)
 
     /** Checks if this map maps <code>key</code> to a value and return the
      *  value if it exists.
@@ -152,8 +158,11 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
      *  @param  key the key of the mapping of interest
      *  @return     the value of the mapping, if it exists
      */
-    override def get(k: A): Option[B1] =
-      if (k == key) Some(value) else next.get(k)
+    override def get(k: A): Option[B1] = get0(this, k)
+
+    @tailrec private def get0(cur: ListMap[A, B1], k: A): Option[B1] =
+      if (k == cur.key) Some(cur.value)
+      else if (cur.next.nonEmpty) get0(cur.next, k) else None
 
     /** This method allows one to create a new map with an additional mapping
      *  from `key` to `value`. If the map contains already a mapping for `key`,
@@ -174,14 +183,22 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
      *  @param k ...
      *  @return  ...
      */
-    override def - (k: A): ListMap[A, B1] =
-      if (k == key)
-        next
-      else {
-        val tail = next - k
-        if (tail eq next) this
-        else new tail.Node(key, value)
-      }
+    override def - (k: A): ListMap[A, B1] = remove0(this, k, ListMap[A, B1]())
+
+    // this solution was nicer and possibly more efficient, but resulted in stack overflows:
+    // if (k == key)
+    //   next
+    // else {
+    //   val tail = next - k
+    //   if (tail eq next) this
+    //   else new tail.Node(key, value)
+    // }
+
+    @tailrec private def remove0(cur: ListMap[A, B1], k: A, acc: ListMap[A, B1]): ListMap[A, B1] =
+      if (cur.nonEmpty) {
+        if (k == cur.key) remove0(cur.next, k, acc)
+        else remove0(cur.next, k, new acc.Node(cur.key, cur.value))
+      } else cur
 
     override protected def next: ListMap[A, B1] = ListMap.this
   }
