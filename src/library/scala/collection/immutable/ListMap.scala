@@ -183,14 +183,32 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
      *  @param k ...
      *  @return  ...
      */
-    override def - (k: A): ListMap[A, B1] =
-      if (k == key)
-        next
-      else {
-        val tail = next - k
-        if (tail eq next) this
-        else new tail.Node(key, value)
+    override def - (k: A): ListMap[A, B1] = {
+      // This definition used to result in stack overflows
+      // if (k == key)
+      //   next
+      // else {
+      //   val tail = next - k
+      //   if (tail eq next) this
+      //   else new tail.Node(key, value)
+      // }
+      // we use an imperative one instead:
+      var cur: ListMap[A, B1] = this
+      var lst: List[(A, B1)] = Nil
+      while (cur.nonEmpty) {
+        if (k != cur.key) lst ::= ((cur.key, cur.value))
+        cur = cur.next
       }
+      var acc = ListMap[A, B1]()
+      while (lst != Nil) {
+        val elem = lst.head
+        val stbl = acc
+        acc = new stbl.Node(elem._1, elem._2)
+        lst = lst.tail
+      }
+      acc
+    }
+
 
     override protected def next: ListMap[A, B1] = ListMap.this
   }
