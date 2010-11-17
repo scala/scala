@@ -36,7 +36,9 @@ trait DirectRunner {
     }
   }
 
-  def runTestsForFiles(kindFiles: List[File], kind: String): scala.collection.immutable.Map[String, Int] = {
+  def runTestsForFiles(_kindFiles: List[File], kind: String): scala.collection.immutable.Map[String, Int] = {
+    /** NO DUPLICATES, or partest will blow the count and hang forever. **/
+    val kindFiles = _kindFiles.distinct
     val len = kindFiles.length
     val (testsEach, lastFrag) = (len/numActors, len%numActors)
     val last = numActors-1
