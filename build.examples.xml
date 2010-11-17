@@ -30,6 +30,8 @@ PROPERTIES
   <property name="scala.comp.jar"     value="${lib.dir}/scala-compiler.jar"/>
   <property name="fjbg.name"          value="fjbg.jar"/>
   <property name="fjbg.jar"           value="${lib.dir}/${fjbg.name}"/>
+  <property name="msil.name"          value="msil.jar"/>
+  <property name="msil.jar"           value="${lib.dir}/${msil.name}"/>
   <property name="ant.jar"            value="${ant.home}/lib/ant.jar"/>
   <property name="ant-contrib.jar"    value="${lib.dir}/ant/ant-contrib.jar"/>
   <!-- -->
@@ -61,7 +63,7 @@ INITIALISATION
           classpath="${scala.lib.jar}"
         />
         <available
-          classname="scala.List"
+          classname="scala.collection.immutable.List"
           classpath="${scala.lib.jar}"
         />
         <available
@@ -88,6 +90,15 @@ INITIALISATION
         />
       </not></condition>
     </fail>
+    <echo level="verbose" message="msil.jar=${msil.jar}"/>
+    <fail message="MSIL library in '${lib.dir}/' is not available">
+      <condition><not>
+        <available
+          classname="ch.epfl.lamp.compiler.msil.MemberInfo"
+          classpath="${msil.jar}"
+        />
+      </not></condition>
+    </fail>
     <echo level="verbose" message="ant.jar=${ant.jar}"/>
     <echo level="verbose" message="ant-contrib.jar=${ant-contrib.jar}"/>
     <fail message="Additional Ant tasks in '${lib.dir}/' is not available">
@@ -101,6 +112,7 @@ INITIALISATION
     <!-- Creating class-pathes -->
     <path id="common.classpath">
       <pathelement location="${fjbg.jar}"/>
+      <pathelement location="${msil.jar}"/>
     </path>
     <path id="scala.classpath">
       <pathelement location="${scala.lib.jar}"/>
@@ -202,7 +214,7 @@ BUILD
     <for list="${list}" param="file">
       <sequential>
         <scalac srcdir="${src.dir}"
-                destdir="${build.dir}">
+                destdir="${build.dir}" deprecation="true">
           <classpath>
             <pathelement location="${scala.lib.jar}"/>
             <pathelement location="${build.dir}"/>

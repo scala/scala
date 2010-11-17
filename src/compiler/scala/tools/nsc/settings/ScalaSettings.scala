@@ -112,7 +112,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val noCompletion  = BooleanSetting    ("-Yno-completion", "Disable tab-completion in the REPL")
   val Xdce          = BooleanSetting    ("-Ydead-code", "Perform dead code elimination")
   val debug         = BooleanSetting    ("-Ydebug", "Output debugging messages")
-  val Xdetach       = BooleanSetting    ("-Ydetach", "Perform detaching of remote closures")
   // val doc           = BooleanSetting    ("-Ydoc", "Generate documentation")
   val inline        = BooleanSetting    ("-Yinline", "Perform inlining when possible")
   val Xlinearizer   = ChoiceSetting     ("-Ylinearizer", "Linearizer to use", List("normal", "dfs", "rpo", "dump"), "rpo") .

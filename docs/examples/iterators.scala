@@ -10,10 +10,10 @@ object iterators {
   }
 
   def printArray(xs: Array[Double]) =
-    Iterator.fromArray(xs) foreach { x => println(x) }
+    xs.iterator foreach { x => println(x) }
 
   def findGreater(xs: Array[Double], limit: Double) =
-    Iterator.fromArray(xs)
+    xs.iterator
       .zip(Iterator.from(0))
       .filter{case Pair(x, i) => x > limit }
       .map{case Pair(x, i) => i}

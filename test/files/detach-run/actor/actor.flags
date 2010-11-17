@@ -1,0 +1,1 @@
+-Xpluginsdir ../../../../build/pack/misc/scala-devel/plugins -Xplugin-require:detach -P:detach:enable

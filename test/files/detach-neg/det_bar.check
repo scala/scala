@@ -1,0 +1,4 @@
+det_bar.scala:7: error: detach inapplicable for method bar
+  detach(bar)
+         ^
+one error found

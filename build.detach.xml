@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="sabbus" default="build">
+
+  <description>
+SuperSabbus for Scala detach plugin.
+  </description>
+
+  <echo level="info" message="Running SABBUS for ${ant.project.name}..."/>
+
+<!-- ===========================================================================
+END-USER TARGETS
+============================================================================ -->
+  
+  <target name="build" depends="pack.done"
+    description="Builds the Scala detach plugin."/>
+
+  <target name="clean" depends="quick.clean">
+  </target>
+
+  <target name="all.clean" depends="quick.clean, pack.clean">
+  </target>
+
+<!-- ===========================================================================
+PROPERTIES
+============================================================================ -->
+
+  <property environment="env"/>
+  <!-- Prevents system classpath from being used -->
+  <property name="build.sysclasspath" value="ignore"/>
+
+  <!-- Defines the repository layout -->
+  <property name="lib.dir" value="${basedir}/lib"/>
+  <property name="src.dir" value="${basedir}/src"/>
+  <property name="partest.dir" value="${basedir}/test"/>
+
+  <!-- Loads custom properties definitions -->
+  <property file="${basedir}/build.properties"/>
+
+  <!-- Sets location of build folders -->
+  <property name="build.dir" value="${basedir}/build"/>
+  <property name="build-quick.dir" value="${build.dir}/quick"/>
+  <property name="build-pack.dir" value="${build.dir}/pack"/>
+
+  <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
+       but if it is unset it will take this default value. -->
+  <property name="env.ANT_OPTS" value="-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=128M -XX:+UseParallelGC" />
+
+  <property
+      name="scalacfork.jvmargs"
+      value="${env.ANT_OPTS}"/>
+
+  <property name="scalac.args.quick" value="-deprecation"/>
+  <property name="scalac.args.optimise" value=""/>
+
+  <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${lib.dir}/ant/ant-contrib.jar"/>
+
+<!-- ===========================================================================
+QUICK BUILD (QUICK)
+============================================================================ -->
+
+  <target name="quick.clean">
+    <delete includeemptydirs="yes" quiet="yes" failonerror="no">
+      <fileset dir="${build-quick.dir}/classes/detach-library"/>
+      <fileset dir="${build-quick.dir}/classes/detach-plugin"/>
+    </delete>
+  </target>
+
+  <target name="quick.done">
+    <stopwatch name="quick.done.timer"/>
+    <path id="quick.classpath">
+      <pathelement location="${build-quick.dir}/classes/library"/>
+      <pathelement location="${build-quick.dir}/classes/compiler"/>
+      <pathelement location="${lib.dir}/fjbg.jar"/>
+      <pathelement location="${lib.dir}/msil.jar"/>
+      <pathelement location="${lib.dir}/forkjoin.jar"/>
+      <pathelement location="${ant.home}/lib/ant.jar"/>
+    </path>
+    <taskdef
+      resource="scala/tools/ant/sabbus/antlib.xml"
+      classpathref="quick.classpath"
+    />
+    <mkdir dir="${build-quick.dir}/classes/detach-plugin"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/detach-plugin"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/detach/plugin"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${build-quick.dir}/classes/compiler"/>
+        <pathelement location="${build-quick.dir}/classes/detach-plugin"/>
+        <pathelement location="${lib.dir}/forkjoin.jar"/>
+      </compilationpath>
+    </scalacfork>
+    <copy
+       file="${src.dir}/detach/plugin/scalac-plugin.xml"
+       todir="${build-quick.dir}/classes/detach-plugin"
+    />
+    <mkdir dir="${build-quick.dir}/classes/detach-library"/>
+    <scalacfork
+      destdir="${build-quick.dir}/classes/detach-library"
+      compilerpathref="quick.classpath"
+      params="${scalac.args.quick}"
+      srcdir="${src.dir}/detach/library"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <pathelement location="${build-quick.dir}/classes/library"/>
+        <pathelement location="${lib.dir}/forkjoin.jar"/>
+      </compilationpath>
+    </scalacfork>
+    <touch file="${build-quick.dir}/plugins.complete" verbose="no"/>
+    <stopwatch name="quick.done.timer" action="total"/>
+  </target>
+
+<!-- ===========================================================================
+PACKED QUICK BUILD (PACK)
+============================================================================ -->
+  
+  <target name="pack.start" depends="quick.done"/>
+  
+  <target name="pack.pre-lib" depends="pack.start">
+    <uptodate
+      property="pack.lib.available"
+      targetfile="${build-pack.dir}/lib/scala-detach.jar"
+      srcfile="${build-quick.dir}/plugins.complete"/>
+  </target>
+
+  <target name="pack.lib" depends="pack.pre-lib" unless="pack.lib.available">
+    <mkdir dir="${build-pack.dir}/misc/scala-devel/plugins"/>
+    <jar destfile="${build-pack.dir}/misc/scala-devel/plugins/detach.jar">
+      <fileset dir="${build-quick.dir}/classes/detach-plugin"/>
+    </jar>
+    <mkdir dir="${build-pack.dir}/lib"/>
+    <jar destfile="${build-pack.dir}/lib/scala-detach.jar">
+      <fileset dir="${build-quick.dir}/classes/detach-library">
+        <include name="scala/**"/>
+      </fileset>
+    </jar>
+  </target>
+
+  <target name="pack.done" depends="pack.lib">
+    <path id="pack.classpath">
+      <pathelement location="${build-pack.dir}/lib/scala-library.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-compiler.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-detach.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scala-partest.jar"/>
+      <pathelement location="${build-pack.dir}/lib/scalap.jar"/>
+      <pathelement location="${ant.home}/lib/ant.jar"/>
+      <pathelement location="${lib.dir}/jline.jar"/>
+    </path>
+    <taskdef resource="scala/tools/ant/antlib.xml" classpathref="pack.classpath"/>
+    <taskdef resource="scala/tools/partest/antlib.xml" classpathref="pack.classpath"/>
+  </target>
+
+  <target name="pack.clean">
+    <delete includeemptydirs="yes" quiet="yes" failonerror="no">
+      <fileset dir="${build-pack.dir}/lib" includes="scala-detach.jar"/>
+      <fileset dir="${build-pack.dir}/misc/scala-devel/plugins" includes="detach.jar"/>
+    </delete>
+  </target>
+
+<!-- ===========================================================================
+TEST SUITE
+============================================================================ -->
+
+  <target name="test.suite" depends="pack.done">
+    <property name="partest.srcdir" value="files" />
+    <partest showlog="yes" erroronfailed="yes" javacmd="${java.home}/bin/java"
+             timeout="2400000"
+             srcdir="${partest.srcdir}"
+             scalacopts="${scalac.args.optimise} -Xpluginsdir ${build-pack.dir}/misc/scala-devel/plugins -Xplugin-require:detach -P:detach:enable">
+      <compilationpath>
+        <path refid="pack.classpath"/>
+        <fileset dir="${partest.dir}/files/lib" includes="*.jar" />
+      </compilationpath>
+      <negtests  dir="${partest.dir}/${partest.srcdir}/detach-neg" includes="*.scala"/>
+      <runtests  dir="${partest.dir}/${partest.srcdir}/detach-run" includes="*.scala"/>
+    </partest>
+  </target>
+
+</project>

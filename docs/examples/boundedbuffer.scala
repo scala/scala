@@ -4,19 +4,19 @@ object boundedbuffer {
 
   import concurrent.ops._
 
-  class BoundedBuffer[a](N: Int) {
+  class BoundedBuffer[A](N: Int)(implicit m: ClassManifest[A]) {
     var in, out, n = 0
-    val elems = new Array[a](N)
+    val elems = new Array[A](N)
 
     def await(cond: => Boolean) = while (!cond) { wait() }
 
-    def put(x: a) = synchronized {
+    def put(x: A) = synchronized {
       await (n < N)
       elems(in) = x; in = (in + 1) % N; n += 1
       if (n == 1) notifyAll()
     }
 
-    def get: a = synchronized {
+    def get: A = synchronized {
       await (n != 0)
       val x = elems(out); out = (out + 1) % N ; n -= 1
       if (n == N - 1) notifyAll()

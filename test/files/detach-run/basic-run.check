@@ -1,0 +1,5 @@
+Server.main 8889
+> Client.main 127.0.0.1 8889
+yInstVal = 10
+zLocVal = 1000
+result received: 11111

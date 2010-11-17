@@ -1,0 +1,26 @@
+// See http://java.sun.com/javase/6/docs/technotes/guides/security/permissions.html
+// See http://mindprod.com/jgloss/policyfile.html
+// The policy expands ${/} to the correct path or folder delimiter on your host platform.
+
+// Actions available with SocketPermission: accept, connect, listen, resolve
+// 1) The "resolve" action is implied when any of the other actions are present.
+// 2) The "listen" action is only meaningful when used with "localhost".
+
+grant {
+    permission java.net.SocketPermission "*:80", "connect,accept,listen";
+    permission java.net.SocketPermission "*:1024-", "connect,accept,listen";
+    permission java.util.PropertyPermission "scala.remoting.logLevel", "read";
+    permission java.util.PropertyPermission "scala.remoting.port", "read";
+};
+
+grant codeBase "@PROJECT_LIB_BASE@" {
+    permission java.lang.RuntimePermission "getClassLoader";
+    permission java.lang.RuntimePermission "createClassLoader";
+    permission java.util.PropertyPermission "java.rmi.server.codebase", "read";
+    permission java.util.PropertyPermission "java.rmi.server.hostname", "read";
+    permission java.util.PropertyPermission "sun.rmi.dgc.server.gcInterval", "read,write";
+};
+
+//grant {
+//    permission java.security.AllPermission;
+//};
