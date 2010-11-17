@@ -97,32 +97,25 @@ trait DoubleLinkedListLike[A, This <: Seq[A] with DoubleLinkedListLike[A, This]]
     if (prev ne null) prev.next = next // because this could be the first node
   }
 
-  private def getAtLocation(n: Int): This = if (this.isEmpty) null.asInstanceOf[This] else {
+  private def atLocation[T](n: Int)(f: This => T)(onOutOfBounds: => T) = if (isEmpty) onOutOfBounds else {
     var loc = repr
     var left = n
     while (left > 0) {
       loc = loc.next
       left -= 1
-      if (loc.isEmpty) return null.asInstanceOf[This]
+      if (loc.isEmpty) onOutOfBounds
     }
-    loc
+    f(loc)
   }
 
-  private def atLocation[T](n: Int)(f: This => T) = {
-    val node = getAtLocation(n)
-    if (node eq null) f(node)
-    else throw new IndexOutOfBoundsException(n.toString)
-  }
+  private def outofbounds(n: Int) = throw new IndexOutOfBoundsException(n.toString)
 
   override def drop(n: Int): This = super[SeqLike].drop(n)
 
-  override def apply(n: Int): A   = atLocation(n)(_.elem)
-  override def update(n: Int, x: A): Unit  = atLocation(n)(_.elem = x)
+  override def tail = drop(1)
 
-  override def get(n: Int): Option[A] = {
-    val loc = getAtLocation(n)
-    if (loc ne null) Some(loc.elem)
-    else None
-  }
+  override def apply(n: Int): A   = atLocation(n)(_.elem)(outofbounds(n))
+  override def update(n: Int, x: A): Unit  = atLocation(n)(_.elem = x)(outofbounds(n))
+  override def get(n: Int): Option[A] = atLocation[Option[A]](n)(x => Some(x.elem))(None)
 
 }
