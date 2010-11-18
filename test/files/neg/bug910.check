@@ -1,6 +1,6 @@
 bug910.scala:4: error: type mismatch;
  found   : Seq[Char]
- required: scala.Seq[Int]
+ required: Seq[Int]
     val y: Seq[Int] = rest
                       ^
 one error found

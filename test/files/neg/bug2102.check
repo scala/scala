@@ -1,6 +1,6 @@
 bug2102.scala:2: error: type mismatch;
  found   : java.util.Iterator[Int]
- required: scala.Iterator[_]
+ required: scala.collection.Iterator[_]
   val x: Iterator[_] = new java.util.ArrayList[Int]().iterator
                                                       ^
 one error found

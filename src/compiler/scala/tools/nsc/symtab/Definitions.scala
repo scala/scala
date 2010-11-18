@@ -150,6 +150,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     // fundamental modules
     lazy val PredefModule: Symbol = getModule("scala.Predef")
+    lazy val PredefModuleClass = PredefModule.tpe.typeSymbol
       def Predef_classOf = getMember(PredefModule, nme.classOf)
       def Predef_error    = getMember(PredefModule, nme.error)
       def Predef_identity = getMember(PredefModule, nme.identity)

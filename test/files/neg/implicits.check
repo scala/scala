@@ -5,7 +5,7 @@ implicits.scala:38: error: type mismatch;
       ^
 implicits.scala:46: error: type mismatch;
  found   : List[Any]
- required: scala.List[Mxml]
+ required: List[Mxml]
         children.toList.flatMap ( e => {
                                 ^
 two errors found

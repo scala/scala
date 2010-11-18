@@ -87,8 +87,7 @@ class Outer {
   }
 }
 
-object Test
-{
+object Test {
   val outer1 = new Outer
   val outer2 = new Outer
   val inner1 = new outer1.Inner
@@ -118,8 +117,8 @@ object Test
     List("These should be true under any scenario: ",
       inner1.isInstanceOf[outer1.Inner] ,
       inner1.isInstanceOf[Outer#Inner] ,
-      inner1 match { case _: Outer#Inner => true ; case _ => false } ,
-      inner1 match { case _: outer1.Inner => true ; case _ => false } ,
+      (inner1: Any) match { case _: Outer#Inner => true ; case _ => false } ,
+      (inner1: Any) match { case _: outer1.Inner => true ; case _ => false } ,
       inner1.compareSharpWithTypeMatch(inner2) ,
       inner1.compareSharpWithInstanceOf(inner2)
     ) foreach println
@@ -139,7 +138,7 @@ object Test
     ) foreach println
 
     List("These are doing the wrong thing under current proposal",
-      inner1 match { case _: outer2.Inner => true ; case _ => false }    // should be false
+      (inner1: Any) match { case _: outer2.Inner => true ; case _ => false }    // should be false
     ) foreach println
   }
 
@@ -159,7 +158,7 @@ object Test
     //  required: MethodInner where type MethodInner <: java.lang.Object with ScalaObject{def passOuter(other: Outer): Unit; def passThisType(other: Test.outer1.type): Unit; def passInner(other: Test.outer1.Inner): Unit; def passInner2(other: Test.outer1.Inner): Unit; def passInnerSharp(other: Outer#Inner): Unit; def passMethodInner(other: MethodInner): Unit}
     //     method1.passMethodInner(method1)
     //                             ^
-    // method1.passMethodInner(method1)
+    method1.passMethodInner(method1)
 
     // these should all fail to compile, and do
     //

@@ -1,0 +1,16 @@
+type-diagnostics.scala:4: error: type mismatch;
+ found   : scala.collection.Set[String]
+ required: scala.collection.immutable.Set[String]
+  def f = Calculator("Hello",binding.keySet)
+                                     ^
+type-diagnostics.scala:13: error: type mismatch;
+ found   : List[a(in method f2)]
+ required: List[a(in method f1)]
+      y match { case y1: List[a] => f3(x, y1) }
+                                          ^
+type-diagnostics.scala:17: error: type mismatch;
+ found   : String(in method f2)
+ required: java.lang.String
+  def f2[String](s: String) = strings(List(s))
+                                           ^
+three errors found

@@ -198,64 +198,107 @@ trait TypeDiagnostics {
        "\n required: " + req + existentialContext(req)
     }
 
-  /** If two given types contain different type variables with the same name
-   *  differentiate the names by including owner information.  Also, if the
-   *  type error is because of a conflict between two identically named
-   *  classes and one is in package scala, fully qualify the name so one
-   *  need not deduce why "java.util.Iterator" and "Iterator" don't match.
-   *  Another disambiguation performed is to address the confusion present
-   *  in the following snippet:
-   *    def f[Int](x: Int) = x + 5.
-   */
-  def withDisambiguation[T](types: Type*)(op: => T): T = {
-    object SymExtractor {
-      def unapply(x: Any) = x match {
-        case t @ TypeRef(_, sym, _)   => Some(t -> sym)
-        case t @ ConstantType(value)  => Some(t -> t.underlying.typeSymbol)
-        case _                        => None
-      }
-    }
-    val typerefs =
-      for (tp <- types.toList ; SymExtractor(t, sym) <- tp) yield
-        t -> sym
-
-    val savedNames    = typerefs map { case (_, sym) => sym -> sym.name } toMap
-    def restoreNames  = savedNames foreach { case (sym, name) => sym.name = name }
-
-    def isAlreadyAltered(sym: Symbol) = sym.name != savedNames(sym)
-
-    def modifyName(sym: Symbol)(f: String => String): Unit =
+  case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {
+    // save the name because it will be mutated until it has been
+    // distinguished from the other types in the same error message
+    private val savedName = sym.name
+    def restoreName()     = sym.name = savedName
+    def isAltered         = sym.name != savedName
+    def modifyName(f: String => String) =
       sym.name = newTypeName(f(sym.name.toString))
 
-    def scalaQualify(sym: Symbol) =
-      if (sym.owner.isScalaPackageClass)
-        modifyName(sym)("scala." + _)
+    // functions to manipulate the name
+    def preQualify()   = modifyName(trueOwner.fullName + "." + _)
+    def postQualify()  = modifyName(_ + "(in " + trueOwner + ")")
+    def scalaQualify() = if (isInScalaOrPredef) preQualify()
+    def typeQualify()  = if (sym.isTypeParameterOrSkolem) postQualify()
+    def nameQualify()  = if (trueOwner.isPackageClass) preQualify() else postQualify()
 
-    def explainName(sym: Symbol) = {
-      scalaQualify(sym)
+    def trueOwner  = tp.typeSymbol.ownerSkipPackageObject
+    def aliasOwner = tp.typeSymbolDirect.ownerSkipPackageObject
+    def owners     = List(trueOwner, aliasOwner)
 
-      if (!isAlreadyAltered(sym))
-        modifyName(sym)(_ + "(in " + sym.owner + ")")
+    def isInScalaOrPredef = owners exists {
+      case ScalaPackageClass | PredefModuleClass => true
+      case _                                     => false
     }
 
-    ultimately(restoreNames) {
-      for ((t1, sym1) <- typerefs ; (t2, sym2) <- typerefs ; if sym1 != sym2 && (sym1 isLess sym2)) {
+    def sym_==(other: TypeDiag)     = tp.typeSymbol == other.tp.typeSymbol
+    def owner_==(other: TypeDiag)   = trueOwner == other.trueOwner
+    def string_==(other: TypeDiag)  = tp.toString == other.tp.toString
+    def name_==(other: TypeDiag)    = sym.name == other.sym.name
 
-        if (t1.toString == t2.toString) {   // type variable collisions
-          List(sym1, sym2) foreach explainName
-          if (sym1.owner == sym2.owner)
-            sym2.name = newTypeName("(some other)"+sym2.name)
-        }
-        else if (sym1.name == sym2.name) {  // symbol name collisions
-          List(sym1, sym2) foreach { x =>
-            if (x.owner.isScalaPackageClass)
-              modifyName(x)("scala." + _)
-            else if (x.isTypeParameterOrSkolem)
-              explainName(x)
-          }
+    def compare(other: TypeDiag) =
+      if (this == other) 0
+      else if (sym isLess other.sym) -1
+      else 1
+
+    override def toString = {
+      """
+      |tp = %s
+      |tp.typeSymbol = %s
+      |tp.typeSymbol.owner = %s
+      |tp.typeSymbolDirect = %s
+      |tp.typeSymbolDirect.owner = %s
+      |isInScalaOrPredef = %s
+      """.stripMargin.format(
+        tp, tp.typeSymbol, tp.typeSymbol.owner, tp.typeSymbolDirect, tp.typeSymbolDirect.owner, isInScalaOrPredef
+      )
+    }
+  }
+  private def typeDiags(types: Type*): List[TypeDiag] = {
+    object SymExtractor {
+      def unapply(x: Any) = x match {
+        case t @ ConstantType(_)    => Some(t -> t.underlying.typeSymbol)
+        case t @ TypeRef(_, sym, _) => Some(t -> sym)
+        case _                      => None
+      }
+    }
+
+    for (tp <- types.toList ; SymExtractor(t, sym) <- tp) yield
+      TypeDiag(t, sym)
+  }
+
+  /** The distinct pairs from an ordered list. */
+  private def pairs[T <: Ordered[T]](xs: Seq[T]): Seq[(T, T)] = {
+    for (el1 <- xs ; el2 <- xs ; if el1 < el2) yield
+      ((el1, el2))
+  }
+
+  /** Given any number of types, alters the name information in the symbols
+   *  until they can be distinguished from one another: then executes the given
+   *  code.  The names are restored and the result is returned.
+   */
+  def withDisambiguation[T](types: Type*)(op: => T): T = {
+    val typeRefs = typeDiags(types: _*)
+    val toCheck  = pairs(typeRefs) filterNot { case (td1, td2) => td1 sym_== td2 }
+
+    ultimately(typeRefs foreach (_.restoreName())) {
+      for ((td1, td2) <- toCheck) {
+        val tds = List(td1, td2)
+
+        // If the types print identically, qualify them:
+        //   a) If the dealiased owner is a package, the full path
+        //   b) Otherwise, append (in <owner>)
+        if (td1 string_== td2)
+          tds foreach (_.nameQualify())
+
+        // If they have the same simple name, and either of them is in the
+        // scala package or predef, qualify with scala so it is not confusing why
+        // e.g. java.util.Iterator and Iterator are different types.
+        if (td1 name_== td2)
+          tds foreach (_.scalaQualify())
+
+        // If they still print identically:
+        //   a) If they are type parameters with different owners, append (in <owner>)
+        //   b) Failing that, the best we can do is append "(some other)" to the latter.
+        if (td1 string_== td2) {
+          if (td1 owner_== td2)
+            td2.modifyName("(some other)" + _)
+          else
+            tds foreach (_.typeQualify())
         }
       }
-
       // performing the actual operation
       op
     }

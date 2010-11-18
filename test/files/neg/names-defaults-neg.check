@@ -89,13 +89,13 @@ names-defaults-neg.scala:76: error: no type parameters for method test4: (x: T[T
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[Int]
- required: ?T[ ?T[ scala.List[?T[ X forSome { type X } ]] ] ]
+ required: ?T[ ?T[ List[?T[ X forSome { type X } ]] ] ]
 Error occurred in an application involving default arguments.
   test4()
   ^
 names-defaults-neg.scala:79: error: type mismatch;
  found   : List[Int]
- required: scala.List[scala.List[?]]
+ required: List[List[?]]
   def test6[T](x: List[List[T]] = List(1,2)) = x
                                       ^
 names-defaults-neg.scala:82: error: type mismatch;
