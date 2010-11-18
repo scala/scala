@@ -42,9 +42,9 @@ final class SingleFileILPrinterVisitor(_fileName: String) extends ILPrinterVisit
 
 	// all external assemblies
 	as = assemblyBuilder.getExternAssemblies()
-	Arrays.sort(as, assemblyNameComparator)
+  scala.util.Sorting.quickSort(as)(assemblyNameComparator) // Arrays.sort(as, assemblyNameComparator)
 
-        assemblyBuilder.generatedFiles.add(fileName)
+        assemblyBuilder.generatedFiles += fileName
 	printAssemblyBoilerplate()
 
 	// print each module

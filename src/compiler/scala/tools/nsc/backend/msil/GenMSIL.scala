@@ -481,6 +481,12 @@ abstract class GenMSIL extends SubComponent {
       }
     }
 
+    private[GenMSIL] def ilasmFileName(iclass: IClass) : String = {
+      val singleBackslashed = iclass.cunit.source.file.toString
+      val doubleBackslashed = singleBackslashed.replace("\\", "\\\\")
+      doubleBackslashed
+    }
+
     private[GenMSIL] def genClass(iclass: IClass) {
       val sym = iclass.symbol
       if (settings.debug.value)
@@ -510,7 +516,7 @@ abstract class GenMSIL extends SubComponent {
       }
 
       val line = sym.pos.line
-      tBuilder.setPosition(line, iclass.cunit.source.file.name)
+      tBuilder.setPosition(line, ilasmFileName(iclass))
 
       if (isTopLevelModule(sym)) {
         if (sym.companionClass == NoSymbol)
@@ -949,7 +955,7 @@ abstract class GenMSIL extends SubComponent {
         }
 
         if (currentLineNr != lastLineNr) {
-          mcode.setPosition(currentLineNr)
+          mcode.setPosition(currentLineNr, ilasmFileName(clasz)) // method.sourceFile contains just the filename
           lastLineNr = currentLineNr
         }
 
@@ -1097,7 +1103,8 @@ abstract class GenMSIL extends SubComponent {
                 case SuperCall(_) =>
                   mcode.Emit(OpCodes.Call, constructorInfo)
                   if (isStaticModule(clasz.symbol) &&
-                     notInitializedModules.contains(clasz.symbol))
+                      notInitializedModules.contains(clasz.symbol) &&
+                      method.symbol.isClassConstructor)
                     {
                       notInitializedModules -= clasz.symbol
                       mcode.Emit(OpCodes.Ldarg_0)
@@ -1252,11 +1259,6 @@ abstract class GenMSIL extends SubComponent {
           //  is permitted in the host environment."
           case CHECK_CAST(tpknd) =>
             val tMSIL = msilType(tpknd)
-            if (tMSIL.IsValueType) {
-              // calling emitUnbox does nothing because there's no unbox method for tMSIL
-              mcode.Emit(OpCodes.Unbox, tMSIL)
-              mcode.Emit(OpCodes.Ldobj, tMSIL)
-            } else
               mcode.Emit(OpCodes.Castclass, tMSIL)
 
           // no SWITCH is generated when there's
@@ -1683,7 +1685,7 @@ abstract class GenMSIL extends SubComponent {
 
       if (!sym.isClassConstructor) {
         if (sym.isStaticMember)
-          mf = mf | FieldAttributes.Static
+          mf = mf | FieldAttributes.Static // coincidentally, same value as for MethodAttributes.Static ...
         else {
           mf = mf | MethodAttributes.Virtual
           if (sym.isFinal && !getType(sym.owner).IsInterface)
@@ -1691,6 +1693,16 @@ abstract class GenMSIL extends SubComponent {
           if (sym.isDeferred || getType(sym.owner).IsInterface)
             mf = mf | MethodAttributes.Abstract
         }
+      }
+
+      if (sym.isStaticMember) {
+        mf = mf | MethodAttributes.Static
+      }
+
+      // constructors of module classes should be private
+      if (sym.isPrimaryConstructor && isTopLevelModule(sym.owner)) {
+        mf |= MethodAttributes.Private
+        mf &= ~(MethodAttributes.Public)
       }
 
       mf.toShort
@@ -1902,6 +1914,21 @@ abstract class GenMSIL extends SubComponent {
         addAttributes(fBuilder, sym.annotations)
       } // all iclass.fields iterated over
 
+      if (isStaticModule(iclass.symbol)) {
+        val sc = iclass.lookupStaticCtor
+        if (sc.isDefined) {
+          val m = sc.get
+          val oldLastBlock = m.code.blocks.last
+          val lastBlock = m.code.newBlock
+          oldLastBlock.replaceInstruction(oldLastBlock.length - 1, JUMP(lastBlock))
+          // call object's private ctor from static ctor
+          lastBlock.emit(CIL_NEWOBJ(iclass.symbol.primaryConstructor))
+          lastBlock.emit(DROP(toTypeKind(iclass.symbol.tpe)))
+          lastBlock emit RETURN(UNIT)
+          lastBlock.close
+        }
+      }
+
       if (iclass.symbol != definitions.ArrayClass) {
       for (m: IMethod <- iclass.methods) {
         val sym = m.symbol
@@ -1941,7 +1968,9 @@ abstract class GenMSIL extends SubComponent {
       if (isStaticModule(iclass.symbol)) {
         addModuleInstanceField(iclass.symbol)
         notInitializedModules += iclass.symbol
-        addStaticInit(iclass.symbol)
+        if (iclass.lookupStaticCtor.isEmpty) {
+          addStaticInit(iclass.symbol)
+        }
       }
 
     } // createClassMembers0
@@ -1995,7 +2024,8 @@ abstract class GenMSIL extends SubComponent {
         case Some(sym) => sym
         case None =>
           //val mclass = types(moduleClassSym)
-          val mClass = clrTypes.getType(moduleClassSym.fullName + "$")
+          val nameInMetadata = nestingAwareFullClassname(moduleClassSym)
+          val mClass = clrTypes.getType(nameInMetadata)
           val mfield = mClass.GetField("MODULE$")
           assert(mfield ne null, "module not found " + showsym(moduleClassSym))
           fields(moduleClassSym) = mfield
@@ -2004,6 +2034,21 @@ abstract class GenMSIL extends SubComponent {
 
       //fields(moduleClassSym)
     }
+
+    def nestingAwareFullClassname(csym: Symbol) : String = {
+      val suffix = moduleSuffix(csym)
+      val res = if (csym.isNestedClass)
+        nestingAwareFullClassname(csym.owner) + "+" + csym.encodedName
+      else
+        csym.fullName
+      res + suffix
+    }
+
+  /** cut&pasted from GenJVM */
+  def moduleSuffix(sym: Symbol) =
+    if (sym.hasFlag(Flags.MODULE) && !sym.isMethod &&
+       !sym.isImplClass && !sym.hasFlag(Flags.JAVA)) "$"
+    else "";
 
     /** Adds a static initializer which creates an instance of the module
      *  class (calls the primary constructor). A special primary constructor
@@ -2050,7 +2095,8 @@ abstract class GenMSIL extends SubComponent {
 
       for (m <- sym.tpe.nonPrivateMembers
            if m.owner != definitions.ObjectClass && !m.isProtected &&
-           m.isMethod && !m.isClassConstructor && !m.isStaticMember && !m.isCase)
+           m.isMethod && !m.isClassConstructor && !m.isStaticMember && !m.isCase &&
+           !m.isDeferred)
         {
           if (settings.debug.value)
             log("   Mirroring method: " + m)

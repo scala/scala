@@ -161,7 +161,7 @@ final class PEModule extends Module {
 	int tableId = Table.getTableId(Table._ResolutionScope,
 				       tr.ResolutionScope);
 	int refRow = tr.ResolutionScope >> Table.NoBits[Table._ResolutionScope];
-	String typeName = tr.getFullName();
+	final String typeName = tr.getFullName();
 	pefile.getTable(tableId).readRow(refRow);
 	switch (tableId) {
 	case AssemblyRef.ID:
@@ -190,7 +190,9 @@ final class PEModule extends Module {
 	    //assert type != null;
 	    break;
 	case TypeRef.ID:
-	    type = getTypeRef(refRow);
+        Type nestingType = getTypeRef(refRow);
+        String nestedName = typeName;
+	    type = nestingType.GetNestedType(nestedName);
 	    break;
 	case ModuleRef.ID:
             type = getAssembly(pefile.ModuleRef.getName()).GetType(typeName);

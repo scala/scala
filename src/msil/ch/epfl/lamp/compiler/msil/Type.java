@@ -154,7 +154,7 @@ public abstract class Type extends MemberInfo {
 				 fullName.length()),
 	      declType);
 
-	Module = module;
+	Module = module; // null only for TMVarUsage and for PrimitiveType
 	Attributes = attr;
 	this.baseType = baseType;
 	if (DeclaringType == null) {

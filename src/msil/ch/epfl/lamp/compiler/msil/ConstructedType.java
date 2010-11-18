@@ -11,7 +11,7 @@ public class ConstructedType extends Type {
     public final Type[] typeArgs;
 
     public ConstructedType(Type instantiatedType, Type[] typeArgs) {
-        super (null, instantiatedType.Attributes, "", null, null, null, instantiatedType.auxAttr /*AuxAttr.None*/ , null);
+        super(instantiatedType.Module, instantiatedType.Attributes, "", null, null, null, instantiatedType.auxAttr /*AuxAttr.None*/ , null);
         this.instantiatedType = instantiatedType;
         this.typeArgs = typeArgs;
     }

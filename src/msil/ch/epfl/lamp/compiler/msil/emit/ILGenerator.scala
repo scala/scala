@@ -7,11 +7,7 @@ package ch.epfl.lamp.compiler.msil.emit
 
 import ch.epfl.lamp.compiler.msil._
 import ch.epfl.lamp.compiler.msil.util.Table
-import java.util.ArrayList
 import java.util.Stack
-import java.util.Iterator
-import java.util.Map
-import java.util.HashMap
 import java.io.IOException
 import ILGenerator._
 
@@ -293,7 +289,7 @@ import ILGenerator._
     def DeclareLocal(localType: Type): LocalBuilder = {
 	val l: LocalBuilder = new LocalBuilder(locals, localType)
     locals = locals + 1
-	localList.add(l)
+      localList += l
 	return l
     }
 
@@ -415,19 +411,13 @@ import ILGenerator._
 	    lineNums.put(lastLabel, line + "  '" + filename + "'")
     }
 
-    def getLocals(): Array[LocalBuilder] = {
-	  localList.toArray(new Array[LocalBuilder](0)).asInstanceOf[Array[LocalBuilder]]
-    }
+    def getLocals(): Array[LocalBuilder] = localList.toArray
 
-    def getLabelIterator(): Iterator[Label] = {
-	  labelList.iterator()
-    }
-    def getOpcodeIterator(): Iterator[OpCode] = {
-	  opcodeList.iterator()
-    }
-    def getArgumentIterator(): Iterator[Object] = {
-	  argumentList.iterator()
-    }
+    def getLabelIterator() = labelList.iterator
+
+    def getOpcodeIterator() = opcodeList.iterator
+
+    def getArgumentIterator() = argumentList.iterator
 
     //##########################################################################
     // private implementation details
@@ -435,15 +425,15 @@ import ILGenerator._
 
 
     // the local variable list
-    private final val localList: ArrayList[LocalBuilder] = new ArrayList[LocalBuilder]()
+    private final val localList  = scala.collection.mutable.ArrayBuffer.empty[LocalBuilder]
 
     // the label list, the opcode list and the opcode argument list
     // labelList is an array of Label
     // opcodeList is an array of OpCode
     // argumentList is an array of Object (null if no argument)
-    private final val labelList: ArrayList[Label] = new ArrayList[Label]()
-    private final val opcodeList: ArrayList[OpCode] = new ArrayList[OpCode]()
-    private final val argumentList: ArrayList[Object] = new ArrayList[Object]()
+    private final val labelList = scala.collection.mutable.ArrayBuffer.empty[Label]
+    private final val opcodeList = scala.collection.mutable.ArrayBuffer.empty[OpCode]
+    private final val argumentList = scala.collection.mutable.ArrayBuffer.empty[Object]
 
     // the program counter (pc)
     // also called the stream's current position
@@ -464,7 +454,7 @@ import ILGenerator._
     // the method info owner of this ILGenerator
     var owner: MethodBase = _owner
 
-    val lineNums: Map[Label, String] = new HashMap[Label, String]()
+    val lineNums = scala.collection.mutable.Map.empty[Label, String]
 
 
     def getMaxStacksize(): Int = { this.maxstack }
@@ -477,13 +467,15 @@ import ILGenerator._
     // private emit with Object Argument and override POPUSH
     private def emit(opcode: OpCode, arg: Object, overridePOPUSH: Int) {
 	// add label, opcode and argument
-	labelList.add(lastLabel)
-	opcodeList.add(opcode)
-	argumentList.add(arg)
+      labelList += lastLabel
+      opcodeList += opcode
+      argumentList += arg
 	// compute new lastLabel (next label)
 	val stackSize: Int = lastLabel.getStacksize() + overridePOPUSH
 	if (stackSize < 0) {
-	    throw new RuntimeException("ILGenerator.emit(): Stack underflow in method: " + owner)
+          val msg = "ILGenerator.emit(): Stack underflow in method: " + owner
+          scala.Console.println(msg)
+          // throw new RuntimeException(msg)
 	}
 	if (stackSize > maxstack)
 	    maxstack = stackSize
@@ -498,7 +490,7 @@ import ILGenerator._
    def Ldarg0WasJustEmitted() : Boolean = {
      if(opcodeList.isEmpty)
        return false
-     val lastEmitted = opcodeList.get(opcodeList.size - 1)
+     val lastEmitted = opcodeList(opcodeList.size - 1)
      lastEmitted eq OpCode.Ldarg_0
    }
 
@@ -506,9 +498,9 @@ import ILGenerator._
         emitSpecialLabel(l, null)
     }
     private def emitSpecialLabel(l: Label, catchType: Type) {
-        labelList.add(l)
-        opcodeList.add(null)
-        argumentList.add(catchType)
+        labelList += l
+        opcodeList += null
+        argumentList += catchType
     }
 
     //##########################################################################
@@ -528,16 +520,16 @@ object ILGenerator {
    val NO_LABEL: String = ""
 
     private final class ExceptionStack {
-        private val labels: Stack[Label] = new Stack[Label]()
-        private val kinds: Stack[Label] = new Stack[Label]()
+        private val labels = new scala.collection.mutable.Stack[Label]()
+        private val kinds = new scala.collection.mutable.Stack[Label]()
         def ExceptionStack() {}
-        def pop() { labels.pop(); kinds.pop() }
+        def pop() { labels.pop; kinds.pop }
         def push(kind: Label, label: Label) {
             kinds.push(kind); labels.push(label)
         }
-        def peekKind(): Label.Kind = {kinds.peek().asInstanceOf[Label].getKind() }
-        def peekLabel(): Label = { labels.peek().asInstanceOf[Label] }
-        def popLabel(): Label = { kinds.pop(); labels.pop().asInstanceOf[Label]}
+        def peekKind(): Label.Kind = kinds.top.getKind
+        def peekLabel(): Label = labels.top
+        def popLabel(): Label = { kinds.pop(); labels.pop() }
     }
 
 }

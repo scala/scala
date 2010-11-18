@@ -11,7 +11,6 @@ import java.io.BufferedWriter
 import java.io.PrintWriter
 import java.io.IOException
 import java.util.Iterator
-import java.util.HashMap
 import java.util.Arrays
 
 import ch.epfl.lamp.compiler.msil._
@@ -39,7 +38,7 @@ final class MultipleFilesILPrinterVisitor(destPath: String, sourceFilesPath: Str
 
 	// all external assemblies
 	as = assemblyBuilder.getExternAssemblies()
-	Arrays.sort(as, assemblyNameComparator)
+	scala.util.Sorting.quickSort(as)(assemblyNameComparator)  // Arrays.sort(as, assemblyNameComparator)
 
 	// print each module
 	var m: Array[Module] = assemblyBuilder.GetModules()
@@ -91,7 +90,7 @@ final class MultipleFilesILPrinterVisitor(destPath: String, sourceFilesPath: Str
             append = true
         } else {
             fileName.getParentFile().mkdirs()
-            assemblyBuilder.generatedFiles.add(fileName.getPath)
+            assemblyBuilder.generatedFiles += (fileName.getPath)
         }
 
 	    out = new PrintWriter(new BufferedWriter(new FileWriter(fileName, append)))
@@ -115,7 +114,7 @@ final class MultipleFilesILPrinterVisitor(destPath: String, sourceFilesPath: Str
 		out = new PrintWriter(new BufferedWriter(new FileWriter(globalMethods, append)))
 
         // make sure we're the first in the list (ilasm uses the first file name to guess the output file name)
-        assemblyBuilder.generatedFiles.add(0, globalMethods.getPath)
+        assemblyBuilder.generatedFiles.insert(0, globalMethods.getPath)
 
 		// if this file hasn't been created by one of the classes, write boilerplate
 		if(!append) {

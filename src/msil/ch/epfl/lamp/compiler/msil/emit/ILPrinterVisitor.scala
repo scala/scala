@@ -10,9 +10,6 @@ import java.io.FileWriter
 import java.io.BufferedWriter
 import java.io.PrintWriter
 import java.io.IOException
-import java.util.Iterator
-import java.util.HashMap
-import java.util.Arrays
 import java.util.Comparator
 
 import ch.epfl.lamp.compiler.msil._
@@ -33,8 +30,8 @@ abstract class ILPrinterVisitor extends Visitor {
     //##########################################################################
 
     protected final val assemblyNameComparator =
-        new Comparator[Assembly]() {
-            def compare(o1: Assembly, o2: Assembly): Int = {
+        new scala.math.Ordering[Assembly]() {
+            override def compare(o1: Assembly, o2: Assembly): Int = {
                 val a1 = o1.asInstanceOf[Assembly]
                 val a2 = o2.asInstanceOf[Assembly]
                 return a1.GetName().Name.compareTo(a2.GetName().Name)
@@ -101,7 +98,7 @@ abstract class ILPrinterVisitor extends Visitor {
     protected def printName(name: String) {
 	var ch = name.charAt(0)
 	//if (Character.isLetter(ch) && Character.isLowerCase(ch)) {
-	if (ch != '.') {
+	if ((ch != '.') && (ch != '!')) {
 	    print('\''); print(name); print('\'')
 	} else
 	    print(name)
@@ -236,23 +233,23 @@ abstract class ILPrinterVisitor extends Visitor {
             printAttributes(`type`)
         }
 	// print nested classes
-    val nested = `type`.nestedTypeBuilders.iterator()
-    while(nested.hasNext())
+    val nested = `type`.nestedTypeBuilders.iterator
+    while(nested.hasNext)
       print(nested.next().asInstanceOf[TypeBuilder])
 
 	// print each field
-    val fields = `type`.fieldBuilders.iterator()
-    while(fields.hasNext())
+    val fields = `type`.fieldBuilders.iterator
+    while(fields.hasNext)
 	  print(fields.next().asInstanceOf[FieldBuilder])
 
 	// print each constructor
-	val constrs = `type`.constructorBuilders.iterator()
-	while (constrs.hasNext())
+	val constrs = `type`.constructorBuilders.iterator
+	while (constrs.hasNext)
 	    print(constrs.next().asInstanceOf[ConstructorBuilder])
 
 	// print each method
-	val methods = `type`.methodBuilders.iterator()
-	while (methods.hasNext()) {
+	val methods = `type`.methodBuilders.iterator
+	while (methods.hasNext) {
 	    val method = methods.next().asInstanceOf[MethodBuilder]
 	    assert(method.DeclaringType == `type`)
 	    print(method)
@@ -308,29 +305,9 @@ abstract class ILPrinterVisitor extends Visitor {
 		print((value.asInstanceOf[Long]).longValue())
 		print(")")
 	    } else if (value.isInstanceOf[Float]) {
-		// !!! check if encoding is correct
-		val bits = java.lang.Float.floatToRawIntBits((value.asInstanceOf[Float]).floatValue())
-		// float32(float32(...)) != float32(...)
-		print("float32 (float32 (")
-        /* see p. 170 in Lidin's book Expert .NET 2.0 IL Assembler */
-        val valFlo = value.asInstanceOf[Float]
-        if (java.lang.Float.NaN == valFlo) print("0xFFC00000 /* NaN */ ") /* TODO this is 'quiet NaN, http://www.savrola.com/resources/NaN.html , what's the difference with a 'signaling NaN'?? */
-        else if (java.lang.Float.NEGATIVE_INFINITY == valFlo) print("0xFF800000 /* NEGATIVE_INFINITY */ ")
-        else if (java.lang.Float.POSITIVE_INFINITY == valFlo) print("0x7F800000 /* POSITIVE_INFINITY */ ")
-        else print(bits)
-		print("))")
+        print(msilSyntaxFloat(value.asInstanceOf[Float]))
 	    } else if (value.isInstanceOf[Double]) {
-		// !!! check if encoding is correct
-		var bits = java.lang.Double.doubleToRawLongBits((value.asInstanceOf[Double]).doubleValue())
-		// float64(float64(...)) != float64(...)
-		print("float64 (float64 (")
-        /* see p. 170 in Lidin's book Expert .NET 2.0 IL Assembler */
-        val valDou = value.asInstanceOf[Double]
-        if (java.lang.Double.NaN == valDou) print("0xffffffffffffffff /* NaN */ ") /* TODO this is 'quiet NaN, http://www.savrola.com/resources/NaN.html , what's the difference with a 'signaling NaN'?? */
-        else if (java.lang.Double.NEGATIVE_INFINITY == valDou) print("0xfff0000000000000 /* NEGATIVE_INFINITY */ ")
-        else if (java.lang.Double.POSITIVE_INFINITY == valDou) print("0x7ff0000000000000 /* POSITIVE_INFINITY */ ")
-        else print(bits)
-		print("))")
+        print(msilSyntaxDouble(value.asInstanceOf[Double]))
 	    } else {
 		throw new Error("ILPrinterVisitor: Illegal default value: "
 				+ value.getClass())
@@ -339,6 +316,31 @@ abstract class ILPrinterVisitor extends Visitor {
 	println()
         printAttributes(field)
     }
+
+    def msilSyntaxFloat(valFlo: java.lang.Float) : String = {
+      // !!! check if encoding is correct
+      val bits = java.lang.Float.floatToRawIntBits(valFlo.floatValue())
+      /* see p. 170 in Lidin's book Expert .NET 2.0 IL Assembler */
+      /* Note: no value is equal to Nan, including NaN. Thus, x == Float.NaN always evaluates to false. */
+      val res = if (valFlo.isNaN) "0xFFC00000 /* NaN */ " /* TODO this is 'quiet NaN, http://www.savrola.com/resources/NaN.html , what's the difference with a 'signaling NaN'?? */
+                else if (java.lang.Float.NEGATIVE_INFINITY == valFlo.floatValue) "0xFF800000 /* NEGATIVE_INFINITY */ "
+                else if (java.lang.Float.POSITIVE_INFINITY == valFlo.floatValue) "0x7F800000 /* POSITIVE_INFINITY */ "
+                else bits
+      "float32 (" + res + ")"
+    }
+
+  def msilSyntaxDouble(valDou: java.lang.Double) : String = {
+    // !!! check if encoding is correct
+    var bits = java.lang.Double.doubleToRawLongBits(valDou.doubleValue())
+    /* see p. 170 in Lidin's book Expert .NET 2.0 IL Assembler */
+    /* Note: no value is equal to Nan, including NaN. Thus, x == Double.NaN always evaluates to false. */
+    val res = if (valDou.isNaN) "0xffffffffffffffff /* NaN */ " /* TODO this is 'quiet NaN, http://www.savrola.com/resources/NaN.html , what's the difference with a 'signaling NaN'?? */
+              else if (java.lang.Double.NEGATIVE_INFINITY == valDou.doubleValue) "0xfff0000000000000 /* NEGATIVE_INFINITY */ "
+              else if (java.lang.Double.POSITIVE_INFINITY == valDou.doubleValue) "0x7ff0000000000000 /* POSITIVE_INFINITY */ "
+              else bits
+    // float64(float64(...)) != float64(...)
+    "float64 (" + res + ")"
+  }
 
     /**
      * Visit a ConstructorBuilder
@@ -402,6 +404,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	print(' '); printName(param.Name)
     }
 
+  var locals: Array[LocalBuilder] = null
     /**
      * Visit an ILGenerator
      */
@@ -410,7 +413,7 @@ abstract class ILPrinterVisitor extends Visitor {
 	// print maxstack
 	println(".maxstack   " + code.getMaxStacksize())
 	// get the local variables
-	var locals: Array[LocalBuilder] = code.getLocals()
+	locals = code.getLocals()
 	if (locals.length > 0) {
 	    println(".locals init (")
 	    indent()
@@ -426,15 +429,16 @@ abstract class ILPrinterVisitor extends Visitor {
 	val itO = code.getOpcodeIterator()
 	val itA = code.getArgumentIterator()
 	// iterate over each opcode
-	while (itO.hasNext()) {
+	while (itO.hasNext) {
 	    // first print label
-	    val label = itL.next().asInstanceOf[Label]
-	    var o = code.lineNums.get(label)
-	    if (o != null)
-		println(".line       " + o)
-	    argument = itA.next().asInstanceOf[Object]
+	    val label = itL.next
+      val oOpt = code.lineNums.get(label)
+      if (oOpt.isDefined) {
+        println(".line       " + oOpt.get)
+      }
+	    argument = itA.next.asInstanceOf[Object]
 	    printLabel(label)
-            val o2 = itO.next()
+            val o2 = itO.next
             if (o2 != null) {
                 print("   ")
                 print(o2.asInstanceOf[OpCode])
@@ -483,6 +487,14 @@ abstract class ILPrinterVisitor extends Visitor {
 	    print(loc.slot); print("\t// "); printSignature(loc.LocalType)
 	    print(" \'"); print(loc.name); print("\'")
 	    //print("'") print(((LocalBuilder)argument).name) print("'")
+    } else if (opCode == OpCode.Ldloc_0 || opCode == OpCode.Ldloc_1 || opCode == OpCode.Ldloc_2 || opCode == OpCode.Ldloc_3 ) {
+          val loc = locals(opCode.CEE_opcode - OpCode.CEE_LDLOC_0)
+          print("\t// "); printSignature(loc.LocalType)
+          print(" \'"); print(loc.name); print("\'")
+    } else if (opCode == OpCode.Stloc_0 || opCode == OpCode.Stloc_1 || opCode == OpCode.Stloc_2 || opCode == OpCode.Stloc_3 ) {
+          val loc = locals(opCode.CEE_opcode - OpCode.CEE_STLOC_0)
+          print("\t// "); printSignature(loc.LocalType)
+          print(" \'"); print(loc.name); print("\'")
     } else if (opCode == OpCode.Readonly) {
       // nothing to do
     } else if (opCode == OpCode.Constrained) {
@@ -491,8 +503,21 @@ abstract class ILPrinterVisitor extends Visitor {
       printReference(argument.asInstanceOf[Type])
         } else {
 	    // by default print toString argument if any
-	    if (argument != null)
-		print(argument)
+	    if (argument != null) {
+        val strArgument = java.lang.String.valueOf(argument)
+        if (         argument.isInstanceOf[java.lang.Float]
+                  && (   strArgument.equals("NaN")
+                      || strArgument.equals("-Infinity")
+                      || strArgument.equals("Infinity")))
+                print(msilSyntaxFloat(argument.asInstanceOf[java.lang.Float]))
+        else if (    argument.isInstanceOf[java.lang.Double]
+                  && (   strArgument.equals("NaN")
+                      || strArgument.equals("-Infinity")
+                      || strArgument.equals("Infinity")))
+                print(msilSyntaxDouble(argument.asInstanceOf[java.lang.Double]))
+        else print(strArgument)
+      }
+
 	} // end switch
     }
 
@@ -646,12 +671,11 @@ abstract class ILPrinterVisitor extends Visitor {
     }
 
     def printSignature(`type`: Type) {
-	val sig : Object = primitive.get(`type`)
-	if (sig != null) {
-	    print(sig)
+      val sigOpt = primitive.get(`type`)
+      if (sigOpt.isDefined) {
+          print(sigOpt.get)
 	    return
 	}
-
 	if (`type`.HasElementType()) {
 	    printSignature(`type`.GetElementType())
 	    if (`type`.IsArray())
@@ -661,29 +685,36 @@ abstract class ILPrinterVisitor extends Visitor {
 	    else if (`type`.IsByRef())
 		print('&')
 	} else {
-	    print(if(`type`.IsValueType()) "valuetype " else "class ")
+          val preref = if (`type`.isInstanceOf[Type.TMVarUsage]) ""
+                       else if(`type`.IsValueType()) "valuetype "
+                       else "class "
+          print(preref)
 	    printReference(`type`)
 	}
     }
 
     def printReference(`type`: Type) {
+      if (`type`.Module != null) { // i.e. not PrimitiveType and not TMVarUsage
 	if (`type`.Assembly() != currentModule.Assembly) {
 	    print('['); print(`type`.Assembly().GetName().Name); print("]")
 	} else if (`type`.Module != currentModule) {
 	    print("[.module "); print(`type`.Module.Name); print("]")
 	}
+      }
 	printTypeName(`type`)
     }
 
     def printTypeName(`type`: Type) {
     if (`type`.isInstanceOf[ConstructedType]) {
       val ct = `type`.asInstanceOf[ConstructedType]
-      printSignature(ct.instantiatedType)
+        printTypeName(ct.instantiatedType)
       print("<")
       var i = 0
       while (i < ct.typeArgs.length) {
         val ta = ct.typeArgs(i)
-        printTypeName(ta); /* should be printSignature, but don't want `class' or `valuetype'
+          val sigOpt = primitive.get(ta)
+          if (sigOpt.isDefined) print(sigOpt.get)
+          else printTypeName(ta); /* should be printSignature, but don't want `class' or `valuetype'
         appearing before a type param usage. */
         i = i + 1;
         if (i < ct.typeArgs.length) {
@@ -789,7 +820,7 @@ object ILPrinterVisitor {
     /** The current assembly */
     var currAssembly: Assembly = _
 
-    final var primitive = new HashMap[Type, String]()
+    final var primitive = scala.collection.mutable.Map.empty[Type, String]
     def addPrimitive(name: String, sig: String) {
       var `type` =
       Type.GetType(name)

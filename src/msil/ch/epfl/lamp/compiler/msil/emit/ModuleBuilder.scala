@@ -6,8 +6,6 @@
 package ch.epfl.lamp.compiler.msil.emit
 
 import ch.epfl.lamp.compiler.msil._
-import java.util.HashMap
-import java.util.ArrayList
 import java.io.IOException
 
 /**
@@ -36,8 +34,8 @@ class ModuleBuilder(name: String, fullname: String, scopeName: String, assembly:
     def CreateGlobalFunctions() {
 	if (globalsCreated)
 	    throw new RuntimeException("Global functions are already created")
-	this.fields = fieldBuilders.toArray(fields).asInstanceOf[Array[FieldInfo]]
-	this.methods = methodBuilders.toArray(methods).asInstanceOf[Array[MethodInfo]]
+	this.fields = fieldBuilders.toArray // (fields).asInstanceOf[Array[FieldInfo]]
+	this.methods = methodBuilders.toArray //  (methods).asInstanceOf[Array[MethodInfo]]
 	globalsCreated = true
     }
 
@@ -94,13 +92,18 @@ class ModuleBuilder(name: String, fullname: String, scopeName: String, assembly:
     {
 	val method =
 	    new MethodBuilder(name, null, attributes, returnType, paramTypes)
-	methodBuilders.add(method)
+	methodBuilders += method
 	return method
     }
 
 
     override def GetTypes(): Array[Type] = {
-	return typesMap.values().toArray(Type.EmptyTypes).asInstanceOf[Array[Type]]
+      val res = scala.collection.mutable.ArrayBuffer.empty[Type]
+      val iter = typesMap.values().iterator
+      while (iter.hasNext) {
+        res += iter.next.asInstanceOf[Type]
+    }
+	    return res.toArray
     }
 
     /** Sets a custom attribute. */
@@ -112,8 +115,8 @@ class ModuleBuilder(name: String, fullname: String, scopeName: String, assembly:
     // internal members
 
     var globalsCreated = false
-    protected var fieldBuilders = new ArrayList[FieldInfo]()
-    protected var methodBuilders = new ArrayList[MethodInfo]()
+    protected var fieldBuilders = scala.collection.mutable.ArrayBuffer.empty[FieldInfo]
+    protected var methodBuilders = scala.collection.mutable.ArrayBuffer.empty[MethodInfo]
 
     override def addType(t: Type): Type = {
 	return super.addType(t)

@@ -6,9 +6,6 @@
 package ch.epfl.lamp.compiler.msil.emit
 
 import ch.epfl.lamp.compiler.msil._
-import java.util.HashMap
-import java.util.HashSet
-import java.util.ArrayList
 import java.io.IOException
 
 /**
@@ -50,19 +47,19 @@ class AssemblyBuilder(name: AssemblyName)
     /** Saves this dynamic assembly to disk. */
     @throws(classOf[IOException])
     def Save(fileName: String) {
-    generatedFiles = new ArrayList()
+    generatedFiles = scala.collection.mutable.ArrayBuffer.empty[String]
 	ILPrinterVisitor.printAssembly(this, fileName)
     }
 
     @throws(classOf[IOException])
     def Save(destPath: String, sourceFilesPath: String) {
-    generatedFiles = new ArrayList()
+    generatedFiles = scala.collection.mutable.ArrayBuffer.empty[String]
     ILPrinterVisitor.printAssembly(this, destPath, sourceFilesPath)
     }
 
     /** Returns the list of generated files from calling Save(). */
     def GetGeneratedFiles(): Array[String] = {
-    return generatedFiles.toArray(new Array[String](generatedFiles.size())).asInstanceOf[Array[String]]
+       return generatedFiles.toArray // (new Array[String](generatedFiles.size())).asInstanceOf[Array[String]]
     }
 
     /** Sets the entry point for this dynamic assembly. */
@@ -82,24 +79,28 @@ class AssemblyBuilder(name: AssemblyName)
     private var access : Int = _
 
     // all extern assemblies used in this assembly builder
-    protected var externAssemblies = new HashSet[Assembly]()
+    protected var externAssemblies = scala.collection.mutable.Set.empty[Assembly]
 
     // register an extern assembly
     protected def registerExternAssembly(assembly: Assembly) {
-	externAssemblies.add(assembly)
+	externAssemblies += assembly
     }
 
     // get all extern Assemblies used in this Assembly Builder
     def getExternAssemblies(): Array[Assembly] = {
-	externAssemblies = new HashSet[Assembly](Assembly.assemblies.values().asInstanceOf[java.util.Collection[Assembly]])
-	externAssemblies.remove(this)
-	return externAssemblies.toArray(new Array[Assembly](0)).asInstanceOf[Array[Assembly]]
+      externAssemblies = scala.collection.mutable.Set[Assembly]()
+      val iter = Assembly.assemblies.values().iterator
+      while (iter.hasNext) {
+        externAssemblies += iter.next.asInstanceOf[Assembly]
+    }
+      externAssemblies -= this
+      return externAssemblies.toArray
     }
 
     def loadModules() {}
 
     // contains list of generated .msil files after calling Save()
-    var generatedFiles: ArrayList[String] = new ArrayList[String]()
+    var generatedFiles = scala.collection.mutable.ArrayBuffer.empty[String]
 
     //##########################################################################
     //##########################################################################
