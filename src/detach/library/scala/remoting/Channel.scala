@@ -74,7 +74,7 @@ class Channel protected (socket: Socket) {
             super.resolveClass(desc)
         }
   }
-/*
+
   // lazy modifier is required!
   private lazy val in =
     try {
@@ -94,7 +94,7 @@ class Channel protected (socket: Socket) {
         error("Output stream undefined: "+e.getMessage+" ("+this+")")
         null
     }
-*/
+
   /** <code>receive&lt;primtype&gt;</code> methods may throw an
    *  <code>IOException</code>.
    */
@@ -117,7 +117,6 @@ class Channel protected (socket: Socket) {
    */
   @throws(classOf[ChannelException])
   def receive[T](implicit expected: reflect.Manifest[T]): T = {
-    val in = new CustomObjectInputStream(socket.getInputStream)
     val found = in.readObject().asInstanceOf[reflect.Manifest[_]]
     info("receive: found="+found+", expected="+expected)
     import scala.reflect.Manifest
@@ -150,7 +149,6 @@ class Channel protected (socket: Socket) {
   /** <code>send</code> method may throw an <code>IOException</code>.
    */
   def send[T](x: T)(implicit m: reflect.Manifest[T]) {
-    val out = new ObjectOutputStream(socket.getOutputStream)
     out writeObject m
     x match {
       case x: Unit    => // nop

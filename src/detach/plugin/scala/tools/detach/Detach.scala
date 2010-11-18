@@ -25,7 +25,7 @@ abstract class Detach extends PluginComponent
     new DetachTransformer(unit)
 
   // set with the `-P:detach:enable` plugin option (see DetachPlugin) */
-  var isEnabled = false
+  protected[detach] var isEnabled = false
 
   private class DetachTransformer(unit: CompilationUnit)
   extends TypingTransformer(unit) {

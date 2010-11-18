@@ -22,6 +22,6 @@ object Debug extends runtime.remoting.Debug {
 
   def getLocation(obj: AnyRef): String = {
     val s = obj.getClass().getClassLoader().toString()
-    s.substring(s.indexOf('['))
+    s substring s.indexOf('[')
   }
 }
