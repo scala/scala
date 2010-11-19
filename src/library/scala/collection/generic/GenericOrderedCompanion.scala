@@ -17,6 +17,11 @@ import mutable.Builder
 
 
 
+/** This class represents companions of classes which require the ordered trait
+ *  for their element types.
+ *
+ *  @author Aleksandar Prokopec
+ */
 abstract class GenericOrderedCompanion[+CC[X] <: Traversable[X]] {
   type Coll = CC[_]
 

@@ -17,6 +17,11 @@ import annotation.unchecked.uncheckedVariance
 
 
 
+/** This trait represents collections classes which require class
+ *  manifests for their element types.
+ *
+ *  @author Aleksandar Prokopec
+ */
 trait GenericClassManifestTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
   implicit protected[this] val manifest: ClassManifest[A]
   def classManifestCompanion: GenericClassManifestCompanion[CC]

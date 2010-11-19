@@ -16,7 +16,11 @@ import mutable.Builder
 
 
 
-
+/** This class represents companions of classes which require classmanifests
+ *  for their element types.
+ *
+ *  @author Aleksandar Prokopec
+ */
 abstract class GenericClassManifestCompanion[+CC[X] <: Traversable[X]] {
   type Coll = CC[_]
 

@@ -16,7 +16,11 @@ import annotation.unchecked.uncheckedVariance
 
 
 
-
+/** This trait represents collections classes which require
+ *  ordered element types.
+ *
+ *  @author Aleksandar Prokopec
+ */
 trait GenericOrderedTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBuilder[A, CC[A] @uncheckedVariance] {
   implicit protected[this] val ord: Ordering[A]
   def orderedCompanion: GenericOrderedCompanion[CC]

@@ -17,14 +17,18 @@ import mutable.{ Buffer, ListBuffer, ArrayBuffer }
  *  @tparam A    the element type of the collection
  *
  *  @define traversableonceinfo
- *  This trait is composed of those methods which can be implemented
- *  solely in terms of foreach and which do not need access to a Builder.
- *  It represents the implementations common to Iterators and
- *  Traversables, such as folds, conversions, and other operations which
+ *  This trait exists primarily to eliminate code duplication between
+ *  `Iterator` and `Traversable`, and thus implements some of the common
+ *  methods that can be implemented solely in terms of foreach without
+ *  access to a `Builder`. It also includes a number of abstract methods
+ *  whose implementations are provided by `Iterator`, `Traversable`, etc.
+ *  It contains implementations common to `Iterators` and
+ *  `Traversables`, such as folds, conversions, and other operations which
  *  traverse some or all of the elements and return a derived value.
- *  Note that, while all the methods here can implemented in terms of
- *  foreach, some of them are defined in subtraits such as `TraversableLike`
- *  and `Iterator`.
+ *  Directly subclassing `TraversableOnce` is not recommended - instead,
+ *  consider declaring an `Iterator` with a `next` and `hasNext` method,
+ *  creating an `Iterator` with one of the methods on the `Iterator` object,
+ *  or declaring a subclass of `Traversable`.
  *
  *  @author Martin Odersky
  *  @author Paul Phillips
