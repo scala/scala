@@ -65,11 +65,10 @@ object PagedSeq {
   def fromLines(source: Iterator[String]): PagedSeq[Char] = {
     var isFirst = true
     fromStrings(source map { line =>
-      if (isFirst) line
-      else {
+      if (isFirst) {
         isFirst = false
-        "\n"+line
-      }
+        line
+      } else "\n"+line
     })
   }
 
