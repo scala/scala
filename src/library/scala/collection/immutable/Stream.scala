@@ -121,7 +121,7 @@ self =>
   @inline private def asThat[That](x: AnyRef): That     = x.asInstanceOf[That]
   @inline private def asStream[B](x: AnyRef): Stream[B] = x.asInstanceOf[Stream[B]]
   @inline private def buildsThis[B, That](bf: CanBuildFrom[Stream[A], B, That]) = bf.isInstanceOf[Stream.StreamCanBuildFrom[_]]
-  @inline private def ifTargetThis[B, That](bf: CanBuildFrom[Stream[A], B, That])(ifIs: => Stream[B])(ifNot: => That): That =
+  private def ifTargetThis[B, That](bf: CanBuildFrom[Stream[A], B, That])(ifIs: => Stream[B])(ifNot: => That): That =
     if (buildsThis(bf)) ifIs.asInstanceOf[That]
     else ifNot
 
