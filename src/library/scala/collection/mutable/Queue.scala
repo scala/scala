@@ -29,9 +29,16 @@ import generic._
  *  @define willNotTerminateInf
  */
 @serializable @cloneable
-class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
+class Queue[A]
+extends MutableList[A]
+   with GenericTraversableTemplate[A, Queue]
+   with Cloneable[Queue[A]]
+{
+  override def companion: GenericCompanion[Queue] = Queue
 
-  protected def this(fst: LinkedList[A], lst: LinkedList[A], lng: Int) {
+  override protected[this] def newBuilder = companion.newBuilder[A]
+
+  private[mutable] def this(fst: LinkedList[A], lst: LinkedList[A], lng: Int) {
     this()
     first0 = fst
     last0 = lst
@@ -159,6 +166,8 @@ class Queue[A] extends MutableList[A] with Cloneable[Queue[A]] {
 }
 
 
-object Queue {
-  def apply[A](xs: A*): Queue[A] = new Queue[A] ++= xs
+object Queue extends SeqFactory[Queue] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Queue[A]] = new GenericCanBuildFrom[A]
+
+  def newBuilder[A]: Builder[A, Queue[A]] = new MutableList[A] mapResult { _.toQueue }
 }

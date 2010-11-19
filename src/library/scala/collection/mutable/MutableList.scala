@@ -26,15 +26,21 @@ import immutable.{List, Nil}
  *  @since   1
  */
 @serializable @SerialVersionUID(5938451523372603072L)
-class MutableList[A] extends LinearSeq[A]
-                        with LinearSeqOptimized[A, MutableList[A]]
-                        with Builder[A, MutableList[A]] {
+class MutableList[A]
+extends LinearSeq[A]
+   with LinearSeqOptimized[A, MutableList[A]]
+   with GenericTraversableTemplate[A, MutableList]
+   with Builder[A, MutableList[A]]
+{
+  override def companion: GenericCompanion[MutableList] = MutableList
 
-  override protected[this] def newBuilder = new MutableList[A]
+  override protected[this] def newBuilder: Builder[A, MutableList[A]] = new MutableList[A]
 
   protected var first0: LinkedList[A] = new LinkedList[A]
-  protected var last0: LinkedList[A] = _ // undefined if first0.isEmpty
+  protected var last0: LinkedList[A] = first0
   protected var len: Int = 0
+
+  def toQueue = new Queue(first0, last0, len)
 
   /** Is the list empty?
    */
@@ -136,8 +142,10 @@ class MutableList[A] extends LinearSeq[A]
 }
 
 
-object MutableList {
+object MutableList extends SeqFactory[MutableList] {
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, MutableList[A]] = new GenericCanBuildFrom[A]
 
+  def newBuilder[A]: Builder[A, MutableList[A]] = new MutableList[A]
 }
 
 
