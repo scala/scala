@@ -192,7 +192,7 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
       //   if (tail eq next) this
       //   else new tail.Node(key, value)
       // }
-      // we use an imperative one instead:
+      // we use an imperative one instead (and use an auxiliary list to preserve order!):
       var cur: ListMap[A, B1] = this
       var lst: List[(A, B1)] = Nil
       while (cur.nonEmpty) {

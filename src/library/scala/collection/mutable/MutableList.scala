@@ -42,7 +42,7 @@ class MutableList[A] extends LinearSeq[A]
 
   /** Returns the first element in this list
    */
-  override def head: A = first0.head
+  override def head: A = if (nonEmpty) first0.head else throw new NoSuchElementException
 
   /** Returns the rest of this list
    */
@@ -134,3 +134,12 @@ class MutableList[A] extends LinearSeq[A]
 
   def result = this
 }
+
+
+object MutableList {
+
+}
+
+
+
+
