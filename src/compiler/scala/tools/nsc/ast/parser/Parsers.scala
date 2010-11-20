@@ -1501,7 +1501,9 @@ self =>
       if (tok == EQUALS && eqOK) in.nextToken()
       else accept(LARROW)
       val rhs = expr()
-      enums += makeGenerator(r2p(start, point, in.lastOffset), pat, tok == EQUALS, rhs)
+      enums += makeGenerator(r2p(start, point, in.lastOffset max start), pat, tok == EQUALS, rhs)
+      // why max above? IDE stress tests have shown that lastOffset could be less than start,
+      // I guess this happens if instead if a for-expression we sit on a closing paren.
       while (in.token == IF) enums += makeFilter(in.offset, guard())
     }
 
