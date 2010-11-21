@@ -145,7 +145,13 @@ self =>
   def pollForWork() {
     scheduler.pollInterrupt() match {
       case Some(ir) =>
-        ir.execute(); pollForWork()
+	try {
+	  activeLocks += 1
+          ir.execute()
+	} finally {
+	  activeLocks -= 1
+	}
+        pollForWork()
       case _ =>
     }
     if (pendingResponse.isCancelled)
