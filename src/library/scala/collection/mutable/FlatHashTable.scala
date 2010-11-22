@@ -16,6 +16,10 @@ package mutable
  *  This trait is used internally. It can be mixed in with various collections relying on
  *  hash table as an implementation.
  *
+ *  @coll flat hash table
+ *
+ *  @define cannotStoreNull '''Note''': A $coll cannot store `null` elements.
+ *
  *  @since 2.3
  *
  *  @tparam A   the type of the elements contained in the flat hash table.
@@ -343,7 +347,9 @@ private[collection] object FlatHashTable {
     // so that:
     protected final def sizeMapBucketSize = 1 << sizeMapBucketBitSize
 
-    protected def elemHashCode(elem: A) = if (elem == null) 0 else elem.hashCode()
+    protected def elemHashCode(elem: A) =
+      if (elem == null) throw new IllegalArgumentException("Flat hash tables cannot contain null elements.")
+      else elem.hashCode()
 
     protected final def improve(hcode: Int) = {
       // var h: Int = hcode + ~(hcode << 9)
