@@ -976,6 +976,10 @@ abstract class RefChecks extends InfoTransform {
             }
           } else {
             def lazyNestedObjectTrees(transformedInfo: Boolean) = {
+              // transformedInfo flag is necessary here because it is possible
+              // that the object info was already run through the transformInfo.
+              // Since we do not want to have duplicate lazy accessors
+              // (through duplicate nested object -> lazy val transformation) we have this check here.
               val cdef = ClassDef(mods | MODULE, name, List(), impl)
                 .setPos(tree.pos)
                 .setSymbol(if (!transformedInfo) sym.moduleClass else sym.lazyAccessor)

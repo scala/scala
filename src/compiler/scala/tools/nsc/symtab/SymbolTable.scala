@@ -39,15 +39,6 @@ abstract class SymbolTable extends reflect.generic.Universe
   /** Are we compiling for .NET ? */
   def forMSIL: Boolean
 
-  protected def trackTypeIDE(sym : Symbol) : Boolean = true
-  def compare(sym : Symbol, name : Name) = sym.name == name
-  def verifyAndPrioritize[T](g : Symbol => Symbol)(pt : Type)(f : => T) = f
-  def trackSetInfo[T <: Symbol](sym : T)(info : Type) : T = {
-    sym.setInfo(info); sym
-  }
-  def notifyImport(what : Name, container : Type, from : Name, to : Name) : Unit = {}
-  def sanitize(tree : Tree) : Tree = tree
-
   /** A period is an ordinal number for a phase in a run.
    *  Phases in later runs have higher periods than phases in earlier runs.
    *  Later phases have higher periods than earlier phases in the same run.

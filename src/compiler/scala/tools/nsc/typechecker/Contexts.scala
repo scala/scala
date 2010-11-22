@@ -93,8 +93,8 @@ trait Contexts { self: Analyzer =>
 
   class Context private[typechecker] {
     var unit: CompilationUnit = _
-    var tree: Tree = _ // Tree associated with this context
-    var owner: Symbol = NoSymbol// The current owner
+    var tree: Tree = _                      // Tree associated with this context
+    var owner: Symbol = NoSymbol            // The current owner
     var scope: Scope = _                    // The current scope
     var outer: Context = _                  // The next outer context
     var enclClass: Context = _              // The next outer context whose tree is a
@@ -150,7 +150,7 @@ trait Contexts { self: Analyzer =>
              scope: Scope, imports: List[ImportInfo]): Context = {
       val c = new Context
       c.unit = unit
-      c.tree = /*sanitize*/(tree) // used to be for IDE
+      c.tree = tree
       c.owner = owner
       c.scope = scope
 
@@ -588,9 +588,6 @@ trait Contexts { self: Analyzer =>
       var renamed = false
       var selectors = tree.selectors
       while (selectors != Nil && result == NoSymbol) {
-//        if (selectors.head.name != nme.WILDCARD) // used to be for IDE
-//          notifyImport(name, qual.tpe, selectors.head.name, selectors.head.rename)
-
         if (selectors.head.rename == name.toTermName)
           result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
             if (name.isTypeName) selectors.head.name.toTypeName else selectors.head.name)

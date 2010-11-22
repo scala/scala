@@ -147,8 +147,7 @@ trait Namers { self: Analyzer =>
           newS.name.length==1 && newS.name(0)=='_') //@M: allow repeated use of `_' for higher-order type params
     }
 
-    // IDE hook
-    protected def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = sym.setInfo(tpe)
+    private def setInfo[Sym <: Symbol](sym : Sym)(tpe : LazyType) : Sym = sym.setInfo(tpe)
 
     private def doubleDefError(pos: Position, sym: Symbol) {
       context.error(pos,
