@@ -138,6 +138,7 @@ trait Symbols { self: Universe =>
     final def isImplClass = isClass && hasFlag(IMPLCLASS) // Is this symbol an implementation class for a mixin?
     final def isLazyAccessor = isLazy && lazyAccessor != NoSymbol
     final def isMethod = isTerm && hasFlag(METHOD)
+    final def isVarargsMethod = isMethod && hasFlag(VARARGS)
     final def isModule = isTerm && hasFlag(MODULE)
     final def isModuleClass = isClass && hasFlag(MODULE)
     final def isOverloaded = hasFlag(OVERLOADED)

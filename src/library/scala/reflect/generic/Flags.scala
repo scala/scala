@@ -78,6 +78,8 @@ class Flags extends ModifierFlags {
   final val SPECIALIZED   = 0x10000000000L// symbol is a generated specialized member
   final val VBRIDGE       = 0x40000000000L// symbol is a varargs bridge
 
+  final val VARARGS       = 0x80000000000L// symbol is a Java-style varargs method
+
   // pickling and unpickling of flags
 
   // The flags from 0x001 to 0x800 are different in the raw flags

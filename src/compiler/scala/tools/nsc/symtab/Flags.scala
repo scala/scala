@@ -55,7 +55,7 @@ package symtab
 // 40:     SPECIALIZED
 // 41:   DEFAULTINIT/M
 // 42:         VBRIDGE
-// 43:
+// 43:         VARARGS
 // 44:
 // 45:
 // 46:
@@ -192,7 +192,7 @@ class Flags extends reflect.generic.Flags {
     case         SPECIALIZED => "<specialized>"                       // (1L << 40)
     case         DEFAULTINIT => "<defaultinit>"                       // (1L << 41)
     case             VBRIDGE => "<vbridge>"                           // (1L << 42)
-    case      0x80000000000L => ""                                    // (1L << 43)
+    case             VARARGS => "<varargs>"                           // (1L << 43)
     case     0x100000000000L => ""                                    // (1L << 44)
     case     0x200000000000L => ""                                    // (1L << 45)
     case     0x400000000000L => ""                                    // (1L << 46)

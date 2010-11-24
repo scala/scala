@@ -1881,7 +1881,8 @@ abstract class GenJVM extends SubComponent {
         if (sym.isFinal && !sym.enclClass.isInterface && !sym.isClassConstructor) ACC_FINAL else 0,
         if (sym.isStaticMember) ACC_STATIC else 0,
         if (sym.isBridge) ACC_BRIDGE else 0,
-        if (sym.isClass && !sym.isInterface) ACC_SUPER else 0
+        if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
+        if (sym.isVarargsMethod) ACC_VARARGS else 0
       )
     }
 

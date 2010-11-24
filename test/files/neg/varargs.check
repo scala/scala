@@ -1,0 +1,7 @@
+varargs.scala:11: error: A method without repeated parameters cannot be annotated with the `varargs` annotation.
+  @varargs def nov(a: Int) = 0
+               ^
+varargs.scala:13: error: A method with a varargs annotation produces a forwarder method with the same signature (a: Int,b: Array[java.lang.String])Int as an existing method.
+  @varargs def v2(a: Int, b: String*) = 0
+               ^
+two errors found

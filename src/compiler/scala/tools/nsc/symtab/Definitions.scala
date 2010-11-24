@@ -129,6 +129,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val SwitchClass                = getClass("scala.annotation.switch")
     lazy val ElidableMethodClass        = getClass("scala.annotation.elidable")
     lazy val ImplicitNotFoundClass      = getClass("scala.annotation.implicitNotFound")
+    lazy val VarargsClass               = getClass("scala.annotation.varargs")
     lazy val FieldTargetClass           = getClass("scala.annotation.target.field")
     lazy val GetterTargetClass          = getClass("scala.annotation.target.getter")
     lazy val SetterTargetClass          = getClass("scala.annotation.target.setter")
@@ -379,6 +380,8 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       case _ =>
         false
     }
+
+    def isSeqType(tp: Type) = cond(tp.normalize) { case TypeRef(_, SeqClass, List(tparam)) => true }
 
     def seqType(arg: Type)   = typeRef(SeqClass.typeConstructor.prefix, SeqClass, List(arg))
     def arrayType(arg: Type) = typeRef(ArrayClass.typeConstructor.prefix, ArrayClass, List(arg))

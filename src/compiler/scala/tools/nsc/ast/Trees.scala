@@ -344,7 +344,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
 
   case class Parens(args: List[Tree]) extends Tree // only used during parsing
 
-  /** emitted by typer, eliminated by refchecks **/
+  /** emitted by typer, eliminated by refchecks */
   case class TypeTreeWithDeferredRefCheck()(val check: () => TypeTree) extends AbsTypeTree
 
 // ----- subconstructors --------------------------------------------
