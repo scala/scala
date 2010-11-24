@@ -6,7 +6,6 @@
 **                          |/                                          **
 \*                                                                      */
 
-
 /** This program generates the ProductN, TupleN, FunctionN,
  *  and AbstractFunctionN, where 0 <= N <= MAX_ARITY.
  *
@@ -49,6 +48,7 @@ object genprod {
     def covariantSpecs  = ""
     def contravariantSpecs = ""
     def contraCoArgs    = typeArgsString((targs map (contravariantSpecs + "-" + _)) ::: List(covariantSpecs + "+R"))
+    def constructorArgs = (targs).map( _.toLowerCase ) mkString ","
     def fields          = (mdefs, targs).zipped.map(_ + ":" + _) mkString ","
     def funArgs         = (vdefs, targs).zipped.map(_ + ":" + _) mkString ","
 
@@ -133,15 +133,17 @@ object FunctionOne extends Function(1) {
  * """)
 
   override def moreMethods = """
-  /** (f compose g)(x) ==  f(g(x))
+  /** Returns a function taking one argument that applies this function to `g` applied to the argument.
+   * @return a function `f` such that `f(x) == apply(g(x))`
    */
   def compose[A](g: A => T1): A => R = { x => apply(g(x)) }
 
-  /** (f andThen g)(x) ==  g(f(x))
+  /** Returns a function taking one argument that applies `g` to this function applied to the argument.
+   * @return a function `f` such that `f(x) == g(apply(x))`
    */
   def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 
-  /** Turns a function A => Option[B] into a PartialFunction[A, B].  Important note:
+  /** Turns a function `A => Option[B]` into a `PartialFunction[A, B]`.  Important note:
    *  this transformation implies the original function will be called 2 or more
    *  times on each logical invocation, because the only way to supply an implementation
    *  of isDefinedAt is to call the function and examine the return value.
@@ -189,7 +191,7 @@ object Function
 
 class Function(val i: Int) extends Group("Function") with Arity {
   val functionNTemplate = """
- * In the following example the definition of
+ * In the following example, the definition of
  *    %s is a shorthand for the anonymous class
  *    definition %s:
  *
@@ -205,6 +207,10 @@ class Function(val i: Int) extends Group("Function") with Arity {
  *  {descriptiveComment}
  */
 trait {className}{contraCoArgs} extends AnyRef {{ self =>
+  /**
+   * Applies this function to the argument{s}.
+   * @return the results of application of this function to the passed-in argument{s}
+   */
   def apply({funArgs}): R
   override def toString() = {toStr}
   {moreMethods}
@@ -229,16 +235,21 @@ trait {className}{contraCoArgs} extends AnyRef {{ self =>
 
   // f(x1,x2,x3,x4,x5,x6)  == (f.curried)(x1)(x2)(x3)(x4)(x5)(x6)
   def curryComment = { """
-  /** f%s  == (f.curried)%s
+  /**
+   * Returns a curried version of this function.
+   * @return a function `f` such that `f%s == apply%s`
    */
-""".format(commaXs, xdefs map ("(" + _ + ")") mkString)
+""".format(xdefs map ("(" + _ + ")") mkString, commaXs)
   }
 
   def tupleMethod = {
     def comment = """
-  /* f%s == (f.tupled)(Tuple%d%s)
+  /**
+   * Returns a version of this function that takes a [[scala.Tuple%d]] as its argument
+   * instead of %d arguments.
+   * @return a function `f` such that `f(%s) == f(Tuple%d%s) == apply%s`
    */
-""".format(commaXs, i, commaXs)
+""".format(i,i,commaXs, i, commaXs, commaXs)
     def body = "case Tuple%d%s => apply%s".format(i, commaXs, commaXs)
 
     comment + "  def tupled: Tuple%d%s => R = {\n    %s\n  }\n".format(i, invariantArgs, body)
@@ -286,7 +297,10 @@ object TupleTwo extends Tuple(2)
   override def imports = Tuple.zipImports
   override def covariantSpecs = "@specialized(Int, Long, Double) "
   override def moreMethods = """
-  /** Swap the elements of the tuple */
+  /** Swaps the elements of this `Tuple`.
+   * @return a new Tuple where the first element is the second element of this Tuple and the
+   * second element is the first element of this Tuple.
+   */
   def swap: Tuple2[T2,T1] = Tuple2(_2, _1)
 
   @deprecated("Use `zipped` instead.")
@@ -296,7 +310,16 @@ object TupleTwo extends Tuple(2)
     zipped map ((x, y) => ((x, y)))
   }
 
-  /** Wraps a tuple in a `Zipped`, which supports 2-ary generalisations of map, flatMap, filter,...
+  /** Wraps a tuple in a `Zipped`, which supports 2-ary generalisations of `map`, `flatMap`, `filter`, etc.
+   * Note that there must be an implicit value to convert this tuple's types into a [[scala.collection.TraversableLike]]
+   * or [[scala.collection.IterableLike]].
+   * {{{
+   * scala> val tuple = (List(1,2,3),List('a','b','c'))
+   * tuple: (List[Int], List[Char]) = (List(1, 2, 3),List(a, b, c))
+   *
+   * scala> tuple.zipped map { (x,y) => x + ":" + y }
+   * res6: List[java.lang.String] = List(1:a, 2:b, 3:c)
+   * }}}
    *
    * @see Zipped
    * $willNotTerminateInf
@@ -395,7 +418,16 @@ object TupleThree extends Tuple(3) {
     zipped map ((x, y, z) => ((x, y, z)))
   }
 
-  /** Wraps a tuple in a `Zipped`, which supports 3-ary generalisations of map, flatMap, filter,...
+  /** Wraps a tuple in a `Zipped`, which supports 3-ary generalisations of `map`, `flatMap`, `filter`, etc.
+   * Note that there must be an implicit value to convert this tuple's types into a [[scala.collection.TraversableLike]]
+   * or [[scala.collection.IterableLike]].
+   * {{{
+   * scala> val tuple = (List(1,2,3),List('a','b','c'),List("x","y","z"))
+   * tuple: (List[Int], List[Char], List[java.lang.String]) = (List(1, 2, 3),List(a, b, c),List(x, y, z))
+   *
+   * scala> tuple.zipped map { (x,y,z) => x + ":" + y + ":" + z}
+   * res8: List[java.lang.String] = List(1:a:x, 2:b:y, 3:c:z)
+   * }}}
    *
    * @see Zipped
    * $willNotTerminateInf
@@ -512,8 +544,11 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity
   def apply() = {
 <file name={fileName}>{header}
 
-/** {className} is the canonical representation of a @see {Product.className(i)}
+/** A tuple of {i} elements; the canonical representation of a [[scala.{Product.className(i)}]].
  *  {descriptiveComment}
+ *
+ *  @constructor Create a new tuple with {i} elements. Note that it is more idiomatic to create a {className} via `({constructorArgs})`.
+{to.map { index => " * @param _" + index + " element " + index + " of this `Tuple`\n" }}
  */
 case class {className}{covariantArgs}({fields})
   extends {Product.className(i)}{invariantArgs}
@@ -553,10 +588,10 @@ class Product(val i: Int) extends Group("Product") with Arity {
   val productElementComment = """
   /**
    *  Returns the n-th projection of this product if 0 < n <= productArity,
-   *  otherwise throws IndexOutOfBoundsException.
+   *  otherwise throws an `IndexOutOfBoundsException`.
    *
    *  @param n number of the projection to be returned
-   *  @return  same as _(n+1)
+   *  @return  same as `._(n+1)`, for example `productElement(1)` is the same as `._1`.
    *  @throws  IndexOutOfBoundsException
    */
 """
@@ -567,9 +602,9 @@ class Product(val i: Int) extends Group("Product") with Arity {
     "\n" + ((xs ::: List(default)) map ("    " + _ + "\n") mkString)
   }
   def proj = {
-    (mdefs, targs).zipped.map(
-      "  /** projection of this product */\n  def %s: %s\n\n".format(_, _)
-    ) mkString
+    (mdefs,targs).zipped.map( (_,_) ).zipWithIndex.map { case ((method,typeName),index) =>
+      "  /** Returns a projection of element %d of this product.\n   * @return a projection of element %d */\n  def %s: %s\n\n".format(index+1,index+1,method,typeName)
+    } mkString
   }
 
   def apply() = {

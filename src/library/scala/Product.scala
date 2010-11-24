@@ -6,12 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala
 
-/** The trait <code>Product</code> defines access functions for instances
- *  of products, in particular case classes.
+/** Base trait for all products.  See [[scala.Product2]].
  *
  *  @author  Burak Emir
  *  @version 1.0
@@ -19,8 +16,9 @@ package scala
  */
 trait Product extends Equals {
 
-  /** For a product <code>A(x_1,...,x_k)</code>, returns <code>x_(n+1)</code>
-   *  for <code>0 &lt;= n &lt; k</code>
+  /** Returns the nth element of this product, 0-based.  In other words, for a
+   * product <code>A(x_1,...,x_k)</code>, returns <code>x_(n+1)</code>
+   * where <code>0 &lt;= n &lt; k</code>
    *
    *  @param  n the index of the element to return
    *  @throws IndexOutOfBoundsException
@@ -28,7 +26,8 @@ trait Product extends Equals {
    */
   def productElement(n: Int): Any
 
-  /** return k for a product <code>A(x_1,...,x_k)</code>
+  /** Returns the size of this product.
+   * @return For a product <code>A(x_1,...,x_k)</code>, returns `k`
    */
   def productArity: Int
 
@@ -44,9 +43,11 @@ trait Product extends Equals {
   def productElements: Iterator[Any] = productIterator
 
   /**
-   *  By default the empty string. Implementations may override this
+   * Returns a string that is used in the `toString` method of subtraits/classes.
+   *  Implementations may override this
    *  method in order to prepend a string prefix to the result of the
    *  toString methods.
+   *  @return the empty string
    */
   def productPrefix = ""
 }
