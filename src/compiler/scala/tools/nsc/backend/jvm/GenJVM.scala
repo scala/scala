@@ -297,7 +297,6 @@ abstract class GenJVM extends SubComponent {
       if (sym.isMethod) {
         log("enclosing method for %s is %s".format(clazz, sym))
         var outerName = javaName(sym.enclClass)
-        if (outerName.endsWith("$")) outerName = outerName.dropRight(1)
         jclass.addAttribute(fjbgContext.JEnclosingMethodAttribute(jclass, outerName, javaName(sym), javaType(sym)))
       }
     }
