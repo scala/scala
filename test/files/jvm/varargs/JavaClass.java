@@ -10,5 +10,6 @@ public class JavaClass {
 	va.vs(4, "", "", "");
 	va.vi(1, 2, 3, 4);
         varargz(5, 1.0, 2.0, 3.0);
+	va.vt(16, "", "", "");
     }
 }

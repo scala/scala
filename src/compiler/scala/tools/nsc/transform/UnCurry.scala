@@ -734,10 +734,19 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
      */
     private def addJavaVarargsForwarders(dd: DefDef, flatdd: DefDef, tree: Tree) = if (repeatedParams.contains(dd.symbol)) {
       def toArrayType(tp: Type): Type = tp match {
-        case TypeRef(_, SeqClass, List(tparg)) => arrayType(tparg)
+        case TypeRef(_, SeqClass, List(tparg)) =>
+          // to prevent generation of an `Object` parameter from `Array[T]` parameter later
+          // as this would crash the Java compiler which expects an `Object[]` array for varargs
+          //   e.g.        def foo[T](a: Int, b: T*)
+          //   becomes     def foo[T](a: Int, b: Array[Object])
+          //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
+          if (tparg.typeSymbol.isTypeSkolem) arrayType(ObjectClass.tpe) else arrayType(tparg)
       }
       def toSeqType(tp: Type): Type = tp match {
         case TypeRef(_, ArrayClass, List(tparg)) => seqType(tparg)
+      }
+      def seqElemType(tp: Type): Type = tp match {
+        case TypeRef(_, SeqClass, List(tparg)) => tparg
       }
       def arrayElemType(tp: Type): Type = tp match {
         case TypeRef(_, ArrayClass, List(tparg)) => tparg
@@ -772,7 +781,10 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         val locals: List[ValDef] = for ((argsym, fp) <- (forwsym ARGS) zip flatparams) yield
           if (rpsymbols contains fp.symbol)
             VAL(forwsym.newValue(unit.fresh.newName("param$")).setInfo(fp.symbol.tpe)) === {
-              gen.mkWrapArray(Ident(argsym), arrayElemType(argsym.tpe))
+              gen.mkCast(
+                gen.mkWrapArray(Ident(argsym), arrayElemType(argsym.tpe)),
+                seqType(seqElemType(fp.symbol.tpe))
+              )
             }
           else null
         val emitted = for (l <- locals if l != null) yield l
@@ -791,7 +803,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
       }
 
       // check if the method with that name and those arguments already exists in the template
-      currentClass.info.decls.lookupAll(forwsym.name).find(s => s != forwsym && s.tpe.matches(forwsym.tpe)) match {
+      currentClass.info.member(forwsym.name).alternatives.find(s => s != forwsym && s.tpe.matches(forwsym.tpe)) match {
         case Some(s) => unit.error(dd.symbol.pos,
                                    "A method with a varargs annotation produces a forwarder method with the same signature "
                                    + s.tpe + " as an existing method.")
