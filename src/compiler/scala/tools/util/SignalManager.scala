@@ -6,6 +6,10 @@
 package scala.tools
 package util
 
+class SignalManager // dummy for ant
+
+/** Disabled.
+
 import sun.misc.{ Signal, SignalHandler }
 import SignalHandler._
 import nsc.io.timer
@@ -93,5 +97,4 @@ object SignalManager extends SignalManager {
   }
 }
 
-
-
+*/
