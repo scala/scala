@@ -81,6 +81,10 @@ extends ParSeq[Int]
 }
 
 
+object ParRange {
+  def apply(start: Int, end: Int, step: Int, inclusive: Boolean) =
+    new ParRange(start, end, step, inclusive)
+}
 
 
 

@@ -26,6 +26,8 @@ extends SetLike[T, Repr]
 
   override def empty: Repr
 
+  override def toParSet[U >: T] = this.asInstanceOf[ParSet[U]]
+
 }
 
 

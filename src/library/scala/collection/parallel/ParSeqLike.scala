@@ -72,10 +72,6 @@ self =>
     }
   }
 
-  /** A convenient shorthand for the signal context passing stackable modification.
-   */
-  //type SCPI <: SignalContextPassingIterator[ParIterator]
-
   /** A more refined version of the iterator found in the `ParallelIterable` trait,
    *  this iterator can be split into arbitrary subsets of iterators.
    *
@@ -304,6 +300,8 @@ self =>
   } otherwise super.corresponds(that)(p)
 
   override def toString = seq.mkString(stringPrefix + "(", ", ", ")")
+
+  override def toParSeq = this.asInstanceOf[ParSeq[T]] // TODO add a type bound for `Repr`
 
   override def view = new ParSeqView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr

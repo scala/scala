@@ -56,7 +56,7 @@ extends Map[A, B]
 
   def this() = this(null)
 
-  def par = new ParHashMap[A, B](contents)
+  def par = new ParHashMap[A, B](hashTableContents)
 
   def get(key: A): Option[B] = {
     val e = findEntry(key)
@@ -128,6 +128,11 @@ extends Map[A, B]
   private def readObject(in: java.io.ObjectInputStream) {
     init[B](in, new Entry(_, _))
   }
+
+  override def toParIterable = par
+
+  private type C = (A, B)
+  override def toParMap[D, E](implicit ev: C <:< (D, E)) = par.asInstanceOf[ParHashMap[D, E]]
 
 }
 

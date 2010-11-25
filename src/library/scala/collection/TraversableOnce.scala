@@ -469,6 +469,40 @@ trait TraversableOnce[+A] {
     b.result
   }
 
+  /* The following 4 methods are implemented in a generic way here,
+   * but are specialized further down the hierarchy where possible.
+   * In particular:
+   *
+   * - all concrete sequential collection classes that can be
+   *   parallelized have their corresponding `toPar*` methods
+   *   overridden (e.g. ArrayBuffer overrides `toParIterable`
+   *   and `toParSeq`)
+   * - ParIterableLike overrides all 4 methods
+   * - ParSeqLike again overrides `toParSeq`
+   * - ParSetLike again overrides `toParSet`
+   * - ParMapLike again overrides `toParMap`
+   */
+
+  def toParIterable: parallel.ParIterable[A] = toParSeq
+
+  def toParSeq: parallel.ParSeq[A] = {
+    val cb = parallel.mutable.ParArray.newCombiner[A]
+    for (elem <- this) cb += elem
+    cb.result
+  }
+
+  def toParSet[B >: A]: parallel.ParSet[B] = {
+    val cb = parallel.mutable.ParHashSet.newCombiner[B]
+    for (elem <- this) cb += elem
+    cb.result
+  }
+
+  def toParMap[T, U](implicit ev: A <:< (T, U)): parallel.ParMap[T, U] = {
+    val cb = parallel.mutable.ParHashMap.newCombiner[T, U]
+    for (elem <- this) cb += elem
+    cb.result
+  }
+
   /** Displays all elements of this $coll in a string using start, end, and
    *  separator strings.
    *

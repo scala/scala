@@ -666,13 +666,29 @@ self =>
 
   override def toList: List[T] = seq.toList
 
-  override def toIndexedSeq[S >: T]: collection.immutable.IndexedSeq[S] = seq.toIndexedSeq[S]
+  override def toIndexedSeq[U >: T]: collection.immutable.IndexedSeq[U] = seq.toIndexedSeq[U]
 
   override def toStream: Stream[T] = seq.toStream
 
-  override def toSet[S >: T]: collection.immutable.Set[S] = seq.toSet
+  override def toSet[U >: T]: collection.immutable.Set[U] = seq.toSet
 
   override def toSeq: Seq[T] = seq.toSeq
+
+  override def toIterator: Iterator[T] = seq.toIterator
+
+  override def toTraversable: Traversable[T] = seq.toTraversable
+
+  override def toBuffer[U >: T]: collection.mutable.Buffer[U] = seq.toBuffer
+
+  override def toMap[K, V](implicit ev: T <:< (K, V)): collection.immutable.Map[K, V] = seq.toMap
+
+  override def toParIterable = this.asInstanceOf[ParIterable[T]] // TODO add a type bound on Repr
+
+  override def toParSeq = seq.toParSeq
+
+  override def toParSet[U >: T] = seq.toParSet
+
+  override def toParMap[K, V](implicit ev: T <:< (K, V)) = seq.toParMap
 
   /* tasks */
 

@@ -92,6 +92,10 @@ extends Set[A]
     if (!isSizeMapDefined) sizeMapInitAndRebuild
   } else sizeMapDisable
 
+  override def toParIterable = par
+
+  override def toParSet[B >: A] = par.asInstanceOf[ParHashSet[B]]
+
 }
 
 /** $factoryInfo

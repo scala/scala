@@ -92,6 +92,11 @@ class HashMap[A, +B] extends Map[A,B] with MapLike[A, B, HashMap[A, B]] with Par
 
   def par = ParHashMap.fromTrie(this)
 
+  override def toParIterable = par
+
+  private type C = (A, B)
+  override def toParMap[D, E](implicit ev: C <:< (D, E)) = par.asInstanceOf[ParHashMap[D, E]]
+
 }
 
 /** $factoryInfo

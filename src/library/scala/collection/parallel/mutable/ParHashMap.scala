@@ -65,6 +65,8 @@ self =>
 
   def -=(key: K): this.type = { removeEntry(key); this }
 
+  override def stringPrefix = "ParHashMap"
+
   type SCPI = SignalContextPassingIterator[ParHashMapIterator]
 
   class ParHashMapIterator(start: Int, untilIdx: Int, totalSize: Int, e: DefaultEntry[K, V])

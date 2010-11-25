@@ -13,6 +13,7 @@ package mutable
 
 import scala.reflect.ClassManifest
 import scala.collection.generic._
+import scala.collection.parallel.mutable.ParArray
 
 /**
  *  A class representing `Array[T]`.
@@ -29,7 +30,11 @@ import scala.collection.generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedArray[T]] {
+abstract class WrappedArray[T]
+extends IndexedSeq[T]
+    with ArrayLike[T, WrappedArray[T]]
+    with Parallelizable[ParArray[T]]
+{
 
   override protected[this] def thisCollection: WrappedArray[T] = this
   override protected[this] def toCollection(repr: WrappedArray[T]): WrappedArray[T] = repr
@@ -49,6 +54,8 @@ abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedAr
   /** The underlying array */
   def array: Array[T]
 
+  def par = ParArray.handoff(array)
+
   override def toArray[U >: T : ClassManifest]: Array[U] =
     if (implicitly[ClassManifest[U]].erasure eq array.getClass.getComponentType)
       array.asInstanceOf[Array[U]]
@@ -64,6 +71,11 @@ abstract class WrappedArray[T] extends IndexedSeq[T] with ArrayLike[T, WrappedAr
    */
   override protected[this] def newBuilder: Builder[T, WrappedArray[T]] =
     new WrappedArrayBuilder[T](elemManifest)
+
+  override def toParIterable = par
+
+  override def toParSeq = par
+
 }
 
 /** A companion object used to create instances of `WrappedArray`.

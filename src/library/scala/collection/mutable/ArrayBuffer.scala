@@ -175,6 +175,11 @@ class ArrayBuffer[A](override protected val initialSize: Int)
   /** Defines the prefix of the string representation.
    */
   override def stringPrefix: String = "ArrayBuffer"
+
+  override def toParIterable = par
+
+  override def toParSeq = par
+
 }
 
 /** Factory object for the `ArrayBuffer` class.

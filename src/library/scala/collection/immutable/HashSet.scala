@@ -80,6 +80,11 @@ class HashSet[A] extends Set[A]
   protected def removed0(key: A, hash: Int, level: Int): HashSet[A] = this
 
   protected def writeReplace(): AnyRef = new HashSet.SerializationProxy(this)
+
+  override def toParIterable = par
+
+  override def toParSet[B >: A] = par.asInstanceOf[ParHashSet[B]]
+
 }
 
 /** $factoryInfo
