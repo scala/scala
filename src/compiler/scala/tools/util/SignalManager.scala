@@ -6,87 +6,188 @@
 package scala.tools
 package util
 
-class SignalManager // dummy for ant
-
-/** Disabled.
-
-import sun.misc.{ Signal, SignalHandler }
-import SignalHandler._
+import java.lang.reflect.{ Method, Constructor }
+import scala.tools.reflect._
+import scala.collection.{ mutable, immutable }
 import nsc.io.timer
+import nsc.util.{ ScalaClassLoader, Exceptional }
 
-/** Unofficial signal handling code.  According to sun it's unsupported,
- *  but it's too useful not to take advantage of.  Degrade gracefully.
+/** Signal handling code.  100% clean of any references to sun.misc:
+ *  it's all reflection and proxies and invocation handlers and lasers,
+ *  so even the choosiest runtimes will be cool with it.
+ *
+ *  Sun/Oracle says sun.misc.* is unsupported and therefore so is all
+ *  of this.  Simple examples:
+ *  {{{
+      val manager = scala.tools.util.SignalManager // or you could make your own
+      // Assignment clears any old handlers; += chains them.
+      manager("HUP") = println("HUP 1!")
+      manager("HUP") += println("HUP 2!")
+      // Use raise() to raise a signal: this will print both lines
+      manager("HUP").raise()
+      // See a report on every signal's current handler
+      manager.dump()
+ *  }}}
  */
-class SignalManager {
-  def apply(name: String): SignalWrapper =
-    try   { new SignalWrapper(new Signal(name)) }
+class SignalManager(classLoader: ScalaClassLoader) {
+  def this() = this(ScalaClassLoader.getSystemLoader)
+
+  object rSignalHandler extends Shield {
+    val className   = "sun.misc.SignalHandler"
+    val classLoader = SignalManager.this.classLoader
+
+    lazy val SIG_DFL = field("SIG_DFL") get null
+    lazy val SIG_IGN = field("SIG_IGN") get null
+
+    /** Create a new signal handler based on the function.
+     */
+    def apply(action: Invoked => Unit) = Mock.fromInterfaces(clazz) {
+      case inv @ Invoked.NameAndArgs("handle", _ :: Nil) => action(inv)
+    }
+    def empty = rSignalHandler(_ => ())
+  }
+  import rSignalHandler.{ SIG_DFL, SIG_IGN }
+
+  object rSignal extends Shield {
+    val className   = "sun.misc.Signal"
+    val classLoader = SignalManager.this.classLoader
+
+    lazy val handleMethod = method("handle", 2)
+    lazy val raiseMethod  = method("raise", 1)
+    lazy val numberMethod = method("getNumber", 0)
+
+    /** Create a new Signal with the given name.
+     */
+    def apply(name: String)                     = constructor(classOf[String]) newInstance name
+    def handle(signal: AnyRef, current: AnyRef) = handleMethod.invoke(null, signal, current)
+    def raise(signal: AnyRef)                   = raiseMethod.invoke(null, signal)
+    def number(signal: AnyRef): Int             = numberMethod.invoke(signal).asInstanceOf[Int]
+
+    class WSignal(val name: String) {
+      lazy val signal             = rSignal apply name
+      def number                  = rSignal number signal
+      def raise()                 = rSignal raise signal
+      def handle(handler: AnyRef) = rSignal.handle(signal, handler)
+
+      def setTo(body: => Unit)  = register(name, false, body)
+      def +=(body: => Unit)     = register(name, true, body)
+
+      /** It's hard to believe there's no way to get a signal's current
+       *  handler without replacing it, but if there is I couldn't find
+       *  it, so we have this swapping code.
+       */
+      def withCurrentHandler[T](f: AnyRef => T): T = {
+        val swap = handle(rSignalHandler.empty)
+
+        try f(swap)
+        finally handle(swap)
+      }
+
+      def handlerString() = withCurrentHandler {
+        case SIG_DFL    => "Default"
+        case SIG_IGN    => "Ignore"
+        case x          => "" + x
+      }
+      override def toString = "%10s  %s".format("SIG" + name,
+        try handlerString()
+        catch { case x: Exception => "VM threw " + Exceptional.unwrap(x) }
+      )
+    }
+  }
+  type WSignal = rSignal.WSignal
+
+  /** Adds a handler for the named signal.  If shouldChain is true,
+   *  the installed handler will call the previous handler after the
+   *  new one has executed.  If false, the old handler is dropped.
+   */
+  private def register(name: String, shouldChain: Boolean, body: => Unit) = {
+    val signal  = rSignal(name)
+    val current = rSignalHandler(_ => body)
+    val prev    = rSignal.handle(signal, current)
+
+    if (shouldChain) {
+      val chainer = rSignalHandler { inv =>
+        val signal = inv.args.head
+
+        inv invokeOn current
+        prev match {
+          case SIG_IGN | SIG_DFL  => ()
+          case _                  => inv invokeOn prev
+        }
+      }
+      rSignal.handle(signal, chainer)
+      chainer
+    }
+    else current
+  }
+
+  /** Use apply and update to get and set handlers.
+   */
+  def apply(name: String): WSignal =
+    try   { new WSignal(name) }
     catch { case x: IllegalArgumentException => new SignalError(x.getMessage) }
 
-  class ChainedHandler(prev: SignalHandler, current: SignalHandler) extends SignalHandler {
-    def handle(sig: Signal): Unit = {
-      current handle sig
-      if (prev != SIG_DFL && prev != SIG_IGN)
-        prev handle sig
-    }
-  }
-  class SignalWrapper(val signal: Signal) {
-    def name = signal.getName
-    def add(body: => Unit) = {
-      val handler = new SignalHandler { def handle(sig: Signal) = body }
-      val prev    = Signal.handle(signal, handler)
+  def update(name: String, body: => Unit): Unit = apply(name) setTo body
 
-      new ChainedHandler(prev, handler)
-    }
-    override def toString = "SIG" + name
-  }
-  class SignalError(message: String) extends SignalWrapper(null) {
+  class SignalError(message: String) extends WSignal(null) {
     override def toString = message
   }
 }
 
 object SignalManager extends SignalManager {
-  private implicit def mkSignalWrapper(name: String): SignalWrapper = this(name)
+  private implicit def mkWSignal(name: String): WSignal = this(name)
+  private lazy val signalNumberMap = all map (x => x.number -> x) toMap
 
-  def HUP: SignalWrapper    = "HUP"
-  def INT: SignalWrapper    = "INT"
-  def QUIT: SignalWrapper   = "QUIT"
-  def ILL: SignalWrapper    = "ILL"
-  def TRAP: SignalWrapper   = "TRAP"
-  def ABRT: SignalWrapper   = "ABRT"
-  def EMT: SignalWrapper    = "EMT"
-  def FPE: SignalWrapper    = "FPE"
-  def KILL: SignalWrapper   = "KILL"
-  def BUS: SignalWrapper    = "BUS"
-  def SEGV: SignalWrapper   = "SEGV"
-  def SYS: SignalWrapper    = "SYS"
-  def PIPE: SignalWrapper   = "PIPE"
-  def ALRM: SignalWrapper   = "ALRM"
-  def TERM: SignalWrapper   = "TERM"
-  def URG: SignalWrapper    = "URG"
-  def STOP: SignalWrapper   = "STOP"
-  def TSTP: SignalWrapper   = "TSTP"
-  def CONT: SignalWrapper   = "CONT"
-  def CHLD: SignalWrapper   = "CHLD"
-  def TTIN: SignalWrapper   = "TTIN"
-  def TTOU: SignalWrapper   = "TTOU"
-  def IO: SignalWrapper     = "IO"
-  def XCPU: SignalWrapper   = "XCPU"
-  def XFSZ: SignalWrapper   = "XFSZ"
-  def VTALRM: SignalWrapper = "VTALRM"
-  def PROF: SignalWrapper   = "PROF"
-  def WINCH: SignalWrapper  = "WINCH"
-  def INFO: SignalWrapper   = "INFO"
-  def USR1: SignalWrapper   = "USR1"
-  def USR2: SignalWrapper   = "USR2"
+  def all = List(
+    HUP, INT, QUIT, ILL, TRAP, ABRT, EMT, FPE,    // 1-8
+    KILL, BUS, SEGV, SYS, PIPE, ALRM, TERM, URG,  // 9-15
+    STOP, TSTP, CONT, CHLD, TTIN, TTOU, IO, XCPU, // 16-23
+    XFSZ, VTALRM, PROF, WINCH, INFO, USR1, USR2   // 24-31
+  )
+  def dump() = all foreach (x => println("%2s %s".format(x.number, x)))
+
+  def apply(sigNumber: Int): WSignal = signalNumberMap(sigNumber)
+
+  def HUP: WSignal    = "HUP"
+  def INT: WSignal    = "INT"
+  def QUIT: WSignal   = "QUIT"
+  def ILL: WSignal    = "ILL"
+  def TRAP: WSignal   = "TRAP"
+  def ABRT: WSignal   = "ABRT"
+  def EMT: WSignal    = "EMT"
+  def FPE: WSignal    = "FPE"
+  def KILL: WSignal   = "KILL"
+  def BUS: WSignal    = "BUS"
+  def SEGV: WSignal   = "SEGV"
+  def SYS: WSignal    = "SYS"
+  def PIPE: WSignal   = "PIPE"
+  def ALRM: WSignal   = "ALRM"
+  def TERM: WSignal   = "TERM"
+  def URG: WSignal    = "URG"
+  def STOP: WSignal   = "STOP"
+  def TSTP: WSignal   = "TSTP"
+  def CONT: WSignal   = "CONT"
+  def CHLD: WSignal   = "CHLD"
+  def TTIN: WSignal   = "TTIN"
+  def TTOU: WSignal   = "TTOU"
+  def IO: WSignal     = "IO"
+  def XCPU: WSignal   = "XCPU"
+  def XFSZ: WSignal   = "XFSZ"
+  def VTALRM: WSignal = "VTALRM"
+  def PROF: WSignal   = "PROF"
+  def WINCH: WSignal  = "WINCH"
+  def INFO: WSignal   = "INFO"
+  def USR1: WSignal   = "USR1"
+  def USR2: WSignal   = "USR2"
 
   /** Given a number of seconds, a signal, and a function: sets up a handler which upon
    *  receiving the signal once, calls the function with argument true, and if the
    *  signal is received again within the allowed time, calls it with argument false.
    *  (Otherwise it calls it with true and starts the timer over again.)
    */
-  def requireInterval(seconds: Int, wrapper: SignalWrapper)(fn: Boolean => Unit) = {
+  def requireInterval(seconds: Int, wrapper: WSignal)(fn: Boolean => Unit) = {
     var received = false
-    wrapper add {
+    wrapper setTo {
       if (received) fn(false)
       else {
         received = true
@@ -96,5 +197,3 @@ object SignalManager extends SignalManager {
     }
   }
 }
-
-*/

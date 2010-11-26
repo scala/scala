@@ -11,18 +11,19 @@ import File.pathSeparator
 import java.lang.{ Class, ClassLoader }
 import java.net.{ MalformedURLException, URL }
 import java.lang.reflect
+import java.util.concurrent.Future
 import reflect.InvocationTargetException
 
 import scala.collection.{ mutable, immutable }
 import scala.PartialFunction.{ cond, condOpt }
-import scala.tools.util.PathResolver
+import scala.tools.util.{ PathResolver, SignalManager }
 import scala.reflect.Manifest
 import scala.collection.mutable.{ ListBuffer, HashSet, HashMap, ArrayBuffer }
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import ScalaClassLoader.URLClassLoader
 import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately, unwrapping }
 
-import io.{ PlainFile, VirtualDirectory }
+import io.{ PlainFile, VirtualDirectory, spawn }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import util.{ ScalaPrefs, JavaStackFrame, SourceFile, BatchSourceFile, ScriptSourceFile, ClassPath, Chars, stringFromWriter }
@@ -181,6 +182,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       bindLastException = false
       operation
     }
+  }
+
+  private var currentExecution: Future[_] = null
+  private def sigintHandler = {
+    if (currentExecution == null) System.exit(1)
+    else currentExecution.cancel(true)
+  }
+  /** Try to install sigint handler: ignore failure. */
+  locally {
+    try   { SignalManager("INT") = sigintHandler }
+    catch { case _: Exception => () }
   }
 
   /** interpreter settings */
@@ -999,9 +1011,19 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           }
       }
 
-      catchingPromiscuously(onErr) {
-        unwrapping(wrapperExceptions: _*) {
-          (resultValMethod.invoke(loadedResultObject).toString, true)
+      /** Todo: clean this up. */
+      ultimately(currentExecution = null) {
+        catchingPromiscuously(onErr) {
+          unwrapping(wrapperExceptions: _*) {
+            /** Running it in a separate thread so it's easy to interrupt on ctrl-C. */
+            val future = spawn(resultValMethod.invoke(loadedResultObject).toString)
+            currentExecution = future
+            while (!future.isDone)
+              Thread.`yield`
+
+            if (future.isCancelled) ("Execution interrupted by signal.\n", false)
+            else (future.get(), true)
+          }
         }
       }
     }

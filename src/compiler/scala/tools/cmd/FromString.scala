@@ -7,7 +7,7 @@ package scala.tools
 package cmd
 
 import nsc.io.{ Path, File, Directory }
-import reflect.OptManifest
+import scala.reflect.OptManifest
 
 /** A general mechanism for defining how a command line argument
  *  (always a String) is transformed into an arbitrary type.  A few

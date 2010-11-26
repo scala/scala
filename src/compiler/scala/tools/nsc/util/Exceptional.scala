@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package util
 
-import java.lang.reflect.InvocationTargetException
+import java.lang.reflect.{ InvocationTargetException, UndeclaredThrowableException }
 import io.{ Sources, Fileish }
 import scala.tools.util.StringOps._
 
@@ -117,7 +117,7 @@ object Exceptional {
     case ex   => x :: causes(ex)
   }
   def unwrap(x: Throwable): Throwable = x match {
-    case _: InvocationTargetException | _: ExceptionInInitializerError if x.getCause != null  => unwrap(x.getCause)
+    case _: InvocationTargetException | _: ExceptionInInitializerError | _: UndeclaredThrowableException if x.getCause != null  => unwrap(x.getCause)
     case _                                                                                    => x
   }
 }

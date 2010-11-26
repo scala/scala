@@ -56,6 +56,9 @@ trait ScalaClassLoader extends JavaClassLoader {
     result
   }
 
+  def constructorsOf[T <: AnyRef : Manifest]: List[Constructor[T]] =
+    manifest[T].erasure.getConstructors.toList map (_.asInstanceOf[Constructor[T]])
+
   /** The actual bytes for a class file, or an empty array if it can't be found. */
   def findBytesForClassName(s: String): Array[Byte] = {
     val name = s.replaceAll("""\.""", "/") + ".class"
@@ -80,6 +83,11 @@ trait ScalaClassLoader extends JavaClassLoader {
 }
 
 object ScalaClassLoader {
+  implicit def apply(cl: JavaClassLoader): ScalaClassLoader = {
+    val loader = if (cl == null) JavaClassLoader.getSystemClassLoader() else cl
+    new JavaClassLoader(loader) with ScalaClassLoader
+  }
+
   class URLClassLoader(urls: Seq[URL], parent: JavaClassLoader)
       extends java.net.URLClassLoader(urls.toArray, parent)
       with ScalaClassLoader {
@@ -97,7 +105,7 @@ object ScalaClassLoader {
 
   def setContextLoader(cl: JavaClassLoader) = Thread.currentThread.setContextClassLoader(cl)
   def getContextLoader() = Thread.currentThread.getContextClassLoader()
-  def getSystemLoader(): ScalaClassLoader = new JavaClassLoader(JavaClassLoader.getSystemClassLoader()) with ScalaClassLoader
+  def getSystemLoader(): ScalaClassLoader = ScalaClassLoader(null)
   def defaultParentClassLoader() = findExtClassLoader()
 
   def fromURLs(urls: Seq[URL], parent: ClassLoader = defaultParentClassLoader()): URLClassLoader =
