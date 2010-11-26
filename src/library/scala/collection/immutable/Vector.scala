@@ -636,7 +636,16 @@ final class VectorIterator[+A](_startIndex: Int, _endIndex: Int) extends Iterato
     res
   }
 
-  // TODO: drop (important?)
+  private[collection] def remainingElementCount: Int = (_endIndex - (blockIndex + lo)) max 0
+
+  /** Creates a new vector which consists of elements remaining in this iterator.
+   *  Such a vector can then be split into several vectors using methods like `take` and `drop`.
+   */
+  private[collection] def remainingVector: Vector[A] = {
+    val v = new Vector(blockIndex + lo, _endIndex, blockIndex + lo)
+    v.initFrom(this)
+    v
+  }
 
   @deprecated("this method is experimental and will be removed in a future release")
   @inline def foreachFast[U](f: A =>  U) { while (hasNext) f(next()) }
