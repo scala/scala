@@ -7,6 +7,10 @@ import collection._
 object Test {
 
   def main(args: Array[String]) {
+    // disabled
+  }
+
+  def testConversions {
     // seq conversions
     assertSeq(parallel.mutable.ParArray(1, 2, 3))
     assertSeq(parallel.mutable.ParHashMap(1 -> 2, 2 -> 3))
