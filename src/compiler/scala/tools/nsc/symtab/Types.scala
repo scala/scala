@@ -3790,12 +3790,11 @@ A type's typeSymbol should never be inspected directly.
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
       if (phase.refChecked) {
-	sym
+        sym
       } else if (sym.isModuleClass) {
-        if (!sym.owner.isPackageClass)
-          sym // Nested lazy object
-        else
-          adaptToNewRun(pre, sym.sourceModule).moduleClass
+        val adaptedSym = adaptToNewRun(pre, sym.sourceModule)
+        // Handle nested objects properly
+        if (adaptedSym.isLazy) adaptedSym.lazyAccessor else adaptedSym.moduleClass
       } else if ((pre eq NoPrefix) || (pre eq NoType) || sym.isPackageClass) {
         sym
       } else {
