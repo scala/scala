@@ -740,7 +740,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           //   e.g.        def foo[T](a: Int, b: T*)
           //   becomes     def foo[T](a: Int, b: Array[Object])
           //   instead of  def foo[T](a: Int, b: Array[T]) ===> def foo[T](a: Int, b: Object)
-          if (tparg.typeSymbol.isTypeSkolem) arrayType(ObjectClass.tpe) else arrayType(tparg)
+          if (tparg.typeSymbol.isTypeParameterOrSkolem) arrayType(ObjectClass.tpe) else arrayType(tparg)
       }
       def toSeqType(tp: Type): Type = tp match {
         case TypeRef(_, ArrayClass, List(tparg)) => seqType(tparg)
@@ -778,25 +778,25 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
 
       // create the tree
       val forwtree = theTyper.typed {
-        val locals: List[ValDef] = for ((argsym, fp) <- (forwsym ARGS) zip flatparams) yield
+        val locals: List[Tree] = for ((argsym, fp) <- (forwsym ARGS) zip flatparams) yield
           if (rpsymbols contains fp.symbol)
-            VAL(forwsym.newValue(unit.fresh.newName("param$")).setInfo(fp.symbol.tpe)) === {
+            Block(Nil,
               gen.mkCast(
                 gen.mkWrapArray(Ident(argsym), arrayElemType(argsym.tpe)),
                 seqType(seqElemType(fp.symbol.tpe))
               )
-            }
+            )
           else null
-        val emitted = for (l <- locals if l != null) yield l
         val seqargs = for ((l, argsym) <- locals zip (forwsym ARGS)) yield
           if (l == null) Ident(argsym)
-          else Ident(l.symbol)
+          else l
+        val end = if (forwsym.isConstructor) List(UNIT) else Nil
 
         atPos(dd.pos) {
           val t = DEF(forwsym) === BLOCK {
-            (emitted ::: List(
-              Apply(REF(flatdd.symbol), seqargs)
-            )): _*
+            (List(
+              Apply(gen.mkAttributedRef(flatdd.symbol), seqargs)
+            ) ::: end): _*
           }
           t
         }
