@@ -21,9 +21,10 @@ import scala.reflect.Manifest
 import scala.collection.mutable.{ ListBuffer, HashSet, HashMap, ArrayBuffer }
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import ScalaClassLoader.URLClassLoader
-import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately, unwrapping }
+import Exceptional.unwrap
+import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately }
 
-import io.{ PlainFile, VirtualDirectory, spawn, callable, newSingleThreadDaemonExecutor }
+import io.{ PlainFile, VirtualDirectory, spawn, callable, newDaemonThreadExecutor }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import util.{ ScalaPrefs, JavaStackFrame, SourceFile, BatchSourceFile, ScriptSourceFile, ClassPath, Chars, stringFromWriter }
@@ -185,8 +186,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** An executor service which creates daemon threads. */
-  private lazy val lineExecutor = newSingleThreadDaemonExecutor()
-  private var currentExecution: Future[_] = null
+  private lazy val lineExecutor = newDaemonThreadExecutor()
+  private var currentExecution: Future[String] = null
   private def sigintHandler = {
     if (currentExecution == null) System.exit(1)
     else currentExecution.cancel(true)
@@ -998,35 +999,28 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
-      val resultValMethod   = loadedResultObject getMethod "scala_repl_result"
-      val wrapperExceptions = List(classOf[InvocationTargetException], classOf[ExceptionInInitializerError])
+      try {
+        val resultValMethod = loadedResultObject getMethod "scala_repl_result"
+        currentExecution    = lineExecutor submit callable(resultValMethod.invoke(loadedResultObject).toString)
+        while (!currentExecution.isDone)
+          Thread.`yield`
 
-      /** We turn off the binding to accomodate ticket #2817 */
-      def onErr: Catcher[(String, Boolean)] = {
+        if (currentExecution.isCancelled) ("Execution interrupted by signal.\n", false)
+        else (currentExecution.get(), true)
+      }
+      catch {
         case t: Throwable if bindLastException =>
+          /** We turn off the binding to accomodate ticket #2817 */
           withoutBindingLastException {
             val message =
-              if (opt.richExes) bindExceptionally(t)
-              else bindUnexceptionally(t)
+              if (opt.richExes) bindExceptionally(unwrap(t))
+              else bindUnexceptionally(unwrap(t))
 
             (message, false)
           }
       }
-
-      /** Todo: clean this up. */
-      ultimately(currentExecution = null) {
-        catchingPromiscuously(onErr) {
-          unwrapping(wrapperExceptions: _*) {
-            /** Running it in a separate thread so it's easy to interrupt on ctrl-C. */
-            val future = lineExecutor submit callable(resultValMethod.invoke(loadedResultObject).toString)
-            currentExecution = future
-            while (!future.isDone)
-              Thread.`yield`
-
-            if (future.isCancelled) ("Execution interrupted by signal.\n", false)
-            else (future.get(), true)
-          }
-        }
+      finally {
+        currentExecution = null
       }
     }
 

@@ -17,17 +17,16 @@ package object io {
   def callableFn[T](f: () => T): Callable[T]  = callable(f())
   def spawnFn[T](f: () => T): Future[T]       = spawn(f())
 
-  def newSingleThreadDaemonExecutor() = {
-    val factory = new ThreadFactory {
-      val default = Executors.defaultThreadFactory()
+  def newConfiguredExecutor(f: Thread => Unit) = {
+    Executors.newCachedThreadPool(new ThreadFactory {
       def newThread(r: Runnable) = {
-        val t = default.newThread(r)
-        t setDaemon true
+        val t = Executors.defaultThreadFactory().newThread(r)
+        f(t)
         t
       }
-    }
-    Executors.newSingleThreadExecutor(factory)
+    })
   }
+  def newDaemonThreadExecutor() = newConfiguredExecutor(_ setDaemon true)
 
   // Create, start, and return a background thread
   // If isDaemon is true, it is marked as daemon (and will not interfere with JVM shutdown)
