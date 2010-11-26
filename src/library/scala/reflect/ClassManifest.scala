@@ -6,13 +6,9 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.reflect
 
-import scala.runtime._
-import scala.collection.immutable.{List, Nil}
-import scala.collection.mutable.{WrappedArray, ArrayBuilder}
+import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
 
 /** <p>
   *   A <code>ClassManifest[T]</code> is an opaque descriptor for type <code>T</code>.
@@ -139,7 +135,6 @@ trait ClassManifest[T] extends OptManifest[T] with Equals {
   * </p>
   */
 object ClassManifest {
-
   val Byte = Manifest.Byte
   val Short = Manifest.Short
   val Char = Manifest.Char
@@ -191,18 +186,6 @@ object ClassManifest {
   def classType[T <: AnyRef](prefix: OptManifest[_], clazz: Predef.Class[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
-  /** Manifest for the class type `clazz[args]', where `clazz' is
-    * a top-level or static class. */
-  @serializable
-  private class ClassTypeManifest[T <: AnyRef](prefix: Option[OptManifest[_]],
-                                               val erasure: Predef.Class[_],
-                                               override val typeArguments: List[OptManifest[_]]) extends ClassManifest[T] {
-    override def toString =
-      (if (prefix.isEmpty) "" else prefix.get.toString+"#") +
-      (if (erasure.isArray) "Array" else erasure.getName) +
-      argString
-   }
-
   def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = arg match {
     case NoManifest => Object.asInstanceOf[ClassManifest[Array[T]]]
     case m: ClassManifest[_] => m.asInstanceOf[ClassManifest[T]].arrayManifest
@@ -229,4 +212,18 @@ object ClassManifest {
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
     }
+}
+
+/** Manifest for the class type `clazz[args]', where `clazz' is
+  * a top-level or static class. */
+@serializable
+private class ClassTypeManifest[T <: AnyRef](
+  prefix: Option[OptManifest[_]],
+  val erasure: Predef.Class[_],
+  override val typeArguments: List[OptManifest[_]]) extends ClassManifest[T]
+{
+  override def toString =
+    (if (prefix.isEmpty) "" else prefix.get.toString+"#") +
+    (if (erasure.isArray) "Array" else erasure.getName) +
+    argString
 }

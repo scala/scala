@@ -10,9 +10,7 @@
 
 package scala.reflect
 
-import scala.runtime._
-import scala.collection.mutable._
-import scala.collection.immutable.{List, Nil}
+import scala.collection.mutable.{ ArrayBuilder, WrappedArray }
 
 /** <p>
   *   A <code>Manifest[T]</code> is an opaque descriptor for type <code>T</code>.
@@ -45,8 +43,8 @@ trait Manifest[T] extends ClassManifest[T] with Equals {
 
 @serializable
 trait AnyValManifest[T] extends Manifest[T] with Equals {
-  import Manifest.{ Any, AnyVal }
-  override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any) || (that eq AnyVal)
+  override def <:<(that: ClassManifest[_]): Boolean =
+    (that eq this) || (that eq Manifest.Any) || (that eq Manifest.AnyVal)
   override def canEqual(other: Any) = other match {
     case _: AnyValManifest[_] => true
     case _                    => false
@@ -66,7 +64,9 @@ trait AnyValManifest[T] extends Manifest[T] with Equals {
   * </p>
   */
 object Manifest {
-  val Byte: AnyValManifest[Byte] = new (AnyValManifest[Byte] @serializable) {
+  private def ObjectClass = classOf[java.lang.Object]
+
+  val Byte: AnyValManifest[Byte] = new (AnyValManifest[scala.Byte] @serializable) {
     def erasure = java.lang.Byte.TYPE
     override def toString = "Byte"
     override def newArray(len: Int): Array[Byte] = new Array[Byte](len)
@@ -75,7 +75,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Byte
   }
 
-  val Short: AnyValManifest[Short] = new (AnyValManifest[Short] @serializable) {
+  val Short: AnyValManifest[Short] = new (AnyValManifest[scala.Short] @serializable) {
     def erasure = java.lang.Short.TYPE
     override def toString = "Short"
     override def newArray(len: Int): Array[Short] = new Array[Short](len)
@@ -84,7 +84,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Short
   }
 
-  val Char: AnyValManifest[Char] = new (AnyValManifest[Char] @serializable) {
+  val Char: AnyValManifest[Char] = new (AnyValManifest[scala.Char] @serializable) {
     def erasure = java.lang.Character.TYPE
     override def toString = "Char"
     override def newArray(len: Int): Array[Char] = new Array[Char](len)
@@ -93,7 +93,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Char
   }
 
-  val Int: AnyValManifest[Int] = new (AnyValManifest[Int] @serializable) {
+  val Int: AnyValManifest[Int] = new (AnyValManifest[scala.Int] @serializable) {
     def erasure = java.lang.Integer.TYPE
     override def toString = "Int"
     override def newArray(len: Int): Array[Int] = new Array[Int](len)
@@ -102,7 +102,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Int
   }
 
-  val Long: AnyValManifest[Long] = new (AnyValManifest[Long] @serializable) {
+  val Long: AnyValManifest[Long] = new (AnyValManifest[scala.Long] @serializable) {
     def erasure = java.lang.Long.TYPE
     override def toString = "Long"
     override def newArray(len: Int): Array[Long] = new Array[Long](len)
@@ -111,7 +111,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Long
   }
 
-  val Float: AnyValManifest[Float] = new (AnyValManifest[Float] @serializable) {
+  val Float: AnyValManifest[Float] = new (AnyValManifest[scala.Float] @serializable) {
     def erasure = java.lang.Float.TYPE
     override def toString = "Float"
     override def newArray(len: Int): Array[Float] = new Array[Float](len)
@@ -120,7 +120,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Float
   }
 
-  val Double: AnyValManifest[Double] = new (AnyValManifest[Double] @serializable) {
+  val Double: AnyValManifest[Double] = new (AnyValManifest[scala.Double] @serializable) {
     def erasure = java.lang.Double.TYPE
     override def toString = "Double"
     override def newArray(len: Int): Array[Double] = new Array[Double](len)
@@ -129,7 +129,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Double
   }
 
-  val Boolean: AnyValManifest[Boolean] = new (AnyValManifest[Boolean] @serializable) {
+  val Boolean: AnyValManifest[Boolean] = new (AnyValManifest[scala.Boolean] @serializable) {
     def erasure = java.lang.Boolean.TYPE
     override def toString = "Boolean"
     override def newArray(len: Int): Array[Boolean] = new Array[Boolean](len)
@@ -138,7 +138,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Boolean
   }
 
-  val Unit: AnyValManifest[Unit] = new (AnyValManifest[Unit] @serializable) {
+  val Unit: AnyValManifest[Unit] = new (AnyValManifest[scala.Unit] @serializable) {
     def erasure = java.lang.Void.TYPE
     override def toString = "Unit"
     override def newArray(len: Int): Array[Unit] = new Array[Unit](len)
@@ -147,7 +147,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Unit
   }
 
-  val Any: Manifest[Any] = new ClassTypeManifest[Any](None, classOf[java.lang.Object], List()) {
+  val Any: Manifest[Any] = new ClassTypeManifest[scala.Any](None, ObjectClass, Nil) {
     override def toString = "Any"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
@@ -155,7 +155,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Any
   }
 
-  val Object: Manifest[Object] = new ClassTypeManifest[Object](None, classOf[java.lang.Object], List()) {
+  val Object: Manifest[Object] = new ClassTypeManifest[java.lang.Object](None, ObjectClass, Nil) {
     override def toString = "Object"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
@@ -163,7 +163,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Object
   }
 
-  val AnyVal: Manifest[AnyVal] = new ClassTypeManifest[AnyVal](None, classOf[java.lang.Object], List()) {
+  val AnyVal: Manifest[AnyVal] = new ClassTypeManifest[scala.AnyVal](None, ObjectClass, Nil) {
     override def toString = "AnyVal"
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
@@ -171,7 +171,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.AnyVal
   }
 
-  val Null: Manifest[Null] = new ClassTypeManifest[Null](None, classOf[java.lang.Object], List()) {
+  val Null: Manifest[Null] = new ClassTypeManifest[scala.Null](None, ObjectClass, Nil) {
     override def toString = "Null"
     override def <:<(that: ClassManifest[_]): Boolean =
       (that ne null) && (that ne Nothing) && !(that <:< AnyVal)
@@ -180,7 +180,7 @@ object Manifest {
     private def readResolve(): Any = Manifest.Null
   }
 
-  val Nothing: Manifest[Nothing] = new ClassTypeManifest[Nothing](None, classOf[java.lang.Object], List()) {
+  val Nothing: Manifest[Nothing] = new ClassTypeManifest[scala.Nothing](None, ObjectClass, Nil) {
     override def toString = "Nothing"
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
