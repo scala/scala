@@ -62,18 +62,18 @@ abstract class TreeBrowsers {
       t
     }
 
-    def browse(units: Iterator[CompilationUnit]): Unit =
-      browse(units.toList)
+    def browse(pName: String, units: Iterator[CompilationUnit]): Unit =
+      browse(pName, units.toList)
 
     /** print the whole program */
-    def browse(units: List[CompilationUnit]): Unit = {
+    def browse(pName: String, units: List[CompilationUnit]): Unit = {
       var unitList: List[UnitTree] = Nil
 
       for (i <- units)
         unitList = UnitTree(i) :: unitList
       val tm = new ASTTreeModel(ProgramTree(unitList))
 
-      val frame = new BrowserFrame()
+      val frame = new BrowserFrame(pName)
       frame.setTreeModel(tm)
 
       val lock = new Lock()
@@ -131,8 +131,8 @@ abstract class TreeBrowsers {
    * @author Iulian Dragos
    * @version 1.0
    */
-  class BrowserFrame {
-    val frame = new JFrame("Scala AST")
+  class BrowserFrame(phaseName: String = "unknown") {
+    val frame = new JFrame("Scala AST [" + phaseName + "]")
     val topLeftPane = new JPanel(new BorderLayout())
     val topRightPane = new JPanel(new BorderLayout())
     val bottomPane = new JPanel(new BorderLayout())

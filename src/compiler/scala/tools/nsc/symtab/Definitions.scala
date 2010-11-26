@@ -228,7 +228,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def Seq_length = getMember(SeqClass, nme.length)
 
     lazy val ListModule   = getModule2("scala.List", "scala.collection.immutable.List")
-      def List_apply = getMember(ListModule, nme.apply)
     lazy val ListClass    = getClass2("scala.List", "scala.collection.immutable.List")
       def List_isEmpty  = getMember(ListClass, nme.isEmpty)
       def List_head     = getMember(ListClass, nme.head)

@@ -3335,7 +3335,7 @@ trait Typers { self: Analyzer =>
               // TODO: In theory we should be able to call:
               //if (fun2.hasSymbol && fun2.symbol.name == nme.apply && fun2.symbol.owner == ArrayClass) {
               // But this causes cyclic reference for Array class in Cleanup. It is easy to overcome this
-              // by calling here ArrayClass.info here (or some other place before specialize).
+              // by calling ArrayClass.info here (or some other place before specialize).
               if (fun2.symbol == Array_apply) {
                 val checked = gen.mkCheckInit(res)
                 // this check is needed to avoid infinite recursion in Duplicators

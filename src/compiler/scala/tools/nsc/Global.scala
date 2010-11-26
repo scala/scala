@@ -867,7 +867,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
         // browse trees with swing tree viewer
         if (opt.browsePhase)
-          treeBrowser browse units
+          treeBrowser browse (phase.name, units)
 
         // progress update
         informTime(globalPhase.description, startTime)
