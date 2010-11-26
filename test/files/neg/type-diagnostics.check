@@ -13,4 +13,8 @@ type-diagnostics.scala:17: error: type mismatch;
  required: java.lang.String
   def f2[String](s: String) = strings(List(s))
                                            ^
-three errors found
+type-diagnostics.scala:21: error: missing parameter type for expanded function
+(see SLS 8.5, "Pattern Matching Anonymous Functions")
+  val f = { case 5 => 10 }
+          ^
+four errors found

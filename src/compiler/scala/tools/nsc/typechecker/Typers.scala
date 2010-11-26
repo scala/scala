@@ -2036,11 +2036,7 @@ trait Typers { self: Analyzer =>
                     }
                   case _ =>
                 }
-                error(
-                  vparam.pos,
-                  "missing parameter type"+
-                  (if (vparam.mods.isSynthetic) " for expanded function "+fun
-                   else ""))
+                error(vparam.pos, missingParameterTypeMsg(fun, vparam))
                 ErrorType
               }
             if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
@@ -2390,16 +2386,7 @@ trait Typers { self: Analyzer =>
                   if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
                 } else {
-                  tryTupleApply.getOrElse {
-                    val suffix =
-                      if (missing.isEmpty) ""
-                      else {
-                        val missingStr = missing.take(3).map(_.name).mkString(", ") + (if (missing.length > 3) ", ..." else ".")
-                        val sOpt = if (missing.length > 1) "s" else ""
-                        ".\nUnspecified value parameter"+ sOpt +" "+ missingStr
-                      }
-                    errorTree(tree, "not enough arguments for "+treeSymTypeMsg(fun) + suffix)
-                  }
+                  tryTupleApply getOrElse errorTree(tree, notEnoughArgumentsMsg(fun, missing))
                 }
               }
             }

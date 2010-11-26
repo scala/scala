@@ -145,11 +145,15 @@ trait TypeDiagnostics {
   def alternativesString(tree: Tree) =
     alternatives(tree) map (x => "  " + methodTypeErrorString(x)) mkString ("", " <and>\n", "\n")
 
-  def missingParameterTypeError(fun: Tree, vparam: ValDef) = {
-    val suffix = if (vparam.mods.isSynthetic) " for expanded function "+fun else ""
+  def missingParameterTypeMsg(fun: Tree, vparam: ValDef) = {
+    val suffix =
+      if (!vparam.mods.isSynthetic) ""
+      else " for expanded function" + (fun match {
+        case Function(_, Match(_, _)) => "\n(see SLS 8.5, \"Pattern Matching Anonymous Functions\")"
+        case _                        => " " + fun
+      })
 
-    inferError(vparam.pos, "missing parameter type" + suffix)
-    ErrorType
+    "missing parameter type" + suffix
   }
 
   def treeSymTypeMsg(tree: Tree): String = {
@@ -168,6 +172,22 @@ trait TypeDiagnostics {
     else if (sym.isModule) moduleMessage
     else if (sym.name == nme.apply) applyMessage
     else defaultMessage
+  }
+
+  def notEnoughArgumentsMsg(fun: Tree, missing: List[Symbol]): String = {
+    val suffix = {
+      if (missing.isEmpty) ""
+      else {
+        val keep = missing take 3 map (_.name)
+        ".\nUnspecified value parameter%s %s".format(
+          if (missing.tail.isEmpty) "" else "s",
+          if (missing drop 3 nonEmpty) (keep :+ "...").mkString(", ")
+          else keep.mkString("", ", ", ".")
+        )
+      }
+    }
+
+    "not enough arguments for " + treeSymTypeMsg(fun) + suffix
   }
 
   def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {

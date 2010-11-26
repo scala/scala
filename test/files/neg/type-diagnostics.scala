@@ -16,3 +16,7 @@ object TParamConfusion {
 
   def f2[String](s: String) = strings(List(s))
 }
+
+object PartialInfer {
+  val f = { case 5 => 10 }
+}
