@@ -221,27 +221,10 @@ INITIALISATION
     <condition property="os.win">
       <os family="windows"/>
     </condition>
-    <!-- Finding out SVN revision, svn style -->
-    <exec executable="svn" outputproperty="svn.out"
-      failifexecutionfails="false">
-      <arg line=" info ${basedir}"/>
-    </exec>
-    <propertyregex
-      property="svn.number.svn" input="${svn.out}" select="\1"
-      regexp="Revision: ([0-9]+)"
-      defaultValue="0"/>
-
-    <!-- Both clauses of the conditional set svn.number -->
-    <if>
-      <equals arg1="${svn.number.svn}" arg2="0" />
-      <then>
-        <!-- Finding SVN revision, git style -->
-        <exec osfamily="unix" executable="tools/get-git-svn-rev" outputproperty="svn.number" failifexecutionfails="false" />
-      </then>
-      <else>
-        <property name="svn.number" value="${svn.number.svn}" />
-      </else>
-    </if>
+    
+    <exec osfamily="unix" executable="tools/get-scala-revision" outputproperty="svn.number" failifexecutionfails="false" />
+    <!-- some default in case something went wrong getting the revision -->
+    <property name="svn.number" value="0"/>
 
     <property name="init.avail" value="yes"/>
 
