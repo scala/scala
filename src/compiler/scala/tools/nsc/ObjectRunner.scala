@@ -9,6 +9,7 @@ package scala.tools.nsc
 import java.net.URL
 import util.ScalaClassLoader
 import java.lang.reflect.InvocationTargetException
+import util.Exceptional.unwrap
 
 /** An object that runs another object specified by name.
  *
@@ -37,10 +38,6 @@ object ObjectRunner {
    */
   def runAndCatch(urls: List[URL], objectName: String, arguments: Seq[String]): Either[Throwable, Unit] = {
     try Right(run(urls, objectName, arguments))
-    catch {
-      case e: ClassNotFoundException    => Left(e)
-      case e: NoSuchMethodException     => Left(e)
-      case e: InvocationTargetException => Left(e.getCause match { case null => e ; case cause => cause })
-    }
+    catch { case e => Left(unwrap(e)) }
   }
 }
