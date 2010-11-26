@@ -825,8 +825,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             diffCheck(compareOutput(dir, fileBase, kind, logFile))
 
             } catch {
-              case e: Exception =>
-	        e.printStackTrace()
+              case e =>
+                e.printStackTrace()
                 succeeded = false
             }
 
