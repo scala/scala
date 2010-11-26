@@ -23,7 +23,7 @@ import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import ScalaClassLoader.URLClassLoader
 import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately, unwrapping }
 
-import io.{ PlainFile, VirtualDirectory, spawn }
+import io.{ PlainFile, VirtualDirectory, spawn, callable, newSingleThreadDaemonExecutor }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import util.{ ScalaPrefs, JavaStackFrame, SourceFile, BatchSourceFile, ScriptSourceFile, ClassPath, Chars, stringFromWriter }
@@ -184,15 +184,17 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
   }
 
+  /** An executor service which creates daemon threads. */
+  private lazy val lineExecutor = newSingleThreadDaemonExecutor()
   private var currentExecution: Future[_] = null
   private def sigintHandler = {
     if (currentExecution == null) System.exit(1)
     else currentExecution.cancel(true)
   }
-  /** Try to install sigint handler: ignore failure. */
-  locally {
-    try   { SignalManager("INT") = sigintHandler }
-    catch { case _: Exception => () }
+  /** Try to install sigint handler: false on failure. */
+  def installSigIntHandler(): Boolean = {
+    try   { SignalManager("INT") = sigintHandler ; true }
+    catch { case _: Exception => false }
   }
 
   /** interpreter settings */
@@ -1016,7 +1018,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
         catchingPromiscuously(onErr) {
           unwrapping(wrapperExceptions: _*) {
             /** Running it in a separate thread so it's easy to interrupt on ctrl-C. */
-            val future = spawn(resultValMethod.invoke(loadedResultObject).toString)
+            val future = lineExecutor submit callable(resultValMethod.invoke(loadedResultObject).toString)
             currentExecution = future
             while (!future.isDone)
               Thread.`yield`
