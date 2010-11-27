@@ -107,6 +107,7 @@ private[immutable] abstract class HashSetCombiner[T]
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
 self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   import HashSetCombiner._
+  import tasksupport._
   val emptyTrie = HashSet.empty[T]
 
   def +=(elem: T) = {
@@ -147,7 +148,7 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   /* tasks */
 
   class CreateTrie(bucks: Array[Unrolled[Any]], root: Array[HashSet[T]], offset: Int, howmany: Int)
-  extends super.Task[Unit, CreateTrie] {
+  extends Task[Unit, CreateTrie] {
     var result = ()
     def leaf(prev: Option[Unit]) = {
       var i = offset

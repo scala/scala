@@ -42,7 +42,8 @@ extends ParSeq[T]
    with GenericParTemplate[T, ParArray]
    with ParSeqLike[T, ParArray[T], ArraySeq[T]]
 {
-  self =>
+self =>
+  import tasksupport._
 
   private val array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
 
@@ -533,6 +534,8 @@ extends ParSeq[T]
 
   /* operations */
 
+  private def asTask[R, Tp](t: Any) = t.asInstanceOf[Task[R, Tp]]
+
   private def buildsArray[S, That](c: Builder[S, That]) = c.isInstanceOf[ParArrayCombiner[_]]
 
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[ParArray[T], S, That]) = if (buildsArray(bf(repr))) {
@@ -554,13 +557,9 @@ extends ParSeq[T]
     targetarr(0) = z
 
     // do a parallel prefix scan
-    executeAndWaitResult(new BuildScanTree[U, Any](z, op, 1, size, targetarr, parallelIterator) mapResult { st =>
-      // println("-----------------------")
-      // println(targetarr.toList)
-      // st.printTree
-      executeAndWaitResult(new ScanWithScanTree[U, Any](Some(z), op, st, array, targetarr))
-    })
-    // println(targetarr.toList)
+    executeAndWaitResult(asTask[That, Task[That, _]](new BuildScanTree[U, Any](z, op, 1, size, targetarr, parallelIterator).mapResult(st =>
+      executeAndWaitResult(asTask[That, Task[That, _]](new ScanWithScanTree[U, Any](Some(z), op, st, array, targetarr)))
+    )))
 
     // wrap the array into a parallel array
     (new ParArray[U](targarrseq)).asInstanceOf[That]
@@ -568,7 +567,7 @@ extends ParSeq[T]
 
   /* tasks */
 
-  class Map[S](f: T => S, targetarr: Array[Any], offset: Int, howmany: Int) extends super.Task[Unit, Map[S]] {
+  class Map[S](f: T => S, targetarr: Array[Any], offset: Int, howmany: Int) extends Task[Unit, Map[S]] {
     var result = ();
     def leaf(prev: Option[Unit]) = {
       val tarr = targetarr

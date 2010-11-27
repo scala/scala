@@ -18,8 +18,9 @@ import scala.collection.generic.Sizing
  *
  *  @author prokopec
  */
-trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel with TaskSupport {
+trait Combiner[-Elem, +To] extends Builder[Elem, To] with Sizing with Parallel {
 self: EnvironmentPassingCombiner[Elem, To] =>
+  private[collection] final val tasksupport = getTaskSupport
 
   type EPC = EnvironmentPassingCombiner[Elem, To]
 
@@ -56,7 +57,10 @@ self: EnvironmentPassingCombiner[Elem, To] =>
 trait EnvironmentPassingCombiner[-Elem, +To] extends Combiner[Elem, To] {
   abstract override def result = {
     val res = super.result
-    if (res.isInstanceOf[TaskSupport]) res.asInstanceOf[TaskSupport].environment = environment
+    res match {
+      case pc: ParIterableLike[_, _, _] => pc.tasksupport.environment = tasksupport.environment
+      case _ =>
+    }
     res
   }
 }

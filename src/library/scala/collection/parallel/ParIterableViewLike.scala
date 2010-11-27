@@ -40,6 +40,7 @@ extends IterableView[T, Coll]
    with ParIterableLike[T, This, ThisSeq]
 {
 self =>
+  import tasksupport._
 
   override protected[this] def newCombiner: Combiner[T, This] = throw new UnsupportedOperationException(this + ".newCombiner");
 
@@ -48,7 +49,7 @@ self =>
   trait Transformed[+S] extends ParIterableView[S, Coll, CollSeq] with super.Transformed[S] {
     override def parallelIterator: ParIterableIterator[S]
     override def iterator = parallelIterator
-    environment = self.environment
+    tasksupport.environment = self.tasksupport.environment
   }
 
   trait Sliced extends super.Sliced with Transformed[T] {
@@ -121,7 +122,7 @@ self =>
     newZippedAllTryParSeq(that, thisElem, thatElem).asInstanceOf[That]
 
   override def force[U >: T, That](implicit bf: CanBuildFrom[Coll, U, That]) = bf ifParallel { pbf =>
-    executeAndWaitResult(new Force(pbf, parallelIterator) mapResult { _.result })
+    executeAndWaitResult(new Force(pbf, parallelIterator).mapResult(_.result).asInstanceOf[Task[That, ResultMapping[_, Force[U, That], That]]])
   } otherwise {
     val b = bf(underlying)
     b ++= this.iterator

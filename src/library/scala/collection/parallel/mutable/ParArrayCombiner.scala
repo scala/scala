@@ -18,8 +18,9 @@ import scala.collection.parallel.EnvironmentPassingCombiner
 
 trait ParArrayCombiner[T]
 extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]]
-   with TaskSupport {
-  self: EnvironmentPassingCombiner[T, ParArray[T]] =>
+{
+self: EnvironmentPassingCombiner[T, ParArray[T]] =>
+  import tasksupport._
 
   override def sizeHint(sz: Int) = if (chain.length == 1) chain(0).sizeHint(sz)
 
@@ -41,7 +42,7 @@ extends LazyCombiner[T, ParArray[T], ExposedArrayBuffer[T]]
 
   /* tasks */
 
-  class CopyChainToArray(array: Array[Any], offset: Int, howmany: Int) extends super.Task[Unit, CopyChainToArray] {
+  class CopyChainToArray(array: Array[Any], offset: Int, howmany: Int) extends Task[Unit, CopyChainToArray] {
     var result = ()
     def leaf(prev: Option[Unit]) = if (howmany > 0) {
       var totalleft = howmany

@@ -90,6 +90,7 @@ private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFacto
 extends collection.parallel.BucketCombiner[T, ParHashSet[T], Any, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
 with collection.mutable.FlatHashTable.HashUtils[T] {
 self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
+  import tasksupport._
   private var mask = ParHashSetCombiner.discriminantmask
   private var nonmasklen = ParHashSetCombiner.nonmasklength
 
@@ -189,7 +190,7 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
       //
       //   tableSize = tableSize + 1
       //
-      // interestingly, it completely bogs down the parallel
+      // furthermore, it completely bogs down the parallel
       // execution when there are multiple workers
 
       nnSizeMapAdd(h)
@@ -200,7 +201,7 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   /* tasks */
 
   class FillBlocks(buckets: Array[UnrolledBuffer[Any]], table: AddingFlatHashTable, val offset: Int, val howmany: Int)
-  extends super.Task[(Int, UnrolledBuffer[Any]), FillBlocks] {
+  extends Task[(Int, UnrolledBuffer[Any]), FillBlocks] {
     var result = (Int.MinValue, new UnrolledBuffer[Any]);
     def leaf(prev: Option[(Int, UnrolledBuffer[Any])]) {
       var i = offset

@@ -39,6 +39,7 @@ extends SeqView[T, Coll]
    with ParSeqLike[T, This, ThisSeq]
 {
 self =>
+  import tasksupport._
 
   trait Transformed[+S] extends ParSeqView[S, Coll, CollSeq]
   with super[ParIterableView].Transformed[S] with super[SeqView].Transformed[S] {
@@ -161,7 +162,7 @@ self =>
   override def scanRight[S, That](z: S)(op: (T, S) => S)(implicit bf: CanBuildFrom[This, S, That]): That = newForced(thisParSeq.scanRight(z)(op)).asInstanceOf[That]
   override def groupBy[K](f: T => K): collection.immutable.Map[K, This] = thisParSeq.groupBy(f).mapValues(xs => newForced(xs).asInstanceOf[This])
   override def force[U >: T, That](implicit bf: CanBuildFrom[Coll, U, That]) = bf ifParallel { pbf =>
-    executeAndWaitResult(new Force(pbf, parallelIterator) mapResult { _.result })
+    executeAndWaitResult(new Force(pbf, parallelIterator).mapResult(_.result).asInstanceOf[Task[That, _]])
   } otherwise {
     val b = bf(underlying)
     b ++= this.iterator

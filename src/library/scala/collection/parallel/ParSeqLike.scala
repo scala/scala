@@ -40,6 +40,7 @@ trait ParSeqLike[+T, +Repr <: Parallel, +Sequential <: Seq[T] with SeqLike[T, Se
 extends scala.collection.SeqLike[T, Repr]
    with ParIterableLike[T, Repr, Sequential] {
 self =>
+  import tasksupport._
 
   type SuperParIterator = ParIterableIterator[T]
 

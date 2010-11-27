@@ -129,6 +129,7 @@ private[immutable] abstract class HashMapCombiner[K, V]
 extends collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], (K, V), HashMapCombiner[K, V]](HashMapCombiner.rootsize) {
 self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   import HashMapCombiner._
+  import tasksupport._
   val emptyTrie = HashMap.empty[K, V]
 
   def +=(elem: (K, V)) = {
@@ -172,7 +173,8 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
 
   /* tasks */
 
-  class CreateTrie(bucks: Array[Unrolled[(K, V)]], root: Array[HashMap[K, V]], offset: Int, howmany: Int) extends super.Task[Unit, CreateTrie] {
+  class CreateTrie(bucks: Array[Unrolled[(K, V)]], root: Array[HashMap[K, V]], offset: Int, howmany: Int)
+  extends Task[Unit, CreateTrie] {
     var result = ()
     def leaf(prev: Option[Unit]) = {
       var i = offset

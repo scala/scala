@@ -140,7 +140,8 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     val results = for ((f, ind) <- mapFunctions.zipWithIndex) yield {
       val ms = t.map(f)
       val mp = coll.map(f)
-      if (!areEqual(ms, mp) || !checkDataStructureInvariants(ms, mp)) {
+      val invs = checkDataStructureInvariants(ms, mp)
+      if (!areEqual(ms, mp) || !invs) {
         println(t)
         println(coll)
         println("mapped to: ")
@@ -149,9 +150,9 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
         println("sizes: ")
         println(ms.size)
         println(mp.size)
-        println("valid: " + checkDataStructureInvariants(ms, mp))
+        println("valid: " + invs)
       }
-      ("op index: " + ind) |: (areEqual(ms, mp) && checkDataStructureInvariants(ms, mp))
+      ("op index: " + ind) |: (areEqual(ms, mp) && invs)
     }
     results.reduceLeft(_ && _)
   }
@@ -181,7 +182,8 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     (for ((p, ind) <- filterPredicates.zipWithIndex) yield {
       val tf = t.filter(p)
       val cf = coll.filter(p)
-      if (tf != cf || cf != tf || !checkDataStructureInvariants(tf, cf)) {
+      val invs = checkDataStructureInvariants(tf, cf)
+      if (tf != cf || cf != tf || !invs) {
         println(t)
         println(coll)
         println("filtered to:")
@@ -190,9 +192,9 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
         println("tf == cf - " + (tf == cf))
         println("cf == tf - " + (cf == tf))
         printDataStructureDebugInfo(cf)
-        println("valid: " + checkDataStructureInvariants(tf, cf))
+        println("valid: " + invs)
       }
-      ("op index: " + ind) |: tf == cf && cf == tf && checkDataStructureInvariants(tf, cf)
+      ("op index: " + ind) |: tf == cf && cf == tf && invs
     }).reduceLeft(_ && _)
   }
 
