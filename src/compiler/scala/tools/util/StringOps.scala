@@ -17,6 +17,7 @@ package util
  *  @version 1.0
  */
 object StringOps {
+  def onull(s: String)                    = if (s == null) "" else s
   def oempty(xs: String*)                 = xs filterNot (x => x == null || x == "")
   def ojoin(xs: Seq[String], sep: String) = oempty(xs: _*) mkString sep
   def ojoinOr(xs: Seq[String], sep: String, orElse: String) = {

@@ -310,7 +310,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
 
     // This is jline's entry point for completion.
     override def complete(_buf: String, cursor: Int, candidates: JList[String]): Int = {
-      val buf = onull(_buf)
+      val buf = if (_buf == null) "" else _buf
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
       DBG("\ncomplete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))
 

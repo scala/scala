@@ -70,6 +70,12 @@ object Tokens {
     Path onlyFiles traverse filter (_ hasExtension "scala") toList
   }
 
+  def fromScalaString(code: String): List[Any] = {
+    val f = File.makeTemp("tokens")
+    f writeAll code
+    fromScalaSource(f)
+  }
+
   /** Tokenizes a single scala file.
    */
   def fromScalaSource(file: Path): List[Any] = fromScalaSource(file.path)

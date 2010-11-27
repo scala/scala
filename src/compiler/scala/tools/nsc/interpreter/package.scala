@@ -12,9 +12,6 @@ package object interpreter {
   /** Frequency counter */
   def freq[T](seq: Seq[T]) = seq groupBy identity mapValues (_.length)
 
-  /** null becomes "", otherwise identity */
-  def onull(s: String) = if (s == null) "" else s
-
   /** Heuristically strip interpreter wrapper prefixes
    *  from an interpreter output string.
    */

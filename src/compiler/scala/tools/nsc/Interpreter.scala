@@ -8,29 +8,28 @@ package scala.tools.nsc
 import Predef.{ println => _, _ }
 import java.io.{ File, PrintWriter, StringWriter, Writer }
 import File.pathSeparator
-import java.lang.{ Class, ClassLoader }
+import java.lang.{ reflect, Class, ClassLoader => JavaClassLoader }
 import java.net.{ MalformedURLException, URL }
-import java.lang.reflect
-import java.util.concurrent.Future
 import reflect.InvocationTargetException
+import java.util.concurrent.Future
 
-import scala.collection.{ mutable, immutable }
-import scala.PartialFunction.{ cond, condOpt }
-import scala.tools.util.{ PathResolver, SignalManager }
-import scala.reflect.Manifest
-import scala.collection.mutable.{ ListBuffer, HashSet, HashMap, ArrayBuffer }
-import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
-import ScalaClassLoader.URLClassLoader
-import Exceptional.unwrap
-import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately }
-
+import util.{ Set => _, _ }
+import interpreter._
 import io.{ PlainFile, VirtualDirectory, spawn, callable, newDaemonThreadExecutor }
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
-import util.{ ScalaPrefs, JavaStackFrame, SourceFile, BatchSourceFile, ScriptSourceFile, ClassPath, Chars, stringFromWriter }
-import scala.reflect.NameTransformer
 import scala.tools.nsc.{ InterpreterResults => IR }
-import interpreter._
+import scala.tools.util.{ PathResolver, SignalManager }
+import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
+import ScalaClassLoader.URLClassLoader
+import Exceptional.unwrap
+
+import scala.collection.{ mutable, immutable }
+import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
+import scala.PartialFunction.{ cond, condOpt }
+import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately, unwrapping }
+import scala.reflect.NameTransformer
+
 import Interpreter._
 
 /** <p>
@@ -75,6 +74,8 @@ import Interpreter._
  */
 class Interpreter(val settings: Settings, out: PrintWriter) {
   repl =>
+
+  private val RESULT_OBJECT_PREFIX = "RequestResult$"
 
   def println(x: Any) = {
     out.println(x)
@@ -252,10 +253,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   def setContextClassLoader() = classLoader.setAsContext()
 
   /** the previous requests this interpreter has processed */
-  private val prevRequests = new ArrayBuffer[Request]()
-  private val usedNameMap = new HashMap[Name, Request]()
-  private val boundNameMap = new HashMap[Name, Request]()
-  private def allHandlers = prevRequests.toList flatMap (_.handlers)
+  private val prevRequests      = new ArrayBuffer[Request]()
+  private val usedNameMap       = new mutable.HashMap[Name, Request]()
+  private val boundNameMap      = new mutable.HashMap[Name, Request]()
+  private def allHandlers       = prevRequests.toList flatMap (_.handlers)
   private def allReqAndHandlers = prevRequests.toList flatMap (req => req.handlers map (req -> _))
 
   def printAllTypeOf = {
@@ -276,6 +277,15 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     None
   }
 
+  /** Stubs for work in progress. */
+  def handleTypeRedefinition(name: Name, old: Request, req: Request) = {
+    DBG("Redefining type '%s'\n  %s -> %s".format(name, old simpleNameOfType name, req simpleNameOfType name))
+  }
+
+  def handleTermRedefinition(name: Name, old: Request, req: Request) = {
+    DBG("Redefining term '%s'\n  %s -> %s".format(name, old compilerTypeOf name, req compilerTypeOf name))
+  }
+
   def recordRequest(req: Request) {
     def tripart[T](set1: Set[T], set2: Set[T]) = {
       val intersect = set1 intersect set2
@@ -284,7 +294,14 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     prevRequests += req
     req.usedNames foreach (x => usedNameMap(x) = req)
-    req.boundNames foreach (x => boundNameMap(x) = req)
+
+    req.boundNames foreach { name =>
+      if (boundNameMap contains name) {
+        if (name.isTypeName) handleTypeRedefinition(name, boundNameMap(name), req)
+        else handleTermRedefinition(name, boundNameMap(name), req)
+      }
+      boundNameMap(name) = req
+    }
 
     // XXX temporarily putting this here because of tricky initialization order issues
     // so right now it's not bound until after you issue a command.
@@ -297,18 +314,19 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private def keyList[T](x: collection.Map[T, _]): List[T] = x.keys.toList sortBy (_.toString)
-  def allUsedNames = keyList(usedNameMap)
-  def allBoundNames = keyList(boundNameMap)
-  def allSeenTypes = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
+  def allUsedNames            = keyList(usedNameMap)
+  def allBoundNames           = keyList(boundNameMap)
+  def allSeenTypes            = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
+  def allDefinedTypes         = prevRequests.toList flatMap (_.definedTypes.values.toList) distinct
   def allValueGeneratingNames = allHandlers flatMap (_.generatesValue)
-  def allImplicits = partialFlatMap(allHandlers) {
+  def allImplicits            = partialFlatMap(allHandlers) {
     case x: MemberHandler if x.definesImplicit => x.boundNames
   }
 
   /** Generates names pre0, pre1, etc. via calls to apply method */
   class NameCreator(pre: String) {
     private var x = -1
-    var mostRecent: String = null
+    var mostRecent: String = ""
 
     def apply(): String = {
       x += 1
@@ -437,7 +455,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
 
     val code, trailingBraces, accessPath = new StringBuffer
-    val currentImps = HashSet[Name]()
+    val currentImps = mutable.HashSet[Name]()
 
     // add code for a new object to hold some imports
     def addWrapper() {
@@ -522,7 +540,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     compileSources(new BatchSourceFile("<script>", code))
 
   def compileAndSaveRun(label: String, code: String) = {
-    if (isReplDebug) {
+    /** Secret bookcase entrance for repl debuggers: end the line
+     *  with "// show" and see what's going on.
+     */
+    if (code.lines exists (_.trim endsWith "// show")) {
+      Console println code
       parse(code) match {
         case Some(trees)  => trees foreach (t => DBG(compiler.asCompactString(t)))
         case _            => DBG("Parse error:\n\n" + code)
@@ -670,7 +692,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  that need to be imported.  It might return extra names.
    */
   private class ImportVarsTraverser extends Traverser {
-    val importVars = new HashSet[Name]()
+    val importVars = new mutable.HashSet[Name]()
 
     override def traverse(ast: Tree) = ast match {
       // XXX this is obviously inadequate but it's going to require some effort
@@ -712,7 +734,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     override def generatesValue = Some(vname)
 
     override def resultExtractionCode(req: Request, code: PrintWriter) {
-      val isInternal = isGeneratedVarName(vname) && req.typeOfEnc(vname) == "Unit"
+      val isInternal = isGeneratedVarName(vname) && req.lookupTypeOf(vname) == "Unit"
       if (!mods.isPublic || isInternal) return
 
       lazy val extractor = "scala.runtime.ScalaRunTime.stringOf(%s, %s)".format(req fullPath vname, maxStringElements)
@@ -748,7 +770,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** Print out lhs instead of the generated varName */
     override def resultExtractionCode(req: Request, code: PrintWriter) {
-      val lhsType = string2code(req typeOfEnc helperName)
+      val lhsType = string2code(req lookupTypeOf helperName)
       val res = string2code(req fullPath helperName)
       val codeToPrint = """ + "%s: %s = " + %s + "\n" """.format(lhs, lhsType, res)
 
@@ -819,7 +841,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def objectName = lineName + INTERPRETER_WRAPPER_SUFFIX
 
     /** name of the object that retrieves the result from the above object */
-    def resultObjectName = "RequestResult$" + objectName
+    def resultObjectName = RESULT_OBJECT_PREFIX + objectName
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map chooseHandler
@@ -836,6 +858,11 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case x: AssignHandler => List(x.helperName)
       case x: ValHandler    => boundNames
       case x: ModuleHandler => List(x.name)
+    }
+    /** Type names */
+    def typeNames = handlers collect {
+      case x: ClassHandler     => x.name
+      case x: TypeAliasHandler => x.name
     }
 
     /** Code to import bound names from previous lines - accessPath is code to
@@ -935,6 +962,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
       // extract and remember types
       typeOf
+      definedTypes
 
       // compile the result-extraction object
       extractionObjectRun
@@ -943,7 +971,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       !reporter.hasErrors
     }
 
-    def atNextPhase[T](op: => T): T = compiler.atPhase(objRun.typerPhase.next)(op)
+    def afterTyper[T](op: => T): T = compiler.atPhase(objRun.typerPhase.next)(op)
 
     /** The outermost wrapper object */
     lazy val outerResObjSym: Symbol = getMember(EmptyPackage, newTermName(objectName))
@@ -953,34 +981,38 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     lazy val resObjSym =
       accessPath.split("\\.").foldLeft(outerResObjSym) { (sym, name) =>
         if (name == "") sym else
-        atNextPhase(sym.info member newTermName(name))
+        afterTyper(sym.info member newTermName(name))
       }
 
     /* typeOf lookup with encoding */
-    def typeOfEnc(vname: Name) = typeOf(compiler encode vname)
+    def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(compiler encode name))
 
-    /** Types of variables defined by this request. */
-    lazy val typeOf: Map[Name, String] = {
-      def getTypes(names: List[Name], nameMap: Name => Name): Map[Name, String] = {
-        names.foldLeft(Map.empty[Name, String]) { (map, name) =>
-          val tp1 = atNextPhase(resObjSym.info.nonPrivateDecl(name).tpe)
-          // the types are all =>T; remove the =>
-          val tp2 = tp1 match {
-            case PolyType(Nil, tp)  => tp
-            case tp                 => tp
-          }
-          // normalize non-public types so we don't see protected aliases like Self
-          val tp3 = compiler.atPhase(objRun.typerPhase)(tp2 match {
-            case TypeRef(_, sym, _) if !sym.isPublic  => tp2.normalize.toString
-            case tp                                   => tp.toString
-          })
+    def simpleNameOfType(name: Name) = compilerTypeOf(name).typeSymbol.simpleName
 
-          map + (name -> tp3)
-        }
+    private def typeMap[T](f: Type => T): Map[Name, T] = {
+      def toType(name: Name): T = {
+        // the types are all =>T; remove the =>
+        val tp1 = afterTyper(resObjSym.info.nonPrivateDecl(name).tpe match {
+          case PolyType(Nil, tp)  => tp
+          case tp                 => tp
+        })
+        // normalize non-public types so we don't see protected aliases like Self
+        afterTyper(tp1 match {
+          case TypeRef(_, sym, _) if !sym.isPublic  => f(tp1.normalize)
+          case tp                                   => f(tp)
+        })
       }
-
-      getTypes(valueNames, nme.getterToLocal(_)) ++ getTypes(defNames, identity)
+      valueNames ++ defNames ++ typeNames map (x => x -> toType(x)) toMap
     }
+    /** Types of variables defined by this request. */
+    lazy val compilerTypeOf = typeMap[Type](x => x)
+    /** String representations of same. */
+    lazy val typeOf         = typeMap[String](_.toString)
+
+    lazy val definedTypes: Map[Name, Type] = {
+      typeNames map (x => x -> afterTyper(resObjSym.info.nonPrivateDecl(x).tpe)) toMap
+    }
+
     private def bindExceptionally(t: Throwable) = {
       val ex: Exceptional =
         if (isettings.showInternalStackTraces) Exceptional(t)
@@ -1095,7 +1127,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       case x: ValOrDefDef           => x.name
       case Assign(Ident(name), _)   => name
       case ModuleDef(_, name, _)    => name
-      case _                        => onull(varNameCreator.mostRecent)
+      case _                        => varNameCreator.mostRecent
     }
 
   private def requestForName(name: Name): Option[Request] =
@@ -1103,6 +1135,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   private def requestForIdent(line: String): Option[Request] = requestForName(newTermName(line))
 
+  // XXX literals.
   def stringToCompilerType(id: String): compiler.Type = {
     // if it's a recognized identifier, the type of that; otherwise treat the
     // String like a value (e.g. scala.collection.Map) .

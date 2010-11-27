@@ -22,6 +22,7 @@ class Parsed private (
   def isAtStart     = cursor <= 0
 
   private var _verbosity = 0
+
   def verbosity = _verbosity
   def withVerbosity(v: Int): this.type = returning[this.type](this)(_ => _verbosity = v)
 
@@ -56,6 +57,8 @@ class Parsed private (
 }
 
 object Parsed {
+  private def onull(s: String) = if (s == null) "" else s
+
   def apply(s: String): Parsed = apply(onull(s), onull(s).length)
   def apply(s: String, cursor: Int): Parsed = apply(onull(s), cursor, "{},`; \t" contains _)
   def apply(s: String, cursor: Int, delimited: Char => Boolean): Parsed =
