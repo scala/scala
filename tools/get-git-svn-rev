@@ -13,7 +13,7 @@ else
   DIR=$1
 fi
 
-builtin cd $DIR
+cd $DIR
 
 if [ -d .svn ]; then
   svn info . | grep ^Revision | sed 's/Revision: //'
