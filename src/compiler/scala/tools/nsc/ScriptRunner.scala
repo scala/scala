@@ -226,7 +226,7 @@ object ScriptRunner {
         else recompile()                            // jar old - recompile the script.
       }
       // don't use a cache jar at all--just use the class files
-      else compile map (cp => handler(cp.path)) getOrElse false
+      else compile exists (cp => handler(cp.path))
     }
   }
 

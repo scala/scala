@@ -36,8 +36,8 @@ object ObjectRunner {
   /** Catches exceptions enumerated by run (in the case of InvocationTargetException,
    *  unwrapping it) and returns it any thrown in Left(x).
    */
-  def runAndCatch(urls: List[URL], objectName: String, arguments: Seq[String]): Either[Throwable, Unit] = {
-    try Right(run(urls, objectName, arguments))
+  def runAndCatch(urls: List[URL], objectName: String, arguments: Seq[String]): Either[Throwable, Boolean] = {
+    try   { run(urls, objectName, arguments) ; Right(true) }
     catch { case e => Left(unwrap(e)) }
   }
 }

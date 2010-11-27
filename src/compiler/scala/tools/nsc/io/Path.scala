@@ -28,6 +28,8 @@ import scala.util.Random.alphanumeric
  */
 
 object Path {
+  // See http://download.java.net/jdk7/docs/api/java/nio/file/Path.html
+  // for some ideas.
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
   private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
 

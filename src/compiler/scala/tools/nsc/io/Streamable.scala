@@ -105,4 +105,13 @@ object Streamable {
     def slurp(): String = slurp(creationCodec)
     def slurp(codec: Codec) = chars(codec).mkString
   }
+
+  def bytes(is: InputStream): Array[Byte] =
+    new Bytes { val inputStream = is } toByteArray
+
+  def slurp(is: InputStream)(implicit codec: Codec): String =
+    new Chars { val inputStream = is } slurp codec
+
+  def slurp(url: URL)(implicit codec: Codec): String =
+    slurp(url.openStream())
 }

@@ -46,6 +46,18 @@ package object util {
     result
   }
 
+  /** Given a function and a block of code, evaluates code block,
+   *  calls function with milliseconds elapsed, and returns block result.
+   */
+  def millisElapsedTo[T](f: Long => Unit)(body: => T): T = {
+    val start = System.currentTimeMillis
+    val result = body
+    val end = System.currentTimeMillis
+
+    f(end - start)
+    result
+  }
+
   /** Generate a string using a routine that wants to write on a stream. */
   def stringFromWriter(writer: PrintWriter => Unit): String = {
     val stringWriter = new StringWriter()

@@ -12,7 +12,7 @@ import java.net.{ URL, MalformedURLException }
 import scala.tools.util.PathResolver
 
 import io.{ File, Process }
-import util.{ ClassPath, ScalaClassLoader, waitingForThreads }
+import util.{ ClassPath, ScalaClassLoader }
 import Properties.{ versionString, copyrightString }
 
 /** An object that runs Scala code.  It has three possible
@@ -31,7 +31,7 @@ object MainGenericRunner {
 
   def main(args: Array[String]) {
     if (!process(args))
-      exit(1)
+      System.exit(1)
   }
 
   def process(args: Array[String]): Boolean = {
@@ -85,17 +85,13 @@ object MainGenericRunner {
             case "guess"  => ScalaClassLoader.classExists(classpath, thingToRun)
           }
 
-        if (isObjectName) {
-          ObjectRunner.runAndCatch(classpath, thingToRun, command.arguments) match {
-            case Left(ex) => errorFn(ex)
-            case _        => true
-          }
-        }
-        else {
-          ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments) match {
-            case Left(ex) => errorFn(ex)
-            case Right(b) => b
-          }
+        val result =
+          if (isObjectName) ObjectRunner.runAndCatch(classpath, thingToRun, command.arguments)
+          else ScriptRunner.runScriptAndCatch(settings, thingToRun, command.arguments)
+
+        result match {
+          case Left(ex) => errorFn(ex)
+          case Right(b) => b
         }
     }
   }
