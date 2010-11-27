@@ -720,13 +720,14 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
      * If the repeated params exist, it saves them into the `repeatedParams` map,
      * which is used later.
      */
-    private def saveRepeatedParams(dd: DefDef) {
-      val allparams = dd.vparamss.flatten
-      val reps = allparams.filter(p => isRepeatedParamType(p.symbol.tpe))
-      if (reps.isEmpty)
-        unit.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
-      else repeatedParams.put(dd.symbol, reps)
-    }
+    private def saveRepeatedParams(dd: DefDef): Unit =
+      if (dd.symbol.isConstructor) unit.error(dd.symbol.pos, "A constructor cannot be annotated with a `varargs` annotation.") else {
+        val allparams = dd.vparamss.flatten
+        val reps = allparams.filter(p => isRepeatedParamType(p.symbol.tpe))
+        if (reps.isEmpty)
+          unit.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
+        else repeatedParams.put(dd.symbol, reps)
+      }
 
     /* Called during post transform, after the method argument lists have been flattened.
      * It looks for the method in the `repeatedParams` map, and generates a Java-style
