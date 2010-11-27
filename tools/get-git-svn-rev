@@ -7,7 +7,7 @@
 # If no dir is given, current working dir is used.
 
 DIR=""
-if [[ $# -eq 0 ]]; then
+if [ $# -eq 0 ]; then
   DIR=`pwd`
 else
   DIR=$1
@@ -15,9 +15,9 @@ fi
 
 builtin cd $DIR
 
-if [[ -d .svn ]]; then
+if [ -d .svn ]; then
   svn info . | grep ^Revision | sed 's/Revision: //'
-elif [[ -d .git ]]; then
+elif [ -d .git ]; then
   GIT_PAGER=cat
   # this grabs more than one line because otherwise if you have local
   # commits which aren't in git-svn it won't see any revision.
