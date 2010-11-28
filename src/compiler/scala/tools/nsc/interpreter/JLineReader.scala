@@ -17,10 +17,6 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
   override lazy val completion = Option(interpreter) map (x => new Completion(x))
   override def init()          = consoleReader.getTerminal().initializeTerminal()
 
-  locally {
-    interpreter.installSigIntHandler()
-  }
-
   val consoleReader = {
     val r = new jline.ConsoleReader()
     r setHistory (History().jhistory)
@@ -33,6 +29,7 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
     r
   }
 
+  override def currentLine: String = consoleReader.getCursorBuffer.getBuffer.toString
   def readOneLine(prompt: String) = consoleReader readLine prompt
   val interactive = true
 }

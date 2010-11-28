@@ -19,7 +19,7 @@ import io.{ PlainFile, VirtualDirectory, spawn, callable, newDaemonThreadExecuto
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import scala.tools.nsc.{ InterpreterResults => IR }
-import scala.tools.util.{ PathResolver, SignalManager }
+import scala.tools.util.PathResolver
 import scala.tools.nsc.util.{ ScalaClassLoader, Exceptional }
 import ScalaClassLoader.URLClassLoader
 import Exceptional.unwrap
@@ -188,16 +188,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** An executor service which creates daemon threads. */
   private lazy val lineExecutor = newDaemonThreadExecutor()
-  private var currentExecution: Future[String] = null
-  private def sigintHandler = {
-    if (currentExecution == null) System.exit(1)
-    else currentExecution.cancel(true)
-  }
-  /** Try to install sigint handler: false on failure. */
-  def installSigIntHandler(): Boolean = {
-    try   { SignalManager("INT") = sigintHandler ; true }
-    catch { case _: Exception => false }
-  }
+  private var _currentExecution: Future[String] = null
+  def currentExecution = _currentExecution
 
   /** interpreter settings */
   lazy val isettings = new InterpreterSettings(this)
@@ -1033,7 +1025,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def loadAndRun: (String, Boolean) = {
       try {
         val resultValMethod = loadedResultObject getMethod "scala_repl_result"
-        currentExecution    = lineExecutor submit callable(resultValMethod.invoke(loadedResultObject).toString)
+        _currentExecution   = lineExecutor submit callable(resultValMethod.invoke(loadedResultObject).toString)
         while (!currentExecution.isDone)
           Thread.`yield`
 
@@ -1052,7 +1044,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           }
       }
       finally {
-        currentExecution = null
+        _currentExecution = null
       }
     }
 

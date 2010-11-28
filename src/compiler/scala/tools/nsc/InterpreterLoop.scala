@@ -10,7 +10,9 @@ import java.io.{ BufferedReader, FileReader, PrintWriter }
 import java.io.IOException
 
 import scala.tools.nsc.{ InterpreterResults => IR }
+import scala.tools.util.SignalManager
 import scala.annotation.tailrec
+import scala.util.control.Exception.{ ignoring }
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ops
 import util.{ ClassPath }
@@ -102,6 +104,31 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   /** Record a command for replay should the user request a :replay */
   def addReplay(cmd: String) = replayCommandStack ::= cmd
 
+  /** Try to install sigint handler: ignore failure.  Signal handler
+   *  will interrupt current line execution if any is in progress.
+   *
+   *  Attempting to protect the repl from accidental exit, we only honor
+   *  a single ctrl-C if the current buffer is empty: otherwise we look
+   *  for a second one within a short time.
+   */
+  private def installSigIntHandler() {
+    def onExit() {
+      Console.println("") // avoiding "shell prompt in middle of line" syndrome
+      System.exit(1)
+    }
+    ignoring(classOf[Exception]) {
+      SignalManager("INT") = {
+        val exec = interpreter.currentExecution
+        if (exec != null) exec.cancel(true)
+        else if (in.currentLine != "") {
+          SignalManager("INT") = onExit()
+          io.timer(5)(installSigIntHandler())  // restore original
+        }
+        else onExit()
+      }
+    }
+  }
+
   /** Close the interpreter and set the var to <code>null</code>. */
   def closeInterpreter() {
     if (interpreter ne null) {
@@ -121,6 +148,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
         settings.explicitParentLoader.getOrElse( classOf[InterpreterLoop].getClassLoader )
     }
     interpreter.setContextClassLoader()
+    installSigIntHandler()
     // interpreter.quietBind("settings", "scala.tools.nsc.InterpreterSettings", interpreter.isettings)
   }
 
