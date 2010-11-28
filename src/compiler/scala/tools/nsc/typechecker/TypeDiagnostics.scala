@@ -145,11 +145,15 @@ trait TypeDiagnostics {
   def alternativesString(tree: Tree) =
     alternatives(tree) map (x => "  " + methodTypeErrorString(x)) mkString ("", " <and>\n", "\n")
 
-  def missingParameterTypeMsg(fun: Tree, vparam: ValDef) = {
+  def missingParameterTypeMsg(fun: Tree, vparam: ValDef, pt: Type) = {
+    def anonMessage = (
+      "\nThe argument types of an anonymous function must be fully known. (SLS 8.5)" +
+      "\nExpected type was: " + pt.toLongString
+    )
     val suffix =
       if (!vparam.mods.isSynthetic) ""
       else " for expanded function" + (fun match {
-        case Function(_, Match(_, _)) => "\n(see SLS 8.5, \"Pattern Matching Anonymous Functions\")"
+        case Function(_, Match(_, _)) => anonMessage
         case _                        => " " + fun
       })
 

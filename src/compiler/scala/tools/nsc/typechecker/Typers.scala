@@ -2036,7 +2036,7 @@ trait Typers { self: Analyzer =>
                     }
                   case _ =>
                 }
-                error(vparam.pos, missingParameterTypeMsg(fun, vparam))
+                error(vparam.pos, missingParameterTypeMsg(fun, vparam, pt))
                 ErrorType
               }
             if (!vparam.tpt.pos.isDefined) vparam.tpt setPos vparam.pos.focus
