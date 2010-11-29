@@ -20,7 +20,7 @@ trait TraversableMethods[+A, +This <: TraversableLike[A, This]] extends Traversa
   self: Traversable[A] =>
 
   // maps/iteration
-  def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That
+  def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[This, B, That]): That
   def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That
   def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CanBuildFrom[This, B, That]): That

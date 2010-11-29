@@ -77,7 +77,7 @@ self =>
    *  @param rest   The stream that gets appended to this stream
    *  @return       The stream containing elements of this stream and the traversable object.
    */
-  def append[B >: A](rest: => Traversable[B]): Stream[B] =
+  def append[B >: A](rest: => TraversableOnce[B]): Stream[B] =
     if (isEmpty) rest.toStream else new Stream.Cons(head, tail append rest)
 
   /** Forces evaluation of the whole stream and returns it. */
@@ -187,7 +187,7 @@ self =>
    *  @return  <code>f(a<sub>0</sub>) ::: ... ::: f(a<sub>n</sub>)</code> if
    *           this stream is <code>[a<sub>0</sub>, ..., a<sub>n</sub>]</code>.
    */
-  override final def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
+  override final def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That =
     // we assume there is no other builder factory on streams and therefore know that That = Stream[B]
     // optimisations are not for speed, but for functionality
     // see tickets #153, #498, #2147, and corresponding tests in run/ (as well as run/stream_flatmap_odds.scala)
@@ -243,7 +243,7 @@ self =>
       }
     }
 
-    override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
+    override def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Stream[A], B, That]): That = {
       def tailFlatMap = asStream[B](tail withFilter p flatMap f)
       ifTargetThis[B, That](bf) {
         if (isEmpty) Stream.Empty
@@ -498,17 +498,15 @@ self =>
     result
   }
 
-  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ Traversable[B]): Stream[B] = {
+  override def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): Stream[B] = {
     def flatten1(t: Traversable[B]): Stream[B] =
       if (!t.isEmpty)
         new Stream.Cons(t.head, flatten1(t.tail))
       else
         tail.flatten
 
-    if (isEmpty)
-      Stream.empty
-    else
-      flatten1(asTraversable(head))
+    if (isEmpty) Stream.empty
+    else flatten1(asTraversable(head).toTraversable)
   }
 
   override def view = new StreamView[A, Stream[A]] {

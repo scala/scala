@@ -113,7 +113,7 @@ self =>
     val (pref, suff) = thisParSeq.span(p)
     (newForced(pref).asInstanceOf[This], newForced(suff).asInstanceOf[This])
   }
-  override def flatMap[S, That](f: T => Traversable[S])(implicit bf: CanBuildFrom[This, S, That]): That = newForced(thisParSeq.flatMap(f)).asInstanceOf[That]
+  override def flatMap[S, That](f: T => TraversableOnce[S])(implicit bf: CanBuildFrom[This, S, That]): That = newForced(thisParSeq.flatMap(f)).asInstanceOf[That]
 
   override def zip[U >: T, S, That](that: Iterable[S])(implicit bf: CanBuildFrom[This, (U, S), That]): That = newZippedTryParSeq(that).asInstanceOf[That]
   override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[This, (U, Int), That]): That =
@@ -137,7 +137,7 @@ self =>
   protected override def newAppended[U >: T](that: Traversable[U]): Transformed[U] = new Appended[U] { val rest = that }
   protected override def newDroppedWhile(p: T => Boolean) = unsupported
   protected override def newTakenWhile(p: T => Boolean) = unsupported
-  protected override def newFlatMapped[S](f: T => Traversable[S]) = unsupported
+  protected override def newFlatMapped[S](f: T => TraversableOnce[S]) = unsupported
   protected override def newFiltered(p: T => Boolean) = unsupported
   protected override def newZipped[S](that: Iterable[S]): Transformed[(T, S)] = new Zipped[S] { val other = that }
   protected override def newZippedAll[U >: T, S](that: Iterable[S], _thisElem: U, _thatElem: S): Transformed[(U, S)] = new ZippedAll[U, S] {

@@ -108,7 +108,7 @@ self =>
   }
 
   trait FlatMapped[B] extends Transformed[B] {
-    protected[this] val mapping: A => Traversable[B]
+    protected[this] val mapping: A => TraversableOnce[B]
     override def foreach[U](f: B => U) {
       for (x <- self)
         for (y <- mapping(x))
@@ -164,7 +164,7 @@ self =>
   protected def newForced[B](xs: => Seq[B]): Transformed[B] = new Forced[B] { val forced = xs }
   protected def newAppended[B >: A](that: Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
   protected def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected def newFlatMapped[B](f: A => Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
+  protected def newFlatMapped[B](f: A => TraversableOnce[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
   protected def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
   protected def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
   protected def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }
@@ -186,7 +186,7 @@ self =>
   override def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[This, B, That]): That =
     filter(pf.isDefinedAt).map(pf)(bf)
 
-  override def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
+  override def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[This, B, That]): That = {
     newFlatMapped(f).asInstanceOf[That]
 // was:    val b = bf(repr)
 //     if (b.isInstanceOf[NoBuilder[_]]) newFlatMapped(f).asInstanceOf[That]

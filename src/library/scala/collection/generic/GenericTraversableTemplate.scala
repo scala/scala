@@ -96,7 +96,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
    *  @return a new $coll resulting from concatenating all element ${coll}s.
    *  @usecase def flatten[B]: $Coll[B]
    */
-  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ Traversable[B]): CC[B] = {
+  def flatten[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[B] = {
     val b = genericBuilder[B]
     for (xs <- this)
       b ++= asTraversable(xs)
@@ -112,7 +112,7 @@ trait GenericTraversableTemplate[+A, +CC[X] <: Traversable[X]] extends HasNewBui
    *  @return a two-dimensional $coll of ${coll}s which has as ''n''th row
    *          the ''n''th column of this $coll.
    */
-  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ Traversable[B]): CC[CC[B] @uncheckedVariance] = {
+  def transpose[B](implicit asTraversable: A => /*<:<!!!*/ TraversableOnce[B]): CC[CC[B] @uncheckedVariance] = {
     if (isEmpty)
       return genericBuilder[CC[B]].result
 

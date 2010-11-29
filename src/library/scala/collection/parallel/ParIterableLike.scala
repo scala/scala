@@ -415,7 +415,7 @@ self =>
     executeAndWaitResult(new Collect[S, That](pf, pbf, parallelIterator) mapResult { _.result })
   } otherwise super.collect(pf)(bf)
 
-  override def flatMap[S, That](f: T => Traversable[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
+  override def flatMap[S, That](f: T => TraversableOnce[S])(implicit bf: CanBuildFrom[Repr, S, That]): That = bf ifParallel { pbf =>
     executeAndWaitResult(new FlatMap[S, That](f, pbf, parallelIterator) mapResult { _.result })
   } otherwise super.flatMap(f)(bf)
 
@@ -869,7 +869,7 @@ self =>
     override def merge(that: Collect[S, That]) = result = result combine that.result
   }
 
-  protected[this] class FlatMap[S, That](f: T => Traversable[S], pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: ParIterableIterator[T])
+  protected[this] class FlatMap[S, That](f: T => TraversableOnce[S], pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: ParIterableIterator[T])
   extends Transformer[Combiner[S, That], FlatMap[S, That]] {
     var result: Combiner[S, That] = null
     def leaf(prev: Option[Combiner[S, That]]) = result = pit.flatmap2combiner(f, pbf(self.repr))

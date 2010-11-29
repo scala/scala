@@ -149,46 +149,6 @@ object Iterator {
     def next = elem
   }
 
-  /** With the advent of TraversableOnce, it can be useful to have a builder
-   *  for Iterators so they can be treated uniformly along with the collections.
-   *  See scala.util.Random.shuffle for an example.
-   */
-  class IteratorCanBuildFrom[A] extends generic.CanBuildFrom[Iterator[A], A, Iterator[A]] {
-    def newIterator = new ArrayBuffer[A] mapResult (_.iterator)
-
-    /** Creates a new builder on request of a collection.
-     *  @param from  the collection requesting the builder to be created.
-     *  @return the result of invoking the `genericBuilder` method on `from`.
-     */
-    def apply(from: Iterator[A]) = newIterator
-
-    /** Creates a new builder from scratch
-     *  @return the result of invoking the `newBuilder` method of this factory.
-     */
-    def apply() = newIterator
-  }
-
-  implicit def iteratorCanBuildFrom[T]: IteratorCanBuildFrom[T] = new IteratorCanBuildFrom[T]
-
-  /** A wrapper class for the `flatten` method that is added to
-   *  class `Iterator` with implicit conversion
-   *  @see iteratorIteratorWrapper.
-   */
-  class IteratorIteratorOps[A](its: Iterator[Iterator[A]]) {
-    /** If `its` is an iterator of iterators, `its.flatten` gives the iterator
-     *  that is the concatenation of all iterators in `its`.
-     */
-    def flatten: Iterator[A] = new Iterator[A] {
-      private var it: Iterator[A] = empty
-      def hasNext: Boolean = it.hasNext || its.hasNext && { it = its.next(); hasNext }
-      def next(): A = if (hasNext) it.next() else empty.next()
-    }
-  }
-
-  /** An implicit conversion which adds the `flatten` method to class `Iterator` */
-  implicit def iteratorIteratorWrapper[A](its: Iterator[Iterator[A]]): IteratorIteratorOps[A] =
-    new IteratorIteratorOps[A](its)
-
   @deprecated("use `xs.iterator' or `Iterator(xs)' instead")
   def fromValues[a](xs: a*) = xs.iterator
 
@@ -375,13 +335,13 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  iterator followed by the values produced by iterator `that`.
    *  @usecase def ++(that: => Iterator[A]): Iterator[A]
    */
-  def ++[B >: A](that: => Iterator[B]): Iterator[B] = new Iterator[B] {
+  def ++[B >: A](that: => TraversableOnce[B]): Iterator[B] = new Iterator[B] {
     // optimize a little bit to prevent n log n behavior.
     private var cur : Iterator[B] = self
     // since that is by-name, make sure it's only referenced once -
     // if "val it = that" is inside the block, then hasNext on an empty
     // iterator will continually reevaluate it.  (ticket #3269)
-    lazy val it = that
+    lazy val it = that.toIterator
     // the eq check is to avoid an infinite loop on "x ++ x"
     def hasNext = cur.hasNext || ((cur eq self) && {
       it.hasNext && {
@@ -399,10 +359,10 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @return   the iterator resulting from applying the given iterator-valued function
    *                `f` to each value produced by this iterator and concatenating the results.
    */
-  def flatMap[B](f: A => Iterator[B]): Iterator[B] = new Iterator[B] {
+  def flatMap[B](f: A => TraversableOnce[B]): Iterator[B] = new Iterator[B] {
     private var cur: Iterator[B] = empty
     def hasNext: Boolean =
-      cur.hasNext || self.hasNext && { cur = f(self.next); hasNext }
+      cur.hasNext || self.hasNext && { cur = f(self.next).toIterator; hasNext }
     def next(): B = (if (hasNext) cur else empty).next()
   }
 

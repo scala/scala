@@ -393,7 +393,7 @@ self =>
       }
     }
 
-    override def flatmap2combiner[S, That](f: T => Traversable[S], cb: Combiner[S, That]): Combiner[S, That] = {
+    override def flatmap2combiner[S, That](f: T => TraversableOnce[S], cb: Combiner[S, That]): Combiner[S, That] = {
       //val cb = pbf(self.repr)
       while (i < until) {
         val traversable = f(arr(i).asInstanceOf[T])

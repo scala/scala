@@ -217,12 +217,12 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
    *  @return       a new collection of type `That` resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
    *
-   *  @usecase def flatMap[B](f: A => Traversable[B]): $Coll[B]
+   *  @usecase def flatMap[B](f: A => TraversableOnce[B]): $Coll[B]
    *
    *  @return       a new $coll resulting from applying the given collection-valued function
    *                `f` to each element of this $coll and concatenating the results.
    */
-  def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+  def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
     val b = bf(repr)
     for (x <- this) b ++= f(x)
     b.result
@@ -797,12 +797,12 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
      *  @return       a new collection of type `That` resulting from applying the given collection-valued function
      *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
      *
-     *  @usecase def flatMap[B](f: A => Traversable[B]): $Coll[B]
+     *  @usecase def flatMap[B](f: A => TraversableOnce[B]): $Coll[B]
      *
      *  @return       a new $coll resulting from applying the given collection-valued function
      *                `f` to each element of the outer $coll that satisfies predicate `p` and concatenating the results.
      */
-    def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
       val b = bf(repr)
       for (x <- self)
         if (p(x)) b ++= f(x)

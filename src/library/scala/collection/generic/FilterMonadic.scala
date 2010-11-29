@@ -5,7 +5,7 @@ package scala.collection.generic
  */
 trait FilterMonadic[+A, +Repr] {
   def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That
-  def flatMap[B, That](f: A => Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That
+  def flatMap[B, That](f: A => TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That
   def foreach[U](f: A => U): Unit
   def withFilter(p: A => Boolean): FilterMonadic[A, Repr]
 }

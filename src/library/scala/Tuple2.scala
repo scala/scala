@@ -58,7 +58,7 @@ case class Tuple2[@specialized(Int, Long, Double) +T1, @specialized(Int, Long, D
       b.result
     }
 
-    def flatMap[B, To](f: (El1, El2) => Traversable[B])(implicit cbf: CBF[Repr1, B, To]): To = {
+    def flatMap[B, To](f: (El1, El2) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
       val b = cbf(coll1.repr)
       val elems2 = coll2.iterator
 

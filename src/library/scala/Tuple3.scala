@@ -60,7 +60,7 @@ case class Tuple3[+T1, +T2, +T3](_1:T1,_2:T2,_3:T3)
       b.result
     }
 
-    def flatMap[B, To](f: (El1, El2, El3) => Traversable[B])(implicit cbf: CBF[Repr1, B, To]): To = {
+    def flatMap[B, To](f: (El1, El2, El3) => TraversableOnce[B])(implicit cbf: CBF[Repr1, B, To]): To = {
       val b = cbf(coll1.repr)
       val elems2 = coll2.iterator
       val elems3 = coll3.iterator

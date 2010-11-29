@@ -52,7 +52,7 @@ extends SeqView[A, Coll]
   protected override def newForced[B](xs: => collection.Seq[B]): Transformed[B] = new Forced[B] { val forced = xs }
   protected override def newAppended[B >: A](that: collection.Traversable[B]): Transformed[B] = new Appended[B] { val rest = that }
   protected override def newMapped[B](f: A => B): Transformed[B] = new Mapped[B] { val mapping = f }
-  protected override def newFlatMapped[B](f: A => collection.Traversable[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
+  protected override def newFlatMapped[B](f: A => collection.TraversableOnce[B]): Transformed[B] = new FlatMapped[B] { val mapping = f }
   protected override def newFiltered(p: A => Boolean): Transformed[A] = new Filtered { val pred = p }
   protected override def newSliced(_from: Int, _until: Int): Transformed[A] = new Sliced { val from = _from; val until = _until }
   protected override def newDroppedWhile(p: A => Boolean): Transformed[A] = new DroppedWhile { val pred = p }

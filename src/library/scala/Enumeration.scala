@@ -309,7 +309,7 @@ abstract class Enumeration(initial: Int, names: String*) {
     * concatenates the results.
     */
   @deprecated("use values.flatMap instead")
-  def flatMap[B](f: Value => Iterator[B]): Iterator[B] = this.iterator flatMap f
+  def flatMap[B](f: Value => TraversableOnce[B]): Iterator[B] = this.iterator flatMap f
 
   /** Returns all values of this enumeration that satisfy the predicate p.
     * The order of values is preserved.
