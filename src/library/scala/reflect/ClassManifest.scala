@@ -9,6 +9,7 @@
 package scala.reflect
 
 import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
+import java.io.Serializable
 
 /** <p>
   *   A <code>ClassManifest[T]</code> is an opaque descriptor for type <code>T</code>.
@@ -21,8 +22,7 @@ import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
   *   these operators should be on the unerased type.
   * </p>
   */
-@serializable
-trait ClassManifest[T] extends OptManifest[T] with Equals {
+trait ClassManifest[T] extends OptManifest[T] with Equals with Serializable {
 
   /** A class representing the type U to which T would be erased. Note
     * that there is no subtyping relationship between T and U. */
@@ -195,7 +195,7 @@ object ClassManifest {
     * strictly necessary as it could be obtained by reflection. It was
     * added so that erasure can be calculated without reflection. */
   def abstractType[T](prefix: OptManifest[_], name: String, clazz: Predef.Class[_], args: OptManifest[_]*): ClassManifest[T] =
-    new (ClassManifest[T] @serializable) {
+    new ClassManifest[T] {
       def erasure = clazz
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
@@ -207,7 +207,7 @@ object ClassManifest {
     * todo: remove after next boostrap
     */
   def abstractType[T](prefix: OptManifest[_], name: String, upperbound: ClassManifest[_], args: OptManifest[_]*): ClassManifest[T] =
-    new (ClassManifest[T] @serializable) {
+    new ClassManifest[T] {
       def erasure = upperbound.erasure
       override val typeArguments = args.toList
       override def toString = prefix.toString+"#"+name+argString
@@ -216,7 +216,6 @@ object ClassManifest {
 
 /** Manifest for the class type `clazz[args]', where `clazz' is
   * a top-level or static class. */
-@serializable
 private class ClassTypeManifest[T <: AnyRef](
   prefix: Option[OptManifest[_]],
   val erasure: Predef.Class[_],

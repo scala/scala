@@ -4,7 +4,7 @@ t0226.scala:5: error: not found: type A1
 t0226.scala:5: error: not found: type A1
       (implicit _1: Foo[List[A1]], _2: Foo[A2]): Foo[Tuple2[List[A1], A2]] =
                              ^
-t0226.scala:8: error: could not find implicit value for parameter rep: Test.this.Foo[((List[Char], Int), (object Nil, Int))]
+t0226.scala:8: error: could not find implicit value for parameter rep: Test.this.Foo[((List[Char], Int), (scala.collection.immutable.Nil.type, Int))]
   foo(((List('b'), 3), (Nil, 4)))
      ^
 three errors found

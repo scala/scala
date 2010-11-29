@@ -23,8 +23,6 @@ x=(1,2), m=scala.Tuple2[Int, Int]
 x=(abc,xyz), m=scala.Tuple2[java.lang.String, java.lang.String]
 x=('abc,'xyz), m=scala.Tuple2[scala.Symbol, scala.Symbol]
 
-x=Test$, m=Test$
-x=scala.collection.immutable.List$, m=scala.collection.immutable.List$
 
 x=Foo, m=Foo[Int]
 x=Foo, m=Foo[scala.collection.immutable.List[Int]]
