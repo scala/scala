@@ -10,10 +10,16 @@ case class NumTerm(val n: Number) extends Term[Number]
 class IntTerm(n: Int) extends NumTerm(n) with Term[Int]
 
 
-def f[a](t:Term[a], c:Cell[a]): Unit =
+def f[a](t:Term[a], c:Cell[a]): Unit = {
   t match {
     case NumTerm(n) => c.x = Double(1.0)
   }
+  t match {
+    // presently testing that this gets past the parser: eventually
+    // it should actually work.
+    case Cell[a](x: Int) => c.x = 5
+  }
+}
 
 
 val x:Term[Number] = NumTerm(Int(5))
