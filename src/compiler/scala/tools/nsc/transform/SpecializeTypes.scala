@@ -346,7 +346,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
   def specializeClass(clazz: Symbol, outerEnv: TypeEnv): List[Symbol] = {
     def specializedClass(env: TypeEnv, normMembers: List[Symbol]): Symbol = {
-      val cls = clazz.owner.newClass(clazz.pos, specializedName(clazz, env))
+      val cls = clazz.owner.newClass(clazz.pos, specializedName(clazz, env).toTypeName)
                               .setFlag(SPECIALIZED | clazz.flags)
                               .resetFlag(CASE)
       cls.sourceFile = clazz.sourceFile
@@ -545,7 +545,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         } else if (m.isClass) {
           val specClass: Symbol = m.cloneSymbol(cls).setFlag(SPECIALIZED)
           typeEnv(specClass) = fullEnv
-          specClass.name = specializedName(specClass, fullEnv)
+          specClass.name = specializedName(specClass, fullEnv).toTypeName
           enterMember(specClass)
           log("entered specialized class " + specClass.fullName)
           info(specClass) = SpecializedInnerClass(m, fullEnv)
@@ -581,6 +581,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val spc = specializedClass(env, decls1)
       log("entered " + spc + " in " + clazz.owner)
       hasSubclasses = true
+      val existing = clazz.owner.info.decl(spc.name)
+      // a symbol for the specialized class already exists if there's a classfile for it.
+      // keeping both crashes the compiler on test/files/pos/spec-Function1.scala
+      if (existing != NoSymbol) {
+        log("removing existing symbol for "+ existing)
+        clazz.owner.info.decls.unlink(existing)
+      }
+
       atPhase(phase.next)(clazz.owner.info.decls enter spc) //!! assumes fully specialized classes
     }
     if (hasSubclasses) clazz.resetFlag(FINAL)

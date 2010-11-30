@@ -29,6 +29,7 @@ abstract class TreeBuilder {
   def scalaUnitConstr          = gen.scalaUnitConstr
   def scalaScalaObjectConstr   = gen.scalaScalaObjectConstr
   def productConstr            = gen.productConstr
+  def serializableConstr       = gen.serializableConstr
 
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _

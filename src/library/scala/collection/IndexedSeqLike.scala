@@ -48,8 +48,8 @@ trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
    *  multiple `take`, `drop`, and `slice` operations on this iterator are bunched
    *  together for better efficiency.
    */
-  @serializable @SerialVersionUID(1756321872811029277L)
-  protected class Elements(start: Int, end: Int) extends BufferedIterator[A] {
+  @SerialVersionUID(1756321872811029277L)
+  protected class Elements(start: Int, end: Int) extends BufferedIterator[A] with Serializable {
     private var i = start
 
     def hasNext: Boolean = i < end

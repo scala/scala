@@ -38,13 +38,14 @@ import collection.parallel.mutable.ParHashSet
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @SerialVersionUID(1L)
+@SerialVersionUID(1L)
 class HashSet[A] private[collection] (contents: FlatHashTable.Contents[A])
 extends Set[A]
    with GenericSetTemplate[A, HashSet]
    with SetLike[A, HashSet[A]]
    with FlatHashTable[A]
    with Parallelizable[ParHashSet[A]]
+   with Serializable
 {
   initWithContents(contents)
 

@@ -39,12 +39,13 @@ import scala.collection.parallel.mutable.ParHashMap
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @SerialVersionUID(1L)
+@SerialVersionUID(1L)
 class HashMap[A, B] private[collection] (contents: HashTable.Contents[A, DefaultEntry[A, B]])
 extends Map[A, B]
    with MapLike[A, B, HashMap[A, B]]
    with HashTable[A, DefaultEntry[A, B]]
    with Parallelizable[ParHashMap[A, B]]
+   with Serializable
 {
   initWithContents(contents)
 

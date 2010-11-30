@@ -59,7 +59,7 @@ object ArrayStack extends SeqFactory[ArrayStack] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@cloneable @serializable @SerialVersionUID(8565219180626620510L)
+@cloneable @SerialVersionUID(8565219180626620510L)
 class ArrayStack[T] private(private var table : Array[AnyRef],
                             private var index : Int)
 extends Seq[T]
@@ -67,6 +67,7 @@ extends Seq[T]
    with GenericTraversableTemplate[T, ArrayStack]
    with Cloneable[ArrayStack[T]]
    with Builder[T, ArrayStack[T]]
+   with Serializable
 {
   def this() = this(new Array[AnyRef](1), 0)
 

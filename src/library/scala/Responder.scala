@@ -66,8 +66,7 @@ object Responder {
  *  @version 1.0
  *  @since 2.1
  */
-@serializable
-abstract class Responder[+A] {
+abstract class Responder[+A] extends Serializable {
 
   def respond(k: A => Unit): Unit
 

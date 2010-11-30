@@ -27,8 +27,7 @@ package scala
  *  @author  Martin Odersky, Iulian Dragos
  *  @version 1.8
  */
-@serializable
-final class Symbol private (val name: String) {
+final class Symbol private (val name: String) extends Serializable {
   /** Converts this symbol to a string.
    */
   override def toString(): String = "'" + name

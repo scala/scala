@@ -1337,10 +1337,16 @@ trait Typers { self: Analyzer =>
         for (c <- linkedClass.info.decl(nme.CONSTRUCTOR).alternatives)
           c.initialize
       val clazz = mdef.symbol.moduleClass
+      val maybeAddSerializable = (l: List[Tree]) =>
+        if(linkedClass == NoSymbol || !linkedClass.isSerializable || clazz.isSerializable) l
+        else {
+          clazz.makeSerializable()
+          l ::: List(TypeTree(SerializableClass.tpe))
+        }
       val typedMods = removeAnnotations(mdef.mods)
       assert(clazz != NoSymbol)
       val impl1 = newTyper(context.make(mdef.impl, clazz, new Scope))
-        .typedTemplate(mdef.impl, parentTypes(mdef.impl))
+        .typedTemplate(mdef.impl, maybeAddSerializable(parentTypes(mdef.impl)))
       val impl2 = typerAddSyntheticMethods(impl1, clazz, context)
 
       if (mdef.name == nme.PACKAGEkw)

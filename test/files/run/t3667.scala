@@ -3,6 +3,9 @@ object Test {
     val o1 = new Outer1
     val o2 = new Outer2
     val o3 = new Outer3
+    val o4 = new Outer4
+    val o5 = new Outer5
+    val o6 = new Outer6
 
     println(1)
     ser(new o1.Inner(1))
@@ -18,6 +21,21 @@ object Test {
     ser(new o3.Inner(1))
     o3.Inner
     ser(new o3.Inner(1))
+
+    println(4)
+    ser(new o4.Inner(1))
+    o4.Inner
+    ser(new o4.Inner(1))
+
+    println(2)
+    ser(new o5.Inner(1))
+    o5.Inner
+    ser(new o5.Inner(1))
+
+    println(3)
+    ser(new o6.Inner(1))
+    o6.Inner
+    ser(new o6.Inner(1))
 
     foo
   }
@@ -49,5 +67,18 @@ class Outer2 {
 
 @serializable
 class Outer3 {
+  case class Inner(x: Int)
+}
+
+
+class Outer4 extends Serializable {
+  class Inner(x: Int = 1) extends Serializable
+}
+
+class Outer5 extends Serializable {
+  case class Inner(x: Int = 1)
+}
+
+class Outer6 extends Serializable {
   case class Inner(x: Int)
 }

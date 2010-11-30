@@ -80,9 +80,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       annots1
     }
 
-    def setSerializable(): Unit =
-      addAnnotation(AnnotationInfo(SerializableAttr.tpe, Nil, Nil))
-
     def setAnnotations(annots: List[AnnotationInfoBase]): this.type = {
       this.rawannots = annots
       this
@@ -402,7 +399,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       }
 
     def isStrictFP          = hasAnnotation(ScalaStrictFPAttr) || (enclClass hasAnnotation ScalaStrictFPAttr)
-    def isSerializable      = hasAnnotation(SerializableAttr)
+    def isSerializable      = info.baseClasses.exists(p => p == SerializableClass || p == JavaSerializableClass) || hasAnnotation(SerializableAttr) // last part can be removed, @serializable annotation is deprecated
     def isDeprecated        = hasAnnotation(DeprecatedAttr)
     def deprecationMessage  = getAnnotation(DeprecatedAttr) flatMap { _.stringArg(0) }
     // !!! when annotation arguments are not literal strings, but any sort of
@@ -953,6 +950,19 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       validTo = NoPeriod
       //limit = NoPhase.id
       setInfo(completer)
+    }
+
+    /**
+     * Adds the interface scala.Serializable to the parents of a ClassInfoType.
+     * Note that the tree also has to be updated accordingly.
+     */
+    def makeSerializable() {
+      info match {
+        case ci @ ClassInfoType(_, _, _) =>
+          updateInfo(ci.copy(parents = ci.parents ::: List(SerializableClass.tpe)))
+        case i =>
+          abort("Only ClassInfoTypes can be made serializable: "+ i)
+      }
     }
 
 // Comparisons ----------------------------------------------------------------

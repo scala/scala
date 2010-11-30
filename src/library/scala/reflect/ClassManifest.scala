@@ -9,7 +9,6 @@
 package scala.reflect
 
 import scala.collection.mutable.{ WrappedArray, ArrayBuilder }
-import java.io.Serializable
 
 /** <p>
   *   A <code>ClassManifest[T]</code> is an opaque descriptor for type <code>T</code>.

@@ -22,8 +22,7 @@ package mutable
  *  @version 1.0, 21/07/2003
  *  @since   1
  */
-@serializable
-class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A] {
+class ImmutableSetAdaptor[A](protected var set: immutable.Set[A]) extends Set[A] with Serializable {
 
   override def size: Int = set.size
 

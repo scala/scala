@@ -83,7 +83,7 @@ object Option {
  *  @define p `p`
  *  @define f `f`
  */
-sealed abstract class Option[+A] extends Product {
+sealed abstract class Option[+A] extends Product with Serializable {
   self =>
 
   /** Returns true if the option is $none, false otherwise.

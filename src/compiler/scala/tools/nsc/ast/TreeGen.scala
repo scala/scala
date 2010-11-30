@@ -26,6 +26,7 @@ abstract class TreeGen {
   def scalaUnitConstr             = scalaDot(nme.Unit.toTypeName)
   def scalaScalaObjectConstr      = scalaDot(nme.ScalaObject.toTypeName)
   def productConstr               = scalaDot(nme.Product.toTypeName)
+  def serializableConstr          = scalaDot(nme.Serializable.toTypeName)
 
   private def isRootOrEmptyPackageClass(s: Symbol) = s.isRoot || s.isEmptyPackageClass
 

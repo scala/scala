@@ -243,8 +243,6 @@ trait SyntheticMethods extends ast.TreeDSL {
     if (!phase.erasedTypes) try {
       if (clazz.isCase) {
         val isTop = clazz.ancestors forall (x => !x.isCase)
-        // case classes are automatically marked serializable
-        clazz.setSerializable()
 
         if (isTop) {
           // If this case class has fields with less than public visibility, their getter at this
@@ -295,12 +293,6 @@ trait SyntheticMethods extends ast.TreeDSL {
       }
 
       if (clazz.isModuleClass) {
-        if (!clazz.isSerializable) {
-          val comp = companionClassOf(clazz, context)
-          if (comp.isCase || comp.isSerializable)
-            clazz.setSerializable()
-        }
-
         def hasReadResolve = {
           val sym = clazz.info member nme.readResolve // any member, including private
           sym.isTerm && !sym.isDeferred

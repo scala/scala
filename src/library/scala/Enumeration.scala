@@ -50,9 +50,8 @@ import java.lang.reflect.{ Modifier, Method => JMethod, Field => JField }
  *  @author  Matthias Zenger
  *  @version 1.0, 10/02/2004
  */
-@serializable
 @SerialVersionUID(8476000850333817230L)
-abstract class Enumeration(initial: Int, names: String*) {
+abstract class Enumeration(initial: Int, names: String*) extends Serializable {
   thisenum =>
 
   def this() = this(0, null)
@@ -178,9 +177,8 @@ abstract class Enumeration(initial: Int, names: String*) {
   }
 
   /** The type of the enumerated values. */
-  @serializable
   @SerialVersionUID(7091335633555234129L)
-  abstract class Value extends Ordered[Value] {
+  abstract class Value extends Ordered[Value] with Serializable {
     /** the id and bit location of this enumeration value */
     def id: Int
     /** a marker so we can tell whose values belong to whom come reflective-naming time */
@@ -216,9 +214,8 @@ abstract class Enumeration(initial: Int, names: String*) {
    *  overridden to change the enumeration's naming and integer identification
    *  behaviour.
    */
-  @serializable
   @SerialVersionUID(0 - 3501153230598116017L)
-  protected class Val(i: Int, name: String) extends Value {
+  protected class Val(i: Int, name: String) extends Value with Serializable {
     def this(i: Int)        = this(i, nextNameOrElse(i.toString))
     def this(name: String)  = this(nextId, name)
     def this()              = this(nextId)

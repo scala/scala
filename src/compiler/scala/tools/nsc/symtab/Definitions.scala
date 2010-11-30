@@ -169,11 +169,12 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
 
     // classes with special meanings
-    lazy val NotNullClass         = getClass("scala.NotNull")
-    lazy val TypeConstraintClass  = getClass("scala.TypeConstraint")
-    lazy val SingletonClass       = newClass(ScalaPackageClass, nme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
-    lazy val SerializableClass    = getClass(sn.Serializable)
-    lazy val ComparableClass      = getClass("java.lang.Comparable")
+    lazy val NotNullClass          = getClass("scala.NotNull")
+    lazy val TypeConstraintClass   = getClass("scala.TypeConstraint")
+    lazy val SingletonClass        = newClass(ScalaPackageClass, nme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
+    lazy val SerializableClass     = getClass("scala.Serializable")
+    lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
+    lazy val ComparableClass       = getClass("java.lang.Comparable")
 
     lazy val RepeatedParamClass = newCovariantPolyClass(
       ScalaPackageClass,
@@ -486,7 +487,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val ScalaNumberClass: Symbol           = getClass("scala.math.ScalaNumber")
     lazy val ScalaStrictFPAttr: Symbol          = getClass("scala.annotation.strictfp")
     lazy val SerialVersionUIDAttr: Symbol       = getClass("scala.SerialVersionUID")
-    lazy val SerializableAttr: Symbol           = getClass("scala.serializable")
+    lazy val SerializableAttr: Symbol           = getClass("scala.annotation.serializable") // @serializable is deprecated
     lazy val TraitSetterAnnotationClass: Symbol = getClass("scala.runtime.TraitSetter")
     lazy val TransientAttr: Symbol              = getClass("scala.transient")
     lazy val VolatileAttr: Symbol               = getClass("scala.volatile")

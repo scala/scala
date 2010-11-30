@@ -28,11 +28,12 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @cloneable
+@cloneable
 class Queue[A]
 extends MutableList[A]
    with GenericTraversableTemplate[A, Queue]
    with Cloneable[Queue[A]]
+   with Serializable
 {
   override def companion: GenericCompanion[Queue] = Queue
 

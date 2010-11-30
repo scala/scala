@@ -1,5 +1,4 @@
-@scala.serializable
-case class CaseClass[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) extends java.lang.Object with scala.ScalaObject with scala.Product {
+case class CaseClass[A <: scala.Seq[scala.Int]](i : A, s : scala.Predef.String) extends java.lang.Object with scala.ScalaObject with scala.Product with scala.Serializable {
   val i : A = { /* compiled code */ }
   val s : scala.Predef.String = { /* compiled code */ }
   def foo : scala.Int = { /* compiled code */ }

@@ -38,10 +38,11 @@ import scala.collection.parallel.immutable.ParRange
  *    '''Note:''' this method does not use builders to construct a new range,
  *         and its complexity is O(1).
  */
-@serializable @SerialVersionUID(7618862778670199309L)
+@SerialVersionUID(7618862778670199309L)
 class Range(val start: Int, val end: Int, val step: Int)
 extends IndexedSeq[Int]
    with collection.Parallelizable[ParRange]
+   with Serializable
 {
   def par = ParRange(start, end, step, false)
 

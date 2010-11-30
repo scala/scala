@@ -34,8 +34,7 @@ object BigDecimal {
   /** Cache ony for defaultMathContext using BigDecimals in a small range. */
   private lazy val cache = new Array[BigDecimal](maxCached - minCached + 1)
 
-  @serializable
-  object RoundingMode extends Enumeration(java.math.RoundingMode.values map (_.toString) : _*) {
+  object RoundingMode extends Enumeration(java.math.RoundingMode.values map (_.toString) : _*) with Serializable {
     type RoundingMode = Value
     val UP, DOWN, CEILING, FLOOR, HALF_UP, HALF_DOWN, HALF_EVEN, UNNECESSARY = Value
   }
@@ -155,11 +154,10 @@ object BigDecimal {
  *  @author  Stephane Micheloud
  *  @version 1.0
  */
-@serializable
 class BigDecimal(
   val bigDecimal: BigDec,
   val mc: MathContext)
-extends ScalaNumber with ScalaNumericConversions
+extends ScalaNumber with ScalaNumericConversions with Serializable
 {
   def this(bigDecimal: BigDec) = this(bigDecimal, BigDecimal.defaultMathContext)
   import BigDecimal.RoundingMode._

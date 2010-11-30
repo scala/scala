@@ -42,12 +42,12 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable
 class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit val ordering: Ordering[A])
   extends RedBlack[A]
      with SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
-     with MapLike[A, B, TreeMap[A, B]] {
+     with MapLike[A, B, TreeMap[A, B]]
+     with Serializable {
 
   def isSmaller(x: A, y: A) = ordering.lt(x, y)
 

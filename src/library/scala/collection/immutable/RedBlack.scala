@@ -15,8 +15,8 @@ package immutable
  *
  *  @since 2.3
  */
-@serializable @SerialVersionUID(8691885935445612921L)
-abstract class RedBlack[A] {
+@SerialVersionUID(8691885935445612921L)
+abstract class RedBlack[A] extends Serializable {
 
   def isSmaller(x: A, y: A): Boolean
 
@@ -27,8 +27,7 @@ abstract class RedBlack[A] {
   private def mkTree[B](isBlack: Boolean, k: A, v: B, l: Tree[B], r: Tree[B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
-  @serializable
-  abstract class Tree[+B] {
+  abstract class Tree[+B] extends Serializable {
     def isEmpty: Boolean
     def isBlack: Boolean
     def lookup(x: A): Tree[B]
@@ -49,8 +48,7 @@ abstract class RedBlack[A] {
     def last : A
     def count : Int
   }
-  @serializable
-  abstract class NonEmpty[+B] extends Tree[B] {
+  abstract class NonEmpty[+B] extends Tree[B] with Serializable {
     def isEmpty = false
     def key: A
     def value: B
@@ -270,7 +268,6 @@ abstract class RedBlack[A] {
     def last  = if (right.isEmpty) key else right.last
     def count = 1 + left.count + right.count
   }
-  @serializable
   case object Empty extends Tree[Nothing] {
     def isEmpty = true
     def isBlack = true
@@ -291,14 +288,12 @@ abstract class RedBlack[A] {
     def last = throw new NoSuchElementException("empty map")
     def count = 0
   }
-  @serializable
   case class RedTree[+B](override val key: A,
                          override val value: B,
                          override val left: Tree[B],
                          override val right: Tree[B]) extends NonEmpty[B] {
     def isBlack = false
   }
-  @serializable
   case class BlackTree[+B](override val key: A,
                            override val value: B,
                            override val left: Tree[B],

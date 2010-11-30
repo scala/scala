@@ -32,13 +32,14 @@ import annotation.migration
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @cloneable
+@cloneable
 class PriorityQueue[A](implicit val ord: Ordering[A])
       extends Iterable[A]
       with GenericOrderedTraversableTemplate[A, PriorityQueue]
       with IterableLike[A, PriorityQueue[A]]
       with Growable[A]
       with Builder[A, PriorityQueue[A]]
+      with Serializable
 {
   import ord._
 

@@ -2498,7 +2498,7 @@ self =>
         parents = parents ::: List(scalaScalaObjectConstr)
       if (parents.isEmpty)
         parents = List(scalaAnyRefConstr)
-      if (mods.isCase) parents = parents ::: List(productConstr)
+      if (mods.isCase) parents = parents ::: List(productConstr, serializableConstr)
       val tstart0 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
       atPos(tstart0) {
         Template(parents, self, constrMods, vparamss, argss, body, o2p(tstart))

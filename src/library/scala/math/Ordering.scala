@@ -40,8 +40,7 @@ import java.util.Comparator
  * @version 0.9.5, 2008-04-15
  * @since 2.7
  */
-@serializable
-trait Ordering[T] extends Comparator[T] with PartialOrdering[T] {
+trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializable {
   outer =>
 
   /** An Ordering is defined at all x and y. */

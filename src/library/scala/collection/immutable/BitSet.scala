@@ -20,10 +20,11 @@ import mutable.{ Builder, AddingBuilder }
  *  @define Coll immutable.BitSet
  *  @define coll immutable bitset
  */
-@serializable @SerialVersionUID(1611436763290191562L)
+@SerialVersionUID(1611436763290191562L)
 abstract class BitSet extends Set[Int]
                          with scala.collection.BitSet
-                         with BitSetLike[BitSet] {
+                         with BitSetLike[BitSet]
+                         with Serializable {
   override def empty = BitSet.empty
 
   def fromArray(elems: Array[Long]): BitSet = BitSet.fromArray(elems)

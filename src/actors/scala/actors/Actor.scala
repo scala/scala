@@ -417,8 +417,8 @@ object Actor extends Combinators {
  * @define actor actor
  * @define channel actor's mailbox
  */
-@serializable @SerialVersionUID(-781154067877019505L)
-trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with InputChannel[Any] {
+@SerialVersionUID(-781154067877019505L)
+trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with InputChannel[Any] with Serializable {
 
   /* The following two fields are only used when the actor
    * suspends by blocking its underlying thread, for example,

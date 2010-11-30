@@ -34,8 +34,7 @@ import generic._
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@serializable
-class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
+class ListMap[A, B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Serializable {
 
 
   override def empty = ListMap.empty[A, B]

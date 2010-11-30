@@ -42,8 +42,8 @@ object ListMap extends ImmutableMapFactory[ListMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @SerialVersionUID(301002838095710379L)
-class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
+@SerialVersionUID(301002838095710379L)
+class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] with Serializable {
 
   override def empty = ListMap.empty
 
@@ -123,9 +123,9 @@ class ListMap[A, +B] extends Map[A, B] with MapLike[A, B, ListMap[A, B]] {
 
   /** This class represents an entry in the `ListMap`.
    */
-  @serializable @SerialVersionUID(-6453056603889598734L)
+  @SerialVersionUID(-6453056603889598734L)
   protected class Node[B1 >: B](override protected val key: A,
-                                override protected val value: B1) extends ListMap[A, B1] {
+                                override protected val value: B1) extends ListMap[A, B1] with Serializable {
     /** Returns the number of mappings in this map.
      *
      *  @return number of mappings.

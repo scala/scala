@@ -36,7 +36,7 @@ trait JavaPlatform extends Platform[AbstractFile] {
   def isMaybeBoxed(sym: Symbol): Boolean = {
     import definitions._
     (sym == ObjectClass) ||
-    (sym == SerializableClass) ||
+    (sym == JavaSerializableClass) ||
     (sym == ComparableClass) ||
     (sym isNonBottomSubClass BoxedNumberClass) ||
     (sym isNonBottomSubClass BoxedCharacterClass)

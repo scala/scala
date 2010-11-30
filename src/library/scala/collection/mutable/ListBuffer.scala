@@ -38,13 +38,14 @@ import immutable.{List, Nil, ::}
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @SerialVersionUID(3419063961353022661L)
+@SerialVersionUID(3419063961353022661L)
 final class ListBuffer[A]
       extends Buffer[A]
          with GenericTraversableTemplate[A, ListBuffer]
          with BufferLike[A, ListBuffer[A]]
          with Builder[A, List[A]]
          with SeqForwarder[A]
+         with Serializable
 {
   override def companion: GenericCompanion[ListBuffer] = ListBuffer
 

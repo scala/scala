@@ -55,12 +55,13 @@ object Stack extends SeqFactory[Stack] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @cloneable
+@cloneable
 class Stack[A] private (var elems: List[A])
 extends Seq[A]
    with SeqLike[A, Stack[A]]
    with GenericTraversableTemplate[A, Stack]
    with Cloneable[Stack[A]]
+   with Serializable
 {
   def this() = this(Nil)
 

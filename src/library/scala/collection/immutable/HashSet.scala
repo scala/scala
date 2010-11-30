@@ -30,11 +30,12 @@ import collection.parallel.immutable.ParHashSet
  *  @define Coll immutable.HashSet
  *  @define coll immutable hash set
  */
-@serializable @SerialVersionUID(2L)
+@SerialVersionUID(2L)
 class HashSet[A] extends Set[A]
                     with GenericSetTemplate[A, HashSet]
                     with SetLike[A, HashSet[A]]
                     with Parallelizable[ParHashSet[A]]
+                    with Serializable
 {
   override def companion: GenericCompanion[HashSet] = HashSet
 
@@ -412,7 +413,7 @@ time { mNew.iterator.foreach( p => ()) }
     }
   }
 
-  @serializable  @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashSet[A]) {
+  @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashSet[A]) extends Serializable {
     private def writeObject(out: java.io.ObjectOutputStream) {
       val s = orig.size
       out.writeInt(s)

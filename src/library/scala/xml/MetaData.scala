@@ -71,8 +71,7 @@ object MetaData {
  * Copyright 2008 Google Inc. All Rights Reserved.
  * @author Burak Emir <bqe@google.com>
  */
-@serializable
-abstract class MetaData extends Iterable[MetaData] with Equality
+abstract class MetaData extends Iterable[MetaData] with Equality with Serializable
 {
   /** Updates this MetaData with the MetaData given as argument. All attributes that occur in updates
    *  are part of the resulting MetaData. If an attribute occurs in both this instance and

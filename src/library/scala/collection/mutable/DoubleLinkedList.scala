@@ -37,10 +37,11 @@ import generic._
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @SerialVersionUID(-8144992287952814767L)
+@SerialVersionUID(-8144992287952814767L)
 class DoubleLinkedList[A]() extends LinearSeq[A]
                             with GenericTraversableTemplate[A, DoubleLinkedList]
-                            with DoubleLinkedListLike[A, DoubleLinkedList[A]] {
+                            with DoubleLinkedListLike[A, DoubleLinkedList[A]]
+                            with Serializable {
   next = this
 
   /** Creates a node for the double linked list.

@@ -31,9 +31,8 @@ import collection.{Iterator, Seq}
  *  @param regex      A string representing a regular expression
  *  @param groupNames A mapping from names to indices in capture groups
  */
-@serializable
 @SerialVersionUID(-2094783597747625537L)
-class Regex(regex: String, groupNames: String*) {
+class Regex(regex: String, groupNames: String*) extends  Serializable {
 
   import Regex._
 

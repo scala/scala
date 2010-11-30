@@ -63,10 +63,10 @@ object ListSet extends ImmutableSetFactory[ListSet] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable
 class ListSet[A] extends Set[A]
                     with GenericSetTemplate[A, ListSet]
-                    with SetLike[A, ListSet[A]] { self =>
+                    with SetLike[A, ListSet[A]]
+                    with Serializable{ self =>
   override def companion: GenericCompanion[ListSet] = ListSet
 
   /** Returns the number of elements in this set.
@@ -136,8 +136,7 @@ class ListSet[A] extends Set[A]
 
   /** Represents an entry in the `ListSet`.
    */
-  @serializable
-  protected class Node(override protected val elem: A) extends ListSet[A] {
+  protected class Node(override protected val elem: A) extends ListSet[A] with Serializable {
     override private[ListSet] def unchecked_outer = self
 
     /** Returns the number of elements in this set.

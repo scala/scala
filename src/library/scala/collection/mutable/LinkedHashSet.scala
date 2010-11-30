@@ -38,11 +38,12 @@ import generic._
  *  @define orderDependent
  *  @define orderDependentFold
  */
-@serializable @SerialVersionUID(1L)
+@SerialVersionUID(1L)
 class LinkedHashSet[A] extends Set[A]
                           with GenericSetTemplate[A, LinkedHashSet]
                           with SetLike[A, LinkedHashSet[A]]
                           with FlatHashTable[A]
+                          with Serializable
 {
   override def companion: GenericCompanion[LinkedHashSet] = LinkedHashSet
 

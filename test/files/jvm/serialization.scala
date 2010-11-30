@@ -40,7 +40,6 @@ object Test1_scala {
     (a1.length == a2.length) &&
     (Iterator.range(0, a1.length) forall { i => a1(i) == a2(i) })
 
-  @serializable
   object WeekDay extends Enumeration {
     type WeekDay = Value
     val Monday, Tuesday, Wednesday, Thusday, Friday, Saturday, Sunday = Value
@@ -187,7 +186,6 @@ object Test1_scala {
 //############################################################################
 // Test classes in package "scala.collection.immutable"
 
-@serializable
 object Test2_immutable {
   import scala.collection.immutable.{
     BitSet, HashMap, HashSet, ListMap, ListSet, Queue, Range, SortedMap,
@@ -353,10 +351,6 @@ object Test3_mutable {
     val _hs1: HashSet[String] = read(write(hs1))
     check(hs1, _hs1)
 
-    // History
-    @serializable
-    class Feed extends Publisher[String]
-
     val h1 = new History[String, Int]
     val _h1: History[String, Int] = read(write(h1))
     check(h1, _h1)
@@ -372,8 +366,6 @@ object Test3_mutable {
     lb1 ++= List("white", "black")
     val _lb1: ListBuffer[String] = read(write(lb1))
     check(lb1, _lb1)
-
-    // Publisher
 
     // Queue
     val q1 = new Queue[Int]
@@ -471,8 +463,7 @@ object Test4_xml {
 //############################################################################
 // Test user-defined classes WITHOUT nesting
 
-@serializable
-class Person(_name: String) {
+class Person(_name: String) extends Serializable {
   private var name = _name
   override def toString() = name
   override def equals(that: Any): Boolean =
@@ -480,12 +471,11 @@ class Person(_name: String) {
     (name == that.asInstanceOf[Person].name)
 }
 
-@serializable
-class Employee(_name: String) {
+class Employee(_name: String) extends Serializable {
   private var name = _name
   override def toString() = name
 }
-@serializable
+
 object bob extends Employee("Bob")
 
 object Test5 {
@@ -508,13 +498,10 @@ object Test5 {
 //############################################################################
 // Test user-defined classes WITH nesting
 
-@serializable
 object Test6 {
-  @serializable
   object bill extends Employee("Bill") {
     val x = paul
   }
-  @serializable
   object paul extends Person("Paul") {
     val x = 4  //  bill; => StackOverflowException !!!
   }
@@ -540,11 +527,8 @@ object Test6 {
 //############################################################################
 // Nested objects cannot get readresolve automatically because after deserialization
 // they would be null (they are treated as lazy vals)
-@serializable
-class Outer {
-
-    @serializable
-    object Inner
+class Outer extends Serializable {
+    object Inner extends Serializable
 }
 
 object Test7 {
@@ -564,11 +548,10 @@ object Test7 {
 
 
 // Verify that transient lazy vals don't get serialized
-@serializable
-class WithTransient {
+class WithTransient extends Serializable {
   @transient lazy val a1 = 1
   @transient private lazy val a2 = 2
-  @transient @serializable object B
+  @transient object B extends Serializable
 
   def test = {
     println(a1)

@@ -15,8 +15,7 @@ import scala.collection.mutable.HashMap
 /**
  * @author Philipp Haller
  */
-@serializable
-private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends AbstractActor {
+private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: NetKernel) extends AbstractActor with Serializable {
   import java.io.{IOException, ObjectOutputStream, ObjectInputStream}
 
   @transient
@@ -82,8 +81,7 @@ private[remote] class Proxy(node: Node, name: Symbol, @transient var kernel: Net
     name+"@"+node
 }
 
-@serializable
-class LinkToFun extends Function2[AbstractActor, Proxy, Unit] {
+class LinkToFun extends Function2[AbstractActor, Proxy, Unit] with Serializable {
   def apply(target: AbstractActor, creator: Proxy) {
     target.linkTo(creator)
   }
@@ -91,8 +89,7 @@ class LinkToFun extends Function2[AbstractActor, Proxy, Unit] {
     "<LinkToFun>"
 }
 
-@serializable
-class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] {
+class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] with Serializable {
   def apply(target: AbstractActor, creator: Proxy) {
     target.unlinkFrom(creator)
   }
@@ -100,8 +97,7 @@ class UnlinkFromFun extends Function2[AbstractActor, Proxy, Unit] {
     "<UnlinkFromFun>"
 }
 
-@serializable
-class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] {
+class ExitFun(reason: AnyRef) extends Function2[AbstractActor, Proxy, Unit] with Serializable {
   def apply(target: AbstractActor, creator: Proxy) {
     target.exit(creator, reason)
   }

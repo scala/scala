@@ -24,9 +24,8 @@ package mutable
  *  @tparam Evt   Type of events.
  *  @tparam Pub   Type of publishers.
  */
-@serializable
 @SerialVersionUID(5219213543849892588L)
-class History[Evt, Pub] extends Subscriber[Evt, Pub] with Iterable[(Pub, Evt)]
+class History[Evt, Pub] extends Subscriber[Evt, Pub] with Iterable[(Pub, Evt)] with Serializable
 {
   protected val log: Queue[(Pub, Evt)] = new Queue
   val maxHistory: Int = 1000

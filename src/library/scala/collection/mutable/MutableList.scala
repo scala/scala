@@ -25,12 +25,13 @@ import immutable.{List, Nil}
  *  @version 2.8
  *  @since   1
  */
-@serializable @SerialVersionUID(5938451523372603072L)
+@SerialVersionUID(5938451523372603072L)
 class MutableList[A]
 extends LinearSeq[A]
    with LinearSeqOptimized[A, MutableList[A]]
    with GenericTraversableTemplate[A, MutableList]
    with Builder[A, MutableList[A]]
+   with Serializable
 {
   override def companion: GenericCompanion[MutableList] = MutableList
 

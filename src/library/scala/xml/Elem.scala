@@ -40,14 +40,13 @@ object Elem
  * Copyright 2008 Google Inc. All Rights Reserved.
  * @author Burak Emir <bqe@google.com>
  */
-@serializable
 class Elem(
   override val prefix: String,
   val label: String,
   override val attributes: MetaData,
   override val scope: NamespaceBinding,
   val child: Node*)
-extends Node
+extends Node with Serializable
 {
   final override def doCollectNamespaces = true
   final override def doTransform         = true

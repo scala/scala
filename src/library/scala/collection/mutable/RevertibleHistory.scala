@@ -24,8 +24,7 @@ package mutable
  *  @version 1.0, 08/07/2003
  *  @since   2.8
  */
-@serializable
-class RevertibleHistory[Evt <: Undoable, Pub] extends History[Evt, Pub] with Undoable {
+class RevertibleHistory[Evt <: Undoable, Pub] extends History[Evt, Pub] with Undoable with Serializable {
 
   /** Rollback the full history.
    */

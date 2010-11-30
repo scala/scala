@@ -18,5 +18,4 @@ package scala.reflect
  *
  *  @author Martin Odersky
  */
-@serializable
-trait OptManifest[+T]
+trait OptManifest[+T] extends Serializable

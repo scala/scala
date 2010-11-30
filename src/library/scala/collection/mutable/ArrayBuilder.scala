@@ -20,8 +20,7 @@ import scala.reflect.ClassManifest
  *
  *  @tparam T    the type of the elements for the builder.
  */
-@serializable
-abstract class ArrayBuilder[T] extends Builder[T, Array[T]]
+abstract class ArrayBuilder[T] extends Builder[T, Array[T]] with Serializable
 
 /** A companion object for array builders.
  *

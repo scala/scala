@@ -15,9 +15,9 @@ package scala.actors
  *
  * @author Philipp Haller
  */
-@serializable @SerialVersionUID(7124278808020037465L)
+@SerialVersionUID(7124278808020037465L)
 @deprecated("this class is going to be removed in a future release")
-class MessageQueueElement(msg: Any, session: OutputChannel[Any], next: MessageQueueElement) extends MQueueElement[Any](msg, session, next) {
+class MessageQueueElement(msg: Any, session: OutputChannel[Any], next: MessageQueueElement) extends MQueueElement[Any](msg, session, next) with Serializable {
   def this() = this(null, null, null)
   def this(msg: Any, session: OutputChannel[Any]) = this(msg, session, null)
 }
@@ -35,9 +35,9 @@ private[actors] class MQueueElement[Msg >: Null](val msg: Msg, val session: Outp
  *
  * @author Philipp Haller
  */
-@serializable @SerialVersionUID(2168935872884095767L)
+@SerialVersionUID(2168935872884095767L)
 @deprecated("this class is going to be removed in a future release")
-class MessageQueue(label: String) extends MQueue[Any](label)
+class MessageQueue(label: String) extends MQueue[Any](label) with Serializable
 
 private[actors] class MQueue[Msg >: Null](protected val label: String) {
   protected var first: MQueueElement[Msg] = null

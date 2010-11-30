@@ -197,6 +197,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val ScalaObject = newTermName("ScalaObject")
     val ScalaRunTime = newTermName("ScalaRunTime")
     val Seq = newTermName("Seq")
+    val Serializable = newTermName("Serializable")
     val Short = newTermName("Short")
     val Singleton = newTermName("Singleton")
     val Some = newTermName("Some")
@@ -379,7 +380,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val NLRControl          : Name = newTermName("scala.runtime.NonLocalReturnControl")
     val NPException         : Name // NullPointerException
     val Object              : Name
-    val Serializable        : Name
+    val JavaSerializable    : Name
     val String              : Name
     val Throwable           : Name
     val ValueType           : Name
@@ -446,7 +447,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val MethodAsObject      = newTermName("System.Reflection.MethodInfo")
     final val NPException         = newTermName("System.NullReferenceException")
     final val Object              = newTermName("System.Object")
-    final val Serializable        = nme.NOSYMBOL
+    final val JavaSerializable    = nme.NOSYMBOL
     final val String              = newTermName("System.String")
     final val Throwable           = newTermName("System.Exception")
     final val ValueType           = newTermName("System.ValueType")
@@ -467,7 +468,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     final val BeanProperty        = newTermName("scala.reflect.BeanProperty")
     final val BooleanBeanProperty = newTermName("scala.reflect.BooleanBeanProperty")
     final val Code                = newTermName("scala.reflect.Code")
-    final val Serializable        = newTermName("java.io.Serializable")
+    final val JavaSerializable    = newTermName("java.io.Serializable")
   }
 
   lazy val sn: SymbolNames =

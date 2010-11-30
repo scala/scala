@@ -32,11 +32,11 @@ object Vector extends SeqFactory[Vector] {
 // in principle, most members should be private. however, access privileges must
 // be carefully chosen to not prevent method inlining
 
-@serializable
 final class Vector[+A](startIndex: Int, endIndex: Int, focus: Int) extends IndexedSeq[A]
                  with GenericTraversableTemplate[A, Vector]
                  with IndexedSeqLike[A, Vector[A]]
-                 with VectorPointer[A @uncheckedVariance] { self =>
+                 with VectorPointer[A @uncheckedVariance]
+                 with Serializable { self =>
 
 override def companion: GenericCompanion[Vector] = Vector
 

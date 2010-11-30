@@ -26,12 +26,12 @@ import annotation.tailrec
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable
 @SerialVersionUID(-7622936493364270175L)
 class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
             extends LinearSeq[A]
             with GenericTraversableTemplate[A, Queue]
-            with LinearSeqLike[A, Queue[A]] {
+            with LinearSeqLike[A, Queue[A]]
+            with Serializable {
 
   override def companion: GenericCompanion[Queue] = Queue
 

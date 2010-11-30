@@ -43,10 +43,10 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-@serializable @SerialVersionUID(-234066569443569402L)
+@SerialVersionUID(-234066569443569402L)
 class TreeSet[A](override val size: Int, t: RedBlack[A]#Tree[Unit])
                 (implicit val ordering: Ordering[A])
-  extends RedBlack[A] with SortedSet[A] with SortedSetLike[A, TreeSet[A]] {
+  extends RedBlack[A] with SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
   override def stringPrefix = "TreeSet"
 

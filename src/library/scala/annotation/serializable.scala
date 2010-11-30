@@ -6,12 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala
-
+package scala.annotation
 
 /**
  * An annotation that designates the class to which it is applied as serializable
  */
-class serializable extends StaticAnnotation {}
+@deprecated("instead of `@serializable class C`, use `class C extends Serializable`")
+class serializable extends StaticAnnotation

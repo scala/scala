@@ -22,13 +22,13 @@ import immutable.StringLike
  *  @version 2.8
  *  @since   2.7
  */
-@serializable
 @SerialVersionUID(0 - 8525408645367278351L)
 final class StringBuilder(private val underlying: JavaStringBuilder)
       extends Builder[Char, StringBuilder]
          with java.lang.CharSequence
          with IndexedSeq[Char]
-         with StringLike[StringBuilder] {
+         with StringLike[StringBuilder]
+         with Serializable {
 
   override protected[this] def thisCollection: StringBuilder = this
   override protected[this] def toCollection(repr: StringBuilder): StringBuilder = repr
