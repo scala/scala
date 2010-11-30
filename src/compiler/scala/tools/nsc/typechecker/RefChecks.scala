@@ -870,24 +870,29 @@ abstract class RefChecks extends InfoTransform {
             sym = sym.info.bounds.hi.widen.typeSymbol
           sym
         }
-        val actual = underlyingClass(args.head.tpe)
+        val actual   = underlyingClass(args.head.tpe)
         val receiver = underlyingClass(qual.tpe)
+
+        /** Symbols which limit the warnings we can issue since they may be value types */
+        val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, SerializableClass)
 
         // Whether def equals(other: Any) is overridden
         def isUsingDefaultEquals      = {
           val m = receiver.info.member(nme.equals_)
           (m == Object_equals) || (m == Any_equals)
         }
-        // Whether this == or != is actually an overloaded version
+        // Whether this == or != is one of those defined in Any/AnyRef or an overload from elsewhere.
         def isUsingDefaultScalaOp = {
           val s = fn.symbol
-          (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=) || (s == Object_eq) || (s == Object_ne)
+          (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=)
         }
         // Whether the operands+operator represent a warnable combo (assuming anyrefs)
-        def isWarnable                = isReferenceOp || (isUsingDefaultEquals && isUsingDefaultScalaOp)
-        def isScalaNumber(s: Symbol)  = isNumericValueClass(s) || (s isSubClass BoxedNumberClass) || (s isSubClass ScalaNumberClass)
-        def isEitherNull              = (receiver == NullClass) || (actual == NullClass)
-        def isEitherNullable          = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
+        def isWarnable               = isReferenceOp || (isUsingDefaultEquals && isUsingDefaultScalaOp)
+        def isEitherNull             = (receiver == NullClass) || (actual == NullClass)
+        def isEitherNullable         = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
+        def isBoolean(s: Symbol)     = unboxedValueClass(s) == BooleanClass
+        def isUnit(s: Symbol)        = unboxedValueClass(s) == UnitClass
+        def isNumeric(s: Symbol)     = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
 
         def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
           val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
@@ -895,23 +900,37 @@ abstract class RefChecks extends InfoTransform {
         }
 
         // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol'
-        def nonSensible(pre: String, alwaysEqual: Boolean) =
-          nonSensibleWarning(pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
-                             alwaysEqual)
+        def nonSensible(pre: String, alwaysEqual: Boolean) = nonSensibleWarning(
+          pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
+          alwaysEqual
+        )
 
-        if (receiver == BooleanClass && !(receiver isSubClass actual))  // true == 5
-          nonSensible("", false)
-        else if (receiver == UnitClass && actual == UnitClass)  // () == ()
-          nonSensible("", true)
-        else if (isNumericValueClass(receiver)) {
-          if (!isScalaNumber(actual) && !forMSIL) // 5 == "abc"
+        if (isBoolean(receiver)) {
+          if (!isBoolean(actual) && !isMaybeValue(actual))    // true == 5
             nonSensible("", false)
         }
+        else if (isUnit(receiver)) {
+          if (isUnit(actual)) // () == ()
+            nonSensible("", true)
+          else if (!isUnit(actual) && !isMaybeValue(actual))  // () == "abc"
+            nonSensible("", false)
+        }
+        else if (isNumeric(receiver)) {
+          if (!isNumeric(actual) && !forMSIL)
+            if (isUnit(actual) || isBoolean(actual) || !isMaybeValue(actual))   // 5 == "abc"
+              nonSensible("", false)
+        }
         else if (isWarnable) {
-          if (receiver.isFinal && !isEitherNull && !(receiver isSubClass actual)) // object X, Y; X == Y
-            nonSensible((if (isEitherNullable) "non-null " else ""), false)
-          else if (isNew(qual) || (isNew(args.head) && (receiver.isFinal || isReferenceOp))) // new X == y or object X ; X == new Y
+          if (isNew(qual)) // new X == y
             nonSensibleWarning("a fresh object", false)
+          else if (isNew(args.head) && (receiver.isFinal || isReferenceOp))   // object X ; X == new Y
+            nonSensibleWarning("a fresh object", false)
+          else if (receiver.isFinal && !isEitherNull && !(receiver isSubClass actual)) {  // object X, Y; X == Y
+            if (isEitherNullable)
+              nonSensible("non-null ", false)
+            else
+              nonSensible("", false)
+          }
         }
       case _ =>
     }

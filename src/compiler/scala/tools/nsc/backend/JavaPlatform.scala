@@ -33,12 +33,18 @@ trait JavaPlatform extends Platform[AbstractFile] {
   def externalEqualsNumChar = getMember(BoxesRunTimeClass, "equalsNumChar")
   def externalEqualsNumObject = getMember(BoxesRunTimeClass, "equalsNumObject")
 
+  /** We could get away with excluding BoxedBooleanClass for the
+   *  purpose of equality testing since it need not compare equal
+   *  to anything but other booleans, but it should be present in
+   *  case this is put to other uses.
+   */
   def isMaybeBoxed(sym: Symbol): Boolean = {
     import definitions._
     (sym == ObjectClass) ||
     (sym == JavaSerializableClass) ||
     (sym == ComparableClass) ||
     (sym isNonBottomSubClass BoxedNumberClass) ||
-    (sym isNonBottomSubClass BoxedCharacterClass)
+    (sym isNonBottomSubClass BoxedCharacterClass) ||
+    (sym isNonBottomSubClass BoxedBooleanClass)
   }
 }

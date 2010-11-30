@@ -27,10 +27,14 @@ class EqEqValTest {
   0 == (c = 1)
 
   1 == "abc"
-  "abc" == 1  // doesn't warn since String defines an equals method
+  1 == ("abc": Any) // doesn't warn because an Any may be a boxed Int
+  1 == (1: Any)     // as above
+  "abc" == 1        // doesn't warn since String defines an equals method
 
   new AnyRef == 1
-  1 == new AnyRef
+  1 == new AnyRef                 // doesn't warn because it could be...
+  1 == (new java.lang.Integer(1)) // ...something like this
+  1 == (new java.lang.Boolean(true))
 
   1 != true
   () == true
