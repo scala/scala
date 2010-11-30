@@ -5,9 +5,10 @@ object Test {
 
   object Mgr extends SecurityManager {
     override def checkPermission(perm: Permission) = perm match {
-      case _: java.lang.RuntimePermission => ()
-      case _: java.io.FilePermission      => ()
-      case _                              => super.checkPermission(perm)
+      case _: java.lang.RuntimePermission                                                   => ()
+      case _: java.io.FilePermission                                                        => ()
+      case x: java.security.AccessControlException if x.getName contains ".networkaddress." => () // generality ftw
+      case _                                                                                => super.checkPermission(perm)
     }
   }
 
