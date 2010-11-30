@@ -17,6 +17,7 @@ import scala.collection.immutable.{ NumericRange, List, Stream, Nil, :: }
 import scala.collection.generic.{ Sorted }
 import scala.xml.{ Node, MetaData }
 import scala.util.control.ControlThrowable
+import java.lang.reflect.{ Modifier, Method => JMethod }
 
 /* The object <code>ScalaRunTime</code> provides ...
  */
@@ -109,6 +110,16 @@ object ScalaRunTime {
       i += 1
     }
     arr
+  }
+
+  // Java bug: http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4071957
+  // More background at ticket #2318.
+  def ensureAccessible(m: JMethod): JMethod = {
+    if (!m.isAccessible) {
+      try m setAccessible true
+      catch { case _: SecurityException => () }
+    }
+    m
   }
 
   def checkInitialized[T <: AnyRef](x: T): T =
