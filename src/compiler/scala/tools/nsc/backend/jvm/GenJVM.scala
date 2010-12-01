@@ -89,7 +89,7 @@ abstract class GenJVM extends SubComponent {
     val PublicStatic      = ACC_PUBLIC | ACC_STATIC
     val PublicStaticFinal = ACC_PUBLIC | ACC_STATIC | ACC_FINAL
 
-    val StringBuilderClass = definitions.getClass2("scala.StringBuilder", "scala.collection.mutable.StringBuilder").fullName
+    val StringBuilderClass = definitions.getClass("scala.collection.mutable.StringBuilder").fullName
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
     val StringBuilderType = new JObjectType(StringBuilderClass)
