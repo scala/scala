@@ -6,7 +6,7 @@
 package scala.tools
 package reflect
 
-import java.lang.reflect.Method
+import java.lang.reflect.{ Method, InvocationTargetException }
 import java.{ lang => jl }
 
 /** For certain reflection tasks it is convenient to treat all methods
@@ -37,7 +37,9 @@ class UniversalFn private (val closure: AnyRef, val method: Method) extends (Seq
     proxy.asInstanceOf[T]
   }
 
-  def apply(xs: Seq[AnyRef]): AnyRef = method.invoke(closure, xs: _*)
+  def apply(xs: Seq[AnyRef]): AnyRef =
+    try method.invoke(closure, xs: _*)
+    catch { case x: InvocationTargetException => throw x.getCause() }
 }
 
 object UniversalFn {
