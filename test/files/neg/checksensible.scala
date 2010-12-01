@@ -29,7 +29,7 @@ class EqEqValTest {
   1 == "abc"
   1 == ("abc": Any) // doesn't warn because an Any may be a boxed Int
   1 == (1: Any)     // as above
-  "abc" == 1        // doesn't warn since String defines an equals method
+  "abc" == 1        // doesn't generally warn since String defines an equals method, but can chatty warn
 
   new AnyRef == 1
   1 == new AnyRef                 // doesn't warn because it could be...
@@ -70,12 +70,13 @@ class EqEqRefTest {
   val z1 = new Z1
   val c3 = new C3
 
-  // all but c3 != z1 should warn
-  c3 != z1
+  // these should always warn
   c3 == z1
   z1 == c3
   z1 != c3
   c3 != "abc"
+  // this should warn when feeling chatty
+  c3 != z1
 
   // non-warners
   (null: AnyRef) == (null: AnyRef)

@@ -872,6 +872,11 @@ abstract class RefChecks extends InfoTransform {
         }
         val actual   = underlyingClass(args.head.tpe)
         val receiver = underlyingClass(qual.tpe)
+        def onTrees[T](f: List[Tree] => T) = f(List(qual, args.head))
+        def onSyms[T](f: List[Symbol] => T) = f(List(receiver, actual))
+
+        // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol'
+        def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen)
 
         /** Symbols which limit the warnings we can issue since they may be value types */
         val isMaybeValue = Set(AnyClass, AnyRefClass, AnyValClass, ObjectClass, ComparableClass, SerializableClass)
@@ -887,25 +892,34 @@ abstract class RefChecks extends InfoTransform {
           (s == Object_==) || (s == Object_!=) || (s == Any_==) || (s == Any_!=)
         }
         // Whether the operands+operator represent a warnable combo (assuming anyrefs)
-        def isWarnable               = isReferenceOp || (isUsingDefaultEquals && isUsingDefaultScalaOp)
-        def isEitherNull             = (receiver == NullClass) || (actual == NullClass)
-        def isEitherNullable         = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
-        def isBoolean(s: Symbol)     = unboxedValueClass(s) == BooleanClass
-        def isUnit(s: Symbol)        = unboxedValueClass(s) == UnitClass
-        def isNumeric(s: Symbol)     = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
+        def isWarnable           = isReferenceOp || (isUsingDefaultEquals && isUsingDefaultScalaOp)
+        def isEitherNullable     = (NullClass.tpe <:< receiver.info) || (NullClass.tpe <:< actual.info)
+        def isBoolean(s: Symbol) = unboxedValueClass(s) == BooleanClass
+        def isUnit(s: Symbol)    = unboxedValueClass(s) == UnitClass
+        def isNumeric(s: Symbol) = isNumericValueClass(unboxedValueClass(s)) || (s isSubClass ScalaNumberClass)
+        def possibleNumericCount = onSyms(_ filter (x => isNumeric(x) || isMaybeValue(x)) size)
+        val nullCount            = onSyms(_ filter (_ == NullClass) size)
 
         def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
           val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
           unit.warning(pos, "comparing "+what+" using `"+name.decode+"' will always yield " + msg)
         }
 
-        // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol'
-        def nonSensible(pre: String, alwaysEqual: Boolean) = nonSensibleWarning(
-          pre+"values of types "+normalizeAll(qual.tpe.widen)+" and "+normalizeAll(args.head.tpe.widen),
-          alwaysEqual
-        )
+        def nonSensible(pre: String, alwaysEqual: Boolean) =
+          nonSensibleWarning(pre+"values of types "+typesString, alwaysEqual)
 
-        if (isBoolean(receiver)) {
+        def unrelatedTypes() =
+          unit.warning(pos, typesString + " are unrelated: should not compare equal")
+
+        if (nullCount == 2)
+          nonSensible("", true)  // null == null
+        else if (nullCount == 1) {
+          if (onSyms(_ exists isValueClass)) // null == 5
+            nonSensible("", false)
+          else if (onTrees( _ exists isNew)) // null == new AnyRef
+            nonSensibleWarning("a fresh object", false)
+        }
+        else if (isBoolean(receiver)) {
           if (!isBoolean(actual) && !isMaybeValue(actual))    // true == 5
             nonSensible("", false)
         }
@@ -925,13 +939,20 @@ abstract class RefChecks extends InfoTransform {
             nonSensibleWarning("a fresh object", false)
           else if (isNew(args.head) && (receiver.isFinal || isReferenceOp))   // object X ; X == new Y
             nonSensibleWarning("a fresh object", false)
-          else if (receiver.isFinal && !isEitherNull && !(receiver isSubClass actual)) {  // object X, Y; X == Y
+          else if (receiver.isFinal && !(receiver isSubClass actual)) {  // object X, Y; X == Y
             if (isEitherNullable)
               nonSensible("non-null ", false)
             else
               nonSensible("", false)
           }
         }
+        // Warning on types without a parental relationship.  Uncovers a lot of
+        // bugs, but not always right to warn.
+        if (false) {
+          if (nullCount == 0 && possibleNumericCount < 2 && !(receiver isSubClass actual) && !(actual isSubClass receiver))
+            unrelatedTypes()
+        }
+
       case _ =>
     }
 

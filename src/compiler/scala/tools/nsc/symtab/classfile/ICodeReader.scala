@@ -970,7 +970,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       def checkValidIndex {
         locals.get(idx - 1) match {
-          case Some(others) if ((others find { x => x._1 == LONG || x._1 == DOUBLE}) != None) =>
+          case Some(others) if others exists (_._2.isWideType) =>
             error("Illegal index: " + idx + " points in the middle of another local")
           case _ => ()
         }

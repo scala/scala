@@ -413,7 +413,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       	  (functionType.normalize match {
       	    case TypeRef(_, _, args) =>
       	      (delegateParams.map(pt => {
-                      if (pt == AnyClass.tpe) definitions.ObjectClass.tpe else pt})
+                      if (pt.tpe == AnyClass.tpe) definitions.ObjectClass.tpe else pt})
       	       ::: List(delegateReturn)) == args
       	    case _ => false
       	  })

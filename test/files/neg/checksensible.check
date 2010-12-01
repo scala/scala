@@ -73,19 +73,19 @@ checksensible.scala:59: error: comparing values of types Int and Null using `=='
 checksensible.scala:64: error: comparing values of types Bip and Bop using `==' will always yield false
   (x1 == x2)
       ^
-checksensible.scala:75: error: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
+checksensible.scala:74: error: comparing values of types EqEqRefTest.this.C3 and EqEqRefTest.this.Z1 using `==' will always yield false
   c3 == z1
      ^
-checksensible.scala:76: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
+checksensible.scala:75: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `==' will always yield false
   z1 == c3
      ^
-checksensible.scala:77: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
+checksensible.scala:76: error: comparing values of types EqEqRefTest.this.Z1 and EqEqRefTest.this.C3 using `!=' will always yield true
   z1 != c3
      ^
-checksensible.scala:78: error: comparing values of types EqEqRefTest.this.C3 and java.lang.String using `!=' will always yield true
+checksensible.scala:77: error: comparing values of types EqEqRefTest.this.C3 and java.lang.String using `!=' will always yield true
   c3 != "abc"
      ^
-checksensible.scala:87: error: comparing values of types Unit and Int using `!=' will always yield true
+checksensible.scala:88: error: comparing values of types Unit and Int using `!=' will always yield true
     while ((c = in.read) != -1)
                          ^
 30 errors found
