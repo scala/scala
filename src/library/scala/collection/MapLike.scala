@@ -306,6 +306,14 @@ self =>
     res
   }
 
+  /** Overridden for efficiency. */
+  override def toSeq: Seq[(A, B)] = toBuffer[(A, B)]
+  override def toBuffer[C >: (A, B)]: mutable.Buffer[C] = {
+    val result = new mutable.ArrayBuffer[C](size)
+    copyToBuffer(result)
+    result
+  }
+
   /** Appends all bindings of this map to a string builder using start, end, and separator strings.
    *  The written text begins with the string `start` and ends with the string
    *  `end`. Inside, the string representations of all bindings of this map

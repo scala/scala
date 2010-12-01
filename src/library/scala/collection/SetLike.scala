@@ -73,6 +73,14 @@ self =>
    */
   override protected[this] def newBuilder: Builder[A, This] = new AddingBuilder[A, This](empty)
 
+  /** Overridden for efficiency. */
+  override def toSeq: Seq[A] = toBuffer[A]
+  override def toBuffer[A1 >: A]: mutable.Buffer[A1] = {
+    val result = new mutable.ArrayBuffer[A1](size)
+    copyToBuffer(result)
+    result
+  }
+
   // note: this is only overridden here to add the migration annotation,
   // which I hope to turn into an Xlint style warning as the migration aspect
   // is not central to its importance.

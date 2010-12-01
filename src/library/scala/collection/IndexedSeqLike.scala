@@ -81,6 +81,15 @@ trait IndexedSeqLike[+A, +Repr] extends SeqLike[A, Repr] { self =>
 
   override /*IterableLike*/
   def iterator: Iterator[A] = new Elements(0, length)
+
+  /** Overridden for efficiency */
+  override def toBuffer[A1 >: A]: mutable.Buffer[A1] = {
+    val result = new mutable.ArrayBuffer[A1](size)
+    copyToBuffer(result)
+    result
+  }
+
+
 /*
   override /*SeqLike*/
   def view = new IndexedSeqView[A, Repr] {
