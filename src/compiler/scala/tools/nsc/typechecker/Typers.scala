@@ -1150,8 +1150,11 @@ trait Typers { self: Analyzer =>
         treeInfo.firstConstructor(templ.body) match {
           case constr @ DefDef(_, _, _, vparamss, _, cbody @ Block(cstats, cunit)) =>
             // Convert constructor body to block in environment and typecheck it
-            val cstats1: List[Tree] = cstats map (_.duplicate)
-            val scall = if (cstats.isEmpty) EmptyTree else cstats.last
+            val (preSuperStats, rest) = cstats span (!treeInfo.isSuperConstrCall(_))
+            val (scall, upToSuperStats) =
+              if (rest.isEmpty) (EmptyTree, preSuperStats)
+              else (rest.head, preSuperStats :+ rest.head)
+            val cstats1: List[Tree] = upToSuperStats map (_.duplicate)
             val cbody1 = scall match {
               case Apply(_, _) =>
                 treeCopy.Block(cbody, cstats1.init,
@@ -4158,7 +4161,7 @@ trait Typers { self: Analyzer =>
           tree.tpe = null
           if (tree.hasSymbol) tree.symbol = NoSymbol
         }
-        printTyping("typing "+tree+", pt = "+pt+", undetparams = "+context.undetparams+", implicits-enabled = "+context.implicitsEnabled+", silent = "+context.reportGeneralErrors) //DEBUG
+        printTyping("typing "+tree+", pt = "+pt+", undetparams = "+context.undetparams+", implicits-enabled = "+context.implicitsEnabled+", silent = "+context.reportGeneralErrors+", context.owner = "+context.owner) //DEBUG
 
         var tree1 = if (tree.tpe ne null) tree else typed1(tree, mode, dropExistential(pt))
         printTyping("typed "+tree1+":"+tree1.tpe+(if (isSingleType(tree1.tpe)) " with underlying "+tree1.tpe.widen else "")+", undetparams = "+context.undetparams+", pt = "+pt) //DEBUG
@@ -4332,3 +4335,4 @@ trait Typers { self: Analyzer =>
 */
   }
 }
+
