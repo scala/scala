@@ -209,7 +209,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
       nonLocalReturnKeys.getOrElseUpdate(meth, {
-        meth.newValue(meth.pos, unit.fresh.newName("nonLocalReturnKey"))
+        meth.newValue(meth.pos, unit.freshTermName("nonLocalReturnKey"))
           .setFlag (SYNTHETIC)
           .setInfo (ObjectClass.tpe)
       })
@@ -249,7 +249,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         val pat = Bind(ex,
                        Typed(Ident(nme.WILDCARD),
                              AppliedTypeTree(Ident(NonLocalReturnControlClass),
-                                             List(Bind(nme.WILDCARD.toTypeName,
+                                             List(Bind(tpnme.WILDCARD,
                                                        EmptyTree)))))
         val rhs =
           If(
@@ -503,7 +503,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
       def liftTree(tree: Tree) = {
         if (settings.debug.value)
           log("lifting tree at: " + (tree.pos))
-        val sym = currentOwner.newMethod(tree.pos, unit.fresh.newName("liftedTree"))
+        val sym = currentOwner.newMethod(tree.pos, unit.freshTermName("liftedTree"))
         sym.setInfo(MethodType(List(), tree.tpe))
         new ChangeOwnerTraverser(currentOwner, sym).traverse(tree)
         localTyper.typed {
@@ -676,7 +676,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         case Try(body, catches, finalizer) =>
           if (catches forall treeInfo.isCatchCase) tree
           else {
-            val exname = unit.fresh.newName("ex$")
+            val exname = unit.freshTermName("ex$")
             val cases =
               if ((catches exists treeInfo.isDefaultCase) || (catches.last match {  // bq: handle try { } catch { ... case ex:Throwable => ...}
                     case CaseDef(Typed(Ident(nme.WILDCARD), tpt), EmptyTree, _) if (tpt.tpe =:= ThrowableClass.tpe) =>
@@ -702,7 +702,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
         case Apply(Apply(fn, args), args1) =>
           treeCopy.Apply(tree, fn, args ::: args1)
         case Ident(name) =>
-          assert(name != nme.WILDCARD_STAR)
+          assert(name != tpnme.WILDCARD_STAR)
           applyUnary()
         case Select(_, _) | TypeApply(_, _) =>
           applyUnary()

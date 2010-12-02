@@ -153,25 +153,30 @@ abstract class ClassfileParser {
       }
     }
 
-    /** Return the name found at given index. The returned name is a term name. */
+    /** Return the name found at given index. */
     def getName(index: Int): Name = {
-      if (index <= 0 || len <= index) errorBadIndex(index)
-      var name = values(index).asInstanceOf[Name]
-      if (name eq null) {
-        val start = starts(index)
-        if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
-        name = newTermName(in.buf, start + 3, in.getChar(start + 1))
-        values(index) = name
+      if (index <= 0 || len <= index)
+        errorBadIndex(index)
+
+      values(index) match {
+        case name: Name => name
+        case null   =>
+          val start = starts(index)
+          if (in.buf(start).toInt != CONSTANT_UTF8) errorBadTag(start)
+          val name = newTermName(in.buf, start + 3, in.getChar(start + 1))
+          values(index) = name
+          name
       }
-      name
     }
 
     /** Return the name found at given index in the constant pool, with '/' replaced by '.'. */
     def getExternalName(index: Int): Name = {
-      if (index <= 0 || len <= index) errorBadIndex(index)
-      if (internalized(index) eq null) {
+      if (index <= 0 || len <= index)
+        errorBadIndex(index)
+
+      if (internalized(index) == null)
         internalized(index) = getName(index).replace('/', '.')
-      }
+
       internalized(index)
     }
 
@@ -182,10 +187,11 @@ abstract class ClassfileParser {
         val start = starts(index)
         if (in.buf(start).toInt != CONSTANT_CLASS) errorBadTag(start)
         val name = getExternalName(in.getChar(start + 1))
-        if (name.endsWith("$"))
-          c = definitions.getModule(name.subName(0, name.length - 1))
+        if (name endsWith '$')
+          c = definitions.getModule(name stripEnd "$")
         else
           c = classNameToSymbol(name)
+
         values(index) = c
       }
       c
@@ -205,7 +211,7 @@ abstract class ClassfileParser {
      *   - If the member refers to special MODULE$ static field, return
      *  the symbol of the corresponding module.
      *   - If the member is a field, and is not found with the given name,
-     *     another try is made by appending nme.LOCAL_SUFFIX
+     *     another try is made by appending nme.LOCAL_SUFFIX_STRING
      *   - If no symbol is found in the right tpe, a new try is made in the
      *     companion class, in case the owner is an implementation class.
      */
@@ -242,7 +248,7 @@ abstract class ClassfileParser {
 //          println("\t" + owner.info.member(name).tpe.widen + " =:= " + tpe)
           f = owner.info.member(origName).suchThat(_.tpe.widen =:= tpe)
           if (f == NoSymbol)
-            f = owner.info.member(newTermName(origName.toString + nme.LOCAL_SUFFIX)).suchThat(_.tpe =:= tpe)
+            f = owner.info.member(newTermName(origName + nme.LOCAL_SUFFIX_STRING)).suchThat(_.tpe =:= tpe)
           if (f == NoSymbol) {
             // if it's an impl class, try to find it's static member inside the class
             if (ownerTpe.typeSymbol.isImplClass) {
@@ -871,10 +877,10 @@ abstract class ClassfileParser {
         c convertTo pt
     }
     def parseAttribute() {
-      val attrName = pool.getName(in.nextChar)
+      val attrName = pool.getName(in.nextChar).toTypeName
       val attrLen = in.nextInt
       attrName match {
-        case nme.SignatureATTR =>
+        case tpnme.SignatureATTR =>
           if (!isScala && !isScalaRaw) {
             val sig = pool.getExternalName(in.nextChar)
             val newType = sigToType(sym, sig)
@@ -884,40 +890,40 @@ abstract class ClassfileParser {
             hasMeta = true
           } else
             in.skip(attrLen)
-        case nme.SyntheticATTR =>
+        case tpnme.SyntheticATTR =>
           sym.setFlag(SYNTHETIC)
           in.skip(attrLen)
-        case nme.BridgeATTR =>
+        case tpnme.BridgeATTR =>
           sym.setFlag(BRIDGE)
           in.skip(attrLen)
-        case nme.DeprecatedATTR =>
+        case tpnme.DeprecatedATTR =>
           val arg = Literal(Constant("see corresponding Javadoc for more information."))
           sym.addAnnotation(AnnotationInfo(definitions.DeprecatedAttr.tpe, List(arg), List()))
           in.skip(attrLen)
-        case nme.ConstantValueATTR =>
+        case tpnme.ConstantValueATTR =>
           val c = pool.getConstant(in.nextChar)
           val c1 = convertTo(c, symtype)
           if (c1 ne null) sym.setInfo(ConstantType(c1))
           else println("failure to convert " + c + " to " + symtype); //debug
-        case nme.ScalaSignatureATTR =>
+        case tpnme.ScalaSignatureATTR =>
           if (!isScalaAnnot) {
             if (settings.debug.value)
               log("warning: symbol " + sym.fullName + " has pickled signature in attribute")
             unpickler.unpickle(in.buf, in.bp, clazz, staticModule, in.file.toString())
           }
           in.skip(attrLen)
-        case nme.ScalaATTR =>
+        case tpnme.ScalaATTR =>
           isScalaRaw = true
-        case nme.JacoMetaATTR =>
+        case tpnme.JacoMetaATTR =>
           val meta = pool.getName(in.nextChar).toString().trim()
           metaParser.parse(meta, sym, symtype)
           this.hasMeta = true
          // Attribute on methods of java annotation classes when that method has a default
-        case nme.AnnotationDefaultATTR =>
+        case tpnme.AnnotationDefaultATTR =>
           sym.addAnnotation(AnnotationInfo(definitions.AnnotationDefaultAttr.tpe, List(), List()))
           in.skip(attrLen)
         // Java annotations on classes / methods / fields with RetentionPolicy.RUNTIME
-        case nme.RuntimeAnnotationATTR =>
+        case tpnme.RuntimeAnnotationATTR =>
           if (isScalaAnnot || !isScala) {
             val scalaSigAnnot = parseAnnotations(attrLen)
             if (isScalaAnnot)
@@ -935,15 +941,15 @@ abstract class ClassfileParser {
             in.skip(attrLen)
 
         // TODO 1: parse runtime visible annotations on parameters
-        // case nme.RuntimeParamAnnotationATTR
+        // case tpnme.RuntimeParamAnnotationATTR
 
         // TODO 2: also parse RuntimeInvisibleAnnotation / RuntimeInvisibleParamAnnotation,
         // i.e. java annotations with RetentionPolicy.CLASS?
 
-        case nme.ExceptionsATTR if (!isScala) =>
+        case tpnme.ExceptionsATTR if (!isScala) =>
           parseExceptions(attrLen)
 
-        case nme.SourceFileATTR =>
+        case tpnme.SourceFileATTR =>
           val srcfileLeaf = pool.getName(in.nextChar).toString.trim
           val srcpath = sym.enclosingPackage match {
             case NoSymbol => srcfileLeaf
@@ -1102,7 +1108,7 @@ abstract class ClassfileParser {
       var sflags = transFlags(jflags, true)
 
       val innerClass = getOwner(jflags).newClass(NoPosition, name.toTypeName).setInfo(completer).setFlag(sflags)
-      val innerModule = getOwner(jflags).newModule(NoPosition, name).setInfo(completer).setFlag(sflags)
+      val innerModule = getOwner(jflags).newModule(NoPosition, name.toTermName).setInfo(completer).setFlag(sflags)
       innerModule.moduleClass.setInfo(global.loaders.moduleClassLoader)
 
       getScope(jflags).enter(innerClass)
@@ -1142,26 +1148,26 @@ abstract class ClassfileParser {
     skipMembers() // methods
     val attrs = in.nextChar
     for (i <- 0 until attrs) {
-      val attrName = pool.getName(in.nextChar)
+      val attrName = pool.getName(in.nextChar).toTypeName
       val attrLen = in.nextInt
       attrName match {
-        case nme.SignatureATTR =>
+        case tpnme.SignatureATTR =>
           if (!isScala)
             hasMeta = true
           in.skip(attrLen)
-        case nme.JacoMetaATTR =>
+        case tpnme.JacoMetaATTR =>
           this.hasMeta = true
           in.skip(attrLen)
-        case nme.ScalaSignatureATTR =>
+        case tpnme.ScalaSignatureATTR =>
           isScala = true
           val pbuf = new PickleBuffer(in.buf, in.bp, in.bp + attrLen)
           pbuf.readNat; pbuf.readNat;
           if (pbuf.readNat == 0) // a scala signature attribute with no entries means that the actual scala signature
             isScalaAnnot = true    // is in a ScalaSignature annotation.
           in.skip(attrLen)
-        case nme.ScalaATTR =>
+        case tpnme.ScalaATTR =>
           isScalaRaw = true
-        case nme.InnerClassesATTR if !isScala =>
+        case tpnme.InnerClassesATTR if !isScala =>
           val entries = in.nextChar.toInt
           for (i <- 0 until entries) {
             val innerIndex = in.nextChar.toInt
@@ -1182,9 +1188,9 @@ abstract class ClassfileParser {
 
   /** An entry in the InnerClasses attribute of this class file. */
   case class InnerClassEntry(external: Int, outer: Int, name: Int, jflags: Int) {
-    def externalName: Name = pool.getClassName(external)
-    def outerName: Name = pool.getClassName(outer)
-    def originalName: Name = pool.getName(name)
+    def externalName = pool.getClassName(external)
+    def outerName    = pool.getClassName(outer)
+    def originalName = pool.getName(name)
 
     override def toString =
       originalName + " in " + outerName + "(" + externalName +")"

@@ -22,7 +22,7 @@ trait JavaParsers extends JavaScanners {
 
   class JavaUnitParser(val unit: global.CompilationUnit) extends JavaParser {
     val in = new JavaUnitScanner(unit)
-    def freshName(prefix : String) = unit.fresh.newName(prefix)
+    def freshName(prefix : String) = unit.freshTermName(prefix)
     implicit def i2p(offset : Int) : Position = new OffsetPosition(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = unit.warning(pos, msg)
     def syntaxError(pos: Int, msg: String) : Unit = unit.error(pos, msg)
@@ -106,10 +106,10 @@ trait JavaParsers extends JavaScanners {
     def javaLangDot(name: Name): Tree =
       Select(javaDot(nme.lang), name)
 
-    def javaLangObject(): Tree = javaLangDot(nme.Object.toTypeName)
+    def javaLangObject(): Tree = javaLangDot(tpnme.Object)
 
     def arrayOf(tpt: Tree) =
-      AppliedTypeTree(scalaDot(nme.Array.toTypeName), List(tpt))
+      AppliedTypeTree(scalaDot(tpnme.Array), List(tpt))
 
     def blankExpr = Ident(nme.WILDCARD)
 
@@ -192,14 +192,18 @@ trait JavaParsers extends JavaScanners {
     }
 
     def acceptClosingAngle() {
-      if (in.token == GTGTGTEQ) in.token = GTGTEQ
-      else if (in.token == GTGTGT) in.token = GTGT
-      else if (in.token == GTGTEQ) in.token = GTEQ
-      else if (in.token == GTGT) in.token = GT
-      else if (in.token == GTEQ) in.token = ASSIGN
+      val closers: PartialFunction[Int, Int] = {
+        case GTGTGTEQ => GTGTEQ
+        case GTGTGT   => GTGT
+        case GTGTEQ   => GTEQ
+        case GTGT     => GT
+        case GTEQ     => ASSIGN
+      }
+      if (closers isDefinedAt in.token) in.token = closers(in.token)
       else accept(GT)
     }
 
+    def identForType(): TypeName = ident().toTypeName
     def ident(): Name =
       if (in.token == IDENTIFIER) {
         val name = in.name
@@ -279,7 +283,7 @@ trait JavaParsers extends JavaScanners {
           // turns out to be an instance ionner class instead of a static inner class.
           def typeSelect(t: Tree, name: Name) = t match {
             case Ident(_) | Select(_, _) => Select(t, name)
-            case _ => SelectFromTypeTree(t, name)
+            case _ => SelectFromTypeTree(t, name.toTypeName)
           }
           while (in.token == DOT) {
             in.nextToken
@@ -431,7 +435,7 @@ trait JavaParsers extends JavaScanners {
           case _ =>
             val privateWithin: Name =
               if (isPackageAccess && !inInterface) thisPackageName
-              else nme.EMPTY.toTypeName
+              else tpnme.EMPTY
 
             return Modifiers(flags, privateWithin) withAnnotations annots
         }
@@ -449,16 +453,16 @@ trait JavaParsers extends JavaScanners {
 
     def typeParam(): TypeDef =
       atPos(in.currentPos) {
-        val name = ident().toTypeName
+        val name = identForType()
         val hi =
           if (in.token == EXTENDS) {
             in.nextToken
             bound()
           } else {
-            scalaDot(nme.Any.toTypeName)
+            scalaDot(tpnme.Any)
           }
         TypeDef(Modifiers(Flags.JAVA | Flags.DEFERRED | Flags.PARAM), name, List(),
-                TypeBoundsTree(scalaDot(nme.Nothing.toTypeName), hi))
+                TypeBoundsTree(scalaDot(tpnme.Nothing), hi))
       }
 
     def bound(): Tree =
@@ -487,7 +491,7 @@ trait JavaParsers extends JavaScanners {
       if (in.token == DOTDOTDOT) {
         in.nextToken
         t = atPos(t.pos) {
-          AppliedTypeTree(scalaDot(nme.JAVA_REPEATED_PARAM_CLASS_NAME), List(t))
+          AppliedTypeTree(scalaDot(tpnme.JAVA_REPEATED_PARAM_CLASS_NAME), List(t))
         }
       }
      varDecl(in.currentPos, Modifiers(Flags.JAVA | Flags.PARAM), t, ident())
@@ -548,7 +552,7 @@ trait JavaParsers extends JavaScanners {
               if (parentToken == AT && in.token == DEFAULT) {
                 val annot =
                   atPos(pos) {
-                    New(Select(scalaDot(newTermName("runtime")), nme.AnnotationDefaultATTR.toTypeName), List(List()))
+                    New(Select(scalaDot(newTermName("runtime")), tpnme.AnnotationDefaultATTR), List(List()))
                   }
                 mods1 = Modifiers(mods1.flags, mods1.privateWithin, annot :: mods1.annotations, mods1.positions)
                 skipTo(SEMI)
@@ -613,7 +617,7 @@ trait JavaParsers extends JavaScanners {
       buf.toList
     }
 
-    def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: Name): ValDef = {
+    def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: TermName): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
       if (in.token == ASSIGN && !mods.isParameter) skipTo(COMMA, SEMI)
       val mods1 = if (mods.isFinal) mods &~ Flags.FINAL else mods | Flags.MUTABLE
@@ -714,7 +718,7 @@ trait JavaParsers extends JavaScanners {
     def classDecl(mods: Modifiers): List[Tree] = {
       accept(CLASS)
       val pos = in.currentPos
-      val name = ident().toTypeName
+      val name = identForType()
       val tparams = typeParams()
       val superclass =
         if (in.token == EXTENDS) {
@@ -733,7 +737,7 @@ trait JavaParsers extends JavaScanners {
     def interfaceDecl(mods: Modifiers): List[Tree] = {
       accept(INTERFACE)
       val pos = in.currentPos
-      val name = ident().toTypeName
+      val name = identForType()
       val tparams = typeParams()
       val parents =
         if (in.token == EXTENDS) {
@@ -795,7 +799,7 @@ trait JavaParsers extends JavaScanners {
       accept(AT)
       accept(INTERFACE)
       val pos = in.currentPos
-      val name = ident().toTypeName
+      val name = identForType()
       val parents = List(scalaDot(newTypeName("Annotation")),
                          Select(javaLangDot(newTermName("annotation")), newTypeName("Annotation")),
                          scalaDot(newTypeName("ClassfileAnnotation")))
@@ -815,7 +819,7 @@ trait JavaParsers extends JavaScanners {
     def enumDecl(mods: Modifiers): List[Tree] = {
       accept(ENUM)
       val pos = in.currentPos
-      val name = ident().toTypeName
+      val name = identForType()
       def enumType = Ident(name)
       val interfaces = interfacesOpt()
       accept(LBRACE)

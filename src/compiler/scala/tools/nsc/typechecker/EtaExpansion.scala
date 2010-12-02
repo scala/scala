@@ -52,7 +52,7 @@ trait EtaExpansion { self: Analyzer =>
     var cnt = 0 // for NoPosition
     def freshName() = {
       cnt += 1
-      newTermName(unit.fresh.newName("eta$" + (cnt - 1) + "$"))
+      unit.freshTermName("eta$" + (cnt - 1) + "$")
     }
     val defs = new ListBuffer[Tree]
 

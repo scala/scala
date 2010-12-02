@@ -87,12 +87,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
         if (sym.isDeferred) {
           val member = sym.overridingSymbol(clazz);
-          if (mix != nme.EMPTY.toTypeName || member == NoSymbol ||
+          if (mix != tpnme.EMPTY || member == NoSymbol ||
               !((member hasFlag ABSOVERRIDE) && member.isIncompleteIn(clazz)))
             unit.error(tree.pos, ""+sym+sym.locationString+" is accessed from super. It may not be abstract "+
                                  "unless it is overridden by a member declared `abstract' and `override'");
         }
-        if (tree.isTerm && mix == nme.EMPTY.toTypeName &&
+        if (tree.isTerm && mix == tpnme.EMPTY &&
             (clazz.isTrait || clazz != currentOwner.enclClass || !validCurrentOwner)) {
           val supername = nme.superName(sym.name)
           var superAcc = clazz.info.decl(supername).suchThat(_.alias == sym)
@@ -191,7 +191,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
            if (sym.isParamAccessor && sym.alias != NoSymbol) {
             val result = localTyper.typed {
                 Select(
-                  Super(qual.symbol, nme.EMPTY.toTypeName/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
+                  Super(qual.symbol, tpnme.EMPTY/*qual.symbol.info.parents.head.symbol.name*/) setPos qual.pos,
                   sym.alias) setPos tree.pos
             }
             if (settings.debug.value)

@@ -37,7 +37,7 @@ trait JavaScanners {
     var lastPos: Int = 0
 
     /** the name of an identifier or token */
-    var name: Name = null
+    var name: TermName = null
 
     /** the base of a number */
     var base: Int = 0
@@ -165,7 +165,7 @@ trait JavaScanners {
 //Token representation -----------------------------------------------------
 
   /** Convert name to token */
-  def name2token(name: Name): Int =
+  def name2token(name: TermName): Int =
     if (name.start <= maxKey) key(name.start) else IDENTIFIER
 
   /** Returns the string representation of given token. */

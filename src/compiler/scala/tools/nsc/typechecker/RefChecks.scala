@@ -993,11 +993,14 @@ abstract class RefChecks extends InfoTransform {
       tree match {
         case ModuleDef(mods, name, impl) =>
           val sym = tree.symbol
-          if (sym.isStatic) {
-            val cdef = ClassDef(mods | MODULE, name, List(), impl)
+          def mkClassDef(transformedInfo: Boolean) = {
+            ClassDef(mods | MODULE, name.toTypeName, Nil, impl)
               .setPos(tree.pos)
-              .setSymbol(sym.moduleClass)
+              .setSymbol(if (transformedInfo) sym.lazyAccessor else sym.moduleClass)
               .setType(NoType)
+          }
+          if (sym.isStatic) {
+            val cdef = mkClassDef(false)
 
             if (!sym.allOverriddenSymbols.isEmpty) {
               val factory = sym.owner.newMethod(sym.pos, sym.name)
@@ -1020,11 +1023,7 @@ abstract class RefChecks extends InfoTransform {
               // that the object info was already run through the transformInfo.
               // Since we do not want to have duplicate lazy accessors
               // (through duplicate nested object -> lazy val transformation) we have this check here.
-              val cdef = ClassDef(mods | MODULE, name, List(), impl)
-                .setPos(tree.pos)
-                .setSymbol(if (!transformedInfo) sym.moduleClass else sym.lazyAccessor)
-                .setType(NoType)
-
+              val cdef = mkClassDef(transformedInfo)
               val vdef = localTyper.typedPos(tree.pos){
                 if (!transformedInfo)
                   gen.mkModuleVarDef(sym)
@@ -1128,7 +1127,7 @@ abstract class RefChecks extends InfoTransform {
           (args corresponds clazz.primaryConstructor.tpe.asSeenFrom(seltpe, clazz).paramTypes)(isIrrefutable) // @PP: corresponds
         case Typed(pat, tpt) =>
           seltpe <:< tpt.tpe
-        case Ident(nme.WILDCARD) =>
+        case Ident(tpnme.WILDCARD) =>
           true
         case Bind(_, pat) =>
           isIrrefutable(pat, seltpe)
@@ -1297,7 +1296,7 @@ abstract class RefChecks extends InfoTransform {
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
-        assert(!(qual.symbol.isTrait && sym.isTerm && mix == nme.EMPTY.toTypeName))
+        assert(!(qual.symbol.isTrait && sym.isTerm && mix == tpnme.EMPTY))
 
       transformCaseApply(tree,
         qual match {
@@ -1387,15 +1386,15 @@ abstract class RefChecks extends InfoTransform {
             enterReference(tree.pos, tpt.tpe.typeSymbol)
             tree
 
-          case Typed(_, Ident(nme.WILDCARD_STAR)) if !isRepeatedParamArg(tree) =>
+          case Typed(_, Ident(tpnme.WILDCARD_STAR)) if !isRepeatedParamArg(tree) =>
             unit.error(tree.pos, "no `: _*' annotation allowed here\n"+
               "(such annotations are only allowed in arguments to *-parameters)")
             tree
 
           case Ident(name) =>
             transformCaseApply(tree,
-              if (name != nme.WILDCARD && name != nme.WILDCARD_STAR) {
-                assert(sym != NoSymbol, tree) //debug
+              if (name != nme.WILDCARD && name != tpnme.WILDCARD_STAR) {
+                assert(sym != NoSymbol, "transformCaseApply: name = " + name.debugString + " tree = " + tree + " / " + tree.getClass) //debug
                 enterReference(tree.pos, sym)
               }
             )

@@ -133,7 +133,7 @@ abstract class UnPickler {
       assert(tag == CLASSsym)
 
       readNat(); // read length
-      val result = readNameRef() == mkTypeName(nme.REFINE_CLASS_NAME)
+      val result = readNameRef() == tpnme.REFINE_CLASS_NAME
       readIndex = savedIndex
       result
     }

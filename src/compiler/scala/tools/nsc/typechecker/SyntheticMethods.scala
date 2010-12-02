@@ -182,7 +182,7 @@ trait SyntheticMethods extends ast.TreeDSL {
 
       // returns (Apply, Bind)
       def makeTrees(acc: Symbol, cpt: Type): (Tree, Bind) = {
-        val varName     = context.unit.fresh.newName(acc.name + "$")
+        val varName     = context.unit.freshTermName(acc.name + "$")
         val isRepeated  = isRepeatedParamType(cpt)
         val binding     = if (isRepeated) Star(WILD()) else WILD()
         val eqMethod: Tree  =
@@ -221,7 +221,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     def newAccessorMethod(tree: Tree): Tree = tree match {
       case DefDef(_, _, _, _, _, rhs) =>
         var newAcc = tree.symbol.cloneSymbol
-        newAcc.name = context.unit.fresh.newName(tree.symbol.name + "$")
+        newAcc.name = context.unit.freshTermName(tree.symbol.name + "$")
         newAcc setFlag SYNTHETIC resetFlag (ACCESSOR | PARAMACCESSOR | PRIVATE | PROTECTED)
         newAcc.privateWithin = NoSymbol
         newAcc = newAcc.owner.info.decls enter newAcc

@@ -206,8 +206,6 @@ trait Matrix extends MatrixAdditions {
       override def toString() = "%s: %s = %s".format(lhs, lhs.info, rhs)
     }
 
-    def newName(s: String) = cunit.fresh.newName(s)
-
     /** Sets the rhs to EmptyTree, which makes the valDef ignored in Scrutinee.
      */
     def specialVar(lhs: Symbol, checked: Boolean) =
@@ -223,7 +221,7 @@ trait Matrix extends MatrixAdditions {
       label: String = "temp"): PatternVar =
     {
       val tpe   = ifNull(_tpe, root.tpe)
-      val name  = newName(label)
+      val name  = cunit.freshTermName(label)
       val sym   = newVar(root.pos, tpe, flags(checked), name)
 
       tracing("copy", new PatternVar(sym, root, checked))
@@ -243,9 +241,9 @@ trait Matrix extends MatrixAdditions {
       pos: Position,
       tpe: Type,
       flags: List[Long] = Nil,
-      name: Name = null): Symbol =
+      name: TermName = null): Symbol =
     {
-      val n: Name = if (name == null) newName("temp") else name
+      val n = if (name == null) cunit.freshTermName("temp") else name
       // careful: pos has special meaning
       recordSyntheticSym(owner.newVariable(pos, n) setInfo tpe setFlag (SYNTHETIC.toLong /: flags)(_|_))
     }

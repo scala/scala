@@ -20,7 +20,6 @@ trait NameManglers {
 
     val IMPL_CLASS_SUFFIX             = "$class"
     val LOCALDUMMY_PREFIX             = "<local "   // owner of local blocks
-    val LOCAL_SUFFIX                  = newTermName(LOCAL_SUFFIX_STRING)
     val PROTECTED_PREFIX              = "protected$"
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
     val SELECTOR_DUMMY                = "<unapply-selector>"
@@ -32,15 +31,15 @@ trait NameManglers {
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
     def isImplClassName(name: Name)         = name endsWith IMPL_CLASS_SUFFIX
     def isLocalDummyName(name: Name)        = name startsWith LOCALDUMMY_PREFIX
-    def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX
+    def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX_STRING
     def isLoopHeaderLabel(name: Name)       = (name startsWith WHILE_PREFIX) || (name startsWith DO_WHILE_PREFIX)
     def isProtectedAccessorName(name: Name) = name startsWith PROTECTED_PREFIX
     def isSetterName(name: Name)            = name endsWith SETTER_SUFFIX
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
 
     def isOpAssignmentName(name: Name) = name match {
-      case NEraw | LEraw | GEraw | EMPTY  => false
-      case _                              =>
+      case raw.NE | raw.LE | raw.GE | EMPTY => false
+      case _                                =>
         name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar)
     }
 
@@ -75,16 +74,16 @@ trait NameManglers {
         val name1 = name.subName(0, name.length - 3)
         val idxC = name1.lastPos('c')
         val idxM = name1.lastPos('m', idxC)
-        (name1.subName(0, idxM - 1).toString,
+        (name1.subName(0, idxM - 1),
          name1.subName(idxC + 1, name1.length).toString,
          name1.subName(idxM + 1, idxC).toString)
       } else
         (name, "", "")
 
     def getterName(name: Name): Name     = if (isLocalName(name)) localToGetter(name) else name
-    def getterToLocal(name: Name): Name  = name append LOCAL_SUFFIX
+    def getterToLocal(name: Name): Name  = name append LOCAL_SUFFIX_STRING
     def getterToSetter(name: Name): Name = name append SETTER_SUFFIX
-    def localToGetter(name: Name): Name  = name stripEnd LOCAL_SUFFIX
+    def localToGetter(name: Name): Name  = name stripEnd LOCAL_SUFFIX_STRING
 
     def setterToGetter(name: Name): Name = {
       val p = name.pos(TRAIT_SETTER_SEPARATOR_STRING)

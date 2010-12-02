@@ -632,7 +632,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
       def completeSuperAccessor(stat: Tree) = stat match {
         case DefDef(mods, name, tparams, List(vparams), tpt, EmptyTree)
         if (stat.symbol.isSuperAccessor) =>
-          val rhs0 = (Super(clazz, nme.EMPTY.toTypeName) DOT stat.symbol.alias)(vparams map (v => Ident(v.symbol)): _*)
+          val rhs0 = (Super(clazz, tpnme.EMPTY) DOT stat.symbol.alias)(vparams map (v => Ident(v.symbol)): _*)
           val rhs1 = localTyper.typed(atPos(stat.pos)(rhs0), stat.symbol.tpe.resultType)
           val rhs2 = atPhase(currentRun.mixinPhase)(transform(rhs1))
           if (settings.debug.value)
@@ -1114,7 +1114,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
               //  - if `m' refers to a trait, insert a static call to the corresponding static
               //    implementation
               //  - otherwise return tree unchanged
-              if (mix == nme.EMPTY.toTypeName && currentOwner.enclClass.isImplClass)
+              if (mix == tpnme.EMPTY && currentOwner.enclClass.isImplClass)
                 assert(false, "illegal super in trait: " + currentOwner.enclClass + " " + tree);
               if (sym.owner hasFlag lateINTERFACE) {
                 if (sym.hasAccessorFlag) {

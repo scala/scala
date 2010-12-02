@@ -329,7 +329,7 @@ abstract class AddInterfaces extends InfoTransform {
 /* !!!
         case Super(qual, mix) =>
           val mix1 = mix
-            if (mix == nme.EMPTY.toTypeName) mix
+            if (mix == tpnme.EMPTY) mix
             else {
               val ps = atPhase(currentRun.erasurePhase) {
                 sym.info.parents dropWhile (p => p.symbol.name != mix)

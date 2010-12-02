@@ -133,7 +133,7 @@ abstract class Pickler extends SubComponent {
             val children =
               if (locals.isEmpty) globals
               else {
-                val localChildDummy = sym.newClass(sym.pos, nme.LOCALCHILD)
+                val localChildDummy = sym.newClass(sym.pos, tpnme.LOCAL_CHILD)
                 localChildDummy.setInfo(ClassInfoType(List(sym.tpe), EmptyScope, localChildDummy))
                 localChildDummy :: globals
               }

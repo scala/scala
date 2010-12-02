@@ -711,9 +711,9 @@ self: Analyzer =>
         tp match {
           case TypeRef(pre, sym, args) =>
             if (sym.isClass) {
-              if (!((sym.name == nme.REFINE_CLASS_NAME.toTypeName) ||
-                    (sym.name startsWith nme.ANON_CLASS_NAME) ||
-                    (sym.name == nme.ROOT.toTypeName)))
+              if (!((sym.name == tpnme.REFINE_CLASS_NAME) ||
+                    (sym.name startsWith tpnme.ANON_CLASS_NAME) ||
+                    (sym.name == tpnme.ROOT)))
                 partMap get sym match {
                   case Some(pre1) =>
                     if (!(pre =:= pre1)) partMap(sym) = NoType // ambiguous prefix - ignore implicit members

@@ -353,7 +353,7 @@ abstract class ExplicitOuter extends InfoTransform
       var nselector = transform(selector)
 
       def makeGuardDef(vs: List[Symbol], guard: Tree) = {
-        val gdname = unit.fresh.newName("gd")
+        val gdname = unit.freshTermName("gd")
         val method = currentOwner.newMethod(tree.pos, gdname) setFlag SYNTHETIC
         val fmls   = vs map (_.tpe)
         val tpe    = new MethodType(method newSyntheticValueParams fmls, BooleanClass.tpe)

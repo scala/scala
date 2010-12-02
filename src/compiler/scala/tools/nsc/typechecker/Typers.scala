@@ -3051,7 +3051,7 @@ trait Typers { self: Analyzer =>
       def typedBind(name: Name, body: Tree) = {
         var vble = tree.symbol
         if (name.isTypeName) {
-          assert(body == EmptyTree)
+          assert(body == EmptyTree, context.unit + " typedBind: " + name.debugString + " " + body + " " + body.getClass)
           if (vble == NoSymbol)
             vble =
               if (isFullyDefined(pt))
@@ -3060,7 +3060,7 @@ trait Typers { self: Analyzer =>
                 context.owner.newAbstractType(tree.pos, name) setInfo
                   TypeBounds(NothingClass.tpe, AnyClass.tpe)
           val rawInfo = vble.rawInfo
-          vble = if (vble.name == nme.WILDCARD.toTypeName) context.scope.enter(vble)
+          vble = if (vble.name == tpnme.WILDCARD) context.scope.enter(vble)
                  else namer.enterInScope(vble)
           tree setSymbol vble setType vble.tpe
         } else {
@@ -3899,7 +3899,7 @@ trait Typers { self: Analyzer =>
             val params = for (i <- List.range(0, arity)) yield
               atPos(tree.pos.focusStart) {
                 ValDef(Modifiers(PARAM | SYNTHETIC),
-                       unit.fresh.newName("x" + i + "$"), TypeTree(), EmptyTree)
+                       unit.freshTermName("x" + i + "$"), TypeTree(), EmptyTree)
               }
             val ids = for (p <- params) yield Ident(p.name)
             val selector1 = atPos(tree.pos.focusStart) { if (arity == 1) ids.head else gen.mkTuple(ids) }
@@ -3940,7 +3940,7 @@ trait Typers { self: Analyzer =>
         case Typed(expr, Function(List(), EmptyTree)) =>
           typedEta(checkDead(typed1(expr, mode, pt)))
 
-        case Typed(expr, tpt @ Ident(nme.WILDCARD_STAR))  =>
+        case Typed(expr, tpt @ Ident(tpnme.WILDCARD_STAR))  =>
           val expr0 = typed(expr, mode & stickyModes, WildcardType)
           def subArrayType(pt: Type) =
             if (isValueClass(pt.typeSymbol) || !isFullyDefined(pt)) arrayType(pt)
@@ -4077,7 +4077,7 @@ trait Typers { self: Analyzer =>
         case Ident(name) =>
           incCounter(typedIdentCount)
           if ((name == nme.WILDCARD && (mode & (PATTERNmode | FUNmode)) == PATTERNmode) ||
-              (name == nme.WILDCARD.toTypeName && (mode & TYPEmode) != 0))
+              (name == tpnme.WILDCARD && (mode & TYPEmode) != 0))
             tree setType makeFullyDefined(pt)
           else
             typedIdent(name)

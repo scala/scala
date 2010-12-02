@@ -34,7 +34,7 @@ trait Scanners {
     var lastOffset: Offset = 0
 
     /** the name of an identifier */
-    var name: Name = null
+    var name: TermName = null
 
     /** the string value of a literal */
     var strVal: String = null
@@ -898,14 +898,14 @@ trait Scanners {
   /** The highest name index of a keyword token */
   private var maxKey = 0
   /** An array of all keyword token names */
-  private var keyName = new Array[Name](128)
+  private var keyName = new Array[TermName](128)
   /** The highest keyword token plus one */
   private var tokenCount = 0
 
   /** Enter keyword with given name and token id */
-  protected def enterKeyword(n: Name, tokenId: Int) {
+  protected def enterKeyword(n: TermName, tokenId: Int) {
     while (tokenId >= keyName.length) {
-      val newTokName = new Array[Name](keyName.length * 2)
+      val newTokName = new Array[TermName](keyName.length * 2)
       compat.Platform.arraycopy(keyName, 0, newTokName, 0, newTokName.length)
       keyName = newTokName
     }

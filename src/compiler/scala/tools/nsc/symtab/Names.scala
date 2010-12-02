@@ -100,7 +100,7 @@ trait Names extends reflect.generic.Names {
 
   /** Create a term name from the characters in cs[offset..offset+len-1].
    */
-  def newTermName(cs: Array[Char], offset: Int, len: Int): Name = {
+  def newTermName(cs: Array[Char], offset: Int, len: Int): TermName = {
     val h = hashValue(cs, offset, len) & HASH_MASK
     var n = termHashtable(h)
     while ((n ne null) && (n.length != len || !equals(n.start, cs, offset, len)))
@@ -114,41 +114,51 @@ trait Names extends reflect.generic.Names {
 
   /** create a term name from string
    */
-  def newTermName(s: String): Name =
+  def newTermName(s: String): TermName =
     newTermName(s.toCharArray(), 0, s.length())
 
   /** Create a term name from the UTF8 encoded bytes in bs[offset..offset+len-1].
    */
-  def newTermName(bs: Array[Byte], offset: Int, len: Int): Name =
+  def newTermName(bs: Array[Byte], offset: Int, len: Int): TermName =
     newTermName(Codec toUTF8 bs.slice(offset, offset + len) mkString)
 
   /** Create a type name from the characters in cs[offset..offset+len-1].
    */
-  def newTypeName(cs: Array[Char], offset: Int, len: Int): Name =
+  def newTypeName(cs: Array[Char], offset: Int, len: Int): TypeName =
     newTermName(cs, offset, len).toTypeName
 
   /** Create a type name from string
    */
-  def newTypeName(s: String): Name =
+  def newTypeName(s: String): TypeName =
     newTermName(s).toTypeName
 
   /** Create a type name from the UTF8 encoded bytes in bs[offset..offset+len-1].
    */
-  def newTypeName(bs: Array[Byte], offset: Int, len: Int): Name =
+  def newTypeName(bs: Array[Byte], offset: Int, len: Int): TypeName =
     newTermName(bs, offset, len).toTypeName
 
-  def mkTermName(name: Name) = name.toTermName
-  def mkTypeName(name: Name) = name.toTypeName
+  def mkTermName(name: Name): TermName = name.toTermName
+  def mkTypeName(name: Name): TypeName = name.toTypeName
+  def isTermName(name: Name): Boolean = name.isTermName
+  def isTypeName(name: Name): Boolean = name.isTypeName
 
   def nameChars: Array[Char] = chrs
+  @deprecated("") def view(s: String): TermName = newTermName(s)
 
-  implicit def view(s: String): Name = newTermName(s)
+  override def onNameTranslate(name: Name): Unit = {
+    if (nameDebug) {
+      Console println "Translating %s '%s' to %s.".format(
+        if (isTypeName(name)) "type" else "term",
+        name,
+        if (isTypeName(name)) "term" else "type"
+      )
+    }
+  }
 
 // Classes ----------------------------------------------------------------------
 
   /** The name class. */
   abstract class Name(index: Int, len: Int) extends Function1[Int, Char] {
-
     /** Index into name table */
     def start: Int = index
 
@@ -164,8 +174,8 @@ trait Names extends reflect.generic.Names {
 
     def isTermName: Boolean
     def isTypeName: Boolean
-    def toTermName: Name
-    def toTypeName: Name
+    def toTermName: TermName
+    def toTypeName: TypeName
 
     /** Copy bytes of this name to buffer cs, starting at position `offset`.
      */
@@ -183,6 +193,7 @@ trait Names extends reflect.generic.Names {
     /** return the string representation of this name
      */
     final override def toString(): String = new String(chrs, index, len)
+    def debugString() = NameTransformer.decode(toString) + (if (isTypeName) "!" else "")
 
     /** Write to UTF8 representation of this name to given character array.
      *  Start copying to index `to'. Return index of next free byte in array.
@@ -198,6 +209,29 @@ trait Names extends reflect.generic.Names {
     /** return the hash value of this name
      */
     final override def hashCode(): Int = index
+
+    // Presently disabled.
+    // override def equals(other: Any) = paranoidEquals(other)
+    private def paranoidEquals(other: Any): Boolean = {
+      val cmp = this eq other.asInstanceOf[AnyRef]
+      if (cmp || !nameDebug)
+        return cmp
+
+      other match {
+        case x: String  =>
+          Console.println("Compared " + debugString + " and String '" + x + "'")
+        case x: Name    =>
+          if (this.isTermName != x.isTermName) {
+            val panic = this.toTermName == x.toTermName
+            Console.println("Compared '%s' and '%s', one term, one type.%s".format(this, x,
+              if (panic) "  And they contain the same name string!"
+              else ""
+            ))
+          }
+        case _ =>
+      }
+      false
+    }
 
     /** return the i'th Char of this name
      */
@@ -250,7 +284,7 @@ trait Names extends reflect.generic.Names {
      */
     final def lastPos(c: Char): Int = lastPos(c, len - 1)
 
-    final def lastPos(s: String): Int = lastPos(s, len - s.length())
+    final def lastPos(s: String): Int = lastPos(s, len - s.length)
 
     /** return the index of the last occurrence of char c in this
      *  name from start, -1 if not found.
@@ -313,6 +347,7 @@ trait Names extends reflect.generic.Names {
       i > suffix.length
     }
 
+    final def containsName(subname: String): Boolean = containsName(newTermName(subname))
     final def containsName(subname: Name): Boolean = {
       var start = 0
       val last = len - subname.length
@@ -323,15 +358,16 @@ trait Names extends reflect.generic.Names {
     /** Some thoroughly self-explanatory convenience functions.  They
      *  assume that what they're being asked to do is known to be valid.
      */
-    final def startChar: Char                 = apply(0)
-    final def endChar: Char                   = apply(len - 1)
-    final def startsWith(char: Char): Boolean = len > 0 && startChar == char
-    final def endsWith(char: Char): Boolean   = len > 0 && endChar == char
-    final def stripStart(prefix: Name): Name  = subName(prefix.length, len)
-    final def stripEnd(suffix: Name): Name    = subName(0, len - suffix.length)
-    final def append(suffix: Name): Name      =
-      if (isTermName) newTermName(this.toString + suffix)
-      else newTypeName(this.toString + suffix)
+    final def startChar: Char                   = apply(0)
+    final def endChar: Char                     = apply(len - 1)
+    final def startsWith(char: Char): Boolean   = len > 0 && startChar == char
+    final def startsWith(name: String): Boolean = startsWith(newTermName(name))
+    final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
+    final def endsWith(name: String): Boolean   = endsWith(newTermName(name))
+    final def stripStart(prefix: Name): Name    = subName(prefix.length, len)
+    final def stripStart(prefix: String): Name  = subName(prefix.length, len)
+    final def stripEnd(suffix: Name): Name      = subName(0, len - suffix.length)
+    final def stripEnd(suffix: String): Name    = subName(0, len - suffix.length)
 
     /** Return the subname with characters from start to end-1.
      */
@@ -361,6 +397,13 @@ trait Names extends reflect.generic.Names {
       else newTermName(res)
     }
 
+    def append(suffix: String): Name = {
+      val chars = this + suffix
+      if (isTypeName) newTypeName(chars)
+      else newTermName(chars)
+    }
+    def append(suffix: Name): Name = append(suffix.toString)
+
     /** Replace $op_name by corresponding operator symbol.
      */
     def decode: String = (
@@ -370,13 +413,13 @@ trait Names extends reflect.generic.Names {
     def isOperatorName: Boolean = decode != toString
   }
 
-  private class TermName(index: Int, len: Int, hash: Int) extends Name(index, len) {
+  final class TermName(index: Int, len: Int, hash: Int) extends Name(index, len) {
     next = termHashtable(hash)
     termHashtable(hash) = this
     def isTermName: Boolean = true
     def isTypeName: Boolean = false
-    def toTermName: Name = this
-    def toTypeName = {
+    def toTermName: TermName = this
+    def toTypeName: TypeName = {
       val h = hashValue(chrs, index, len) & HASH_MASK
       var n = typeHashtable(h)
       while ((n ne null) && n.start != index)
@@ -385,16 +428,16 @@ trait Names extends reflect.generic.Names {
         n = new TypeName(index, len, h);
       n
     }
-    def subName(from: Int, to: Int): Name =
+    def subName(from: Int, to: Int): TermName =
       newTermName(chrs, start + from, to - from)
   }
 
-  private class TypeName(index: Int, len: Int, hash: Int) extends Name(index, len) {
+  final class TypeName(index: Int, len: Int, hash: Int) extends Name(index, len) {
     next = typeHashtable(hash)
     typeHashtable(hash) = this
     def isTermName: Boolean = false
     def isTypeName: Boolean = true
-    def toTermName: Name = {
+    def toTermName: TermName = {
       val h = hashValue(chrs, index, len) & HASH_MASK
       var n = termHashtable(h)
       while ((n ne null) && n.start != index)
@@ -403,8 +446,8 @@ trait Names extends reflect.generic.Names {
         n = new TermName(index, len, h);
       n
     }
-    def toTypeName: Name = this
-    def subName(from: Int, to: Int): Name =
+    def toTypeName: TypeName = this
+    def subName(from: Int, to: Int): TypeName =
       newTypeName(chrs, start + from, to - from)
   }
 }

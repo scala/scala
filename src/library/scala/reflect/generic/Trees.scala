@@ -18,7 +18,7 @@ trait Trees { self: Universe =>
   protected def flagsIntoString(flags: Long, privateWithin: String): String
 
   /** @param privateWithin the qualifier for a private (a type name)
-   *    or nme.EMPTY.toTypeName, if none is given.
+   *    or tpnme.EMPTY, if none is given.
    *  @param annotations the annotations for the definition.
    *    <strong>Note:</strong> the typechecker drops these annotations,
    *    use the AnnotationInfo's (Symbol.annotations) in later phases.
@@ -29,9 +29,7 @@ trait Trees { self: Universe =>
     type AccessBoundaryType = Name
     type AnnotationType     = Tree
 
-    private val emptyTypeName = mkTypeName(nme.EMPTY)
-
-    def hasAccessBoundary = privateWithin != emptyTypeName
+    def hasAccessBoundary = privateWithin != tpnme.EMPTY
     def hasAllFlags(mask: Long): Boolean = (flags & mask) == mask
     def hasFlag(flag: Long) = (flag & flags) != 0L
     def hasFlagsToString(mask: Long): String = flagsToString(
@@ -63,7 +61,7 @@ trait Trees { self: Universe =>
   }
 
   def Modifiers(flags: Long, privateWithin: Name): Modifiers = Modifiers(flags, privateWithin, List(), Map.empty)
-  def Modifiers(flags: Long): Modifiers = Modifiers(flags, mkTypeName(nme.EMPTY))
+  def Modifiers(flags: Long): Modifiers = Modifiers(flags, tpnme.EMPTY)
 
   lazy val NoMods = Modifiers(0)
 
@@ -204,30 +202,31 @@ trait Trees { self: Universe =>
   }
 
   /** Class definition */
-  case class ClassDef(mods: Modifiers, name: Name, tparams: List[TypeDef], impl: Template)
+  case class ClassDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template)
        extends ImplDef
 
   /** Singleton object definition
    */
-  case class ModuleDef(mods: Modifiers, name: Name, impl: Template)
+  case class ModuleDef(mods: Modifiers, name: TermName, impl: Template)
        extends ImplDef
 
   abstract class ValOrDefDef extends MemberDef {
+    def name: TermName
     def tpt: Tree
     def rhs: Tree
   }
 
   /** Value definition
    */
-  case class ValDef(mods: Modifiers, name: Name, tpt: Tree, rhs: Tree) extends ValOrDefDef
+  case class ValDef(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree) extends ValOrDefDef
 
   /** Method definition
    */
-  case class DefDef(mods: Modifiers, name: Name, tparams: List[TypeDef],
+  case class DefDef(mods: Modifiers, name: TermName, tparams: List[TypeDef],
                     vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree) extends ValOrDefDef
 
   /** Abstract type, type parameter, or type alias */
-  case class TypeDef(mods: Modifiers, name: Name, tparams: List[TypeDef], rhs: Tree)
+  case class TypeDef(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree)
        extends MemberDef
 
   /** <p>
@@ -247,7 +246,7 @@ trait Trees { self: Universe =>
    *        jumps within a Block.
    *  </p>
    */
-  case class LabelDef(name: Name, params: List[Ident], rhs: Tree)
+  case class LabelDef(name: TermName, params: List[Ident], rhs: Tree)
        extends DefTree with TermTree
 
 
@@ -415,13 +414,13 @@ trait Trees { self: Universe =>
     // The symbol of an ApplyDynamic is the function symbol of `qual', or NoSymbol, if there is none.
 
   /** Super reference */
-  case class Super(qual: Name, mix: Name)
+  case class Super(qual: TypeName, mix: TypeName)
        extends TermTree with SymTree
     // The symbol of a Super is the class _from_ which the super reference is made.
     // For instance in C.super(...), it would be C.
 
   /** Self reference */
-  case class This(qual: Name)
+  case class This(qual: TypeName)
         extends TermTree with SymTree
     // The symbol of a This is the class to which the this refers.
     // For instance in C.this, it would be C.
@@ -431,8 +430,7 @@ trait Trees { self: Universe =>
        extends RefTree
 
   /** Identifier <name> */
-  case class Ident(name: Name)
-       extends RefTree
+  case class Ident(name: Name) extends RefTree { }
 
   class BackQuotedIdent(name: Name) extends Ident(name)
 
@@ -604,7 +602,7 @@ trait Trees { self: Universe =>
         extends TypTree
 
   /** Type selection <qualifier> # <name>, eliminated by RefCheck */
-  case class SelectFromTypeTree(qualifier: Tree, name: Name)
+  case class SelectFromTypeTree(qualifier: Tree, name: TypeName)
        extends TypTree with RefTree
 
   /** Intersection type <parent1> with ... with <parentN> { <decls> }, eliminated by RefCheck */
@@ -706,7 +704,7 @@ trait Trees { self: Universe =>
   case ApplyDynamic(qual, args)                                   (introduced by erasure, eliminated by cleanup)
     // fun(args)
   case Super(qual, mix) =>
-    // qual.super[mix]     if qual and/or mix is empty, ther are nme.EMPTY.toTypeName
+    // qual.super[mix]     if qual and/or mix is empty, ther are tpnme.EMPTY
   case This(qual) =>
     // qual.this
   case Select(qualifier, selector) =>

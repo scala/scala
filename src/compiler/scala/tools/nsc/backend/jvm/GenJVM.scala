@@ -27,6 +27,7 @@ import reflect.generic.{ PickleFormat, PickleBuffer }
  *
  */
 abstract class GenJVM extends SubComponent {
+  val global: Global
   import global._
   import icodes._
   import icodes.opcodes._
@@ -35,6 +36,7 @@ abstract class GenJVM extends SubComponent {
     AnyClass, ObjectClass, ThrowsClass, ThrowableClass, ClassfileAnnotationClass,
     SerializableClass, StringClass, ClassClass, FunctionClass,
     DeprecatedAttr, SerializableAttr, SerialVersionUIDAttr, VolatileAttr,
+    AndroidParcelableInterface, AndroidCreatorClass,
     TransientAttr, CloneableAttr, RemoteAttr,
     getPrimitiveCompanion
   }
@@ -89,10 +91,10 @@ abstract class GenJVM extends SubComponent {
     val PublicStatic      = ACC_PUBLIC | ACC_STATIC
     val PublicStaticFinal = ACC_PUBLIC | ACC_STATIC | ACC_FINAL
 
-    val StringBuilderClass = definitions.getClass("scala.collection.mutable.StringBuilder").fullName
+    val StringBuilderClassName = definitions.StringBuilderClass.fullName
     val BoxesRunTime = "scala.runtime.BoxesRunTime"
 
-    val StringBuilderType = new JObjectType(StringBuilderClass)
+    val StringBuilderType = new JObjectType(StringBuilderClassName)
     val toStringType      = new JMethodType(JAVA_LANG_STRING, JType.EMPTY_ARRAY)
     val arrayCloneType    = new JMethodType(JAVA_LANG_OBJECT, JType.EMPTY_ARRAY)
     val MethodTypeType    = new JObjectType("java.dyn.MethodType")
@@ -108,12 +110,6 @@ abstract class GenJVM extends SubComponent {
     lazy val CloneableClass  = definitions.getClass("java.lang.Cloneable")
     lazy val RemoteInterface = definitions.getClass("java.rmi.Remote")
     lazy val RemoteException = definitions.getClass("java.rmi.RemoteException").tpe
-
-    lazy val ParcelableInterface =
-      try { definitions.getClass("android.os.Parcelable") }
-      catch { case _: FatalError => NoSymbol }
-    // only evaluated if ParcelableInterface != NoSymbol
-    lazy val CreatorClass = definitions.getClass("android.os.Parcelable$Creator")
 
     val versionPickle = {
       val vp = new PickleBuffer(new Array[Byte](16), -1, 0)
@@ -176,7 +172,7 @@ abstract class GenJVM extends SubComponent {
       currentRun.symData.get(sym) match {
         case Some(pickle) if !jclass.getName().endsWith("$") =>
           val scalaAttr =
-            fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaSignatureATTR.toString,
+            fjbgContext.JOtherAttribute(jclass, jclass, tpnme.ScalaSignatureATTR.toString,
                                         versionPickle.bytes, versionPickle.writeIndex)
           jclass.addAttribute(scalaAttr)
           val scalaAnnot = {
@@ -189,7 +185,7 @@ abstract class GenJVM extends SubComponent {
           Some(scalaAnnot)
         case _ =>
           val markerAttr =
-            fjbgContext.JOtherAttribute(jclass, jclass, nme.ScalaATTR.toString, new Array[Byte](0), 0)
+            fjbgContext.JOtherAttribute(jclass, jclass, tpnme.ScalaATTR.toString, new Array[Byte](0), 0)
           jclass.addAttribute(markerAttr)
           None
       }
@@ -210,8 +206,8 @@ abstract class GenJVM extends SubComponent {
       val name    = javaName(c.symbol)
       serialVUID  = None
       isRemoteClass = false
-      isParcelableClass = (ParcelableInterface != NoSymbol) &&
-                          (parents contains ParcelableInterface.tpe)
+      isParcelableClass = (AndroidParcelableInterface != NoSymbol) &&
+                          (parents contains AndroidParcelableInterface.tpe)
 
       if (parents.isEmpty)
         parents = List(ObjectClass.tpe)
@@ -399,7 +395,7 @@ abstract class GenJVM extends SubComponent {
 
       assert(nattr > 0)
       buf.putShort(0, nattr.toShort)
-      addAttribute(jmethod, nme.ExceptionsATTR, buf)
+      addAttribute(jmethod, tpnme.ExceptionsATTR, buf)
     }
 
     /** Whether an annotation should be emitted as a Java annotation
@@ -527,7 +523,7 @@ abstract class GenJVM extends SubComponent {
             }
           val buf = ByteBuffer.allocate(2)
           buf.putShort(index)
-          addAttribute(jmember, nme.SignatureATTR, buf)
+          addAttribute(jmember, tpnme.SignatureATTR, buf)
         }
       }
     }
@@ -535,7 +531,7 @@ abstract class GenJVM extends SubComponent {
     def addAnnotations(jmember: JMember, annotations: List[AnnotationInfo]) {
       if (annotations.exists(_.atp.typeSymbol == definitions.DeprecatedAttr)) {
         val attr = jmember.getContext().JOtherAttribute(
-          jmember.getJClass(), jmember, nme.DeprecatedATTR.toString,
+          jmember.getJClass(), jmember, tpnme.DeprecatedATTR.toString,
           new Array[Byte](0), 0)
         jmember addAttribute attr
       }
@@ -545,7 +541,7 @@ abstract class GenJVM extends SubComponent {
 
       val buf: ByteBuffer = ByteBuffer.allocate(2048)
       emitJavaAnnotations(jmember.getConstantPool, buf, toEmit)
-      addAttribute(jmember, nme.RuntimeAnnotationATTR, buf)
+      addAttribute(jmember, tpnme.RuntimeAnnotationATTR, buf)
     }
 
     def addParamAnnotations(jmethod: JMethod, pannotss: List[List[AnnotationInfo]]) {
@@ -559,7 +555,7 @@ abstract class GenJVM extends SubComponent {
       for (annots <- annotations)
         emitJavaAnnotations(jmethod.getConstantPool, buf, annots)
 
-      addAttribute(jmethod, nme.RuntimeParamAnnotationATTR, buf)
+      addAttribute(jmethod, tpnme.RuntimeParamAnnotationATTR, buf)
     }
 
     def addAttribute(jmember: JMember, name: Name, buf: ByteBuffer) {
@@ -813,7 +809,7 @@ abstract class GenJVM extends SubComponent {
             val fieldName = "CREATOR"
             val fieldSymbol = clasz.symbol.newValue(NoPosition, newTermName(fieldName))
                                 .setFlag(Flags.STATIC | Flags.FINAL)
-                                .setInfo(CreatorClass.tpe)
+                                .setInfo(AndroidCreatorClass.tpe)
             val methodSymbol = definitions.getMember(clasz.symbol.companionModule, "CREATOR")
             clasz addField new IField(fieldSymbol)
             lastBlock emit CALL_METHOD(methodSymbol, Static(false))
@@ -854,7 +850,7 @@ abstract class GenJVM extends SubComponent {
 
       if (isParcelableClass) {
         val fieldName = "CREATOR"
-        val creatorType = javaType(CreatorClass)
+        val creatorType = javaType(AndroidCreatorClass)
         jclass.addNewField(PublicStaticFinal,
                            fieldName,
                            creatorType)
@@ -1648,9 +1644,9 @@ abstract class GenJVM extends SubComponent {
           jcode.emitARRAYLENGTH()
 
         case StartConcat =>
-          jcode emitNEW StringBuilderClass
+          jcode emitNEW StringBuilderClassName
           jcode.emitDUP()
-          jcode.emitINVOKESPECIAL(StringBuilderClass,
+          jcode.emitINVOKESPECIAL(StringBuilderClassName,
                                   JMethod.INSTANCE_CONSTRUCTOR_NAME,
                                   JMethodType.ARGLESS_VOID_FUNCTION)
 
@@ -1659,12 +1655,12 @@ abstract class GenJVM extends SubComponent {
             case REFERENCE(_) | ARRAY(_) => JAVA_LANG_OBJECT
             case _ => javaType(el)
           }
-          jcode.emitINVOKEVIRTUAL(StringBuilderClass,
+          jcode.emitINVOKEVIRTUAL(StringBuilderClassName,
                                   "append",
                                   new JMethodType(StringBuilderType,
                                   Array(jtype)))
         case EndConcat =>
-          jcode.emitINVOKEVIRTUAL(StringBuilderClass,
+          jcode.emitINVOKEVIRTUAL(StringBuilderClassName,
                                   "toString",
                                   toStringType)
 
@@ -1728,7 +1724,7 @@ abstract class GenJVM extends SubComponent {
       val attr =
         fjbgContext.JOtherAttribute(jclass,
                                     jmethod,
-                                    nme.LocalVariableTableATTR.toString,
+                                    tpnme.LocalVariableTableATTR.toString,
                                     lvTab.array())
       jcode addAttribute attr
     }

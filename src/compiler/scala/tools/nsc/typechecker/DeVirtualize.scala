@@ -463,7 +463,7 @@ abstract class DeVirtualize extends InfoTransform with TypingTransformers {
       val bridge = meth.cloneSymbol(cclazz)
         .resetFlag(notOVERRIDE | notFINAL)
       cclazz.info.decls.enter(bridge)
-      val superRef: Tree = Select(Super(cclazz, nme.EMPTY.toTypeName), meth)
+      val superRef: Tree = Select(Super(cclazz, tpnme.EMPTY), meth)
       DefDef(bridge, gen.mkForwarder(superRef, bridge.paramss))
     }
 

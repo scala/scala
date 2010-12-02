@@ -210,7 +210,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  guarantees the same result regardless of the map order by sorting
    *  type variables alphabetically.
    */
-  private def specializedName(sym: Symbol, env: TypeEnv): Name = {
+  private def specializedName(sym: Symbol, env: TypeEnv): TermName = {
     val tvars = if (sym.isClass) env.keySet
                 else specializedTypeVars(sym).intersect(env.keySet)
     val (methparams, others) = tvars.toList.partition(_.owner.isMethod)
@@ -223,7 +223,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   /** Specialize name for the two list of types. The first one denotes
    *  specialization on method type parameters, the second on outer environment.
    */
-  private def specializedName(name: Name, types1: List[Type], types2: List[Type]): Name = {
+  private def specializedName(name: Name, types1: List[Type], types2: List[Type]): TermName = {
     if (nme.INITIALIZER == name || (types1.isEmpty && types2.isEmpty))
       name
     else if (nme.isSetterName(name))
@@ -1143,7 +1143,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         case ddef @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if info.isDefinedAt(symbol) =>
           if (symbol.isConstructor) {
             val t = atOwner(symbol) {
-              val superRef: Tree = Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
+              val superRef: Tree = Select(Super(tpnme.EMPTY, tpnme.EMPTY), nme.CONSTRUCTOR)
               forwardCtorCall(tree.pos, superRef, vparamss, symbol.owner)
             }
             if (symbol.isPrimaryConstructor) localTyper typed {

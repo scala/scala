@@ -39,7 +39,6 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
   /** The class for all symbols */
   abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends AbsSymbol {
-
     var rawowner = initOwner
 
     /** The original owner of this class. Used by the backend to generate
@@ -108,36 +107,36 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
 // Creators -------------------------------------------------------------------
 
-    final def newValue(pos: Position, name: Name) =
+    final def newValue(pos: Position, name: TermName) =
       new TermSymbol(this, pos, name)
-    final def newValue(name: Name, pos: Position = NoPosition) =
+    final def newValue(name: TermName, pos: Position = NoPosition) =
       new TermSymbol(this, pos, name)
-    final def newVariable(pos: Position, name: Name) =
+    final def newVariable(pos: Position, name: TermName) =
       newValue(pos, name).setFlag(MUTABLE)
-    final def newValueParameter(pos: Position, name: Name) =
+    final def newValueParameter(pos: Position, name: TermName) =
       newValue(pos, name).setFlag(PARAM)
     /** Create local dummy for template (owner of local blocks) */
     final def newLocalDummy(pos: Position) =
       newValue(pos, nme.localDummyName(this)).setInfo(NoType)
-    final def newMethod(pos: Position, name: Name) =
+    final def newMethod(pos: Position, name: TermName) =
       new MethodSymbol(this, pos, name).setFlag(METHOD)
-    final def newMethod(name: Name, pos: Position = NoPosition) =
+    final def newMethod(name: TermName, pos: Position = NoPosition) =
       new MethodSymbol(this, pos, name).setFlag(METHOD)
-    final def newLabel(pos: Position, name: Name) =
+    final def newLabel(pos: Position, name: TermName) =
       newMethod(pos, name).setFlag(LABEL)
     final def newConstructor(pos: Position) =
       newMethod(pos, nme.CONSTRUCTOR)
-    final def newModule(pos: Position, name: Name, clazz: ClassSymbol) =
+    final def newModule(pos: Position, name: TermName, clazz: ClassSymbol) =
       new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
         .setModuleClass(clazz)
-    final def newModule(name: Name, clazz: Symbol, pos: Position = NoPosition) =
+    final def newModule(name: TermName, clazz: Symbol, pos: Position = NoPosition) =
       new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
         .setModuleClass(clazz.asInstanceOf[ClassSymbol])
-    final def newModule(pos: Position, name: Name) = {
+    final def newModule(pos: Position, name: TermName) = {
       val m = new ModuleSymbol(this, pos, name).setFlag(MODULE | FINAL)
       m.setModuleClass(new ModuleClassSymbol(m))
     }
-    final def newPackage(pos: Position, name: Name) = {
+    final def newPackage(pos: Position, name: TermName) = {
       assert(name == nme.ROOT || isPackageClass)
       val m = newModule(pos, name).setFlag(JAVA | PACKAGE)
       m.moduleClass.setFlag(JAVA | PACKAGE)
@@ -167,7 +166,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *    pre.memberType(m)
      */
     final def newOverloaded(pre: Type, alternatives: List[Symbol]): Symbol =
-      newValue(alternatives.head.pos, alternatives.head.name)
+      newValue(alternatives.head.pos, alternatives.head.name.toTermName)
       .setFlag(OVERLOADED)
       .setInfo(OverloadedType(pre, alternatives))
 
@@ -181,26 +180,26 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       sym
     }
 
-    final def newErrorValue(name: Name) =
+    final def newErrorValue(name: TermName) =
       newValue(pos, name).setFlag(SYNTHETIC | IS_ERROR).setInfo(ErrorType)
 
     /** Symbol of a type definition  type T = ...
      */
-    final def newAliasType(pos: Position, name: Name) =
+    final def newAliasType(pos: Position, name: TypeName) =
       new TypeSymbol(this, pos, name)
-    final def newAliasType(name: Name, pos: Position = NoPosition) =
+    final def newAliasType(name: TypeName, pos: Position = NoPosition) =
       new TypeSymbol(this, pos, name)
 
     /** Symbol of an abstract type  type T >: ... <: ...
      */
-    final def newAbstractType(pos: Position, name: Name) =
+    final def newAbstractType(pos: Position, name: TypeName) =
       new TypeSymbol(this, pos, name).setFlag(DEFERRED)
-    final def newAbstractType(name: Name, pos: Position = NoPosition) =
+    final def newAbstractType(name: TypeName, pos: Position = NoPosition) =
       new TypeSymbol(this, pos, name).setFlag(DEFERRED)
 
     /** Symbol of a type parameter
      */
-    final def newTypeParameter(pos: Position, name: Name) =
+    final def newTypeParameter(pos: Position, name: TypeName) =
       newAbstractType(pos, name).setFlag(PARAM)
 
     /** Synthetic value parameters when parameter symbols are not available
@@ -220,8 +219,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *  @param owner   The owner of the variable
      *  @param bounds  The variable's bounds
      */
-    final def newExistential(pos: Position, name: Name): Symbol =
-      newAbstractType(pos, name.toTypeName).setFlag(EXISTENTIAL)
+    final def newExistential(pos: Position, name: TypeName): Symbol =
+      newAbstractType(pos, name).setFlag(EXISTENTIAL)
 
     final def freshExistential(suffix: String): Symbol =
       newExistential(pos, freshExistentialName()+suffix)
@@ -247,27 +246,26 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       new TypeSkolem(owner, pos, name, this)
         .setFlag(flags)
 
-    final def newClass(pos: Position, name: Name) =
+    final def newClass(pos: Position, name: TypeName) =
       new ClassSymbol(this, pos, name)
-    final def newClass(name: Name, pos: Position = NoPosition) =
+    final def newClass(name: TypeName, pos: Position = NoPosition) =
       new ClassSymbol(this, pos, name)
 
-    final def newModuleClass(pos: Position, name: Name) =
+    final def newModuleClass(pos: Position, name: TypeName) =
       new ModuleClassSymbol(this, pos, name)
-    final def newModuleClass(name: Name, pos: Position = NoPosition) =
+    final def newModuleClass(name: TypeName, pos: Position = NoPosition) =
       new ModuleClassSymbol(this, pos, name)
 
     final def newAnonymousClass(pos: Position) =
-      newClass(pos, nme.ANON_CLASS_NAME.toTypeName)
-
+      newClass(pos, tpnme.ANON_CLASS_NAME)
     final def newAnonymousFunctionClass(pos: Position) =
-      newClass(pos, nme.ANON_FUN_NAME.toTypeName)
+      newClass(pos, tpnme.ANON_FUN_NAME)
 
     /** Refinement types P { val x: String; type T <: Number }
      *  also have symbols, they are refinementClasses
      */
     final def newRefinementClass(pos: Position) =
-      newClass(pos, nme.REFINE_CLASS_NAME.toTypeName)
+      newClass(pos, tpnme.REFINE_CLASS_NAME)
 
     /** Create a new getter for current symbol (which must be a field)
      */
@@ -277,14 +275,15 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       getter.setInfo(MethodType(List(), tpe))
     }
 
-    final def newErrorClass(name: Name) = {
+    final def newErrorClass(name: TypeName) = {
       val clazz = newClass(pos, name).setFlag(SYNTHETIC | IS_ERROR)
       clazz.setInfo(ClassInfoType(List(), new ErrorScope(this), clazz))
       clazz
     }
 
     final def newErrorSymbol(name: Name): Symbol =
-      if (name.isTypeName) newErrorClass(name) else newErrorValue(name)
+      if (name.isTypeName) newErrorClass(name)
+      else newErrorValue(name)
 
 // Locking and unlocking ------------------------------------------------------
 
@@ -371,8 +370,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     // class C extends D( { class E { ... } ... } ). Here, E is a class local to a constructor
     final def isClassLocalToConstructor = isClass && hasFlag(INCONSTRUCTOR)
 
-    final def isAnonymousClass = isClass && (name containsName nme.ANON_CLASS_NAME) // todo: find out why we can't use containsName here.
-    final def isAnonymousFunction = hasFlag(SYNTHETIC) && (name containsName nme.ANON_FUN_NAME)
+    final def isAnonymousClass    = isClass && (name containsName tpnme.ANON_CLASS_NAME)
+    final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
 
     final def isClassOfModule = isModuleClass || isClass && nme.isLocalName(name)
     final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
@@ -866,9 +865,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         val current = phase
         try {
           while ((phase.prev ne NoPhase) && phase.prev.keepsTypeParams) phase = phase.prev
-//          while (phase.keepsTypeParams && (phase.prev ne NoPhase))        phase = phase.prev
           if (phase ne current) phase = phase.next
-          if (settings.debug.value && (phase ne current))
+          if (settings.debug.value && settings.verbose.value && (phase ne current))
             log("checking unsafeTypeParams(" + this + ") at: " + current + " reading at: " + phase)
           rawInfo.typeParams
         } finally {
@@ -1452,7 +1450,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
           setter(owner).expandName(base)
         }
         name = nme.expandedName(name, base)
-        if (isType) name = name.toTypeName
+        if (isType) name = name
       }
     }
 /* code for fixing nested objects
@@ -1654,7 +1652,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   }
 
   /** A class for term symbols */
-  class TermSymbol(initOwner: Symbol, initPos: Position, initName: Name)
+  class TermSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
   extends Symbol(initOwner, initPos, initName) {
     override def isTerm = true
 
@@ -1741,7 +1739,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   }
 
   /** A class for module symbols */
-  class ModuleSymbol(initOwner: Symbol, initPos: Position, initName: Name)
+  class ModuleSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) {
     private var flatname = nme.EMPTY
     // This method could use a better name from someone clearer on what the condition expresses.
@@ -1751,7 +1749,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       if (isFlatAdjusted) rawowner.owner
       else rawowner
 
-    override def name: Name =
+    override def name: TermName =
       if (isFlatAdjusted) {
         if (flatname == nme.EMPTY) {
           assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname, rawowner))
@@ -1765,7 +1763,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   }
 
   /** A class for method symbols */
-  class MethodSymbol(initOwner: Symbol, initPos: Position, initName: Name)
+  class MethodSymbol(initOwner: Symbol, initPos: Position, initName: TermName)
   extends TermSymbol(initOwner, initPos, initName) {
 
     private var mtpePeriod = NoPeriod
@@ -1795,7 +1793,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   /** A class of type symbols. Alias and abstract types are direct instances
    *  of this class. Classes are instances of a subclass.
    */
-  class TypeSymbol(initOwner: Symbol, initPos: Position, initName: Name)
+  class TypeSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)
   extends Symbol(initOwner, initPos, initName) {
     privateWithin = NoSymbol
     private var tyconCache: Type = null
@@ -1897,7 +1895,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
    *     origin.isInstanceOf[Symbol] == !hasFlag(EXISTENTIAL)
    */
   class TypeSkolem(initOwner: Symbol, initPos: Position,
-                   initName: Name, origin: AnyRef)
+                   initName: TypeName, origin: AnyRef)
   extends TypeSymbol(initOwner, initPos, initName) {
 
     /** The skolemization level in place when the skolem was constructed */
@@ -1926,7 +1924,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
 
   /** A class for class symbols */
-  class ClassSymbol(initOwner: Symbol, initPos: Position, initName: Name)
+  class ClassSymbol(initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
 
     /** The classfile from which this class was loaded. Maybe null. */
@@ -1956,17 +1954,17 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       thissym = this
     }
 
-    private var flatname = nme.EMPTY
+    private var flatname: TypeName = tpnme.EMPTY
 
     override def owner: Symbol =
       if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) rawowner.owner
       else rawowner
 
-    override def name: Name =
+    override def name: TypeName =
       if ((rawflags & notDEFERRED) != 0L && phase.devirtualized && !phase.erasedTypes) {
         newTypeName(rawname+"$trait") // (part of DEVIRTUALIZE)
       } else if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
-        if (flatname == nme.EMPTY) {
+        if (flatname == tpnme.EMPTY) {
           assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname+idString, rawowner))
           flatname = newTypeName(compactify(rawowner.name.toString() + "$" + rawname))
         }
@@ -2024,7 +2022,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
    *  Note: Not all module classes are of this type; when unpickled, we get
    *  plain class symbols!
    */
-  class ModuleClassSymbol(owner: Symbol, pos: Position, name: Name)
+  class ModuleClassSymbol(owner: Symbol, pos: Position, name: TypeName)
   extends ClassSymbol(owner, pos, name) {
     private var module: Symbol = null
     def this(module: TermSymbol) = {
@@ -2038,7 +2036,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
   }
 
   /** An object representing a missing symbol */
-  object NoSymbol extends Symbol(null, NoPosition, nme.NOSYMBOL) {
+  object NoSymbol extends Symbol(null, NoPosition, nme.NO_NAME) {
     setInfo(NoType)
     privateWithin = this
     override def info_=(info: Type) {

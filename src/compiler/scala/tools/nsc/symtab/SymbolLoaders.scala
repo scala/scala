@@ -109,9 +109,8 @@ abstract class SymbolLoaders {
 
     def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader) {
       val owner = if (root.isRoot) definitions.EmptyPackageClass else root
-      val className = newTermName(name)
       assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullName + "." + name)
-      val clazz = owner.newClass(NoPosition, name.toTypeName)
+      val clazz = owner.newClass(NoPosition, newTypeName(name))
       val module = owner.newModule(NoPosition, name)
       clazz setInfo completer
       module setInfo completer
@@ -167,7 +166,7 @@ abstract class SymbolLoaders {
       // if there's a $member object, enter its members as well.
       val pkgModule = root.info.decl(nme.PACKAGEkw)
       if (pkgModule.isModule && !pkgModule.rawInfo.isInstanceOf[SourcefileLoader]) {
-        //println("open "+pkgModule)//DEBUG
+        // println("open "+pkgModule)//DEBUG
         openPackageModule(pkgModule)()
       }
     }
@@ -233,7 +232,6 @@ abstract class SymbolLoaders {
 
     protected def newPackageLoader(pkg: ClassPath[MSILType]) =
       new NamespaceLoader(pkg)
-
   }
 
   class ClassfileLoader(val classfile: AbstractFile) extends SymbolLoader {

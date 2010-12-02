@@ -22,11 +22,11 @@ abstract class TreeGen {
   def rootId(name: Name)          = Select(Ident(nme.ROOTPKG), name)
   def rootScalaDot(name: Name)    = Select(rootId(nme.scala_) setSymbol ScalaPackage, name)
   def scalaDot(name: Name)        = Select(Ident(nme.scala_) setSymbol ScalaPackage, name)
-  def scalaAnyRefConstr           = scalaDot(nme.AnyRef.toTypeName)
-  def scalaUnitConstr             = scalaDot(nme.Unit.toTypeName)
-  def scalaScalaObjectConstr      = scalaDot(nme.ScalaObject.toTypeName)
-  def productConstr               = scalaDot(nme.Product.toTypeName)
-  def serializableConstr          = scalaDot(nme.Serializable.toTypeName)
+  def scalaAnyRefConstr           = scalaDot(tpnme.AnyRef)
+  def scalaUnitConstr             = scalaDot(tpnme.Unit)
+  def scalaScalaObjectConstr      = scalaDot(tpnme.ScalaObject)
+  def productConstr               = scalaDot(tpnme.Product)
+  def serializableConstr          = scalaDot(tpnme.Serializable)
 
   private def isRootOrEmptyPackageClass(s: Symbol) = s.isRoot || s.isEmptyPackageClass
 
@@ -317,7 +317,7 @@ abstract class TreeGen {
     Apply(Select(monitor, Object_synchronized), List(body))
 
   def wildcardStar(tree: Tree) =
-    atPos(tree.pos) { Typed(tree, Ident(nme.WILDCARD_STAR)) }
+    atPos(tree.pos) { Typed(tree, Ident(tpnme.WILDCARD_STAR)) }
 
   def paramToArg(vparam: Symbol) = {
     val arg = Ident(vparam)
@@ -363,12 +363,12 @@ abstract class TreeGen {
 
   /** Try to convert Select(qual, name) to a SelectFromTypeTree.
    */
-  def convertToSelectFromType(qual: Tree, name: Name): Tree = {
-    def selFromType(qual1: Tree) = SelectFromTypeTree(qual1 setPos qual.pos, name)
+  def convertToSelectFromType(qual: Tree, origName: Name): Tree = {
+    def selFromType(qual1: Tree) = SelectFromTypeTree(qual1 setPos qual.pos, origName)
     qual match {
       case Select(qual1, name) => selFromType(Select(qual1, name.toTypeName))
-      case Ident(name) => selFromType(Ident(name.toTypeName))
-      case _ => EmptyTree
+      case Ident(name)         => selFromType(Ident(name.toTypeName))
+      case _                   => EmptyTree
     }
   }
 
@@ -379,7 +379,7 @@ abstract class TreeGen {
     if (treeInfo.isPureExpr(expr)) {
       within(() => if (used) expr.duplicate else { used = true; expr })
     } else {
-      val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName("ev$"))
+      val temp = owner.newValue(expr.pos.makeTransparent, unit.freshTermName("ev$"))
         .setFlag(SYNTHETIC).setInfo(expr.tpe)
       val containing = within(() => Ident(temp) setPos temp.pos.focus setType expr.tpe)
       ensureNonOverlapping(containing, List(expr))
@@ -399,7 +399,7 @@ abstract class TreeGen {
           () => if (used(idx)) expr.duplicate else { used(idx) = true; expr }
         }
       } else {
-        val temp = owner.newValue(expr.pos.makeTransparent, unit.fresh.newName("ev$"))
+        val temp = owner.newValue(expr.pos.makeTransparent, unit.freshTermName("ev$"))
           .setFlag(SYNTHETIC).setInfo(expr.tpe)
         vdefs += ValDef(temp, expr)
         exprs1 += (() => Ident(temp) setPos temp.pos.focus setType expr.tpe)

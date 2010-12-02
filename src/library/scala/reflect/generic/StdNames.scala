@@ -3,33 +3,48 @@ package generic
 
 import scala.reflect.NameTransformer
 
-trait StdNames { self: Universe =>
+trait LowPriorityStdNames {
+  self: Universe =>
 
-  val nme: StandardNames
+  implicit def stringToTypeName(s: String): TypeName = newTypeName(s)
+}
 
-  def encode(str: String): Name = newTermName(NameTransformer.encode(str))
+trait StdNames extends LowPriorityStdNames {
+  self: Universe =>
 
-  class StandardNames {
+  val nme: LibraryTermNames
+  val tpnme: LibraryTypeNames
+
+  def encode(str: String): TermName = newTermName(NameTransformer.encode(str))
+
+  implicit def stringToTermName(s: String): TermName = newTermName(s)
+
+  trait LibraryCommonNames {
+    type NameType <: Name
+    implicit def createNameType(name: String): NameType
+
+    val EMPTY: NameType              = ""
+    val ANON_FUN_NAME: NameType      = "$anonfun"
+    val EMPTY_PACKAGE_NAME: NameType = "<empty>"
+    val IMPORT: NameType             = "<import>"
+    val MODULE_SUFFIX: NameType      = "$module"
+    val ROOT: NameType               = "<root>"
+    val ROOTPKG: NameType            = "_root_"
+  }
+
+  trait LibraryTermNames extends LibraryCommonNames {
     val EXPAND_SEPARATOR_STRING = "$$"
     val LOCAL_SUFFIX_STRING = " "
 
-    val EMPTY              = newTermName("")
-    val EMPTY_PACKAGE_NAME = newTermName("<empty>")
-    val IMPORT             = newTermName("<import>")
-    val REFINE_CLASS_NAME  = newTermName("<refinement>")
-    val ROOT               = newTermName("<root>")
-
-    val ANON_CLASS_NAME    = newTermName("$anon")
-    val ANON_FUN_NAME      = newTermName("$anonfun")
-    val MODULE_SUFFIX      = newTermName("$module")
-    val ROOTPKG            = newTermName("_root_")
-
     /** The expanded name of `name' relative to this class `base` with given `separator`
      */
-    def expandedName(name: Name, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): Name =
+    def expandedName(name: TermName, base: Symbol, separator: String = EXPAND_SEPARATOR_STRING): TermName =
       newTermName(base.fullName('$') + separator + name)
 
-    def moduleVarName(name: Name): Name =
-      newTermName(name.toString + MODULE_SUFFIX)
+    def moduleVarName(name: TermName): TermName = newTermName("" + name + MODULE_SUFFIX)
+  }
+  trait LibraryTypeNames extends LibraryCommonNames {
+    val REFINE_CLASS_NAME: NameType  = "<refinement>"
+    val ANON_CLASS_NAME: NameType    = "$anon"
   }
 }

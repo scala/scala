@@ -3284,7 +3284,7 @@ A type's typeSymbol should never be inspected directly.
                 val termSym =
                   pre.typeSymbol.owner.newValue(
                     pre.typeSymbol.pos,
-                    pre.typeSymbol.name).setInfo(pre)  // what symbol should really be used?
+                    pre.typeSymbol.name.toTermName).setInfo(pre)  // what symbol should really be used?
                 mkAttributedQualifier(pre, termSym)
               } else
                 giveup()
@@ -4574,7 +4574,7 @@ A type's typeSymbol should never be inspected directly.
             tp1.isStable || fourthTry
           else if (isRaw(sym2, tp2.args))
             isSubType(tp1, rawToExistential(tp2), depth)
-          else if (sym2.name == nme.REFINE_CLASS_NAME.toTypeName)
+          else if (sym2.name == tpnme.REFINE_CLASS_NAME)
             isSubType(tp1, sym2.info, depth)
           else
             fourthTry
@@ -4656,7 +4656,7 @@ A type's typeSymbol should never be inspected directly.
             else if (isRaw(sym1, tr1.args))
               isSubType(rawToExistential(tp1), tp2, depth)
             else
-              sym1.name == nme.REFINE_CLASS_NAME.toTypeName &&
+              sym1.name == tpnme.REFINE_CLASS_NAME &&
               isSubType(sym1.info, tp2, depth)
           case _: TypeSymbol =>
             if (sym1 hasFlag DEFERRED) {

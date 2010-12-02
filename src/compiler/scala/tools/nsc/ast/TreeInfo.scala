@@ -176,15 +176,15 @@ abstract class TreeInfo {
   /** Is tpt of the form T* ? */
   def isRepeatedParamType(tpt: Tree) = tpt match {
     case TypeTree()                                                        => definitions.isRepeatedParamType(tpt.tpe)
-    case AppliedTypeTree(Select(_, nme.REPEATED_PARAM_CLASS_NAME), _)      => true
-    case AppliedTypeTree(Select(_, nme.JAVA_REPEATED_PARAM_CLASS_NAME), _) => true
+    case AppliedTypeTree(Select(_, tpnme.REPEATED_PARAM_CLASS_NAME), _)      => true
+    case AppliedTypeTree(Select(_, tpnme.JAVA_REPEATED_PARAM_CLASS_NAME), _) => true
     case _                                                                 => false
   }
 
   /** Is tpt a by-name parameter type? */
   def isByNameParamType(tpt: Tree) = tpt match {
     case TypeTree()                                                 => definitions.isByNameParamType(tpt.tpe)
-    case AppliedTypeTree(Select(_, nme.BYNAME_PARAM_CLASS_NAME), _) => true
+    case AppliedTypeTree(Select(_, tpnme.BYNAME_PARAM_CLASS_NAME), _) => true
     case _                                                          => false
   }
 
@@ -217,7 +217,7 @@ abstract class TreeInfo {
   /** Is this argument node of the form <expr> : _* ?
    */
   def isWildcardStarArg(tree: Tree): Boolean = tree match {
-    case Typed(_, Ident(nme.WILDCARD_STAR)) => true
+    case Typed(_, Ident(tpnme.WILDCARD_STAR)) => true
     case _                                  => false
   }
   def isWildcardStarArgList(trees: List[Tree]) =

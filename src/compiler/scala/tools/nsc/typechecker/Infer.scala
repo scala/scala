@@ -181,7 +181,7 @@ trait Infer {
       tp1 // @MAT aliases already handled by subtyping
   }
 
-  private val stdErrorClass = RootClass.newErrorClass(nme.ERROR.toTypeName)
+  private val stdErrorClass = RootClass.newErrorClass(tpnme.ERROR)
   private val stdErrorValue = stdErrorClass.newErrorValue(nme.ERROR)
 
   /** The context-dependent inferencer part */
@@ -1309,7 +1309,7 @@ trait Infer {
         def isLocalBinding(sym: Symbol) =
           sym.isAbstractType &&
           ((bound contains sym) ||
-           sym.name == nme.WILDCARD.toTypeName || {
+           sym.name == tpnme.WILDCARD || {
             val e = context.scope.lookupEntry(sym.name)
             (e ne null) && e.sym == sym && e.owner == context.scope
           })

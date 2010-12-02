@@ -91,11 +91,10 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   private def parseMember(field: Boolean): (Int, Symbol) = {
-    val jflags = in.nextChar
-    val name = pool.getName(in.nextChar)
-
-    val owner = getOwner(jflags)
-    val dummySym = owner.newMethod(owner.pos, name).setFlag(javaToScalaFlags(jflags))
+    val jflags   = in.nextChar
+    val name     = pool.getName(in.nextChar)
+    val owner    = getOwner(jflags)
+    val dummySym = owner.newMethod(owner.pos, name) setFlag javaToScalaFlags(jflags)
 
     try {
       val ch = in.nextChar
@@ -107,7 +106,7 @@ abstract class ICodeReader extends ClassfileParser {
         val owner = getOwner(jflags)
         var sym = owner.info.member(name).suchThat(old => sameType(old.tpe, tpe));
         if (sym == NoSymbol)
-          sym = owner.info.member(newTermName(name.toString + nme.LOCAL_SUFFIX)).suchThat(old => old.tpe =:= tpe);
+          sym = owner.info.member(newTermName(name + nme.LOCAL_SUFFIX_STRING)).suchThat(old => old.tpe =:= tpe);
         if (sym == NoSymbol) {
           log("Could not find symbol for " + name + ": " + tpe)
           log(owner.info.member(name).tpe + " : " + tpe)
@@ -177,10 +176,10 @@ abstract class ICodeReader extends ClassfileParser {
   }
 
   def parseAttribute() {
-    val attrName = pool.getName(in.nextChar)
+    val attrName = pool.getName(in.nextChar).toTypeName
     val attrLen = in.nextInt
     attrName match {
-      case nme.CodeATTR =>
+      case tpnme.CodeATTR =>
         parseByteCode()
       case _ =>
         in.skip(attrLen)

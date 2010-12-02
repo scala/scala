@@ -18,6 +18,9 @@ trait CompilationUnits { self: Global =>
     /** the fresh name creator */
     var fresh: FreshNameCreator = new FreshNameCreator.Default
 
+    def freshTermName(prefix: String): TermName = newTermName(fresh.newName(prefix))
+    def freshTypeName(prefix: String): TypeName = newTypeName(fresh.newName(prefix))
+
     /** the content of the compilation unit in tree form */
     var body: Tree = EmptyTree
 

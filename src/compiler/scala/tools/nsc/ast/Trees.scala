@@ -17,6 +17,8 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
     var body: Tree
     val source: SourceFile
     def fresh : FreshNameCreator
+    def freshTermName(prefix: String): TermName
+    def freshTypeName(prefix: String): TypeName
   }
 
   type CompilationUnit <: CompilationUnitTrait
@@ -36,25 +38,24 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   implicit def treeWrapper(tree: Tree): TreeOps = new TreeOps(tree)
 
   class TreeOps(tree: Tree) {
-
     def isTerm: Boolean = tree match {
-      case _: TermTree => true
-      case Bind(name, _) => name.isTermName
-      case Select(_, name) => name.isTermName
-      case Ident(name) => name.isTermName
+      case _: TermTree       => true
+      case Bind(name, _)     => name.isTermName
+      case Select(_, name)   => name.isTermName
+      case Ident(name)       => name.isTermName
       case Annotated(_, arg) => arg.isTerm
-      case DocDef(_, defn) => defn.isTerm
-      case _ => false
+      case DocDef(_, defn)   => defn.isTerm
+      case _                 => false
     }
 
     def isType: Boolean = tree match {
-      case _: TypTree => true
-      case Bind(name, _) => name.isTypeName
-      case Select(_, name) => name.isTypeName
-      case Ident(name) => name.isTypeName
+      case _: TypTree        => true
+      case Bind(name, _)     => name.isTypeName
+      case Select(_, name)   => name.isTypeName
+      case Ident(name)       => name.isTypeName
       case Annotated(_, arg) => arg.isType
-      case DocDef(_, defn) => defn.isType
-      case _ => false
+      case DocDef(_, defn)   => defn.isType
+      case _                 => false
     }
 
     def isErroneous = (tree.tpe ne null) && tree.tpe.isErroneous
@@ -254,7 +255,7 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
         if (vparamss1.isEmpty || !vparamss1.head.isEmpty && vparamss1.head.head.mods.isImplicit)
           vparamss1 = List() :: vparamss1;
         val superRef: Tree = atPos(superPos) {
-          Select(Super(nme.EMPTY.toTypeName, nme.EMPTY.toTypeName), nme.CONSTRUCTOR)
+          Select(Super(tpnme.EMPTY, tpnme.EMPTY), nme.CONSTRUCTOR)
         }
         val superCall = (superRef /: argss) (Apply)
         List(

@@ -148,7 +148,7 @@ trait NamesDefaults { self: Analyzer =>
 
       // never used for constructor calls, they always have a stable qualifier
       def blockWithQualifier(qual: Tree, selected: Name) = {
-        val sym = blockTyper.context.owner.newValue(qual.pos, unit.fresh.newName("qual$"))
+        val sym = blockTyper.context.owner.newValue(qual.pos, unit.freshTermName("qual$"))
                             .setInfo(qual.tpe)
         blockTyper.context.scope.enter(sym)
         val vd = atPos(sym.pos)(ValDef(sym, qual).setType(NoType))
@@ -253,32 +253,32 @@ trait NamesDefaults { self: Analyzer =>
         val byName = isByNameParamType(tpe)
         val (argTpe, repeated) =
           if (isScalaRepeatedParamType(tpe)) arg match {
-            case Typed(expr, Ident(nme.WILDCARD_STAR)) =>
+            case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
               (expr.tpe, true)
             case _ =>
               (seqType(arg.tpe), true)
           } else (arg.tpe, false)
-        val s = context.owner.newValue(arg.pos, unit.fresh.newName("x$"))
+        val s = context.owner.newValue(arg.pos, unit.freshTermName("x$"))
         val valType = if (byName) functionType(List(), argTpe)
                       else if (repeated) argTpe
                       else argTpe
         s.setInfo(valType)
         (context.scope.enter(s), byName, repeated)
       })
-      (symPs, args).zipped map ((symP, arg) => {
-        val (sym, byName, repeated) = symP
-        // resetAttrs required for #2290. given a block { val x = 1; x }, when wrapping into a function
-        // () => { val x = 1; x }, the owner of symbol x must change (to the apply method of the function).
-        val body = if (byName) blockTyper.typed(Function(List(), resetLocalAttrs(arg)))
-                   else if (repeated) arg match {
-                     case Typed(expr, Ident(nme.WILDCARD_STAR)) =>
-                       expr
-                     case _ =>
-                       val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
-                       blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
-                   } else arg
-        atPos(body.pos)(ValDef(sym, body).setType(NoType))
-      })
+      (symPs, args).zipped map {
+        case ((sym, byName, repeated), arg) =>
+          // resetAttrs required for #2290. given a block { val x = 1; x }, when wrapping into a function
+          // () => { val x = 1; x }, the owner of symbol x must change (to the apply method of the function).
+          val body = if (byName) blockTyper.typed(Function(List(), resetLocalAttrs(arg)))
+                     else if (repeated) arg match {
+                       case Typed(expr, Ident(tpnme.WILDCARD_STAR)) =>
+                         expr
+                       case _ =>
+                         val factory = Select(gen.mkAttributedRef(SeqModule), nme.apply)
+                         blockTyper.typed(Apply(factory, List(resetLocalAttrs(arg))))
+                     } else arg
+          atPos(body.pos)(ValDef(sym, body).setType(NoType))
+      }
     }
 
     // begin transform
@@ -315,7 +315,7 @@ trait NamesDefaults { self: Analyzer =>
                 atPos(vDef.pos.focus) {
                   // for by-name parameters, the local value is a nullary function returning the argument
                   if (isByNameParamType(tpe)) Apply(ref, List())
-                  else if (isScalaRepeatedParamType(tpe)) Typed(ref, Ident(nme.WILDCARD_STAR))
+                  else if (isScalaRepeatedParamType(tpe)) Typed(ref, Ident(tpnme.WILDCARD_STAR))
                   else ref
                 }
               })
