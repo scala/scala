@@ -1,4 +1,4 @@
-g/*  NSC -- new Scala compiler
+/*  NSC -- new Scala compiler
  * Copyright 2005-2010 LAMP/EPFL
  * @author
  */
