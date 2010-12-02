@@ -122,6 +122,32 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     def parseNormalArg(p: String, args: List[String]): Option[List[String]] =
       tryToSetIfExists(p, args, (s: Setting) => s.tryToSet _)
 
+    def getMainClass(jarName: String): Option[String] = {
+      import java.io._, java.util.jar._
+      try {
+        val in = new JarInputStream(new FileInputStream(jarName))
+        val mf = in.getManifest
+        val res = if (mf != null) {
+          val name = mf.getMainAttributes getValue Attributes.Name.MAIN_CLASS
+          if (name != null) Some(name)
+          else {
+            errorFn("Unable to get attribute 'Main-Class' from jarfile "+jarName)
+            None
+          }
+        } else {
+          errorFn("Unable to find manifest in jarfile "+jarName)
+          None
+        }
+        in.close()
+        res
+      } catch {
+        case e: FileNotFoundException =>
+          errorFn("Unable to access jarfile "+jarName); None
+        case e: IOException =>
+          errorFn(e.getMessage); None
+      }
+    }
+
     def doArgs(args: List[String]): List[String] = {
       if (args.isEmpty) return Nil
       val arg :: rest = args
@@ -136,6 +162,16 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       else if (arg == "-") {
         errorFn("'-' is not a valid argument.")
         args
+      }
+      else if (arg == "-jar") {
+        parseNormalArg("-cp", rest) match {
+          case Some(xs) =>
+            getMainClass(rest.head) match {
+              case Some(mainClass) => mainClass :: xs
+              case None => args
+            }
+          case None     => args
+        }
       }
       else
         // we dispatch differently based on the appearance of p:

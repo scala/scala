@@ -33,13 +33,19 @@ extends CompilerCommand(args, settings) {
     case hd :: tl => (Some(hd), tl)
   }
 
-  override def usageMsg = """
-%s [ <option> ]... [<torun> <arguments>]
+  override def usageMsg ="""
+Usage: %s <options> [<torun> <arguments>]
+   or  %s <options> [-jar <jarfile> <arguments>]
 
 All options to %s are allowed.  See %s -help.
 
 <torun>, if present, is an object or script file to run.
-If no <torun> is present, run an interactive shell.
+
+-jar <jarfile>, if present, uses the 'Main-Class' attribute
+in the manifest file to determine the object to run.
+
+If neither <torun> nor -jar <jarfile> are present, run an
+interactive shell.
 
 Option -howtorun allows explicitly specifying how to run <torun>:
     script: it is a script file
@@ -57,5 +63,5 @@ for future use.
 Option -nocompdaemon requests that the fsc offline compiler not be used.
 
 Option -Dproperty=value sets a Java system property.
-""".format(cmdName, compCmdName, compCmdName)
+""".format(cmdName, cmdName, compCmdName, compCmdName)
 }

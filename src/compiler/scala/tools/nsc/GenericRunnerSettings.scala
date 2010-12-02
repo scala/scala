@@ -8,6 +8,13 @@ package scala.tools.nsc
 
 class GenericRunnerSettings(error: String => Unit)
 extends Settings(error) {
+  val jarfile =
+    StringSetting(
+      "-jar",
+      "jar",
+      "Specify the jarfile in which to look for the main class",
+      "")
+
   val howtorun =
     ChoiceSetting(
       "-howtorun",
@@ -17,24 +24,24 @@ extends Settings(error) {
 
   val loadfiles =
     MultiStringSetting(
-        "-i",
-        "file",
-        "load a file (assumes the code is given interactively)")
+      "-i",
+      "file",
+      "load a file (assumes the code is given interactively)")
 
   val execute =
     StringSetting(
-        "-e",
-        "string",
-        "execute a single command",
-        "")
+      "-e",
+      "string",
+      "execute a single command",
+      "")
 
   val savecompiled =
     BooleanSetting(
-        "-savecompiled",
-        "save the compiled script (assumes the code is a script)")
+      "-savecompiled",
+      "save the compiled script (assumes the code is a script)")
 
   val nocompdaemon =
     BooleanSetting(
-        "-nocompdaemon",
-        "do not use the fsc compilation daemon")
+      "-nocompdaemon",
+      "do not use the fsc compilation daemon")
 }
