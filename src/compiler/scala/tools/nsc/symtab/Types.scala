@@ -3789,7 +3789,7 @@ A type's typeSymbol should never be inspected directly.
 
   object adaptToNewRunMap extends TypeMap {
     private def adaptToNewRun(pre: Type, sym: Symbol): Symbol = {
-      if (phase.refChecked) {
+      if (phase.flatClasses) {
         sym
       } else if (sym.isModuleClass) {
         val adaptedSym = adaptToNewRun(pre, sym.sourceModule)
