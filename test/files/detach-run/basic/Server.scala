@@ -14,4 +14,5 @@ object Server extends ServerConsole {
       client ! result
     }
     server.close()
-  }}
+  }
+}

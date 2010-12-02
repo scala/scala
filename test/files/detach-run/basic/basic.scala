@@ -112,17 +112,19 @@ object Env {
 
   def generateJarFile(classNames: List[String]) {
     val out = new JarOutputStream(new FileOutputStream(deployJar))
-    classNames foreach (name => {
+    classNames foreach (name => try {
       val classFile = name+".class"
-      out putNextEntry new JarEntry(classFile)
       val in = new FileInputStream(outPath+sep+classFile)
-      val buf = new Array[Byte](256)
+      out putNextEntry new JarEntry(classFile)
+      val buf = new Array[Byte](512)
       var len = in read buf
       while (len != -1) {
         out.write(buf, 0, len)
         len = in read buf
       }
       in.close()
+    } catch {
+      case e: FileNotFoundException => println(e)
     })
     out.close()
   }
