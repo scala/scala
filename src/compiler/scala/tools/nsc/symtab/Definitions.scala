@@ -169,7 +169,13 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def scalaRuntimeSameElements = getMember(ScalaRunTimeModule, nme.sameElements)
 
     // classes with special meanings
-    lazy val NotNullClass          = getClass("scala.NotNull")
+    lazy val NotNullClass         = getClass("scala.NotNull")
+    lazy val DelayedInitClass     = getClass("scala.DelayedInit")
+      def delayedInitMethod = getMember(DelayedInitClass, nme.delayedInit)
+      // a dummy value that communicates that a delayedInit call is compiler-generated
+      // from phase UnCurry to phase Constructors
+      def delayedInitArgVal = EmptyPackageClass.newValue(NoPosition, nme.delayedInitArg)
+        .setInfo(UnitClass.tpe)
     lazy val TypeConstraintClass   = getClass("scala.TypeConstraint")
     lazy val SingletonClass        = newClass(ScalaPackageClass, nme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = getClass("scala.Serializable")

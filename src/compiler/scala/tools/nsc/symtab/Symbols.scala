@@ -523,6 +523,10 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       isClass && (isAnonymousClass || isRefinementClass || isLocal ||
                   !owner.isPackageClass && owner.isLocalClass)
 
+/* code for fixing nested objects
+    override final def isModuleClass: Boolean =
+      super.isModuleClass && !isExpandedModuleClass
+*/
     /** Is this class or type defined as a structural refinement type?
      */
     final def isStructuralRefinement: Boolean =
@@ -1451,7 +1455,13 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         if (isType) name = name.toTypeName
       }
     }
+/* code for fixing nested objects
+    def expandModuleClassName() {
+      name = newTypeName(name.toString + "$")
+    }
 
+    def isExpandedModuleClass: Boolean = name(name.length - 1) == '$'
+*/
     def sourceFile: AbstractFile =
       (if (isModule) moduleClass else toplevelClass).sourceFile
 

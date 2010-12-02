@@ -12,6 +12,7 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
   self: SymbolTable =>
 
   object nme extends StandardNames with NameMangling {
+
     /** Translate a String into a list of simple TypeNames and TermNames.
      *  In all segments before the last, type/term is determined by whether
      *  the following separator char is '.' or '#'.  In the last segment,
@@ -222,6 +223,8 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val identity = newTermName("identity")
     val conforms = newTermName("conforms")
     val copy = newTermName("copy")
+    val delayedInit = newTermName("delayedInit")
+    val delayedInitArg = newTermName("delayedInit$body")
     val dottype = newTermName(".type")
     val drop = newTermName("drop")
     val elem = newTermName("elem")

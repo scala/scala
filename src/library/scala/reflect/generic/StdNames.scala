@@ -30,6 +30,6 @@ trait StdNames { self: Universe =>
       newTermName(base.fullName('$') + separator + name)
 
     def moduleVarName(name: Name): Name =
-      newTermName(name.toString() + MODULE_SUFFIX)
+      newTermName(name.toString + MODULE_SUFFIX)
   }
 }

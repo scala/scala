@@ -155,7 +155,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // The list of statements that go into constructor after superclass constructor call
       val constrStatBuf = new ListBuffer[Tree]
 
-      // The list of statements that go into constructor before superclass constructor call
+      // The list of statements that go into constructor before and including the
+      // superclass constructor call
       val constrPrefixBuf = new ListBuffer[Tree]
 
       // The early initialized field definitions of the class (these are the class members)
@@ -163,14 +164,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
 
       // generate code to copy pre-initialized fields
       for (stat <- constrBody.stats) {
-        constrStatBuf += stat
+        constrPrefixBuf += stat
         stat match {
           case ValDef(mods, name, _, _) if (mods hasFlag PRESUPER) =>
             // stat is the constructor-local definition of the field value
             val fields = presupers filter (
               vdef => nme.localToGetter(vdef.name) == name)
             assert(fields.length == 1)
-            constrStatBuf += mkAssign(fields.head.symbol, Ident(stat.symbol))
+            constrPrefixBuf += mkAssign(fields.head.symbol, Ident(stat.symbol))
           case _ =>
         }
       }
@@ -404,12 +405,87 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         } else stats0
       }
 
+      def isInitDef(stat: Tree) = stat match {
+        case dd: DefDef => dd.symbol == delayedInitMethod
+        case _ => false
+      }
+
+      def delayedInitClosure(stats: List[Tree]) =
+        localTyper.typed {
+          atPos(impl.pos) {
+            val closureClass = clazz.newClass(impl.pos, nme.delayedInitArg.toTypeName)
+              .setFlag(SYNTHETIC | FINAL)
+            val closureParents = List(AbstractFunctionClass(0).tpe, ScalaObjectClass.tpe)
+            closureClass.setInfo(new ClassInfoType(closureParents, new Scope, closureClass))
+
+            val outerField = clazz.newValue(impl.pos, nme.OUTER)
+              .setFlag(PRIVATE | LOCAL)
+              .setInfo(clazz.tpe)
+
+            val applyMethod = closureClass.newMethod(impl.pos, nme.apply)
+              .setFlag(FINAL)
+              .setInfo(MethodType(List(), ObjectClass.tpe))
+
+            closureClass.info.decls enter outerField
+            closureClass.info.decls enter applyMethod
+
+            val outerFieldDef = ValDef(outerField)
+
+            val changeOwner = new ChangeOwnerTraverser(impl.symbol, applyMethod)
+            val constrStatTransformer = new Transformer {
+              override def transform(tree: Tree): Tree = tree match {
+                case This(`clazz`) =>
+                  localTyper.typed {
+                    atPos(tree.pos) {
+                      Select(This(closureClass), outerField)
+                    }
+                  }
+                case _ =>
+                  changeOwner traverse tree
+                  tree
+              }
+            }
+
+            def applyMethodStats = constrStatTransformer.transformTrees(stats)
+
+            val applyMethodDef = DefDef(
+              sym = applyMethod,
+              vparamss = List(List()),
+              rhs = Block(applyMethodStats, gen.mkAttributedRef(BoxedUnit_UNIT)))
+
+            util.trace("delayedInit: ") { ClassDef(
+              sym = closureClass,
+              constrMods = Modifiers(0),
+              vparamss = List(List(outerFieldDef)),
+              argss = List(List()),
+              body = List(outerFieldDef, applyMethodDef),
+              superPos = impl.pos)
+          }}
+        }
+
+      def delayedInitCall(closure: Tree) =
+        localTyper.typed {
+          atPos(impl.pos) {
+            Apply(
+              Select(This(clazz), delayedInitMethod),
+              List(New(TypeTree(closure.symbol.tpe), List(List(This(clazz))))))
+          }
+        }
+
+      val needsDelayedInit =
+        false && (clazz isSubClass DelayedInitClass) && !(defBuf exists isInitDef) && constrStatBuf.nonEmpty
+
+      var constrStats = constrStatBuf.toList
+      if (needsDelayedInit) {
+        constrStats = List(delayedInitCall(delayedInitClosure(constrStats)))
+      }
+
       // Assemble final constructor
       defBuf += treeCopy.DefDef(
         constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,
         treeCopy.Block(
           constrBody,
-          paramInits ::: constrPrefixBuf.toList ::: guardSpecializedInitializer(constrStatBuf.toList),
+          paramInits ::: constrPrefixBuf.toList ::: guardSpecializedInitializer(constrStats),
           constrBody.expr));
 
       // Followed by any auxiliary constructors
@@ -423,6 +499,12 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       treeCopy.Template(impl, impl.parents, impl.self,
         defBuf.toList filter (stat => mustbeKept(stat.symbol)))
     } // transformClassTemplate
+
+    def hasDelayedInit(clazz: Symbol) = false &&
+      (clazz isSubClass DelayedInitClass) &&
+      (clazz.info.decls lookup nme.delayedInit) == NoSymbol
+
+    def delayedInitCall(stats: List[Tree]): Tree = null
 
     override def transform(tree: Tree): Tree =
       tree match {

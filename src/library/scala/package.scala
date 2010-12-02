@@ -102,6 +102,23 @@ package object scala {
   type PartialOrdering[T] = scala.math.PartialOrdering[T]
   type PartiallyOrdered[T] = scala.math.PartiallyOrdered[T]
 
+  // Annotations which we might move to annotation.*
+/*
+  type SerialVersionUID = annotation.SerialVersionUID
+  type cloneable = annotation.cloneable
+  type deprecated = annotation.deprecated
+  type deprecatedName = annotation.deprecatedName
+  type inline = annotation.inline
+  type native = annotation.native
+  type noinline = noannotation.inline
+  type remote = annotation.remote
+  type serializable = annotation.serializable
+  type specialized = annotation.specialized
+  type transient = annotation.transient
+  type throws  = annotation.throws
+  type unchecked = annotation.unchecked.unchecked
+  type volatile = annotation.volatile
+  */
   @deprecated("Use Tuple1(x) to create a 1-tuple.")
   def Tuple[A1](x1: A1) = Tuple1(x1)
   @deprecated("Use ((x1, x2, ...)) syntax to create Tuples")
@@ -160,4 +177,10 @@ package object scala {
 
   @deprecated("use IndexedSeq instead") type RandomAccessSeq[+A] = scala.collection.IndexedSeq[A]
   @deprecated("use IndexedSeq instead") val RandomAccessSeq = scala.collection.IndexedSeq
+/* the following classes should be moved to annotation and the aliases should be enabled
+  @deprecated("use annotation.Annotation instead") type Annotation = annotation.Annotation
+  @deprecated("use annotation.ClassfileAnnotation instead") type ClassfileAnnotation = annotation.Annotation
+  @deprecated("use annotation.StaticAnnotation instead") type StaticAnnotation = annotation.Annotation
+  @deprecated("use annotation.TypeConstraint instead") type TypeConstraint = annotation.TypeConstraint
+*/
 }
