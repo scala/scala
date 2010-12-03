@@ -1,7 +1,7 @@
 object SetVsSet {
   case class Calculator[+T](name: String, parameters: Set[String])
   val binding = Map.empty[String, String]
-  def f = Calculator("Hello",binding.keySet)
+  def f = Calculator("Hello", binding.keySet: collection.Set[String])
 }
 
 object TParamConfusion {

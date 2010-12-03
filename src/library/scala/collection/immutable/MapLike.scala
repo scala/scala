@@ -50,8 +50,6 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
   extends scala.collection.MapLike[A, B, This]
 { self =>
 
-  import scala.collection.Traversable
-
   /** A new immutable map containing updating this map with a given key/value mapping.
    *  @param    key the key
    *  @param    value the value
@@ -109,6 +107,11 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
     override def contains(key: A) = self.contains(key)
     def get(key: A) = self.get(key).map(f)
   }
+
+  /** Collects all keys of this map in a set.
+   *  @return  a set containing all keys of this map.
+   */
+  override def keySet: immutable.Set[A] = immutable.Set.empty ++ (this map (_._1))
 
   /** This function transforms all the values of mappings contained
    *  in this map with function `f`.

@@ -1,8 +1,8 @@
 type-diagnostics.scala:4: error: type mismatch;
  found   : scala.collection.Set[String]
  required: scala.collection.immutable.Set[String]
-  def f = Calculator("Hello",binding.keySet)
-                                     ^
+  def f = Calculator("Hello", binding.keySet: collection.Set[String])
+                                            ^
 type-diagnostics.scala:13: error: type mismatch;
  found   : List[a(in method f2)]
  required: List[a(in method f1)]
