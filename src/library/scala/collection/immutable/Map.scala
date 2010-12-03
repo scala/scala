@@ -30,6 +30,8 @@ trait Map[A, +B] extends Iterable[(A, B)]
                     with MapLike[A, B, Map[A, B]] { self =>
 
   override def empty: Map[A, B] = Map.empty
+  override def toMap[T, U](implicit ev: (A, B) <:< (T, U)): immutable.Map[T, U] =
+    self.asInstanceOf[immutable.Map[T, U]]
 
   /** The same map with a given default function */
   def withDefault[B1 >: B](d: A => B1): immutable.Map[A, B1] = new Map.WithDefault[A, B1](this, d)
