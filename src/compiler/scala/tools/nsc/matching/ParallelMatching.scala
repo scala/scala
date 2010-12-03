@@ -28,7 +28,6 @@ trait ParallelMatching extends ast.TreeDSL
   import CODE._
   import Types._
   import Debug._
-  import Flags.{ TRANS_FLAG }
   import PartialFunction._
 
   /** Transition **/
@@ -124,8 +123,8 @@ trait ParallelMatching extends ast.TreeDSL
         (0 to count).toList map (i => if (i < count) createElemVar(i) else createSeqVar(i))
 
       // for propagating "unchecked" to synthetic vars
-      def isChecked = !(sym hasFlag TRANS_FLAG)
-      def flags: List[Long] = List(TRANS_FLAG) filter (sym hasFlag _)
+      def isChecked = !(sym hasFlag NO_EXHAUSTIVE)
+      def flags: List[Long] = List(NO_EXHAUSTIVE) filter (sym hasFlag _)
 
       // this is probably where this actually belongs
       def createVar(tpe: Type, f: Symbol => Tree) = context.createVar(tpe, f, isChecked)

@@ -206,7 +206,7 @@ trait Patterns extends ast.TreeDSL {
 
     // @pre: is not right-ignoring (no star pattern) ; no exhaustivity check
     override def simplify(pv: PatternVar) = {
-      pv.sym setFlag Flags.TRANS_FLAG
+      pv.sym setFlag NO_EXHAUSTIVE
       this rebindTo elems.foldRight(gen.mkNil)(listFolder)
     }
     override def description = "UnSeq(%s => %s)".format(tptArg, resTypesString)

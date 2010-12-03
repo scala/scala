@@ -471,10 +471,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       ((hasFlag(notPRIVATE | LIFTED) && !hasFlag(ACCESSOR | SUPERACCESSOR | MODULE) || isConstructor) ||
        (hasFlag(LIFTED) && isModule && isMethod))
 
-    /** Is this symbol a module variable ?
-     *  MUTABLE is needed to partition overloaded flags MODULEVAR and SYNTHETICMETH.
+    /** Is this symbol a module variable?
+     *  This used to have to test for MUTABLE to distinguish the overloaded
+     *  MODULEVAR/SYNTHETICMETH flag, but now SYNTHETICMETH is gone.
      */
-    final def isModuleVar: Boolean = hasAllFlags(MODULEVAR | MUTABLE)
+    final def isModuleVar = hasFlag(MODULEVAR)
 
     /** Is this symbol static (i.e. with no outer instance)? */
     final def isStatic: Boolean =

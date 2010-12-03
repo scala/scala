@@ -25,10 +25,6 @@ package util
 //   x.isParameter  ==> DEFAULTPARAM
 //   x.isClass      ==> TRAIT
 //
-// 30: MODULEVAR SYNTHETICMETH
-//   x.isMutable    ==> MODULEVAR
-//   x.isMethod     ==> SYNTHETICMETH
-//
 // 35: EXISTENTIAL MIXEDIN
 //   x.isType       ==> EXISTENTIAL
 //   x.isTerm       ==> MIXEDIN
@@ -37,7 +33,93 @@ package util
 //   x.isClass      ==> IMPLCLASS
 //   x.isTerm       ==> PRESUPER
 
+import scala.collection.{ mutable, immutable }
 import symtab.Flags.ExplicitFlags
+
+class TransFlagManager[T <: Global](val global: T) {
+  import global._
+  import definitions._
+
+  private var trackerStack: List[FlagTracker] = Nil
+  private def trackerString = trackerStack.mkString(" ")
+
+  class FlagTracker(val name: String) {
+    private val mask               = symtab.Flags.TRANS_FLAG
+    private val seen               = new mutable.HashSet[Symbol]
+
+    private def debug(msg: String) = if (settings.debug.value) log(msg)
+    private def trace(msg: String) = if (settings.debug.value && settings.verbose.value) log(msg)
+    private def isDebug            = settings.debug.value
+    private def doWeOwnFlag        = trackerStack.headOption exists (_ eq this)
+    private def isOK               = trackerStack.isEmpty || (trackerStack.head eq this)
+
+    def apply(sym: Symbol) = {
+      if (!isOK)
+        log("Testing " + sym.name + " for " + name + " flag, but not at top of stack: " + trackerString)
+
+      sym hasFlag mask
+    }
+    def set(sym: Symbol) = {
+      if (!isOK)
+        log("Tried to set " + name + " but not at top of stack: " + trackerString)
+
+      seen += sym
+      sym setFlag mask
+    }
+    def reset(sym: Symbol) = {
+      if (!isOK)
+        log("Tried to clear " + name + " but not at top of stack: " + trackerString)
+
+      seen -= sym
+      sym resetFlag mask
+    }
+    def clear() {
+      if (!doWeOwnFlag && seen.nonEmpty)
+        log("Clearing " + seen.size + " " + name + " flags even though the stack is: " + trackerString)
+
+      seen foreach (_ resetFlag mask)
+      seen.clear()
+    }
+  }
+
+  def forceClear() = {
+    if (trackerStack.nonEmpty) {
+      log("Warning: force clearing the stack at " + phase + ": " + trackerString)
+      trackerStack foreach (_.clear())
+      trackerStack = Nil
+    }
+  }
+
+  def claimTransFlag(label: String): FlagTracker = {
+    if (trackerStack.isEmpty || trackerStack.head.name != label)
+      trackerStack ::= new FlagTracker(label)
+
+    trackerStack.head
+  }
+  def releaseTransFlag(label: String): Boolean = {
+    trackerStack.isEmpty || {
+      if (trackerStack.head.name == label) {
+        trackerStack.head.clear()
+        trackerStack = trackerStack.tail
+        true
+      }
+      else {
+        log("Warning: trying to release " + label + " flag but the stack is: " + trackerStack.mkString(" "))
+        false
+      }
+    }
+  }
+  def holdingTransFlag[U](label: String)(f: FlagTracker => U): U = {
+    try {
+      val t = claimTransFlag(label)
+      f(t)
+    }
+    finally {
+      releaseTransFlag(label)
+    }
+  }
+}
+
 
 /** Some functions for generating comments and methods involving flags,
  *  with the output determined by reflection so we can have a little more

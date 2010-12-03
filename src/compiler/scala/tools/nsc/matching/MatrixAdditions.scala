@@ -127,7 +127,6 @@ trait MatrixAdditions extends ast.TreeDSL
           })
         }
       }
-
       returning(lxtt transform tree)(_ => clearSyntheticSyms())
     }
   }
@@ -145,7 +144,7 @@ trait MatrixAdditions extends ast.TreeDSL
     class ExhaustivenessChecker(rep: Rep) {
       val Rep(tvars, rows) = rep
 
-      import Flags.{ MUTABLE, ABSTRACT, SEALED, TRANS_FLAG }
+      import Flags.{ MUTABLE, ABSTRACT, SEALED }
 
       private case class Combo(index: Int, sym: Symbol) {
         val isBaseClass = sym.tpe.baseClasses.toSet
@@ -167,7 +166,7 @@ trait MatrixAdditions extends ast.TreeDSL
 
       private def requiresExhaustive(sym: Symbol) = {
          (sym.isMutable) &&                 // indicates that have not yet checked exhaustivity
-        !(sym hasFlag TRANS_FLAG) &&        // indicates @unchecked
+        !(sym hasFlag NO_EXHAUSTIVE) &&        // indicates @unchecked
          (sym.tpe.typeSymbol.isSealed) &&
         !isValueClass(sym.tpe.typeSymbol)   // make sure it's not a primitive, else (5: Byte) match { case 5 => ... } sees no Byte
       }

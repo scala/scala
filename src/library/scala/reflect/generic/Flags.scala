@@ -60,7 +60,6 @@ class Flags extends ModifierFlags {
 
   final val SUPERACCESSOR = 0x10000000    // a super accessor
   final val MODULEVAR     = 0x40000000    // for variables: is the variable caching a module value
-  final val SYNTHETICMETH = 0x40000000    // for methods: synthetic method, but without SYNTHETIC flag
 
   final val IS_ERROR      = 0x100000000L  // symbol is an error symbol
   final val OVERLOADED    = 0x200000000L  // symbol is overloaded
@@ -69,7 +68,6 @@ class Flags extends ModifierFlags {
                                           // todo: make LIFTED = latePRIVATE?
   final val MIXEDIN       = 0x800000000L  // term member has been mixed in
   final val EXISTENTIAL   = 0x800000000L  // type is an existential parameter or skolem
-
   final val EXPANDEDNAME  = 0x1000000000L // name has been expanded with class suffix
   final val IMPLCLASS     = 0x2000000000L // symbol is an implementation class
   final val TRANS_FLAG    = 0x4000000000L // transient flag guaranteed to be reset after each phase.
@@ -163,7 +161,7 @@ class Flags extends ModifierFlags {
     case            ACCESSOR => "<accessor>"                          // (1L << 27)
     case       SUPERACCESSOR => "<superaccessor>"                     // (1L << 28)
     case       PARAMACCESSOR => "<paramaccessor>"                     // (1L << 29)
-    case           MODULEVAR => "<modulevar/syntheticmeth>"           // (1L << 30)
+    case           MODULEVAR => "<modulevar>"                         // (1L << 30)
     case                LAZY => "lazy"                                // (1L << 31)
     case            IS_ERROR => "<is_error>"                          // (1L << 32)
     case          OVERLOADED => "<overloaded>"                        // (1L << 33)

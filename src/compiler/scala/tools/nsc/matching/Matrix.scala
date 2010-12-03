@@ -17,7 +17,9 @@ trait Matrix extends MatrixAdditions {
   import analyzer.Typer
   import CODE._
   import Debug._
-  import Flags.{ TRANS_FLAG, SYNTHETIC, MUTABLE }
+  import Flags.{ SYNTHETIC, MUTABLE }
+
+  private[matching] val NO_EXHAUSTIVE = Flags.TRANS_FLAG
 
   /** Translation of match expressions.
    *
@@ -101,7 +103,7 @@ trait Matrix extends MatrixAdditions {
 
     // redundancy check
     matrix.targets filter (_.isNotReached) foreach (cs => cunit.error(cs.body.pos, "unreachable code"))
-    // optimize performs squeezing and resets any remaining TRANS_FLAGs
+    // optimize performs squeezing and resets any remaining NO_EXHAUSTIVE
     tracing("handlePattern(" + selector + ")", matrix optimize dfatree)
   }
 
@@ -115,15 +117,15 @@ trait Matrix extends MatrixAdditions {
   {
     private def ifNull[T](x: T, alt: T) = if (x == null) alt else x
 
-    // TRANS_FLAG communicates there should be no exhaustiveness checking
-    private def flags(checked: Boolean) = if (checked) Nil else List(TRANS_FLAG)
+    // NO_EXHAUSTIVE communicates there should be no exhaustiveness checking
+    private def flags(checked: Boolean) = if (checked) Nil else List(NO_EXHAUSTIVE)
 
     // Recording the symbols of the synthetics we create so we don't go clearing
     // anyone else's mutable flags.
     private val _syntheticSyms = mutable.HashSet[Symbol]()
     def clearSyntheticSyms() = {
-      _syntheticSyms foreach (_ resetFlag (TRANS_FLAG|MUTABLE))
-      log("Cleared TRANS_FLAG/MUTABLE on " + _syntheticSyms.size + " synthetic symbols.")
+      _syntheticSyms foreach (_ resetFlag (NO_EXHAUSTIVE|MUTABLE))
+      log("Cleared NO_EXHAUSTIVE/MUTABLE on " + _syntheticSyms.size + " synthetic symbols.")
       _syntheticSyms.clear()
     }
     def recordSyntheticSym(sym: Symbol): Symbol = {
@@ -157,7 +159,7 @@ trait Matrix extends MatrixAdditions {
 
         val xs =
           for (Binding(lhs, rhs) <- info) yield
-            new PatternVar(lhs, Ident(rhs) setType lhs.tpe, !(rhs hasFlag TRANS_FLAG))
+            new PatternVar(lhs, Ident(rhs) setType lhs.tpe, !(rhs hasFlag NO_EXHAUSTIVE))
 
         new PatternVarGroup(xs)
       }
