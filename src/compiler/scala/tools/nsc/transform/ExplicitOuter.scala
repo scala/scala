@@ -38,25 +38,32 @@ abstract class ExplicitOuter extends InfoTransform
   protected def newTransformer(unit: CompilationUnit): Transformer =
     new ExplicitOuterTransformer(unit)
 
-  /** Is given <code>clazz</code> an inner class? */
+  /** Is given clazz an inner class? */
   private def isInner(clazz: Symbol) =
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
-  /** Does given <code>clazz</code> define an outer field? */
-  def hasOuterField(clazz: Symbol) = {
-    def hasSameOuter(parent: Type) =
-      parent.typeSymbol.isClass &&
-      clazz.owner.isClass &&
-      clazz.owner == parent.typeSymbol.owner &&
-      parent.prefix =:= clazz.owner.thisType
+  private def haveSameOuter(parent: Type, clazz: Symbol) = parent match {
+    case TypeRef(pre, sym, _)   =>
+      val owner = clazz.owner
 
-    isInner(clazz) && !clazz.isTrait &&
-    !(clazz.info.parents.headOption exists hasSameOuter)
+      sym.isClass && owner.isClass &&
+      owner == sym.owner &&
+      owner.thisType =:= pre
+    case _                      => false
+  }
+
+  /** Does given clazz define an outer field? */
+  def hasOuterField(clazz: Symbol) = {
+    val parents = clazz.info.parents
+
+    isInner(clazz) && !clazz.isTrait && {
+      parents.isEmpty || !haveSameOuter(parents.head, clazz)
+    }
   }
 
   private def outerField(clazz: Symbol): Symbol = {
     val result = clazz.info.member(nme.OUTER_LOCAL)
-    assert(result != NoSymbol, "no outer field in "+clazz+clazz.info.decls+" at "+phase)
+    assert(result != NoSymbol, "no outer field in "+clazz+" at "+phase)
 
     result
   }
@@ -65,7 +72,7 @@ abstract class ExplicitOuter extends InfoTransform
    *  for which the type parameter conforms to Seq, because these answers changed in 2.8.
    */
   def isArraySeqTest(lhs: Type, rhs: Type) =
-    ArrayClass.tpe <:< lhs.widen && rhs.widen.matchesPattern(SeqClass.tpe)
+    (ArrayClass.tpe <:< lhs.widen) && (rhs.widen matchesPattern SeqClass.tpe)
 
   def outerAccessor(clazz: Symbol): Symbol = {
     val firstTry = clazz.info.decl(nme.expandedName(nme.OUTER, clazz))
@@ -82,13 +89,13 @@ abstract class ExplicitOuter extends InfoTransform
    *      in a inner non-trait class;
    *    </li>
    *    <li>
-   *      Add a protected <code>$outer</code> field to an inner class which is
+   *      Add a protected $outer field to an inner class which is
    *      not a trait.
    *    </li>
    *    <li>
    *      <p>
-   *        Add an outer accessor <code>$outer$$C</code> to every inner class
-   *        with fully qualified name <code>C</code> that is not an interface.
+   *        Add an outer accessor $outer$$C to every inner class
+   *        with fully qualified name C that is not an interface.
    *        The outer accessor is abstract for traits, concrete for other
    *        classes.
    *      </p>
@@ -167,7 +174,7 @@ abstract class ExplicitOuter extends InfoTransform
       tp
   }
 
-  /** A base class for transformers that maintain <code>outerParam</code>
+  /** A base class for transformers that maintain outerParam
    *  values for outer parameters of constructors.
    *  The class provides methods for referencing via outer.
    */
@@ -209,8 +216,8 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The path
      *  <blockquote><pre>`base'.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
-     *  which refers to the outer instance of class <code>to</code> of
-     *  value <code>base</code>. The result is typed but not positioned.
+     *  which refers to the outer instance of class to of
+     *  value base. The result is typed but not positioned.
      *
      *  @param base ...
      *  @param from ...
@@ -260,42 +267,42 @@ abstract class ExplicitOuter extends InfoTransform
    *      A constructor of a non-trait inner class gets an outer parameter.
    *    </li>
    *    <li> <!-- 5 -->
-   *      A reference <code>C.this</code> where <code>C</code> refers to an
+   *      A reference C.this where C refers to an
    *      outer class is replaced by a selection
-   *      <code>this.$outer$$C1</code> ... <code>.$outer$$Cn</code> (@see outerPath)
+   *      this.$outer$$C1 ... .$outer$$Cn (@see outerPath)
    *    </li>
    *    <li>
    *    </li>
    *    <li> <!-- 7 -->
    *      A call to a constructor Q.<init>(args) or Q.$init$(args) where Q != this and
    *      the constructor belongs to a non-static class is augmented by an outer argument.
-   *      E.g. <code>Q.&lt;init&gt;(OUTER, args)</code> where <code>OUTER</code>
-   *      is the qualifier corresponding to the singleton type <code>Q</code>.
+   *      E.g. Q.<init>(OUTER, args) where OUTER
+   *      is the qualifier corresponding to the singleton type Q.
    *    </li>
    *    <li>
-   *      A call to a constructor <code>this.&lt;init&gt;(args)</code> in a
-   *      secondary constructor is augmented to <code>this.&lt;init&gt;(OUTER, args)</code>
-   *      where <code>OUTER</code> is the last parameter of the secondary constructor.
+   *      A call to a constructor this.<init>(args) in a
+   *      secondary constructor is augmented to this.<init>(OUTER, args)
+   *      where OUTER is the last parameter of the secondary constructor.
    *    </li>
    *    <li> <!-- 9 -->
-   *      Remove <code>private</code> modifier from class members <code>M</code>
+   *      Remove private modifier from class members M
    *      that are accessed from an inner class.
    *    </li>
    *    <li> <!-- 10 -->
-   *      Remove <code>protected</code> modifier from class members <code>M</code>
+   *      Remove protected modifier from class members M
    *      that are accessed without a super qualifier accessed from an inner
    *      class or trait.
    *    </li>
    *    <li> <!-- 11 -->
-   *      Remove <code>private</code> and <code>protected</code> modifiers
+   *      Remove private and protected modifiers
    *      from type symbols
    *    </li>
    *    <li> <!-- 12 -->
-   *      Remove <code>private</code> modifiers from members of traits
+   *      Remove private modifiers from members of traits
    *    </li>
    *  </ol>
    *  <p>
-   *    Note: The whole transform is run in phase <code>explicitOuter.next</code>.
+   *    Note: The whole transform is run in phase explicitOuter.next.
    *  </p>
    */
   class ExplicitOuterTransformer(unit: CompilationUnit) extends OuterPathTransformer(unit) {
