@@ -675,9 +675,13 @@ object Stream extends SeqFactory[Stream] {
     loop(0)
   }
 
-  override def range(start: Int, end: Int, step: Int): Stream[Int] =
-    if (if (step < 0) start <= end else end <= start) Empty
+  override def range[T: Integral](start: T, end: T, step: T): Stream[T] = {
+    val num = implicitly[Integral[T]]
+    import num._
+
+    if (if (step < zero) start <= end else end <= start) Empty
     else new Cons(start, range(start + step, end, step))
+  }
 
   private[immutable] def filteredTail[A](stream: Stream[A], p: A => Boolean) = {
     new Stream.Cons(stream.head, stream.tail filter p)

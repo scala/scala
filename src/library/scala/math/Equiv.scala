@@ -39,10 +39,6 @@ trait LowPriorityEquiv {
   self: Equiv.type =>
 
   implicit def universalEquiv[T] : Equiv[T] = universal[T]
-
-  implicit def comparatorToEquiv[T](cmp: Comparator[T]): Equiv[T] = new Equiv[T] {
-    def equiv(x: T, y: T) = cmp.compare(x, y) == 0
-  }
 }
 
 object Equiv extends LowPriorityEquiv {
@@ -51,6 +47,9 @@ object Equiv extends LowPriorityEquiv {
   }
   def universal[T] : Equiv[T] = new Equiv[T] {
     def equiv(x: T, y: T) = x == y
+  }
+  def fromComparator[T](cmp: Comparator[T]): Equiv[T] = new Equiv[T] {
+    def equiv(x: T, y: T) = cmp.compare(x, y) == 0
   }
   def fromFunction[T](cmp: (T, T) => Boolean): Equiv[T] = new Equiv[T] {
     def equiv(x: T, y: T) = cmp(x, y)

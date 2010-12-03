@@ -195,7 +195,7 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
    *  @param end the end value of the $coll (the first value NOT contained)
    *  @return  a $coll with values `start, start + 1, ..., end - 1`
    */
-  def range(start: Int, end: Int): CC[Int] = range(start, end, 1)
+  def range[T: Integral](start: T, end: T): CC[T] = range(start, end, implicitly[Integral[T]].one)
 
   /** Produces a $coll containing equally spaced values in some integer interval.
    *  @param start the start value of the $coll
@@ -203,12 +203,15 @@ abstract class TraversableFactory[CC[X] <: Traversable[X] with GenericTraversabl
    *  @param step  the difference between successive elements of the $coll (must be positive or negative)
    *  @return      a $coll with values `start, start + step, ...` up to, but excluding `end`
    */
-  def range(start: Int, end: Int, step: Int): CC[Int] = {
-    if (step == 0) throw new IllegalArgumentException("zero step")
-    val b = newBuilder[Int]
-    b.sizeHint(Range.count(start, end, step, false))
+  def range[T: Integral](start: T, end: T, step: T): CC[T] = {
+    val num = implicitly[Integral[T]]
+    import num._
+
+    if (step == zero) throw new IllegalArgumentException("zero step")
+    val b = newBuilder[T]
+    b sizeHint immutable.NumericRange.count(start, end, step, false)
     var i = start
-    while (if (step < 0) end < i else i < end) {
+    while (if (step < zero) end < i else i < end) {
       b += i
       i += step
     }

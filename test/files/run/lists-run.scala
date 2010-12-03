@@ -172,13 +172,7 @@ object Test3 extends TestCase("t1691") with Assert {
       case e: IllegalArgumentException => ()
       case _ => throw new Error("List.range(1, 10, 0)")
     }
-    try {
-      List.range(1, 10, x => 4)
-    } catch {
-      case e: IllegalArgumentException => ()
-      case _ => throw new Error("List.range(1, 10, x => 4)")
-    }
-    assertEquals(List.range(10, 0, x => x - 2),
+    assertEquals(List.range(10, 0, -2),
 		 List(10, 8, 6, 4, 2))
   }
 }
