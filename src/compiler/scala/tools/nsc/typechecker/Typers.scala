@@ -2137,7 +2137,7 @@ trait Typers { self: Analyzer =>
 
       def checkNoDoubleDefsAndAddSynthetics(stats: List[Tree]): List[Tree] = {
         val scope = if (inBlock) context.scope else context.owner.info.decls
-        val newStats = new ListBuffer[Tree]
+        var newStats = new ListBuffer[Tree]
         var needsCheck = true
         var moreToAdd = true
         while (moreToAdd) {
@@ -2177,12 +2177,27 @@ trait Typers { self: Analyzer =>
         }
         if (newStats.isEmpty) stats
         else {
-          val (defaultGetters, others) = newStats.toList.partition {
-            case DefDef(mods, _, _, _, _, _) => mods.hasDefaultFlag
+          // put default getters next to the method they belong to,
+          // same for companion objects. fixes #2489 and #4036.
+          def matches(stat: Tree, synt: Tree) = (stat, synt) match {
+            case (DefDef(_, statName, _, _, _, _), DefDef(mods, syntName, _, _, _, _)) =>
+              mods.hasDefaultFlag && syntName.toString.startsWith(statName.toString)
+
+            case (ClassDef(_, className, _, _), ModuleDef(_, moduleName, _)) =>
+              className.toTermName == moduleName
+
             case _ => false
           }
-          // default getters first: see #2489
-          defaultGetters ::: stats ::: others
+
+          def matching(stat: Tree): List[Tree] = {
+            val (pos, neg) = newStats.partition(synt => matches(stat, synt))
+            newStats = neg
+            pos.toList
+          }
+
+          (stats foldRight List[Tree]())((stat, res) => {
+            stat :: matching(stat) ::: res
+          }) ::: newStats.toList
         }
       }
       val result = stats mapConserve (typedStat)

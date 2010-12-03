@@ -274,6 +274,7 @@ object Test extends Application {
 
   // #2489
   class A2489 { def foo { def bar(a: Int = 1) = a; bar(); val u = 0 } }
+  class A2489x2 { def foo { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
 
   // a bug reported on the mailing lists, related to #2489
   class Test2489 {
