@@ -233,31 +233,6 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
     }
   }
 
-
-  /** This method prepends elements to the buffer and
-   *  returns the same buffer.
-   *
-   *  $compatMutate
-   *  You are strongly recommended to use `++=:` instead.
-   *
-   *  @param xs   elements to prepend
-   *  @return     this buffer
-   */
-  @deprecated("use ++=: instead")
-  final def ++:(xs: collection.Traversable[A]): This = ++=:(xs)
-
-  /** This method prepends elements to the buffer and
-   *  returns the same buffer.
-   *
-   *  $compatMutate
-   *  You are strongly recommended to use `+=:` instead.
-   *
-   *  @param xs   elements to prepend
-   *  @return     this buffer
-   */
-  @deprecated("use `+=:' instead")
-  final def +:(elem: A): This = +=:(elem)
-
   /** Adds a single element to this collection and returns
    *  the collection itself.
    *

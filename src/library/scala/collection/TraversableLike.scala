@@ -186,6 +186,38 @@ trait TraversableLike[+A, +Repr] extends HasNewBuilder[A, Repr]
     b.result
   }
 
+  /** Concatenates this $coll with the elements of a traversable collection.  It
+   *  differs from ++ in that the right operand determines the type of the resulting
+   *  collection rather than the left one.
+   *
+   *  @param that   the traversable to append.
+   *  @tparam B     the element type of the returned collection.
+   *  @tparam That  $thatinfo
+   *  @param bf     $bfinfo
+   *  @return       a new collection of type `That` which contains all elements of this $coll
+   *                followed by all elements of `that`.
+   *
+   *  @usecase def ++(that: TraversableOnce[A]): $Coll[A]
+   *
+   *  @return       a new $coll which contains all elements of this $coll
+   *                followed by all elements of `that`.
+   */
+  def ++:[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
+    val b = bf(repr)
+    if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.size)
+    b ++= that
+    b ++= thisCollection
+    b.result
+  }
+
+  /** This overload exists because: for the implementation of ++: we should reuse
+   *  that of ++ because many collections override it with more efficient versions.
+   *  Since TraversableOnce has no '++' method, we have to implement that directly,
+   *  but Traversable and down can use the overload.
+   */
+  def ++:[B >: A, That](that: Traversable[B])(implicit bf: CanBuildFrom[Repr, B, That]): That =
+    (that ++ this)(breakOut)
+
   /** Builds a new collection by applying a function to all elements of this $coll.
    *
    *  @param f      the function to apply to each element.
