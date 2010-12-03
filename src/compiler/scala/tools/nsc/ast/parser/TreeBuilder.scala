@@ -17,8 +17,10 @@ abstract class TreeBuilder {
   val global: Global
   import global._
 
-  def freshName(prefix: String): Name
   def freshName(): Name = freshName("x$")
+  def freshName(prefix: String): Name
+  def freshTermName(prefix: String): TermName
+  def freshTypeName(prefix: String): TypeName
   def o2p(offset: Int): Position
   def r2p(start: Int, point: Int, end: Int): Position
 
@@ -466,6 +468,28 @@ abstract class TreeBuilder {
   /** Create tree for case definition <case pat if guard => rhs> */
   def makeCaseDef(pat: Tree, guard: Tree, rhs: Tree): CaseDef =
     CaseDef(patvarTransformer.transform(pat), guard, rhs)
+
+  /** Creates tree representing:
+   *    { case x: Throwable =>
+   *        val catchFn = catchExpr
+   *        if (catchFn isDefinedAt x) catchFn(x) else throw x
+   *    }
+   */
+  def makeCatchFromExpr(catchExpr: Tree): CaseDef = {
+    val binder   = freshTermName("x")
+    val pat      = atPos(catchExpr.pos)(Bind(binder, Typed(Ident(nme.WILDCARD), Ident(tpnme.Throwable))))
+    val catchDef = ValDef(NoMods, freshTermName("catchExpr"), TypeTree(), catchExpr)
+    val catchFn  = Ident(catchDef.name)
+    val body     = Block(
+      List(catchDef),
+      If(
+        Apply(Select(catchFn, nme.isDefinedAt), List(Ident(binder))),
+        Apply(Select(catchFn, nme.apply), List(Ident(binder))),
+        Throw(Ident(binder))
+      )
+    )
+    makeCaseDef(pat, EmptyTree, body)
+  }
 
   /** Create tree for pattern definition <val pat0 = rhs> */
   def makePatDef(pat: Tree, rhs: Tree): List[Tree] =

@@ -176,6 +176,7 @@ trait Names extends reflect.generic.Names {
     def isTypeName: Boolean
     def toTermName: TermName
     def toTypeName: TypeName
+    def bothNames: List[Name] = List(toTermName, toTypeName)
 
     /** Copy bytes of this name to buffer cs, starting at position `offset`.
      */

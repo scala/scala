@@ -1195,8 +1195,8 @@ trait Namers { self: Analyzer =>
               }
 
               def isValidSelector(from: Name)(fun : => Unit) {
-                  if (base.nonLocalMember(from) == NoSymbol &&
-                      base.nonLocalMember(from.toTypeName) == NoSymbol) fun
+                if (from.bothNames forall (x => (base nonLocalMember x) == NoSymbol))
+                  fun
               }
 
               def checkSelectors(selectors: List[ImportSelector]): Unit = selectors match {

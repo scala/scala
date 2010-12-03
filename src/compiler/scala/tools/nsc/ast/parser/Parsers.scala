@@ -1123,18 +1123,27 @@ self =>
         }
       case TRY =>
         atPos(in.skipToken()) {
-          val body =
-            if (in.token == LBRACE) surround(LBRACE, RBRACE)(block(), Literal(()))
-            else if (in.token == LPAREN) surround(LPAREN, RPAREN)(expr(), Literal(()))
-            else expr()
-          val catches =
-            if (in.token == CATCH) {
+          val body = in.token match {
+            case LBRACE   => surround(LBRACE, RBRACE)(block(), Literal(()))
+            case LPAREN   => surround(LPAREN, RPAREN)(expr(), Literal(()))
+            case _        => expr()
+          }
+          def catchFromExpr() = List(makeCatchFromExpr(expr()))
+          val catches: List[CaseDef] =
+            if (in.token != CATCH) Nil
+            else {
               in.nextToken()
-              surround(LBRACE, RBRACE)(caseClauses(), Nil)
-            } else Nil
-          val finalizer =
-            if (in.token == FINALLY) { in.nextToken(); expr() }
-            else EmptyTree
+              if (in.token == LBRACE)
+                surround(LBRACE, RBRACE)(
+                  if (in.token == CASE) caseClauses() else catchFromExpr(),
+                  Nil
+                )
+              else catchFromExpr()
+            }
+          val finalizer = in.token match {
+            case FINALLY  => in.nextToken() ; expr()
+            case _        => EmptyTree
+          }
           Try(body, catches, finalizer)
         }
       case WHILE =>
