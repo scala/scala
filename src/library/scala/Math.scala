@@ -13,7 +13,7 @@ package scala
  *  operations such as the elementary exponential, logarithm, square root, and
  *  trigonometric functions.
  */
-@deprecated("use scala.math package instead")
+@deprecated("use scala.math package object instead.\n(Example package object usage: scala.math.Pi )")
 object Math extends MathCommon {
   @deprecated("Use scala.Byte.MinValue instead")
   val MIN_BYTE = java.lang.Byte.MIN_VALUE

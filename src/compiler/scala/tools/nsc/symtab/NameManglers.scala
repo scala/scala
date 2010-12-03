@@ -98,16 +98,16 @@ trait NameManglers {
       newTermName(prefix + DEFAULT_GETTER_STRING + pos)
     }
 
-    def implClassName(name: Name): Name     = name.toTypeName append IMPL_CLASS_SUFFIX
-    def interfaceName(implname: Name): Name = implname stripEnd IMPL_CLASS_SUFFIX
-    def localDummyName(clazz: Symbol): Name = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
-    def productAccessorName(i: Int): Name   = newTermName("_" + i)
-    def superName(name: Name): Name         = newTermName(SUPER_PREFIX_STRING + name)
+    def implClassName(name: Name): TypeName     = name append IMPL_CLASS_SUFFIX toTypeName
+    def interfaceName(implname: Name): TypeName = implname stripEnd IMPL_CLASS_SUFFIX toTypeName
+    def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
+    def productAccessorName(i: Int): TermName   = newTermName("_" + i)
+    def superName(name: Name): TermName         = newTermName(SUPER_PREFIX_STRING + name)
 
     /** The name of an accessor for protected symbols. */
-    def protName(name: Name): Name = newTermName(PROTECTED_PREFIX + name)
+    def protName(name: Name): TermName = newTermName(PROTECTED_PREFIX + name)
 
     /** The name of a setter for protected symbols. Used for inherited Java fields. */
-    def protSetterName(name: Name): Name = newTermName(PROTECTED_SET_PREFIX + name)
+    def protSetterName(name: Name): TermName = newTermName(PROTECTED_SET_PREFIX + name)
   }
 }

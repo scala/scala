@@ -1780,8 +1780,7 @@ trait Typers { self: Analyzer =>
           if (!meth.isPrimaryConstructor &&
               (!meth.owner.isClass ||
                meth.owner.isModuleClass ||
-               meth.owner.isAnonymousClass ||
-               meth.owner.isRefinementClass))
+               meth.owner.isAnonOrRefinementClass))
             error(ddef.pos, "constructor definition not allowed here")
           typed(ddef.rhs)
         } else {

@@ -71,33 +71,31 @@ abstract class AddInterfaces extends InfoTransform {
   def implClassPhase = currentRun.erasurePhase.next
 
   /** Return the implementation class of a trait; create a new one of one does not yet exist */
-  def implClass(iface: Symbol): Symbol = implClassMap.get(iface) match {
-    case Some(c) => c
-    case None =>
-      atPhase(implClassPhase) {
-        val implName = nme.implClassName(iface.name)
-        var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
-        if (impl != NoSymbol && settings.XO.value) {
-          log("unlinking impl class " + impl)
-          iface.owner.info.decls.unlink(impl)
-          impl = NoSymbol
-        }
-        if (impl == NoSymbol) {
-          impl = iface.cloneSymbolImpl(iface.owner)
-          impl.name = implName
-          impl.sourceFile = iface.sourceFile
-          if (iface.owner.isClass)
-            iface.owner.info.decls enter impl
-        }
-        if (currentRun.compiles(iface)) currentRun.symSource(impl) = iface.sourceFile
-        impl setPos iface.pos
-        impl.flags = iface.flags & ~(INTERFACE | lateINTERFACE) | IMPLCLASS
-        impl setInfo new LazyImplClassType(iface)
-        implClassMap(iface) = impl
-        if (settings.debug.value) log("generating impl class " + impl + " in " + iface.owner)//debug
-        impl
+  def implClass(iface: Symbol): Symbol = implClassMap.getOrElse(iface, {
+    atPhase(implClassPhase) {
+      val implName = nme.implClassName(iface.name)
+      var impl = if (iface.owner.isClass) iface.owner.info.decl(implName) else NoSymbol
+      if (impl != NoSymbol && settings.XO.value) {
+        log("unlinking impl class " + impl)
+        iface.owner.info.decls.unlink(impl)
+        impl = NoSymbol
       }
-  }
+      if (impl == NoSymbol) {
+        impl = iface.cloneSymbolImpl(iface.owner)
+        impl.name = implName
+        impl.sourceFile = iface.sourceFile
+        if (iface.owner.isClass)
+          iface.owner.info.decls enter impl
+      }
+      if (currentRun.compiles(iface)) currentRun.symSource(impl) = iface.sourceFile
+      impl setPos iface.pos
+      impl.flags = iface.flags & ~(INTERFACE | lateINTERFACE) | IMPLCLASS
+      impl setInfo new LazyImplClassType(iface)
+      implClassMap(iface) = impl
+      if (settings.debug.value) log("generating impl class " + impl + " in " + iface.owner)//debug
+      impl
+    }
+  })
 
   /** <p>
    *    A lazy type to set the info of an implementation class

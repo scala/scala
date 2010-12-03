@@ -372,17 +372,29 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     final def isAnonymousClass    = isClass && (name containsName tpnme.ANON_CLASS_NAME)
     final def isAnonymousFunction = isSynthetic && (name containsName tpnme.ANON_FUN_NAME)
+    final def isAnonOrRefinementClass = isAnonymousClass || isRefinementClass
 
-    final def isClassOfModule = isModuleClass || isClass && nme.isLocalName(name)
     final def isPackageObject = isModule && name == nme.PACKAGEkw && owner.isPackageClass
     final def isPackageObjectClass = isModuleClass && name.toTermName == nme.PACKAGEkw && owner.isPackageClass
     final def definedInPackage  = owner.isPackageClass || owner.isPackageObjectClass
-    final def isPredefModule = this == PredefModule // not printed as a prefix
     final def isJavaInterface = isJavaDefined && isTrait
 
     // not printed as prefixes
+    final def isRootOrEmpty       = (this == EmptyPackageClass) || (this == RootClass)
+    final def isPredefModule      = this == PredefModule
     final def isScalaPackage      = (this == ScalaPackage) || (isPackageObject && owner == ScalaPackageClass)
-    final def isScalaPackageClass = (this == ScalaPackageClass) || (isPackageObjectClass && owner == ScalaPackageClass)
+    final def isScalaPackageClass = skipPackageObject == ScalaPackageClass
+
+    /** If this is a package object or package object class, its owner: otherwise this.
+     */
+    final def skipPackageObject: Symbol = if (isPackageObjectClass) owner else this
+
+    /** Conditions where we omit the prefix when printing a symbol, to avoid
+     *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
+     */
+    final def printWithoutPrefix = !settings.debug.value && (
+      isScalaPackageClass || isPredefModule || isRootOrEmpty || isAnonOrRefinementClass || isInterpreterWrapper
+    )
 
     /** Is symbol a monomorphic type?
      *  assumption: if a type starts out as monomorphic, it will not acquire
@@ -415,8 +427,8 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     final def isInterpreterWrapper =
       (isModule || isModuleClass) &&
       owner.isEmptyPackageClass &&
-      name.toString.startsWith(nme.INTERPRETER_LINE_PREFIX) &&
-      name.toString.endsWith(nme.INTERPRETER_WRAPPER_SUFFIX)
+      (name startsWith nme.INTERPRETER_LINE_PREFIX) &&
+      (name endsWith nme.INTERPRETER_WRAPPER_SUFFIX)
 
     override def isEffectiveRoot = super.isEffectiveRoot || isInterpreterWrapper
 
@@ -462,7 +474,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** Is this symbol a trait which needs an implementation class? */
     final def needsImplClass: Boolean =
-      isTrait && (!hasFlag(INTERFACE) || hasFlag(lateINTERFACE)) && !isImplClass
+      isTrait && (!isInterface || hasFlag(lateINTERFACE)) && !isImplClass
 
     /** Is this a symbol which exists only in the implementation class, not in its trait? */
     final def isImplOnly: Boolean =
@@ -520,7 +532,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      *   - it is defined within a local class
      */
     final def isLocalClass: Boolean =
-      isClass && (isAnonymousClass || isRefinementClass || isLocal ||
+      isClass && (isAnonOrRefinementClass || isLocal ||
                   !owner.isPackageClass && owner.isLocalClass)
 
 /* code for fixing nested objects
@@ -1219,10 +1231,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         res
       }
 
-    /** @PP: Added diagram because every time I come through here I end up
-     *       losing my train of thought.  [Renaming occurs.] This diagram is a
-     *       bit less necessary since the renaming, but leaving in place
-     *       due to high artistic merit.
+    /** The internal representation of classes and objects:
+     *
+     *  class Foo is "the class" or sometimes "the plain class"
+     * object Foo is "the module"
+     * class Foo$ is "the module class" (invisible to the user: it implements object Foo)
      *
      * class Foo  <
      *  ^  ^ (2)   \
@@ -1239,10 +1252,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      * (5) companionSymbol
      */
 
-    /** The class with the same name in the same package as this module or
-     *  case class factory.
-     *  Note: does not work for classes owned by methods, see
-     *  Namers.companionClassOf
+    /** For a module or case factory: the class with the same name in the same package.
+     *  For all others: NoSymbol
+     *  Note: does not work for classes owned by methods, see Namers.companionClassOf
+     *
+     *  object Foo  .  companionClass -->  class Foo
      */
     final def companionClass: Symbol = {
       if (this != NoSymbol)
@@ -1260,32 +1274,31 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         sym => (sym hasFlag f) && (sym isCoDefinedWith this))
     }
 
-    /** The module or case class factory with the same name in the same
-     *  package as this class.
-     *  Note: does not work for modules owned by methods, see
-     *  Namers.companionModuleOf
+    /** For a class: the module or case class factory wiht the same name in the same package.
+     *  For all others: NoSymbol
+     *  Note: does not work for modules owned by methods, see Namers.companionModuleOf
+     *
+     *  class Foo  .  companionModule -->  object Foo
      */
     final def companionModule: Symbol =
-      if (this.isClass && !this.isAnonymousClass && !this.isRefinementClass)
-        companionModule0
+      if (isClass && !isAnonOrRefinementClass) companionModule0
       else NoSymbol
 
-    /** For a module its linked class, for a class its linked module or case
-     *  factory otherwise.
-     *  Note: does not work for modules owned by methods, see
-     *  Namers.companionSymbolOf
+    /** For a module: its linked class
+     *  For a plain class: its linked module or case factory.
+     *  Note: does not work for modules owned by methods, see Namers.companionSymbolOf
+     *
+     *  class Foo  <-- companionSymbol -->  object Foo
      */
     final def companionSymbol: Symbol =
       if (isTerm) companionClass
-      else if (isClass)
-        companionModule0
+      else if (isClass) companionModule0
       else NoSymbol
 
     /** For a module class: its linked class
      *   For a plain class: the module class of its linked module.
      *
-     *  Then object Foo has a `moduleClass' (invisible to the user, the backend calls it Foo$
-     *  linkedClassOfClass goes from class Foo$ to class Foo, and back.
+     *  class Foo  <-- linkedClassOfClass -->  class Foo$
      */
     final def linkedClassOfClass: Symbol =
       if (isModuleClass) companionClass else companionModule.moduleClass
@@ -1561,21 +1574,11 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
         compose(List(kindString,
                      if (isClassConstructor) owner.simpleName.decode+idString else nameString))
 
-    /** If owner is a package object, its owner, else the normal owner.
-     */
-    def ownerSkipPackageObject =
-      if (owner.isPackageObjectClass) owner.owner else owner
-
     /** String representation of location. */
     def locationString: String = {
-      val owner = ownerSkipPackageObject
-      if (owner.isClass &&
-          ((!owner.isAnonymousClass &&
-            !owner.isRefinementClass &&
-            !owner.isInterpreterWrapper &&
-            !owner.isRoot &&
-            !owner.isEmptyPackageClass) || settings.debug.value))
-        " in " + owner else ""
+      val owns = owner.skipPackageObject
+      if (!owns.isClass || (owns.printWithoutPrefix && owns != ScalaPackageClass)) ""
+      else " in " + owns
     }
 
     /** String representation of symbol's definition following its name */

@@ -12,37 +12,70 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
   self: SymbolTable =>
 
   trait CompilerCommonNames extends LibraryCommonNames {
+    // value types are all used as terms as well
+    final val Boolean: NameType = "Boolean"
+    final val Byte: NameType    = "Byte"
+    final val Char: NameType    = "Char"
+    final val Double: NameType  = "Double"
+    final val Float: NameType   = "Float"
+    final val Int: NameType     = "Int"
+    final val Long: NameType    = "Long"
+    final val Short: NameType   = "Short"
+    final val Unit: NameType    = "Unit"
+
+    // types whose companions we utilize
+    final val Array: NameType  = "Array"
+    final val List: NameType   = "List"
+    final val Seq: NameType    = "Seq"
+    final val Symbol: NameType = "Symbol"
+
+    // fictions we use as both types and terms
+    final val ERROR: NameType    = "<error>"
+    final val NO_NAME: NameType  = "<none>"  // formerly NOSYMBOL
+    final val WILDCARD: NameType = "_"
+  }
+
+  trait CompilerTypeNames extends CompilerCommonNames {
+    final val BYNAME_PARAM_CLASS_NAME: NameType        = "<byname>"
+    final val EQUALS_PATTERN_NAME: NameType            = "<equals>"
+    final val JAVA_REPEATED_PARAM_CLASS_NAME: NameType = "<repeated...>"
+    final val LOCAL_CHILD: NameType                    = "<local child>"
+    final val REPEATED_PARAM_CLASS_NAME: NameType      = "<repeated>"
+    final val WILDCARD_STAR: NameType                  = "_*"
+
     final val Any: NameType             = "Any"
     final val AnyRef: NameType          = "AnyRef"
     final val AnyVal: NameType          = "AnyVal"
-    final val Array: NameType           = "Array"
-    final val Boolean: NameType         = "Boolean"
-    final val Byte: NameType            = "Byte"
-    final val Char: NameType            = "Char"
-    final val Double: NameType          = "Double"
-    final val Float: NameType           = "Float"
-    final val Function: NameType        = "Function"
-    final val Int: NameType             = "Int"
-    final val List: NameType            = "List"
-    final val Long: NameType            = "Long"
-    final val Nil: NameType             = "Nil"
+    final val Nothing: NameType         = "Nothing"
+    final val Null: NameType            = "Null"
     final val Object: NameType          = "Object"
     final val PartialFunction: NameType = "PartialFunction"
-    final val Predef: NameType          = "Predef"
     final val Product: NameType         = "Product"
     final val ScalaObject: NameType     = "ScalaObject"
-    final val ScalaRunTime: NameType    = "ScalaRunTime"
-    final val Seq: NameType             = "Seq"
-    final val Short: NameType           = "Short"
-    final val Some: NameType            = "Some"
+    final val Serializable: NameType    = "Serializable"
+    final val Singleton: NameType       = "Singleton"
     final val String: NameType          = "String"
-    final val Symbol: NameType          = "Symbol"
-    final val Unit: NameType            = "Unit"
+    final val Throwable: NameType       = "Throwable"
 
-    final val ERROR: NameType         = "<error>"
-    final val NO_NAME: NameType       = "<none>"  // formerly NOSYMBOL
-    final val STAR: NameType          = "*"
-    final val WILDCARD: NameType      = "_"
+    // Annotation types
+    final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
+    final val BridgeATTR: NameType                 = "Bridge"
+    final val ClassfileAnnotationATTR: NameType    = "RuntimeInvisibleAnnotations" // RetentionPolicy.CLASS. Currently not used (Apr 2009).
+    final val CodeATTR: NameType                   = "Code"
+    final val ConstantValueATTR: NameType          = "ConstantValue"
+    final val DeprecatedATTR: NameType             = "Deprecated"
+    final val ExceptionsATTR: NameType             = "Exceptions"
+    final val InnerClassesATTR: NameType           = "InnerClasses"
+    final val JacoMetaATTR: NameType               = "JacoMeta"
+    final val LineNumberTableATTR: NameType        = "LineNumberTable"
+    final val LocalVariableTableATTR: NameType     = "LocalVariableTable"
+    final val RuntimeAnnotationATTR: NameType      = "RuntimeVisibleAnnotations"   // RetentionPolicy.RUNTIME
+    final val RuntimeParamAnnotationATTR: NameType = "RuntimeVisibleParameterAnnotations" // RetentionPolicy.RUNTIME (annotations on parameters)
+    final val ScalaATTR: NameType                  = "Scala"
+    final val ScalaSignatureATTR: NameType         = "ScalaSig"
+    final val SignatureATTR: NameType              = "Signature"
+    final val SourceFileATTR: NameType             = "SourceFile"
+    final val SyntheticATTR: NameType              = "Synthetic"
   }
 
   trait CompilerTermNames extends CompilerCommonNames {
@@ -110,7 +143,13 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val OUTER_LOCAL: NameType           = "$outer " // note the space
     val SELF: NameType                  = "$this"
     val SPECIALIZED_INSTANCE: NameType  = "specInstance$"
+    val STAR: NameType                  = "*"
     val THIS: NameType                  = "_$this"
+
+    final val Nil: NameType             = "Nil"
+    final val Predef: NameType          = "Predef"
+    final val ScalaRunTime: NameType    = "ScalaRunTime"
+    final val Some: NameType            = "Some"
 
     // Compiler utilized names
     // val productElementName: NameType = "productElementName"
@@ -224,43 +263,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     val toLong: NameType   = "toLong"
     val toFloat: NameType  = "toFloat"
     val toDouble: NameType = "toDouble"
-  }
-
-  trait CompilerTypeNames extends CompilerCommonNames {
-    final val BYNAME_PARAM_CLASS_NAME: NameType        = "<byname>"
-    final val EQUALS_PATTERN_NAME: NameType            = "<equals>"
-    final val JAVA_REPEATED_PARAM_CLASS_NAME: NameType = "<repeated...>"
-    final val LOCAL_CHILD: NameType                    = "<local child>"
-    final val REPEATED_PARAM_CLASS_NAME: NameType      = "<repeated>"
-    final val WILDCARD_STAR: NameType                  = "_*"
-
-    final val Nothing: NameType      = "Nothing"
-    final val Null: NameType         = "Null"
-    final val Serializable: NameType = "Serializable"
-    final val Singleton: NameType    = "Singleton"
-    final val Throwable: NameType    = "Throwable"
-
-    // Stores Java annotations on parameters with RetentionPolicy.RUNTIME
-    // Stores Java annotations with RetentionPolicy.CLASS. Currently not used (Apr 2009).
-    // Stores Java annotations with RetentionPolicy.RUNTIME
-    final val AnnotationDefaultATTR: NameType      = "AnnotationDefault"
-    final val BridgeATTR: NameType                 = "Bridge"
-    final val ClassfileAnnotationATTR: NameType    = "RuntimeInvisibleAnnotations"
-    final val CodeATTR: NameType                   = "Code"
-    final val ConstantValueATTR: NameType          = "ConstantValue"
-    final val DeprecatedATTR: NameType             = "Deprecated"
-    final val ExceptionsATTR: NameType             = "Exceptions"
-    final val InnerClassesATTR: NameType           = "InnerClasses"
-    final val JacoMetaATTR: NameType               = "JacoMeta"
-    final val LineNumberTableATTR: NameType        = "LineNumberTable"
-    final val LocalVariableTableATTR: NameType     = "LocalVariableTable"
-    final val RuntimeAnnotationATTR: NameType      = "RuntimeVisibleAnnotations"
-    final val RuntimeParamAnnotationATTR: NameType = "RuntimeVisibleParameterAnnotations"
-    final val ScalaATTR: NameType                  = "Scala"
-    final val ScalaSignatureATTR: NameType         = "ScalaSig"
-    final val SignatureATTR: NameType              = "Signature"
-    final val SourceFileATTR: NameType             = "SourceFile"
-    final val SyntheticATTR: NameType              = "Synthetic"
   }
 
   object tpnme extends CompilerTypeNames with LibraryTypeNames {

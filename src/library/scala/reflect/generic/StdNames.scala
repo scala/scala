@@ -29,12 +29,12 @@ trait StdNames extends LowPriorityStdNames {
     val IMPORT: NameType             = "<import>"
     val MODULE_SUFFIX: NameType      = "$module"
     val ROOT: NameType               = "<root>"
-    val ROOTPKG: NameType            = "_root_"
   }
 
   trait LibraryTermNames extends LibraryCommonNames {
     val EXPAND_SEPARATOR_STRING = "$$"
-    val LOCAL_SUFFIX_STRING = " "
+    val LOCAL_SUFFIX_STRING     = " "
+    val ROOTPKG: NameType       = "_root_"
 
     /** The expanded name of `name' relative to this class `base` with given `separator`
      */

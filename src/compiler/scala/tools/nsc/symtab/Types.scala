@@ -1127,8 +1127,8 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def isHigherKinded = sym.isRefinementClass && underlying.isHigherKinded
     override def prefixString =
       if (settings.debug.value) sym.nameString + ".this."
-      else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper || sym.isScalaPackageClass) ""
-      else if (sym.isAnonymousClass || sym.isRefinementClass) "this."
+      else if (sym.isAnonOrRefinementClass) "this."
+      else if (sym.printWithoutPrefix) ""
       else if (sym.isModuleClass) sym.fullName + "."
       else sym.nameString + ".this."
     override def safeToString: String =
@@ -1211,10 +1211,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def typeSymbol = thistpe.typeSymbol
     override def underlying = supertpe
     override def prefix: Type = supertpe.prefix
-    override def prefixString =
-      if (thistpe.prefixString.endsWith("this."))
-        thistpe.prefixString.substring(0, thistpe.prefixString.length() - 5) + "super."
-      else thistpe.prefixString;
+    override def prefixString = thistpe.prefixString.replaceAll("""this\.$""", "super.")
     override def narrow: Type = thistpe.narrow
     override def kind = "SuperType"
   }
@@ -1367,7 +1364,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
     override def isNotNull: Boolean = parents exists (_.isNotNull)
 
     override def isStructuralRefinement: Boolean =
-      (typeSymbol.isRefinementClass || typeSymbol.isAnonymousClass) &&
+      typeSymbol.isAnonOrRefinementClass &&
         (decls.toList exists { entry => !entry.isConstructor && entry.allOverriddenSymbols.isEmpty })
 
     // override def isNullable: Boolean =
@@ -1952,13 +1949,12 @@ A type's typeSymbol should never be inspected directly.
     override def prefixString =
       if (settings.debug.value)
         super.prefixString
-      else if (sym.isRoot || sym.isEmptyPackageClass || sym.isInterpreterWrapper ||
-               sym.isAnonymousClass || sym.isRefinementClass || sym.isScalaPackageClass)
+      else if (sym.printWithoutPrefix)
         ""
       else if (sym.isPackageClass)
         sym.fullName + "."
-      else if (isStable && (sym.name.toString endsWith ".type"))
-        sym.name.toString.substring(0, sym.name.length - 4)
+      else if (isStable && (sym.name endsWith ".type"))
+        sym.name.toString dropRight 4
       else
         super.prefixString
 
