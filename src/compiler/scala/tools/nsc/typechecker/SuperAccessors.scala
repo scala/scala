@@ -417,13 +417,19 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       def accessibleThroughSubclassing =
         validCurrentOwner && clazz.thisSym.isSubClass(sym.owner) && !clazz.isTrait
 
+      def packageAccessBoundry(sym: Symbol) = {
+        val b = sym.accessBoundary(sym.owner)
+        if (b.isPackageClass) b
+        else b.enclosingPackageClass
+      }
+
       val isCandidate = (
            sym.isProtected
         && sym.isJavaDefined
         && !sym.definedInPackage
         && !accessibleThroughSubclassing
         && (sym.owner.enclosingPackageClass != currentOwner.enclosingPackageClass)
-        && (sym.owner.enclosingPackageClass == sym.accessBoundary(sym.owner).enclosingPackageClass)
+        && (sym.owner.enclosingPackageClass == packageAccessBoundry(sym))
       )
       val host = hostForAccessorOf(sym, clazz)
       def isSelfType = (host.thisSym != host) && {
