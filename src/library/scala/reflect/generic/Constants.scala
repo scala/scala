@@ -7,47 +7,53 @@ package scala.reflect
 package generic
 
 import java.lang.Integer.toOctalString
-import PickleFormat._
 
-trait Constants { self: Universe =>
+trait Constants {
+  self: Universe =>
 
   import definitions._
 
-  final val NoTag      = LITERAL - LITERAL
-  final val UnitTag    = LITERALunit - LITERAL
-  final val BooleanTag = LITERALboolean - LITERAL
-  final val ByteTag    = LITERALbyte - LITERAL
-  final val ShortTag   = LITERALshort - LITERAL
-  final val CharTag    = LITERALchar - LITERAL
-  final val IntTag     = LITERALint - LITERAL
-  final val LongTag    = LITERALlong - LITERAL
-  final val FloatTag   = LITERALfloat - LITERAL
-  final val DoubleTag  = LITERALdouble - LITERAL
-  final val StringTag  = LITERALstring - LITERAL
-  final val NullTag    = LITERALnull - LITERAL
-  final val ClassTag   = LITERALclass - LITERAL
+  final val NoTag      = 0
+  final val UnitTag    = 1
+  final val BooleanTag = 2
+  final val ByteTag    = 3
+  final val ShortTag   = 4
+  final val CharTag    = 5
+  final val IntTag     = 6
+  final val LongTag    = 7
+  final val FloatTag   = 8
+  final val DoubleTag  = 9
+  final val StringTag  = 10
+  final val NullTag    = 11
+  final val ClassTag   = 12
   // For supporting java enumerations inside java annotations (see ClassfileParser)
-  final val EnumTag    = LITERALenum - LITERAL
+  final val EnumTag    = 13
 
   case class Constant(value: Any) {
+    val tag: Int = value match {
+      case null         => NullTag
+      case x: Unit      => UnitTag
+      case x: Boolean   => BooleanTag
+      case x: Byte      => ByteTag
+      case x: Short     => ShortTag
+      case x: Int       => IntTag
+      case x: Long      => LongTag
+      case x: Float     => FloatTag
+      case x: Double    => DoubleTag
+      case x: String    => StringTag
+      case x: Char      => CharTag
+      case x: AbsType   => ClassTag
+      case x: AbsSymbol => EnumTag
+      case _            => throw new Error("bad constant value: " + value)
+    }
 
-    val tag: Int =
-      if (value.isInstanceOf[Unit]) UnitTag
-      else if (value.isInstanceOf[Boolean]) BooleanTag
-      else if (value.isInstanceOf[Byte]) ByteTag
-      else if (value.isInstanceOf[Short]) ShortTag
-      else if (value.isInstanceOf[Char]) CharTag
-      else if (value.isInstanceOf[Int]) IntTag
-      else if (value.isInstanceOf[Long]) LongTag
-      else if (value.isInstanceOf[Float]) FloatTag
-      else if (value.isInstanceOf[Double]) DoubleTag
-      else if (value.isInstanceOf[String]) StringTag
-      else if (value.isInstanceOf[AbsType]) ClassTag
-      else if (value.isInstanceOf[AbsSymbol]) EnumTag
-      else if (value == null) NullTag
-      else throw new Error("bad constant value: " + value)
-
-    def isNumeric: Boolean = ByteTag <= tag && tag <= DoubleTag
+    def isByteRange: Boolean  = isIntRange && Byte.MinValue <= intValue && intValue <= Byte.MaxValue
+    def isShortRange: Boolean = isIntRange && Short.MinValue <= intValue && intValue <= Short.MaxValue
+    def isCharRange: Boolean  = isIntRange && Char.MinValue <= intValue && intValue <= Char.MaxValue
+    def isIntRange: Boolean   = ByteTag <= tag && tag <= IntTag
+    def isLongRange: Boolean  = ByteTag <= tag && tag <= LongTag
+    def isFloatRange: Boolean = ByteTag <= tag && tag <= FloatTag
+    def isNumeric: Boolean    = ByteTag <= tag && tag <= DoubleTag
 
     def tpe: Type = tag match {
       case UnitTag    => UnitClass.tpe
@@ -71,9 +77,6 @@ trait Constants { self: Universe =>
     }
 
     /** We need the equals method to take account of tags as well as values.
-     *
-     *  @param other ...
-     *  @return      ...
      */
     override def equals(other: Any): Boolean = other match {
       case that: Constant =>
@@ -83,7 +86,7 @@ trait Constants { self: Universe =>
     }
 
     def isNaN = value match {
-      case f: Float => f.isNaN
+      case f: Float  => f.isNaN
       case d: Double => d.isNaN
       case _ => false
     }
@@ -170,34 +173,27 @@ trait Constants { self: Universe =>
     }
 
     /** Convert constant value to conform to given type.
-     *
-     *  @param pt ...
-     *  @return   ...
      */
     def convertTo(pt: Type): Constant = {
       val target = pt.typeSymbol
       if (target == tpe.typeSymbol)
         this
-      else if (target == ByteClass && ByteTag <= tag && tag <= IntTag &&
-          -128 <= intValue && intValue <= 127)
+      else if (target == ByteClass && isByteRange)
         Constant(byteValue)
-      else if (target == ShortClass && ByteTag <= tag && tag <= IntTag &&
-               -32768 <= intValue && intValue <= 32767)
+      else if (target == ShortClass && isShortRange)
         Constant(shortValue)
-      else if (target == CharClass && ByteTag <= tag && tag <= IntTag  &&
-               0 <= intValue && intValue <= 65635)
+      else if (target == CharClass && isCharRange)
         Constant(charValue)
-      else if (target == IntClass && ByteTag <= tag && tag <= IntTag)
+      else if (target == IntClass && isIntRange)
         Constant(intValue)
-      else if (target == LongClass && ByteTag <= tag && tag <= LongTag)
+      else if (target == LongClass && isLongRange)
         Constant(longValue)
-      else if (target == FloatClass && ByteTag <= tag && tag <= FloatTag)
+      else if (target == FloatClass && isFloatRange)
         Constant(floatValue)
-      else if (target == DoubleClass && ByteTag <= tag && tag <= DoubleTag)
+      else if (target == DoubleClass && isNumeric)
         Constant(doubleValue)
-      else {
+      else
         null
-      }
     }
 
     def stringValue: String =
@@ -224,9 +220,7 @@ trait Constants { self: Universe =>
         case _         => value.toString()
       }
     }
-
-    def typeValue: Type = value.asInstanceOf[Type]
-
+    def typeValue: Type     = value.asInstanceOf[Type]
     def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
     override def hashCode: Int =
