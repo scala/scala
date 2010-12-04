@@ -182,8 +182,8 @@ object Predef extends LowPriorityImplicits {
   def println() = Console.println()
   def println(x: Any) = Console.println(x)
   def printf(text: String, xs: Any*) = Console.print(format(text, xs: _*))
-  // deprecation waiting for 2.9
-  // @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead")
+
+  @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead")
   def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
 
   def readLine(): String = Console.readLine()
@@ -352,8 +352,7 @@ object Predef extends LowPriorityImplicits {
   }
 
   // less useful due to #2781
-  // @deprecated("Use From => To instead")
-  // ...intended for 2.9 unless someone can point out anything <%< offers over =>
+  @deprecated("Use From => To instead")
   sealed abstract class <%<[-From, +To] extends (From => To)
   object <%< {
     implicit def conformsOrViewsAs[A <% B, B]: A <%< B = new (A <%< B) {def apply(x: A) = x}

@@ -72,7 +72,7 @@ package object system {
    *  @param    the body of code to run at shutdown
    *  @return   the Thread which will run the shutdown hook.
    */
-  def addShutdownHook(body: => Unit): Thread = ShutdownHookThread(body)
+  def addShutdownHook(body: => Unit): ShutdownHookThread = ShutdownHookThread(body)
 
   /** Returns all active thread in the current thread's thread group and subgroups.
    *

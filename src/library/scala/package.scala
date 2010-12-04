@@ -75,7 +75,7 @@ package object scala {
 
   val $scope = scala.xml.TopScope
 
-  // @deprecated("Use Thread.currentThread instead") // waiting for 2.9
+  @deprecated("Use Thread.currentThread instead")
   def currentThread = java.lang.Thread.currentThread()
 
   // Numeric types which were moved into scala.math.*
