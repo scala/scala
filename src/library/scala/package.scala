@@ -87,6 +87,8 @@ package object scala {
   val BigInt = scala.math.BigInt
 
   type Equiv[T] = scala.math.Equiv[T]
+  val Equiv = scala.math.Equiv
+
   type Fractional[T] = scala.math.Fractional[T]
   type Integral[T] = scala.math.Integral[T]
 

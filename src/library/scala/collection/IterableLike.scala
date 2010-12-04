@@ -84,10 +84,6 @@ self =>
     iterator.exists(p)
   override /*TraversableLike*/ def find(p: A => Boolean): Option[A] =
     iterator.find(p)
-/*
-  override /*TraversableLike*/ def mapFind[B](f: A => Option[B]): Option[B] =
-    iterator.mapFind(f)
-*/
   override /*TraversableLike*/ def isEmpty: Boolean =
     !iterator.hasNext
   override /*TraversableLike*/ def foldRight[B](z: B)(op: (A, B) => B): B =

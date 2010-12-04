@@ -367,6 +367,25 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     i
   }
 
+  /** Iterates over distinct permutations.
+   *
+   *  @return   An Iterator which traverses the distinct permutations of this $coll.
+   *  @example  `"abb".permutations = Iterator(abb, bab, bba)`
+   */
+  def permutations: Iterator[Repr] = {
+    val seen = mutable.HashSet[A]()
+    val xs = thisCollection.toIndexedSeq
+
+    if (xs.isEmpty) Iterator.empty
+    else if (xs.tail.isEmpty) Iterator(repr)
+    else xs.indices collect {
+      case idx if !seen(xs(idx))  =>
+        seen += xs(idx)
+        val rest = (xs take idx) ++ (xs drop (idx + 1))
+        rest.permutations map (newBuilder += xs(idx) ++= _ result)
+    } reduceLeft (_ ++ _)
+  }
+
   /** Returns new $coll wih elements in reversed order.
    *
    *  $willNotTerminateInf

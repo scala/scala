@@ -104,17 +104,7 @@ trait LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] extends Linea
     }
     None
   }
-/*
-  override def mapFind[B](f: A => Option[B]): Option[B] = {
-    var res: Option[B] = None
-    var these = this
-    while (res.isEmpty && !these.isEmpty) {
-      res = f(these.head)
-      these = these.tail
-    }
-    res
-  }
-*/
+
   override /*TraversableLike*/
   def foldLeft[B](z: B)(f: (B, A) => B): B = {
     var acc = z

@@ -461,7 +461,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
     val self = buffered
     class PartitionIterator(p: A => Boolean) extends Iterator[A] {
       var other: PartitionIterator = _
-      val lookahead = new scala.collection.mutable.Queue[A]
+      val lookahead = new mutable.Queue[A]
       def skip() =
         while (self.hasNext && !p(self.head)) {
           other.lookahead += self.next
@@ -475,6 +475,48 @@ trait Iterator[+A] extends TraversableOnce[A] {
     l.other = r
     r.other = l
     (l, r)
+  }
+
+  /** Splits this Iterator into a prefix/suffix pair according to a predicate.
+   *
+   *  @param p the test predicate
+   *  @return  a pair of Iterators consisting of the longest prefix of this
+   *           whose elements all satisfy `p`, and the rest of the Iterator.
+   */
+  def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
+    val self = buffered
+    val leading = new Iterator[A] {
+      private var isDone = false
+      val lookahead = new mutable.Queue[A]
+      def advance() = {
+        self.hasNext && p(self.head) && {
+          lookahead += self.next
+          true
+        }
+      }
+      def finish() = {
+        while (advance()) ()
+        isDone = true
+      }
+      def hasNext = lookahead.nonEmpty || advance()
+      def next() = {
+        if (lookahead.isEmpty)
+          advance()
+
+        lookahead.dequeue()
+      }
+    }
+    val trailing = new Iterator[A] {
+      private lazy val it = {
+        leading.finish()
+        self
+      }
+      def hasNext = it.hasNext
+      def next() = it.next()
+      override def toString = "unknown-if-empty iterator"
+    }
+
+    (leading, trailing)
   }
 
   /** Skips longest sequence of elements of this iterator which satisfy given
@@ -641,21 +683,6 @@ trait Iterator[+A] extends TraversableOnce[A] {
     }
     res
   }
-
-  /** Applies option-valued function to successive elements of this iterator
-   *  until a defined value is found.
-   *
-   *  @param f    the function to be applied to successive elements.
-   *  @return     an option value containing the first defined result of
-   *              `f`, or `None` if `f` returns `None` for all all elements.
-  def mapFind[B](f: A => Option[B]): Option[B] = {
-    var res: Option[B] = None
-    while (res.isEmpty && hasNext) {
-      res = f(next())
-    }
-    res
-  }
-   */
 
   /** Returns the index of the first produced value satisfying a predicate, or -1.
    *  $mayNotTerminateInf

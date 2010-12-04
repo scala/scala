@@ -9,6 +9,7 @@
 package scala.collection
 
 import mutable.{ Buffer, ListBuffer, ArrayBuffer }
+import annotation.unchecked.{ uncheckedVariance => uV }
 
 /** A template trait for collections which can be traversed either once only
  *  or one or more times.
@@ -88,7 +89,6 @@ trait TraversableOnce[+A] {
   def exists(p: A => Boolean): Boolean
   def find(p: A => Boolean): Option[A]
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Unit
-  // def mapFind[B](f: A => Option[B]): Option[B]
 
   // for internal use
   protected[this] def reversed = {
@@ -126,6 +126,25 @@ trait TraversableOnce[+A] {
       if (p(x)) cnt += 1
 
     cnt
+  }
+
+  /** Finds the first element of the $coll for which the given partial
+   *  function is defined, and applies the partial function to it.
+   *
+   *  $mayNotTerminateInf
+   *  $orderDependent
+   *
+   *  @param pf   the partial function
+   *  @return     an option value containing pf applied to the first
+   *              value for which it is defined, or `None` if none exists.
+   *  @example   `Seq("a", 1, 5L).collectFirst({ case x: Int => x*10 }) = Some(10)`
+   */
+  def collectFirst[B](pf: PartialFunction[A, B]): Option[B] = {
+    for (x <- self.toIterator) {
+      if (pf isDefinedAt x)
+        return Some(pf(x))
+    }
+    None
   }
 
   /** Applies a binary operator to a start value and all elements of this $coll,
@@ -348,6 +367,19 @@ trait TraversableOnce[+A] {
       throw new UnsupportedOperationException("empty.max")
 
     reduceLeft((x, y) => if (cmp.gteq(x, y)) x else y)
+  }
+
+  def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.maxBy")
+
+    reduceLeft((x, y) => if (cmp.gteq(f(x), f(y))) x else y)
+  }
+  def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
+    if (isEmpty)
+      throw new UnsupportedOperationException("empty.maxBy")
+
+    reduceLeft((x, y) => if (cmp.lteq(f(x), f(y))) x else y)
   }
 
   /** Copies all elements of this $coll to a buffer.
@@ -628,8 +660,8 @@ object TraversableOnce {
   class TraversableOnceMonadOps[+A](trav: TraversableOnce[A]) {
     def map[B](f: A => B): TraversableOnce[B] = trav.toIterator map f
     def flatMap[B](f: A => TraversableOnce[B]): TraversableOnce[B] = trav.toIterator flatMap f
-    def filter(p: A => Boolean): TraversableOnce[A] = trav.toIterator filter p
-    def withFilter(p: A => Boolean) = filter(p)
+    def withFilter(p: A => Boolean) = trav.toIterator filter p
+    def filter(p: A => Boolean): TraversableOnce[A] = withFilter(p)
   }
 }
 
