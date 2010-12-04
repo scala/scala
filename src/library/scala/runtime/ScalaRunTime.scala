@@ -201,7 +201,9 @@ object ScalaRunTime {
 
     val lv = dv.toLong
     if (lv == dv) return lv.hashCode
-    else dv.hashCode
+
+    val fv = dv.toFloat
+    if (fv == dv) fv.hashCode else dv.hashCode
   }
   @inline def hash(fv: Float): Int = {
     val iv = fv.toInt
