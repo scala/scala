@@ -1,0 +1,88 @@
+/*                     __                                               *\
+**     ________ ___   / /  ___     Scala API                            **
+**    / __/ __// _ | / /  / _ |    (c) 2003-2010, LAMP/EPFL             **
+**  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
+** /____/\___/_/ |_/____/_/ | |                                         **
+**                          |/                                          **
+\*                                                                      */
+
+package scala
+
+import scala.collection.immutable
+import collection.JavaConverters._
+
+/** The package object `scala.system` contains methods for reading
+ *  and altering core aspects of the virtual machine as well as the
+ *  world outside of it.
+ *
+ *  @author Paul Phillips
+ *  @version 2.9
+ *  @since   2.9
+ */
+package object system {
+  /** Throw a new RuntimeException with the supplied message.
+   *
+   *  @return   Nothing.
+   */
+  def error(message: String): Nothing = throw new RuntimeException(message)
+
+  /** Exit the JVM with the default status code.
+   *
+   *  @return   Nothing.
+   */
+  def exit(): Nothing = exit(0)
+
+  /** Exit the JVM with the given status code.
+   *
+   *  @return   Nothing.
+   */
+  def exit(status: Int): Nothing = {
+    java.lang.System.exit(status)
+    throw new Throwable()
+  }
+
+  /** A convenience method to get the current Runtime instance.
+   *
+   *  @return   the result of `java.lang.Runtime.getRuntime()`
+   */
+  def runtime: Runtime = Runtime.getRuntime
+
+  /** A bidirectional, mutable Map representing the current system Properties.
+   *
+   *  @return   a PropertiesMap.
+   *  @see      `scala.system.PropertiesMap`
+   */
+  def props: PropertiesMap = new PropertiesMap
+
+  /** An immutable Map representing the current system environment.
+   *
+   *  @return   a Map containing the system environment variables.
+   */
+  def env: immutable.Map[String, String] = immutable.Map(System.getenv().asScala.toSeq: _*)
+
+  /** Register a shutdown hook to be run when the VM exits.
+   *  The newly created thread is marked as a daemon so it will not
+   *  interfere with VM shutdown.  The hook is automatically registered:
+   *  the returned value can be ignored, but is available in case the
+   *  Thread requires further modification.  It can also be unregistered
+   *  by calling ShutdownHookThread#remove().
+   *
+   *  Note that shutdown hooks are NOT guaranteed to be run.
+   *
+   *  @param    the body of code to run at shutdown
+   *  @return   the Thread which will run the shutdown hook.
+   */
+  def addShutdownHook(body: => Unit): Thread = ShutdownHookThread(body)
+
+  /** Returns all active thread in the current thread's thread group and subgroups.
+   *
+   *  @return   an IndexedSeq containing the threads.
+   */
+  def allThreads(): IndexedSeq[Thread] = {
+    val num    = Thread.activeCount()
+    val tarray = new Array[Thread](num)
+    val got    = Thread.enumerate(tarray)
+
+    tarray take got
+  }
+}

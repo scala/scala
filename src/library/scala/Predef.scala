@@ -58,17 +58,14 @@ object Predef extends LowPriorityImplicits {
 
   // errors and asserts -------------------------------------------------
 
-  // @deprecated("Throw your own exceptions") // deprecation waiting for 2.9
-  def error(message: String): Nothing = throw new RuntimeException(message)
+  @deprecated("Use system.error(message) instead")
+  def error(message: String): Nothing = system.error(message)
 
-  // @deprecated("Use System.exit instead") // deprecation waiting for 2.9
-  def exit(): Nothing = exit(0)
+  @deprecated("Use system.exit() instead")
+  def exit(): Nothing = system.exit()
 
-  // @deprecated("Use System.exit(status) instead") // deprecation waiting for 2.9
-  def exit(status: Int): Nothing = {
-    java.lang.System.exit(status)
-    throw new Throwable()
-  }
+  @deprecated("Use system.exit(status) instead")
+  def exit(status: Int): Nothing = system.exit(status)
 
   /** Tests an expression, throwing an AssertionError if false.
    *  Calls to this method will not be generated if -Xelide-below

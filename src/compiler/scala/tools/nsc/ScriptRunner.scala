@@ -16,7 +16,7 @@ import io.{ Directory, File, Path, PlainFile }
 import java.net.URL
 import java.util.jar.{ JarEntry, JarOutputStream }
 
-import util.{ waitingForThreads, addShutdownHook }
+import util.{ waitingForThreads }
 import scala.tools.util.PathResolver
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
 import util.Exceptional.unwrap
@@ -178,7 +178,7 @@ object ScriptRunner {
       val compiledPath = Directory makeTemp "scalascript"
 
       // delete the directory after the user code has finished
-      addShutdownHook(compiledPath.deleteRecursively())
+      system.addShutdownHook(compiledPath.deleteRecursively())
 
       settings.outdir.value = compiledPath.path
 
