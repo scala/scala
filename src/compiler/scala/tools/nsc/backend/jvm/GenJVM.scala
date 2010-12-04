@@ -26,7 +26,7 @@ import reflect.generic.{ PickleFormat, PickleBuffer }
  *  @version 1.0
  *
  */
-abstract class GenJVM extends SubComponent {
+abstract class GenJVM extends SubComponent with GenAndroid {
   val global: Global
   import global._
   import icodes._
@@ -36,7 +36,6 @@ abstract class GenJVM extends SubComponent {
     AnyClass, ObjectClass, ThrowsClass, ThrowableClass, ClassfileAnnotationClass,
     SerializableClass, StringClass, ClassClass, FunctionClass,
     DeprecatedAttr, SerializableAttr, SerialVersionUIDAttr, VolatileAttr,
-    AndroidParcelableInterface, AndroidCreatorClass,
     TransientAttr, CloneableAttr, RemoteAttr,
     getPrimitiveCompanion
   }
@@ -206,8 +205,7 @@ abstract class GenJVM extends SubComponent {
       val name    = javaName(c.symbol)
       serialVUID  = None
       isRemoteClass = false
-      isParcelableClass = (AndroidParcelableInterface != NoSymbol) &&
-                          (parents contains AndroidParcelableInterface.tpe)
+      isParcelableClass = isAndroidParcelableClass(c.symbol)
 
       if (parents.isEmpty)
         parents = List(ObjectClass.tpe)
@@ -804,17 +802,8 @@ abstract class GenJVM extends SubComponent {
             lastBlock emit STORE_FIELD(fieldSymbol, true)
           }
 
-          // add CREATOR code
-          if (isParcelableClass) {
-            val fieldName = "CREATOR"
-            val fieldSymbol = clasz.symbol.newValue(NoPosition, newTermName(fieldName))
-                                .setFlag(Flags.STATIC | Flags.FINAL)
-                                .setInfo(AndroidCreatorClass.tpe)
-            val methodSymbol = definitions.getMember(clasz.symbol.companionModule, "CREATOR")
-            clasz addField new IField(fieldSymbol)
-            lastBlock emit CALL_METHOD(methodSymbol, Static(false))
-            lastBlock emit STORE_FIELD(fieldSymbol, true)
-          }
+          if (isParcelableClass)
+            addCreatorCode(BytecodeGenerator.this, lastBlock)
 
           if (clasz.bootstrapClass.isDefined) {
             // emit bootstrap method install
@@ -848,20 +837,8 @@ abstract class GenJVM extends SubComponent {
         clinit.emitPUTSTATIC(jclass.getName(), fieldName, JType.LONG)
       }
 
-      if (isParcelableClass) {
-        val fieldName = "CREATOR"
-        val creatorType = javaType(AndroidCreatorClass)
-        jclass.addNewField(PublicStaticFinal,
-                           fieldName,
-                           creatorType)
-        val moduleName = javaName(clasz.symbol)+"$"
-        clinit.emitGETSTATIC(moduleName,
-                             nme.MODULE_INSTANCE_FIELD.toString,
-                             new JObjectType(moduleName))
-        clinit.emitINVOKEVIRTUAL(moduleName, "CREATOR",
-                                 new JMethodType(creatorType, Array()))
-        clinit.emitPUTSTATIC(jclass.getName(), fieldName, creatorType)
-      }
+      if (isParcelableClass)
+        legacyAddCreatorCode(BytecodeGenerator.this, clinit)
 
       if (clasz.bootstrapClass.isDefined)
         legacyEmitBootstrapMethodInstall(clinit)
@@ -1894,7 +1871,6 @@ abstract class GenJVM extends SubComponent {
       sym.isInterface ||
       (sym.isJavaDefined && sym.isNonBottomSubClass(ClassfileAnnotationClass))
     }
-
 
     def javaType(t: TypeKind): JType = (t: @unchecked) match {
       case UNIT            => JType.VOID

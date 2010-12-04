@@ -500,15 +500,6 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       attr
     }
 
-    // Android.  I moved it into definitions because it threw an expensive
-    // exception on every repl line.
-    lazy val AndroidParcelableInterface =
-      try getClass("android.os.Parcelable")
-      catch { case _: FatalError => NoSymbol }
-    lazy val AndroidCreatorClass =
-      if (AndroidParcelableInterface == NoSymbol) NoSymbol
-      else getClass("android.os.Parcelable$Creator")
-
     def getModule(fullname: Name): Symbol =
       getModuleOrClass(fullname.toTermName)
 
