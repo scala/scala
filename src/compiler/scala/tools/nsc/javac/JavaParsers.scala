@@ -8,12 +8,12 @@
 package scala.tools.nsc
 package javac
 
-import scala.tools.nsc.util.{OffsetPosition, BatchSourceFile}
+import scala.tools.nsc.util.OffsetPosition
 import scala.collection.mutable.ListBuffer
 import symtab.Flags
 import JavaTokens._
 
-trait JavaParsers extends JavaScanners {
+trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
   val global : Global
   import global._
   import definitions._
@@ -22,22 +22,25 @@ trait JavaParsers extends JavaScanners {
 
   class JavaUnitParser(val unit: global.CompilationUnit) extends JavaParser {
     val in = new JavaUnitScanner(unit)
-    def freshName(prefix : String) = unit.freshTermName(prefix)
+    def freshName(prefix: String): Name = freshTermName(prefix)
+    def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
+    def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
+    def deprecationWarning(off: Int, msg: String) = unit.deprecationWarning(off, msg)
     implicit def i2p(offset : Int) : Position = new OffsetPosition(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = unit.warning(pos, msg)
     def syntaxError(pos: Int, msg: String) : Unit = unit.error(pos, msg)
   }
 
-  abstract class JavaParser {
-
+  abstract class JavaParser extends ParserCommon {
     val in: JavaScanner
+
     protected def posToReport: Int = in.currentPos
-    protected def freshName(prefix : String): Name
+    def freshName(prefix : String): Name
     protected implicit def i2p(offset : Int) : Position
     private implicit def p2i(pos : Position): Int = if (pos.isDefined) pos.point else -1
 
     /** The simple name of the package of the currently parsed file */
-    private var thisPackageName: Name = nme.EMPTY
+    private var thisPackageName: TypeName = tpnme.EMPTY
 
     /** this is the general parse method
      */
@@ -92,9 +95,9 @@ trait JavaParsers extends JavaScanners {
     }
     def warning(msg: String) : Unit = warning(in.currentPos, msg)
 
-    def errorTypeTree = TypeTree().setType(ErrorType).setPos((in.currentPos))
-    def errorTermTree = Literal(Constant(null)).setPos((in.currentPos))
-    def errorPatternTree = blankExpr.setPos((in.currentPos))
+    def errorTypeTree = TypeTree().setType(ErrorType) setPos in.currentPos
+    def errorTermTree = Literal(Constant(null)) setPos in.currentPos
+    def errorPatternTree = blankExpr setPos in.currentPos
 
     // --------- tree building -----------------------------
 
@@ -123,17 +126,11 @@ trait JavaParsers extends JavaScanners {
         if (treeInfo.firstConstructor(stats) == EmptyTree) makeConstructor(List()) :: stats
         else stats)
 
-    def makeParam(name: Name, tpt: Tree) =
-      ValDef(Modifiers(Flags.JAVA | Flags.PARAM), name, tpt, EmptyTree)
+    def makeParam(name: String, tpt: Tree) =
+      ValDef(Modifiers(Flags.JAVA | Flags.PARAM), newTermName(name), tpt, EmptyTree)
 
     def makeConstructor(formals: List[Tree]) = {
-      var count = 0
-      val vparams =
-        for (formal <- formals)
-        yield {
-          count += 1
-          makeParam(newTermName("x$"+count), formal)
-        }
+      val vparams = formals.zipWithIndex map { case (p, i) => makeParam("x$" + (i + 1), p) }
       DefDef(Modifiers(Flags.JAVA), nme.CONSTRUCTOR, List(), List(vparams), TypeTree(), blankExpr)
     }
 
@@ -225,16 +222,15 @@ trait JavaParsers extends JavaScanners {
 
     /** Convert (qual)ident to type identifier
      */
-    def convertToTypeId(tree: Tree): Tree = tree match {
-      case Ident(name) =>
-        Ident(name.toTypeName).setPos(tree.pos)
-      case Select(qual, name) =>
-        Select(qual, name.toTypeName).setPos(tree.pos)
-      case AppliedTypeTree(_, _) | ExistentialTypeTree(_, _) | SelectFromTypeTree(_, _) =>
-        tree
-      case _ =>
-        syntaxError(tree.pos, "identifier expected", false)
-        errorTypeTree
+    def convertToTypeId(tree: Tree): Tree = gen.convertToTypeName(tree) match {
+      case Some(t)  => t setPos tree.pos
+      case _        => tree match {
+        case AppliedTypeTree(_, _) | ExistentialTypeTree(_, _) | SelectFromTypeTree(_, _) =>
+          tree
+        case _ =>
+          syntaxError(tree.pos, "identifier expected", false)
+          errorTypeTree
+      }
     }
 
     // -------------------- specific parsing routines ------------------
@@ -390,8 +386,7 @@ trait JavaParsers extends JavaScanners {
 
     def modifiers(inInterface: Boolean): Modifiers = {
       var flags: Long = Flags.JAVA
-      // assumed true unless we see public/private/protected - see bug #1240
-      // Todo: look at pos/t1176, #1240, #1840, #1842, see what current access issues are.
+      // assumed true unless we see public/private/protected
       var isPackageAccess = true
       var annots: List[Tree] = Nil
       def addAnnot(sym: Symbol) =
@@ -433,7 +428,7 @@ trait JavaParsers extends JavaScanners {
           case SYNCHRONIZED | STRICTFP =>
             in.nextToken
           case _ =>
-            val privateWithin: Name =
+            val privateWithin: TypeName =
               if (isPackageAccess && !inInterface) thisPackageName
               else tpnme.EMPTY
 
@@ -698,12 +693,11 @@ trait JavaParsers extends JavaScanners {
       } else {
         val qual = ((Ident(names.head): Tree) /: names.tail.init) (Select(_, _))
         val lastname = names.last
-        List {
-          atPos(pos) {
-            if (lastname == nme.WILDCARD) Import(qual, List(ImportSelector(lastname, lastnameOffset, null, -1)))
-            else Import(qual, List(ImportSelector(lastname, lastnameOffset, lastname, lastnameOffset)))
-          }
+        val selector = lastname match {
+          case nme.WILDCARD => ImportSelector(lastname, lastnameOffset, null, -1)
+          case _            => ImportSelector(lastname, lastnameOffset, lastname, lastnameOffset)
         }
+        List(atPos(pos)(Import(qual, List(selector))))
       }
     }
 
@@ -850,7 +844,7 @@ trait JavaParsers extends JavaScanners {
           blankExpr),
         DefDef(
           Modifiers(Flags.JAVA | Flags.STATIC), newTermName("valueOf"), List(),
-          List(List(makeParam(newTermName("x"), TypeTree(StringClass.tpe)))),
+          List(List(makeParam("x", TypeTree(StringClass.tpe)))),
           enumType,
           blankExpr))
       accept(RBRACE)
@@ -881,11 +875,11 @@ trait JavaParsers extends JavaScanners {
     }
 
     def typeDecl(mods: Modifiers): List[Tree] = in.token match {
-      case ENUM => enumDecl(mods)
+      case ENUM      => enumDecl(mods)
       case INTERFACE => interfaceDecl(mods)
-      case AT => annotationDecl(mods)
-      case CLASS => classDecl(mods)
-      case _ => in.nextToken; syntaxError("illegal start of type declaration", true); List(errorTypeTree)
+      case AT        => annotationDecl(mods)
+      case CLASS     => classDecl(mods)
+      case _         => in.nextToken; syntaxError("illegal start of type declaration", true); List(errorTypeTree)
     }
 
     /** CompilationUnit ::= [package QualId semi] TopStatSeq
@@ -903,9 +897,9 @@ trait JavaParsers extends JavaScanners {
         } else {
           Ident(nme.EMPTY_PACKAGE_NAME)
         }
-      thisPackageName = pkg match {
-        case Ident(name) => name.toTypeName
-        case Select(_, name) => name.toTypeName
+      thisPackageName = gen.convertToTypeName(pkg) match {
+        case Some(t)  => t.name
+        case _        => tpnme.EMPTY
       }
       val buf = new ListBuffer[Tree]
       while (in.token == IMPORT)

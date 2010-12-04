@@ -33,6 +33,8 @@ abstract class TreeBuilder {
   def productConstr            = gen.productConstr
   def serializableConstr       = gen.serializableConstr
 
+  def convertToTypeName(t: Tree) = gen.convertToTypeName(t)
+
   /** Convert all occurrences of (lower-case) variables in a pattern as follows:
    *    x                  becomes      x @ _
    *    x: T               becomes      x @ (_: T)

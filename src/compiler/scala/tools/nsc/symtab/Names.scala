@@ -176,6 +176,7 @@ trait Names extends reflect.generic.Names {
     def isTypeName: Boolean
     def toTermName: TermName
     def toTypeName: TypeName
+    def companionName: Name
     def bothNames: List[Name] = List(toTermName, toTypeName)
 
     /** Copy bytes of this name to buffer cs, starting at position `offset`.
@@ -429,6 +430,7 @@ trait Names extends reflect.generic.Names {
         n = new TypeName(index, len, h);
       n
     }
+    def companionName: TypeName = toTypeName
     def subName(from: Int, to: Int): TermName =
       newTermName(chrs, start + from, to - from)
   }
@@ -448,6 +450,7 @@ trait Names extends reflect.generic.Names {
       n
     }
     def toTypeName: TypeName = this
+    def companionName: TermName = toTermName
     def subName(from: Int, to: Int): TypeName =
       newTypeName(chrs, start + from, to - from)
   }

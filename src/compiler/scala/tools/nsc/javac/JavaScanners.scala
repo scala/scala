@@ -12,9 +12,10 @@ import JavaTokens._
 import scala.annotation.switch
 
 // Todo merge these better with Scanners
-trait JavaScanners {
+trait JavaScanners extends ast.parser.ScannersCommon {
   val global : Global
   import global._
+
   abstract class AbstractJavaTokenData {
     def token: Int
     type ScanPosition
@@ -56,10 +57,7 @@ trait JavaScanners {
   abstract class AbstractJavaScanner extends AbstractJavaTokenData {
     implicit def p2g(pos: Position): ScanPosition
     implicit def g2p(pos: ScanPosition): Position
-    def warning(pos: ScanPosition, msg: String): Unit
-    def error  (pos: ScanPosition, msg: String): Unit
-    def incompleteInputError(pos: ScanPosition, msg: String): Unit
-    def deprecationWarning(pos: ScanPosition, msg: String): Unit
+
     /** the last error position
      */
     var errpos: ScanPosition
@@ -250,7 +248,7 @@ trait JavaScanners {
    *
    *  @author     Martin Odersky
    */
-  abstract class JavaScanner extends AbstractJavaScanner with JavaTokenData with Cloneable {
+  abstract class JavaScanner extends AbstractJavaScanner with JavaTokenData with Cloneable with ScannerCommon {
     override def intVal = super.intVal// todo: needed?
     override def floatVal = super.floatVal
     override var errpos: Int = NoPos
@@ -312,12 +310,9 @@ trait JavaScanners {
 
     def nextToken {
       if (next.token == EMPTY) {
-        //print("[")
-        val t = fetchToken()
-        //print(this)
-        //print("]")
-        t
-      } else {
+        fetchToken()
+      }
+      else {
         this copyFrom next
         next.token = EMPTY
       }
@@ -950,7 +945,6 @@ trait JavaScanners {
     def warning(pos: Int, msg: String) = unit.warning(pos, msg)
     def error  (pos: Int, msg: String) = unit.  error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = unit.incompleteInputError(pos, msg)
-    def deprecationWarning(pos: Int, msg: String) = unit.deprecationWarning(pos, msg)
     implicit def p2g(pos: Position): Int = if (pos.isDefined) pos.point else -1
     implicit def g2p(pos: Int): Position = new OffsetPosition(unit.source, pos)
   }

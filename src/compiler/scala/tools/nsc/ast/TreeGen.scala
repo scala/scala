@@ -361,15 +361,19 @@ abstract class TreeGen {
     else
       mkCast(tree, pt)
 
+  /** Translate names in Select/Ident nodes to type names.
+   */
+  def convertToTypeName(tree: Tree): Option[RefTree] = tree match {
+    case Select(qual, name) => Some(Select(qual, name.toTypeName))
+    case Ident(name)        => Some(Ident(name.toTypeName))
+    case _                  => None
+  }
+
   /** Try to convert Select(qual, name) to a SelectFromTypeTree.
    */
-  def convertToSelectFromType(qual: Tree, origName: Name): Tree = {
-    def selFromType(qual1: Tree) = SelectFromTypeTree(qual1 setPos qual.pos, origName)
-    qual match {
-      case Select(qual1, name) => selFromType(Select(qual1, name.toTypeName))
-      case Ident(name)         => selFromType(Ident(name.toTypeName))
-      case _                   => EmptyTree
-    }
+  def convertToSelectFromType(qual: Tree, origName: Name) = convertToTypeName(qual) match {
+    case Some(qual1)  => SelectFromTypeTree(qual1 setPos qual.pos, origName)
+    case _            => EmptyTree
   }
 
   /** Used in situations where you need to access value of an expression several times

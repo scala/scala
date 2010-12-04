@@ -658,7 +658,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       abbrvTag(clazz) = tag
       if (weight > 0) numericWeight(clazz) = weight
 
-      val module = ScalaPackageClass.newModule(NoPosition, name.toTermName)
+      val module = ScalaPackageClass.newModule(NoPosition, name)
       ScalaPackageClass.info.decls.enter(module)
       val mclass = module.moduleClass
       mclass.setInfo(ClassInfoType(List(AnyRefClass.tpe, AnyValCompanionClass.tpe), new Scope, mclass))

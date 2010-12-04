@@ -13,6 +13,39 @@ import util.{ OffsetPosition }
 import scala.reflect.generic.{ ModifierFlags => Flags }
 import Tokens._
 
+/** Historical note: JavaParsers started life as a direct copy of Parsers
+ *  but at a time when that Parsers had been replaced by a different one.
+ *  Later it was dropped and the original Parsers reinstated, leaving us with
+ *  massive duplication between Parsers and JavaParsers.
+ *
+ *  This trait and the similar one for Scanners/JavaScanners represents
+ *  the beginnings of a campaign against this latest incursion by Cutty
+ *  McPastington and his army of very similar soldiers.
+ */
+trait ParsersCommon extends ScannersCommon {
+  val global : Global
+  import global._
+
+  trait ParserCommon {
+    val in: ScannerCommon
+    def freshName(prefix: String): Name
+    def freshTermName(prefix: String): TermName
+    def freshTypeName(prefix: String): TypeName
+    def deprecationWarning(off: Int, msg: String): Unit
+
+    def accept(token: Int): Int
+    def surround[T](open: Int, close: Int)(f: => T, orElse: T): T = {
+      val wasOpened = in.token == open
+      accept(open)
+      if (wasOpened) {
+        val ret = f
+        accept(close)
+        ret
+      } else orElse
+    }
+  }
+}
+
 //todo verify when stableId's should be just plain qualified type ids
 
 /** <p>Performs the following context-free rewritings:</p>
@@ -50,7 +83,7 @@ import Tokens._
  *    </li>
  *  </ol>
  */
-trait Parsers extends Scanners with MarkupParsers {
+trait Parsers extends Scanners with MarkupParsers with ParsersCommon {
 self =>
   val global: Global
   import global._
@@ -81,8 +114,7 @@ self =>
     def r2p(start: Int, mid: Int, end: Int): Position = rangePos(unit.source, start, mid, end)
     def warning(offset: Int, msg: String) { unit.warning(o2p(offset), msg) }
 
-    def deprecationWarning(offset: Int,
-                           msg: String) {
+    def deprecationWarning(offset: Int, msg: String) {
       unit.deprecationWarning(o2p(offset), msg)
     }
 
@@ -141,7 +173,7 @@ self =>
 
   import nme.raw
 
-  abstract class Parser {
+  abstract class Parser extends ParserCommon {
     val in: Scanner
 
     def freshName(prefix: String): Name
@@ -367,7 +399,6 @@ self =>
     }
     def warning(offset: Int, msg: String): Unit
     def incompleteInputError(msg: String): Unit
-    def deprecationWarning(offset: Int, msg: String): Unit
     private def syntaxError(pos: Position, msg: String, skipIt: Boolean) {
       syntaxError(pos pointOrElse in.offset, msg, skipIt)
     }
@@ -415,16 +446,6 @@ self =>
       }
       if (in.token == token) in.nextToken()
       offset
-    }
-
-    def surround[T](open: Int, close: Int)(f: => T, orElse: T): T = {
-      val wasOpened = in.token == open
-      accept(open)
-      if (wasOpened) {
-        val ret = f
-        accept(close)
-        ret
-      } else orElse
     }
 
     /** semi = nl {nl} | `;'
@@ -587,14 +608,9 @@ self =>
     /** Convert (qual)ident to type identifier
      */
     def convertToTypeId(tree: Tree): Tree = atPos(tree.pos) {
-      tree match {
-        case Ident(name) =>
-          Ident(name.toTypeName)
-        case Select(qual, name) =>
-          Select(qual, name.toTypeName)
-        case _ =>
-          syntaxError(tree.pos, "identifier expected", false)
-          errorTypeTree
+      convertToTypeName(tree) getOrElse {
+        syntaxError(tree.pos, "identifier expected", false)
+        errorTypeTree
       }
     }
 

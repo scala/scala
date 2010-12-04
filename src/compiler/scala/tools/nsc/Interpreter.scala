@@ -821,7 +821,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
      *  we know how to enumerate the identifiers.
      */
     val importedNames: List[Name] =
-      selectorRenames filterNot (_ == USCOREkw) flatMap (x => List(x.toTypeName, x.toTermName))
+      selectorRenames filterNot (_ == USCOREkw) flatMap (_.bothNames)
 
     override def resultExtractionCode(req: Request, code: PrintWriter) =
       code println codegenln(imp.toString)
