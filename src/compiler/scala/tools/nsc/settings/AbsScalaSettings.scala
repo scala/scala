@@ -22,14 +22,14 @@ trait AbsScalaSettings {
   type OutputSetting <: AbsSetting
 
   def BooleanSetting(name: String, descr: String): BooleanSetting
-  def ChoiceSetting(name: String, descr: String, choices: List[String], default: String): ChoiceSetting
+  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String): ChoiceSetting
   def DefinesSetting(): DefinesSetting
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]): IntSetting
-  def MultiStringSetting(name: String, arg: String, descr: String): MultiStringSetting
+  def MultiStringSetting(name: String, helpArg: String, descr: String): MultiStringSetting
   def OutputSetting(outputDirs: OutputDirs, default: String): OutputSetting
-  def PathSetting(name: String, arg: String, descr: String, default: String): PathSetting
+  def PathSetting(name: String, descr: String, default: String): PathSetting
   def PhasesSetting(name: String, descr: String): PhasesSetting
-  def StringSetting(name: String, arg: String, descr: String, default: String): StringSetting
+  def StringSetting(name: String, helpArg: String, descr: String, default: String): StringSetting
 
   /** **/
   abstract class SettingGroup(val prefix: String) extends AbsSetting {

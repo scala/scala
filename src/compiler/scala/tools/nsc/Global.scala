@@ -203,9 +203,9 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   /** Taking flag checking to a somewhat higher level. */
   object opt {
-    // True if the given PhasesSetting includes the current phase.
-    def isActive(ph: Settings#PhasesSetting)  = ph contains globalPhase.name
-    def wasActive(ph: Settings#PhasesSetting) = ph contains globalPhase.prev.name
+    // protected implicit lazy val globalPhaseOrdering: Ordering[Phase] = Ordering[Int] on (_.id)
+    def isActive(ph: Settings#PhasesSetting)  = ph containsPhase globalPhase
+    def wasActive(ph: Settings#PhasesSetting) = ph containsPhase globalPhase.prev
 
     // Some(value) if setting has been set by user, None otherwise.
     def optSetting[T](s: Settings#Setting): Option[T] =
@@ -557,11 +557,11 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       analyzer.typerFactory   -> "the meat and potatoes: type the trees",
       superAccessors          -> "add super accessors in traits and nested classes",
       pickler                 -> "serialize symbol tables",
-      refchecks               -> "reference and override checking, translate nested objects",
+      refchecks               -> "reference/override checking, translate nested objects",
       uncurry                 -> "uncurry, translate function values to anonymous classes",
       tailCalls               -> "replace tail calls by jumps",
       specializeTypes         -> "@specialized-driven class and method specialization",
-      explicitOuter           -> "C.this refs become outer pointers, translate pattern matches",
+      explicitOuter           -> "this refs to outer pointers, translate patterns",
       erasure                 -> "erase types, add interfaces for traits",
       lazyVals                -> "allocate bitmaps, translate lazy vals into lazified defs",
       lambdaLift              -> "move nested functions to top level",
@@ -617,9 +617,14 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   /** A description of the phases that will run */
   def phaseDescriptions: String = {
     val width = phaseNames map (_.length) max
-    val fmt   = "%" + width + "s  %s\n"
+    val fmt   = "%" + width + "s  %2s  %s\n"
 
-    phaseDescriptors map (ph => fmt.format(ph.phaseName, phasesDescMap(ph))) mkString
+    val line1 = fmt.format("phase name", "id", "description")
+    val line2 = fmt.format("----------", "--", "-----------")
+    val descs = phaseDescriptors.zipWithIndex map {
+      case (ph, idx) => fmt.format(ph.phaseName, idx + 1, phasesDescMap(ph))
+    }
+    line1 :: line2 :: descs mkString
   }
 
   // ----------- Runs ---------------------------------------

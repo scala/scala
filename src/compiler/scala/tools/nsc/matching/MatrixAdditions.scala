@@ -28,7 +28,7 @@ trait MatrixAdditions extends ast.TreeDSL
   private[matching] trait Squeezer {
     self: MatrixContext =>
 
-    private val settings_squeeze = settings.Xsqueeze.value == "on"
+    private val settings_squeeze = !settings.Ynosqueeze.value
 
     def squeezedBlockPVs(pvs: List[PatternVar], exp: Tree): Tree =
       squeezedBlock(pvs map (_.valDef), exp)

@@ -15,7 +15,7 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   /** A setting that defines in which format the documentation is output. ''Note:'' this setting is currently always
     * `html`. */
-  val docformat      = ChoiceSetting    ("-doc-format", "Selects in which format documentation is rendered", List("html"), "html")
+  val docformat      = ChoiceSetting    ("-doc-format", "format", "Selects in which format documentation is rendered", List("html"), "html")
 
   /** A setting that defines the overall title of the documentation, typically the name of the library being
     * documented. 'Note:'' This setting is currently not used. */
@@ -31,8 +31,10 @@ class Settings(error: String => Unit) extends scala.tools.nsc.Settings(error) {
 
   val useStupidTypes = BooleanSetting   ("-Yuse-stupid-types", "Print the types of inherited members as seen from their original definition context. Hint: you don't want to do that!")
 
-  // working around issue described in r18708.
-  suppressVTWarn.value = true
+  // Somewhere slightly before r18708 scaladoc stopped building unless the
+  // self-type check was suppressed.  I hijacked the slotted-for-removal-anyway
+  // suppress-vt-warnings option and renamed it for this purpose.
+  noSelfCheck.value = true
 
   // TODO: add a new setting for whether or not to document sourceless entities (e.g., Any, Unit, etc)
 }

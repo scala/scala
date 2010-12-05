@@ -18,6 +18,7 @@ extends Settings(error) {
   val howtorun =
     ChoiceSetting(
       "-howtorun",
+      "how",
       "how to run the specified code",
       List("guess", "object", "script"),
       "guess")

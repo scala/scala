@@ -116,6 +116,7 @@ trait AbsSettings {
     def isAdvanced  = name match { case "-Y" => true ; case "-X" => false ; case _  => name startsWith "-X" }
     def isPrivate   = name match { case "-Y" => false ; case _  => name startsWith "-Y" }
     def isStandard  = !isAdvanced && !isPrivate
+    def isForDebug  = isPrivate && (name contains ("-debug")) // by convention, i.e. -Ytyper-debug
 
     def compare(that: Setting): Int = name compare that.name
 

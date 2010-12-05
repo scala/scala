@@ -28,19 +28,41 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     if (s.length >= helpSyntaxColumnWidth) s
     else s + (" " * (helpSyntaxColumnWidth - s.length))
 
+  private val explainAdvanced = "\n" + """
+    |-- Notes on option parsing --
+    |Boolean settings are always false unless set.
+    |Where multiple values are accepted, they should be comma-separated.
+    |  example: -Xplugin:plugin1,plugin2
+    |<phase> means one or a list of:
+    |  (partial) phase names, phase ids, phase id ranges, or the string "all".
+    |  example: -Xprint:all prints all phases.
+    |  example: -Xprint:expl,24-26 prints phases explicitouter, closelim, dce, jvm.
+    |  example: -Xprint:-4 prints only the phases up to typer.
+    |
+  """.stripMargin.trim + "\n\n"
+
   /** Creates a help message for a subset of options based on cond */
-  def createUsageMsg(label: String, cond: (Setting) => Boolean): String =
-    settings.visibleSettings .
-      filter(cond) .
-      map(s => format(s.helpSyntax) + "  " + s.helpDescription) .
-      toList.sorted.mkString("Usage: %s <options> <source files>\n%s options include:\n  " .
-        format(cmdName, label), "\n  ", "\n")
+  def createUsageMsg(label: String, shouldExplain: Boolean, cond: (Setting) => Boolean): String = {
+    def helpStr(s: Setting) = format(s.helpSyntax) + "  " + s.helpDescription
+
+    val usage         = "Usage: %s <options> <source files>\n" format cmdName
+    val explain       = if (shouldExplain) explainAdvanced else ""
+    val prefix        = label + " options include:\n  "
+
+    // Separating out any debugging options from others for easier reading
+    val (debug, rest) = (settings.visibleSettings filter cond).toList sortBy (_.name) partition (_.isForDebug)
+
+    (rest map helpStr).mkString(usage + explain + prefix, "\n  ", "\n") + (
+      if (debug.isEmpty) ""
+      else (debug map helpStr).mkString("\nAdditional debug settings:\n  ", "\n  ", "\n")
+    )
+  }
 
   /** Messages explaining usage and options */
-  def usageMsg    = createUsageMsg("where possible standard", _.isStandard)
-  def fscUsageMsg = createUsageMsg("where possible standard", ( st => st.isStandard || st.name == "-shutdown"))
-  def xusageMsg   = createUsageMsg("Possible advanced", _.isAdvanced)
-  def yusageMsg   = createUsageMsg("Possible private", _.isPrivate)
+  def usageMsg    = createUsageMsg("where possible standard", false, _.isStandard)
+  def fscUsageMsg = createUsageMsg("where possible standard", false, ( st => st.isStandard || st.name == "-shutdown"))
+  def xusageMsg   = createUsageMsg("Possible advanced", true, _.isAdvanced)
+  def yusageMsg   = createUsageMsg("Possible private", true, _.isPrivate)
 
   // If any of these settings is set, the compiler shouldn't start;
   // an informative message of some sort should be printed instead.

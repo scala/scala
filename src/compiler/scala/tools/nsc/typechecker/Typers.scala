@@ -1247,9 +1247,10 @@ trait Typers { self: Analyzer =>
           }
           if (!(selfType <:< parent.tpe.typeOfThis) &&
               !phase.erasedTypes &&
-              !context.owner.isSynthetic && // don't do this check for synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
-              !(settings.suppressVTWarn.value) &&
-              !selfType.isErroneous && !parent.tpe.isErroneous)
+              !context.owner.isSynthetic &&   // don't check synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+              !settings.noSelfCheck.value &&  // setting to suppress this very check
+              !selfType.isErroneous &&
+              !parent.tpe.isErroneous)
           {
             //Console.println(context.owner);//DEBUG
             //Console.println(context.owner.unsafeTypeParams);//DEBUG
