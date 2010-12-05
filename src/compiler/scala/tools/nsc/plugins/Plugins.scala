@@ -75,7 +75,7 @@ trait Plugins
 
     /** Verify requirements are present. */
     for (req <- settings.require.value ; if !(plugs exists (_.name == req)))
-      error("Missing required plugin: " + req)
+      globalError("Missing required plugin: " + req)
 
     /** Process plugin options. */
     def namec(plug: Plugin) = plug.name + ":"
@@ -86,12 +86,12 @@ trait Plugins
     for (p <- plugs) {
       val opts = doOpts(p)
       if (!opts.isEmpty)
-        p.processOptions(opts, error)
+        p.processOptions(opts, globalError)
     }
 
     /** Verify no non-existent plugin given with -P */
     for (opt <- settings.pluginOptions.value ; if plugs forall (p => optList(List(opt), p).isEmpty))
-      error("bad option: -P:" + opt)
+      globalError("bad option: -P:" + opt)
 
     plugs
   }

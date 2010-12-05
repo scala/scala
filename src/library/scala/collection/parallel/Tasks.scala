@@ -204,7 +204,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
    *  $fjdispatch
    */
   def execute[R, Tp](fjtask: Task[R, Tp]): () => R = {
-    if (currentThread.isInstanceOf[ForkJoinWorkerThread]) {
+    if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
       fjtask.fork
     } else {
       forkJoinPool.execute(fjtask)
@@ -225,7 +225,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
    *  @return    the result of the task
    */
   def executeAndWaitResult[R, Tp](fjtask: Task[R, Tp]): R = {
-    if (currentThread.isInstanceOf[ForkJoinWorkerThread]) {
+    if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
       fjtask.fork
     } else {
       forkJoinPool.execute(fjtask)

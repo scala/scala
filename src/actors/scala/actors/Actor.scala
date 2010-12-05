@@ -75,7 +75,7 @@ object Actor extends Combinators {
   private[actors] def rawSelf(sched: IScheduler): ReplyReactor = {
     val s = tl.get
     if (s eq null) {
-      val r = new ActorProxy(currentThread, sched)
+      val r = new ActorProxy(Thread.currentThread, sched)
       tl.set(r)
       r
     } else
@@ -98,7 +98,7 @@ object Actor extends Combinators {
   def resetProxy {
     val a = tl.get
     if ((null ne a) && a.isInstanceOf[ActorProxy])
-      tl.set(new ActorProxy(currentThread, parentScheduler))
+      tl.set(new ActorProxy(Thread.currentThread, parentScheduler))
   }
 
   /**
@@ -543,7 +543,7 @@ trait Actor extends AbstractActor with ReplyReactor with ActorCanReply with Inpu
         received = Some(TIMEOUT)
         senders = this :: senders
       } else
-        error("unhandled timeout")
+        system.error("unhandled timeout")
     }
 
     var done = false

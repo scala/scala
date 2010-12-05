@@ -32,7 +32,7 @@ trait InterpreterControl {
   sealed abstract class Command extends Function1[List[String], Result] {
     def name: String
     def help: String
-    def error(msg: String) = {
+    def commandError(msg: String) = {
       out.println(":" + name + " " + msg + ".")
       Result(true, None)
     }
@@ -41,7 +41,7 @@ trait InterpreterControl {
 
   case class NoArgs(name: String, help: String, f: () => Result) extends Command {
     def usage(): String = ":" + name
-    def apply(args: List[String]) = if (args.isEmpty) f() else error("accepts no arguments")
+    def apply(args: List[String]) = if (args.isEmpty) f() else commandError("accepts no arguments")
   }
 
   case class LineArg(name: String, help: String, f: (String) => Result) extends Command {
@@ -53,7 +53,7 @@ trait InterpreterControl {
     def usage(): String = ":" + name + " <arg>"
     def apply(args: List[String]) =
       if (args.size == 1) f(args.head)
-      else error("requires exactly one argument")
+      else commandError("requires exactly one argument")
   }
 
   case class VarArgs(name: String, help: String, f: (List[String]) => Result) extends Command {
@@ -114,7 +114,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   private def installSigIntHandler() {
     def onExit() {
       Console.println("") // avoiding "shell prompt in middle of line" syndrome
-      System.exit(1)
+      system.exit(1)
     }
     ignoring(classOf[Exception]) {
       SignalManager("INT") = {

@@ -580,7 +580,7 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           val args1 = transformTrees(fn.symbol.name match {
             case nme.unapply    => args
             case nme.unapplySeq => transformArgs(tree.pos, fn.symbol, args, analyzer.unapplyTypeListFromReturnTypeSeq(fn.tpe))
-            case _              => Predef.error("internal error: UnApply node has wrong symbol")
+            case _              => system.error("internal error: UnApply node has wrong symbol")
           })
           treeCopy.UnApply(tree, fn1, args1)
 

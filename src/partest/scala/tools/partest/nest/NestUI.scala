@@ -98,7 +98,7 @@ object NestUI {
     println
     println(utils.Properties.versionString)
     println("maintained by Philipp Haller (EPFL)")
-    exit(1)
+    system.exit(1)
   }
 
   var _verbose = false

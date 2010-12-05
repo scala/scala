@@ -98,7 +98,7 @@ object Arbitrary {
   /** Arbitrary instance of Float */
   implicit lazy val arbFloat: Arbitrary[Float] = Arbitrary(
     Gen.chooseNum(
-      Float.MinValue, Float.MaxValue
+      Float.MinNegativeValue, Float.MaxValue
       // I find that including these by default is a little TOO testy.
       // Float.Epsilon, Float.NaN, Float.PositiveInfinity, Float.NegativeInfinity
     )
@@ -107,7 +107,7 @@ object Arbitrary {
   /** Arbitrary instance of Double */
   implicit lazy val arbDouble: Arbitrary[Double] = Arbitrary(
     Gen.chooseNum(
-      Double.MinValue / 2, Double.MaxValue / 2
+      Double.MinNegativeValue / 2, Double.MaxValue / 2
       // As above.  Perhaps behind some option?
       // Double.Epsilon, Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity
     )

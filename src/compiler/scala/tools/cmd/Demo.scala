@@ -48,7 +48,7 @@ object DemoSpec extends DemoSpec with Property {
   type ThisCommandLine = SpecCommandLine
   def creator(args: List[String]) =
     new SpecCommandLine(args) {
-      override def errorFn(msg: String) = { println("Error: " + msg) ; System.exit(0) }
+      override def errorFn(msg: String) = { println("Error: " + msg) ; system.exit(0) }
     }
 }
 

@@ -467,7 +467,7 @@ time { mNew.iterator.foreach( p => ()) }
         new HashTrieMap[A, B1](this.bitmap | that.bitmap, merged, totalelems)
       case hm: HashMapCollision1[_, _] => that.merge0(this, level, merger)
       case hm: HashMap[_, _] => this
-      case _ => error("section supposed to be unreachable.")
+      case _ => system.error("section supposed to be unreachable.")
     }
 
   }
@@ -586,7 +586,7 @@ time { mNew.iterator.foreach( p => ()) }
             val arr: Array[HashMap[A, B]] = arrayD(posD) match {
               case c: HashMapCollision1[a, b] => collisionToArray(c).asInstanceOf[Array[HashMap[A, B]]]
               case ht: HashTrieMap[_, _] => ht.asInstanceOf[HashTrieMap[A, B]].elems
-              case _ => error("cannot divide single element")
+              case _ => system.error("cannot divide single element")
             }
             arrayToIterators(arr)
           } else {

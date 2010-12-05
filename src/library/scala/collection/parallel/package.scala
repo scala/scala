@@ -211,7 +211,7 @@ package object parallel {
         afterCombine(other)
 
         this
-      } else error("Unexpected combiner type.")
+      } else system.error("Unexpected combiner type.")
     } else this
 
   }

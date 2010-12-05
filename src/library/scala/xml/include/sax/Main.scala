@@ -29,12 +29,12 @@ object Main {
   */
   def main(args: Array[String]) {
     def saxe[T](body: => T) = catching[T](classOf[SAXException]) opt body
-    def error(msg: String) = System.err.println(msg)
+    def fail(msg: String) = System.err.println(msg)
 
     val parser: XMLReader =
       saxe[XMLReader](XMLReaderFactory.createXMLReader()) getOrElse (
         saxe[XMLReader](XMLReaderFactory.createXMLReader(XercesClassName)) getOrElse (
-          return error("Could not find an XML parser")
+          return fail("Could not find an XML parser")
         )
       )
 
@@ -53,7 +53,7 @@ object Main {
           val r = Class.forName(args(1)).newInstance().asInstanceOf[EntityResolver]
           parser setEntityResolver r
           r
-        } orElse (return error("Could not load requested EntityResolver"))
+        } orElse (return fail("Could not load requested EntityResolver"))
 
     for (arg <- args2) {
       try {
@@ -72,10 +72,10 @@ object Main {
       }
       catch {
         case e: SAXParseException =>
-          error(e.toString)
-          error("Problem in %s at line %d".format(e.getSystemId, e.getLineNumber))
+          fail(e.toString)
+          fail("Problem in %s at line %d".format(e.getSystemId, e.getLineNumber))
         case e: SAXException =>
-          error(e.toString)
+          fail(e.toString)
       }
     }
   }

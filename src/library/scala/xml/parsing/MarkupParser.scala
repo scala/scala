@@ -866,7 +866,7 @@ trait MarkupParser extends MarkupParserCommon with TokenTests
       new PublicID(pubID, sysID);
     } else {
       reportSyntaxError("PUBLIC or SYSTEM expected");
-      error("died parsing notationdecl")
+      system.error("died parsing notationdecl")
     }
     xSpaceOpt
     xToken('>')

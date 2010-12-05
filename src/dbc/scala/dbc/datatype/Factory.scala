@@ -234,17 +234,17 @@ object Factory {
       }
       /* Unsupported data types. */
       case REF | ARRAY | STRUCT =>
-        error ("I don't support composite data types yet.");
+        system.error ("I don't support composite data types yet.");
       case DATALINK | DISTINCT | JAVA_OBJECT | NULL =>
-        error ("I won't support strange data types.");
+        system.error ("I won't support strange data types.");
       /* Unsupported binary string data types. */
       case BINARY | BLOB | LONGVARBINARY | VARBINARY =>
-        error ("I don't support binary string data types yet.");
+        system.error ("I don't support binary string data types yet.");
       /* Unsupported date and time data types. */
       case DATE | TIME | TIMESTAMP =>
-        error ("I don't support date and time data types yet.");
+        system.error ("I don't support date and time data types yet.");
       /* Default case */
-      case x => error ("I don't know about this ("+metadata.getColumnTypeName(index)+") JDBC type.")
+      case x => system.error ("I don't know about this ("+metadata.getColumnTypeName(index)+") JDBC type.")
     }
   }
 }

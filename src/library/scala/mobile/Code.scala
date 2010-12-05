@@ -196,7 +196,7 @@ class Code(clazz: java.lang.Class[_]) {
             if (cs.length > 0) {
               cs(0).newInstance("").asInstanceOf[AnyRef]
             } else {
-              error("class " + clazz.getName() + " has no public constructor")
+              system.error("class " + clazz.getName() + " has no public constructor")
               null
             }
           }

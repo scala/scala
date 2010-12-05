@@ -1340,7 +1340,7 @@ object Interpreter {
     intLoop.createInterpreter
     intLoop.in = InteractiveReader.createDefault(intLoop.interpreter)
 
-    // rebind exit so people don't accidentally call System.exit by way of predef
+    // rebind exit so people don't accidentally call system.exit by way of predef
     intLoop.interpreter.beQuietDuring {
       intLoop.interpreter.interpret("""def exit = println("Type :quit to resume program execution.")""")
       for (p <- args) {

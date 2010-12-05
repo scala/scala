@@ -168,12 +168,12 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       // hash codes and remove the collision. however this is never called
       // because no references to this class are ever handed out to client code
       // and HashTrieSet serialization takes care of the situation
-      error("cannot serialize an immutable.HashSet where all items have the same 32-bit hash code")
+      system.error("cannot serialize an immutable.HashSet where all items have the same 32-bit hash code")
       //out.writeObject(kvs)
     }
 
     private def readObject(in: java.io.ObjectInputStream) {
-      error("cannot deserialize an immutable.HashSet where all items have the same 32-bit hash code")
+      system.error("cannot deserialize an immutable.HashSet where all items have the same 32-bit hash code")
       //kvs = in.readObject().asInstanceOf[ListSet[A]]
       //hash = computeHash(kvs.)
     }
@@ -398,7 +398,7 @@ time { mNew.iterator.foreach( p => ()) }
             val arr: Array[HashSet[A]] = arrayD(posD) match {
               case c: HashSetCollision1[a] => collisionToArray(c).asInstanceOf[Array[HashSet[A]]]
               case ht: HashTrieSet[_] => ht.asInstanceOf[HashTrieSet[A]].elems
-              case _ => error("cannot divide single element")
+              case _ => system.error("cannot divide single element")
             }
             arrayToIterators(arr)
           } else {

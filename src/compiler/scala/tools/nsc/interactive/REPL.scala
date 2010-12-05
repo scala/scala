@@ -20,13 +20,13 @@ object REPL {
 
   var reporter: ConsoleReporter = _
 
-  def error(msg: String) {
+  private def replError(msg: String) {
     reporter.error(/*new Position */FakePos("scalac"),
                    msg + "\n  scalac -help  gives more information")
   }
 
   def process(args: Array[String]) {
-    val settings = new Settings(error)
+    val settings = new Settings(replError)
     reporter = new ConsoleReporter(settings)
     val command = new CompilerCommand(args.toList, settings)
     if (command.settings.version.value)
@@ -56,7 +56,7 @@ object REPL {
 
   def main(args: Array[String]) {
     process(args)
-    exit(if (reporter.hasErrors) 1 else 0)
+    system.exit(if (reporter.hasErrors) 1 else 0)
   }
 
   def loop(action: (String) => Unit) {
@@ -109,7 +109,7 @@ object REPL {
         case List("complete", file, off1) =>
           doComplete(makePos(file, off1, off1))
         case List("quit") =>
-          System.exit(1)
+          system.exit(1)
         case _ =>
           println("unrecongized command")
       }

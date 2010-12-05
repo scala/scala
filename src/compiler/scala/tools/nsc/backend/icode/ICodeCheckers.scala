@@ -7,7 +7,8 @@ package scala.tools.nsc
 package backend
 package icode
 
-import scala.collection.mutable.{Buffer, ListBuffer, Map, HashMap}
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.symtab._
 
 abstract class ICodeCheckers {
@@ -59,8 +60,8 @@ abstract class ICodeCheckers {
     var method: IMethod = _
     var code: Code = _
 
-    val in: Map[BasicBlock, TypeStack]  = new HashMap()
-    val out: Map[BasicBlock, TypeStack] = new HashMap()
+    val in: mutable.Map[BasicBlock, TypeStack]  = new mutable.HashMap()
+    val out: mutable.Map[BasicBlock, TypeStack] = new mutable.HashMap()
     val emptyStack = new TypeStack() {
       override def toString = "<empty>"
     }
@@ -113,11 +114,11 @@ abstract class ICodeCheckers {
 
       for (f1 <- cls.fields ; f2 <- cls.fields ; if f1 < f2)
         if (isConfict(f1, f2, false))
-          ICodeCheckers.this.global.error("Repetitive field name: " + f1.symbol.fullName)
+          icodeError("Repetitive field name: " + f1.symbol.fullName)
 
       for (m1 <- cls.methods ; m2 <- cls.methods ; if m1 < m2)
         if (isConfict(m1, m2, true))
-          ICodeCheckers.this.global.error("Repetitive method: " + m1.symbol.fullName)
+          icodeError("Repetitive method: " + m1.symbol.fullName)
 
       clasz.methods foreach check
     }
@@ -130,7 +131,7 @@ abstract class ICodeCheckers {
     }
 
     def check(c: Code) {
-      val worklist: Buffer[BasicBlock] = new ListBuffer()
+      val worklist = new ListBuffer[BasicBlock]
       def append(elems: List[BasicBlock]) =
         worklist ++= (elems filterNot (worklist contains _))
 
@@ -284,7 +285,7 @@ abstract class ICodeCheckers {
       var stack = new TypeStack(initial)
       def checkStack(len: Int) {
         if (stack.length < len)
-          ICodeChecker.this.error("Expected at least " + len + " elements on the stack", stack)
+          ICodeChecker.this.icodeError("Expected at least " + len + " elements on the stack", stack)
       }
 
       def sizeString(push: Boolean) = {
@@ -301,7 +302,7 @@ abstract class ICodeCheckers {
       }
       def _popStack: TypeKind = {
         if (stack.isEmpty) {
-          error("Popped empty stack in " + b.fullString + ", throwing a Unit")
+          icodeError("Popped empty stack in " + b.fullString + ", throwing a Unit")
           return UNIT
         }
         stack.pop
@@ -337,7 +338,7 @@ abstract class ICodeCheckers {
       }
 
       def typeError(k1: TypeKind, k2: TypeKind) {
-        error("\n  expected: " + k1 + "\n     found: " + k2)
+        icodeError("\n  expected: " + k1 + "\n     found: " + k2)
       }
       def isSubtype(k1: TypeKind, k2: TypeKind) = (k1 <:< k2) || {
         import platform.isMaybeBoxed
@@ -368,21 +369,21 @@ abstract class ICodeCheckers {
 
         def checkLocal(local: Local): Unit = {
           method lookupLocal local.sym.name getOrElse {
-            error(" " + local + " is not defined in method " + method)
+            icodeError(" " + local + " is not defined in method " + method)
           }
         }
         def checkField(obj: TypeKind, field: Symbol): Unit = obj match {
           case REFERENCE(sym) =>
             if (sym.info.member(field.name) == NoSymbol)
-              error(" " + field + " is not defined in class " + clasz);
+              icodeError(" " + field + " is not defined in class " + clasz);
           case _ =>
-            error(" expected reference type, but " + obj + " found");
+            icodeError(" expected reference type, but " + obj + " found");
         }
 
         /** Checks that tpe is a subtype of one of the allowed types */
         def checkType(tpe: TypeKind, allowed: TypeKind*) = (
           if (allowed exists (k => isSubtype(tpe, k))) ()
-          else error(tpe + " is not one of: " + allowed.mkString("{ ", ", ", " }"))
+          else icodeError(tpe + " is not one of: " + allowed.mkString("{ ", ", ", " }"))
         )
         def checkNumeric(tpe: TypeKind) =
           checkType(tpe, BYTE, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE)
@@ -437,11 +438,11 @@ abstract class ICodeCheckers {
                         "Method " + method + " does not exist in " + receiver)
 
             case t =>
-              error("Not a reference type: " + t)
+              icodeError("Not a reference type: " + t)
           }
 
         def checkBool(cond: Boolean, msg: String) =
-          if (!cond) error(msg)
+          if (!cond) icodeError(msg)
 
         if (settings.debug.value) {
           log("PC: " + instr)
@@ -461,7 +462,7 @@ abstract class ICodeCheckers {
                 subtypeTest(elem, kind)
                 pushStack(elem)
               case (a, b) =>
-                error(" expected and INT and a array reference, but " +
+                icodeError(" expected and INT and a array reference, but " +
                     a + ", " + b + " found");
             }
 
@@ -486,7 +487,7 @@ abstract class ICodeCheckers {
          case STORE_THIS(kind) =>
            val actualType = popStack
            if (actualType.isReferenceType) subtypeTest(actualType, kind)
-           else error("Expected this reference but found: " + actualType)
+           else icodeError("Expected this reference but found: " + actualType)
 
          case STORE_ARRAY_ITEM(kind) =>
            popStack3 match {
@@ -494,7 +495,7 @@ abstract class ICodeCheckers {
                subtypeTest(k, kind)
                subtypeTest(k, elem)
              case (a, b, c) =>
-                error(" expected and array reference, and int and " + kind +
+                icodeError(" expected and array reference, and int and " + kind +
                       " but " + a + ", " + b + ", " + c + " found");
            }
 
@@ -564,7 +565,7 @@ abstract class ICodeCheckers {
              case ArrayLength(kind) =>
                popStack match {
                  case ARRAY(elem) => checkType(elem, kind)
-                 case arr         => error(" array reference expected, but " + arr + " found")
+                 case arr         => icodeError(" array reference expected, but " + arr + " found")
                }
                pushStack(INT)
 
@@ -695,16 +696,16 @@ abstract class ICodeCheckers {
 
     //////////////// Error reporting /////////////////////////
 
-    def error(msg: String) {
-      ICodeCheckers.this.global.error(
+    def icodeError(msg: String) {
+      ICodeCheckers.this.global.globalError(
         "!! ICode checker fatality in " + method +
         "\n  at: " + basicBlock.fullString +
         "\n  error message: " + msg
       )
     }
 
-    def error(msg: String, stack: TypeStack) {
-      error(msg + "\n type stack: " + stack)
+    def icodeError(msg: String, stack: TypeStack) {
+      icodeError(msg + "\n type stack: " + stack)
     }
   }
 }

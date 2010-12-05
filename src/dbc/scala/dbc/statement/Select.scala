@@ -67,7 +67,7 @@ abstract class Select extends Relation {
                  ((name:String, dc:DerivedColumn) => name + ", " + dc.sqlString))
     }) +
     (fromClause match {
-      case Nil => error("Empty from clause is not allowed")
+      case Nil => system.error("Empty from clause is not allowed")
       case _ => (" FROM " + fromClause.tail.foldLeft(fromClause.head.sqlInnerString)
       ((name:String, rel:Relation) => name + ", " + rel.sqlInnerString))
     }) +
@@ -78,7 +78,7 @@ abstract class Select extends Relation {
     (groupByClause match {
       case None => ""
       case Some(gbl) => gbl match {
-        case Nil => error("Empty group by clause is not allowed")
+        case Nil => system.error("Empty group by clause is not allowed")
         case _ =>
           (" GROUP BY " +
            gbl.tail.foldLeft(gbl.head.sqlInnerString)

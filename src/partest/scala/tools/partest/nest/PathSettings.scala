@@ -15,14 +15,14 @@ import java.net.URLClassLoader
 object PathSettings {
   import PartestDefaults.{ testRootDir, srcDirName }
 
-  private def cwd = Directory.Current getOrElse error("user.dir property not set")
+  private def cwd = Directory.Current getOrElse system.error("user.dir property not set")
   private def isPartestDir(d: Directory) = (d.name == "test") && (d / srcDirName isDirectory)
 
   // Directory <root>/test
   lazy val testRoot: Directory = testRootDir getOrElse {
     val candidates: List[Directory] = (cwd :: cwd.parents) flatMap (d => List(d, Directory(d / "test")))
 
-    candidates find isPartestDir getOrElse error("Directory 'test' not found.")
+    candidates find isPartestDir getOrElse system.error("Directory 'test' not found.")
   }
 
   // Directory <root>/test/files
@@ -38,7 +38,7 @@ object PathSettings {
     // but in the postmodern "sbt" build, it is called target.  Look for both.
     val dirs = Path.onlyDirs(bases flatMap (x => List(x / "build", x / "target")))
 
-    dirs.headOption getOrElse error("Neither 'build' nor 'target' dir found under test root " + testRoot + ".")
+    dirs.headOption getOrElse system.error("Neither 'build' nor 'target' dir found under test root " + testRoot + ".")
   }
 
   // Directory <root>/build/pack/lib
@@ -46,7 +46,7 @@ object PathSettings {
 
   lazy val scalaCheck: File =
     buildPackLibDir.files ++ srcLibDir.files find (_.name startsWith "scalacheck") getOrElse {
-      error("No scalacheck jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
+      system.error("No scalacheck jar found in '%s' or '%s'".format(buildPackLibDir, srcLibDir))
     }
 }
 

@@ -14,7 +14,7 @@ private class cpsMinus extends Annotation // implementation detail
 
 
 
-@serializable final class ControlContext[+A,-B,+C](val fun: (A => B, Exception => B) => C, val x: A) {
+final class ControlContext[+A,-B,+C](val fun: (A => B, Exception => B) => C, val x: A) extends Serializable {
 
   /*
     final def map[A1](f: A => A1): ControlContext[A1,B,C] = {

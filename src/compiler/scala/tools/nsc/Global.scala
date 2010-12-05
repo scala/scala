@@ -135,10 +135,13 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
 // ------------------ Reporting -------------------------------------
 
-  def inform(msg: String)  = reporter.info(NoPosition, msg, true)
-  def error(msg: String)   = reporter.error(NoPosition, msg)
-  def warning(msg: String) =
-    if (opt.fatalWarnings) error(msg)
+  // not deprecated yet, but a method called "error" imported into
+  // nearly every trait really must go.  For now using globalError.
+  def error(msg: String)       = globalError(msg)
+  def globalError(msg: String) = reporter.error(NoPosition, msg)
+  def inform(msg: String)      = reporter.info(NoPosition, msg, true)
+  def warning(msg: String)     =
+    if (opt.fatalWarnings) globalError(msg)
     else reporter.warning(NoPosition, msg)
 
   def informProgress(msg: String)          = if (opt.verbose) inform("[" + msg + "]")
@@ -148,7 +151,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   def logError(msg: String, t: Throwable): Unit = ()
   def log(msg: => AnyRef): Unit = if (opt.logPhase) inform("[log " + phase + "] " + msg)
 
-  def logThrowable(t: Throwable): Unit = error(throwableAsString(t))
+  def logThrowable(t: Throwable): Unit = globalError(throwableAsString(t))
   def throwableAsString(t: Throwable): String =
     if (opt.richExes) Exceptional(t).force().context()
     else util.stringFromWriter(t printStackTrace _)
@@ -163,10 +166,10 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       try Some(Charset.forName(name))
       catch {
         case _: IllegalCharsetNameException =>
-          error("illegal charset name '" + name + "'")
+          globalError("illegal charset name '" + name + "'")
           None
         case _: UnsupportedCharsetException =>
-          error("unsupported charset '" + name + "'")
+          globalError("unsupported charset '" + name + "'")
           None
       }
 
@@ -180,7 +183,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
       catch { case x =>
-        error("exception while trying to instantiate source reader '" + name + "'")
+        globalError("exception while trying to instantiate source reader '" + name + "'")
         None
       }
     }
@@ -920,19 +923,19 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** Compile list of abstract files */
     def compileFiles(files: List[AbstractFile]) {
       try compileSources(files map getSourceFile)
-      catch { case ex: IOException => error(ex.getMessage()) }
+      catch { case ex: IOException => globalError(ex.getMessage()) }
     }
 
     /** Compile list of files given by their names */
     def compile(filenames: List[String]) {
       try {
         val sources: List[SourceFile] =
-          if (isScriptRun && filenames.size > 1) returning(Nil)(_ => error("can only compile one script at a time"))
+          if (isScriptRun && filenames.size > 1) returning(Nil)(_ => globalError("can only compile one script at a time"))
           else filenames map getSourceFile
 
         compileSources(sources)
       }
-      catch { case ex: IOException => error(ex.getMessage()) }
+      catch { case ex: IOException => globalError(ex.getMessage()) }
     }
 
     /** Compile abstract file until `globalPhase`, but at least
@@ -1107,7 +1110,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
       } catch {
         case ex: IOException =>
           if (opt.debug) ex.printStackTrace()
-        error("could not write file " + file)
+        globalError("could not write file " + file)
       }
     })
   }

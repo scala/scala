@@ -23,16 +23,17 @@ import java.lang.reflect.InvocationTargetException
 object Exception {
   type Catcher[+T] = PartialFunction[Throwable, T]
 
-  def mkCatcher[Ex <: Throwable, T](isDef: Ex => Boolean, f: Ex => T) = new Catcher[T] {
+  def mkCatcher[Ex <: Throwable: ClassManifest, T](isDef: Ex => Boolean, f: Ex => T) = new Catcher[T] {
     private def downcast(x: Throwable): Option[Ex] =
-      if (x.isInstanceOf[Ex]) Some(x.asInstanceOf[Ex]) else None
+      if (classManifest[Ex].erasure.isAssignableFrom(x.getClass)) Some(x.asInstanceOf[Ex])
+      else None
 
     def isDefinedAt(x: Throwable) = downcast(x) exists isDef
     def apply(x: Throwable): T = f(downcast(x).get)
   }
   def mkThrowableCatcher[T](isDef: Throwable => Boolean, f: Throwable => T) = mkCatcher(isDef, f)
 
-  implicit def throwableSubtypeToCatcher[Ex <: Throwable, T](pf: PartialFunction[Ex, T]) =
+  implicit def throwableSubtypeToCatcher[Ex <: Throwable: ClassManifest, T](pf: PartialFunction[Ex, T]) =
     mkCatcher(pf.isDefinedAt _, pf.apply _)
 
   /** !!! Not at all sure of every factor which goes into this,

@@ -190,7 +190,7 @@ self: scala.tools.nsc.Global =>
       inform("")
     }
 
-    def error(msg: String)(body : => Unit) {
+    def positionError(msg: String)(body : => Unit) {
       inform("======= Bad positions: "+msg)
       inform("")
       body
@@ -205,15 +205,15 @@ self: scala.tools.nsc.Global =>
     def validate(tree: Tree, encltree: Tree): Unit = {
       if (!tree.isEmpty) {
         if (!tree.pos.isDefined)
-          error("Unpositioned tree ["+tree.id+"]") { reportTree("Unpositioned", tree) }
+          positionError("Unpositioned tree ["+tree.id+"]") { reportTree("Unpositioned", tree) }
         if (tree.pos.isRange) {
           if (!encltree.pos.isRange)
-            error("Synthetic tree ["+encltree.id+"] contains nonsynthetic tree ["+tree.id+"]") {
+            positionError("Synthetic tree ["+encltree.id+"] contains nonsynthetic tree ["+tree.id+"]") {
             reportTree("Enclosing", encltree)
             reportTree("Enclosed", tree)
             }
           if (!(encltree.pos includes tree.pos))
-            error("Enclosing tree ["+encltree.id+"] does not include tree ["+tree.id+"]") {
+            positionError("Enclosing tree ["+encltree.id+"] does not include tree ["+tree.id+"]") {
               reportTree("Enclosing", encltree)
               reportTree("Enclosed", tree)
             }
@@ -221,7 +221,7 @@ self: scala.tools.nsc.Global =>
           findOverlapping(tree.children flatMap solidDescendants) match {
             case List() => ;
             case xs => {
-              error("Overlapping trees "+xs.map { case (x, y) => (x.id, y.id) }.mkString("", ", ", "")) {
+              positionError("Overlapping trees "+xs.map { case (x, y) => (x.id, y.id) }.mkString("", ", ", "")) {
                 reportTree("Ancestor", tree)
                 for((x, y) <- xs) {
                   reportTree("First overlapping", x)

@@ -181,9 +181,9 @@ class ResizableThreadPoolScheduler(protected val terminate: Boolean,
   def restart() {
     synchronized {
       if (!suspending)
-        error("snapshot has not been invoked")
+        system.error("snapshot has not been invoked")
       else if (isActive)
-        error("scheduler is still active")
+        system.error("scheduler is still active")
       else
         suspending = false
 

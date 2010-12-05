@@ -28,10 +28,10 @@ object ShowPickled extends Names {
     }
     def readName =
       if (isName) new String(bytes, "UTF-8")
-      else error("%s is no name" format tagName)
+      else system.error("%s is no name" format tagName)
     def nameIndex =
       if (hasName) readNat(bytes, 0)
-      else error("%s has no name" format tagName)
+      else system.error("%s has no name" format tagName)
 
     def tagName = tag2string(tag)
     override def toString = "%d,%d: %s".format(num, startIndex, tagName)

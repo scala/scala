@@ -29,6 +29,6 @@ class Unknown extends DataType {
 
   /** A SQL-99 compliant string representation of the type. */
   override def sqlString: java.lang.String =
-    error("The 'UNKNOWN' data type cannot be represented.");
+    system.error("The 'UNKNOWN' data type cannot be represented.");
 
 }

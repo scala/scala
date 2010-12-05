@@ -12,7 +12,6 @@ package scala.tools.ant
 import java.io.{File, FileInputStream}
 
 import org.apache.tools.ant.{BuildException, Project}
-import org.apache.tools.ant.taskdefs.MatchingTask
 import org.apache.tools.ant.util.{FileNameMapper, IdentityMapper}
 
 import org.apache.tools.ant.types.Mapper
@@ -32,7 +31,7 @@ import org.apache.tools.ant.types.Mapper
  *
  * @author  Gilles Dubochet
  * @version 1.0 */
-class Same extends MatchingTask {
+class Same extends ScalaMatchingTask {
 /*============================================================================*\
 **                             Ant user-properties                            **
 \*============================================================================*/
@@ -91,8 +90,8 @@ class Same extends MatchingTask {
 
   /** Tests if all mandatory attributes are set and valid. */
   private def validateAttributes = {
-    if (origin.isEmpty) error("Mandatory attribute 'dir' is not set.")
-    if (destination.isEmpty) error("Mandatory attribute 'todir' is not set.")
+    if (origin.isEmpty) system.error("Mandatory attribute 'dir' is not set.")
+    if (destination.isEmpty) system.error("Mandatory attribute 'todir' is not set.")
   }
 
   private def reportDiff(f1: File, f2: File) = {
@@ -151,7 +150,7 @@ class Same extends MatchingTask {
     }
     if (!allEqualNow)
       if (failing)
-        error("There were differences between '" + origin.get + "' and '" + destination.get + "'")
+        system.error("There were differences between '" + origin.get + "' and '" + destination.get + "'")
       else
         log("There were differences between '" + origin.get + "' and '" + destination.get + "'")
     else {

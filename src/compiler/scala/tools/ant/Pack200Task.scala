@@ -16,7 +16,6 @@ import java.util.jar.{JarFile, JarInputStream, JarOutputStream, Pack200}
 import java.util.jar.Pack200.Packer._
 
 import org.apache.tools.ant.{BuildException, DirectoryScanner}
-import org.apache.tools.ant.taskdefs.MatchingTask
 import org.apache.tools.ant.types.FileSet
 
 /** <p>
@@ -34,7 +33,7 @@ import org.apache.tools.ant.types.FileSet
  *
  * @author  James Matlik
  */
-class Pack200Task extends MatchingTask {
+class Pack200Task extends ScalaMatchingTask {
 
 /*============================================================================*\
 **                             Ant user-properties                            **
@@ -58,13 +57,13 @@ class Pack200Task extends MatchingTask {
 
   def setDir(dir: File) {
     if (dir.exists && dir.isDirectory) srcdir = Some(dir)
-    else error("Please specify a valid directory with Jar files for packing.")
+    else buildError("Please specify a valid directory with Jar files for packing.")
   }
 
   /** A level from 0 (none) to 9 (max) of effort for applying Pack200 */
   def setEffort(x: Int) {
     if (effort < 10 && effort > -1) effort = x
-    else error("The effort level must be a value from 0 to 9")
+    else buildError("The effort level must be a value from 0 to 9")
   }
 
   /** Set the flag to specify if file reordering should be performed. Reordering
@@ -89,7 +88,7 @@ class Pack200Task extends MatchingTask {
   /** Set the output directory */
   def setDestdir(file: File) {
     if (file != null && file.exists && file.isDirectory) destdir = Some(file)
-    else error("The destination directory is invalid: " + file.getAbsolutePath)
+    else buildError("The destination directory is invalid: " + file.getAbsolutePath)
   }
 
   def setSuffix(s: String) { packFileSuffix = s }
@@ -117,13 +116,6 @@ class Pack200Task extends MatchingTask {
 **                       Compilation and support methods                      **
 \*============================================================================*/
 
-/** Generates a build error. Error location will be the current task in the
-   * ant file.
-   * @param message A message describing the error.
-   * @throws BuildException A build error exception thrown in every case. */
-  private def error(message: String): Nothing =
-    throw new BuildException(message, getLocation())
-
   private def makeJarOutputStream(file: File) =
     new JarOutputStream(makeOutputStream(file))
 
@@ -137,13 +129,13 @@ class Pack200Task extends MatchingTask {
   /** Performs the tool creation. */
   override def execute() = {
     // Audits
-    val packDir = destdir.getOrElse(error("No output directory specified"))
+    val packDir = destdir.getOrElse(buildError("No output directory specified"))
 
     // Setup the inherited fileset for further processing
     fileset.setDir(srcdir.getOrElse(getProject.getBaseDir))
 
     val files = getFileList
-    if (files.isEmpty) error("No JAR files were selected for packing.")
+    if (files.isEmpty) buildError("No JAR files were selected for packing.")
 
     // Setup the packer
     val packer = Pack200.newPacker

@@ -52,7 +52,7 @@ package scala.tools.ant {
     *  </ul>
     *
     * @author Gilles Dubochet */
-  class ScalaBazaar extends Task {
+  class ScalaBazaar extends Task with ScalaTask {
 
     /** The unique Ant file utilities instance to use in this task. */
     private val fileUtils = FileUtils.getFileUtils()
@@ -161,10 +161,10 @@ package scala.tools.ant {
     def addConfiguredLooseset(set: LooseFileSet) = {
       Pair(set.destination, set.fileset) match {
         case Pair(None, _) =>
-          error("destination not specified for a loose file set")
+          buildError("destination not specified for a loose file set")
 
         case Pair(_, None) =>
-          error("no files specified for a loose file set")
+          buildError("no files specified for a loose file set")
 
         case Pair(Some(dest), Some(fileset)) =>
           fileSetsMap.update(dest, fileset)
@@ -178,19 +178,19 @@ package scala.tools.ant {
     /** Gets the value of the file attribute in a Scala-friendly form.
       * @return The file as a file. */
     private def getName: String =
-      if (name.isEmpty) error("Name attribute must be defined first.")
+      if (name.isEmpty) buildError("Name attribute must be defined first.")
       else name.get
 
     /** Gets the value of the file attribute in a Scala-friendly form.
       * @return The file as a file. */
     private def getFile: File =
-      if (file.isEmpty) error("Member 'file' is empty.")
+      if (file.isEmpty) buildError("Member 'file' is empty.")
       else getProject().resolveFile(file.get.toString())
 
     /** Gets the value of the adfile attribute in a Scala-friendly form.
       * @return The adfile as a file. */
     private def getAdfile: File =
-      if (adfile.isEmpty) error("Member 'adfile' is empty.")
+      if (adfile.isEmpty) buildError("Member 'adfile' is empty.")
       else getProject().resolveFile(adfile.get.toString())
 
 /******************************************************************************\
@@ -223,16 +223,9 @@ package scala.tools.ant {
       file
     }
 
-    /** Generates a build error. Error location will be the current task in the
-      * ant file.
-      * @param message A message describing the error.
-      * @throws BuildException A build error exception thrown in every case. */
-    private def error(message: String): Nothing =
-      throw new BuildException(message, getLocation())
-
     private def writeFile(file: File, content: String) =
       if (file.exists() && !file.canWrite())
-        error("File " + file + " is not writable")
+        buildError("File " + file + " is not writable")
       else {
         val writer = new FileWriter(file, false)
         writer.write(content)
@@ -246,9 +239,9 @@ package scala.tools.ant {
     /** Performs the compilation. */
     override def execute() = {
       // Tests if all mandatory attributes are set and valid.
-      if (file.isEmpty) error("Attribute 'file' is not set.")
-      if (name.isEmpty) error("Attribute 'name' is not set.")
-      if (version.isEmpty) error("Attribute 'version' is not set.")
+      if (file.isEmpty) buildError("Attribute 'file' is not set.")
+      if (name.isEmpty) buildError("Attribute 'name' is not set.")
+      if (version.isEmpty) buildError("Attribute 'version' is not set.")
 
       val pack = {
         <package>

@@ -21,7 +21,7 @@ object Arguments {
     val prefixedBindings: Map[String, Char] = new HashMap
     val optionalBindings: Map[String, Char] = new HashMap
 
-    def error(message: String): Unit = Console.println(message)
+    def argumentError(message: String): Unit = Console.println(message)
 
     def withOption(option: String): Parser = {
       options += option
@@ -51,7 +51,7 @@ object Arguments {
     def parseBinding(str: String, separator: Char): (String, String) = {
       val eqls = str.indexOf(separator)
       if (eqls < 0) {
-        error("missing '" + separator + "' in binding '" + str + "'")
+        argumentError("missing '" + separator + "' in binding '" + str + "'")
         Pair("", "")
       } else
         Pair(str.substring(0, eqls).trim(),
@@ -78,7 +78,7 @@ object Arguments {
             i += 1
           } else if (optionalArgs contains args(i)) {
             if ((i + 1) == args.length) {
-              error("missing argument for '" + args(i) + "'")
+              argumentError("missing argument for '" + args(i) + "'")
               i += 1
             } else {
               res.addArgument(args(i), args(i + 1))
@@ -86,7 +86,7 @@ object Arguments {
             }
           } else if (optionalBindings contains args(i)) {
             if ((i + 1) == args.length) {
-              error("missing argument for '" + args(i) + "'")
+              argumentError("missing argument for '" + args(i) + "'")
               i += 1
             } else {
               res.addBinding(args(i),
@@ -115,7 +115,7 @@ object Arguments {
                 }
               }
               if (i == j) {
-                error("unknown option '" + args(i) + "'")
+                argumentError("unknown option '" + args(i) + "'")
                 i = i + 1
               }
             }

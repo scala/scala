@@ -37,7 +37,7 @@ private[actors] class ActorTask(actor: Actor,
     val uncaught = UncaughtException(actor,
                                      if (msg != null) Some(msg) else None,
                                      senderInfo,
-                                     currentThread,
+                                     Thread.currentThread,
                                      e)
 
     val todo = actor.synchronized {

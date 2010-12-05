@@ -138,7 +138,7 @@ private[immutable] abstract class LongMapIterator[V, T](it : LongMap[V]) extends
       case t@LongMap.Tip(_, _) => valueOf(t);
       // This should never happen. We don't allow LongMap.Nil in subtrees of the LongMap
       // and don't return an LongMapIterator for LongMap.Nil.
-      case LongMap.Nil => error("Empty maps not allowed as subtrees");
+      case LongMap.Nil => system.error("Empty maps not allowed as subtrees");
     }
 }
 
@@ -275,8 +275,8 @@ sealed abstract class LongMap[+T] extends Map[Long, T] with MapLike[Long, T, Lon
 
   final override def apply(key : Long) : T = this match {
     case LongMap.Bin(prefix, mask, left, right) => if (zero(key, mask)) left(key) else right(key);
-    case LongMap.Tip(key2, value) => if (key == key2) value else error("Key not found");
-    case LongMap.Nil => error("key not found");
+    case LongMap.Tip(key2, value) => if (key == key2) value else system.error("Key not found");
+    case LongMap.Nil => system.error("key not found");
   }
 
   def + [S >: T] (kv: (Long, S)): LongMap[S] = updated(kv._1, kv._2)

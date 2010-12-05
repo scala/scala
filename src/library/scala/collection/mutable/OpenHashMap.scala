@@ -196,7 +196,7 @@ extends Map[Key, Value]
     val initialModCount = modCount;
 
     private[this] def advance {
-      if (initialModCount != modCount) error("Concurrent modification");
+      if (initialModCount != modCount) system.error("Concurrent modification");
       while((index <= mask) && (table(index) == null || table(index).value == None)) index+=1;
     }
 
@@ -233,7 +233,7 @@ extends Map[Key, Value]
   override def foreach[U](f : ((Key, Value)) => U) {
     val startModCount = modCount;
     foreachUndeletedEntry(entry => {
-      if (modCount != startModCount) error("Concurrent Modification")
+      if (modCount != startModCount) system.error("Concurrent Modification")
       f((entry.key, entry.value.get))}
     );
   }

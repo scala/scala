@@ -53,7 +53,7 @@ object Mock {
   /** Tries to implement all the class's interfaces.
    */
   def fromClass(clazz: Class[_])(pf: PartialFunction[Invoked, AnyRef]): AnyRef = allInterfaces(clazz) match {
-    case Nil      => Predef.error(clazz + " implements no interfaces.")
+    case Nil      => system.error(clazz + " implements no interfaces.")
     case x :: xs  => fromInterfaces(x, xs: _*)(pf)
   }
 }

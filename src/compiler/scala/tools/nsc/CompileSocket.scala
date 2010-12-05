@@ -43,10 +43,10 @@ class CompileSocket {
   /** A Pattern object for checking compiler output for errors */
   val errorPattern = Pattern compile errorRegex
 
-  protected def error(msg: String) = System.err.println(msg)
+  protected def fscError(msg: String) = System.err.println(msg)
 
   protected def fatal(msg: String) = {
-    error(msg)
+    fscError(msg)
     throw new Exception("fsc failure")
   }
 
@@ -147,7 +147,7 @@ class CompileSocket {
     val maxAttempts = (5 * 1000) / retryDelay
 
     def getsock(attempts: Int): Option[Socket] = attempts match {
-      case 0    => error("Unable to establish connection to compilation daemon") ; None
+      case 0    => fscError("Unable to establish connection to compilation daemon") ; None
       case num  =>
         val port = if (create) getPort(vmArgs) else pollPort()
         if (port < 0) return None

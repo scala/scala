@@ -13,12 +13,12 @@ package sabbus
 import java.io.File
 import java.io.FileWriter
 import org.apache.tools.ant.Project
-import org.apache.tools.ant.taskdefs.{ MatchingTask, Java }
+import org.apache.tools.ant.taskdefs.Java
 import org.apache.tools.ant.util.{ GlobPatternMapper, SourceFileScanner }
 import scala.tools.nsc.io
 import scala.tools.nsc.util.ScalaClassLoader
 
-class ScalacFork extends MatchingTask with ScalacShared with TaskArgs {
+class ScalacFork extends ScalaMatchingTask with ScalacShared with TaskArgs {
   private def originOfThis: String =
     ScalaClassLoader.originOfClass(classOf[ScalacFork]) map (_.toString) getOrElse "<unknown>"
 
@@ -62,9 +62,9 @@ class ScalacFork extends MatchingTask with ScalacShared with TaskArgs {
 
     log("Executing ant task scalacfork, origin: %s".format(originOfThis), Project.MSG_VERBOSE)
 
-    val compilerPath = this.compilerPath getOrElse error("Mandatory attribute 'compilerpath' is not set.")
-    val sourceDir = this.sourceDir getOrElse error("Mandatory attribute 'srcdir' is not set.")
-    val destinationDir = this.destinationDir getOrElse error("Mandatory attribute 'destdir' is not set.")
+    val compilerPath = this.compilerPath getOrElse system.error("Mandatory attribute 'compilerpath' is not set.")
+    val sourceDir = this.sourceDir getOrElse system.error("Mandatory attribute 'srcdir' is not set.")
+    val destinationDir = this.destinationDir getOrElse system.error("Mandatory attribute 'destdir' is not set.")
 
     val settings = new Settings
     settings.d = destinationDir
@@ -114,7 +114,7 @@ class ScalacFork extends MatchingTask with ScalacShared with TaskArgs {
     val res = execWithArgFiles(java, paths)
 
     if (failOnError && res != 0)
-      error("Compilation failed because of an internal compiler error;"+
+      system.error("Compilation failed because of an internal compiler error;"+
             " see the error output for details.")
   }
 }

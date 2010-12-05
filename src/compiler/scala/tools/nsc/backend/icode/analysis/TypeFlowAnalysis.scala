@@ -46,7 +46,7 @@ abstract class TypeFlowAnalysis {
     def lub2(exceptional: Boolean)(s1: TypeStack, s2: TypeStack) = {
       if (s1 eq bottom) s2
       else if (s2 eq bottom) s1
-      else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) Predef.error("merging with exhan stack")
+      else if ((s1 eq exceptionHandlerStack) || (s2 eq exceptionHandlerStack)) system.error("merging with exhan stack")
       else {
 //        if (s1.length != s2.length)
 //          throw new CheckerException("Incompatible stacks: " + s1 + " and " + s2);

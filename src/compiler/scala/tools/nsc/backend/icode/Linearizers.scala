@@ -196,7 +196,7 @@ trait Linearizers { self: ICodes =>
       m.code.blocks.toList;
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
-      error("not implemented")
+      system.error("not implemented")
     }
   }
 
@@ -335,7 +335,7 @@ trait Linearizers { self: ICodes =>
     }
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
-      error("not implemented")
+      system.error("not implemented")
     }
   }
 }

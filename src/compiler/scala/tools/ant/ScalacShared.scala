@@ -9,10 +9,10 @@
 package scala.tools.ant
 
 import org.apache.tools.ant.Project
-import org.apache.tools.ant.taskdefs.{ MatchingTask, Java }
+import org.apache.tools.ant.taskdefs.Java
 import scala.tools.nsc.io
 
-trait ScalacShared extends MatchingTask {
+trait ScalacShared extends ScalaMatchingTask {
   val MainClass = "scala.tools.nsc.Main"
 
   def execWithArgFiles(java: Java, paths: List[String]) = {

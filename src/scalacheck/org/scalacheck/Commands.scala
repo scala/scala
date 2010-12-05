@@ -26,7 +26,7 @@ trait Commands extends Prop {
 
   class Binding(private val key: State) {
     def get: Any = bindings.find(_._1 eq key) match {
-      case None => error("No value bound")
+      case None => system.error("No value bound")
       case Some(x) => x
     }
   }
@@ -139,7 +139,7 @@ trait Commands extends Prop {
     case Cmds(Nil, _) => proved
     case Cmds(c::cs, s::ss) =>
       c.postCondition(s,c.nextState(s),c.run(s)) && runCommands(Cmds(cs,ss))
-    case _ => error("Should not be here")
+    case _ => system.error("Should not be here")
   }
 
   private def commandsProp: Prop = {

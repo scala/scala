@@ -122,7 +122,7 @@ abstract class GenICode extends SubComponent  {
             case Block(_, Return(_)) => ()
             case Return(_) => ()
             case EmptyTree =>
-              error("Concrete method has no definition: " + tree)
+              globalError("Concrete method has no definition: " + tree)
             case _ => if (ctx1.bb.isEmpty)
               ctx1.bb.closeWith(RETURN(m.returnType), rhs.pos)
             else

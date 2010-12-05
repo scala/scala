@@ -26,21 +26,21 @@ object Main extends AnyRef with EvalLoop {
 
   var reporter: ConsoleReporter = _
 
-  def error(msg: String) {
+  private def scalacError(msg: String) {
     reporter.error(FakePos("scalac"), msg + "\n  scalac -help  gives more information")
   }
 
   def resident(compiler: Global) {
     loop { line =>
       val args = line.split(' ').toList
-      val command = new CompilerCommand(args, new Settings(error))
+      val command = new CompilerCommand(args, new Settings(scalacError))
       compiler.reporter.reset
       new compiler.Run() compile command.files
     }
   }
 
   def process(args: Array[String]) {
-    val ss       = new Settings(error)
+    val ss       = new Settings(scalacError)
     reporter     = new ConsoleReporter(ss)
     val command  = new CompilerCommand(args.toList, ss)
     val settings = command.settings
@@ -120,7 +120,7 @@ object Main extends AnyRef with EvalLoop {
 
   def main(args: Array[String]) {
     process(args)
-    exit(if (reporter.hasErrors) 1 else 0)
+    system exit (if (reporter.hasErrors) 1 else 0)
   }
 
 }

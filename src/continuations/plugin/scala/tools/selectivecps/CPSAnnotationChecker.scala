@@ -326,7 +326,7 @@ abstract class CPSAnnotationChecker extends CPSUtils {
     def single(xs: List[AnnotationInfo]) = xs match {
       case List(x) => x
       case _ =>
-        global.error("not a single cps annotation: " + xs)// FIXME: error message
+        global.globalError("not a single cps annotation: " + xs)// FIXME: error message
         xs(0)
     }
 

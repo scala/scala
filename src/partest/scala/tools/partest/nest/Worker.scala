@@ -115,7 +115,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
                  else
                    fileManager.JAVAC_CMD
 
-  def error(msg: String): Unit = reporter.error(
+  def workerError(msg: String): Unit = reporter.error(
     FakePos("scalac"),
     msg + "\n  scalac -help  gives more information"
   )
@@ -618,7 +618,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
               val logConsoleWriter = new PrintWriter(logWriter)
 
               // create proper settings for the compiler
-              val settings = new Settings(error)
+              val settings = new Settings(workerError)
               settings.outdir.value = outDir.getCanonicalFile.getAbsolutePath
               settings.sourcepath.value = sourcepath
               settings.classpath.value = fileManager.CLASSPATH
@@ -753,7 +753,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             val logConsoleWriter = new PrintWriter(new OutputStreamWriter(logOut))
 
             // create compiler
-            val settings = new Settings(error)
+            val settings = new Settings(workerError)
             settings.sourcepath.value = sourcepath
             settings.classpath.value = fileManager.CLASSPATH
             reporter = new ConsoleReporter(settings, scala.Console.in, logConsoleWriter)
@@ -767,7 +767,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
               NestUI.verbose("compiling "+line)
               val cmdArgs = (line split ' ').toList map (fs => new File(dir, fs).getAbsolutePath)
               NestUI.verbose("cmdArgs: "+cmdArgs)
-              val sett = new Settings(error)
+              val sett = new Settings(workerError)
               sett.sourcepath.value = sourcepath
               val command = new CompilerCommand(cmdArgs, sett)
               (new compiler.Run) compile command.files

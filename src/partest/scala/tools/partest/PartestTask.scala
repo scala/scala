@@ -192,7 +192,7 @@ class PartestTask extends Task with CompilationPathProperty {
 
     srcDir foreach (x => setProp("partest.srcdir", x))
 
-    val classpath = this.compilationPath getOrElse error("Mandatory attribute 'compilationPath' is not set.")
+    val classpath = this.compilationPath getOrElse system.error("Mandatory attribute 'compilationPath' is not set.")
 
     val scalaLibrary = {
       (classpath.list map { fs => new File(fs) }) find { f =>
@@ -202,7 +202,7 @@ class PartestTask extends Task with CompilationPathProperty {
           case _ => false
         }
       }
-    } getOrElse error("Provided classpath does not contain a Scala library.")
+    } getOrElse system.error("Provided classpath does not contain a Scala library.")
 
     val antRunner = new scala.tools.partest.nest.AntRunner
     val antFileManager = antRunner.fileManager
@@ -262,7 +262,7 @@ class PartestTask extends Task with CompilationPathProperty {
     val allFailures = _results map (_._2) sum
     val allFailedPaths = _results flatMap (_._3)
 
-    def f = if (errorOnFailed && allFailures > 0) error(_) else log(_: String)
+    def f = if (errorOnFailed && allFailures > 0) (system error _) else log(_: String)
     def s = if (allFailures > 1) "s" else ""
     val msg =
       if (allFailures > 0)

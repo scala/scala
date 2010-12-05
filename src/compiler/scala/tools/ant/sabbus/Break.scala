@@ -20,7 +20,7 @@ class Break extends Task {
   private var id: Option[String] = None
 
   override def execute {
-    if (id.isEmpty) error("Attribute 'id' is not set")
+    if (id.isEmpty) system.error("Attribute 'id' is not set")
     Compilers.break(id.get)
   }
 

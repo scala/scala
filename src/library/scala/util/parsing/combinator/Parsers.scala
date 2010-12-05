@@ -137,7 +137,7 @@ trait Parsers {
     def flatMapWithNext[U](f: Nothing => Input => ParseResult[U]): ParseResult[U]
       = this
 
-    def get: Nothing = error("No result when parsing failed")
+    def get: Nothing = system.error("No result when parsing failed")
   }
   /** An extractor so NoSuccess(msg, next) can be used in matches.
    */

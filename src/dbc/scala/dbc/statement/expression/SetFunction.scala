@@ -35,6 +35,6 @@ object SetFunction {
     );
   }
   abstract class Binary extends SetFunction {
-    def sqlString = error("Binary set function is not supported yet.");
+    def sqlString = system.error("Binary set function is not supported yet.");
   }
 }
