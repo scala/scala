@@ -144,6 +144,10 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         else tree
 
       try tree match {
+        // Don't transform patterns or strange trees will reach the matcher (ticket #4062)
+        case CaseDef(pat, guard, body) =>
+          treeCopy.CaseDef(tree, pat, transform(guard), transform(body))
+
         case ClassDef(_, _, _, _) =>
           checkCompanionNameClashes(sym)
           val decls = sym.info.decls
