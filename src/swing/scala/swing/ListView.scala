@@ -24,21 +24,21 @@ object ListView {
     val MultiInterval = Value(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION)
   }
 
-  def wrap[A](c: JList) = new ListView[A] {
+  def wrap[A](c: JList[A]) = new ListView[A] {
     override lazy val peer = c
   }
 
   object Renderer {
-    def wrap[A](r: ListCellRenderer): Renderer[A] = new Wrapped[A](r)
+    def wrap[A](r: ListCellRenderer[A]): Renderer[A] = new Wrapped[A](r)
 
     /**
      * Wrapper for <code>javax.swing.ListCellRenderer<code>s
      */
-  	class Wrapped[A](override val peer: ListCellRenderer) extends Renderer[A] {
-  	  def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int) = {
+        class Wrapped[A](override val peer: ListCellRenderer[A]) extends Renderer[A] {
+          def componentFor(list: ListView[_ <: A], isSelected: Boolean, focused: Boolean, a: A, index: Int) = {
         Component.wrap(peer.getListCellRendererComponent(list.peer, a, index, isSelected, focused).asInstanceOf[JComponent])
       }
-  	}
+	}
 
     /**
      * Returns a renderer for items of type <code>A</code>. The given function
@@ -55,8 +55,8 @@ object ListView {
      * </code>
      */
     def apply[A,B](f: A => B)(implicit renderer: Renderer[B]): Renderer[A] = new Renderer[A] {
-      def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component =
-        renderer.componentFor(list, isSelected, focused, f(a), index)
+      def componentFor(list: ListView[_ <: A], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component =
+        renderer.componentFor(list.asInstanceOf[ListView[_ <: B]], isSelected, focused, f(a), index)
     }
   }
 
@@ -69,11 +69,11 @@ object ListView {
    * @see javax.swing.ListCellRenderer
    */
   abstract class Renderer[-A] {
-    def peer: ListCellRenderer = new ListCellRenderer {
-      def getListCellRendererComponent(list: JList, a: Any, index: Int, isSelected: Boolean, focused: Boolean) =
-        componentFor(ListView.wrap[A](list), isSelected, focused, a.asInstanceOf[A], index).peer
+    def peer: ListCellRenderer[_ >: A] = new ListCellRenderer[A] {
+      def getListCellRendererComponent(list: JList[_ <: A], a: A, index: Int, isSelected: Boolean, focused: Boolean) =
+        componentFor(ListView.wrap[A](list.asInstanceOf[JList[A]]), isSelected, focused, a, index).peer
     }
-    def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component
+    def componentFor(list: ListView[_ <: A], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component
   }
 
   /**
@@ -110,7 +110,7 @@ object ListView {
     /**
      * Configures the component before returning it.
      */
-    def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component = {
+    def componentFor(list: ListView[_ <: A], isSelected: Boolean, focused: Boolean, a: A, index: Int): Component = {
       preConfigure(list, isSelected, focused, a, index)
       configure(list, isSelected, focused, a, index)
       component
@@ -123,10 +123,10 @@ object ListView {
    * that renders the string returned from an item's <code>toString</code>.
    */
   implicit object GenericRenderer extends Renderer[Any] {
-    override lazy val peer: ListCellRenderer = new DefaultListCellRenderer
-    def componentFor(list: ListView[_], isSelected: Boolean, focused: Boolean, a: Any, index: Int): Component = {
-      val c = peer.getListCellRendererComponent(list.peer, a, index, isSelected, focused).asInstanceOf[JComponent]
-      Component.wrap(c)
+    override lazy val peer: ListCellRenderer[Any] = (new DefaultListCellRenderer).asInstanceOf[ListCellRenderer[Any]]
+    def componentFor(list: ListView[_ <: Any], isSelected: Boolean, focused: Boolean, a: Any, index: Int): Component = {
+      val c = peer.getListCellRendererComponent(list.peer, a, index, isSelected, focused)
+      Component.wrap(c.asInstanceOf[JComponent])
     }
   }
 }
@@ -142,34 +142,34 @@ object ListView {
  */
 class ListView[A] extends Component {
   import ListView._
-  override lazy val peer: JList = new JList with SuperMixin
+  override lazy val peer: JList[A] = new JList[A] with SuperMixin
 
   def this(items: Seq[A]) = {
     this()
     listData = items
   }
 
-  protected class ModelWrapper(val items: Seq[A]) extends AbstractListModel {
-    def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
+  protected class ModelWrapper[A](val items: Seq[A]) extends AbstractListModel[A] {
+    def getElementAt(n: Int) = items(n)
     def getSize = items.size
   }
 
   def listData: Seq[A] = peer.getModel match {
-    case model: ModelWrapper => model.items
-    case model @ _ => new Seq[A] { selfSeq =>
+    case model: ModelWrapper[a] => model.items
+    case model => new Seq[A] { selfSeq =>
      def length = model.getSize
      def iterator = new Iterator[A] {
        var idx = 0
        def next = { idx += 1; apply(idx-1) }
        def hasNext = idx < selfSeq.length
      }
-     def apply(n: Int) = model.getElementAt(n).asInstanceOf[A]
+     def apply(n: Int): A = model.getElementAt(n)
     }
   }
 
   def listData_=(items: Seq[A]) {
-    peer.setModel(new AbstractListModel {
-      def getElementAt(n: Int) = items(n).asInstanceOf[AnyRef]
+    peer.setModel(new AbstractListModel[A] {
+      def getElementAt(n: Int) = items(n)
       def getSize = items.size
     })
   }

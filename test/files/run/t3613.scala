@@ -2,13 +2,13 @@ class Boopy {
     private val s = new Schnuck
     def observer : PartialFunction[ Any, Unit ] = s.observer
     
-    private class Schnuck extends javax.swing.AbstractListModel {
+    private class Schnuck extends javax.swing.AbstractListModel[String] {
         model =>
         val observer : PartialFunction[ Any, Unit ] = {
             case "Boopy" => fireIntervalAdded( model, 0, 1 )
         }
         def getSize = 0
-        def getElementAt( idx: Int ) : AnyRef = "egal"
+        def getElementAt( idx: Int ) : String = "egal"
     }
     
 }
