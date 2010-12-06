@@ -17,6 +17,7 @@ trait InteractiveReader {
   protected def readOneLine(prompt: String): String
   val interactive: Boolean
   def init(): Unit = ()
+  def redrawLine(): Unit = ()
   def currentLine = ""    // the current buffer contents, if available
 
   def readLine(prompt: String): String = {

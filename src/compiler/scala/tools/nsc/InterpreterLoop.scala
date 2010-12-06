@@ -118,18 +118,19 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     }
     ignoring(classOf[Exception]) {
       SignalManager("INT") = {
-        val exec = interpreter.currentExecution
-        if (exec != null) exec.cancel(true)
+        if (interpreter.lineManager.running)
+          interpreter.lineManager.cancel()
         else if (in.currentLine != "") {
+          // non-empty buffer, so make them hit ctrl-C a second time
           SignalManager("INT") = onExit()
-          io.timer(5)(installSigIntHandler())  // restore original
+          io.timer(5)(installSigIntHandler())  // and restore original handler if they don't
         }
         else onExit()
       }
     }
   }
 
-  /** Close the interpreter and set the var to <code>null</code>. */
+  /** Close the interpreter and set the var to null. */
   def closeInterpreter() {
     if (interpreter ne null) {
       interpreter.close
@@ -144,6 +145,18 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
       settings.classpath append addedClasspath
 
     interpreter = new Interpreter(settings, out) {
+      override protected def createLineManager() = new Line.Manager {
+        override def onRunaway(line: Line[_]): Unit = {
+          val template = """
+            |// She's gone rogue, captain! Have to take her out!
+            |// Calling Thread.stop on runaway %s with offending code:
+            |// scala> %s""".stripMargin
+
+          println(template.format(line.thread, line.code))
+          line.thread.stop()
+          in.redrawLine()
+        }
+      }
       override protected def parentClassLoader =
         settings.explicitParentLoader.getOrElse( classOf[InterpreterLoop].getClassLoader )
     }

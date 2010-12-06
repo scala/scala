@@ -16,6 +16,11 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
   override lazy val history    = Some(History(consoleReader))
   override lazy val completion = Option(interpreter) map (x => new Completion(x))
   override def init()          = consoleReader.getTerminal().initializeTerminal()
+  override def redrawLine()    = {
+    consoleReader.flushConsole()
+    consoleReader.drawLine()
+    consoleReader.flushConsole()
+  }
 
   val consoleReader = {
     val r = new jline.ConsoleReader()

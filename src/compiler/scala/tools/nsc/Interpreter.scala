@@ -6,16 +6,13 @@
 package scala.tools.nsc
 
 import Predef.{ println => _, _ }
-import java.io.{ File, PrintWriter, StringWriter, Writer }
-import File.pathSeparator
-import java.lang.{ reflect, Class, ClassLoader => JavaClassLoader }
-import java.net.{ MalformedURLException, URL }
-import reflect.InvocationTargetException
-import java.util.concurrent.Future
-
+import java.io.{ PrintWriter }
+import java.io.File.pathSeparator
+import java.lang.reflect
+import java.net.URL
 import util.{ Set => _, _ }
 import interpreter._
-import io.{ PlainFile, VirtualDirectory, spawn, callable, newDaemonThreadExecutor }
+import io.VirtualDirectory
 import reporters.{ ConsoleReporter, Reporter }
 import symtab.{ Flags, Names }
 import scala.tools.nsc.{ InterpreterResults => IR }
@@ -27,7 +24,7 @@ import Exceptional.unwrap
 import scala.collection.{ mutable, immutable }
 import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
 import scala.PartialFunction.{ cond, condOpt }
-import scala.util.control.Exception.{ Catcher, catching, catchingPromiscuously, ultimately, unwrapping }
+import scala.util.control.Exception.{ ultimately }
 import scala.reflect.NameTransformer
 
 import Interpreter._
@@ -186,10 +183,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
   }
 
-  /** An executor service which creates daemon threads. */
-  private lazy val lineExecutor = newDaemonThreadExecutor()
-  private var _currentExecution: Future[String] = null
-  def currentExecution = _currentExecution
+  protected def createLineManager(): Line.Manager = new Line.Manager
+  lazy val lineManager = createLineManager()
 
   /** interpreter settings */
   lazy val isettings = new InterpreterSettings(this)
@@ -580,7 +575,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     if (trees.size == 1) trees.head match {
       case _:Assign                         => // we don't want to include assignments
       case _:TermTree | _:Ident | _:Select  => // ... but do want these as valdefs.
-        return requestFromLine("val %s =\n%s".format(varName, line), synthetic)
+        requestFromLine("val %s =\n%s".format(varName, line), synthetic) match {
+          case Right(req) => return Right(req withOriginalLine line)
+          case x          => return x
+        }
       case _                                =>
     }
 
@@ -829,6 +827,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** One line of code submitted by the user for interpretation */
   private class Request(val line: String, val lineName: String, val trees: List[Tree]) {
+    private var _originalLine: String = null
+    def withOriginalLine(s: String): this.type = { _originalLine = s ; this }
+    def originalLine = if (_originalLine == null) line else _originalLine
+
     /** name to use for the object that will compute "line" */
     def objectName = lineName + INTERPRETER_WRAPPER_SUFFIX
 
@@ -1023,29 +1025,32 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /** load and run the code using reflection */
     def loadAndRun: (String, Boolean) = {
+      import interpreter.Line._
+
+      def handleException(t: Throwable) = {
+        /** We turn off the binding to accomodate ticket #2817 */
+        withoutBindingLastException {
+          val message =
+            if (opt.richExes) bindExceptionally(unwrap(t))
+            else bindUnexceptionally(unwrap(t))
+
+          (message, false)
+        }
+      }
+
       try {
         val resultValMethod = loadedResultObject getMethod "scala_repl_result"
-        _currentExecution   = lineExecutor submit callable(resultValMethod.invoke(loadedResultObject).toString)
-        while (!currentExecution.isDone)
-          Thread.`yield`
+        val execution       = lineManager.set(originalLine)(resultValMethod invoke loadedResultObject)
 
-        if (currentExecution.isCancelled) ("Execution interrupted by signal.\n", false)
-        else (currentExecution.get(), true)
+        execution.await()
+        execution.state match {
+          case Done       => ("" + execution.get(), true)
+          case Threw      => if (bindLastException) handleException(execution.caught()) else throw execution.caught()
+          case Cancelled  => ("Execution interrupted by signal.\n", false)
+          case Running    => ("Execution still running! Seems impossible.", false)
+        }
       }
-      catch {
-        case t: Throwable if bindLastException =>
-          /** We turn off the binding to accomodate ticket #2817 */
-          withoutBindingLastException {
-            val message =
-              if (opt.richExes) bindExceptionally(unwrap(t))
-              else bindUnexceptionally(unwrap(t))
-
-            (message, false)
-          }
-      }
-      finally {
-        _currentExecution = null
-      }
+      finally lineManager.clear()
     }
 
     override def toString = "Request(line=%s, %s trees)".format(line, trees.size)
