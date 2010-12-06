@@ -19,6 +19,6 @@ import annotation.target._
  * @since 2.3
  */
 @getter @setter @beanGetter @beanSetter
-class deprecated(message: String) extends StaticAnnotation {
+class deprecated(message: String) extends annotation.StaticAnnotation {
   def this() = this("")
 }

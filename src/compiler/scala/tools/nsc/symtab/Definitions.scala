@@ -120,9 +120,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val UninitializedErrorClass        = getClass("scala.UninitializedFieldError")
 
     // annotations
-    lazy val AnnotationClass            = getClass("scala.Annotation")
-    lazy val ClassfileAnnotationClass   = getClass("scala.ClassfileAnnotation")
-    lazy val StaticAnnotationClass      = getClass("scala.StaticAnnotation")
+    lazy val AnnotationClass            = getClass("scala.annotation.Annotation")
+    lazy val ClassfileAnnotationClass   = getClass("scala.annotation.ClassfileAnnotation")
+    lazy val StaticAnnotationClass      = getClass("scala.annotation.StaticAnnotation")
     lazy val uncheckedStableClass       = getClass("scala.annotation.unchecked.uncheckedStable")
     lazy val uncheckedVarianceClass     = getClass("scala.annotation.unchecked.uncheckedVariance")
     lazy val UncheckedClass             = getClass("scala.unchecked")
@@ -179,7 +179,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def delayedInitArgVal = EmptyPackageClass.newValue(NoPosition, nme.delayedInitArg)
         .setInfo(UnitClass.tpe)
 
-    lazy val TypeConstraintClass   = getClass("scala.TypeConstraint")
+    lazy val TypeConstraintClass   = getClass("scala.annotation.TypeConstraint")
     lazy val SingletonClass        = newClass(ScalaPackageClass, tpnme.Singleton, anyparam) setFlag (ABSTRACT | TRAIT | FINAL)
     lazy val SerializableClass     = getClass("scala.Serializable")
     lazy val JavaSerializableClass = getClass(sn.JavaSerializable)
@@ -827,19 +827,19 @@ trait Definitions extends reflect.generic.StandardDefinitions {
      *  so for now they're mothballed.
      */
     // def getModule2(name1: Name, name2: Name) = {
-    //   try getModuleOrClass(name1, true)
+    //   try getModuleOrClass(name1.toTermName)
     //   catch { case ex1: FatalError =>
-    //     try getModuleOrClass(name2, true)
+    //     try getModuleOrClass(name2.toTermName)
     //     catch { case ex2: FatalError => throw ex1 }
     //   }
     // }
     // def getClass2(name1: Name, name2: Name) = {
     //   try {
-    //     val result = getModuleOrClass(name1, false)
+    //     val result = getModuleOrClass(name1.toTypeName)
     //     if (result.isAliasType) getClass(name2) else result
     //   }
     //   catch { case ex1: FatalError =>
-    //     try getModuleOrClass(name2, false)
+    //     try getModuleOrClass(name2.toTypeName)
     //     catch { case ex2: FatalError => throw ex1 }
     //   }
     // }

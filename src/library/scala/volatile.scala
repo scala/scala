@@ -13,4 +13,4 @@ package scala
 import annotation.target._
 
 @field
-class volatile extends StaticAnnotation
+class volatile extends annotation.StaticAnnotation

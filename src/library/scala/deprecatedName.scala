@@ -10,4 +10,4 @@ import annotation.target._
  * @since 2.8.1
  */
 @param
-class deprecatedName(name: Symbol) extends StaticAnnotation
+class deprecatedName(name: Symbol) extends annotation.StaticAnnotation

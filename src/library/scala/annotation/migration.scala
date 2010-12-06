@@ -25,4 +25,4 @@ private[scala] final class migration(
   majorVersion: Int,
   minorVersion: Int,
   message: String)
-extends StaticAnnotation {}
+extends annotation.StaticAnnotation {}

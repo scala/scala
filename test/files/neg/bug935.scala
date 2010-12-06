@@ -1,3 +1,5 @@
+import annotation.Annotation
+
 object Test3 {
   class E[T >: Nothing <: String](s: T) extends Annotation
   class B

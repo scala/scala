@@ -6,9 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala
+package scala.annotation
 
 /** <p>
  *    A base class for static annotations. These are available
@@ -19,4 +17,4 @@ package scala
  *  @version 1.1, 2/02/2007
  *  @since   2.4
  */
-trait StaticAnnotation extends Annotation {}
+trait StaticAnnotation extends Annotation

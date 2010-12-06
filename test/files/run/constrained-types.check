@@ -1,4 +1,4 @@
-class Annot(obj: Any) extends Annotation with TypeConstraint
+class Annot(obj: Any) extends annotation.Annotation with annotation.TypeConstraint
 defined class Annot
 
 -----
@@ -80,7 +80,7 @@ val stuff = m("stuff") // should not crash
 stuff: String @Annot("stuff") = stuff
 
 -----
-class peer extends Annotation // should not crash
+class peer extends annotation.Annotation // should not crash
 defined class peer
 
 -----
@@ -108,7 +108,7 @@ def n(y: String) = {
 n: (y: String)java.lang.String @Annot(x) forSome { val x: String }
 
 -----
-class rep extends Annotation
+class rep extends annotation.Annotation
 defined class rep
 
 -----
@@ -126,7 +126,7 @@ val x = 3 : Int @Annot(e+f+g+h) //should have a graceful error message
                               ^
 
 -----
-class Where(condition: Boolean) extends Annotation
+class Where(condition: Boolean) extends annotation.Annotation
 defined class Where
 
 -----

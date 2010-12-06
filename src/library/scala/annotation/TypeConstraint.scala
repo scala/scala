@@ -6,9 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala
+package scala.annotation
 
 /** <p>
  *    A marker for annotations that, when applied to a type,

@@ -15,4 +15,4 @@ package scala.annotation
  *  @version 2.9
  *  @since 2.9
  */
-class strictfp extends StaticAnnotation
+class strictfp extends annotation.StaticAnnotation

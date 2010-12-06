@@ -48,4 +48,4 @@ package scala.annotation.target
  * class myAnnotation extends Annotation
  * }}}
  */
-final class beanGetter extends StaticAnnotation
+final class beanGetter extends annotation.StaticAnnotation

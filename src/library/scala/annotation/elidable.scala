@@ -27,7 +27,7 @@ import java.util.logging.Level
  *  }}}
  *  @since 2.8
  */
-final class elidable(final val level: Int) extends StaticAnnotation {}
+final class elidable(final val level: Int) extends annotation.StaticAnnotation {}
 
 /** This useless appearing code was necessary to allow people to use
  *  named constants for the elidable annotation.  This is what it takes

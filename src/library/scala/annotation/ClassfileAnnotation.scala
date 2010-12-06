@@ -6,9 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala
+package scala.annotation
 
 /** <p>
  *    A base class for classfile annotations. These are stored as

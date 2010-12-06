@@ -13,4 +13,4 @@ package scala
 import annotation.target._
 
 @field
-class transient extends StaticAnnotation
+class transient extends annotation.StaticAnnotation

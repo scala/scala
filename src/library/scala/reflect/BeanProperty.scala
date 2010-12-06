@@ -31,4 +31,4 @@ import annotation.target._
  *  </p>
  */
 @field
-class BeanProperty extends StaticAnnotation
+class BeanProperty extends annotation.StaticAnnotation

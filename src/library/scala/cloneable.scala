@@ -13,4 +13,4 @@ package scala
 /**
  * An annotation that designates the class to which it is applied as cloneable
  */
-class cloneable extends StaticAnnotation
+class cloneable extends annotation.StaticAnnotation

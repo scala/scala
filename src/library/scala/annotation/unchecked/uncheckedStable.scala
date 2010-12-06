@@ -12,4 +12,4 @@ package scala.annotation.unchecked
  *
  *  @since 2.7
  */
-final class uncheckedStable extends StaticAnnotation {}
+final class uncheckedStable extends annotation.StaticAnnotation {}

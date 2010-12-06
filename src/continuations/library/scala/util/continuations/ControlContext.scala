@@ -3,13 +3,13 @@
 package scala.util.continuations
 
 
-class cpsParam[-B,+C] extends StaticAnnotation with TypeConstraint
+class cpsParam[-B,+C] extends annotation.StaticAnnotation with TypeConstraint
 
 private class cpsSym[B] extends Annotation // implementation detail
 
 private class cpsSynth extends Annotation // implementation detail
 
-private class cpsPlus extends StaticAnnotation with TypeConstraint // implementation detail
+private class cpsPlus extends annotation.StaticAnnotation with TypeConstraint // implementation detail
 private class cpsMinus extends Annotation // implementation detail
 
 

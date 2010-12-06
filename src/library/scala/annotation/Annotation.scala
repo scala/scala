@@ -6,9 +6,7 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
-package scala
+package scala.annotation
 
 /** <p>
  *   A base class for annotations. Annotations extending this class directly

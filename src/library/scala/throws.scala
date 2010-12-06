@@ -25,4 +25,4 @@ package scala
  * @version 1.0, 19/05/2006
  * @since   2.1
  */
-class throws(clazz: Class[_]) extends StaticAnnotation
+class throws(clazz: Class[_]) extends annotation.StaticAnnotation

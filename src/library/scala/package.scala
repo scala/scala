@@ -166,9 +166,9 @@ package object scala {
   @deprecated("Use ((x1, x2, ...)) syntax to create Tuples")
   def Tuple[A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22](x1: A1, x2: A2, x3: A3, x4: A4, x5: A5, x6: A6, x7: A7, x8: A8, x9: A9, x10: A10, x11: A11, x12: A12, x13: A13, x14: A14, x15: A15, x16: A16, x17: A17, x18: A18, x19: A19, x20: A20, x21: A21, x22: A22) = Tuple22(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22)
 
-  @deprecated("use <code>java.lang.Integer</code> instead")
+  @deprecated("use java.lang.Integer instead")
   type Integer = java.lang.Integer
-  @deprecated("use <code>java.lang.Character</code> instead")
+  @deprecated("use java.lang.Character instead")
   type Character = java.lang.Character
 
   @deprecated("use Iterable instead") type Collection[+A] = Iterable[A]
@@ -179,10 +179,9 @@ package object scala {
 
   @deprecated("use IndexedSeq instead") type RandomAccessSeq[+A] = scala.collection.IndexedSeq[A]
   @deprecated("use IndexedSeq instead") val RandomAccessSeq = scala.collection.IndexedSeq
-/* the following classes should be moved to annotation and the aliases should be enabled
-  @deprecated("use annotation.Annotation instead") type Annotation = annotation.Annotation
-  @deprecated("use annotation.ClassfileAnnotation instead") type ClassfileAnnotation = annotation.Annotation
-  @deprecated("use annotation.StaticAnnotation instead") type StaticAnnotation = annotation.Annotation
-  @deprecated("use annotation.TypeConstraint instead") type TypeConstraint = annotation.TypeConstraint
-*/
+
+  @deprecated("use scala.annotation.Annotation instead") type Annotation = scala.annotation.Annotation
+  @deprecated("use scala.annotation.ClassfileAnnotation instead") type ClassfileAnnotation = scala.annotation.ClassfileAnnotation
+  @deprecated("use scala.annotation.StaticAnnotation instead") type StaticAnnotation = scala.annotation.StaticAnnotation
+  @deprecated("use scala.annotation.TypeConstraint instead") type TypeConstraint = scala.annotation.TypeConstraint
 }

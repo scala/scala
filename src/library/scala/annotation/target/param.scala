@@ -48,4 +48,4 @@ package scala.annotation.target
  * class myAnnotation extends Annotation
  * }}}
  */
-final class param extends StaticAnnotation
+final class param extends annotation.StaticAnnotation

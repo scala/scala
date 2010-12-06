@@ -18,4 +18,4 @@ package scala
  * @version 1.0, 2007-5-21
  * @since 2.5
  */
-class noinline extends StaticAnnotation
+class noinline extends annotation.StaticAnnotation

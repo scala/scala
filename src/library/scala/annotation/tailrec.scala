@@ -15,4 +15,4 @@ package scala.annotation
  *
  *  @since 2.8
  */
-final class tailrec extends StaticAnnotation
+final class tailrec extends annotation.StaticAnnotation

@@ -20,4 +20,4 @@ import annotation.target._
  *  </p>
  */
 @field
-class BooleanBeanProperty extends StaticAnnotation
+class BooleanBeanProperty extends annotation.StaticAnnotation

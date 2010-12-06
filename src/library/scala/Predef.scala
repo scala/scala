@@ -56,7 +56,7 @@ object Predef extends LowPriorityImplicits {
   def implicitly[T](implicit e: T) = e    // for summoning implicit values from the nether world
   @inline def locally[T](x: T): T  = x    // to communicate intent and avoid unmoored statements
 
-  // errors and asserts -------------------------------------------------
+  // Deprecated
 
   @deprecated("Use system.error(message) instead")
   def error(message: String): Nothing = system.error(message)
@@ -66,6 +66,11 @@ object Predef extends LowPriorityImplicits {
 
   @deprecated("Use system.exit(status) instead")
   def exit(status: Int): Nothing = system.exit(status)
+
+  @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead")
+  def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
+
+  // errors and asserts -------------------------------------------------
 
   /** Tests an expression, throwing an AssertionError if false.
    *  Calls to this method will not be generated if -Xelide-below
@@ -182,9 +187,6 @@ object Predef extends LowPriorityImplicits {
   def println() = Console.println()
   def println(x: Any) = Console.println(x)
   def printf(text: String, xs: Any*) = Console.print(text.format(xs: _*))
-
-  @deprecated("Use formatString.format(args: _*) or arg.formatted(formatString) instead")
-  def format(text: String, xs: Any*) = augmentString(text).format(xs: _*)
 
   def readLine(): String = Console.readLine()
   def readLine(text: String, args: Any*) = Console.readLine(text, args)
