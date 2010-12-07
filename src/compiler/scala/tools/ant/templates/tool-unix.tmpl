@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 ##############################################################################
 # Copyright 2002-2010, LAMP/EPFL
@@ -63,21 +63,44 @@ fi
 # Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="@javaflags@"
 
-# break out -D options and add them to JAVA_OPTS as well so they reach the
-# underlying JVM in time to do some good.
-for i
-do
-  case "$i" in
+# break out -D and -J options and add them to JAVA_OPTS as well
+# so they reach the underlying JVM in time to do some good.  The
+# -D options will be available as system properties.
+declare -a java_args
+declare -a scala_args
+CPSWITCH="-cp \"$TOOL_CLASSPATH\""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
     -D*)
-      JAVA_OPTS="$JAVA_OPTS $i" ;;
+      java_args=("${java_args[@@]}" "$1")
+      shift
+      ;;
+    -J*)
+      java_args=("${java_args[@@]}" "${1:2}")
+      shift
+      ;;
+    --usebootcp)
+      CPSWITCH="-Xbootclasspath/a:\"$TOOL_CLASSPATH\""
+      shift
+      ;;
     *)
+      scala_args=("${scala_args[@@]}" "$1")
+      shift
       ;;
   esac
-done 
-
+done
+# reset "$@@" to the remaining args
+set -- "${scala_args[@@]}"
 
 if [ -z "$JAVACMD" -a -n "$JAVA_HOME" -a -x "$JAVA_HOME/bin/java" ]; then
     JAVACMD="$JAVA_HOME/bin/java"
 fi
 
-exec "${JAVACMD:=java}" $JAVA_OPTS -cp "$TOOL_CLASSPATH" -Dscala.usejavacp=true -Dscala.home="$SCALA_HOME" -Denv.emacs="$EMACS" @properties@ @class@ @toolflags@ "$@@"
+exec "${JAVACMD:=java}" \
+  "${java_args[@@]}" \
+  $CPSWITCH \
+  -Dscala.usejavacp=true \
+  -Dscala.home="$SCALA_HOME" \
+  -Denv.emacs="$EMACS" \
+  @properties@ @class@ @toolflags@ "$@@"

@@ -107,16 +107,6 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
       // any non-Nil return value means failure and we return s unmodified
       tryToSetIfExists(p, args split "," toList, (s: Setting) => s.tryToSetColon _)
     }
-    // if arg is of form -Dfoo=bar or -Dfoo (name = "-D")
-    def isPropertyArg(s: String) = lookupSetting(s take 2) match {
-      case Some(x: DefinesSetting)  => true
-      case _                        => false
-    }
-    def parsePropertyArg(s: String): Option[List[String]] = {
-      val (p, args) = (s take 2, s drop 2)
-
-      tryToSetIfExists(p, List(args), (s: Setting) => s.tryToSetProperty _)
-    }
 
     // if arg is of form -Xfoo or -Xfoo bar (name = "-Xfoo")
     def parseNormalArg(p: String, args: List[String]): Option[List[String]] =
@@ -181,11 +171,7 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
         //
         // Internally we use Option[List[String]] to discover error,
         // but the outside expects our arguments back unchanged on failure
-        if (isPropertyArg(arg)) parsePropertyArg(arg) match {
-          case Some(_)  => rest
-          case None     => args
-        }
-        else if (arg contains ":") parseColonArg(arg) match {
+        if (arg contains ":") parseColonArg(arg) match {
           case Some(_)  => rest
           case None     => args
         }
@@ -234,7 +220,6 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
-  def DefinesSetting() = add(new DefinesSetting())
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) = add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
@@ -621,40 +606,5 @@ class MutableSettings(val errorFn: String => Unit) extends AbsSettings with Scal
     def unparse: List[String] = value map (name + ":" + _)
 
     withHelpSyntax(name + ":<phase>")
-  }
-
-  /** A setting for a -D style property definition */
-  class DefinesSetting private[nsc] extends Setting("-D", "set a Java property") {
-    type T = List[(String, String)]
-    protected var v: T = Nil
-    withHelpSyntax(name + "<prop>")
-
-    // given foo=bar returns Some(foo, bar), or None if parse fails
-    def parseArg(s: String): Option[(String, String)] = {
-      if (s == "") return None
-      val idx = s indexOf '='
-
-      if (idx < 0) Some(s, "")
-      else Some(s take idx, s drop (idx + 1))
-    }
-
-    protected[nsc] override def tryToSetProperty(args: List[String]): Option[List[String]] =
-      tryToSet(args)
-
-    def tryToSet(args: List[String]) =
-      if (args.isEmpty) None
-      else parseArg(args.head) match {
-        case None         => None
-        case Some((a, b)) => value = value ++ List((a, b)) ; Some(args.tail)
-      }
-
-    def unparse: List[String] =
-      value map { case (k,v) => "-D" + k + (if (v == "") "" else "=" + v) }
-
-    /** Apply the specified properties to the current JVM and returns them. */
-    def applyToJVM() = {
-      value foreach { case (k, v) => System.getProperties.setProperty(k, v) }
-      value
-    }
   }
 }

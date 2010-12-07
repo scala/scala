@@ -31,7 +31,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", scalaUserClassPath) .
                                             withAbbreviation ("-cp")
   val d             = OutputSetting     (outputDirs, ".")
-  val defines       = DefinesSetting()
   val optimise      = BooleanSetting    ("-optimise", "Generates faster bytecode by applying optimisations to the program") .
                                             withAbbreviation("-optimize") .
                                             withPostSetHook(set => List(inline, Xcloselim, Xdce) foreach (_.value = set.value))

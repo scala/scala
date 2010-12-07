@@ -49,5 +49,4 @@ trait StandardScalaSettings {
    *  nicely map to identifiers.
    */
   val argfiles: BooleanSetting  // exists only to echo help message, should be done differently
-  val defines: DefinesSetting   // not entirely clear that DefinesSetting makes sense as a Setting
 }
