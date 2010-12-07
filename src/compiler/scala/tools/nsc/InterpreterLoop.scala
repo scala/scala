@@ -28,6 +28,9 @@ trait InterpreterControl {
   // the default result means "keep running, and don't record that line"
   val defaultResult = Result(true, None)
 
+  private def isQuoted(s: String) =
+    (s.length >= 2) && (s.head == s.last) && ("\"'" contains s.head)
+
   // a single interpreter command
   sealed abstract class Command extends Function1[List[String], Result] {
     def name: String
@@ -240,7 +243,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   val standardCommands: List[Command] = {
     import CommandImplicits._
     List(
-       OneArg("cp", "add an entry (jar or directory) to the classpath", addClasspath),
+       LineArg("cp", "add an entry (jar or directory) to the classpath", addClasspath),
        NoArgs("help", "print this help message", printHelp),
        VarArgs("history", "show the history (optional arg: lines to show)", printHistory),
        LineArg("h?", "search the history", searchHistory),
@@ -354,7 +357,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     if (f.exists) {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       val totalClasspath = ClassPath.join(settings.classpath.value, addedClasspath)
-      println("Added '%s'.  Your new classpath is:\n%s".format(f.path, totalClasspath))
+      println("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, totalClasspath))
       replay()
     }
     else out.println("The path '" + f + "' doesn't seem to exist.")
