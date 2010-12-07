@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash --posix
 #
 ##############################################################################
 # Copyright 2002-2010, LAMP/EPFL
@@ -98,6 +98,7 @@ if [ -z "$JAVACMD" -a -n "$JAVA_HOME" -a -x "$JAVA_HOME/bin/java" ]; then
 fi
 
 exec "${JAVACMD:=java}" \
+  $JAVA_OPTS \
   "${java_args[@@]}" \
   $CPSWITCH \
   -Dscala.usejavacp=true \
