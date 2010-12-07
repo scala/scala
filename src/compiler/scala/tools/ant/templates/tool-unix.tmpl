@@ -68,7 +68,7 @@ fi
 # -D options will be available as system properties.
 declare -a java_args
 declare -a scala_args
-CPSWITCH="-cp \"$TOOL_CLASSPATH\""
+CPSWITCH="-cp $TOOL_CLASSPATH"
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -81,7 +81,7 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --usebootcp)
-      CPSWITCH="-Xbootclasspath/a:\"$TOOL_CLASSPATH\""
+      CPSWITCH="-Xbootclasspath/a:$TOOL_CLASSPATH"
       shift
       ;;
     *)
