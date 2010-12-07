@@ -59,8 +59,6 @@ trait MapLike[A, +B, +This <: MapLike[A, B, This] with Map[A, B]]
      with IterableLike[(A, B), This]
      with Subtractable[A, This] {
 self =>
-  // note: can't inherit Addable because of variance problems: Map
-  // is covariant in its value type B, but Addable is nonvariant.
 
   /** The empty map of the same type as this map
    *   @return   an empty map of type `This`.

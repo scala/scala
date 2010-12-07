@@ -10,7 +10,7 @@
 package scala.collection
 
 import generic._
-import mutable.{Builder, AddingBuilder}
+import mutable.{ Builder, SetBuilder }
 import scala.annotation.migration
 
 /** A template trait for sets.
@@ -57,7 +57,6 @@ import scala.annotation.migration
  */
 trait SetLike[A, +This <: SetLike[A, This] with Set[A]]
 extends IterableLike[A, This]
-   with Addable[A, This]
    with Subtractable[A, This] {
 self =>
 
@@ -71,7 +70,7 @@ self =>
    *  <a href="mutable/SetLike.html" target="ContentFrame">
    *  `mutable.SetLike`</a>.
    */
-  override protected[this] def newBuilder: Builder[A, This] = new AddingBuilder[A, This](empty)
+  override protected[this] def newBuilder: Builder[A, This] = new SetBuilder[A, This](empty)
 
   /** Overridden for efficiency. */
   override def toSeq: Seq[A] = toBuffer[A]
@@ -102,6 +101,25 @@ self =>
    *          contains `elem`.
    */
   def + (elem: A): This
+
+  /** Creates a new $coll with additional elements.
+   *
+   *  This method takes two or more elements to be added. Another overloaded
+   *  variant of this method handles the case where a single element is added.
+   *
+   *  @param elem1 the first element to add.
+   *  @param elem2 the second element to add.
+   *  @param elems the remaining elements to add.
+   *  @return   a new $coll with the given elements added.
+   */
+  def + (elem1: A, elem2: A, elems: A*): This = this + elem1 + elem2 ++ elems
+
+  /** Creates a new $coll by adding all elements contained in another collection to this $coll.
+   *
+   *  @param elems     the collection containing the added elements.
+   *  @return a new $coll with the given elements added.
+   */
+  def ++ (elems: TraversableOnce[A]): This = newBuilder ++= this ++= elems result
 
   /** Creates a new set with a given element removed from this set.
    *

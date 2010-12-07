@@ -21,6 +21,7 @@ package generic
  *  @define  $coll collection
  *  @define  $Coll Addable
  */
+@deprecated("Will be removed after scala 2.9")
 trait Addable[A, +Repr <: Addable[A, Repr]] { self =>
 
   /** The representation object of type `Repr` which contains the collection's elements

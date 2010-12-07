@@ -13,7 +13,7 @@ package immutable
 
 import generic._
 import BitSetLike.{LogWL, updateArray}
-import mutable.{ Builder, AddingBuilder }
+import mutable.{ Builder, SetBuilder }
 
 /** A class for immutable bitsets.
  *  $bitsetinfo
@@ -65,7 +65,7 @@ object BitSet extends BitSetFactory[BitSet] {
   val empty: BitSet = new BitSet1(0L)
 
   /** An adding builder for immutable Sets. */
-  def newBuilder: Builder[Int, BitSet] = new AddingBuilder[Int, BitSet](empty)
+  def newBuilder: Builder[Int, BitSet] = new SetBuilder[Int, BitSet](empty)
 
   /** $bitsetCanBuildFrom */
   implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom

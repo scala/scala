@@ -253,7 +253,7 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
 
   /** A factory object for value sets */
   object ValueSet {
-    import mutable.{ Builder, AddingBuilder }
+    import mutable.{ Builder, SetBuilder }
     import generic.CanBuildFrom
 
     /** The empty value set */
@@ -261,7 +261,7 @@ abstract class Enumeration(initial: Int, names: String*) extends Serializable {
     /** A value set consisting of given elements */
     def apply(elems: Value*): ValueSet = empty ++ elems
     /** A builder object for value sets */
-    def newBuilder: Builder[Value, ValueSet] = new AddingBuilder(empty)
+    def newBuilder: Builder[Value, ValueSet] = new SetBuilder(empty)
     /** The implicit builder for value sets */
     implicit def canBuildFrom: CanBuildFrom[ValueSet, Value, ValueSet] =
       new CanBuildFrom[ValueSet, Value, ValueSet] {

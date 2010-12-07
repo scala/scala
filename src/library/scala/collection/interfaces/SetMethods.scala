@@ -17,15 +17,6 @@ import annotation.unchecked.uncheckedVariance
 /**
  * @since 2.8
  */
-trait AddableMethods[A, +This <: Addable[A, This]] {
-  def +(elem: A): This
-  def +(elem1: A, elem2: A, elems: A*): This
-  def ++(xs: TraversableOnce[A]): This
-}
-
-/**
- * @since 2.8
- */
 trait SubtractableMethods[A, +This <: Subtractable[A, This]] {
   def -(elem: A): This
   def -(elem1: A, elem2: A, elems: A*): This
@@ -37,7 +28,6 @@ trait SubtractableMethods[A, +This <: Subtractable[A, This]] {
  */
 trait SetMethods[A, +This <: SetLike[A, This] with Set[A]]
           extends IterableMethods[A, This]
-             with AddableMethods[A, This]
              with SubtractableMethods[A, This] {
   self: Set[A] =>
 

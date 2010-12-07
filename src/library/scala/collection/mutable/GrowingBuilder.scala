@@ -12,16 +12,7 @@ package mutable
 import generic._
 
 /** The canonical builder for collections that are growable, i.e. that support an
- *  efficient `+=` method which adds an element to the collection.  It is
- *  almost identical to `AddingBuilder`, but necessitated by the existence of
- *  classes which are `Growable` but not `Addable`, which is a result of covariance
- *  interacting surprisingly with any2stringadd thus driving '+' out of the `Seq`
- *  hierarchy.  The tendrils of original sin should never be underestimated.
- *
- *  Addendum: of even greater significance is that '+' on mutable collections now
- *  creates a new collection.  This means using AddingBuilder on them will create
- *  a new intermediate collection for every element given to the builder, taking
- *  '+' from an O(1) to O(n) operation.
+ *  efficient `+=` method which adds an element to the collection.
  *
  *  @author Paul Phillips
  *  @version 2.8

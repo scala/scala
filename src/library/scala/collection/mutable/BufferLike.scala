@@ -67,9 +67,6 @@ trait BufferLike[A, +This <: BufferLike[A, This] with Buffer[A]]
                    with SeqLike[A, This]
 { self : This =>
 
-  // Note this does not extend Addable because `+` is being phased out of
-  // all Seq-derived classes.
-
   // Abstract methods from Seq:
 
   def apply(n: Int): A
