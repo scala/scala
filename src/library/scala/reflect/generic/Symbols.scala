@@ -158,6 +158,10 @@ trait Symbols { self: Universe =>
      */
     def isEffectiveRoot = isRoot || isEmptyPackageClass
 
+    /** If this is NoSymbol, evaluate the argument: otherwise, this.
+     */
+    def orElse[T](alt: => Symbol): Symbol = if (this ne NoSymbol) this else alt
+
     // creators
 
     def newAbstractType(name: TypeName, pos: Position = NoPosition): Symbol
