@@ -33,9 +33,9 @@ object Test {
             loop {
               i += 1
               val msg = r !? (500, 'hello)
-              if (i % 10000 == 0)
+              if (i % 200000 == 0)
                 println(msg)
-              if (i >= 50000) {
+              if (i >= 1000000) {
                 r ! 'stop
                 exit()
               }
