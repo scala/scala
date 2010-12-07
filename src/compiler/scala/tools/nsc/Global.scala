@@ -1124,6 +1124,7 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
 
   def forJVM           = opt.jvm
   def forMSIL          = opt.msil
+  def forInteractive   = false
   def onlyPresentation = false
   def createJavadoc    = false
 }

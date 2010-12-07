@@ -147,16 +147,18 @@ abstract class SymbolLoaders {
 
       val sourcepaths = classpath.sourcepaths
       for (classRep <- classpath.classes if doLoad(classRep)) {
-        if (classRep.binary.isDefined && classRep.source.isDefined) {
-          val (bin, src) = (classRep.binary.get, classRep.source.get)
-          val loader = if (needCompile(bin, src)) new SourcefileLoader(src)
-                       else newClassLoader(bin)
-          enterClassAndModule(root, classRep.name, loader)
-        } else if (classRep.binary.isDefined) {
-          enterClassAndModule(root, classRep.name, newClassLoader(classRep.binary.get))
-        } else if (classRep.source.isDefined) {
-          enterClassAndModule(root, classRep.name, new SourcefileLoader(classRep.source.get))
-        }
+	def enterToplevels(src: AbstractFile) {
+	  if (global.forInteractive)
+	    // Parse the source right away in the presentation compiler.
+	    global.currentRun.compileLate(src)
+	  else
+	    enterClassAndModule(root, classRep.name, new SourcefileLoader(src))
+	}
+	((classRep.binary, classRep.source) : @unchecked) match {
+	  case (Some(bin), Some(src)) if needCompile(bin, src) => enterToplevels(src)
+	  case (None, Some(src)) => enterToplevels(src)
+	  case (Some(bin), _) => enterClassAndModule(root, classRep.name, newClassLoader(bin))
+	}
       }
 
       for (pkg <- classpath.packages) {

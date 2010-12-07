@@ -32,6 +32,7 @@ self =>
     if (debugIDE) println(msg)
 
   override def onlyPresentation = true
+  override def forInteractive = true
 
   /** A list indicating in which order some units should be typechecked.
    *  All units in firsts are typechecked before any unit not in this list
