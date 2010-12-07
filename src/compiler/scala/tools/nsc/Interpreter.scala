@@ -89,7 +89,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   /** reporter */
   object reporter extends ConsoleReporter(settings, null, out) {
     override def printMessage(msg: String) {
-      out println clean(msg)
+      out println (
+        if (truncationOK) clean(msg)
+        else cleanNoTruncate(msg)
+      )
       out.flush()
     }
   }

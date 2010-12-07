@@ -63,7 +63,6 @@ class ConsoleReporter(val settings: Settings, reader: BufferedReader, writer: Pr
         printSourceLine(pos)
     }
   }
-
   def print(pos: Position, msg: String, severity: Severity) {
     printMessage(pos, clabel(severity) + msg)
   }
