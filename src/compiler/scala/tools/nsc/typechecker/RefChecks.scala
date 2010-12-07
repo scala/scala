@@ -329,9 +329,10 @@ abstract class RefChecks extends InfoTransform {
           // todo: align accessibility implication checking with isAccessible in Contexts
           val ob = other.accessBoundary(member.owner)
           val mb = member.accessBoundary(member.owner)
-          def isOverrideAccessOK = member.isPublic || {     // member is public, definitely same or relaxed access
-            (!other.isProtected || member.isProtected) &&   // if o is protected, so is m
-            (!isRootOrNone(ob) && ob.hasTransOwner(mb))     // m relaxes o's access boundary
+          def isOverrideAccessOK = member.isPublic || {      // member is public, definitely same or relaxed access
+            (!other.isProtected || member.isProtected) &&    // if o is protected, so is m
+            ((!isRootOrNone(ob) && ob.hasTransOwner(mb)) ||  // m relaxes o's access boundary
+              other.isJavaDefined)                           // overriding a protected java member, see #3946
           }
           if (!isOverrideAccessOK) {
             overrideAccessError()
