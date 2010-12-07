@@ -118,7 +118,9 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
     }
     ignoring(classOf[Exception]) {
       SignalManager("INT") = {
-        if (interpreter.lineManager.running)
+        if (interpreter == null)
+          onExit()
+        else if (interpreter.lineManager.running)
           interpreter.lineManager.cancel()
         else if (in.currentLine != "") {
           // non-empty buffer, so make them hit ctrl-C a second time
