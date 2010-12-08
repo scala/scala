@@ -691,7 +691,7 @@ self =>
 
     /** Assumed (provisionally) to be TermNames. */
     def ident(skipIt: Boolean): Name =
-      if (in.token == IDENTIFIER || in.token == BACKQUOTED_IDENT) {
+      if (isIdent) {
         val name = in.name.encode
         in.nextToken()
         name
@@ -854,8 +854,8 @@ self =>
 
     /** Types ::= Type {`,' Type}
      */
-    def types(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): List[Tree] =
-      commaSeparated(argType(isPattern, isTypeApply, isFuncArg))
+    def types(isPattern: Boolean, isFuncArg: Boolean): List[Tree] =
+      commaSeparated(argType(isPattern, isFuncArg))
 
     /** Type ::= InfixType `=>' Type
      *         | `(' [`=>' Type] `)' `=>' Type
@@ -876,7 +876,7 @@ self =>
               makeFunctionTypeTree(List(), typ(isPattern))
             }
           } else {
-            val ts = types(isPattern, false, true)
+            val ts = types(isPattern, true)
             accept(RPAREN)
             if (in.token == ARROW)
               atPos(start, in.skipToken()) {
@@ -987,7 +987,7 @@ self =>
       val t =
         if (in.token == LPAREN) {
           in.nextToken()
-          val ts = types(isPattern, false, false)
+          val ts = types(isPattern, false)
           accept(RPAREN)
           atPos(start) { makeTupleType(ts, true) }
         } else if (in.token == USCORE) {
@@ -1009,7 +1009,7 @@ self =>
         }
         simpleTypeRest(sel, isPattern)
       } else if (in.token == LBRACKET) {
-        simpleTypeRest(atPos(t.pos.startOrPoint) { AppliedTypeTree(t, typeArgs(isPattern, false)) }, isPattern)
+        simpleTypeRest(atPos(t.pos.startOrPoint) { AppliedTypeTree(t, typeArgs(isPattern)) }, isPattern)
       } else {
         t
       }
@@ -1027,16 +1027,16 @@ self =>
 
     /** TypeArgs    ::= `[' ArgType {`,' ArgType} `]'
      */
-    def typeArgs(isPattern: Boolean, isTypeApply: Boolean): List[Tree] = {
+    def typeArgs(isPattern: Boolean): List[Tree] = {
       accept(LBRACKET)
-      val ts = types(isPattern, isTypeApply, false)
+      val ts = types(isPattern, false)
       accept(RBRACKET)
       ts
     }
 
     /** ArgType       ::=  Type
      */
-    def argType(isPattern: Boolean, isTypeApply: Boolean, isFuncArg: Boolean): Tree = {
+    def argType(isPattern: Boolean, isFuncArg: Boolean): Tree = {
       val start = in.offset
       if (isPattern) {
         if (in.token == USCORE) {
@@ -1401,7 +1401,7 @@ self =>
           t1 match {
             case Ident(_) | Select(_, _) =>
               val tapp = atPos(t1.pos.startOrPoint, in.offset) {
-                TypeApply(t1, typeArgs(false, true))
+                TypeApply(t1, typeArgs(false))
               }
               simpleExprRest(tapp, true)
             case _ =>
@@ -1655,7 +1655,7 @@ self =>
             case _ =>
           }
           val typeAppliedTree = in.token match {
-            case LBRACKET   => atPos(start, in.offset)(TypeApply(convertToTypeId(t), typeArgs(true, false)))
+            case LBRACKET   => atPos(start, in.offset)(TypeApply(convertToTypeId(t), typeArgs(true)))
             case _          => t
           }
           in.token match {
