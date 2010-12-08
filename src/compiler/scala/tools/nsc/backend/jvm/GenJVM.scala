@@ -81,6 +81,17 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
    */
   class BytecodeGenerator extends BytecodeUtil {
     def debugLevel = settings.debuginfo.indexOfChoice
+    import scala.tools.reflect.SigParser
+    def verifySig(sym: Symbol, sig: String) = {
+      val ok =
+        if (sym.isMethod) SigParser verifyMethod sig
+        else if (sym.isTerm) SigParser verifyType sig
+        else SigParser verifyClass sig
+
+      def label = if (ok) "[ OK ] " else "[BAD!] "
+      if (settings.verbose.value || !ok)
+        Console.println(label + sym + " in " + sym.owner.skipPackageObject.fullName + "\n  " + sig)
+    }
 
     val MIN_SWITCH_DENSITY = 0.7
     val INNER_CLASSES_FLAGS =
@@ -513,6 +524,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
         // println("addGenericSignature sym: " + sym.fullName + " : " + memberTpe + " sym.info: " + sym.info)
         // println("addGenericSignature: "+ (sym.ownerChain map (x => (x.name, x.isImplClass))))
         erasure.javaSig(sym, memberTpe) foreach { sig =>
+          if (settings.Yverifysigs.value)
+            verifySig(sym, sig)
+
           val index = jmember.getConstantPool().addUtf8(sig).toShort
           if (settings.debug.value && settings.verbose.value)
             atPhase(currentRun.erasurePhase) {
