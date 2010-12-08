@@ -1,6 +1,6 @@
 /*                     __                                               *\
 **     ________ ___   / /  ___     Scala API                            **
-**    / __/ __// _ | / /  / _ |    (c) 2007-2010, LAMP/EPFL             **
+**    / __/ __// _ | / /  / _ |    (c) 2007-2011, LAMP/EPFL             **
 **  __\ \/ /__/ __ |/ /__/ __ |    http://scala-lang.org/               **
 ** /____/\___/_/ |_/____/_/ | |                                         **
 **                          |/                                          **
@@ -51,7 +51,7 @@ class Channel protected (socket: Socket) {
     }
     catch {
       case e: Exception =>
-        error("Class loader undefined: " + e.getMessage)
+        system.error("Class loader undefined: " + e.getMessage)
         null
     }
   def classLoader: ClassLoader = cl
@@ -82,7 +82,7 @@ class Channel protected (socket: Socket) {
     }
     catch {
       case e: IOException =>
-        error("Input stream undefined: "+e.getMessage+" ("+this+")")
+        system.error("Input stream undefined: "+e.getMessage+" ("+this+")")
         null
     }
   private lazy val out =
@@ -91,7 +91,7 @@ class Channel protected (socket: Socket) {
     }
     catch {
       case e: IOException =>
-        error("Output stream undefined: "+e.getMessage+" ("+this+")")
+        system.error("Output stream undefined: "+e.getMessage+" ("+this+")")
         null
     }
 

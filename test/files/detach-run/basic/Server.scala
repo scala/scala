@@ -1,3 +1,7 @@
+/*
+ *  @author Stephane Micheloud
+ */
+
 import scala.remoting.ServerChannel
 
 object Server extends ServerConsole {

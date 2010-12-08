@@ -1,4 +1,8 @@
-import java.io._
+/*
+ *  @author Stephane Micheloud
+ */
+
+import java.io.{BufferedReader, InputStreamReader}
 
 import scala.compat.Platform.currentTime
 import scala.remoting.Debug, Debug._
@@ -15,7 +19,7 @@ trait ServerConsole extends Thread {
     import java.rmi.server.RMIClassLoader
     val codebase = System.getProperty("java.rmi.server.codebase")
     info("[ServerConsole] codebase="+codebase)
-    RMIClassLoader.getClassLoader(codebase)
+    RMIClassLoader getClassLoader codebase
   }
 
   private var isTerminated = false
@@ -44,7 +48,7 @@ trait ServerConsole extends Thread {
     }
     terminate()
     println("Server exited ("+mkTimeString(currentTime - startTime)+")")
-    exit(0)
+    system.exit(0)
   }
 
   protected def trace(msg: String) {

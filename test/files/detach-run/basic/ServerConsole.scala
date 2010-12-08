@@ -1,3 +1,7 @@
+/*
+ *  @author Stephane Micheloud
+ */
+
 import java.io._
 
 import scala.compat.Platform.currentTime
@@ -31,7 +35,6 @@ trait ServerConsole extends Thread {
   }
 
   override def run() {
-    import java.io._
     val in = new BufferedReader(new InputStreamReader(System.in))
     var quit = false
     while (!quit) {

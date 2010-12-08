@@ -1,3 +1,7 @@
+/*
+ *  @author Stephane Micheloud
+ */
+
 object Test {
 
   val name = "basic"
@@ -20,7 +24,7 @@ object Test {
     private var th = new Thread(this)
     def start() { th.start(); Thread.sleep(1000) }
     def run() { Server.main(Array(port.toString)) }
-    def terminate() { Server.terminate(); System.exit(0) }
+    def terminate() { Server.terminate(); system.exit(0) }
   }
 
   private class ClientThread(host: String, port: Int) extends Runnable {

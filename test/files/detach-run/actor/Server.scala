@@ -1,6 +1,9 @@
-import scala.actors._, Actor._
-import scala.actors.remote._, RemoteActor._
-import scala.reflect.Manifest
+/*
+ *  @author Stephane Micheloud
+ */
+
+import scala.actors.Actor._
+import scala.actors.remote.RemoteActor._
 
 object Server extends ServerConsole {
   private def computation(f: Int => Int): Int = {

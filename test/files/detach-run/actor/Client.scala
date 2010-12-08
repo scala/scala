@@ -1,3 +1,7 @@
+/*
+ *  @author Stephane Micheloud
+ */
+
 import scala.actors.Actor._, ClientHelper._
 import scala.actors.remote._, RemoteActor._
 import scala.remoting._, Debug._

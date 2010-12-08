@@ -1,3 +1,7 @@
+/*
+ *  @author Stephane Micheloud
+ */
+
 import java.net._, Thread._, ClientHelper._
 import scala.remoting._, Debug._
 

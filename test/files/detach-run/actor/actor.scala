@@ -1,3 +1,7 @@
+/*
+ *  @author Stephane Micheloud
+ */
+
 object Test {
 
   val name = "actor"
