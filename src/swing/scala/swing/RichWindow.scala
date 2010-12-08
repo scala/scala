@@ -78,7 +78,7 @@ class Frame extends RichWindow {
   override lazy val peer: JFrame with InterfaceMixin = new JFrame with InterfaceMixin with SuperMixin
 
   protected trait SuperMixin extends JFrame {
-    override def processWindowEvent(e: java.awt.event.WindowEvent) {
+    override protected def processWindowEvent(e: java.awt.event.WindowEvent) {
       super.processWindowEvent(e)
       if (e.getID() == java.awt.event.WindowEvent.WINDOW_CLOSING)
         closeOperation()
