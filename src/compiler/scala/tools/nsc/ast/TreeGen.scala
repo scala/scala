@@ -128,8 +128,8 @@ abstract class TreeGen {
   def stableTypeFor(tree: Tree): Option[Type] = tree match {
     case Ident(_) if tree.symbol.isStable =>
       Some(singleType(tree.symbol.owner.thisType, tree.symbol))
-    case Select(qual, _) if   {assert((tree.symbol ne null) && (qual.tpe ne null));
-                            tree.symbol.isStable && qual.tpe.isStable} =>
+    case Select(qual, _) if ((tree.symbol ne null) && (qual.tpe ne null)) && // turned assert into guard for #4064
+                            tree.symbol.isStable && qual.tpe.isStable =>
       Some(singleType(qual.tpe, tree.symbol))
     case _ =>
       None

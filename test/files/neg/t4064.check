@@ -1,0 +1,4 @@
+t4064.scala:4: error: value FALSE is not a member of object Boolean
+ new Foo[Boolean](Boolean.FALSE)
+                          ^
+one error found
