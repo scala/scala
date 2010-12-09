@@ -393,7 +393,7 @@ trait MarkupParsers
 
     /** xScalaPatterns  ::= patterns
      */
-    def xScalaPatterns: List[Tree] = escapeToScala(parser.patterns(true), "pattern")
+    def xScalaPatterns: List[Tree] = escapeToScala(parser.seqPatterns(), "pattern")
 
     def reportSyntaxError(pos: Int, str: String) = parser.syntaxError(pos, str)
     def reportSyntaxError(str: String) = {

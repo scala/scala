@@ -7,9 +7,10 @@ package scala.tools.nsc
 package util
 
 import annotation.{ tailrec, switch }
+import java.lang.{ Character => JCharacter }
 
 /** Contains constants and classifier methods for characters */
-object Chars {
+trait Chars {
   // Be very careful touching these.
   // Apparently trivial changes to the way you write these constants
   // will cause Scanners.scala to go from a nice efficient switch to
@@ -73,6 +74,13 @@ object Chars {
     chtp == Character.MATH_SYMBOL.toInt || chtp == Character.OTHER_SYMBOL.toInt
   }
 
+  private final val otherLetters = Set[Char]('\u0024', '\u005F')  // '$' and '_'
+  private final val letterGroups = {
+    import JCharacter._
+    Set[Byte](LOWERCASE_LETTER, UPPERCASE_LETTER, OTHER_LETTER, TITLECASE_LETTER, LETTER_NUMBER)
+  }
+  def isScalaLetter(ch: Char) = letterGroups(JCharacter.getType(ch).toByte) || otherLetters(ch)
+
   /** Can character form part of a Scala operator name? */
   def isOperatorPart(c : Char) : Boolean = (c: @switch) match {
     case '~' | '!' | '@' | '#' | '%' |
@@ -83,3 +91,4 @@ object Chars {
   }
 }
 
+object Chars extends Chars { }

@@ -122,6 +122,14 @@ abstract class TreeBuilder {
     Apply(scalaDot(if (isType) newTypeName(tupString) else newTermName(tupString)), trees)
   }
 
+  def byNameApplication(tpe: Tree): Tree =
+    AppliedTypeTree(rootScalaDot(tpnme.BYNAME_PARAM_CLASS_NAME), List(tpe))
+  def repeatedApplication(tpe: Tree): Tree =
+    AppliedTypeTree(rootScalaDot(tpnme.REPEATED_PARAM_CLASS_NAME), List(tpe))
+
+  def makeImportSelector(name: Name, nameOffset: Int): ImportSelector =
+    ImportSelector(name, nameOffset, name, nameOffset)
+
   def makeTupleTerm(trees: List[Tree], flattenUnary: Boolean): Tree = trees match {
     case Nil => Literal(())
     case List(tree) if flattenUnary => tree
@@ -273,6 +281,9 @@ abstract class TreeBuilder {
       }
     if (valeq) ValEq(pos, pat1, rhs1) else ValFrom(pos, pat1, rhs1)
   }
+
+  def makeParam(pname: TermName, tpe: Tree) =
+    ValDef(Modifiers(PARAM), pname, tpe, EmptyTree)
 
   def makeSyntheticParam(pname: TermName) =
     ValDef(Modifiers(PARAM | SYNTHETIC), pname, TypeTree(), EmptyTree)
