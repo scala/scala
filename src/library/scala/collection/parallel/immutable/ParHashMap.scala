@@ -28,10 +28,12 @@ import annotation.unchecked.uncheckedVariance
  *
  *  @author prokopec
  */
+@SerialVersionUID(1L)
 class ParHashMap[K, +V] private[immutable] (private[this] val trie: HashMap[K, V])
 extends ParMap[K, V]
    with GenericParMapTemplate[K, V, ParHashMap]
    with ParMapLike[K, V, ParHashMap[K, V], HashMap[K, V]]
+   with Serializable
 {
 self =>
 

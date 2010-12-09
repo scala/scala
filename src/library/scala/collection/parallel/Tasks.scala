@@ -264,7 +264,7 @@ trait ThreadPoolTasks extends Tasks {
   var environment: AnyRef = ThreadPoolTasks.defaultThreadPool
   def executor = environment.asInstanceOf[ThreadPoolExecutor]
   def queue = executor.getQueue.asInstanceOf[LinkedBlockingQueue[Runnable]]
-  var totaltasks = 0
+  @volatile var totaltasks = 0
 
   private def incrTasks = synchronized {
     totaltasks += 1
@@ -312,6 +312,13 @@ object ThreadPoolTasks {
     Int.MaxValue,
     60L, TimeUnit.MILLISECONDS,
     new LinkedBlockingQueue[Runnable],
+    new ThreadFactory {
+      def newThread(r: Runnable) = {
+        val t = new Thread(r)
+        t.setDaemon(true)
+        t
+      }
+    },
     new ThreadPoolExecutor.CallerRunsPolicy
   )
 }

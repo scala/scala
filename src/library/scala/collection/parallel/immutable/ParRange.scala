@@ -11,8 +11,10 @@ import scala.collection.parallel.ParIterableIterator
 
 
 
-class ParRange(range: Range)
-extends ParSeq[Int] {
+@SerialVersionUID(1L)
+class ParRange(val range: Range)
+extends ParSeq[Int]
+   with Serializable {
 self =>
 
   def seq = range

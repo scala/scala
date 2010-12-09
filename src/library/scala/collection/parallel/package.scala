@@ -40,6 +40,8 @@ package object parallel {
     if (util.Properties.isJavaAtLeast("1.6")) new ForkJoinTaskSupport
     else new ThreadPoolTaskSupport
 
+  private[parallel] val tasksupport = getTaskSupport
+
   /* implicit conversions */
 
   /** An implicit conversion providing arrays with a `par` method, which

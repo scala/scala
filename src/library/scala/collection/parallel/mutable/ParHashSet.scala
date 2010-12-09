@@ -13,11 +13,13 @@ import collection.parallel.UnrolledBuffer
 
 
 
+@SerialVersionUID(1L)
 class ParHashSet[T] private[collection] (contents: FlatHashTable.Contents[T])
 extends ParSet[T]
    with GenericParTemplate[T, ParHashSet]
    with ParSetLike[T, ParHashSet[T], collection.mutable.HashSet[T]]
    with ParFlatHashTable[T]
+   with Serializable
 {
   initWithContents(contents)
   // println("----> new par hash set!")
@@ -46,6 +48,8 @@ extends ParSet[T]
     this
   }
 
+  override def stringPrefix = "ParHashSet"
+
   def contains(elem: T) = containsEntry(elem)
 
   def parallelIterator = new ParHashSetIterator(0, table.length, size) with SCPI
@@ -56,6 +60,14 @@ extends ParSet[T]
   extends ParFlatHashTableIterator(start, iteratesUntil, totalElements) with ParIterator {
   me: SCPI =>
     def newIterator(start: Int, until: Int, total: Int) = new ParHashSetIterator(start, until, total) with SCPI
+  }
+
+  private def writeObject(s: java.io.ObjectOutputStream) {
+    serializeTo(s)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    init(in, x => x)
   }
 
   import collection.DebugUtils._

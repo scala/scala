@@ -37,15 +37,17 @@ import scala.collection.Sequentializable
  *  @define Coll ParArray
  *  @define coll parallel array
  */
+@SerialVersionUID(1L)
 class ParArray[T] private[mutable] (val arrayseq: ArraySeq[T])
 extends ParSeq[T]
    with GenericParTemplate[T, ParArray]
    with ParSeqLike[T, ParArray[T], ArraySeq[T]]
+   with Serializable
 {
 self =>
-  import tasksupport._
+  import collection.parallel.tasksupport._
 
-  private val array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
+  @transient private var array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
 
   override def companion: GenericCompanion[ParArray] with GenericParCompanion[ParArray] = ParArray
 
@@ -582,7 +584,7 @@ self =>
   } else super.map(f)(bf)
 
   override def scan[U >: T, That](z: U)(op: (U, U) => U)(implicit cbf: CanCombineFrom[ParArray[T], U, That]): That =
-    if (tasksupport.parallelismLevel > 1 && buildsArray(cbf(repr))) {
+    if (parallelismLevel > 1 && buildsArray(cbf(repr))) {
       // reserve an array
       val targarrseq = new ArraySeq[U](length + 1)
       val targetarr = targarrseq.array.asInstanceOf[Array[Any]]
@@ -653,6 +655,19 @@ self =>
       List(new Map(f, targetarr, offset, fp), new Map(f, targetarr, offset + fp, howmany - fp))
     }
     def shouldSplitFurther = howmany > collection.parallel.thresholdFromSize(length, parallelismLevel)
+  }
+
+  /* serialization */
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    out.defaultWriteObject
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    in.defaultReadObject
+
+    // get raw array from arrayseq
+    array = arrayseq.array.asInstanceOf[Array[Any]]
   }
 
 }

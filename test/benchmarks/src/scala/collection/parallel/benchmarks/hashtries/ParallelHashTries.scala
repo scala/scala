@@ -164,7 +164,7 @@ object RefParHashTrieBenches extends ParHashTrieBenches[Dummy, Dummy] {
     var pht = new ParHashMap[Dummy, Dummy]
     for (i <- 0 until sz) pht += ((new Dummy(i), new Dummy(i)))
     forkJoinPool.setParallelism(p)
-    pht.tasksupport.environment = forkJoinPool
+    collection.parallel.tasksupport.environment = forkJoinPool
     pht
   }
 

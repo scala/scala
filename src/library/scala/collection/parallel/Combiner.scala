@@ -57,10 +57,7 @@ self: EnvironmentPassingCombiner[Elem, To] =>
 trait EnvironmentPassingCombiner[-Elem, +To] extends Combiner[Elem, To] {
   abstract override def result = {
     val res = super.result
-    res match {
-      case pc: ParIterableLike[_, _, _] => pc.tasksupport.environment = tasksupport.environment
-      case _ =>
-    }
+    //
     res
   }
 }

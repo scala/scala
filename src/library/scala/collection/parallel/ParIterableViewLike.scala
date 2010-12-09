@@ -49,7 +49,6 @@ self =>
   trait Transformed[+S] extends ParIterableView[S, Coll, CollSeq] with super.Transformed[S] {
     override def parallelIterator: ParIterableIterator[S]
     override def iterator = parallelIterator
-    tasksupport.environment = self.tasksupport.environment
   }
 
   trait Sliced extends super.Sliced with Transformed[T] {

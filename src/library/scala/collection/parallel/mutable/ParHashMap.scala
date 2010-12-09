@@ -11,11 +11,13 @@ import collection.mutable.HashTable
 
 
 
+@SerialVersionUID(1L)
 class ParHashMap[K, V] private[collection] (contents: HashTable.Contents[K, DefaultEntry[K, V]])
 extends ParMap[K, V]
    with GenericParMapTemplate[K, V, ParHashMap]
    with ParMapLike[K, V, ParHashMap[K, V], collection.mutable.HashMap[K, V]]
    with ParHashTable[K, DefaultEntry[K, V]]
+   with Serializable
 {
 self =>
   initWithContents(contents)
@@ -75,6 +77,14 @@ self =>
     def entry2item(entry: DefaultEntry[K, V]) = (entry.key, entry.value);
     def newIterator(idxFrom: Int, idxUntil: Int, totalSz: Int, es: DefaultEntry[K, V]) =
       new ParHashMapIterator(idxFrom, idxUntil, totalSz, es) with SCPI
+  }
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    serializeTo(out, _.value)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    init[V](in, new Entry(_, _))
   }
 
   private[parallel] override def brokenInvariants = {

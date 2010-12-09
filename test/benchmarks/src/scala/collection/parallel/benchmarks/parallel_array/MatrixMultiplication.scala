@@ -15,6 +15,7 @@ object MatrixMultiplication extends Companion {
 class MatrixMultiplication(sz: Int, p: Int, what: String)
 extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
   def companion = MatrixMultiplication
+  collection.parallel.tasksupport.environment = forkjoinpool
 
   val a = Matrix.unit[Int](sz)
   val b = Matrix.unit[Int](sz)
@@ -39,7 +40,6 @@ extends Resettable(sz, p, what, new Cont(_), new Array[Any](_), classOf[Cont]) {
 
     def assignProduct(a: Matrix[T], b: Matrix[T]) = {
       val range = ParRange(0, n * n, 1, false)
-      range.tasksupport.environment = forkjoinpool
       for (i <- range) this(i / n, i % n) = calcProduct(a, b, i / n, i % n);
     }
 

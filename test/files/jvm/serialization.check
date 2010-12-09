@@ -271,3 +271,36 @@ x equals y: true, y equals x: true
 2
 1
 2
+
+x = UnrolledBuffer(one, two)
+y = UnrolledBuffer(one, two)
+x equals y: true, y equals x: true
+
+x = ParArray(abc, def, etc)
+y = ParArray(abc, def, etc)
+x equals y: true, y equals x: true
+
+x = ParHashMap(1 -> 2, 2 -> 4)
+y = ParHashMap(1 -> 2, 2 -> 4)
+x equals y: true, y equals x: true
+
+x = ParHashSet(2, 1, 3)
+y = ParHashSet(2, 1, 3)
+x equals y: true, y equals x: true
+
+x = ParRange(0, 1, 2, 3, 4)
+y = ParRange(0, 1, 2, 3, 4)
+x equals y: true, y equals x: true
+
+x = ParRange(0, 1, 2, 3)
+y = ParRange(0, 1, 2, 3)
+x equals y: true, y equals x: true
+
+x = ParMap(5 -> 1, 10 -> 2)
+y = ParMap(5 -> 1, 10 -> 2)
+x equals y: true, y equals x: true
+
+x = ParSet(two, one)
+y = ParSet(two, one)
+x equals y: true, y equals x: true
+

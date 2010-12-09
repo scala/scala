@@ -52,7 +52,7 @@ object Test {
         workers = 1,
         minSize = 0,
         maxSize = 4000,
-        minSuccessfulTests = 120
+        minSuccessfulTests = 20
       ),
       pc
     )

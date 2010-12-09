@@ -244,7 +244,7 @@ self =>
     val copystart = new Copy[U, That](() => pbf(repr), pits(0))
     val copymiddle = wrap {
       val tsk = new that.Copy[U, That](() => pbf(repr), that.parallelIterator)
-      that.tasksupport.executeAndWaitResult(tsk)
+      tasksupport.executeAndWaitResult(tsk)
     }
     val copyend = new Copy[U, That](() => pbf(repr), pits(2))
     executeAndWaitResult(((copystart parallel copymiddle) { _ combine _ } parallel copyend) { _ combine _ } mapResult {

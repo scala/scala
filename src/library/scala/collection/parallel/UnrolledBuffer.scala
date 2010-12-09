@@ -38,17 +38,19 @@ import annotation.tailrec
  *  @coll unrolled buffer
  *  @Coll UnrolledBuffer
  */
+@SerialVersionUID(1L)
 class UnrolledBuffer[T](implicit val manifest: ClassManifest[T])
 extends collection.mutable.Buffer[T]
    with collection.mutable.BufferLike[T, UnrolledBuffer[T]]
    with GenericClassManifestTraversableTemplate[T, UnrolledBuffer]
    with collection.mutable.Builder[T, UnrolledBuffer[T]]
+   with Serializable
 {
   import UnrolledBuffer.Unrolled
 
-  private var headptr = newUnrolled
-  private var lastptr = headptr
-  private var sz = 0
+  @transient private var headptr = newUnrolled
+  @transient private var lastptr = headptr
+  @transient private var sz = 0
 
   private[parallel] def headPtr = headptr
   private[parallel] def headPtr_=(head: Unrolled[T]) = headptr = head
@@ -145,6 +147,27 @@ extends collection.mutable.Buffer[T]
       headptr.insertAll(idx, elems, this)
       sz += elems.size
     } else outofbounds(idx)
+
+  private def writeObject(out: java.io.ObjectOutputStream) {
+    out.defaultWriteObject
+    out.writeInt(sz)
+    for (elem <- this) out.writeObject(elem)
+  }
+
+  private def readObject(in: java.io.ObjectInputStream) {
+    in.defaultReadObject
+
+    val num = in.readInt
+
+    headPtr = newUnrolled
+    lastPtr = headPtr
+    sz = 0
+    var i = 0
+    while (i < num) {
+      this += in.readObject.asInstanceOf[T]
+      i += 1
+    }
+  }
 
   override def stringPrefix = "UnrolledBuffer"
 }

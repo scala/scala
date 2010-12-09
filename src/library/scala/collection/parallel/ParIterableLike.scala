@@ -15,6 +15,8 @@ import scala.collection.generic._
 import java.util.concurrent.atomic.AtomicBoolean
 
 
+import annotation.unchecked.uncheckedStable
+
 
 // TODO update docs!!
 /** A template trait for parallel collections of type `ParIterable[T]`.
@@ -126,7 +128,6 @@ extends IterableLike[T, Repr]
 {
 self =>
 
-  private[collection] final val tasksupport: TaskSupport = getTaskSupport
   import tasksupport._
 
   /** Parallel iterators are split iterators that have additional accessor and
@@ -476,7 +477,7 @@ self =>
       val copythis = new Copy(() => pbf(repr), parallelIterator)
       val copythat = wrap {
         val othtask = new other.Copy(() => pbf(self.repr), other.parallelIterator)
-        other.tasksupport.executeAndWaitResult(othtask)
+        tasksupport.executeAndWaitResult(othtask)
       }
       val task = (copythis parallel copythat) { _ combine _ } mapResult {
         _.result
