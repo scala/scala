@@ -38,6 +38,7 @@ package object immutable {
       def remaining = until - i
       def hasNext = i < until
       def next = { i += 1; elem }
+      def dup = new ParIterator(i, until, elem) with SCPI
       def psplit(sizes: Int*) = {
         val incr = sizes.scanLeft(0)(_ + _)
         for ((start, end) <- incr.init zip incr.tail) yield new ParIterator(i + start, (i + end) min until, elem) with SCPI

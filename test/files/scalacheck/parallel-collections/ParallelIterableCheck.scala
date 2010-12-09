@@ -398,6 +398,22 @@ abstract class ParallelIterableCheck[T](collName: String) extends Properties(col
     tarr.toSeq == collarr.toSeq
   }
 
+  if (hasStrictOrder) property("scans must be equal") = forAll(collectionPairs) {
+    case (t, coll) =>
+      (for (((first, op), ind) <- foldArguments.zipWithIndex) yield {
+        val tscan = t.scanLeft(first)(op)
+        val cscan = coll.scan(first)(op)
+        if (tscan != cscan || cscan != tscan) {
+          println("from: " + t)
+          println("and: " + coll)
+          println("scans are: ")
+          println(tscan)
+          println(cscan)
+        }
+        ("operator " + ind) |: tscan == cscan && cscan == tscan
+      }).reduceLeft(_ && _)
+  }
+
 }
 
 

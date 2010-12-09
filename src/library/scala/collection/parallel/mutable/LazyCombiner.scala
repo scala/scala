@@ -21,7 +21,7 @@ import scala.collection.parallel.Combiner
  */
 trait LazyCombiner[Elem, +To, Buff <: Growable[Elem] with Sizing] extends Combiner[Elem, To]
 {
-  self: collection.parallel.EnvironmentPassingCombiner[Elem, To] =>
+self: collection.parallel.EnvironmentPassingCombiner[Elem, To] =>
   val chain: ArrayBuffer[Buff]
   val lastbuff = chain.last
   def +=(elem: Elem) = { lastbuff += elem; this }

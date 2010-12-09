@@ -35,6 +35,7 @@ src/scala/collection/parallel/benchmarks/parallel_array/ReducePrime.scala
 src/scala/collection/parallel/benchmarks/parallel_array/DropMany.scala
 src/scala/collection/parallel/benchmarks/parallel_array/ReduceList.scala
 src/scala/collection/parallel/benchmarks/parallel_array/ForeachLight.scala
+src/scala/collection/parallel/benchmarks/parallel_array/ScanMedium.scala
 src/scala/collection/parallel/benchmarks/parallel_array/MatrixMultiplication.scala
 src/scala/collection/parallel/benchmarks/parallel_array/SliceMedium.scala
 src/scala/collection/parallel/benchmarks/parallel_array/ReverseMap.scala

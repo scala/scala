@@ -10,6 +10,11 @@ import scala.collection.generic.Sizing
 
 package object mutable {
 
+  /* aliases */
+
+  type ParArrayCombiner[T] = ResizableParArrayCombiner[T]
+  val ParArrayCombiner = ResizableParArrayCombiner
+
   /* classes and traits */
 
   private[mutable] trait SizeMapUtils {

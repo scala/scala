@@ -9,6 +9,8 @@ object ForeachHeavy extends Companion {
   override def comparisons = List("jsr")
   override def defaultSize = 2048
 
+  @volatile var z = 0
+
   val fun = (a: Cont) => heavyOperation(a)
   val funjsr = new extra166y.Ops.Procedure[Cont] {
     def op(a: Cont) = heavyOperation(a)
@@ -26,6 +28,7 @@ object ForeachHeavy extends Companion {
       if (n % i == 0) isPrime = false
       i += 1
     }
+    if (isPrime && (n.toString == z)) z += 1
     isPrime
   }
 }

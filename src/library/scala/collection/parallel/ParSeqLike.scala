@@ -102,6 +102,8 @@ self =>
 
     final def remaining = end - i
 
+    def dup = new Elements(i, end) with SignalContextPassingIterator[ParIterator]
+
     def split = psplit(remaining / 2, remaining - remaining / 2)
 
     def psplit(sizes: Int*) = {

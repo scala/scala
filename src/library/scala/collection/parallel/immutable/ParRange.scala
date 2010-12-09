@@ -46,6 +46,8 @@ self =>
 
     private def rangeleft = range.drop(ind)
 
+    def dup = new ParRangeIterator(rangeleft) with SCPI
+
     def split = {
       val rleft = rangeleft
       val elemleft = rleft.length

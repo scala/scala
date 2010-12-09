@@ -107,8 +107,10 @@ package object parallel {
   }
 
   implicit def throwable2ops(self: Throwable) = new ThrowableOps {
-    def alongWith(that: Throwable) = self match {
-      case ct: CompositeThrowable => new CompositeThrowable(ct.throwables + that)
+    def alongWith(that: Throwable) = (self, that) match {
+      case (self: CompositeThrowable, that: CompositeThrowable) => new CompositeThrowable(self.throwables ++ that.throwables)
+      case (self: CompositeThrowable, _) => new CompositeThrowable(self.throwables + that)
+      case (_, that: CompositeThrowable) => new CompositeThrowable(that.throwables + self)
       case _ => new CompositeThrowable(Set(self, that))
     }
   }
@@ -117,7 +119,7 @@ package object parallel {
 
   /** Composite throwable - thrown when multiple exceptions are thrown at the same time. */
   final class CompositeThrowable(val throwables: Set[Throwable])
-  extends Throwable("Multiple exceptions thrown during a parallel computation: " + throwables.mkString(", "))
+  extends Throwable("Multiple exceptions thrown during a parallel computation: " + throwables.map(t => (t, t.getStackTrace.toList)).mkString(", "))
 
 
   /** A helper iterator for iterating very small array buffers.
@@ -133,6 +135,7 @@ package object parallel {
       r
     }
     def remaining = until - index
+    def dup = new BufferIterator(buffer, index, until, signalDelegate)
     def split: Seq[ParIterableIterator[T]] = if (remaining > 1) {
       val divsz = (until - index) / 2
       Seq(

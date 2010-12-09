@@ -87,6 +87,16 @@ trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
     }
   }
 
+  def reduceLeft[U >: T](howmany: Int, op: (U, U) => U): U = {
+    var i = howmany - 1
+    var u: U = next
+    while (i > 0 && hasNext) {
+      u = op(u, next)
+      i -= 1
+    }
+    u
+  }
+
   /* transformers to combiners */
 
   def map2combiner[S, That](f: T => S, cb: Combiner[S, That]): Combiner[S, That] = {
@@ -165,7 +175,7 @@ trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
 
   def slice2combiner[U >: T, This](from: Int, until: Int, cb: Combiner[U, This]): Combiner[U, This] = {
     drop(from)
-    var left = until - from
+    var left = math.max(until - from, 0)
     cb.sizeHint(left)
     while (left > 0) {
       cb += next
@@ -219,6 +229,26 @@ trait AugmentedIterableIterator[+T] extends RemainsIterator[T] {
       array(i) = last
       i += 1
     }
+  }
+
+  def scanToCombiner[U >: T, That](startValue: U, op: (U, U) => U, cb: Combiner[U, That]) = {
+    var curr = startValue
+    while (hasNext) {
+      curr = op(curr, next)
+      cb += curr
+    }
+    cb
+  }
+
+  def scanToCombiner[U >: T, That](howmany: Int, startValue: U, op: (U, U) => U, cb: Combiner[U, That]) = {
+    var curr = startValue
+    var left = howmany
+    while (left > 0) {
+      curr = op(curr, next)
+      cb += curr
+      left -= 1
+    }
+    cb
   }
 
   def zip2combiner[U >: T, S, That](otherpit: RemainsIterator[S], cb: Combiner[(U, S), That]): Combiner[(U, S), That] = {
@@ -336,6 +366,9 @@ extends AugmentedIterableIterator[T]
 {
 self =>
 
+  /** Creates a copy of this iterator. */
+  def dup: ParIterableIterator[T]
+
   def split: Seq[ParIterableIterator[T]]
 
   /** The number of elements this iterator has yet to traverse. This method
@@ -377,6 +410,7 @@ self =>
     var remaining = taken min self.remaining
     def hasNext = remaining > 0
     def next = { remaining -= 1; self.next }
+    def dup: ParIterableIterator[T] = self.dup.take(taken)
     def split: Seq[ParIterableIterator[T]] = takeSeq(self.split) { (p, n) => p.take(n) }
     protected[this] def takeSeq[PI <: ParIterableIterator[T]](sq: Seq[PI])(taker: (PI, Int) => PI) = {
       val sizes = sq.scanLeft(0)(_ + _.remaining)
@@ -400,6 +434,7 @@ self =>
     def hasNext = self.hasNext
     def next = f(self.next)
     def remaining = self.remaining
+    def dup: ParIterableIterator[S] = self.dup map f
     def split: Seq[ParIterableIterator[S]] = self.split.map { _ map f }
   }
 
@@ -418,6 +453,7 @@ self =>
     } else curr.next
     def remaining = if (curr eq self) curr.remaining + that.remaining else curr.remaining
     protected def firstNonEmpty = (curr eq self) && curr.hasNext
+    def dup: ParIterableIterator[U] = self.dup.appendParIterable[U, PI](that)
     def split: Seq[ParIterableIterator[U]] = if (firstNonEmpty) Seq(curr, that) else curr.split
   }
 
@@ -428,6 +464,7 @@ self =>
     def hasNext = self.hasNext && that.hasNext
     def next = (self.next, that.next)
     def remaining = self.remaining min that.remaining
+    def dup: ParIterableIterator[(T, S)] = self.dup.zipParSeq(that)
     def split: Seq[ParIterableIterator[(T, S)]] = {
       val selfs = self.split
       val sizes = selfs.map(_.remaining)
@@ -447,6 +484,7 @@ self =>
       else (self.next, thatelem)
     } else (thiselem, that.next);
     def remaining = self.remaining max that.remaining
+    def dup: ParIterableIterator[(U, S)] = self.dup.zipAllParSeq(that, thiselem, thatelem)
     def split: Seq[ParIterableIterator[(U, S)]] = {
       val selfrem = self.remaining
       val thatrem = that.remaining
@@ -468,6 +506,8 @@ extends ParIterableIterator[T]
    with PreciseSplitter[T]
 {
 self =>
+  def dup: ParSeqIterator[T]
+
   def split: Seq[ParSeqIterator[T]]
   def psplit(sizes: Int*): Seq[ParSeqIterator[T]]
 
@@ -483,6 +523,7 @@ self =>
   /* iterator transformers */
 
   class Taken(tk: Int) extends super.Taken(tk) with ParSeqIterator[T] {
+    override def dup = super.dup.asInstanceOf[ParSeqIterator[T]]
     override def split: Seq[ParSeqIterator[T]] = super.split.asInstanceOf[Seq[ParSeqIterator[T]]]
     def psplit(sizes: Int*): Seq[ParSeqIterator[T]] = takeSeq(self.psplit(sizes: _*)) { (p, n) => p.take(n) }
   }
@@ -497,6 +538,7 @@ self =>
   }
 
   class Mapped[S](f: T => S) extends super.Mapped[S](f) with ParSeqIterator[S] {
+    override def dup = super.dup.asInstanceOf[ParSeqIterator[S]]
     override def split: Seq[ParSeqIterator[S]] = super.split.asInstanceOf[Seq[ParSeqIterator[S]]]
     def psplit(sizes: Int*): Seq[ParSeqIterator[S]] = self.psplit(sizes: _*).map { _ map f }
   }
@@ -504,6 +546,7 @@ self =>
   override def map[S](f: T => S) = new Mapped(f)
 
   class Appended[U >: T, PI <: ParSeqIterator[U]](it: PI) extends super.Appended[U, PI](it) with ParSeqIterator[U] {
+    override def dup = super.dup.asInstanceOf[ParSeqIterator[U]]
     override def split: Seq[ParSeqIterator[U]] = super.split.asInstanceOf[Seq[ParSeqIterator[U]]]
     def psplit(sizes: Int*): Seq[ParSeqIterator[U]] = if (firstNonEmpty) {
       val selfrem = self.remaining
@@ -534,6 +577,7 @@ self =>
   def appendParSeq[U >: T, PI <: ParSeqIterator[U]](that: PI) = new Appended[U, PI](that)
 
   class Zipped[S](ti: ParSeqIterator[S]) extends super.Zipped[S](ti) with ParSeqIterator[(T, S)] {
+    override def dup = super.dup.asInstanceOf[ParSeqIterator[(T, S)]]
     override def split: Seq[ParSeqIterator[(T, S)]] = super.split.asInstanceOf[Seq[ParSeqIterator[(T, S)]]]
     def psplit(szs: Int*) = (self.psplit(szs: _*) zip that.psplit(szs: _*)) map { p => p._1 zipParSeq p._2 }
   }
@@ -541,6 +585,7 @@ self =>
   override def zipParSeq[S](that: ParSeqIterator[S]) = new Zipped(that)
 
   class ZippedAll[U >: T, S](ti: ParSeqIterator[S], thise: U, thate: S) extends super.ZippedAll[U, S](ti, thise, thate) with ParSeqIterator[(U, S)] {
+    override def dup = super.dup.asInstanceOf[ParSeqIterator[(U, S)]]
     private def patchem = {
       val selfrem = self.remaining
       val thatrem = that.remaining
@@ -578,6 +623,7 @@ self =>
     def hasNext = trio.hasNext
     def next = trio.next
     def remaining = trio.remaining
+    def dup = self.dup.patchParSeq(from, patch, replaced)
     def split = trio.split
     def psplit(sizes: Int*) = trio.psplit(sizes: _*)
   }

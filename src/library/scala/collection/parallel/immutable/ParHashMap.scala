@@ -20,7 +20,7 @@ import scala.collection.generic.GenericParMapCompanion
 import scala.collection.immutable.HashMap
 
 
-
+import annotation.unchecked.uncheckedVariance
 
 
 
@@ -62,10 +62,24 @@ self =>
 
   type SCPI = SignalContextPassingIterator[ParHashMapIterator]
 
-  class ParHashMapIterator(val triter: Iterator[(K, V)], val sz: Int)
+  class ParHashMapIterator(var triter: Iterator[(K, V @uncheckedVariance)], val sz: Int)
   extends super.ParIterator {
   self: SignalContextPassingIterator[ParHashMapIterator] =>
     var i = 0
+    def dup = triter match {
+      case t: HashMap.TrieIterator[_, _] =>
+        val dupt = t.dupIterator.asInstanceOf[Iterator[(K, V)]]
+        dupFromIterator(dupt)
+      case _ =>
+        val buff = triter.toBuffer
+        triter = buff.iterator
+        dupFromIterator(buff.iterator)
+    }
+    private def dupFromIterator(it: Iterator[(K, V @uncheckedVariance)]) = {
+      val phit = new ParHashMapIterator(it, sz) with SCPI
+      phit.i = i
+      phit
+    }
     def split: Seq[ParIterator] = if (remaining < 2) Seq(this) else triter match {
       case t: HashMap.TrieIterator[_, _] =>
         val previousRemaining = remaining

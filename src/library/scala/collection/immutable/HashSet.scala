@@ -285,14 +285,25 @@ time { mNew.iterator.foreach( p => ()) }
 
 
   class TrieIterator[A](elems: Array[HashSet[A]]) extends Iterator[A] {
-    private[this] var depth = 0
-    private[this] var arrayStack = new Array[Array[HashSet[A]]](6)
-    private[this] var posStack = new Array[Int](6)
+    protected var depth = 0
+    protected var arrayStack = new Array[Array[HashSet[A]]](6)
+    protected var posStack = new Array[Int](6)
 
-    private[this] var arrayD = elems
-    private[this] var posD = 0
+    protected var arrayD = elems
+    protected var posD = 0
 
-    private[this] var subIter: Iterator[A] = null // to traverse collision nodes
+    protected var subIter: Iterator[A] = null // to traverse collision nodes
+
+    def dupIterator: TrieIterator[A] = {
+      val t = new TrieIterator(elems)
+      t.depth = depth
+      t.arrayStack = arrayStack
+      t.posStack = posStack
+      t.arrayD = arrayD
+      t.posD = posD
+      t.subIter = subIter
+      t
+    }
 
     def hasNext = (subIter ne null) || depth >= 0
 

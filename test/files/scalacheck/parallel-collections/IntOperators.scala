@@ -49,7 +49,8 @@ trait IntOperators extends Operators[Int] {
   def foldArguments = List(
     (0, _ + _),
     (1, _ * _),
-    (Int.MinValue, math.max(_, _))
+    (Int.MinValue, math.max(_, _)),
+    (Int.MaxValue, math.min(_, _))
   )
   def addAllTraversables = List(
     List[Int](),
