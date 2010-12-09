@@ -216,6 +216,10 @@ extends IndexedSeq[Int]
 
   final def contains(x: Int) = isWithinBoundaries(x) && ((x - start) % step == 0)
 
+  override def toParIterable = par
+
+  override def toParSeq = par
+
   override def equals(other: Any) = other match {
     case x: Range =>
       (x canEqual this) && (length == x.length) && (
