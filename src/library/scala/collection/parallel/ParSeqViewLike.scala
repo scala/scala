@@ -140,7 +140,7 @@ self =>
   override def map[S, That](f: T => S)(implicit bf: CanBuildFrom[This, S, That]): That = newMapped(f).asInstanceOf[That]
   override def zip[U >: T, S, That](that: Iterable[S])(implicit bf: CanBuildFrom[This, (U, S), That]): That = newZippedTryParSeq(that).asInstanceOf[That]
   override def zipWithIndex[U >: T, That](implicit bf: CanBuildFrom[This, (U, Int), That]): That =
-    newZipped(new ParRange(0, parallelIterator.remaining, 1, false)).asInstanceOf[That]
+    newZipped(ParRange(0, parallelIterator.remaining, 1, false)).asInstanceOf[That]
   override def reverse: This = newReversed.asInstanceOf[This]
   override def reverseMap[S, That](f: T => S)(implicit bf: CanBuildFrom[This, S, That]): That = reverse.map(f)
 

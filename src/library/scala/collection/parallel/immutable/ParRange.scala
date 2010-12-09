@@ -7,71 +7,82 @@ import scala.collection.immutable.RangeUtils
 import scala.collection.parallel.ParSeq
 import scala.collection.parallel.Combiner
 import scala.collection.generic.CanCombineFrom
+import scala.collection.parallel.ParIterableIterator
 
 
 
-class ParRange(val start: Int, val end: Int, val step: Int, val inclusive: Boolean)
-extends ParSeq[Int]
-   with RangeUtils[ParRange] {
-  self =>
+class ParRange(range: Range)
+extends ParSeq[Int] {
+self =>
 
-  def seq = new Range(start, end, step)
+  def seq = range
 
-  def length = _length
+  @inline
+  final def length = range.length
 
-  def apply(idx: Int) = _apply(idx)
-
-  def create(_start: Int, _end: Int, _step: Int, _inclusive: Boolean) = new ParRange(_start, _end, _step, _inclusive)
+  @inline
+  final def apply(idx: Int) = range.apply(idx)
 
   def parallelIterator = new ParRangeIterator with SCPI
 
-  override def toString = seq.toString // TODO
-
   type SCPI = SignalContextPassingIterator[ParRangeIterator]
 
-  class ParRangeIterator
-  (var start: Int = self.start, val end: Int = self.end, val step: Int = self.step, val inclusive: Boolean = self.inclusive)
-  extends ParIterator with RangeUtils[ParRangeIterator] {
-    me: SignalContextPassingIterator[ParRangeIterator] =>
-    def remaining = _length
-    def next = { val r = start; start += step; r }
-    def hasNext = remaining > 0
-    def split: Seq[ParIterator] = psplit(remaining / 2, remaining - remaining / 2)
-    def psplit(sizes: Int*): Seq[ParIterator] = {
-      val incr = sizes.scanLeft(0)(_ + _)
-      for ((from, until) <- incr.init zip incr.tail) yield _slice(from, until)
-    }
-    def create(_start: Int, _end: Int, _step: Int, _inclusive: Boolean) = {
-      new ParRangeIterator(_start, _end, _step, _inclusive) with SCPI
+  class ParRangeIterator(range: Range = self.range)
+  extends ParIterator {
+  me: SignalContextPassingIterator[ParRangeIterator] =>
+    override def toString = "ParRangeIterator(over: " + range + ")"
+    private var ind = 0
+    private val len = range.length
+
+    final def remaining = len - ind
+
+    final def hasNext = ind < len
+
+    final def next = if (hasNext) {
+      val r = range.apply(ind)
+      ind += 1
+      r
+    } else Iterator.empty.next
+
+    private def rangeleft = range.drop(ind)
+
+    def split = {
+      val rleft = rangeleft
+      val elemleft = rleft.length
+      if (elemleft < 2) Seq(new ParRangeIterator(rleft) with SCPI)
+      else Seq(
+        new ParRangeIterator(rleft.take(elemleft / 2)) with SCPI,
+        new ParRangeIterator(rleft.drop(elemleft / 2)) with SCPI
+      )
     }
 
-    override def toString = "ParRangeIterator(" + start + ", " + end + ", " + step + ", incl: " + inclusive + ")"
+    def psplit(sizes: Int*) = {
+      var rleft = rangeleft
+      for (sz <- sizes) yield {
+        val fronttaken = rleft.take(sz)
+        rleft = rleft.drop(sz)
+        new ParRangeIterator(fronttaken) with SCPI
+      }
+    }
 
     /* accessors */
 
     override def foreach[U](f: Int => U): Unit = {
-      _foreach(f)
-      start = end + step
+      rangeleft.foreach(f)
+      ind = len
     }
 
     override def reduce[U >: Int](op: (U, U) => U): U = {
-      var sum = next
-      for (elem <- this) sum += elem
-      sum
+      val r = rangeleft.reduceLeft(op)
+      ind = len
+      r
     }
 
     /* transformers */
 
     override def map2combiner[S, That](f: Int => S, cb: Combiner[S, That]): Combiner[S, That] = {
-      //val cb = pbf(self.repr)
-      val sz = remaining
-      cb.sizeHint(sz)
-      if (sz > 0) {
-        val last = _last
-        while (start != last) {
-          f(start)
-          start += step
-        }
+      while (hasNext) {
+        cb += f(next)
       }
       cb
     }
@@ -82,8 +93,10 @@ extends ParSeq[Int]
 
 
 object ParRange {
-  def apply(start: Int, end: Int, step: Int, inclusive: Boolean) =
-    new ParRange(start, end, step, inclusive)
+  def apply(start: Int, end: Int, step: Int, inclusive: Boolean) = new ParRange(
+    if (inclusive) new Range.Inclusive(start, end, step)
+    else new Range(start, end, step)
+  )
 }
 
 

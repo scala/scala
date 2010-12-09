@@ -282,6 +282,7 @@ trait ThreadPoolTasks extends Tasks {
 
     () => {
       t.sync
+      t.body.forwardThrowable
       t.body.result
     }
   }
@@ -293,6 +294,7 @@ trait ThreadPoolTasks extends Tasks {
     t.start
 
     t.sync
+    t.body.forwardThrowable
     t.body.result
   }
 

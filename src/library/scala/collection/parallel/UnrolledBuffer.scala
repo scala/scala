@@ -10,6 +10,34 @@ import annotation.tailrec
 
 
 
+
+/** A buffer that stores elements in an unrolled linked list.
+ *
+ *  Unrolled linked lists store elements in linked fixed size
+ *  arrays.
+ *
+ *  Unrolled buffers retain locality and low memory overhead
+ *  properties of array buffers, but offer much more efficient
+ *  element addition, since they never reallocate and copy the
+ *  internal array.
+ *
+ *  However, they provide `O(n/m)` complexity random access,
+ *  where `n` is the number of elements, and `m` the size of
+ *  internal array chunks.
+ *
+ *  Ideal to use when:
+ *  - elements are added to the buffer and then all of the
+ *    elements are traversed sequentially
+ *  - two unrolled buffers need to be concatenated (see `concat`)
+ *
+ *  Better than singly linked lists for random access, but
+ *  should still be avoided for such a purpose.
+ *
+ *  @author Aleksandar Prokopec
+ *
+ *  @coll unrolled buffer
+ *  @Coll UnrolledBuffer
+ */
 class UnrolledBuffer[T](implicit val manifest: ClassManifest[T])
 extends collection.mutable.Buffer[T]
    with collection.mutable.BufferLike[T, UnrolledBuffer[T]]

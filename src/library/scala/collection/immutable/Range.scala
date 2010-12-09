@@ -44,7 +44,7 @@ extends IndexedSeq[Int]
    with collection.Parallelizable[ParRange]
    with Serializable
 {
-  def par = ParRange(start, end, step, false)
+  def par = new ParRange(this)
 
   // Note that this value is calculated eagerly intentionally: it also
   // serves to enforce conditions (step != 0) && (length <= Int.MaxValue)
@@ -249,7 +249,7 @@ object Range {
     NumericRange.count[Long](start, end, step, isInclusive)
 
   class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
-    override def par = ParRange(start, end, step, true)
+    override def par = new ParRange(this)
     override def isInclusive = true
     override protected def copy(start: Int, end: Int, step: Int): Range = new Inclusive(start, end, step)
   }
