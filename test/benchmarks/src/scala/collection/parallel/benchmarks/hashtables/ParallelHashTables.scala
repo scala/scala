@@ -206,7 +206,7 @@ object RefParHashTableBenches extends ParHashTableBenches[Dummy, Dummy] {
     val phm = new ParHashMap[Dummy, Dummy]
     for (i <- 0 until sz) phm += ((new Dummy(i), new Dummy(i)))
     forkJoinPool.setParallelism(p)
-    phm.environment = forkJoinPool
+    phm.tasksupport.environment = forkJoinPool
     phm
   }
 

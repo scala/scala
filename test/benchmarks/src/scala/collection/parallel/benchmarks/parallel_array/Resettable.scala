@@ -77,7 +77,7 @@ extends Bench with SequentialOps[T] {
       for (i <- 0 until size) arr(i) = elemcreator(i)
     case "par" =>
       pa = new ParArray[T](size)
-      pa.environment = forkjoinpool
+      pa.tasksupport.environment = forkjoinpool
       for (i <- 0 until size) pa(i) = elemcreator(i)
     case "jsr" =>
       jsrarr  = JSR166Array.create(size, cls, papool)

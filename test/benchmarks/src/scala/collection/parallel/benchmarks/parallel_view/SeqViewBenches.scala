@@ -31,7 +31,7 @@ extends ParSeqViewBenches[Dummy, ParSeqView[Dummy, ParSeq[Dummy], Seq[Dummy]], S
     forkJoinPool.setParallelism(p)
     for (i <- 0 until sz) pa(i) = new Dummy(i)
     val v = pa.view
-    v.environment = forkJoinPool
+    v.tasksupport.environment = forkJoinPool
     v
   }
   def createSeqView(sz: Int, p: Int) = createSequential(sz, p).view

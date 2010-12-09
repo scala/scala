@@ -87,6 +87,7 @@ package object collection {
     }
 
     def arrayString[T](array: Array[T], from: Int, until: Int) = array.slice(from, until).map(x => if (x != null) x.toString else "n/a").mkString(" | ")
+
   }
 
 }

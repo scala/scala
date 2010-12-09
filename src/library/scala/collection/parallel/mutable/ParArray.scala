@@ -102,8 +102,11 @@ self =>
       val left = remaining
       if (left >= 2) {
         val splitpoint = left / 2
-        Seq(new ParArrayIterator(i, i + splitpoint, arr) with SCPI,
-            new ParArrayIterator(i + splitpoint, until, arr) with SCPI)
+        val sq = Seq(
+          new ParArrayIterator(i, i + splitpoint, arr) with SCPI,
+          new ParArrayIterator(i + splitpoint, until, arr) with SCPI)
+        i = until
+        sq
       } else {
         Seq(this)
       }

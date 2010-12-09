@@ -476,8 +476,7 @@ self =>
       val copythis = new Copy(() => pbf(repr), parallelIterator)
       val copythat = wrap {
         val othtask = new other.Copy(() => pbf(self.repr), other.parallelIterator)
-        othtask.compute
-        othtask.result
+        other.tasksupport.executeAndWaitResult(othtask)
       }
       val task = (copythis parallel copythat) { _ combine _ } mapResult {
         _.result
@@ -713,13 +712,12 @@ self =>
     def shouldSplitFurther = pit.remaining > threshold(size, parallelismLevel)
     def split = pit.split.map(newSubtask(_)) // default split procedure
     private[parallel] override def signalAbort = pit.abort
-    override def toString = "Accessor(" + pit.toString + ")"
+    override def toString = this.getClass.getSimpleName + "(" + pit.toString + ")(" + result + ")"
   }
 
   protected[this] trait NonDivisibleTask[R, Tp] extends StrictSplitterCheckTask[R, Tp] {
     def shouldSplitFurther = false
     def split = throw new UnsupportedOperationException("Does not split.")
-    override def toString = "NonDivisibleTask"
   }
 
   protected[this] trait NonDivisible[R] extends NonDivisibleTask[R, NonDivisible[R]]
@@ -768,9 +766,7 @@ self =>
     var result: R1 = null.asInstanceOf[R1]
     def map(r: R): R1
     def leaf(prevr: Option[R1]) = {
-      inner.compute
-      throwable = inner.throwable
-      if (throwable eq null) result = map(inner.result)
+      result = map(executeAndWaitResult(inner))
     }
     private[parallel] override def signalAbort {
       inner.signalAbort
@@ -787,10 +783,12 @@ self =>
   }
 
   protected[this] class Count(pred: T => Boolean, protected[this] val pit: ParIterableIterator[T]) extends Accessor[Int, Count] {
+    // val pittxt = pit.toString
     var result: Int = 0
     def leaf(prevr: Option[Int]) = result = pit.count(pred)
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new Count(pred, p)
     override def merge(that: Count) = result = result + that.result
+    // override def toString = "CountTask(" + pittxt + ")"
   }
 
   protected[this] class Reduce[U >: T](op: (U, U) => U, protected[this] val pit: ParIterableIterator[T]) extends Accessor[Option[U], Reduce[U]] {
@@ -901,7 +899,9 @@ self =>
   protected[this] class Filter[U >: T, This >: Repr](pred: T => Boolean, cbf: () => Combiner[U, This], protected[this] val pit: ParIterableIterator[T])
   extends Transformer[Combiner[U, This], Filter[U, This]] {
     var result: Combiner[U, This] = null
-    def leaf(prev: Option[Combiner[U, This]]) = result = pit.filter2combiner(pred, reuse(prev, cbf()))
+    def leaf(prev: Option[Combiner[U, This]]) = {
+      result = pit.filter2combiner(pred, reuse(prev, cbf()))
+    }
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new Filter(pred, cbf, p)
     override def merge(that: Filter[U, This]) = result = result combine that.result
   }
@@ -909,7 +909,9 @@ self =>
   protected[this] class FilterNot[U >: T, This >: Repr](pred: T => Boolean, cbf: () => Combiner[U, This], protected[this] val pit: ParIterableIterator[T])
   extends Transformer[Combiner[U, This], FilterNot[U, This]] {
     var result: Combiner[U, This] = null
-    def leaf(prev: Option[Combiner[U, This]]) = result = pit.filterNot2combiner(pred, reuse(prev, cbf()))
+    def leaf(prev: Option[Combiner[U, This]]) = {
+      result = pit.filterNot2combiner(pred, reuse(prev, cbf()))
+    }
     protected[this] def newSubtask(p: ParIterableIterator[T]) = new FilterNot(pred, cbf, p)
     override def merge(that: FilterNot[U, This]) = result = result combine that.result
   }
@@ -1252,6 +1254,24 @@ self =>
   private[parallel] def debugInformation = "Parallel collection: " + this.getClass
 
   private[parallel] def brokenInvariants = Seq[String]()
+
+  private val debugBuffer = collection.mutable.ArrayBuffer[String]()
+
+  private[parallel] def debugclear() = synchronized {
+    debugBuffer.clear
+  }
+
+  private[parallel] def debuglog(s: String) = synchronized {
+    debugBuffer += s
+  }
+
+  import collection.DebugUtils._
+  private[parallel] def printDebugBuffer = println(buildString {
+    append =>
+    for (s <- debugBuffer) {
+      append(s)
+    }
+  })
 
 }
 

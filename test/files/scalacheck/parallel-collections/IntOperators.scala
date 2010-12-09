@@ -5,8 +5,14 @@ import scala.collection.parallel._
 
 
 trait IntOperators extends Operators[Int] {
-  def reduceOperators = List(_ + _, _ * _, math.min(_, _), math.max(_, _))
-  def countPredicates = List(_ >= 0, _ < 0, _ < 50, _ < 500, _ < 5000, _ < 50000, _ % 2 == 0, _ == 99)
+  def reduceOperators = List(_ + _, _ * _, math.min(_, _), math.max(_, _), _ ^ _)
+  def countPredicates = List(
+    x => true,
+    _ >= 0, _ < 0, _ < 50, _ < 500, _ < 5000, _ < 50000, _ % 2 == 0, _ == 99,
+    x => x > 50 && x < 150,
+    x => x > 350 && x < 550,
+    x => (x > 1000 && x < 1500) || (x > 400 && x < 500)
+  )
   def forallPredicates = List(_ >= 0, _ < 0, _ % 2 == 0, _ != 55, _ != 505, _ != 5005)
   def existsPredicates = List(_ >= 0, _ < 0, _ % 2 == 0, _ == 55, _ == 505, _ == 5005)
   def findPredicates = List(_ >= 0, _ % 2 == 0, _ < 0, _ == 50, _ == 500, _ == 5000)
@@ -18,9 +24,14 @@ trait IntOperators extends Operators[Int] {
     (n: Int) => if (n == 0) List(1, 2, 3, 4, 5) else if (n < 0) List(1, 2, 3) else List()
   )
   def filterPredicates = List(
-    _ % 2 == 0, _ % 3 == 0, _ % 4 != 0, _ % 17 != 0, n => n > 50 && n < 100, _ >= 0, _ < 0, _ == 99,
-    _ > 500, _ > 5000, _ > 50000, _ < 500, _ < 50, _ < -50, _ < -5e5,
-    x => true, x => false, x => x % 53 == 0 && x % 17 == 0
+    _ % 2 == 0, _ % 3 == 0,
+    _ % 4 != 0, _ % 17 != 0,
+    n => n > 50 && n < 100,
+    _ >= 0, _ < 0, _ == 99,
+    _ > 500, _ > 5000, _ > 50000,
+    _ < 500, _ < 50, _ < -50, _ < -5e5,
+    x => true, x => false,
+    x => x % 53 == 0 && x % 17 == 0
   )
   def filterNotPredicates = filterPredicates
   def partitionPredicates = filterPredicates
@@ -30,7 +41,8 @@ trait IntOperators extends Operators[Int] {
     _ < -100, _ < -1000, _ > -200, _ > -50,
     n => -90 < n && n < -10,
     n => 50 < n && n < 550,
-    n => 5000 < n && n < 7500
+    n => 5000 < n && n < 7500,
+    n => -50 < n && n < 450
   )
   def dropWhilePredicates = takeWhilePredicates
   def spanPredicates = takeWhilePredicates

@@ -7,7 +7,7 @@ object ForeachHeavy extends Companion {
   def benchName = "foreach-heavy";
   def apply(sz: Int, parallelism: Int, what: String) = new ForeachHeavy(sz, parallelism, what)
   override def comparisons = List("jsr")
-  override def defaultSize = 16
+  override def defaultSize = 2048
 
   val fun = (a: Cont) => heavyOperation(a)
   val funjsr = new extra166y.Ops.Procedure[Cont] {
@@ -21,7 +21,7 @@ object ForeachHeavy extends Companion {
   def checkPrime(n: Int) = {
     var isPrime = true
     var i = 2
-    val until = scala.math.sqrt(n).toInt + 1
+    val until = 550
     while (i < until) {
       if (n % i == 0) isPrime = false
       i += 1

@@ -22,7 +22,7 @@ object RangeBenches extends StandardParIterableBenches[Int, ParRange] {
   def createParallel(sz: Int, p: Int) = {
     val pr = new collection.parallel.immutable.ParRange(0, sz, 1, false)
     forkJoinPool.setParallelism(p)
-    pr.environment = forkJoinPool
+    pr.tasksupport.environment = forkJoinPool
     pr
   }
 

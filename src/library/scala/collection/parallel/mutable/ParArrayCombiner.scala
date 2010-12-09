@@ -38,7 +38,7 @@ self: EnvironmentPassingCombiner[T, ParArray[T]] =>
     pa
   }
 
-  override def toString = "ParArrayCombiner(" + size + "): " + chain
+  override def toString = "ParArrayCombiner(" + size + "): " //+ chain
 
   /* tasks */
 

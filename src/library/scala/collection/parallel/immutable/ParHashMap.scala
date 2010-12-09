@@ -90,6 +90,7 @@ self =>
       i < sz
     }
     def remaining = sz - i
+    override def toString = "HashTrieIterator(" + sz + ")"
   }
 
   private[parallel] def printDebugInfo {
@@ -168,7 +169,8 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
   }
 
   override def toString = {
-    "HashTrieCombiner(buckets:\n\t" + buckets.filter(_ != null).mkString("\n\t") + ")\n"
+    "HashTrieCombiner(sz: " + size + ")"
+    //"HashTrieCombiner(buckets:\n\t" + buckets.filter(_ != null).mkString("\n\t") + ")\n"
   }
 
   /* tasks */

@@ -36,7 +36,9 @@ package object parallel {
 
   private[parallel] def outofbounds(idx: Int) = throw new IndexOutOfBoundsException(idx.toString)
 
-  private[parallel] def getTaskSupport: TaskSupport = new TaskSupport {}
+  private[parallel] def getTaskSupport: TaskSupport =
+    if (util.Properties.isJavaAtLeast("1.6")) new ForkJoinTaskSupport
+    else new ThreadPoolTaskSupport
 
   /* implicit conversions */
 
