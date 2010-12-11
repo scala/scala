@@ -4,13 +4,17 @@ public class J_2 {
   public void f1(Class<?> clazz) {
     Field[] fields = clazz.getDeclaredFields();
     for (int i = 0 ; i < fields.length; i++) {
-      System.out.println("(" + fields[i].getName() + "," + fields[i].getGenericType() + ")");
+      String name = fields[i].getName();
+      if (name.length() >= 7 && name.substring(0, 7).equals("bitmap$")) { }
+      else System.out.println("(" + name + "," + fields[i].getGenericType() + ")");
     }
   }
   public void f2(Class<?> clazz) {
     Method[] methods = clazz.getDeclaredMethods();
     for (int i = 0 ; i < methods.length; i++) {
-      System.out.println("(" + methods[i].getName() + "," + methods[i].getGenericReturnType() + ")");
+      String name = methods[i].getName();
+      if (name.length() >= 7 && name.substring(0, 7).equals("bitmap$")) { }
+      else System.out.println("(" + name + "," + methods[i].getGenericReturnType() + ")");
     }
   }
 

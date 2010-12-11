@@ -69,14 +69,6 @@ object Test extends Application {
      case _ =>
    }
 
-   var ex: Counter[T] forSome { type T } = _
-   ex = ci
-   ex = cf
-
-   var exW: Counter[_] = _
-   ex = ci
-   ex = cf
-
    val ci = new Counter[Int] {
      def newCounter = 0
      def get(i: Int) = i
@@ -90,6 +82,14 @@ object Test extends Application {
      def inc(i: Float) = i+1
      def name = "Float"
    }
+
+   var ex: Counter[T] forSome { type T } = _
+   ex = ci
+   ex = cf
+
+   var exW: Counter[_] = _
+   ex = ci
+   ex = cf
 
    foo(ci)
    foo(cf)

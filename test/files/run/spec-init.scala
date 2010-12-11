@@ -5,11 +5,10 @@ class Foo[@specialized(Int) T](_x: T) {
   val y = x
   println(x)
   println(y)
-  println(z)
 
   def baz {}
   val z = y
-
+  println(z)
 }
 
 class Bar[@specialized(Int) T] {

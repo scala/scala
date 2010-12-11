@@ -1,8 +1,0 @@
-Foo 1: a = 0, b = 0, x = 0, y = 0
-Foo 2: a = 2, b = 0, x = 0, y = 0
-Foo 3: a = 2, b = 3, x = 0, y = 0
-Foo 4: a = 2, b = 3, x = 0, y = 0
-Foo 5: a = 2, b = 3, x = 0, y = 0
-Bar 1: a = 2, b = 3, x = 0, y = 0
-Bar 2: a = 2, b = 3, x = 5, y = 0
-Bar 3: a = 2, b = 3, x = 5, y = 7

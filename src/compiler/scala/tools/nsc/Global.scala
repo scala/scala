@@ -603,8 +603,8 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
   lazy val phaseDescriptors: List[SubComponent] = computePhaseDescriptors
 
   /* The set of phase objects that is the basis for the compiler phase chain */
-  protected val phasesSet     = new mutable.HashSet[SubComponent]
-  protected val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
+  protected lazy val phasesSet     = new mutable.HashSet[SubComponent]
+  protected lazy val phasesDescMap = new mutable.HashMap[SubComponent, String] withDefaultValue ""
   protected def addToPhasesSet(sub: SubComponent, descr: String) {
     phasesSet += sub
     phasesDescMap(sub) = descr

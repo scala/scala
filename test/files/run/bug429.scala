@@ -6,8 +6,8 @@ object Test {
   }
   class B extends A {
     Console.print("B");
-    val z = 0;
-    val x = 4 + z
+    lazy val z = 0;
+    lazy val x = 4 + z
   }
   def main (args: Array[String]): Unit = {
     Console.print((new B).y);
