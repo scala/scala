@@ -205,16 +205,16 @@ abstract class Component extends UIElement {
     // TODO: deprecated, remove after 2.8
     peer.addComponentListener(new java.awt.event.ComponentListener {
       def componentHidden(e: java.awt.event.ComponentEvent) {
-        publish(ComponentHidden(Component.this))
+        publish(UIElementHidden(Component.this))
       }
       def componentShown(e: java.awt.event.ComponentEvent) {
-        publish(ComponentShown(Component.this))
+        publish(UIElementShown(Component.this))
       }
       def componentMoved(e: java.awt.event.ComponentEvent) {
-        publish(ComponentMoved(Component.this))
+        publish(UIElementMoved(Component.this))
       }
       def componentResized(e: java.awt.event.ComponentEvent) {
-        publish(ComponentResized(Component.this))
+        publish(UIElementResized(Component.this))
       }
     })
 

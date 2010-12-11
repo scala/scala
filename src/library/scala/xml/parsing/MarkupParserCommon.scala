@@ -218,7 +218,7 @@ private[scala] trait MarkupParserCommon extends TokenTests {
   def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
   /** Execute body with a variable saved and restored after execution */
-  def saving[A,B](getter: A, setter: (A) => Unit)(body: => B): B = {
+  def saving[A, B](getter: A, setter: A => Unit)(body: => B): B = {
     val saved = getter
     try body
     finally setter(saved)
@@ -234,8 +234,8 @@ private[scala] trait MarkupParserCommon extends TokenTests {
     until: String): T =
   {
     val sb = new StringBuilder
-    val head = until charAt 0
-    val rest = until drop 1
+    val head = until.head
+    val rest = until.tail
 
     while (true) {
       if (ch == head && peek(rest))

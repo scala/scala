@@ -323,11 +323,12 @@ trait MarkupParsers
 
     /** Use a lookahead parser to run speculative body, and return the first char afterward. */
     private def charComingAfter(body: => Unit): Char = {
-      input = input.lookaheadReader
-      body
-      val res = ch
-      input = parser.in
-      res
+      try {
+        input = input.lookaheadReader
+        body
+        ch
+      }
+      finally input = parser.in
     }
 
     /** xLiteral = element { element }

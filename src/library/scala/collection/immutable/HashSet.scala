@@ -332,16 +332,17 @@ time { mNew.iterator.foreach( p => ()) }
         posD += 1
 
       elems(i) match {
-        case m: HashTrieSet[A] => // push current pos onto stack and descend
+        case m: HashTrieSet[_] => // push current pos onto stack and descend
           if (depth >= 0) {
             arrayStack(depth) = arrayD
             posStack(depth) = posD
           }
           depth += 1
-          arrayD = m.elems
+          val elems = m.elems.asInstanceOf[Array[HashSet[A]]]
+          arrayD = elems
           posD = 0
-          next0(m.elems, 0)
-        case m: HashSet1[A] => m.key
+          next0(elems, 0)
+        case m: HashSet1[_] => m.key
         case m =>
           subIter = m.iterator
           next

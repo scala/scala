@@ -158,6 +158,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
             |// scala> %s""".stripMargin
 
           println(template.format(line.thread, line.code))
+          // XXX no way to suppress the deprecation warning
           line.thread.stop()
           in.redrawLine()
         }

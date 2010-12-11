@@ -354,7 +354,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
   def execute[R, Tp](task: Task[R, Tp]): () => R = {
     val fjtask = newTaskImpl(task)
 
-    if (currentThread.isInstanceOf[ForkJoinWorkerThread]) {
+    if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
       fjtask.fork
     } else {
       forkJoinPool.execute(fjtask)
@@ -377,7 +377,7 @@ trait ForkJoinTasks extends Tasks with HavingForkJoinPool {
   def executeAndWaitResult[R, Tp](task: Task[R, Tp]): R = {
     val fjtask = newTaskImpl(task)
 
-    if (currentThread.isInstanceOf[ForkJoinWorkerThread]) {
+    if (Thread.currentThread.isInstanceOf[ForkJoinWorkerThread]) {
       fjtask.fork
     } else {
       forkJoinPool.execute(fjtask)
