@@ -77,7 +77,9 @@ trait Scanners extends ScannersCommon {
 
     def resume(lastCode: Int) = {
       token = lastCode
-      assert(next.token == EMPTY || reporter.hasErrors)
+      if (next.token != EMPTY && !reporter.hasErrors)
+        syntaxError("unexpected end of input: possible missing '}' in XML block")
+
       nextToken()
     }
 

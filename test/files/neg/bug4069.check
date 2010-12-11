@@ -1,0 +1,16 @@
+bug4069.scala:7: error: unexpected end of input: possible missing '}' in XML block
+          case 2 =>
+          ^
+bug4069.scala:6: error: Missing closing brace `}' assumed here
+            </div>
+            ^
+bug4069.scala:9: error: in XML literal: in XML content, please use '}}' to express '}'
+        }
+        ^
+bug4069.scala:4: error:  I encountered a '}' where I didn't expect one, maybe this tag isn't closed <div>
+            <div>
+             ^
+bug4069.scala:10: error: '}' expected but eof found.
+}
+^
+5 errors found

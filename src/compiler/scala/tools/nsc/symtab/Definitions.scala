@@ -349,10 +349,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
     /** if tpe <: ProductN[T1,...,TN], returns Some(T1,...,TN) else None */
     def getProductArgs(tpe: Type): Option[List[Type]] =
-      tpe.baseClasses.find(x => isExactProductType(x.tpe)) match {
-        case Some(p) => Some(tpe.baseType(p).typeArgs)
-        case _       => None
-      }
+      tpe.baseClasses collectFirst { case x if isExactProductType(x.tpe) => tpe.baseType(x).typeArgs }
 
     def unapplyUnwrap(tpe:Type) = (tpe match {
       case PolyType(_,MethodType(_, res)) => res

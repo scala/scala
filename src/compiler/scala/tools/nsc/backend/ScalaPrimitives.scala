@@ -581,16 +581,10 @@ abstract class ScalaPrimitives {
     val code = getPrimitive(fun)
 
     def elementType = atPhase(currentRun.typerPhase) {
-      val arrayParent = tpe :: tpe.parents find {
-        case TypeRef(_, sym, _elem :: Nil)
-             if (sym == ArrayClass) => true
-        case _ => false
+      val arrayParent = tpe :: tpe.parents collectFirst {
+        case TypeRef(_, ArrayClass, elem :: Nil) => elem
       }
-      if (arrayParent.isEmpty) {
-        println(fun.fullName + " : " + tpe :: tpe.baseTypeSeq.toList)
-      }
-      val TypeRef(_, _, elem :: Nil) = arrayParent.get
-      elem
+      arrayParent getOrElse system.error(fun.fullName + " : " + (tpe :: tpe.baseTypeSeq.toList).mkString(", "))
     }
 
     code match {

@@ -38,10 +38,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
     private var validCurrentOwner = true
     private var accDefs: List[(Symbol, ListBuffer[Tree])] = List()
 
-    private def accDefBuf(clazz: Symbol) = accDefs find (_._1 == clazz) match {
-      case Some((_, buf)) => buf
-      case None => throw new AssertionError("no acc def buf for "+clazz)
-    }
+    private def accDefBuf(clazz: Symbol) =
+      accDefs collectFirst { case (`clazz`, buf) => buf } getOrElse system.error("no acc def buf for "+clazz)
 
     private def transformArgs(args: List[Tree], params: List[Symbol]) =
       ((args, params).zipped map { (arg, param) =>
