@@ -18,9 +18,12 @@ trait TreePrinters { trees: SymbolTable =>
   final val showOuterTests = false
 
   /** Adds backticks if the name is a scala keyword. */
-  def quotedName(name: Name): String =
-    if (nme.keywords(name.toTermName)) "`%s`" format name
-    else name.toString
+  def quotedName(name: Name, decode: Boolean): String = {
+    val s = if (decode) name.decode else name.toString
+    if (nme.keywords(name.toTermName)) "`%s`" format s
+    else s
+  }
+  def quotedName(name: Name): String = quotedName(name, false)
 
   /** Turns a path into a String, introducing backquotes
    *  as necessary.
@@ -116,12 +119,11 @@ trait TreePrinters { trees: SymbolTable =>
     private def ifSym(tree: Tree, p: Symbol => Boolean) = symFn(tree, p, false)
 
     private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
-      val nameToString: Name => String = if (decoded) _.decode else quotedName
       def nameFn(sym: Symbol) = {
-        val prefix = if (sym.isMixinConstructor) "/*%s*/".format(nameToString(sym.owner.name)) else ""
+        val prefix = if (sym.isMixinConstructor) "/*%s*/".format(quotedName(sym.owner.name, decoded)) else ""
         prefix + tree.symbol.nameString
       }
-      symFn(tree, nameFn, nameToString(name))
+      symFn(tree, nameFn, quotedName(name, decoded))
     }
 
     def decodedSymName(tree: Tree, name: Name) = symNameInternal(tree, name, true)
@@ -154,7 +156,7 @@ trait TreePrinters { trees: SymbolTable =>
     }
 
     def print(str: String) { out.print(str) }
-    def print(name: Name) { print(name.toString()) }
+    def print(name: Name) { print(quotedName(name)) }
 
     private var currentOwner: Symbol = NoSymbol
     private var selectorType: Type = NoType
@@ -219,9 +221,11 @@ trait TreePrinters { trees: SymbolTable =>
         case Import(expr, selectors) =>
           // Is this selector remapping a name (i.e, {name1 => name2})
           def isNotRemap(s: ImportSelector) : Boolean = (s.name == nme.WILDCARD || s.name == s.rename)
-          def selectorToString(s: ImportSelector): String =
-              if (isNotRemap(s)) s.name.toString else s.name + "=>" + s.rename
-
+          def selectorToString(s: ImportSelector): String = {
+            val from = quotedName(s.name)
+            if (isNotRemap(s)) from
+            else from + "=>" + quotedName(s.rename)
+          }
           print("import "); print(backquotedPath(expr))
           print(".")
           selectors match {
@@ -509,7 +513,7 @@ trait TreePrinters { trees: SymbolTable =>
         case Select(qualifier, name) =>
           printRaw(qualifier)
           print(".")
-          print(name.decode)
+          print(quotedName(name, true))
 
         // target.toString() ==> target.toString
         case Apply(fn, Nil)   => printRaw(fn)
