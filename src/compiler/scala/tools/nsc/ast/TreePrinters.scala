@@ -20,7 +20,8 @@ trait TreePrinters { trees: SymbolTable =>
   /** Adds backticks if the name is a scala keyword. */
   def quotedName(name: Name, decode: Boolean): String = {
     val s = if (decode) name.decode else name.toString
-    if (nme.keywords(name.toTermName)) "`%s`" format s
+    val term = name.toTermName
+    if (nme.keywords(term) && term != nme.USCOREkw) "`%s`" format s
     else s
   }
   def quotedName(name: Name): String = quotedName(name, false)
