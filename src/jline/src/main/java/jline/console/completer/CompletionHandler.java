@@ -5,21 +5,21 @@
  * BSD license in the documentation provided with this software.
  */
 
-package jline;
+package jline.console.completer;
+
+import jline.console.ConsoleReader;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
- * An unsupported terminal.
+ * Handler for dealing with candidates for tab-completion.
  *
  * @author <a href="mailto:mwp1@cornell.edu">Marc Prud'hommeaux</a>
  * @author <a href="mailto:jason@planet57.com">Jason Dillon</a>
- * @since 2.0
+ * @since 2.3
  */
-public class UnsupportedTerminal
-    extends TerminalSupport
+public interface CompletionHandler
 {
-    public UnsupportedTerminal() {
-        super(false);
-        setAnsiSupported(false);
-        setEchoEnabled(true);
-    }
+    boolean complete(ConsoleReader reader, List<CharSequence> candidates, int position) throws IOException;
 }

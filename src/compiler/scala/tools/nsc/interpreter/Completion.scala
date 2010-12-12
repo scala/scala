@@ -8,6 +8,7 @@ package scala.tools.nsc
 package interpreter
 
 import jline._
+import jline.console.completer._
 import java.util.{ List => JList }
 import util.returning
 
@@ -285,8 +286,11 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
     topLevelFor(Parsed.dotted(buf + ".", buf.length + 1))
 
   // jline's entry point
-  lazy val jline: ArgumentCompletor =
-    returning(new ArgumentCompletor(new JLineCompletion, new JLineDelimiter))(_ setStrict false)
+  lazy val jline: ArgumentCompleter = {
+    val c = new ArgumentCompleter(new JLineDelimiter, new JLineCompletion)
+    c setStrict false
+    c
+  }
 
   /** This gets a little bit hairy.  It's no small feat delegating everything
    *  and also keeping track of exactly where the cursor is and where it's supposed
@@ -294,7 +298,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
    *  string in the list of completions, that means we are expanding a unique
    *  completion, so don't update the "last" buffer because it'll be wrong.
    */
-  class JLineCompletion extends Completor {
+  class JLineCompletion extends Completer {
     // For recording the buffer on the last tab hit
     private var lastBuf: String = ""
     private var lastCursor: Int = -1
@@ -309,7 +313,7 @@ class Completion(val repl: Interpreter) extends CompletionOutput {
       else xs.reduceLeft(_ zip _ takeWhile (x => x._1 == x._2) map (_._1) mkString)
 
     // This is jline's entry point for completion.
-    override def complete(_buf: String, cursor: Int, candidates: JList[String]): Int = {
+    override def complete(_buf: String, cursor: Int, candidates: JList[CharSequence]): Int = {
       val buf = if (_buf == null) "" else _buf
       verbosity = if (isConsecutiveTabs(buf, cursor)) verbosity + 1 else 0
       DBG("\ncomplete(%s, %d) last = (%s, %d), verbosity: %s".format(buf, cursor, lastBuf, lastCursor, verbosity))

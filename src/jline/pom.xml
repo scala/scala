@@ -1,224 +1,273 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-To build, you need to have Maven 2 installed.
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-To compile, run:
+    <modelVersion>4.0.0</modelVersion>
 
-    mvn compile
+    <parent>
+        <groupId>org.sonatype.forge</groupId>
+        <artifactId>forge-parent</artifactId>
+        <version>6</version>
+    </parent>
 
-To run tests, run:
+    <groupId>org.sonatype.jline</groupId>
+    <artifactId>jline</artifactId>
+    <name>JLine</name>
+    <version>2.6-SNAPSHOT</version>
 
-    mvn test
+    <organization>
+        <name>Sonatype</name>
+        <url>http://sonatype.org</url>
+    </organization>
 
-To run one particular test, e.g. TestSomeTest, run:
+    <licenses>
+        <license>
+            <name>The BSD License</name>
+            <url>http://www.opensource.org/licenses/bsd-license.php</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
-    mvn test -Dtest=TestSomeTest
+    <scm>
+        <connection>scm:git:git://github.com/jdillon/jline2.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/jdillon/jline2.git</developerConnection>
+        <url>http://github.com/jdillon/jline2</url>
+    </scm>
 
-To build the jars, run:
+    <ciManagement>
+        <system>Hudson</system>
+        <url>https://grid.sonatype.org/ci/job/JLine2</url>
+    </ciManagement>
 
-    mvn package
+    <developers>
+        <developer>
+            <id>jdillon</id>
+            <name>Jason Dillon</name>
+            <email>jason@planet57.com</email>
+            <roles>
+                <role>Build Master</role>
+                <role>Developer</role>
+            </roles>
+        </developer>
+    </developers>
 
-To create and upload a release, run:
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    
+    <!--
+    <repositories>
+        <repository>
+            <id>jansi</id>
+            <url>http://jansi.fusesource.org/repo/snapshot</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    -->
+    
+    <dependencies>
+        <dependency>
+            <groupId>org.fusesource.jansi</groupId>
+            <artifactId>jansi</artifactId>
+            <version>1.4</version>
+            <!--<scope>provided</scope>-->
+        </dependency>
 
-    mvn deploy
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
-To build the site and upload it, run:
+    <build>
+        <defaultGoal>install</defaultGoal>
 
-    mvn site:deploy
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
 
-To perform a complete release, run:
+            <resource>
+                <directory>${project.basedir}/src/main/filtered-resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+        </resources>
 
-    mvn clean compile package site assembly:assembly deploy site:deploy
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </testResource>
 
-To actually upload the artifact to sourceforge, it must be manually ftp'd:
+            <testResource>
+                <directory>${project.basedir}/src/test/filtered-resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </testResource>
+        </testResources>
 
-    lftp ftp://upload.sourceforge.net/incoming/ -e "put `ls target/jline-*.zip`"
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <forkMode>once</forkMode>
+                    <argLine>-ea</argLine>
+                    <failIfNoTests>false</failIfNoTests>
+                    <workingDirectory>${project.build.directory}</workingDirectory>
+                    <excludes>
+                        <exclude>**/Abstract*.java</exclude>
+                        <exclude>**/Test*.java</exclude>
+                    </excludes>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
 
-To make a bundle and request that ibilio upload it, do:
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.5</source>
+                    <target>1.5</target>
+                </configuration>
+            </plugin>
 
-    mvn source:jar javadoc:jar repository:bundle-create
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>2.1.0</version>
+                <executions>
+                    <execution>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                        <configuration>
+                            <instructions>
+                                <Import-Package>!jline*,javax.swing;resolution:=optional,*</Import-Package>
+                                <DynamicImport-Package>*</DynamicImport-Package>
+                            </instructions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-    scp target/jline-*-bundle.jar shell.sourceforge.net:/home/groups/j/jl/jline/htdocs
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.1</version>
+                <configuration>
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-    Make a request like at http://jira.codehaus.org/browse/MAVENUPLOAD-1003
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>1.4</version>
+            </plugin>
 
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-    http://maven.apache.org/maven-v4_0_0.xsd">
+            <!-- include all the dependencies into the jar so it can run standalone -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>1.4</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>junit:junit</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>org.fusesource.jansi:jansi</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>*.txt</exclude>
+                                        <exclude>junit/**</exclude>
+                                        <exclude>org/junit/**</exclude>
+                                        <exclude>org/hamcrest/**</exclude>
+                                        <exclude>org/fusesource/hawtjni/runtime/Jni*</exclude>
+                                        <exclude>org/fusesource/hawtjni/runtime/*Flag*</exclude>
+                                        <exclude>org/fusesource/hawtjni/runtime/T32*</exclude>
+                                        <exclude>org/fusesource/hawtjni/runtime/NativeStats*</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
-<properties>
-  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-</properties>
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>jline</groupId>
-  <artifactId>jline</artifactId>
-  <packaging>jar</packaging>
-  <name>JLine</name>
-  <version>0.9.95-SNAPSHOT</version>
-  <description>JLine is a java library for reading and editing user input in console applications. It features tab-completion, command history, password masking, customizable keybindings, and pass-through handlers to use to chain to other console applications.</description>
-  <url>http://jline.sourceforge.net</url>
-  <issueManagement>
-    <system>sourceforge</system>
-    <url>http://sourceforge.net/tracker/?group_id=64033&amp;atid=506056</url>
-  </issueManagement>
-  <inceptionYear>2002</inceptionYear>
-  <mailingLists>
-    <mailingList>
-      <name>JLine users</name>
-      <subscribe>https://lists.sourceforge.net/lists/listinfo/jline-users</subscribe>
-      <post>jline-users@lists.sourceforge.net</post>
-      <archive>http://sourceforge.net/mailarchive/forum.php?forum=jline-users</archive>
-    </mailingList>
-  </mailingLists>
+    <profiles>
+        <profile>
+            <id>retro</id>
+            <activation>
+                <property>
+                    <name>retro</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>retrotranslator-maven-plugin</artifactId>
+                        <version>1.0-alpha-4</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>translate-project</goal>
+                                </goals>
+                                <configuration>
+                                    <classifier>jdk14</classifier>
+                                    <attach>true</attach>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
-  <developers>
-    <developer>
-      <id>mprudhom</id>
-      <name>Marc Prud'hommeaux</name>
-      <email>mwp1@cornell.edu</email>
-    </developer>
-  </developers>
-  <licenses>
-    <license>
-      <name>BSD</name>
-      <url>LICENSE.txt</url>
-    </license>
-  </licenses>
-  <scm>
-    <connection>scm:cvs:pserver:anonymous@jline.cvs.sourceforge.net:/cvsroot/jline:jline</connection>
-    <developerConnection>scm:cvs:ext:${maven.username}@jline.cvs.sourceforge.net:/cvsroot/jline:jline</developerConnection>
-    <url>http://jline.cvs.sourceforge.net/jline</url>
-  </scm>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <plugins>
-      <!--
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>jalopy-maven-plugin</artifactId>
-        <version>1.0-SNAPSHOT</version>
-        <configuration>
-          <fileFormat>UNIX</fileFormat>
-          <convention>codestyle.xml</convention>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>format</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- <testFailureIgnore>true</testFailureIgnore> -->
-          <useFile>false</useFile>
-          <trimStackTrace>false</trimStackTrace>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
-          <showWarnings>true</showWarnings>
-          <compilerArgument>-Xlint:unchecked</compilerArgument>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <configuration>
-          <stagingDirectory>../site-staging</stagingDirectory>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <descriptors>
-            <descriptor>src/assembly/assembly.xml</descriptor>
-          </descriptors>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>jxr-maven-plugin</artifactId>
-        <configuration>
-          <aggregate>true</aggregate>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <aggregate>true</aggregate>
-          <linksource>true</linksource>
-          <links>
-            <link>http://java.sun.com/j2se/1.5.0/docs/api</link>
-          </links>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-        <reportSets>
-          <reportSet>
-            <reports>
-              <!-- <report>dependencies</report> -->
-              <!-- <report>cim</report> -->
-              <!-- <report>cobertura</report> -->
-              <report>project-team</report>
-              <report>mailing-list</report>
-              <report>issue-tracking</report>
-              <report>license</report>
-              <report>scm</report>
-            </reports>
-          </reportSet>
-        </reportSets>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>surefire-report-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </reporting>
-  <distributionManagement>
-    <repository>
-      <id>jline</id>
-      <url>scp://shell.sourceforge.net/home/groups/j/jl/jline/htdocs/m2repo</url>
-    </repository>
-    <snapshotRepository>
-      <id>jline</id>
-      <url>scp://shell.sourceforge.net/home/groups/j/jl/jline/htdocs/m2snapshot</url>
-    </snapshotRepository>
-    <site>
-      <id>jline</id>
-      <name>jline</name>
-      <url>scpexe://shell.sourceforge.net/home/groups/j/jl/jline/htdocs/</url>
-    </site>
-  </distributionManagement>
 </project>

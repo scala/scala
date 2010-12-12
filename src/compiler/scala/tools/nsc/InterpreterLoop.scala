@@ -195,17 +195,14 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   /** Show the history */
   def printHistory(xs: List[String]) {
     val defaultLines = 20
-
-    if (in.history.isEmpty)
-      return println("No history available.")
-
-    val current = in.history.get.index
-    val count = try xs.head.toInt catch { case _: Exception => defaultLines }
-    val lines = in.historyList takeRight count
-    val offset = current - lines.size + 1
+    val h       = in.history getOrElse { return println("No history available.") }
+    val current = h.index
+    val count   = try xs.head.toInt catch { case _: Exception => defaultLines }
+    val lines   = in.historyList takeRight count
+    val offset  = current - lines.size + 1
 
     for ((line, index) <- lines.zipWithIndex)
-      println("%d %s".format(index + offset, line))
+      println("%3d  %s".format(index + offset, line.value))
   }
 
   /** Some print conveniences */
@@ -216,14 +213,10 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
   /** Search the history */
   def searchHistory(_cmdline: String) {
     val cmdline = _cmdline.toLowerCase
+    val h       = in.history getOrElse { return println("No history available.") }
+    val offset  = h.index - h.size + 1
 
-    if (in.history.isEmpty)
-      return println("No history available.")
-
-    val current = in.history.get.index
-    val offset = current - in.historyList.size + 1
-
-    for ((line, index) <- in.historyList.zipWithIndex ; if line.toLowerCase contains cmdline)
+    for ((line, index) <- h.asStrings.zipWithIndex ; if line.toLowerCase contains cmdline)
       println("%d %s".format(index + offset, line))
   }
 

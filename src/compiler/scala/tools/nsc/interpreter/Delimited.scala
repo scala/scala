@@ -6,11 +6,11 @@
 package scala.tools.nsc
 package interpreter
 
-import jline.ArgumentCompletor.{ ArgumentDelimiter, ArgumentList }
+import jline.console.completer.ArgumentCompleter.{ ArgumentDelimiter, ArgumentList }
 
 class JLineDelimiter extends ArgumentDelimiter {
-  def delimit(buffer: String, cursor: Int) = Parsed(buffer, cursor).asJlineArgumentList
-  def isDelimiter(buffer: String, cursor: Int) = Parsed(buffer, cursor).isDelimiter
+  def delimit(buffer: CharSequence, cursor: Int) = Parsed(buffer.toString, cursor).asJlineArgumentList
+  def isDelimiter(buffer: CharSequence, cursor: Int) = Parsed(buffer.toString, cursor).isDelimiter
 }
 
 trait Delimited {

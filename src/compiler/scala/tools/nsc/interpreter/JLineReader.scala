@@ -7,34 +7,43 @@ package scala.tools.nsc
 package interpreter
 
 import java.io.File
-import jline.{ ConsoleReader, ArgumentCompletor, History => JHistory }
+import jline.console.ConsoleReader
+import jline.console.completer._
+import jline.console.history.{ History => JHistory }
 
 /** Reads from the console using JLine */
 class JLineReader(interpreter: Interpreter) extends InteractiveReader {
   def this() = this(null)
 
-  override lazy val history    = Some(History(consoleReader))
+  override lazy val history    = {
+    val h = History(consoleReader)
+    system addShutdownHook {
+      repldbg("Flushing history")
+      h.flush()
+    }
+    Some(h)
+  }
   override lazy val completion = Option(interpreter) map (x => new Completion(x))
-  override def init()          = consoleReader.getTerminal().initializeTerminal()
+  override def init()          = consoleReader.getTerminal().init()
   override def redrawLine()    = {
-    consoleReader.flushConsole()
+    consoleReader.flush()
     consoleReader.drawLine()
-    consoleReader.flushConsole()
+    consoleReader.flush()
   }
 
   val consoleReader = {
-    val r = new jline.ConsoleReader()
-    r setHistory (History().jhistory)
+    val r = new ConsoleReader()
+    r setHistory (History().jhistory) // placeholder
     r setBellEnabled false
     completion foreach { c =>
-      r addCompletor c.jline
-      r setAutoprintThreshhold 250
+      r addCompleter c.jline
+      r setAutoprintThreshold 250 // max completion candidates without warning
     }
 
     r
   }
 
-  override def currentLine: String = consoleReader.getCursorBuffer.getBuffer.toString
+  override def currentLine: String = consoleReader.getCursorBuffer.buffer.toString
   def readOneLine(prompt: String) = consoleReader readLine prompt
   val interactive = true
 }

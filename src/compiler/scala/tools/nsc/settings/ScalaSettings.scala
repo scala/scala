@@ -137,7 +137,8 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
                       BooleanSetting    ("-Ybuild-manager-debug", "Generate debug information for the Refined Build Manager compiler.")
   val Ytyperdebug   = BooleanSetting    ("-Ytyper-debug", "Trace all type assignements.")
   val Ypmatdebug    = BooleanSetting    ("-Ypmat-debug", "Trace all pattern matcher activity.")
-  val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.")
+  val Yrepldebug    = BooleanSetting    ("-Yrepl-debug", "Trace all repl activity.") .
+                                          withPostSetHook(set => interpreter._debug = true)
   val Ycompletion   = BooleanSetting    ("-Ycompletion-debug", "Trace all tab completion activity.")
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible.")
   val Ymurmur       = BooleanSetting    ("-Ymurmur", "Use Murmur hash algorithm for case class generated hashCodes.")

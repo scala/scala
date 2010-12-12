@@ -6,6 +6,13 @@
 package scala.tools.nsc
 
 package object interpreter {
+  private[nsc] val DebugProperty = "scala.repl.debug"
+  private[nsc] var _debug = false
+  private[nsc] def isReplDebug = _debug || (system.props contains DebugProperty)
+
+  /** Debug output */
+  def repldbg(msg: String) = if (isReplDebug) Console println msg
+
   /** Tracing */
   def tracing[T](msg: String)(x: T): T = { println("(" + msg + ") " + x) ; x }
 

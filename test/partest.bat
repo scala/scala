@@ -19,7 +19,7 @@ if "%OS%"=="Windows_NT" (
   call :set_home
   set _ARGS=%*
 ) else (
-  set _SCALA_HOME=%SCALA_HOME%
+  set _SCALA_HOME="%SCALA_HOME%"
   rem The following line tests SCALA_HOME instead of _SCALA_HOME, because
   rem the above change to _SCALA_HOME is not visible within this block.
   if "%SCALA_HOME%"=="" goto error1
@@ -31,11 +31,11 @@ set _JAVACMD=%JAVACMD%
 if "%_JAVACMD%"=="" set _JAVACMD=java
 
 rem We use the value of the JAVA_OPTS environment variable if defined
-set _JAVA_OPTS=%JAVA_OPTS%
+set _JAVA_OPTS="%JAVA_OPTS%"
 if "%_JAVA_OPTS%"=="" set _JAVA_OPTS=-Xmx256M -Xms16M
 
 rem We use the value of the SCALAC_OPTS environment variable if defined
-set _SCALAC_OPTS=%SCALAC_OPTS%
+set _SCALAC_OPTS="%SCALAC_OPTS%"
 if "%_SCALAC_OPTS%"=="" set _SCALAC_OPTS=-deprecation
 
 set _EXTENSION_CLASSPATH=

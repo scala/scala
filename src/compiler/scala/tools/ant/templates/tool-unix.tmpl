@@ -50,6 +50,10 @@ if [ -z "$TOOL_CLASSPATH" ] ; then
     done
 fi
 
+EXEC=exec
+CYGWIN_TERM_PRE=
+CYGWIN_TERM_POST=
+CYGWIN_JLINE_TERMINAL=
 if $cygwin; then
     if [ "$OS" = "Windows_NT" ] && cygpath -m .>/dev/null 2>/dev/null ; then
         format=mixed
@@ -58,9 +62,19 @@ if $cygwin; then
     fi
     SCALA_HOME=`cygpath --$format "$SCALA_HOME"`
     TOOL_CLASSPATH=`cygpath --path --$format "$TOOL_CLASSPATH"`
+    case "$TERM" in
+        rxvt* | xterm*)
+            EXEC=
+            CYGWIN_TERM_PRE="stty -icanon min 1 -echo"
+            CYGWIN_TERM_POST="stty icanon echo"
+            CYGWIN_JLINE_TERMINAL="-Djline.terminal=jline.UnixTerminal"
+            trap "$CYGWIN_TERM_POST" SIGINT
+        ;;
+    esac
+else
+    trap "stty echo" SIGINT
 fi
 
-# Reminder: substitution ${JAVA_OPTS:=-Xmx256M -Xms16M} DO NOT work on Solaris
 [ -n "$JAVA_OPTS" ] || JAVA_OPTS="@javaflags@"
 
 # break out -D and -J options and add them to JAVA_OPTS as well
@@ -97,11 +111,16 @@ if [ -z "$JAVACMD" -a -n "$JAVA_HOME" -a -x "$JAVA_HOME/bin/java" ]; then
     JAVACMD="$JAVA_HOME/bin/java"
 fi
 
-exec "${JAVACMD:=java}" \
+eval $CYGWIN_TERM_PRE
+
+$EXEC "${JAVACMD:=java}" \
   $JAVA_OPTS \
   "${java_args[@@]}" \
   $CPSWITCH \
   -Dscala.usejavacp=true \
   -Dscala.home="$SCALA_HOME" \
   -Denv.emacs="$EMACS" \
+  $CYGWIN_JLINE_TERMINAL \
   @properties@ @class@ @toolflags@ "$@@"
+  
+eval $CYGWIN_TERM_POST
