@@ -151,7 +151,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type, TypeRef, PolyType }
   import compiler.{
     Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
-    ModuleDef, Ident, Select, TypeDef, Import, MemberDef, DocDef,
+    ModuleDef, Ident, BackQuotedIdent, Select, TypeDef, Import, MemberDef, DocDef,
     ImportSelector, EmptyTree, NoType }
   import compiler.{ opt, nme, newTermName, newTypeName }
   import nme.{
@@ -244,7 +244,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   /** the previous requests this interpreter has processed */
   private val prevRequests      = new ArrayBuffer[Request]()
-  private val usedNameMap       = new mutable.HashMap[Name, Request]()
+  private val referencedNameMap = new mutable.HashMap[Name, Request]()
   private val boundNameMap      = new mutable.HashMap[Name, Request]()
   private def allHandlers       = prevRequests.toList flatMap (_.handlers)
   private def allReqAndHandlers = prevRequests.toList flatMap (req => req.handlers map (req -> _))
@@ -283,7 +283,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     }
 
     prevRequests += req
-    req.usedNames foreach (x => usedNameMap(x) = req)
+    req.referencedNames foreach (x => referencedNameMap(x) = req)
 
     req.boundNames foreach { name =>
       if (boundNameMap contains name) {
@@ -299,12 +299,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       quietBind("settings", "scala.tools.nsc.InterpreterSettings", isettings)
 
     // println("\n  s1 = %s\n  s2 = %s\n  s3 = %s".format(
-    //   tripart(usedNameMap.keysIterator.toSet, boundNameMap.keysIterator.toSet): _*
+    //   tripart(referencedNameMap.keysIterator.toSet, boundNameMap.keysIterator.toSet): _*
     // ))
   }
 
   private def keyList[T](x: collection.Map[T, _]): List[T] = x.keys.toList sortBy (_.toString)
-  def allUsedNames            = keyList(usedNameMap)
+  def allreferencedNames      = keyList(referencedNameMap)
   def allBoundNames           = keyList(boundNameMap)
   def allSeenTypes            = prevRequests.toList flatMap (_.typeOf.values.toList) distinct
   def allDefinedTypes         = prevRequests.toList flatMap (_.definedTypes.values.toList) distinct
@@ -435,16 +435,16 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
           case rh :: rest                             =>
             val importedNames = rh.handler match { case x: ImportHandler => x.importedNames ; case _ => Nil }
             import rh.handler._
-            val newWanted = wanted ++ usedNames -- boundNames -- importedNames
+            val newWanted = wanted ++ referencedNames -- boundNames -- importedNames
             rh :: select(rest, newWanted)
         }
       }
 
       /** Flatten the handlers out and pair each with the original request */
-      select(allReqAndHandlers reverseMap  { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
+      select(allReqAndHandlers reverseMap { case (r, h) => ReqAndHandler(r, h) }, wanted).reverse
     }
 
-    val code, trailingBraces, accessPath = new StringBuffer
+    val code, trailingBraces, accessPath = new StringBuilder
     val currentImps = mutable.HashSet[Name]()
 
     // add code for a new object to hold some imports
@@ -688,10 +688,12 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     val importVars = new mutable.HashSet[Name]()
 
     override def traverse(ast: Tree) = ast match {
-      // XXX this is obviously inadequate but it's going to require some effort
-      // to get right.
-      case Ident(name) if !(name.toString startsWith "x$")  => importVars += name
-      case _                                                => super.traverse(ast)
+      case Ident(name) =>
+        // XXX this is obviously inadequate but it's going to require some effort
+        // to get right.
+        if (name.toString startsWith "x$") ()
+        else importVars += name
+      case _        => super.traverse(ast)
     }
   }
 
@@ -699,7 +701,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
    *  in a single interpreter request.
    */
   private sealed abstract class MemberHandler(val member: Tree) {
-    lazy val usedNames: List[Name] = {
+    lazy val referencedNames: List[Name] = {
       val ivt = new ImportVarsTraverser()
       ivt traverse member
       ivt.importVars.toList
@@ -713,7 +715,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def extraCodeToEvaluate(req: Request, code: PrintWriter) { }
     def resultExtractionCode(req: Request, code: PrintWriter) { }
 
-    override def toString = "%s(used = %s)".format(this.getClass.toString split '.' last, usedNames)
+    override def toString = "%s(used = %s)".format(this.getClass.toString split '.' last, referencedNames)
   }
 
   private class GenericHandler(member: Tree) extends MemberHandler(member)
@@ -799,7 +801,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   private class ImportHandler(imp: Import) extends MemberHandler(imp) {
-    lazy val Import(expr, selectors) = imp
+    val Import(expr, selectors) = imp
     def targetType = stringToCompilerType(expr.toString) match {
       case NoType => None
       case x      => Some(x)
@@ -824,8 +826,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     val importedNames: List[Name] =
       selectorRenames filterNot (_ == USCOREkw) flatMap (_.bothNames)
 
-    override def resultExtractionCode(req: Request, code: PrintWriter) =
+    override def resultExtractionCode(req: Request, code: PrintWriter) = {
       code println codegenln(imp.toString)
+    }
   }
 
   /** One line of code submitted by the user for interpretation */
@@ -847,7 +850,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     val boundNames = handlers flatMap (_.boundNames)
 
     /** list of names used by this expression */
-    val usedNames: List[Name] = handlers flatMap (_.usedNames)
+    val referencedNames: List[Name] = handlers flatMap (_.referencedNames)
 
     /** def and val names */
     def defNames = partialFlatMap(handlers) { case x: DefHandler => x.boundNames }
@@ -866,7 +869,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
       * append to objectName to access anything bound by request.
       */
     val ComputedImports(importsPreamble, importsTrailer, accessPath) =
-      importsCode(Set.empty ++ usedNames)
+      importsCode(Set.empty ++ referencedNames)
 
     /** Code to access a variable with the specified name */
     def fullPath(vname: String): String = "%s.`%s`".format(objectName + accessPath, vname)
@@ -1089,7 +1092,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     def mkType(id: String): compiler.Type = stringToCompilerType(id)
 
     def dump(): String = (
-      ("Names used: " :: allUsedNames) ++
+      ("Names used: " :: allreferencedNames) ++
       ("\nIdentifiers: " :: unqualifiedIds)
     ) mkString " "
 

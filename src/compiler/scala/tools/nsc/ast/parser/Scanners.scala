@@ -9,7 +9,7 @@ import scala.tools.nsc.util._
 import Chars._
 import Tokens._
 import scala.annotation.switch
-import scala.collection.mutable.{ListBuffer, ArrayBuffer}
+import scala.collection.mutable.{ ListBuffer, ArrayBuffer }
 import scala.xml.Utility.{ isNameStart }
 
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.

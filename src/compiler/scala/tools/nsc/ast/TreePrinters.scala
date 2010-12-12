@@ -17,6 +17,20 @@ trait TreePrinters { trees: SymbolTable =>
 
   final val showOuterTests = false
 
+  /** Adds backticks if the name is a scala keyword. */
+  def quotedName(name: Name): String =
+    if (nme.keywords(name.toTermName)) "`%s`" format name
+    else name.toString
+
+  /** Turns a path into a String, introducing backquotes
+   *  as necessary.
+   */
+  def backquotedPath(t: Tree): String = t match {
+    case Select(qual, name) => "%s.%s".format(backquotedPath(qual), quotedName(name))
+    case Ident(name)        => quotedName(name)
+    case t                  => t.toString
+  }
+
   class TreePrinter(out: PrintWriter) extends trees.AbsTreePrinter(out) {
     protected var indentMargin = 0
     protected val indentStep = 2
@@ -102,7 +116,7 @@ trait TreePrinters { trees: SymbolTable =>
     private def ifSym(tree: Tree, p: Symbol => Boolean) = symFn(tree, p, false)
 
     private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
-      val nameToString: Name => String = if (decoded) _.decode else _.toString
+      val nameToString: Name => String = if (decoded) _.decode else quotedName
       def nameFn(sym: Symbol) = {
         val prefix = if (sym.isMixinConstructor) "/*%s*/".format(nameToString(sym.owner.name)) else ""
         prefix + tree.symbol.nameString
@@ -206,9 +220,9 @@ trait TreePrinters { trees: SymbolTable =>
           // Is this selector remapping a name (i.e, {name1 => name2})
           def isNotRemap(s: ImportSelector) : Boolean = (s.name == nme.WILDCARD || s.name == s.rename)
           def selectorToString(s: ImportSelector): String =
-              if (isNotRemap(s)) s.name.toString else s.name.toString + "=>" + s.rename.toString
+              if (isNotRemap(s)) s.name.toString else s.name + "=>" + s.rename
 
-          print("import "); print(expr)
+          print("import "); print(backquotedPath(expr))
           print(".")
           selectors match {
             case List(s) =>
@@ -337,7 +351,7 @@ trait TreePrinters { trees: SymbolTable =>
           print(qual)
 
         case Select(qualifier, name) =>
-          print(qualifier); print("."); print(symName(tree, name))
+          print(backquotedPath(qualifier)); print("."); print(symName(tree, name))
 
         case Ident(name) =>
           print(symName(tree, name))

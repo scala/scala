@@ -274,6 +274,18 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
     type NameType = TermName
     implicit def createNameType(name: String): TermName = newTermName(name)
 
+    final val keywords = Set[TermName](
+      ABSTRACTkw, CASEkw, CLASSkw, CATCHkw, DEFkw, DOkw, ELSEkw,
+      EXTENDSkw, FALSEkw, FINALkw, FINALLYkw, FORkw, FORSOMEkw, IFkw,
+      IMPLICITkw, IMPORTkw, LAZYkw, MATCHkw, NEWkw, NULLkw, OBJECTkw,
+      OVERRIDEkw, PACKAGEkw, PRIVATEkw, PROTECTEDkw, RETURNkw, REQUIRESkw,
+      SEALEDkw, SUPERkw, THISkw, THROWkw, TRAITkw, TRUEkw, TRYkw, TYPEkw,
+      VALkw, VARkw, WITHkw, WHILEkw, YIELDkw
+    ) ++ Set[TermName](
+      DOTkw, USCOREkw, COLONkw, EQUALSkw, ARROWkw, LARROWkw, SUBTYPEkw,
+      VIEWBOUNDkw, SUPERTYPEkw, HASHkw, ATkw
+    )
+
     /** Translate a String into a list of simple TypeNames and TermNames.
      *  In all segments before the last, type/term is determined by whether
      *  the following separator char is '.' or '#'.  In the last segment,
@@ -309,7 +321,6 @@ trait StdNames extends reflect.generic.StdNames with NameManglers {
           mkName(simple, div == '.') :: segments(rest, assumeTerm)
       }
     }
-
     private def bitmapName(n: Int, suffix: String): TermName =
       newTermName(BITMAP_PREFIX + suffix + n)
 
