@@ -30,8 +30,7 @@ import util.Chars.{ SU, LF }
  *  @author  Burak Emir
  *  @version 1.0
  */
-trait MarkupParsers
-{
+trait MarkupParsers {
   self: Parsers =>
 
   case object MissingEndTagControl extends ControlThrowable {
@@ -294,7 +293,7 @@ trait MarkupParsers
       while (ch != SU) {
         if (ch == '}') {
           if (charComingAfter(nextch) == '}') nextch
-          else errorBraces
+          else errorBraces()
         }
 
         buf append ch
@@ -318,7 +317,7 @@ trait MarkupParsers
       }
       finally parser.in resume Tokens.XMLSTART
 
-      EmptyTree
+      parser.errorTermTree
     }
 
     /** Use a lookahead parser to run speculative body, and return the first char afterward. */
