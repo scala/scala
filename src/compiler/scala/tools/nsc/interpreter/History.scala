@@ -33,10 +33,6 @@ class History(val jhistory: JHistory) {
 object History {
   val ScalaHistoryFile = ".scala_history"
 
-  def apply(reader: ConsoleReader): History =
-    if (reader == null) apply()
-    else new History(reader.getHistory)
-
   def apply(): History = new History(
     try new FileHistory(new File(userHome, ScalaHistoryFile))
     catch {

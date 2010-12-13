@@ -148,7 +148,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
     else null
   }
 
-  import compiler.{ Traverser, CompilationUnit, Symbol, Name, Type, TypeRef, PolyType }
+  import compiler.{ Traverser, CompilationUnit, Symbol, Name, TermName, TypeName, Type, TypeRef, PolyType }
   import compiler.{
     Tree, TermTree, ValOrDefDef, ValDef, DefDef, Assign, ClassDef,
     ModuleDef, Ident, BackQuotedIdent, Select, TypeDef, Import, MemberDef, DocDef,
@@ -268,12 +268,16 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   }
 
   /** Stubs for work in progress. */
-  def handleTypeRedefinition(name: Name, old: Request, req: Request) = {
-    DBG("Redefining type '%s'\n  %s -> %s".format(name, old simpleNameOfType name, req simpleNameOfType name))
+  def handleTypeRedefinition(name: TypeName, old: Request, req: Request) = {
+    for (t1 <- old.simpleNameOfType(name) ; t2 <- req.simpleNameOfType(name)) {
+      DBG("Redefining type '%s'\n  %s -> %s".format(name, t1, t2))
+    }
   }
 
-  def handleTermRedefinition(name: Name, old: Request, req: Request) = {
-    DBG("Redefining term '%s'\n  %s -> %s".format(name, old compilerTypeOf name, req compilerTypeOf name))
+  def handleTermRedefinition(name: TermName, old: Request, req: Request) = {
+    for (t1 <- old.compilerTypeOf get name ; t2 <- req.compilerTypeOf get name) {
+      DBG("Redefining term '%s'\n  %s -> %s".format(name, t1, t2))
+    }
   }
 
   def recordRequest(req: Request) {
@@ -287,8 +291,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     req.boundNames foreach { name =>
       if (boundNameMap contains name) {
-        if (name.isTypeName) handleTypeRedefinition(name, boundNameMap(name), req)
-        else handleTermRedefinition(name, boundNameMap(name), req)
+        if (name.isTypeName) handleTypeRedefinition(name.toTypeName, boundNameMap(name), req)
+        else handleTermRedefinition(name.toTermName, boundNameMap(name), req)
       }
       boundNameMap(name) = req
     }
@@ -986,8 +990,7 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
     /* typeOf lookup with encoding */
     def lookupTypeOf(name: Name) = typeOf.getOrElse(name, typeOf(compiler encode name))
-
-    def simpleNameOfType(name: Name) = compilerTypeOf(name).typeSymbol.simpleName
+    def simpleNameOfType(name: TypeName) = (compilerTypeOf get name) map (_.typeSymbol.simpleName)
 
     private def typeMap[T](f: Type => T): Map[Name, T] = {
       def toType(name: Name): T = {
@@ -1291,9 +1294,8 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
   // }
 
   // debugging
-  def isReplDebug = settings.Yrepldebug.value
   def isCompletionDebug = settings.Ycompletion.value
-  def DBG(s: String) = if (isReplDebug) out println s else ()
+  def DBG(s: String) = repldbg(s)
 }
 
 /** Utility methods for the Interpreter. */

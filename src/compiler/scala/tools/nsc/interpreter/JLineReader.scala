@@ -16,7 +16,7 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
   def this() = this(null)
 
   override lazy val history    = {
-    val h = History(consoleReader)
+    val h = History()
     system addShutdownHook {
       repldbg("Flushing history")
       h.flush()
@@ -33,8 +33,8 @@ class JLineReader(interpreter: Interpreter) extends InteractiveReader {
 
   val consoleReader = {
     val r = new ConsoleReader()
-    r setHistory (History().jhistory) // placeholder
     r setBellEnabled false
+    history foreach { r setHistory _.jhistory }
     completion foreach { c =>
       r addCompleter c.jline
       r setAutoprintThreshold 250 // max completion candidates without warning
