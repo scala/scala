@@ -551,6 +551,13 @@ object JavaConversions {
 
   // Private implementations (shared by JavaConverters) ...
 
+  trait IterableWrapperTrait[A] extends ju.AbstractCollection[A] {
+    val underlying: Iterable[A]
+    def size = underlying.size
+    override def iterator = IteratorWrapper(underlying.iterator)
+    override def isEmpty = underlying.isEmpty
+  }
+
   case class IteratorWrapper[A](underlying : Iterator[A]) extends ju.Iterator[A] with ju.Enumeration[A] {
     def hasNext = underlying.hasNext
     def next = underlying.next
@@ -573,11 +580,9 @@ object JavaConversions {
     def next = underlying.nextElement
   }
 
-  case class IterableWrapper[A](underlying : Iterable[A]) extends ju.AbstractCollection[A] {
-    def iterator = underlying.iterator
-    def size = underlying.size
-    override def isEmpty = underlying.isEmpty
-  }
+  case class IterableWrapper[A](underlying : Iterable[A])
+                extends ju.AbstractCollection[A]
+                   with IterableWrapperTrait[A] { }
 
   case class JIterableWrapper[A](underlying : jl.Iterable[A]) extends Iterable[A] {
     def iterator = underlying.iterator
@@ -591,19 +596,16 @@ object JavaConversions {
     def newBuilder[B] = new mutable.ArrayBuffer[B]
   }
 
-  case class SeqWrapper[A](underlying : Seq[A]) extends ju.AbstractList[A] {
-    def size = underlying.length
+  case class SeqWrapper[A](underlying : Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] {
     def get(i : Int) = underlying(i)
   }
 
-  case class MutableSeqWrapper[A](underlying : mutable.Seq[A]) extends ju.AbstractList[A] {
-    def size = underlying.length
+  case class MutableSeqWrapper[A](underlying : mutable.Seq[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] {
     def get(i : Int) = underlying(i)
     override def set(i : Int, elem: A) = { val p = underlying(i) ; underlying(i) = elem ; p }
   }
 
-  case class MutableBufferWrapper[A](underlying : mutable.Buffer[A]) extends ju.AbstractList[A] {
-    def size = underlying.length
+  case class MutableBufferWrapper[A](underlying : mutable.Buffer[A]) extends ju.AbstractList[A] with IterableWrapperTrait[A] {
     def get(i : Int) = underlying(i)
     override def set(i : Int, elem: A) = { val p = underlying(i) ; underlying(i) = elem ; p }
     override def add(elem : A) = { underlying.append(elem) ; true }
