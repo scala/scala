@@ -513,7 +513,11 @@ public class ConsoleReader
      * fixes backspace issue, where it assumes that the terminal is doing this.
      */
     private final void newlineAtWrap() throws IOException {
-        if (terminal.newlineAtWrapNeeded()) {
+        /** On OSX this leads to failure to paste lines longer than the
+         *  the terminal width.  It spews some ansi control and truncates
+         *  the paste.
+         */
+        if (false && terminal.newlineAtWrapNeeded()) {
             int width = getTerminal().getWidth();
 
             if ((getCursorPosition() % width == 0) && getCurrentPosition() >= width)
