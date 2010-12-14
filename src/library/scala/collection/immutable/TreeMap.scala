@@ -120,6 +120,7 @@ class TreeMap[A, +B](override val size: Int, t: RedBlack[A]#Tree[B])(implicit va
 
   def - (key:A): TreeMap[A, B] =
     if (tree.lookup(key).isEmpty) this
+    else if (size == 1) empty
     else TreeMap.make(size - 1, tree.delete(key))
 
   /** Check if this map maps `key` to a value and return the
