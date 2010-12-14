@@ -152,10 +152,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
       // follow the primary constructor
       val auxConstructorBuf = new ListBuffer[Tree]
 
-      // The list of statements that go into constructor after superclass constructor call
+      // The list of statements that go into constructor after and including the superclass constructor call
       val constrStatBuf = new ListBuffer[Tree]
 
-      // The list of statements that go into constructor before superclass constructor call
+      // The list of early initializer statements that go into constructor before the superclass constructor call
       val constrPrefixBuf = new ListBuffer[Tree]
 
       // The early initialized field definitions of the class (these are the class members)
@@ -365,17 +365,17 @@ abstract class Constructors extends Transform with ast.TreeDSL {
        *  has specialized fields, and their initialization should be deferred to the subclass, method
        *  'specInstance$' is added in phase specialize.
        */
-      def guardSpecializedInitializer(stats0: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats0 else {
+      def guardSpecializedInitializer(stats: List[Tree]): List[Tree] = if (settings.nospecialization.value) stats else {
         // split the statements in presuper and postsuper
-        var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
-        if (postfix.nonEmpty) {
-          prefix = prefix :+ postfix.head
-          postfix = postfix.tail
-        }
+    //    var (prefix, postfix) = stats0.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor))
+      //  if (postfix.nonEmpty) {
+        //  prefix = prefix :+ postfix.head
+          //postfix = postfix.tail
+        //}
 
-        if (usesSpecializedField && shouldGuard && postfix.nonEmpty) {
+        if (usesSpecializedField && shouldGuard && stats.nonEmpty) {
           // save them for duplication in the specialized subclass
-          guardedCtorStats(clazz) = postfix
+          guardedCtorStats(clazz) = stats
           ctorParams(clazz) = constrParams
 
           val tree =
@@ -385,10 +385,10 @@ abstract class Constructors extends Transform with ast.TreeDSL {
                   Apply(gen.mkAttributedRef(specializedFlag), List()),
                   definitions.getMember(definitions.BooleanClass, nme.UNARY_!)),
                 List()),
-              Block(postfix, Literal(())),
+              Block(stats, Literal(())),
               EmptyTree)
 
-          prefix ::: List(localTyper.typed(tree))
+          List(localTyper.typed(tree))
         } else if (clazz.hasFlag(SPECIALIZED)) {
           // add initialization from its generic class constructor
           val (genericName, _, _) = nme.splitSpecializedName(clazz.name)
@@ -396,12 +396,93 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           assert(genericClazz != NoSymbol)
 
           guardedCtorStats.get(genericClazz) match {
-            case Some(stats1) =>
-              val merged = mergeConstructors(genericClazz, stats1, postfix)
-              prefix ::: merged
-            case None => stats0
+            case Some(stats1) => mergeConstructors(genericClazz, stats1, stats)
+            case None => stats
           }
-        } else stats0
+        } else stats
+      }
+
+      def isInitDef(stat: Tree) = stat match {
+        case dd: DefDef => dd.symbol == delayedInitMethod
+        case _ => false
+      }
+
+      def delayedInitClosure(stats: List[Tree]) =
+        localTyper.typed {
+          atPos(impl.pos) {
+            val closureClass = clazz.newClass(impl.pos, nme.delayedInitArg.toTypeName)
+              .setFlag(SYNTHETIC | FINAL)
+            val closureParents = List(AbstractFunctionClass(0).tpe, ScalaObjectClass.tpe)
+            closureClass.setInfo(new ClassInfoType(closureParents, new Scope, closureClass))
+
+            val outerField = clazz.newValue(impl.pos, nme.OUTER)
+              .setFlag(PRIVATE | LOCAL)
+              .setInfo(clazz.tpe)
+
+            val applyMethod = closureClass.newMethod(impl.pos, nme.apply)
+              .setFlag(FINAL)
+              .setInfo(MethodType(List(), ObjectClass.tpe))
+
+            closureClass.info.decls enter outerField
+            closureClass.info.decls enter applyMethod
+
+            val outerFieldDef = ValDef(outerField)
+
+            val changeOwner = new ChangeOwnerTraverser(impl.symbol, applyMethod)
+            val constrStatTransformer = new Transformer {
+              override def transform(tree: Tree): Tree = tree match {
+                case This(`clazz`) =>
+                  localTyper.typed {
+                    atPos(tree.pos) {
+                      Select(This(closureClass), outerField)
+                    }
+                  }
+                case _ =>
+                  changeOwner traverse tree
+                  tree
+              }
+            }
+
+            def applyMethodStats = constrStatTransformer.transformTrees(stats)
+
+            val applyMethodDef = DefDef(
+              sym = applyMethod,
+              vparamss = List(List()),
+              rhs = Block(applyMethodStats, gen.mkAttributedRef(BoxedUnit_UNIT)))
+
+            util.trace("delayedInit: ") { ClassDef(
+              sym = closureClass,
+              constrMods = Modifiers(0),
+              vparamss = List(List(outerFieldDef)),
+              argss = List(List()),
+              body = List(outerFieldDef, applyMethodDef),
+              superPos = impl.pos)
+          }}
+        }
+
+      def delayedInitCall(closure: Tree) =
+        localTyper.typed {
+          atPos(impl.pos) {
+            Apply(
+              Select(This(clazz), delayedInitMethod),
+              List(New(TypeTree(closure.symbol.tpe), List(List(This(clazz))))))
+          }
+        }
+
+      /** Return a pair consisting of (all statements up to and icnluding superclass constr call, rest) */
+      def splitAtSuper(stats: List[Tree]) =
+        stats.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor)) match {
+          case (prefix, supercall :: rest) => (prefix :+ supercall, rest)
+          case p => p
+        }
+
+      var (uptoSuperStats, remainingConstrStats) = splitAtSuper(constrStatBuf.toList)
+
+      val needsDelayedInit =
+        false && (clazz isSubClass DelayedInitClass) && !(defBuf exists isInitDef) && remainingConstrStats.nonEmpty
+
+      if (needsDelayedInit) {
+        remainingConstrStats = List(delayedInitCall(delayedInitClosure(remainingConstrStats)))
       }
 
       // Assemble final constructor
@@ -409,7 +490,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         constr, constr.mods, constr.name, constr.tparams, constr.vparamss, constr.tpt,
         treeCopy.Block(
           constrBody,
-          paramInits ::: constrPrefixBuf.toList ::: guardSpecializedInitializer(constrStatBuf.toList),
+          paramInits ::: constrPrefixBuf.toList ::: uptoSuperStats :::
+            guardSpecializedInitializer(remainingConstrStats),
           constrBody.expr));
 
       // Followed by any auxiliary constructors
