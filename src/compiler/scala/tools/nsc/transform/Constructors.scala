@@ -450,14 +450,14 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               vparamss = List(List()),
               rhs = Block(applyMethodStats, gen.mkAttributedRef(BoxedUnit_UNIT)))
 
-            util.trace("delayedInit: ") { ClassDef(
+            ClassDef(
               sym = closureClass,
               constrMods = Modifiers(0),
               vparamss = List(List(outerFieldDef)),
               argss = List(List()),
               body = List(outerFieldDef, applyMethodDef),
               superPos = impl.pos)
-          }}
+          }
         }
 
       def delayedInitCall(closure: Tree) =
@@ -469,20 +469,23 @@ abstract class Constructors extends Transform with ast.TreeDSL {
           }
         }
 
-      /** Return a pair consisting of (all statements up to and icnluding superclass constr call, rest) */
-      def splitAtSuper(stats: List[Tree]) =
-        stats.span(tree => !((tree.symbol ne null) && tree.symbol.isConstructor)) match {
-          case (prefix, supercall :: rest) => (prefix :+ supercall, rest)
-          case p => p
-        }
+      /** Return a pair consisting of (all statements up to and including superclass and trait constr calls, rest) */
+      def splitAtSuper(stats: List[Tree]) = {
+        def isConstr(tree: Tree) = (tree.symbol ne null) && tree.symbol.isConstructor
+        val (pre, rest0) = stats span (!isConstr(_))
+        val (supercalls, rest) = rest0 span (isConstr(_))
+        (pre ::: supercalls, rest)
+      }
 
       var (uptoSuperStats, remainingConstrStats) = splitAtSuper(constrStatBuf.toList)
 
       val needsDelayedInit =
-        false && (clazz isSubClass DelayedInitClass) && !(defBuf exists isInitDef) && remainingConstrStats.nonEmpty
+        (clazz isSubClass DelayedInitClass) && !(defBuf exists isInitDef) && remainingConstrStats.nonEmpty
 
       if (needsDelayedInit) {
-        remainingConstrStats = List(delayedInitCall(delayedInitClosure(remainingConstrStats)))
+        val dicl = delayedInitClosure(remainingConstrStats)
+        defBuf += dicl
+        remainingConstrStats = List(delayedInitCall(dicl))
       }
 
       // Assemble final constructor
