@@ -17,6 +17,7 @@ trait InteractiveReader {
   protected def readOneLine(prompt: String): String
   val interactive: Boolean
   def init(): Unit = ()
+  def reset(): Unit = ()
   def redrawLine(): Unit = ()
   def currentLine = ""    // the current buffer contents, if available
 
@@ -24,7 +25,7 @@ trait InteractiveReader {
     def handler: Catcher[String] = {
       case e: ClosedByInterruptException          => system.error("Reader closed by interrupt.")
       // Terminal has to be re-initialized after SIGSTP or up arrow etc. stop working.
-      case e: IOException if restartSystemCall(e) => init() ; readLine(prompt)
+      case e: IOException if restartSystemCall(e) => reset() ; readLine(prompt)
     }
     catching(handler) { readOneLine(prompt) }
   }
