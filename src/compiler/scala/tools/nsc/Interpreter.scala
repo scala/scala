@@ -284,6 +284,10 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   def handleTermRedefinition(name: TermName, old: Request, req: Request) = {
     for (t1 <- old.compilerTypeOf get name ; t2 <- req.compilerTypeOf get name) {
+      // Printing the types here has a tendency to cause assertion errors, like
+      //   assertion failed: fatal: <refinement> has owner value x, but a class owner is required
+      // so DBG is by-name now to keep it in the family.  (It also traps the assertion error,
+      // but we don't want to unnecessarily risk hosing the compiler's internal state.)
       DBG("Redefining term '%s'\n  %s -> %s".format(name, t1, t2))
     }
   }
@@ -1303,7 +1307,9 @@ class Interpreter(val settings: Settings, out: PrintWriter) {
 
   // debugging
   def isCompletionDebug = settings.Ycompletion.value
-  def DBG(s: String) = repldbg(s)
+  def DBG(s: => String) =
+    try if (isReplDebug) repldbg(s)
+    catch { case x: AssertionError => repldbg("Assertion error printing debug string:\n  " + x) }
 }
 
 /** Utility methods for the Interpreter. */
