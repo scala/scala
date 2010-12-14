@@ -1791,7 +1791,7 @@ trait Typers { self: Analyzer =>
       if (meth.isPrimaryConstructor && meth.isClassConstructor &&
           phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
         computeParamAliases(meth.owner, vparamss1, rhs1)
-      if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen) rhs1 = checkDead(rhs1)
+      if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass) rhs1 = checkDead(rhs1)
 
       if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
           meth.paramss.exists(ps => ps.exists(_.hasDefaultFlag) && isRepeatedParamType(ps.last.tpe)))
@@ -2205,8 +2205,11 @@ trait Typers { self: Analyzer =>
       else checkNoDoubleDefsAndAddSynthetics(result)
     }
 
-    def typedArg(arg: Tree, mode: Int, newmode: Int, pt: Type): Tree =
-      checkDead(constrTyperIf((mode & SCCmode) != 0).typed(arg, mode & stickyModes | newmode, pt))
+    def typedArg(arg: Tree, mode: Int, newmode: Int, pt: Type): Tree = {
+      val t = constrTyperIf((mode & SCCmode) != 0).typed(arg, mode & stickyModes | newmode, pt)
+      if ((newmode & BYVALmode) != 0) t
+      else checkDead(t)
+    }
 
     def typedArgs(args: List[Tree], mode: Int) =
       args mapConserve (arg => typedArg(arg, mode, 0, WildcardType))

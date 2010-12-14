@@ -1,0 +1,7 @@
+check-dead.scala:27: error: dead code following this construct
+    throw new Exception
+    ^
+check-dead.scala:31: error: dead code following this construct
+    throw new Exception
+    ^
+two errors found
