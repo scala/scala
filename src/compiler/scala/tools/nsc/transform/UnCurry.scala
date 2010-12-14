@@ -419,7 +419,8 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
           }
           atPhase(phase.next) {
             localTyper.typedPos(pos) {
-              Apply(gen.mkAttributedSelect(tree, toArraySym), List(getManifest(tree.tpe.typeArgs.head)))
+              Apply(gen.mkAttributedSelect(tree, toArraySym),
+                    List(getManifest(tree.tpe.baseType(TraversableClass).typeArgs.head)))
             }
           }
         }
