@@ -1479,12 +1479,6 @@ trait Infer {
       protected def includeCondition(sym: Symbol): Boolean = true
     }
 
-    def checkDead(tree: Tree): Tree = {
-      if (settings.Ywarndeadcode.value && tree.tpe != null && tree.tpe.typeSymbol == NothingClass)
-        context.warning (tree.pos, "dead code following this construct")
-      tree
-    }
-
     /* -- Overload Resolution ---------------------------------------------- */
 
 /*

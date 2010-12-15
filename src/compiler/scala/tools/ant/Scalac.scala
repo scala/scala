@@ -329,7 +329,6 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
         (if (input != "") List(st) else Nil)
       else {
         buildError("Phase " + st + " in log does not exist.")
-        Nil
       }
     }
   }

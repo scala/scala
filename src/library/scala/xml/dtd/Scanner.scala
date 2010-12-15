@@ -65,7 +65,7 @@ class Scanner extends Tokens with parsing.TokenTests {
       case ENDCH => END
       case _     =>
         if (isNameStart(c)) name; // NAME
-        else { system.error("unexpected character:"+c); END }
+        else system.error("unexpected character:" + c)
     }
 
   final def name = {

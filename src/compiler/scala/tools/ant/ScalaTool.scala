@@ -100,7 +100,6 @@ class ScalaTool extends ScalaMatchingTask {
         (if (input != "") List(st) else Nil)
       else {
         buildError("Platform " + st + " does not exist.")
-        Nil
       }
     }
   }

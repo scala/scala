@@ -351,7 +351,6 @@ self: Analyzer =>
          case Some(pending) =>
            // println("Pending implicit "+pending+" dominates "+pt+"/"+undetParams) //@MDEBUG
            throw DivergentImplicit
-           SearchFailure
          case None =>
            try {
              context.openImplicits = (pt, tree.symbol) :: context.openImplicits

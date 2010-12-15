@@ -332,6 +332,38 @@ trait TypeDiagnostics {
     private def contextError(pos: Position, msg: String) = context.error(pos, msg)
     private def contextError(pos: Position, err: Throwable) = context.error(pos, err)
 
+    object checkDead {
+      private var expr: Symbol = NoSymbol
+      private def exprOK = expr != Object_synchronized
+      private def treeOK(tree: Tree) = tree.tpe != null && tree.tpe.typeSymbol == NothingClass
+
+      def updateExpr(fn: Tree) = {
+        if (fn.symbol != null && fn.symbol.isMethod && !fn.symbol.isConstructor)
+          checkDead.expr = fn.symbol
+      }
+      def apply(tree: Tree): Tree = {
+        // Error suppression will squash some of these warnings unless we circumvent it.
+        // It is presumed if you are using a -Y option you would really like to hear
+        // the warnings you've requested.
+        if (settings.Ywarndeadcode.value && context.unit != null && treeOK(tree) && exprOK) {
+          val saved = context.reportGeneralErrors
+          try {
+            context.reportGeneralErrors = true
+            context.warning(tree.pos, "dead code following this construct")
+          }
+          finally context.reportGeneralErrors = saved
+        }
+        tree
+      }
+
+      // The checkDead call from typedArg is more selective.
+      def inMode(mode: Int, tree: Tree): Tree = {
+        val modeOK = (mode & (EXPRmode | BYVALmode | POLYmode)) == (EXPRmode | BYVALmode)
+        if (modeOK) apply(tree)
+        else tree
+      }
+    }
+
     def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
     def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
 

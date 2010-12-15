@@ -1791,7 +1791,8 @@ trait Typers { self: Analyzer =>
       if (meth.isPrimaryConstructor && meth.isClassConstructor &&
           phase.id <= currentRun.typerPhase.id && !reporter.hasErrors)
         computeParamAliases(meth.owner, vparamss1, rhs1)
-      if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass) rhs1 = checkDead(rhs1)
+      if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
+        rhs1 = checkDead(rhs1)
 
       if (phase.id <= currentRun.typerPhase.id && meth.owner.isClass &&
           meth.paramss.exists(ps => ps.exists(_.hasDefaultFlag) && isRepeatedParamType(ps.last.tpe)))
@@ -2206,9 +2207,9 @@ trait Typers { self: Analyzer =>
     }
 
     def typedArg(arg: Tree, mode: Int, newmode: Int, pt: Type): Tree = {
-      val t = constrTyperIf((mode & SCCmode) != 0).typed(arg, mode & stickyModes | newmode, pt)
-      if ((newmode & BYVALmode) != 0) t
-      else checkDead(t)
+      val typedMode = mode & stickyModes | newmode
+      val t = constrTyperIf((mode & SCCmode) != 0).typed(arg, typedMode, pt)
+      checkDead.inMode(typedMode, t)
     }
 
     def typedArgs(args: List[Tree], mode: Int) =
@@ -2301,6 +2302,7 @@ trait Typers { self: Analyzer =>
         if (sym != NoSymbol)
           fun = adapt(fun setSymbol sym setType pre.memberType(sym), funMode(mode), WildcardType)
       }
+
       fun.tpe match {
         case OverloadedType(pre, alts) =>
           val undetparams = context.extractUndetparams()
@@ -2427,6 +2429,12 @@ trait Typers { self: Analyzer =>
           } else {
             val tparams = context.extractUndetparams()
             if (tparams.isEmpty) { // all type params are defined
+              // In order for checkDead not to be misled by the unfortunate special
+              // case of AnyRef#synchronized (which is implemented with signature T => T
+              // but behaves as if it were (=> T) => T) we need to know what is the actual
+              // target of a call.  Since this information is no longer available from
+              // typedArg, it is recorded here.
+              checkDead.updateExpr(fun)
               val args1 = typedArgs(args, argMode(fun, mode), paramTypes, formals)
               // instantiate dependent method types, must preserve singleton types where possible (stableTypeFor) -- example use case:
               // val foo = "foo"; def precise(x: String)(y: x.type): x.type = {...}; val bar : foo.type = precise(foo)(foo)

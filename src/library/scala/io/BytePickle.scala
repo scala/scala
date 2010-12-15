@@ -144,7 +144,7 @@ object BytePickle {
         case Ref() =>
           val res2 = unat.appU(res._2)  // read location
           upe.get(res2._1) match {     // lookup value in unpickler env
-            case None => throw new IllegalArgumentException("invalid unpickler environment"); return null
+            case None => throw new IllegalArgumentException("invalid unpickler environment")
             case Some(v) => return (v.asInstanceOf[a], new UnPicklerState(res2._2, upe))
           }
       }
@@ -153,7 +153,7 @@ object BytePickle {
 
   def ulift[t](x: t): PU[t] = new PU[t] {
     def appP(a: t, state: Array[Byte]): Array[Byte] =
-      if (x != a) { throw new IllegalArgumentException("value to be pickled (" + a + ") != " + x); state }
+      if (x != a) throw new IllegalArgumentException("value to be pickled (" + a + ") != " + x)
       else state;
     def appU(state: Array[Byte]) = (x, state)
   }

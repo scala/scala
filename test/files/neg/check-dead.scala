@@ -1,34 +1,37 @@
-package dummy
-
-object Error {
-    def soSorry(msg: String = "sorry"): Nothing =
-        throw new Exception("we have a problem: "+msg)
+object Other {
+  def oops(msg: String = "xxx"): Nothing = throw new Exception(msg) // should not warn
 }
 
 class NoDeads {
-    def x = synchronized { throw new Exception }
-    def y[T](arg: T) = println("foo")
-    def z = this.y(throw new Exception)
+  def y1(arg: Any) = println("foo")
+  def z1 = y1(throw new Exception)  // should warn
 
-    def dummy1: Int = synchronized {
-        val i = 10 + 2
-        return i
-    }
-    def dummy1b: Int = synchronized {
-        val i = 10 + 2
-        i
-    }
+  def y2[T](arg: T) = println("foo")
+  def z2 = y2(throw new Exception)  // should warn
 
-    def dummy2: String = Error.soSorry("we're dummies")
-}
+  def y3[T](arg: => T) = println("foo")
+  def z3 = y3(throw new Exception)  // should not warn: by name arg
 
-class Deads {
-  def x1 = synchronized {
-    throw new Exception
+  def nowarn1 = synchronized { throw new Exception } // should not warn: synchronized should be by name
+
+  def nowarn2: Int = synchronized { // should not warn
+      val i = 10 + 2
+      return i
+  }
+  def nowarn3: Int = synchronized { // should not warn
+      val i = 10 + 2
+      i
+  }
+
+  def nowarn4: String = Other.oops("don't warn about me") // should not warn
+
+  def yeswarn1 = synchronized {
+    throw new Exception // should warn
     5 * 5
   }
-  def x2: Int = synchronized {
-    throw new Exception
+  def yeswarn2: Int = synchronized {
+    throw new Exception // should warn
     return 5
   }
 }
+
