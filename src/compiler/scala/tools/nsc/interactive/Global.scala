@@ -367,6 +367,7 @@ self =>
 
   /** Make sure a set of compilation units is loaded and parsed */
   def reloadSources(sources: List[SourceFile]) {
+    if (debugIDE) inform("reloadSources " + sources)
     currentTyperRun = newTyperRun
     for (source <- sources) {
       val unit = new RichCompilationUnit(source)
@@ -378,6 +379,7 @@ self =>
 
   /** Make sure a set of compilation units is loaded and parsed */
   def reload(sources: List[SourceFile], response: Response[Unit]) {
+    if (debugIDE) inform("reload" + sources)
     respond(response)(reloadSources(sources))
     if (outOfDate) throw FreshRunReq // cancel background compile
     else outOfDate = true            // proceed normally and enable new background compile
@@ -385,6 +387,7 @@ self =>
 
   /** A fully attributed tree located at position `pos`  */
   def typedTreeAt(pos: Position): Tree = {
+    if (debugIDE) inform("typedTreeAt " + pos)
     val unit = unitOf(pos)
     val sources = List(unit.source)
     if (unit.status == NotLoaded) reloadSources(sources)
@@ -395,6 +398,7 @@ self =>
 
   /** A fully attributed tree corresponding to the entire compilation unit  */
   def typedTree(source: SourceFile, forceReload: Boolean): Tree = {
+    if (debugIDE) inform("typedTree" + source + " forceReload: " + forceReload)
     val unit = unitOf(source)
     val sources = List(source)
     if (unit.status == NotLoaded || forceReload) reloadSources(sources)
@@ -404,6 +408,7 @@ self =>
 
   /** Set sync var `response` to a fully attributed tree located at position `pos`  */
   def getTypedTreeAt(pos: Position, response: Response[Tree]) {
+    if (debugIDE) inform("getTypedTreeAt" + pos)
     respond(response)(typedTreeAt(pos))
   }
 
@@ -414,6 +419,7 @@ self =>
 
   /** Set sync var `result` to the last fully attributed tree produced from the entire compilation unit  */
   def getLastTypedTree(source : SourceFile, result: Response[Tree]) {
+    if (debugIDE) inform("getLastTyped" + source)
     respond(result) {
       val unit = unitOf(source)
       if (unit.status > JustParsed) unit.body
@@ -441,6 +447,7 @@ self =>
   import analyzer.{SearchResult, ImplicitSearch}
 
   def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
+    if (debugIDE) inform("getScopeCompletion" + pos)
     respond(response) { scopeMembers(pos) }
   }
 
@@ -485,6 +492,7 @@ self =>
   }
 
   def getTypeCompletion(pos: Position, response: Response[List[Member]]) {
+    if (debugIDE) inform("getTypeCompletion " + pos)
     respondGradually(response) { typeMembers(pos) }
     if (debugIDE) typeMembers(pos)
   }
@@ -622,7 +630,7 @@ self =>
         val lastPrintTypings = printTypings
         try {
           println("starting targeted type check")
-          if (debugIDE) printTypings = true
+          //if (debugIDE) printTypings = true
           typeCheck(unit)
           throw new FatalError("tree not found")
         } catch {

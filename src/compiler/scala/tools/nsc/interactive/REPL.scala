@@ -83,6 +83,8 @@ object REPL {
     val reloadResult = new Response[Unit]
     val typeatResult = new Response[comp.Tree]
     val completeResult = new Response[List[comp.Member]]
+    val typedResult = new Response[comp.Tree]
+
     def makePos(file: String, off1: String, off2: String) = {
       val source = toSourceFile(file)
       comp.rangePos(source, off1.toInt, off1.toInt, off2.toInt)
@@ -95,11 +97,23 @@ object REPL {
       comp.askTypeCompletion(pos, completeResult)
       show(completeResult)
     }
+    def doTypedTree(file: String) {
+      comp.askType(toSourceFile(file), true, typedResult)
+      show(typedResult)
+    }
+
     loop { line =>
       (line split " ").toList match {
         case "reload" :: args =>
           comp.askReload(args map toSourceFile, reloadResult)
           show(reloadResult)
+        case "reloadAndAskType" :: file :: millis :: Nil =>
+          comp.askReload(List(toSourceFile(file)), reloadResult)
+          Thread.sleep(millis.toInt)
+          comp.askType(toSourceFile(file), false, typedResult)
+          show(typedResult)
+        case List("typed", file) =>
+          doTypedTree(file)
         case List("typeat", file, off1, off2) =>
           doTypeAt(makePos(file, off1, off2))
         case List("typeat", file, off1) =>
