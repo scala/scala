@@ -50,19 +50,22 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
     def name = phaseName
     override def erasedTypes = true
-    object codeGenerator extends BytecodeGenerator
 
     override def run {
+      // we reinstantiate the bytecode generator at each run, to allow the GC
+      // to collect everything
+      val codeGenerator = new BytecodeGenerator
       if (settings.debug.value) inform("[running phase " + name + " on icode]")
       if (settings.Xdce.value)
         for ((sym, cls) <- icodes.classes if inliner.isClosureClass(sym) && !deadCode.liveClosures(sym))
           icodes.classes -= sym
 
-      classes.values foreach apply
+      classes.values foreach codeGenerator.genClass
+      classes.clear
     }
 
-    override def apply(cls: IClass) {
-      codeGenerator.genClass(cls)
+    def apply(cls: IClass) {
+      error("no implementation")
     }
   }
 
@@ -631,15 +634,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
               (flags & INNER_CLASSES_FLAGS));
         }
       }
-    }
-
-    def isTopLevelModule(sym: Symbol): Boolean =
-      atPhase (currentRun.picklerPhase.next) {
-        sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
-      }
-
-    def isStaticModule(sym: Symbol): Boolean = {
-      sym.isModuleClass && !sym.isImplClass && !sym.isLifted
     }
 
     def genField(f: IField) {
@@ -1731,40 +1725,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
     ////////////////////// Utilities ////////////////////////
 
-    /**
-     * Return the Java modifiers for the given symbol.
-     * Java modifiers for classes:
-     *  - public, abstract, final, strictfp (not used)
-     * for interfaces:
-     *  - the same as for classes, without 'final'
-     * for fields:
-     *  - public, private (*)
-     *  - static, final
-     * for methods:
-     *  - the same as for fields, plus:
-     *  - abstract, synchronized (not used), strictfp (not used), native (not used)
-     *
-     *  (*) protected cannot be used, since inner classes 'see' protected members,
-     *      and they would fail verification after lifted.
-     */
-    def javaFlags(sym: Symbol): Int = {
-      def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
-      // constructors of module classes should be private
-      // PP: why are they only being marked private at this stage and not earlier?
-      val isConsideredPrivate =
-        sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
-
-      mkFlags(
-        if (isConsideredPrivate) ACC_PRIVATE else ACC_PUBLIC,
-        if (sym.isDeferred || sym.hasAbstractFlag) ACC_ABSTRACT else 0,
-        if (sym.isInterface) ACC_INTERFACE else 0,
-        if (sym.isFinal && !sym.enclClass.isInterface && !sym.isClassConstructor) ACC_FINAL else 0,
-        if (sym.isStaticMember) ACC_STATIC else 0,
-        if (sym.isBridge) ACC_BRIDGE else 0,
-        if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
-        if (sym.isVarargsMethod) ACC_VARARGS else 0
-      )
+    override def javaName(sym: Symbol): String = {
+      if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass)
+        innerClasses = innerClasses + sym
+      super.javaName(sym)
     }
+
 
     /** Calls to methods in 'sym' need invokeinterface? */
     def needsInterfaceCall(sym: Symbol): Boolean = {
@@ -1808,4 +1774,50 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
     def assert(cond: Boolean) { assert(cond, "Assertion failed.") }
   }
+
+  /**
+   * Return the Java modifiers for the given symbol.
+   * Java modifiers for classes:
+   *  - public, abstract, final, strictfp (not used)
+   * for interfaces:
+   *  - the same as for classes, without 'final'
+   * for fields:
+   *  - public, private (*)
+   *  - static, final
+   * for methods:
+   *  - the same as for fields, plus:
+   *  - abstract, synchronized (not used), strictfp (not used), native (not used)
+   *
+   *  (*) protected cannot be used, since inner classes 'see' protected members,
+   *      and they would fail verification after lifted.
+   */
+  def javaFlags(sym: Symbol): Int = {
+    def mkFlags(args: Int*) = args.foldLeft(0)(_ | _)
+    // constructors of module classes should be private
+    // PP: why are they only being marked private at this stage and not earlier?
+    val isConsideredPrivate =
+      sym.isPrivate || (sym.isPrimaryConstructor && isTopLevelModule(sym.owner))
+
+    mkFlags(
+      if (isConsideredPrivate) ACC_PRIVATE else ACC_PUBLIC,
+      if (sym.isDeferred || sym.hasAbstractFlag) ACC_ABSTRACT else 0,
+      if (sym.isInterface) ACC_INTERFACE else 0,
+      if (sym.isFinal && !sym.enclClass.isInterface && !sym.isClassConstructor) ACC_FINAL else 0,
+      if (sym.isStaticMember) ACC_STATIC else 0,
+      if (sym.isBridge) ACC_BRIDGE else 0,
+      if (sym.isClass && !sym.isInterface) ACC_SUPER else 0,
+      if (sym.isVarargsMethod) ACC_VARARGS else 0
+    )
+  }
+
+  def isTopLevelModule(sym: Symbol): Boolean =
+    atPhase (currentRun.picklerPhase.next) {
+      sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
+    }
+
+  def isStaticModule(sym: Symbol): Boolean = {
+    sym.isModuleClass && !sym.isImplClass && !sym.isLifted
+  }
+
+
 }

@@ -43,8 +43,11 @@ trait GenJVMUtil {
     DOUBLE -> new JObjectType("java.lang.Double")
   )
 
+  /** This trait may be used by tools who need access to
+   *  utility methods like javaName and javaType. (for instance,
+   *  the Eclipse plugin uses it).
+   */
   trait BytecodeUtil {
-    self: BytecodeGenerator =>
 
     val conds = immutable.Map[TestOp, Int](
       EQ -> JExtendedCode.COND_EQ,
@@ -84,9 +87,6 @@ trait GenJVMUtil {
       else getPrimitiveCompanion(sym.companionModule) match {
         case Some(sym)  => javaName(sym)
         case _          =>
-          if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass)
-            innerClasses = innerClasses + sym
-
           val prefix =
             if (sym.isClass || (sym.isModule && !sym.isMethod)) sym.fullName('/')
             else sym.simpleName.toString.trim()
@@ -132,6 +132,7 @@ trait GenJVMUtil {
       ts foreach ( t => { res(i) = javaType(t); i += 1 } );
       res
     }
+
     protected def genConstant(jcode: JExtendedCode, const: Constant) {
       const.tag match {
         case UnitTag    => ()
