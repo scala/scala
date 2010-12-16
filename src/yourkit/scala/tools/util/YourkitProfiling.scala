@@ -32,5 +32,9 @@ class YourkitProfiling extends Profiling {
     active = false
   }
 
+  def advanceGeneration(desc: String) {
+    controller.advanceGeneration(desc)
+  }
+
   def isActive = active
 }

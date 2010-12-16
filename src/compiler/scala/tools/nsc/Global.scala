@@ -655,6 +655,12 @@ class Global(var settings: Settings, var reporter: Reporter) extends SymbolTable
     /** To be initialized from firstPhase. */
     private var terminalPhase: Phase = NoPhase
 
+    if (settings.YprofileRes.value) {
+      System.gc();
+      println("Saving snapshot")
+      profiler.captureSnapshot()
+    }
+
     /** Whether compilation should stop at or skip the phase with given name. */
     protected def stopPhase(name: String) = settings.stop contains name
     protected def skipPhase(name: String) = settings.skip contains name

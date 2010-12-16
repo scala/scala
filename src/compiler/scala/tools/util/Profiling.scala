@@ -29,4 +29,11 @@ abstract class Profiling {
     captureSnapshot()
     result
   }
+
+  /** Advance the current object generation.
+   *
+   *  Each object on the heap is associated to a generation number. Generations
+   *  start at 1, and are automatically advanced on each snapshot capture.
+   */
+  def advanceGeneration(desc: String = ""): Unit
 }
