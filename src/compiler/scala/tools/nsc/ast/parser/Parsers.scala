@@ -2771,7 +2771,11 @@ self =>
         case stats =>
           val start =
             if (stats forall (_ == EmptyTree)) 0
-            else wrappingPos(stats).startOrPoint
+            else {
+              val wpos = wrappingPos(stats)
+              if (wpos.isDefined) wpos.startOrPoint
+              else 0
+            }
 
           makePackaging(start, atPos(start, start, start) { Ident(nme.EMPTY_PACKAGE_NAME) }, stats)
       }
