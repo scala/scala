@@ -3831,8 +3831,13 @@ A type's typeSymbol should never be inspected directly.
     }
     def apply(tp: Type): Type = tp match {
       case ThisType(sym) =>
-        val sym1 = adaptToNewRun(sym.owner.thisType, sym)
-        if (sym1 == sym) tp else ThisType(sym1)
+        try {
+          val sym1 = adaptToNewRun(sym.owner.thisType, sym)
+          if (sym1 == sym) tp else ThisType(sym1)
+        } catch {
+        	case ex: MissingTypeControl =>
+            NoType
+        }
       case SingleType(pre, sym) =>
         if (sym.isPackage) tp
         else {
