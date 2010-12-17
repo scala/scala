@@ -6,10 +6,13 @@ import scala.tools.nsc.util.{SourceFile, Position, NoPosition}
 trait RichCompilationUnits { self: Global =>
 
   /** The status value of a unit that has not yet been loaded */
-  final val NotLoaded = -1
+  final val NotLoaded = -2
 
   /** The status value of a unit that has not yet been typechecked */
-  final val JustParsed = 0
+  final val JustParsed = -1
+
+  /** The status value of a unit that has been partially typechecked */
+  final val PartiallyChecked = 0
 
   class RichCompilationUnit(source: SourceFile) extends CompilationUnit(source) {
 

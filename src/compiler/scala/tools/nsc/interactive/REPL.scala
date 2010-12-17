@@ -110,6 +110,7 @@ object REPL {
         case "reloadAndAskType" :: file :: millis :: Nil =>
           comp.askReload(List(toSourceFile(file)), reloadResult)
           Thread.sleep(millis.toInt)
+          println("ask type now")
           comp.askType(toSourceFile(file), false, typedResult)
           show(typedResult)
         case List("typed", file) =>

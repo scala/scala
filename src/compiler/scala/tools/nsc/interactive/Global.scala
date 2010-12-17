@@ -74,6 +74,8 @@ self =>
   override def signalDone(context: Context, old: Tree, result: Tree) {
     def integrateNew() {
       context.unit.body = new TreeReplacer(old, result) transform context.unit.body
+      context.unit.asInstanceOf[RichCompilationUnit].status = PartiallyChecked
+      currentTyperRun = newTyperRun
     }
     if (activeLocks == 0) {
       if (context.unit != null &&
@@ -106,8 +108,8 @@ self =>
           // But why are we doing this at all? If it was non-null previously
           // integrateNew will already have been called. If it was null previously
           // it will still be null now?
-          if (context.unit != null)
-            integrateNew()
+          // if (context.unit != null)
+          integrateNew()
           throw FreshRunReq
         }
         catch {
@@ -390,7 +392,7 @@ self =>
     if (debugIDE) inform("typedTreeAt " + pos)
     val unit = unitOf(pos)
     val sources = List(unit.source)
-    if (unit.status == NotLoaded) reloadSources(sources)
+    if (unit.status == NotLoaded || unit.status == PartiallyChecked) reloadSources(sources)
     moveToFront(sources)
     val typedTree = currentTyperRun.typedTreeAt(pos)
     new Locator(pos) locateIn typedTree
@@ -401,7 +403,7 @@ self =>
     if (debugIDE) inform("typedTree" + source + " forceReload: " + forceReload)
     val unit = unitOf(source)
     val sources = List(source)
-    if (unit.status == NotLoaded || forceReload) reloadSources(sources)
+    if (unit.status == NotLoaded || unit.status == PartiallyChecked || forceReload) reloadSources(sources)
     moveToFront(sources)
     currentTyperRun.typedTree(unitOf(source))
   }
@@ -669,4 +671,3 @@ self =>
 }
 
 object CancelException extends Exception
-

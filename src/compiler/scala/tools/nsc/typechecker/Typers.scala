@@ -2093,7 +2093,7 @@ trait Typers { self: Analyzer =>
 
     def typedImport(imp : Import) : Import = (transformed remove imp) match {
       case Some(imp1: Import) => imp1
-      case None => println("unhandled impoprt: "+imp+" in "+unit); imp
+      case None => println("unhandled import: "+imp+" in "+unit); imp
     }
 
     def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
