@@ -1010,10 +1010,13 @@ trait Trees extends reflect.generic.Trees { self: SymbolTable =>
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
-    override def traverse(tree: Tree) {
+    def changeOwner(tree: Tree) = {
       if ((tree.isDef || tree.isInstanceOf[Function]) &&
           tree.symbol != NoSymbol && tree.symbol.owner == oldowner)
-        tree.symbol.owner = newowner;
+        tree.symbol.owner = newowner
+    }
+    override def traverse(tree: Tree) {
+      changeOwner(tree)
       super.traverse(tree)
     }
   }

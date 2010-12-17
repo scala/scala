@@ -849,14 +849,21 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         stats1
       }
 
-      /** Does this field require an initialized bit? */
+      /** Does this field require an initialized bit?
+       *  Note: fields of classes inheriting DelayedInit are not checked.
+       *        This is because the they are neither initialized in the constructor
+       *        nor do they have a setter (not if they are vals abyway). The usual
+       *        logic for setting bitmaps does therefor not work for such fields.
+       *        That's why they are excluded.
+       */
       def needsInitFlag(sym: Symbol) = {
         val res = (settings.checkInit.value
            && sym.isGetter
            && !sym.isInitializedToDefault
            && !sym.hasFlag(PARAMACCESSOR | SPECIALIZED)
            && !sym.accessed.hasFlag(PRESUPER)
-           && !sym.isOuterAccessor)
+           && !sym.isOuterAccessor
+           && !(sym.owner isSubClass DelayedInitClass))
 
 //        if (settings.debug.value) {
 //          log("needsInitFlag(" + sym.fullName + "): " + res)

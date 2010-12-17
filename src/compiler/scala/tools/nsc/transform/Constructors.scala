@@ -415,8 +415,8 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             val closureParents = List(AbstractFunctionClass(0).tpe, ScalaObjectClass.tpe)
             closureClass.setInfo(new ClassInfoType(closureParents, new Scope, closureClass))
 
-            val outerField = clazz.newValue(impl.pos, nme.OUTER)
-              .setFlag(PRIVATE | LOCAL)
+            val outerField = closureClass.newValue(impl.pos, nme.OUTER)
+              .setFlag(PRIVATE | LOCAL | PARAMACCESSOR)
               .setInfo(clazz.tpe)
 
             val applyMethod = closureClass.newMethod(impl.pos, nme.apply)
@@ -429,17 +429,29 @@ abstract class Constructors extends Transform with ast.TreeDSL {
             val outerFieldDef = ValDef(outerField)
 
             val changeOwner = new ChangeOwnerTraverser(impl.symbol, applyMethod)
+
+            val closureClassTyper = localTyper.atOwner(closureClass)
+            val applyMethodTyper = closureClassTyper.atOwner(applyMethod)
+
             val constrStatTransformer = new Transformer {
               override def transform(tree: Tree): Tree = tree match {
-                case This(`clazz`) =>
-                  localTyper.typed {
+                case This(_) if tree.symbol == clazz =>
+                  applyMethodTyper.typed {
                     atPos(tree.pos) {
                       Select(This(closureClass), outerField)
                     }
                   }
                 case _ =>
-                  changeOwner traverse tree
-                  tree
+                  tree match {
+                    case Select(qual, _) =>
+                      val sym = tree.symbol
+                      sym makeNotPrivate sym.owner
+                    case Assign(lhs @ Select(_, _), _) =>
+                      lhs.symbol setFlag MUTABLE
+                    case _ =>
+                      changeOwner.changeOwner(tree)
+                  }
+                  super.transform(tree)
               }
             }
 
@@ -455,7 +467,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
               constrMods = Modifiers(0),
               vparamss = List(List(outerFieldDef)),
               argss = List(List()),
-              body = List(outerFieldDef, applyMethodDef),
+              body = List(applyMethodDef),
               superPos = impl.pos)
           }
         }
@@ -483,7 +495,7 @@ abstract class Constructors extends Transform with ast.TreeDSL {
         (clazz isSubClass DelayedInitClass) && !(defBuf exists isInitDef) && remainingConstrStats.nonEmpty
 
       if (needsDelayedInit) {
-        val dicl = delayedInitClosure(remainingConstrStats)
+        val dicl = new ConstructorTransformer(unit) transform delayedInitClosure(remainingConstrStats)
         defBuf += dicl
         remainingConstrStats = List(delayedInitCall(dicl))
       }

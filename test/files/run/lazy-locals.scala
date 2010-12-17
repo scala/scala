@@ -162,7 +162,7 @@ object Test extends Application {
   }
 
   // see #1589
-  object NestedLazyVals extends Application {
+  object NestedLazyVals {
     lazy val x = {
       lazy val y = { println("forcing y"); 42; }
       println("forcing x")
@@ -179,7 +179,7 @@ object Test extends Application {
     lazy val x = { lazy val y = 42; y }
   }
 
-  object ONestedLazyVals extends Application with TNestedLazyVals {
+  object ONestedLazyVals extends TNestedLazyVals {
     println(x)
   }
 

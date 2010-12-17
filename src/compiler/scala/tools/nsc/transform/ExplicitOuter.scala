@@ -469,7 +469,7 @@ abstract class ExplicitOuter extends InfoTransform
           else atPos(tree.pos)(outerPath(outerValue, currentClass.outerClass, sym)) // (5)
 
         case Select(qual, name) =>
-          if (currentClass != sym.owner/* && currentClass != sym.moduleClass*/) // (3)
+          if (currentClass != sym.owner) // (3)
             sym.makeNotPrivate(sym.owner)
           val qsym = qual.tpe.widen.typeSymbol
           if (sym.isProtected && //(4)
