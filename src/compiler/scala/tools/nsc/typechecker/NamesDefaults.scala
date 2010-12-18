@@ -368,7 +368,23 @@ trait NamesDefaults { self: Analyzer =>
         val defaultArgs = missing map (p => {
           var default1 = qual match {
             case Some(q) => gen.mkAttributedSelect(q.duplicate, defaultGetter(p, context))
-            case None =>    gen.mkAttributedRef(defaultGetter(p, context))
+            case None =>
+              val dgetter = defaultGetter(p, context)
+              if (dgetter == NoSymbol) {
+                println("no getter for "+p+" in "+p.owner)
+                println(p.owner.paramss)
+                var ctx = context
+                while (ctx.owner != p.owner.owner) {
+                  println("inner scope: "+ctx.scope+ctx.scope.hashCode+" "+ctx.owner)
+                  ctx = ctx.outer
+                }
+                while (ctx.owner == p.owner.owner) {
+                  println("this scope: "+ctx.scope+ctx.scope.hashCode+" "+ctx.owner)
+                  ctx = ctx.outer
+                }
+              }
+              gen.mkAttributedRef(dgetter)
+
           }
           default1 = if (targs.isEmpty) default1
                      else TypeApply(default1, targs.map(_.duplicate))

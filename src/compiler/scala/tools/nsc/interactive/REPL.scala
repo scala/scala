@@ -112,7 +112,7 @@ object REPL {
           Thread.sleep(millis.toInt)
           println("ask type now")
           comp.askType(toSourceFile(file), false, typedResult)
-          show(typedResult)
+          typedResult.get
         case List("typed", file) =>
           doTypedTree(file)
         case List("typeat", file, off1, off2) =>

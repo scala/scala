@@ -395,7 +395,9 @@ self =>
     if (unit.status == NotLoaded || unit.status == PartiallyChecked) reloadSources(sources)
     moveToFront(sources)
     val typedTree = currentTyperRun.typedTreeAt(pos)
-    new Locator(pos) locateIn typedTree
+    val result = new Locator(pos) locateIn typedTree
+    reloadSources(sources)
+    result
   }
 
   /** A fully attributed tree corresponding to the entire compilation unit  */
@@ -405,7 +407,9 @@ self =>
     val sources = List(source)
     if (unit.status == NotLoaded || unit.status == PartiallyChecked || forceReload) reloadSources(sources)
     moveToFront(sources)
-    currentTyperRun.typedTree(unitOf(source))
+    val result = currentTyperRun.typedTree(unitOf(source))
+    reloadSources(sources)
+    result
   }
 
   /** Set sync var `response` to a fully attributed tree located at position `pos`  */
