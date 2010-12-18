@@ -4,7 +4,7 @@ package util
 import TableDef._
 
 /** A class for representing tabular data in a way that preserves
- *  its inner beauty.  See JavaStackFrame for an example usage.
+ *  its inner beauty.  See Exceptional for an example usage.
  *  One creates an instance of TableDef by defining the columns of
  *  the table, then uses that to create an instance of Table by
  *  passing in a sequence of rows.

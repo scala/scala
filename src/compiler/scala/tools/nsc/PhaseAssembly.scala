@@ -6,8 +6,8 @@
 
 package scala.tools.nsc
 
-import scala.collection.mutable.{HashSet, HashMap}
-import java.io.{BufferedWriter, FileWriter}
+import java.io.{ BufferedWriter, FileWriter }
+import scala.collection.mutable
 
 /**
  * PhaseAssembly
@@ -15,7 +15,8 @@ import java.io.{BufferedWriter, FileWriter}
  * the rest of the compiler. See SIP 00002
  *
  */
-trait PhaseAssembly { self: Global =>
+trait PhaseAssembly {
+  self: Global =>
 
   /**
    * Aux datastructure for solving the constraint system
@@ -35,8 +36,8 @@ trait PhaseAssembly { self: Global =>
     class Node(name: String) {
       val phasename = name
       var phaseobj: Option[List[SubComponent]] = None
-      val after = new HashSet[Edge]()
-      var before = new HashSet[Edge]()
+      val after = new mutable.HashSet[Edge]()
+      var before = new mutable.HashSet[Edge]()
       var visited = false
       var level = 0
 
@@ -46,8 +47,8 @@ trait PhaseAssembly { self: Global =>
       }
     }
 
-    val nodes = new HashMap[String,Node]()
-    val edges = new HashSet[Edge]()
+    val nodes = new mutable.HashMap[String,Node]()
+    val edges = new mutable.HashSet[Edge]()
 
     /* Given a phase object, get the node for this phase object. If the
      * node object does not exist, then create it.
@@ -184,22 +185,19 @@ trait PhaseAssembly { self: Global =>
      *  dependency on something that is dropped.
      */
     def removeDanglingNodes() {
-      var dnodes = nodes.valuesIterator filter (_.phaseobj.isEmpty)
-      for (node <- dnodes) {
+      for (node <- nodes.valuesIterator filter (_.phaseobj.isEmpty)) {
         val msg = "dropping dependency on node with no phase object: "+node.phasename
         informProgress(msg)
         nodes -= node.phasename
+
         for (edge <- node.before) {
           edges -= edge
           edge.frm.after -= edge
-          edge.frm.phaseobj match {
-            case Some(lsc) => if (! lsc.head.internal) warning(msg)
-            case _ =>
-          }
+          if (edge.frm.phaseobj exists (lsc => !lsc.head.internal))
+            warning(msg)
         }
       }
     }
-
   }
 
   /* Method called from computePhaseDescriptors in class Global
@@ -241,7 +239,7 @@ trait PhaseAssembly { self: Global =>
   /** Given the phases set, will build a dependency graph from the phases set
    *  Using the aux. method of the DependencyGraph to create nodes and egdes.
    */
-  private def phasesSetToDepGraph(phsSet: HashSet[SubComponent]): DependencyGraph = {
+  private def phasesSetToDepGraph(phsSet: mutable.HashSet[SubComponent]): DependencyGraph = {
     val graph = new DependencyGraph()
 
     for (phs <- phsSet) {
@@ -283,9 +281,9 @@ trait PhaseAssembly { self: Global =>
    * Plug-in supplied phases are marked as green nodes and hard links are marked as blue edges.
    */
   private def graphToDotFile(graph: DependencyGraph, filename: String) {
-    var sbuf = new StringBuilder
-    var extnodes = new HashSet[graph.Node]()
-    var fatnodes = new HashSet[graph.Node]()
+    val sbuf = new StringBuilder
+    val extnodes = new mutable.HashSet[graph.Node]()
+    val fatnodes = new mutable.HashSet[graph.Node]()
     sbuf.append("digraph G {\n")
     for (edge <- graph.edges) {
       sbuf.append("\"" + edge.frm.allPhaseNames + "(" + edge.frm.level + ")" + "\"->\"" + edge.to.allPhaseNames + "(" + edge.to.level + ")" + "\"")
