@@ -88,7 +88,7 @@ trait Matrix extends MatrixAdditions {
     context: MatrixContext): Tree =
   {
     import context._
-    log("handlePattern: selector.tpe = " + selector.tpe)
+    // log("handlePattern: selector.tpe = " + selector.tpe)
 
     // sets up top level match
     val matrixInit: MatrixInit = {
@@ -104,7 +104,7 @@ trait Matrix extends MatrixAdditions {
     // redundancy check
     matrix.targets filter (_.isNotReached) foreach (cs => cunit.error(cs.body.pos, "unreachable code"))
     // optimize performs squeezing and resets any remaining NO_EXHAUSTIVE
-    tracing("handlePattern(" + selector + ")", matrix optimize dfatree)
+    tracing("handlePattern")(matrix optimize dfatree)
   }
 
   case class MatrixContext(
@@ -226,7 +226,7 @@ trait Matrix extends MatrixAdditions {
       val name  = cunit.freshTermName(label)
       val sym   = newVar(root.pos, tpe, flags(checked), name)
 
-      tracing("copy", new PatternVar(sym, root, checked))
+      tracing("copy")(new PatternVar(sym, root, checked))
     }
 
     /** Creates a new synthetic variable of the specified type and
@@ -236,7 +236,7 @@ trait Matrix extends MatrixAdditions {
       val lhs = newVar(owner.pos, tpe, flags(checked))
       val rhs = f(lhs)
 
-      tracing("create", new PatternVar(lhs, rhs, checked))
+      tracing("create")(new PatternVar(lhs, rhs, checked))
     }
 
     private def newVar(
@@ -251,6 +251,6 @@ trait Matrix extends MatrixAdditions {
     }
 
     def typedValDef(x: Symbol, rhs: Tree) =
-      tracing("typedVal", typer typedValDef (VAL(x) === rhs))
+      tracing("typedVal")(typer typedValDef (VAL(x) === rhs))
   }
 }

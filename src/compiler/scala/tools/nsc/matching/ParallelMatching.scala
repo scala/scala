@@ -197,7 +197,7 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       def mkRule(rest: Rep): RuleApplication = {
-        tracing("Rule", head match {
+        tracing("Rule")(head match {
           case x if isEquals(x.tree.tpe)        => new MixEquals(this, rest)
           case x: SequencePattern               => new MixSequence(this, rest, x)
           case AnyUnapply(false)                => new MixUnapply(this, rest, false)
@@ -375,7 +375,7 @@ trait ParallelMatching extends ast.TreeDSL
 
         def unapply(p: Pattern) = condOpt(p) {
           case Pattern(UnApply(Apply(fn1, _), args), _) if sameFunction(fn1)  =>
-            tracing("sameUnapply", args)
+            tracing("sameUnapply")(args)
         }
       }
       object SameUnapply {
@@ -644,8 +644,8 @@ trait ParallelMatching extends ast.TreeDSL
     case class Row(pats: List[Pattern], subst: Bindings, guard: Guard, bx: Int) {
       private def nobindings = subst.get().isEmpty
       private def bindstr = if (nobindings) "" else pp(subst)
-      if (pats exists (p => !p.isDefault))
-        traceCategory("Row", "%s%s", pats, bindstr)
+      // if (pats exists (p => !p.isDefault))
+      //   traceCategory("Row", "%s%s", pats, bindstr)
 
       /** Extracts the 'i'th pattern. */
       def extractColumn(i: Int) = {
@@ -664,7 +664,7 @@ trait ParallelMatching extends ast.TreeDSL
       def rebind(b: Bindings)             = copy(subst = b)           // substitutes for bindings
 
       def insert2(hs: List[Pattern], vs: Iterable[Symbol], tvar: Symbol) =
-        tracing("insert2", copy(pats = hs ::: pats, subst = subst.add(vs, tvar)))
+        tracing("insert2")(copy(pats = hs ::: pats, subst = subst.add(vs, tvar)))
 
       // returns this rows with alternatives expanded
       def expandAlternatives(classifyPat: (Pattern, Int) => Pattern): List[Row] = {
@@ -745,10 +745,9 @@ trait ParallelMatching extends ast.TreeDSL
         if (isLabellable) {
           val mtype = MethodType(freeVars, bodyTpe)
           _labelSym = owner.newLabel(body.pos, name) setInfo mtype
-
-          TRACE("Creating index %d: mtype = %s".format(bx, mtype))
           _label = typer typedLabelDef LabelDef(_labelSym, freeVars, body setType bodyTpe)
-          TRACE("[New label] def %s%s: %s = %s".format(name, pp(freeVars), bodyTpe, body))
+          // TRACE("Creating index %d: mtype = %s".format(bx, mtype))
+          // TRACE("[New label] def %s%s: %s = %s".format(name, pp(freeVars), bodyTpe, body))
         }
 
         ifLabellable(vdefs, squeezedBlock(vdefs, label))
@@ -793,7 +792,7 @@ trait ParallelMatching extends ast.TreeDSL
       }
 
       /** Converts this to a tree - recursively acquires subreps. */
-      final def toTree(): Tree = tracing("toTree", typer typed applyRule())
+      final def toTree(): Tree = tracing("toTree")(typer typed applyRule())
 
       /** The VariableRule. */
       private def variable() = {
@@ -826,7 +825,7 @@ trait ParallelMatching extends ast.TreeDSL
     val NoRep = Rep(Nil, Nil)
     /** Expands the patterns recursively. */
     final def expand(roots: List[PatternVar], cases: List[CaseDef]) =
-      tracing("Expanded", ExpandedMatrix(
+      tracing("Expanded")(ExpandedMatrix(
         for ((CaseDef(pat, guard, body), index) <- cases.zipWithIndex) yield {
           def mkRow(ps: List[Tree]) = Row(toPats(ps), NoBinding, Guard(guard), index)
 

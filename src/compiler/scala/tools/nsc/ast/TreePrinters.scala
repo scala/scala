@@ -32,7 +32,7 @@ trait TreePrinters { trees: SymbolTable =>
   def backquotedPath(t: Tree): String = t match {
     case Select(qual, name) => "%s.%s".format(backquotedPath(qual), quotedName(name))
     case Ident(name)        => quotedName(name)
-    case t                  => t.toString
+    case _                  => t.toString
   }
 
   class TreePrinter(out: PrintWriter) extends trees.AbsTreePrinter(out) {

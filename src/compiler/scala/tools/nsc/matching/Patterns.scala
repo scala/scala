@@ -300,7 +300,7 @@ trait Patterns extends ast.TreeDSL {
       p match {
         case WildcardPattern()  => p
         case _: LiteralPattern  => p
-        case _                  => tracing("Pattern", p)
+        case _                  => tracing("Pattern")(p)
       }
     }
     def unapply(other: Any): Option[(Tree, List[Symbol])] = other match {
@@ -496,7 +496,7 @@ trait Patterns extends ast.TreeDSL {
     }
 
     def equalsCheck =
-      tracing("equalsCheck",
+      tracing("equalsCheck")(
         if (sym.isValue) singleType(NoPrefix, sym)
         else tpe.narrow
       )

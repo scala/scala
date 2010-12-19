@@ -14,7 +14,12 @@ package object interpreter {
   def repldbg(msg: String) = if (isReplDebug) Console println msg
 
   /** Tracing */
-  def tracing[T](msg: String)(x: T): T = { println("(" + msg + ") " + x) ; x }
+  def tracing[T](msg: String)(x: T): T = {
+    if (isReplDebug)
+      println("(" + msg + ") " + x)
+
+    x
+  }
 
   /** Frequency counter */
   def freq[T](seq: Seq[T]) = seq groupBy identity mapValues (_.length)
