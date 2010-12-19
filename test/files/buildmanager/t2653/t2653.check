@@ -9,5 +9,7 @@ compiling Set(B.scala)
 B.scala:2: error: type mismatch;
  found   : A[Int]
  required: A[Any]
+Note: Int <: Any, but class A is invariant in type T.
+You may wish to define T as +T instead. (SLS 4.5)
   val a: A[Any] = new A[Int]
                   ^

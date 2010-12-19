@@ -1,0 +1,185 @@
+found-req-variance.scala:22: error: type mismatch;
+ found   : Inv[B]
+ required: Inv[A]
+Note: B <: A, but class Inv is invariant in type T.
+You may wish to define T as +T instead. (SLS 4.5)
+  def f2 = Set[Inv[A]]() + new Inv[B]
+                           ^
+found-req-variance.scala:23: error: type mismatch;
+ found   : Inv[C]
+ required: Inv[A]
+Note: C <: A, but class Inv is invariant in type T.
+You may wish to define T as +T instead. (SLS 4.5)
+  def f3 = Set[Inv[A]]() + new Inv[C]
+                           ^
+found-req-variance.scala:24: error: type mismatch;
+ found   : Inv[A]
+ required: Inv[B]
+Note: A >: B, but class Inv is invariant in type T.
+You may wish to define T as -T instead. (SLS 4.5)
+  def f4 = Set[Inv[B]]() + new Inv[A]
+                           ^
+found-req-variance.scala:26: error: type mismatch;
+ found   : Inv[C]
+ required: Inv[B]
+Note: C <: B, but class Inv is invariant in type T.
+You may wish to define T as +T instead. (SLS 4.5)
+  def f6 = Set[Inv[B]]() + new Inv[C]
+                           ^
+found-req-variance.scala:27: error: type mismatch;
+ found   : Inv[A]
+ required: Inv[C]
+Note: A >: C, but class Inv is invariant in type T.
+You may wish to define T as -T instead. (SLS 4.5)
+  def f7 = Set[Inv[C]]() + new Inv[A]
+                           ^
+found-req-variance.scala:28: error: type mismatch;
+ found   : Inv[B]
+ required: Inv[C]
+Note: B >: C, but class Inv is invariant in type T.
+You may wish to define T as -T instead. (SLS 4.5)
+  def f8 = Set[Inv[C]]() + new Inv[B]
+                           ^
+found-req-variance.scala:34: error: type mismatch;
+ found   : MultiInv[A]
+ required: Multi[A,B,C]
+Note: A >: B (and MultiInv[A] <: Multi[A,A,C]), but class Multi is invariant in type Inv.
+You may wish to define Inv as -Inv instead. (SLS 4.5)
+  def g4 = Set[Multi[A, B, C]]() + new MultiInv[A]
+                                   ^
+found-req-variance.scala:36: error: type mismatch;
+ found   : MultiInv[C]
+ required: Multi[A,B,C]
+Note: C <: B (and MultiInv[C] <: Multi[A,C,C]), but class Multi is invariant in type Inv.
+You may wish to define Inv as +Inv instead. (SLS 4.5)
+  def g6 = Set[Multi[A, B, C]]() + new MultiInv[C]
+                                   ^
+found-req-variance.scala:47: error: type mismatch;
+ found   : FF1[A,A]
+ required: FF1[B,B]
+    def ff1 = f[B, B](h[A, A]) // fail
+                       ^
+found-req-variance.scala:48: error: type mismatch;
+ found   : FF1[B,A]
+ required: FF1[B,B]
+    def ff2 = f[B, B](h[B, A]) // fail
+                       ^
+found-req-variance.scala:49: error: type mismatch;
+ found   : FF1[C,A]
+ required: FF1[B,B]
+    def ff3 = f[B, B](h[C, A]) // fail
+                       ^
+found-req-variance.scala:50: error: type mismatch;
+ found   : FF1[A,B]
+ required: FF1[B,B]
+Note: A >: B, but trait FF1 is invariant in type T.
+You may wish to define T as -T instead. (SLS 4.5)
+    def ff4 = f[B, B](h[A, B]) // suggest
+                       ^
+found-req-variance.scala:52: error: type mismatch;
+ found   : FF1[C,B]
+ required: FF1[B,B]
+Note: C <: B, but trait FF1 is invariant in type T.
+You may wish to define T as +T instead. (SLS 4.5)
+    def ff6 = f[B, B](h[C, B]) // suggest
+                       ^
+found-req-variance.scala:53: error: type mismatch;
+ found   : FF1[A,C]
+ required: FF1[B,B]
+Note: A >: B, but trait FF1 is invariant in type T.
+You may wish to define T as -T instead. (SLS 4.5)
+    def ff7 = f[B, B](h[A, C]) // suggest
+                       ^
+found-req-variance.scala:55: error: type mismatch;
+ found   : FF1[C,C]
+ required: FF1[B,B]
+Note: C <: B, but trait FF1 is invariant in type T.
+You may wish to define T as +T instead. (SLS 4.5)
+    def ff9 = f[B, B](h[C, C]) // suggest
+                       ^
+found-req-variance.scala:61: error: type mismatch;
+ found   : FF2[A,A]
+ required: FF2[B,B]
+Note: A >: B, but trait FF2 is invariant in type R.
+You may wish to define R as -R instead. (SLS 4.5)
+    def ff1 = f[B, B](h[A, A]) // suggest
+                       ^
+found-req-variance.scala:62: error: type mismatch;
+ found   : FF2[B,A]
+ required: FF2[B,B]
+Note: A >: B, but trait FF2 is invariant in type R.
+You may wish to define R as -R instead. (SLS 4.5)
+    def ff2 = f[B, B](h[B, A]) // suggest
+                       ^
+found-req-variance.scala:63: error: type mismatch;
+ found   : FF2[C,A]
+ required: FF2[B,B]
+    def ff3 = f[B, B](h[C, A]) // fail
+                       ^
+found-req-variance.scala:66: error: type mismatch;
+ found   : FF2[C,B]
+ required: FF2[B,B]
+    def ff6 = f[B, B](h[C, B]) // fail
+                       ^
+found-req-variance.scala:67: error: type mismatch;
+ found   : FF2[A,C]
+ required: FF2[B,B]
+Note: C <: B, but trait FF2 is invariant in type R.
+You may wish to define R as +R instead. (SLS 4.5)
+    def ff7 = f[B, B](h[A, C]) // suggest
+                       ^
+found-req-variance.scala:68: error: type mismatch;
+ found   : FF2[B,C]
+ required: FF2[B,B]
+Note: C <: B, but trait FF2 is invariant in type R.
+You may wish to define R as +R instead. (SLS 4.5)
+    def ff8 = f[B, B](h[B, C]) // suggest
+                       ^
+found-req-variance.scala:69: error: type mismatch;
+ found   : FF2[C,C]
+ required: FF2[B,B]
+    def ff9 = f[B, B](h[C, C]) // fail
+                       ^
+found-req-variance.scala:86: error: type mismatch;
+ found   : java.util.ArrayList[String]
+ required: java.util.List[AnyRef]
+Note: String <: AnyRef, but Java-defined trait List is invariant in type E.
+You may wish to investigate a wildcard type such as `_ <: AnyRef`. (SLS 3.2.10)
+  def g1 = f[AnyRef](new java.util.ArrayList[String] { })
+                     ^
+found-req-variance.scala:87: error: type mismatch;
+ found   : scala.math.Ordering[AnyRef]
+ required: java.util.Comparator[String]
+Note: AnyRef >: String, but Java-defined trait Comparator is invariant in type T.
+You may wish to investigate a wildcard type such as `_ >: String`. (SLS 3.2.10)
+  def g2 = g[String](Ordering.fromLessThan[AnyRef](_.toString < _.toString))
+                                                  ^
+found-req-variance.scala:94: error: type mismatch;
+ found   : Misc.MyData
+ required: Misc.Data[AnyVal]
+Note: Int <: AnyVal (and Misc.MyData <: Misc.Data[Int]), but class Data is invariant in type A.
+You may wish to define A as +A instead. (SLS 4.5)
+  def f1 = Set[Data[AnyVal]]() + new MyData
+                                 ^
+found-req-variance.scala:100: error: type mismatch;
+ found   : Set[String]
+ required: Set[java.lang.CharSequence]
+Note: String <: java.lang.CharSequence, but trait Set is invariant in type A.
+You may wish to investigate a wildcard type such as `_ <: java.lang.CharSequence`. (SLS 3.2.10)
+    foo(s)
+        ^
+found-req-variance.scala:104: error: type mismatch;
+ found   : Misc.Trippy[String,String,String]
+ required: Misc.Trippy[java.lang.Object,java.lang.Object,java.lang.Object]
+Note: String <: java.lang.Object, but class Trippy is invariant in type T2.
+You may wish to define T2 as +T2 instead. (SLS 4.5)
+  def g1 = Set[Trippy[AnyRef, AnyRef, AnyRef]]() + new Trippy[String, String, String]
+                                                   ^
+found-req-variance.scala:105: error: type mismatch;
+ found   : scala.collection.immutable.Map[AnyRef,String]
+ required: Map[String,String]
+Note: AnyRef >: String, but trait Map is invariant in type A.
+You may wish to investigate a wildcard type such as `_ >: String`. (SLS 3.2.10)
+  def g2 = Set[Map[String, String]]() + Map[AnyRef, String]()
+                                                           ^
+28 errors found

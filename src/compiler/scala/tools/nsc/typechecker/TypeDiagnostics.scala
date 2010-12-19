@@ -216,11 +216,91 @@ trait TypeDiagnostics {
     case xs   => " where " + (disambiguate(xs map (_.existentialToString)) mkString ", ")
   }
 
-  def foundReqMsg(found: Type, req: Type): String =
-    withDisambiguation(found, req) {
+  def varianceWord(sym: Symbol): String =
+    if (sym.variance == 1) "covariant"
+    else if (sym.variance == -1) "contravariant"
+    else "invariant"
+
+  /** Look through the base types of the found type for any which
+   *  might have been valid subtypes if given conformant type arguments.
+   *  Examine those for situations where the type error would have been
+   *  eliminated if the variance were different.  In such cases, append
+   *  an additional explanatory message.
+   *
+   *  TODO: handle type aliases better.
+   */
+  def explainVariance(found: Type, req: Type): String = {
+    found.baseTypeSeq.toList foreach { tp =>
+      if (tp.typeSymbol isSubClass req.typeSymbol) {
+        val foundArgs = tp.typeArgs
+        val reqArgs   = req.typeArgs
+        val params    = req.typeConstructor.typeParams
+
+        if (foundArgs.nonEmpty && foundArgs.length == reqArgs.length) {
+          val relationships = (foundArgs, reqArgs, params).zipped map {
+            case (arg, reqArg, param) =>
+              def mkMsg(isSubtype: Boolean) = {
+                val op      = if (isSubtype) "<:" else ">:"
+                val suggest = if (isSubtype) "+" else "-"
+                val reqsym  = req.typeSymbol
+                def isJava  = reqsym.isJavaDefined
+                def isScala = reqsym hasTransOwner ScalaPackageClass
+
+                val explainFound = "%s %s %s%s, but ".format(
+                  arg, op, reqArg,
+                  // If the message involves a type from the base type sequence rather than the
+                  // actual found type, we need to explain why we're talking about it.  Less brute
+                  // force measures than comparing normalized Strings were producing error messages
+                  // like "and java.util.ArrayList[String] <: java.util.ArrayList[String]" but there
+                  // should be a cleaner way to do this.
+                  if (found.normalize.toString == tp.normalize.toString) ""
+                  else " (and %s <: %s)".format(found, tp)
+                )
+                val explainDef = {
+                  val prepend = if (isJava) "Java-defined " else ""
+                  "%s%s is %s in %s.".format(prepend, reqsym, varianceWord(param), param)
+                }
+                // Don't suggest they change the class declaration if it's somewhere
+                // under scala.* or defined in a java class, because attempting either
+                // would be fruitless.
+                val suggestChange = "\nYou may wish to " + (
+                  if (isScala || isJava)
+                    "investigate a wildcard type such as `_ %s %s`. (SLS 3.2.10)".format(op, reqArg)
+                  else
+                    "define %s as %s%s instead. (SLS 4.5)".format(param.name, suggest, param.name)
+                )
+
+                Some("Note: " + explainFound + explainDef + suggestChange)
+              }
+              // In these cases the arg is OK and needs no explanation.
+              val conforms = (
+                   (arg =:= reqArg)
+                || ((arg <:< reqArg) && param.isCovariant)
+                || ((reqArg <:< arg) && param.isContravariant)
+              )
+              val invariant = param.variance == 0
+
+              if (conforms)                             Some("")
+              else if ((arg <:< reqArg) && invariant)   mkMsg(true)   // covariant relationship
+              else if ((reqArg <:< arg) && invariant)   mkMsg(false)  // contravariant relationship
+              else None // we assume in other cases our ham-fisted advice will merely serve to confuse
+          }
+          val messages = relationships.flatten
+          // the condition verifies no type argument came back None
+          if (messages.size == foundArgs.size)
+            return messages filterNot (_ == "") mkString ("\n", "\n", "")
+        }
+      }
+    }
+    ""    // no elaborable variance situation found
+  }
+
+  def foundReqMsg(found: Type, req: Type): String = {
+    (withDisambiguation(found, req) {
       ";\n found   : " + found.toLongString + existentialContext(found) +
        "\n required: " + req + existentialContext(req)
-    }
+    }) + explainVariance(found, req)
+  }
 
   case class TypeDiag(tp: Type, sym: Symbol) extends Ordered[TypeDiag] {
     // save the name because it will be mutated until it has been
