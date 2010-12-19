@@ -311,13 +311,11 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def tupleField(n: Int, j: Int) = getMember(TupleClass(n), "_" + j)
       def isTupleType(tp: Type): Boolean = isTupleType(tp, false)
       def isTupleTypeOrSubtype(tp: Type): Boolean = isTupleType(tp, true)
-      private def isTupleType(tp: Type, subtypeOK: Boolean) = tp.normalize match {
-        case TypeRef(_, sym, args) =>
-          args.length <= MaxTupleArity && {
-            val tsym = TupleClass(args.length)
-            (sym == tsym) || (subtypeOK && !tp.isHigherKinded && sym.isSubClass(tsym))
-          }
-        case _ => false
+      private def isTupleType(tp: Type, subtypeOK: Boolean): Boolean = cond(tp.normalize) {
+        case t @ TypeRef(_, sym, elems) =>
+          elems.length <= MaxTupleArity &&
+          (sym == TupleClass(elems.length) ||
+           subtypeOK && !tp.isHigherKinded && (t <:< TupleClass(elems.length).tpe))
       }
 
       def tupleType(elems: List[Type]) =
