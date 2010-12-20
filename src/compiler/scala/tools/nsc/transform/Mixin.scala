@@ -910,22 +910,23 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL {
         field.info // ensure that nested objects are tranformed
         // For checkinit consider normal value getters
         // but for lazy values only take into account lazy getters
-          (needsInitFlag(field) || field.hasFlag(LAZY) && field.isMethod) && !field.isDeferred
+        (needsInitFlag(field) || field.isLazy && field.isMethod) && !field.isDeferred
       }
-
 
       /**
        * Return the number of bits used by superclass fields.
        */
       def usedBits(clazz0: Symbol): Int = {
-          def needsBitmap(field: Symbol) =
-              field.owner != clazz0 &&
-              fieldWithBitmap(field)
-          val fs = for {
-               cl <- clazz0.info.baseClasses.tail.filter(cl => !cl.isTrait && !cl.hasFlag(JAVA))
-               field <- cl.info.decls.iterator.toList if needsBitmap(field) && !localBitmapField(field)
-          } yield field
-          fs.length
+        def needsBitmap(field: Symbol) = field.owner != clazz0 && fieldWithBitmap(field)
+        var bits = 0
+        for {
+          cl <- clazz0.info.baseClasses.tail
+          if !cl.isTrait && !cl.hasFlag(JAVA)
+          field <- cl.info.decls.iterator
+          if needsBitmap(field) && !localBitmapField(field)
+        } bits += 1
+
+        bits
       }
 
       /** Fill the map from fields to offset numbers.

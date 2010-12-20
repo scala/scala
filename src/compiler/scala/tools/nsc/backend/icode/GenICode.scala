@@ -1058,10 +1058,11 @@ abstract class GenICode extends SubComponent  {
           generatedType = UNIT
           genStat(tree, ctx)
 
-        case ArrayValue(tpt @ TypeTree(), elems) =>
+        case ArrayValue(tpt @ TypeTree(), _elems) =>
           var ctx1 = ctx
           val elmKind = toTypeKind(tpt.tpe)
           generatedType = ARRAY(elmKind)
+          val elems = _elems.toIndexedSeq
 
           ctx1.bb.emit(CONSTANT(new Constant(elems.length)), tree.pos)
           ctx1.bb.emit(CREATE_ARRAY(elmKind, 1))
@@ -1962,7 +1963,7 @@ abstract class GenICode extends SubComponent  {
       }
 
       def exitScope = {
-        if (bb.size > 0) {
+        if (bb.nonEmpty) {
           scope.locals foreach { lv => bb.emit(SCOPE_EXIT(lv)) }
         }
         scope = scope.outer

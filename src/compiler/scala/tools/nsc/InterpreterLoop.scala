@@ -633,7 +633,7 @@ class InterpreterLoop(in0: Option[BufferedReader], protected val out: PrintWrite
         vname + ": " + vtype
       }
 
-    if (strs.size == 0) "Set no variables."
+    if (strs.isEmpty) "Set no variables."
     else "Variables set:\n" + strs.mkString("\n")
   }
 

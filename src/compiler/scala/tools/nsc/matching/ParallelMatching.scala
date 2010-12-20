@@ -687,10 +687,10 @@ trait ParallelMatching extends ast.TreeDSL
     object ExpandedMatrix {
       def unapply(x: ExpandedMatrix) = Some((x.rows, x.targets))
       def apply(rowz: List[(Row, FinalState)]) =
-        new ExpandedMatrix(rowz map (_._1), rowz map (_._2))
+        new ExpandedMatrix(rowz map (_._1), rowz map (_._2) toIndexedSeq)
     }
 
-    class ExpandedMatrix(val rows: List[Row], val targets: List[FinalState]) {
+    class ExpandedMatrix(val rows: List[Row], val targets: IndexedSeq[FinalState]) {
       require(rows.size == targets.size)
 
       override def toString() = {
@@ -818,7 +818,7 @@ trait ParallelMatching extends ast.TreeDSL
 
       def ppn(x: Any) = pp(x, newlines = true)
       override def toString() =
-        if (tvars.size == 0) "Rep(%d) = %s".format(rows.size, ppn(rows))
+        if (tvars.isEmpty) "Rep(%d) = %s".format(rows.size, ppn(rows))
         else "Rep(%dx%d)%s%s".format(tvars.size, rows.size, ppn(tvars), ppn(rows))
     }
 

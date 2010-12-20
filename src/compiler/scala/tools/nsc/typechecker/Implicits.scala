@@ -856,7 +856,7 @@ self: Analyzer =>
             }
           case RefinedType(parents, decls) =>
             // refinement is not generated yet
-            if (parents.length == 1) findManifest(parents.head)
+            if (hasLength(parents, 1)) findManifest(parents.head)
             else if (full) manifestFactoryCall("intersectionType", tp, parents map (findSubManifest(_)): _*)
             else mot(erasure.erasure.intersectionDominator(parents))
           case ExistentialType(tparams, result) =>

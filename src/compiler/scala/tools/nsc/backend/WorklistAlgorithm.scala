@@ -40,8 +40,8 @@ trait WorklistAlgorithm {
   def run(initWorklist: => Unit) = {
     initWorklist
 
-    while (!(worklist.length == 0))
-      processElement(dequeue);
+    while (worklist.nonEmpty)
+      processElement(dequeue)
   }
 
   /**

@@ -839,7 +839,8 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
    *              sorted according to the ordering `ord`.
    */
   def sorted[B >: A](implicit ord: Ordering[B]): Repr = {
-    val arr = new ArraySeq[A](this.length)
+    val len = this.length
+    val arr = new ArraySeq[A](len)
     var i = 0
     for (x <- this) {
       arr(i) = x
@@ -847,7 +848,7 @@ trait SeqLike[+A, +Repr] extends IterableLike[A, Repr] { self =>
     }
     java.util.Arrays.sort(arr.array, ord.asInstanceOf[Ordering[Object]])
     val b = newBuilder
-    b.sizeHint(this)
+    b.sizeHint(len)
     for (x <- arr) b += x
     b.result
   }

@@ -10,9 +10,8 @@
 package scala.collection
 
 import generic._
-import mutable.{Builder, StringBuilder, MapBuilder}
+import mutable.{ Builder, MapBuilder }
 import annotation.migration
-import PartialFunction._
 
 /** A template trait for maps, which associate keys with values.
  *

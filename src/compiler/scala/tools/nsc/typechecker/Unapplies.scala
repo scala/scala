@@ -179,7 +179,7 @@ trait Unapplies extends ast.TreeDSL
       case _                                                          => nme.unapply
     }
     val cparams   = List(ValDef(Modifiers(PARAM | SYNTHETIC), paramName, classType(cdef, tparams), EmptyTree))
-    val ifNull    = if (constrParamss(cdef).head.size == 0) FALSE else REF(NoneModule)
+    val ifNull    = if (constrParamss(cdef).head.isEmpty) FALSE else REF(NoneModule)
     val body      = nullSafe({ case Ident(x) => caseClassUnapplyReturnValue(x, cdef.symbol) }, ifNull)(Ident(paramName))
 
     atPos(cdef.pos.focus)(

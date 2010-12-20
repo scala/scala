@@ -48,13 +48,15 @@ trait Infer {
   }
 
   def actualTypes(actuals: List[Type], nformals: Int): List[Type] =
-    if (nformals == 1 && actuals.length != 1)
-      List(if (actuals.length == 0) UnitClass.tpe else tupleType(actuals))
+    if (nformals == 1 && !hasLength(actuals, 1))
+      List(if (actuals.isEmpty) UnitClass.tpe else tupleType(actuals))
     else actuals
 
-  def actualArgs(pos: Position, actuals: List[Tree], nformals: Int): List[Tree] =
-    if (nformals == 1 && actuals.length != 1 && actuals.length <= definitions.MaxTupleArity && !phase.erasedTypes)
-      List(atPos(pos)(gen.mkTuple(actuals))) else actuals
+  def actualArgs(pos: Position, actuals: List[Tree], nformals: Int): List[Tree] = {
+    val inRange = nformals == 1 && !hasLength(actuals, 1) && actuals.lengthCompare(MaxTupleArity) <= 0
+    if (inRange && !phase.erasedTypes) List(atPos(pos)(gen.mkTuple(actuals)))
+    else actuals
+  }
 
   /** A fresh type variable with given type parameter as origin.
    *
@@ -319,18 +321,19 @@ trait Infer {
             } else if (sym.isAbstractType) {
               isPlausiblyCompatible(tp, pt.bounds.lo)
             } else {
-              val l = args.length - 1
-              l == params.length &&
-              sym == FunctionClass(l) && {
-                var curargs = args
-                var curparams = params
-                while (curparams.nonEmpty) {
-                  if (!isPlausiblySubType(curargs.head, curparams.head.tpe))
+              val len = args.length - 1
+              hasLength(params, len) &&
+              sym == FunctionClass(len) && {
+                val ps = mt.paramTypes.iterator
+                val as = args.iterator
+                while (ps.hasNext && as.hasNext) {
+                  if (!isPlausiblySubType(as.next, ps.next))
                     return false
-                  curargs = curargs.tail
-                  curparams = curparams.tail
                 }
-                isPlausiblySubType(restpe, curargs.head)
+                ps.isEmpty && as.hasNext && {
+                  val lastArg = as.next
+                  as.isEmpty && isPlausiblySubType(restpe, lastArg)
+                }
               }
             }
           case _ =>
@@ -736,7 +739,7 @@ trait Infer {
      * tupled and n-ary methods, but thiws is something for a future major revision.
      */
     def isUnitForVarArgs(args: List[AnyRef], params: List[Symbol]): Boolean =
-      args.isEmpty && params.length == 2 && isVarArgsList(params)
+      args.isEmpty && hasLength(params, 2) && isVarArgsList(params)
 
     /** Is there an instantiation of free type variables <code>undetparams</code>
      *  such that function type <code>ftpe</code> is applicable to
@@ -775,7 +778,7 @@ trait Infer {
               case tp => tp
               }, formals.length)
 
-            argtpes0.length != tupleArgTpes.length &&
+            !sameLength(argtpes0, tupleArgTpes) &&
             !isUnitForVarArgs(argtpes0, params) &&
             isApplicable(undetparams, ftpe, tupleArgTpes, pt)
           }
@@ -796,21 +799,21 @@ trait Infer {
           }
 
           // very similar logic to doTypedApply in typechecker
-          if (argtpes0.length > formals.length) tryTupleApply
-          else if (argtpes0.length == formals.length) {
+          val lencmp = compareLengths(argtpes0, formals)
+          if (lencmp > 0) tryTupleApply
+          else if (lencmp == 0) {
             if (!argtpes0.exists(_.isInstanceOf[NamedType])) {
               // fast track if no named arguments are used
               typesCompatible(argtpes0)
-            } else {
+            }
+            else {
               // named arguments are used
               val (argtpes1, argPos, namesOK) = checkNames(argtpes0, params)
-              if (!namesOK) false
               // when using named application, the vararg param has to be specified exactly once
-              else if (!isIdentity(argPos) && (formals.length != params.length)) false
-              else {
-                // nb. arguments and names are OK, check if types are compatible
+              ( namesOK && (isIdentity(argPos) || sameLength(formals, params)) &&
+              // nb. arguments and names are OK, check if types are compatible
                 typesCompatible(reorderArgs(argtpes1, argPos))
-              }
+              )
             }
           } else {
             // not enough arguments, check if applicable using defaults
@@ -1582,16 +1585,17 @@ trait Infer {
           // if there are multiple, drop those that use a default
           // (keep those that use vararg / tupling conversion)
           val applicable =
-            if (allApplicable.length <= 1) allApplicable
+            if (allApplicable.lengthCompare(1) <= 0) allApplicable
             else allApplicable filter (alt => {
               val mtypes = followApply(alt.tpe) match {
-                case OverloadedType(_, alts) =>
-                  // for functional values, the `apply' method might be overloaded
-                  alts map (_.tpe)
-                case t => List(t)
+                // for functional values, the `apply' method might be overloaded
+                case OverloadedType(_, alts) => alts map (_.tpe)
+                case t                       => List(t)
               }
-              mtypes.exists(t => t.params.length < argtpes.length || // tupling (*)
-                                 hasExactlyNumParams(t, argtpes.length)) // same nb or vararg
+              mtypes exists (t =>
+                compareLengths(t.params, argtpes) < 0 ||  // tupling (*)
+                hasExactlyNumParams(t, argtpes.length)    // same nb or vararg
+              )
               // (*) more arguments than parameters, but still applicable: tuplig conversion works.
               //     todo: should not return "false" when paramTypes = (Unit) no argument is given
               //     (tupling would work)
@@ -1659,44 +1663,43 @@ trait Infer {
      *  @param tree ...
      *  @param nparams ...
      */
-    def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): Unit = tree.tpe match {
-      case OverloadedType(pre, alts) =>
-        val sym0 = tree.symbol filter { alt => alt.typeParams.length == argtypes.length }
-        if (sym0 == NoSymbol) {
-          error(
-            tree.pos,
-            if (alts exists (alt => alt.typeParams.length > 0))
-              "wrong number of type parameters for " + treeSymTypeMsg(tree)
-            else treeSymTypeMsg(tree) + " does not take type parameters")
-          return
-        }
-        if (sym0.isOverloaded) {
-          val sym = sym0 filter { alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes) }
+    def inferPolyAlternatives(tree: Tree, argtypes: List[Type]): Unit = {
+      val OverloadedType(pre, alts) = tree.tpe
+      val sym0 = tree.symbol filter (alt => sameLength(alt.typeParams, argtypes))
+      def fail(msg: String): Unit = error(tree.pos, msg)
+
+      if (sym0 == NoSymbol) return fail(
+        if (alts exists (_.typeParams.nonEmpty))
+          "wrong number of type parameters for " + treeSymTypeMsg(tree)
+        else treeSymTypeMsg(tree) + " does not take type parameters"
+      )
+
+      val (resSym, resTpe) = {
+        if (!sym0.isOverloaded)
+          (sym0, pre.memberType(sym0))
+        else {
+          val sym = sym0 filter (alt => isWithinBounds(pre, alt.owner, alt.typeParams, argtypes))
           if (sym == NoSymbol) {
-            if (!(argtypes exists (_.isErroneous))) {
-              error(
-                tree.pos,
-                "type arguments " + argtypes.mkString("[", ",", "]") +
-                " conform to the bounds of none of the overloaded alternatives of\n "+sym0+
-                ": "+sym0.info)
-              return
-            }
+            if (argtypes forall (x => !x.isErroneous)) fail(
+              "type arguments " + argtypes.mkString("[", ",", "]") +
+              " conform to the bounds of none of the overloaded alternatives of\n "+sym0+
+              ": "+sym0.info
+            )
+            return
           }
-          if (sym.isOverloaded) {
-            val tparams = new AsSeenFromMap(pre, sym.alternatives.head.owner).mapOver(
-              sym.alternatives.head.typeParams)
-            val bounds = tparams map (_.tpeHK) // see e.g., #1236
-            val tpe =
-              PolyType(tparams,
-                       OverloadedType(AntiPolyType(pre, bounds), sym.alternatives))
-            sym.setInfo(tpe)
-            tree.setSymbol(sym).setType(tpe)
-          } else {
-            tree.setSymbol(sym).setType(pre.memberType(sym))
+          else if (sym.isOverloaded) {
+            val xs      = sym.alternatives
+            val tparams = new AsSeenFromMap(pre, xs.head.owner) mapOver xs.head.typeParams
+            val bounds  = tparams map (_.tpeHK) // see e.g., #1236
+            val tpe     = PolyType(tparams, OverloadedType(AntiPolyType(pre, bounds), xs))
+
+            (sym setInfo tpe, tpe)
           }
-        } else {
-          tree.setSymbol(sym0).setType(pre.memberType(sym0))
+          else (sym, pre.memberType(sym))
         }
+      }
+      // Side effects tree with symbol and type
+      tree setSymbol resSym setType resTpe
     }
   }
 }

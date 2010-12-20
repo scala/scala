@@ -215,10 +215,8 @@ abstract class DeadCodeElimination extends SubComponent {
           }
         }
 
-        if (bb.size > 0)
-          bb.close
-        else
-          log("empty block encountered")
+        if (bb.nonEmpty) bb.close
+        else log("empty block encountered")
       }
     }
 
@@ -256,9 +254,9 @@ abstract class DeadCodeElimination extends SubComponent {
     }
 
     private def withClosed[a](bb: BasicBlock)(f: => a): a = {
-      if (bb.size > 0) bb.close
+      if (bb.nonEmpty) bb.close
       val res = f
-      if (bb.size > 0) bb.open
+      if (bb.nonEmpty) bb.open
       res
     }
 

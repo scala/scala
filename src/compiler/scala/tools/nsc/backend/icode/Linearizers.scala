@@ -60,7 +60,7 @@ trait Linearizers { self: ICodes =>
     }
 
     def processElement(b: BasicBlock) =
-      if (b.size > 0) {
+      if (b.nonEmpty) {
         add(b);
         b.lastInstruction match {
           case JUMP(whereto) =>
@@ -118,7 +118,7 @@ trait Linearizers { self: ICodes =>
     }
 
     def dfs(b: BasicBlock): Unit =
-      if (b.size > 0 && add(b))
+      if (b.nonEmpty && add(b))
         b.successors foreach dfs;
 
     /**
