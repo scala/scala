@@ -6,15 +6,10 @@
 **                          |/                                          **
 \*                                                                      */
 
-
-
 package scala.mobile
 
-
-import java.lang.ClassLoader
 import java.net._
-
-import scala.collection.mutable._
+import scala.collection.mutable
 
 /** The class <code>Location</code> provides a <code>create</code>
  *  method to instantiate objects from a network location by
@@ -33,56 +28,34 @@ import scala.collection.mutable._
  *  @version 1.0, 04/05/2004
  */
 class Location(url: URL) {
-
   /** A cache containing all class loaders of this location.
    */
-  private var lcache: Map[URL, ClassLoader] = new HashMap
+  private val lcache = new mutable.HashMap[URL, ClassLoader]
 
   /** The class loader associated with this location.
    */
-  private val loader = if (url eq null)
-    ClassLoader.getSystemClassLoader()
-  else
-    lcache.get(url) match {
-    case Some(cl) =>
-      cl
-    case _ =>
-      val cl = new URLClassLoader(Array(url))
-      lcache(url) = cl
-      cl
-  }
+  private val loader =
+    if (url eq null) ClassLoader.getSystemClassLoader()
+    else lcache.getOrElseUpdate(url, new URLClassLoader(Array(url)))
 
   /** A cache containing all classes of this location.
    */
-  private var ccache: Map[String, java.lang.Class[T] forSome { type T }] = new HashMap
+  private val ccache = new mutable.HashMap[String, java.lang.Class[_]]
 
   /** Return the code description for the string <code>className</code>
    *  at this location.
    *
    * @param classname the name of the class
-   * @return          the code description corresponding to
-   *                  <code>className</code>.
+   * @return          the code description corresponding to `className`.
    */
   def create(className: String) = new Code(
-    ccache.get(className) match {
-      case Some(clazz) =>
-        clazz
-      case _ =>
-        val clazz = if (loader.loadClass(className).isInterface()) {
-          // Scala source: class A { ... };
-          // Java bytecode: interface A.class + class A$class.class
-          loader.loadClass(className + "$class")
-        }
-        else {
-          // Scala source: object A { ... };
-          // Java bytecode: interface A.class + class A$.class
-          loader.loadClass(className + "$")
-        }
-        ccache(className) = clazz
-        clazz
-    }
+    ccache.getOrElseUpdate(className, {
+      // source 'class A { ... }' becomes in bytecode: interface A.class + class A$class.class
+      // source 'object A { ... }' becomes in bytecode: interface A.class + class A$.class
+      val append = if (loader.loadClass(className).isInterface) "$class" else "$"
+      loader loadClass (className + append)
+    })
   )
-
 }
 
 /** The object <code>Location</code> can be used to instantiate

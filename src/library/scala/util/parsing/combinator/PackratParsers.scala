@@ -9,10 +9,9 @@
 
 package scala.util.parsing.combinator
 
-import scala.collection.mutable._
 import scala.util.parsing.combinator._
-import scala.util.parsing.input.Position
-import scala.util.parsing.input.Reader
+import scala.util.parsing.input.{ Reader, Position }
+import scala.collection.mutable
 
 /**
  *  <p>
@@ -69,8 +68,7 @@ trait PackratParsers extends Parsers {
      * caching of intermediate parse results and information about recursion
      */
 
-    private[PackratParsers] val cache: HashMap[(Parser[_], Position), MemoEntry[_]] = HashMap.empty
-
+    private[PackratParsers] val cache = mutable.HashMap.empty[(Parser[_], Position), MemoEntry[_]]
 
     private[PackratParsers] def getFromCache[T](p: Parser[T]): Option[MemoEntry[T]] = {
       cache.get((p, pos)).asInstanceOf[Option[MemoEntry[T]]]
@@ -83,13 +81,10 @@ trait PackratParsers extends Parsers {
 
     /* a cache for storing parser heads: allows to know which parser is involved
        in a recursion*/
-    private[PackratParsers] val recursionHeads: HashMap[Position, Head] = HashMap.empty
+    private[PackratParsers] val recursionHeads: mutable.HashMap[Position, Head] = mutable.HashMap.empty
 
     //a stack that keeps a list of all involved rules
     private[PackratParsers] var lrStack: List[LR] = Nil
-
-
-
 
     override def source: java.lang.CharSequence = underlying.source
     override def offset: Int = underlying.offset

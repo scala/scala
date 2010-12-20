@@ -6,10 +6,11 @@
 
 package scala.tools.nsc
 package backend
-package icode;
+package icode
 
 import scala.tools.nsc.ast._
-import scala.collection.mutable.{Stack, HashSet, BitSet, ListBuffer}
+import scala.collection.{ mutable, immutable }
+import mutable.ListBuffer
 
 trait Linearizers { self: ICodes =>
   import opcodes._;
@@ -29,7 +30,7 @@ trait Linearizers { self: ICodes =>
   class NormalLinearizer extends Linearizer with WorklistAlgorithm {
     type Elem = BasicBlock;
 
-    val worklist: WList = new Stack();
+    val worklist: WList = new mutable.Stack();
 
     var blocks: List[BasicBlock] = Nil;
 
@@ -126,9 +127,7 @@ trait Linearizers { self: ICodes =>
      * @return Returns true if the block was added.
      */
     def add(b: BasicBlock): Boolean =
-      if (blocks.contains(b))
-        false
-      else {
+      !(blocks contains b) && {
         blocks = b :: blocks;
         true
       }
@@ -140,13 +139,13 @@ trait Linearizers { self: ICodes =>
    * This way, it is constructed already in reverse post order.
    */
   class ReversePostOrderLinearizer extends Linearizer {
-    var blocks: List[BasicBlock] = Nil;
-    var visited: HashSet[BasicBlock] = new HashSet;
-    val added: BitSet = new BitSet
+    var blocks: List[BasicBlock] = Nil
+    val visited = new mutable.HashSet[BasicBlock]
+    val added = new mutable.BitSet
 
     def linearize(m: IMethod): List[BasicBlock] = {
       blocks = Nil;
-      visited.clear;
+      visited.clear()
       added.clear;
 
       m.exh foreach (b => rpo(b.startBlock));
@@ -162,18 +161,18 @@ trait Linearizers { self: ICodes =>
 
     def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
       blocks = Nil
-      visited.clear
-      added.clear
+      visited.clear()
+      added.clear()
 
       rpo(start)
       blocks
     }
 
     def rpo(b: BasicBlock): Unit =
-      if (b.size > 0 && !(visited contains b)) {
+      if (b.nonEmpty && !visited(b)) {
         visited += b;
-        b.successors foreach rpo;
-        add(b);
+        b.successors foreach rpo
+        add(b)
       }
 
     /**
@@ -192,12 +191,8 @@ trait Linearizers { self: ICodes =>
    *  the last instruction being a jump).
    */
   class DumpLinearizer extends Linearizer {
-    def linearize(m: IMethod): List[BasicBlock] =
-      m.code.blocks.toList;
-
-    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = {
-      system.error("not implemented")
-    }
+    def linearize(m: IMethod): List[BasicBlock] = m.code.blocks.toList
+    def linearizeAt(m: IMethod, start: BasicBlock): List[BasicBlock] = system.error("not implemented")
   }
 
   /** The MSIL linearizer is used only for methods with at least one exception handler.
@@ -238,10 +233,9 @@ trait Linearizers { self: ICodes =>
       }
 
       val tryBlocks = handlersByCovered.keys.toList sortBy size
+      var result    = normalLinearizer.linearize(m)
+      val frozen    = mutable.HashSet[BasicBlock](result.head)
 
-      var result = normalLinearizer.linearize(m)
-
-      val frozen = HashSet[BasicBlock](result.head)
       for (tryBlock <- tryBlocks) {
         result = groupBlocks(m, result, handlersByCovered(tryBlock), frozen)
       }
@@ -251,7 +245,7 @@ trait Linearizers { self: ICodes =>
     /** @param handlers a list of handlers covering the same blocks (same try, multiple catches)
      *  @param frozen blocks can't be moved (fist block of a method, blocks directly following a try-catch)
      */
-    def groupBlocks(method: IMethod, blocks: List[BasicBlock], handlers: List[ExceptionHandler], frozen: HashSet[BasicBlock]) = {
+    def groupBlocks(method: IMethod, blocks: List[BasicBlock], handlers: List[ExceptionHandler], frozen: mutable.HashSet[BasicBlock]) = {
       assert(blocks.head == method.code.startBlock, method)
 
       // blocks before the try, and blocks for the try
@@ -281,7 +275,7 @@ trait Linearizers { self: ICodes =>
       }
 
       // reorder the blocks in "catches" so that the "firstBlock" is actually first
-      for ((lb, handler) <- catches.zip(handlers)) {
+      (catches, handlers).zipped foreach { (lb, handler) =>
         lb -= handler.startBlock
         handler.startBlock +=: lb
       }
@@ -305,7 +299,7 @@ trait Linearizers { self: ICodes =>
       }
       if (firstAfter.isDefined) {
         val b = firstAfter.get
-        if (frozen contains b) {
+        if (frozen(b)) {
           assert(after contains b, b +", "+ method)
         } else {
           frozen += b
@@ -328,7 +322,7 @@ trait Linearizers { self: ICodes =>
      *  that list, i.e. successors outside the `blocks` list.
      */
     private def leavingBlocks(blocks: List[BasicBlock]) = {
-      val res = new HashSet[BasicBlock]()
+      val res = new mutable.HashSet[BasicBlock]()
       for (b <- blocks; s <- b.directSuccessors; if (!blocks.contains(s)))
         res += s
       res

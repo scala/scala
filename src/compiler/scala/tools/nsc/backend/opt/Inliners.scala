@@ -7,9 +7,7 @@
 package scala.tools.nsc
 package backend.opt
 
-import scala.util.control.Breaks._
-import scala.collection.{ mutable, immutable }
-import mutable.{ HashMap, HashSet }
+import scala.collection.mutable
 import scala.tools.nsc.symtab._
 
 /**
@@ -80,17 +78,15 @@ abstract class Inliners extends SubComponent {
       val Public, Protected, Private = Value
 
       /** Cache whether a method calls private members. */
-      val usesNonPublics: mutable.Map[IMethod, Value] = new HashMap
+      val usesNonPublics: mutable.Map[IMethod, Value] = new mutable.HashMap
     }
     import NonPublicRefs._
 
     /* fresh name counter */
-    val fresh = new HashMap[String, Int]
-    var count = 0
+    val fresh = new mutable.HashMap[String, Int] withDefaultValue 0
     def freshName(s: String) = {
-      val count = fresh.getOrElseUpdate(s, 0)
       fresh(s) += 1
-      s + count
+      s + fresh(s)
     }
 
     private def hasInline(sym: Symbol)    = sym hasAnnotation ScalaInlineClass
@@ -110,10 +106,10 @@ abstract class Inliners extends SubComponent {
       }
 
     val tfa   = new analysis.MethodTFA()
-    tfa.stat  = settings.Ystatistics.value
+    tfa.stat  = global.opt.printStats
 
     // how many times have we already inlined this method here?
-    private val inlinedMethodCount: mutable.Map[Symbol, Int] = new HashMap[Symbol, Int] {
+    private val inlinedMethodCount: mutable.Map[Symbol, Int] = new mutable.HashMap[Symbol, Int] {
     	override def default(k: Symbol) = 0
     }
 
@@ -122,8 +118,8 @@ abstract class Inliners extends SubComponent {
       var instrBeforeInlining = if (m.code ne null) m.code.blocks.foldLeft(0)(_ + _.length)  else 0
       var retry = false
       var count = 0
-      fresh.clear
-      inlinedMethodCount.clear
+      fresh.clear()
+      inlinedMethodCount.clear()
       val caller = new IMethodInfo(m)
       var info: tfa.lattice.Elem = null
 
@@ -218,7 +214,6 @@ abstract class Inliners extends SubComponent {
                 i match {
                   case CALL_METHOD(msym, Dynamic) =>
                     if (analyzeInc(msym, i, bb)) break
-
                   case _ => ()
                 }
                 info = tfa.interpret(info, i)
@@ -342,9 +337,9 @@ abstract class Inliners extends SubComponent {
         val activeHandlers = caller.handlers filter (_ covered block)
 
         /* Map 'original' blocks to the ones inlined in the caller. */
-        val inlinedBlock: mutable.Map[BasicBlock, BasicBlock] = new HashMap
+        val inlinedBlock: mutable.Map[BasicBlock, BasicBlock] = new mutable.HashMap
 
-        val varsInScope: mutable.Set[Local] = HashSet() ++= block.varsInScope
+        val varsInScope: mutable.Set[Local] = mutable.HashSet() ++= block.varsInScope
 
         /** Side effects varsInScope when it sees SCOPE_ENTERs. */
         def instrBeforeFilter(i: Instruction): Boolean = {
@@ -365,7 +360,7 @@ abstract class Inliners extends SubComponent {
           case x     => newLocal("$retVal", x)
         }
 
-        val inlinedLocals: mutable.Map[Local, Local] = new HashMap
+        val inlinedLocals: mutable.Map[Local, Local] = new mutable.HashMap
 
         /** Add a new block in the current context. */
         def newBlock() = {
@@ -386,7 +381,7 @@ abstract class Inliners extends SubComponent {
 
         /** alfa-rename `l' in caller's context. */
         def dupLocal(l: Local): Local = {
-          val sym = caller.sym.newVariable(l.sym.pos, freshName(l.sym.name.toString()))
+          val sym = caller.sym.newVariable(l.sym.pos, freshName(l.sym.name.toString))
           // sym.setInfo(l.sym.tpe)
           val dupped = new Local(sym, l.kind, false)
           inlinedLocals(l) = dupped
@@ -396,7 +391,7 @@ abstract class Inliners extends SubComponent {
         val afterBlock = newBlock()
 
         /** Map from nw.init instructions to their matching NEW call */
-        val pending: mutable.Map[Instruction, NEW] = new HashMap
+        val pending: mutable.Map[Instruction, NEW] = new mutable.HashMap
 
         /** Map an instruction from the callee to one suitable for the caller. */
         def map(i: Instruction): Instruction = {
@@ -488,7 +483,6 @@ abstract class Inliners extends SubComponent {
 
         afterBlock emit instrAfter
         afterBlock.close
-        count += 1
 
         // add exception handlers of the callee
         caller addHandlers (inc.handlers map translateExh)

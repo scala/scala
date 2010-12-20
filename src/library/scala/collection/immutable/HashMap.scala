@@ -320,7 +320,6 @@ object HashMap extends ImmutableMapFactory[HashMap] {
 
 /*
 
-import collection.immutable._
 def time(block: =>Unit) = { val t0 = System.nanoTime; block; println("elapsed: " + (System.nanoTime - t0)/1000000.0) }
 var mOld = OldHashMap.empty[Int,Int]
 var mNew = HashMap.empty[Int,Int]

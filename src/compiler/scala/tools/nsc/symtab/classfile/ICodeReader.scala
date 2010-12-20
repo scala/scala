@@ -7,13 +7,11 @@ package scala.tools.nsc
 package symtab
 package classfile
 
-import java.io.IOException
-
-import scala.collection.mutable._
+import scala.collection.{ mutable, immutable }
+import mutable.ListBuffer
 import scala.tools.nsc._
 import scala.tools.nsc.backend.icode._
 import scala.tools.nsc.io._
-
 import ClassfileConstants._
 import Flags._
 
@@ -665,8 +663,8 @@ abstract class ICodeReader extends ClassfileParser {
 
   class LinearCode {
     var instrs: ListBuffer[(Int, Instruction)] = new ListBuffer
-    var jmpTargets: Set[Int] = new HashSet[Int]
-    var locals: Map[Int, List[(Local, TypeKind)]] = new HashMap()
+    var jmpTargets: mutable.Set[Int] = new mutable.HashSet[Int]
+    var locals: mutable.Map[Int, List[(Local, TypeKind)]] = new mutable.HashMap()
 
     var containsDUPX = false
     var containsNEW  = false
@@ -689,11 +687,8 @@ abstract class ICodeReader extends ClassfileParser {
       method.setCode(code)
       var bb = code.startBlock
 
-      def makeBasicBlocks: Map[Int, BasicBlock] = {
-        val block: Map[Int, BasicBlock] = new HashMap
-        for (pc <- jmpTargets) block += (pc -> code.newBlock)
-        block
-      }
+      def makeBasicBlocks: mutable.Map[Int, BasicBlock] =
+        mutable.Map(jmpTargets.toSeq map (_ -> code.newBlock): _*)
 
       val blocks = makeBasicBlocks
       var otherBlock: BasicBlock = null
@@ -701,7 +696,7 @@ abstract class ICodeReader extends ClassfileParser {
 
       for ((pc, instr) <- instrs.iterator) {
 //        Console.println("> " + pc + ": " + instr);
-        if (jmpTargets contains pc) {
+        if (jmpTargets(pc)) {
           otherBlock = blocks(pc)
           if (!bb.closed && otherBlock != bb) {
             bb.emit(JUMP(otherBlock))
@@ -1054,7 +1049,7 @@ abstract class ICodeReader extends ClassfileParser {
     case class LSWITCH(tags: List[List[Int]], targets: List[Int]) extends LazyJump(targets.head) {
       override def toString(): String ="LSWITCH (tags: " + tags + ") targets: " + targets;
 
-      targets.tail.foreach(t => jmpTargets += t)
+      jmpTargets ++= targets.tail
     }
 
     /** Duplicate and exchange pseudo-instruction. Should be later

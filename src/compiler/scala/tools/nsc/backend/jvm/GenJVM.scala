@@ -1008,7 +1008,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       linearization = linearizer.linearize(m)
       val labels = makeLabels(linearization)
       /** local variables whose scope appears in this block. */
-      var varsInBlock: mutable.Set[Local] = new mutable.HashSet
+      val varsInBlock: mutable.Set[Local] = new mutable.HashSet
 
       var nextBlock: BasicBlock = linearization.head
 
@@ -1085,7 +1085,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       var lastMappedPC = 0
       var lastLineNr = 0
       var crtPC = 0
-      varsInBlock.clear
+      varsInBlock.clear()
 
       for (instr <- b) {
         class CompilationException(msg: String) extends Exception(msg) {

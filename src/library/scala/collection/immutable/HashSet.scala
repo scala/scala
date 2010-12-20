@@ -255,7 +255,6 @@ object HashSet extends ImmutableSetFactory[HashSet] {
 
 /*
 
-import collection.immutable._
 def time(block: =>Unit) = { val t0 = System.nanoTime; block; println("elapsed: " + (System.nanoTime - t0)/1000000.0) }
 var mOld = OldHashSet.empty[Int]
 var mNew = HashSet.empty[Int]

@@ -6,7 +6,6 @@
 package scala.tools.nsc
 package ast
 
-import compat.Platform.{EOL => LINE_SEPARATOR}
 import java.io.{ OutputStream, PrintWriter, StringWriter, Writer }
 import symtab.Flags._
 import symtab.SymbolTable
@@ -435,13 +434,12 @@ trait TreePrinters { trees: SymbolTable =>
     }
 
     def print(unit: CompilationUnit) {
-      print("// Scala source: " + unit.source + LINE_SEPARATOR)
-      if (unit.body ne null) {
-        print(unit.body); println()
-      } else {
-        print("<null>")
-      }
-      println(); flush
+      print("// Scala source: " + unit.source + "\n")
+      if (unit.body == null) print("<null>")
+      else { print(unit.body); println() }
+
+      println()
+      flush()
     }
   }
 
@@ -695,8 +693,7 @@ trait TreePrinters { trees: SymbolTable =>
     override def write(str: String) { Console.print(str) }
 
     def write(cbuf: Array[Char], off: Int, len: Int) {
-      val str = new String(cbuf, off, len)
-      write(str)
+      write(new String(cbuf, off, len))
     }
 
     def close = { /* do nothing */ }

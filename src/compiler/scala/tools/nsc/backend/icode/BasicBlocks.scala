@@ -303,7 +303,7 @@ trait BasicBlocks {
     /** Close the block */
     def close {
       assert(!closed || ignore)
-      assert(instructionList.length > 0, "Empty block.")
+      assert(instructionList.nonEmpty, "Empty block.")
       closed = true
       setFlag(DIRTYSUCCS)
       instructionList = instructionList.reverse

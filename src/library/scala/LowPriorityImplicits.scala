@@ -8,9 +8,10 @@
 
 package scala
 
-import collection.mutable._
-import collection.immutable.WrappedString
-import collection.generic.CanBuildFrom
+import scala.collection.{ mutable, immutable, generic }
+import mutable.WrappedArray
+import immutable.WrappedString
+import generic.CanBuildFrom
 
 /** The `LowPriorityImplicits` class provides implicit values that
  *  are valid in all Scala compilation units without explicit qualification,
@@ -52,10 +53,10 @@ class LowPriorityImplicits {
   implicit def wrapString(s: String): WrappedString = if (s ne null) new WrappedString(s) else null
   implicit def unwrapString(ws: WrappedString): String = if (ws ne null) ws.self else null
 
-  implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, collection.immutable.IndexedSeq[T]] =
-    new CanBuildFrom[String, T, collection.immutable.IndexedSeq[T]] {
-      def apply(from: String) = scala.collection.immutable.IndexedSeq.newBuilder[T]
-      def apply() = scala.collection.immutable.IndexedSeq.newBuilder[T]
+  implicit def fallbackStringCanBuildFrom[T]: CanBuildFrom[String, T, immutable.IndexedSeq[T]] =
+    new CanBuildFrom[String, T, immutable.IndexedSeq[T]] {
+      def apply(from: String) = immutable.IndexedSeq.newBuilder[T]
+      def apply() = immutable.IndexedSeq.newBuilder[T]
     }
 }
 

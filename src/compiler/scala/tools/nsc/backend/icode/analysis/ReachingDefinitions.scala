@@ -10,7 +10,6 @@ package analysis
 
 import scala.collection.{ mutable, immutable }
 import immutable.ListSet
-import mutable.HashMap
 
 /** Compute reaching definitions. We are only interested in reaching
  *  definitions for local variables, since values on the stack
@@ -69,10 +68,10 @@ abstract class ReachingDefinitions {
 
     var method: IMethod = _
 
-    val gen: mutable.Map[BasicBlock, Set[Definition]] = new HashMap()
-    val kill: mutable.Map[BasicBlock, Set[Local]]     = new HashMap()
-    val drops: mutable.Map[BasicBlock, Int]           = new HashMap()
-    val outStack: mutable.Map[BasicBlock, Stack]      = new HashMap()
+    val gen: mutable.Map[BasicBlock, Set[Definition]] = new mutable.HashMap()
+    val kill: mutable.Map[BasicBlock, Set[Local]]     = new mutable.HashMap()
+    val drops: mutable.Map[BasicBlock, Int]           = new mutable.HashMap()
+    val outStack: mutable.Map[BasicBlock, Stack]      = new mutable.HashMap()
 
     def init(m: IMethod) {
       this.method = m
