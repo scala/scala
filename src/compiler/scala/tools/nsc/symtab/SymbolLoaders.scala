@@ -25,6 +25,33 @@ abstract class SymbolLoaders {
   val global: Global
   import global._
 
+  /** Enter class and module with given `name` into scope of `root`
+   *  and give them `completer` as type.
+   */
+  def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader) {
+    val owner = if (root.isRoot) definitions.EmptyPackageClass else root
+    assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullName + "." + name)
+    val clazz = owner.newClass(NoPosition, newTypeName(name))
+    val module = owner.newModule(NoPosition, name)
+    clazz setInfo completer
+    module setInfo completer
+    module.moduleClass setInfo moduleClassLoader
+    owner.info.decls enter clazz
+    owner.info.decls enter module
+    assert(clazz.companionModule == module || clazz.isAnonymousClass, module)
+    assert(module.companionClass == clazz, clazz)
+  }
+
+  /** In batch mode: Enter class and module with given `name` into scope of `root`
+   *  and give them a source completer for given `src` as type.
+   *  In IDE mode: Find all toplevel definitions in `src` and enter then into scope of `root`
+   *  with source completer for given `src` as type.
+   *  (overridden in interactive.Global).
+   */
+  def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
+    enterClassAndModule(root, name, new SourcefileLoader(src))
+  }
+
   /**
    * A lazy type that completes itself by calling parameter doComplete.
    * Any linked modules/classes or module classes are also initialized.
@@ -107,20 +134,6 @@ abstract class SymbolLoaders {
       root.info.decls.enter(pkg)
     }
 
-    def enterClassAndModule(root: Symbol, name: String, completer: SymbolLoader) {
-      val owner = if (root.isRoot) definitions.EmptyPackageClass else root
-      assert(owner.info.decls.lookup(name) == NoSymbol, owner.fullName + "." + name)
-      val clazz = owner.newClass(NoPosition, newTypeName(name))
-      val module = owner.newModule(NoPosition, name)
-      clazz setInfo completer
-      module setInfo completer
-      module.moduleClass setInfo moduleClassLoader
-      owner.info.decls enter clazz
-      owner.info.decls enter module
-      assert(clazz.companionModule == module || clazz.isAnonymousClass, module)
-      assert(module.companionClass == clazz, clazz)
-    }
-
     /**
      * Tells whether a class with both a binary and a source representation
      * (found in classpath and in sourcepath) should be re-compiled. Behaves
@@ -147,17 +160,13 @@ abstract class SymbolLoaders {
 
       val sourcepaths = classpath.sourcepaths
       for (classRep <- classpath.classes if doLoad(classRep)) {
-	def enterToplevels(src: AbstractFile) {
-	  if (global.forInteractive)
-	    // Parse the source right away in the presentation compiler.
-	    global.currentRun.compileLate(src)
-	  else
-	    enterClassAndModule(root, classRep.name, new SourcefileLoader(src))
-	}
 	((classRep.binary, classRep.source) : @unchecked) match {
-	  case (Some(bin), Some(src)) if needCompile(bin, src) => enterToplevels(src)
-	  case (None, Some(src)) => enterToplevels(src)
-	  case (Some(bin), _) => enterClassAndModule(root, classRep.name, newClassLoader(bin))
+	  case (Some(bin), Some(src)) if needCompile(bin, src) =>
+            enterToplevelsFromSource(root, classRep.name, src)
+	  case (None, Some(src)) =>
+            enterToplevelsFromSource(root, classRep.name, src)
+	  case (Some(bin), _) =>
+            enterClassAndModule(root, classRep.name, newClassLoader(bin))
 	}
       }
 

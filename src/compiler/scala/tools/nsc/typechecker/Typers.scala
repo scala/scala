@@ -1895,6 +1895,7 @@ trait Typers { self: Analyzer =>
         namer.enterSyms(block.stats)
         for (stat <- block.stats) {
           if (onlyPresentation && stat.isDef) {
+            // this might be redundant now
             var e = context.scope.lookupEntry(stat.symbol.name)
             while ((e ne null) && (e.sym ne stat.symbol)) e = e.tail
             if (e eq null) context.scope.enter(stat.symbol)

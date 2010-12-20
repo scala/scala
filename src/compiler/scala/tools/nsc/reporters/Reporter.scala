@@ -22,7 +22,7 @@ abstract class Reporter {
   val WARNING = new Severity(1)
   val ERROR = new Severity(2)
 
-  def reset {
+  def reset() {
     INFO.count = 0
     ERROR.count   = 0
     WARNING.count = 0
