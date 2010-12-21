@@ -188,8 +188,8 @@ trait BaseTypeSeqs {
     val buf = new ListBuffer[Type]
     buf += tsym.tpe
     var btsSize = 1
-    val nparents = parents.length
-    if (nparents != 0) {
+    if (parents.nonEmpty) {
+      val nparents = parents.length
       val pbtss = new Array[BaseTypeSeq](nparents)
       val index = new Array[Int](nparents)
       var i = 0

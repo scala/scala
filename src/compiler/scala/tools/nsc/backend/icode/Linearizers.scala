@@ -12,11 +12,12 @@ import scala.tools.nsc.ast._
 import scala.collection.{ mutable, immutable }
 import mutable.ListBuffer
 
-trait Linearizers { self: ICodes =>
-  import opcodes._;
+trait Linearizers {
+  self: ICodes =>
+  import opcodes._
 
   abstract class Linearizer {
-    def linearize(c: IMethod): List[BasicBlock];
+    def linearize(c: IMethod): List[BasicBlock]
     def linearizeAt(c: IMethod, start: BasicBlock): List[BasicBlock]
   }
 
@@ -28,11 +29,9 @@ trait Linearizers { self: ICodes =>
    * 'true', the loop continues).
    */
   class NormalLinearizer extends Linearizer with WorklistAlgorithm {
-    type Elem = BasicBlock;
-
-    val worklist: WList = new mutable.Stack();
-
-    var blocks: List[BasicBlock] = Nil;
+    type Elem = BasicBlock
+    val worklist: WList = new mutable.Stack()
+    var blocks: List[BasicBlock] = Nil
 
     def linearize(m: IMethod): List[BasicBlock] = {
       val b = m.code.startBlock;

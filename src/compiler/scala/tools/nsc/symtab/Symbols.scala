@@ -1584,7 +1584,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     /** String representation of symbol's definition following its name */
     final def infoString(tp: Type): String = {
       def typeParamsString: String = tp match {
-        case PolyType(tparams, _) if (tparams.length != 0) =>
+        case PolyType(tparams, _) if tparams.nonEmpty =>
           (tparams map (_.defString)).mkString("[", ",", "]")
         case _ =>
           ""

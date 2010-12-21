@@ -483,7 +483,7 @@ trait Typers { self: Analyzer =>
             case TypeRef(_, sym, args) =>
               checkNoEscape(sym)
               if (!hiddenSymbols.isEmpty && hiddenSymbols.head == sym &&
-                  sym.isAliasType && sym.typeParams.length == args.length) {
+                  sym.isAliasType && sameLength(sym.typeParams, args)) {
                 hiddenSymbols = hiddenSymbols.tail
                 t.normalize
               } else t
@@ -906,7 +906,7 @@ trait Typers { self: Analyzer =>
                      ((mode & HKmode) != 0) &&
                     // @M: don't check tree.tpe.symbol.typeParams. check tree.tpe.typeParams!!!
                     // (e.g., m[Int] --> tree.tpe.symbol.typeParams.length == 1, tree.tpe.typeParams.length == 0!)
-                     tree.tpe.typeParams.length != pt.typeParams.length &&
+                    !sameLength(tree.tpe.typeParams, pt.typeParams) &&
                      !(tree.tpe.typeSymbol==AnyClass ||
                        tree.tpe.typeSymbol==NothingClass ||
                        pt == WildcardType )) {
@@ -1620,8 +1620,8 @@ trait Typers { self: Analyzer =>
           val (superConstr, args1) = decompose(fn)
           val params = fn.tpe.params
           val args2 = if (params.isEmpty || !isRepeatedParamType(params.last.tpe)) args
-                      else args.take(params.length - 1) ::: List(EmptyTree)
-          assert(args2.length == params.length, "mismatch " + clazz + " " + (params map (_.tpe)) + " " + args2)//debug
+                      else args.take(params.length - 1) :+ EmptyTree
+          assert(sameLength(args2, params), "mismatch " + clazz + " " + (params map (_.tpe)) + " " + args2)//debug
           (superConstr, args1 ::: args2)
         case Block(stats, expr) if !stats.isEmpty =>
           decompose(stats.last)
@@ -1643,7 +1643,7 @@ trait Typers { self: Analyzer =>
         val superClazz = superConstr.symbol.owner
         if (!superClazz.isJavaDefined) {
           val superParamAccessors = superClazz.constrParamAccessors
-          if (superParamAccessors.length == superArgs.length) {
+          if (sameLength(superParamAccessors, superArgs)) {
             (superParamAccessors, superArgs).zipped map { (superAcc, superArg) =>
               superArg match {
                 case Ident(name) =>
@@ -2005,27 +2005,28 @@ trait Typers { self: Analyzer =>
      *  @return     ...
      */
     def typedFunction(fun: Function, mode: Int, pt: Type): Tree = {
+      val numVparams = fun.vparams.length
       val codeExpected = !forMSIL && (pt.typeSymbol isNonBottomSubClass CodeClass)
 
-      if (fun.vparams.length > definitions.MaxFunctionArity)
+      if (numVparams > definitions.MaxFunctionArity)
         return errorTree(fun, "implementation restricts functions to " + definitions.MaxFunctionArity + " parameters")
 
       def decompose(pt: Type): (Symbol, List[Type], Type) =
         if ((isFunctionType(pt)
              ||
              pt.typeSymbol == PartialFunctionClass &&
-             fun.vparams.length == 1 && fun.body.isInstanceOf[Match])
+             numVparams == 1 && fun.body.isInstanceOf[Match])
              && // see bug901 for a reason why next conditions are needed
-            (pt.normalize.typeArgs.length - 1 == fun.vparams.length
+            (pt.normalize.typeArgs.length - 1 == numVparams
              ||
              fun.vparams.exists(_.tpt.isEmpty)))
           (pt.typeSymbol, pt.normalize.typeArgs.init, pt.normalize.typeArgs.last)
         else
-          (FunctionClass(fun.vparams.length), fun.vparams map (x => NoType), WildcardType)
+          (FunctionClass(numVparams), fun.vparams map (x => NoType), WildcardType)
 
       val (clazz, argpts, respt) = decompose(if (codeExpected) pt.normalize.typeArgs.head else pt)
 
-      if (fun.vparams.length != argpts.length)
+      if (argpts.lengthCompare(numVparams) != 0)
         errorTree(fun, "wrong number of parameters; expected = " + argpts.length)
       else {
         val vparamSyms = (fun.vparams, argpts).zipped map { (vparam, argpt) =>
@@ -2040,7 +2041,7 @@ trait Typers { self: Analyzer =>
                         // if context,undetparams is not empty, the function was polymorphic,
                         // so we need the missing arguments to infer its type. See #871
                         //println("typing eta "+fun+":"+fn1.tpe+"/"+context.undetparams)
-                        val ftpe = normalize(fn1.tpe) baseType FunctionClass(fun.vparams.length)
+                        val ftpe = normalize(fn1.tpe) baseType FunctionClass(numVparams)
                         if (isFunctionType(ftpe) && isFullyDefined(ftpe))
                           return typedFunction(fun, mode, ftpe)
                       case _ =>
@@ -2064,7 +2065,7 @@ trait Typers { self: Analyzer =>
         var body = typed(fun.body, respt)
         val formals = vparamSyms map (_.tpe)
         val restpe = packedType(body, fun.symbol).deconst
-        val funtpe = typeRef(clazz.tpe.prefix, clazz, formals ::: List(restpe))
+        val funtpe = typeRef(clazz.tpe.prefix, clazz, formals :+ restpe)
 //        body = checkNoEscaping.locals(context.scope, restpe, body)
         val fun1 = treeCopy.Function(fun, vparams, body).setType(funtpe)
         if (codeExpected) {
@@ -2219,7 +2220,7 @@ trait Typers { self: Analyzer =>
     def typedArgs(args: List[Tree], mode: Int, originalFormals: List[Type], adaptedFormals: List[Type]) = {
       var newmodes = originalFormals map (tp => if (isByNameParamType(tp)) 0 else BYVALmode)
       if (isVarArgTypes(originalFormals)) // TR check really necessary?
-        newmodes = newmodes.init ::: List.fill(args.length - originalFormals.length + 1)(STARmode | BYVALmode)
+        newmodes = newmodes.init ++ List.fill(args.length - originalFormals.length + 1)(STARmode | BYVALmode)
 
       (args, adaptedFormals, newmodes).zipped map { (arg, formal, m) =>
         typedArg(arg, mode, m, formal)
@@ -2339,7 +2340,7 @@ trait Typers { self: Analyzer =>
             // if 1 formal, 1 arg (a tuple), otherwise unmodified args
             val tupleArgs = actualArgs(tree.pos.makeTransparent, args, formals.length)
 
-            if (tupleArgs.length != args.length && !isUnitForVarArgs(args, params)) {
+            if (!sameLength(tupleArgs, args) && !isUnitForVarArgs(args, params)) {
               // expected one argument, but got 0 or >1 ==>  try applying to tuple
               // the inner "doTypedApply" does "extractUndetparams" => restore when it fails
               val savedUndetparams = context.undetparams
@@ -2360,21 +2361,21 @@ trait Typers { self: Analyzer =>
            *  and defaults is ruled out by typedDefDef.
            */
           def tryNamesDefaults: Tree = {
+            val lencmp = compareLengths(args, formals)
+
             if (mt.isErroneous) setError(tree)
             else if ((mode & PATTERNmode) != 0)
               // #2064
               errorTree(tree, "wrong number of arguments for "+ treeSymTypeMsg(fun))
-            else if (args.length > formals.length) {
-              tryTupleApply.getOrElse {
-                errorTree(tree, "too many arguments for "+treeSymTypeMsg(fun))
-              }
-            } else if (args.length == formals.length) {
+            else if (lencmp > 0) {
+              tryTupleApply getOrElse errorTree(tree, "too many arguments for "+treeSymTypeMsg(fun))
+            } else if (lencmp == 0) {
               // we don't need defaults. names were used, so this application is transformed
               // into a block (@see transformNamedApplication in NamesDefaults)
               val (namelessArgs, argPos) = removeNames(Typer.this)(args, params)
               if (namelessArgs exists (_.isErroneous)) {
                 setError(tree)
-              } else if (!isIdentity(argPos) && (formals.length != params.length))
+              } else if (!isIdentity(argPos) && !sameLength(formals, params))
                 // !isIdentity indicates that named arguments are used to re-order arguments
                 errorTree(tree, "when using named arguments, the vararg parameter "+
                                 "has to be specified exactly once")
@@ -2405,12 +2406,14 @@ trait Typers { self: Analyzer =>
                 }
                 val (allArgs, missing) = addDefaults(args, qual, targs, previousArgss, params, fun.pos.focus, context)
                 val funSym = fun1 match { case Block(_, expr) => expr.symbol }
-                if (allArgs.length != args.length && callToCompanionConstr(context, funSym)) {
+                val lencmp2 = compareLengths(allArgs, formals)
+
+                if (!sameLength(allArgs, args) && callToCompanionConstr(context, funSym)) {
                   errorTree(tree, "module extending its companion class cannot use default constructor arguments")
-                } else if (allArgs.length > formals.length) {
+                } else if (lencmp2 > 0) {
                   removeNames(Typer.this)(allArgs, params) // #3818
                   setError(tree)
-                } else if (allArgs.length == formals.length) {
+                } else if (lencmp2 == 0) {
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   val note = "Error occurred in an application involving default arguments."
                   if (!(context.diagnostic contains note)) context.diagnostic = note :: context.diagnostic
@@ -2422,10 +2425,10 @@ trait Typers { self: Analyzer =>
             }
           }
 
-          if (formals.length != args.length || // wrong nb of arguments
-              args.exists(isNamed(_)) ||       // uses a named argument
-              isNamedApplyBlock(fun)) {        // fun was transformed to a named apply block =>
-                                               // integrate this application into the block
+          if (!sameLength(formals, args) ||   // wrong nb of arguments
+              (args exists isNamed) ||        // uses a named argument
+              isNamedApplyBlock(fun)) {       // fun was transformed to a named apply block =>
+                                              // integrate this application into the block
             tryNamesDefaults
           } else {
             val tparams = context.extractUndetparams()
@@ -2570,7 +2573,7 @@ trait Typers { self: Analyzer =>
           else {
             val formals0 = unapplyTypeList(fun1.symbol, fun1.tpe)
             val formals1 = formalTypes(formals0, args.length)
-            if (formals1.length == args.length) {
+            if (sameLength(formals1, args)) {
               val args1 = typedArgs(args, mode, formals0, formals1)
               if (!isFullyDefined(pt)) assert(false, tree+" ==> "+UnApply(fun1, args1)+", pt = "+pt)
               val itype =  glb(List(pt, arg.tpe))
@@ -2784,8 +2787,7 @@ trait Typers { self: Analyzer =>
               error(t.pos, "unexpected tree after typing annotation: "+ typedAnn)
           }
 
-          if (annType.typeSymbol == DeprecatedAttr &&
-              (argss.length == 0 || argss.head.length == 0))
+          if (annType.typeSymbol == DeprecatedAttr && (argss.isEmpty || argss.head.isEmpty))
             unit.deprecationWarning(ann.pos,
               "the `deprecated' annotation now takes a (message: String) as parameter\n"+
               "indicating the reason for deprecation. That message is printed to the console and included in scaladoc.")
@@ -2944,7 +2946,7 @@ trait Typers { self: Analyzer =>
       case OverloadedType(pre, alts) =>
         inferPolyAlternatives(fun, args map (_.tpe))
         val tparams = fun.symbol.typeParams //@M TODO: fun.symbol.info.typeParams ? (as in typedAppliedTypeTree)
-        val args1 = if(args.length == tparams.length) {
+        val args1 = if (sameLength(args, tparams)) {
           //@M: in case TypeApply we can't check the kind-arities of the type arguments,
           // as we don't know which alternative to choose... here we do
           map2Conserve(args, tparams) {
@@ -2960,8 +2962,8 @@ trait Typers { self: Analyzer =>
         typedTypeApply(tree, mode, fun, args1)
       case SingleType(_, _) =>
         typedTypeApply(tree, mode, fun setType fun.tpe.widen, args)
-      case PolyType(tparams, restpe) if (tparams.length != 0) =>
-        if (tparams.length == args.length) {
+      case PolyType(tparams, restpe) if tparams.nonEmpty =>
+        if (sameLength(tparams, args)) {
           val targs = args map (_.tpe)
           checkBounds(tree.pos, NoPrefix, NoSymbol, tparams, targs, "")
           if (fun.symbol == Predef_classOf) {
@@ -3779,7 +3781,7 @@ trait Typers { self: Analyzer =>
           errorTree(tree, tpt1.tpe+" does not take type parameters")
         } else {
           val tparams = tpt1.symbol.typeParams
-          if (tparams.length == args.length) {
+          if (sameLength(tparams, args)) {
             // @M: kind-arity checking is done here and in adapt, full kind-checking is in checkKindBounds (in Infer)
             val args1 =
               if(!tpt1.symbol.rawInfo.isComplete)
@@ -3813,7 +3815,7 @@ trait Typers { self: Analyzer =>
                 result // you only get to see the wrapped tree after running this check :-p
               }).setType(result.tpe)
             else result
-          } else if (tparams.length == 0) {
+          } else if (tparams.isEmpty) {
             errorTree(tree, tpt1.tpe+" does not take type parameters")
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
@@ -4015,7 +4017,7 @@ trait Typers { self: Analyzer =>
           //context.undetparams = undets
 
           // @M maybe the well-kindedness check should be done when checking the type arguments conform to the type parameters' bounds?
-          val args1 = if(args.length == tparams.length) map2Conserve(args, tparams) {
+          val args1 = if (sameLength(args, tparams)) map2Conserve(args, tparams) {
                         //@M! the polytype denotes the expected kind
                         (arg, tparam) => typedHigherKindedType(arg, mode, polyType(tparam.typeParams, AnyClass.tpe))
                       } else {

@@ -1822,7 +1822,6 @@ abstract class GenICode extends SubComponent  {
      * in code generation
      */
     class Context {
-
       /** The current package. */
       var packg: Name = _
 

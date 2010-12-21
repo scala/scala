@@ -312,19 +312,22 @@ trait Definitions extends reflect.generic.StandardDefinitions {
       def isTupleType(tp: Type): Boolean = isTupleType(tp, false)
       def isTupleTypeOrSubtype(tp: Type): Boolean = isTupleType(tp, true)
       private def isTupleType(tp: Type, subtypeOK: Boolean) = tp.normalize match {
-        case TypeRef(_, sym, args) =>
-          args.nonEmpty && args.length <= MaxTupleArity && {
-            val tsym = TupleClass(args.length)
+        case TypeRef(_, sym, args) if args.nonEmpty =>
+          val len = args.length
+          len <= MaxTupleArity && {
+            val tsym = TupleClass(len)
             (sym == tsym) || (subtypeOK && !tp.isHigherKinded && sym.isSubClass(tsym))
           }
         case _ => false
       }
 
-      def tupleType(elems: List[Type]) =
-        if (elems.length <= MaxTupleArity) {
-          val sym = TupleClass(elems.length)
+      def tupleType(elems: List[Type]) = {
+        val len = elems.length
+        if (len <= MaxTupleArity) {
+          val sym = TupleClass(len)
           typeRef(sym.typeConstructor.prefix, sym, elems)
-        } else NoType;
+        } else NoType
+      }
 
     lazy val ProductRootClass: Symbol = getClass("scala.Product")
       def Product_productArity = getMember(ProductRootClass, nme.productArity)
@@ -338,16 +341,22 @@ trait Definitions extends reflect.generic.StandardDefinitions {
 
       /** returns true if this type is exactly ProductN[T1,...,Tn], not some subclass */
       def isExactProductType(tp: Type): Boolean = cond(tp.normalize) {
-        case TypeRef(_, sym, elems) => elems.length <= MaxProductArity && sym == ProductClass(elems.length)
+        case TypeRef(_, sym, elems) =>
+          val len = elems.length
+          len <= MaxProductArity && sym == ProductClass(len)
       }
 
-      def productType(elems: List[Type]) =
-        if (elems.isEmpty)
-          UnitClass.tpe
-        else if (elems.length <= MaxProductArity) {
-          val sym = ProductClass(elems.length)
-          typeRef(sym.typeConstructor.prefix, sym, elems)
-        } else NoType
+      def productType(elems: List[Type]) = {
+        if (elems.isEmpty) UnitClass.tpe
+        else {
+          val len = elems.length
+          if (len <= MaxProductArity) {
+            val sym = ProductClass(len)
+            typeRef(sym.typeConstructor.prefix, sym, elems)
+          }
+          else NoType
+        }
+      }
 
     /** if tpe <: ProductN[T1,...,TN], returns Some(T1,...,TN) else None */
     def getProductArgs(tpe: Type): Option[List[Type]] =
@@ -360,11 +369,13 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     }).normalize
 
     def functionApply(n: Int) = getMember(FunctionClass(n), nme.apply)
-    def functionType(formals: List[Type], restpe: Type) =
-      if (formals.length <= MaxFunctionArity) {
-        val sym = FunctionClass(formals.length)
+    def functionType(formals: List[Type], restpe: Type) = {
+      val len = formals.length
+      if (len <= MaxFunctionArity) {
+        val sym = FunctionClass(len)
         typeRef(sym.typeConstructor.prefix, sym, formals :+ restpe)
       } else NoType
+    }
 
     def abstractFunctionForFunctionType(tp: Type) = tp.normalize match {
       case tr @ TypeRef(_, _, args) if isFunctionType(tr) =>
@@ -375,9 +386,9 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     }
 
     def isFunctionType(tp: Type): Boolean = tp.normalize match {
-      case TypeRef(_, sym, args) =>
-        (args.length > 0) && (args.length - 1 <= MaxFunctionArity) &&
-        (sym == FunctionClass(args.length - 1))
+      case TypeRef(_, sym, args) if args.nonEmpty =>
+        val len = args.length
+        len < MaxFunctionArity && sym == FunctionClass(len - 1)
       case _ =>
         false
     }

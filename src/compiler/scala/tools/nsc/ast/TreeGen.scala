@@ -35,7 +35,7 @@ abstract class TreeGen {
       mkAttributedRef(AbstractFunctionClass(argtpes.length))
     else
       mkAttributedRef(FunctionClass(argtpes.length))
-    AppliedTypeTree(cls, argtpes ::: List(restpe))
+    AppliedTypeTree(cls, argtpes :+ restpe)
   }
 
   /** Builds a reference to value whose type is given stable prefix.

@@ -3574,20 +3574,21 @@ A type's typeSymbol should never be inspected directly.
   }
 
   class InstantiateDependentMap(params: List[Symbol], actuals: List[Type]) extends TypeMap {
+    private val actualsIndexed = actuals.toIndexedSeq
     override val dropNonConstraintAnnotations = true
 
     object ParamWithActual {
       def unapply(sym: Symbol): Option[Type] = {
         val pid = params indexOf sym
-        if(pid != -1) Some(actuals(pid)) else None
+        if(pid != -1) Some(actualsIndexed(pid)) else None
       }
     }
 
     def apply(tp: Type): Type =
       mapOver(tp) match {
-        case SingleType(NoPrefix, ParamWithActual(arg)) if arg isStable => arg // unsound to replace args by unstable actual #3873
+        case SingleType(NoPrefix, ParamWithActual(arg)) if arg.isStable => arg // unsound to replace args by unstable actual #3873
         // (soundly) expand type alias selections on implicit arguments, see depmet_implicit_oopsla* test cases -- typically, `param.isImplicit`
-        case tp1@TypeRef(SingleType(NoPrefix, param@ParamWithActual(arg)), sym, targs) =>
+        case tp1@TypeRef(SingleType(NoPrefix, ParamWithActual(arg)), sym, targs) =>
           val res = typeRef(arg, sym, targs)
           if(res.typeSymbolDirect isAliasType) res.dealias
           else tp1
@@ -3596,8 +3597,8 @@ A type's typeSymbol should never be inspected directly.
 
     def existentialsNeeded: List[Symbol] = existSyms.filter(_ ne null).toList
 
-    private val existSyms: Array[Symbol] = new Array(actuals.length)
-    private def haveExistential(i: Int) = {assert((i >= 0) && (i <= actuals.length)); existSyms(i) ne null}
+    private val existSyms: Array[Symbol] = new Array(actualsIndexed.size)
+    private def haveExistential(i: Int) = {assert((i >= 0) && (i <= actualsIndexed.size)); existSyms(i) ne null}
 
     /* Return the type symbol for referencing a parameter inside the existential quantifier.
      * (Only needed if the actual is unstable.)
@@ -3607,7 +3608,7 @@ A type's typeSymbol should never be inspected directly.
       else {
         val oldSym = params(actualIdx)
         val symowner = oldSym.owner
-        val bound = singletonBounds(actuals(actualIdx))
+        val bound = singletonBounds(actualsIndexed(actualIdx))
 
         val sym = symowner.newExistential(oldSym.pos, oldSym.name+".type")
         sym.setInfo(bound)
@@ -3625,9 +3626,9 @@ A type's typeSymbol should never be inspected directly.
             case RefParamAt(pid) =>
               // TODO: this should be simplified; in the stable case, one can probably
               // just use an Ident to the tree.symbol. Why an existential in the non-stable case?
-              val actual = actuals(pid)
-              if(actual.isStable && actual.typeSymbol != NothingClass) {
-                mkAttributedQualifier(actuals(pid), tree.symbol)
+              val actual = actualsIndexed(pid)
+              if (actual.isStable && actual.typeSymbol != NothingClass) {
+                mkAttributedQualifier(actualsIndexed(pid), tree.symbol)
               } else {
                 val sym = existSymFor(pid)
                 (Ident(sym.name)
@@ -3638,11 +3639,9 @@ A type's typeSymbol should never be inspected directly.
           }
         }
         object RefParamAt {
-          def unapply(tree: Tree): Option[(Int)] = tree match {
-            case Ident(_) =>
-              val pid = params indexOf tree.symbol
-              if(pid != -1) Some((pid)) else None
-            case _ => None
+          def unapply(tree: Tree): Option[Int] = tree match {
+            case Ident(_) => Some(params indexOf tree.symbol) filterNot (_ == -1)
+            case _        => None
           }
         }
       }

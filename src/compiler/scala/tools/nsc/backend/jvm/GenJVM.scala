@@ -238,11 +238,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
       parents = parents.distinct
 
-      if (parents.length > 1) {
-        ifaces = new Array[String](parents.length - 1)
-        parents.drop(1).map((s) => javaName(s.typeSymbol)).copyToArray(ifaces, 0)
-        ()
-      }
+      if (parents.tail.nonEmpty)
+        ifaces = parents drop 1 map (x => javaName(x.typeSymbol)) toArray;
 
       jclass = fjbgContext.JClass(javaFlags(c.symbol),
                                   name,
