@@ -352,7 +352,7 @@ self =>
 
   /** Move list of files to front of allSources */
   def moveToFront(fs: List[SourceFile]) {
-    allSources = fs ++ (allSources -- fs)
+    allSources = fs ++ (allSources diff fs)
   }
 
   // ----------------- Implementations of client commands -----------------------
@@ -397,6 +397,7 @@ self =>
   /** Make sure a set of compilation units is loaded and parsed */
   def reloadSources(sources: List[SourceFile]) {
     newTyperRun()
+    minRunId = currentRunId
     sources foreach reloadSource
     moveToFront(sources)
   }
@@ -424,7 +425,8 @@ self =>
         debugLog("starting targeted type check")
         newTyperRun()
         typeCheck(unit)
-        throw new FatalError("tree not found")
+        println("tree not found at "+pos)
+        EmptyTree
       } catch {
         case ex: TyperResult => new Locator(pos) locateIn ex.tree
       } finally {
@@ -643,9 +645,9 @@ self =>
     /** canRedefine is used to detect double declarations in multiple source files.
      *  Since the IDE rechecks units several times in the same run, these tests
      *  are disabled by always returning true here.
-     *  (I think we don't need that anymore, therefore disabled)
+     *  (I think we don't need that anymore)
      */
-    // override def canRedefine(sym: Symbol) = false
+    override def canRedefine(sym: Symbol) = true
 
     def typeCheck(unit: CompilationUnit): Unit = {
       activeLocks = 0
