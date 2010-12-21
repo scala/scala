@@ -25,9 +25,8 @@ self =>
 
   import definitions._
 
-  val debugIDE = false
-
-  var verboseIDE = false
+  val debugIDE: Boolean = settings.YpresentationDebug.value
+  val verboseIDE: Boolean = settings.YpresentationVerbose.value
 
   /** Print msg only when debugIDE is true. */
   @inline final def debugLog(msg: => String) =
@@ -292,11 +291,13 @@ self =>
     // remove any files in first that are no longer maintained by presentation compiler (i.e. closed)
     allSources = allSources filter (s => unitOfFile contains (s.file))
 
+    informIDE("Parsing %d files.".format(allSources.size))
     for (s <- allSources) {
       val unit = unitOf(s)
       if (unit.status == NotLoaded) parse(unit)
     }
 
+    informIDE("Typechecking %d files.".format(allSources.size))
     for (s <- allSources) {
       val unit = unitOf(s)
       if (!unit.isUpToDate) typeCheck(unit)

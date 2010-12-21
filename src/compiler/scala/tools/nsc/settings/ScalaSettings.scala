@@ -79,10 +79,6 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   // Experimental Extensions
   val Xexperimental = BooleanSetting    ("-Xexperimental", "Enable experimental extensions.") .
                           withPostSetHook(set => List(YdepMethTpes, YmethodInfer) foreach (_.value = set.value)) //YvirtClasses,
-  val YdepMethTpes  = BooleanSetting    ("-Ydependent-method-types", "Allow dependent method types.")
-  val YmethodInfer  = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overriden methods.")
-  val noSelfCheck   = BooleanSetting    ("-Yno-self-type-checks", "Suppress check for self-type conformance among inherited members.")
-  val YvirtClasses  = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
 
   /** Compatibility stubs for options whose value name did
    *  not previously match the option name.
@@ -144,6 +140,13 @@ trait ScalaSettings extends AbsScalaSettings with StandardScalaSettings {
   val Ypmatnaive    = BooleanSetting    ("-Ypmat-naive", "Desugar matches as naively as possible.")
   val Ymurmur       = BooleanSetting    ("-Ymurmur", "Use Murmur hash algorithm for case class generated hashCodes.")
   val Ynotnull      = BooleanSetting    ("-Ynotnull", "Enable (experimental and incomplete) scala.NotNull.")
+  val YdepMethTpes  = BooleanSetting    ("-Ydependent-method-types", "Allow dependent method types.")
+  val YmethodInfer  = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overriden methods.")
+  val noSelfCheck   = BooleanSetting    ("-Yno-self-type-checks", "Suppress check for self-type conformance among inherited members.")
+  val YvirtClasses  = false // too embryonic to even expose as a -Y //BooleanSetting    ("-Yvirtual-classes", "Support virtual classes")
+
+  val YpresentationVerbose = BooleanSetting("-YpresentationVerbose", "Print information about presentation compiler tasks.")
+  val YpresentationDebug   = BooleanSetting("-Ypresentation-debug",   "Enable debugging output for the presentation compiler.")
 
   // Warnings
   val Ywarndeadcode = BooleanSetting    ("-Ywarn-dead-code", "Emit warnings for dead code")
