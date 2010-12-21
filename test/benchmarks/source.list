@@ -64,6 +64,8 @@ src/scala/collection/parallel/benchmarks/generic/Operators.scala
 src/scala/collection/parallel/benchmarks/generic/ParallelBenches.scala
 src/scala/collection/parallel/benchmarks/generic/Dummy.scala
 src/scala/collection/parallel/benchmarks/parallel_range/RangeBenches.scala
+src/scala/collection/parallel/benchmarks/misc/Dictionary.scala
+src/scala/collection/parallel/benchmarks/misc/Coder.scala
 src/scala/collection/parallel/benchmarks/Bench.scala
 src/scala/collection/parallel/benchmarks/hashtries/Foreach.scala
 src/scala/collection/parallel/benchmarks/hashtries/Combine.scala

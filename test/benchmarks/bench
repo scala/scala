@@ -15,7 +15,8 @@
 
 
 TOP_DIR=$PWD
-SCALA_BUILD_DIR=../../build/pack
+# build/pack for ant, target/pack for sbt
+SCALA_BUILD_DIR=../../target/pack 
 SRC_DIR=src/
 TARGET_DIR=target
 CLASS_DIR=$TARGET_DIR/classes
@@ -35,6 +36,11 @@ then
   
   # recompile with fsc
   $FSC -cp $CLASSPATH -d $CLASS_DIR @source.list
+  
+  # copy files
+  cd $SRC_DIR
+  cp -r * ../$CLASS_DIR
+  cd ..
   
   # jar it up
   rm $ARTIFACT_PATH

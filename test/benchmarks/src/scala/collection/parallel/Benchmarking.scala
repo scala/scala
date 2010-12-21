@@ -127,6 +127,9 @@ trait BenchmarkRegister {
   register(hashtables.RefParHashTableSetBenches.Map)
   register(hashtables.RefParHashTableSetBenches.Map2)
   register(hashtables.RefParHashTableSetBenches.HeavyMap)
+
+  // general examples
+  register(misc.Coder)
 }
 
 

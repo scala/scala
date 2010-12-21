@@ -38,14 +38,14 @@ trait PartestRunner{
 
   lazy val posFilesTest          = TestSet(Std,"pos", "Compiling files that are expected to build", testFiles / "pos" * ("*.scala" || DirectoryFilter))
   lazy val negFilesTest          = TestSet(Std,"neg", "Compiling files that are expected to fail", testFiles / "neg" * ("*.scala" || DirectoryFilter))
-  lazy val runFilesTest          = TestSet(Std,"run", "Compiling and running files", testFiles / "run" ** ("*.scala" ))
+  lazy val runFilesTest          = TestSet(Std,"run", "Compiling and running files", testFiles / "run" * ("*.scala" || DirectoryFilter))
   lazy val jvmFilesTest          = TestSet(Std,"jvm", "Compiling and running files", testFiles / "jvm" *("*.scala" || DirectoryFilter))
   lazy val resFilesTest          = TestSet(Std,"res", "Running resident compiler scenarii", testFiles / "res" * ("*.res"))
   lazy val buildmanagerFilesTest = TestSet(Std,"buildmanager", "Running Build Manager scenarii", testFiles / "buildmanager" * DirectoryFilter)
-  lazy val scalacheckFilesTest   = TestSet(Std,"scalacheck", "Running scalacheck tests", testFiles / "scalacheck" ** ("*.scala"))
+  lazy val scalacheckFilesTest   = TestSet(Std,"scalacheck", "Running scalacheck tests", testFiles / "scalacheck" * ("*.scala" || DirectoryFilter))
   lazy val scriptFilesTest       = TestSet(Std,"script", "Running script files", testFiles / "script" * ("*.scala"))
   lazy val shootoutFilesTest     = TestSet(Std,"shootout", "Running shootout tests", testFiles / "shootout" * ("*.scala"))
-  lazy val scalapFilesTest       = TestSet(Std,"scalap", "Running scalap tests", testFiles / "scalap" ** ("*.scala"))
+  lazy val scalapFilesTest       = TestSet(Std,"scalap", "Running scalap tests", testFiles / "scalap" * ("*.scala"))
 
   lazy val negContinuationTest = TestSet(Continuations,"neg", "Compiling continuations files that are expected to fail", testFiles / "continuations-neg" * ("*.scala" || DirectoryFilter))
   lazy val runContinuationTest = TestSet(Continuations,"run", "Compiling and running continuations files", testFiles / "continuations-run" ** ("*.scala" ))
@@ -149,7 +149,6 @@ trait PartestRunner{
         }
 
       }
-
 
       resolve0(l.map(Path.fromString(testFiles,_).asFile),filesTestMap.values.toList,sets)
     }

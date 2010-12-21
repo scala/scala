@@ -192,7 +192,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
 
   class CreateTrie(bucks: Array[Unrolled[(K, V)]], root: Array[HashMap[K, V]], offset: Int, howmany: Int)
   extends Task[Unit, CreateTrie] {
-    var result = ()
+    @volatile var result = ()
     def leaf(prev: Option[Unit]) = {
       var i = offset
       val until = offset + howmany
@@ -200,6 +200,7 @@ self: EnvironmentPassingCombiner[(K, V), ParHashMap[K, V]] =>
         root(i) = createTrie(bucks(i))
         i += 1
       }
+      result = result
     }
     private def createTrie(elems: Unrolled[(K, V)]): HashMap[K, V] = {
       var trie = new HashMap[K, V]

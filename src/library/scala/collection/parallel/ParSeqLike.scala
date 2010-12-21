@@ -327,7 +327,7 @@ self =>
 
   protected[this] class SegmentLength(pred: T => Boolean, from: Int, protected[this] val pit: ParSeqIterator[T])
   extends Accessor[(Int, Boolean), SegmentLength] {
-    var result: (Int, Boolean) = null
+    @volatile var result: (Int, Boolean) = null
     def leaf(prev: Option[(Int, Boolean)]) = if (from < pit.indexFlag) {
       val itsize = pit.remaining
       val seglen = pit.prefixLength(pred)
@@ -345,7 +345,7 @@ self =>
 
   protected[this] class IndexWhere(pred: T => Boolean, from: Int, protected[this] val pit: ParSeqIterator[T])
   extends Accessor[Int, IndexWhere] {
-    var result: Int = -1
+    @volatile var result: Int = -1
     def leaf(prev: Option[Int]) = if (from < pit.indexFlag) {
       val r = pit.indexWhere(pred)
       if (r != -1) {
@@ -366,7 +366,7 @@ self =>
 
   protected[this] class LastIndexWhere(pred: T => Boolean, pos: Int, protected[this] val pit: ParSeqIterator[T])
   extends Accessor[Int, LastIndexWhere] {
-    var result: Int = -1
+    @volatile var result: Int = -1
     def leaf(prev: Option[Int]) = if (pos > pit.indexFlag) {
       val r = pit.lastIndexWhere(pred)
       if (r != -1) {
@@ -387,7 +387,7 @@ self =>
 
   protected[this] class Reverse[U >: T, This >: Repr](cbf: () => Combiner[U, This], protected[this] val pit: ParSeqIterator[T])
   extends Transformer[Combiner[U, This], Reverse[U, This]] {
-    var result: Combiner[U, This] = null
+    @volatile var result: Combiner[U, This] = null
     def leaf(prev: Option[Combiner[U, This]]) = result = pit.reverse2combiner(reuse(prev, cbf()))
     protected[this] def newSubtask(p: SuperParIterator) = new Reverse(cbf, down(p))
     override def merge(that: Reverse[U, This]) = result = that.result combine result
@@ -395,7 +395,7 @@ self =>
 
   protected[this] class ReverseMap[S, That](f: T => S, pbf: CanCombineFrom[Repr, S, That], protected[this] val pit: ParSeqIterator[T])
   extends Transformer[Combiner[S, That], ReverseMap[S, That]] {
-    var result: Combiner[S, That] = null
+    @volatile var result: Combiner[S, That] = null
     def leaf(prev: Option[Combiner[S, That]]) = result = pit.reverseMap2combiner(f, pbf(self.repr))
     protected[this] def newSubtask(p: SuperParIterator) = new ReverseMap(f, pbf, down(p))
     override def merge(that: ReverseMap[S, That]) = result = that.result combine result
@@ -403,7 +403,7 @@ self =>
 
   protected[this] class SameElements[U >: T](protected[this] val pit: ParSeqIterator[T], val otherpit: PreciseSplitter[U])
   extends Accessor[Boolean, SameElements[U]] {
-    var result: Boolean = true
+    @volatile var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.sameElements(otherpit)
       if (!result) pit.abort
@@ -420,7 +420,7 @@ self =>
 
   protected[this] class Updated[U >: T, That](pos: Int, elem: U, pbf: CanCombineFrom[Repr, U, That], protected[this] val pit: ParSeqIterator[T])
   extends Transformer[Combiner[U, That], Updated[U, That]] {
-    var result: Combiner[U, That] = null
+    @volatile var result: Combiner[U, That] = null
     def leaf(prev: Option[Combiner[U, That]]) = result = pit.updated2combiner(pos, elem, pbf(self.repr))
     protected[this] def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
@@ -433,7 +433,7 @@ self =>
 
   protected[this] class Zip[U >: T, S, That](len: Int, pbf: CanCombineFrom[Repr, (U, S), That], protected[this] val pit: ParSeqIterator[T], val otherpit: ParSeqIterator[S])
   extends Transformer[Combiner[(U, S), That], Zip[U, S, That]] {
-    var result: Result = null
+    @volatile var result: Result = null
     def leaf(prev: Option[Result]) = result = pit.zip2combiner[U, S, That](otherpit, pbf(self.repr))
     protected[this] def newSubtask(p: SuperParIterator) = unsupported
     override def split = {
@@ -451,7 +451,7 @@ self =>
 
   protected[this] class Corresponds[S](corr: (T, S) => Boolean, protected[this] val pit: ParSeqIterator[T], val otherpit: PreciseSplitter[S])
   extends Accessor[Boolean, Corresponds[S]] {
-    var result: Boolean = true
+    @volatile var result: Boolean = true
     def leaf(prev: Option[Boolean]) = if (!pit.isAborted) {
       result = pit.corresponds(corr)(otherpit)
       if (!result) pit.abort
