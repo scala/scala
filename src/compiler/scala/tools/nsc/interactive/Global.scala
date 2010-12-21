@@ -153,7 +153,14 @@ self =>
   override lazy val loaders = new SymbolLoaders {
     val global: Global.this.type = Global.this
     override def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
-      currentRun.compileLate(src) // todo: change
+      // todo: change
+      if (root.isEmptyPackageClass) {
+	// currentRun is null for the empty package, since its type is taken during currentRun
+	// initialization. todo: remove when refactored.
+	super.enterToplevelsFromSource(root, name, src)
+      } else {
+	currentRun.compileLate(src)
+      }
     }
   }
 
