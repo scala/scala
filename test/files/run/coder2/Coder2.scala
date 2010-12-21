@@ -168,32 +168,32 @@ object Test {
 
   /* */
   def main(args : Array[String]) {
-    for (i <- 0 until 10) {
-      val seqcoder = new SeqCoder(Dictionary.wordlist)
-      val st = seqcoder.translate(code)
-      //println("Translation check: " + st.size)
+    // for (i <- 0 until 10) {
+    //   val seqcoder = new SeqCoder(Dictionary.wordlist)
+    //   val st = seqcoder.translate(code)
+    //   //println("Translation check: " + st.size)
 
-      val parcoder = new ParCoder(Dictionary.wordlist)
-      val pt = parcoder.translate(code)
-      //println("Translation check: " + pt.size)
+    //   val parcoder = new ParCoder(Dictionary.wordlist)
+    //   val pt = parcoder.translate(code)
+    //   //println("Translation check: " + pt.size)
 
-      // val st = sts.toList.sorted
-      // val pt = pts.toList.sorted
-      if (st.size != pt.size) {
-        // val zipped = st.zip(pt)
-        // val ind = zipped.indexWhere { case (a, b) => a != b }
-        // val sliced = zipped.slice(ind - 10, ind + 10)
-        // println(sliced.map(t => t._1 + "\n" + t._2 + "\n--------").mkString("\n"))
-        println(i + ") seq vs par: " + st.size + " vs " + pt.size)
-      }
-      if (st != pt) {
-        val zipped = (st.toList.sorted zip pt.toList.sorted);
-        val diffp = zipped indexWhere { case (x, y) => x != y }
-        println(zipped/*.slice(diffp - 10, diffp + 10)*/ mkString ("\n"))
-        println((st.toList.sorted zip pt.toList.sorted) map { case (x, y) => (x == y) } reduceLeft(_ && _))
-      }
-      assert(st == pt)
-    }
+    //   // val st = sts.toList.sorted
+    //   // val pt = pts.toList.sorted
+    //   if (st.size != pt.size) {
+    //     // val zipped = st.zip(pt)
+    //     // val ind = zipped.indexWhere { case (a, b) => a != b }
+    //     // val sliced = zipped.slice(ind - 10, ind + 10)
+    //     // println(sliced.map(t => t._1 + "\n" + t._2 + "\n--------").mkString("\n"))
+    //     println(i + ") seq vs par: " + st.size + " vs " + pt.size)
+    //   }
+    //   if (st != pt) {
+    //     val zipped = (st.toList.sorted zip pt.toList.sorted);
+    //     val diffp = zipped indexWhere { case (x, y) => x != y }
+    //     println(zipped/*.slice(diffp - 10, diffp + 10)*/ mkString ("\n"))
+    //     println((st.toList.sorted zip pt.toList.sorted) map { case (x, y) => (x == y) } reduceLeft(_ && _))
+    //   }
+    //   assert(st == pt)
+    // }
   }
 }
 
