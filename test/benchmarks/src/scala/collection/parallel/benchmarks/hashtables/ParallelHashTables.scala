@@ -39,8 +39,9 @@ trait ParHashTableBenches[K, V] extends StandardParIterableBenches[(K, V), ParHa
     def runjhashtable = {
       val jumap = new java.util.HashMap[K, V]()
       val it = this.seqcoll.iterator
+      val f = operators.mapper2
       while (it.hasNext) {
-        val p = it.next
+        val p = f(it.next)
         jumap.put(p._1, p._2)
       }
       result = jumap.size
