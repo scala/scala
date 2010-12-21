@@ -6,7 +6,6 @@ package scala.collection.parallel.immutable
 
 
 
-import scala.collection.parallel.ParSet
 import scala.collection.parallel.ParSetLike
 import scala.collection.parallel.Combiner
 import scala.collection.parallel.ParIterableIterator

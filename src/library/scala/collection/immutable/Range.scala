@@ -220,6 +220,8 @@ extends IndexedSeq[Int]
 
   override def toParSeq = par
 
+  override def toParSet[U >: Int] = par.toParSet[U]
+
   override def equals(other: Any) = other match {
     case x: Range =>
       (x canEqual this) && (length == x.length) && (

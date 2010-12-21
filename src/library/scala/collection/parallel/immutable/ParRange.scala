@@ -14,16 +14,15 @@ import scala.collection.parallel.ParIterableIterator
 @SerialVersionUID(1L)
 class ParRange(val range: Range)
 extends ParSeq[Int]
-   with Serializable {
+   with Serializable
+{
 self =>
 
   def seq = range
 
-  @inline
-  final def length = range.length
+  @inline final def length = range.length
 
-  @inline
-  final def apply(idx: Int) = range.apply(idx)
+  @inline final def apply(idx: Int) = range.apply(idx);
 
   def parallelIterator = new ParRangeIterator with SCPI
 
@@ -90,7 +89,6 @@ self =>
       }
       cb
     }
-
   }
 
 }

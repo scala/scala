@@ -651,6 +651,14 @@ self =>
     executeAndWaitResult(new ZipAll(size max thatseq.length, thisElem, thatElem, pbf, parallelIterator, thatseq.parallelIterator) mapResult { _.result });
   } else super.zipAll(that, thisElem, thatElem)(bf)
 
+  protected def toParCollection[U >: T, That](cbf: () => Combiner[U, That]): That = {
+    executeAndWaitResult(new ToParCollection(cbf, parallelIterator) mapResult { _.result });
+  }
+
+  protected def toParMap[K, V, That](cbf: () => Combiner[(K, V), That])(implicit ev: T <:< (K, V)): That = {
+    executeAndWaitResult(new ToParMap(cbf, parallelIterator)(ev) mapResult { _.result })
+  }
+
   override def view = new ParIterableView[T, Repr, Sequential] {
     protected lazy val underlying = self.repr
     def seq = self.seq.view
@@ -683,13 +691,13 @@ self =>
 
   override def toMap[K, V](implicit ev: T <:< (K, V)): collection.immutable.Map[K, V] = seq.toMap
 
-  override def toParIterable = this.asInstanceOf[ParIterable[T]]
+  override def toParIterable: ParIterable[T] = this.asInstanceOf[ParIterable[T]]
 
-  override def toParSeq = seq.toParSeq
+  override def toParSeq: ParSeq[T] = toParCollection[T, ParSeq[T]](() => mutable.ParArrayCombiner[T]())
 
-  override def toParSet[U >: T] = seq.toParSet
+  override def toParSet[U >: T]: ParSet[U] = toParCollection[U, ParSet[U]](() => mutable.ParHashSetCombiner[U])
 
-  override def toParMap[K, V](implicit ev: T <:< (K, V)) = seq.toParMap
+  override def toParMap[K, V](implicit ev: T <:< (K, V)): ParMap[K, V] = toParMap[K, V, mutable.ParHashMap[K, V]](() => mutable.ParHashMapCombiner[K, V])
 
   /* tasks */
 
@@ -1096,6 +1104,28 @@ self =>
       }
     }
     override def requiresStrictSplitters = true
+  }
+
+  protected[this] class ToParCollection[U >: T, That](cbf: () => Combiner[U, That], protected[this] val pit: ParIterableIterator[T])
+  extends Transformer[Combiner[U, That], ToParCollection[U, That]] {
+    var result: Result = null
+    def leaf(prev: Option[Combiner[U, That]]) {
+      result = cbf()
+      while (pit.hasNext) result += pit.next
+    }
+    protected[this] def newSubtask(p: ParIterableIterator[T]) = new ToParCollection[U, That](cbf, p)
+    override def merge(that: ToParCollection[U, That]) = result = result combine that.result
+  }
+
+  protected[this] class ToParMap[K, V, That](cbf: () => Combiner[(K, V), That], protected[this] val pit: ParIterableIterator[T])(implicit ev: T <:< (K, V))
+  extends Transformer[Combiner[(K, V), That], ToParMap[K, V, That]] {
+    var result: Result = null
+    def leaf(prev: Option[Combiner[(K, V), That]]) {
+      result = cbf()
+      while (pit.hasNext) result += pit.next
+    }
+    protected[this] def newSubtask(p: ParIterableIterator[T]) = new ToParMap[K, V, That](cbf, p)(ev)
+    override def merge(that: ToParMap[K, V, That]) = result = result combine that.result
   }
 
   protected[this] class CreateScanTree[U >: T](from: Int, len: Int, z: U, op: (U, U) => U, protected[this] val pit: ParIterableIterator[T])

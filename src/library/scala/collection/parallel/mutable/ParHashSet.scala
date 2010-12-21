@@ -295,7 +295,7 @@ self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
 }
 
 
-private[mutable] object ParHashSetCombiner {
+private[parallel] object ParHashSetCombiner {
   private[mutable] val discriminantbits = 5
   private[mutable] val numblocks = 1 << discriminantbits
   private[mutable] val discriminantmask = ((1 << discriminantbits) - 1);

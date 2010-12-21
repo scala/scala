@@ -513,6 +513,10 @@ trait TraversableOnce[+A] {
    * - ParSeqLike again overrides `toParSeq`
    * - ParSetLike again overrides `toParSet`
    * - ParMapLike again overrides `toParMap`
+   * - immutable.ParIterable overrides all 4 methods to have immutable return types
+   * - immutable.ParSet overrides `toParSet` to `this`
+   * - immutable.ParSeq overrides nothing yet TODO vector
+   * - immutable.ParMap overrides `toParMap` to `this`
    */
 
   def toParIterable: parallel.ParIterable[A] = toParSeq
