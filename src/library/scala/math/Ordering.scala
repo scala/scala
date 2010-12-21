@@ -234,6 +234,21 @@ object Ordering extends LowPriorityOrderingImplicits {
       }
     }
 
+  implicit def SeqDerived[CC[X] <: collection.Seq[X], T](implicit ord: Ordering[T]): Ordering[CC[T]] =
+    new Ordering[CC[T]] {
+      def compare(x: CC[T], y: CC[T]): Int = {
+        val xe = x.iterator
+        val ye = y.iterator
+
+        while (xe.hasNext && ye.hasNext) {
+          val res = ord.compare(xe.next, ye.next)
+          if (res != 0) return res
+        }
+
+        Boolean.compare(xe.hasNext, ye.hasNext)
+      }
+    }
+
   implicit def Tuple2[T1, T2](implicit ord1: Ordering[T1], ord2: Ordering[T2]): Ordering[(T1, T2)] =
     new Ordering[(T1, T2)]{
       def compare(x: (T1, T2), y: (T1, T2)): Int = {
