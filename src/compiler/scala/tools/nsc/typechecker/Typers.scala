@@ -2466,11 +2466,14 @@ trait Typers { self: Analyzer =>
                 }
               }
 
-              if (fun.hasSymbol && fun.symbol.name == nme.apply &&
-                  fun.symbol.owner == ListClass && args.isEmpty && !onlyPresentation)
-                atPos(tree.pos) { gen.mkNil setType restpe }
+              /** This is translating uses of List() into Nil.  This is less
+               *  than ideal from a consistency standpoint, but it shouldn't be
+               *  altered without due caution.
+               */
+              if (fun.symbol == List_apply && args.isEmpty && !onlyPresentation)
+                atPos(tree.pos)(gen.mkNil setType restpe)
               else
-                constfold(treeCopy.Apply(tree, fun, args1).setType(ifPatternSkipFormals(restpe)))
+                constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
 
             } else if (needsInstantiation(tparams, formals, args)) {
               //println("needs inst "+fun+" "+tparams+"/"+(tparams map (_.info)))
@@ -2488,10 +2491,8 @@ trait Typers { self: Analyzer =>
                   if (isByNameParamType(remainingParams.head)) POLYmode
                   else POLYmode | BYVALmode
                 if (remainingParams.tail.nonEmpty) remainingParams = remainingParams.tail
-                // println("typedArgToPoly(arg, formal): "+(arg, formal))
                 val arg1 = typedArg(arg, argMode(fun, mode), newmode, lenientPt)
                 val argtparams = context.extractUndetparams()
-                // println("typedArgToPoly(arg1, argtparams): "+(arg1, argtparams))
                 if (!argtparams.isEmpty) {
                   val strictPt = formal.instantiateTypeParams(tparams, strictTargs)
                   inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)

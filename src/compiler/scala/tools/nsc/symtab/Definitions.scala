@@ -235,6 +235,7 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     lazy val TraversableClass   = getClass("scala.collection.Traversable")
 
     lazy val ListModule       = getModule("scala.collection.immutable.List")
+      def List_apply = getMember(ListModule, nme.apply)
     lazy val NilModule        = getModule("scala.collection.immutable.Nil")
     lazy val SeqModule        = getModule("scala.collection.Seq")
 
