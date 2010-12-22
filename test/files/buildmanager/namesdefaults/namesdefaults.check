@@ -1,0 +1,9 @@
+builder > defparam.scala defparam-use.scala
+compiling Set(defparam-use.scala, defparam.scala)
+Changes: Map()
+builder > defparam-use.scala
+compiling Set(defparam-use.scala)
+Changes: Map(class Test$delayedInit$body -> List(Changed(Definition(Test$delayedInit$body.<init>))[constructor Test$delayedInit$body changed from ($outer: object Test)<notype> to ($outer: object Test)Test$delayedInit$body flags: <method>], Changed(Definition(Test.delayedInit$body.<init>))[constructor delayedInit$body changed from ($outer: object Test)<notype> to ($outer: object Test)Test#delayedInit$body flags: <method>]), object Test -> List())
+builder > defparam-use.scala
+compiling Set(defparam-use.scala)
+Changes: Map(class Test$delayedInit$body -> List(Changed(Definition(Test$delayedInit$body.<init>))[constructor Test$delayedInit$body changed from ($outer: object Test)<notype> to ($outer: object Test)Test$delayedInit$body flags: <method>], Changed(Definition(Test.delayedInit$body.<init>))[constructor delayedInit$body changed from ($outer: object Test)<notype> to ($outer: object Test)Test#delayedInit$body flags: <method>]), object Test -> List())
