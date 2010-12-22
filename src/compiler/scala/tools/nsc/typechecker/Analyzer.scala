@@ -76,10 +76,17 @@ trait Analyzer extends AnyRef
     def newPhase(_prev: Phase): StdPhase = new StdPhase(_prev) {
       override def keepsTypeParams = false
       resetTyper()
+      // the log accumulates entries over time, even though it should not (Adriaan, Martin said so).
+      // Lacking a better fix, we clear it here (before the phase is created, meaning for each
+      // compiler run). This is good enough for the resident compiler, which was the most affected.
+      undoLog.clear()
       override def run {
         val start = startTimer(typerNanos)
         global.echoPhaseSummary(this)
         currentRun.units foreach applyPhase
+        undoLog.clear()
+        // need to clear it after as well or 10K+ accumulated entries are
+        // uncollectable the rest of the way.
         stopTimer(typerNanos, start)
       }
       def apply(unit: CompilationUnit) {
