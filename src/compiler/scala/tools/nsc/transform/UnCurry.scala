@@ -434,10 +434,12 @@ abstract class UnCurry extends InfoTransform with TypingTransformers with ast.Tr
             else
               if (tree.tpe.typeSymbol isSubClass TraversableClass) tree   // @PP: I suspect this should be SeqClass
               else arrayToSequence(tree, varargsElemType)
-          } else {
-            val tree = mkArrayValue(args drop (formals.length - 1), varargsElemType)
-            if (isJava || inPattern) tree
-            else arrayToSequence(tree, varargsElemType)
+          }
+          else {
+            def mkArray = mkArrayValue(args drop (formals.length - 1), varargsElemType)
+            if (isJava || inPattern) mkArray
+            else if (args.isEmpty) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
+            else arrayToSequence(mkArray, varargsElemType)
           }
 
         atPhase(phase.next) {
