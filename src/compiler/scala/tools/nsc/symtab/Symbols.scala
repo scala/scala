@@ -37,21 +37,19 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     "_"+nextexid
   }
 
+  /** The original owner of a class. Used by the backend to generate
+   *  EnclosingMethod attributes.
+   */
+  val originalOwner = mutable.HashMap[Symbol, Symbol]()
+
   /** The class for all symbols */
   abstract class Symbol(initOwner: Symbol, initPos: Position, initName: Name) extends AbsSymbol {
     var rawowner = initOwner
+    var rawname  = initName
+    var rawflags = 0L
 
-    /** The original owner of this class. Used by the backend to generate
-     *  EnclosingMethod attributes. */
-    var originalOwner: Symbol = initOwner
-
-    var rawname = initName
-    var rawflags: Long = 0
     private var rawpos = initPos
-
     val id = { ids += 1; ids } // identity displayed when -uniqid
-
-//    assert(id != 7498, initName+"/"+initOwner)
 
     var validTo: Period = NoPeriod
 
@@ -596,7 +594,12 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 // Flags, owner, and name attributes --------------------------------------------------------------
 
     def owner: Symbol = rawowner
-    override final def owner_=(owner: Symbol) { rawowner = owner }
+    override final def owner_=(owner: Symbol) {
+      if (originalOwner contains this) ()
+      else originalOwner(this) = rawowner
+
+      rawowner = owner
+    }
 
     def ownerChain: List[Symbol] = this :: owner.ownerChain
 
@@ -1199,8 +1202,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
      */
     def originalEnclosingMethod: Symbol = {
       if (isMethod) this
-      else
-        originalOwner.originalEnclosingMethod
+      else originalOwner.getOrElse(this, rawowner).originalEnclosingMethod
     }
 
     /** The top-level class containing this symbol */
@@ -1980,7 +1982,7 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
       } else if (phase.flatClasses && rawowner != NoSymbol && !rawowner.isPackageClass) {
         if (flatname == tpnme.EMPTY) {
           assert(rawowner.isClass, "fatal: %s has owner %s, but a class owner is required".format(rawname+idString, rawowner))
-          flatname = newTypeName(compactify(rawowner.name.toString() + "$" + rawname))
+          flatname = newTypeName(compactify(rawowner.name + "$" + rawname))
         }
         flatname
       } else rawname

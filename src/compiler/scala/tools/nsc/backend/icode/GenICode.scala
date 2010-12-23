@@ -29,7 +29,7 @@ abstract class GenICode extends SubComponent  {
     ArrayClass, ObjectClass, ThrowableClass, StringClass, NothingClass, NullClass, AnyRefClass,
     Object_equals, Object_isInstanceOf, Object_asInstanceOf, ScalaRunTimeModule,
     BoxedNumberClass, BoxedCharacterClass,
-    getMember, getPrimitiveCompanion
+    getMember, runtimeCompanions
   }
   import scalaPrimitives.{
     isArrayOp, isComparisonOp, isLogicalOp,
@@ -1217,7 +1217,7 @@ abstract class GenICode extends SubComponent  {
       }
 
     private def genLoadModule(ctx: Context, sym: Symbol, pos: Position) {
-      ctx.bb.emit(LOAD_MODULE(getPrimitiveCompanion(sym) getOrElse sym), pos)
+      ctx.bb.emit(LOAD_MODULE(runtimeCompanions.getOrElse(sym, sym)), pos)
     }
 
     def genConversion(from: TypeKind, to: TypeKind, ctx: Context, cast: Boolean) = {

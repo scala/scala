@@ -43,6 +43,21 @@ trait GenJVMUtil {
     DOUBLE -> new JObjectType("java.lang.Double")
   )
 
+  private val javaNameCache = {
+    val map = new mutable.HashMap[Symbol, String]()
+    map ++= List(
+      NothingClass        -> RuntimeNothingClass.fullName('/'),
+      RuntimeNothingClass -> RuntimeNothingClass.fullName('/'),
+      NullClass           -> RuntimeNullClass.fullName('/'),
+      RuntimeNullClass    -> RuntimeNullClass.fullName('/')
+    )
+    primitiveCompanions foreach { sym =>
+      map(sym) = "scala/runtime/" + sym.name + "$"
+    }
+
+    map
+  }
+
   /** This trait may be used by tools who need access to
    *  utility methods like javaName and javaType. (for instance,
    *  the Eclipse plugin uses it).
@@ -79,28 +94,13 @@ trait GenJVMUtil {
      *  references from method signatures to these types, because such classes can
      *  not exist in the classpath: the type checker will be very confused.
      */
-    def javaName(sym: Symbol): String = {
-      val suffix = moduleSuffix(sym)
-
-      if (sym == NothingClass)    javaName(RuntimeNothingClass)
-      else if (sym == NullClass)  javaName(RuntimeNullClass)
-      else getPrimitiveCompanion(sym.companionModule) match {
-        case Some(sym)  => javaName(sym)
-        case _          =>
-          val prefix =
-            if (sym.isClass || (sym.isModule && !sym.isMethod)) sym.fullName('/')
-            else sym.simpleName.toString.trim()
-
-          prefix + suffix
-      }
-    }
-
-    def javaNames(syms: List[Symbol]): Array[String] = {
-      val res = new Array[String](syms.length)
-      var i = 0
-      syms foreach (s => { res(i) = javaName(s); i += 1 })
-      res
-    }
+    def javaName(sym: Symbol): String =
+      javaNameCache.getOrElseUpdate(sym, {
+        if (sym.isClass || (sym.isModule && !sym.isMethod))
+          sym.fullName('/') + moduleSuffix(sym)
+        else
+          sym.simpleName.toString.trim() + moduleSuffix(sym)
+      })
 
     def javaType(t: TypeKind): JType = (t: @unchecked) match {
       case UNIT            => JType.VOID
@@ -122,16 +122,10 @@ trait GenJVMUtil {
       if (s.isMethod)
         new JMethodType(
           if (s.isClassConstructor) JType.VOID else javaType(s.tpe.resultType),
-          s.tpe.paramTypes.map(javaType).toArray)
+          s.tpe.paramTypes map javaType toArray
+        )
       else
         javaType(s.tpe)
-
-    def javaTypes(ts: List[TypeKind]): Array[JType] = {
-      val res = new Array[JType](ts.length)
-      var i = 0
-      ts foreach ( t => { res(i) = javaType(t); i += 1 } );
-      res
-    }
 
     protected def genConstant(jcode: JExtendedCode, const: Constant) {
       const.tag match {

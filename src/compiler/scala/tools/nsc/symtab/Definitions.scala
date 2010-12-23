@@ -623,11 +623,10 @@ trait Definitions extends reflect.generic.StandardDefinitions {
     val unboxMethod = new HashMap[Symbol, Symbol]     // Type -> Method
     val boxMethod = new HashMap[Symbol, Symbol]       // Type -> Method
     val primitiveCompanions = new HashSet[Symbol]     // AnyVal -> Companion
-
     /** Maps a companion object like scala.Int to scala.runtime.Int. */
-    def getPrimitiveCompanion(sym: Symbol) =
-      if (primitiveCompanions(sym)) Some(getModule("scala.runtime." + sym.name))
-      else None
+    lazy val runtimeCompanions = (primitiveCompanions map { sym =>
+      sym -> getModule("scala.runtime." + sym.name)
+    }).toMap
 
     def isUnbox(m: Symbol) = unboxMethod.valuesIterator contains m
     def isBox(m: Symbol) = boxMethod.valuesIterator contains m

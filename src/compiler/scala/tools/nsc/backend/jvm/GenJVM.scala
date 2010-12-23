@@ -8,8 +8,8 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.nio.ByteBuffer
-
 import scala.collection.{ mutable, immutable }
+import mutable.{ ListBuffer, LinkedHashSet }
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.symtab.classfile.ClassfileConstants._
@@ -35,8 +35,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     AnyClass, ObjectClass, ThrowsClass, ThrowableClass, ClassfileAnnotationClass,
     SerializableClass, StringClass, ClassClass, FunctionClass,
     DeprecatedAttr, SerializableAttr, SerialVersionUIDAttr, VolatileAttr,
-    TransientAttr, CloneableAttr, RemoteAttr,
-    getPrimitiveCompanion
+    TransientAttr, CloneableAttr, RemoteAttr
   }
 
   val phaseName = "jvm"
@@ -137,14 +136,18 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     var jmethod: JMethod = _
 //    var jcode: JExtendedCode = _
 
-    // referenced inner classes
-    var innerClasses: immutable.Set[Symbol] = immutable.ListSet.empty
-
     val fjbgContext = new FJBGContext(49, 0)
 
     val emitSource = debugLevel >= 1
     val emitLines  = debugLevel >= 2
     val emitVars   = debugLevel >= 3
+
+    override def javaName(sym: Symbol): String = {
+      if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass)
+        innerClassBuffer += sym
+
+      super.javaName(sym)
+    }
 
     /** Write a class to disk, adding the Scala signature (pickled type
      *  information) and inner classes.
@@ -206,12 +209,14 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     var isRemoteClass: Boolean = false
     var isParcelableClass = false
 
+    private val innerClassBuffer = new ListBuffer[Symbol]
+
     def genClass(c: IClass) {
       val needsEnclosingMethod: Boolean =
         c.symbol.isClass && (c.symbol.originalEnclosingMethod != NoSymbol)
 
       clasz = c
-      innerClasses = immutable.ListSet.empty
+      innerClassBuffer.clear()
 
       var parents = c.symbol.info.parents
       var ifaces  = JClass.NO_INTERFACES
@@ -300,8 +305,12 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       val sym = clazz.originalEnclosingMethod
       if (sym.isMethod) {
         log("enclosing method for %s is %s".format(clazz, sym))
-        var outerName = javaName(sym.enclClass)
-        jclass addAttribute fjbgContext.JEnclosingMethodAttribute(jclass, outerName, javaName(sym), javaType(sym))
+        jclass addAttribute fjbgContext.JEnclosingMethodAttribute(
+          jclass,
+          javaName(sym.enclClass),
+          javaName(sym),
+          javaType(sym)
+        )
       }
     }
 
@@ -334,7 +343,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 	         !m.symbol.isGetter &&
 	         !m.symbol.isSetter) yield javaName(m.symbol)
 
-      val constructor = beanInfoClass.addNewMethod(ACC_PUBLIC, "<init>", JType.VOID, javaTypes(Nil), javaNames(Nil))
+      val constructor = beanInfoClass.addNewMethod(ACC_PUBLIC, "<init>", JType.VOID, new Array[JType](0), new Array[String](0))
       val jcode = constructor.getCode().asInstanceOf[JExtendedCode]
       val strKind = new JObjectType(javaName(StringClass))
       val stringArrayKind = new JArrayType(strKind)
@@ -530,7 +539,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
             verifySig(sym, sig)
 
           val index = jmember.getConstantPool.addUtf8(sig).toShort
-          if (settings.debug.value && settings.verbose.value)
+          if (opt.verboseDebug)
             atPhase(currentRun.erasurePhase) {
               println("add generic sig "+sym+":"+sym.info+" ==> "+sig+" @ "+index)
             }
@@ -587,9 +596,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     }
 
     def addInnerClasses(jclass: JClass) {
-      def addOwnInnerClasses(cls: Symbol): Unit =
-        innerClasses ++= (cls.info.decls filter (_.isClass))
-
       /** The outer name for this inner class. Note that it returns null
        *  when the inner class should not get an index in the constant pool.
        *  That means non-member classes (anonymous). See Section 4.7.5 in the JVMS.
@@ -598,11 +604,9 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
         if (innerSym.isAnonymousClass || innerSym.isAnonymousFunction || innerSym.originalEnclosingMethod != NoSymbol)
           null
         else {
-          var outerName = javaName(innerSym.rawowner)
-          // remove the trailing '$'
-          if (outerName.endsWith("$") && isTopLevelModule(innerSym.rawowner))
-            outerName = outerName dropRight 1
-          outerName
+          val outerName = javaName(innerSym.rawowner)
+          if (isTopLevelModule(innerSym.rawowner)) outerName stripSuffix "$"
+          else outerName
         }
       }
 
@@ -614,25 +618,30 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
       // add inner classes which might not have been referenced yet
       atPhase(currentRun.erasurePhase.next) {
-        addOwnInnerClasses(clasz.symbol)
-        addOwnInnerClasses(clasz.symbol.linkedClassOfClass)
+        for (sym <- List(clasz.symbol, clasz.symbol.linkedClassOfClass) ; m <- sym.info.decls ; if m.isClass)
+          innerClassBuffer += m
       }
 
-      if (!innerClasses.isEmpty) {
+      val allInners = innerClassBuffer.toList
+      if (allInners.nonEmpty) {
         val innerClassesAttr = jclass.getInnerClasses()
         // sort them so inner classes succeed their enclosing class
         // to satisfy the Eclipse Java compiler
         //for (innerSym <- innerClasses.toList sortBy (_.name.length)) {
-        for (innerSym <- innerClasses.toList sortBy (_.name.length);
-          outer = outerName(innerSym) if outer != null) {
-          var flags = javaFlags(innerSym)
-          if (innerSym.rawowner.hasModuleFlag)
-            flags |= ACC_STATIC
+        for (innerSym <- allInners.distinct sortBy (_.name.length)) {
+          val outer = outerName(innerSym)
+          if (outer != null) {
+            var flags = javaFlags(innerSym)
+            if (innerSym.rawowner.hasModuleFlag)
+              flags |= ACC_STATIC
 
-          innerClassesAttr.addEntry(javaName(innerSym),
-              outer, //outerName(innerSym),
+            innerClassesAttr.addEntry(
+              javaName(innerSym),
+              outer,
               innerName(innerSym),
-              (flags & INNER_CLASSES_FLAGS))
+              (flags & INNER_CLASSES_FLAGS)
+            )
+          }
         }
       }
     }
@@ -686,8 +695,8 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
       jmethod = jclass.addNewMethod(flags,
                                     javaName(m.symbol),
                                     resTpe,
-                                    javaTypes(m.params map (_.kind)),
-                                    javaNames(m.params map (_.sym)))
+                                    m.params map (p => javaType(p.kind)) toArray,
+                                    m.params map (p => javaName(p.sym)) toArray)
 
       addRemoteException(jmethod, m.symbol)
 
@@ -873,17 +882,16 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     /** Add a forwarder for method m */
     def addForwarder(jclass: JClass, module: Symbol, m: Symbol, accessFlags: Int) {
       val moduleName     = javaName(module)
-      val mirrorName     = moduleName dropRight 1 // dropping '$'
       val methodInfo     = module.thisType.memberInfo(m)
-      val paramJavaTypes = methodInfo.paramTypes map toTypeKind
-      val paramNames     = 0 until paramJavaTypes.length map ("x_" + _) toArray
+      val paramJavaTypes = methodInfo.paramTypes map javaType
+      val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
       val mirrorMethod = jclass.addNewMethod(
         accessFlags,
         javaName(m),
         javaType(methodInfo.resultType),
-        javaTypes(paramJavaTypes),
-        paramNames)
+        paramJavaTypes.toArray,
+        paramNames.toArray)
       val mirrorCode = mirrorMethod.getCode().asInstanceOf[JExtendedCode]
       mirrorCode.emitGETSTATIC(moduleName,
                                nme.MODULE_INSTANCE_FIELD.toString,
@@ -969,8 +977,7 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
      *  instead be made to add the forwarder methods to the companion class.
      */
     def dumpMirrorClass(clasz: Symbol, sourceFile: String) {
-      val moduleName = javaName(clasz) // + "$"
-      val mirrorName = moduleName dropRight 1
+      val mirrorName = javaName(clasz).init   // drops "$"
       val mirrorClass = fjbgContext.JClass(ACC_SUPER | ACC_PUBLIC | ACC_FINAL,
                                            mirrorName,
                                            JAVA_LANG_OBJECT.getName,
@@ -1725,12 +1732,6 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
     }
 
     ////////////////////// Utilities ////////////////////////
-
-    override def javaName(sym: Symbol): String = {
-      if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass)
-        innerClasses = innerClasses + sym
-      super.javaName(sym)
-    }
 
     /** Calls to methods in 'sym' need invokeinterface? */
     def needsInterfaceCall(sym: Symbol): Boolean = {
