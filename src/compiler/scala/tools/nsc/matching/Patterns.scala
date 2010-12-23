@@ -263,6 +263,7 @@ trait Patterns extends ast.TreeDSL {
   object Pattern {
     // a small tree -> pattern cache
     private val cache = new collection.mutable.HashMap[Tree, Pattern]
+    def clear() = cache.clear()
 
     def unadorn(x: Tree): Tree = x match {
       case Typed(expr, _) => unadorn(expr)

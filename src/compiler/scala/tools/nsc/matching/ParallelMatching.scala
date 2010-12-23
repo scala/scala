@@ -231,10 +231,6 @@ trait ParallelMatching extends ast.TreeDSL
     /***** Rule Applications *****/
 
     sealed abstract class RuleApplication {
-      // def isFinal = false
-      // def body = tree
-      // def freeVars = (scrut.pv :: rest.tvars).syms
-
       def pmatch: PatternMatch
       def rest: Rep
       def cond: Tree
@@ -243,7 +239,7 @@ trait ParallelMatching extends ast.TreeDSL
 
       lazy val PatternMatch(scrut, patterns) = pmatch
       lazy val head = pmatch.head
-      def codegen: Tree = IF (cond) THEN (success) ELSE (failure)
+      lazy val codegen: Tree = IF (cond) THEN (success) ELSE (failure)
 
       def mkFail(xs: List[Row]): Tree =
         if (xs.isEmpty) failTree
