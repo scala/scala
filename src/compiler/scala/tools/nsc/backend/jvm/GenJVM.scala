@@ -1726,16 +1726,11 @@ abstract class GenJVM extends SubComponent with GenJVMUtil with GenAndroid {
 
     ////////////////////// Utilities ////////////////////////
 
-    private val javaNameCache = mutable.HashMap[Symbol, String]()
     override def javaName(sym: Symbol): String = {
       if (sym.isClass && !sym.rawowner.isPackageClass && !sym.isModuleClass)
         innerClasses = innerClasses + sym
-
-      javaNameCache.getOrElseUpdate(sym, super.javaName(sym))
+      super.javaName(sym)
     }
-
-    private val javaTypeCache = mutable.HashMap[Symbol, JType]()
-    override def javaType(sym: Symbol): JType = javaTypeCache.getOrElseUpdate(sym, super.javaType(sym))
 
     /** Calls to methods in 'sym' need invokeinterface? */
     def needsInterfaceCall(sym: Symbol): Boolean = {
