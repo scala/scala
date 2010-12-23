@@ -2644,43 +2644,32 @@ A type's typeSymbol should never be inspected directly.
    *  todo: see how we can clean this up a bit
    */
   def typeRef(pre: Type, sym: Symbol, args: List[Type]): Type = {
-    def rebindTR(pre: Type, sym: Symbol): Symbol = {
-      if(sym.isAbstractType) rebind(pre, sym) else sym
-         // type alias selections are rebound in TypeMap ("coevolved", actually -- see #3731)
-         // e.g., when type parameters that are referenced by the alias are instantiated in the prefix
-         // see pos/depmet_rebind_typealias
-    }
+    // type alias selections are rebound in TypeMap ("coevolved", actually -- see #3731)
+    // e.g., when type parameters that are referenced by the alias are instantiated in
+    // the prefix.  See pos/depmet_rebind_typealias.
+    def rebindTR(pre: Type, sym: Symbol) =
+      if (sym.isAbstractType) rebind(pre, sym) else sym
+
     val sym1 = rebindTR(pre, sym)
 
-    def transform(tp: Type): Type =
-      tp.resultType.asSeenFrom(pre, sym1.owner).instantiateTypeParams(sym1.typeParams, args)
-
+    // we require that object is initialized, thus info.typeParams instead of typeParams.
     if (sym1.isAliasType && sameLength(sym1.info.typeParams, args)) {
-      if (!sym1.lockOK)
-        throw new TypeError("illegal cyclic reference involving " + sym1)
-      // note: we require that object is initialized,
-      // that's why we use info.typeParams instead of typeParams.
-/*
-      sym1.lock {
-        throw new TypeError("illegal cyclic reference involving " + sym1)
-      }
-      transform(sym1.info) // check there are no cycles
-      sym1.unlock()
-*/
-      TypeRef(pre, sym1, args) // don't expand type alias (cycles checked above)
-    } else {
+      if (sym1.lockOK) TypeRef(pre, sym1, args) // don't expand type alias (cycles checked by lockOK)
+      else throw new TypeError("illegal cyclic reference involving " + sym1)
+    }
+    else {
       val pre1 = removeSuper(pre, sym1)
-      if (pre1 ne pre) {
+      if (pre1 ne pre)
         typeRef(pre1, rebindTR(pre1, sym1), args)
-      }
-      else if (sym1.isClass && pre.isInstanceOf[CompoundType]) {
-        // sharpen prefix so that it is maximal and still contains the class.
-        var p = pre.parents.reverse
-        while (!p.isEmpty && p.head.member(sym1.name) != sym1) p = p.tail
-        if (p.isEmpty) TypeRef(pre, sym1, args)
-        else typeRef(p.head, sym1, args)
-      } else {
-        TypeRef(pre, sym1, args)
+      else pre match {
+        case _: CompoundType if sym1.isClass =>
+          // sharpen prefix so that it is maximal and still contains the class.
+          pre.parents.reverse dropWhile (_.member(sym1.name) != sym1) match {
+            case Nil         => TypeRef(pre, sym1, args)
+            case parent :: _ => typeRef(parent, sym1, args)
+          }
+        case _ =>
+          TypeRef(pre, sym1, args)
       }
     }
   }
