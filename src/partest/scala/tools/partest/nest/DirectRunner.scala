@@ -8,13 +8,13 @@
 package scala.tools.partest
 package nest
 
-import java.io.{File, PrintStream, FileOutputStream, BufferedReader,
-                InputStreamReader, StringWriter, PrintWriter}
+import java.io.{ File }
 import java.util.StringTokenizer
 import scala.util.Properties.{ setProp }
+import scala.tools.util.Signallable
 import scala.tools.nsc.util.ScalaClassLoader
 import scala.tools.nsc.io.Directory
-
+import scala.collection.{ mutable, immutable }
 import scala.actors.Actor._
 import scala.actors.TIMEOUT
 
@@ -36,12 +36,28 @@ trait DirectRunner {
     }
   }
 
-  def runTestsForFiles(_kindFiles: List[File], kind: String): scala.collection.immutable.Map[String, Int] = {
+  /** These things, formerly inside runTestsForFiles, have been promoted
+   *  into private fields so I can inspect them via signal when partest shows
+   *  signs of dementia.
+   */
+  private var workers: List[Worker]       = Nil
+  private var logsToDelete: List[LogFile] = Nil
+  private var outdirsToDelete: List[File] = Nil
+  private val results                     = new mutable.HashMap[String, Int]()
+  private def addResults(kvs: Traversable[(String, Int)]) = synchronized { results ++= kvs }
+  private val signallable = Signallable("HUP", "Make partest dump its state.")(dumpState())
+
+  def dumpState() {
+    println("Dumping partest internals.")
+    println("results.size = " + results.size + ", " + workers.size + " workers.")
+    workers foreach println
+  }
+
+  def runTestsForFiles(_kindFiles: List[File], kind: String): immutable.Map[String, Int] = {
     /** NO DUPLICATES, or partest will blow the count and hang forever. **/
     val kindFiles = _kindFiles.distinct
-    val len = kindFiles.length
-    val (testsEach, lastFrag) = (len/numActors, len%numActors)
-    val last = numActors-1
+    val groupSize = (kindFiles.length / numActors) + 1
+
     val consFM = new ConsoleFileManager
     import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
     val scalacheckURL = PathSettings.scalaCheck.toURL
@@ -49,44 +65,37 @@ trait DirectRunner {
       List(scalacheckURL, latestCompFile.toURI.toURL, latestLibFile.toURI.toURL, latestPartestFile.toURI.toURL)
     )
     Output.init
-    val workers = for (i <- List.range(0, numActors)) yield {
-      val toTest = kindFiles.slice(i*testsEach, (i+1)*testsEach)
+
+    this.workers = kindFiles.grouped(groupSize).toList map { toTest =>
       val worker = new Worker(fileManager, TestRunParams(scalaCheckParentClassLoader))
       worker.start()
-      if (i == last)
-        worker ! RunTests(kind, (kindFiles splitAt (last*testsEach))._2)
-      else
-        worker ! RunTests(kind, toTest)
+      worker ! RunTests(kind, toTest)
       worker
     }
 
-    var logsToDelete: List[File] = List()
-    var outdirsToDelete: List[File] = List()
-    var results = new scala.collection.immutable.HashMap[String, Int]
     workers foreach { w =>
       receiveWithin(3600 * 1000) {
         case Results(res, logs, outdirs) =>
-          logsToDelete :::= logs filter (_.toDelete)
-          outdirsToDelete :::= outdirs
-          results ++= res
+          logsToDelete ++= (logs filter (_.toDelete))
+          outdirsToDelete ++= outdirs
+          addResults(res)
         case TIMEOUT =>
           // add at least one failure
           NestUI.verbose("worker timed out; adding failed test")
-          results += ("worker timed out; adding failed test" -> 2)
+          addResults(Seq(("worker timed out; adding failed test" -> 2)))
       }
     }
 
     if (isPartestDebug)
       fileManager.showTestTimings()
-
-    if (!isPartestDebug) {
-      for (x <- logsToDelete ::: outdirsToDelete) {
+    else {
+      for (x <- logsToDelete ++ outdirsToDelete) {
         NestUI.verbose("deleting "+x)
         Directory(x).deleteRecursively()
       }
     }
 
-    results
+    results.toMap
   }
 
 }

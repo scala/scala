@@ -23,6 +23,7 @@ import scala.actors.{ Actor, Exit, TIMEOUT }
 import scala.actors.Actor._
 import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ClassFileParser, ScalaSigAttributeParsers}
 
+import scala.collection.{ mutable, immutable }
 import scala.collection.immutable.{ HashMap, Map => ImmMap }
 import scala.collection.Map
 
@@ -114,6 +115,30 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
                      fileManager.JAVAC_CMD.equals("\\bin\\javac")) "javac"
                  else
                    fileManager.JAVAC_CMD
+
+  /** Formerly deeper inside, these next few things are now promoted outside so
+   *  I can see what they're doing when the world comes to a premature stop.
+   */
+  private val filesRemaining = new mutable.HashSet[File]
+  private def addFilesRemaining(xs: Traversable[File]) = filesRemaining ++= xs
+  private def getNextFile() = synchronized {
+    val file = filesRemaining.head
+    filesRemaining -= file
+    file
+  }
+  // maps canonical file names to the test result (0: OK, 1: FAILED, 2: TIMOUT)
+  private val status = new mutable.HashMap[String, Int]
+  private def updateStatus(key: String, num: Int) = synchronized {
+    status(key) = num
+  }
+  override def toString = (
+    ">> Partest Worker:\n" +
+    "TestRunParams = " + params + "\n" +
+    filesRemaining.size + " files remaining:\n" +
+    filesRemaining.toList.sortBy(_.toString).map("  " + _ + "\n").mkString("") +
+    "\nstatus hashmap contains " + status.size + " entries:\n" +
+    status.toList.map(x => "  " + x._1 + " -> " + x._2).sorted.mkString("\n") + "\n"
+  )
 
   def workerError(msg: String): Unit = reporter.error(
     FakePos("scalac"),
@@ -1023,8 +1048,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
       try {
         // delete log file only if test was successful
-        if (good && !logFile.isEmpty && !isPartestDebug)
-          logFile.get.toDelete = true
+        logFile filter (_ => good && !isPartestDebug) foreach (_.toDelete = true)
 
         writers match {
           case Some((swr, wr)) =>
@@ -1046,64 +1070,54 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
       }
     }
 
-    val numFiles = files.size
-    if (numFiles == 0)
-      reportAll(ImmMap(), topcont)
+    if (files.isEmpty) reportAll(ImmMap(), topcont)
+    else addFilesRemaining(files)
 
-    // maps canonical file names to the test result (0: OK, 1: FAILED, 2: TIMOUT)
-    var status = new HashMap[String, Int]
-
-    var fileCnt = 1
-    Actor.loopWhile(fileCnt <= numFiles) {
+    Actor.loopWhile(filesRemaining.nonEmpty) {
       val parent = self
 
       actor {
-        val testFile = files(fileCnt-1)
-
+        val testFile = getNextFile()
         val ontimeout = new TimerTask {
           def run() = parent ! Timeout(testFile)
         }
         timer.schedule(ontimeout, fileManager.timeout.toLong)
 
-        val context = try {
-          processSingleFile(testFile)
-        } catch {
-          case t: Throwable =>
-            NestUI.verbose("while invoking compiler ("+files+"):")
-            NestUI.verbose("caught "+t)
-            t.printStackTrace
-            if (t.getCause != null)
-              t.getCause.printStackTrace
-            LogContext(null, None)
-        }
+        val context =
+          try processSingleFile(testFile)
+          catch {
+            case t: Throwable =>
+              NestUI.verbose("while invoking compiler ("+files+"):")
+              NestUI.verbose("caught "+t)
+              t.printStackTrace
+              if (t.getCause != null)
+                t.getCause.printStackTrace
+              LogContext(null, None)
+          }
         parent ! Result(testFile, context)
       }
 
       react {
         case res: TestResult =>
           val path = res.file.getCanonicalPath
-          status.get(path) match {
-            case Some(stat) => // ignore message
-            case None =>
-              res match {
-                case Timeout(_) =>
-                  status = status + (path -> 2)
-                  val swr = new StringWriter
-                  val wr = new PrintWriter(swr)
-                  printInfoStart(res.file, wr)
-                  succeeded = false
-                  reportResult(2, None, Some((swr, wr)))
-                case Result(_, logs) =>
-                  status = status + (path -> (if (succeeded) 0 else 1))
-                  reportResult(
-                    if (succeeded) 0 else 1,
-                    if (logs != null) Some(logs.file) else None,
-                    if (logs != null) logs.writers else None)
-              }
-              if (fileCnt == numFiles)
-                reportAll(status, topcont)
-              fileCnt += 1
+          if (status contains path) ()  // ignore message
+          else res match {
+            case Timeout(_) =>
+              updateStatus(path, 2)
+              val swr = new StringWriter
+              val wr = new PrintWriter(swr)
+              printInfoStart(res.file, wr)
+              succeeded = false
+              reportResult(2, None, Some((swr, wr)))
+            case Result(_, logs) =>
+              updateStatus(path, (if (succeeded) 0 else 1))
+              reportResult(
+                if (succeeded) 0 else 1,
+                if (logs != null) Some(logs.file) else None,
+                if (logs != null) logs.writers else None)
           }
+          if (filesRemaining.isEmpty)
+            reportAll(status.toMap, topcont)
       }
     }
   }

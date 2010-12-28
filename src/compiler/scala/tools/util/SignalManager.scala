@@ -81,6 +81,7 @@ class SignalManager(classLoader: ScalaClassLoader) {
       def raise()                 = rSignal raise signal
       def handle(handler: AnyRef) = rSignal.handle(signal, handler)
 
+      def isError               = false
       def setTo(body: => Unit)  = register(name, false, body)
       def +=(body: => Unit)     = register(name, true, body)
 
@@ -158,34 +159,45 @@ class SignalManager(classLoader: ScalaClassLoader) {
 
   def update(name: String, body: => Unit): Unit = apply(name) setTo body
 
-  class SignalError(message: String) extends WSignal(null) {
+  class SignalError(message: String) extends WSignal("") {
+    override def isError = true
     override def toString = message
   }
 
   def public(name: String, description: String)(body: => Unit): Unit = {
-    val wsig = apply(name)
-    wsig setTo body
-    registerInfoHandler()
-    addPublicHandler((wsig, description))
+    try {
+      val wsig = apply(name)
+      if (wsig.isError)
+        return
+
+      wsig setTo body
+      registerInfoHandler()
+      addPublicHandler(wsig, description)
+    }
+    catch {
+      case x: Exception => ()   // ignore failure
+    }
   }
   /** Makes sure the info handler is registered if we see activity. */
   private def registerInfoHandler() = {
     val INFO = apply("INFO")
     if (publicHandlers.isEmpty && INFO.isDefault) {
       INFO setTo Console.println(info())
-      addPublicHandler((INFO, "Dump list of well known signal handler to console."))
+      addPublicHandler(INFO, "Print signal handler registry on console.")
     }
   }
-  private def addPublicHandler(kv: (WSignal, String)) = {
-    if (publicHandlers exists (_._1 == kv._1)) ()
-    else publicHandlers = (kv :: publicHandlers) sortBy (_._1.number)
+  private def addPublicHandler(wsig: WSignal, description: String) = {
+    if (publicHandlers contains wsig) ()
+    else publicHandlers = publicHandlers.updated(wsig, description)
   }
-  private var publicHandlers: List[(WSignal, String)] = Nil
+  private var publicHandlers: Map[WSignal, String] = Map()
   def info(): String = {
     registerInfoHandler()
-    "\nOutward facing signal handler registry:\n" + (
-      publicHandlers map { case (wsig, descr) => "  %2d  %5s  %s\n".format(wsig.number, wsig.name, descr) } mkString ""
-    )
+    val xs = publicHandlers.toList sortBy (_._1.name) map {
+      case (wsig, descr) => "  %2d  %5s  %s".format(wsig.number, wsig.name, descr)
+    }
+
+    xs.mkString("\nSignal handler registry:\n", "\n", "")
   }
 }
 
@@ -199,12 +211,11 @@ object SignalManager extends SignalManager {
     STOP, TSTP, CONT, CHLD, TTIN, TTOU, IO, XCPU, // 16-23
     XFSZ, VTALRM, PROF, WINCH, INFO, USR1, USR2   // 24-31
   )
-  /** Signals which seem like particularly bad choices
-   *  when looking for an open one.
+  /** Signals which are either inaccessible or which seem like
+   *  particularly bad choices when looking for an open one.
    */
-  def reserved = Set(QUIT, TRAP, ABRT, KILL, BUS, SEGV, ALRM, STOP, INT)
-  def unreserved = all filterNot reserved
-
+  def reserved         = Set(QUIT, TRAP, ABRT, KILL, BUS, SEGV, ALRM, STOP, INT)
+  def unreserved       = all filterNot reserved
   def defaultSignals() = unreserved filter (_.isDefault)
   def ignoredSignals() = unreserved filter (_.isIgnored)
   def findOpenSignal() = Random.shuffle(defaultSignals()).head

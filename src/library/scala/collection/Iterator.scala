@@ -757,7 +757,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  Typical uses can be achieved via methods `grouped' and `sliding'.
    */
   class GroupedIterator[B >: A](self: Iterator[A], size: Int, step: Int) extends Iterator[Seq[B]] {
-    require(size >= 1 && step >= 1)
+    require(size >= 1 && step >= 1, "size=%d and step=%d, but both must be positive".format(size, step))
 
     private[this] var buffer: ArrayBuffer[B] = ArrayBuffer()  // the buffer
     private[this] var filled = false                          // whether the buffer is "hot"
