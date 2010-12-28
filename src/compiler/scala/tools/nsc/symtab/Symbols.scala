@@ -1990,6 +1990,9 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
     private var thisTypeCache: Type = _
     private var thisTypePeriod = NoPeriod
 
+    private var typeOfThisCache: Type = _
+    private var typeOfThisPeriod = NoPeriod
+
     /** the type this.type in this class */
     override def thisType: Type = {
       val period = thisTypePeriod
@@ -2005,10 +2008,18 @@ trait Symbols extends reflect.generic.Symbols { self: SymbolTable =>
 
     /** the self type of an object foo is foo.type, not class<foo>.this.type
      */
-    override def typeOfThis: Type =
-      if (getFlag(MODULE | IMPLCLASS) == MODULE.toLong && owner != NoSymbol)
-        singleType(owner.thisType, sourceModule)
+    override def typeOfThis: Type = {
+      if (getFlag(MODULE | IMPLCLASS) == MODULE.toLong && owner != NoSymbol) {
+        val period = typeOfThisPeriod
+        if (period != currentPeriod) {
+          typeOfThisPeriod = currentPeriod
+          if (!isValid(period))
+            typeOfThisCache = singleType(owner.thisType, sourceModule)
+        }
+        typeOfThisCache
+      }
       else thissym.tpe
+    }
 
     /** Sets the self type of the class */
     override def typeOfThis_=(tp: Type) {
