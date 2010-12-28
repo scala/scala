@@ -11,6 +11,8 @@ import scala.tools.reflect._
 import scala.collection.{ mutable, immutable }
 import nsc.io.timer
 import nsc.util.{ ScalaClassLoader, Exceptional }
+import Exceptional.unwrap
+import scala.util.Random
 
 /** Signal handling code.  100% clean of any references to sun.misc:
  *  it's all reflection and proxies and invocation handlers and lasers,
@@ -31,6 +33,10 @@ import nsc.util.{ ScalaClassLoader, Exceptional }
  */
 class SignalManager(classLoader: ScalaClassLoader) {
   def this() = this(ScalaClassLoader.getSystemLoader)
+  private val illegalArgHandler: PartialFunction[Throwable, Boolean] = {
+    case x if unwrap(x).isInstanceOf[IllegalArgumentException] => false
+  }
+  private def fail(msg: String) = new SignalError(msg)
 
   object rSignalHandler extends Shield {
     val className   = "sun.misc.SignalHandler"
@@ -59,8 +65,14 @@ class SignalManager(classLoader: ScalaClassLoader) {
     /** Create a new Signal with the given name.
      */
     def apply(name: String)                     = constructor(classOf[String]) newInstance name
-    def handle(signal: AnyRef, current: AnyRef) = handleMethod.invoke(null, signal, current)
-    def raise(signal: AnyRef)                   = raiseMethod.invoke(null, signal)
+    def handle(signal: AnyRef, current: AnyRef) = {
+      if (signal == null || current == null) fail("Signals cannot be null")
+      else handleMethod.invoke(null, signal, current)
+    }
+    def raise(signal: AnyRef)                   = {
+      if (signal == null) fail("Signals cannot be null")
+      else raiseMethod.invoke(null, signal)
+    }
     def number(signal: AnyRef): Int             = numberMethod.invoke(signal).asInstanceOf[Int]
 
     class WSignal(val name: String) {
@@ -82,16 +94,33 @@ class SignalManager(classLoader: ScalaClassLoader) {
         try f(swap)
         finally handle(swap)
       }
+      def isDefault = try withCurrentHandler {
+        case SIG_DFL  => true
+        case _        => false
+      } catch illegalArgHandler
+      def isIgnored = try withCurrentHandler {
+        case SIG_IGN  => true
+        case _        => false
+      } catch illegalArgHandler
+      def isSetTo(ref: AnyRef) =
+        try withCurrentHandler { _ eq ref }
+        catch illegalArgHandler
 
       def handlerString() = withCurrentHandler {
         case SIG_DFL    => "Default"
         case SIG_IGN    => "Ignore"
         case x          => "" + x
       }
+
       override def toString = "%10s  %s".format("SIG" + name,
         try handlerString()
-        catch { case x: Exception => "VM threw " + Exceptional.unwrap(x) }
+        catch { case x: Exception => "VM threw " + unwrap(x) }
       )
+      override def equals(other: Any) = other match {
+        case x: WSignal => name == x.name
+        case _          => false
+      }
+      override def hashCode = name.##
     }
   }
   type WSignal = rSignal.WSignal
@@ -132,6 +161,32 @@ class SignalManager(classLoader: ScalaClassLoader) {
   class SignalError(message: String) extends WSignal(null) {
     override def toString = message
   }
+
+  def public(name: String, description: String)(body: => Unit): Unit = {
+    val wsig = apply(name)
+    wsig setTo body
+    registerInfoHandler()
+    addPublicHandler((wsig, description))
+  }
+  /** Makes sure the info handler is registered if we see activity. */
+  private def registerInfoHandler() = {
+    val INFO = apply("INFO")
+    if (publicHandlers.isEmpty && INFO.isDefault) {
+      INFO setTo Console.println(info())
+      addPublicHandler((INFO, "Dump list of well known signal handler to console."))
+    }
+  }
+  private def addPublicHandler(kv: (WSignal, String)) = {
+    if (publicHandlers exists (_._1 == kv._1)) ()
+    else publicHandlers = (kv :: publicHandlers) sortBy (_._1.number)
+  }
+  private var publicHandlers: List[(WSignal, String)] = Nil
+  def info(): String = {
+    registerInfoHandler()
+    "\nOutward facing signal handler registry:\n" + (
+      publicHandlers map { case (wsig, descr) => "  %2d  %5s  %s\n".format(wsig.number, wsig.name, descr) } mkString ""
+    )
+  }
 }
 
 object SignalManager extends SignalManager {
@@ -144,6 +199,16 @@ object SignalManager extends SignalManager {
     STOP, TSTP, CONT, CHLD, TTIN, TTOU, IO, XCPU, // 16-23
     XFSZ, VTALRM, PROF, WINCH, INFO, USR1, USR2   // 24-31
   )
+  /** Signals which seem like particularly bad choices
+   *  when looking for an open one.
+   */
+  def reserved = Set(QUIT, TRAP, ABRT, KILL, BUS, SEGV, ALRM, STOP, INT)
+  def unreserved = all filterNot reserved
+
+  def defaultSignals() = unreserved filter (_.isDefault)
+  def ignoredSignals() = unreserved filter (_.isIgnored)
+  def findOpenSignal() = Random.shuffle(defaultSignals()).head
+
   def dump() = all foreach (x => println("%2s %s".format(x.number, x)))
 
   def apply(sigNumber: Int): WSignal = signalNumberMap(sigNumber)
