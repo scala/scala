@@ -103,6 +103,7 @@ trait Types extends reflect.generic.Types { self: SymbolTable =>
   object undoLog {
     private type UndoLog = List[(TypeVar, TypeConstraint)]
     private[nsc] var log: UndoLog = List()
+    private[nsc] def size() = log.size
 
     /** Undo all changes to constraints to type variables upto `limit'
      */

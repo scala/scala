@@ -84,6 +84,8 @@ trait Analyzer extends AnyRef
         val start = startTimer(typerNanos)
         global.echoPhaseSummary(this)
         currentRun.units foreach applyPhase
+        if (global.opt.debug)
+          log("Clearing " + undoLog.size() + " entries from the undoLog.")
         undoLog.clear()
         // need to clear it after as well or 10K+ accumulated entries are
         // uncollectable the rest of the way.
