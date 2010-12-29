@@ -121,10 +121,11 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
    */
   private val filesRemaining = new mutable.HashSet[File]
   private def addFilesRemaining(xs: Traversable[File]) = filesRemaining ++= xs
+  private var currentTestFile: File = _
   private def getNextFile() = synchronized {
-    val file = filesRemaining.head
-    filesRemaining -= file
-    file
+    currentTestFile = filesRemaining.head
+    filesRemaining -= currentTestFile
+    currentTestFile
   }
   // maps canonical file names to the test result (0: OK, 1: FAILED, 2: TIMOUT)
   private val status = new mutable.HashMap[String, Int]
@@ -133,8 +134,8 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   }
   override def toString = (
     ">> Partest Worker:\n" +
-    "TestRunParams = " + params + "\n" +
-    filesRemaining.size + " files remaining:\n" +
+    "Current test file is: " + currentTestFile + "\n" +
+    "There are " + filesRemaining.size + " files remaining:\n" +
     filesRemaining.toList.sortBy(_.toString).map("  " + _ + "\n").mkString("") +
     "\nstatus hashmap contains " + status.size + " entries:\n" +
     status.toList.map(x => "  " + x._1 + " -> " + x._2).sorted.mkString("\n") + "\n"
@@ -205,50 +206,6 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
     createdOutputDirs ::= outDir.jfile
     outDir.jfile
   }
-
-  /* Note: not yet used/tested. */
-  // def execTestObjectRunner(file: File, outDir: File, logFile: File) {
-  //   val consFM = new ConsoleFileManager
-  //
-  //   val classpath: List[URL] = {
-  //     import consFM.{ latestCompFile, latestLibFile, latestPartestFile }
-  //     val units = (
-  //       List(outDir, latestCompFile, latestLibFile, latestPartestFile) :::
-  //       ((CLASSPATH split File.pathSeparatorChar).toList map (x => new File(x)))
-  //     )
-  //     units map (_.toURI.toURL)
-  //   }
-  //
-  //   NestUI.verbose("ObjectRunner classpath: "+classpath)
-  //
-  //   try {
-  //     // configure input/output files
-  //     val logOut    = new FileOutputStream(logFile)
-  //     val logWriter = new PrintStream(logOut)
-  //
-  //     // grab global lock
-  //     fileManager.synchronized {
-  //       withOutputRedirected(logWriter) {
-  //         System.setProperty("java.library.path", logFile.getParentFile.getCanonicalFile.getAbsolutePath)
-  //         System.setProperty("partest.output", outDir.getCanonicalFile.getAbsolutePath)
-  //         System.setProperty("partest.lib", LATEST_LIB)
-  //         System.setProperty("partest.cwd", outDir.getParent)
-  //         ObjectRunner.run(classpath, "Test", List("jvm"))
-  //       }
-  //     }
-  //
-  //     /*val out = new FileOutputStream(logFile, true)
-  //     Console.withOut(new PrintStream(out)) {
-  //       ObjectRunner.run(classpath, "Test", List("jvm"))
-  //     }
-  //     out.flush
-  //     out.close*/
-  //   } catch {
-  //     case e: Exception =>
-  //       NestUI.verbose(e+" ("+file.getPath+")")
-  //       e.printStackTrace()
-  //   }
-  // }
 
   def javac(outDir: File, files: List[File], output: File): Boolean = {
     // compile using command-line javac compiler
@@ -350,15 +307,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
 
     runCommand(cmd, logFile)
 
-    if (fileManager.showLog) {
+    if (fileManager.showLog)
       // produce log as string in `log`
-      val reader = new BufferedReader(new FileReader(logFile))
-      val swriter = new StringWriter
-      val pwriter = new PrintWriter(swriter, true)
-      val appender = new StreamAppender(reader, pwriter)
-      appender.run()
-      log = swriter.toString
-    }
+      log = SFile(logFile).slurp()
   }
 
   def getCheckFile(dir: File, fileBase: String, kind: String) = {
@@ -886,10 +837,7 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             // 3. cat {test}.scala.runner {test}.scala > testFile
             val runnerFile = new File(dir, fileBase+".scala.runner")
             val bodyFile   = new File(dir, fileBase+".scala")
-            val appender = StreamAppender.concat(new FileInputStream(runnerFile),
-                                                 new FileInputStream(bodyFile),
-                                                 new FileOutputStream(testFile))
-            appender.run()
+            SFile(testFile).writeAll(List(runnerFile, bodyFile) map (f => SFile(f).slurp()): _*)
 
             try { // *catch-all*
               // 4. compile testFile
@@ -988,13 +936,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
             // check whether there is an args file
             val argsFile = new File(file.getParentFile, fileBase+".args")
             NestUI.verbose("argsFile: "+argsFile)
-            val argString = if (argsFile.exists) {
-              val swriter = new StringWriter
-              val app = StreamAppender(new BufferedReader(new FileReader(argsFile)),
-                                       swriter)
-              app.run()
-              " "+swriter.toString
-            } else ""
+            val argString =
+              if (!argsFile.exists) ""
+              else " " + SFile(argsFile).slurp()
 
             try {
               val cmdString =
@@ -1134,17 +1078,9 @@ class Worker(val fileManager: FileManager, params: TestRunParams) extends Actor 
   }
 
   def showLog(logFile: File) {
-    try {
-      val logReader = new BufferedReader(new FileReader(logFile))
-      val strWriter = new StringWriter
-      val logWriter = new PrintWriter(strWriter, true)
-      val logAppender = new StreamAppender(logReader, logWriter)
-      logAppender.run()
-      logReader.close()
-      val log = strWriter.toString
-      NestUI.normal(log)
-    } catch {
-      case fnfe: java.io.FileNotFoundException =>
+    try NestUI.normal(SFile(logFile).slurp())
+    catch {
+      case _: java.io.FileNotFoundException =>
         NestUI.failure("Couldn't open log file \""+logFile+"\".")
     }
   }
